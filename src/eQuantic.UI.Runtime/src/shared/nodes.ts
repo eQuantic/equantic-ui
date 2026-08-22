@@ -25,11 +25,12 @@ export interface ColorTokenValue {
 import type {
   CrossAlignValue,
   MainAlignValue,
+  NavigableMoveValue,
   SizeKindValue,
   VectorPaintKindValue,
 } from './enums.generated';
 
-export type { SizeKindValue } from './enums.generated';
+export type { SizeKindValue, NavigableMoveValue } from './enums.generated';
 
 export interface SizeValueValue {
   kind: SizeKindValue;
@@ -596,6 +597,24 @@ export interface AdjustableNode extends VisualNodeValue {
   label?: string;
   /** ARIA identity of the host — 'slider' (default), 'tablist' or 'radiogroup'. */
   role?: 'slider' | 'tablist' | 'radiogroup';
+}
+
+/**
+ * A TWO-DIMENSIONAL composite (C# twin: Navigable) — one Tab stop, arrows moving inside it. The
+ * host reads the keys and reports an abstract MOVE; the composite decides what a move means. Rows
+ * are structural: a grid whose cells are not inside rows is an invalid accessibility tree, and the
+ * realizer emits them `display:contents` so layout never sees them.
+ */
+export interface NavigableNode extends VisualNodeValue {
+  nodeKind: 'navigable';
+  rows: VisualNodeValue[];
+  onMove?: (move: NavigableMoveValue) => void;
+  label?: string;
+  role?: 'grid';
+  /** Whether rows[0] holds the column headers (a calendar's day-name row). */
+  hasHeaderRow?: boolean;
+  /** The focused cell as [row, item] — announced through aria-activedescendant. */
+  activeCell?: [number, number] | null;
 }
 
 /**

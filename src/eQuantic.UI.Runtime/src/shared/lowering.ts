@@ -51,6 +51,8 @@ import type {
   IconGlyphValue,
   IconNode,
   AdjustableNode,
+  NavigableNode,
+  NavigableMoveValue,
   CameraPreviewNode,
   WebFrameNode,
   CodeSurfaceNode,
@@ -361,6 +363,8 @@ function lowerNodeKind(
       return lowerAnchored(node as unknown as AnchoredNode, context, path);
     case 'adjustable':
       return lowerAdjustable(node as unknown as AdjustableNode, context, path);
+    case 'navigable':
+      return lowerNavigable(node as unknown as NavigableNode, context, path);
     case 'hoverable':
       return lowerHoverable(node as unknown as HoverableNode, context, path);
     case 'simulated':
@@ -2192,6 +2196,9 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as PressableNode).child);
     case 'adjustable':
       return fills((node as AdjustableNode).child as VisualNodeValue);
+    case 'navigable':
+      // A grid host has ROWS, not one child: nothing to inherit a fill from.
+      return { width: false, height: false };
     case 'hoverable':
       return fills((node as HoverableNode).child);
     case 'simulated':
@@ -2265,6 +2272,12 @@ function lowerPressable(
     node.attributes['tabindex'] = '-1';
   } else if (pressable.role === 'option') {
     node.attributes['role'] = 'option';
+    node.attributes['aria-selected'] = pressable.selected === true ? 'true' : 'false';
+    node.attributes['tabindex'] = '-1';
+  } else if (pressable.role === 'gridCell') {
+    // One cell of a 2-D composite: PICKED like a tab, and out of the Tab order because the
+    // enclosing Navigable is the composite's one stop — 42 days are not 42 tab presses.
+    node.attributes['role'] = 'gridcell';
     node.attributes['aria-selected'] = pressable.selected === true ? 'true' : 'false';
     node.attributes['tabindex'] = '-1';
   } else if (pressable.role === 'checkbox' || pressable.role === 'switch') {
@@ -2392,7 +2405,9 @@ function lowerAnchored(node: AnchoredNode, context: LoweringContext, path: strin
   // an open panel never comes from SSR (it opens by interaction), so hydration never compares
   // these ids — the one place both spellings could meet.
   const panelRole =
-    node.panelRole === 'menu' || node.panelRole === 'listbox' ? node.panelRole : null;
+    node.panelRole === 'menu' || node.panelRole === 'listbox' || node.panelRole === 'dialog'
+      ? node.panelRole
+      : null;
   const panelId = panelRole ? `eq-panel-${hashDeclaration(path)}` : null;
 
   const anchor = lowerNode(node.anchor, context, null, path + '/0');
@@ -2404,7 +2419,8 @@ function lowerAnchored(node: AnchoredNode, context: LoweringContext, path: strin
     if (describedBy) anchor.attributes['aria-describedby'] = describedBy;
     // The anchor's half of the menu/listbox pattern (C# twin) — on its root, the trigger button.
     if (panelId) {
-      anchor.attributes['aria-haspopup'] = panelRole === 'listbox' ? 'listbox' : 'menu';
+      anchor.attributes['aria-haspopup'] =
+        panelRole === 'listbox' ? 'listbox' : panelRole === 'dialog' ? 'dialog' : 'menu';
       if (panelRole === 'listbox') anchor.attributes['role'] = 'combobox';
       if (node.open === true) {
         anchor.attributes['aria-controls'] = panelId;
@@ -2472,7 +2488,10 @@ function lowerAnchored(node: AnchoredNode, context: LoweringContext, path: strin
 
   const openPanel = buildAnchorPanel(node, context, path);
   if (panelId) {
-    openPanel.attributes['role'] = panelRole === 'listbox' ? 'listbox' : 'menu';
+    // A panel holding a COMPOSITE (C15's calendar) is a dialog: focus moves INTO it, so its rows
+    // are not items the trigger's activedescendant can point at.
+    openPanel.attributes['role'] =
+      panelRole === 'listbox' ? 'listbox' : panelRole === 'dialog' ? 'dialog' : 'menu';
     openPanel.attributes['id'] = panelId;
     // Number the item rows in TREE ORDER — the ids aria-activedescendant points at (C# twin).
     numberItemRows(openPanel, panelId, { next: 0 });
@@ -2586,6 +2605,128 @@ function lowerAdjustable(node: AdjustableNode, context: LoweringContext, path: s
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) host.children.push(child);
   return host;
+}
+
+/** The id a cell answers to for aria-activedescendant — the C# twin builds the same string. */
+function navigableCellId(scope: string, row: number, item: number): string {
+  return `eq-cell-${scope}-${row}-${item}`;
+}
+
+/**
+ * What makes one grid's cell ids distinct from another's on the same page: the grid's NAME, hashed
+ * with the atomizer's FNV — the one hash both producers compute identically, which is what SSR
+ * hydration needs. Two grids that also share a name (the same month rendered twice) would still
+ * collide, which is the point where a caller should give them names that differ; a screen reader
+ * needs that anyway.
+ */
+function navigableScope(node: NavigableNode): string {
+  return hashDeclaration(node.label ?? '');
+}
+
+/**
+ * A KEY, as the MOVE it means (C# twin: NavigableMove). The design system's C15 keyboard: arrows
+ * walk a day, PgUp/PgDn a month, +Shift a year, Home/End the week's bounds. Returns null for a key
+ * this composite does not claim — which must then reach the page untouched, or an inline grid
+ * would eat the browser's own Home/End.
+ */
+function navigableMove(event: KeyboardEvent): NavigableMoveValue | null {
+  switch (event.key) {
+    case 'ArrowLeft':
+      return 'previousItem';
+    case 'ArrowRight':
+      return 'nextItem';
+    case 'ArrowUp':
+      return 'previousRow';
+    case 'ArrowDown':
+      return 'nextRow';
+    case 'PageUp':
+      return event.shiftKey ? 'previousSection' : 'previousPage';
+    case 'PageDown':
+      return event.shiftKey ? 'nextSection' : 'nextPage';
+    case 'Home':
+      return 'rowStart';
+    case 'End':
+      return 'rowEnd';
+    default:
+      return null;
+  }
+}
+
+/**
+ * The 2-D composite (C# twin: LowerNavigable). One focusable host with the grid role and the name,
+ * one `display:contents` row per declared row — the row exists for assistive tech and not for
+ * layout, so the caller's Grid or Column keeps placing the cells exactly as before.
+ *
+ * FOCUS-SCOPED on purpose: the handler sits on the host, so two grids on one page never answer the
+ * same arrow. That is the line between this and `Shortcut`, which is page-level by design and stays
+ * the tool for Esc-dismiss and ⌘K.
+ */
+function lowerNavigable(node: NavigableNode, context: LoweringContext, path: string): HtmlNode {
+  const host = element('div', {});
+  host.attributes['role'] = node.role ?? 'grid';
+  host.attributes['tabindex'] = '0';
+  if (node.label) host.attributes['aria-label'] = node.label;
+  const scope = navigableScope(node);
+  if (node.activeCell)
+    host.attributes['aria-activedescendant'] = navigableCellId(
+      scope,
+      node.activeCell[0],
+      node.activeCell[1],
+    );
+
+  if (node.onMove) {
+    const move = node.onMove;
+    host.events['keydown'] = ((event: KeyboardEvent) => {
+      const which = navigableMove(event);
+      if (which === null) return;
+      // An arrow that also scrolls the page is two answers to one key.
+      event.preventDefault();
+      move(which);
+    }) as unknown as EventHandler;
+  }
+
+  const rows = node.rows ?? [];
+  for (let index = 0; index < rows.length; index++) {
+    const row = element('div', { display: 'contents' });
+    row.attributes['role'] = 'row';
+    const lowered = lowerNode(rows[index], context, null, `${path}/${index}`);
+    const isHeader = node.hasHeaderRow === true && index === 0;
+    if (lowered) {
+      row.children.push(lowered);
+      if (isHeader) markColumnHeaders(lowered);
+    }
+    // The cells are IDENTIFIED — an aria-activedescendant pointing at an id nothing carries is a
+    // dangling reference, which reads to assistive tech as no focus at all.
+    if (!isHeader) numberGridCells(row, scope, index, { next: 0 });
+    host.children.push(row);
+  }
+  return host;
+}
+
+/** Ids every gridcell of one row in tree order — the C# twin numbers the same way. */
+function numberGridCells(
+  node: HtmlNode,
+  scope: string,
+  row: number,
+  counter: { next: number },
+): void {
+  if (node.attributes?.role === 'gridcell') {
+    node.attributes['id'] = navigableCellId(scope, row, counter.next);
+    counter.next++;
+  }
+  for (const child of node.children ?? []) numberGridCells(child as HtmlNode, scope, row, counter);
+}
+
+/**
+ * The header row's cells NAME their columns (design system C15: the day names). They are the row
+ * content's DIRECT children — whatever the caller laid out, one element per column — so the rule
+ * is structural rather than a guess about what a header looks like.
+ */
+function markColumnHeaders(rowContent: HtmlNode): void {
+  for (const child of rowContent.children ?? []) {
+    const cell = child as HtmlNode;
+    if (cell.attributes) cell.attributes['role'] = 'columnheader';
+  }
 }
 
 /**

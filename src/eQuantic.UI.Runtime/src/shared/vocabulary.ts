@@ -8,7 +8,7 @@
  * `render()` like on any other component; the reconciler never learns about abstract nodes).
  */
 
-import type { AnchorPlacementValue, ComponentChild } from './nodes';
+import type { AnchorPlacementValue, ComponentChild, NavigableMoveValue } from './nodes';
 import type { HtmlNode } from '../core/types';
 import { setCenterWrapper } from '../core/types';
 import { iconPaths } from './icons.generated';
@@ -1196,6 +1196,40 @@ export class Adjustable extends VisualNode {
     super();
     this.child = child;
     this.onAdjust = onAdjust;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/**
+ * Mirror of the C# `Navigable` node: a TWO-DIMENSIONAL composite — one Tab stop, arrows moving a
+ * selection inside it. The 2-D twin of `Adjustable`: where that answers ±1 along one axis, this
+ * answers rows, pages, sections and row bounds, and it is focus-scoped (the handler sits on the
+ * host), which is what keeps two grids on one page from answering the same arrow.
+ */
+export class Navigable extends VisualNode {
+  readonly nodeKind = 'navigable';
+  rows: VisualNode[];
+  onMove: (move: NavigableMoveValue) => void;
+  label = '';
+  role: 'grid' = 'grid';
+  /** Whether rows[0] holds the column headers (a calendar's day-name row). */
+  hasHeaderRow = false;
+  /** The focused cell as [row, item] — announced through aria-activedescendant. */
+  activeCell: [number, number] | null = null;
+
+  constructor(
+    rows: VisualNode[],
+    onMove: (move: NavigableMoveValue) => void,
+    config?: {
+      label?: string;
+      role?: 'grid';
+      hasHeaderRow?: boolean;
+      activeCell?: [number, number] | null;
+    },
+  ) {
+    super();
+    this.rows = rows;
+    this.onMove = onMove;
     if (config) Object.assign(this, config);
   }
 }

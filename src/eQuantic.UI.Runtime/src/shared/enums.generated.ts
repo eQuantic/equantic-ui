@@ -13,7 +13,7 @@ export type AlignmentValue =
   'topStart' | 'topCenter' | 'topEnd' | 'centerStart' | 'center' | 'centerEnd' | 'bottomStart'
   | 'bottomCenter' | 'bottomEnd';
 
-export type AnchorPanelRoleValue = 'none' | 'menu' | 'listbox';
+export type AnchorPanelRoleValue = 'none' | 'menu' | 'listbox' | 'dialog';
 
 export type AnchorPlacementValue =
   'bottomStart' | 'bottomEnd' | 'topStart' | 'topEnd' | 'bottomCenter' | 'topCenter';
@@ -69,6 +69,12 @@ export type LoopEffectValue = 'slideX';
 
 export type MainAlignValue = 'start' | 'center' | 'end' | 'spaceBetween';
 
+export type NavigableMoveValue =
+  'previousItem' | 'nextItem' | 'previousRow' | 'nextRow' | 'previousPage' | 'nextPage'
+  | 'previousSection' | 'nextSection' | 'rowStart' | 'rowEnd';
+
+export type NavigableRoleValue = 'grid';
+
 export type NetworkKindValue = 'none' | 'wifi' | 'cellular' | 'wired' | 'other';
 
 export type PermissionStateValue =
@@ -80,7 +86,8 @@ export type PointerCursorValue =
 export type PresenceMotionValue = 'fade' | 'slideUp';
 
 export type PressableRoleValue =
-  'button' | 'radio' | 'checkbox' | 'switch' | 'tab' | 'menuItem' | 'option' | 'destination';
+  'button' | 'radio' | 'checkbox' | 'switch' | 'tab' | 'menuItem' | 'option' | 'destination'
+  | 'gridCell';
 
 export type ScrollAxisValue = 'vertical' | 'horizontal' | 'both';
 

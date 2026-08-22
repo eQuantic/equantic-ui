@@ -70,6 +70,7 @@
   "MotionReading",
   "MotionSpec",
   "MotionVector",
+  "Navigable",
   "Navigator",
   "NetworkState",
   "Overlay",

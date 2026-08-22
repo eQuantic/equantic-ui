@@ -24,6 +24,11 @@ public enum SemanticRole : byte
     /// bridges speak different words for them (UISwitch trait, Switch class), even though macOS
     /// maps both onto AXCheckBox.</summary>
     Switch,
+
+    /// <summary>One cell of a two-dimensional composite — a calendar day (design system C15).
+    /// Its picked-ness rides <see cref="SemanticNode.Selected"/>, the same field a tab and a
+    /// listbox option use, and never the label.</summary>
+    GridCell,
 }
 
 /// <summary>A check's state, in ARIA's own three words. Mixed exists for checkboxes and nothing
@@ -53,7 +58,17 @@ public readonly record struct SemanticNode(
     /// bridge reports it with the nearest thing its platform has, which on both mobiles is the
     /// SELECTED trait; a bar whose active stop is only a tint colour is a bar a screen-reader user
     /// walks blind.</summary>
-    bool Current = false);
+    bool Current = false,
+    /// <summary>
+    /// This one of a set is PICKED — a tab, a listbox option, a calendar day (the web's
+    /// <c>aria-selected</c>). Distinct from <see cref="Checked"/>, which is a two-or-three-state
+    /// answer to a question, and from <see cref="Current"/>, which says where you ARE; every
+    /// bridge reports it with its platform's selected state. Null where the role has no notion of
+    /// being picked, so a plain button never announces "not selected".
+    /// <para>Design system §10 REQUEST, opened by C15: before this, a Tab and an Option reached
+    /// the native tree as plain Buttons and their selection was paint only.</para>
+    /// </summary>
+    bool? Selected = null);
 
 /// <summary>
 /// Derives the SEMANTICS TREE from a realized frame: the page layout plus every overlay layout
@@ -96,12 +111,20 @@ public static class SemanticsTree
                             : pressable.Selected == true ? SemanticCheck.On : SemanticCheck.Off)),
                     PressableRole.Switch => (SemanticRole.Switch,
                         (SemanticCheck?)(pressable.Selected == true ? SemanticCheck.On : SemanticCheck.Off)),
+                    PressableRole.GridCell => (SemanticRole.GridCell, (SemanticCheck?)null),
                     _ => (SemanticRole.Button, null),
                 };
+                // PICKED-ness, for the three roles that have it. Before the Selected field existed
+                // a Tab and an Option arrived here as plain Buttons whose selection was paint only.
+                bool? selected = pressable.Role is PressableRole.Tab or PressableRole.Option
+                    or PressableRole.GridCell
+                    ? pressable.Selected == true
+                    : null;
                 nodes.Add(new(role, node.Path ?? "", node.Bounds,
                     pressable.Label ?? TextWithin(node), null, pressable.Disabled, check,
                     pressable.Expanded,
-                    pressable.Role == PressableRole.Destination && pressable.Selected == true));
+                    pressable.Role == PressableRole.Destination && pressable.Selected == true,
+                    selected));
                 return;
             }
 

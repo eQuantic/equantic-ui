@@ -40,6 +40,7 @@ export {
   Icon,
   IconGlyph,
   Adjustable,
+  Navigable,
   CameraPreview,
   WebFrame,
   Image,
