@@ -3,19 +3,34 @@ export class PythonLanguage {
     constructor(props?: any) {
         if (props && typeof props === 'object') Object.assign(this, props);
     }
+
     static normal: number = 0;
     static tripleDouble: number = 1;
     static tripleSingle: number = 2;
     static _keywords: Set<string> | undefined;
-    static get keywords(): Set<string> { return PythonLanguage._keywords ??= new Set(['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'match', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield']); }
+
+    static get keywords(): Set<string> {
+        return PythonLanguage._keywords ??= new Set(['and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'match', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield']);
+    }
+
     static _builtins: Set<string> | undefined;
-    static get builtins(): Set<string> { return PythonLanguage._builtins ??= new Set(['bool', 'bytes', 'dict', 'float', 'frozenset', 'int', 'list', 'object', 'set', 'str', 'tuple', 'type']); }
+
+    static get builtins(): Set<string> {
+        return PythonLanguage._builtins ??= new Set(['bool', 'bytes', 'dict', 'float', 'frozenset', 'int', 'list', 'object', 'set', 'str', 'tuple', 'type']);
+    }
+
     static _constants: Set<string> | undefined;
-    static get constants(): Set<string> { return PythonLanguage._constants ??= new Set(['True', 'False', 'None', 'self', 'cls']); }
+
+    static get constants(): Set<string> {
+        return PythonLanguage._constants ??= new Set(['True', 'False', 'None', 'self', 'cls']);
+    }
+
     get name(): string {
         return 'Python';
     }
+
     rules: CodeLanguageRules = new CodeLanguageRules('#', null, [['(', ')'], ['[', ']'], ['{', '}']], ['"', '\''], [':', '(', '[', '{'], [')', ']', '}'], 4);
+
     tokenize(line: string, state: number, into: CodeToken[]) {
         let i = 0;
         if (state !== PythonLanguage.normal) {
@@ -86,9 +101,11 @@ export class PythonLanguage {
         }
         return PythonLanguage.normal;
     }
+
     static tripleAt(line: string, i: number, quote: string) {
         return i + 2 < line.length && line[i] === quote && line[i + 1] === quote && line[i + 2] === quote;
     }
+
     static scanQuoted(line: string, from: number, quote: string) {
         for (let i = from; i < line.length; i++) {
             if (line[i] === '\\') {
@@ -99,10 +116,12 @@ export class PythonLanguage {
         }
         return -1;
     }
+
     static nextNonSpace(line: string, from: number) {
         for (let i = from; i < line.length; i++) if (!(/^\s$/.test(line[i]))) return line[i];
         return '\0';
     }
+
     static add(into: CodeToken[], start: number, length: number, kind: CodeTokenKindValue) {
         if (length <= 0) return;
         if (into.length > 0 && into[into.length - 1].kind === kind && into[into.length - 1].end === start) {

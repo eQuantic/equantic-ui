@@ -7,6 +7,7 @@ export class Banner extends StatelessComponent {
     declare primaryAction: any;
     declare secondaryAction: any;
     declare onDismiss: (() => void) | null;
+
     constructor(status?: any, title?: any, body: any = null, props?: any) {
         super();
         if (status !== undefined) this.status = status;
@@ -41,6 +42,5 @@ export class Banner extends StatelessComponent {
         }
         return new Box(new BoxStyle({ width: SizeValue.fill, padding: new EdgeInsets(14, 12, 14, 12), background: tint.subtle, cornerRadius: new CornerRadii(context.theme.shape('large')) }), content);
     }
-
 }
 

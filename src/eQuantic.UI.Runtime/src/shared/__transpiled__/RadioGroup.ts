@@ -6,6 +6,7 @@ export class RadioGroup extends StatelessComponent {
     declare onChanged: any;
     declare label: any;
     declare disabled: boolean;
+
     constructor(options?: any, selected?: any, onChanged: any = null, label: any = null, props?: any) {
         super();
         if (options !== undefined) this.options = options;
@@ -46,6 +47,5 @@ export class RadioGroup extends StatelessComponent {
         column.add(group);
         return column;
     }
-
 }
 

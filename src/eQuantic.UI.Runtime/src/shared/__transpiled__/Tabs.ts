@@ -4,6 +4,7 @@ export class Tabs extends StatelessComponent {
     declare labels: string[];
     declare selected: number;
     declare onSelect: any;
+
     constructor(labels?: any, selected?: any, onSelect: any = null, props?: any) {
         super();
         if (labels !== undefined) this.labels = labels;
@@ -35,6 +36,5 @@ export class Tabs extends StatelessComponent {
         let count = this.labels.length;
         return new Adjustable(row, (direction: number) => this.onSelect((this.selected + direction + count) % count), { role: 'tablist' });
     }
-
 }
 

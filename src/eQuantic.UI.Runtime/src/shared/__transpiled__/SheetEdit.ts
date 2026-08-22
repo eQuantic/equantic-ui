@@ -3,6 +3,7 @@ export class SheetEdit {
     constructor(props?: any) {
         if (props && typeof props === 'object') Object.assign(this, props);
     }
+
     declare kind: SheetEditKindValue;
     before: SheetCellSnapshot[] = [];
     after: SheetCellSnapshot[] = [];

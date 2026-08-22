@@ -2,6 +2,7 @@ import { BuildContext, Crumb, Icon, Link, Row, StatelessComponent, Text } from "
 
 export class Breadcrumb extends StatelessComponent {
     declare crumbs: Crumb[];
+
     constructor(crumbs?: any, props?: any) {
         super();
         if (crumbs !== undefined) this.crumbs = crumbs;
@@ -22,6 +23,5 @@ export class Breadcrumb extends StatelessComponent {
         }
         return row;
     }
-
 }
 

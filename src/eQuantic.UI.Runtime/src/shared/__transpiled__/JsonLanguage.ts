@@ -3,10 +3,13 @@ export class JsonLanguage {
     constructor(props?: any) {
         if (props && typeof props === 'object') Object.assign(this, props);
     }
+
     get name(): string {
         return 'JSON';
     }
+
     rules: CodeLanguageRules = new CodeLanguageRules(null, null, [['(', ')'], ['[', ']'], ['{', '}']], ['"'], ['{', '(', '['], ['}', ')', ']'], 2);
+
     tokenize(line: string, _state: number, into: CodeToken[]) {
         let i = 0;
         while (i < line.length) {
@@ -52,6 +55,7 @@ export class JsonLanguage {
         }
         return 0;
     }
+
     static nextNonSpace(line: string, from: number) {
         for (let i = from; i < line.length; i++) if (!(/^\s$/.test(line[i]))) return line[i];
         return '\0';

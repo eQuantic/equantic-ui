@@ -5,6 +5,7 @@ export class Skeleton extends StatelessComponent {
     declare shape: string;
     declare width: number;
     declare height: number;
+
     constructor(shape?: any, width?: any, height: any = 0, props?: any) {
         super();
         if (shape !== undefined) this.shape = shape;
@@ -28,6 +29,5 @@ export class Skeleton extends StatelessComponent {
         glint.add(new Flexible(new Box(new BoxStyle({ height: height, gradient: new LinearGradient(theme.surfaceHighlight, new ColorToken(Color.transparent)) })), 1));
         return new Box(new BoxStyle({ width: this.width, height: height, background: theme.surfaceSubtle, cornerRadius: new CornerRadii(radius), clip: true }), new LoopMotion(glint, 'slideX', -1, 1, Skeleton.shimmerDurationMs, { hideAtRest: true }));
     }
-
 }
 

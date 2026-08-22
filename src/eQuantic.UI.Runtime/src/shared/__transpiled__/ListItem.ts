@@ -10,12 +10,15 @@ export class ListItem extends StatelessComponent {
     declare trailing: any;
     declare selected: boolean;
     declare subtitleLines: number;
+
     get minHeight() {
         return this.subtitle == null ? 52 : this.subtitleLines >= 2 ? 88 : 68;
     }
+
     get contentInset() {
         return this.leading == null ? 16 : 16 + ListItem.slotWidth(this.leading, this.leadingWidth) + 12;
     }
+
     constructor(title?: any, subtitle: any = null, onPressed: any = null, props?: any) {
         super();
         if (title !== undefined) this.title = title;
@@ -50,6 +53,5 @@ export class ListItem extends StatelessComponent {
     static slotWidth(leading: VisualNode, declared: number) {
         return (() => { const _s = leading; if (_s instanceof Icon) { const icon = _s; return icon.size; } if (_s instanceof Avatar) { const avatar = _s; return Sizing.avatar(avatar.size); } return declared; })();
     }
-
 }
 

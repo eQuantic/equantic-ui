@@ -5,6 +5,7 @@ export class Switch extends StatelessComponent {
     declare onChanged: (() => void) | null;
     declare disabled: boolean;
     declare label: any;
+
     constructor(on?: any, onChanged: any = null, props?: any) {
         super();
         if (on !== undefined) this.on = on;
@@ -36,6 +37,5 @@ export class Switch extends StatelessComponent {
         let next = this.on ? offset > -travel / 2 : offset >= travel / 2;
         if (next !== this.on) this.onChanged?.();
     }
-
 }
 

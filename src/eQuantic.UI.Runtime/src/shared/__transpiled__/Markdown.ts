@@ -3,6 +3,7 @@ import { Box, BoxStyle, BuildContext, CodeBlock, Column, CornerRadii, Divider, E
 export class Markdown extends StatelessComponent {
     declare source: string;
     declare style: any;
+
     constructor(source?: any, props?: any) {
         super();
         if (source !== undefined) this.source = source;
@@ -80,6 +81,5 @@ export class Markdown extends StatelessComponent {
         }
         return new Box(new BoxStyle({ width: SizeValue.fill, cornerRadius: new CornerRadii(12), borderColor: theme.border, borderWidth: 1, clip: true }), rows);
     }
-
 }
 

@@ -10,6 +10,7 @@ export class Stepper extends StatelessComponent {
     declare disabled: boolean;
     declare suffix: string;
     declare label: string;
+
     constructor(value?: any, onChanged: any = null, props?: any) {
         super();
         if (value !== undefined) this.value = value;
@@ -47,6 +48,5 @@ export class Stepper extends StatelessComponent {
         let box = new Box(new BoxStyle({ width: height, height: SizeValue.fill }), centered);
         return new Pressable(box, enabled ? onPressed : null, { disabled: !enabled, label: label });
     }
-
 }
 

@@ -4,6 +4,7 @@ export class Mermaid extends StatelessComponent {
     static headSize: number = 9;
     static edgeWidth: number = 2;
     declare source: string;
+
     constructor(source?: any, props?: any) {
         super();
         if (source !== undefined) this.source = source;
@@ -69,6 +70,5 @@ export class Mermaid extends StatelessComponent {
         }
         return new Positioned(new Vector(Mermaid.headGlyph(arrow.direction), Mermaid.headSize, ink), top, null, null, start);
     }
-
 }
 

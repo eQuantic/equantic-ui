@@ -5,6 +5,7 @@ export class Card extends StatelessComponent {
     declare kind: string;
     declare padding: EdgeInsets;
     declare width: SizeValue;
+
     constructor(child?: any, kind: any = 'elevated', props?: any) {
         super();
         if (child !== undefined) this.child = child;
@@ -23,6 +24,5 @@ export class Card extends StatelessComponent {
         let borderColor = this.kind === 'elevated' ? new ColorToken(Color.transparent, theme.border.dark) : theme.border;
         return new Box(new BoxStyle({ width: this.width, padding: this.padding, background: background, cornerRadius: new CornerRadii(theme.shape('large')), borderWidth: borderWidth, borderColor: borderColor, elevation: this.kind === 'elevated' ? 1 : 0 }), this.child);
     }
-
 }
 

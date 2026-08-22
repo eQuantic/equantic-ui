@@ -9,6 +9,7 @@ export class IconButton extends StatelessComponent {
     declare disabled: boolean;
     declare selected: boolean;
     declare selectedGlyph: any;
+
     constructor(glyph?: any, label?: any, kind: any = 'standard', size: any = 'medium', onPressed: any = null, props?: any) {
         super();
         if (glyph !== undefined) this.glyph = glyph;
@@ -50,6 +51,5 @@ export class IconButton extends StatelessComponent {
         let box = new Box(new BoxStyle({ width: side, height: side, background: fill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: this.kind === 'outline' ? 1 : 0, borderColor: theme.borderStrong, hover: this.disabled ? null : new StyleDiff({ background: hoverFill }) }), content);
         return new Pressable(box, this.disabled ? null : this.onPressed, { disabled: this.disabled, label: this.label, pressedBackground: this.disabled ? null : pressedFill, selected: this.selectedGlyph == null && !this.selected ? null : this.selected });
     }
-
 }
 

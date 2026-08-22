@@ -11,6 +11,7 @@ export class ListView extends SharedStatefulComponent {
     declare overscan: number;
     declare width: SizeValue;
     declare height: SizeValue;
+
     constructor(count?: any, itemExtent?: any, itemBuilder?: any, props?: any) {
         super();
         if (count !== undefined) this.count = count;
@@ -65,6 +66,5 @@ export class ListView extends SharedStatefulComponent {
         if (Math.abs(viewport - this._viewport) < 0.5) return;
         this.setState(() => this._viewport = viewport);
     }
-
 }
 

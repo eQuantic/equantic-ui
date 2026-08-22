@@ -6,6 +6,7 @@ export class Popover extends StatelessComponent {
     declare open: boolean;
     declare onDismiss: (() => void) | null;
     declare placement: AnchorPlacementValue;
+
     constructor(trigger?: any, content?: any, open?: any, onDismiss: any = null, props?: any) {
         super();
         if (trigger !== undefined) this.trigger = trigger;
@@ -27,6 +28,5 @@ export class Popover extends StatelessComponent {
         if (context.inFlow) return panel;
         return new Anchored(this.trigger, panel, { placement: this.placement, open: this.open, onDismiss: this.onDismiss });
     }
-
 }
 

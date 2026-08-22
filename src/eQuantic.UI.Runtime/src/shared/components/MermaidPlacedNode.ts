@@ -3,6 +3,7 @@ export class MermaidPlacedNode {
     constructor(props?: any) {
         if (props && typeof props === 'object') Object.assign(this, props);
     }
+
     node: MermaidNode = new MermaidNode();
     x: number = 0;
     y: number = 0;

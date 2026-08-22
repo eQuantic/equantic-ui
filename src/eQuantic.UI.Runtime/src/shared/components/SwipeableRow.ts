@@ -9,6 +9,7 @@ export class SwipeableRow extends StatelessComponent {
     declare actionVariant: VariantValue;
     declare open: boolean;
     declare onOpenChanged: any;
+
     constructor(child?: any, actionLabel?: any, actionIcon?: any, onAction: any = null, props?: any) {
         super();
         if (child !== undefined) this.child = child;
@@ -42,6 +43,5 @@ export class SwipeableRow extends StatelessComponent {
     onReleased(offset: number) {
         return this.onOpenChanged?.(offset <= -SwipeableRow.actionWidth / 2);
     }
-
 }
 

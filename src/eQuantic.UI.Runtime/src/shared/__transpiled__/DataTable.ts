@@ -14,9 +14,11 @@ export class DataTable extends StatelessComponent {
     declare onRowPressed: any;
     declare pendingRows: number;
     declare empty: any;
+
     get selectable() {
         return !(this.selection == null);
     }
+
     constructor(columns?: any, rows?: any, props?: any) {
         super();
         if (columns !== undefined) this.columns = columns;
@@ -98,6 +100,5 @@ export class DataTable extends StatelessComponent {
         row.add(child);
         return new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(12, 8) }), row);
     }
-
 }
 

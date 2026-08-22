@@ -2,6 +2,7 @@ import { BuildContext, Button, Column, SharedStatefulComponent, Text } from "@eq
 
 export class SharedCounter extends SharedStatefulComponent {
     _count: number = 0;
+
     build(_context: BuildContext) {
         let column = new Column(12);
         column.add(new Text(`Count: ${this._count}`, 'title'));
@@ -23,6 +24,5 @@ export class SharedCounter extends SharedStatefulComponent {
         _seq.push(new Text('b', 'caption'));
         return _seq;
     }
-
 }
 

@@ -91,6 +91,7 @@ export class SheetKeymap {
         }
         return false;
     }
+
     static type(sheet: SheetController, text: string) {
         if (sheet.editing) sheet.typeIntoDraft(text); else sheet.beginEdit(text);
     }

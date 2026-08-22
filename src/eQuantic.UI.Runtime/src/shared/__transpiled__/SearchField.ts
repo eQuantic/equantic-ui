@@ -5,6 +5,7 @@ export class SearchField extends StatelessComponent {
     declare onChanged: ((string: string) => void) | null;
     declare placeholder: string;
     declare onSubmit: (() => void) | null;
+
     constructor(query?: any, onChanged: any = null, placeholder: any = null, onSubmit: any = null, props?: any) {
         super();
         if (query !== undefined) this.query = query;
@@ -29,6 +30,5 @@ export class SearchField extends StatelessComponent {
         }
         return new Box(new BoxStyle({ width: SizeValue.fill, height: Sizing.height('medium', context.density), background: theme.surfaceSubtle, cornerRadius: new CornerRadii(theme.shape('full')), padding: EdgeInsets.symmetric(14, 0) }), row);
     }
-
 }
 

@@ -7,6 +7,7 @@ export class Pagination extends StatelessComponent {
     declare pageCount: number;
     declare currentPage: number;
     declare onChanged: any;
+
     constructor(pageCount?: any, currentPage?: any, onChanged: any = null, props?: any) {
         super();
         if (pageCount !== undefined) this.pageCount = pageCount;
@@ -69,6 +70,5 @@ export class Pagination extends StatelessComponent {
     static step(label: string, enabled: boolean, onPressed: () => void) {
         return new Button(label, 'outline', 'small', null, { disabled: !enabled, onPressed: onPressed });
     }
-
 }
 

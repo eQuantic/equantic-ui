@@ -5,6 +5,7 @@ export class Accordion extends SharedStatefulComponent {
     _openMulti: any = new Set();
     declare items: AccordionItem[];
     declare multiple: boolean;
+
     constructor(items?: any, openIndex: any = -1, props?: any) {
         super();
         if (items !== undefined) this.items = items;
@@ -53,6 +54,5 @@ export class Accordion extends SharedStatefulComponent {
             }
         });
     }
-
 }
 

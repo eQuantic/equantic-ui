@@ -3,6 +3,7 @@ export class IndentationFoldProvider {
     constructor(props?: any) {
         if (props && typeof props === 'object') Object.assign(this, props);
     }
+
     foldsFor(document: CodeDocument) {
         let folds: CodeFold[] = [];
         for (let line = 0; line < document.lineCount - 1; line++) {

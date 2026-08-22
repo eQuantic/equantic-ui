@@ -11,6 +11,7 @@ export class Slider extends StatelessComponent {
     declare disabled: boolean;
     declare variant: VariantValue;
     declare label: string;
+
     constructor(value?: any, onChanged: any = null, props?: any) {
         super();
         if (value !== undefined) this.value = value;
@@ -59,6 +60,5 @@ export class Slider extends StatelessComponent {
         let target = new Box(new BoxStyle({ width: SizeValue.fill, height: SizeValue.fill }), centered);
         return enabled ? new Pressable(target, onPressed, { label: filled ? 'Decrease' : 'Increase' }) : target;
     }
-
 }
 

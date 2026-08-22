@@ -3,28 +3,38 @@ export abstract class CurlyBraceLanguage {
     constructor(props?: any) {
         if (props && typeof props === 'object') Object.assign(this, props);
     }
+
     static stateNormal: number = 0;
     static stateBlockComment: number = 1;
     static stateMultilineString: number = 2;
     static _punctuation: Set<string> | undefined;
-    static get punctuation(): Set<string> { return CurlyBraceLanguage._punctuation ??= new Set(['(', ')', '[', ']', '{', '}', ',', ';', '.', ':']); }
+
+    static get punctuation(): Set<string> {
+        return CurlyBraceLanguage._punctuation ??= new Set(['(', ')', '[', ']', '{', '}', ',', ';', '.', ':']);
+    }
+
     abstract name: string;
     rules: CodeLanguageRules = CodeLanguageRules.default;
     abstract keywords: Set<string>;
     abstract typeWords: Set<string>;
     abstract constantWords: Set<string>;
+
     get hasVerbatimStrings(): boolean {
         return false;
     }
+
     get hasTemplateStrings(): boolean {
         return false;
     }
+
     get hasBracketAttributes(): boolean {
         return false;
     }
+
     get hasAtDecorators(): boolean {
         return false;
     }
+
     tokenize(line: string, state: number, into: CodeToken[]) {
         let i = 0;
         if (state === CurlyBraceLanguage.stateBlockComment) {
@@ -122,6 +132,7 @@ export abstract class CurlyBraceLanguage {
         }
         return CurlyBraceLanguage.stateNormal;
     }
+
     wordKind(word: string, line: string, afterIndex: number) {
         if (word.length > 1 && word[0] === '@') return 'attribute';
         if (this.keywords.has(word)) return 'keyword';
@@ -132,6 +143,7 @@ export abstract class CurlyBraceLanguage {
         if (word.length > 0 && (/^\p{Lu}$/u.test(word[0]))) return 'type';
         return 'plain';
     }
+
     closeMultilineString(line: string) {
         for (let i = 0; i < line.length; i++) {
             if (line[i] === '`' && this.hasTemplateStrings) return i + 1;
@@ -144,6 +156,7 @@ export abstract class CurlyBraceLanguage {
         }
         return -1;
     }
+
     static add(into: CodeToken[], start: number, length: number, kind: CodeTokenKindValue) {
         if (length <= 0) return;
         if (into.length > 0 && into[into.length - 1].kind === kind && into[into.length - 1].end === start) {
@@ -152,6 +165,7 @@ export abstract class CurlyBraceLanguage {
         }
         into.push(new CodeToken(start, length, kind));
     }
+
     static scanQuoted(line: string, from: number, quote: string) {
         for (let i = from; i < line.length; i++) {
             if (line[i] === '\\') {
@@ -162,6 +176,7 @@ export abstract class CurlyBraceLanguage {
         }
         return -1;
     }
+
     static scanVerbatim(line: string, from: number) {
         for (let i = from; i < line.length; i++) {
             if (line[i] !== '"') continue;
@@ -173,6 +188,7 @@ export abstract class CurlyBraceLanguage {
         }
         return -1;
     }
+
     static scanNumber(line: string, from: number) {
         let i = from;
         if (line[i] === '0' && i + 1 < line.length && (line[i + 1] === 'x' || line[i + 1] === 'X' || line[i + 1] === 'b' || line[i + 1] === 'B')) {
@@ -196,10 +212,12 @@ export abstract class CurlyBraceLanguage {
         while (i < line.length && (/^\p{L}$/u.test(line[i]))) i++;
         return i;
     }
+
     static nextNonSpace(line: string, from: number) {
         for (let i = from; i < line.length; i++) if (!(/^\s$/.test(line[i]))) return line[i];
         return '\0';
     }
+
     static isLineHead(line: string, index: number) {
         for (let i = 0; i < index; i++) if (!(/^\s$/.test(line[i]))) return false;
         return true;

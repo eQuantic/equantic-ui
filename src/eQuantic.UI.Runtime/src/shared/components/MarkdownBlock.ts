@@ -3,6 +3,7 @@ export class MarkdownBlock {
     constructor(props?: any) {
         if (props && typeof props === 'object') Object.assign(this, props);
     }
+
     declare kind: string;
     level: number = 0;
     text: string = '';

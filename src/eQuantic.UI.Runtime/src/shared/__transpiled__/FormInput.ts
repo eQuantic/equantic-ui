@@ -11,6 +11,7 @@ export class FormInput extends StatelessComponent {
     declare obscure: boolean;
     declare autofocus: boolean;
     declare disabled: boolean;
+
     constructor(form?: any, name?: any, label: any = '', placeholder: any = null, helper: any = null, leading: any = null, size: any = 'large', props?: any) {
         super();
         if (form !== undefined) this.form = form;
@@ -41,6 +42,5 @@ export class FormInput extends StatelessComponent {
             if (!focused) this.form.touch(this.name);
         } });
     }
-
 }
 

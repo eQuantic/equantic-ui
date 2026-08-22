@@ -26,6 +26,7 @@ export class CodeBlock extends StatelessComponent {
     declare viewportWidth: number;
     declare onScrolled: any;
     declare onViewportChanged: any;
+
     constructor(code?: any, language: any = null, props?: any) {
         super();
         if (language !== undefined) this.language = language;
@@ -224,6 +225,5 @@ export class CodeBlock extends StatelessComponent {
         let token = theme.code(kind);
         return new ColorToken(token.dark, token.dark);
     }
-
 }
 

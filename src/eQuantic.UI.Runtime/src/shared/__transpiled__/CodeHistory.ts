@@ -3,16 +3,20 @@ export class CodeHistory {
     constructor(props?: any) {
         this._past = []; this._future = []; this._runEnd = new CodePosition(-1, -1);  if (props && typeof props === 'object') Object.assign(this, props);
     }
+
     _past: CodeEdit[];
     _future: CodeEdit[];
     _runEnd: CodePosition;
     limit: number = 500;
+
     get canUndo(): boolean {
         return this._past.length > 0;
     }
+
     get canRedo(): boolean {
         return this._future.length > 0;
     }
+
     record(edit: CodeEdit) {
         this._future.splice(0);
         if (edit.isSimpleInsert && this._past.length > 0 && $eq.equals(edit.range.start, this._runEnd)) {
@@ -27,9 +31,11 @@ export class CodeHistory {
         if (this._past.length > this.limit) this._past.splice(0, 1);
         this._runEnd = edit.isSimpleInsert ? edit.insertedRange.end : new CodePosition(-1, -1);
     }
+
     break() {
         return this._runEnd = new CodePosition(-1, -1);
     }
+
     undo(document: CodeDocument) {
         let selection; const $r = (() => { selection = undefined;
         if (this._past.length === 0) return null;
@@ -41,6 +47,7 @@ export class CodeHistory {
         selection = edit.selectionBefore;
         return next; })(); return { $: $r, selection };
     }
+
     redo(document: CodeDocument) {
         let selection; const $r = (() => { selection = undefined;
         if (this._future.length === 0) return null;
@@ -52,6 +59,7 @@ export class CodeHistory {
         selection = edit.selectionAfter;
         return next; })(); return { $: $r, selection };
     }
+
     clear() {
         this._past.splice(0);
         this._future.splice(0);

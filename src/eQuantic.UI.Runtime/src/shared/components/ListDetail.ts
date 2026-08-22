@@ -9,6 +9,7 @@ export class ListDetail extends StatelessComponent {
     declare listWidth: number;
     declare placeholder: any;
     declare twoPaneFrom: number;
+
     constructor(list?: any, detail: any = null, onBack: any = null, props?: any) {
         super();
         if (list !== undefined) this.list = list;
@@ -44,6 +45,5 @@ export class ListDetail extends StatelessComponent {
     static nothing() {
         return new EmptyState('info', SdkStrings.nothingSelected);
     }
-
 }
 

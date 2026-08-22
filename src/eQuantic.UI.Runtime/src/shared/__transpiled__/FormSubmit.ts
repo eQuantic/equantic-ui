@@ -7,6 +7,7 @@ export class FormSubmit extends StatelessComponent {
     declare variant: VariantValue;
     declare size: SizeVariantValue;
     declare wide: boolean;
+
     constructor(form?: any, label?: any, onSubmit?: any, variant: any = 'primary', size: any = 'medium', props?: any) {
         super();
         if (form !== undefined) this.form = form;
@@ -28,6 +29,5 @@ export class FormSubmit extends StatelessComponent {
     build(_context: BuildContext) {
         return new Button(this.label, this.variant, this.size, null, { loading: this.form.submitting, expand: this.wide, onPressed: () => this.form.submitAsync(this.onSubmit) });
     }
-
 }
 

@@ -3,6 +3,7 @@ import { BuildContext, Column, Divider, ListItem, SizeValue, StatelessComponent 
 export class List extends StatelessComponent {
     declare items: ListItem[];
     declare dividers: boolean;
+
     constructor(items?: any, dividers: any = true, props?: any) {
         super();
         if (items !== undefined) this.items = items;
@@ -21,6 +22,5 @@ export class List extends StatelessComponent {
         }
         return column;
     }
-
 }
 

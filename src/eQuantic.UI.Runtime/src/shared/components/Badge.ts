@@ -7,6 +7,7 @@ export class Badge extends StatelessComponent {
     declare neutral: boolean;
     declare dot: boolean;
     declare ring: boolean;
+
     constructor(count: any = 0, max: any = 99, variant: any = 'destructive', props?: any) {
         super();
         if (count !== undefined) this.count = count;
@@ -47,6 +48,5 @@ export class Badge extends StatelessComponent {
         stack.add(new Positioned(new Badge(count, 99, 'destructive', { ring: true }), -4, -8));
         return stack;
     }
-
 }
 

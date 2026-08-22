@@ -7,6 +7,7 @@ export class SegmentedControl extends StatelessComponent {
     declare size: SizeVariantValue;
     declare disabled: boolean;
     declare stretch: boolean;
+
     constructor(segments?: any, selectedIndex?: any, onChanged: any = null, props?: any) {
         super();
         if (segments !== undefined) this.segments = segments;
@@ -42,6 +43,5 @@ export class SegmentedControl extends StatelessComponent {
         let count = this.segments.length;
         return new Adjustable(track, (direction: number) => this.onChanged((this.selectedIndex + direction + count) % count), { role: 'radiogroup' });
     }
-
 }
 

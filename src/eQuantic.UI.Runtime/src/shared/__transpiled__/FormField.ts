@@ -8,57 +8,72 @@ export class FormField {
         this._relevantWhen = relevantWhen;
         this.revalidate(); if (props && typeof props === 'object') Object.assign(this, props);
     }
+
     _rules: FieldRule[];
     _relevantWhen: (() => boolean) | null;
     declare name: string;
     declare initial: string;
     declare value: string;
     touched: boolean = false;
+
     get dirty(): boolean {
         return this.value !== this.initial;
     }
+
     get relevant(): boolean {
         return this._relevantWhen == null || this._relevantWhen();
     }
+
     declare error: string | null;
+
     get visibleError(): string | null {
         return this.touched && this.relevant ? this.error : null;
     }
+
     get rulesFor(): FieldRule[] {
         return this._rules;
     }
+
     addRule(rule: FieldRule) {
         this._rules.push(rule);
         this.revalidate();
     }
+
     set(value: string) {
         this.value = value;
         this.revalidate();
     }
+
     touch() {
         this.touched = true;
         this.revalidate();
     }
+
     reset() {
         this.value = this.initial;
         this.touched = false;
         this.revalidate();
     }
+
     accept() {
         this.initial = this.value;
         this.touched = false;
         this.revalidate();
     }
+
     fail(message: string) {
         this.error = message;
         this.touched = true;
     }
+
     reveal() {
         return this.touched = true;
     }
+
     revalidateNow() {
         return this.revalidate();
     }
+
     revalidate() {
         this.error = null;
         if (!this.relevant) return;

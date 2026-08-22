@@ -6,6 +6,7 @@ export class PageIndicator extends StatelessComponent {
     declare currentIndex: number;
     declare onSelected: any;
     declare variant: VariantValue;
+
     constructor(count?: any, currentIndex?: any, onSelected: any = null, props?: any) {
         super();
         if (count !== undefined) this.count = count;
@@ -42,6 +43,5 @@ export class PageIndicator extends StatelessComponent {
         centered.add(dot);
         return new Box(new BoxStyle({ height: 48, padding: EdgeInsets.symmetric(4, 0) }), centered);
     }
-
 }
 

@@ -7,6 +7,7 @@ export class Checkbox extends StatelessComponent {
     declare disabled: boolean;
     declare error: boolean;
     declare indeterminate: boolean;
+
     constructor(checked?: any, onChanged: any = null, label: any = null, props?: any) {
         super();
         if (checked !== undefined) this.checked = checked;
@@ -36,6 +37,5 @@ export class Checkbox extends StatelessComponent {
         if ((label = this.label) != null) row.add(new Text(label, 'bodyM', this.disabled ? theme.textMuted : theme.textPrimary, 2));
         return new Pressable(row, this.disabled ? null : this.onChanged, { disabled: this.disabled, role: 'checkbox', selected: this.checked, mixed: this.indeterminate, label: this.label });
     }
-
 }
 

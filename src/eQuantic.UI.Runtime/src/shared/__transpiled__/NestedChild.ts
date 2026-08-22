@@ -3,6 +3,7 @@ import { BuildContext, Button, Column, SharedStatefulComponent, Text, UiComponen
 export class NestedChild extends SharedStatefulComponent {
     _count: number = 0;
     _label: string;
+
     constructor(label: any = 'child', props?: any) {
         super();
         this._label = label;
@@ -20,6 +21,5 @@ export class NestedChild extends SharedStatefulComponent {
         let fresh: any; 
         if ((next instanceof NestedChild && (fresh = next, true))) this._label = fresh._label;
     }
-
 }
 

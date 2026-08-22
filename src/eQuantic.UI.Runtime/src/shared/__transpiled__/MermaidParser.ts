@@ -1,9 +1,17 @@
 import { MermaidEdge, MermaidEdgeRef, MermaidGraph, MermaidMessage, MermaidNode, MermaidNodeRef } from "@equantic/runtime";
 export class MermaidParser {
     static _skipWords: string[] | undefined;
-    static get skipWords(): string[] { return MermaidParser._skipWords ??= ['subgraph', 'end', 'style', 'classDef', 'class', 'click', 'linkStyle', 'direction']; }
+
+    static get skipWords(): string[] {
+        return MermaidParser._skipWords ??= ['subgraph', 'end', 'style', 'classDef', 'class', 'click', 'linkStyle', 'direction'];
+    }
+
     static _messageArrows: string[] | undefined;
-    static get messageArrows(): string[] { return MermaidParser._messageArrows ??= ['-->>', '->>', '-->', '->']; }
+
+    static get messageArrows(): string[] {
+        return MermaidParser._messageArrows ??= ['-->>', '->>', '-->', '->'];
+    }
+
     static parse(source: string) {
         if (!source) return null;
         let lines = source.replaceAll('\r\n', '\n').split('\n');
@@ -18,6 +26,7 @@ export class MermaidParser {
         if (graph.kind === 'sequence') return graph.messages.length === 0 && graph.nodes.length === 0 ? null : graph;
         return graph.nodes.length === 0 ? null : graph;
     }
+
     static headerOf(lines: string[]) {
         for (let i = 0; i < lines.length; i++) {
             let line = MermaidParser.stripComment(lines[i]).trim();
@@ -31,13 +40,16 @@ export class MermaidParser {
         }
         return null;
     }
+
     static isHeader(line: string) {
         return line.startsWith('sequenceDiagram') || line.startsWith('flowchart') || line.startsWith('graph');
     }
+
     static stripComment(line: string) {
         let at = line.indexOf('%%');
         return at < 0 ? line : line.slice(0, at);
     }
+
     static parseFlowchartLine(graph: MermaidGraph, line: string) {
         for (const skip of MermaidParser.skipWords) if (line === skip || line.startsWith(skip + ' ')) return;
         let text = line.endsWith(';') ? line.slice(0, (line.length - 1)) : line;
@@ -60,6 +72,7 @@ export class MermaidParser {
             pos = to.end;
         }
     }
+
     static declare(graph: MermaidGraph, nodeRef: MermaidNodeRef) {
         for (const known of graph.nodes) {
             if (known.id !== nodeRef.id) continue;
@@ -71,13 +84,16 @@ export class MermaidParser {
         }
         graph.nodes.push(new MermaidNode({ id: nodeRef.id, label: nodeRef.label.length === 0 ? nodeRef.id : nodeRef.label, shape: nodeRef.shape }));
     }
+
     static skipSpaces(text: string, pos: number) {
         while (pos < text.length && text[pos] === ' ') pos++;
         return pos;
     }
+
     static isIdChar(c: string) {
         return (/^\p{L}$/u.test(c)) || (/^\p{Nd}$/u.test(c)) || c === '_';
     }
+
     static nodeRefAt(text: string, pos: number) {
         let start = MermaidParser.skipSpaces(text, pos);
         let end = start;
@@ -94,6 +110,7 @@ export class MermaidParser {
         }
         return node;
     }
+
     static closeShape(text: string, from: number, closer: string, shape: string, node: MermaidNodeRef) {
         let close = text.indexOf(closer, from);
         if (close < 0) return null;
@@ -105,6 +122,7 @@ export class MermaidParser {
         node.end = close + closer.length;
         return node;
     }
+
     static edgeRefAt(text: string, pos: number) {
         let i = pos;
         let body = 0;
@@ -126,6 +144,7 @@ export class MermaidParser {
         }
         return edge;
     }
+
     static parseSequenceLine(graph: MermaidGraph, line: string) {
         if (line.startsWith('participant ') || line.startsWith('actor ')) {
             let rest = line.slice((line.indexOf(' ') + 1)).trim();
@@ -155,6 +174,7 @@ export class MermaidParser {
             return;
         }
     }
+
     static declareParticipant(graph: MermaidGraph, id: string, display: string) {
         for (const known of graph.nodes) if (known.id === id) return;
         graph.nodes.push(new MermaidNode({ id: id, label: display, shape: 'rect' }));

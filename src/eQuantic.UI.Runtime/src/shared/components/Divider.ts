@@ -4,6 +4,7 @@ export class Divider extends StatelessComponent {
     declare inset: string;
     declare axis: string;
     declare leadingInset: any;
+
     constructor(inset: any = 'none', axis: any = 'horizontal', props?: any) {
         super();
         if (inset !== undefined) this.inset = inset;
@@ -21,6 +22,5 @@ export class Divider extends StatelessComponent {
         let padding = this.inset === 'leading' ? new EdgeInsets(this.leadingInset ?? 16, 0, 0, 0) : EdgeInsets.symmetric(16, 0);
         return new Box(new BoxStyle({ width: SizeValue.fill, padding: padding }), line);
     }
-
 }
 

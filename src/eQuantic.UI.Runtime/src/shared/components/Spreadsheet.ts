@@ -16,6 +16,7 @@ export class Spreadsheet extends SharedStatefulComponent {
     declare width: SizeValue;
     declare height: SizeValue;
     declare overscan: number;
+
     constructor(controller?: any, props?: any) {
         super();
         if (controller !== undefined) this.controller = controller;
@@ -181,6 +182,5 @@ export class Spreadsheet extends SharedStatefulComponent {
         }
         return line;
     }
-
 }
 

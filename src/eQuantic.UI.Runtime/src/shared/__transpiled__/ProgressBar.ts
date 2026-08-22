@@ -8,6 +8,7 @@ export class ProgressBar extends SharedStatefulComponent {
     declare value: any;
     declare variant: VariantValue;
     declare prominent: boolean;
+
     constructor(value: any = null, variant: any = 'primary', props?: any) {
         super();
         if (value !== undefined) this.value = value;
@@ -51,6 +52,5 @@ export class ProgressBar extends SharedStatefulComponent {
         this.value = fresh.value;
         this.variant = fresh.variant;
     }
-
 }
 

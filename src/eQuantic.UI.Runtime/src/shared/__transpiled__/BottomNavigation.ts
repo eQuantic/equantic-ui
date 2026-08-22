@@ -2,12 +2,18 @@ import { Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, Flexible, Icon
 
 export class BottomNavigation extends StatelessComponent {
     declare $items: NavItem[];
-    get items() { return this.$items; }
+
+    get items() {
+        return this.$items;
+    }
+
     set items(value) {
         this.$items = (value.length < 3 || value.length > 5) ? (() => { throw new Error('BottomNavigation takes 3-5 destinations (spec B4): 2 → Tabs, 6+ → Drawer.'); })() : value;
     }
+
     declare selected: number;
     declare onSelect: any;
+
     constructor(items?: any, selected?: any, onSelect: any = null, props?: any) {
         super();
         if (items !== undefined) this.items = items;
@@ -42,6 +48,5 @@ export class BottomNavigation extends StatelessComponent {
         }
         return new Box(new BoxStyle({ width: SizeValue.fill, height: 56, background: theme.surface }), row);
     }
-
 }
 

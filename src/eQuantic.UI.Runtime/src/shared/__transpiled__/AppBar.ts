@@ -4,11 +4,17 @@ export class AppBar extends StatelessComponent {
     declare title: string;
     declare leading: any;
     declare $actions: any;
-    get actions() { return this.$actions; }
+
+    get actions() {
+        return this.$actions;
+    }
+
     set actions(value) {
         this.$actions = (value != null && value.length > 3) ? (() => { throw new Error('AppBar takes at most 3 actions (spec B3) — overflow belongs in an ActionSheet.'); })() : value;
     }
+
     declare scrolled: boolean;
+
     constructor(title?: any, props?: any) {
         super();
         if (title !== undefined) this.title = title;
@@ -31,6 +37,5 @@ export class AppBar extends StatelessComponent {
         }
         return new Box(new BoxStyle({ width: SizeValue.fill, height: 56, padding: EdgeInsets.symmetric(4, 0), background: this.scrolled ? theme.surface : null, elevation: this.scrolled ? 2 : 0 }), row);
     }
-
 }
 

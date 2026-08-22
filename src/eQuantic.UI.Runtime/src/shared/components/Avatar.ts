@@ -7,6 +7,7 @@ export class Avatar extends StatelessComponent {
     declare size: SizeVariantValue;
     declare name: any;
     declare status: string;
+
     constructor(initials?: any, size: any = 'medium', name: any = null, props?: any) {
         super();
         if (initials !== undefined) this.initials = initials;
@@ -49,6 +50,5 @@ export class Avatar extends StatelessComponent {
         stack.add(new Positioned(dot, null, 0, 0));
         return stack;
     }
-
 }
 

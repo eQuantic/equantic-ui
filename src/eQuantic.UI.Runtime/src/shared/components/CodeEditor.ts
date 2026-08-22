@@ -25,9 +25,11 @@ export class CodeEditor extends SharedStatefulComponent {
     declare search: any;
     declare searchMatchCase: boolean;
     declare onGutterPressed: any;
+
     get editor() {
         return this._editor ?? (this._editor = this.create());
     }
+
     constructor(code: any = '', language: any = null, props?: any) {
         super();
         if (this.showLineNumbers === undefined) this.showLineNumbers = true;
@@ -159,6 +161,5 @@ export class CodeEditor extends SharedStatefulComponent {
         }) }));
         return new Box(new BoxStyle({ background: theme.surface, borderWidth: 1, borderColor: theme.border, cornerRadius: new CornerRadii(theme.shape('medium')), padding: EdgeInsets.symmetric(8, 4), shadow: theme.elevation(2) }), row);
     }
-
 }
 

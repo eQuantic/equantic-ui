@@ -3,6 +3,7 @@ import { Box, BoxStyle, BuildContext, Column, Divider, EdgeInsets, Grid, GridTra
 export class Table extends StatelessComponent {
     declare columns: string[];
     declare rows: string[][];
+
     constructor(columns?: any, rows?: any, props?: any) {
         super();
         if (columns !== undefined) this.columns = columns;
@@ -29,6 +30,5 @@ export class Table extends StatelessComponent {
         }
         return table;
     }
-
 }
 

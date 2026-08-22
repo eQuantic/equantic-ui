@@ -10,6 +10,7 @@ export class Button extends StatelessComponent {
     declare initialFocus: boolean;
     declare leading: any;
     declare loading: boolean;
+
     constructor(label?: any, variant: any = 'primary', size: any = 'medium', onPressed: any = null, props?: any) {
         super();
         if (label !== undefined) this.label = label;
@@ -56,6 +57,5 @@ export class Button extends StatelessComponent {
         let container = new Box(new BoxStyle({ height: height, width: this.expand ? SizeValue.fill : SizeValue.hug, minWidth: 64, padding: EdgeInsets.symmetric(padX, 0), background: fill, cornerRadius: new CornerRadii(radius), borderWidth: borderWidth, borderColor: borderColor, hover: inert || hoverFill == null ? null : new StyleDiff({ background: hoverFill }) }), content);
         return new Pressable(container, inert ? null : this.onPressed, { disabled: inert, label: this.label, pressedBackground: inert ? null : pressedFill, initialFocus: this.initialFocus });
     }
-
 }
 

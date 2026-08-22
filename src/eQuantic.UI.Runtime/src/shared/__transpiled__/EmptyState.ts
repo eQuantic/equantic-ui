@@ -6,6 +6,7 @@ export class EmptyState extends StatelessComponent {
     declare body: any;
     declare action: any;
     declare secondaryAction: any;
+
     constructor(icon?: any, title?: any, body: any = null, props?: any) {
         super();
         if (icon !== undefined) this.icon = icon;
@@ -42,6 +43,5 @@ export class EmptyState extends StatelessComponent {
         }
         return column;
     }
-
 }
 

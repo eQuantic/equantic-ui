@@ -3,26 +3,36 @@ export class CodeDocument {
     constructor(lines: string[], props?: any) {
         this._lines = lines; if (props && typeof props === 'object') Object.assign(this, props);
     }
+
     _lines: string[];
     static _empty: CodeDocument | undefined;
-    static get empty(): CodeDocument { return CodeDocument._empty ??= new CodeDocument(['']); }
+
+    static get empty(): CodeDocument {
+        return CodeDocument._empty ??= new CodeDocument(['']);
+    }
+
     get lines(): string[] {
         return this._lines;
     }
+
     get lineCount(): number {
         return this._lines.length;
     }
+
     get text(): string {
         return this._lines.join('\n');
     }
+
     get length(): number {
         let total = 0;
         for (let i = 0; i < this._lines.length; i++) total += this._lines[i].length + 1;
         return total - 1;
     }
+
     get end(): CodePosition {
         return new CodePosition(this._lines.length - 1, this._lines[this._lines.length - 1].length);
     }
+
     static fromText(text: string) {
         let lines: string[] = [];
         let current = $eq.text.stringBuilder();
@@ -44,20 +54,24 @@ export class CodeDocument {
         lines.push(current.toString());
         return new CodeDocument(lines);
     }
+
     line(index: number) {
         return index >= 0 && index < this._lines.length ? this._lines[index] : '';
     }
+
     clamp(position: CodePosition) {
         let line = Math.min(Math.max(position.line, 0), this._lines.length - 1);
         let column = Math.min(Math.max(position.column, 0), this._lines[line].length);
         return new CodePosition(line, column);
     }
+
     offsetOf(position: CodePosition) {
         let clamped = this.clamp(position);
         let offset = 0;
         for (let i = 0; i < clamped.line; i++) offset += this._lines[i].length + 1;
         return offset + clamped.column;
     }
+
     positionOf(offset: number) {
         if (offset <= 0) return CodePosition.start;
         let remaining = offset;
@@ -68,6 +82,7 @@ export class CodeDocument {
         }
         return this.end;
     }
+
     textIn(range: CodeRange) {
         let start = this.clamp(range.start);
         let end = this.clamp(range.end);
@@ -83,6 +98,7 @@ export class CodeDocument {
         text.append(this._lines[end.line].slice(0, end.column));
         return text.toString();
     }
+
     replace(range: CodeRange, text: string) {
         let caret; const $r = (() => { let start = this.clamp(range.start);
         let end = this.clamp(range.end);
@@ -104,18 +120,21 @@ export class CodeDocument {
         for (let i = end.line + 1; i < this._lines.length; i++) lines.push(this._lines[i]);
         return new CodeDocument(lines); })(); return { $: $r, caret };
     }
+
     previous(position: CodePosition) {
         let here = this.clamp(position);
         if (here.column > 0) return $eq.withPatch(here, { column: here.column - 1 });
         if (here.line === 0) return CodePosition.start;
         return new CodePosition(here.line - 1, this._lines[here.line - 1].length);
     }
+
     next(position: CodePosition) {
         let here = this.clamp(position);
         if (here.column < this._lines[here.line].length) return $eq.withPatch(here, { column: here.column + 1 });
         if (here.line === this._lines.length - 1) return here;
         return new CodePosition(here.line + 1, 0);
     }
+
     lineStart(position: CodePosition) {
         let here = this.clamp(position);
         let line = this._lines[here.line];
@@ -123,10 +142,12 @@ export class CodeDocument {
         while (indent < line.length && (line[indent] === ' ' || line[indent] === '\t')) indent++;
         return $eq.withPatch(here, { column: here.column === indent ? 0 : indent });
     }
+
     lineEnd(position: CodePosition) {
         let here = this.clamp(position);
         return $eq.withPatch(here, { column: this._lines[here.line].length });
     }
+
     wordAt(position: CodePosition) {
         let here = this.clamp(position);
         let line = this._lines[here.line];
@@ -147,12 +168,14 @@ export class CodeDocument {
         while (end < line.length && CodeDocument.isWordChar(line[end])) end++;
         return new CodeRange($eq.withPatch(here, { column: start }), $eq.withPatch(here, { column: end }));
     }
+
     indentOf(line: number) {
         let text = this.line(line);
         let indent = 0;
         while (indent < text.length && (text[indent] === ' ' || text[indent] === '\t')) indent++;
         return text.slice(0, indent);
     }
+
     static isWordChar(c: string) {
         return (/^[\p{L}\p{Nd}]$/u.test(c)) || c === '_';
     }

@@ -3,22 +3,27 @@ export class CodeHighlighter {
     constructor(language: any, props?: any) {
         this._tokens = []; this._endStates = []; this.language = language; if (props && typeof props === 'object') Object.assign(this, props);
     }
+
     _tokens: CodeToken[][];
     _endStates: number[];
     declare language: any;
+
     useLanguage(language: any) {
         this.language = language;
         this.invalidate();
     }
+
     invalidate() {
         this._tokens.splice(0);
         this._endStates.splice(0);
     }
+
     tokensFor(document: CodeDocument, line: number) {
         if (line < 0 || line >= document.lineCount) return [];
         this.ensureThrough(document, line);
         return this._tokens[line];
     }
+
     lineChanged(document: CodeDocument, line: number, linesInserted: number = 0, linesRemoved: number = 0) {
         if (linesInserted !== linesRemoved) {
             this.trimTo(line);
@@ -35,6 +40,7 @@ export class CodeHighlighter {
         }
         return this._tokens.length - 1;
     }
+
     ensureThrough(document: CodeDocument, line: number) {
         while (this._tokens.length <= line && this._tokens.length < document.lineCount) {
             let index = this._tokens.length;
@@ -45,12 +51,14 @@ export class CodeHighlighter {
             this._endStates.push(endState);
         }
     }
+
     retokenize(document: CodeDocument, line: number) {
         let state = line === 0 ? 0 : this._endStates[line - 1];
         let tokens = this._tokens[line];
         tokens.splice(0);
         this._endStates[line] = this.language.tokenize(document.line(line), state, tokens);
     }
+
     trimTo(line: number) {
         if (line >= this._tokens.length) return;
         this._tokens.splice(line, this._tokens.length - line);

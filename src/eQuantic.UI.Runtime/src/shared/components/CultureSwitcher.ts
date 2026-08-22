@@ -4,6 +4,7 @@ export class CultureSwitcher extends StatelessComponent {
     declare options: CultureOption[];
     declare size: SizeVariantValue;
     declare onChanged: ((string: string) => void) | null;
+
     constructor(options?: any, props?: any) {
         super();
         if (options !== undefined) this.options = options;
@@ -45,6 +46,5 @@ export class CultureSwitcher extends StatelessComponent {
         let cut = name.indexOf('-');
         return cut < 0 ? name : name.slice(0, cut);
     }
-
 }
 

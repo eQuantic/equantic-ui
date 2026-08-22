@@ -14,6 +14,7 @@ export class TextInput extends SharedStatefulComponent {
     declare autofocus: boolean;
     declare obscure: boolean;
     declare onFocusChanged: any;
+
     constructor(value?: any, onChanged: any = null, label: any = '', placeholder: any = null, helper: any = null, error: any = null, leading: any = null, size: any = 'large', props?: any) {
         super();
         if (value !== undefined) this.value = value;
@@ -80,6 +81,5 @@ export class TextInput extends SharedStatefulComponent {
         this.leading = fresh.leading;
         this.size = fresh.size;
     }
-
 }
 

@@ -6,6 +6,7 @@ export class Drawer extends StatelessComponent {
     declare onDismiss: (() => void) | null;
     declare edge: string;
     declare width: number;
+
     constructor(content?: any, open?: any, onDismiss: any = null, props?: any) {
         super();
         if (content !== undefined) this.content = content;
@@ -32,6 +33,5 @@ export class Drawer extends StatelessComponent {
         let escape: any; 
         return (escape = this.onDismiss) != null ? new Shortcut(overlay, KeyChord.escape, escape) : overlay;
     }
-
 }
 

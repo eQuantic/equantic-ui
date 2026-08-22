@@ -4,6 +4,7 @@ export class BottomSheet extends StatelessComponent {
     declare content: VisualNode;
     declare onDismiss: (() => void) | null;
     declare dismissible: boolean;
+
     constructor(content?: any, onDismiss: any = null, dismissible: any = true, props?: any) {
         super();
         if (content !== undefined) this.content = content;
@@ -37,6 +38,5 @@ export class BottomSheet extends StatelessComponent {
         let escape: any; 
         return this.dismissible && (escape = this.onDismiss) != null ? new Shortcut(layer, KeyChord.escape, escape) : layer;
     }
-
 }
 

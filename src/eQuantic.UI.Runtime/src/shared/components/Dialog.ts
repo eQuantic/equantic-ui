@@ -6,6 +6,7 @@ export class Dialog extends StatelessComponent {
     declare actions: DialogAction[];
     declare dismissible: boolean;
     declare onDismiss: (() => void) | null;
+
     constructor(title?: any, body?: any, actions?: any, dismissible: any = false, onDismiss: any = null, props?: any) {
         super();
         if (title !== undefined) this.title = title;
@@ -48,6 +49,5 @@ export class Dialog extends StatelessComponent {
         let escape: any; 
         return this.dismissible && (escape = this.onDismiss) != null ? new Shortcut(layer, KeyChord.escape, escape) : layer;
     }
-
 }
 

@@ -9,10 +9,12 @@ export class TsvCodec {
         }
         return rows.join('\n');
     }
+
     static escape(value: string) {
         if (value.indexOf('\t') < 0 && value.indexOf('\n') < 0 && value.indexOf('"') < 0) return value;
         return '"' + value.replaceAll('"', '""') + '"';
     }
+
     static parse(text: string) {
         let rows: string[][] = [];
         let row: string[] = [];

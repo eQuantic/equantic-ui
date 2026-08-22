@@ -258,7 +258,7 @@ public class TypeScriptEmitter
                         ctorStatements.Add(Contents(ctor.SyntaxNode.Body));
                     }
                     c.Member(JsClassMember.Constructor(jsParams, JsStatement.Block(ctorStatements)),
-                        separated: true, bodySource: ctor?.SyntaxNode?.Body, bodyLine: ctorBodyLine);
+                        bodySource: ctor?.SyntaxNode?.Body, bodyLine: ctorBodyLine);
 
                     // Emit Render method for primitive - ONLY if defined or it's the base primitive
                     if (component.BuildMethodNode != null && component.BuildMethodNode.Body != null)
@@ -279,7 +279,7 @@ public class TypeScriptEmitter
                         _converter.SetCurrentClass(component.Name);
                         renderStatements.Add(Contents(component.BuildMethodNode.Body));
                         c.Member(JsClassMember.Method("", "render", "", "", "", JsStatement.Block(renderStatements)),
-                            separated: true, bodySource: component.BuildMethodNode.Body, bodyLine: outVars.Count + 1);
+                            bodySource: component.BuildMethodNode.Body, bodyLine: outVars.Count + 1);
                     }
                     else if (component.BaseClassName == "HtmlElement" || component.BaseClassName == null)
                     {
@@ -287,7 +287,7 @@ public class TypeScriptEmitter
                         c.Member(JsClassMember.Method("", "render", "", "", "", JsStatement.Block(new[]
                         {
                             JsStatement.Raw("return { tag: 'div', attributes: {}, events: {}, children: [] };"),
-                        })), separated: true);
+                        })));
                     }
 
                     // Emit helper methods
@@ -305,7 +305,7 @@ public class TypeScriptEmitter
                     c.Member(JsClassMember.Method("", "createState", "", "", "", JsStatement.Block(new[]
                     {
                         JsStatement.Raw($"return new {component.StateClassName}(this)"),
-                    })), separated: true);
+                    })));
                 }
                 // A concrete component, OR an abstract base that still defines a concrete Build/members for
                 // its subclasses to inherit (a pure-abstract class with no Build emits nothing here).
@@ -414,7 +414,7 @@ public class TypeScriptEmitter
                             // …and the initializer last, which is where C# runs it.
                             statements.Add(JsStatement.Raw("if (props && typeof props === 'object') Object.assign(this, props);"));
                             c.Member(JsClassMember.Constructor(signature, JsStatement.Block(statements)),
-                                separated: true, bodySource: ctorDef?.BodyNode, bodyLine: bodyLine);
+                                bodySource: ctorDef?.BodyNode, bodyLine: bodyLine);
                         }
                     }
 
@@ -432,7 +432,7 @@ public class TypeScriptEmitter
                     var (buildBody, buildSource) = BuildBody(component.BuildMethodNode,
                         JsStatement.Raw("throw new Error('Build method not implemented');"));
                     c.Member(JsClassMember.Method("", "build", "", Param(buildParamName, "BuildContext"), "", buildBody),
-                        separated: true, bodySource: buildSource);
+                        bodySource: buildSource);
 
                     // Emit helper methods
                     foreach (var method in component.Methods)
@@ -457,7 +457,7 @@ public class TypeScriptEmitter
                     c.Member(JsClassMember.Method("async ", action.MethodName.ToCamelCase(), "", paramsList, "", JsStatement.Block(new[]
                     {
                         JsStatement.Raw($"return await getServerActionsClient().invoke('{action.ActionId}', [{argsList}])"),
-                    })), action.SyntaxNode, separated: true);
+                    })), action.SyntaxNode);
                 }
             }, component.TypeParameters);
 
@@ -956,7 +956,7 @@ public class TypeScriptEmitter
             {
                 JsStatement.Expression(JsExpr.Call(JsExpr.Identifier("super"))),
                 Assign(JsExpr.ThisMember("_component"), JsExpr.Identifier("component")),
-            })), separated: true);
+            })));
             
             // SetState
             c.Member(JsClassMember.Method("", "setState", "", Param("fn", "() => void"), "", JsStatement.Block(new[]
@@ -964,7 +964,7 @@ public class TypeScriptEmitter
                 JsStatement.Expression(JsExpr.Call(JsExpr.Identifier("fn"))),
                 Assign(JsExpr.ThisMember("_needsRender"), JsExpr.Literal("true")),
                 JsStatement.Expression(JsExpr.Call(JsExpr.Member(JsExpr.ThisMember("_component"), "_scheduleRender"))),
-            })), separated: true);
+            })));
 
             // Custom methods (Phase 2: Semantic Body)
             foreach (var method in component.Methods)
@@ -979,7 +979,7 @@ public class TypeScriptEmitter
             _converter.SetCurrentClass(component.StateClassName);
             var (stateBody, stateSource) = BuildBody(component.BuildMethodNode, JsStatement.Raw("return new Container({});"));
             c.Member(JsClassMember.Method("", "build", "", Param("context", "BuildContext"), "", stateBody),
-                separated: true, bodySource: stateSource);
+                bodySource: stateSource);
         });
         WriteLn();
     }
@@ -1135,7 +1135,7 @@ public class TypeScriptEmitter
                         var slot = Strategies.Expressions.FieldExpressionStrategy.BackingSlot(node);
                         c.Field(slot, DeclarationType(component, prop.Type), null, node, isDeclare: true);
                         if (!getterHasBody && getter != null)
-                            c.Raw($"{stat}get {name}() {{ return this.{slot}; }}", getter);
+                            c.Member(JsClassMember.Getter(stat, name, "", JsStatement.Return(JsExpr.ThisMember(slot))), getter);
                     }
 
                     if (getterHasBody)
@@ -1239,9 +1239,9 @@ public class TypeScriptEmitter
                         // `static _x: T | undefined;` is a syntax error that takes the WHOLE module
                         // with it — one static collection in a helper class blanked the preview and
                         // reported only "Unexpected strict mode reserved word".
-                        c.Raw($"static {slot}{Annotation($"{DeclaredType(f.Declaration.Type)} | undefined")};", v);
-                        c.Raw($"static get {fieldName}(){Annotation(DeclaredType(f.Declaration.Type))} "
-                            + $"{{ return {name}.{slot} ??= {def}; }}", v);
+                        c.Member(JsClassMember.Field("static ", slot, Annotation($"{DeclaredType(f.Declaration.Type)} | undefined")), v);
+                        c.Member(JsClassMember.Getter("static ", fieldName, Annotation(DeclaredType(f.Declaration.Type)),
+                            JsStatement.Raw($"return {name}.{slot} ??= {def};")), v);
                     }
                     else
                     {
@@ -1921,7 +1921,7 @@ public class TypeScriptEmitter
             var generics = method.TypeParameters is { } typeParameters && typeParameters.Any()
                 ? $"<{string.Join(", ", typeParameters)}>" : "";
             c.Member(JsClassMember.Method((method.IsStatic ? "static " : "") + asyncPrefix, methodName, generics, parameters, "",
-                JsStatement.Raw(body)), method.SyntaxNode, separated: true);
+                JsStatement.Raw(body)), method.SyntaxNode);
         }
         else
         {
@@ -1932,7 +1932,7 @@ public class TypeScriptEmitter
             var generics = method.TypeParameters is { } typeParameters && typeParameters.Any()
                 ? $"<{string.Join(", ", typeParameters)}>" : "";
             c.Member(JsClassMember.Method(asyncPrefix, methodName, generics, parameters, "",
-                JsStatement.Raw($"return {convertedExpr};")), separated: true);
+                JsStatement.Raw($"return {convertedExpr};")));
         }
     }
     

@@ -2,14 +2,20 @@ import { Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Ic
 
 export class NavigationRail extends StatelessComponent {
     declare $items: NavItem[];
-    get items() { return this.$items; }
+
+    get items() {
+        return this.$items;
+    }
+
     set items(value) {
         this.$items = (value.length < 3 || value.length > 7) ? (() => { throw new Error('NavigationRail takes 3-7 destinations (spec B4): 2 → Tabs, 8+ → Drawer.'); })() : value;
     }
+
     declare selected: number;
     declare onSelect: any;
     declare leading: any;
     declare alignment: MainAlignValue;
+
     constructor(items?: any, selected?: any, onSelect: any = null, props?: any) {
         super();
         if (items !== undefined) this.items = items;
@@ -48,6 +54,5 @@ export class NavigationRail extends StatelessComponent {
         rail.add(destinations);
         return new Box(new BoxStyle({ width: 80, height: SizeValue.fill, padding: EdgeInsets.symmetric(0, 12), background: theme.surface, borderWidth: 1, borderColor: theme.border, borderSides: 2 }), rail);
     }
-
 }
 

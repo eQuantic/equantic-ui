@@ -106,6 +106,23 @@ public class TypeScriptCodeBuilder
     public class ClassBuilder(TypeScriptCodeBuilder builder)
     {
         private readonly TypeScriptCodeBuilder _builder = builder;
+        private int _members;
+        private bool _lastHadBody;
+
+        /// <summary>
+        /// The ONE layout rule for a class body: a blank line separates a member with a body —
+        /// an accessor, a method, the constructor — from whatever precedes it, and a field from a
+        /// body member before it; fields stay contiguous, and nothing trails the last member.
+        /// Decided here, once, so the two member families cannot drift apart again (methods used
+        /// to be followed by a blank line and accessors not, which is how a generated class read
+        /// as two different hands).
+        /// </summary>
+        private void Separate(bool hasBody)
+        {
+            if (_members > 0 && (hasBody || _lastHadBody)) _builder.Line("");
+            _members++;
+            _lastHadBody = hasBody;
+        }
 
         /// <param name="isDeclare">Emit a TYPE-ONLY field (<c>declare x: T;</c>) — no runtime code at all.
         /// Required for properties populated from outside the class body (the base
@@ -121,6 +138,7 @@ public class TypeScriptCodeBuilder
             var init = defaultValue != null ? $" = {defaultValue}" : "";
             var prefix = (isDeclare ? "declare " : "") + (isStatic ? "static " : "");
             var annotation = !_builder.TypeAnnotations || string.IsNullOrEmpty(type) ? "" : $": {type}";
+            Separate(hasBody: false);
             _builder.Line($"{prefix}{name}{annotation}{init};", sourceNode);
         }
 
@@ -128,22 +146,25 @@ public class TypeScriptCodeBuilder
         {
             if (!_builder.TypeAnnotations) return;   // a bare interface-style property is TypeScript-only
             var access = isPublic ? "" : "private ";
+            Separate(hasBody: false);
             _builder.Line($"{access}{name}: {type};", sourceNode);
         }
 
-        public void Raw(string content, SyntaxNode? sourceNode = null) => _builder.Line(content, sourceNode);
+        public void Raw(string content, SyntaxNode? sourceNode = null)
+        {
+            Separate(hasBody: false);
+            _builder.Line(content, sourceNode);
+        }
 
-        /// <summary>A member through the member writer. <paramref name="separated"/> adds the blank
-        /// line the method family has always been followed by (the accessor family has not — the
-        /// layout is the emitter's to normalize, not this seam's).</summary>
-        public void Member(JsClassMember member, SyntaxNode? sourceNode = null, bool separated = false,
+        /// <summary>A member through the member writer, laid out by the class's one rule.</summary>
+        public void Member(JsClassMember member, SyntaxNode? sourceNode = null,
             SyntaxNode? bodySource = null, int bodyLine = 1)
         {
+            Separate(hasBody: member is JsAccessorMember or JsMethodMember or JsConstructorMember);
             // The body's source maps to the line it starts on — `bodyLine` lines below the signature
             // (past any statements the emitter put in front of it), one level in.
             if (bodySource != null) _builder.RecordMapping(bodySource, bodyLine, 1);
             _builder.Line(JsMemberWriter.Write(member, _builder.Layout), sourceNode);
-            if (separated) _builder.Line("");
         }
 
     }

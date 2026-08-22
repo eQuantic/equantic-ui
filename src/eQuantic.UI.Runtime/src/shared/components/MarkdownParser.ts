@@ -104,6 +104,7 @@ export class MarkdownParser {
         MarkdownParser.flushParagraph(paragraph, blocks);
         return blocks;
     }
+
     static slug(text: string) {
         let plain = MarkdownParser.strip(text).toLowerCase();
         let slug = '';
@@ -114,12 +115,14 @@ export class MarkdownParser {
         while (slug.length > 0 && slug[slug.length - 1] === '-') slug = slug.slice(0, (slug.length - 1));
         return slug;
     }
+
     static flushParagraph(paragraph: string, blocks: MarkdownBlock[]) {
         let joined = paragraph.trim();
         if (joined.length === 0) return '';
         blocks.push(new MarkdownBlock({ kind: 'paragraph', runs: MarkdownParser.inline(joined) }));
         return '';
     }
+
     static stripComments(lines: string[]) {
         let clean: string[] = [];
         let fenced = false;
@@ -160,6 +163,7 @@ export class MarkdownParser {
         }
         return clean;
     }
+
     static isAlignmentRow(line: string) {
         let t = line.trim();
         if (!t.startsWith('|')) return false;
@@ -170,6 +174,7 @@ export class MarkdownParser {
         }
         return hasDash;
     }
+
     static splitRow(line: string) {
         let cells: string[] = [];
         let t = line.trim();
@@ -190,6 +195,7 @@ export class MarkdownParser {
         cells.push(cell.trim());
         return cells;
     }
+
     static bulletOf(line: string) {
         let t = line.trimStart();
         if (t.startsWith('- ') || t.startsWith('* ')) return new MarkdownBulletMatch({ marker: '•', content: t.slice(2).trim() });
@@ -198,6 +204,7 @@ export class MarkdownParser {
         if (digits > 0 && digits + 1 < t.length && t[digits] === '.' && t[digits + 1] === ' ') return new MarkdownBulletMatch({ marker: t.slice(0, digits) + '.', content: t.slice((digits + 2)).trim() });
         return null;
     }
+
     static inline(text: string) {
         let runs: MarkdownRun[] = [];
         if (!text) return runs;
@@ -267,15 +274,18 @@ export class MarkdownParser {
         MarkdownParser.flushText(runs, buffer);
         return runs;
     }
+
     static strip(text: string) {
         let flat = '';
         for (const run of MarkdownParser.inline(text)) flat += run.text;
         return flat;
     }
+
     static flushText(runs: MarkdownRun[], buffer: string) {
         if (buffer.length > 0) runs.push(new MarkdownRun({ text: buffer }));
         return '';
     }
+
     static matchLink(text: string, open: number) {
         let close = text.indexOf(']', open + 1);
         if (close <= open || close + 1 >= text.length || text[close + 1] !== '(') return null;
@@ -283,6 +293,7 @@ export class MarkdownParser {
         if (hrefEnd <= close) return null;
         return new MarkdownLinkMatch({ label: text.slice((open + 1), close), href: text.slice((close + 2), hrefEnd), end: hrefEnd + 1 });
     }
+
     static addLinkRuns(runs: MarkdownRun[], label: string, href: string) {
         let inner = MarkdownParser.inline(label);
         if (inner.length === 0) {

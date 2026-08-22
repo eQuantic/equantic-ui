@@ -7,6 +7,7 @@ export class Menu extends SharedStatefulComponent {
     declare items: MenuItem[];
     declare onSelect: any;
     declare placement: AnchorPlacementValue;
+
     constructor(trigger?: any, items?: any, onSelect: any = null, props?: any) {
         super();
         if (trigger !== undefined) this.trigger = trigger;
@@ -72,6 +73,5 @@ export class Menu extends SharedStatefulComponent {
         for (let i = this._highlight + direction; i >= 0 && i < this.items.length; i += direction) if (!this.items[i].disabled) return i;
         return this._highlight;
     }
-
 }
 

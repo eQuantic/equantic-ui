@@ -3,12 +3,16 @@ export class XmlLanguage {
     constructor(props?: any) {
         if (props && typeof props === 'object') Object.assign(this, props);
     }
+
     static normal: number = 0;
     static inComment: number = 1;
+
     get name(): string {
         return 'XML';
     }
+
     rules: CodeLanguageRules = new CodeLanguageRules(null, ['<!--', '-->'], [['<', '>'], ['(', ')'], ['[', ']']], ['"', '\''], ['>'], ['<'], 2);
+
     tokenize(line: string, state: number, into: CodeToken[]) {
         let i = 0;
         if (state === XmlLanguage.inComment) {
@@ -67,6 +71,7 @@ export class XmlLanguage {
         }
         return XmlLanguage.normal;
     }
+
     static nextNonSpace(line: string, from: number) {
         for (let i = from; i < line.length; i++) if (!(/^\s$/.test(line[i]))) return line[i];
         return '\0';

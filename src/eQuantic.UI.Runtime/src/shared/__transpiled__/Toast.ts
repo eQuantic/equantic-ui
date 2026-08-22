@@ -5,6 +5,7 @@ export class Toast extends StatelessComponent {
     declare status: VariantValue;
     declare actionLabel: any;
     declare onAction: (() => void) | null;
+
     constructor(message?: any, status: any = 'info', actionLabel: any = null, onAction: any = null, props?: any) {
         super();
         if (message !== undefined) this.message = message;
@@ -33,6 +34,5 @@ export class Toast extends StatelessComponent {
         anchor.add(new Presence(pill, 'slideUp'));
         return new Overlay(anchor, { modal: false });
     }
-
 }
 

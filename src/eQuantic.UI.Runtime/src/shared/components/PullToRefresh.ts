@@ -5,6 +5,7 @@ export class PullToRefresh extends StatelessComponent {
     declare child: VisualNode;
     declare onRefresh: (() => void) | null;
     declare refreshing: boolean;
+
     constructor(child?: any, onRefresh: any = null, props?: any) {
         super();
         if (child !== undefined) this.child = child;
@@ -29,6 +30,5 @@ export class PullToRefresh extends StatelessComponent {
     onReleased(offset: number) {
         if (offset >= PullToRefresh.threshold) this.onRefresh?.();
     }
-
 }
 

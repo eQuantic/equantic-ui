@@ -7,6 +7,7 @@ export class Chip extends StatelessComponent {
     declare onPressed: (() => void) | null;
     declare onRemove: (() => void) | null;
     declare variant: VariantValue;
+
     constructor(label?: any, kind: any = 'filter', selected: any = false, onPressed: any = null, onRemove: any = null, props?: any) {
         super();
         if (label !== undefined) this.label = label;
@@ -44,6 +45,5 @@ export class Chip extends StatelessComponent {
         let box = new Box(new BoxStyle({ height: Sizing.height('small', context.density), padding: EdgeInsets.symmetric(12, 0), background: fill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: this.kind === 'filter' && this.selected ? 1 : 0, borderColor: primary.base, hover: hoverFill == null ? null : new StyleDiff({ background: hoverFill }) }), content);
         return this.kind === 'filter' && this.onPressed != null ? new Pressable(box, this.onPressed, { label: this.label, pressedBackground: this.selected ? primary.pressed.withOpacity(0.24) : theme.surfaceSubtle, selected: this.selected }) : box;
     }
-
 }
 
