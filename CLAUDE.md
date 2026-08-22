@@ -17,6 +17,29 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
 All commits must be authored solely by the repository owner without any co-author attribution.
 
+## Pull Requests (main is protected)
+
+**CRITICAL — never push to `main`.** A repository ruleset enforces `pull_request` and
+`copilot_code_review` on `main`: a direct push is rejected. Every change reaches main through a PR,
+which is also how the work stays documented.
+
+The flow:
+
+1. **Branch first.** Never commit onto `main` locally either — start the branch before the work.
+2. **Open the PR in ENGLISH** — title and body, like commit messages. The title follows the commit
+   format (`emoji type: description`), because a squash merge takes it as the subject line.
+3. **Copilot reviews automatically.** ALWAYS go back and read its comments after opening the PR,
+   and address them (fix, or reply saying why not). A PR is not done when it is opened.
+4. **Complete the PR yourself** once the review is clean and CI is green — that is what lands the
+   change on main.
+5. **Cutting a version is OPTIONAL** and separate. Merging a PR does not imply a release. Bump and
+   tag only when Edgar asks — see **Version Management** below for what a bump touches.
+
+**Size: do not open thin PRs.** A one-commit, few-line PR is noise to review. Group a coherent body
+of work — a slice, a fixed family of bugs, a refactor and the net that proves it — so the PR has
+enough substance to be reviewed as a unit and to read as a record later. Commits inside it stay
+small and focused; the PR is the unit that must be substantial.
+
 ## Project Overview
 
 **eQuantic.UI** is a Flutter-inspired component-based UI framework for .NET that compiles C# components directly to optimized JavaScript at build time (not WASM). It provides type-safe, HTML-native components with a minimal runtime (~85 KB gzipped).
@@ -401,7 +424,14 @@ public class BlogPostPage : StatelessComponent, IHandleMetadata
 
 ## Version Management
 
-Global version is defined in `Directory.Build.props` (currently 0.1.2). Debug builds auto-pack to `artifacts/packages/` for local testing.
+Global version is defined in `Directory.Build.props` — ONE line, which is the whole bump. Debug
+builds auto-pack to `artifacts/packages/` for local testing.
+
+A release is: commit the bump as `🔧 chore: <version>`, then tag `v<version>` and push the tag —
+the tag is what triggers publication to nuget.org. Never bump on your own initiative: choosing to
+release is Edgar's call, and a version number in the tree that nobody released is worse than none.
+(Do not quote the current version here; it changes every release and a stale number in the docs is
+how a reader is misled — read `Directory.Build.props`.)
 
 ## Compiler Boundaries (Server vs Client)
 
