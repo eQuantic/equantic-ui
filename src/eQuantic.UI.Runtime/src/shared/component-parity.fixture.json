@@ -1,0 +1,491 @@
+{
+  "text": {
+    "tag": "span",
+    "attrs": {
+      "class": "eq-type-bodym eq-7gvrt4"
+    },
+    "events": [],
+    "children": [
+      {
+        "tag": "#text",
+        "text": "hello",
+        "attrs": {},
+        "events": [],
+        "children": []
+      }
+    ]
+  },
+  "button-primary": {
+    "tag": "button",
+    "attrs": {
+      "aria-label": "Save",
+      "class": "eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-p7nbpw",
+      "style": "--eq-pressed-bg: light-dark(#00427f, #7cb5ee)"
+    },
+    "events": [],
+    "children": [
+      {
+        "tag": "div",
+        "attrs": {
+          "class": "eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-jq1py4 eq-xhcqoy eq-ky45n5"
+        },
+        "events": [],
+        "children": [
+          {
+            "tag": "div",
+            "attrs": {
+              "class": "eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-m92pvu"
+            },
+            "events": [],
+            "children": [
+              {
+                "tag": "span",
+                "attrs": {
+                  "class": "eq-type-label eq-16x7aca eq-1cb9own eq-1dakdsg eq-1hwu9wq eq-5goeua eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-y9mhin"
+                },
+                "events": [],
+                "children": [
+                  {
+                    "tag": "#text",
+                    "text": "Save",
+                    "attrs": {},
+                    "events": [],
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "button-ghost-small": {
+    "tag": "button",
+    "attrs": {
+      "aria-label": "Cancel",
+      "class": "eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-p7nbpw",
+      "style": "--eq-pressed-bg: light-dark(#eff1f4, #1c232b)"
+    },
+    "events": [],
+    "children": [
+      {
+        "tag": "div",
+        "attrs": {
+          "class": "eq-1eb13m5 eq-1o1uad7 eq-1su9m49 eq-1vzw3dm eq-bo3n4y eq-hw1jqi eq-189q21e"
+        },
+        "events": [],
+        "children": [
+          {
+            "tag": "div",
+            "attrs": {
+              "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-m92pvu eq-v9un6z"
+            },
+            "events": [],
+            "children": [
+              {
+                "tag": "span",
+                "attrs": {
+                  "class": "eq-type-label eq-16x7aca eq-1hwu9wq eq-1x60j26 eq-5goeua eq-7gvrt4 eq-a53ok4 eq-epaxs4 eq-mbtjfn eq-y9mhin"
+                },
+                "events": [],
+                "children": [
+                  {
+                    "tag": "#text",
+                    "text": "Cancel",
+                    "attrs": {},
+                    "events": [],
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "switch-on": {
+    "tag": "button",
+    "attrs": {
+      "aria-checked": "true",
+      "class": "eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-p7nbpw",
+      "role": "switch"
+    },
+    "events": [],
+    "children": [
+      {
+        "tag": "div",
+        "attrs": {
+          "class": "eq-1avhl7d eq-1eviv88"
+        },
+        "events": [],
+        "children": [
+          {
+            "tag": "div",
+            "attrs": {
+              "class": "eq-19zfii6 eq-1gudvpj eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp"
+            },
+            "events": [],
+            "children": [
+              {
+                "tag": "div",
+                "attrs": {
+                  "class": "eq-17a2pwz eq-1eb13m5 eq-1su9m49 eq-bo3n4y eq-e3wn64 eq-jq1py4"
+                },
+                "events": [],
+                "children": []
+              }
+            ]
+          },
+          {
+            "tag": "div",
+            "attrs": {
+              "class": "eq-1p2uoqo eq-3imi0j eq-elqnki eq-mfc69x"
+            },
+            "events": [],
+            "children": [
+              {
+                "tag": "div",
+                "attrs": {
+                  "class": "eq-11kg7e8 eq-17a2pwz eq-1amv73n eq-1eb13m5 eq-1eviv88 eq-1pwthtl eq-5hocaj eq-7ow04d eq-bo3n4y",
+                  "data-eq-drag": "x",
+                  "data-eq-drag-max": "0",
+                  "data-eq-drag-min": "-20",
+                  "data-eq-drag-rest": "0"
+                },
+                "events": [
+                  "eq-drag-released"
+                ],
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "switch-off": {
+    "tag": "button",
+    "attrs": {
+      "aria-checked": "false",
+      "class": "eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-p7nbpw",
+      "role": "switch"
+    },
+    "events": [],
+    "children": [
+      {
+        "tag": "div",
+        "attrs": {
+          "class": "eq-1avhl7d eq-1eviv88"
+        },
+        "events": [],
+        "children": [
+          {
+            "tag": "div",
+            "attrs": {
+              "class": "eq-19zfii6 eq-1gudvpj eq-1jjc6f6 eq-1pwthtl eq-1w1wt6p eq-5ew4ww eq-akjizx eq-m92pvu eq-mc2xdp"
+            },
+            "events": [],
+            "children": [
+              {
+                "tag": "div",
+                "attrs": {
+                  "class": "eq-17a2pwz eq-1eb13m5 eq-1su9m49 eq-8ktm3z eq-bo3n4y eq-e3wn64"
+                },
+                "events": [],
+                "children": []
+              }
+            ]
+          },
+          {
+            "tag": "div",
+            "attrs": {
+              "class": "eq-1dcee87 eq-1p2uoqo eq-3imi0j eq-mfc69x"
+            },
+            "events": [],
+            "children": [
+              {
+                "tag": "div",
+                "attrs": {
+                  "class": "eq-11kg7e8 eq-17a2pwz eq-1amv73n eq-1eb13m5 eq-1eviv88 eq-1pwthtl eq-5hocaj eq-7ow04d eq-bo3n4y",
+                  "data-eq-drag": "x",
+                  "data-eq-drag-max": "20",
+                  "data-eq-drag-min": "0",
+                  "data-eq-drag-rest": "0"
+                },
+                "events": [
+                  "eq-drag-released"
+                ],
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "progress-determinate": {
+    "tag": "div",
+    "attrs": {
+      "class": "eq-12ve49g eq-17a2pwz eq-1cutupo eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-m92pvu eq-mc2xdp"
+    },
+    "events": [],
+    "children": [
+      {
+        "tag": "div",
+        "attrs": {
+          "class": "eq-5ew4ww eq-9djncc eq-x8mmv4"
+        },
+        "events": [],
+        "children": [
+          {
+            "tag": "div",
+            "attrs": {
+              "class": "eq-17a2pwz eq-1cutupo eq-1eb13m5 eq-bo3n4y eq-jq1py4"
+            },
+            "events": [],
+            "children": []
+          }
+        ]
+      },
+      {
+        "tag": "div",
+        "attrs": {
+          "aria-hidden": "true",
+          "class": "eq-7yia2j eq-x8mmv4"
+        },
+        "events": [],
+        "children": []
+      }
+    ]
+  },
+  "progress-indeterminate": {
+    "tag": "div",
+    "attrs": {
+      "class": "eq-12ve49g eq-17a2pwz eq-1cutupo eq-1eb13m5 eq-5ew4ww eq-akjizx eq-bo3n4y eq-mbtjfn"
+    },
+    "events": [],
+    "children": [
+      {
+        "tag": "div",
+        "attrs": {
+          "class": "eq-loop eq-zoyhx2",
+          "style": "--eq-loop-from: -35%; --eq-loop-to: 105%"
+        },
+        "events": [],
+        "children": [
+          {
+            "tag": "div",
+            "attrs": {
+              "class": "eq-1cutupo eq-1eb13m5 eq-1uhnwvg eq-5ew4ww eq-akjizx eq-bo3n4y eq-ewlixa eq-m92pvu eq-mc2xdp"
+            },
+            "events": [],
+            "children": [
+              {
+                "tag": "div",
+                "attrs": {
+                  "class": "eq-5ew4ww eq-cxods1"
+                },
+                "events": [],
+                "children": [
+                  {
+                    "tag": "div",
+                    "attrs": {
+                      "class": "eq-17a2pwz eq-1cutupo eq-1eb13m5 eq-bo3n4y eq-jq1py4"
+                    },
+                    "events": [],
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "tag": "div",
+                "attrs": {
+                  "aria-hidden": "true",
+                  "class": "eq-1lz35b1"
+                },
+                "events": [],
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "avatar": {
+    "tag": "div",
+    "attrs": {
+      "class": "eq-17a2pwz eq-1eb13m5 eq-1xrfuoj eq-bo3n4y eq-cl6mtg eq-p7ntc"
+    },
+    "events": [],
+    "children": [
+      {
+        "tag": "div",
+        "attrs": {
+          "class": "eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-5ew4ww eq-6gdbvu eq-akjizx eq-ewlixa eq-m92pvu"
+        },
+        "events": [],
+        "children": [
+          {
+            "tag": "span",
+            "attrs": {
+              "class": "eq-type-caption eq-16x7aca eq-1h2zrd3 eq-1o5c7c3 eq-1x60j26 eq-5goeua eq-epaxs4 eq-mbtjfn eq-pbx3g3 eq-y9mhin"
+            },
+            "events": [],
+            "children": [
+              {
+                "tag": "#text",
+                "text": "EM",
+                "attrs": {},
+                "events": [],
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "column-of-text": {
+    "tag": "div",
+    "attrs": {
+      "class": "eq-11yg588 eq-1eb13m5 eq-1iu691c eq-aexooi eq-m92pvu eq-mc2xdp"
+    },
+    "events": [],
+    "children": [
+      {
+        "tag": "span",
+        "attrs": {
+          "class": "eq-type-bodym eq-7gvrt4"
+        },
+        "events": [],
+        "children": [
+          {
+            "tag": "#text",
+            "text": "one",
+            "attrs": {},
+            "events": [],
+            "children": []
+          }
+        ]
+      },
+      {
+        "tag": "span",
+        "attrs": {
+          "class": "eq-type-label eq-7gvrt4"
+        },
+        "events": [],
+        "children": [
+          {
+            "tag": "#text",
+            "text": "two",
+            "attrs": {},
+            "events": [],
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "button-in-column": {
+    "tag": "div",
+    "attrs": {
+      "class": "eq-11yg588 eq-19dgm5h eq-1eb13m5 eq-aexooi eq-m92pvu eq-mc2xdp"
+    },
+    "events": [],
+    "children": [
+      {
+        "tag": "button",
+        "attrs": {
+          "aria-label": "A",
+          "class": "eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-p7nbpw",
+          "style": "--eq-pressed-bg: light-dark(#00427f, #7cb5ee)"
+        },
+        "events": [],
+        "children": [
+          {
+            "tag": "div",
+            "attrs": {
+              "class": "eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-jq1py4 eq-xhcqoy eq-ky45n5"
+            },
+            "events": [],
+            "children": [
+              {
+                "tag": "div",
+                "attrs": {
+                  "class": "eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-m92pvu"
+                },
+                "events": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attrs": {
+                      "class": "eq-type-label eq-16x7aca eq-1cb9own eq-1dakdsg eq-1hwu9wq eq-5goeua eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-y9mhin"
+                    },
+                    "events": [],
+                    "children": [
+                      {
+                        "tag": "#text",
+                        "text": "A",
+                        "attrs": {},
+                        "events": [],
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "button",
+        "attrs": {
+          "aria-label": "B",
+          "class": "eq-pressable eq-1esejbi eq-1etnzxl eq-1imlfss eq-1uykvw eq-byqqyj eq-p7nbpw",
+          "style": "--eq-pressed-bg: light-dark(#eff1f4, #1c232b)"
+        },
+        "events": [],
+        "children": [
+          {
+            "tag": "div",
+            "attrs": {
+              "class": "eq-1e8yzyr eq-1eb13m5 eq-1o1uad7 eq-1vzw3dm eq-bo3n4y eq-cl6mtg eq-xhcqoy eq-189q21e"
+            },
+            "events": [],
+            "children": [
+              {
+                "tag": "div",
+                "attrs": {
+                  "class": "eq-19dgm5h eq-1eb13m5 eq-1gudvpj eq-1jjc6f6 eq-1uhnwvg eq-6gdbvu eq-ewlixa eq-m92pvu"
+                },
+                "events": [],
+                "children": [
+                  {
+                    "tag": "span",
+                    "attrs": {
+                      "class": "eq-type-label eq-16x7aca eq-1cb9own eq-1hwu9wq eq-5goeua eq-7gvrt4 eq-epaxs4 eq-jsw0f2 eq-mbtjfn eq-y9mhin"
+                    },
+                    "events": [],
+                    "children": [
+                      {
+                        "tag": "#text",
+                        "text": "B",
+                        "attrs": {},
+                        "events": [],
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
