@@ -18,7 +18,7 @@ namespace eQuantic.UI.Primitives;
 /// class. .NET's <c>ShortestDayNames</c> and CLDR's <c>weekday: "narrow"</c> are different data:
 /// they disagree for seven of the ten cultures probed (en-US "Su" vs "S", pt-BR "dom." vs "D",
 /// de-DE "So." vs "S"). No shared derivation rescues it either — taking the first character of the
-/// short name gives Chinese seven identical headers, because 周日/周一/週二 all begin with the same
+/// short name gives Chinese seven identical headers, because 周日/周一/周二 all begin with the same
 /// glyph. A calendar that cannot say the day names honestly in every script says them in the
 /// SHORT form, which both sides agree on exactly.
 /// </para>
