@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
 using eQuantic.UI.Compiler.Services;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
@@ -66,7 +67,10 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         {
             context.UsedHelpers.Add(Eq.Import);
             var jsOp = op switch { "==" => "===", "!=" => "!==", _ => op };
-            var longResult = JsExpr.Opaque($"({Eq.Long}({left}) {jsOp} {Eq.Long}({right}))");
+            // The wrap is DEFENSIVE, not a conversion: a long that arrived from state crosses JSON
+            // as a string, so every use site coerces (long() takes bigint | number | string) until
+            // hydration is typed. An operand ValueFlow already made a BigInt is left alone.
+            var longResult = JsExpr.Opaque($"({AsLong(left)} {jsOp} {AsLong(right)})");
             // A 64-bit result settles like any fixed-width one: checked throws, an explicit
             // `unchecked` wraps (BigInt does not on its own), the default keeps counting.
             if (op is "+" or "-" or "*" or "<<")
@@ -86,9 +90,15 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         if (op != "&&" && op != "||"
             && context.SemanticHelper.GetType(binary) is not { SpecialType: SpecialType.System_String })
         {
+            // The bound tree SAYS whether an operator is lifted (IsLifted) — the operand-type
+            // guess stays only for the worlds where the model cannot answer. A lifted operator
+            // with an OperatorMethod is a user-defined one on a nullable struct, not this lift.
             var nlt = context.SemanticHelper.GetType(binary.Left);
             var nrt = context.SemanticHelper.GetType(binary.Right);
-            if (nlt.IsNullablePrimitiveNumeric() || nrt.IsNullablePrimitiveNumeric())
+            var lifted = context.SemanticHelper.GetOperation(binary) is IBinaryOperation bound
+                ? bound.IsLifted && bound.OperatorMethod is null
+                : nlt.IsNullablePrimitiveNumeric() || nrt.IsNullablePrimitiveNumeric();
+            if (lifted)
             {
                 if (op is "<" or ">" or "<=" or ">=")
                 {
@@ -207,6 +217,14 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         // text wherever the bound tree shows one, `s += flag` included.
         return JsExpr.Binary(leftIr, op, rightIr);
     }
+
+    /// <summary>An operand as a BigInt: a literal or a value ValueFlow already converted passes
+    /// through; anything else is coerced, because its runtime shape is not guaranteed.</summary>
+    private static string AsLong(string operand) =>
+        (operand.StartsWith(Eq.Long + "(", StringComparison.Ordinal) && operand.EndsWith(")", StringComparison.Ordinal))
+        || (operand.EndsWith("n", StringComparison.Ordinal) && operand.Length > 1 && operand[..^1].All(char.IsDigit))
+            ? operand
+            : $"{Eq.Long}({operand})";
 
     /// <summary>The enum type of an operand, for a non-flags enum (a flags enum is numeric already).</summary>
     private static INamedTypeSymbol? EnumOperand(ExpressionSyntax operand, ConversionContext context) =>

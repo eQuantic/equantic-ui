@@ -28,13 +28,18 @@ value converts twice.
 | 0 | `SemanticHelper.GetOperation` — Original-aware, Knows-guarded access to the bound tree | done (Fase 4.2: `IsChecked`) |
 | 1 | `ValueFlow` — the dispatcher settles every expression for the implicit conversion wrapping it in the bound tree; owns char promotion and int→long (the syntax rules were removed); yields on text (`StringConversion`) and decimal | done |
 | 2 | Text: a value on its way into a concatenation (boxed, or a string operand — of `+` or of `+=`'s VALUE, never its target) or a plain interpolation hole is settled by ValueFlow; the concatenation and interpolation strategies dropped their calls. `s += flag` prints "True" for the first time | done |
-| 3 | `IBinaryOperation` as an operation strategy: `IsLifted` replaces the nullable-lifting guess, `OperatorMethod` lowers user-defined operators (today: passed through), enum and width rules read the operation; decimal operand wrapping moves to ValueFlow | next |
+| 3 | `IBinaryOperation` read where the syntax guessed: `IsLifted` decides the nullable lift (the operand-type guess stays for model-less worlds); the long branch no longer re-wraps an operand ValueFlow made a BigInt | done |
+| 4 | User-defined operators: `OperatorMethod` on binary/unary/compound operations and `Conversion.MethodSymbol` on conversions call the operator — for IN-SOURCE types, whose twin the emitter writes (operator declarations become static members); framework wrappers keep passing the primitive through | next |
 | 4 | Statements: `IForEachLoopOperation` (element conversion, deconstruction), `IUsingOperation`, pattern operations | |
 | 5 | Explicit conversions: `CastExpressionStrategy`'s tables and `IntegerWidth.Wrap` become one conversion table, used by ValueFlow and by casts | |
 
 ## Lessons recorded on the way
 
 - `GetOperation(node)` returns the OPERAND; the implicit conversion is its `Parent`. Hook there.
+- `decimal` and `long` have NO invariant runtime representation: a value hydrated from state
+  crosses JSON as a number or a string, so the binary strategies wrap every operand DEFENSIVELY
+  (`$eq.num.dec(x)`, `$eq.num.long(x)` are coercions, not conversions). ValueFlow converts at
+  the implicit-conversion seams only; the wraps stay until hydration is typed — its own track.
 - A compound assignment has a Target and a Value; only the Value FLOWS. Matching any child of
   `s += x` settled the target too (`r ?? '' += 't'`), which is how slice 1's first cut failed.
 - A constant folds only where the JavaScript REPRESENTATION changes (`1` → `1n`); folding `0x10`
