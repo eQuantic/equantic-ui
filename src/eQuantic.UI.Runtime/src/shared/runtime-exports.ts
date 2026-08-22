@@ -127,6 +127,7 @@ export { VisualNodeComponent } from './visual-node-component';
 // build()/render() time, never during module evaluation.
 // The roster is the GENERATED barrel, never a hand-kept list: a list fell thirteen components
 // behind, and each of them transpiled, embedded, and then failed to import.
+export { CalendarNames } from './calendar-names';
 export * from './components';
 
 // ---- Device capabilities ---------------------------------------------------------------------

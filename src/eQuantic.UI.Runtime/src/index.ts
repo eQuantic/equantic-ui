@@ -9,6 +9,8 @@ export type { IComponent, HtmlNode, RenderContext, StyleClass, EventHandler } fr
 // The C# `BuildContext` mirror — transpiled components declare `build(context: BuildContext)`, so the
 // name must resolve here exactly as it does in shared/runtime-exports.
 export type { RenderContext as BuildContext } from './core/types';
+export { CalendarNames } from './shared/calendar-names';
+
 export {
   StatelessComponent,
   StatefulComponent,
