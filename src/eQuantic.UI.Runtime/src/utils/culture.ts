@@ -90,6 +90,16 @@ export function installCulture(ui: string, format: string, strings: Record<strin
   activeStrings = strings;
   warned.clear();
   if (ui.length > 0) catalogs.set(ui, strings);
+
+  // The DOCUMENT's language, not just the catalog's. The server stamps `<html lang>` on the page
+  // it renders and a no-reload switch left it behind, so the page said `lang="en"` while every
+  // word in it was Portuguese. A screen reader takes its pronunciation from that attribute and
+  // nothing else — it reads the Portuguese aloud with English phonemes — and it is the same
+  // attribute a browser's translation offer and the hyphenation dictionary read. One line, at the
+  // single point where the active culture changes, so no caller has to remember it.
+  if (ui.length > 0 && typeof document !== 'undefined' && document.documentElement) {
+    document.documentElement.lang = ui;
+  }
 }
 
 /** Registers the re-render (boot) and the catalog loader (a host with its own transport). */

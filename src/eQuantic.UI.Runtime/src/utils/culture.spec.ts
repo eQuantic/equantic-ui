@@ -144,6 +144,28 @@ describe('culture atom', () => {
     expect(activeCulture()).toEqual({ ui: 'pt-BR', format: 'en-US' });
   });
 
+  it('installing a culture moves the DOCUMENT language with it', () => {
+    // `<html lang>` is where a screen reader takes its pronunciation from, and nothing else. The
+    // server stamps it on the page it renders; a switch with no reload used to leave it behind, so
+    // the page said `lang="en"` while every word in it was Portuguese and the reader heard
+    // Portuguese through English phonemes. It is also what a browser's translation offer and the
+    // hyphenation dictionary read.
+    document.documentElement.lang = 'en';
+    installCulture('pt-BR', 'pt-BR', {});
+    expect(document.documentElement.lang).toBe('pt-BR');
+
+    installCulture('es', 'es', {});
+    expect(document.documentElement.lang).toBe('es');
+  });
+
+  it('leaves the document language alone when the culture has no name', () => {
+    // The neutral install (no culture at all) must not blank the attribute — an empty `lang` is
+    // worse than a stale one: it tells the reader "language unknown" and it guesses.
+    document.documentElement.lang = 'pt-BR';
+    installCulture('', '', {});
+    expect(document.documentElement.lang).toBe('pt-BR');
+  });
+
   it('installing a new culture swaps the catalog and re-arms the warnings', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     try {

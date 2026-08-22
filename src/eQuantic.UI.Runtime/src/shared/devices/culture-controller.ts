@@ -58,9 +58,18 @@ export class WebCultureController {
       const here = window.location.pathname;
       const [current] = splitCulturePath(here);
       if (current !== '' && current !== uiCulture) {
-        Navigator.go(
-          pathForCulture(uiCulture, here) + window.location.search + window.location.hash,
-        );
+        const target =
+          pathForCulture(uiCulture, here) + window.location.search + window.location.hash;
+        // The CATALOG first, then the address. The router renders the destination from whatever
+        // strings are in memory, so navigating on its own moved the reader to /pt-BR and drew the
+        // page there in English — the URL said one language and every word said the other, and a
+        // reader who had just asked for Portuguese got the same page back. Only a full reload
+        // corrected it, which is the reload D6 exists to avoid.
+        // A catalog that will not load must not strand them at the old address either, so the
+        // navigation happens whatever the fetch did: strings degrade, the language still switches.
+        void setCulture(uiCulture, format)
+          .catch(() => {})
+          .then(() => Navigator.go(target));
         return;
       }
     }
