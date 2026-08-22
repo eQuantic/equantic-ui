@@ -32,8 +32,8 @@ The flow:
    and address them (fix, or reply saying why not). A PR is not done when it is opened.
 4. **Complete the PR yourself** once the review is clean and CI is green — that is what lands the
    change on main.
-5. **Cutting a version is OPTIONAL** and separate. Merging a PR does not imply a release; bump and
-   tag only when Edgar asks (see the release rules above).
+5. **Cutting a version is OPTIONAL** and separate. Merging a PR does not imply a release. Bump and
+   tag only when Edgar asks — see **Version Management** below for what a bump touches.
 
 **Size: do not open thin PRs.** A one-commit, few-line PR is noise to review. Group a coherent body
 of work — a slice, a fixed family of bugs, a refactor and the net that proves it — so the PR has
@@ -424,7 +424,14 @@ public class BlogPostPage : StatelessComponent, IHandleMetadata
 
 ## Version Management
 
-Global version is defined in `Directory.Build.props` (currently 0.1.2). Debug builds auto-pack to `artifacts/packages/` for local testing.
+Global version is defined in `Directory.Build.props` — ONE line, which is the whole bump. Debug
+builds auto-pack to `artifacts/packages/` for local testing.
+
+A release is: commit the bump as `🔧 chore: <version>`, then tag `v<version>` and push the tag —
+the tag is what triggers publication to nuget.org. Never bump on your own initiative: choosing to
+release is Edgar's call, and a version number in the tree that nobody released is worse than none.
+(Do not quote the current version here; it changes every release and a stale number in the docs is
+how a reader is misled — read `Directory.Build.props`.)
 
 ## Compiler Boundaries (Server vs Client)
 
