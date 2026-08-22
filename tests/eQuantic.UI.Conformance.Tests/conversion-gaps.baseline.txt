@@ -1,0 +1,21 @@
+float f = 0.1f; double d = f; return d > 0.1;
+float f = 0.1f + 0.2f; return f.ToString();
+int big = int.MaxValue; int r = big + 1; return r;
+byte b = 250; b += 10; return b;
+short s = 32767; s++; return s;
+uint u = 0; u--; return u.ToString();
+int x = 10; x /= 4; return x;
+int x = 10; x /= 4.0 > 1 ? 4 : 1; return x;
+try { checked { int m = int.MaxValue; m++; return m; } } catch (OverflowException) { return -1; }
+char c = 'a'; c++; return c.ToString();
+string s = "abc"; int sum = 0; foreach (var ch in s) sum += ch; return sum;
+var v = DayOfWeek.Wednesday; return v + 1 == DayOfWeek.Thursday;
+var v = DayOfWeek.Monday; return v.CompareTo(DayOfWeek.Friday) < 0;
+decimal m = 1.5m; return Math.Round(m);
+decimal m = 2.5m; return Math.Round(m);
+long l = long.MaxValue; return (l + 1).ToString();
+string s = null; return "a" + s + "b";
+bool f = true; return "v=" + f;
+int? n = null; return "v=" + n;
+object a = 5; object b = 5; return a.Equals(b);
+float f = 0.1f; return f == 0.1;
