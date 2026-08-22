@@ -12,7 +12,7 @@ export const sdkNeutralStrings: Record<string, string> = {
   'ChooseDate': "Choose a date",
   'ChooseTime': "Choose a time",
   'ClearSearch': "Clear search",
-  'DateFormatHint': "DD/MM/YYYY",
+  'DateFormatLetters': "DMY",
   'Dismiss': "Dismiss",
   'Find': "Find",
   'NextMatch': "Next match",

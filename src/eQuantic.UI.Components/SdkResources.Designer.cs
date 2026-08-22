@@ -103,9 +103,9 @@ namespace eQuantic.UI.Components
             get { return ResourceManager.GetString("ChooseTime", Culture)!; }
         }
 
-        internal static string DateFormatHint
+        internal static string DateFormatLetters
         {
-            get { return ResourceManager.GetString("DateFormatHint", Culture)!; }
+            get { return ResourceManager.GetString("DateFormatLetters", Culture)!; }
         }
 }
 }

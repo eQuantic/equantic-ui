@@ -1,4 +1,4 @@
-import { $eq } from "../runtime-exports";
+import { $eq, CalendarNames } from "../runtime-exports";
 
 export class SdkStrings {
     static get dismiss(): string {
@@ -50,7 +50,11 @@ export class SdkStrings {
     }
 
     static get dateFormatHint(): string {
-        return $eq.str("SdkResources", "DateFormatHint");
+        return SdkStrings.hint(CalendarNames.shortDatePattern, SdkStrings.dateFormatLetters);
+    }
+
+    static get dateFormatLetters(): string {
+        return $eq.str("SdkResources", "DateFormatLetters");
     }
 
     static get spreadsheet(): string {
@@ -63,6 +67,32 @@ export class SdkStrings {
 
     static get nothingSelected(): string {
         return $eq.str("SdkResources", "NothingSelected");
+    }
+
+    static hint(pattern: string, letters: string) {
+        let day = letters.length > 0 ? letters[0] : 'D';
+        let month = letters.length > 1 ? letters[1] : 'M';
+        let year = letters.length > 2 ? letters[2] : 'Y';
+        let hint = $eq.text.stringBuilder();
+        let i = 0;
+        while (i < pattern.length) {
+            let letter = pattern[i];
+            if (letter === '\'') {
+                let close = pattern.indexOf('\'', i + 1);
+                if (close < 0) {
+                    hint.append(pattern.slice(i + 1));
+                    break;
+                }
+                hint.append(pattern.substring(i + 1, i + 1 + close - i - 1));
+                i = close + 1;
+                continue;
+            }
+            let run = 1;
+            while (i + run < pattern.length && pattern[i + run] === letter) run++;
+            if (letter === 'd') hint.append(day).append(day); else if (letter === 'M') hint.append(month).append(month); else if (letter === 'y') hint.append(year).append(year).append(year).append(year); else hint.append(pattern.substring(i, i + run));
+            i += run;
+        }
+        return hint.toString();
     }
 }
 

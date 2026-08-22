@@ -83,8 +83,27 @@ public class SdkStringLiteralGuardTests
             .Where(f => !f.EndsWith("SdkStrings.cs", StringComparison.Ordinal))
             .Select(File.ReadAllText));
 
+        // A string can also reach a human through ANOTHER string: the date hint is built from the
+        // culture's pattern and the three letters this language stands the parts on, and only the
+        // hint is what a field shows. So a property one of SdkStrings' own members reads counts as
+        // read — the member doing the reading is itself policed by the rule above.
+        var own = CSharpSyntaxTree.ParseText(
+            File.ReadAllText(Path.Combine(componentsDir, "SdkStrings.cs"))).GetRoot();
+        var declarations = own.DescendantNodes().OfType<PropertyDeclarationSyntax>()
+            .Select(property => property.Identifier)
+            .ToHashSet();
+        var readByAnotherString = own.DescendantNodes().OfType<IdentifierNameSyntax>()
+            // A `<see cref="…"/>` is a mention, not a read — the one way this could go soft.
+            .Where(identifier => identifier.Ancestors()
+                .OfType<DocumentationCommentTriviaSyntax>().Any() == false)
+            .Select(identifier => identifier.Identifier)
+            .Where(token => !declarations.Contains(token))
+            .Select(token => token.Text)
+            .ToHashSet(StringComparer.Ordinal);
+
         var unread = typeof(Components.SdkStrings).GetProperties()
             .Where(p => !sources.Contains($"SdkStrings.{p.Name}", StringComparison.Ordinal))
+            .Where(p => !readByAnotherString.Contains(p.Name))
             .Select(p => p.Name)
             .ToList();
 

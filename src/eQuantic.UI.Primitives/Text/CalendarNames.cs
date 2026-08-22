@@ -45,6 +45,18 @@ public static class CalendarNames
     /// <summary>The twelve month names abbreviated, January-first.</summary>
     public static IReadOnlyList<string> MonthNamesShort => Trimmed(Format.AbbreviatedMonthNames);
 
+    /// <summary>
+    /// The culture's short date pattern, as .NET writes it: <c>M/d/yyyy</c> in the United States,
+    /// <c>dd/MM/yyyy</c> in Brazil, <c>yyyy-MM-dd</c> in Sweden.
+    /// <para>
+    /// Handed out RAW because two readers need it and they need different things: the parser
+    /// reads which slot holds what, and the field's hint reads the order to show. Deriving either
+    /// one from a translated string is how a hint ends up telling a reader to type the date in an
+    /// order the parser then refuses.
+    /// </para>
+    /// </summary>
+    public static string ShortDatePattern => Format.ShortDatePattern;
+
     private static DateTimeFormatInfo Format => CultureInfo.CurrentCulture.DateTimeFormat;
 
     /// <summary>.NET's month arrays carry THIRTEEN entries — the thirteenth is the leap month of

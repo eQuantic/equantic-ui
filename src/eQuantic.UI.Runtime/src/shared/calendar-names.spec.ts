@@ -1,5 +1,6 @@
 import { describe, expect, it, afterEach } from 'vitest';
 import { CalendarNames } from './calendar-names';
+import { SdkStrings } from './components/SdkStrings';
 import { installCulture } from '../utils/culture';
 import pinned from './calendar-names.fixture.json';
 
@@ -9,6 +10,9 @@ type Snapshot = {
   dayNamesLong: string[];
   monthNames: string[];
   monthNamesShort: string[];
+  shortDatePattern: string;
+  dateFormatLetters: string;
+  dateFormatHint: string;
 };
 
 const fixture = pinned as Record<string, Snapshot>;
@@ -36,6 +40,24 @@ describe('calendar names (C# CalendarNamesFixtureTests cross-pin)', () => {
       expect(CalendarNames.dayNamesLong).toEqual(expected.dayNamesLong);
       expect(CalendarNames.monthNames).toEqual(expected.monthNames);
       expect(CalendarNames.monthNamesShort).toEqual(expected.monthNamesShort);
+    });
+  }
+
+  for (const [culture, expected] of Object.entries(fixture)) {
+    it(`builds the same typed-field hint as C# for ${culture}`, () => {
+      // The hint is DERIVED on both sides — the culture's pattern arranged, the language's three
+      // letters standing in — so it is the derivation that has to agree, not a shipped string.
+      installCulture(
+        culture,
+        culture,
+        {
+          $dateShort: expected.shortDatePattern,
+          'SdkResources/DateFormatLetters': expected.dateFormatLetters,
+        },
+        expected,
+      );
+      expect(CalendarNames.shortDatePattern).toBe(expected.shortDatePattern);
+      expect(SdkStrings.dateFormatHint).toBe(expected.dateFormatHint);
     });
   }
 

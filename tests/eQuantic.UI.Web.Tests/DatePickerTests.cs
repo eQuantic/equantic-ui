@@ -64,12 +64,6 @@ public class DatePickerTests
         // Under the SAME culture as the render: what "7/17" MEANS is a culture question, and
         // parsing it under the machine's own is how a test passes in one country and fails in
         // another. This is the third time this pair has bitten in this track.
-        var previousFormat = CultureInfo.CurrentCulture;
-        var previousUi = CultureInfo.CurrentUICulture;
-        CultureInfo.CurrentCulture = new CultureInfo(culture);
-        CultureInfo.CurrentUICulture = new CultureInfo(culture);
-        try
-        {
         IEnumerable<VisualNode> Walk(VisualNode node)
         {
             yield return node;
@@ -88,6 +82,16 @@ public class DatePickerTests
                 foreach (var descendant in Walk(child))
                     yield return descendant;
         }
+
+        var previousFormat = CultureInfo.CurrentCulture;
+        var previousUi = CultureInfo.CurrentUICulture;
+        // Resolved BEFORE the thread is touched: a name the platform cannot answer throws here,
+        // where there is still nothing to restore.
+        var asked = new CultureInfo(culture);
+        try
+        {
+            CultureInfo.CurrentCulture = asked;
+            CultureInfo.CurrentUICulture = asked;
 
             var entry = Walk(picker).OfType<TextEntry>().First();
             entry.OnChanged.Should().NotBeNull("the field has to be typeable");
@@ -112,7 +116,10 @@ public class DatePickerTests
 
         // C15 requires the typed row, and it is the FIELD — not a fallback tucked away somewhere.
         var input = Walk(tree).Single(n => n.Tag == "input");
-        input.Attributes["placeholder"].Should().Be(SdkStrings.DateFormatHint);
+        // The LITERAL, not SdkStrings read back: the hint is derived from the render culture, so
+        // comparing it against a read under the machine's own culture would assert nothing and
+        // pass in the United States while failing in Brazil. en-US is month-first, and says so.
+        input.Attributes["placeholder"].Should().Be("MM/DD/YYYY");
         input.Attributes.GetValueOrDefault("value").Should().BeEmpty();
         // …and the panel is not up until asked.
         Walk(tree).Should().NotContain(n => n.Attributes.GetValueOrDefault("role") == "grid");
@@ -270,6 +277,37 @@ public class DatePickerTests
 
         Children(built).OfType<TimePicker>().Single().OnChanged!(new TimeOnly(11, 0));
         reported.Should().Be(new DateTime(2026, 7, 17, 11, 0, 0));
+    }
+
+    [Fact]
+    public void AControlledParentThatClearsTheMoment_ClearsBothHalves()
+    {
+        var picker = new DateTimePicker(new DateTime(2026, 7, 17, 11, 0, 0));
+
+        // Null is a value the app can hand down. A picker that treats "no value" as "nothing
+        // changed" keeps showing the moment a Clear button just removed.
+        picker.AdoptConfig(new DateTimePicker());
+
+        var built = picker.BuildContained(new ComponentContext(Theme));
+        Children(built).OfType<DatePicker>().Single().Selected.Should().BeNull();
+        Children(built).OfType<TimePicker>().Single().Selected.Should().BeNull();
+    }
+
+    [Fact]
+    public void AStepUnderAMinute_IsAMinute_AtEveryDoor()
+    {
+        // A step of zero cannot walk, and the guard that stops it walking forever would leave the
+        // list holding one option. Both doors answer the same: the constructor, and the adopt an
+        // app's re-render comes through.
+        new TimePicker(stepMinutes: 0).StepMinutes.Should().Be(1);
+
+        var picker = new TimePicker(stepMinutes: 60);
+        picker.AdoptConfig(new TimePicker(stepMinutes: 0));
+        picker.StepMinutes.Should().Be(1);
+
+        Press(Trigger(Render(picker)));
+        Walk(Render(picker)).Count(n => n.Attributes.GetValueOrDefault("role") == "option")
+            .Should().Be(24 * 60, "a minute step is a day of minutes, not one lonely option");
     }
 
     /// <summary>The visual children of a built node, one level of composition deep.</summary>

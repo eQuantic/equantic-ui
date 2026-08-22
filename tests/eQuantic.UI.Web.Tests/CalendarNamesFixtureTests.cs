@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using eQuantic.UI.Components;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
 
@@ -34,10 +35,17 @@ public class CalendarNamesFixtureTests
     /// <summary>Reads the surface under a given culture — the same call an SSR render makes.</summary>
     private static object Snapshot(string culture)
     {
-        var previous = CultureInfo.CurrentCulture;
+        var previousFormat = CultureInfo.CurrentCulture;
+        var previousUi = CultureInfo.CurrentUICulture;
+        var asked = new CultureInfo(culture);
         try
         {
-            CultureInfo.CurrentCulture = new CultureInfo(culture);
+            // BOTH halves of .NET's pair. The names and the pattern follow the FORMAT culture,
+            // the hint's letters follow the UI culture through the resx, and pinning one while
+            // the machine supplies the other is how this fixture would carry whatever language
+            // the developer's laptop is in.
+            CultureInfo.CurrentCulture = asked;
+            CultureInfo.CurrentUICulture = asked;
             return new
             {
                 firstDayOfWeek = CalendarNames.FirstDayOfWeek,
@@ -45,11 +53,17 @@ public class CalendarNamesFixtureTests
                 dayNamesLong = CalendarNames.DayNamesLong,
                 monthNames = CalendarNames.MonthNames,
                 monthNamesShort = CalendarNames.MonthNamesShort,
+                // Not a NAME, but the same contract: the twin derives the field's hint from the
+                // pattern and the letters, and it has to reach the same string this side does.
+                shortDatePattern = CalendarNames.ShortDatePattern,
+                dateFormatLetters = SdkStrings.DateFormatLetters,
+                dateFormatHint = SdkStrings.DateFormatHint,
             };
         }
         finally
         {
-            CultureInfo.CurrentCulture = previous;
+            CultureInfo.CurrentCulture = previousFormat;
+            CultureInfo.CurrentUICulture = previousUi;
         }
     }
 
