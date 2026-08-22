@@ -15,6 +15,15 @@ public static class DefaultValue
     /// reference type, unknown, or a struct with no faithful zero on this side.</summary>
     public static string Of(ITypeSymbol? type, ConversionContext context)
     {
+        var value = Of(type);
+        if (value.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
+        return value;
+    }
+
+    /// <summary>The default, with no context to tell about the helper import — the emitter's field
+    /// path already scans what it emits for <c>$eq.</c> and adds it.</summary>
+    public static string Of(ITypeSymbol? type)
+    {
         switch (type?.SpecialType)
         {
             case SpecialType.System_Boolean:
@@ -25,10 +34,8 @@ public static class DefaultValue
                 or SpecialType.System_Single or SpecialType.System_Double:
                 return "0";
             case SpecialType.System_Int64 or SpecialType.System_UInt64:
-                context.UsedHelpers.Add(Eq.Import);
                 return $"{Eq.Long}(0)";
             case SpecialType.System_Decimal:
-                context.UsedHelpers.Add(Eq.Import);
                 return $"{Eq.Dec}(0)";
             case SpecialType.System_Char:
                 return "'\\0'";

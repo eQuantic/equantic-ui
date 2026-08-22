@@ -257,7 +257,7 @@ public class TypeScriptEmitter
                             : (field.DefaultValue != null ? ConvertToTsValue(field.DefaultValue, field.Type) : null);
                         // C# value types default without an initializer (`private int _count;` is 0);
                         // an uninitialized TS field is `undefined` and would poison arithmetic (NaN).
-                        tsDefault ??= ImplicitValueTypeDefault(field.Type);
+                        tsDefault ??= ValueTypeDefault(field.Type, field.TypeNode);
                         if (tsDefault is not null && tsDefault.Contains("$eq."))
                             component.UsedHelpers.Add(Eq.Import);
                         c.Field(field.Name.ToCamelCase(), tsType, tsDefault, field.DefaultValueNode, field.IsStatic);
@@ -896,6 +896,22 @@ public class TypeScriptEmitter
     
     /// <summary>The JS literal for C#'s implicit <c>default(T)</c> on a FIELD with no initializer —
     /// numeric and boolean value types only; everything else stays uninitialized (≈ null).</summary>
+    /// <summary>
+    /// The default of a field declared without an initializer. The spelled name answers the common
+    /// primitives; where it cannot — an ENUM (whose default is its zero member, a name string on
+    /// this side), a <c>char</c>, or a type reached through an alias (<c>using Amount =
+    /// decimal;</c>) — the SYMBOL answers, through the same table the OrDefault family reads. A
+    /// field left with no default is <c>undefined</c>, so an enum field rendered as nothing where
+    /// .NET renders its zero member.
+    /// </summary>
+    private string? ValueTypeDefault(string csharpType, TypeSyntax? typeNode)
+    {
+        if (ImplicitValueTypeDefault(csharpType) is { } byName) return byName;
+        if (csharpType.EndsWith('?') || BindType(typeNode) is not { } symbol) return null;
+        var bySymbol = Strategies.DefaultValue.Of(symbol);
+        return bySymbol == "null" ? null : bySymbol;
+    }
+
     private static string? ImplicitValueTypeDefault(string csharpType) => csharpType.TrimEnd('?') switch
     {
         "int" or "Int32" or "short" or "Int16" or "byte" or "sbyte" or "uint" or "UInt32"
@@ -1036,7 +1052,7 @@ public class TypeScriptEmitter
                 // is also the witness legacy hydration reads a field's type from.
                 var tsDefault = field.DefaultValueNode != null
                     ? _converter.ConvertExpression(field.DefaultValueNode, field.Type)
-                    : (field.Type.EndsWith('?') ? null : ImplicitValueTypeDefault(field.Type))
+                    : (field.Type.EndsWith('?') ? null : ValueTypeDefault(field.Type, field.TypeNode))
                       ?? ConvertToTsValue(field.DefaultValue ?? GetDefaultForType(field.Type), field.Type);
                 if (tsDefault.Contains("$eq.")) component.UsedHelpers.Add(Eq.Import);
                 c.Field(field.Name, tsType, tsDefault);
