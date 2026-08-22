@@ -98,6 +98,7 @@ import { CellRef as CellRefCtor } from './components/CellRef';
 import { SheetRange as SheetRangeCtor } from './components/SheetRange';
 import { Curve, Motion } from './design-system.generated';
 import { StyleChannels } from './value-types';
+import { localizeDestination } from '../utils/culture-routes';
 
 /** The C# `Anchored.MotionLiftDp` twin — the open/close nudge toward the anchor. */
 const ANCHOR_MOTION_LIFT = 8;
@@ -672,9 +673,13 @@ function webClipboard() {
 }
 
 function lowerLink(node: LinkNode, context: LoweringContext, path: string): HtmlNode {
+  // The active language rides the href (C# twin: RenderContext.ResolveDestination). An author
+  // writes `/pricing` once and the link is right in every language — including after a
+  // client-side switch, which re-renders this node with a different active culture.
+  const destination = localizeDestination(node.destination);
   const anchor: HtmlNode = {
     tag: 'a',
-    attributes: { class: 'eq-link', href: node.destination },
+    attributes: { class: 'eq-link', href: destination },
     events: {},
     children: [],
   };
@@ -683,7 +688,7 @@ function lowerLink(node: LinkNode, context: LoweringContext, path: string): Html
   // that is what the router's one delegated click listener meets.
   if (node.keepsPosition) anchor.attributes['data-eq-keep-position'] = '';
   // WARM ON HOVER (C# twin): app-internal destinations only — an absolute URL is somebody else's.
-  if (node.destination.startsWith('/')) anchor.attributes['data-prefetch'] = '';
+  if (destination.startsWith('/')) anchor.attributes['data-prefetch'] = '';
   // The page you are ON (C# twin): only the current link says so.
   if (node.current === true) anchor.attributes['aria-current'] = 'page';
   const child = lowerNode(node.child, context, null, path + '/0');

@@ -227,8 +227,41 @@ public static class UIExtensions
         var options = endpoints.ServiceProvider.GetRequiredService<UIOptions>();
         options.DeclareRoute(route, pageType, title);
 
-        endpoints.MapGet(route, async context => await ServeAppShell(context, pageType.Name));
+        // The same two endpoints a [Page] gets — the route, and its language-prefixed twin.
+        foreach (var pattern in CultureEndpointPatterns(options, route))
+            endpoints.MapGet(pattern, async context => await ServeAppShell(context, pageType.Name));
         return endpoints;
+    }
+
+    /// <summary>
+    /// The endpoints one page route answers at: itself, and — when the app declared language
+    /// prefixes — the same route behind <c>{culture:culture}</c>. ONE constrained pattern rather
+    /// than a literal endpoint per language: the <c>culture</c> constraint admits exactly the
+    /// prefixes the app named (anything else is a 404, which is the whole reason to name them),
+    /// and the platform's <c>RouteDataRequestCultureProvider</c> reads the bound value. The home
+    /// route is the case worth naming — <c>/</c> under <c>pt-BR</c> is <c>/pt-BR</c>, not
+    /// <c>/pt-BR/</c>, which would be a second URL for one page.
+    /// </summary>
+    private static IEnumerable<string> CultureEndpointPatterns(UIOptions options, string route)
+    {
+        yield return route;
+        if (options.CultureRoutes is null) yield break;
+        yield return route == "/" ? $"/{{{CultureRouteConstraint.Name}:{CultureRouteConstraint.Name}}}"
+                                  : $"/{{{CultureRouteConstraint.Name}:{CultureRouteConstraint.Name}}}{route}";
+    }
+
+    /// <summary>
+    /// The same routes for the CLIENT's table, with the prefixes spelled out. The browser's matcher
+    /// accepts a constraint it does not know, so <c>{culture:culture}</c> there would take any
+    /// segment and claim <c>/fr/pricing</c> for a page the server refuses; the literal list keeps
+    /// the two matchers answering the same.
+    /// </summary>
+    private static IEnumerable<string> CultureClientPatterns(UIOptions options, string route)
+    {
+        yield return route;
+        if (options.CultureRoutes is not { } map) yield break;
+        foreach (var prefix in map.Prefixed)
+            yield return route == "/" ? $"/{prefix}" : $"/{prefix}{route}";
     }
 
     public static IEndpointRouteBuilder MapPages(this IEndpointRouteBuilder endpoints)
@@ -248,12 +281,12 @@ public static class UIExtensions
                 
                 foreach (var pageAttr in pageAttrs) 
                 {
-                    var route = pageAttr.Route;
-
-                    endpoints.MapGet(route, async context =>
+                    // The bare route, plus the constrained one when the app declared languages.
+                    foreach (var route in CultureEndpointPatterns(options, pageAttr.Route))
                     {
-                        await ServeAppShell(context, pageType.Name);
-                    });
+                        var name = pageType.Name;
+                        endpoints.MapGet(route, async context => await ServeAppShell(context, name));
+                    }
                 }
             }
         }
@@ -517,6 +550,25 @@ public static class UIExtensions
         await context.Response.WriteAsync(payload.ToString());
     }
 
+    /// <summary>
+    /// A bare URL asked for in a PREFIXED language goes to its prefixed address: the language the
+    /// middleware negotiated for the request — the cookie the switcher writes, Accept-Language —
+    /// becomes the URL, so what a reader sees, shares and bookmarks always names its language.
+    /// 302, not 301: the preference is the reader's, and it changes. A URL that already carries a
+    /// segment is left alone, and so is the default culture, which has none.
+    /// </summary>
+    private static bool RedirectToLanguageUrl(HttpContext context, UIOptions options)
+    {
+        if (options.CultureRoutes is not { } map) return false;
+        if (context.Request.RouteValues.ContainsKey(CultureRouteConstraint.Name)) return false;
+        var culture = System.Globalization.CultureInfo.CurrentUICulture.Name;
+        if (map.IsDefault(culture) || map.SegmentFor(culture).Length == 0) return false;
+
+        var path = context.Request.Path.HasValue ? context.Request.Path.Value! : "/";
+        context.Response.Redirect(map.PathFor(culture, path) + context.Request.QueryString, permanent: false);
+        return true;
+    }
+
     private static async Task ServeAppShell(HttpContext context, string? pageName)
     {
         // A client navigation asks the same route for the page's data instead of a document.
@@ -527,6 +579,8 @@ public static class UIExtensions
         }
 
         var options = context.RequestServices.GetRequiredService<UIOptions>();
+        if (RedirectToLanguageUrl(context, options)) return;
+
         var shell = options.HtmlShell;
         // Per-request copy of the head tags. The HtmlShell is a singleton, so mutating
         // shell.HeadTags directly is not thread-safe and leaks tags across requests.
@@ -724,6 +778,13 @@ public static class UIExtensions
             }
         }
 
+        // The canonical LAST, after the page has had its say. A page writes
+        // seo.Canonical("https://site/products") once, and under a language prefix that same
+        // string tells a search engine to index the ENGLISH page instead of this one — the exact
+        // opposite of what putting the language in the URL was for, and silent: the markup looks
+        // right on every page.
+        LocalizeCanonical(context, options, metadata);
+
         // Client route table from [Page] attributes — lets the runtime resolve URLs to page bundles
         // for client-side (SPA) navigation without a server round-trip.
         static string JsStr(string s) => s.Replace("\\", "\\\\").Replace("'", "\\'");
@@ -732,6 +793,11 @@ public static class UIExtensions
             .SelectMany(t => t.GetCustomAttributes<Core.PageAttribute>()
                 .Select(attr => (Pattern: attr.Route, Page: t.Name, attr.Title)))
             .Concat(options.DeclaredRoutes.Select(r => (Pattern: r.Pattern, Page: r.Page.Name, r.Title)))
+            // The prefixed URLs go in the table too, or the FIRST client-side navigation inside a
+            // translated page finds no match and falls back to a full reload — the language would
+            // survive and the SPA would not, which is the kind of regression nobody reports.
+            .SelectMany(r => CultureClientPatterns(options, r.Pattern)
+                .Select(pattern => (Pattern: pattern, r.Page, r.Title)))
             .Distinct()
             .ToList();
         var routesJson = "[" + string.Join(",", routeEntries.Select(r =>
@@ -749,11 +815,20 @@ public static class UIExtensions
             ? $"{{ name: '{cookie.Name}', days: {cookie.Days} }}"
             : "false";
 
+        // The language-prefix policy crosses because the browser has to APPLY it: an href lowered
+        // after hydration, and the switcher's own navigation, both need to know which segments are
+        // languages. Guessing by shape would call a page named `pt` a language.
+        var cultureRoutesJson = options.CultureRoutes is { } cultureMap
+            ? $"{{ default: '{JsStr(cultureMap.Default)}', prefixed: ["
+              + string.Join(",", cultureMap.Prefixed.Select(p => $"'{JsStr(p)}'")) + "] }"
+            : "null";
+
         var configJson = $@"{{
             page: {pageValue},
             version: '{BuildId}',
             ssr: {ssrEnabled.ToString().ToLowerInvariant()},
             themeCookie: {themeCookieJson},
+            cultureRoutes: {cultureRoutesJson},
             routes: {routesJson}
         }}";
 
@@ -812,9 +887,46 @@ public static class UIExtensions
     /// an absence.
     /// </para>
     /// </summary>
+    /// <summary>
+    /// Puts the request's language on the canonical URL, when the app serves languages as a path
+    /// prefix. Idempotent — a canonical that already names a language has it replaced, not stacked
+    /// — and it only ever rewrites the PATH, so the scheme and host a page chose stay its own.
+    /// </summary>
+    private static void LocalizeCanonical(HttpContext context, UIOptions options, MetadataCollection metadata)
+    {
+        if (options.CultureRoutes is not { } map) return;
+        var culture = System.Globalization.CultureInfo.CurrentUICulture.Name;
+
+        foreach (var tag in metadata.Tags.OfType<LinkTag>().Where(t => t.Rel == "canonical").ToList())
+        {
+            var localized = LocalizeUrlPath(map, culture, tag.Href);
+            if (localized == tag.Href) continue;
+            metadata.AddOrUpdate(new LinkTag("canonical", localized));
+            metadata.AddOrUpdate(new PropertyMetaTag("og:url", localized));
+        }
+    }
+
+    /// <summary>The same URL with the language on its path. Absolute or rooted — an absolute one
+    /// keeps everything but the path.</summary>
+    private static string LocalizeUrlPath(CultureRouteMap map, string culture, string url)
+    {
+        if (url.StartsWith('/')) return map.PathFor(culture, url);
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var absolute)) return url;
+        if (absolute.Scheme is not ("http" or "https")) return url;
+        var builder = new UriBuilder(absolute) { Path = map.PathFor(culture, absolute.AbsolutePath) };
+        return builder.Uri.ToString();
+    }
+
     private static void AddAlternateLinks(HttpContext context, UIOptions options, SeoBuilder seo)
     {
-        if (options.AlternateUrl is not { } policy) return;
+        // Declared language prefixes ARE an alternate-URL policy — the map answers where every page
+        // lives in every language — so an app that asked for them gets the hreflang group for
+        // free, and its own policy still wins when it wrote one.
+        var policy = options.AlternateUrl
+            ?? (options.CultureRoutes is { } map
+                ? request => map.PathFor(request.Culture, request.Request.Path.HasValue ? request.Request.Path.Value! : "/")
+                : (Func<AlternateRequest, string?>?)null);
+        if (policy is null) return;
 
         var localization = context.RequestServices
             .GetService<Microsoft.Extensions.Options.IOptions<RequestLocalizationOptions>>()?.Value;
@@ -822,6 +934,7 @@ public static class UIExtensions
         // builds its options INLINE and registers nothing, so the container answers with the
         // invariant default — a single culture, and a head that comes out empty without saying why.
         var cultures = (options.AlternateCultures
+                ?? options.CultureRoutes?.All.ToList()
                 ?? localization?.SupportedUICultures?.Select(culture => culture.Name).ToList()
                 ?? [])
             .Where(name => name.Length > 0)
@@ -1013,6 +1126,50 @@ public class UIOptions
         AlternateCultures = cultures.Length > 0 ? cultures : null;
         return this;
     }
+
+    /// <summary>
+    /// Serve every page under a LANGUAGE PREFIX — <c>/pt-BR/pricing</c> — with the first culture
+    /// named here staying unprefixed.
+    /// <para>
+    /// One declaration reaches the three places that have to agree: the endpoints each page is
+    /// mapped at, the client route table the runtime navigates with, and the href every in-app
+    /// link carries. A prefix the app never named matches no endpoint, so it 404s rather than
+    /// serving one language under another language's URL.
+    /// </para>
+    /// <para>
+    /// Negotiation stays ASP.NET's: this configures the platform's own
+    /// <c>RequestLocalizationOptions</c> from the list (default, supported cultures, and its
+    /// <c>RouteDataRequestCultureProvider</c> first, reading the <c>{culture:culture}</c> segment)
+    /// and teaches the route constraint map the word <c>culture</c>. The app adds
+    /// <c>app.UseRequestLocalization()</c> and is done. An app that prefers the middleware's lambda
+    /// overload — which builds its options inline and sees nothing from DI — passes the same list
+    /// there with <see cref="CultureRouteExtensions.UseCultureRoutes(RequestLocalizationOptions, string[])"/>.
+    /// </para>
+    /// <para>
+    /// A bare URL asked for in a prefixed language (a cookie the switcher wrote, an Accept-Language)
+    /// is redirected to its prefixed address, so what a reader sees, shares and bookmarks always
+    /// names its language; and the <c>hreflang</c> group is emitted from the same map unless the
+    /// app declared its own policy with <see cref="UseAlternateLinks"/>.
+    /// </para>
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// builder.Services.AddUI(o => o.UseCultureRoutes("en", "pt-BR", "es"));
+    /// …
+    /// app.UseRequestLocalization();
+    /// app.MapUI();
+    /// </code>
+    /// </example>
+    public UIOptions UseCultureRoutes(params string[] cultures)
+    {
+        var map = CultureRouteMap.From(cultures);
+        CultureRoutes = map;
+        ServiceRegistrations.Add(services => services.AddCultureRoutes(map));
+        return this;
+    }
+
+    /// <summary>The language-prefix policy, or null when the app never asked for one.</summary>
+    public CultureRouteMap? CultureRoutes { get; private set; }
 
     /// <summary>The alternate-URL policy, or null when the app never set one. See
     /// <see cref="UseAlternateLinks"/>.</summary>

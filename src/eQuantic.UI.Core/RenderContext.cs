@@ -35,6 +35,38 @@ public class RenderContext
     /// </summary>
     public static void SetScopedRoute(RouteData? route) => _scopedRoute.Value = route;
 
+    private static readonly AsyncLocal<Func<string, string>?> _linkPolicy = new();
+
+    /// <summary>
+    /// What an in-app destination becomes on the way into an href, for THIS render.
+    /// <para>
+    /// It exists for one policy — the language prefix — and it lives here rather than in the link
+    /// node because the alternative is asking every author to remember it on every link. A site
+    /// with two hundred hrefs has two hundred chances to forget, and forgetting is silent: the
+    /// link works, it just leaves the language behind.
+    /// </para>
+    /// <para>
+    /// AsyncLocal, like the route and the provider beside it: two requests rendering concurrently
+    /// in different languages must not see each other's prefix.
+    /// </para>
+    /// </summary>
+    public static Func<string, string>? LinkPolicy => _linkPolicy.Value;
+
+    /// <inheritdoc cref="LinkPolicy"/>
+    public static void SetLinkPolicy(Func<string, string>? policy) => _linkPolicy.Value = policy;
+
+    /// <summary>The destination an href should carry — the policy's answer, or the destination
+    /// untouched when no policy is in force. Only APP-INTERNAL rooted paths are offered to it:
+    /// <c>//cdn</c>, <c>https://</c>, <c>#anchor</c> and <c>mailto:</c> belong to someone else.
+    /// </summary>
+    public static string ResolveDestination(string destination) =>
+        _linkPolicy.Value is { } policy
+        && destination.Length > 0
+        && destination[0] == '/'
+        && !destination.StartsWith("//", StringComparison.Ordinal)
+            ? policy(destination)
+            : destination;
+
     /// <summary>
     /// Service provider for the current async context.
     /// Uses AsyncLocal for thread-safe per-request isolation during SSR.

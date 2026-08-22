@@ -27,7 +27,13 @@ public static class AlternateUrls
     /// A segment that already names a culture is REPLACED rather than stacked, so the link is
     /// right whichever translation the visitor is currently reading.
     /// </summary>
-    public static Func<AlternateRequest, string?> PathPrefix(IEnumerable<string>? cultures = null)
+    /// <param name="cultures">The app's languages, so a segment is a culture because it was
+    /// DECLARED rather than because it looks like one — a page called <c>pt</c> is a page.</param>
+    /// <param name="defaultCulture">The language served with NO prefix, when the site keeps its
+    /// original URLs and prefixes only the translations. Its alternate is the bare path, and it is
+    /// the natural <c>x-default</c>. Omit it and every language is prefixed.</param>
+    public static Func<AlternateRequest, string?> PathPrefix(
+        IEnumerable<string>? cultures = null, string? defaultCulture = null)
     {
         var known = cultures?.ToHashSet(StringComparer.OrdinalIgnoreCase);
         return request =>
@@ -35,7 +41,8 @@ public static class AlternateUrls
             var path = request.Request.Path.HasValue ? request.Request.Path.Value! : "/";
             var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries).ToList();
             if (segments.Count > 0 && LooksLikeCulture(segments[0], known)) segments.RemoveAt(0);
-            segments.Insert(0, request.Culture);
+            if (!string.Equals(request.Culture, defaultCulture, StringComparison.OrdinalIgnoreCase))
+                segments.Insert(0, request.Culture);
             return Absolute(request.Request, "/" + string.Join('/', segments));
         };
     }

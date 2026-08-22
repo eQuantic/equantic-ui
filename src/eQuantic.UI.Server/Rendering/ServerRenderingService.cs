@@ -139,6 +139,14 @@ public class ServerRenderingService : IServerRenderingService
             // Where a component in the MIDDLE of the tree finds a capability — the REQUEST's
             // container, so a scoped one resolves and a page's own registrations win.
             Primitives.CapabilityScope.Current = context.RequestServices.GetService;
+            // Every in-app href picks up THIS request's language prefix. The culture is the one
+            // UseRequestLocalization negotiated — from the path segment first — so a page served
+            // at /pt-BR/pricing links to /pt-BR/about without any page saying so.
+            if (_options.CultureRoutes is { } cultureRoutes)
+            {
+                var culture = System.Globalization.CultureInfo.CurrentUICulture.Name;
+                RenderContext.SetLinkPolicy(path => cultureRoutes.PathFor(culture, path));
+            }
 
             try
             {
@@ -278,6 +286,7 @@ public class ServerRenderingService : IServerRenderingService
             {
                 RenderContext.SetScopedServiceProvider(null);
                 RenderContext.SetScopedRoute(null);
+                RenderContext.SetLinkPolicy(null);
                 Primitives.RouteValues.ClearCurrent();
                 Primitives.CapabilityScope.Current = null;
             }

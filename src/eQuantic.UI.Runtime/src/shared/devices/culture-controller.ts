@@ -16,6 +16,8 @@
  */
 
 import { setCulture, activeCulture } from '../../utils/culture';
+import { pathForCulture, splitCulturePath } from '../../utils/culture-routes';
+import { Navigator } from '../../router/navigator';
 
 const CULTURE_COOKIE = '.AspNetCore.Culture';
 const DEFAULT_DAYS = 365;
@@ -47,6 +49,20 @@ export class WebCultureController {
   apply(uiCulture: string, formatCulture?: string): void {
     const format = formatCulture && formatCulture.length > 0 ? formatCulture : uiCulture;
     this.remember(uiCulture, format);
+
+    // With the language in the URL, switching is a NAVIGATION — the page the reader is on has a
+    // different address in the new language, and re-rendering in place would leave them reading
+    // Portuguese at an English URL: wrong to share, wrong to bookmark, wrong to a crawler, and
+    // wrong again on the next refresh. The router does the swap, so it still costs no reload.
+    if (typeof window !== 'undefined') {
+      const here = window.location.pathname;
+      const [current] = splitCulturePath(here);
+      if (current !== '' && current !== uiCulture) {
+        Navigator.go(pathForCulture(uiCulture, here) + window.location.search + window.location.hash);
+        return;
+      }
+    }
+
     void setCulture(uiCulture, format);
   }
 

@@ -2022,6 +2022,9 @@ public static class WebRealizer
     private static HtmlElement LowerLink(Link link, ComponentContext context)
     {
         var fills = Fills(link.Child);
+        // The render's link policy — the language prefix, when the app asked for one. Applied HERE
+        // so an author writes `/pricing` once and the href is right in every language.
+        var destination = RenderContext.ResolveDestination(link.Destination);
         var element = new RealizedElement("a")
         {
             ClassName = "eq-link",
@@ -2031,7 +2034,7 @@ public static class WebRealizer
                 Height = fills.Height ? "100%" : null,
             },
             AriaLabel = link.Label,
-            RawAttributes = new Dictionary<string, string> { ["href"] = link.Destination },
+            RawAttributes = new Dictionary<string, string> { ["href"] = destination },
         };
         // Read by the router when it decides where the new page starts. On the anchor rather than in
         // a side table because the router meets the ANCHOR — a delegated click listener, one for the
@@ -2043,7 +2046,7 @@ public static class WebRealizer
         // worst case is the work the click was going to do anyway, done slightly earlier.
         //
         // App-internal destinations only: an absolute URL belongs to somebody else's server.
-        if (link.Destination.StartsWith('/')) element.RawAttributes["data-prefetch"] = "";
+        if (destination.StartsWith('/')) element.RawAttributes["data-prefetch"] = "";
         // The page you are ON. Only the current link carries it — aria-current="false" on the other
         // nine is legal, useless, and read out loud.
         if (link.Current) element.AriaCurrent = "page";
