@@ -38,14 +38,22 @@ public class OrderByStrategy : IConversionStrategy
                && inv.Expression is MemberAccessExpressionSyntax acc
                && OrderMethods.Contains(acc.Name.Identifier.Text))
         {
+            var method = acc.Name.Identifier.Text;
             if (inv.ArgumentList.Arguments.Count > 0)
             {
                 var selector = context.Converter.ConvertExpression(inv.ArgumentList.Arguments[0].Expression);
-                var descending = acc.Name.Identifier.Text.EndsWith("Descending");
+                var descending = method.EndsWith("Descending");
                 keys.Insert(0, (selector, descending)); // outer call = later (lower-priority) key
             }
             source = acc.Expression;
             current = acc.Expression;
+
+            // An OrderBy is a PRIMARY key: it does not refine the ordering under it, it REPLACES
+            // it. `xs.OrderBy(a).OrderBy(b)` sorts by b, and the a-ordering survives only as the
+            // tiebreak a stable sort gives it — so the chain is CUT here and what is under it
+            // becomes the source, which sorts itself. Composing both keys into one comparator is
+            // what ThenBy means, and it silently produced a different order.
+            if (!method.StartsWith("ThenBy", StringComparison.Ordinal)) break;
         }
 
         var src = context.Converter.ConvertExpression(source);

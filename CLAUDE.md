@@ -31,7 +31,11 @@ The flow:
 3. **Copilot reviews automatically.** ALWAYS go back and read its comments after opening the PR,
    and address them (fix, or reply saying why not). A PR is not done when it is opened.
 4. **Complete the PR yourself** once the review is clean and CI is green — that is what lands the
-   change on main.
+   change on main. The ruleset requires every review thread RESOLVED (not merely replied to), and
+   `gh pr merge` only says "the base branch policy prohibits the merge" when one is open. Resolving
+   is GraphQL-only: read `pullRequest.reviewThreads` for the unresolved id, then
+   `resolveReviewThread`. Copilot is not requested on open — it arrives on its own a few minutes
+   later, and asking for it fails, so wait rather than retry.
 5. **Cutting a version is OPTIONAL** and separate. Merging a PR does not imply a release. Bump and
    tag only when Edgar asks — see **Version Management** below for what a bump touches.
 

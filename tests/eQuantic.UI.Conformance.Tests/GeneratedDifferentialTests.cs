@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Text;
 using eQuantic.UI.Conformance.Tests.Infrastructure;
 using Xunit;
@@ -24,6 +25,12 @@ public class GeneratedDifferentialTests
     [InlineData(0xE0502u)]
     [InlineData(0xE0503u)]
     [InlineData(0xE0504u)]
+    // Four more batches once lists and LINQ chains joined the grammar: the surface the generator
+    // walks is much wider than it was, so the permanent sweep grew with it.
+    [InlineData(0xE0505u)]
+    [InlineData(0xE0506u)]
+    [InlineData(0xE0507u)]
+    [InlineData(0xE0508u)]
     public void GeneratedPrograms_MatchDotNet(uint batchSeed)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
@@ -72,6 +79,7 @@ public class GeneratedDifferentialTests
         private readonly List<string> _ints = [];
         private readonly List<string> _bools = [];
         private readonly List<string> _strings = [];
+        private readonly List<string> _lists = [];
 
         public string Generate()
         {
@@ -89,6 +97,16 @@ public class GeneratedDifferentialTests
             program.Append($"var {name0} = {BoolExpr(2)}; ");
             _bools.Add(name0);
 
+            var listCount = 1 + Pick(2);
+            for (var i = 0; i < listCount; i++)
+            {
+                var name = $"xs{i}";
+                var items = 2 + Pick(4);
+                var values = string.Join(", ", Enumerable.Range(0, items).Select(_ => Pick(20).ToString()));
+                program.Append($"var {name} = new[] {{ {values} }}; ");
+                _lists.Add(name);
+            }
+
             var stringCount = 1 + Pick(2);
             for (var i = 0; i < stringCount; i++)
             {
@@ -104,6 +122,7 @@ public class GeneratedDifferentialTests
             program.Append("var acc = 17; ");
             foreach (var n in _ints) program.Append($"acc = acc * 31 + {n}; ");
             foreach (var b in _bools) program.Append($"acc = acc * 2 + ({b} ? 1 : 0); ");
+            foreach (var xs in _lists) program.Append($"acc = acc * 7 + {IntChain(xs)}; ");
             var fold = new StringBuilder("return $\"{acc}");
             foreach (var s in _strings) fold.Append($"|{{{s}}}");
             fold.Append("\";");
@@ -114,8 +133,14 @@ public class GeneratedDifferentialTests
 
         private string Statement()
         {
-            switch (Pick(6))
+            switch (Pick(8))
             {
+                case 6:
+                    // A chain whose result feeds an accumulator: the interplay between operators is
+                    // what no hand-written case enumerates.
+                    return $"{IntVar()} += {IntChain(ListVar())}; ";
+                case 7:
+                    return $"{StringVar()} += string.Join(\"-\", {Chain(ListVar(), 1 + Pick(2))}); ";
                 case 0:
                     return $"if ({BoolExpr(2)}) {{ {IntVar()} += {IntExpr(1)}; }} else {{ {IntVar()} -= {IntExpr(1)}; }} ";
                 case 1:
@@ -135,6 +160,55 @@ public class GeneratedDifferentialTests
                 default:
                     return $"{BoolVar()} = !{BoolVar()} || {BoolExpr(1)}; ";
             }
+        }
+
+        private string ListVar() => _lists[Pick(_lists.Count)];
+
+        /// <summary>
+        /// A LINQ chain over a list, ending in something the fold can observe as an INT. Only
+        /// operators that are total are used: an empty sequence must not throw, so Max and Min go
+        /// through DefaultIfEmpty and First is always FirstOrDefault. Values stay small because
+        /// Enumerable.Sum is checked in .NET and would throw on overflow rather than diverge —
+        /// which would be the generator testing itself, not the compiler.
+        /// </summary>
+        private string IntChain(string source)
+        {
+            var chain = Chain(source, Pick(3));
+            return Pick(8) switch
+            {
+                0 => $"{chain}.Count()",
+                1 => $"{chain}.Sum()",
+                2 => $"{chain}.DefaultIfEmpty(0).Max()",
+                3 => $"{chain}.DefaultIfEmpty(0).Min()",
+                4 => $"{chain}.Aggregate(7, (a, b) => a % 1000 * 3 + b)",
+                5 => $"{chain}.FirstOrDefault()",
+                6 => $"{chain}.ElementAtOrDefault({Pick(4)})",
+                _ => $"({chain}.Any(x => x % {2 + Pick(4)} == 0) ? 1 : 0)",
+            };
+        }
+
+        /// <summary>A run of sequence-to-sequence operators. Every one of them is total and keeps
+        /// the element type an int, so any two compose and the result is always observable.</summary>
+        private string Chain(string source, int links)
+        {
+            var chain = source;
+            for (var i = 0; i < links; i++)
+            {
+                chain = Pick(10) switch
+                {
+                    0 => $"{chain}.Where(x => x % {2 + Pick(4)} != {Pick(2)})",
+                    1 => $"{chain}.Select(x => x * {1 + Pick(3)} + {Pick(5)})",
+                    2 => $"{chain}.Take({Pick(5)})",
+                    3 => $"{chain}.Skip({Pick(3)})",
+                    4 => $"{chain}.Distinct()",
+                    5 => $"{chain}.OrderBy(x => x % {2 + Pick(5)})",
+                    6 => $"{chain}.Reverse()",
+                    7 => $"{chain}.TakeWhile(x => x < {5 + Pick(15)})",
+                    8 => $"{chain}.Append({Pick(20)})",
+                    _ => $"{chain}.Concat({ListVar()})",
+                };
+            }
+            return chain;
         }
 
         private string IntVar() => _ints[Pick(_ints.Count)];
