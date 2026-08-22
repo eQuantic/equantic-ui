@@ -34,6 +34,10 @@ public static class Eq
     public const string Checked = "$eq.num.checked";
     /// <summary>A float as text: the shortest decimal that reads back as the same single.</summary>
     public const string Single = "$eq.num.single";
+    /// <summary>Substring that refuses an out-of-range index, the way .NET does.</summary>
+    public const string Substring = "$eq.text.substring";
+    /// <summary>A dictionary read that throws for a key that is not there.</summary>
+    public const string DictGet = "$eq.dictGet";
     /// <summary>LINQ Zip — pairs stop with the shorter sequence.</summary>
     public const string Zip = "$eq.zip";
     public const string Format = "$eq.text.format";

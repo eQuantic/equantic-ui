@@ -50,17 +50,20 @@ public class StringStrategyTests
     }
 
     [Fact]
-    public void Substring_OneArg_MapsToSlice()
+    public void Substring_OneArg_GoesThroughTheRuntime()
     {
+        // Not `.slice(5)`: JavaScript's own clamps an out-of-range index to an empty string where
+        // .NET throws, so the call went quiet in the browser and loud on the server.
         var result = TestHelper.ConvertExpression("str.Substring(5)");
-        result.Should().Be("this.str.slice(5)");
+        result.Should().Be("$eq.text.substring(this.str, 5)");
     }
 
     [Fact]
-    public void Substring_TwoArgs_MapsToSubstring()
+    public void Substring_TwoArgs_GoesThroughTheRuntime()
     {
+        // The runtime takes (start, LENGTH) as C# does, and refuses a range the string cannot give.
         var result = TestHelper.ConvertExpression("str.Substring(5, 10)");
-        result.Should().Be("this.str.substring(5, 5 + 10)");
+        result.Should().Be("$eq.text.substring(this.str, 5, 10)");
     }
 
     [Fact]

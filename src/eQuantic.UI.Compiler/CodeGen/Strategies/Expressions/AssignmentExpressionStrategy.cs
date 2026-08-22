@@ -43,6 +43,23 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
             }
         }
 
+        // A COMPOUND write to a dictionary entry READS it first, and .NET throws when the key is
+        // not there. Emitting `map[k] op= v` would answer undefined and walk it into the
+        // arithmetic; emitting the guarded read as the TARGET does not even parse. So it is
+        // lowered: read through the guard, write plainly. The template binds the receiver and the
+        // key once each, so neither is evaluated twice.
+        if (assignment.Left is ElementAccessExpressionSyntax { ArgumentList.Arguments.Count: 1 } target
+            && !assignment.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression)
+            && context.SemanticHelper.GetType(target.Expression).IsDictionaryLike(out _))
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var compound = assignment.OperatorToken.Text[..^1];
+            return JsExpr.Template($"{{0}}[{{1}}] = {Eq.DictGet}({{0}}, {{1}}) {compound} {{2}}",
+                context.Converter.ConvertIr(target.Expression),
+                context.Converter.ConvertIr(target.ArgumentList.Arguments[0].Expression),
+                context.Converter.ConvertIr(assignment.Right));
+        }
+
         var leftIr = context.Converter.ConvertIr(assignment.Left);
         var rightIr = context.Converter.ConvertIr(assignment.Right);
         var left = JsExprWriter.Write(leftIr);

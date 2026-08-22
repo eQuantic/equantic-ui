@@ -28,7 +28,7 @@ import {
   trailingZeroCount64,
   log2Of64,
 } from './utils/bits';
-import { checked, single } from './utils/overflow';
+import { checked, dictGet, single, substring } from './utils/overflow';
 import { format, parseEnum, stringFormat } from './utils/format';
 import { str } from './utils/culture';
 import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './utils/datetime';
@@ -154,7 +154,9 @@ export const $eq = {
     log2Of64,
   },
   /** Text: number/string formatting and StringBuilder. */
-  text: { format, stringFormat, stringBuilder },
+  text: { format, stringFormat, stringBuilder, substring },
+  /** A dictionary read that fails on a missing key, the way .NET does. */
+  dictGet,
   /** Date and time, tick-precise. */
   time: { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset },
   /** Enum parsing (member-name string). */

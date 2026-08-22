@@ -60,7 +60,7 @@ public class Users : StatelessComponent
 
         // An emitted-but-empty static would fail just as silently as a missing one.
         ts.Should().Contain("static initials(");
-        ts.Should().Contain("return name.substring(");
+        ts.Should().Contain("return $eq.text.substring(name, 0, 1);");
     }
 
     /// <remarks>

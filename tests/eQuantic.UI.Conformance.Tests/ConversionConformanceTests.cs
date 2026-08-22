@@ -37,6 +37,24 @@ public class ConversionConformanceTests
         "double d = 3.99; int i = (int)d; return i;",                              // 3
         "double d = -3.99; int i = (int)d; return i;",                             // -3
         "int big = int.MaxValue; int r = big + 1; return r;",                      // -2147483648 (wraps)
+        // An ARRAY INDEX out of range throws in .NET and answers undefined here. Substring and a
+        // missing dictionary key were fixed to fail where .NET fails; this one is not, and the
+        // reason is cost: it would put a bounds check on EVERY index in every loop the framework
+        // emits, and an index out of range is a defect the server catches on the same code path.
+        // Recorded so the limit is known rather than discovered.
+        "try { var bad = (new int[1])[5]; return 1; } catch { return -1; }",          // -1 in .NET; undefined here
+        "var xs = new[]{1,2}; try { var v = xs[9]; return 1; } catch { return -1; }", // same, through a variable
+        // ++ and -- on a MISSING key: .NET reads first and throws, and a plain object increments an
+        // undefined into NaN and creates the key. `+=` and `??=` ARE lowered — read through the
+        // guard, write the result — because their value IS the result.
+        //
+        // The POSTFIX form's value is the value BEFORE the write, which the template cannot
+        // express. The PREFIX form's is the result, so it could be lowered the same way as `+=`
+        // and simply has not been; both are pinned here so neither drifts, and closing the prefix
+        // one should take the postfix out of this list only if it finds a shape for it too.
+        "var m = new Dictionary<string, int>(); try { m[\"gone\"]++; return 1; } catch { return -1; }",
+        "var m = new Dictionary<string, int>(); try { ++m[\"gone\"]; return 1; } catch { return -1; }",
+        "var m = new Dictionary<string, int>(); try { --m[\"gone\"]; return 1; } catch { return -1; }",
         "int big = int.MaxValue; long r = big + 1L; return r.ToString();",         // "2147483648" — widened first
         "byte b = 250; b += 10; return b;",                                        // 4 (wraps at 256)
         "short s = 32767; s++; return s;",                                         // -32768
