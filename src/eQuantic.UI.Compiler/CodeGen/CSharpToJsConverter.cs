@@ -140,7 +140,6 @@ public class CSharpToJsConverter
         // Compile-Time Evaluation Strategy (Highest Priority - 100)
         _strategyRegistry.Register<CompileTimeEvaluatedExpressionStrategy>();
 
-        _strategyRegistry.Register<AnyStrategy>();
         _strategyRegistry.Register<EnumStrategy>();
         _strategyRegistry.Register<EnumMethodStrategy>();
         _strategyRegistry.Register<EnumHasFlagStrategy>();
@@ -157,13 +156,10 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<DefaultKeywordStrategy>(); // Priority 15
         
         // LINQ Strategies
-        _strategyRegistry.Register<SelectStrategy>();
-        _strategyRegistry.Register<WhereStrategy>();
         _strategyRegistry.Register<QueryExpressionStrategy>();
         _strategyRegistry.Register<FirstStrategy>();
         _strategyRegistry.Register<LastStrategy>();
         _strategyRegistry.Register<SingleStrategy>();
-        _strategyRegistry.Register<AllStrategy>();
         _strategyRegistry.Register<CountStrategy>();
         _strategyRegistry.Register<OrderByStrategy>();
         _strategyRegistry.Register<SkipStrategy>();
@@ -174,7 +170,6 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<SumStrategy>();
         _strategyRegistry.Register<AverageStrategy>();
         _strategyRegistry.Register<MinMaxStrategy>();
-        _strategyRegistry.Register<ReverseStrategy>();
         _strategyRegistry.Register<GroupByStrategy>();
         _strategyRegistry.Register<AggregateStrategy>();
         _strategyRegistry.Register<ToDictionaryStrategy>();
@@ -183,7 +178,6 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<JoinStrategy>();
         _strategyRegistry.Register<GroupJoinStrategy>();
         _strategyRegistry.Register<ZipStrategy>();
-        _strategyRegistry.Register<ConcatStrategy>();
         _strategyRegistry.Register<UnionStrategy>();
         _strategyRegistry.Register<IntersectStrategy>();
         _strategyRegistry.Register<ExceptStrategy>();
@@ -203,7 +197,8 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<StringStaticStrategy>(); // New Phase 7
         _strategyRegistry.Register<PrimitiveStaticStrategy>(); // .NET 7+ statics on the primitives themselves
         _strategyRegistry.Register<BclSurfaceTailStrategy>();  // instance tail: Equals/String/Dictionary/List QoL
-        _strategyRegistry.Register<LinqSurfaceTailStrategy>(); // modern Enumerable tail (Append, Order, *By, …)
+        _strategyRegistry.Register<ReverseStrategy>();
+        _strategyRegistry.Register<LinqTableStrategy>(); // the LINQ surface as a table of shapes
         _strategyRegistry.Register<ListMethodStrategy>();
         _strategyRegistry.Register<ArrayStaticStrategy>();
 

@@ -5,20 +5,22 @@ using eQuantic.UI.Compiler.CodeGen.Ir;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
 /// <summary>
-/// The modern tail of the Enumerable surface — <c>Append</c>, <c>SkipLast</c>, <c>ToHashSet</c>,
-/// <c>Order</c>, <c>ExceptBy</c>… — one symbol-first, table-driven strategy instead of thirteen
-/// more single-operator files. Same doctrine as PrimitiveStaticStrategy: a member translates only
-/// when the table names it AND the symbol binds to System.Linq, every argument evaluates exactly
-/// once (receiver-reusing shapes go through an arrow), and what the table doesn't name stays
-/// visibly fenced in the audit baseline (<c>Shuffle</c> is RANDOM, <c>Index</c> yields tuples —
-/// deliberately absent).
+/// The LINQ surface as a TABLE: one entry per (operator, argument count), giving the JavaScript
+/// shape and nothing else. The gate — an invocation through a member access, bound by the model to
+/// a LINQ extension, or claimed by name only where there is no model to ask — is written once
+/// here, which is what forty individual strategies were each repeating around two lines of shape.
 /// <para>
-/// <c>Order</c>/<c>OrderDescending</c> use the generic ordinal comparator — culture-sensitive
-/// string ordering is out of scope by standing policy (see the runtime's sorted.ts), exactly as
-/// OrderBy already behaves.
+/// The shape is a <see cref="JsExpr.Template(string, IReadOnlyList{JsExpr})"/>, so a receiver used
+/// twice is bound to a temporary and evaluated once, and the IR writer punctuates: an entry cannot
+/// forget a parenthesis or evaluate a source twice, because it never writes either.
+/// </para>
+/// <para>
+/// An operator that has to REASON — about the element type (the OrDefault family), the semantic
+/// model (Cast, OfType), or a runtime helper of its own (Zip, GroupBy) — keeps its own strategy.
+/// That is what a strategy is for; a table entry is for a shape.
 /// </para>
 /// </summary>
-public class LinqSurfaceTailStrategy : IExpressionIrStrategy
+public class LinqTableStrategy : IExpressionIrStrategy
 {
     public int Priority => 12;
 
@@ -28,8 +30,12 @@ public class LinqSurfaceTailStrategy : IExpressionIrStrategy
         if (!invocation.TryGetInstanceCall(out _, out var name)) return false;
         if (Template(name.Identifier.Text, invocation.ArgumentList.Arguments.Count) is null) return false;
 
-        return context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol method
-            && context.SemanticHelper.IsLinqExtension(method.ContainingType);
+        // The SYMBOL decides when there is one; a NAME may decide only where the model cannot be
+        // asked at all (CanGuess — the documented policy). Claiming by name FIRST and checking the
+        // symbol afterwards is how a call gets refused after its receiver was already emitted.
+        var symbol = context.SemanticHelper.GetSymbol(invocation);
+        if (symbol is IMethodSymbol method) return context.SemanticHelper.IsLinqExtension(method.ContainingType);
+        return symbol is null && context.CanGuess(node);
     }
 
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
@@ -51,6 +57,21 @@ public class LinqSurfaceTailStrategy : IExpressionIrStrategy
 
     private static string? Template(string name, int argCount) => (name, argCount) switch
     {
+        // Filtering, projection and quantifiers map one-for-one onto the array methods. These
+        // arrived here from a strategy each, whose twenty lines of gate said what the gate above
+        // now says once; the shape is what was actually theirs.
+        ("Where", 1) => "{0}.filter({1})",
+        ("Where", 0) => "{0}.filter(x => true)",
+        ("Select", 1) => "{0}.map({1})",
+        ("Select", 0) => "{0}.map(x => x)",
+        ("Any", 1) => "{0}.some({1})",
+        ("Any", 0) => "({0}.length > 0)",
+        ("All", 1) => "{0}.every({1})",
+        ("All", 0) => "{0}.every(x => true)",
+        ("Concat", 1) => "[...{0}, ...{1}]",
+        // Reverse is deliberately NOT here: `List<T>.Reverse()` is an INSTANCE method that
+        // reverses in place and returns void, and only `Enumerable.Reverse()` returns a new
+        // sequence. One name, two meanings decided by the receiver — a reason, not a shape.
         ("Append", 1) => "[...{0}, {1}]",
         ("Prepend", 1) => "[{1}, ...{0}]",
         ("AsEnumerable", 0) => "{0}",

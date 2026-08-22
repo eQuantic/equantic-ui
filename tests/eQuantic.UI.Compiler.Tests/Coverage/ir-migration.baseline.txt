@@ -1,8 +1,6 @@
 AddChildStrategy
 AggregateStrategy
-AllStrategy
 AnonymousObjectCreationStrategy
-AnyStrategy
 ArrayCreationStrategy
 ArrayStaticStrategy
 AsExpressionStrategy
@@ -15,7 +13,6 @@ ChunkStrategy
 CollectionExpressionStrategy
 CollectionMaterializationStrategy
 CompileTimeEvaluatedExpressionStrategy
-ConcatStrategy
 ConditionalAccessStrategy
 ConsoleStrategy
 ContainsStrategy
@@ -76,7 +73,6 @@ ResourceAccessorStrategy
 ReverseStrategy
 RuntimeUtilityStrategy
 SelectManyStrategy
-SelectStrategy
 SequenceEqualStrategy
 ServiceProviderStrategy
 SingleStrategy
@@ -106,6 +102,5 @@ UnionStrategy
 UnsupportedConstructStrategy
 ValueKeyedDictionaryStrategy
 WebPrimitiveStrategy
-WhereStrategy
 WithExpressionStrategy
 ZipStrategy
