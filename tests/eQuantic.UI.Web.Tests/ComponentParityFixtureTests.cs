@@ -103,8 +103,13 @@ public class ComponentParityFixtureTests
             "component-parity.fixture.json");
     }
 
-    /// <summary>The smallest JSON writer that produces exactly what JSON.stringify(x, null, 2)
-    /// produces — the fixture has to be diffable and byte-comparable from both sides.</summary>
+    /// <summary>
+    /// The smallest JSON writer that gives the fixture a STABLE, diffable shape: two-space indent,
+    /// entries in insertion order, one trailing newline. It is byte-compared against the committed
+    /// file by this side only — the twin imports the fixture as parsed JSON, so escaping choices
+    /// (System.Text.Json escapes more than JSON.stringify does) change how it READS, never whether
+    /// the two sides agree.
+    /// </summary>
     private abstract class JsonValue
     {
         public static JsonValue Text(string value) => new JsonText(value);
@@ -149,7 +154,20 @@ public class ComponentParityFixtureTests
     private sealed class JsonObject : JsonValue
     {
         private readonly List<(string Key, JsonValue Value)> _entries = [];
-        public JsonValue this[string key] { set => _entries.Add((key, value)); }
+
+        /// <summary>Appends, and REFUSES a repeat: two entries under one key is duplicate keys in
+        /// the output, which is not canonical and which a reader would never see. For the case
+        /// names it means a copy-pasted name fails here instead of quietly covering nine
+        /// components while claiming ten.</summary>
+        public JsonValue this[string key]
+        {
+            set
+            {
+                if (_entries.Any(entry => entry.Key == key))
+                    throw new InvalidOperationException($"duplicate key '{key}' in the parity fixture");
+                _entries.Add((key, value));
+            }
+        }
 
         public override void Write(StringBuilder builder, int indent)
         {
