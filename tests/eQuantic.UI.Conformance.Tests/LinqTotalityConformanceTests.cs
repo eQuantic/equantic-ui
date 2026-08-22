@@ -74,4 +74,48 @@ public class LinqTotalityConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertSameAsDotNet(expression);
     }
+
+    /// <summary>
+    /// The operators that had exactly ONE case before slice (1) of the coverage plan. One case
+    /// proves the happy path and nothing else, and the edges are where a JavaScript array and a
+    /// .NET sequence part company: a JS `reverse`/`sort` MUTATES its receiver where LINQ never
+    /// touches the source, an empty sequence makes `All` vacuously true, a count outside the
+    /// sequence is clamped rather than an error, ties keep the FIRST element met, and `OrderBy` is
+    /// stable. Statement-shaped so the source can be inspected after the operator ran.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var a = new[]{1,2,3}; var r = a.Reverse().ToList(); return a[0] + \",\" + r[0];")]
+    [InlineData("var a = new[]{3,1,2}; var r = a.Order().ToList(); return a[0] + \",\" + r[0];")]
+    [InlineData("var a = new[]{3,1,2}; var r = a.OrderDescending().ToList(); return a[0] + \",\" + r[0];")]
+    [InlineData("var a = new[]{1,2}; var r = a.Append(3).ToList(); return a.Length + \",\" + r.Count;")]
+    [InlineData("var a = new[]{1,2}; var r = a.Prepend(0).ToList(); return a.Length + \",\" + r.Count;")]
+    [InlineData("return new[]{1,2,3}.Skip(9).Count();")]                          // 0
+    [InlineData("return new[]{1,2,3}.Skip(-1).Count();")]                         // 3
+    [InlineData("return new[]{1,2,3}.Take(9).Count();")]                          // 3
+    [InlineData("return new[]{1,2,3}.Take(-1).Count();")]                         // 0
+    [InlineData("return string.Join(\",\", new[]{1,2,3,4}.Skip(1).Take(2));")]    // "2,3"
+    [InlineData("return new int[0].All(x => x > 100);")]                          // true
+    [InlineData("return new int[0].Any();")]                                      // false
+    [InlineData("return new[]{1,2,3}.SkipWhile(x => x > 100).Count();")]          // 3
+    [InlineData("return new[]{1,2,3}.TakeWhile(x => x > 100).Count();")]          // 0
+    [InlineData("return new[]{\"bb\",\"aa\",\"c\"}.MaxBy(s => s.Length);")]      // "bb"
+    [InlineData("return new[]{\"c\",\"bb\",\"a\"}.MinBy(s => s.Length);")]       // "c"
+    [InlineData("return string.Join(\",\", new[]{\"ax\",\"ay\",\"b\"}.DistinctBy(s => s[0]));")] // "ax,b"
+    [InlineData("return string.Join(\",\", new[]{\"bb\",\"aa\",\"cc\",\"d\"}.OrderBy(s => s.Length));")] // "d,bb,aa,cc"
+    [InlineData("return string.Join(\",\", new[]{31,12,21,11}.OrderBy(x => x % 10));")]                     // "31,21,11,12"
+    [InlineData("return string.Join(\",\", new[]{\"aa\",\"bb\"}.UnionBy(new[]{\"ac\",\"cc\"}, s => s[0]));")]     // "aa,bb,cc"
+    [InlineData("return string.Join(\",\", new[]{\"aa\",\"bb\"}.IntersectBy(new[]{'a'}, s => s[0]));")]              // "aa"
+    [InlineData("return string.Join(\",\", new[]{\"aa\",\"bb\"}.ExceptBy(new[]{'a'}, s => s[0]));")]                 // "bb"
+    [InlineData("return string.Join(\"|\", new[]{1,2,3,4,5}.Chunk(2).Select(c => string.Join(\",\", c)));")] // "1,2|3,4|5"
+    [InlineData("return new[]{1,2,2,3}.ToHashSet().Count;")]                       // 3
+    [InlineData("return new[]{1,2}.ToDictionary(x => x, x => x * 10).Count;")]     // 2
+    [InlineData("return new[]{1,2,3}.Zip(new[]{10,20}, (a, b) => a + b).Count();")] // 2 — the shorter wins
+    [InlineData("return string.Join(\",\", new[]{1,2}.SelectMany((x, i) => new[]{x, i}));")] // "1,0,2,1"
+    [InlineData("return new[]{1,2,3}.ElementAt(1);")]                              // 2
+    [InlineData("return new[]{1,2,3}.Last(x => x < 3);")]                          // 2
+    public void LinqEdges_MatchDotNet(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
 }

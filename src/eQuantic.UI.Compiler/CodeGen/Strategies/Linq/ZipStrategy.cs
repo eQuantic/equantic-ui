@@ -26,10 +26,10 @@ public class ZipStrategy : IConversionStrategy
             var second = context.Converter.ConvertExpression(args[0].Expression);
             var resultSelector = context.Converter.ConvertExpression(args[1].Expression);
             
-            // source.map((e, i) => resultSelector(e, second[i]))
-            // Only if second is array accessable. If iterable, harder.
-            // Assuming array for UI simplified compilation.
-            return $"{source}.map((e, i) => ({resultSelector})(e, {second}[i]))";
+            // A map over the receiver walks the LONGER sequence and hands the selector undefined
+            // for the missing partner — a silent NaN for numbers. LINQ stops with the shorter.
+            context.UsedHelpers.Add(Eq.Import);
+            return $"{Eq.Zip}({source}, {second}, {resultSelector})";
         }
         
         return source;

@@ -36,13 +36,15 @@ public class AdvancedLinqTests
         Assert.Matches(@"(x\.type|x\.Type)", js);
     }
     
+    /// <summary>Zip stops with the SHORTER sequence. It used to map over the receiver, which walks
+    /// the longer one and hands the selector undefined for the missing partner — a silent NaN for
+    /// numbers — so the shape this asserts changed with the behaviour.</summary>
     [Fact]
-    public void Zip_ConvertsToMap()
+    public void Zip_StopsWithTheShorterSequence()
     {
-        var code = "list.Zip(other, (a, b) => a + b)";
-        var js = ConvertExpression(code);
-        Assert.Contains("list.map((e, i) =>", js);
-        Assert.Contains("other[i]", js);
+        var js = ConvertExpression("list.Zip(other, (a, b) => a + b)");
+        Assert.Contains("$eq.zip(list, other,", js);
+        Assert.DoesNotContain("[i]", js);
     }
 
     private string ConvertExpression(string code)

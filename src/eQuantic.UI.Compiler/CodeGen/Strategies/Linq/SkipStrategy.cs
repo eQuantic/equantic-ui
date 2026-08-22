@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -47,11 +48,20 @@ public class SkipStrategy : IConversionStrategy
         if (args.Count > 0)
         {
             var count = context.Converter.ConvertExpression(args[0].Expression);
-            return $"{caller}.slice({count})";
+            // A negative count skips NOTHING in .NET; in JavaScript it slices from the END, so
+            // `Skip(-1)` quietly returned just the last element. A literal count needs no guard.
+            return NonNegativeLiteral(count)
+                ? $"{caller}.slice({count})"
+                : $"{caller}.slice(Math.max(0, {count}))";
         }
 
         return caller;
     }
+
+    /// <summary>Whether the emitted count is a literal that cannot be negative — the common
+    /// case, which keeps its plain slice.</summary>
+    private static bool NonNegativeLiteral(string count) =>
+        count.Length > 0 && count.All(char.IsAsciiDigit);
 
     public int Priority => 10;
 }

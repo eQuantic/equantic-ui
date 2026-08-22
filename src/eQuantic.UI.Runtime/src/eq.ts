@@ -42,6 +42,7 @@ import {
   count,
   setAdd,
   entries,
+  zip,
 } from './utils/collections';
 import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
 import { liftArith, liftCmp } from './utils/nullable';
@@ -110,6 +111,8 @@ export const $eq = {
   str,
   /** Dictionary enumeration for transpiled foreach/List-copy — see utils/collections. */
   entries,
+  /** LINQ Zip: pairs stop with the shorter sequence. */
+  zip,
   /** C# `with` over a runtime value type — prototype preserved. */
   withPatch,
   /** C# range indexing whose endpoints count from the end — see `slice`. */

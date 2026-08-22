@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -47,11 +48,20 @@ public class TakeStrategy : IConversionStrategy
         if (args.Count > 0)
         {
             var count = context.Converter.ConvertExpression(args[0].Expression);
-            return $"{caller}.slice(0, {count})";
+            // A negative count takes NOTHING in .NET; in JavaScript it slices from the END, so
+            // `Take(-1)` quietly dropped the last element. A literal count needs no guard.
+            return NonNegativeLiteral(count)
+                ? $"{caller}.slice(0, {count})"
+                : $"{caller}.slice(0, Math.max(0, {count}))";
         }
 
         return caller;
     }
+
+    /// <summary>Whether the emitted count is a literal that cannot be negative — the common
+    /// case, which keeps its plain slice.</summary>
+    private static bool NonNegativeLiteral(string count) =>
+        count.Length > 0 && count.All(char.IsAsciiDigit);
 
     public int Priority => 10;
 }

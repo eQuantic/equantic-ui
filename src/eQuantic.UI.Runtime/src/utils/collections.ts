@@ -336,6 +336,18 @@ export function contains(collection: unknown, value: unknown): boolean {
  * `if (!set.Add(x)) set.Remove(x)` toggles. A JS `Set.add` returns the set itself, always truthy,
  * so that idiom silently became "add, and never remove".
  */
+/**
+ * LINQ's Zip: pairs run out with the SHORTER sequence. A `map` over the receiver instead walks the
+ * longer one and hands the selector `undefined` for the missing partner, which for numbers is a
+ * silent NaN. Both sources are read once here, so a side-effecting source stays a single read.
+ */
+export function zip<A, B, R>(first: readonly A[], second: readonly B[], selector: (a: A, b: B) => R): R[] {
+  const length = Math.min(first.length, second.length);
+  const result: R[] = new Array(length);
+  for (let i = 0; i < length; i++) result[i] = selector(first[i], second[i]);
+  return result;
+}
+
 export function setAdd<T>(set: Set<T>, value: T): boolean {
   if (set.has(value)) return false;
   set.add(value);
