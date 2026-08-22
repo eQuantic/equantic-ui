@@ -1,4 +1,5 @@
 import { TypeRoleValue } from "@equantic/runtime";
+
 export class MarkdownStyle {
     constructor(props?: any) {
         if (props && typeof props === 'object') Object.assign(this, props);

@@ -1,4 +1,5 @@
 import { MermaidNode } from "@equantic/runtime";
+
 export class MermaidPlacedNode {
     constructor(props?: any) {
         if (props && typeof props === 'object') Object.assign(this, props);

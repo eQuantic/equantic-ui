@@ -1,4 +1,5 @@
 import { $eq, CellRef, SheetCellSnapshot } from "@equantic/runtime";
+
 export class SheetDocument {
     constructor(rows: number = 1000, cols: number = 26, props?: any) {
         this._cells = {}; this._rowHeights = {}; this._colWidths = {}; this.rows = Math.max(1, rows);

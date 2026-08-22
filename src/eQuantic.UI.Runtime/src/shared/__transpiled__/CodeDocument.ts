@@ -1,4 +1,5 @@
 import { $eq, CodePosition, CodeRange } from "@equantic/runtime";
+
 export class CodeDocument {
     constructor(lines: string[], props?: any) {
         this._lines = lines; if (props && typeof props === 'object') Object.assign(this, props);

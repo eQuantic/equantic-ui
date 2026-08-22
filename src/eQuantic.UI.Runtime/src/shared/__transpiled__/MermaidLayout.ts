@@ -1,4 +1,5 @@
 import { MermaidArrowhead, MermaidCurve, MermaidEdge, MermaidGraph, MermaidLabel, MermaidNode, MermaidPlacedNode, MermaidScene, MermaidSegment } from "@equantic/runtime";
+
 export class MermaidLayout {
     static nodeHeight: number = 36;
     static rankGap: number = 48;

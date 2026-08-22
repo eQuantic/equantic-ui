@@ -29,13 +29,6 @@ public class TypeScriptCodeBuilder
 
     public List<SourceMapping> GetMappings() => _mappings;
 
-    public void Import(IEnumerable<string> items, string from)
-    {
-        if (!items.Any()) return;
-        var sortedItems = items.OrderBy(i => i);
-        Write($"import {{ {string.Join(", ", sortedItems)} }} from \"{from}\";");
-    }
-
     public void Class(string name, string? baseClass, Action<ClassBuilder> buildAction, IEnumerable<string>? typeParameters = null, SyntaxNode? sourceNode = null, bool export = true, bool isAbstract = false)
     {
         if (sourceNode != null) RecordMapping(sourceNode);

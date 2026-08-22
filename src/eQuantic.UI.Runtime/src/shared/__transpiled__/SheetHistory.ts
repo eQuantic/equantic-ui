@@ -1,4 +1,5 @@
 import { SheetEdit } from "@equantic/runtime";
+
 export class SheetHistory {
     constructor(props?: any) {
         this._undo = []; this._redo = [];  if (props && typeof props === 'object') Object.assign(this, props);

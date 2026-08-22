@@ -1,4 +1,5 @@
 import { SheetCellSnapshot, SheetEditKindValue, SheetRange } from "@equantic/runtime";
+
 export class SheetEdit {
     constructor(props?: any) {
         if (props && typeof props === 'object') Object.assign(this, props);

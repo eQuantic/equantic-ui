@@ -1,4 +1,5 @@
 import { MarkdownCell, MarkdownListItem, MarkdownRow, MarkdownRun } from "@equantic/runtime";
+
 export class MarkdownBlock {
     constructor(props?: any) {
         if (props && typeof props === 'object') Object.assign(this, props);

@@ -1,4 +1,5 @@
 import { $eq, CodeDirectionValue, CodeDocument, CodeEdit, CodeHighlighter, CodeHistory, CodeLanguageRules, CodeLanguages, CodeMotionValue, CodePosition, CodeRange } from "../runtime-exports";
+
 export class CodeEditorController {
     constructor(text: string = '', language: any = null, props?: any) {
         this._desiredColumn = -1; this._document = CodeDocument.fromText(text);

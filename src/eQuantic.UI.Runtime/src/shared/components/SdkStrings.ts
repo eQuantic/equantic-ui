@@ -1,4 +1,5 @@
 import { $eq } from "../runtime-exports";
+
 export class SdkStrings {
     static get dismiss(): string {
         return $eq.str("SdkResources", "Dismiss");

@@ -1,4 +1,5 @@
 import { CodeLanguageRules, CodeToken } from "../runtime-exports";
+
 export class JsonLanguage {
     constructor(props?: any) {
         if (props && typeof props === 'object') Object.assign(this, props);

@@ -1,4 +1,5 @@
 import { CodeToken } from "../runtime-exports";
+
 export class PlainTextLanguage {
     constructor(props?: any) {
         if (props && typeof props === 'object') Object.assign(this, props);

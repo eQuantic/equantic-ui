@@ -1,4 +1,5 @@
 import { FieldRule, FormField } from "@equantic/runtime";
+
 export class Rules {
     static required(message: string = 'This field is required.') {
         return new FieldRule(message, (value: string) => value.trim().length > 0);

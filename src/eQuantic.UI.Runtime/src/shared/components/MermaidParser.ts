@@ -1,4 +1,5 @@
 import { MermaidEdge, MermaidEdgeRef, MermaidGraph, MermaidMessage, MermaidNode, MermaidNodeRef } from "../runtime-exports";
+
 export class MermaidParser {
     static _skipWords: string[] | undefined;
 

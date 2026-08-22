@@ -1,4 +1,5 @@
 import { $eq, MarkdownBlock, MarkdownBulletMatch, MarkdownCell, MarkdownLinkMatch, MarkdownListItem, MarkdownRow, MarkdownRun } from "@equantic/runtime";
+
 export class MarkdownParser {
     static parse(source: string) {
         let blocks: MarkdownBlock[] = [];

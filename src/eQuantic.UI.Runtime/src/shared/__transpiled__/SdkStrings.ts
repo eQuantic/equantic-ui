@@ -1,4 +1,5 @@
 import { $eq } from "@equantic/runtime";
+
 export class SdkStrings {
     static get dismiss(): string {
         return $eq.str("SdkResources", "Dismiss");

@@ -1,4 +1,5 @@
 import { MermaidEdge, MermaidMessage, MermaidNode } from "../runtime-exports";
+
 export class MermaidGraph {
     constructor(props?: any) {
         if (props && typeof props === 'object') Object.assign(this, props);

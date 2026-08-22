@@ -500,10 +500,10 @@ public class TypeScriptEmitter
 
         // Generate imports based on populated UsedHelpers. The emitted body is the authority on what is
         // actually referenced, so it is passed in to drop imports the scan over-collected.
-        var importsCode = GenerateImports(component, nestedCode + componentCode);
+        var imports = Imports(component, nestedCode + componentCode);
 
         // Return imports + nested scope classes + component code
-        return importsCode + "\n" + nestedCode + componentCode;
+        return JsModuleWriter.Write(new JsModule(imports, nestedCode + componentCode));
     }
     
     /// <summary>Every identifier the emitted body mentions — the authority on which imports are live.</summary>
@@ -518,7 +518,9 @@ public class TypeScriptEmitter
     /// resolver's transitive closure) so nothing needed is ever missed; filtering the result against what
     /// the body actually mentions removes the over-collection instead of narrowing the scan and risking a
     /// missing import — an unused import is only a warning, a missing one is a runtime "X is not defined".</param>
-    private string GenerateImports(ComponentDefinition component, string emittedBody)
+    /// <summary>What the module imports, as records — the runtime's names first, then one sibling
+    /// module per user type the body references. A decision that comes out as data, not as lines.</summary>
+    private IReadOnlyList<JsImport> Imports(ComponentDefinition component, string emittedBody)
     {
         var referenced = ReferencedIdentifiers(emittedBody);
         // A type this module DECLARES is not a type this module imports. The nested `Copy` classes
@@ -779,8 +781,8 @@ public class TypeScriptEmitter
         }
 
         // Create a temporary builder for imports only
-        var importsBuilder = new TypeScriptCodeBuilder();
-        importsBuilder.Import(coreImports.Where(referenced.Contains), "@equantic/runtime");
+        var imports = new List<JsImport>();
+        imports.Add(new JsImport(coreImports.Where(referenced.Contains).ToList(), "@equantic/runtime"));
 
         // Import user types that we actually emit as their own module: UI components AND data records
         // (each gets a generated .ts file). The set is discovered by scanning the project — no fixed
@@ -801,10 +803,10 @@ public class TypeScriptEmitter
             // above the component, so `from "./Copy"` names a module nobody writes.
             if (declaredHere.Contains(userComp))
                 continue;
-            importsBuilder.Import(new[] { userComp }, $"./{userComp}");
+            imports.Add(new JsImport([userComp], $"./{userComp}"));
         }
 
-        return importsBuilder.ToString();
+        return imports;
     }
     
     /// <summary>The JS literal for C#'s implicit <c>default(T)</c> on a FIELD with no initializer —
@@ -1781,7 +1783,7 @@ public class TypeScriptEmitter
         // Imports: $eq (if used) + runtime-provided references (the same semantic routing components
         // get — a static helper composing the shared vocabulary/library imports it from the runtime)
         // + any record/component/static-helper this class references as per-app modules.
-        var ib = new TypeScriptCodeBuilder();
+        var imports = new List<JsImport>();
         var core = new HashSet<string>(_converter.UsedHelpers);
         var runtimeProvided = new HashSet<string>();
         var referencedEnums = new HashSet<string>();
@@ -1801,14 +1803,14 @@ public class TypeScriptEmitter
         runtimeProvided.RemoveWhere(referenced => !System.Text.RegularExpressions.Regex.IsMatch(
             emitted, $@"(?<![\w$]){System.Text.RegularExpressions.Regex.Escape(referenced)}(?![\w$])"));
         core.UnionWith(runtimeProvided);
-        if (core.Count > 0) ib.Import(core, "@equantic/runtime");
+        if (core.Count > 0) imports.Add(new JsImport(core.ToList(), "@equantic/runtime"));
         var knownComp = _dependencyResolver?.GetAllComponents().ToHashSet() ?? new HashSet<string>();
         var knownRec = _dependencyResolver?.GetAllRecords() ?? (IReadOnlySet<string>)new HashSet<string>();
         var knownHelp = _dependencyResolver?.GetAllStaticHelpers() ?? (IReadOnlySet<string>)new HashSet<string>();
         var knownPlainClasses = _dependencyResolver?.GetAllPlainClasses() ?? (IReadOnlySet<string>)new HashSet<string>();
         // The base class is imported whether or not the syntax scanner noticed it: `extends` is the
         // one reference that must resolve before this module's first statement runs.
-        if (baseName is not null) ib.Import(new[] { baseName }, $"./{baseName}");
+        if (baseName is not null) imports.Add(new JsImport([baseName], $"./{baseName}"));
         foreach (var t in CollectComponentTypesFromNode(cls, new HashSet<string> { name })
                      .Concat(_converter.UsedAppTypes) // conversion-introduced names (reduced extension calls)
                      .Distinct().OrderBy(x => x))
@@ -1821,9 +1823,9 @@ public class TypeScriptEmitter
             if (runtimeProvided.Contains(ct) || referencedEnums.Contains(ct)) continue;
             if (knownComp.Contains(ct) || knownRec.Contains(ct) || knownHelp.Contains(ct)
                 || knownPlainClasses.Contains(ct))
-                ib.Import(new[] { ct }, $"./{ct}");
+                imports.Add(new JsImport([ct], $"./{ct}"));
         }
-        return ib.ToString() + builder.ToString();
+        return JsModuleWriter.Write(new JsModule(imports, builder.ToString()));
     }
 
     private void EmitMethod(MethodDefinition method, TypeScriptCodeBuilder.ClassBuilder c, ComponentDefinition component, string? className = null)

@@ -1,4 +1,5 @@
 import { FieldError, FieldRule, FormField } from "../runtime-exports";
+
 export class FormController {
     constructor(props?: any) {
         this._fields = [];  if (props && typeof props === 'object') Object.assign(this, props);

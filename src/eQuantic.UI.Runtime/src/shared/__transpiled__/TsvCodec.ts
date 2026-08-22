@@ -1,4 +1,5 @@
 import { CellRef, SheetDocument, SheetRange } from "@equantic/runtime";
+
 export class TsvCodec {
     static serialize(document: SheetDocument, range: SheetRange) {
         let rows: string[] = [];

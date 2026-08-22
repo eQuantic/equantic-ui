@@ -1,4 +1,5 @@
 import { SheetController, SheetMotionValue } from "@equantic/runtime";
+
 export class SheetKeymap {
     static handle(sheet: SheetController, key: string, command: boolean, shift: boolean) {
         let motion: SheetMotionValue = command ? 'dataEdge' : 'cell';

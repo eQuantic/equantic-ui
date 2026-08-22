@@ -1,5 +1,6 @@
 import { CodeLanguageRules } from "@equantic/runtime";
 import { CurlyBraceLanguage } from "./CurlyBraceLanguage";
+
 export class CSharpLanguage extends CurlyBraceLanguage {
     constructor(props?: any) {
         super();  if (props && typeof props === 'object') Object.assign(this, props);

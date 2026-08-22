@@ -1,4 +1,5 @@
 import { $eq, CodeDocument, CodeLanguageRules, CodeToken, CodeTokenKindValue } from "@equantic/runtime";
+
 export abstract class CurlyBraceLanguage {
     constructor(props?: any) {
         if (props && typeof props === 'object') Object.assign(this, props);

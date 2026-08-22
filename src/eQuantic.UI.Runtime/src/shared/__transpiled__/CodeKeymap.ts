@@ -1,4 +1,5 @@
 import { CodeEditorController, CodeMotionValue } from "@equantic/runtime";
+
 export class CodeKeymap {
     static handle(editor: CodeEditorController, key: string, modifiers: number, clipboard: any = null) {
         let shift = (modifiers & 1) !== 0;

@@ -1,4 +1,5 @@
 import { CSharpLanguage, JsonLanguage, PlainTextLanguage, PythonLanguage, TypeScriptLanguage, XmlLanguage } from "@equantic/runtime";
+
 export class CodeLanguages {
     static _cSharp: any | undefined;
 

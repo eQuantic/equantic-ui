@@ -1,4 +1,5 @@
 import { CodeDocument, CodeFold } from "../runtime-exports";
+
 export class IndentationFoldProvider {
     constructor(props?: any) {
         if (props && typeof props === 'object') Object.assign(this, props);
