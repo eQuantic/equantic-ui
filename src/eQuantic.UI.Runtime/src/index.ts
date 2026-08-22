@@ -134,6 +134,7 @@ export {
   CodeSurface,
   SheetSurface,
   Adjustable,
+  Navigable,
   CameraPreview,
   WebFrame,
   Hoverable,
