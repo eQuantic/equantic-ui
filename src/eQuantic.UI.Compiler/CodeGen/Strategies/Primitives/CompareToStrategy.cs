@@ -29,8 +29,10 @@ public class CompareToStrategy : IExpressionIrStrategy
     {
         var invocation = (InvocationExpressionSyntax)node;
         var access = (MemberAccessExpressionSyntax)invocation.Expression;
-        var left = context.Converter.ConvertIr(access.Expression);
-        var right = context.Converter.ConvertIr(invocation.ArgumentList.Arguments[0].Expression);
+        var left = Expressions.BinaryExpressionStrategy.EnumValue(access.Expression,
+            context.Converter.ConvertIr(access.Expression), context);
+        var right = Expressions.BinaryExpressionStrategy.EnumValue(invocation.ArgumentList.Arguments[0].Expression,
+            context.Converter.ConvertIr(invocation.ArgumentList.Arguments[0].Expression), context);
 
         // Numbers subtract; everything ordered (strings ordinally, chars by code unit,
         // longs-as-BigInts) is a three-way the WRITER evaluates once per operand. Booleans order
@@ -58,6 +60,9 @@ public class CompareToStrategy : IExpressionIrStrategy
         // Guid is deliberately ABSENT: Guid.CompareTo orders by the struct's COMPONENTS, which is
         // not the string order a guid rides as here — a sort that disagrees across the seam is
         // worse than a fence.
+        // An enum compares by its underlying value, a number once the member name is looked up.
+        if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType && !enumType.IsFlagsEnum())
+            return SpecialType.System_Int32;
         return type?.SpecialType switch
         {
             // Decimal is deliberately ABSENT: it rides as a runtime Decimal object, and the old

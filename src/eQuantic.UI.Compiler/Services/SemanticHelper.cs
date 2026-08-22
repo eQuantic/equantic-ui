@@ -81,6 +81,18 @@ public class SemanticHelper
         return Knows(node) ? _semanticModel!.GetTypeInfo(node).ConvertedType : null;
     }
 
+    /// <summary>
+    /// The BOUND operation for a node — Roslyn's IOperation, where what the syntax does not spell
+    /// out lives: whether an arithmetic is <c>checked</c>, which conversions were applied, what an
+    /// operator resolved to. Original-aware and guarded like every other accessor; null where the
+    /// model cannot answer, which every caller treats as "the syntax decides".
+    /// </summary>
+    public IOperation? GetOperation(SyntaxNode node)
+    {
+        node = Original(node);
+        return Knows(node) ? _semanticModel!.GetOperation(node) : null;
+    }
+
     /// <summary>The symbol a node DECLARES (a lambda parameter, a local), Original-aware and
     /// guarded — the model throws for a node outside its tree.</summary>
     public ISymbol? GetDeclaredSymbol(SyntaxNode node)

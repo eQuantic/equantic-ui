@@ -229,6 +229,10 @@ translation change must execute identically on both sides.
 
 **Supported C# Features:**
 - Expressions: Arithmetic, Logical, Ternary, Null-coalescing (`??`)
+- Fixed-width integers settle by RESULT type (`IntegerWidth`): byte/sbyte/short/ushort/uint always
+  wrap, int/long wrap only under explicit `unchecked`, a `checked` context throws (read from the
+  bound tree's `IsChecked` — the first IOperation use); float results `Math.fround`, print via
+  `$eq.num.single`; `char++` steps the code unit; enum arithmetic computes on the value
 - Control Flow: `if`, `switch`, `for`, `foreach`, `while`
 - Modern Patterns: Recursive, Property, Positional, Relational (C# 9-12); bare-type and
   positional arms test by `instanceof` (in-source classes/records included)

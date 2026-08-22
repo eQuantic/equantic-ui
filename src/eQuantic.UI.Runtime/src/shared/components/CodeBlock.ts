@@ -58,7 +58,7 @@ export class CodeBlock extends StatelessComponent {
         let [first, last] = this.window(lineHeight);
         let widest = 0;
         for (let index = 0; index < this.document.lineCount; index++) widest = Math.max(widest, this.document.line(index).length);
-        let codeWidth = widest * metrics.columnWidth + metrics.columnWidth;
+        let codeWidth = Math.fround(widest * metrics.columnWidth + metrics.columnWidth);
         let lines = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         if (first > 0) lines.add(Spacer.fixed(first * lineHeight));
         for (let index = first; index <= last; index++) {
@@ -112,7 +112,7 @@ export class CodeBlock extends StatelessComponent {
 
     static metricsFor(context: any, size: SizeVariantValue, showLineNumbers: boolean, lastLineNumber: number) {
         let style = $eq.withPatch(TypeStyle.ofSize(Sizing.labelSize(size, context.density), 'regular'), { mono: true });
-        let gutter = showLineNumbers ? Math.ceil(context.measureText(String(lastLineNumber) + '0', style)) + 12 : 0;
+        let gutter = Math.fround(showLineNumbers ? Math.ceil(context.measureText(String(lastLineNumber) + '0', style)) + 12 : 0);
         return new CodeMetrics(style, $eq.math.round(style.lineHeight * Math.fround(1.15)), context.monoAdvance(style), gutter);
     }
 
@@ -179,9 +179,9 @@ export class CodeBlock extends StatelessComponent {
             let from = line === start.line ? start.column : 0;
             let to = line === end.line ? end.column : this.document.line(line).length;
             if (to <= from) continue;
-            let left = metrics.contentLeft + from * metrics.columnWidth;
-            let top = line * metrics.lineHeight;
-            let width = (to - from) * metrics.columnWidth;
+            let left = Math.fround(metrics.contentLeft + from * metrics.columnWidth);
+            let top = Math.fround(line * metrics.lineHeight);
+            let width = Math.fround((to - from) * metrics.columnWidth);
             _seq.push((() => { const _s = decoration.kind; if (_s === 'outline') return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, borderWidth: 1, borderColor: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); if (_s === 'squiggle') return new Positioned(new Box(new BoxStyle({ width: width, height: 2, background: color })), top + metrics.lineHeight - 2, null, null, left); if (_s === 'strike') return new Positioned(new Box(new BoxStyle({ width: width, height: 1, background: color })), top + metrics.lineHeight / 2, null, null, left); return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, background: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); })());
         }
         return _seq;

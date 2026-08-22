@@ -70,6 +70,42 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
             return JsExpr.Binary(leftIr, "=", JsExpr.Callish($"{Eq.Dec}({left}).{method}({Eq.Dec}({right}))"));
         }
 
+        var leftType = context.SemanticHelper.GetType(assignment.Left);
+        var rightType = context.SemanticHelper.GetType(assignment.Right);
+
+        // A float STORED is a single: the computed double rounds at the assignment (FloatStore).
+        if (op == "=" && leftType is { SpecialType: SpecialType.System_Single })
+            rightIr = FloatStore.Settle(assignment.Right, rightIr, context);
+
+        // A compound on a CHAR, or with a char on the right of a numeric target, computes on the
+        // code unit: `c += 1` steps the character, `sum += ch` adds its code.
+        if (op.Length >= 2 && op[^1] == '=' && op != "==" && op != "!=" && op != "<=" && op != ">=")
+        {
+            var binaryOp = op[..^1];
+            if (leftType is { SpecialType: SpecialType.System_Char } && binaryOp is "+" or "-")
+                return JsExpr.Binary(leftIr, "=", JsExpr.Callish(
+                    $"String.fromCharCode({JsExprWriter.WriteIn(leftIr, JsPrecedence.Call)}.charCodeAt(0) {binaryOp} {CharOrValue(assignment.Right, right, rightType)})"));
+            if (rightType is { SpecialType: SpecialType.System_Char } && leftType is { SpecialType: not SpecialType.System_String })
+                rightIr = JsExpr.Callish(CharOrValue(assignment.Right, right, rightType));
+
+            // A fixed-width target settles the compound result by its type (IntegerWidth), and a
+            // float target rounds it to single precision.
+            if (binaryOp is "+" or "-" or "*" or "<<" && IntegerWidth.Of(leftType) is { } width)
+            {
+                var arithmetic = ArithmeticContext.Of(assignment, context);
+                if (arithmetic.IsChecked || arithmetic.ExplicitUnchecked || IntegerWidth.WrapsByDefault(width))
+                {
+                    var computed = binaryOp == "*" && width.Bits == 32 && !arithmetic.IsChecked
+                        ? (JsExpr)JsExpr.Callish($"Math.imul({left}, {JsExprWriter.Write(rightIr)})")
+                        : JsExpr.Binary(leftIr, binaryOp, rightIr);
+                    return JsExpr.Binary(leftIr, "=", IntegerWidth.Settle(computed, leftType,
+                        arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context));
+                }
+            }
+            if (binaryOp is "+" or "-" or "*" or "/" or "%" && leftType is { SpecialType: SpecialType.System_Single })
+                return JsExpr.Binary(leftIr, "=", FloatStore.Round(JsExpr.Binary(leftIr, binaryOp, rightIr)));
+        }
+
         // `x /= y` on integers is integer division, exactly like `x = x / y` — the compound form
         // used to reach JavaScript's `/=`, which divides as a double.
         // Built as IR, not as a template: a right-hand side that is a ternary (`x /= c ? 4 : 1`)
@@ -81,6 +117,14 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         // An assignment NODE: right-associative at the loosest level, so `a = b = c` chains and
         // an assignment used as an operand is fenced by whoever places it.
         return JsExpr.Binary(leftIr, op, rightIr);
+    }
+
+    /// <summary>A char operand's code unit — folded for a literal — or the value as written.</summary>
+    private static string CharOrValue(ExpressionSyntax operand, string converted, ITypeSymbol? type)
+    {
+        if (type is not { SpecialType: SpecialType.System_Char }) return converted;
+        if (operand is LiteralExpressionSyntax { Token.Value: char c }) return ((int)c).ToString();
+        return $"{converted}.charCodeAt(0)";
     }
 
     public int Priority => 10;

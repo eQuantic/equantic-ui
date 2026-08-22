@@ -133,12 +133,12 @@ public class CastExpressionStrategy : IConversionStrategy
     private static long ToLong(object? value) => System.Convert.ToInt64(value, CultureInfo.InvariantCulture);
 
     // { 'low': 0, 'medium': 5, 'high': 10 } — member-name string → underlying value.
-    private static string BuildNameToValueMap(INamedTypeSymbol enumType)
+    internal static string BuildNameToValueMap(INamedTypeSymbol enumType)
         => "{ " + string.Join(", ", EnumMembers(enumType)
             .Select(f => $"'{f.Name.ToCamelCase()}': {ToLong(f.ConstantValue).ToString(CultureInfo.InvariantCulture)}")) + " }";
 
     // { 0: 'low', 5: 'medium', 10: 'high' } — underlying value → member-name string.
-    private static string BuildValueToNameMap(INamedTypeSymbol enumType)
+    internal static string BuildValueToNameMap(INamedTypeSymbol enumType)
         => "{ " + string.Join(", ", EnumMembers(enumType)
             .Select(f => $"{ToLong(f.ConstantValue).ToString(CultureInfo.InvariantCulture)}: '{f.Name.ToCamelCase()}'")) + " }";
 

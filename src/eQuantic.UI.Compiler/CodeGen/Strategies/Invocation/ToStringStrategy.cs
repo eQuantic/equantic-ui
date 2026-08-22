@@ -100,6 +100,15 @@ public class ToStringStrategy : IConversionStrategy
                 + "value a machine reads, or ToString(\"N2\") for one a person reads.");
         }
 
+        // A FLOAT prints as the shortest decimal that reads back as the same single — `0.1f + 0.2f`
+        // is "0.3", where String() of the same bits would spell the double underneath.
+        if (context.SemanticHelper.GetType(memberAccess.Expression) is { SpecialType: SpecialType.System_Single }
+            && invocation.ArgumentList.Arguments.Count == 0)
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return $"{Eq.Single}({context.Converter.ConvertExpression(memberAccess.Expression)})";
+        }
+
         // An ENUM crosses as a lowercase string (`Kind.B` → 'b'), so String() hands back the WIRE
         // value while the server hands back the C# member name. Any text printing an enum then
         // reads one way in the SSR markup and another after hydration — a word that changes by

@@ -55,17 +55,17 @@ export class Mermaid extends StatelessComponent {
     }
 
     static placeArrowhead(arrow: MermaidArrowhead, ink: ColorToken) {
-        let half = (Mermaid.headSize - 1) / 2;
-        let top = arrow.y - Mermaid.headSize;
-        let start = arrow.x - half;
+        let half = Math.fround((Mermaid.headSize - 1) / 2);
+        let top = Math.fround(arrow.y - Mermaid.headSize);
+        let start = Math.fround(arrow.x - half);
         if (arrow.direction === 1) {
-            top = arrow.y - half;
-            start = arrow.x - Mermaid.headSize;
+            top = Math.fround(arrow.y - half);
+            start = Math.fround(arrow.x - Mermaid.headSize);
         } else if (arrow.direction === 2) {
             top = arrow.y;
-            start = arrow.x - half;
+            start = Math.fround(arrow.x - half);
         } else if (arrow.direction === 3) {
-            top = arrow.y - half;
+            top = Math.fround(arrow.y - half);
             start = arrow.x;
         }
         return new Positioned(new Vector(Mermaid.headGlyph(arrow.direction), Mermaid.headSize, ink), top, null, null, start);

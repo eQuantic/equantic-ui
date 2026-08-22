@@ -2,6 +2,7 @@ import { dec } from './utils/decimal';
 import { combineDelegate, removeDelegate } from './utils/delegates';
 import { long } from './utils/long';
 import { round } from './utils/dotnet-math';
+import { checked, single } from './utils/overflow';
 import { format, parseEnum, stringFormat } from './utils/format';
 import { str } from './utils/culture';
 import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './utils/datetime';
@@ -90,7 +91,7 @@ export const $eq = {
   /** Design mode only: the source span that constructed a node — see `origin`. */
   origin,
   /** Numeric compat: exact decimal and 64-bit integer. */
-  num: { dec, long },
+  num: { dec, long, checked, single },
   /** Math with .NET semantics (banker's rounding). */
   math: { round },
   /** Text: number/string formatting and StringBuilder. */

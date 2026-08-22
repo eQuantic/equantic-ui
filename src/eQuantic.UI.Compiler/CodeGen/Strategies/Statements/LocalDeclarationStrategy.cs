@@ -27,8 +27,9 @@ public class LocalDeclarationStrategy : IStatementStrategy
             // through the same rule, so `var package = …` stays one identifier on both sides.
             var name = variable.Identifier.Text.ToJsIdentifier();
             var patternVars = PatternVariableScanner.Declarations(variable.Initializer?.Value, context.TypeAnnotations);
+            // A float STORED is a single: a computed initializer rounds here (FloatStore).
             var init = variable.Initializer != null
-                ? context.Converter.ConvertIr(variable.Initializer.Value)
+                ? FloatStore.Settle(variable.Initializer.Value, context.Converter.ConvertIr(variable.Initializer.Value), context)
                 : JsExpr.Literal("null");
 
             if (decl.UsingKeyword.IsKind(SyntaxKind.UsingKeyword))

@@ -34,7 +34,7 @@ export class Switch extends StatelessComponent {
     }
 
     release(offset: number, travel: number) {
-        let next = this.on ? offset > -travel / 2 : offset >= travel / 2;
+        let next = this.on ? offset > Math.fround(-travel / 2) : offset >= Math.fround(travel / 2);
         if (next !== this.on) this.onChanged?.();
     }
 }

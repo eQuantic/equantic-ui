@@ -30,6 +30,9 @@ public class ConversionConformanceTests
         "byte b = 200; int r = b + 100; return r;",                                // 300 (byte + int → int)
         "float f = 0.1f; double d = f; return d > 0.1;",                           // true — float widened carries its error
         "float f = 0.1f + 0.2f; return f.ToString();",                             // "0.3" (single precision)
+        "float a = 0.1f, b = 0.2f; return (a + b).ToString();",                    // "0.3" — unstored, rounded on print
+        "float a = 0.1f, b = 0.2f; return a + b == 0.3f;",                         // true — singles compare as singles
+        "float a = 0.1f, b = 0.2f; float c = a + b; return c == 0.3f;",            // true — rounded at the store
         // narrowing casts truncate, and integers wrap (unchecked by default)
         "double d = 3.99; int i = (int)d; return i;",                              // 3
         "double d = -3.99; int i = (int)d; return i;",                             // -3
@@ -37,6 +40,15 @@ public class ConversionConformanceTests
         "int big = int.MaxValue; long r = big + 1L; return r.ToString();",         // "2147483648" — widened first
         "byte b = 250; b += 10; return b;",                                        // 4 (wraps at 256)
         "short s = 32767; s++; return s;",                                         // -32768
+        // The author's word decides for int and long: `unchecked` wraps, `checked` throws, and the
+        // default keeps the double's count (a documented limit — see IntegerWidth).
+        "return unchecked(int.MaxValue + 1);",                                      // -2147483648
+        "int big = int.MaxValue; unchecked { big++; } return big;",                 // -2147483648
+        "int a = 65536; return unchecked(a * a);",                                  // 0 — Math.imul
+        "long l = long.MaxValue; unchecked { l++; } return l.ToString();",          // "-9223372036854775808"
+        "int big = int.MaxValue; try { return checked(big + 1); } catch { return -1; }", // -1 — overflow thrown
+        "try { checked { byte b = 255; b += 1; return b; } } catch { return -1; }", // -1
+        "uint h = 2166136261; h *= 16777619; return h.ToString();",                // FNV step wraps at 2^32
         "uint u = 0; u--; return u.ToString();",                                   // "4294967295"
         "int x = 1; return x << 33;",                                              // 2 — shift count masked to 5 bits
         "int x = -8; return x >> 1;",                                              // -4 (arithmetic shift)

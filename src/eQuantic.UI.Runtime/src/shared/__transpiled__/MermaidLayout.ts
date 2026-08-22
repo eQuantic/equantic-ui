@@ -16,7 +16,7 @@ export class MermaidLayout {
     }
 
     static labelWidth(label: string, pad: number, min: number, max: number) {
-        let w = label.length * 8 + pad;
+        let w = Math.fround(label.length * 8 + pad);
         if (w < min) return min;
         if (w > max) return max;
         return w;
@@ -95,7 +95,7 @@ export class MermaidLayout {
             let span = 0;
             let thick = 0;
             for (const i of order[r]) {
-                span += crossSize[i] + (span > 0 ? MermaidLayout.siblingGap : 0);
+                span = Math.fround(span + (crossSize[i] + (span > 0 ? MermaidLayout.siblingGap : 0)));
                 if (mainSize[i] > thick) thick = mainSize[i];
             }
             rankSpan[r] = span;
@@ -109,7 +109,7 @@ export class MermaidLayout {
             for (const edge of graph.edges) {
                 if (edge.label.length === 0) continue;
                 let lower = rank[index[edge.from]] < rank[index[edge.to]] ? rank[index[edge.from]] : rank[index[edge.to]];
-                let needed = MermaidLayout.labelChipWidth(edge.label) + 24;
+                let needed = Math.fround(MermaidLayout.labelChipWidth(edge.label) + 24);
                 if (lower >= 0 && lower < rankCount && gapAfter[lower] < needed) gapAfter[lower] = needed;
             }
         }
@@ -117,16 +117,16 @@ export class MermaidLayout {
         let cursor = MermaidLayout.margin;
         for (let r = 0; r < rankCount; r++) {
             mainStart[r] = cursor;
-            cursor += rankThickness[r] + gapAfter[r];
+            cursor = Math.fround(cursor + (rankThickness[r] + gapAfter[r]));
         }
         let crossCenter = new Array(count).fill(0);
         let mainCenter = new Array(count).fill(0);
         for (let r = 0; r < rankCount; r++) {
-            let at = MermaidLayout.margin + (maxSpan - rankSpan[r]) / 2;
+            let at = Math.fround(MermaidLayout.margin + (maxSpan - rankSpan[r]) / 2);
             for (const i of order[r]) {
-                crossCenter[i] = at + crossSize[i] / 2;
-                at += crossSize[i] + MermaidLayout.siblingGap;
-                mainCenter[i] = mainStart[rank[i]] + rankThickness[rank[i]] / 2;
+                crossCenter[i] = Math.fround(at + crossSize[i] / 2);
+                at = Math.fround(at + (crossSize[i] + MermaidLayout.siblingGap));
+                mainCenter[i] = Math.fround(mainStart[rank[i]] + rankThickness[rank[i]] / 2);
             }
         }
         let scene = new MermaidScene();
@@ -134,8 +134,8 @@ export class MermaidLayout {
             let node = graph.nodes[i];
             let w = MermaidLayout.nodeWidth(node);
             let h = MermaidLayout.nodeHeightOf(node);
-            let x = (graph.vertical ? crossCenter[i] : mainCenter[i]) - w / 2;
-            let y = (graph.vertical ? mainCenter[i] : crossCenter[i]) - h / 2;
+            let x = Math.fround((graph.vertical ? crossCenter[i] : mainCenter[i]) - w / 2);
+            let y = Math.fround((graph.vertical ? mainCenter[i] : crossCenter[i]) - h / 2);
             scene.nodes.push(new MermaidPlacedNode({ node: node, x: x, y: y, w: w, h: h }));
         }
         for (const edge of graph.edges) {
@@ -143,9 +143,9 @@ export class MermaidLayout {
             let to = scene.nodes[index[edge.to]];
             MermaidLayout.routeFlowEdge(scene, graph.vertical, from, to, edge);
         }
-        let mainExtent = cursor - gapAfter[rankCount - 1] + MermaidLayout.margin;
-        scene.width = graph.vertical ? maxSpan + MermaidLayout.margin * 2 : mainExtent;
-        scene.height = graph.vertical ? mainExtent : maxSpan + MermaidLayout.margin * 2;
+        let mainExtent = Math.fround(cursor - gapAfter[rankCount - 1] + MermaidLayout.margin);
+        scene.width = Math.fround(graph.vertical ? maxSpan + MermaidLayout.margin * 2 : mainExtent);
+        scene.height = Math.fround(graph.vertical ? mainExtent : maxSpan + MermaidLayout.margin * 2);
         return scene;
     }
 
@@ -234,17 +234,17 @@ export class MermaidLayout {
         let x1 = null;
         let y1 = null;
         if (vertical) {
-            x0 = from.x + from.w / 2;
-            y0 = from.y + from.h;
-            x1 = to.x + to.w / 2;
+            x0 = Math.fround(from.x + from.w / 2);
+            y0 = Math.fround(from.y + from.h);
+            x1 = Math.fround(to.x + to.w / 2);
             y1 = to.y;
         } else {
-            x0 = from.x + from.w;
-            y0 = from.y + from.h / 2;
+            x0 = Math.fround(from.x + from.w);
+            y0 = Math.fround(from.y + from.h / 2);
             x1 = to.x;
-            y1 = to.y + to.h / 2;
+            y1 = Math.fround(to.y + to.h / 2);
         }
-        let mid = vertical ? (y0 + y1) / 2 : (x0 + x1) / 2;
+        let mid = Math.fround(vertical ? (y0 + y1) / 2 : (x0 + x1) / 2);
         if (vertical) {
             MermaidLayout.addCurve(scene, x0, y0, x0, mid, x1, mid, x1, y1);
             if (edge.arrow) scene.arrows.push(new MermaidArrowhead({ x: x1, y: y1, direction: y1 >= mid ? 0 : 2 }));
@@ -292,12 +292,12 @@ export class MermaidLayout {
         if (x0 === x1 && y0 === y1) return;
         if (x0 === x1) {
             let top = y0 < y1 ? y0 : y1;
-            let h = y0 < y1 ? y1 - y0 : y0 - y1;
+            let h = Math.fround(y0 < y1 ? y1 - y0 : y0 - y1);
             scene.segments.push(new MermaidSegment({ x: x0 - MermaidLayout.lineThickness / 2, y: top, w: MermaidLayout.lineThickness, h: h }));
             return;
         }
         let left = x0 < x1 ? x0 : x1;
-        let w = x0 < x1 ? x1 - x0 : x0 - x1;
+        let w = Math.fround(x0 < x1 ? x1 - x0 : x0 - x1);
         scene.segments.push(new MermaidSegment({ x: left, y: y0 - MermaidLayout.lineThickness / 2, w: w, h: MermaidLayout.lineThickness }));
     }
 
@@ -308,15 +308,15 @@ export class MermaidLayout {
         for (const participant of graph.nodes) {
             let w = MermaidLayout.labelWidth(participant.label, 28, 80, 220);
             scene.nodes.push(new MermaidPlacedNode({ node: participant, x: at, y: MermaidLayout.margin, w: w, h: MermaidLayout.nodeHeight }));
-            centers[participant.id] = at + w / 2;
-            at += w + MermaidLayout.participantGap;
+            centers[participant.id] = Math.fround(at + w / 2);
+            at = Math.fround(at + (w + MermaidLayout.participantGap));
         }
-        let bottom = MermaidLayout.margin + MermaidLayout.lifelineTop + graph.messages.length * MermaidLayout.messageGap + MermaidLayout.margin;
+        let bottom = Math.fround(MermaidLayout.margin + MermaidLayout.lifelineTop + graph.messages.length * MermaidLayout.messageGap + MermaidLayout.margin);
         for (const placed of scene.nodes) {
-            let x = placed.x + placed.w / 2;
+            let x = Math.fround(placed.x + placed.w / 2);
             MermaidLayout.addSegment(scene, x, placed.y + placed.h, x, bottom - MermaidLayout.margin);
         }
-        let y = MermaidLayout.margin + MermaidLayout.lifelineTop + MermaidLayout.messageGap / 2;
+        let y = Math.fround(MermaidLayout.margin + MermaidLayout.lifelineTop + MermaidLayout.messageGap / 2);
         for (const message of graph.messages) {
             let x0 = centers[message.from];
             let x1 = centers[message.to];
@@ -331,9 +331,9 @@ export class MermaidLayout {
                 scene.arrows.push(new MermaidArrowhead({ x: x1, y: y, direction: x1 > x0 ? 1 : 3 }));
                 if (message.label.length > 0) scene.labels.push(new MermaidLabel({ text: message.label, x: (x0 + x1) / 2, y: y - 12 }));
             }
-            y += MermaidLayout.messageGap;
+            y = Math.fround(y + MermaidLayout.messageGap);
         }
-        scene.width = at - MermaidLayout.participantGap + MermaidLayout.margin;
+        scene.width = Math.fround(at - MermaidLayout.participantGap + MermaidLayout.margin);
         scene.height = bottom;
         return scene;
     }

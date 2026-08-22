@@ -46,7 +46,7 @@ export class Spreadsheet extends SharedStatefulComponent {
         if (topOfWindow > 0) content.add(Spacer.fixed(topOfWindow));
         content.add(windowRows);
         let below = 0;
-        for (let r = this._last + 1; r < document.rows; r++) below += document.rowHeight(r);
+        for (let r = this._last + 1; r < document.rows; r++) below = Math.fround(below + document.rowHeight(r));
         if (below > 0) content.add(Spacer.fixed(below));
         let frame = new Column(0, 'start', 'stretch', false, null, null, { width: this.width, height: this.height });
         frame.add(headerRow);
@@ -73,17 +73,17 @@ export class Spreadsheet extends SharedStatefulComponent {
         let document = this.controller.document;
         let row = 0;
         let top = 0;
-        while (row < document.rows - 1 && top + document.rowHeight(row) <= offset) {
-            top += document.rowHeight(row);
+        while (row < document.rows - 1 && Math.fround(top + document.rowHeight(row)) <= offset) {
+            top = Math.fround(top + document.rowHeight(row));
             row++;
         }
         let first = Math.max(0, row - this.overscan);
         let firstTop = top;
-        for (let r = row - 1; r >= first; r--) firstTop -= document.rowHeight(r);
+        for (let r = row - 1; r >= first; r--) firstTop = Math.fround(firstTop - document.rowHeight(r));
         let last = row;
-        let covered = top - offset;
+        let covered = Math.fround(top - offset);
         while (last < document.rows - 1 && covered < viewport) {
-            covered += document.rowHeight(last);
+            covered = Math.fround(covered + document.rowHeight(last));
             last++;
         }
         last = Math.min(document.rows - 1, last + this.overscan);

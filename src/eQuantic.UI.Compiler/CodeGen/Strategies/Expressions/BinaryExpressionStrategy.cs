@@ -77,7 +77,16 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         {
             context.UsedHelpers.Add(Eq.Import);
             var jsOp = op switch { "==" => "===", "!=" => "!==", _ => op };
-            return JsExpr.Opaque($"({Eq.Long}({left}) {jsOp} {Eq.Long}({right}))");
+            var longResult = JsExpr.Opaque($"({Eq.Long}({left}) {jsOp} {Eq.Long}({right}))");
+            // A 64-bit result settles like any fixed-width one: checked throws, an explicit
+            // `unchecked` wraps (BigInt does not on its own), the default keeps counting.
+            if (op is "+" or "-" or "*" or "<<")
+            {
+                var arithmetic = ArithmeticContext.Of(binary, context);
+                return IntegerWidth.Settle(longResult, context.SemanticHelper.GetType(binary),
+                    arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context);
+            }
+            return longResult;
         }
 
         // Lifted Nullable<T> operators for primitive-numeric T (int/double/short/… — decimal and
@@ -162,6 +171,48 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
             };
         }
 
+        // ENUM ARITHMETIC: an enum crosses as its member NAME, so `day + 1` needs the value behind
+        // the name and, when the result is the enum again, the name behind the value.
+        var resultType = context.SemanticHelper.GetType(binary);
+        if (op is "+" or "-" or "*" or "/" or "%" or "<" or ">" or "<=" or ">="
+            && (EnumOperand(binary.Left, context) is not null || EnumOperand(binary.Right, context) is not null))
+        {
+            leftIr = EnumValue(binary.Left, leftIr, context);
+            rightIr = EnumValue(binary.Right, rightIr, context);
+            var computed = JsExpr.Binary(leftIr, op, rightIr);
+            return resultType is INamedTypeSymbol { TypeKind: TypeKind.Enum } resultEnum && !resultEnum.IsFlagsEnum()
+                ? JsExpr.Callish($"({CastExpressionStrategy.BuildValueToNameMap(resultEnum)})[{JsExprWriter.Write(computed)}]")
+                : computed;
+        }
+
+        // A FIXED-WIDTH result settles by its type (IntegerWidth): sub-int widths and uint wrap,
+        // int and long wrap under an explicit `unchecked`, a checked context throws. An int
+        // product goes through Math.imul, which wraps exactly where a double would lose bits.
+        if (op is "+" or "-" or "*" or "<<" && IntegerWidth.Of(resultType) is { } width)
+        {
+            var arithmetic = ArithmeticContext.Of(binary, context);
+            var settles = arithmetic.IsChecked || arithmetic.ExplicitUnchecked || IntegerWidth.WrapsByDefault(width);
+            if (settles && op == "*" && width.Bits == 32)
+            {
+                var product = JsExpr.Callish($"Math.imul({left}, {right})");
+                return arithmetic.IsChecked
+                    ? IntegerWidth.Checked(JsExpr.Binary(leftIr, "*", rightIr), width, context)
+                    : width.Unsigned ? IntegerWidth.Wrap(product, width) : product;
+            }
+            return IntegerWidth.Settle(JsExpr.Binary(leftIr, op, rightIr), resultType,
+                arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context);
+        }
+
+        // A FLOAT operand of a COMPARISON is rounded to single precision where it was computed:
+        // `a + b == 0.3f` holds in C# because both sides are singles. Float arithmetic itself stays
+        // a double here — ECMA-335 lets an intermediate carry more precision, and rounds at the
+        // STORE (FloatStore: declarations, assignments) — so a layout line is not a chain of frounds.
+        if (op is "===" or "!==" or "==" or "!=" or "<" or ">" or "<=" or ">=")
+        {
+            leftIr = FloatStore.Settle(binary.Left, leftIr, context);
+            rightIr = FloatStore.Settle(binary.Right, rightIr, context);
+        }
+
         // STRING CONCATENATION converts each operand the way C# does, not the way JavaScript
         // does: `"a" + null` is "a" (not "anull"), `"v=" + flag` is "v=True", a null `int?` is
         // nothing. One rule, shared with interpolation (StringConversion).
@@ -173,6 +224,17 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
 
         return JsExpr.Binary(leftIr, op, rightIr);
     }
+
+    /// <summary>The enum type of an operand, for a non-flags enum (a flags enum is numeric already).</summary>
+    private static INamedTypeSymbol? EnumOperand(ExpressionSyntax operand, ConversionContext context) =>
+        context.SemanticHelper.GetType(operand) is INamedTypeSymbol { TypeKind: TypeKind.Enum } type && !type.IsFlagsEnum()
+            ? type : null;
+
+    /// <summary>An enum operand as its underlying value; anything else as itself.</summary>
+    internal static JsExpr EnumValue(ExpressionSyntax operand, JsExpr converted, ConversionContext context) =>
+        EnumOperand(operand, context) is { } type
+            ? JsExpr.Callish($"({CastExpressionStrategy.BuildNameToValueMap(type)})[{JsExprWriter.Write(converted)}]")
+            : converted;
 
     /// <summary>
     /// Routes a decimal binary operation to the runtime Decimal class. Non-decimal operands are

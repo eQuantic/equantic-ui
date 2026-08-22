@@ -30,9 +30,9 @@ export class Slider extends StatelessComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let span = this.max - this.min;
+        let span = Math.fround(this.max - this.min);
         let fraction = span <= 0 ? 0 : Math.min(Math.max((this.value - this.min) / span, 0), 1);
-        let step = this.step > 0 ? this.step : span / 10;
+        let step = Math.fround(this.step > 0 ? this.step : span / 10);
         let accent = theme.colors(this.variant).base;
         let fill = this.disabled ? theme.borderStrong : accent;
         let thumb = new Box(new BoxStyle({ width: Slider.thumbSize, height: Slider.thumbSize, background: theme.surface, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: 2, borderColor: fill, elevation: 2, transition: TransitionSpec.of(1, Motion.press) }));

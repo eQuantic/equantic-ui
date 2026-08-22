@@ -41,7 +41,7 @@ export class SwipeableRow extends StatelessComponent {
     }
 
     onReleased(offset: number) {
-        return this.onOpenChanged?.(offset <= -SwipeableRow.actionWidth / 2);
+        return this.onOpenChanged?.(offset <= Math.fround(-SwipeableRow.actionWidth / 2));
     }
 }
 

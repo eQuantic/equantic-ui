@@ -27,6 +27,10 @@ public static class Eq
     public const string Dec = "$eq.num.dec";
     public const string Long = "$eq.num.long";
     public const string Round = "$eq.math.round";
+    /// <summary>A checked arithmetic result — the value, or the OverflowException C# throws.</summary>
+    public const string Checked = "$eq.num.checked";
+    /// <summary>A float as text: the shortest decimal that reads back as the same single.</summary>
+    public const string Single = "$eq.num.single";
     public const string Format = "$eq.text.format";
     public const string StringFormat = "$eq.text.stringFormat";
     public const string StringBuilder = "$eq.text.stringBuilder";
