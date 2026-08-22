@@ -72,6 +72,20 @@ public class LinqTableStrategy : IExpressionIrStrategy
         // Reverse is deliberately NOT here: `List<T>.Reverse()` is an INSTANCE method that
         // reverses in place and returns void, and only `Enumerable.Reverse()` returns a new
         // sequence. One name, two meanings decided by the receiver — a reason, not a shape.
+        // Set operations: a Set dedupes the source, the other side is a membership test.
+        ("Union", 1) => "[...new Set([...{0}, ...{1}])]",
+        ("Intersect", 1) => "[...new Set({0})].filter(x => {1}.includes(x))",
+        ("Except", 1) => "[...new Set({0})].filter(x => !{1}.includes(x))",
+        // Folding and flattening. Aggregate's arguments swap: C# takes (seed, func), reduce (func, seed).
+        ("Aggregate", 2) => "{0}.reduce({2}, {1})",
+        ("Aggregate", 1) => "{0}.reduce({1})",
+        ("SelectMany", 1) => "{0}.flatMap({1})",
+        ("SelectMany", 0) => "{0}.flatMap((x) => x)",
+        // A key wins by comparing the SELECTED value; reduce keeps the first of equals, as .NET does.
+        ("MaxBy", 1) => "{0}.reduce((_a, _b) => (({1})(_b) > ({1})(_a) ? _b : _a))",
+        ("MinBy", 1) => "{0}.reduce((_a, _b) => (({1})(_b) < ({1})(_a) ? _b : _a))",
+        ("ToDictionary", 2) => "Object.fromEntries({0}.map(x => [({1})(x), ({2})(x)]))",
+        ("ToDictionary", 1) => "Object.fromEntries({0}.map(x => [({1})(x), (x => x)(x)]))",
         ("Append", 1) => "[...{0}, {1}]",
         ("Prepend", 1) => "[{1}, ...{0}]",
         ("AsEnumerable", 0) => "{0}",

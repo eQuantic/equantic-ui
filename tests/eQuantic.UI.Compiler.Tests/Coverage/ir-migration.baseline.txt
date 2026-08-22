@@ -1,5 +1,4 @@
 AddChildStrategy
-AggregateStrategy
 AnonymousObjectCreationStrategy
 ArrayCreationStrategy
 ArrayStaticStrategy
@@ -33,7 +32,6 @@ EnumMethodStrategy
 EnumStrategy
 EnumerableFactoryStrategy
 EventSubscriptionStrategy
-ExceptStrategy
 FieldExpressionStrategy
 FirstStrategy
 GenericNameStrategy
@@ -46,14 +44,12 @@ IndexFromEndStrategy
 InitializerExpressionStrategy
 InlinedConstantStrategy
 InterpolatedStringStrategy
-IntersectStrategy
 IsPatternStrategy
 JoinStrategy
 LastStrategy
 ListMethodStrategy
 LookupIndexerStrategy
 MathStrategy
-MinByMaxByStrategy
 MinMaxStrategy
 NameofStrategy
 NamespaceRemovalStrategy
@@ -72,7 +68,6 @@ RegexStrategy
 ResourceAccessorStrategy
 ReverseStrategy
 RuntimeUtilityStrategy
-SelectManyStrategy
 SequenceEqualStrategy
 ServiceProviderStrategy
 SingleStrategy
@@ -92,13 +87,11 @@ TakeWhileStrategy
 TaskMethodStrategy
 ThrowExpressionStrategy
 TimeSpanStrategy
-ToDictionaryStrategy
 ToLookupStrategy
 ToStringStrategy
 TupleExpressionStrategy
 TupleMemberAccessStrategy
 TypeofExpressionStrategy
-UnionStrategy
 UnsupportedConstructStrategy
 ValueKeyedDictionaryStrategy
 WebPrimitiveStrategy
