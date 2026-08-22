@@ -121,6 +121,33 @@ public class CultureRouteTests
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    /// <summary>
+    /// A path nothing serves, asked for UNDER a prefix, is a 404 and not a redirect to itself.
+    /// <para>
+    /// It redirected forever. The rule "a bare URL in a prefixed language goes to its prefixed
+    /// address" read <c>RouteValues["culture"]</c> to decide whether the URL already named its
+    /// language — and a request that matched no route at all, which is every 404, has no route
+    /// values however plainly its path starts with /pt-BR. So the redirect target was the request's
+    /// own URL, and a reader in six of the seven languages of a site got ERR_TOO_MANY_REDIRECTS
+    /// instead of a not-found page. Both halves are asserted: the status, and that the response is
+    /// not a redirect back to where it came from.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public async Task APathNothingServes_UnderAPrefix_IsNotFound_NotARedirectToItself()
+    {
+        var (app, client) = await StartAppAsync();
+        await using var _ = app;
+        // The reader's language is the prefixed one, which is what makes the redirect rule apply at
+        // all: with the default culture there is nothing to redirect to and the bug never showed.
+        client.DefaultRequestHeaders.Add("Cookie", ".AspNetCore.Culture=c%3Dpt-BR%7Cuic%3Dpt-BR");
+
+        var response = await client.GetAsync("/pt-BR/nothing-serves-this");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        response.Headers.Location.Should().BeNull();
+    }
+
     [Fact]
     public async Task ABareUrl_AskedForInAPrefixedLanguage_GoesToItsAddress()
     {

@@ -560,11 +560,20 @@ public static class UIExtensions
     private static bool RedirectToLanguageUrl(HttpContext context, UIOptions options)
     {
         if (options.CultureRoutes is not { } map) return false;
-        if (context.Request.RouteValues.ContainsKey(CultureRouteConstraint.Name)) return false;
         var culture = System.Globalization.CultureInfo.CurrentUICulture.Name;
         if (map.IsDefault(culture) || map.SegmentFor(culture).Length == 0) return false;
 
         var path = context.Request.Path.HasValue ? context.Request.Path.Value! : "/";
+
+        // The PATH decides whether the URL already names its language, and the route values do not.
+        // This asked `RouteValues.ContainsKey("culture")`, which is only there when a culture-prefixed
+        // route MATCHED — and a request that matched nothing at all, which is every 404, carries no
+        // route values however plainly its path starts with /pt-BR. So an unknown path in a prefixed
+        // language was redirected to PathFor(culture, path), which for an already-prefixed path is
+        // that same path: six of seven languages had no 404 page at all, only a redirect to itself
+        // until the browser gave up with ERR_TOO_MANY_REDIRECTS.
+        if (!map.IsDefault(map.Split(path).Culture)) return false;
+
         context.Response.Redirect(map.PathFor(culture, path) + context.Request.QueryString, permanent: false);
         return true;
     }
