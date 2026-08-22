@@ -1,0 +1,17 @@
+{
+  "ArrowLeft": "previousItem",
+  "ArrowRight": "nextItem",
+  "ArrowUp": "previousRow",
+  "ArrowDown": "nextRow",
+  "PageUp": "previousPage",
+  "PageDown": "nextPage",
+  "shift\u002BPageUp": "previousSection",
+  "shift\u002BPageDown": "nextSection",
+  "Home": "rowStart",
+  "End": "rowEnd",
+  "Tab": null,
+  "Enter": null,
+  "Escape": null,
+  "k": null,
+  " ": null
+}

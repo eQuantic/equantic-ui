@@ -1214,8 +1214,9 @@ export class Navigable extends VisualNode {
   role: 'grid' = 'grid';
   /** Whether rows[0] holds the column headers (a calendar's day-name row). */
   hasHeaderRow = false;
-  /** The focused cell as [row, item] — announced through aria-activedescendant. */
-  activeCell: [number, number] | null = null;
+  /** The focused cell as [row, item] — announced through aria-activedescendant. A C# tuple
+   * crosses as a plain array, so that is the type; the realizer reads exactly two entries. */
+  activeCell: readonly number[] | null = null;
 
   constructor(
     rows: VisualNode[],
@@ -1224,7 +1225,7 @@ export class Navigable extends VisualNode {
       label?: string;
       role?: 'grid';
       hasHeaderRow?: boolean;
-      activeCell?: [number, number] | null;
+      activeCell?: readonly number[] | null;
     },
   ) {
     super();

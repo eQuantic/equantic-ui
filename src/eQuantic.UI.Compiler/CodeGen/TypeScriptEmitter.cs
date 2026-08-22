@@ -184,6 +184,19 @@ public class TypeScriptEmitter
     };
 
     /// <summary>
+    /// The .NET-compat VALUE TYPES the runtime exports. Their values are built through
+    /// <c>$eq.time.*</c> / <c>$eq.num.*</c>, so they look like helpers rather than types — but an
+    /// annotation can NAME one (<c>selected: DateOnly | null</c>, from a <c>DateOnly?</c>
+    /// parameter), and a named type that nothing imports is a module that does not compile. That
+    /// reaches a user as a blank page, never as an error, which is why both import paths consult
+    /// this and not just the one that happened to hit it first.
+    /// </summary>
+    private static readonly HashSet<string> RuntimeValueTypes = new(StringComparer.Ordinal)
+    {
+        "DateTime", "DateOnly", "TimeOnly", "TimeSpan", "DateTimeOffset", "Decimal",
+    };
+
+    /// <summary>
     /// Sets the dependency resolver for automatic dependency detection
     /// </summary>
     /// <summary>Forwarded to the converter — see <see cref="CSharpToJsConverter.SymbolsAreAuthoritative"/>.</summary>
@@ -801,7 +814,14 @@ public class TypeScriptEmitter
             // NEVER user modules, so a stray reference (e.g. an `int` property type, a `DateTime`/`Math`
             // usage) must not become `import { int } from "./int"`.
             if (NonImportableTypes.Contains(cleanType))
+            {
+                // …unless the RUNTIME provides it. The list exists to stop `import { X } from
+                // "./X"` for a type no module declares; a compat value type is a different case —
+                // no local module, but a real export from @equantic/runtime, and an annotation
+                // that names it (`selected: DateOnly | null`) needs the name to resolve.
+                if (IsRuntimeComponent(cleanType)) coreImports.Add(cleanType);
                 continue;
+            }
 
             // Skip HtmlNode - it's a type-only interface, not a runtime class
             if (cleanType == "HtmlNode")
@@ -932,6 +952,8 @@ public class TypeScriptEmitter
             "Component" or "BuildContext" or "HtmlElement" => true,
             "StatefulComponent" or "StatelessComponent" or "SharedStatefulComponent" or "ComponentState" => true,
             "getServerActionsClient" or "getRootServiceProvider" => true,
+            // The .NET-compat VALUE TYPES — see RuntimeValueTypes.
+            _ when RuntimeValueTypes.Contains(typeName) => true,
             // StyleBuilder/ClassBuilder are now emitted as `$eq.css.*` (global), not imported.
             _ => false
         };
@@ -1909,6 +1931,9 @@ public class TypeScriptEmitter
         // interface, an enum) would otherwise import a name nothing uses — which the runtime's own
         // build rejects. Lookarounds rather than `\b`: `$eq` starts with a non-word character.
         SeedEnumUnions(emitted, semanticModel?.Compilation, runtimeProvided);
+        // A compat value type is not in an eQuantic namespace, so the scanner above never buckets
+        // it — but a factory's `DateOnly? selected` annotates with the name all the same.
+        foreach (var compat in RuntimeValueTypes) runtimeProvided.Add(compat);
         runtimeProvided.RemoveWhere(referenced => !System.Text.RegularExpressions.Regex.IsMatch(
             emitted, $@"(?<![\w$]){System.Text.RegularExpressions.Regex.Escape(referenced)}(?![\w$])"));
         core.UnionWith(runtimeProvided);

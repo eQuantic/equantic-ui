@@ -37,6 +37,19 @@ public static class SdkStrings
     public static string PreviousMatch => SdkResources.PreviousMatch;
     public static string NextMatch => SdkResources.NextMatch;
 
+    // The calendar's own chrome. The month and day NAMES are not here — those come from the
+    // culture itself (Primitives.CalendarNames), the way .NET reads them, and no resx of ours
+    // could keep up with every locale. What a resx owns is the wording AROUND them.
+
+    /// <summary>The calendar's step-back affordance, announced to assistive tech.</summary>
+    public static string PreviousMonth => SdkResources.PreviousMonth;
+
+    /// <summary>The calendar's step-forward affordance.</summary>
+    public static string NextMonth => SdkResources.NextMonth;
+
+    /// <summary>What today's cell is called beyond its date — the ring is paint, this is the word.</summary>
+    public static string Today => SdkResources.Today;
+
     /// <summary>The sheet surface's accessible name when the app supplies none.</summary>
     public static string Spreadsheet => SdkResources.Spreadsheet;
 

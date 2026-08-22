@@ -11,6 +11,7 @@ export { BottomSheet } from './BottomSheet';
 export { Breadcrumb } from './Breadcrumb';
 export { Button } from './Button';
 export { CSharpLanguage } from './CSharpLanguage';
+export { Calendar } from './Calendar';
 export { Card } from './Card';
 export { CellRef } from './CellRef';
 export { Checkbox } from './Checkbox';

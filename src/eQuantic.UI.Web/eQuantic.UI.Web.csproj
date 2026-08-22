@@ -14,4 +14,11 @@
     <ProjectReference Include="..\eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
   </ItemGroup>
 
+
+  <ItemGroup>
+    <!-- The realizer's internals are the twin's contract: the key table has to be pinned against
+         lowering.ts's, and a table only the tests compare has no reason to be public API. -->
+    <InternalsVisibleTo Include="eQuantic.UI.Web.Tests" />
+  </ItemGroup>
+
 </Project>

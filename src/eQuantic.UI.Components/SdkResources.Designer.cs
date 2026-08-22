@@ -76,5 +76,21 @@ namespace eQuantic.UI.Components
         {
             get { return ResourceManager.GetString("NothingSelected", Culture)!; }
         }
-    }
+    
+        internal static string PreviousMonth
+        {
+            get { return ResourceManager.GetString("PreviousMonth", Culture)!; }
+        }
+
+        internal static string NextMonth
+        {
+            get { return ResourceManager.GetString("NextMonth", Culture)!; }
+        }
+
+        internal static string Today
+        {
+            get { return ResourceManager.GetString("Today", Culture)!; }
+        }
+
+}
 }

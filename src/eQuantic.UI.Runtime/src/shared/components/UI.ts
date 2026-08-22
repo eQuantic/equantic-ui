@@ -1,4 +1,4 @@
-import { AdaptiveNode, Adjustable, AlignmentValue, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxStyle, Button, Card, Checkbox, Chip, ColorToken, Column, CrossAlignValue, CultureOption, CultureSwitcher, Dialog, DialogAction, Divider, DragDismiss, Draggable, Drawer, Drawing, EdgeInsets, EmptyState, Flexible, Grid, GridTrack, Hoverable, Icon, IconButton, IconGlyph, IconsValue, Image, ImageFitValue, InFlow, InView, KeyChord, Link, ListDetail, ListItem, ListView, MainAlignValue, Markdown, Mermaid, NavigationRail, NavItem, Overlay, Positioned, Presence, PresenceMotionValue, Pressable, ProgressBar, Row, SafeArea, ScrollAxisValue, ScrollView, SearchField, Select, Shortcut, Simulated, SizeVariantValue, Skeleton, Slider, Spacer, Spinner, Stack, Stepper, Sticky, Switch, Tabs, Text, TextAlignmentValue, TextEntry, TextInput, Toast, Tooltip, TypeRoleValue, TypeStyle, VariantValue, Vector, VectorDrawing, VisualNode } from "../runtime-exports";
+import { AdaptiveNode, Adjustable, AlignmentValue, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxStyle, Button, Calendar, Card, Checkbox, Chip, ColorToken, Column, CrossAlignValue, CultureOption, CultureSwitcher, DateOnly, Dialog, DialogAction, Divider, DragDismiss, Draggable, Drawer, Drawing, EdgeInsets, EmptyState, Flexible, Grid, GridTrack, Hoverable, Icon, IconButton, IconGlyph, IconsValue, Image, ImageFitValue, InFlow, InView, KeyChord, Link, ListDetail, ListItem, ListView, MainAlignValue, Markdown, Mermaid, NavigationRail, NavItem, Overlay, Positioned, Presence, PresenceMotionValue, Pressable, ProgressBar, Row, SafeArea, ScrollAxisValue, ScrollView, SearchField, Select, Shortcut, Simulated, SizeVariantValue, Skeleton, Slider, Spacer, Spinner, Stack, Stepper, Sticky, Switch, Tabs, Text, TextAlignmentValue, TextEntry, TextInput, Toast, Tooltip, TypeRoleValue, TypeStyle, VariantValue, Vector, VectorDrawing, VisualNode } from "../runtime-exports";
 
 export class UI {
     static column(gap: number = 0, main: MainAlignValue = 'start', cross: CrossAlignValue = 'stretch', wrap: boolean = false, runGap: number | null = null, padding: EdgeInsets | null = null, children: VisualNode[] | null = null) {
@@ -187,6 +187,10 @@ export class UI {
 
     static stepper(value: number, onChanged: ((int: number) => void) | null = null) {
         return new Stepper(value, onChanged);
+    }
+
+    static calendar(selected: DateOnly | null = null, onChanged: ((dateOnly: DateOnly) => void) | null = null, min: DateOnly | null = null, max: DateOnly | null = null) {
+        return new Calendar(selected, onChanged, min, max);
     }
 
     static select(options: string[], selectedIndex: number = -1, onChanged: ((int: number) => void) | null = null, placeholder: string | null = null) {

@@ -1199,6 +1199,15 @@ public static class WebRealizer
             },
         };
         if (navigable.Label is { Length: > 0 } gridLabel) element.RawAttributes["aria-label"] = gridLabel;
+        // The keyboard, DECLARED here as well as installed by the client twin. The server never
+        // dispatches a key, so this delegate does not run — but the lowered tree is what the
+        // parity net compares, and a fixture that says "no handler" cannot notice the client
+        // losing one. NavigableKeys is the same table the TS half reads, cross-pinned.
+        if (navigable.OnMove is { } onMove)
+            element.OnKeyDown = key =>
+            {
+                if (NavigableKeys.Move(key.Key, key.ShiftKey) is { } move) onMove(move);
+            };
         // Ids are scoped to THIS grid: two calendars on one page would otherwise both call their
         // cells eq-cell-1-1, which is a duplicate id and an activedescendant that may resolve into
         // the wrong grid. The scope is the grid's own name, hashed with the atomizer's FNV — the

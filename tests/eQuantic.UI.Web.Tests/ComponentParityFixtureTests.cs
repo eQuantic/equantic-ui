@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Globalization;
 using System.Text.Json;
 using eQuantic.UI.Components;
 using eQuantic.UI.Core;
@@ -59,6 +60,17 @@ public class ComponentParityFixtureTests
             new AccordionItem("One") { Content = new Text("body one", TypeRole.BodyM, Theme.TextPrimary) },
             new AccordionItem("Two") { Content = new Text("body two", TypeRole.BodyM, Theme.TextPrimary) },
         ], 0), [1]),
+
+        // A COMPOSITE, and the first case here whose tree is a grid: 31 cells, seven column
+        // headers, a roving tab order, and a selection stated as an attribute. Pinned under a
+        // fixed culture and a fixed date, or the fixture would say something different every day.
+        ("calendar-july-2026", new eQuantic.UI.Components.Calendar(new DateOnly(2026, 7, 17)), NoPresses),
+        ("calendar-bounded", new eQuantic.UI.Components.Calendar(new DateOnly(2026, 7, 17),
+            min: new DateOnly(2026, 7, 10), max: new DateOnly(2026, 7, 20)), NoPresses),
+        // DRIVEN: pressing a day is the whole point of a calendar, and the frame after it is where
+        // a twin whose state moved differently shows. Index 2 is the first day CELL — the two
+        // chevrons come first in tree order — so this picks July 1st over the 17th.
+        ("calendar-picks-a-day", new eQuantic.UI.Components.Calendar(new DateOnly(2026, 7, 17)), [2]),
     ];
 
     /// <summary>A component that is only lowered, never driven.</summary>
@@ -75,8 +87,25 @@ public class ComponentParityFixtureTests
     public void TheLoweredTrees_MatchTheSharedFixture()
     {
         var json = new JsonObject();
-        foreach (var (name, node, presses) in Cases())
-            json[name] = JsonValue.List(Frames(node, presses).Select(Canonical));
+        // A FIXED culture for the whole set: a calendar reads CultureInfo for its day and month
+        // names, so a fixture generated in São Paulo would differ from one generated in Berlin.
+        // The UI culture too, and for a different reason: a component's own labels come from
+        // SdkStrings through a ResourceManager, which reads THAT one. The twin installs the same
+        // pair before replaying.
+        var previousCulture = CultureInfo.CurrentCulture;
+        var previousUiCulture = CultureInfo.CurrentUICulture;
+        CultureInfo.CurrentCulture = new CultureInfo("en-US");
+        CultureInfo.CurrentUICulture = new CultureInfo("en-US");
+        try
+        {
+            foreach (var (name, node, presses) in Cases())
+                json[name] = JsonValue.List(Frames(node, presses).Select(Canonical));
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previousCulture;
+            CultureInfo.CurrentUICulture = previousUiCulture;
+        }
 
         var text = json.ToJson();
         var path = FixturePath();

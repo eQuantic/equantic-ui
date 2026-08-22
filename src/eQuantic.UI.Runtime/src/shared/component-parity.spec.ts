@@ -28,8 +28,16 @@ import { Button } from './components/Button';
 import { ProgressBar } from './components/ProgressBar';
 import { Select } from './components/Select';
 import { Switch } from './components/Switch';
+import { Calendar } from './components/Calendar';
+import { dateOnly } from '../utils/datetime';
+import { installCulture } from '../utils/culture';
+import calendarNames from './calendar-names.fixture.json';
 
 setPhotonTheme(photonTheme);
+
+// The calendar reads the culture for its names, so the twin replays under the SAME one the C#
+// generator fixed — with the shipped catalog, which is what a server-rendered page installs.
+installCulture('en-US', 'en-US', {}, calendarNames['en-US']);
 
 const lower = (node: unknown): HtmlNode =>
   lowerVisualNode(node as never, {
@@ -78,6 +86,12 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
       ),
       presses: [1],
     },
+    'calendar-july-2026': still(new Calendar(dateOnly(2026, 7, 17))),
+    'calendar-bounded': still(
+      new Calendar(dateOnly(2026, 7, 17), null, dateOnly(2026, 7, 10), dateOnly(2026, 7, 20)),
+    ),
+    // Driven: index 2 is the first day CELL (the two chevrons come first in tree order).
+    'calendar-picks-a-day': { node: new Calendar(dateOnly(2026, 7, 17)), presses: [2] },
   };
 }
 
@@ -189,3 +203,4 @@ describe('component parity: the twin lowers to the tree C# lowers to', () => {
     });
   }
 });
+
