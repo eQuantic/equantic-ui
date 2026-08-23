@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { effectiveStyle } from './style-atomizer';
 import { Box, BoxStyle, Link, Text } from './vocabulary';
 import { lowerVisualNode } from './lowering';
 import { ambientLoweringContext } from './photon-context';
@@ -16,7 +17,10 @@ describe('link lowering (navigation semantics)', () => {
 
     expect(html.tag).toBe('a');
     expect(html.attributes['href']).toBe('/users/2');
-    expect(html.attributes['class']).toBe('eq-link');
+    // `eq-link` plus the atomic class that declares the anchor a hit target — a transparent row
+    // above it now carries `pointer-events: none`, which inherits.
+    expect(html.attributes['class']).toContain('eq-link');
+    expect(effectiveStyle(html)).toContain('pointer-events: auto');
     expect(html.children).toHaveLength(1);
   });
 

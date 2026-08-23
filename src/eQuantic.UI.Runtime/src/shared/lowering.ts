@@ -737,6 +737,7 @@ function lowerLink(node: LinkNode, context: LoweringContext, path: string): Html
     children: [],
   };
   const linkStyle = atomicAttrs({
+    'pointer-events': 'auto',
     width: linkFill.width ? '100%' : undefined,
     'max-width': linkCap > 0 ? `${linkCap}px` : undefined,
     height: linkFill.height ? '100%' : undefined,
@@ -869,6 +870,9 @@ function lowerTextEntry(node: TextEntryNode, context: LoweringContext): HtmlNode
   const lines = node.lines ?? 1;
   const multiline = lines > 1;
   const input = element(multiline ? 'textarea' : 'input', {
+    // A field takes the keyboard and the pointer, and says so: `none` inherits, and any row above
+    // it may now be transparent.
+    'pointer-events': 'auto',
     width: '100%',
     padding: '0',
     background: 'none',
@@ -1908,7 +1912,9 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
     // given the layer's z-index: it covered the viewport with an invisible, fully interactive
     // rectangle, so on a phone the shell's own menu button could not be tapped. The element stays
     // (child counts feed `> :first-child` mechanics); only its ability to be a target goes.
-    'pointer-events': paintsNothing(box) ? 'none' : undefined,
+    // The other half the rule above makes necessary: a box that DOES paint says it is a target,
+    // because `none` inherits and any row above it may now be carrying it.
+    'pointer-events': paintsNothing(box) ? 'none' : 'auto',
   };
 
   // ELEVATION DECIDES WHAT IS ON TOP, not just how deep the shadow is (C# twin). A raised surface
@@ -2024,6 +2030,13 @@ function lowerFlex(flex: FlexNodeValue, context: LoweringContext, path: string):
     'min-height': flex.height?.kind === 'fill' ? '0' : undefined,
     padding: flex.padding && !isZeroInsets(flex.padding) ? paddingValue(flex.padding) : undefined,
     'background-color': flex.background ? tokenValue(flex.background) : undefined,
+    // A layout node that PAINTS NOTHING is not a hit target — the C# twin, and the framework's
+    // inspiration deciding it: Flutter's RenderBox.hitTestSelf answers false, so a Row is
+    // invisible to a tap and only its children register. Every DOM element is a target whether it
+    // draws or not, which is why a transparent full-width band swallowed clicks meant for what
+    // was behind it. Verified in a browser, not only in a fixture: the same empty point in the
+    // same row hits the row before this and passes through after.
+    'pointer-events': flex.background ? 'auto' : 'none',
     'border-radius':
       flex.cornerRadius && !isZeroRadii(flex.cornerRadius)
         ? radiusValue(flex.cornerRadius)
@@ -2311,6 +2324,7 @@ function lowerPressable(
     // A Fill child needs the 100% chain to pass through the button (scrim et al.).
     width: fill.width ? '100%' : undefined,
     'max-width': cap > 0 ? `${cap}px` : undefined,
+    'pointer-events': 'auto',
     height: fill.height ? '100%' : undefined,
   });
 
@@ -2650,6 +2664,7 @@ function lowerAdjustable(node: AdjustableNode, context: LoweringContext, path: s
   const host = element('div', {
     width: fill.width ? '100%' : undefined,
     'max-width': cap > 0 ? `${cap}px` : undefined,
+    'pointer-events': 'auto',
     height: fill.height ? '100%' : undefined,
   });
   const role = node.role ?? 'slider';
@@ -2942,6 +2957,7 @@ function lowerHoverable(node: HoverableNode, context: LoweringContext, path: str
   const host = element('div', {
     width: fill.width ? '100%' : undefined,
     'max-width': cap > 0 ? `${cap}px` : undefined,
+    'pointer-events': 'auto',
     height: fill.height ? '100%' : undefined,
   });
   if (node.onChanged) {

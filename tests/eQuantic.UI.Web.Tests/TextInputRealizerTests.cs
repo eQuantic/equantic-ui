@@ -56,7 +56,10 @@ public class TextInputRealizerTests
         input.Attributes["placeholder"].Should().Be("you@company.com");
         input.Attributes["style"].Should().Be(
             $"width: 100%; padding: 0; background: none; border: none; " +
-            $"color: {TokenCss.Value(Theme.TextPrimary)}; font-family: inherit");
+            $"color: {TokenCss.Value(Theme.TextPrimary)}; font-family: inherit; " +
+            // The field declares itself a hit target: `pointer-events: none` inherits from any
+            // transparent row above it, and a field that cannot be clicked cannot be typed into.
+            "pointer-events: auto");
 
         var description = node.Children[1];
         description.Tag.Should().Be("span");
