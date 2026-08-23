@@ -75,6 +75,14 @@ describe('Router (happy-dom)', () => {
   afterEach(() => router.stop());
 
   describe('navigate(href) and another origin', () => {
+    // `location.assign` is the WINDOW's, shared by every test in this worker — replacing it and
+    // walking away makes some later test fail for a reason it has nothing to do with. Put back
+    // after each one.
+    const realAssign = window.location.assign;
+    afterEach(() => {
+      Object.defineProperty(window.location, 'assign', { value: realAssign, configurable: true });
+    });
+
     /** The window's own `location.assign`, watched — the router calls it to leave the SPA. */
     function watchAssign() {
       const assign = vi.fn();
