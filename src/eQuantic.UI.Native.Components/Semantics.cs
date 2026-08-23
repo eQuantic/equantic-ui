@@ -207,7 +207,11 @@ public static class SemanticsTree
 
         static void Gather(LayoutNode node, List<string> parts)
         {
-            if (node.Source is Text { Content.Length: > 0 } text) parts.Add(text.Content);
+            // PlainContent, for the reason the StaticText case above gives: a paragraph with runs
+            // has an empty Content. Here it costs more than a missing announcement — a control
+            // whose label happens to emphasise one word derived NO name at all, and a nameless
+            // button is announced as "button" and nothing else.
+            if (node.Source is Text { PlainContent.Length: > 0 } text) parts.Add(text.PlainContent);
             foreach (var child in node.Children) Gather(child, parts);
         }
     }

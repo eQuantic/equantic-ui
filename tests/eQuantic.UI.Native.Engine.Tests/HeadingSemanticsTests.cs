@@ -58,6 +58,20 @@ public class HeadingSemanticsTests
     }
 
     [Fact]
+    public void AControlNamedByRichText_HasAName()
+    {
+        // The OTHER reader of the same field: a control with no explicit label derives its name
+        // from the Text under it. A button whose label is styled — one word emphasised, which is
+        // ordinary — had nothing to derive from and reached the platform nameless. A nameless
+        // button is the worst outcome in this file: VoiceOver announces "button" and stops.
+        var styled = new Text("") { Spans = [new TextRun("Delete "), new TextRun("draft")] };
+        var button = new Pressable(styled, () => { });
+
+        SemanticsOf(button).Should().ContainSingle(n => n.Role == SemanticRole.Button)
+            .Which.Label.Should().Be("Delete draft");
+    }
+
+    [Fact]
     public void ItIsATraitOnStaticText_NotARoleOfItsOwn()
     {
         // A heading is still text: it reads as text, it is copied as text, and only the NAVIGATION
