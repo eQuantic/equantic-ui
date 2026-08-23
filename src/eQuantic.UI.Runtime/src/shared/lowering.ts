@@ -2775,6 +2775,23 @@ function lowerSimulated(
  * The lowering of the result happens where it always did — this only decides which branch the child
  * takes, which is the decision `child.nodeKind === 'positioned'` was getting wrong.
  */
+/**
+ * A component the walk can go THROUGH, either family.
+ *
+ * `nodeKind === 'component'` is only the ABSTRACT family's badge. The web family — what a
+ * transpiled stateless component extends — deliberately carries no nodeKind, because the
+ * lowering's default branch recognises it by that absence and lets it render itself. Everywhere
+ * else the two are interchangeable; here they were not, and a `Positioned` returned by a stateless
+ * component laid out in FLOW while the identical stateful one was placed.
+ *
+ * The test is the build both families declare, which is also the thing this walk needs: the offsets
+ * live in the node a component BUILDS, and a render cannot be asked for them.
+ */
+function buildsItsOwnNode(node: unknown): boolean {
+  const candidate = node as { nodeKind?: string; build?: unknown } | null | undefined;
+  return candidate?.nodeKind === 'component' || typeof candidate?.build === 'function';
+}
+
 function resolveStackChild(
   child: VisualNodeValue,
   context: LoweringContext,
@@ -2782,7 +2799,7 @@ function resolveStackChild(
 ): VisualNodeValue | null {
   let node = child;
   // Bounded: a component whose build returns itself would otherwise spin here.
-  for (let hops = 0; hops < 8 && node?.nodeKind === 'component'; hops++) {
+  for (let hops = 0; hops < 8 && buildsItsOwnNode(node); hops++) {
     const pass = getActivePass();
     const resolved = (
       pass ? pass.store.reconcile(path, node, pass.invalidator) : node
