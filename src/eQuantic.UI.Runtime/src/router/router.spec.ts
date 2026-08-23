@@ -74,6 +74,54 @@ describe('Router (happy-dom)', () => {
 
   afterEach(() => router.stop());
 
+  describe('navigate(href) and another origin', () => {
+    /** The window's own `location.assign`, watched — the router calls it to leave the SPA. */
+    function watchAssign() {
+      const assign = vi.fn();
+      Object.defineProperty(window.location, 'assign', { value: assign, configurable: true });
+      return assign;
+    }
+
+    it('leaves the site when the href names another origin, even if the PATH matches a route', async () => {
+      // The shape the site hit: a documentation link whose path happens to be one of ours. Matching
+      // on pathname alone rendered the LOCAL page and kept the reader here, quietly.
+      const assign = watchAssign();
+
+      const handled = await router.navigate('https://ui.equantic.tech/counter');
+
+      expect(handled).toBe(false);
+      expect(assign).toHaveBeenCalledWith('https://ui.equantic.tech/counter');
+      expect(onNavigate).not.toHaveBeenCalled();
+    });
+
+    it('still navigates in-SPA for the same origin, spelled absolutely', async () => {
+      const assign = watchAssign();
+
+      const handled = await router.navigate('http://localhost:3000/counter');
+
+      expect(handled).toBe(true);
+      expect(assign).not.toHaveBeenCalled();
+      expect(onNavigate).toHaveBeenCalled();
+    });
+
+    it('still navigates in-SPA for a relative href', async () => {
+      const assign = watchAssign();
+
+      const handled = await router.navigate('/counter');
+
+      expect(handled).toBe(true);
+      expect(assign).not.toHaveBeenCalled();
+    });
+
+    it('leaves the site for another origin whose path matches nothing either', async () => {
+      const assign = watchAssign();
+
+      await router.navigate('https://example.com/nowhere');
+
+      expect(assign).toHaveBeenCalledWith('https://example.com/nowhere');
+    });
+  });
+
   function anchor(attrs: Record<string, string>): HTMLAnchorElement {
     const a = document.createElement('a');
     for (const [k, v] of Object.entries(attrs)) a.setAttribute(k, v);

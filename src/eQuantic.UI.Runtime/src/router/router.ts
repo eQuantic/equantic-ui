@@ -167,6 +167,17 @@ export class Router {
    */
   async navigate(href: string): Promise<boolean> {
     const url = new URL(href, this.win.location.href);
+
+    // ANOTHER ORIGIN is another site, whatever its path happens to say. The click path refuses one
+    // (see onClick); this one matched on the PATHNAME alone, so `Navigator.Go("https://
+    // ui.equantic.tech/docs")` found the local /docs route and rendered it — the reader stayed on
+    // this site looking at the wrong page, with the address bar agreeing. A link to a documentation
+    // site is exactly the shape that hits it.
+    if (url.origin !== this.win.location.origin) {
+      this.win.location.assign(href);
+      return false;
+    }
+
     const match = matchRoute(this.routes, url.pathname);
     if (!match) {
       this.win.location.assign(href);
