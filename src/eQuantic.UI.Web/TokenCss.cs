@@ -473,6 +473,19 @@ public static class PhotonCssGenerator
         // with it. Centring here fixes every composition instead of asking each one to remember a
         // Row, and a multi-line entry is unaffected (its height is its own, and centring a single
         // child that already fills the line is a no-op).
+        // A heading is a heading for the OUTLINE, never for the paint: the type role already
+        // carries size, weight and line height, and the browser's own h1–h6 rules would add a
+        // margin and a font size on top of it. Zeroed here rather than per element, so choosing a
+        // level costs nothing in the atomic sheet.
+        //
+        // `display` is in the list for the reason the others are not enough. A Text has always
+        // lowered to a SPAN, which is inline; a heading element is block. Inside a flex or grid
+        // parent that difference is erased (a child is blockified either way), but in inline flow
+        // it is a line break the author never asked for — the one place where marking up the
+        // outline would still have moved the page. Every h1–h6 on a page comes from a Text, so
+        // the rule is exactly as scoped as it looks.
+        css.AppendLine("h1, h2, h3, h4, h5, h6 { display: inline; margin: 0; font-size: inherit; "
+            + "font-weight: inherit; line-height: inherit; }");
         css.AppendLine(".eq-field { display: flex; align-items: center; height: 100%; }");
         css.AppendLine(".eq-entry::placeholder { color: var(--eq-color-text-muted); }");
         // AUTOFILL. Chrome paints its own background and text colour over an autofilled control,

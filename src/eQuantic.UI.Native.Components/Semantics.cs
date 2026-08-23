@@ -68,7 +68,16 @@ public readonly record struct SemanticNode(
     /// <para>Design system §10 REQUEST, opened by C15: before this, a Tab and an Option reached
     /// the native tree as plain Buttons and their selection was paint only.</para>
     /// </summary>
-    bool? Selected = null);
+    bool? Selected = null,
+    /// <summary>
+    /// Where this text sits in the document's OUTLINE — 1 to 6, 0 for anything that is not a
+    /// heading (design system A9). Every platform has the same navigation built on it: VoiceOver's
+    /// rotor and TalkBack's heading swipe jump between them, which is how a screen-reader user
+    /// skims a long page instead of reading it end to end.
+    /// <para>A TRAIT rather than a role, because a heading is still static text — the bridges add
+    /// the platform's header trait on top of what they already report.</para>
+    /// </summary>
+    int HeadingLevel = 0);
 
 /// <summary>
 /// Derives the SEMANTICS TREE from a realized frame: the page layout plus every overlay layout
@@ -159,9 +168,13 @@ public static class SemanticsTree
                     adjustable.Label, null, false));
                 return;
 
-            case Text text when text.Content.Length > 0:
+            // PLAIN content, never Content: a paragraph with runs carries an EMPTY Content — the
+            // words live in the spans — so reading the field dropped the whole node and a styled
+            // paragraph reached a screen reader as nothing at all. PlainContent's own summary says
+            // it is what accessibility reads; this is the caller that was not doing it.
+            case Text text when text.PlainContent.Length > 0:
                 nodes.Add(new(SemanticRole.StaticText, node.Path ?? "", node.Bounds,
-                    text.Content, null, false));
+                    text.PlainContent, null, false, HeadingLevel: text.HeadingLevel));
                 return;
 
             // A labelled icon announces; an unlabelled one is decoration and stays silent.
@@ -194,7 +207,11 @@ public static class SemanticsTree
 
         static void Gather(LayoutNode node, List<string> parts)
         {
-            if (node.Source is Text { Content.Length: > 0 } text) parts.Add(text.Content);
+            // PlainContent, for the reason the StaticText case above gives: a paragraph with runs
+            // has an empty Content. Here it costs more than a missing announcement — a control
+            // whose label happens to emphasise one word derived NO name at all, and a nameless
+            // button is announced as "button" and nothing else.
+            if (node.Source is Text { PlainContent.Length: > 0 } text) parts.Add(text.PlainContent);
             foreach (var child in node.Children) Gather(child, parts);
         }
     }

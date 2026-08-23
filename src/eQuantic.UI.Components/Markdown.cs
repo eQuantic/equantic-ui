@@ -95,7 +95,14 @@ public sealed class Markdown : StatelessComponent
                 {
                     Width = SizeValue.Fill,
                     Padding = new EdgeInsets(0, block.Level <= 2 ? 10 : 6, 0, 0),
-                }, new Text(block.Text, role, theme.TextPrimary, maxLines: 0) { Key = block.Id });
+                }, new Text(block.Text, role, theme.TextPrimary, maxLines: 0,
+                    // The document's outline, from the only place that already knows it. A `##`
+                    // said level two long before the framework could emit one; until now every
+                    // heading in every rendered document was a span, which is the worst place for
+                    // it — long prose is exactly what a reader skims by heading. The parser clamps
+                    // to four, so the level is always one HTML has.
+                    headingLevel: block.Level)
+                { Key = block.Id });
             }
 
             case MarkdownBlockKind.List:

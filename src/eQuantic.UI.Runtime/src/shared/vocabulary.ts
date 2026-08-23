@@ -570,8 +570,25 @@ export class Column extends FlexNode {
   }
 }
 
+/**
+ * A heading level as the C# `Text` accepts it — 1 to 6, or 0 for text that is not a heading.
+ * Throws where C# throws, because whoever builds a Text is CODE and a wrong level is a bug in it.
+ * The lowering is the other half and behaves differently on purpose: it reads plain objects that
+ * may predate the field, so it degrades rather than taking the page down.
+ */
+function level(value: number): number {
+  if (!Number.isInteger(value) || value < 0 || value > 6) {
+    throw new RangeError(
+      `Heading level ${value} is not 1 to 6 — HTML has six, and 0 is text that is not a heading.`,
+    );
+  }
+  return value;
+}
+
 interface TextConfig {
   styleOverride?: TypeStyleValue | null;
+  /** 1..6, or 0 for text that is not part of the outline. */
+  headingLevel?: number;
   mono?: boolean;
   /** The SLANTED cut for the whole paragraph (C# `Text.Italic`). */
   italic?: boolean;
@@ -603,6 +620,8 @@ export class Text extends VisualNode {
   spans: import('./nodes').TextRunValue[] | null = null;
   /** Spec S6: animates color changes (the design's transition-colors). */
   transition: TransitionSpec | null = null;
+  /** Where this text sits in the document's OUTLINE — 1..6, 0 for text that is not a heading. */
+  headingLevel = 0;
 
   /**
    * Two shapes, like the flex containers: transpiled C# passes the knobs positionally, hand-written
@@ -618,6 +637,7 @@ export class Text extends VisualNode {
     mono?: boolean,
     tabular?: boolean,
     styleOverride?: TypeStyleValue | null,
+    headingLevel?: number,
     config?: TextConfig,
   ) {
     super();
@@ -627,13 +647,19 @@ export class Text extends VisualNode {
     this.maxLines = maxLines;
     if (typeof align === 'object' && align !== null) {
       Object.assign(this, align);
-      return;
+    } else {
+      if (align !== undefined) this.align = align;
+      if (mono !== undefined) this.mono = mono;
+      if (tabular !== undefined) this.tabular = tabular;
+      if (styleOverride !== undefined && styleOverride !== null) this.styleOverride = styleOverride;
+      if (headingLevel !== undefined) this.headingLevel = headingLevel;
+      if (config) Object.assign(this, config);
     }
-    if (align !== undefined) this.align = align;
-    if (mono !== undefined) this.mono = mono;
-    if (tabular !== undefined) this.tabular = tabular;
-    if (styleOverride !== undefined && styleOverride !== null) this.styleOverride = styleOverride;
-    if (config) Object.assign(this, config);
+    // LAST, after every path that can write the field — the positional argument, the config in
+    // the align slot, and the config in the trailing slot, which the object initializer of the C#
+    // side becomes. Checking any earlier only guards the writes that came before it, which is the
+    // bug this line replaced: a trailing `{ headingLevel: 7 }` overwrote a validated value.
+    this.headingLevel = level(this.headingLevel);
   }
 }
 

@@ -41,8 +41,8 @@ export class UI {
         return new Box(style, child);
     }
 
-    static text(content: string, role: TypeRoleValue = 'bodyL', color: ColorToken | null = null, maxLines: number = 0, align: TextAlignmentValue = 'start', mono: boolean = false, tabular: boolean = false, styleOverride: TypeStyle | null = null) {
-        return new Text(content, role, color, maxLines, align, mono, tabular, styleOverride);
+    static text(content: string, role: TypeRoleValue = 'bodyL', color: ColorToken | null = null, maxLines: number = 0, align: TextAlignmentValue = 'start', mono: boolean = false, tabular: boolean = false, styleOverride: TypeStyle | null = null, headingLevel: number = 0) {
+        return new Text(content, role, color, maxLines, align, mono, tabular, styleOverride, headingLevel);
     }
 
     static textEntry(value: string, onChanged: ((string: string) => void) | null = null) {

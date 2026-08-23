@@ -26,7 +26,7 @@ export class EmptyState extends StatelessComponent {
         let column = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill, cross: 'center', padding: EdgeInsets.symmetric(16, 48) });
         column.add(well);
         column.add(Spacer.fixed(16));
-        column.add(new Text(this.title, 'title', theme.textPrimary, 2, 'start', false, false, null, { styleOverride: new TypeStyle(20, 26, 'semiBold', 0, Math.fround(1.3)) }));
+        column.add(new Text(this.title, 'title', theme.textPrimary, 2, 'start', false, false, null, 0, { styleOverride: new TypeStyle(20, 26, 'semiBold', 0, Math.fround(1.3)) }));
         let body: any; 
         if ((body = this.body) != null) {
             column.add(Spacer.fixed(6));

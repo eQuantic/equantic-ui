@@ -26,7 +26,7 @@ export class Markdown extends StatelessComponent {
                 {
                     let role: TypeRoleValue = style.heading4;
                     if (block.level === 1) role = style.heading1; else if (block.level === 2) role = style.heading2; else if (block.level === 3) role = style.heading3;
-                    return new Box(new BoxStyle({ width: SizeValue.fill, padding: new EdgeInsets(0, block.level <= 2 ? 10 : 6, 0, 0) }), new Text(block.text, role, theme.textPrimary, 0, 'start', false, false, null, { key: block.id }));
+                    return new Box(new BoxStyle({ width: SizeValue.fill, padding: new EdgeInsets(0, block.level <= 2 ? 10 : 6, 0, 0) }), new Text(block.text, role, theme.textPrimary, 0, 'start', false, false, null, block.level, { key: block.id }));
                 }
             case 'list':
                 return Markdown.listView(block, theme, style);
@@ -52,7 +52,7 @@ export class Markdown extends StatelessComponent {
         for (const run of runs) {
             spans.push(new TextRun(run.text, null, false, { mono: run.code, styleOverride: run.code ? code : null, color: run.code ? theme.textPrimary : null, weight: run.bold ? 'bold' : null, italic: run.italic, destination: run.isLink ? run.href : null }));
         }
-        return new Text('', style.body, theme.textSecondary, 0, 'start', false, false, null, { spans: spans });
+        return new Text('', style.body, theme.textSecondary, 0, 'start', false, false, null, 0, { spans: spans });
     }
 
     static listView(block: MarkdownBlock, theme: any, style: MarkdownStyle) {

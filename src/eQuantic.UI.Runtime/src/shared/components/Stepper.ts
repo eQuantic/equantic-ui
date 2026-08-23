@@ -36,7 +36,7 @@ export class Stepper extends StatelessComponent {
         let row = new Row(0, 'start', 'center', false, null, null, { height: SizeValue.fill, cross: 'center' });
         row.add(Stepper.arm(theme, 'minus', height, canDecrement, () => this.onChanged?.(this.value - this.step), this.action('Decrease')));
         let reading = new Row(0, 'start', 'center', false, null, null, { height: SizeValue.fill, main: 'center', cross: 'center' });
-        reading.add(new Text(`${this.value}${this.suffix}`, 'label', this.disabled ? theme.textMuted : theme.textPrimary, 1, 'start', false, false, null, { align: 'center', tabular: true, styleOverride: theme.type('label').withSize(Sizing.labelSize(this.size, context.density)) }));
+        reading.add(new Text(`${this.value}${this.suffix}`, 'label', this.disabled ? theme.textMuted : theme.textPrimary, 1, 'start', false, false, null, 0, { align: 'center', tabular: true, styleOverride: theme.type('label').withSize(Sizing.labelSize(this.size, context.density)) }));
         row.add(new Box(new BoxStyle({ minWidth: height, height: SizeValue.fill }), reading));
         row.add(Stepper.arm(theme, 'plus', height, canIncrement, () => this.onChanged?.(this.value + this.step), this.action('Increase')));
         return new Box(new BoxStyle({ width: SizeValue.hug, height: height, background: this.disabled ? theme.surfaceSubtle : theme.surface, cornerRadius: new CornerRadii(Sizing.radius(this.size)), borderWidth: 1, borderColor: theme.borderStrong, opacity: this.disabled ? theme.disabledOpacity : 1 }), row);

@@ -100,6 +100,14 @@ internal static class PhotonAccessibility
             // word for both, read after the name.
             if (node.Current || node.Selected == true)
                 SendVoid(element, Sel("setAccessibilitySelected:"), true);
+            // AppKit is the one platform of the three that takes the LEVEL as well as the fact —
+            // AXHeading plus AXDisclosureLevel — so VoiceOver on the Mac can announce "heading
+            // level 2" the way it does in a browser.
+            if (node.HeadingLevel > 0)
+            {
+                SendVoid(element, Sel("setAccessibilityRole:"), NSString("AXHeading"));
+                SendVoid(element, Sel("setAccessibilityDisclosureLevel:"), (long)node.HeadingLevel);
+            }
             SendVoid(element, Sel("setAccessibilityEnabled:"), !node.Disabled);
             SendVoid(element, Sel("setAccessibilityParent:"), view);
             // The path, visible in Accessibility Inspector — the same identity every press,

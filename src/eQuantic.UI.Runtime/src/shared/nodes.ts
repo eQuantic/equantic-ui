@@ -344,6 +344,8 @@ export interface FlexNodeValue extends VisualNodeValue {
 export interface TextNode extends VisualNodeValue {
   nodeKind: 'text';
   content: string;
+  /** Where this text sits in the document's OUTLINE — 1..6, 0 for text that is not a heading. */
+  headingLevel?: number;
   /** `TypeRole` as a camelCase member string ('display' | 'heading' | … | 'bodyL' | 'caption'). */
   role: string;
   color?: ColorTokenValue | null;

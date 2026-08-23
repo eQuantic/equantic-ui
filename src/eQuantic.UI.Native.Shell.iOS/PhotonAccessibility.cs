@@ -126,6 +126,10 @@ internal sealed class PhotonAccessibility
         // calendar day) — UIKit has one trait for both. A check never gets it (its state is its
         // VALUE), which is why the flag is separate from Checked rather than another value of it.
         if (node.Current || node.Selected == true) traits |= UIAccessibilityTrait.Selected;
+        // A heading is still static text with a trait ON TOP, which is what the rotor's "Headings"
+        // setting walks. UIKit carries no LEVEL, so the depth is the outline's business and this
+        // reports only that the element is one.
+        if (node.HeadingLevel > 0) traits |= UIAccessibilityTrait.Header;
         return traits;
     }
 

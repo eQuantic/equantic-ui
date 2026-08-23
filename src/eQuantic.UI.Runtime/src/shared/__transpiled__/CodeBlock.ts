@@ -94,7 +94,7 @@ export class CodeBlock extends StatelessComponent {
         corner.add(new Spacer(1));
         let caption: any; 
         if ((caption = this.caption) != null) {
-            corner.add(new Text(caption, 'labelSmall', this.inverse ? CodeBlock.codeInkMuted : theme.textMuted, 1, 'start', false, false, null, { mono: true }));
+            corner.add(new Text(caption, 'labelSmall', this.inverse ? CodeBlock.codeInkMuted : theme.textMuted, 1, 'start', false, false, null, 0, { mono: true }));
         }
         let copy: any; 
         if ((copy = this.onCopy) != null) {
@@ -135,7 +135,7 @@ export class CodeBlock extends StatelessComponent {
         if ((mark = this.markerFor(index)) != null) {
             numbers.add(new Box(new BoxStyle({ width: 7, height: 7, background: this.gutterColor(mark.kind, theme), cornerRadius: new CornerRadii(999) })));
         }
-        numbers.add(new Text(String((this.firstLineNumber + index)), 'labelSmall', this.inverse ? CodeBlock.codeInkMuted : theme.textMuted, 1, 'start', false, false, null, { mono: true, tabular: true, styleOverride: $eq.withPatch(metrics.style, { weight: 'regular' }) }));
+        numbers.add(new Text(String((this.firstLineNumber + index)), 'labelSmall', this.inverse ? CodeBlock.codeInkMuted : theme.textMuted, 1, 'start', false, false, null, 0, { mono: true, tabular: true, styleOverride: $eq.withPatch(metrics.style, { weight: 'regular' }) }));
         let cell = new Box(new BoxStyle({ width: SizeValue.fixed(metrics.gutterWidth), height: SizeValue.fixed(metrics.lineHeight), padding: new EdgeInsets(0, 0, 12, 0), background: this.activeLine === index ? this.inverse ? CodeBlock.codeSlabActive : theme.colors('primary').subtle : null }), numbers);
         let pressed: any; 
         return (pressed = this.onGutterPressed) != null ? new Pressable(cell, () => pressed(index), { label: `Line ${this.firstLineNumber + index}` }) : cell;
@@ -192,7 +192,7 @@ export class CodeBlock extends StatelessComponent {
     }
 
     static run(content: string, color: ColorToken, style: TypeStyle) {
-        return new Text(content, 'labelSmall', color, 1, 'start', false, false, null, { mono: true, styleOverride: style });
+        return new Text(content, 'labelSmall', color, 1, 'start', false, false, null, 0, { mono: true, styleOverride: style });
     }
 
     markerFor(line: number) {
