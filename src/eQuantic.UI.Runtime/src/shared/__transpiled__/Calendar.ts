@@ -5,7 +5,7 @@ export class Calendar extends SharedStatefulComponent {
     _cursor: any;
     static cellSize: number = 44;
     static headerHeight: number = 28;
-    static $hydration = { _month: 'dateOnly', _cursor: 'dateOnly' };
+    static $hydration = { _month: 'dateOnly', _cursor: 'dateOnly', selected: 'dateOnly', min: 'dateOnly', max: 'dateOnly' };
     declare selected: any;
     declare onChanged: any;
     declare min: any;

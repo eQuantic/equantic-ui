@@ -3,7 +3,7 @@ import { $eq, BuildContext, DateOnly, DatePicker, Flexible, Row, SharedStatefulC
 export class DateTimePicker extends SharedStatefulComponent {
     _date: any;
     _time: any;
-    static $hydration = { _date: 'dateOnly', _time: 'timeOnly' };
+    static $hydration = { _date: 'dateOnly', _time: 'timeOnly', selected: 'dateTime', min: 'dateTime', max: 'dateTime' };
     declare selected: any;
     declare onChanged: any;
     declare min: any;

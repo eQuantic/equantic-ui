@@ -302,12 +302,25 @@ public class TypeScriptEmitter
                         c.Field(field.Name.ToCamelCase(), tsType, tsDefault, field.DefaultValueNode, field.IsStatic);
                     }
 
-                    // The page's own typed boundary — what adoptServerState hydrates a prefetch
-                    // payload by (a write-once page's fields are the payload's fields).
+                    // The component's typed boundary — what hydration coerces an incoming payload
+                    // by. Fields AND public auto-properties: a property is a slot the payload
+                    // fills exactly as a field is, and leaving them out meant a `long` prop
+                    // arrived as the JSON number it was sent as, into a slot the twin declares
+                    // `bigint`. The first arithmetic on it threw "Cannot mix BigInt and other
+                    // types" — in the browser only, after hydration, on a page the server had
+                    // rendered perfectly.
                     if (!component.IsPrimitive)
-                        EmitHydrationMap(c, component.ComponentFields
+                    {
+                        var slots = component.ComponentFields
                             .Where(field => !field.IsStatic)
-                            .Select(field => (field.Name.ToCamelCase(), field.TypeNode)));
+                            .Select(field => (Key: field.Name.ToCamelCase(), Type: field.TypeNode))
+                            .Concat(component.Properties
+                                .Where(prop => prop.IsPublic && !prop.IsStatic && IsAutoProperty(prop))
+                                .Select(prop => (Key: prop.Name.ToCamelCase(), Type: prop.Node?.Type)))
+                            .GroupBy(slot => slot.Key, StringComparer.Ordinal)
+                            .Select(group => group.First());
+                        EmitHydrationMap(c, slots);
+                    }
                 }
 
                 if (component.IsPrimitive)
