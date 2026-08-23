@@ -1963,17 +1963,16 @@ public static class WebRealizer
     };
 
     /// <summary>
-    /// Whether a lowered subtree already carries an interactive ELEMENT. HTML forbids a button
-    /// inside a button (and an anchor inside an anchor): the parser closes the outer one and hands
-    /// back an empty shell, so the wrapper renders as nothing and the hydrated tree disagrees with
-    /// the served HTML about the whole subtree.
-    /// </summary>
-    /// <summary>
-    /// Whether a lowered subtree already contains a control, in which case a Pressable around it
-    /// must not become a second one. Form controls count for the same reason buttons do and it is
-    /// not a style preference: HTML's content model forbids interactive content inside a
-    /// <c>button</c>, and a browser handed <c>button &gt; input</c> resolves it by taking the
-    /// typing away.
+    /// Whether a lowered subtree already carries an interactive ELEMENT, in which case a Pressable
+    /// around it must not become a second one. HTML forbids a button inside a button (and an anchor
+    /// inside an anchor): the parser closes the outer one and hands back an empty shell, so the
+    /// wrapper renders as nothing and the hydrated tree disagrees with the served HTML about the
+    /// whole subtree.
+    /// <para>
+    /// FORM CONTROLS count for the same reason, and it is not a style preference: the content model
+    /// forbids interactive content inside a <c>button</c>, and a browser handed
+    /// <c>button &gt; input</c> resolves it by taking the typing away.
+    /// </para>
     /// </summary>
     private static bool WrapsAnInteractive(IComponent node) =>
         node is RealizedElement element

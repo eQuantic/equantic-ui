@@ -46,6 +46,18 @@ public sealed class DatePicker : StatefulComponent
     public override void AdoptConfig(UiComponent next)
     {
         if (next is not DatePicker fresh) return;
+
+        // What the reader typed outlives a re-render — it has to, or a parent that rebuilds on
+        // every keystroke erases the word being written. What it must NOT outlive is the app
+        // moving the value somewhere else: the buffer wins in Build, so a stale one shows
+        // yesterday's text over today's date.
+        //
+        // The test is whether the buffer still SAYS the incoming value, not whether the value
+        // moved. Every parseable keystroke is reported, so the app hands most of them straight
+        // back — and clearing on movement alone would reformat the field under the cursor,
+        // turning "7/1" into "07/01/2026" mid-word.
+        if (_typing is { } buffer && Parse(buffer) != fresh.Selected) _typing = null;
+
         Selected = fresh.Selected;
         OnChanged = fresh.OnChanged;
         Min = fresh.Min;

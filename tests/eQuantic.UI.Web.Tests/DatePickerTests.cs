@@ -83,6 +83,23 @@ public class DatePickerTests
                     yield return descendant;
         }
 
+        Under(culture, () =>
+        {
+            var entry = Walk(picker).OfType<TextEntry>().First();
+            entry.OnChanged.Should().NotBeNull("the field has to be typeable");
+            entry.OnChanged!(text);
+        });
+    }
+
+    /// <summary>
+    /// Runs under BOTH halves of .NET's culture pair, and is the only place in this file that
+    /// touches them. Everything a picker does is culture-bound — the render, the parse, and
+    /// AdoptConfig, which parses the typed buffer to decide whether it still says the incoming
+    /// value. A test that pinned only the render read the buffer under the machine's own culture,
+    /// and a day-first laptop turned 07/01 into January. Fourth time this pair has bitten here.
+    /// </summary>
+    private static void Under(string culture, Action body)
+    {
         var previousFormat = CultureInfo.CurrentCulture;
         var previousUi = CultureInfo.CurrentUICulture;
         // Resolved BEFORE the thread is touched: a name the platform cannot answer throws here,
@@ -92,10 +109,7 @@ public class DatePickerTests
         {
             CultureInfo.CurrentCulture = asked;
             CultureInfo.CurrentUICulture = asked;
-
-            var entry = Walk(picker).OfType<TextEntry>().First();
-            entry.OnChanged.Should().NotBeNull("the field has to be typeable");
-            entry.OnChanged!(text);
+            body();
         }
         finally
         {
@@ -309,6 +323,28 @@ public class DatePickerTests
 
         Children(built).OfType<TimePicker>().Single().OnChanged!(new TimeOnly(11, 0));
         reported.Should().Be(new DateTime(2026, 7, 17, 11, 0, 0));
+    }
+
+    [Fact]
+    public void AControlledValueBeatsAStaleBuffer_ButNotTheWordBeingTyped()
+    {
+        // The app moved the date somewhere the buffer does not say: the app wins, or the field
+        // goes on showing text that no longer matches the value behind it.
+        var picker = new DatePicker();
+        TypeInto(picker, "7/17/2026");
+        Under("en-US", () => picker.AdoptConfig(new DatePicker(new DateOnly(2026, 12, 25))));
+        ValueOf(Render(picker)).Should().Be("12/25/2026");
+
+        // And the case that makes the naive rule wrong: every parseable keystroke is REPORTED, so
+        // a controlled parent hands most of them straight back. That echo is not the app moving
+        // anything, and reformatting on it would rewrite the field under the cursor.
+        // Typed WITH the leading zeros, which en-US does not use when it formats — so the two
+        // strings differ where the DATE does not, and the assertion can tell "kept the buffer"
+        // from "reformatted the value".
+        var typing = new DatePicker();
+        TypeInto(typing, "07/01/2026");
+        Under("en-US", () => typing.AdoptConfig(new DatePicker(new DateOnly(2026, 7, 1))));
+        ValueOf(Render(typing)).Should().Be("07/01/2026", "the reader is still mid-word");
     }
 
     [Fact]

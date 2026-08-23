@@ -41,6 +41,8 @@ export class DatePicker extends SharedStatefulComponent {
     adoptConfig(next: UiComponent) {
         let fresh: any; 
         if (!((next instanceof DatePicker && (fresh = next, true)))) return;
+        let buffer: any; 
+        if ((buffer = this._typing) != null && !$eq.equals(DatePicker.parse(buffer), fresh.selected)) this._typing = null;
         this.selected = fresh.selected;
         this.onChanged = fresh.onChanged;
         this.min = fresh.min;
