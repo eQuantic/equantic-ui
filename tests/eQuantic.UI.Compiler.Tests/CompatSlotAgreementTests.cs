@@ -56,7 +56,7 @@ public class CompatSlotAgreementTests
             "the declared type is what every use site compiles against");
         twin.Should().MatchRegex($@"\$hydration = \{{[^}}]*\b{slot}: '{spec}'",
             "a payload arrives as JSON — without an entry here the wire form never becomes the runtime one");
-        // A DateTime has nozero on this side to write, so there is no default to check — the
+        // A DateTime has no zero on this side to write, so there is no default to check — the
         // absence is the honest answer and the empty expectation says so.
         if (@default.Length > 0)
         {
@@ -90,5 +90,57 @@ public class CompatSlotAgreementTests
         var map = Regex.Match(Twin(), @"\$hydration = \{[^}]*\}").Value;
 
         map.Should().Contain("_internal: 'long'").And.Contain("downloads: 'long'");
+    }
+
+    /// <summary>A component with ONLY properties gets a boundary too. The map used to be emitted
+    /// inside the "are there fields" branch, so the shape most sections take — props in, nothing
+    /// private — was the one shape it never covered.</summary>
+    [Fact]
+    public void AComponentWithNoFieldsAtAll_StillGetsItsBoundary()
+    {
+        const string source = """
+            using eQuantic.UI.Core;
+            using eQuantic.UI.Primitives;
+
+            [Component]
+            public sealed class Tally : StatelessComponent
+            {
+                public long Count { get; init; }
+
+                public override VisualNode Build(ComponentContext context)
+                    => new Text("", TypeRole.BodyM, context.Theme.TextPrimary);
+            }
+            """;
+        var twin = new ComponentCompiler().CompileSource(source, "Tally.cs")
+            .Single(result => result.ComponentName == "Tally").TypeScript;
+
+        twin.Should().Contain("$hydration = { count: 'long' }");
+    }
+
+    /// <summary>A [Flags] enum is a NUMBER on this side, because the bits have to combine — so its
+    /// default is 0 and not the name of whichever member happens to be zero.</summary>
+    [Fact]
+    public void AFlagsEnumDefaultsToZero_NotToItsZeroMembersName()
+    {
+        const string source = """
+            using System;
+            using eQuantic.UI.Core;
+            using eQuantic.UI.Primitives;
+
+            [Flags]
+            public enum Edges { None = 0, Top = 1, Bottom = 2 }
+
+            [Component]
+            public sealed class Framed : StatelessComponent
+            {
+                public Edges Sides { get; init; }
+                public override VisualNode Build(ComponentContext context)
+                    => new Text("", TypeRole.BodyM, context.Theme.TextPrimary);
+            }
+            """;
+        var twin = new ComponentCompiler().CompileSource(source, "Framed.cs")
+            .Single(result => result.ComponentName == "Framed").TypeScript;
+
+        twin.Should().Contain("this.sides = 0").And.NotContain("this.sides = 'none'");
     }
 }
