@@ -44,6 +44,22 @@ describe('a wrapper carries the whole width contract', () => {
     });
   }
 
+  it('the link carries the HEIGHT axis too, as the C# side always has', () => {
+    // Half a contract is its own divergence: the C# realizer passes both axes through here, so a
+    // Height=Fill child inside a Link filled on the server and hugged in the browser.
+    const tall = {
+      nodeKind: 'box',
+      style: { height: { kind: 'fill' } },
+      child: { nodeKind: 'text', content: 'x', role: 'bodyL', maxLines: 0 },
+    };
+    const lowered = lowerVisualNode(
+      { nodeKind: 'link', child: tall, destination: '/somewhere' } as unknown as VisualNodeValue,
+      ctx,
+    );
+
+    expect(styleOf(lowered)).toContain('height: 100%');
+  });
+
   it('a child with no cap acquires none', () => {
     const plain = {
       nodeKind: 'box',

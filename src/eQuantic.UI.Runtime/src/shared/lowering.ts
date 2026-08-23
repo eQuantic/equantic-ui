@@ -723,6 +723,7 @@ function lowerLink(node: LinkNode, context: LoweringContext, path: string): Html
   const linkStyle = atomicAttrs({
     width: linkFill.width ? '100%' : undefined,
     'max-width': linkCap > 0 ? `${linkCap}px` : undefined,
+    height: linkFill.height ? '100%' : undefined,
   });
   if (linkStyle.class) anchor.attributes.class = `eq-link ${linkStyle.class}`;
   if (linkStyle.style) anchor.attributes.style = linkStyle.style;
@@ -2273,6 +2274,7 @@ function lowerPressable(
 ): HtmlNode {
   const disabled = pressable.disabled === true;
   const fill = fills(pressable.child);
+  const cap = capsAt(pressable.child);
   const child = lowerNode(pressable.child, context, null, path + '/0');
 
   // HTML forbids a button inside a button (and an anchor inside an anchor): the parser closes the
@@ -2290,7 +2292,7 @@ function lowerPressable(
     cursor: disabled ? undefined : 'pointer',
     // A Fill child needs the 100% chain to pass through the button (scrim et al.).
     width: fill.width ? '100%' : undefined,
-    'max-width': capsAt(pressable.child) > 0 ? `${capsAt(pressable.child)}px` : undefined,
+    'max-width': cap > 0 ? `${cap}px` : undefined,
     height: fill.height ? '100%' : undefined,
   });
 
@@ -2620,9 +2622,10 @@ function chordId(chord: KeyChordValue | undefined): string {
  */
 function lowerAdjustable(node: AdjustableNode, context: LoweringContext, path: string): HtmlNode {
   const fill = fills(node.child);
+  const cap = capsAt(node.child);
   const host = element('div', {
     width: fill.width ? '100%' : undefined,
-    'max-width': capsAt(node.child) > 0 ? `${capsAt(node.child)}px` : undefined,
+    'max-width': cap > 0 ? `${cap}px` : undefined,
     height: fill.height ? '100%' : undefined,
   });
   const role = node.role ?? 'slider';
@@ -2911,9 +2914,10 @@ function lowerInFlow(
 
 function lowerHoverable(node: HoverableNode, context: LoweringContext, path: string): HtmlNode {
   const fill = fills(node.child);
+  const cap = capsAt(node.child);
   const host = element('div', {
     width: fill.width ? '100%' : undefined,
-    'max-width': capsAt(node.child) > 0 ? `${capsAt(node.child)}px` : undefined,
+    'max-width': cap > 0 ? `${cap}px` : undefined,
     height: fill.height ? '100%' : undefined,
   });
   if (node.onChanged) {

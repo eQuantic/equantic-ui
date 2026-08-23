@@ -28,14 +28,6 @@ public class WrapperLayoutTransparencyTests
 
     private static HtmlNode Render(VisualNode node) => WebRealizer.Lower(node, Theme).Render();
 
-    private static IEnumerable<HtmlNode> Walk(HtmlNode node)
-    {
-        yield return node;
-        foreach (var child in node.Children)
-            foreach (var descendant in Walk(child))
-                yield return descendant;
-    }
-
     /// <summary>A card that fills its row UP TO a limit — the shape every centred panel has.</summary>
     private static Box CappedCard() => new(new BoxStyle
     {
