@@ -118,6 +118,31 @@ public class TypeScriptEmitter
     /// import candidates, or the module loads into "Todo is not defined".</summary>
     private readonly HashSet<string> _hydrationReferences = new();
 
+    /// <summary>The runtime class a C# KEYWORD annotates as. <c>decimal</c> is the only one: every
+    /// other runtime-backed type is spelled the same in both languages, so the type scan sees the
+    /// name in the syntax and routes the import itself. This one the TRANSLATION invents, and a
+    /// name no walk can see is a name no import covers.</summary>
+    private const string Decimal = "Decimal";
+
+    /// <summary>Runtime names an ANNOTATION introduced — same contract as
+    /// <see cref="_hydrationReferences"/>, and merged into the import candidates beside it.</summary>
+    private readonly HashSet<string> _annotationReferences = new();
+
+    /// <summary>The TS annotation for a C# type, registering any runtime class the mapping names.
+    /// Every emitting call site goes through here rather than the static mapper, so a translated
+    /// name cannot reach the output without its import.</summary>
+    private string Annotate(string? csharpType)
+    {
+        var ts = CSharpTypeToTypeScript(csharpType);
+        // The name can arrive wrapped — `Decimal[]`, `Decimal | null`, `Map<string, Decimal>` — so
+        // the test is on the IDENTIFIERS the annotation is made of, not on the whole string.
+        foreach (var name in System.Text.RegularExpressions.Regex.Matches(ts, "[A-Za-z_][A-Za-z0-9_]*"))
+        {
+            if (name.ToString() == Decimal) _annotationReferences.Add(Decimal);
+        }
+        return ts;
+    }
+
     private void EmitHydrationMap(TypeScriptCodeBuilder.ClassBuilder c,
         IEnumerable<(string Key, TypeSyntax? Type)> fields)
     {
@@ -238,6 +263,7 @@ public class TypeScriptEmitter
         // pins a syntax tree per entry and used to survive this point (see ConversionContext.Reset).
         _converter.Reset();
         _hydrationReferences.Clear();
+        _annotationReferences.Clear();
         component.UsedHelpers.Clear();
 
         // Note: We'll emit imports AFTER generating component code
@@ -535,9 +561,9 @@ public class TypeScriptEmitter
                 foreach (var action in component.ServerActions)
                 {
                     ClassBuilder = c;
-                    var paramsList = string.Join(", ", action.Parameters.Select(p => Param(p.Name, CSharpTypeToTypeScript(p.Type))));
+                    var paramsList = string.Join(", ", action.Parameters.Select(p => Param(p.Name, Annotate(p.Type))));
                     var argsList = string.Join(", ", action.Parameters.Select(p => p.Name));
-                    var returnType = CSharpTypeToTypeScript(action.ReturnType);
+                    var returnType = Annotate(action.ReturnType);
 
                     // The action's RESULT crosses the typed boundary too: a Task<decimal> arrives
                     // as a string, a Task<List<Todo>> as plain objects — hydrated ONCE here, by
@@ -679,6 +705,7 @@ public class TypeScriptEmitter
         // Types a HYDRATION SPEC names — see _hydrationReferences: emitted into the body, present
         // in no syntax the walks above cover.
         foreach (var t in _hydrationReferences) componentTypes.Add(t);
+        foreach (var t in _annotationReferences) componentTypes.Add(t);
 
         // Types the CONVERSION introduced into the output (extension calls reduced to
         // `Class.method(...)`) — invisible to every syntax walk above by construction.
@@ -1069,7 +1096,7 @@ public class TypeScriptEmitter
             // Typed fields
             foreach (var field in component.StateFields)
             {
-                var tsType = CSharpTypeToTypeScript(field.Type);
+                var tsType = Annotate(field.Type);
                 // A compat-typed field must DEFAULT to its runtime type (0n, dec(0)) — the default
                 // is also the witness legacy hydration reads a field's type from.
                 var tsDefault = field.DefaultValueNode != null
@@ -1139,7 +1166,7 @@ public class TypeScriptEmitter
     /// </summary>
     private string DeclarationType(ComponentDefinition component, string? csharpType)
     {
-        var ts = CSharpTypeToTypeScript(csharpType);
+        var ts = Annotate(csharpType);
 
         // Structural forms (`X[]`, `(a: X) => void`, `Record<…>`) are only as resolvable as their parts;
         // keep them only when every bare identifier they mention resolves.
@@ -1743,7 +1770,7 @@ public class TypeScriptEmitter
         // `global::Ns.Thing`, and comparing the mapper's output to the raw text would call every
         // qualified name "translated" and skip the enum/interface handling below.
         var askedName = NormalizeQualification(asked.ToString());
-        var mapped = CSharpTypeToTypeScript(askedName);
+        var mapped = Annotate(askedName);
         var echoed = mapped == askedName;
 
         var resolvedRaw = (_semanticModel?.GetSymbolInfo(asked).Symbol as ITypeSymbol)
@@ -2007,7 +2034,7 @@ public class TypeScriptEmitter
         // `onInit` at all, so the override landed on nothing. The legacy `onInit` is also skipped
         // for any page that HYDRATED, which is every server-rendered page there is.
         
-        var returnType = CSharpTypeToTypeScript(method.ReturnType ?? "void");
+        var returnType = Annotate(method.ReturnType ?? "void");
         
         // async is a MODIFIER, not a return type: `async void` handlers (the C# event-handler
         // idiom — hover intent timers et al.) must emit `async` too, or their awaits are syntax
@@ -2153,7 +2180,13 @@ public class TypeScriptEmitter
         string tsType = baseType switch
         {
             "string" or "char" => "string",
-            "int" or "long" or "double" or "float" or "decimal" or "number" => "number",
+            "int" or "double" or "float" or "number" => "number",
+            // NOT `number`, either of them. A long is a JS bigint on this side and a decimal is the
+            // runtime's Decimal class — `$eq.num.long(0)` and `$eq.num.dec(0)` are what the emitter
+            // writes for their literals, and a `number` annotation over either is a lie the rest of
+            // the file then typechecks against: `unit.mul(...)` on a "number" is the shape it takes.
+            "long" => "bigint",
+            "decimal" => Decimal,
             "bool" or "boolean" => "boolean",
             "void" => "void",
             "object" => "any",
