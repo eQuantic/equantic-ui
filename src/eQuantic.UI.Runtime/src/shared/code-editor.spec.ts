@@ -12,11 +12,10 @@ import { describe, expect, it } from 'vitest';
 import { photonTheme } from './design-system.generated';
 import { lowerVisualNode } from './lowering';
 import { setPhotonTheme } from './photon-context';
-import { CodeSurface } from './vocabulary';
+import { CodeSurface, Text, type VisualNode } from './vocabulary';
 import { CodeEditorController } from './components/CodeEditorController';
 import { CodeLanguages } from './components/CodeLanguages';
 import { CodeDocument } from './components/CodeDocument';
-import { Text } from './vocabulary';
 import type { HtmlNode } from '../core/types';
 
 setPhotonTheme(photonTheme);
@@ -281,12 +280,41 @@ describe('components centre like nodes', () => {
   it('a component exposes centered() the way the vocabulary does', async () => {
     const { Card } = await import('./components/Card');
     const { Text } = await import('./vocabulary');
-    const centred = new Card(new Text('hi') as never).centered() as {
+    // A Row, which the vocabulary types as a VisualNode — so this reads the two fields a Row
+    // carries and the base does not. The cast used to be free because `centered()` answered
+    // `unknown`; it now answers VisualNode, and going through `unknown` is the honest way to say
+    // "the concrete node, not the base".
+    const centred = new Card(new Text('hi') as never).centered() as unknown as {
       nodeKind: string;
       children: unknown[];
     };
     expect(centred.nodeKind).toBe('row');
     expect(centred.children).toHaveLength(1);
+  });
+
+  it('a stateful component IS a VisualNode, the way C# says it is', async () => {
+    const { TimePicker } = await import('./components/TimePicker');
+
+    // A TYPE-level pin, and the assertion below is almost beside the point: what this case guards
+    // is that the LINE COMPILES. In C# `UiComponent` derives from `VisualNode`, so eqc emits
+    // `let x: VisualNode = new SomeComponent()` verbatim — and until `centered()` stopped
+    // answering `unknown`, which is assignable to nothing, that emission did not typecheck. The
+    // failure comes from `tsc`, never from a run, which is why it went unnoticed until the first
+    // component was assigned to one.
+    const node: VisualNode = new TimePicker();
+    expect(node.nodeKind).toBe('component');
+  });
+
+  it('a STATELESS component is deliberately not one — the absence is the signal', async () => {
+    const { Card } = await import('./components/Card');
+    const { Text } = await import('./vocabulary');
+
+    // Not an oversight, and worth pinning so nobody "fixes" it by moving nodeKind onto the base:
+    // the lowering's default branch IS the mixing seam, and it recognises a web component by its
+    // LACK of a nodeKind, embedding the HtmlNode it renders for itself. Give every component the
+    // field and that routing changes for the whole library — a runtime decision, not a typing one.
+    const card = new Card(new Text('hi') as never) as unknown as { nodeKind?: string };
+    expect(card.nodeKind).toBeUndefined();
   });
 });
 

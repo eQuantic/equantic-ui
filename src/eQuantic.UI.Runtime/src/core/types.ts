@@ -3,6 +3,7 @@
  */
 
 export interface IComponent {
+
   id?: string;
   className?: string;
   style?: Record<string, string>;
@@ -84,12 +85,24 @@ export type ServiceProvider = {
  * Base class for all components
  */
 /**
+ * TYPE-ONLY, and that is the whole reason it is allowed to point at the vocabulary: `import type`
+ * is erased before anything runs, so it adds no edge to the evaluation graph and cannot reopen the
+ * cycle the seam below exists to avoid. Dropping the `type` keyword would.
+ *
+ * It earns its place by making the hierarchy say what C# says — `UiComponent : VisualNode` — so a
+ * component is assignable to a VisualNode on this side too. Without it `centered()` answered
+ * `unknown`, which is assignable to nothing, and eqc's own `VisualNode x = new SomeComponent()`
+ * emitted TypeScript that did not typecheck.
+ */
+import type { VisualNode } from '../shared/vocabulary';
+
+/**
  * How a node is CENTRED, registered by the vocabulary at import time. Inverted rather than
  * imported: a static import here would close a module cycle (types → vocabulary → types) at
  * evaluation, and a lazy `require` does not exist in ESM. The vocabulary owns the wrapper's
  * shape; this module only owns the seam.
  */
-type CenterWrapper = (child: unknown) => unknown;
+type CenterWrapper = (child: unknown) => VisualNode;
 let centerWrapper: CenterWrapper | null = null;
 export function setCenterWrapper(wrapper: CenterWrapper): void {
   centerWrapper = wrapper;
@@ -103,8 +116,11 @@ export abstract class Component implements IComponent {
    * "centered is not a function" and a blank frame. The wrapper is built through the ambient
    * lowering rather than imported, so this base keeps no dependency on the vocabulary module.
    */
-  centered(): unknown {
-    return centerWrapper ? centerWrapper(this) : this;
+  centered(): VisualNode {
+    // No vocabulary registered means nothing to wrap WITH — a client-only mount before the
+    // vocabulary module has evaluated. The node comes back unchanged, which is the same object
+    // the caller already held, so the cast states what is already true of every caller's value.
+    return centerWrapper ? centerWrapper(this) : (this as unknown as VisualNode);
   }
 
   id?: string;

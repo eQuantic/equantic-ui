@@ -52,10 +52,14 @@ public class FieldDefaultTests
         // No member is zero here: .NET still yields the numeric 0, and so does the twin.
         ts.Should().Contain("_offset: string = 0");
         ts.Should().Contain("_c: string = '\\0'");
-        // Reached through an alias — invisible to a spelled-name table, plain to the symbol.
+        // Reached through an alias — invisible to a spelled-name table, plain to the symbol. The
+        // VALUE is right and the annotation says `any`, which is an absence rather than a claim:
+        // the default path reads the symbol, the annotation path still reads the spelling.
         ts.Should().Contain("_aliased: any = $eq.num.dec(0)");
-        ts.Should().Contain("_n: number = $eq.num.long(0)");
-        ts.Should().Contain("_d: number = $eq.num.dec(0)");
+        // And the annotations that DO carry a claim carry the true one: the literal beside each of
+        // these is a bigint and a Decimal, so `number` was the file disagreeing with itself.
+        ts.Should().Contain("_n: bigint = $eq.num.long(0)");
+        ts.Should().Contain("_d: Decimal = $eq.num.dec(0)");
         ts.Should().Contain("_flag: boolean = false");
         ts.Should().Contain("_i: number = 0");
     }
