@@ -51,9 +51,14 @@ describe('heading outline', () => {
     const seven = () => new Text('Nope', 'bodyL', null, 0, undefined, undefined, undefined, undefined, 7);
     expect(seven).toThrow(RangeError);
 
-    // The config form is the other door into the same field.
-    const viaConfig = () => new Text('Nope', 'bodyL', null, 0, { headingLevel: 7 });
-    expect(viaConfig).toThrow(RangeError);
+    // THREE doors, and the trailing one is the one that was open: it assigns after the parameter,
+    // so a check any earlier than the end guards only the writes that came before it.
+    const viaAlignSlot = () => new Text('Nope', 'bodyL', null, 0, { headingLevel: 7 });
+    expect(viaAlignSlot).toThrow(RangeError);
+
+    const viaTrailingConfig = () =>
+      new Text('Nope', 'bodyL', null, 0, 'start', false, false, null, 0, { headingLevel: 7 });
+    expect(viaTrailingConfig).toThrow(RangeError);
   });
 
   it('the level does not touch the paint — only the tag differs', () => {

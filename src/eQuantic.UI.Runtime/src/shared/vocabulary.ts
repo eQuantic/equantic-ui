@@ -647,18 +647,19 @@ export class Text extends VisualNode {
     this.maxLines = maxLines;
     if (typeof align === 'object' && align !== null) {
       Object.assign(this, align);
-      this.headingLevel = level(this.headingLevel);
-      return;
+    } else {
+      if (align !== undefined) this.align = align;
+      if (mono !== undefined) this.mono = mono;
+      if (tabular !== undefined) this.tabular = tabular;
+      if (styleOverride !== undefined && styleOverride !== null) this.styleOverride = styleOverride;
+      if (headingLevel !== undefined) this.headingLevel = headingLevel;
+      if (config) Object.assign(this, config);
     }
-    if (align !== undefined) this.align = align;
-    if (mono !== undefined) this.mono = mono;
-    if (tabular !== undefined) this.tabular = tabular;
-    if (styleOverride !== undefined && styleOverride !== null) this.styleOverride = styleOverride;
-    if (headingLevel !== undefined) this.headingLevel = level(headingLevel);
-    // The config form reaches the same door: `new Text('x', 'bodyL', null, 0, {headingLevel: 7})`
-    // assigns through Object.assign above, so the check has to run after it too.
+    // LAST, after every path that can write the field — the positional argument, the config in
+    // the align slot, and the config in the trailing slot, which the object initializer of the C#
+    // side becomes. Checking any earlier only guards the writes that came before it, which is the
+    // bug this line replaced: a trailing `{ headingLevel: 7 }` overwrote a validated value.
     this.headingLevel = level(this.headingLevel);
-    if (config) Object.assign(this, config);
   }
 }
 

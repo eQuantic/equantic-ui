@@ -84,6 +84,10 @@ public class HeadingOutlineTests
         css.Should().Contain("h1, h2, h3, h4, h5, h6");
         css.Should().Contain("margin: 0");
         css.Should().Contain("font-size: inherit");
+        // The one the other four do not cover: a span is INLINE and a heading is block, which in
+        // inline flow is a line break nobody asked for. Flex and grid blockify their children, so
+        // this only shows where a Text sits in running text — exactly where it used to be a span.
+        css.Should().Contain("display: inline");
     }
 
     [Fact]
