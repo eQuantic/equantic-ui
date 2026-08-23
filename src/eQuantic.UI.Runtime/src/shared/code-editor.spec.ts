@@ -8,16 +8,14 @@
  * to, the two targets would have started to drift.
  */
 
-import type { VisualNode } from './vocabulary';
 import { describe, expect, it } from 'vitest';
 import { photonTheme } from './design-system.generated';
 import { lowerVisualNode } from './lowering';
 import { setPhotonTheme } from './photon-context';
-import { CodeSurface } from './vocabulary';
+import { CodeSurface, Text, type VisualNode } from './vocabulary';
 import { CodeEditorController } from './components/CodeEditorController';
 import { CodeLanguages } from './components/CodeLanguages';
 import { CodeDocument } from './components/CodeDocument';
-import { Text } from './vocabulary';
 import type { HtmlNode } from '../core/types';
 
 setPhotonTheme(photonTheme);
