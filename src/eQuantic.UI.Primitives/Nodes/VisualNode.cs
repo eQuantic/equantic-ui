@@ -122,9 +122,19 @@ public readonly record struct BoxStyle
     public float MinWidth { get; init; }
     public float MinHeight { get; init; }
     /// <summary>0 = unbounded.</summary>
-    public float MaxWidth { get; init; }
-    /// <summary>0 = unbounded.</summary>
-    public float MaxHeight { get; init; }
+    public SizeValue MaxWidth { get; init; }
+
+    /// <summary>
+    /// The tallest this box may be — <c>Hug</c> (the default) is unbounded, a number is dp, and
+    /// <see cref="SizeValue.WindowMinus"/> is the window less an inset.
+    /// <para>
+    /// A <see cref="SizeValue"/> rather than a float because the cap an overlay needs cannot be
+    /// written as a number: "as tall as the window allows" is the requirement of every menu and
+    /// dialog, and any constant clips early in one window and overflows in another. A plain
+    /// number still works — <c>MaxHeight = 620</c> converts — so nothing that had a cap changes.
+    /// </para>
+    /// </summary>
+    public SizeValue MaxHeight { get; init; }
 
     public EdgeInsets Padding { get; init; }
 

@@ -212,7 +212,7 @@ public static class WebRealizer
                 Display = Core.Display.Grid,
                 Position = Core.Position.Relative,
                 Width = Size(stack.Width),
-                Height = Size(stack.Height),
+                Height = Size(stack.Height, vertical: true),
                 FlexShrink = Rigid(stack.Width, stack.Height),
             },
         };
@@ -653,7 +653,7 @@ public static class WebRealizer
                 // A scroll view IS the window its parent gives it — never its content. Native gets
                 // that from layout (bounds in, clip always); an auto-height overflow div grows with
                 // the content instead and scrolls nothing, so the web mirror defaults to 100%.
-                Height = Size(scroll.Height) ?? "100%",
+                Height = Size(scroll.Height, vertical: true) ?? "100%",
                 OverflowY = scroll.Axis is ScrollAxis.Vertical or ScrollAxis.Both ? "auto" : "hidden",
                 OverflowX = scroll.Axis is ScrollAxis.Horizontal or ScrollAxis.Both ? "auto" : "hidden",
                 // …and it must never be PUSHED wider than that window either. A flex item's
@@ -1195,7 +1195,7 @@ public static class WebRealizer
             Style = new HtmlStyle
             {
                 Width = adjustableFills.Width ? "100%" : null,
-                MaxWidth = adjustableCap > 0 ? TokenCss.Px(adjustableCap) : null,
+                MaxWidth = Size(adjustableCap),
                 PointerEvents = "auto",
                 // BOTH axes, like every other wrapper and like the twin already did. Taking the
                 // width and leaving the height is the same half-contract that made the Link
@@ -1463,7 +1463,7 @@ public static class WebRealizer
                 // Photon borders draw INSIDE the bounds — border-box is the CSS-parity contract.
                 BoxSizing = "border-box",
                 Width = Size(style.Width),
-                Height = Size(style.Height),
+                Height = Size(style.Height, vertical: true),
                 FlexShrink = Rigid(style.Width, style.Height),
                 // FILL is a CEILING: a flex/grid item's automatic minimum size overrides width,
                 // so a Fill box grew past its parent to fit its longest content. An explicit
@@ -1472,8 +1472,11 @@ public static class WebRealizer
                     : style.Width.Kind == SizeKind.Fill ? "0" : null,
                 MinHeight = style.MinHeight > 0 ? TokenCss.Px(style.MinHeight)
                     : style.Height.Kind == SizeKind.Fill ? "0" : null,
-                MaxWidth = style.MaxWidth > 0 ? TokenCss.Px(style.MaxWidth) : null,
-                MaxHeight = style.MaxHeight > 0 ? TokenCss.Px(style.MaxHeight) : null,
+                // The caps go through the same axis-aware translation as the sizes: Hug is
+                // unbounded (null), a number is dp, and the window kind becomes a `calc` the
+                // browser resolves per window.
+                MaxWidth = Size(style.MaxWidth),
+                MaxHeight = Size(style.MaxHeight, vertical: true),
                 Padding = style.Padding == EdgeInsets.Zero ? null : TokenCss.Padding(style.Padding),
                 BackgroundColor = style.Background is { } bg ? TokenCss.Value(bg) : null,
                 // Layers compose like CSS: the FIRST entry paints on top, so a gradient sits over
@@ -1712,7 +1715,7 @@ public static class WebRealizer
                     _ => AlignItem.Stretch,
                 },
                 Width = Size(flex.Width),
-                Height = Size(flex.Height),
+                Height = Size(flex.Height, vertical: true),
                 FlexShrink = Rigid(flex.Width, flex.Height),
                 // FILL means "the parent's extent, never more" — and a flex ITEM's automatic
                 // minimum size OVERRIDES width, so one long line of content grew a Fill row past
@@ -1808,7 +1811,7 @@ public static class WebRealizer
                 Gap = rowGap != grid.Gap ? $"{TokenCss.Px(rowGap)} {TokenCss.Px(grid.Gap)}"
                     : grid.Gap > 0 ? TokenCss.Px(grid.Gap) : null,
                 Width = Size(grid.Width),
-                Height = Size(grid.Height),
+                Height = Size(grid.Height, vertical: true),
                 FlexShrink = Rigid(grid.Width, grid.Height),
                 Padding = grid.Padding == EdgeInsets.Zero ? null : TokenCss.Padding(grid.Padding),
             },
@@ -2012,7 +2015,7 @@ public static class WebRealizer
     /// Measured on a real page before it was believed — a card capped at 980 inside a 1392 wrapper.
     /// </para>
     /// </summary>
-    private static float CapsAt(VisualNode node) => node switch
+    private static SizeValue CapsAt(VisualNode node) => node switch
     {
         Box box => box.Style.MaxWidth,
         Pressable pressable => CapsAt(pressable.Child),
@@ -2021,7 +2024,7 @@ public static class WebRealizer
         Flexible flexible => CapsAt(flexible.Child),
         LoopMotion motion => CapsAt(motion.Child),
         Link link => CapsAt(link.Child),
-        _ => 0,
+        _ => SizeValue.Hug,
     };
 
     private static (bool Width, bool Height) Fills(VisualNode node) => node switch
@@ -2077,7 +2080,7 @@ public static class WebRealizer
                 TextAlign = TextAlign.Start,
                 // A Fill child needs the 100% chain to pass through the button (scrim et al.).
                 Width = fills.Width ? "100%" : null,
-                MaxWidth = cap > 0 ? TokenCss.Px(cap) : null,
+                MaxWidth = Size(cap),
                 // A control is a target by definition, and says so because `none` inherits from
                 // any transparent row above it.
                 PointerEvents = "auto",
@@ -2218,7 +2221,7 @@ public static class WebRealizer
             Style = new HtmlStyle
             {
                 Width = fills.Width ? "100%" : null,
-                MaxWidth = cap > 0 ? TokenCss.Px(cap) : null,
+                MaxWidth = Size(cap),
                 // A control is a target by definition, and says so because `none` inherits from
                 // any transparent row above it.
                 PointerEvents = "auto",
@@ -2250,7 +2253,7 @@ public static class WebRealizer
             Style = new HtmlStyle
             {
                 Width = fills.Width ? "100%" : null,
-                MaxWidth = cap > 0 ? TokenCss.Px(cap) : null,
+                MaxWidth = Size(cap),
                 // A control is a target by definition, and says so because `none` inherits from
                 // any transparent row above it.
                 PointerEvents = "auto",
@@ -2438,10 +2441,19 @@ public static class WebRealizer
     private static string? Rigid(SizeValue width, SizeValue height) =>
         width.Kind == SizeKind.Fixed || height.Kind == SizeKind.Fixed ? "0" : null;
 
-    private static string? Size(SizeValue value) => value.Kind switch
+    /// <summary>
+    /// A size on ONE axis. The axis matters for exactly one kind: the window is `100vh` down and
+    /// `100vw` across, and every other kind reads the same either way.
+    /// </summary>
+    private static string? Size(SizeValue value, bool vertical = false) => value.Kind switch
     {
         SizeKind.Fixed => TokenCss.Px(value.Value),
         SizeKind.Fill => "100%",
+        // The window, less an inset. `calc` rather than a bare `vh` because the inset is the whole
+        // point — see SizeKind.WindowMinus for why a constant cannot express this.
+        SizeKind.WindowMinus => value.Value > 0
+            ? $"calc(100{(vertical ? "vh" : "vw")} - {TokenCss.Px(value.Value)})"
+            : $"100{(vertical ? "vh" : "vw")}",
         _ => null, // Hug = auto
     };
 }
