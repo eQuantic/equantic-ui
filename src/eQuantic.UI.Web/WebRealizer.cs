@@ -455,10 +455,15 @@ public static class WebRealizer
     }
 
     /// <summary>The panel's visible text, flattened — what the tooltip id hashes. Walking the
-    /// VISUAL tree (not the lowered one) keeps the answer identical on both producers.</summary>
+    /// VISUAL tree (not the lowered one) keeps the answer identical on both producers.
+    /// <para>
+    /// PlainContent, not Content: a paragraph built from RUNS has an empty Content, so every
+    /// styled panel hashed the same empty string and shared one id with all the others — and the
+    /// aria-describedby pointing at it then named somebody else's panel.
+    /// </para></summary>
     private static string TextContentOf(VisualNode node) => node switch
     {
-        Text text => text.Content,
+        Text text => text.PlainContent,
         Box box => box.Child is { } child ? TextContentOf(child) : "",
         FlexNode flex => string.Concat(flex.Children.Select(TextContentOf)),
         Pressable pressable => TextContentOf(pressable.Child),
@@ -568,11 +573,23 @@ public static class WebRealizer
     /// by their own layer rather than by a number.
     /// </para>
     /// <para>
+    /// Chrome is TWO bands, not one. A floating header and a pinned rail are both chrome, and on
+    /// one number they TIE — so the winner is whichever comes later in the document, which is the
+    /// page's structure deciding a paint order nobody chose. Reported by the site: a rail pinned on
+    /// one page painted over the open mega menu of the header, and the header's own panel could not
+    /// climb out because its z-index lives inside the header's stacking context. Floating chrome
+    /// outranks pinned chrome by construction, because a header whose dropdown falls behind the
+    /// page is not a trade-off anybody wants to be offered.
+    /// </para>
+    /// <para>
     /// Photon needs none of this: paint order IS child order there, so a later sibling is on top and
     /// the question never comes up. This is the web realizer keeping that promise.
     /// </para>
     /// </summary>
-    private const string ChromeLayer = "100";
+    private const string PinnedLayer = "100";
+
+    /// <summary>Floating chrome — see <see cref="PinnedLayer"/> for why it is a band of its own.</summary>
+    private const string FloatingChromeLayer = "110";
 
     private static HtmlElement LowerSticky(Sticky sticky, ComponentContext context)
     {
@@ -586,13 +603,14 @@ public static class WebRealizer
                 Top = TokenCss.Px(sticky.Offset),
                 Left = sticky.Float ? "0" : null,
                 Right = sticky.Float ? "0" : null,
-                // CHROME, both of them — a band of its own, above anything the CONTENT can reach.
-                // Plain sticky used to sit at 1, one step above nothing, which is a number competing
-                // with other numbers: a raised card (elevation carries 1–5 now) or a deep enough
-                // stack cell would out-stack the pinned header and scroll straight over it. Chrome
-                // is not "slightly raised content", it is a different plane, and saying so here is
-                // what keeps the author out of the argument.
-                ZIndex = ChromeLayer,
+                // CHROME, above anything the CONTENT can reach. Plain sticky used to sit at 1, one
+                // step above nothing, which is a number competing with other numbers: a raised card
+                // (elevation carries 1–5 now) or a deep enough stack cell would out-stack the pinned
+                // header and scroll straight over it. Chrome is not "slightly raised content", it is
+                // a different plane, and saying so here is what keeps the author out of the argument.
+                // FLOATING chrome is a band above PINNED chrome, so a header and a rail on one page
+                // do not tie and let document order pick the winner.
+                ZIndex = sticky.Float ? FloatingChromeLayer : PinnedLayer,
                 // Spec S6: the scrolled swap GLIDES (the design's transparent-until-scrolled bar
                 // fades its veil in) instead of flipping in one frame.
                 Transition = sticky.Transition is { } transition ? TokenCss.Transition(transition) : null,
@@ -1829,8 +1847,11 @@ public static class WebRealizer
                 // Authored \n is a HARD break (the designed headline's line turns) — pre-line
                 // keeps normal wrapping between them.
                 // Mono text is CODE (indentation survives); plain text only keeps its newlines.
+                // PlainContent, not Content: a paragraph built from RUNS has an empty Content, so
+                // reading the field instead of what the node says lost the break entirely — the
+                // headline ran on in one line and nothing said why.
                 WhiteSpace = mono ? "pre-wrap"
-                    : text.Content.Contains('\n') ? "pre-line" : null,
+                    : text.PlainContent.Contains('\n') ? "pre-line" : null,
                 FontFamily = mono ? TokenCss.MonoStack : null,
                 FontVariantNumeric = text.Tabular ? "tabular-nums" : null,
                 FontStyle = italic ? "italic" : null,

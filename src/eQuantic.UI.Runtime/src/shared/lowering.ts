@@ -623,13 +623,29 @@ function revealCaret(path: string): void {
 }
 
 /**
- * The stacking PLANES, because CSS gives you one number and a page needs three (C# `ChromeLayer`).
+ * The stacking PLANES, because CSS gives you one number and a page needs three (the C#
+ * `PinnedLayer` / `FloatingChromeLayer` twins).
  *
  * CONTENT is elevation 1–5 — the design system's own scale, and the only one an author names.
  * CHROME is above all of it: a pinned header is not a raised card. Photon needs none of this, since
  * paint order IS child order there.
+ *
+ * Chrome is TWO bands: a floating header and a pinned rail would otherwise tie on one number and
+ * let document order decide, which is how a rail painted over an open mega menu.
  */
-const CHROME_LAYER = '100';
+/**
+ * The paragraph as PLAIN text: its content, or the runs joined — the C# `Text.PlainContent` twin.
+ * A Text built from runs carries an EMPTY content, so anything that asks the field directly gets
+ * nothing and silently decides as if the paragraph were empty.
+ */
+function plainContent(text: TextNode): string {
+  return text.spans && text.spans.length > 0
+    ? text.spans.map((run) => run.content).join('')
+    : text.content;
+}
+
+const PINNED_LAYER = '100';
+const FLOATING_CHROME_LAYER = '110';
 
 /** The caret's width in px — the C# `PhotonRealizer.CaretWidth` twin. */
 const CARET_WIDTH = 2;
@@ -2089,8 +2105,10 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
     'text-align': text.align === 'center' ? 'center' : text.align === 'end' ? 'end' : undefined,
     // Authored \n is a HARD break (pre-line keeps normal wrapping between them) — C# twin.
     // Mono text is CODE (indentation survives); plain text only keeps its newlines.
+    // plainContent, not content: a paragraph built from RUNS has an empty content, so reading the
+    // field instead of what the node says lost the break entirely (C# twin's PlainContent).
     'white-space':
-      text.mono === true ? 'pre-wrap' : text.content.includes('\n') ? 'pre-line' : undefined,
+      text.mono === true ? 'pre-wrap' : plainContent(text).includes('\n') ? 'pre-line' : undefined,
     'font-family': text.mono === true ? MONO_STACK : undefined,
     'font-variant-numeric': text.tabular === true ? 'tabular-nums' : undefined,
     // The slant (C# twin): the node's own, or the ROLE's when the theme cuts that role italic.
@@ -2373,11 +2391,17 @@ function lowerFlexible(
  * invisible fixed scrim as a REAL pressable while dismissible, and the absolute panel positioned
  * ENTIRELY by the generated placement classes — the gap rides the margin as an atomic declaration.
  */
-/** The panel's visible text, flattened — the C# TextContentOf twin (the tooltip id hashes it). */
+/**
+ * The panel's visible text, flattened — the C# TextContentOf twin (the tooltip id hashes it).
+ *
+ * plainContent, not the content FIELD: a paragraph built from runs carries an empty content, so
+ * every styled panel hashed the same empty string and shared one id with all the others — and the
+ * aria-describedby pointing at one then named somebody else's panel.
+ */
 function visualTextOf(node: VisualNodeValue): string {
   switch (node.nodeKind) {
     case 'text':
-      return (node as TextNode).content ?? '';
+      return plainContent(node as TextNode);
     case 'box': {
       const child = (node as BoxNode).child;
       return child ? visualTextOf(child) : '';
@@ -2963,11 +2987,11 @@ function lowerSticky(node: StickyNode, context: LoweringContext, path: string): 
     top: px(node.offset),
     left: float ? '0' : undefined,
     right: float ? '0' : undefined,
-    // CHROME, both of them — a band of its own, above anything the CONTENT can reach (C# twin's
-    // ChromeLayer). Plain sticky sat at 1, one step above nothing, which is a number competing with
-    // other numbers: a raised card (elevation carries 1–5) would out-stack the pinned header and
-    // scroll straight over it.
-    'z-index': CHROME_LAYER,
+    // CHROME, above anything the CONTENT can reach (C# twin's PinnedLayer). Plain sticky sat at 1,
+    // one step above nothing, which is a number competing with other numbers: a raised card
+    // (elevation carries 1–5) would out-stack the pinned header and scroll straight over it.
+    // FLOATING chrome is a band above PINNED chrome, so two of them on one page do not tie.
+    'z-index': float ? FLOATING_CHROME_LAYER : PINNED_LAYER,
     // Spec S6 (C# twin): the scrolled swap GLIDES instead of flipping in one frame.
     transition: node.transition ? transitionValue(node.transition) : undefined,
   });

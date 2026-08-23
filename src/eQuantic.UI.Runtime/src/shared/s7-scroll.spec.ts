@@ -28,6 +28,22 @@ describe('S7 scroll semantics (C# cross-pin)', () => {
     expect(style).toContain('z-index: 100');
   });
 
+  it('floating chrome outranks pinned chrome, so two of them do not tie', () => {
+    // The C# twin pins the same rule. Reported by the site: a rail pinned on one page painted over
+    // the header's open mega menu, because both are chrome and both were 100 — so document order
+    // decided. The header's panel could not climb out either: its z-index lives inside the
+    // header's own stacking context.
+    const layer = (node: VisualNodeValue) =>
+      Number(/z-index: (\d+)/.exec(effectiveStyle(lowerVisualNode(node, ctx)))?.[1]);
+
+    const floating = layer({ nodeKind: 'sticky', child: box(), offset: 0, float: true } as unknown as VisualNodeValue);
+    const pinned = layer({ nodeKind: 'sticky', child: box(), offset: 96 } as unknown as VisualNodeValue);
+
+    expect(floating).toBe(110);
+    expect(pinned).toBe(100);
+    expect(floating).toBeGreaterThan(pinned);
+  });
+
   it('positioned zIndex rides the anchor', () => {
     const stack = {
       nodeKind: 'stack',
