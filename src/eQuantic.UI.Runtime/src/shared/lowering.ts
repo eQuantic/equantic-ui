@@ -724,12 +724,25 @@ function lowerLink(node: LinkNode, context: LoweringContext, path: string): Html
   // writes `/pricing` once and the link is right in every language — including after a
   // client-side switch, which re-renders this node with a different active culture.
   const destination = localizeDestination(node.destination);
+  // The child's width contract, which the C# realizer has always passed through here and this
+  // side never did — a Fill child inside a Link filled on the server and hugged in the browser.
+  // No fixture caught it because none composed the two; agreement is only proof when something
+  // actually compares.
+  const linkFill = fills(node.child as VisualNodeValue);
+  const linkCap = capsAt(node.child);
   const anchor: HtmlNode = {
     tag: 'a',
     attributes: { class: 'eq-link', href: destination },
     events: {},
     children: [],
   };
+  const linkStyle = atomicAttrs({
+    width: linkFill.width ? '100%' : undefined,
+    'max-width': linkCap > 0 ? `${linkCap}px` : undefined,
+    height: linkFill.height ? '100%' : undefined,
+  });
+  if (linkStyle.class) anchor.attributes.class = `eq-link ${linkStyle.class}`;
+  if (linkStyle.style) anchor.attributes.style = linkStyle.style;
   if (node.label) anchor.attributes['aria-label'] = node.label;
   // Read by the router when it decides where the new page starts (C# twin). On the anchor because
   // that is what the router's one delegated click listener meets.
@@ -2204,6 +2217,34 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
   return node;
 }
 
+/**
+ * The cap a FILL child puts on itself — the C# `CapsAt` twin, and it walks the SAME chain by NAME
+ * rather than by "anything with a child". A structural walk would pull a max-width through node
+ * kinds the C# side does not traverse, and the two would disagree about a layout on a page where
+ * nothing else is wrong.
+ *
+ * A wrapper stands in for its child in the parent's layout, so it carries the WHOLE width
+ * contract: taking the 100% and dropping the max-width leaves a full-width wrapper holding a
+ * narrower block, the child pinned to the start edge, and a centring row with nothing to centre.
+ */
+function capsAt(node: unknown): number {
+  const value = node as { nodeKind?: string; style?: { maxWidth?: number }; child?: unknown } | null;
+  if (!value) return 0;
+  switch (value.nodeKind) {
+    case 'box':
+      return value.style?.maxWidth ?? 0;
+    case 'pressable':
+    case 'hoverable':
+    case 'adjustable':
+    case 'flexible':
+    case 'loopMotion':
+    case 'link':
+      return capsAt(value.child);
+    default:
+      return 0;
+  }
+}
+
 /** Whether a node requests Fill per axis — wrappers must stretch for the 100% chain to reach it. */
 function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
   switch (node.nodeKind) {
@@ -2251,6 +2292,7 @@ function lowerPressable(
 ): HtmlNode {
   const disabled = pressable.disabled === true;
   const fill = fills(pressable.child);
+  const cap = capsAt(pressable.child);
   const child = lowerNode(pressable.child, context, null, path + '/0');
 
   // HTML forbids a button inside a button (and an anchor inside an anchor): the parser closes the
@@ -2268,6 +2310,7 @@ function lowerPressable(
     cursor: disabled ? undefined : 'pointer',
     // A Fill child needs the 100% chain to pass through the button (scrim et al.).
     width: fill.width ? '100%' : undefined,
+    'max-width': cap > 0 ? `${cap}px` : undefined,
     height: fill.height ? '100%' : undefined,
   });
 
@@ -2603,8 +2646,10 @@ function chordId(chord: KeyChordValue | undefined): string {
  */
 function lowerAdjustable(node: AdjustableNode, context: LoweringContext, path: string): HtmlNode {
   const fill = fills(node.child);
+  const cap = capsAt(node.child);
   const host = element('div', {
     width: fill.width ? '100%' : undefined,
+    'max-width': cap > 0 ? `${cap}px` : undefined,
     height: fill.height ? '100%' : undefined,
   });
   const role = node.role ?? 'slider';
@@ -2893,8 +2938,10 @@ function lowerInFlow(
 
 function lowerHoverable(node: HoverableNode, context: LoweringContext, path: string): HtmlNode {
   const fill = fills(node.child);
+  const cap = capsAt(node.child);
   const host = element('div', {
     width: fill.width ? '100%' : undefined,
+    'max-width': cap > 0 ? `${cap}px` : undefined,
     height: fill.height ? '100%' : undefined,
   });
   if (node.onChanged) {
