@@ -76,11 +76,15 @@ describe('Router (happy-dom)', () => {
 
   describe('navigate(href) and another origin', () => {
     // `location.assign` is the WINDOW's, shared by every test in this worker — replacing it and
-    // walking away makes some later test fail for a reason it has nothing to do with. Put back
-    // after each one.
-    const realAssign = window.location.assign;
+    // walking away makes some later test fail for a reason it has nothing to do with. The whole
+    // DESCRIPTOR goes back, not just the value: defineProperty defaults the fields you leave out,
+    // so putting back `{ value, configurable }` would pin `writable` and `enumerable` to false for
+    // good. Where there was no own descriptor, the override is deleted and the prototype's shows
+    // through again.
+    const originalAssign = Object.getOwnPropertyDescriptor(window.location, 'assign');
     afterEach(() => {
-      Object.defineProperty(window.location, 'assign', { value: realAssign, configurable: true });
+      if (originalAssign) Object.defineProperty(window.location, 'assign', originalAssign);
+      else delete (window.location as unknown as Record<string, unknown>).assign;
     });
 
     /** The window's own `location.assign`, watched — the router calls it to leave the SPA. */

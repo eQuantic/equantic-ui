@@ -162,8 +162,9 @@ export class Router {
   }
 
   /**
-   * Programmatic navigation: if `href` matches a route, push a History entry and render it (SPA);
-   * otherwise fall back to a full browser navigation. Returns whether it was handled in-SPA.
+   * Programmatic navigation. A SAME-ORIGIN href that matches a route pushes a History entry and
+   * renders it (SPA); anything else — another origin, or a path no route claims — hands off to a
+   * full browser navigation. Returns whether it was handled in-SPA.
    */
   async navigate(href: string): Promise<boolean> {
     const url = new URL(href, this.win.location.href);
