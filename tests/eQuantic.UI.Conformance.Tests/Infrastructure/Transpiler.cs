@@ -132,7 +132,11 @@ public class __Conformance
     }}
 }}";
 
-        var tree = CSharpSyntaxTree.ParseText(code);
+        // The SAME options eqc parses with in production. Roslyn's default is the latest
+        // RELEASED version, so a harness on the default is not testing what ships: a
+        // construct eqc accepts (C# 15's labeled jumps, `union`, `closed`, collection
+        // `with(...)`) would fail to parse HERE and read as a translation bug.
+        var tree = CSharpSyntaxTree.ParseText(code, eQuantic.UI.Compiler.Services.ParseDefaults.Options);
         var compilation = CSharpCompilation.Create(
             "ConformanceAsm",
             new[] { tree },

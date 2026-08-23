@@ -12,7 +12,11 @@ namespace eQuantic.UI.Conformance.Tests.Infrastructure;
 /// </summary>
 public static class DotNetEvaluator
 {
+    // Preview, to match both eqc and the transpiler side of the harness. The .NET side of a
+    // conformance case has to ACCEPT everything the JS side is asked to translate, or the
+    // comparison is between a compiler error and a value.
     private static readonly ScriptOptions Options = ScriptOptions.Default
+        .WithLanguageVersion(Microsoft.CodeAnalysis.CSharp.LanguageVersion.Preview)
         .AddReferences(
             typeof(object).Assembly,
             typeof(System.Linq.Enumerable).Assembly,
