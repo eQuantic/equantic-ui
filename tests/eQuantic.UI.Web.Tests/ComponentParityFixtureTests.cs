@@ -76,6 +76,28 @@ public class ComponentParityFixtureTests
         ("radio-group", new RadioGroup(["a", "b"], 0), NoPresses),
         ("empty-state", new EmptyState(Icons.Search, "Nothing here", "Try another term"), NoPresses),
 
+        // COMPOSITES: the components that build a tree rather than a control. They have the most
+        // structure, so the most surface on which two lowerings can quietly disagree — and every
+        // one of them takes an ITEM type whose twin has to line up as well.
+        ("menu-closed", new Menu(new Button("Open"), [new MenuItem("One"), new MenuItem("Two")]), NoPresses),
+        ("dialog", new Dialog("Delete this?", "It cannot be undone.",
+            [new DialogAction("Cancel", null, Variant.Ghost), new DialogAction("Delete")]), NoPresses),
+        ("list-item", new ListItem("Title", "and a subtitle"), NoPresses),
+        ("list-view", new ListView(3, 48f, index =>
+            new Text($"row {index}", TypeRole.BodyM, Theme.TextPrimary)), NoPresses),
+        ("table", new Table(["Name", "Size"], [["a", "1"], ["b", "2"]]), NoPresses),
+        ("data-table", new DataTable(
+            [new DataColumn("Name", GridTrack.Flex()), new DataColumn("Size", GridTrack.Fixed(80), TextAlignment.End)],
+            [new DataRow("a", [new Text("alpha", TypeRole.BodyM, Theme.TextPrimary),
+                               new Text("1", TypeRole.BodyM, Theme.TextPrimary)])]), NoPresses),
+        ("popover-closed", new Popover(new Button("Info"),
+            new Text("the content", TypeRole.BodyM, Theme.TextPrimary), false), NoPresses),
+        ("drawer-open", new Drawer(new Text("side", TypeRole.BodyM, Theme.TextPrimary), true), NoPresses),
+        ("accordion", new Accordion([
+            new AccordionItem("First") { Content = new Text("one", TypeRole.BodyM, Theme.TextPrimary) },
+            new AccordionItem("Second") { Content = new Text("two", TypeRole.BodyM, Theme.TextPrimary) },
+        ]), NoPresses),
+
         // DRIVEN: the state has to move the same way on both sides, and one lowering cannot show
         // that. Opening a Select and switching an Accordion's open section are the two smallest
         // changes of state that rewrite a subtree.
