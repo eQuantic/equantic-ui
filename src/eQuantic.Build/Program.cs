@@ -378,13 +378,17 @@ bool CompileAndBundle()
                         // name write the same file and the second wins. Nothing said so: C# is
                         // happy — the namespaces differ — and the page died in the browser with
                         // the OTHER type's fields, which is the worst way to learn.
-                        if (written.Claim(result.ComponentName, file, result.TypeScript,
-                                path => Path.GetRelativePath(dir, path)) is { } collision)
+                        var claim = written.Claim(result.ComponentName, file, result.TypeScript,
+                            path => Path.GetRelativePath(dir, path), out var collision);
+                        if (claim == eQuantic.UI.Compiler.Services.TwinClaim.Collision)
                         {
                             Console.Error.WriteLine($"{file}(1,1): error EQ1005: {collision}");
                             hasErrors = true;
                             continue;
                         }
+                        // The same module already on disk: writing it again would rewrite its map
+                        // with one pointing at a different C# file.
+                        if (claim == eQuantic.UI.Compiler.Services.TwinClaim.Repeat) continue;
 
                         File.WriteAllText(tsPath, result.TypeScript);
                         

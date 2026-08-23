@@ -20,9 +20,9 @@ public class EmittedTwinsTests
     public void TwoTypesOfOneName_InDifferentFiles_AreRefused()
     {
         var twins = new EmittedTwins();
-        twins.Claim("BenchSeat", "Sections/Bench.cs", "class BenchSeat { a }", Here).Should().BeNull();
+        twins.Claim("BenchSeat", "Sections/Bench.cs", "class BenchSeat { a }", Here, out _).Should().Be(TwinClaim.Fresh);
 
-        var collision = twins.Claim("BenchSeat", "Pages/Bench.cs", "class BenchSeat { b }", Here);
+        twins.Claim("BenchSeat", "Pages/Bench.cs", "class BenchSeat { b }", Here, out var collision).Should().Be(TwinClaim.Collision);
 
         collision.Should().NotBeNull();
         collision.Should().Contain("BenchSeat").And.Contain("Sections/Bench.cs");
@@ -33,10 +33,11 @@ public class EmittedTwinsTests
     public void TwoTypesOfOneName_InTheSameFile_AreRefusedToo()
     {
         var twins = new EmittedTwins();
-        twins.Claim("Seat", "Bench.cs", "class Seat { a }", Here).Should().BeNull();
+        twins.Claim("Seat", "Bench.cs", "class Seat { a }", Here, out _).Should().Be(TwinClaim.Fresh);
 
-        twins.Claim("Seat", "Bench.cs", "class Seat { b }", Here)
-            .Should().Contain("another type of the same name in this file");
+        twins.Claim("Seat", "Bench.cs", "class Seat { b }", Here, out var same)
+            .Should().Be(TwinClaim.Collision);
+        same.Should().Contain("another type of the same name in this file");
     }
 
     [Fact]
@@ -46,9 +47,11 @@ public class EmittedTwinsTests
         // refusing that would fail builds that were never broken.
         var twins = new EmittedTwins();
         var module = "class Seat { a }";
-        twins.Claim("Seat", "Bench.cs", module, Here).Should().BeNull();
-        twins.Claim("Seat", "Bench.cs", module, Here).Should().BeNull();
-        twins.Claim("Seat", "Other.cs", module, Here).Should().BeNull();
+        twins.Claim("Seat", "Bench.cs", module, Here, out _).Should().Be(TwinClaim.Fresh);
+        // REPEAT, not Fresh: the writer must skip it. The module is identical but its source map
+        // is not — that embeds the C# path, so rewriting it would map the module to another file.
+        twins.Claim("Seat", "Bench.cs", module, Here, out _).Should().Be(TwinClaim.Repeat);
+        twins.Claim("Seat", "Other.cs", module, Here, out _).Should().Be(TwinClaim.Repeat);
     }
 
     /// <summary>`Seat` and `seat` are two types to C# and ONE file to Windows and to macOS as it
@@ -59,9 +62,9 @@ public class EmittedTwinsTests
     public void NamesDifferingOnlyInCase_AreRefused_BecauseAFilenameDoesNotCare()
     {
         var twins = new EmittedTwins();
-        twins.Claim("Seat", "a.cs", "class Seat {}", Here).Should().BeNull();
+        twins.Claim("Seat", "a.cs", "class Seat {}", Here, out _).Should().Be(TwinClaim.Fresh);
 
-        var collision = twins.Claim("seat", "b.cs", "class seat {}", Here);
+        twins.Claim("seat", "b.cs", "class seat {}", Here, out var collision).Should().Be(TwinClaim.Collision);
 
         collision.Should().NotBeNull();
         collision.Should().Contain("differ only in case",
@@ -73,8 +76,8 @@ public class EmittedTwinsTests
     public void DifferentNames_NeverCollide()
     {
         var twins = new EmittedTwins();
-        twins.Claim("Seat", "a.cs", "class Seat {}", Here).Should().BeNull();
-        twins.Claim("Bench", "b.cs", "class Bench {}", Here).Should().BeNull();
+        twins.Claim("Seat", "a.cs", "class Seat {}", Here, out _).Should().Be(TwinClaim.Fresh);
+        twins.Claim("Bench", "b.cs", "class Bench {}", Here, out _).Should().Be(TwinClaim.Fresh);
     }
 
     /// <summary>The shape the site actually hit: two records of one name, different members. The

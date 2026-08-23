@@ -22,31 +22,53 @@ public sealed class EmittedTwins
         new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
-    /// Records a twin about to be written, and answers the error when its name is already taken by
-    /// a DIFFERENT twin. Compared by CONTENT rather than by source path: two types of one name in
-    /// the same file collide just as surely as two in different files, and a type legitimately
-    /// emitted twice writes the same bytes and is not a collision at all.
+    /// Records a twin about to be written and says what the writer should do with it.
     /// </summary>
-    /// <returns>Null when the name is free (or re-emitting the same twin); the message otherwise.</returns>
-    public string? Claim(string name, string source, string typeScript, Func<string, string> describeSource)
+    /// <remarks>
+    /// Compared by CONTENT rather than by source path: two types of one name in the same file
+    /// collide just as surely as two in different files, and a type that reaches the writer twice
+    /// with the same bytes is not a collision at all. That repeat is a <see cref="TwinClaim.Repeat"/>
+    /// rather than a second write, because the SOURCE MAP is not identical even when the module
+    /// is — it embeds the path and content of the C# it came from, so writing it again would leave
+    /// the module mapped to the wrong file and send a debugger to the wrong line.
+    /// </remarks>
+    public TwinClaim Claim(string name, string source, string typeScript, Func<string, string> describeSource,
+        out string? error)
     {
-        if (_written.TryGetValue(name, out var first))
+        error = null;
+        if (!_written.TryGetValue(name, out var first))
         {
-            if (first.TypeScript == typeScript) return null;
-            var other = first.Source == source
-                ? "another type of the same name in this file"
-                : $"the one in '{describeSource(first.Source)}'";
-            var named = first.Name == name
-                ? $"two types are named '{name}'"
-                : $"'{name}' and '{first.Name}' differ only in case, and a filename on Windows and "
-                  + "on macOS does not";
-            return $"{named} — this one and {other}. Their twins are ONE file, and the second "
-                + "would silently replace the first: the code that used one would get the other's "
-                + "members. Namespaces do not separate them, because a twin is named for its TYPE. "
-                + "Rename one of them.";
+            _written[name] = (name, source, typeScript);
+            return TwinClaim.Fresh;
         }
 
-        _written[name] = (name, source, typeScript);
-        return null;
+        if (first.TypeScript == typeScript) return TwinClaim.Repeat;
+
+        var other = first.Source == source
+            ? "another type of the same name in this file"
+            : $"the one in '{describeSource(first.Source)}'";
+        var named = first.Name == name
+            ? $"two types are named '{name}'"
+            : $"'{name}' and '{first.Name}' differ only in case, and a filename on Windows and "
+              + "on macOS does not";
+        error = $"{named} — this one and {other}. Their twins are ONE file, and the second "
+            + "would silently replace the first: the code that used one would get the other's "
+            + "members. Namespaces do not separate them, because a twin is named for its TYPE. "
+            + "Rename one of them.";
+        return TwinClaim.Collision;
     }
+}
+
+/// <summary>What the writer should do with a twin it is about to write.</summary>
+public enum TwinClaim
+{
+    /// <summary>The name was free: write the module and its map.</summary>
+    Fresh,
+
+    /// <summary>The same module, already written. Writing it again would rewrite its map with one
+    /// that points at a different C# file — skip it.</summary>
+    Repeat,
+
+    /// <summary>A different type wants a name that is taken. The build stops; see the error.</summary>
+    Collision,
 }
