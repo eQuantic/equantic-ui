@@ -47,7 +47,10 @@ public class DiagnosticsDocumentedTests
                 var code = match.Groups[1].Success ? match.Groups[1].Value : match.Groups[2].Value;
                 if (!reported.TryGetValue(code, out var files))
                     reported[code] = files = new SortedSet<string>(StringComparer.Ordinal);
-                files.Add(Path.GetFileName(file));
+                // The path RELATIVE to src, not the filename: src has seven Program.cs, so a
+                // filename key would collapse the build host's diagnostics with the CLI's and a
+                // code moving between them would slip past this guard unseen.
+                files.Add(Path.GetRelativePath(src, file).Replace(Path.DirectorySeparatorChar, '/'));
             }
         }
 

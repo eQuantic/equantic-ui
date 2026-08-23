@@ -1,39 +1,39 @@
-EQ0000 Program.cs
-EQ0001 Program.cs
-EQ0002 Program.cs
-EQ1001 CSharpToJsConverter.cs
-EQ1002 CSharpToJsConverter.cs
-EQ1003 CSharpToJsConverter.cs
-EQ1004 ConversionContext.cs
-EQ1005 Program.cs
-EQ1006 Program.cs
-EQ2001 Program.cs UnsupportedConstructStrategy.cs
-EQ2002 GotoStatementStrategy.cs
-EQ2003 ObjectCreationStrategy.cs
-EQ2004 CodeEditing.cs InvocationStrategy.cs RangeExpressionStrategy.cs
-EQ2005 TypeScriptEmitter.cs
-EQ2006 ConditionalAccessStrategy.cs InvocationStrategy.cs MemberAccessStrategy.cs ObjectCreationStrategy.cs
-EQ2007 CollectionExpressionStrategy.cs
-EQ2008 ComponentCompiler.cs GroupByStrategy.cs InitializerExpressionStrategy.cs QueryExpressionStrategy.cs TypeScriptEmitter.cs
-EQ2009 ComponentCompiler.cs
-EQ2100 StringStaticStrategy.cs
-EQ2101 StringStaticStrategy.cs
-EQ2102 SemanticValidator.cs
-EQ2103 SemanticValidator.cs
-EQ2104 SemanticValidator.cs
-EQ2105 SemanticValidator.cs
-EQ2106 SemanticValidator.cs
-EQ2107 SemanticValidator.cs
-EQ2108 ToStringStrategy.cs
-EQ2109 ToStringStrategy.cs
-EQ2110 ToStringStrategy.cs
-EQ2111 ServiceProviderStrategy.cs
-EQ2112 SemanticValidator.cs
-EQ3001 PhotonProgramGenerator.cs
-EQ3002 PhotonProgramGenerator.cs
-EQ3003 CapabilityDeclarations.cs
-EQ3101 AppFactorySurfaceGenerator.cs
-EQ3102 AppFactorySurfaceGenerator.cs
-EQ3103 FormModelGenerator.cs
-EQ3104 FormModelGenerator.cs
-EQ3105 FormModelGenerator.cs
+EQ0000 eQuantic.Build/Program.cs
+EQ0001 eQuantic.Build/Program.cs
+EQ0002 eQuantic.Build/Program.cs
+EQ1001 eQuantic.UI.Compiler/CodeGen/CSharpToJsConverter.cs
+EQ1002 eQuantic.UI.Compiler/CodeGen/CSharpToJsConverter.cs
+EQ1003 eQuantic.UI.Compiler/CodeGen/CSharpToJsConverter.cs
+EQ1004 eQuantic.UI.Compiler/CodeGen/ConversionContext.cs
+EQ1005 eQuantic.Build/Program.cs
+EQ1006 eQuantic.Build/Program.cs
+EQ2001 eQuantic.Build/Program.cs eQuantic.UI.Compiler/CodeGen/Strategies/Special/UnsupportedConstructStrategy.cs
+EQ2002 eQuantic.UI.Compiler/CodeGen/Strategies/Statements/GotoStatementStrategy.cs
+EQ2003 eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ObjectCreationStrategy.cs
+EQ2004 eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/InvocationStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/RangeExpressionStrategy.cs eQuantic.UI.Primitives/Code/CodeEditing.cs
+EQ2005 eQuantic.UI.Compiler/CodeGen/TypeScriptEmitter.cs
+EQ2006 eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ConditionalAccessStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/InvocationStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/MemberAccessStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ObjectCreationStrategy.cs
+EQ2007 eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/CollectionExpressionStrategy.cs
+EQ2008 eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/InitializerExpressionStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Linq/GroupByStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Linq/QueryExpressionStrategy.cs eQuantic.UI.Compiler/CodeGen/TypeScriptEmitter.cs eQuantic.UI.Compiler/ComponentCompiler.cs
+EQ2009 eQuantic.UI.Compiler/ComponentCompiler.cs
+EQ2100 eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/StringStaticStrategy.cs
+EQ2101 eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/StringStaticStrategy.cs
+EQ2102 eQuantic.UI.Compiler/Services/SemanticValidator.cs
+EQ2103 eQuantic.UI.Compiler/Services/SemanticValidator.cs
+EQ2104 eQuantic.UI.Compiler/Services/SemanticValidator.cs
+EQ2105 eQuantic.UI.Compiler/Services/SemanticValidator.cs
+EQ2106 eQuantic.UI.Compiler/Services/SemanticValidator.cs
+EQ2107 eQuantic.UI.Compiler/Services/SemanticValidator.cs
+EQ2108 eQuantic.UI.Compiler/CodeGen/Strategies/Invocation/ToStringStrategy.cs
+EQ2109 eQuantic.UI.Compiler/CodeGen/Strategies/Invocation/ToStringStrategy.cs
+EQ2110 eQuantic.UI.Compiler/CodeGen/Strategies/Invocation/ToStringStrategy.cs
+EQ2111 eQuantic.UI.Compiler/CodeGen/Strategies/Invocation/ServiceProviderStrategy.cs
+EQ2112 eQuantic.UI.Compiler/Services/SemanticValidator.cs
+EQ3001 eQuantic.UI.Native.Generators/PhotonProgramGenerator.cs
+EQ3002 eQuantic.UI.Native.Generators/PhotonProgramGenerator.cs
+EQ3003 eQuantic.UI.Native.Generators/CapabilityDeclarations.cs
+EQ3101 eQuantic.UI.Generators/AppFactorySurfaceGenerator.cs
+EQ3102 eQuantic.UI.Generators/AppFactorySurfaceGenerator.cs
+EQ3103 eQuantic.UI.Generators/FormModelGenerator.cs
+EQ3104 eQuantic.UI.Generators/FormModelGenerator.cs
+EQ3105 eQuantic.UI.Generators/FormModelGenerator.cs
