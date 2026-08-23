@@ -41,7 +41,13 @@ public class LocalFunctionStatementStrategy : IStatementStrategy
                 }),
                 context.Layout, context.Depth);
 
-        return JsStatement.Const(name, JsExpr.ArrowBlock(parameters, block));
+        // The `async` has to cross. A C# local function that awaits becomes a JS arrow that
+        // awaits, and an arrow that is not `async` makes `await` in its body a SyntaxError — the
+        // module then fails to parse, which is a build that succeeds and a page that never runs.
+        // Lambdas already carry it (LambdaExpressionStrategy) and so do component methods; this
+        // one dropped it, so the shape only broke where somebody wrote a local async helper.
+        var isAsync = localFn.Modifiers.Any(SyntaxKind.AsyncKeyword);
+        return JsStatement.Const(name, JsExpr.ArrowBlock(parameters, block, isAsync));
     }
 
     /// <summary>

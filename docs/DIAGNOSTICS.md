@@ -94,6 +94,7 @@ than pick for you, eqc asks.
 | `EQ2109` | `ToString(CultureInfo.CurrentCulture)` with no specifier — the general format is outside the tested `Intl` subset. | Name the format: `ToString("N2")`, `ToString("F1")`. |
 | `EQ2110` | A fractional number converted with no culture at all: C# follows the request's culture (a comma, in `pt`) and JavaScript is always invariant. | Say which you mean. |
 | `EQ2111` | `GetService` with no type argument to cross — the registry is keyed by the interface NAME, and there is nothing to key on. | Call the generic overload. |
+| `EQ2113` | `ConfigureAwait` is dropped — there is one context to resume on — and dropping it would discard a NON-CONSTANT argument without evaluating it. | Pass a constant, or evaluate the expression into a local first. |
 
 ## EQ3001–EQ3003 — the Photon app generator
 

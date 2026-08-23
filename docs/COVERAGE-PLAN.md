@@ -94,15 +94,30 @@ A plan without a stop condition chases an ideal forever. Three numbers end it:
    async IIFE (conditional, so the other thousand cases keep their program byte for byte) and the
    .NET side imports `System.Threading.Tasks`.
 
-   The first run found a gap nobody had written down: **the TYPE of an awaited call does not reach
-   the value it produces.** `var s = await F();` over a `Task<string>` leaves `s` untyped, so a
-   member on it is name-guessed (`.toUpperInvariant()`, which exists nowhere) and a conversion on
-   it never fires (`l + 2` stays a BigInt beside a Number and throws). Both work the moment the
-   same call is synchronous, so it is the AWAIT that loses the type, not the local function. An
-   async local function is also not emitted `async`, so a body that awaits is a SyntaxError.
+   The first run reported three failures as a compiler gap — "the TYPE of an awaited call does not
+   reach the value it produces". **Two of the three were the instrument again.** The transpiler's
+   synthesized wrapper had no `using System.Threading.Tasks` and its `__Eval` was not `async`, so
+   `Task<string>` did not bind and `await` was not valid C# there. The tree came back full of
+   errors and eqc did exactly what it documents for a model that cannot answer: it guessed a name.
+   The compiler was right; the harness could not present it a program.
 
-   Held in `AsyncConformanceTests` as a ledger that fails when a case starts WORKING, since that is
-   the direction which otherwise goes unnoticed. This is the open thread of Fase 6.
+   **What was real, and what the hunt then found:**
+
+   - An async LOCAL FUNCTION, and `async delegate`, lost the `async` on the emitted arrow — so a
+     body that awaited became a SyntaxError and the module never parsed. Lambdas and component
+     methods already carried it; those two dropped it.
+   - `Task.Yield()` had no translation at all and emitted `Task.yield()`, a name that exists
+     nowhere. It is now `new Promise(resolve => setTimeout(resolve, 0))`: a resolved promise is a
+     microtask and would not yield the loop, which is the whole point of the call.
+
+   The second one almost escaped, and how is the part worth keeping. Its case had the yield inside
+   a `try/catch`, so it PASSED with the name broken — the catch swallowed the ReferenceError and
+   the fold still read the value the catch wrote. A green tick for the wrong reason. The case now
+   awaits outside any catch, and reverting the fix is what proved it bites.
+
+   **The score for this phase is now four instrument faults to two compiler bugs.** That ratio is
+   the finding: on a suite this size, the thing most likely to be wrong about a failure is the
+   thing doing the measuring.
 
 When the three hold, the compiler is finished in the sense that matters, and the effort moves to
 PERFORMANCE — which this whole arc has never once measured.
