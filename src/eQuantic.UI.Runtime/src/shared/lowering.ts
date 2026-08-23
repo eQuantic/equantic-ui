@@ -623,7 +623,8 @@ function revealCaret(path: string): void {
 }
 
 /**
- * The stacking PLANES, because CSS gives you one number and a page needs three (C# `ChromeLayer`).
+ * The stacking PLANES, because CSS gives you one number and a page needs three (the C#
+ * `PinnedLayer` / `FloatingChromeLayer` twins).
  *
  * CONTENT is elevation 1–5 — the design system's own scale, and the only one an author names.
  * CHROME is above all of it: a pinned header is not a raised card. Photon needs none of this, since
@@ -2381,11 +2382,17 @@ function lowerFlexible(
  * invisible fixed scrim as a REAL pressable while dismissible, and the absolute panel positioned
  * ENTIRELY by the generated placement classes — the gap rides the margin as an atomic declaration.
  */
-/** The panel's visible text, flattened — the C# TextContentOf twin (the tooltip id hashes it). */
+/**
+ * The panel's visible text, flattened — the C# TextContentOf twin (the tooltip id hashes it).
+ *
+ * plainContent, not the content FIELD: a paragraph built from runs carries an empty content, so
+ * every styled panel hashed the same empty string and shared one id with all the others — and the
+ * aria-describedby pointing at one then named somebody else's panel.
+ */
 function visualTextOf(node: VisualNodeValue): string {
   switch (node.nodeKind) {
     case 'text':
-      return (node as TextNode).content ?? '';
+      return plainContent(node as TextNode);
     case 'box': {
       const child = (node as BoxNode).child;
       return child ? visualTextOf(child) : '';

@@ -39,3 +39,36 @@ describe('a paragraph built from runs (C# cross-pin)', () => {
     expect(effectiveStyle(lowerVisualNode(plain, ctx))).toContain('pre-line');
   });
 });
+
+/**
+ * The tooltip id hashes the panel's visible text, which is what makes it survive SSR → hydration.
+ * `visualTextOf` read the content FIELD, so every styled panel hashed the same empty string.
+ *
+ * This is the case that would have caught it: the C# side was fixed first and the client twin was
+ * missed, because the two functions do not share a name (`TextContentOf` / `visualTextOf`) and a
+ * search for the C# one found nothing here.
+ */
+describe('the tooltip id of a styled panel (C# cross-pin)', () => {
+  const tipId = (hint: string): string => {
+    const node = {
+      nodeKind: 'anchored',
+      anchor: { nodeKind: 'text', content: 'Save', role: 'label' },
+      panel: styled(hint),
+      open: true,
+      openOnHover: true,
+      describesAnchor: true,
+    } as unknown as VisualNodeValue;
+    const host = lowerVisualNode(node, ctx);
+    const panel = host.children[host.children.length - 1];
+    return panel.attributes['id'] ?? '';
+  };
+
+  it('differs when the styled text differs', () => {
+    expect(tipId('saves the draft')).not.toBe('');
+    expect(tipId('saves the draft')).not.toBe(tipId('discards the draft'));
+  });
+
+  it('is stable for the same styled text, which is what hydration depends on', () => {
+    expect(tipId('saves the draft')).toBe(tipId('saves the draft'));
+  });
+});
