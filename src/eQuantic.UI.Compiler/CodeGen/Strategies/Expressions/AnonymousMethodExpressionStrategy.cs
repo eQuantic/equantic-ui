@@ -18,7 +18,11 @@ public class AnonymousMethodExpressionStrategy : IExpressionIrStrategy
         var parameters = anon.ParameterList is null
             ? ""
             : string.Join(", ", anon.ParameterList.Parameters.Select(p => p.Identifier.Text));
-        return JsExpr.ArrowBlock(parameters, context.Converter.ConvertBlock(anon.Block));
+        // `async delegate { … }` keeps its async, for the same reason the local function does:
+        // an arrow that is not async makes `await` in its body a SyntaxError, and the module then
+        // fails to parse rather than misbehaving somewhere visible.
+        var isAsync = anon.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
+        return JsExpr.ArrowBlock(parameters, context.Converter.ConvertBlock(anon.Block), isAsync);
     }
 
     public int Priority => 10;

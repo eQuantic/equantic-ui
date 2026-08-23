@@ -121,12 +121,13 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 {prelude}
 
 public class __Conformance
 {{
-    public object? __Eval()
+    public async Task<object?> __Eval()
     {{
         {evalBody}
     }}

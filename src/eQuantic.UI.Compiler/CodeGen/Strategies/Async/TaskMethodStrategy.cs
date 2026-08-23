@@ -23,7 +23,7 @@ public class TaskMethodStrategy : IConversionStrategy
         
         if (expr != "Task" && expr != "System.Threading.Tasks.Task") return false;
         
-        return name is "Delay" or "Run" or "WhenAll" or "WhenAny" or "FromResult";
+        return name is "Delay" or "Run" or "WhenAll" or "WhenAny" or "FromResult" or "Yield";
     }
 
     public string Convert(SyntaxNode node, ConversionContext context)
@@ -33,6 +33,16 @@ public class TaskMethodStrategy : IConversionStrategy
         var name = memberAccess.Name.Identifier.Text;
         var args = invocation.ArgumentList.Arguments;
         
+        if (name == "Yield")
+        {
+            // `Task.Yield()` gives the scheduler a turn: the continuation is GUARANTEED to run
+            // asynchronously. A resolved promise is a microtask and would not let anything else in
+            // — setTimeout(0) is the analogue that actually yields the loop, the same shape Delay
+            // already uses. Untranslated it emitted `Task.yield()`, a name that exists nowhere, and
+            // the module died at the first call.
+            return "new Promise(resolve => setTimeout(resolve, 0))";
+        }
+
         if (name == "Delay")
         {
             var ms = context.Converter.ConvertExpression(args[0].Expression);
