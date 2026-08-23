@@ -34,11 +34,27 @@ public class TaskMethodStrategy : IConversionStrategy
         // it went out as `.configureAwait(false)` — a method that exists nowhere. JavaScript has no
         // synchronization context to opt out of, so the honest translation is to DROP it and keep
         // the receiver. It is everywhere in real async C#, and it broke the module at parse time.
-        if (name == "ConfigureAwait") return true;
+        //
+        // Gated on the SYMBOL, not the name. A name gate takes any method called ConfigureAwait,
+        // including one somebody wrote on their own type, and drops the call silently — which is
+        // the failure this whole strategy exists to stop. The name is consulted only where the
+        // model cannot answer, which is the rule everywhere else in here.
+        if (name == "ConfigureAwait")
+            return IsAwaitableConfigure(invocation, context) || context.CanGuess(invocation);
 
         if (!IsTaskType(expr)) return false;
 
         return name is "Delay" or "Run" or "WhenAll" or "WhenAny" or "FromResult" or "Yield";
+    }
+
+    /// <summary>Whether this <c>ConfigureAwait</c> is the BCL's, on a task or a value task.</summary>
+    private static bool IsAwaitableConfigure(InvocationExpressionSyntax invocation, ConversionContext context)
+    {
+        if (context.SemanticHelper.GetSymbol(invocation) is not IMethodSymbol method) return false;
+        var owner = method.ContainingType?.ConstructedFrom ?? method.ContainingType;
+        var name = owner?.ToDisplayString();
+        return name is "System.Threading.Tasks.Task" or "System.Threading.Tasks.Task<TResult>"
+            or "System.Threading.Tasks.ValueTask" or "System.Threading.Tasks.ValueTask<TResult>";
     }
 
     private static bool IsTaskType(string expression) =>
@@ -56,9 +72,25 @@ public class TaskMethodStrategy : IConversionStrategy
         var args = invocation.ArgumentList.Arguments;
 
         // `t.ConfigureAwait(false)` IS `t` here: the flag says which context to resume on, and
-        // there is only one.
+        // there is only one. Dropping the call drops its ARGUMENT too, which is only safe while
+        // the argument cannot do anything — a constant. Anything else is refused rather than
+        // silently discarded: a side effect that stops happening is the kind of defect that shows
+        // up nowhere near the line that caused it.
         if (name == "ConfigureAwait")
+        {
+            var flag = args.Count > 0 ? args[0].Expression : null;
+            if (flag is not null && !context.SemanticHelper.TryGetConstantValue(flag, out _))
+            {
+                context.Report(node, ConversionSeverity.Error, "EQ2113",
+                    "'ConfigureAwait' has no JavaScript translation — there is one context to "
+                    + "resume on — so the call is dropped, and dropping it would discard this "
+                    + "argument without evaluating it. Pass a constant, or evaluate the expression "
+                    + "into a local first.");
+                return context.Converter.ConvertExpression(memberAccess.Expression);
+            }
+
             return context.Converter.ConvertExpression(memberAccess.Expression);
+        }
 
         if (name == "Yield")
         {

@@ -29,6 +29,7 @@ EQ2109 eQuantic.UI.Compiler/CodeGen/Strategies/Invocation/ToStringStrategy.cs
 EQ2110 eQuantic.UI.Compiler/CodeGen/Strategies/Invocation/ToStringStrategy.cs
 EQ2111 eQuantic.UI.Compiler/CodeGen/Strategies/Invocation/ServiceProviderStrategy.cs
 EQ2112 eQuantic.UI.Compiler/Services/SemanticValidator.cs
+EQ2113 eQuantic.UI.Compiler/CodeGen/Strategies/Async/TaskMethodStrategy.cs
 EQ3001 eQuantic.UI.Native.Generators/PhotonProgramGenerator.cs
 EQ3002 eQuantic.UI.Native.Generators/PhotonProgramGenerator.cs
 EQ3003 eQuantic.UI.Native.Generators/CapabilityDeclarations.cs
