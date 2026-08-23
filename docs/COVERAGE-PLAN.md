@@ -63,10 +63,30 @@ A plan without a stop condition chases an ideal forever. Three numbers end it:
    overflow this instrument exists not to hunt.
 
    That is the first widening in this arc to yield nothing, which is what the condition asks for
-   — but on ONE axis. What the grammar still does not write: tuples, structs and user-defined
-   operators, `checked`/`unchecked` blocks, labelled break/continue, local functions, `HashSet`,
-   `StringBuilder`, and the whole async surface. The condition holds when a widening on an axis
-   nobody has walked yet also comes back empty.
+   — but on ONE axis.
+
+   **Third round, on the axis that was named as the remaining doubt.** Everything from that list
+   except async: a `Money` struct carrying user-defined binary, unary, compound, comparison and
+   implicit/explicit conversion operators; tuple deconstruction, named members and the swap;
+   `checked` and `unchecked` BLOCKS (the ArithmeticContext rule, never fuzzed before); labelled
+   `break`/`continue`; `HashSet`; `StringBuilder`; local functions. Each was PROBED first — a
+   construct one side cannot run makes every program fail for a reason that is not a finding —
+   and all seventeen already worked. **1500 more programs, zero divergences.**
+
+   **4500 programs across three rounds, no compiler divergence, and three faults in the
+   INSTRUMENT.** That ratio is the honest state of this condition: what the widenings found was a
+   generator writing invalid input, not a compiler translating it wrongly.
+
+   - `~` and `>>>` put a value at 2^31 from small operands, and the fold reached the
+     default-context int overflow this instrument exists not to hunt.
+   - A `StringBuilder` named `sb0` shadowed the `sbyte sb0`, so the fold added the builder and the
+     program died in the JS engine — which reads exactly like a compiler bug.
+   - Widening the statement switch DILUTED every case, and `Math.Round` fell below the noise of a
+     200-program corpus and read as absent.
+
+   All three are now guarded rather than remembered: `TheGrammarWrites_EveryConstructItClaimsToCover`
+   (does the grammar still reach it), `NoGeneratedProgram_DeclaresOneNameTwice` (is the input
+   valid), and bounding at the point values are consumed. Async is what remains unwritten.
 
 When the three hold, the compiler is finished in the sense that matters, and the effort moves to
 PERFORMANCE — which this whole arc has never once measured.
