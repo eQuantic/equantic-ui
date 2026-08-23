@@ -1,0 +1,6 @@
+# Sites that read a Text's Content FIELD rather than PlainContent, and why each is correct.
+# This list may ONLY SHRINK. See DerivedPropertyReadersTests for what it cost.
+#
+# GUARDED by `Spans is null`, so Content is genuinely the whole paragraph here: the runs branch
+# renders the spans as child elements instead, and there is no inner HTML to set.
+src/eQuantic.UI.Web/WebRealizer.cs  InnerHtml = text.Spans is null ? text.Content : null,
