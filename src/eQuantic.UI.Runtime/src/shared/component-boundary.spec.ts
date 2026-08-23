@@ -89,6 +89,33 @@ describe('component boundary', () => {
     expect(rendered).not.toContain('BrokenCard');
   });
 
+  it('a REAL stateless component gets the boundary too — it is a component', async () => {
+    const { StatelessComponent } = await import('../core/component');
+    class BrokenCard extends StatelessComponent {
+      build(): never {
+        throw new TypeError("Cannot read properties of undefined (reading 'title')");
+      }
+    }
+
+    // The cases above hand-write `nodeKind: 'component'` onto a literal, so they exercise the
+    // BRANCH. This one composes the real base a transpiled stateless component extends, which is
+    // how the library actually reaches the lowering — and the branch is only taken if that base
+    // says it is a component.
+    const row = {
+      nodeKind: 'row',
+      gap: 8,
+      main: 'start',
+      cross: 'start',
+      children: [text('before'), new BrokenCard(), text('after')],
+    } as unknown as VisualNodeValue;
+
+    const rendered = flatten(lowerVisualNode(row, ctx));
+
+    expect(rendered).toContain('before');
+    expect(rendered).toContain('after');
+    expect(rendered).toContain('could not be displayed');
+  });
+
   it('names the component and quotes the throw when a developer is watching', () => {
     (window as { __EQ_DEV__?: boolean }).__EQ_DEV__ = true;
 
