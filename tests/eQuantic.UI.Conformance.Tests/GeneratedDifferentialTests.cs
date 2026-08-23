@@ -90,6 +90,7 @@ public class GeneratedDifferentialTests
         // and not a clash — only block-level declarations can shadow each other here.
         var declaration = new System.Text.RegularExpressions.Regex(
             @"(?<!for \()(?<!foreach \()\b(?:var|int|uint|long|ulong|short|ushort|byte|sbyte|float|double|decimal|char|bool|string|Money|Suit|DateTime|TimeSpan)\s+([A-Za-z_]\w*)\s*(?:=|\()");
+        var Deconstruction = new System.Text.RegularExpressions.Regex(@"\bvar \(([^)]*)\)\s*=");
 
         var clashes = new List<string>();
         for (var index = 0; index < 400; index++)
@@ -101,6 +102,13 @@ public class GeneratedDifferentialTests
                 var name = match.Groups[1].Value;
                 if (!seen.Add(name)) clashes.Add($"index={index} name={name}");
             }
+
+            // A DECONSTRUCTION declares its names inside the parentheses, so the pattern above
+            // walks straight past them — a guard that covers every construct except the ones the
+            // grammar just gained is the failure it was written to prevent.
+            foreach (System.Text.RegularExpressions.Match match in Deconstruction.Matches(program))
+                foreach (var name in match.Groups[1].Value.Split(',', StringSplitOptions.TrimEntries))
+                    if (name.Length > 0 && !seen.Add(name)) clashes.Add($"index={index} name={name}");
         }
 
         Assert.True(clashes.Count == 0,
@@ -171,7 +179,7 @@ public class GeneratedDifferentialTests
             "Math.Sqrt(", "Math.Clamp(", "Math.Min(",
             ".IndexOf(", ".LastIndexOf(", ".Split(", ".Contains(",
             "[^1]", "[..1]", "[1..]", "char.ToUpperInvariant(", ".ToLowerInvariant(", ".Insert(0,",
-            "new Money(", "-{0}".Replace("{0}", "mo0"), "> new Money(", "(int)(",
+            "new Money(", "mo0 * ", "mo0 + ", "mo0 - ", "-mo0", "> new Money(", "mo0 < ", "(int)(",
             "var (ta", ") = (tb", "unchecked(", "checked {", "continue outer", "break outer",
             "new HashSet<int>", ".Contains(", "StringBuilder(", ".Append(", "int Fn",
             "try {", "catch {", "switch {", "is {", "foreach (", "while (", "for (",
@@ -418,9 +426,15 @@ public class GeneratedDifferentialTests
                     // binary, unary, the scale by an int, the implicit conversion FROM an int and
                     // the explicit one back. Bounded, because Money's arithmetic is int arithmetic
                     // and its overflow is the documented divergence, not a finding.
-                    return $"{MoneyVar()} = new Money(((int)({MoneyVar()} + new Money({Pick(300)})) * {1 + Pick(4)}) % 100003); "
+                    // The cast comes AFTER the operator, never before: `(int)(m + n) * k` is int
+                    // multiplication and leaves `operator *(Money, int)` dead, which is how a case
+                    // can name an operator it never runs.
+                    return $"{MoneyVar()} = new Money((int)({MoneyVar()} * {1 + Pick(4)}) % 100003); "
+                           + $"{MoneyVar()} = new Money((int)({MoneyVar()} + new Money({Pick(300)})) % 100003); "
                            + $"if ({MoneyVar()} > new Money({Pick(400)})) {{ {MoneyVar()} = -{MoneyVar()}; }} "
-                           + $"{MoneyVar()} = new Money(Math.Abs((int)({MoneyVar()} - {Pick(200)})) % 100003); ";
+                           // `< {int}` and `- {int}` go through the IMPLICIT conversion, which is an
+                           // operator too and only fires where an int meets a Money.
+                           + $"if ({MoneyVar()} < {Pick(400)}) {{ {MoneyVar()} = new Money(Math.Abs((int)({MoneyVar()} - {Pick(200)})) % 100003); }} ";
                 case 34:
                 {
                     // TUPLES: the deconstruction, the named members, and the swap that has to
