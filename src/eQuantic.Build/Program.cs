@@ -378,12 +378,26 @@ bool CompileAndBundle()
                         // name write the same file and the second wins. Nothing said so: C# is
                         // happy — the namespaces differ — and the page died in the browser with
                         // the OTHER type's fields, which is the worst way to learn.
-                        var claim = written.Claim(result.ComponentName, file, result.TypeScript,
-                            path => Path.GetRelativePath(dir, path), out var collision);
+                        // Namespace-qualified, because that is what makes two claims ONE type.
+                        // The FILE is still keyed by the bare name — see EmittedTwins for why both
+                        // halves are needed, and why either alone gets a real case wrong.
+                        var identity = string.IsNullOrEmpty(result.Namespace)
+                            ? result.ComponentName
+                            : $"{result.Namespace}.{result.ComponentName}";
+                        var claim = written.Claim(result.ComponentName, identity, file, result.TypeScript,
+                            path => Path.GetRelativePath(dir, path), out var message);
                         if (claim == eQuantic.UI.Compiler.Services.TwinClaim.Collision)
                         {
-                            Console.Error.WriteLine($"{file}(1,1): error EQ1005: {collision}");
+                            Console.Error.WriteLine($"{file}(1,1): error EQ1005: {message}");
                             hasErrors = true;
+                            continue;
+                        }
+                        // One type across declarations eqc cannot merge. The build goes on with
+                        // the module already written; the members left out are said out loud,
+                        // because their absence shows up only in the browser.
+                        if (claim == eQuantic.UI.Compiler.Services.TwinClaim.Divided)
+                        {
+                            Console.Error.WriteLine($"{file}(1,1): warning EQ1006: {message}");
                             continue;
                         }
                         // The same module already on disk: writing it again would rewrite its map

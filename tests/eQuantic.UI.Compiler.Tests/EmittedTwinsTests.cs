@@ -20,9 +20,9 @@ public class EmittedTwinsTests
     public void TwoTypesOfOneName_InDifferentFiles_AreRefused()
     {
         var twins = new EmittedTwins();
-        twins.Claim("BenchSeat", "Sections/Bench.cs", "class BenchSeat { a }", Here, out _).Should().Be(TwinClaim.Fresh);
+        twins.Claim("BenchSeat", "App.Sections.BenchSeat", "Sections/Bench.cs", "class BenchSeat { a }", Here, out _).Should().Be(TwinClaim.Fresh);
 
-        twins.Claim("BenchSeat", "Pages/Bench.cs", "class BenchSeat { b }", Here, out var collision).Should().Be(TwinClaim.Collision);
+        twins.Claim("BenchSeat", "App.Pages.BenchSeat", "Pages/Bench.cs", "class BenchSeat { b }", Here, out var collision).Should().Be(TwinClaim.Collision);
 
         collision.Should().NotBeNull();
         collision.Should().Contain("BenchSeat").And.Contain("Sections/Bench.cs");
@@ -33,9 +33,9 @@ public class EmittedTwinsTests
     public void TwoTypesOfOneName_InTheSameFile_AreRefusedToo()
     {
         var twins = new EmittedTwins();
-        twins.Claim("Seat", "Bench.cs", "class Seat { a }", Here, out _).Should().Be(TwinClaim.Fresh);
+        twins.Claim("Seat", "App.Sections.Seat", "Bench.cs", "class Seat { a }", Here, out _).Should().Be(TwinClaim.Fresh);
 
-        twins.Claim("Seat", "Bench.cs", "class Seat { b }", Here, out var same)
+        twins.Claim("Seat", "App.Pages.Seat", "Bench.cs", "class Seat { b }", Here, out var same)
             .Should().Be(TwinClaim.Collision);
         same.Should().Contain("another type of the same name in this file");
     }
@@ -47,11 +47,11 @@ public class EmittedTwinsTests
         // refusing that would fail builds that were never broken.
         var twins = new EmittedTwins();
         var module = "class Seat { a }";
-        twins.Claim("Seat", "Bench.cs", module, Here, out _).Should().Be(TwinClaim.Fresh);
+        twins.Claim("Seat", "App.Seat", "Bench.cs", module, Here, out _).Should().Be(TwinClaim.Fresh);
         // REPEAT, not Fresh: the writer must skip it. The module is identical but its source map
         // is not — that embeds the C# path, so rewriting it would map the module to another file.
-        twins.Claim("Seat", "Bench.cs", module, Here, out _).Should().Be(TwinClaim.Repeat);
-        twins.Claim("Seat", "Other.cs", module, Here, out _).Should().Be(TwinClaim.Repeat);
+        twins.Claim("Seat", "App.Seat", "Bench.cs", module, Here, out _).Should().Be(TwinClaim.Repeat);
+        twins.Claim("Seat", "App.Seat", "Other.cs", module, Here, out _).Should().Be(TwinClaim.Repeat);
     }
 
     /// <summary>`Seat` and `seat` are two types to C# and ONE file to Windows and to macOS as it
@@ -62,9 +62,9 @@ public class EmittedTwinsTests
     public void NamesDifferingOnlyInCase_AreRefused_BecauseAFilenameDoesNotCare()
     {
         var twins = new EmittedTwins();
-        twins.Claim("Seat", "a.cs", "class Seat {}", Here, out _).Should().Be(TwinClaim.Fresh);
+        twins.Claim("Seat", "App.Seat", "a.cs", "class Seat {}", Here, out _).Should().Be(TwinClaim.Fresh);
 
-        twins.Claim("seat", "b.cs", "class seat {}", Here, out var collision).Should().Be(TwinClaim.Collision);
+        twins.Claim("seat", "App.seat", "b.cs", "class seat {}", Here, out var collision).Should().Be(TwinClaim.Collision);
 
         collision.Should().NotBeNull();
         collision.Should().Contain("differ only in case",
@@ -76,8 +76,8 @@ public class EmittedTwinsTests
     public void DifferentNames_NeverCollide()
     {
         var twins = new EmittedTwins();
-        twins.Claim("Seat", "a.cs", "class Seat {}", Here, out _).Should().Be(TwinClaim.Fresh);
-        twins.Claim("Bench", "b.cs", "class Bench {}", Here, out _).Should().Be(TwinClaim.Fresh);
+        twins.Claim("Seat", "App.Seat", "a.cs", "class Seat {}", Here, out _).Should().Be(TwinClaim.Fresh);
+        twins.Claim("Bench", "App.Bench", "b.cs", "class Bench {}", Here, out _).Should().Be(TwinClaim.Fresh);
     }
 
     /// <summary>The shape the site actually hit: two records of one name, different members. The
@@ -95,5 +95,65 @@ public class EmittedTwinsTests
         results.Select(r => r.ComponentName).Should().AllBe("BenchSeat");
         results[0].TypeScript.Should().NotBe(results[1].TypeScript,
             "they are different types — which is exactly what makes one file wrong");
+    }
+
+    /// <summary>
+    /// Reported by the site on preview.41, and the reason this class had to learn the difference
+    /// between a file and a type. `LibrarySeedSource` is ONE `sealed partial class` across six
+    /// files; the ledger counted DECLARATIONS and answered five collisions, each able to stop the
+    /// build on its own. Nothing was colliding: one type cannot silently replace itself.
+    /// </summary>
+    [Fact]
+    public void OneTypeSplitAcrossFiles_IsNotACollision()
+    {
+        var twins = new EmittedTwins();
+        twins.Claim("LibrarySeedSource", "App.Data.LibrarySeedSource", "Seed/Books.cs",
+            "class LibrarySeedSource { books }", Here, out _).Should().Be(TwinClaim.Fresh);
+
+        var claim = twins.Claim("LibrarySeedSource", "App.Data.LibrarySeedSource", "Seed/Films.cs",
+            "class LibrarySeedSource { films }", Here, out var message);
+
+        claim.Should().Be(TwinClaim.Divided, "a partial type is one type, and one type is one twin");
+        message.Should().NotBeNull();
+        message.Should().Contain("Seed/Books.cs",
+            "the warning has to name the declaration that DID reach the twin");
+        message.Should().Contain("not in it",
+            "and say plainly that these members were left out, since that only shows in the browser");
+    }
+
+    /// <summary>
+    /// The other half of the same report: `obj/Debug/…/AppUI.g.cs` and `obj/Release/…/AppUI.g.cs`
+    /// collected together, which is one generated type written twice by two configurations. This
+    /// one hits CI every time, because CI builds Release over a tree that has a Debug obj.
+    /// </summary>
+    [Fact]
+    public void OneGeneratedTypeFromTwoConfigurations_IsNotACollision()
+    {
+        var twins = new EmittedTwins();
+        const string module = "class AppUI { factories }";
+        twins.Claim("AppUI", "App.AppUI", "obj/Debug/net10.0/generated/AppUI.g.cs", module, Here, out _)
+            .Should().Be(TwinClaim.Fresh);
+
+        twins.Claim("AppUI", "App.AppUI", "obj/Release/net10.0/generated/AppUI.g.cs", module, Here, out var message)
+            .Should().Be(TwinClaim.Repeat);
+        message.Should().BeNull("identical bytes from one type are not worth a word to anybody");
+    }
+
+    /// <summary>
+    /// The guard on the guard: making partials pass must not make the ORIGINAL bug pass. What
+    /// separates them is not the namespace — grouping the FILE by namespace would let two
+    /// `BenchSeat` through, which is the bug this class exists for — it is whether the two claims
+    /// are the same TYPE. Same name, different identity: still refused.
+    /// </summary>
+    [Fact]
+    public void TwoTypesOfOneName_AreStillRefused_NowThatOneTypeMayRepeat()
+    {
+        var twins = new EmittedTwins();
+        twins.Claim("BenchSeat", "App.Sections.BenchSeat", "a.cs", "class BenchSeat { a }", Here, out _)
+            .Should().Be(TwinClaim.Fresh);
+
+        twins.Claim("BenchSeat", "App.Pages.BenchSeat", "b.cs", "class BenchSeat { b }", Here, out var error)
+            .Should().Be(TwinClaim.Collision);
+        error.Should().Contain("named for its TYPE");
     }
 }
