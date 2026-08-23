@@ -86,7 +86,23 @@ A plan without a stop condition chases an ideal forever. Three numbers end it:
 
    All three are now guarded rather than remembered: `TheGrammarWrites_EveryConstructItClaimsToCover`
    (does the grammar still reach it), `NoGeneratedProgram_DeclaresOneNameTwice` (is the input
-   valid), and bounding at the point values are consumed. Async is what remains unwritten.
+   valid), and bounding at the point values are consumed.
+
+   **Async, the last axis, and the one that DID find something.** It could not be reached at all
+   before: the harness wrapped every block in a plain arrow, where `await` is a SyntaxError, so bun
+   exited before printing and the failure read as a translation bug. An awaiting block now gets an
+   async IIFE (conditional, so the other thousand cases keep their program byte for byte) and the
+   .NET side imports `System.Threading.Tasks`.
+
+   The first run found a gap nobody had written down: **the TYPE of an awaited call does not reach
+   the value it produces.** `var s = await F();` over a `Task<string>` leaves `s` untyped, so a
+   member on it is name-guessed (`.toUpperInvariant()`, which exists nowhere) and a conversion on
+   it never fires (`l + 2` stays a BigInt beside a Number and throws). Both work the moment the
+   same call is synchronous, so it is the AWAIT that loses the type, not the local function. An
+   async local function is also not emitted `async`, so a body that awaits is a SyntaxError.
+
+   Held in `AsyncConformanceTests` as a ledger that fails when a case starts WORKING, since that is
+   the direction which otherwise goes unnoticed. This is the open thread of Fase 6.
 
 When the three hold, the compiler is finished in the sense that matters, and the effort moves to
 PERFORMANCE — which this whole arc has never once measured.

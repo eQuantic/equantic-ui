@@ -34,7 +34,7 @@ public static class ConformanceRunner
         var types = Transpiler.EmitDeclaredRecordTypes(prelude);
         // Top-level undefined canonicalizes to null: the transpiled world treats them as ONE
         // (the `== null` doctrine), and C#'s side of a guarded chain answers null.
-        var program = $"{BuildHelperImport(jsBlock + types)}{types}console.log(JSON.stringify(((v) => v === undefined ? null : v)((() => {jsBlock})())))";
+        var program = $"{BuildHelperImport(jsBlock + types)}{types}{Log(jsBlock)}";
 
         var actual = JsExecutor.Run(program);
         var expected = DotNetEvaluator.EvaluateToJson(csharpStatements, prelude);
@@ -66,6 +66,28 @@ public static class ConformanceRunner
     /// If the emitted JS references runtime helpers (e.g. `format`), import exactly those from the
     /// real bundled runtime.js. Helper-free output (the common case) gets no import at all.
     /// </summary>
+    /// <summary>
+    /// The line that runs the block and prints its result.
+    /// <para>
+    /// A block that AWAITS cannot run inside a plain arrow — `await` there is a SyntaxError and bun
+    /// exits before printing anything, which reads as a translation failure and is not one. So the
+    /// awaiting shape gets an async IIFE and prints from inside it, rather than a top-level await:
+    /// the harness writes a bare script, and top-level await needs a module.
+    /// </para>
+    /// <para>
+    /// Conditional ON PURPOSE. Every non-awaiting case keeps the exact program it had, byte for
+    /// byte, so a thousand green conformance cases are not quietly re-run through a new shape.
+    /// </para>
+    /// </summary>
+    private static string Log(string jsBlock)
+    {
+        const string canonical = "((v) => v === undefined ? null : v)";
+        return Regex.IsMatch(jsBlock, @"\bawait\b")
+            ? $"(async () => {{ const $r = await (async () => {jsBlock})(); "
+              + $"console.log(JSON.stringify({canonical}($r))); }})()"
+            : $"console.log(JSON.stringify({canonical}((() => {jsBlock})())))";
+    }
+
     private static string BuildHelperImport(string js)
     {
         var used = RuntimeHelpers.Where(h => Regex.IsMatch(js, $@"\b{h}[(.]")).ToList();

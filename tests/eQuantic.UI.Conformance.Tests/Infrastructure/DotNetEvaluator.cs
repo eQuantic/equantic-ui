@@ -23,7 +23,10 @@ public static class DotNetEvaluator
             typeof(System.Collections.Generic.List<>).Assembly,
             typeof(System.Collections.Generic.Stack<>).Assembly,
             typeof(System.DateOnly).Assembly)
-        .AddImports("System", "System.Linq", "System.Collections.Generic", "System.Text");
+        // System.Threading.Tasks so an async case can NAME a Task: without it the .NET side fails
+        // to compile while the JS side runs fine, which compares a compiler error to a value.
+        .AddImports("System", "System.Linq", "System.Collections.Generic", "System.Text",
+            "System.Threading.Tasks");
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
