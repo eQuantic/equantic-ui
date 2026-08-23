@@ -47,6 +47,11 @@ public static class DefaultValue
         // .NET still yields the numeric 0 when the enum declares no such member.
         if (type is { TypeKind: TypeKind.Enum })
         {
+            // A [Flags] enum is a NUMBER on this side — the bits have to be combinable — so its
+            // default is 0 whatever its zero member is called. An ordinary enum is its member
+            // NAME, and the default is the member whose value is zero; .NET still yields the
+            // numeric 0 when the enum declares no such member.
+            if (type is INamedTypeSymbol named && named.IsFlagsEnum()) return "0";
             var zero = type.GetMembers().OfType<IFieldSymbol>()
                 .FirstOrDefault(field => field.HasConstantValue && IsZero(field.ConstantValue));
             return zero is null ? "0" : $"'{zero.Name.ToCamelCase()}'";

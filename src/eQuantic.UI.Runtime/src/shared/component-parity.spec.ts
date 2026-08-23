@@ -20,7 +20,7 @@ import { photonTheme } from './design-system.generated';
 import { lowerVisualNode } from './lowering';
 import { setPhotonTheme } from './photon-context';
 import type { HtmlNode } from '../core/types';
-import { Column, Text } from './vocabulary';
+import { Column, GridTrack, Text } from './vocabulary';
 import { Accordion } from './components/Accordion';
 import { AccordionItem } from './components/AccordionItem';
 import { Badge } from './components/Badge';
@@ -38,6 +38,18 @@ import { SearchField } from './components/SearchField';
 import { TextInput } from './components/TextInput';
 import { RadioGroup } from './components/RadioGroup';
 import { EmptyState } from './components/EmptyState';
+import { Menu } from './components/Menu';
+import { MenuItem } from './components/MenuItem';
+import { Dialog } from './components/Dialog';
+import { DialogAction } from './components/DialogAction';
+import { ListItem } from './components/ListItem';
+import { ListView } from './components/ListView';
+import { Table } from './components/Table';
+import { DataTable } from './components/DataTable';
+import { DataColumn } from './components/DataColumn';
+import { DataRow } from './components/DataRow';
+import { Popover } from './components/Popover';
+import { Drawer } from './components/Drawer';
 import { Avatar } from './components/Avatar';
 import { Button } from './components/Button';
 import { ProgressBar } from './components/ProgressBar';
@@ -110,6 +122,58 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     'text-input': still(new TextInput('value', null, 'Label')),
     'radio-group': still(new RadioGroup(['a', 'b'], 0)),
     'empty-state': still(new EmptyState('search', 'Nothing here', 'Try another term')),
+    'menu-closed': still(new Menu(new Button('Open'), [new MenuItem('One'), new MenuItem('Two')])),
+    dialog: still(
+      new Dialog('Delete this?', 'It cannot be undone.', [
+        new DialogAction('Cancel', null, 'ghost'),
+        new DialogAction('Delete'),
+      ]),
+    ),
+    'list-item': still(new ListItem('Title', 'and a subtitle')),
+    'list-view': still(
+      new ListView(
+        3,
+        48,
+        (index: number) => new Text(`row ${index}`, 'bodyM', photonTheme.textPrimary),
+      ),
+    ),
+    table: still(
+      new Table(
+        ['Name', 'Size'],
+        [
+          ['a', '1'],
+          ['b', '2'],
+        ],
+      ),
+    ),
+    'data-table': still(
+      new DataTable(
+        [
+          new DataColumn('Name', GridTrack.flex()),
+          new DataColumn('Size', GridTrack.fixed(80), 'end'),
+        ],
+        [
+          new DataRow('a', [
+            new Text('alpha', 'bodyM', photonTheme.textPrimary),
+            new Text('1', 'bodyM', photonTheme.textPrimary),
+          ]),
+        ],
+      ),
+    ),
+    'popover-closed': still(
+      new Popover(
+        new Button('Info'),
+        new Text('the content', 'bodyM', photonTheme.textPrimary),
+        false,
+      ),
+    ),
+    'drawer-open': still(new Drawer(new Text('side', 'bodyM', photonTheme.textPrimary), true)),
+    accordion: still(
+      new Accordion([
+        new AccordionItem('First', new Text('one', 'bodyM', photonTheme.textPrimary)),
+        new AccordionItem('Second', new Text('two', 'bodyM', photonTheme.textPrimary)),
+      ]),
+    ),
     'select-opens': { node: new Select(['alpha', 'beta', 'gamma'], 0), presses: [0] },
     'accordion-switches': {
       node: new Accordion(
@@ -216,6 +280,9 @@ const ENTRY_TAGS = new Set(['input', 'textarea']);
 function canonical(node: HtmlNode): unknown {
   const attrs: Record<string, string> = {};
   for (const key of Object.keys(node.attributes ?? {}).sort()) {
+    // The channel KEY itself goes with the channel — a path the client stamps to find the element
+    // again after it mounts, which the server has no reason to write.
+    if (key === 'data-eq-scroll') continue;
     const value = node.attributes[key];
     if (value !== undefined && value !== null) attrs[key] = normalize(key, value);
   }
@@ -224,8 +291,15 @@ function canonical(node: HtmlNode): unknown {
   if (node.textContent !== undefined && node.textContent !== null) result.text = node.textContent;
   result.attrs = attrs;
   const entry = ENTRY_TAGS.has(node.tag);
+  // A SCROLL VIEW's after-pass channel is client-only for a reason the module states: "a windowed
+  // list is (offset, viewport) and neither is knowable before layout". The server has no layout, so
+  // it emits neither the channel key nor the listener that reports back through it. Recognised by
+  // the key itself rather than by tag, and only there — a scroll handler anywhere else still counts.
+  const scrollView = 'data-eq-scroll' in (node.attributes ?? {});
   result.events = Object.keys(node.events ?? {})
-    .filter((name) => !(entry && CLIENT_ONLY_EVENTS.has(name)))
+    .filter(
+      (name) => !(entry && CLIENT_ONLY_EVENTS.has(name)) && !(scrollView && name === 'scroll'),
+    )
     .sort();
   result.children = (node.children ?? []).map(canonical);
   return result;
@@ -276,4 +350,3 @@ describe('component parity: the twin lowers to the tree C# lowers to', () => {
     });
   }
 });
-
