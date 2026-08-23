@@ -33,6 +33,7 @@ public class WrapperLayoutTransparencyTests
     {
         Width = SizeValue.Fill,
         MaxWidth = 980,
+        Height = SizeValue.Fill,
         Background = Theme.Surface,
     }, new Text("panel"));
 
@@ -59,6 +60,22 @@ public class WrapperLayoutTransparencyTests
             $"{name} stands in for its child in the row's layout, so it carries the whole width "
             + "contract — a wrapper that takes the fill and drops the cap is full width, and the "
             + "row has nothing left to centre");
+    }
+
+    [Theory]
+    [MemberData(nameof(Wrappers))]
+    public void AWrapperCarriesBothAxes(string name, VisualNode wrapper)
+    {
+        // Half a contract is its own divergence, and it bit twice in this PR from opposite sides:
+        // the twin's Link was short a height, and this side's Adjustable was. A wrapper mirrors
+        // the axes it stands in for, or the two targets lay the same tree out differently.
+        var column = new Column(gap: 0) { Height = SizeValue.Fill };
+        column.Add(wrapper);
+
+        var lowered = Render(column).Children.Should().ContainSingle().Which;
+
+        lowered.Attributes.GetValueOrDefault("style", "").Should().Contain("height: 100%",
+            $"{name} stands in for a child that fills the cross axis");
     }
 
     [Fact]

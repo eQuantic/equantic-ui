@@ -1163,14 +1163,18 @@ public static class WebRealizer
     /// </summary>
     private static HtmlElement LowerAdjustable(Adjustable adjustable, ComponentContext context)
     {
-        var fillsWidth = Fills(adjustable.Child).Width;
+        var adjustableFills = Fills(adjustable.Child);
         var adjustableCap = CapsAt(adjustable.Child);
         var element = new RealizedElement("div")
         {
             Style = new HtmlStyle
             {
-                Width = fillsWidth ? "100%" : null,
+                Width = adjustableFills.Width ? "100%" : null,
                 MaxWidth = adjustableCap > 0 ? TokenCss.Px(adjustableCap) : null,
+                // BOTH axes, like every other wrapper and like the twin already did. Taking the
+                // width and leaving the height is the same half-contract that made the Link
+                // diverge, mirrored: there the twin was short, here this side was.
+                Height = adjustableFills.Height ? "100%" : null,
             },
             RawAttributes = new Dictionary<string, string>
             {
