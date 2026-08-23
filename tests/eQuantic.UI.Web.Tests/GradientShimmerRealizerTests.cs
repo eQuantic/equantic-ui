@@ -179,7 +179,11 @@ public class GradientShimmerRealizerTests
         var track = Render(new Skeleton(SkeletonShape.Line, 160));
 
         track.Attributes["style"].Should().Contain($"background-color: {TokenCss.Value(Theme.SurfaceSubtle)}");
-        track.Attributes["style"].Should().Contain("border-radius: 999px; overflow: hidden");
+        // The two properties, not the two ADJACENT: a box now declares its hit-target state
+        // between them, and an assertion that spanned the boundary was asserting the order as
+        // much as the values.
+        track.Attributes["style"].Should().Contain("border-radius: 999px");
+        track.Attributes["style"].Should().Contain("overflow: hidden");
 
         var layer = track.Children[0];
         layer.Attributes["class"].Should().Be("eq-loop eq-loop-rest-hidden",

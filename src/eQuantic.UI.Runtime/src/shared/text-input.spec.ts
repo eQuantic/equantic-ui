@@ -63,7 +63,7 @@ describe('text entry primitive (C# cross-pin)', () => {
     expect(input.attributes['placeholder']).toBe('you@company.com');
     expect(effectiveStyle(input)).toBe(
       `background: none; border: none; color: ${tokenValue(photonTheme.textPrimary)}; ` +
-        `font-family: inherit; padding: 0; width: 100%`,
+        `font-family: inherit; padding: 0; pointer-events: auto; width: 100%`,
     );
 
     // The twin is present (and empty) even without a description, so a later error swap

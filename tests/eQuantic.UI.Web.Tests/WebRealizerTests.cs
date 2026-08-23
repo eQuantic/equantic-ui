@@ -64,7 +64,10 @@ public class WebRealizerTests
         Render(box).Attributes["style"].Should().Be(
             "flex-shrink: 0; width: 120px; height: 40px; padding: 0 16px 0 16px; " +
             "background-color: light-dark(#0050a0, #5ca2e8); " +
-            "border: 1px solid light-dark(#c9ced6, #3d4754); border-radius: 10px; box-sizing: border-box");
+            "border: 1px solid light-dark(#c9ced6, #3d4754); border-radius: 10px; " +
+            // A box that PAINTS is a hit target and says so, because a transparent row above it
+            // now carries `pointer-events: none` and that inherits (Flutter's hitTestSelf rule).
+            "pointer-events: auto; box-sizing: border-box");
     }
 
     /// <summary>

@@ -47,8 +47,11 @@ public class LoopMotionRealizerTests
             Clip = true,
         }));
 
-        node.Attributes["style"].Should().Contain("border-radius: 999px; overflow: hidden",
+        // The two properties, not the two ADJACENT — a box declares its hit-target state between
+        // them now, so spanning the boundary asserted the ORDER as much as the values.
+        node.Attributes["style"].Should().Contain("border-radius: 999px",
             "clip follows border-radius in the HtmlStyle property order");
+        node.Attributes["style"].Should().Contain("overflow: hidden");
     }
 
     [Fact]

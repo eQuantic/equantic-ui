@@ -253,7 +253,11 @@ export function mergeAtomicDeclaration(
   const existing = (node.attributes['class'] ?? '').split(' ').filter(Boolean);
   const semantic = existing.filter((c) => !ruleTexts.has(c));
   const atomic = existing.filter((c) => ruleTexts.has(c));
-  atomic.push(added);
+  // A declaration already present needs nothing done to it. A node can be handed the same one
+  // twice — a painted box that is also a drag surface gets `pointer-events: auto` from both —
+  // and appending it again produced a duplicate class the C# side never writes, so the two trees
+  // stopped matching over a declaration they agreed on.
+  if (!atomic.includes(added)) atomic.push(added);
   atomic.sort();
   node.attributes['class'] = [...semantic, ...atomic].join(' ');
 }
