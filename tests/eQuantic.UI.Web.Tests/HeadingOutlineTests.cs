@@ -81,13 +81,30 @@ public class HeadingOutlineTests
         // sheet zeroes them — otherwise marking up the outline would move the page.
         var css = PhotonCssGenerator.Generate(Theme);
 
-        css.Should().Contain("h1, h2, h3, h4, h5, h6");
-        css.Should().Contain("margin: 0");
-        css.Should().Contain("font-size: inherit");
-        // The one the other four do not cover: a span is INLINE and a heading is block, which in
-        // inline flow is a line break nobody asked for. Flex and grid blockify their children, so
-        // this only shows where a Text sits in running text — exactly where it used to be a span.
-        css.Should().Contain("display: inline");
+        // The WHOLE rule as one substring, selector included. Asserting the properties separately
+        // passes on a sheet that lost the heading reset entirely, because `margin: 0` also appears
+        // in the anchor scrim's rule — a test that cannot fail on the thing it names.
+        //
+        // `display` is in the list for the reason the others are not enough: a span is INLINE and
+        // a heading is block, which in running text is a line break nobody asked for. Flex and
+        // grid blockify their children, so it only shows where a Text sits in prose — exactly
+        // where it used to be a span.
+        css.Should().Contain(
+            "h1, h2, h3, h4, h5, h6 { display: inline; margin: 0; font-size: inherit; "
+            + "font-weight: inherit; line-height: inherit; }");
+    }
+
+    [Fact]
+    public void MarkdownHeadingsAreRealHeadings()
+    {
+        // The place the outline matters most, and the only one that already knew the level: a
+        // `##` has said "level two" since long before the framework could emit one.
+        var tree = Render(new Markdown("# Title\n\n## Section\n\nBody text.\n"));
+
+        Walk(tree).Should().Contain(n => n.Tag == "h1");
+        Walk(tree).Should().Contain(n => n.Tag == "h2");
+        // Prose is not a heading, or the rotor fills with the whole document.
+        Walk(tree).Where(n => n.Tag.StartsWith('h')).Should().HaveCount(2);
     }
 
     [Fact]
