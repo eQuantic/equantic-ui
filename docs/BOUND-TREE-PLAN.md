@@ -1,5 +1,11 @@
 # Fase 5 — translating the bound tree
 
+**Closed.** All eight slices shipped. `ValueFlow` settles every expression the bound tree wraps in
+a conversion, text and decimal included, and the defensive `dec()`/`long()` wraps are gone — the
+five seams they were hiding became conversions of their own. What ValueFlow still hands back
+untouched is principled: no bound tree to read, no implicit conversion, or two chars compared.
+Phase 6 (`COVERAGE-PLAN.md`) took over from here.
+
 ## Why
 
 Every strategy in `CodeGen/Strategies/` reads SYNTAX and asks the semantic model what it needs,

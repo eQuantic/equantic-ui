@@ -71,7 +71,7 @@ public class FailOnUnsupportedTests
 
     [Theory]
     [InlineData("System.Net.Http", "EQ2103", "new System.Net.Http.HttpClient().GetStringAsync(\"x\")")]
-    [InlineData("System.IO", "EQ2101", "System.IO.File.ReadAllText(\"x\")")]
+    [InlineData("System.IO", "EQ2112", "System.IO.File.ReadAllText(\"x\")")]
     public void ForbiddenApi_InClientComponent_RaisesBoundaryError(string _, string expectedCode, string call)
     {
         var (semanticModel, tree) = CompileClientComponentCalling(call);

@@ -248,8 +248,10 @@ The Roslyn-based compiler READS C# with strategies and WRITES JavaScript from an
 7. **ValueFlow** (`CodeGen/Strategies/ValueFlow.cs`) - the dispatcher settles EVERY expression for
    the implicit conversion the BOUND tree (`IOperation`) wraps it in — char promotion, int→long —
    at every site C# applies it. A rule ValueFlow owns is removed from the syntax strategies (never
-   both, or the value converts twice); it yields on text and decimal until those move. The bound
-   tree is the destination: `docs/BOUND-TREE-PLAN.md` lists the slices
+   both, or the value converts twice). It now owns TEXT (a value on its way into a concatenation or
+   an interpolation hole) and decimal too; what it still hands back untouched is principled, not
+   owed — no bound tree to read, no implicit conversion, or two chars compared, which stay chars.
+   `docs/BOUND-TREE-PLAN.md` has the slices and what each one cost
 8. **SemanticHelper** (`Services/SemanticHelper.cs`) - symbol-based decisions. The rule: name
    heuristics are legal ONLY where the model cannot be asked (`Knows()` false — no model, or a
    strategy-rewrote node); an in-tree call the model cannot bind is a build error (EQ2006), never

@@ -192,10 +192,22 @@ public static class ProjectCompilationHelper
         }
 
         return roots
-            .SelectMany(dir => Directory.GetFiles(dir, "*.cs", SearchOption.AllDirectories))
+            .SelectMany(dir => Directory.GetFiles(dir, "*.cs", SearchOption.AllDirectories)
+                .Select(file => (Root: dir, File: file)))
             // The implicit-usings file is collected separately; taking it twice would declare the
             // same global usings in two trees, which Roslyn reports as a duplicate.
-            .Where(file => !file.EndsWith(".GlobalUsings.g.cs", StringComparison.Ordinal))
+            .Where(found => !found.File.EndsWith(".GlobalUsings.g.cs", StringComparison.Ordinal))
+            // The SAME generated file under two roots is one file a generator wrote twice, once
+            // per configuration — not two types. Keyed by its path INSIDE its root, because that
+            // is what the generator names it; the roots differ only by the configuration in them.
+            // Newest wins: a stale Release copy from yesterday must not shadow today's Debug one.
+            // Without this the fallback hands Roslyn the same type twice and it resolves to
+            // neither, exactly as the parameter doc above warns.
+            .GroupBy(found => Path.GetRelativePath(found.Root, found.File), StringComparer.OrdinalIgnoreCase)
+            .Select(sameFile => sameFile
+                .OrderByDescending(found => File.GetLastWriteTimeUtc(found.File))
+                .ThenBy(found => found.File, StringComparer.Ordinal)
+                .First().File)
             .Distinct();
     }
 
