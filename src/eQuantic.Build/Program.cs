@@ -323,6 +323,8 @@ bool CompileAndBundle()
     try
     {
         var hasErrors = false;
+        // Which names are already taken — see EmittedTwins for why a name collision is an error.
+        var written = new eQuantic.UI.Compiler.Services.EmittedTwins();
         var entryPoints = new List<string>();
         
         if (!Directory.Exists(intermediateDir)) Directory.CreateDirectory(intermediateDir);
@@ -371,6 +373,19 @@ bool CompileAndBundle()
                     if (result.Success)
                     {
                         var tsPath = Path.Combine(intermediateDir, $"{result.ComponentName}.ts");
+
+                        // A twin is named for its TYPE, not its namespace, so two types with one
+                        // name write the same file and the second wins. Nothing said so: C# is
+                        // happy — the namespaces differ — and the page died in the browser with
+                        // the OTHER type's fields, which is the worst way to learn.
+                        if (written.Claim(result.ComponentName, file, result.TypeScript,
+                                path => Path.GetRelativePath(dir, path)) is { } collision)
+                        {
+                            Console.Error.WriteLine($"{file}(1,1): error EQ1005: {collision}");
+                            hasErrors = true;
+                            continue;
+                        }
+
                         File.WriteAllText(tsPath, result.TypeScript);
                         
                         if (!string.IsNullOrEmpty(result.SourceMap))
