@@ -3,6 +3,7 @@ import { $eq, Anchored, Box, BoxStyle, BuildContext, Calendar, CornerRadii, Date
 export class DatePicker extends SharedStatefulComponent {
     _open: boolean = false;
     _typing: any;
+    static $hydration = { selected: 'dateOnly', min: 'dateOnly', max: 'dateOnly' };
     declare selected: any;
     declare onChanged: any;
     declare min: any;

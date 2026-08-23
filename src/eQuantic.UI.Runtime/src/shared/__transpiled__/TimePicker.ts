@@ -4,6 +4,7 @@ export class TimePicker extends SharedStatefulComponent {
     _open: boolean = false;
     _highlight: number = 0;
     static panelHeight: number = 260;
+    static $hydration = { selected: 'timeOnly', min: 'timeOnly', max: 'timeOnly' };
     declare selected: any;
     declare onChanged: any;
     declare stepMinutes: number;

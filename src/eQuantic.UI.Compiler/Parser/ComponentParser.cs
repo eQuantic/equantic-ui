@@ -53,37 +53,35 @@ public class ComponentParser
     /// </para>
     /// <para>Null for reference types, where C#'s default and `undefined` really do behave alike.</para>
     /// </summary>
+    /// <summary>
+    /// What an auto-property holds when the caller supplies none — C#'s default for its type, which
+    /// `undefined` is not. Answered by the one table (<see cref="Strategies.DefaultValue"/>), and it
+    /// has to be: a `long` defaults to 0n and a `decimal` to a Decimal, and answering plain `0` for
+    /// them put a NUMBER in a slot the twin declares `bigint`, so the first arithmetic on it threw
+    /// "Cannot mix BigInt and other types" — in the browser only, after hydration, on a page whose
+    /// server render was perfect.
+    /// </summary>
+    /// <returns>The JS default, or null where there is none to write (a reference type, a nullable
+    /// value type, an enum with no zero member — C#'s default there is null or an unnamed value,
+    /// and `undefined` is the honest twin).</returns>
     private string? ImplicitValueDefaultJs(PropertyDeclarationSyntax prop)
     {
-        var model = TryGetSemanticModel(prop.SyntaxTree);
-        var type = model?.GetTypeInfo(prop.Type).Type;
+        var type = TryGetSemanticModel(prop.SyntaxTree)?.GetTypeInfo(prop.Type).Type;
+        if (type is null) return null;
 
-        if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType)
+        // An enum with no zero member: C#'s default is an unnamed value, so leave the slot alone
+        // rather than inventing a name for it. DefaultValue answers "0" there, which would be a
+        // number in a slot the twin declares as the member-name string.
+        if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType
+            && !enumType.IsFlagsEnum()
+            && !enumType.GetMembers().OfType<IFieldSymbol>().Any(field => field.HasConstantValue
+                && Convert.ToInt64(field.ConstantValue, CultureInfo.InvariantCulture) == 0))
         {
-            var zero = enumType.GetMembers()
-                .OfType<IFieldSymbol>()
-                .FirstOrDefault(f => f.HasConstantValue
-                    && Convert.ToInt64(f.ConstantValue, CultureInfo.InvariantCulture) == 0);
-            if (zero == null) return null; // no zero member: C# default is an unnamed value — leave it alone
-
-            return enumType.IsFlagsEnum() ? "0" : $"'{zero.Name.ToCamelCase()}'";
+            return null;
         }
 
-        // A NULLABLE value type really is null when unset — `undefined` is the honest twin there.
-        if (type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T })
-            return null;
-
-        return type?.SpecialType switch
-        {
-            SpecialType.System_Boolean => "false",
-            SpecialType.System_SByte or SpecialType.System_Byte
-                or SpecialType.System_Int16 or SpecialType.System_UInt16
-                or SpecialType.System_Int32 or SpecialType.System_UInt32
-                or SpecialType.System_Int64 or SpecialType.System_UInt64
-                or SpecialType.System_Single or SpecialType.System_Double
-                or SpecialType.System_Decimal => "0",
-            _ => null,
-        };
+        var value = CodeGen.Strategies.DefaultValue.Of(type);
+        return value == "null" ? null : value;
     }
 
     /// <summary>
