@@ -51,4 +51,39 @@ public class AsyncConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(program);
     }
+
+    /// <summary>
+    /// The rest of the Task surface, swept after the first two bugs rather than waiting for the
+    /// third to be reported. Three more were broken, and all three are everyday async C#:
+    /// <list type="bullet">
+    /// <item><c>ConfigureAwait</c> is an INSTANCE call, so the strategy's `Task.` gate never saw it
+    /// and it emitted `.configureAwait(false)` — a method that exists nowhere.</item>
+    /// <item><c>Task.CompletedTask</c> is a PROPERTY, so the invocation gate never saw it
+    /// either.</item>
+    /// <item><c>WhenAll</c>/<c>WhenAny</c> with ONE argument passed it to `Promise.all`/`race`
+    /// unwrapped. A promise is not iterable, so a single-task call threw — and the model is what
+    /// tells a lone task from a sequence, since the two are the same syntax.</item>
+    /// </list>
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("async Task<int> F() => 7; var r = await F().ConfigureAwait(false); return $\"{r}\";")]
+    [InlineData("async Task F() { await Task.CompletedTask; } await F(); return \"ok\";")]
+    [InlineData("await Task.Delay(1); return \"ok\";")]
+    [InlineData("var r = await Task.Run(() => 6 * 7); return $\"{r}\";")]
+    // ONE task, not a sequence: the shape that threw.
+    [InlineData("async Task<int> F(int v) => v; var t = await Task.WhenAny(F(1)); return $\"{await t}\";")]
+    [InlineData("async Task<int> F(int v) => v * 2; var xs = await Task.WhenAll(F(3)); return $\"{xs[0]}\";")]
+    // …and a SEQUENCE, which must still go through unwrapped.
+    [InlineData("async Task<int> F(int v) => v; var ts = new[] { F(1), F(2) }.ToList(); "
+        + "var xs = await Task.WhenAll(ts); return $\"{xs[0]}{xs[1]}\";")]
+    [InlineData("var r = 0; try { await Task.FromException(new InvalidOperationException(\"x\")); } "
+        + "catch { r = -1; } var ok = 5; return $\"{r}{ok}\";")]
+    [InlineData("async ValueTask<int> F() => 3; var r = await F(); return $\"{r}\";")]
+    [InlineData("async Task F(int v) { var _ = v; } await F(2); return \"done\";")]
+    [InlineData("Func<Task<int>> f = async () => { await Task.Yield(); return 11; }; return $\"{await f()}\";")]
+    public void TheTaskSurface_MatchesDotNet(string program)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(program);
+    }
 }
