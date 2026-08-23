@@ -62,10 +62,19 @@ public class ServedDocumentContractTests
         return await app.GetTestClient().GetStringAsync(path);
     }
 
-    /// <summary>Every atomic class in the document's stylesheet, to the ONE declaration it carries.</summary>
-    private static Dictionary<string, string> AtomicRules(string html) =>
+    /// <summary>
+    /// Every atomic class in the document's stylesheet, to the declarations it carries. Usually one
+    /// — that is the point of an atomic class — but not always: a VENDOR PAIR writes both spellings
+    /// into a single rule, because `-webkit-backdrop-filter` alone is dropped whole by engines that
+    /// only take the standard name. So the value is a SET, and a caller asks whether a declaration
+    /// is among them rather than whether it is the whole text.
+    /// </summary>
+    private static Dictionary<string, string[]> AtomicRules(string html) =>
         Regex.Matches(html, @"\.(eq-[\w-]+)\{([^}]+)\}")
-            .ToDictionary(m => m.Groups[1].Value, m => m.Groups[2].Value, StringComparer.Ordinal);
+            .ToDictionary(
+                m => m.Groups[1].Value,
+                m => m.Groups[2].Value.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+                StringComparer.Ordinal);
 
     /// <summary>
     /// The z-index actually applied to the element that carries <paramref name="declaration"/>.
@@ -76,7 +85,7 @@ public class ServedDocumentContractTests
     private static int LayerOfElementDeclaring(string html, string declaration)
     {
         var rules = AtomicRules(html);
-        var marker = rules.FirstOrDefault(r => r.Value == declaration).Key;
+        var marker = rules.FirstOrDefault(r => r.Value.Contains(declaration, StringComparer.Ordinal)).Key;
         marker.Should().NotBeNull($"the document has no class declaring `{declaration}`");
 
         foreach (System.Text.RegularExpressions.Match element in Regex.Matches(html, "class=\"([^\"]+)\""))
@@ -85,8 +94,10 @@ public class ServedDocumentContractTests
             if (!classes.Contains(marker, StringComparer.Ordinal)) continue;
 
             foreach (var name in classes)
-                if (rules.TryGetValue(name, out var value) && value.StartsWith("z-index:", StringComparison.Ordinal))
-                    return int.Parse(value["z-index:".Length..]);
+                if (rules.TryGetValue(name, out var declarations))
+                    foreach (var value in declarations)
+                        if (value.StartsWith("z-index:", StringComparison.Ordinal))
+                            return int.Parse(value["z-index:".Length..]);
         }
 
         throw new InvalidOperationException($"no element declaring `{declaration}` carries a z-index");
