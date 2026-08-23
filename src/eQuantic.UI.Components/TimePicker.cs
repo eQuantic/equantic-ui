@@ -61,6 +61,12 @@ public sealed class TimePicker : StatefulComponent
         // field is pressed.
         var open = _open && !Disabled;
         var times = open ? Slots() : [];
+        // The highlight as the LIST can honour it. Two ways it drifts out of range: a range with
+        // nothing in it (Min past Max) offers no slots at all, and an app that narrows the range
+        // or widens the step while the panel is up can leave the index past the end. Either way
+        // the trigger would name an option that does not exist, and an aria-activedescendant
+        // pointing at nothing is worse for a screen reader than none at all.
+        var highlight = times.Count > 0 ? Math.Min(_highlight, times.Count - 1) : -1;
 
         var field = new Row(gap: Space.S2) { Cross = CrossAlign.Center, Width = SizeValue.Fill, Height = SizeValue.Fill };
         field.Add(new Icon(Icons.Clock, IconSize.Dense, theme.TextMuted));
@@ -89,7 +95,7 @@ public sealed class TimePicker : StatefulComponent
             var picked = Selected == slot;
             // The keyboard's row wears the hover coat — one visual language for "you are here",
             // whichever hand is steering. Same rule the Select keeps.
-            var highlighted = i == _highlight;
+            var highlighted = i == highlight;
             var row = new Row(gap: Space.S2) { Cross = CrossAlign.Center, Width = SizeValue.Fill, Height = SizeValue.Fill };
             row.Add(new Text(Format(slot), TypeRole.BodyM,
                 picked ? theme.Colors(Variant.Primary).OnSubtle : theme.TextPrimary, maxLines: 1));
@@ -133,7 +139,7 @@ public sealed class TimePicker : StatefulComponent
             PanelRole = AnchorPanelRole.Listbox,
             // The half of the combobox pattern a painted highlight cannot supply: the options are
             // reachable by pointer only until the trigger SAYS which one the keyboard is on.
-            ActiveIndex = open ? _highlight : -1,
+            ActiveIndex = open ? highlight : -1,
         };
 
         // The keyboard, exactly while the panel is up — a closed picker owns no keys at all.
@@ -143,13 +149,13 @@ public sealed class TimePicker : StatefulComponent
         if (open)
         {
             picker = new Shortcut(picker, KeyChord.Escape, Close);
-            if (times.Count > 0)
+            if (highlight >= 0)
             {
                 picker = new Shortcut(picker, KeyChord.ArrowDown,
-                    () => SetState(() => _highlight = Math.Min(times.Count - 1, _highlight + 1)));
+                    () => SetState(() => _highlight = Math.Min(times.Count - 1, highlight + 1)));
                 picker = new Shortcut(picker, KeyChord.ArrowUp,
-                    () => SetState(() => _highlight = Math.Max(0, _highlight - 1)));
-                picker = new Shortcut(picker, KeyChord.Enter, () => Pick(times[_highlight]));
+                    () => SetState(() => _highlight = Math.Max(0, highlight - 1)));
+                picker = new Shortcut(picker, KeyChord.Enter, () => Pick(times[highlight]));
             }
         }
         return picker;

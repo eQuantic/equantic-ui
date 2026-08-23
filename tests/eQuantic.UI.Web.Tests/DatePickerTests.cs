@@ -386,6 +386,31 @@ public class DatePickerTests
     }
 
     [Fact]
+    public void NoAriaReferencePointsAtNothing_EvenWithAnEmptyRange()
+    {
+        // A range with nothing in it: Min past Max offers no slots, and a trigger that still names
+        // option zero sends a screen reader to an element the page does not have. Silence beats a
+        // dangling reference.
+        var empty = new TimePicker(min: new TimeOnly(18, 0), max: new TimeOnly(9, 0));
+        Press(Trigger(Render(empty)));
+        var open = Render(empty);
+
+        Walk(open).Should().NotContain(n => n.Attributes.GetValueOrDefault("role") == "option");
+        Trigger(open).Attributes.Should().NotContainKey("aria-activedescendant");
+
+        // And the general form of the same rule, on the whole tree: every reference resolves.
+        var ids = Walk(open).Select(n => n.Attributes.GetValueOrDefault("id")).Where(id => id is not null).ToHashSet();
+        foreach (var attribute in new[] { "aria-activedescendant", "aria-controls", "aria-describedby", "aria-labelledby" })
+        {
+            foreach (var node in Walk(open).Where(n => n.Attributes.ContainsKey(attribute)))
+            {
+                ids.Should().Contain(node.Attributes[attribute],
+                    $"{attribute} names an element that has to exist");
+            }
+        }
+    }
+
+    [Fact]
     public void AClosedListCostsNothing_HoweverFineTheStep()
     {
         // The panel is not realized while closed, so building its rows is work nobody sees. At a
