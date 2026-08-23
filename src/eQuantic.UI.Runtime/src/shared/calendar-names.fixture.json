@@ -46,7 +46,10 @@
       "Oct",
       "Nov",
       "Dec"
-    ]
+    ],
+    "shortDatePattern": "M/d/yyyy",
+    "dateFormatLetters": "DMY",
+    "dateFormatHint": "MM/DD/YYYY"
   },
   "pt-BR": {
     "firstDayOfWeek": 0,
@@ -95,7 +98,10 @@
       "out.",
       "nov.",
       "dez."
-    ]
+    ],
+    "shortDatePattern": "dd/MM/yyyy",
+    "dateFormatLetters": "DMA",
+    "dateFormatHint": "DD/MM/AAAA"
   },
   "es-ES": {
     "firstDayOfWeek": 1,
@@ -144,7 +150,10 @@
       "oct",
       "nov",
       "dic"
-    ]
+    ],
+    "shortDatePattern": "d/M/yyyy",
+    "dateFormatLetters": "DMA",
+    "dateFormatHint": "DD/MM/AAAA"
   },
   "fr-FR": {
     "firstDayOfWeek": 1,
@@ -193,7 +202,10 @@
       "oct.",
       "nov.",
       "déc."
-    ]
+    ],
+    "shortDatePattern": "dd/MM/yyyy",
+    "dateFormatLetters": "DMY",
+    "dateFormatHint": "DD/MM/YYYY"
   },
   "de-DE": {
     "firstDayOfWeek": 1,
@@ -242,7 +254,10 @@
       "Okt",
       "Nov",
       "Dez"
-    ]
+    ],
+    "shortDatePattern": "dd.MM.yyyy",
+    "dateFormatLetters": "DMY",
+    "dateFormatHint": "DD.MM.YYYY"
   },
   "ja-JP": {
     "firstDayOfWeek": 0,
@@ -291,7 +306,10 @@
       "10月",
       "11月",
       "12月"
-    ]
+    ],
+    "shortDatePattern": "yyyy/MM/dd",
+    "dateFormatLetters": "DMY",
+    "dateFormatHint": "YYYY/MM/DD"
   },
   "ar-EG": {
     "firstDayOfWeek": 6,
@@ -340,7 +358,10 @@
       "أكتوبر",
       "نوفمبر",
       "ديسمبر"
-    ]
+    ],
+    "shortDatePattern": "d‏/M‏/yyyy",
+    "dateFormatLetters": "DMY",
+    "dateFormatHint": "DD‏/MM‏/YYYY"
   },
   "en-GB": {
     "firstDayOfWeek": 1,
@@ -389,7 +410,10 @@
       "Oct",
       "Nov",
       "Dec"
-    ]
+    ],
+    "shortDatePattern": "dd/MM/yyyy",
+    "dateFormatLetters": "DMY",
+    "dateFormatHint": "DD/MM/YYYY"
   },
   "ru-RU": {
     "firstDayOfWeek": 1,
@@ -438,7 +462,10 @@
       "окт.",
       "нояб.",
       "дек."
-    ]
+    ],
+    "shortDatePattern": "dd.MM.yyyy",
+    "dateFormatLetters": "DMY",
+    "dateFormatHint": "DD.MM.YYYY"
   },
   "zh-CN": {
     "firstDayOfWeek": 0,
@@ -487,6 +514,9 @@
       "10月",
       "11月",
       "12月"
-    ]
+    ],
+    "shortDatePattern": "yyyy/M/d",
+    "dateFormatLetters": "DMY",
+    "dateFormatHint": "YYYY/MM/DD"
   }
 }

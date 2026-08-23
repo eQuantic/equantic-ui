@@ -276,6 +276,22 @@ public static class UI
     public static Stepper Stepper(int value, Action<int>? onChanged = null) =>
         new Stepper(value, onChanged);
 
+    /// <summary>A date, typed or picked from a calendar.</summary>
+    public static DatePicker DatePicker(DateOnly? selected = null, Action<DateOnly>? onChanged = null,
+        DateOnly? min = null, DateOnly? max = null, string label = "") =>
+        new DatePicker(selected, onChanged, min, max, label);
+
+    /// <summary>A time of day, picked from a list of slots.</summary>
+    public static TimePicker TimePicker(TimeOnly? selected = null, Action<TimeOnly>? onChanged = null,
+        int stepMinutes = 30, TimeOnly? min = null, TimeOnly? max = null, string label = "") =>
+        new TimePicker(selected, onChanged, stepMinutes, min, max, label);
+
+    /// <summary>A moment — the date and the time, as one value.</summary>
+    public static DateTimePicker DateTimePicker(DateTime? selected = null, Action<DateTime>? onChanged = null,
+        DateTime? min = null, DateTime? max = null, int stepMinutes = 30,
+        string dateLabel = "", string timeLabel = "") =>
+        new DateTimePicker(selected, onChanged, min, max, stepMinutes, dateLabel, timeLabel);
+
     /// <summary>A month at a time — the grid a date is picked from.</summary>
     public static Calendar Calendar(DateOnly? selected = null, Action<DateOnly>? onChanged = null,
         DateOnly? min = null, DateOnly? max = null) =>
@@ -286,11 +302,12 @@ public static class UI
         Action<int>? onChanged = null, string? placeholder = null) =>
         new Select(options, selectedIndex, onChanged, placeholder);
 
-    /// <summary>The full text field: label, helper, error, leading icon.</summary>
+    /// <summary>The full text field: label, helper, error, leading icon, and a trailing SLOT
+    /// for whatever belongs at the end of the row — a picker's opener, a clear affordance.</summary>
     public static TextInput TextInput(string value, Action<string>? onChanged = null, string label = "",
         string? placeholder = null, string? helper = null, string? error = null,
-        Icons? leading = null, SizeVariant size = SizeVariant.Large) =>
-        new TextInput(value, onChanged, label, placeholder, helper, error, leading, size);
+        Icons? leading = null, SizeVariant size = SizeVariant.Large, VisualNode? trailing = null) =>
+        new TextInput(value, onChanged, label, placeholder, helper, error, leading, size, trailing);
 
     /// <summary>The search entry. Null placeholder = the SDK's localized default.</summary>
     public static SearchField SearchField(string query, Action<string>? onChanged = null,

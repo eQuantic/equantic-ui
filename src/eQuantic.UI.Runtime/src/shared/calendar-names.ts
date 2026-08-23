@@ -1,4 +1,4 @@
-import { calendarCatalog, formatLocale } from '../utils/culture';
+import { activePattern, calendarCatalog, formatLocale } from '../utils/culture';
 
 /**
  * Client twin of the C# `eQuantic.UI.Primitives.CalendarNames` — what a calendar has to say in the
@@ -95,4 +95,15 @@ export class CalendarNames {
   static get monthNamesShort(): string[] {
     return calendarCatalog()?.monthNamesShort ?? months('short');
   }
+
+  /**
+   * The culture's short date pattern, as .NET writes it — the same string the parser reads, so a
+   * hint derived from it can never ask for an order the parser refuses.
+   */
+  static get shortDatePattern(): string {
+    return activePattern('dateShort') ?? INVARIANT_SHORT_DATE;
+  }
 }
+
+/** What .NET's invariant culture answers, for the page with no catalog behind it. */
+const INVARIANT_SHORT_DATE = 'MM/dd/yyyy';

@@ -1368,11 +1368,13 @@ public sealed record TextRun(string Content, ColorToken? Color = null, bool Mono
     /// neither this, nor <see cref="Text.Spans"/>, nor even <see cref="Link.Href"/>, so a paragraph
     /// with links draws on Photon as its text, unlinked. Closing that needs per-run hit testing (the
     /// engine has to know each run's rect) and a navigation action a shell can answer.
+    /// </para>
     /// <para>
     /// The SHAPE is universal — an Apple <c>NSAttributedString</c> carries a <c>.link</c> attribute on
     /// a range, an Android <c>Spannable</c> carries a <c>URLSpan</c>: an inline link is a RUN with an
     /// attribute everywhere, and cannot be a separate node because a separate node is what breaks
     /// the line.
+    /// </para>
     /// <para>
     /// The NAME is not universal, and it is worth being exact about that. Apple says <c>link</c>,
     /// Android says <c>URLSpan</c>, and <c>destination</c> is HTML's word. It is used here for internal

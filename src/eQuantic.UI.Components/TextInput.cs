@@ -19,7 +19,7 @@ public sealed class TextInput : StatefulComponent
 
     public TextInput(string value, Action<string>? onChanged = null, string label = "",
         string? placeholder = null, string? helper = null, string? error = null,
-        Icons? leading = null, SizeVariant size = SizeVariant.Large)
+        Icons? leading = null, SizeVariant size = SizeVariant.Large, VisualNode? trailing = null)
     {
         if (size == SizeVariant.Small)
             throw new ArgumentOutOfRangeException(nameof(size),
@@ -31,6 +31,7 @@ public sealed class TextInput : StatefulComponent
         Helper = helper;
         Error = error;
         Leading = leading;
+        Trailing = trailing;
         Size = size;
     }
 
@@ -45,6 +46,19 @@ public sealed class TextInput : StatefulComponent
     public string? Error { get; private set; }
 
     public Icons? Leading { get; private set; }
+
+    /// <summary>
+    /// What sits at the end of the row, INSIDE the field's box — a slot rather than a glyph,
+    /// because the things that belong there are interactive: the button that opens a date
+    /// picker, a clear affordance, a password reveal.
+    /// <para>
+    /// A slot and not an <c>Icons</c> plus a callback, so the caller owns the semantics. A date
+    /// field's opener has to be the ANCHOR of its own popover, and only the caller can hand that
+    /// in already wired.
+    /// </para>
+    /// </summary>
+    public VisualNode? Trailing { get; private set; }
+
     public SizeVariant Size { get; private set; }
     public bool Disabled { get; init; }
 
@@ -70,6 +84,7 @@ public sealed class TextInput : StatefulComponent
         Helper = fresh.Helper;
         Error = fresh.Error;
         Leading = fresh.Leading;
+        Trailing = fresh.Trailing;
         Size = fresh.Size;
     }
 
@@ -112,6 +127,10 @@ public sealed class TextInput : StatefulComponent
                 OnFocusChanged?.Invoke(focused);
             },
         }, 1));
+        if (Trailing is { } trailing)
+        {
+            row.Add(trailing);
+        }
 
         var container = new Box(new BoxStyle
         {

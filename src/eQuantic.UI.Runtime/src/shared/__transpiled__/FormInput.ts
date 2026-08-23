@@ -38,7 +38,7 @@ export class FormInput extends StatelessComponent {
     build(_context: BuildContext) {
         let field = this.form.field(this.name);
         if (field == null) return new Box();
-        return new TextInput(field.value, (value: string) => this.form.set(this.name, value), this.label, this.placeholder, this.helper, field.visibleError, this.leading, this.size, { obscure: this.obscure, autofocus: this.autofocus, disabled: this.disabled || this.form.submitting, onFocusChanged: (focused: boolean) => {
+        return new TextInput(field.value, (value: string) => this.form.set(this.name, value), this.label, this.placeholder, this.helper, field.visibleError, this.leading, this.size, null, { obscure: this.obscure, autofocus: this.autofocus, disabled: this.disabled || this.form.submitting, onFocusChanged: (focused: boolean) => {
             if (!focused) this.form.touch(this.name);
         } });
     }

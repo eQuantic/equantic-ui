@@ -1,3 +1,6 @@
+using System.Text;
+using eQuantic.UI.Primitives;
+
 namespace eQuantic.UI.Components;
 
 /// <summary>
@@ -49,6 +52,73 @@ public static class SdkStrings
 
     /// <summary>What today's cell is called beyond its date — the ring is paint, this is the word.</summary>
     public static string Today => SdkResources.Today;
+
+    /// <summary>A date picker's accessible name when the app supplies none.</summary>
+    public static string ChooseDate => SdkResources.ChooseDate;
+
+    /// <summary>A time picker's accessible name when the app supplies none.</summary>
+    public static string ChooseTime => SdkResources.ChooseTime;
+
+    /// <summary>
+    /// What shape the typed row expects: <c>MM/DD/YYYY</c> in the United States,
+    /// <c>DD/MM/AAAA</c> in Brazil, <c>YYYY-MM-DD</c> in Sweden.
+    /// <para>
+    /// Half derived, half translated, because the hint IS two facts. The ORDER and the separators
+    /// belong to the culture's data — <see cref="CalendarNames.ShortDatePattern"/>, the same
+    /// string the parser reads, so the hint can never ask for an order the field refuses. The
+    /// LETTERS belong to the language: Portuguese writes the year AAAA, for ano.
+    /// </para>
+    /// </summary>
+    public static string DateFormatHint => Hint(CalendarNames.ShortDatePattern, DateFormatLetters);
+
+    /// <summary>The three letters this language stands the parts of a date on, in the fixed order
+    /// day, month, year — "DMY" in English, "DMA" in Portuguese. Three characters rather than a
+    /// finished hint, because the arrangement is the culture's job and not the translator's.
+    /// </summary>
+    public static string DateFormatLetters => SdkResources.DateFormatLetters;
+
+    /// <summary>
+    /// The pattern with each component widened to the shape people write placeholders in
+    /// (<c>M</c> and <c>MM</c> both read MM) and everything else — separators, the era marker
+    /// some calendars lead with — kept exactly as the culture has it.
+    /// </summary>
+    private static string Hint(string pattern, string letters)
+    {
+        var day = letters.Length > 0 ? letters[0] : 'D';
+        var month = letters.Length > 1 ? letters[1] : 'M';
+        var year = letters.Length > 2 ? letters[2] : 'Y';
+
+        var hint = new StringBuilder();
+        var i = 0;
+        while (i < pattern.Length)
+        {
+            var letter = pattern[i];
+            // A QUOTED literal is text, not a component: Bulgarian's short pattern ends in
+            // `'г'.` for "година", and reading its letters would both mangle the word and leave
+            // the quote marks standing in the hint.
+            if (letter == '\'')
+            {
+                var close = pattern.IndexOf('\'', i + 1);
+                if (close < 0)
+                {
+                    hint.Append(pattern.Substring(i + 1));
+                    break;
+                }
+                hint.Append(pattern.Substring(i + 1, close - i - 1));
+                i = close + 1;
+                continue;
+            }
+
+            var run = 1;
+            while (i + run < pattern.Length && pattern[i + run] == letter) run++;
+            if (letter == 'd') hint.Append(day).Append(day);
+            else if (letter == 'M') hint.Append(month).Append(month);
+            else if (letter == 'y') hint.Append(year).Append(year).Append(year).Append(year);
+            else hint.Append(pattern.Substring(i, run));
+            i += run;
+        }
+        return hint.ToString();
+    }
 
     /// <summary>The sheet surface's accessible name when the app supplies none.</summary>
     public static string Spreadsheet => SdkResources.Spreadsheet;

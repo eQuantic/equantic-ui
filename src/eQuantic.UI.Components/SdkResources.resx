@@ -48,4 +48,14 @@
   <data name="Today" xml:space="preserve">
     <value>Today</value>
   </data>
+  <data name="ChooseDate" xml:space="preserve">
+    <value>Choose a date</value>
+  </data>
+  <data name="ChooseTime" xml:space="preserve">
+    <value>Choose a time</value>
+  </data>
+  <data name="DateFormatLetters" xml:space="preserve">
+    <value>DMY</value>
+    <comment>Day, month and year as this language letters them, in that fixed order — the ARRANGEMENT comes from the culture's date pattern, not from here.</comment>
+  </data>
 </root>

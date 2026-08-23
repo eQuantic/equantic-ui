@@ -43,6 +43,12 @@ public enum Icons : byte
 
     /// <summary>Three-line navigation trigger — the affordance every compact shell opens with.</summary>
     Menu = 22,
+    /// <summary>A date field's affordance, and the header of a calendar.</summary>
+    Calendar = 23,
+
+    /// <summary>A time field's affordance — the hours-and-minutes twin of the calendar.</summary>
+    Clock = 24,
+
 }
 
 /// <summary>

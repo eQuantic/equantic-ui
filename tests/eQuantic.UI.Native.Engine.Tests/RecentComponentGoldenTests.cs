@@ -131,9 +131,10 @@ public class RecentComponentGoldenTests
     [Fact]
     public void IconSet_EveryGlyphIncludingTheNewest()
     {
-        // The Menu glyph is the newest — the enum's count pins that this golden covers it.
-        Enum.GetValues<Icons>().Should().HaveCount(23);
+        // Calendar and Clock are the newest, drawn for the pickers — the enum's count pins that
+        // this golden covers them, and the height fits the row they start.
+        Enum.GetValues<Icons>().Should().HaveCount(25);
 
-        Render(Host(new IconsPage(), 300, 120), "icon-set");
+        Render(Host(new IconsPage(), 300, 150), "icon-set");
     }
 }

@@ -1117,6 +1117,13 @@ public static class WebRealizer
         // The accessible NAME — a placeholder vanishes under text, so it never substitutes for one.
         if (entry.Label is { Length: > 0 } accessibleName) element.RawAttributes["aria-label"] = accessibleName;
         if (entry.Disabled) element.RawAttributes["disabled"] = "";
+        // NOT DECLARED HERE, and it is a gap rather than a decision: the client twin installs an
+        // `input` handler and this side installs nothing, so the parity fixture — which is
+        // generated from THIS tree — cannot notice the client losing one. Exactly the hole the
+        // grid's keydown had before #12, except that one could be closed in an afternoon because
+        // `OnKeyDown` already existed on HtmlElement. `OnInput` is in the event-name map with no
+        // property behind it, so closing this means a Core API addition and a hydration story for
+        // the value it carries. Filed, not smuggled into a component change.
         // The attribute alone only acts on the initial parse; the client lowering also focuses on
         // mount, which is what a dialog opened later needs.
         if (entry.Autofocus) element.RawAttributes["autofocus"] = "";
@@ -1956,14 +1963,21 @@ public static class WebRealizer
     };
 
     /// <summary>
-    /// Whether a lowered subtree already carries an interactive ELEMENT. HTML forbids a button
-    /// inside a button (and an anchor inside an anchor): the parser closes the outer one and hands
-    /// back an empty shell, so the wrapper renders as nothing and the hydrated tree disagrees with
-    /// the served HTML about the whole subtree.
+    /// Whether a lowered subtree already carries an interactive ELEMENT, in which case a Pressable
+    /// around it must not become a second one. HTML forbids a button inside a button (and an anchor
+    /// inside an anchor): the parser closes the outer one and hands back an empty shell, so the
+    /// wrapper renders as nothing and the hydrated tree disagrees with the served HTML about the
+    /// whole subtree.
+    /// <para>
+    /// FORM CONTROLS count for the same reason, and it is not a style preference: the content model
+    /// forbids interactive content inside a <c>button</c>, and a browser handed
+    /// <c>button &gt; input</c> resolves it by taking the typing away.
+    /// </para>
     /// </summary>
     private static bool WrapsAnInteractive(IComponent node) =>
         node is RealizedElement element
-        && (element.Tag is "button" or "a" || element.Children.Any(WrapsAnInteractive));
+        && (element.Tag is "button" or "a" or "input" or "select" or "textarea"
+            || element.Children.Any(WrapsAnInteractive));
 
     private static HtmlElement LowerPressable(Pressable pressable, ComponentContext context)
     {

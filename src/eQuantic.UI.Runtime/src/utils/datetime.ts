@@ -15,6 +15,8 @@
  * (Utc/Local/Unspecified) is not tracked — values are treated as wall-clock, matching `Unspecified`.
  */
 
+import { activePattern } from './culture';
+
 const TICKS_PER_MILLISECOND = 10_000n;
 const TICKS_PER_SECOND = 10_000_000n;
 const TICKS_PER_MINUTE = 600_000_000n;
@@ -574,6 +576,8 @@ export interface DateOnlyFactory {
   minValue(): DateOnly;
   maxValue(): DateOnly;
   parse(text: string): DateOnly;
+  /** The date a reader TYPED, by the active culture's field order, or null when it is not one. */
+  tryParse(text: string): DateOnly | null;
 }
 
 export const dateOnly = ((year: number, month: number, day: number) =>
@@ -583,13 +587,76 @@ dateOnly.fromDateTime = (dt) => new DateOnly(Number(dt.ticks / TICKS_PER_DAY));
 dateOnly.minValue = () => new DateOnly(0);
 dateOnly.maxValue = () => new DateOnly(daysFromCivil(9999, 12, 31));
 dateOnly.parse = (text: string): DateOnly => {
-  const t = text.trim();
-  let m = /^(\d{4})-(\d{2})-(\d{2})/.exec(t); // ISO yyyy-MM-dd
-  if (m) return dateOnly(+m[1], +m[2], +m[3]);
-  m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(t); // invariant MM/dd/yyyy
-  if (m) return dateOnly(+m[3], +m[1], +m[2]);
-  throw new Error(`Unrecognized DateOnly format: '${text}'`);
+  const parsed = tryParseDateOnly(text);
+  if (parsed === null) throw new Error(`Unrecognized DateOnly format: '${text}'`);
+  return parsed;
 };
+
+/**
+ * A typed date, by the ACTIVE CULTURE's field order — the half of parsing that cannot be guessed.
+ * `07/08` is July 8th to a reader in Chicago and August 7th to one in São Paulo, and a parser that
+ * picks one silently is wrong twelve times a year for half the world.
+ *
+ * The order comes from the culture's own short-date pattern (`$dateShort`, shipped beside the
+ * string catalog — see culture.ts), which is `DateTimeFormatInfo`'s, so the client reads a typed
+ * date exactly as the server would. ISO is accepted everywhere: it is unambiguous by construction
+ * and it is what a date input hands over.
+ */
+function tryParseDateOnly(text: string): DateOnly | null {
+  const t = text.trim();
+  if (t.length === 0) return null;
+
+  const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(t);
+  if (iso) return valid(+iso[1], +iso[2], +iso[3]);
+
+  const parts = /^(\d{1,4})[/.-](\d{1,4})[/.-](\d{1,4})$/.exec(t);
+  if (!parts) return null;
+
+  // Which slot holds what, read off the pattern: "M/d/yyyy" is month-first, "dd/MM/yyyy" is
+  // day-first, "yyyy/MM/dd" leads with the year. Without a catalog (a page with no server behind
+  // it) the invariant order applies, which is what .NET's own invariant culture does.
+  const pattern = (activePattern('dateShort') ?? 'M/d/yyyy').toLowerCase();
+  const dayAt = pattern.indexOf('d');
+  const monthAt = pattern.indexOf('m');
+  const yearAt = pattern.indexOf('y');
+  const dayFirst = dayAt >= 0 && monthAt >= 0 && dayAt < monthAt;
+  const yearFirst = yearAt >= 0 && (dayAt < 0 || yearAt < dayAt) && (monthAt < 0 || yearAt < monthAt);
+
+  const [, one, two, three] = parts;
+  // Three digits or more is a year wherever it sits, and a year-first culture takes the leading
+  // slot when the trailing one is not itself year-shaped. Both were PROBED against .NET rather
+  // than reasoned: en-US reads "2026/7/17" (month-first!) as the ISO order, and ja-JP reads
+  // "17/7/26" as 2017-07-26 where a slot-blind reader sees month 17 and gives up.
+  const yearLeads = looksLikeYear(one) || (yearFirst && !looksLikeYear(three));
+  // A year that leads is followed by month then day in EVERY culture .NET ships — a day-first
+  // culture handed "2026/7/17" still answers July 17th.
+  if (yearLeads) return valid(pivot(one), +two, +three);
+  return valid(pivot(three), dayFirst ? +two : +one, dayFirst ? +one : +two);
+}
+
+/** Three digits can only be a year: no month or day reaches 100. */
+function looksLikeYear(part: string): boolean {
+  return part.length >= 3;
+}
+
+/**
+ * A year as .NET reads it: one or two digits are resolved against the calendar's
+ * <c>TwoDigitYearMax</c>, which is 2049 for every culture the framework ships — 00–49 land in
+ * this century, 50–99 in the last. Three digits or more are literal, so "1/2/003" is year 3.
+ */
+function pivot(part: string): number {
+  const year = +part;
+  return part.length <= 2 ? (year <= 49 ? 2000 + year : 1900 + year) : year;
+}
+
+/** The date, or null when those numbers are not one — 31 February parses and does not exist. */
+function valid(year: number, month: number, day: number): DateOnly | null {
+  if (month < 1 || month > 12 || day < 1 || year < 1 || year > 9999) return null;
+  const built = dateOnly(year, month, day);
+  return built.year === year && built.month === month && built.day === day ? built : null;
+}
+
+dateOnly.tryParse = tryParseDateOnly;
 
 // ---------------------------------------------------------------------------------------------
 // TimeOnly (.NET 6+) — a time of day with no date. Backed by ticks in [0, TicksPerDay).
@@ -651,6 +718,8 @@ export interface TimeOnlyFactory {
   (hour: number, minute: number, second: number, millisecond: number): TimeOnly;
   (ticks: bigint): TimeOnly;
   fromTimeSpan(span: TimeSpan): TimeOnly;
+  /** The time of day of a moment — .NET's TimeOnly.FromDateTime. */
+  fromDateTime(value: DateTime): TimeOnly;
   minValue(): TimeOnly;
   maxValue(): TimeOnly;
   parse(text: string): TimeOnly;
@@ -670,6 +739,8 @@ function timeOnlyImpl(...args: number[] | [bigint]): TimeOnly {
 export const timeOnly = timeOnlyImpl as TimeOnlyFactory;
 timeOnly.fromTimeSpan = (span) =>
   new TimeOnly(((span.ticks % TICKS_PER_DAY) + TICKS_PER_DAY) % TICKS_PER_DAY);
+timeOnly.fromDateTime = (value: DateTime) =>
+  new TimeOnly(((value.ticks % TICKS_PER_DAY) + TICKS_PER_DAY) % TICKS_PER_DAY);
 timeOnly.minValue = () => new TimeOnly(0n);
 timeOnly.maxValue = () => new TimeOnly(TICKS_PER_DAY - 1n);
 timeOnly.parse = (text: string): TimeOnly => {

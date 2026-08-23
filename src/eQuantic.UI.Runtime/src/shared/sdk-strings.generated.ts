@@ -9,7 +9,10 @@
 
 export const sdkNeutralStrings: Record<string, string> = {
   'Back': "Back",
+  'ChooseDate': "Choose a date",
+  'ChooseTime': "Choose a time",
   'ClearSearch': "Clear search",
+  'DateFormatLetters': "DMY",
   'Dismiss': "Dismiss",
   'Find': "Find",
   'NextMatch': "Next match",

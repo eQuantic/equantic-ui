@@ -92,5 +92,20 @@ namespace eQuantic.UI.Components
             get { return ResourceManager.GetString("Today", Culture)!; }
         }
 
+
+        internal static string ChooseDate
+        {
+            get { return ResourceManager.GetString("ChooseDate", Culture)!; }
+        }
+
+        internal static string ChooseTime
+        {
+            get { return ResourceManager.GetString("ChooseTime", Culture)!; }
+        }
+
+        internal static string DateFormatLetters
+        {
+            get { return ResourceManager.GetString("DateFormatLetters", Culture)!; }
+        }
 }
 }

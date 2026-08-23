@@ -28,6 +28,8 @@ public static class CuratedIcons
 {
     public static IconGlyph Resolve(Icons glyph) => glyph switch
     {
+        Icons.Calendar => new IconGlyph("calendar", "M5 22q-.825 0-1.412-.587Q3 20.825 3 20V6q0-.825.588-1.412Q4.175 4 5 4h1V2h2v2h8V2h2v2h1q.825 0 1.413.588Q21 5.175 21 6v14q0 .825-.587 1.413Q19.825 22 19 22Zm0-2h14V10H5v10ZM5 8h14V6H5Zm0 0V6v2Z"),
+        Icons.Clock => new IconGlyph("clock", "M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8m.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"),
         Icons.Search => new IconGlyph("search", "M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14"),
         Icons.Close => new IconGlyph("close", "M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"),
         Icons.Check => new IconGlyph("check", "M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"),
