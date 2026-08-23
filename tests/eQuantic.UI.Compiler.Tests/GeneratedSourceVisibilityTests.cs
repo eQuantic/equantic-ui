@@ -112,4 +112,62 @@ public class GeneratedSourceVisibilityTests : IDisposable
 
         Assert.Contains("AppUI", resolver.GetAllStaticHelpers());
     }
+
+    private string WriteGeneratedIn(string configuration, string fileName, string content)
+    {
+        var dir = Path.Combine(_project, "obj", configuration, "net10.0", "generated", "SomeGen", "SomeGen.Emitter");
+        Directory.CreateDirectory(dir);
+        var path = Path.Combine(dir, fileName);
+        File.WriteAllText(path, content);
+        return path;
+    }
+
+    /// <summary>
+    /// A project built in both configurations has obj/Debug/…/generated AND obj/Release/…/generated,
+    /// and the unscoped fallback swept both — so csc's ONE generated type reached Roslyn twice and
+    /// resolved to neither, which the parameter doc had warned about while the code did it anyway.
+    /// Reported by the site: CI builds Release over a tree with a Debug obj, so it hit every run.
+    /// </summary>
+    [Fact]
+    public void OneGeneratedFile_UnderTwoConfigurations_IsCollectedOnce()
+    {
+        WriteGeneratedIn("Debug", "AppUI.g.cs", "public static class AppUI { }");
+        WriteGeneratedIn("Release", "AppUI.g.cs", "public static class AppUI { }");
+
+        var found = ProjectCompilationHelper.GetCompilerGeneratedFiles(_project).ToList();
+
+        Assert.Single(found, file => file.EndsWith("AppUI.g.cs", StringComparison.Ordinal));
+    }
+
+    /// <summary>Newest wins, so a Release copy left over from yesterday cannot shadow the Debug
+    /// build happening now. Same-name-different-content is the case that made it matter.</summary>
+    [Fact]
+    public void WhenTwoConfigurationsDisagree_TheNewerFileIsTheOneCollected()
+    {
+        var stale = WriteGeneratedIn("Release", "AppUI.g.cs", "public static class AppUI { /* yesterday */ }");
+        File.SetLastWriteTimeUtc(stale, DateTime.UtcNow.AddDays(-1));
+        var fresh = WriteGeneratedIn("Debug", "AppUI.g.cs", "public static class AppUI { /* today */ }");
+
+        var found = ProjectCompilationHelper.GetCompilerGeneratedFiles(_project).ToList();
+
+        Assert.Contains(fresh, found);
+        Assert.DoesNotContain(stale, found);
+    }
+
+    /// <summary>Deduping is by the path INSIDE the generated root, not by filename: two generators
+    /// may each write a Registry.g.cs and both are real.</summary>
+    [Fact]
+    public void TwoGeneratorsWritingOneFilename_AreBothKept()
+    {
+        var a = Path.Combine(_project, "obj", "Debug", "net10.0", "generated", "GenA", "GenA.Emitter");
+        var b = Path.Combine(_project, "obj", "Debug", "net10.0", "generated", "GenB", "GenB.Emitter");
+        Directory.CreateDirectory(a);
+        Directory.CreateDirectory(b);
+        File.WriteAllText(Path.Combine(a, "Registry.g.cs"), "class RegistryA { }");
+        File.WriteAllText(Path.Combine(b, "Registry.g.cs"), "class RegistryB { }");
+
+        var found = ProjectCompilationHelper.GetCompilerGeneratedFiles(_project).ToList();
+
+        Assert.Equal(2, found.Count(file => file.EndsWith("Registry.g.cs", StringComparison.Ordinal)));
+    }
 }
