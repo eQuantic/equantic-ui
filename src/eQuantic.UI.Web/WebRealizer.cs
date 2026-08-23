@@ -1164,11 +1164,13 @@ public static class WebRealizer
     private static HtmlElement LowerAdjustable(Adjustable adjustable, ComponentContext context)
     {
         var fillsWidth = Fills(adjustable.Child).Width;
+        var adjustableCap = CapsAt(adjustable.Child);
         var element = new RealizedElement("div")
         {
             Style = new HtmlStyle
             {
                 Width = fillsWidth ? "100%" : null,
+                MaxWidth = adjustableCap > 0 ? TokenCss.Px(adjustableCap) : null,
             },
             RawAttributes = new Dictionary<string, string>
             {
@@ -1954,6 +1956,29 @@ public static class WebRealizer
         return string.Join(", ", sizes);
     }
 
+    /// <summary>
+    /// The cap a FILL child puts on itself, walked the same way <see cref="Fills"/> walks the fill
+    /// — 0 when there is none.
+    /// <para>
+    /// A wrapper stands in for its child in the parent's layout, so it has to carry the whole
+    /// width contract and not half of it. Taking the 100% and dropping the max-width made the
+    /// wrapper full width with a narrower block inside: the child hugged the start edge, and a row
+    /// centring its children had an item already filling the row, which is nothing to centre.
+    /// Measured on a real page before it was believed — a card capped at 980 inside a 1392 wrapper.
+    /// </para>
+    /// </summary>
+    private static float CapsAt(VisualNode node) => node switch
+    {
+        Box box => box.Style.MaxWidth,
+        Pressable pressable => CapsAt(pressable.Child),
+        Hoverable hoverable => CapsAt(hoverable.Child),
+        Adjustable adjustable => CapsAt(adjustable.Child),
+        Flexible flexible => CapsAt(flexible.Child),
+        LoopMotion motion => CapsAt(motion.Child),
+        Link link => CapsAt(link.Child),
+        _ => 0,
+    };
+
     private static (bool Width, bool Height) Fills(VisualNode node) => node switch
     {
         Box box => (box.Style.Width.Kind == SizeKind.Fill, box.Style.Height.Kind == SizeKind.Fill),
@@ -1987,6 +2012,7 @@ public static class WebRealizer
     private static HtmlElement LowerPressable(Pressable pressable, ComponentContext context)
     {
         var fills = Fills(pressable.Child);
+        var cap = CapsAt(pressable.Child);
         var child = LowerNode(pressable.Child, context, horizontalAxis: null);
 
         // A Pressable AROUND a control — a Menu making its trigger open the panel — is ordinary
@@ -2006,6 +2032,7 @@ public static class WebRealizer
                 TextAlign = TextAlign.Start,
                 // A Fill child needs the 100% chain to pass through the button (scrim et al.).
                 Width = fills.Width ? "100%" : null,
+                MaxWidth = cap > 0 ? TokenCss.Px(cap) : null,
                 Height = fills.Height ? "100%" : null,
             },
             Disabled = pressable.Disabled && !wrapping ? true : null,
@@ -2137,11 +2164,13 @@ public static class WebRealizer
     private static HtmlElement LowerHoverable(Hoverable hoverable, ComponentContext context)
     {
         var fills = Fills(hoverable.Child);
+        var cap = CapsAt(hoverable.Child);
         var element = new RealizedElement("div")
         {
             Style = new HtmlStyle
             {
                 Width = fills.Width ? "100%" : null,
+                MaxWidth = cap > 0 ? TokenCss.Px(cap) : null,
                 Height = fills.Height ? "100%" : null,
             },
             OnMouseEnter = _ => hoverable.OnChanged(true),
@@ -2160,6 +2189,7 @@ public static class WebRealizer
     private static HtmlElement LowerLink(Link link, ComponentContext context)
     {
         var fills = Fills(link.Child);
+        var cap = CapsAt(link.Child);
         // The render's link policy — the language prefix, when the app asked for one. Applied HERE
         // so an author writes `/pricing` once and the href is right in every language.
         var destination = RenderContext.ResolveDestination(link.Destination);
@@ -2169,6 +2199,7 @@ public static class WebRealizer
             Style = new HtmlStyle
             {
                 Width = fills.Width ? "100%" : null,
+                MaxWidth = cap > 0 ? TokenCss.Px(cap) : null,
                 Height = fills.Height ? "100%" : null,
             },
             AriaLabel = link.Label,

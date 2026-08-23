@@ -708,12 +708,24 @@ function lowerLink(node: LinkNode, context: LoweringContext, path: string): Html
   // writes `/pricing` once and the link is right in every language — including after a
   // client-side switch, which re-renders this node with a different active culture.
   const destination = localizeDestination(node.destination);
+  // The child's width contract, which the C# realizer has always passed through here and this
+  // side never did — a Fill child inside a Link filled on the server and hugged in the browser.
+  // No fixture caught it because none composed the two; agreement is only proof when something
+  // actually compares.
+  const linkFill = fills(node.child as VisualNodeValue);
+  const linkCap = capsAt(node.child);
   const anchor: HtmlNode = {
     tag: 'a',
     attributes: { class: 'eq-link', href: destination },
     events: {},
     children: [],
   };
+  const linkStyle = atomicAttrs({
+    width: linkFill.width ? '100%' : undefined,
+    'max-width': linkCap > 0 ? `${linkCap}px` : undefined,
+  });
+  if (linkStyle.class) anchor.attributes.class = `eq-link ${linkStyle.class}`;
+  if (linkStyle.style) anchor.attributes.style = linkStyle.style;
   if (node.label) anchor.attributes['aria-label'] = node.label;
   // Read by the router when it decides where the new page starts (C# twin). On the anchor because
   // that is what the router's one delegated click listener meets.
@@ -2187,6 +2199,20 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
 }
 
 /** Whether a node requests Fill per axis — wrappers must stretch for the 100% chain to reach it. */
+/**
+ * The cap a FILL child puts on itself — the C# `CapsAt` twin, walked the way `fills` walks below.
+ *
+ * A wrapper stands in for its child in the parent's layout, so it carries the WHOLE width
+ * contract: taking the 100% and dropping the max-width leaves a full-width wrapper holding a
+ * narrower block, the child pinned to the start edge, and a centring row with nothing to centre.
+ */
+function capsAt(node: unknown): number {
+  const value = node as { nodeKind?: string; style?: { maxWidth?: number }; child?: unknown } | null;
+  if (!value) return 0;
+  if (value.nodeKind === 'box') return value.style?.maxWidth ?? 0;
+  return value.child ? capsAt(value.child) : 0;
+}
+
 function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
   switch (node.nodeKind) {
     case 'box': {
@@ -2250,6 +2276,7 @@ function lowerPressable(
     cursor: disabled ? undefined : 'pointer',
     // A Fill child needs the 100% chain to pass through the button (scrim et al.).
     width: fill.width ? '100%' : undefined,
+    'max-width': capsAt(pressable.child) > 0 ? `${capsAt(pressable.child)}px` : undefined,
     height: fill.height ? '100%' : undefined,
   });
 
@@ -2581,6 +2608,7 @@ function lowerAdjustable(node: AdjustableNode, context: LoweringContext, path: s
   const fill = fills(node.child);
   const host = element('div', {
     width: fill.width ? '100%' : undefined,
+    'max-width': capsAt(node.child) > 0 ? `${capsAt(node.child)}px` : undefined,
     height: fill.height ? '100%' : undefined,
   });
   const role = node.role ?? 'slider';
@@ -2871,6 +2899,7 @@ function lowerHoverable(node: HoverableNode, context: LoweringContext, path: str
   const fill = fills(node.child);
   const host = element('div', {
     width: fill.width ? '100%' : undefined,
+    'max-width': capsAt(node.child) > 0 ? `${capsAt(node.child)}px` : undefined,
     height: fill.height ? '100%' : undefined,
   });
   if (node.onChanged) {
