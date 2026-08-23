@@ -162,11 +162,23 @@ export class Router {
   }
 
   /**
-   * Programmatic navigation: if `href` matches a route, push a History entry and render it (SPA);
-   * otherwise fall back to a full browser navigation. Returns whether it was handled in-SPA.
+   * Programmatic navigation. A SAME-ORIGIN href that matches a route pushes a History entry and
+   * renders it (SPA); anything else — another origin, or a path no route claims — hands off to a
+   * full browser navigation. Returns whether it was handled in-SPA.
    */
   async navigate(href: string): Promise<boolean> {
     const url = new URL(href, this.win.location.href);
+
+    // ANOTHER ORIGIN is another site, whatever its path happens to say. The click path refuses one
+    // (see onClick); this one matched on the PATHNAME alone, so `Navigator.Go("https://
+    // ui.equantic.tech/docs")` found the local /docs route and rendered it — the reader stayed on
+    // this site looking at the wrong page, with the address bar agreeing. A link to a documentation
+    // site is exactly the shape that hits it.
+    if (url.origin !== this.win.location.origin) {
+      this.win.location.assign(href);
+      return false;
+    }
+
     const match = matchRoute(this.routes, url.pathname);
     if (!match) {
       this.win.location.assign(href);
