@@ -1114,6 +1114,9 @@ public static class WebRealizer
             ClassName = $"eq-entry eq-type-{entry.Role.ToString().ToLowerInvariant()}",
             Style = new HtmlStyle
             {
+                // A field takes the keyboard and the pointer, and says so: `none` inherits, and
+                // any row above it may now be transparent.
+                PointerEvents = "auto",
                 Width = "100%",
                 Padding = "0",
                 Background = "none",
@@ -1189,6 +1192,7 @@ public static class WebRealizer
             {
                 Width = adjustableFills.Width ? "100%" : null,
                 MaxWidth = adjustableCap > 0 ? TokenCss.Px(adjustableCap) : null,
+                PointerEvents = "auto",
                 // BOTH axes, like every other wrapper and like the twin already did. Taking the
                 // width and leaving the height is the same half-contract that made the Link
                 // diverge, mirrored: there the twin was short, here this side was.
@@ -1516,8 +1520,11 @@ public static class WebRealizer
                 Transition = style.Transition is { } transition ? TokenCss.Transition(transition) : null,
                 // The CSS cursor mirror (Photon twin: a cursor region the host answers from).
                 Cursor = style.Cursor != PointerCursor.Default ? TokenCss.Cursor(style.Cursor) : null,
-                // "Draw nothing" means intercept nothing — see PaintsNothing.
-                PointerEvents = PaintsNothing(box) ? "none" : null,
+                // "Draw nothing" means intercept nothing — see PaintsNothing. And the other
+                // half, which the transparent-layout rule makes necessary: a box that DOES paint
+                // has to say it is a target, because `none` inherits and any ancestor row may now
+                // be carrying it. Targets declare themselves; everything else is passed through.
+                PointerEvents = PaintsNothing(box) ? "none" : "auto",
             },
         };
 
@@ -1711,6 +1718,15 @@ public static class WebRealizer
                 MinHeight = flex.Height.Kind == SizeKind.Fill ? "0" : null,
                 Padding = flex.Padding == EdgeInsets.Zero ? null : TokenCss.Padding(flex.Padding),
                 BackgroundColor = flex.Background is { } bg ? TokenCss.Value(bg) : null,
+                // A layout node that PAINTS NOTHING is not a hit target — the framework's
+                // inspiration decides it this way, and the two runtimes disagree by default:
+                // Flutter's RenderBox.hitTestSelf answers false, so a Row is invisible to a tap
+                // and only its children register, while every DOM element is a target whether it
+                // draws or not. Following the DOM here made a full-width transparent band swallow
+                // clicks meant for what is behind it — the reason a page had to reach for
+                // `pointer-events` by hand and could not, because the vocabulary has no such word
+                // and must not: it has to mean the same on a target with no CSS at all.
+                PointerEvents = flex.Background is null ? "none" : "auto",
                 BorderRadius = flex.CornerRadius.IsZero ? null : TokenCss.Radius(flex.CornerRadius),
             },
         };
@@ -2058,6 +2074,9 @@ public static class WebRealizer
                 // A Fill child needs the 100% chain to pass through the button (scrim et al.).
                 Width = fills.Width ? "100%" : null,
                 MaxWidth = cap > 0 ? TokenCss.Px(cap) : null,
+                // A control is a target by definition, and says so because `none` inherits from
+                // any transparent row above it.
+                PointerEvents = "auto",
                 Height = fills.Height ? "100%" : null,
             },
             Disabled = pressable.Disabled && !wrapping ? true : null,
@@ -2196,6 +2215,9 @@ public static class WebRealizer
             {
                 Width = fills.Width ? "100%" : null,
                 MaxWidth = cap > 0 ? TokenCss.Px(cap) : null,
+                // A control is a target by definition, and says so because `none` inherits from
+                // any transparent row above it.
+                PointerEvents = "auto",
                 Height = fills.Height ? "100%" : null,
             },
             OnMouseEnter = _ => hoverable.OnChanged(true),
@@ -2225,6 +2247,9 @@ public static class WebRealizer
             {
                 Width = fills.Width ? "100%" : null,
                 MaxWidth = cap > 0 ? TokenCss.Px(cap) : null,
+                // A control is a target by definition, and says so because `none` inherits from
+                // any transparent row above it.
+                PointerEvents = "auto",
                 Height = fills.Height ? "100%" : null,
             },
             AriaLabel = link.Label,
