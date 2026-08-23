@@ -20,7 +20,7 @@ public class SemanticValidator
     /// </summary>
     private static readonly (string Prefix, string Code, string Reason)[] ForbiddenApis =
     {
-        ("System.IO", "EQ2101", "file-system access"),
+        ("System.IO", "EQ2112", "file-system access"),
         ("Microsoft.EntityFrameworkCore", "EQ2102", "direct database access"),
         ("System.Data", "EQ2102", "direct database access"),
         ("System.Net.Http", "EQ2103", "HTTP networking"),
