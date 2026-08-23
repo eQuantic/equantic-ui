@@ -35,7 +35,11 @@ describe('a paragraph built from runs (C# cross-pin)', () => {
   });
 
   it('still reads the plain content when there are no runs at all', () => {
-    const plain = { nodeKind: 'text', content: 'a\nb', role: 'heading' } as unknown as VisualNodeValue;
+    const plain = {
+      nodeKind: 'text',
+      content: 'a\nb',
+      role: 'heading',
+    } as unknown as VisualNodeValue;
     expect(effectiveStyle(lowerVisualNode(plain, ctx))).toContain('pre-line');
   });
 });
