@@ -51,6 +51,24 @@ public class EmittedTwinsTests
         twins.Claim("Seat", "Other.cs", module, Here).Should().BeNull();
     }
 
+    /// <summary>`Seat` and `seat` are two types to C# and ONE file to Windows and to macOS as it
+    /// ships. Keying by ordinal would let the second overwrite the first on the machines most
+    /// people build on and pass on Linux, which is worse than either — a source tree has to build
+    /// the same everywhere.</summary>
+    [Fact]
+    public void NamesDifferingOnlyInCase_AreRefused_BecauseAFilenameDoesNotCare()
+    {
+        var twins = new EmittedTwins();
+        twins.Claim("Seat", "a.cs", "class Seat {}", Here).Should().BeNull();
+
+        var collision = twins.Claim("seat", "b.cs", "class seat {}", Here);
+
+        collision.Should().NotBeNull();
+        collision.Should().Contain("differ only in case",
+            "the message must say WHY two different names collide, or it reads as a compiler bug");
+        collision.Should().Contain("'seat'").And.Contain("'Seat'");
+    }
+
     [Fact]
     public void DifferentNames_NeverCollide()
     {

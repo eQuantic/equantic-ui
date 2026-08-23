@@ -14,7 +14,12 @@ namespace eQuantic.UI.Compiler.Services;
 /// </summary>
 public sealed class EmittedTwins
 {
-    private readonly Dictionary<string, (string Source, string TypeScript)> _written = new(StringComparer.Ordinal);
+    // Keyed the way a FILESYSTEM is, not the way C# is. `Seat` and `seat` are two types to the
+    // language and one file to Windows and to macOS as it ships — so an ordinal key would let the
+    // second overwrite the first on the machines most people build on, and pass on Linux. A source
+    // tree has to build the same everywhere, so the case-only pair is refused too.
+    private readonly Dictionary<string, (string Name, string Source, string TypeScript)> _written =
+        new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     /// Records a twin about to be written, and answers the error when its name is already taken by
@@ -31,13 +36,17 @@ public sealed class EmittedTwins
             var other = first.Source == source
                 ? "another type of the same name in this file"
                 : $"the one in '{describeSource(first.Source)}'";
-            return $"two types are named '{name}' — this one and {other}. Their twins are ONE "
-                + "file, and the second would silently replace the first: the code that used one "
-                + "would get the other's members. Namespaces do not separate them, because a twin "
-                + "is named for its TYPE. Rename one of them.";
+            var named = first.Name == name
+                ? $"two types are named '{name}'"
+                : $"'{name}' and '{first.Name}' differ only in case, and a filename on Windows and "
+                  + "on macOS does not";
+            return $"{named} — this one and {other}. Their twins are ONE file, and the second "
+                + "would silently replace the first: the code that used one would get the other's "
+                + "members. Namespaces do not separate them, because a twin is named for its TYPE. "
+                + "Rename one of them.";
         }
 
-        _written[name] = (source, typeScript);
+        _written[name] = (name, source, typeScript);
         return null;
     }
 }
