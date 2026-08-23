@@ -106,7 +106,10 @@ public class GeneratedDifferentialTests
     [Fact]
     public void TheGrammarWrites_EveryConstructItClaimsToCover()
     {
-        var corpus = string.Concat(Enumerable.Range(0, 200)
+        // 600 programs, not 200: every widening of the statement switch DILUTES each case,
+        // and a rarely-drawn one then reads as absent. Raised once already when the string
+        // and range cases pushed Math.Round below the noise of a 200-program corpus.
+        var corpus = string.Concat(Enumerable.Range(0, 600)
             .Select(index => new ProgramGenerator(unchecked(0xC0FFEEu * 2654435761u + (uint)index)).Generate()));
 
         var missing = new[]
@@ -121,6 +124,8 @@ public class GeneratedDifferentialTests
             " & ", " | ", " ^ ", "(~", " >>> ", " << ", " >> ",
             "Math.Floor(", "Math.Ceiling(", "Math.Truncate(", "Math.Round(",
             "Math.Sqrt(", "Math.Clamp(", "Math.Min(",
+            ".IndexOf(", ".LastIndexOf(", ".Split(", ".Contains(",
+            "[^1]", "[..1]", "[1..]", "char.ToUpperInvariant(", ".ToLowerInvariant(", ".Insert(0,",
             "try {", "catch {", "switch {", "is {", "foreach (", "while (", "for (",
             "new Card(", "TryGetValue", ".Substring(", "string.Join",
         }.Where(fragment => !corpus.Contains(fragment, StringComparison.Ordinal)).ToList();
@@ -348,8 +353,35 @@ public class GeneratedDifferentialTests
 
         private string Statement()
         {
-            switch (Pick(30))
+            switch (Pick(33))
             {
+                case 29:
+                {
+                    // STRING work that answers a NUMBER, which is where the two runtimes have to
+                    // agree on indices rather than on text. Only the ORDINAL overloads: IndexOf
+                    // and Contains over a char are ordinal by definition, while their string
+                    // cousins follow the culture in .NET and would be a divergence about
+                    // collation and not about translation.
+                    var ch = (char)('a' + Pick(26));
+                    return $"{IntVar()} = ({IntVar()} + {StringVar()}.IndexOf('{ch}') "
+                           + $"+ {StringVar()}.Split('-').Length "
+                           + $"+ {StringVar()}.LastIndexOf('{ch}') "
+                           + $"+ ({StringVar()}.Contains('{ch}') ? 3 : 0)) % 100003; ";
+                }
+                case 30:
+                    // INDEX FROM END and RANGE over an array. Arrays here hold at least two
+                    // items, so `[^1]`, `[..1]` and `[1..]` are all in bounds — an index out of
+                    // range is a documented limit and would be the instrument testing itself.
+                    return $"{IntVar()} = ({IntVar()} + {ListVar()}[^1] + {ListVar()}[..1].Length "
+                           + $"+ {ListVar()}[1..].Sum()) % 100003; ";
+                case 31:
+                    // A RANGE over a string lowers to Substring, and `[^1]` on a string is a
+                    // char — so this also checks that a char CONCATENATES as text and not as its
+                    // code unit, which is the direction C# and JavaScript disagree by default.
+                    return $"{StringVar()} = {StringVar()}[..1] + {StringVar()}[^1] "
+                           + $"+ char.ToUpperInvariant({CharVar()}); ";
+                case 32:
+                    return $"{StringVar()} = {StringVar()}.ToLowerInvariant().TrimEnd('.').Insert(0, \"{(char)('a' + Pick(26))}\"); ";
                 case 24:
                 {
                     // The WRAP itself, pushed past the boundary on purpose. The cast back to the
