@@ -63,6 +63,73 @@ public class GeneratedDifferentialTests
             $"{failures.Count}/{CasesPerBatch} generated programs diverged:\n" + string.Join("\n", failures));
     }
 
+    /// <summary>
+    /// The DEEP sweep, off by default because it takes minutes: hundreds of fresh seeds, run when
+    /// the grammar has just been widened. The committed batches above are the permanent net and
+    /// are sized for CI; this is the hunt. Run with EQ_DEEP_SWEEP=1, and give a finding a
+    /// permanent conformance case of its own rather than another seed here.
+    /// </summary>
+    [SkippableFact]
+    public void DeepSweep_FindsNothingNew()
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        Skip.If(Environment.GetEnvironmentVariable("EQ_DEEP_SWEEP") != "1", "Deep sweep is opt-in.");
+
+        var programs = int.TryParse(Environment.GetEnvironmentVariable("EQ_DEEP_SWEEP_COUNT"), out var n) ? n : 1500;
+        var failures = new List<string>();
+        for (var index = 0; index < programs; index++)
+        {
+            var seed = unchecked(0x5EEDu * 2654435761u + (uint)index * 2246822519u);
+            var program = new ProgramGenerator(seed).Generate();
+            try
+            {
+                ConformanceRunner.AssertStatementsSameAsDotNet(program, Prelude);
+            }
+            catch (Exception ex)
+            {
+                failures.Add($"index={index} seed=0x{seed:X}\n  program: {program}\n  {FirstLine(ex.Message)}");
+                if (failures.Count >= 5) break;
+            }
+        }
+
+        Assert.True(failures.Count == 0, $"{failures.Count} divergence(s) in {programs} programs:\n"
+            + string.Join("\n\n", failures));
+    }
+
+    /// <summary>
+    /// What the grammar actually WRITES, asserted against the list of what it claims to cover.
+    /// A generator that stopped reaching a construct looks exactly like a generator that found no
+    /// bug in it: this suite returned 0 divergences over 3600 programs while its grammar had never
+    /// written a long, a decimal, an enum, a nullable, a record, a dictionary or a try/catch, and
+    /// widening it produced findings immediately. A clean run means nothing without this.
+    /// </summary>
+    [Fact]
+    public void TheGrammarWrites_EveryConstructItClaimsToCover()
+    {
+        var corpus = string.Concat(Enumerable.Range(0, 200)
+            .Select(index => new ProgramGenerator(unchecked(0xC0FFEEu * 2654435761u + (uint)index)).Generate()));
+
+        var missing = new[]
+        {
+            // declarations
+            "byte by0", "sbyte sb0", "short sh0", "ushort us0", "uint ui0", "ulong ul0",
+            "double db0", "float fl0", "long L0", "decimal m0", "char c0", "Suit u0",
+            "int? q0", "DateTime d0", "TimeSpan t0", "Dictionary<string, int>",
+            // the constructs that only appear when their statement case is drawn
+            "(byte)(", "(sbyte)(", "(short)(", "(ushort)(",
+            "u - ", "f + 0.3f", "% 512.0",
+            " & ", " | ", " ^ ", "(~", " >>> ", " << ", " >> ",
+            "Math.Floor(", "Math.Ceiling(", "Math.Truncate(", "Math.Round(",
+            "Math.Sqrt(", "Math.Clamp(", "Math.Min(",
+            "try {", "catch {", "switch {", "is {", "foreach (", "while (", "for (",
+            "new Card(", "TryGetValue", ".Substring(", "string.Join",
+        }.Where(fragment => !corpus.Contains(fragment, StringComparison.Ordinal)).ToList();
+
+        Assert.True(missing.Count == 0,
+            "the grammar no longer writes these, so any clean run is silence rather than coverage: "
+            + string.Join(", ", missing));
+    }
+
     private static string FirstLine(string text) =>
         text.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
 
@@ -99,6 +166,11 @@ public class GeneratedDifferentialTests
         private readonly List<string> _spans = [];
         private readonly List<string> _maybeDates = [];
         private readonly List<string> _maps = [];
+        private readonly List<string> _narrow = [];
+        private readonly List<string> _unsigned = [];
+        private readonly List<string> _ulongs = [];
+        private readonly List<string> _doubles = [];
+        private readonly List<string> _floats = [];
 
         public string Generate()
         {
@@ -108,7 +180,13 @@ public class GeneratedDifferentialTests
             for (var i = 0; i < intCount; i++)
             {
                 var name = $"n{i}";
-                program.Append($"var {name} = {IntExpr(2)}; ");
+                // BOUNDED at birth. The expression is evaluated in full — that is what is under
+                // test — and only then brought back into a range where the arithmetic
+                // downstream cannot overflow an int. Without this the bitwise operators put
+                // values at 2^31 and the fold reaches the default-context overflow, which is
+                // a DOCUMENTED divergence: every program would then fail for the one reason
+                // this instrument exists not to hunt.
+                program.Append($"var {name} = ({IntExpr(2)}) % 100003; ");
                 _ints.Add(name);
             }
 
@@ -135,6 +213,38 @@ public class GeneratedDifferentialTests
             var charName = "c0";
             program.Append($"char {charName} = '{(char)('a' + Pick(26))}'; ");
             _chars.Add(charName);
+
+            // The NARROW integers, whose whole semantics is the wrap. byte/sbyte/short/ushort
+            // wrap ALWAYS — no `unchecked` needed, because the cast back to the narrow type is
+            // the wrap — so unlike int and long there is no documented divergence to steer round
+            // here, and the arithmetic can be pushed straight past the boundary on purpose.
+            program.Append($"byte by0 = {Pick(256)}; ");
+            _narrow.Add("by0");
+            program.Append($"sbyte sb0 = {Pick(255) - 127}; ");
+            _narrow.Add("sb0");
+            program.Append($"short sh0 = {Pick(2000) - 1000}; ");
+            _narrow.Add("sh0");
+            program.Append($"ushort us0 = {Pick(65536)}; ");
+            _narrow.Add("us0");
+            // uint is in the same family — it wraps at 2^32 in the default context — but it does
+            // not fit an int, so the fold takes it modulo rather than adding it.
+            program.Append($"uint ui0 = {Pick(100000)}u; ");
+            _unsigned.Add("ui0");
+            // ulong is a BigInt on the other side, like long, and is OBSERVED as text. Its
+            // arithmetic stays small: ulong is not in the always-wrap family, so overflowing it
+            // in the default context is the documented limit and not what this hunts.
+            program.Append($"ulong ul0 = {Pick(100000)}UL; ");
+            _ulongs.Add("ul0");
+
+            // FLOATING POINT, which the generator had never written at all. A double is IEEE754
+            // on both sides and agrees bit for bit; a FLOAT does not, unless every store rounds
+            // to single precision — the FloatStore rule. The factors are deliberately inexact
+            // (1.1f, 0.3f) so a missing round shows up as a different number and not a last-bit
+            // tie, and the values are bounded by a modulo so the observing cast stays in range.
+            program.Append($"double db0 = {1 + Pick(90)}.{10 + Pick(89)}; ");
+            _doubles.Add("db0");
+            program.Append($"float fl0 = {1 + Pick(90)}.{10 + Pick(89)}f; ");
+            _floats.Add("fl0");
 
             // An ENUM crosses as its member NAME, and a NULLABLE has to keep "no value" apart
             // from zero — two more places the two runtimes do not agree by default.
@@ -198,7 +308,7 @@ public class GeneratedDifferentialTests
             // divergence pinned elsewhere — reaching it here would make every program fail for
             // the one reason this generator is meant not to hunt.
             program.Append("var acc = 17; ");
-            foreach (var n in _ints) program.Append($"acc = (acc * 31 + {n}) % 1000003; ");
+            foreach (var n in _ints) program.Append($"acc = (acc * 31 + {n} % 9973) % 1000003; ");
             foreach (var b in _bools) program.Append($"acc = (acc * 2 + ({b} ? 1 : 0)) % 1000003; ");
             foreach (var xs in _lists) program.Append($"acc = (acc * 7 + {IntChain(xs)}) % 1000003; ");
             // A char folds through its CODE UNIT, the way C# promotes it.
@@ -213,12 +323,21 @@ public class GeneratedDifferentialTests
                 program.Append($"acc = (acc * 17 + ({n}.HasValue ? {n}.Value.Day : -1)) % 1000003; ");
             foreach (var m in _maps)
                 program.Append($"acc = (acc * 19 + {m}.Count + {m}.Values.Sum() + ({m}.ContainsKey(\"k1\") ? 7 : 0)) % 1000003; ");
+            // A narrow integer promotes to int to be folded, which is what C# does at every use.
+            foreach (var w in _narrow) program.Append($"acc = (acc * 23 + {w}) % 1000003; ");
+            foreach (var u in _unsigned) program.Append($"acc = (acc * 29 + (int)({u} % 9973u)) % 1000003; ");
+            // A double and a float are observed through a SCALED TRUNCATION, never printed: the
+            // text of a floating-point number is a documented divergence and would drown this.
+            // 1024 is exact in both, so the scaling adds no error of its own.
+            foreach (var d in _doubles) program.Append($"acc = (acc * 31 + (int)({d} * 1024)) % 1000003; ");
+            foreach (var f in _floats) program.Append($"acc = (acc * 37 + (int)({f} * 1024)) % 1000003; ");
             var fold = new StringBuilder("return $\"{acc}");
             foreach (var s in _strings) fold.Append($"|{{{s}}}");
             // A long and a decimal are OBSERVED as text: their runtime representations differ from
             // JavaScript's numbers, so printing them is what compares the value and not a coercion.
             foreach (var l in _longs) fold.Append($"|{{{l}}}");
             foreach (var m in _decimals) fold.Append($"|{{{m}}}");
+            foreach (var u in _ulongs) fold.Append($"|{{{u}}}");
             foreach (var c in _chars) fold.Append($"|{{{c}}}");
             foreach (var u in _suits) fold.Append($"|{{{u}}}");
             fold.Append("\";");
@@ -229,8 +348,50 @@ public class GeneratedDifferentialTests
 
         private string Statement()
         {
-            switch (Pick(24))
+            switch (Pick(30))
             {
+                case 24:
+                {
+                    // The WRAP itself, pushed past the boundary on purpose. The cast back to the
+                    // narrow type is where C# truncates the bits, and it is the RESULT type that
+                    // decides — not the operands, which promoted to int to do the arithmetic.
+                    // ONE variable: the target, the cast and the operand must be the same width,
+                    // or the statement wraps somewhere the test did not mean.
+                    var (narrow, type) = Narrow();
+                    return $"{narrow} = ({type})({narrow} * {3 + Pick(60)} + {Pick(200)}); ";
+                }
+                case 25:
+                    // uint wraps at 2^32 with no cast and no `unchecked`, and the subtraction is
+                    // the direction that wraps DOWNWARD through zero.
+                    return $"{UnsignedVar()} = {UnsignedVar()} * {3 + Pick(9)}u - {Pick(50000)}u; ";
+                case 26:
+                    // A double: bit-identical arithmetic on both sides, bounded so the observing
+                    // cast stays inside an int.
+                    return $"{DoubleVar()} = ({DoubleVar()} * {1 + Pick(3)}.{10 + Pick(89)} + {Pick(9)}.{10 + Pick(89)}) % 512.0; ";
+                case 28:
+                {
+                    // The EXACT members of the numeric BCL, composed rather than called alone —
+                    // the 135 hand-written cases each exercise one, and what nobody wrote down is
+                    // what happens when the result of one feeds the next. Sqrt, the roundings and
+                    // the comparisons are IEEE-exact on both sides; the transcendental family is
+                    // deliberately absent, because a last-bit tie there is noise and not a finding.
+                    var d = DoubleVar();
+                    var inner = $"{d} * {1 + Pick(4)}.{10 + Pick(89)}";
+                    return Pick(7) switch
+                    {
+                        0 => $"{d} = Math.Floor({inner}) % 512.0; ",
+                        1 => $"{d} = Math.Ceiling({inner}) % 512.0; ",
+                        2 => $"{d} = Math.Truncate({inner}) % 512.0; ",
+                        3 => $"{d} = Math.Round({inner}, {Pick(4)}) % 512.0; ",
+                        4 => $"{d} = Math.Sqrt(Math.Abs({inner})) % 512.0; ",
+                        5 => $"{d} = Math.Clamp({inner}, 1.5, 480.25); ",
+                        _ => $"{d} = Math.Min(Math.Max({inner}, 2.75), 500.5); ",
+                    };
+                }
+                case 27:
+                    // A float: every STORE rounds to single precision, including the one the
+                    // multiplication feeds. Inexact factors, so a missing round is visible.
+                    return $"{FloatVar()} = ({FloatVar()} * 1.1f + 0.3f) % 128.0f; ";
                 case 20:
                     return $"foreach (var pair in {MapVar()}) {{ {IntVar()} = ({IntVar()} + pair.Value + pair.Key.Length) % 9973; }} ";
                 case 21:
@@ -299,7 +460,8 @@ public class GeneratedDifferentialTests
                 case 7:
                     return $"{StringVar()} += string.Join(\"-\", {Chain(ListVar(), 1 + Pick(2))}); ";
                 case 0:
-                    return $"if ({BoolExpr(2)}) {{ {IntVar()} += {IntExpr(1)}; }} else {{ {IntVar()} -= {IntExpr(1)}; }} ";
+                    return $"if ({BoolExpr(2)}) {{ {IntVar()} = ({IntVar()} + {IntExpr(1)}) % 100003; }} "
+                           + $"else {{ {IntVar()} = ({IntVar()} - {IntExpr(1)}) % 100003; }} ";
                 case 1:
                     return $"for (var i = 0; i < {1 + Pick(4)}; i++) {{ {IntVar()} += i * {1 + Pick(5)}; }} ";
                 case 2:
@@ -320,6 +482,25 @@ public class GeneratedDifferentialTests
         }
 
         private string ListVar() => _lists[Pick(_lists.Count)];
+
+        /// <summary>A narrow variable and the type it was declared with, together — the cast in a
+        /// wrapping assignment has to name the SAME type, or the value wraps at the wrong width
+        /// and the case tests something nobody chose.</summary>
+        private (string Name, string Type) Narrow()
+        {
+            var name = _narrow[Pick(_narrow.Count)];
+            return (name, name switch
+            {
+                "by0" => "byte",
+                "sb0" => "sbyte",
+                "sh0" => "short",
+                _ => "ushort",
+            });
+        }
+
+        private string UnsignedVar() => _unsigned[Pick(_unsigned.Count)];
+        private string DoubleVar() => _doubles[Pick(_doubles.Count)];
+        private string FloatVar() => _floats[Pick(_floats.Count)];
 
         /// <summary>
         /// A LINQ chain over a list, ending in something the fold can observe as an INT. Only
@@ -395,7 +576,7 @@ public class GeneratedDifferentialTests
             if (depth <= 0 || Pick(4) == 0)
                 return Pick(3) == 0 && _ints.Count > 0 ? IntVar() : Pick(20).ToString();
 
-            return Pick(8) switch
+            return Pick(14) switch
             {
                 0 => $"({IntExpr(depth - 1)} + {IntExpr(depth - 1)})",
                 1 => $"({IntExpr(depth - 1)} - {IntExpr(depth - 1)})",
@@ -404,6 +585,17 @@ public class GeneratedDifferentialTests
                 4 => $"({IntExpr(depth - 1)} % {2 + Pick(8)})",   // literal, never zero
                 5 => $"Math.Max({IntExpr(depth - 1)}, {IntExpr(depth - 1)})",
                 6 => $"Math.Abs({IntExpr(depth - 1)} - {Pick(30)})",
+                // BITWISE, which the grammar had never written. JavaScript's operators coerce to
+                // int32 and C#'s int IS int32, so the two agree by construction — which is exactly
+                // why a disagreement here would mean the value reached the operator already wrong.
+                8 => $"({IntExpr(depth - 1)} & {IntExpr(depth - 1)})",
+                9 => $"({IntExpr(depth - 1)} | {Pick(1000)})",
+                10 => $"({IntExpr(depth - 1)} ^ {Pick(1000)})",
+                11 => $"(~{IntExpr(depth - 1)})",
+                // A shift COUNT is masked to 5 bits on both sides. `>>` propagates the sign in C#
+                // and in JavaScript; `>>>` is the logical one in both.
+                12 => $"({IntExpr(depth - 1)} {(Pick(2) == 0 ? "<<" : ">>")} {Pick(16)})",
+                13 => $"({IntExpr(depth - 1)} >>> {1 + Pick(15)})",
                 _ => $"({BoolExpr(depth - 1)} ? {IntExpr(depth - 1)} : {IntExpr(depth - 1)})",
             };
         }
