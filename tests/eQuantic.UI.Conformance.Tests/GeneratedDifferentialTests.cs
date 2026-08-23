@@ -28,6 +28,20 @@ public class GeneratedDifferentialTests
     private const string Prelude = """
         public enum Suit { Clubs, Hearts, Spades }
         public sealed record Card(int Rank, Suit Suit);
+        public readonly struct Money
+        {
+            public readonly int Cents;
+            public Money(int cents) { Cents = cents; }
+            public static Money operator +(Money a, Money b) => new Money(a.Cents + b.Cents);
+            public static Money operator -(Money a, Money b) => new Money(a.Cents - b.Cents);
+            public static Money operator *(Money a, int k) => new Money(a.Cents * k);
+            public static Money operator -(Money a) => new Money(-a.Cents);
+            public static bool operator >(Money a, Money b) => a.Cents > b.Cents;
+            public static bool operator <(Money a, Money b) => a.Cents < b.Cents;
+            public static implicit operator Money(int cents) => new Money(cents);
+            public static explicit operator int(Money m) => m.Cents;
+            public override string ToString() => $"${Cents}";
+        }
         """;
 
     [SkippableTheory]
@@ -61,6 +75,45 @@ public class GeneratedDifferentialTests
 
         Assert.True(failures.Count == 0,
             $"{failures.Count}/{CasesPerBatch} generated programs diverged:\n" + string.Join("\n", failures));
+    }
+
+    /// <summary>
+    /// No generated program declares one name twice. Found the hard way: a StringBuilder named
+    /// `sb0` shadowed the `sbyte sb0`, so the fold added the builder and the program died in the
+    /// JS engine — which reads as a compiler bug and is the generator writing invalid input.
+    /// Nothing else catches it cheaply: the harness only says the run failed.
+    /// </summary>
+    [Fact]
+    public void NoGeneratedProgram_DeclaresOneNameTwice()
+    {
+        // A LOOP variable is scoped to its loop, so two sibling `for (var i = ...)` are legal C#
+        // and not a clash — only block-level declarations can shadow each other here.
+        var declaration = new System.Text.RegularExpressions.Regex(
+            @"(?<!for \()(?<!foreach \()\b(?:var|int|uint|long|ulong|short|ushort|byte|sbyte|float|double|decimal|char|bool|string|Money|Suit|DateTime|TimeSpan)\s+([A-Za-z_]\w*)\s*(?:=|\()");
+        var Deconstruction = new System.Text.RegularExpressions.Regex(@"\bvar \(([^)]*)\)\s*=");
+
+        var clashes = new List<string>();
+        for (var index = 0; index < 400; index++)
+        {
+            var program = new ProgramGenerator(unchecked(0xD00Du * 2654435761u + (uint)index)).Generate();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            foreach (System.Text.RegularExpressions.Match match in declaration.Matches(program))
+            {
+                var name = match.Groups[1].Value;
+                if (!seen.Add(name)) clashes.Add($"index={index} name={name}");
+            }
+
+            // A DECONSTRUCTION declares its names inside the parentheses, so the pattern above
+            // walks straight past them — a guard that covers every construct except the ones the
+            // grammar just gained is the failure it was written to prevent.
+            foreach (System.Text.RegularExpressions.Match match in Deconstruction.Matches(program))
+                foreach (var name in match.Groups[1].Value.Split(',', StringSplitOptions.TrimEntries))
+                    if (name.Length > 0 && !seen.Add(name)) clashes.Add($"index={index} name={name}");
+        }
+
+        Assert.True(clashes.Count == 0,
+            "a generated program declares a name twice, so it tests the generator and not the "
+            + "compiler: " + string.Join(", ", clashes.Take(8)));
     }
 
     /// <summary>
@@ -126,6 +179,9 @@ public class GeneratedDifferentialTests
             "Math.Sqrt(", "Math.Clamp(", "Math.Min(",
             ".IndexOf(", ".LastIndexOf(", ".Split(", ".Contains(",
             "[^1]", "[..1]", "[1..]", "char.ToUpperInvariant(", ".ToLowerInvariant(", ".Insert(0,",
+            "new Money(", "mo0 * ", "mo0 + ", "mo0 - ", "-mo0", "> new Money(", "mo0 < ", "(int)(",
+            "var (ta", ") = (tb", "unchecked(", "checked {", "continue outer", "break outer",
+            "new HashSet<int>", ".Contains(", "StringBuilder(", ".Append(", "int Fn",
             "try {", "catch {", "switch {", "is {", "foreach (", "while (", "for (",
             "new Card(", "TryGetValue", ".Substring(", "string.Join",
         }.Where(fragment => !corpus.Contains(fragment, StringComparison.Ordinal)).ToList();
@@ -176,6 +232,7 @@ public class GeneratedDifferentialTests
         private readonly List<string> _ulongs = [];
         private readonly List<string> _doubles = [];
         private readonly List<string> _floats = [];
+        private readonly List<string> _monies = [];
 
         public string Generate()
         {
@@ -250,6 +307,12 @@ public class GeneratedDifferentialTests
             _doubles.Add("db0");
             program.Append($"float fl0 = {1 + Pick(90)}.{10 + Pick(89)}f; ");
             _floats.Add("fl0");
+
+            // A type with USER-DEFINED OPERATORS: the twin carries each as a static method, and
+            // every site the bound tree shows an operator at has to call it. Its ToString is its
+            // own, so it is observed as text as well as through its field.
+            program.Append($"Money mo0 = new Money({Pick(500)}); ");
+            _monies.Add("mo0");
 
             // An ENUM crosses as its member NAME, and a NULLABLE has to keep "no value" apart
             // from zero — two more places the two runtimes do not agree by default.
@@ -336,6 +399,7 @@ public class GeneratedDifferentialTests
             // 1024 is exact in both, so the scaling adds no error of its own.
             foreach (var d in _doubles) program.Append($"acc = (acc * 31 + (int)({d} * 1024)) % 1000003; ");
             foreach (var f in _floats) program.Append($"acc = (acc * 37 + (int)({f} * 1024)) % 1000003; ");
+            foreach (var mo in _monies) program.Append($"acc = (acc * 41 + (int){mo} % 9973) % 1000003; ");
             var fold = new StringBuilder("return $\"{acc}");
             foreach (var s in _strings) fold.Append($"|{{{s}}}");
             // A long and a decimal are OBSERVED as text: their runtime representations differ from
@@ -345,6 +409,8 @@ public class GeneratedDifferentialTests
             foreach (var u in _ulongs) fold.Append($"|{{{u}}}");
             foreach (var c in _chars) fold.Append($"|{{{c}}}");
             foreach (var u in _suits) fold.Append($"|{{{u}}}");
+            // Money prints through its OWN ToString, which the twin has to carry too.
+            foreach (var mo in _monies) fold.Append($"|{{{mo}}}");
             fold.Append("\";");
             program.Append(fold);
 
@@ -353,8 +419,69 @@ public class GeneratedDifferentialTests
 
         private string Statement()
         {
-            switch (Pick(33))
+            switch (Pick(40))
             {
+                case 33:
+                    // Every operator the struct declares, at the sites the bound tree shows them:
+                    // binary, unary, the scale by an int, the implicit conversion FROM an int and
+                    // the explicit one back. Bounded, because Money's arithmetic is int arithmetic
+                    // and its overflow is the documented divergence, not a finding.
+                    // The cast comes AFTER the operator, never before: `(int)(m + n) * k` is int
+                    // multiplication and leaves `operator *(Money, int)` dead, which is how a case
+                    // can name an operator it never runs.
+                    return $"{MoneyVar()} = new Money((int)({MoneyVar()} * {1 + Pick(4)}) % 100003); "
+                           + $"{MoneyVar()} = new Money((int)({MoneyVar()} + new Money({Pick(300)})) % 100003); "
+                           + $"if ({MoneyVar()} > new Money({Pick(400)})) {{ {MoneyVar()} = -{MoneyVar()}; }} "
+                           // `< {int}` and `- {int}` go through the IMPLICIT conversion, which is an
+                           // operator too and only fires where an int meets a Money.
+                           + $"if ({MoneyVar()} < {Pick(400)}) {{ {MoneyVar()} = new Money(Math.Abs((int)({MoneyVar()} - {Pick(200)})) % 100003); }} ";
+                case 34:
+                {
+                    // TUPLES: the deconstruction, the named members, and the swap that has to
+                    // evaluate the right side BEFORE it assigns either name.
+                    var a = $"ta{_names}";
+                    var b = $"tb{_names++}";
+                    return $"var ({a}, {b}) = ({IntExpr(1)} % 9973, {IntExpr(1)} % 9973); "
+                           + $"({a}, {b}) = ({b}, {a}); "
+                           + $"{IntVar()} = ({IntVar()} + {a} - {b}) % 100003; ";
+                }
+                case 35:
+                    // An UNCHECKED block, where an int wraps on purpose. The rule is the
+                    // compiler's (ArithmeticContext) and the grammar had never written the block.
+                    return $"{IntVar()} = unchecked({IntVar()} * 1000003 + {Pick(99)}) % 100003; ";
+                case 36:
+                    // A CHECKED block, where the same arithmetic THROWS on both sides. Only
+                    // whether the catch ran is observed, since the exception text differs.
+                    return $"try {{ checked {{ var over{_names} = int.MaxValue; over{_names++} = over{_names - 1} + {1 + Pick(9)}; }} {IntVar()} += 1; }} "
+                           + $"catch {{ {IntVar()} -= 1; }} ";
+                case 37:
+                {
+                    // LABELLED break and continue, which lower 1:1 to JavaScript labels. A fresh
+                    // label per statement: two of one name in a block is a compile error.
+                    var label = $"outer{_names++}";
+                    return $"{label}: for (var li = 0; li < 3; li++) {{ for (var lj = 0; lj < 3; lj++) "
+                           + $"{{ if (lj == 2) continue {label}; if (li == 2) break {label}; {IntVar()} = ({IntVar()} + li * 10 + lj) % 100003; }} }} ";
+                }
+                case 38:
+                {
+                    // A HASHSET, whose whole point is that the duplicate does not land.
+                    var set = $"hs{_names++}";
+                    return $"var {set} = new HashSet<int> {{ {Pick(9)}, {Pick(9)}, {Pick(9)}, {Pick(9)} }}; "
+                           + $"{IntVar()} = ({IntVar()} + {set}.Count + ({set}.Contains({Pick(9)}) ? 5 : 0)) % 100003; ";
+                }
+                case 39:
+                {
+                    // A STRINGBUILDER and a LOCAL FUNCTION, neither of which the grammar wrote.
+                    // `bld`, not `sb`: `sb0` is the SBYTE. A generated name that shadows a
+                    // declared one makes the fold add the wrong variable, and the program dies in
+                    // the JS engine with no hint that the generator wrote it wrong.
+                    var sb = $"bld{_names}";
+                    var fn = $"Fn{_names++}";
+                    return $"int {fn}(int v) => (v * {1 + Pick(5)} + {Pick(9)}) % 9973; "
+                           + $"var {sb} = new System.Text.StringBuilder(); "
+                           + $"{sb}.Append(\"{(char)('a' + Pick(26))}\").Append({fn}({IntVar()})); "
+                           + $"{StringVar()} += {sb}.ToString(); ";
+                }
                 case 29:
                 {
                     // STRING work that answers a NUMBER, which is where the two runtimes have to
@@ -529,6 +656,8 @@ public class GeneratedDifferentialTests
                 _ => "ushort",
             });
         }
+
+        private string MoneyVar() => _monies[Pick(_monies.Count)];
 
         private string UnsignedVar() => _unsigned[Pick(_unsigned.Count)];
         private string DoubleVar() => _doubles[Pick(_doubles.Count)];
