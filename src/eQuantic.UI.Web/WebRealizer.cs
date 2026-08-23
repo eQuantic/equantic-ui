@@ -1968,9 +1968,17 @@ public static class WebRealizer
     /// back an empty shell, so the wrapper renders as nothing and the hydrated tree disagrees with
     /// the served HTML about the whole subtree.
     /// </summary>
+    /// <summary>
+    /// Whether a lowered subtree already contains a control, in which case a Pressable around it
+    /// must not become a second one. Form controls count for the same reason buttons do and it is
+    /// not a style preference: HTML's content model forbids interactive content inside a
+    /// <c>button</c>, and a browser handed <c>button &gt; input</c> resolves it by taking the
+    /// typing away.
+    /// </summary>
     private static bool WrapsAnInteractive(IComponent node) =>
         node is RealizedElement element
-        && (element.Tag is "button" or "a" || element.Children.Any(WrapsAnInteractive));
+        && (element.Tag is "button" or "a" or "input" or "select" or "textarea"
+            || element.Children.Any(WrapsAnInteractive));
 
     private static HtmlElement LowerPressable(Pressable pressable, ComponentContext context)
     {

@@ -209,8 +209,8 @@ export class UI {
         return new Select(options, selectedIndex, onChanged, placeholder);
     }
 
-    static textInput(value: string, onChanged: ((string: string) => void) | null = null, label: string = '', placeholder: string | null = null, helper: string | null = null, error: string | null = null, leading: IconsValue | null = null, size: SizeVariantValue = 'large') {
-        return new TextInput(value, onChanged, label, placeholder, helper, error, leading, size);
+    static textInput(value: string, onChanged: ((string: string) => void) | null = null, label: string = '', placeholder: string | null = null, helper: string | null = null, error: string | null = null, leading: IconsValue | null = null, size: SizeVariantValue = 'large', trailing: VisualNode | null = null) {
+        return new TextInput(value, onChanged, label, placeholder, helper, error, leading, size, trailing);
     }
 
     static searchField(query: string, onChanged: ((string: string) => void) | null = null, placeholder: string | null = null, onSubmit: (() => void) | null = null) {

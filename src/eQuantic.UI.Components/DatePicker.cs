@@ -61,21 +61,6 @@ public sealed class DatePicker : StatefulComponent
         // What the reader typed is either a date or it is not. Saying so under the field is the
         // whole reason the typed row can be trusted as the primary path rather than an escape.
         var invalid = _typing is { Length: > 0 } typed && Parse(typed) is null;
-        var field = new TextInput(shown, Type, Label,
-            placeholder: SdkStrings.DateFormatHint,
-            error: invalid ? SdkStrings.DateFormatHint : null,
-            leading: Icons.Calendar)
-        {
-            Disabled = Disabled,
-        };
-
-        var trigger = Disabled
-            ? (VisualNode)field
-            : new Pressable(field, Toggle)
-            {
-                Label = Label.Length > 0 ? Label : SdkStrings.ChooseDate,
-                Expanded = _open,
-            };
 
         var panel = new Box(new BoxStyle
         {
@@ -87,7 +72,19 @@ public sealed class DatePicker : StatefulComponent
             Padding = EdgeInsets.All(Space.S3),
         }, new Calendar(Selected, Pick, Min, Max));
 
-        VisualNode picker = new Anchored(trigger, panel)
+        // The opener is the ICON, and the field around it stays a field. Pressing the whole row
+        // would be friendlier to a mouse, but on the web it makes a <button> that contains the
+        // <input> — content HTML forbids, and browsers resolve by breaking the typing the C15
+        // spec calls the required path for keyboard and switch users. So the calendar hangs off
+        // a button of its own: the input is tabbed to and typed into, the button is tabbed to and
+        // pressed, and the popover anchors where the glyph already was.
+        VisualNode opener = new Anchored(
+            new Pressable(new Icon(Icons.Calendar, IconSize.Dense, theme.TextSecondary), Toggle)
+            {
+                Label = SdkStrings.ChooseDate,
+                Expanded = _open,
+            },
+            panel)
         {
             Open = _open && !Disabled,
             OnDismiss = Close,
@@ -96,10 +93,18 @@ public sealed class DatePicker : StatefulComponent
             PanelRole = AnchorPanelRole.Dialog,
         };
 
-        // Esc closes, from anywhere, while the panel is up — page-level is right here because the
-        // panel's lifetime IS the binding's, and only one can be open at a time.
-        if (_open && !Disabled) picker = new Shortcut(picker, KeyChord.Escape, Close);
-        return picker;
+        // Esc closes while the panel is up, and it wraps the OPENER because that is what the
+        // panel's lifetime belongs to — putting it outside the field would also put a key
+        // listener around an input for as long as the calendar is open.
+        if (_open && !Disabled) opener = new Shortcut(opener, KeyChord.Escape, Close);
+
+        return new TextInput(shown, Type, Label,
+            placeholder: SdkStrings.DateFormatHint,
+            error: invalid ? SdkStrings.DateFormatHint : null,
+            trailing: Disabled ? null : opener)
+        {
+            Disabled = Disabled,
+        };
     }
 
     /// <summary>A day chosen in the grid: commit it, close, and let the field show it again.</summary>

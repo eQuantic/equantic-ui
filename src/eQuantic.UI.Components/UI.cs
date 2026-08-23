@@ -305,8 +305,8 @@ public static class UI
     /// <summary>The full text field: label, helper, error, leading icon.</summary>
     public static TextInput TextInput(string value, Action<string>? onChanged = null, string label = "",
         string? placeholder = null, string? helper = null, string? error = null,
-        Icons? leading = null, SizeVariant size = SizeVariant.Large) =>
-        new TextInput(value, onChanged, label, placeholder, helper, error, leading, size);
+        Icons? leading = null, SizeVariant size = SizeVariant.Large, VisualNode? trailing = null) =>
+        new TextInput(value, onChanged, label, placeholder, helper, error, leading, size, trailing);
 
     /// <summary>The search entry. Null placeholder = the SDK's localized default.</summary>
     public static SearchField SearchField(string query, Action<string>? onChanged = null,

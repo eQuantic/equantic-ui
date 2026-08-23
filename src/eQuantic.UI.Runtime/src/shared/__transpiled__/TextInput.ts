@@ -9,13 +9,14 @@ export class TextInput extends SharedStatefulComponent {
     declare helper: any;
     declare error: any;
     declare leading: any;
+    declare trailing: any;
     declare size: SizeVariantValue;
     declare disabled: boolean;
     declare autofocus: boolean;
     declare obscure: boolean;
     declare onFocusChanged: any;
 
-    constructor(value?: any, onChanged: any = null, label: any = '', placeholder: any = null, helper: any = null, error: any = null, leading: any = null, size: any = 'large', props?: any) {
+    constructor(value?: any, onChanged: any = null, label: any = '', placeholder: any = null, helper: any = null, error: any = null, leading: any = null, size: any = 'large', trailing: any = null, props?: any) {
         super();
         if (value !== undefined) this.value = value;
         if (onChanged !== undefined) this.onChanged = onChanged;
@@ -25,6 +26,7 @@ export class TextInput extends SharedStatefulComponent {
         if (error !== undefined) this.error = error;
         if (leading !== undefined) this.leading = leading;
         if (size !== undefined) this.size = size;
+        if (trailing !== undefined) this.trailing = trailing;
         if (this.size === undefined) this.size = 'small';
         if (this.disabled === undefined) this.disabled = false;
         if (this.autofocus === undefined) this.autofocus = false;
@@ -37,6 +39,7 @@ export class TextInput extends SharedStatefulComponent {
         this.helper = helper;
         this.error = error;
         this.leading = leading;
+        this.trailing = trailing;
         this.size = size;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
@@ -58,6 +61,10 @@ export class TextInput extends SharedStatefulComponent {
             this.setState(() => this._focused = focused);
             this.onFocusChanged?.(focused);
         } }), 1));
+        let trailing: any; 
+        if ((trailing = this.trailing) != null) {
+            row.add(trailing);
+        }
         let container = new Box(new BoxStyle({ width: SizeValue.fill, height: height, background: this.disabled ? theme.surfaceSubtle : theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: borderWidth, borderColor: borderColor, padding: EdgeInsets.symmetric(paddingX, 0) }), row);
         let top = new Column(6, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         if (this.label.length > 0) top.add(new Text(this.label, 'label', theme.textSecondary));
@@ -79,6 +86,7 @@ export class TextInput extends SharedStatefulComponent {
         this.helper = fresh.helper;
         this.error = fresh.error;
         this.leading = fresh.leading;
+        this.trailing = fresh.trailing;
         this.size = fresh.size;
     }
 }

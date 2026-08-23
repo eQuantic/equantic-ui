@@ -110,6 +110,38 @@ public class DatePickerTests
     // ---- DatePicker -----------------------------------------------------------------------
 
     [Fact]
+    public void NoControlIsNestedInsideAnother_InAnyPicker()
+    {
+        // HTML forbids interactive content inside a button, and a browser handed `button > input`
+        // resolves it by taking the typing away — which is the path C15 calls REQUIRED for
+        // keyboard and switch users. Asserted on all three, and after opening, because the panel
+        // brings its own controls.
+        foreach (var picker in new UiComponent[]
+                 { new DatePicker(), new TimePicker(), new DateTimePicker() })
+        {
+            foreach (var stage in new[] { Render(picker), Reopen(picker) })
+            {
+                foreach (var control in Walk(stage).Where(n => n.Tag is "button" or "a"))
+                {
+                    var nested = Walk(control).Skip(1)
+                        .Where(n => n.Tag is "input" or "select" or "textarea" or "button" or "a")
+                        .Select(n => n.Tag)
+                        .ToList();
+                    nested.Should().BeEmpty(
+                        "a control inside a control is markup no browser is required to honour");
+                }
+            }
+        }
+    }
+
+    /// <summary>The tree after the field has been pressed once — the open state.</summary>
+    private static HtmlNode Reopen(UiComponent picker)
+    {
+        Press(Trigger(Render(picker)));
+        return Render(picker);
+    }
+
+    [Fact]
     public void TheFieldIsTypeableBeforeAnythingIsChosen()
     {
         var tree = Render(new DatePicker());

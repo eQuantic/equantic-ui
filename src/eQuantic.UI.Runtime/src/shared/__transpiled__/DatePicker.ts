@@ -1,4 +1,4 @@
-import { $eq, Anchored, Box, BoxStyle, BuildContext, Calendar, CornerRadii, DateOnly, EdgeInsets, KeyChord, Pressable, SdkStrings, SharedStatefulComponent, Shortcut, TextInput, UiComponent, VisualNode } from "@equantic/runtime";
+import { $eq, Anchored, Box, BoxStyle, BuildContext, Calendar, CornerRadii, DateOnly, EdgeInsets, Icon, KeyChord, Pressable, SdkStrings, SharedStatefulComponent, Shortcut, TextInput, UiComponent, VisualNode } from "@equantic/runtime";
 
 export class DatePicker extends SharedStatefulComponent {
     _open: boolean = false;
@@ -32,12 +32,10 @@ export class DatePicker extends SharedStatefulComponent {
         let shown = this._typing ?? ((value = this.selected) != null ? DatePicker.format(value) : '');
         let typed: any; 
         let invalid = ((this._typing != null && this._typing.length > 0) && (typed = this._typing, true)) && DatePicker.parse(typed) == null;
-        let field = new TextInput(shown, this.type.bind(this), this.label, SdkStrings.dateFormatHint, null, invalid ? SdkStrings.dateFormatHint : null, 'calendar', 'large', { disabled: this.disabled });
-        let trigger = this.disabled ? field : new Pressable(field, this.toggle.bind(this), { label: this.label.length > 0 ? this.label : SdkStrings.chooseDate, expanded: this._open });
         let panel = new Box(new BoxStyle({ background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: 1, borderColor: theme.border, elevation: 2, padding: EdgeInsets.all(12) }), new Calendar(this.selected, this.pick.bind(this), this.min, this.max));
-        let picker: VisualNode = new Anchored(trigger, panel, { open: this._open && !this.disabled, onDismiss: this.close.bind(this), panelRole: 'dialog' });
-        if (this._open && !this.disabled) picker = new Shortcut(picker, KeyChord.escape, this.close.bind(this));
-        return picker;
+        let opener: VisualNode = new Anchored(new Pressable(new Icon('calendar', 20, theme.textSecondary), this.toggle.bind(this), { label: SdkStrings.chooseDate, expanded: this._open }), panel, { open: this._open && !this.disabled, onDismiss: this.close.bind(this), panelRole: 'dialog' });
+        if (this._open && !this.disabled) opener = new Shortcut(opener, KeyChord.escape, this.close.bind(this));
+        return new TextInput(shown, this.type.bind(this), this.label, SdkStrings.dateFormatHint, null, invalid ? SdkStrings.dateFormatHint : null, null, 'large', this.disabled ? null : opener, { disabled: this.disabled });
     }
 
     adoptConfig(next: UiComponent) {
