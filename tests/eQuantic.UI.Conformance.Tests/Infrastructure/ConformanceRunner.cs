@@ -63,10 +63,6 @@ public static class ConformanceRunner
     }
 
     /// <summary>
-    /// If the emitted JS references runtime helpers (e.g. `format`), import exactly those from the
-    /// real bundled runtime.js. Helper-free output (the common case) gets no import at all.
-    /// </summary>
-    /// <summary>
     /// The line that runs the block and prints its result.
     /// <para>
     /// A block that AWAITS cannot run inside a plain arrow — `await` there is a SyntaxError and bun
@@ -88,6 +84,10 @@ public static class ConformanceRunner
             : $"console.log(JSON.stringify({canonical}((() => {jsBlock})())))";
     }
 
+    /// <summary>
+    /// If the emitted JS references runtime helpers (e.g. `format`), import exactly those from the
+    /// real bundled runtime.js. Helper-free output (the common case) gets no import at all.
+    /// </summary>
     private static string BuildHelperImport(string js)
     {
         var used = RuntimeHelpers.Where(h => Regex.IsMatch(js, $@"\b{h}[(.]")).ToList();

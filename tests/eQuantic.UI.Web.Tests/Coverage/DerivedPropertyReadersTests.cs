@@ -22,7 +22,11 @@ namespace eQuantic.UI.Web.Tests.Coverage;
 /// </summary>
 public class DerivedPropertyReadersTests
 {
-    private static string RepoRoot()
+    /// <summary>Walked ONCE. The scan visits hundreds of files, and re-walking the parents for
+    /// each one is filesystem IO to answer a question whose answer cannot change.</summary>
+    private static readonly string Root = FindRoot();
+
+    private static string FindRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "eQuantic.UI.sln")))
@@ -33,19 +37,19 @@ public class DerivedPropertyReadersTests
     private static IEnumerable<(string Path, string Text)> Sources(params string[] roots)
     {
         foreach (var root in roots)
-        foreach (var file in Directory.EnumerateFiles(Path.Combine(RepoRoot(), root), "*.cs",
+        foreach (var file in Directory.EnumerateFiles(Path.Combine(Root, root), "*.cs",
                      SearchOption.AllDirectories))
         {
             if (file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") ||
                 file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
                 continue;
-            yield return (Path.GetRelativePath(RepoRoot(), file).Replace(Path.DirectorySeparatorChar, '/'),
+            yield return (Path.GetRelativePath(Root, file).Replace(Path.DirectorySeparatorChar, '/'),
                 File.ReadAllText(file));
         }
     }
 
     private static string Baseline(string name) => Path.Combine(
-        RepoRoot(), "tests", "eQuantic.UI.Web.Tests", "Coverage", name);
+        Root, "tests", "eQuantic.UI.Web.Tests", "Coverage", name);
 
     // A read of a Text's Content FIELD, in the three spellings the tree uses.
     private static readonly Regex RawRead = new(
