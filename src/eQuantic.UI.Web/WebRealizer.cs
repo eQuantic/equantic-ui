@@ -645,6 +645,10 @@ public static class WebRealizer
         {
             Style = new HtmlStyle
             {
+                // A scroller takes the pointer — the wheel, the drag, the touch — so it declares
+                // itself a target: `none` inherits from any transparent row above it, and a
+                // scroller that is not a target does not scroll.
+                PointerEvents = "auto",
                 Width = Size(scroll.Width),
                 // A scroll view IS the window its parent gives it — never its content. Native gets
                 // that from layout (bounds in, clip always); an auto-height overflow div grows with
@@ -2311,6 +2315,12 @@ public static class WebRealizer
     {
         if (LowerNode(draggable.Child, context, horizontalAxis) is not RealizedElement child) return null;
 
+        // A drag surface takes the pointer, so the node that carries the gesture declares itself:
+        // `none` inherits from any transparent row above it, and a surface that is not a target
+        // never receives the pointerdown the drag starts from.
+        child.Style ??= new HtmlStyle();
+        child.Style.PointerEvents = "auto";
+
         var culture = System.Globalization.CultureInfo.InvariantCulture;
         child.RawAttributes ??= new Dictionary<string, string>();
         child.RawAttributes["data-eq-drag"] = draggable.Axis == DragAxis.Horizontal ? "x" : "y";
@@ -2350,6 +2360,13 @@ public static class WebRealizer
     private static HtmlElement? LowerDragDismiss(DragDismiss drag, ComponentContext context, bool? horizontalAxis)
     {
         if (LowerNode(drag.Child, context, horizontalAxis) is not { } child) return null;
+        if (child is RealizedElement target)
+        {
+            // Same rule as Draggable: the surface the gesture starts on declares itself a target,
+            // because `none` inherits from any transparent row above it.
+            target.Style ??= new HtmlStyle();
+            target.Style.PointerEvents = "auto";
+        }
         if (child is RealizedElement realized)
         {
             realized.RawAttributes ??= new Dictionary<string, string>();

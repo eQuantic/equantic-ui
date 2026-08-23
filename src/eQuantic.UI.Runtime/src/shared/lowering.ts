@@ -488,7 +488,9 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
       // caret stays behind, and a click is read at the column it would have hit unscrolled. The
       // scroll views live outside the surface now (CodeEditor), so this box travels WITH the code
       // and the arithmetic below is true wherever the file has been scrolled to.
-      style: 'position:relative;outline:none;white-space:pre;',
+      // An editing surface takes the pointer and the caret, so it declares itself a target — the
+      // C# twin, and the reason is the same: `none` inherits from a transparent row above.
+      style: 'pointer-events:auto;position:relative;outline:none;white-space:pre;',
     },
     events: {},
     children: [],
@@ -776,6 +778,9 @@ function lowerDraggable(
 
   const horizontal = node.axis === 'horizontal';
   const rest = node.restOffset ?? 0;
+  // The surface the gesture starts on declares itself a target — the C# twin, same reason as the
+  // scroller: `none` inherits, and a surface that is not a target never sees the pointerdown.
+  mergeAtomicDeclaration(child, 'pointer-events', 'auto');
   child.attributes['data-eq-drag'] = horizontal ? 'x' : 'y';
   child.attributes['data-eq-drag-min'] = String(node.min ?? 0);
   child.attributes['data-eq-drag-max'] = String(node.max ?? 0);
@@ -816,6 +821,8 @@ function lowerDragDismiss(
 ): HtmlNode | null {
   const child = lowerNode(node.child, context, horizontalAxis, path + '/0');
   if (!child) return null;
+  // Same rule as Draggable: the surface the gesture starts on declares itself a target.
+  mergeAtomicDeclaration(child, 'pointer-events', 'auto');
   child.attributes['data-eq-drag-dismiss'] = '96'; // DragDismiss.ThresholdDp — cross-pinned
   if (node.onDismiss) {
     child.events['eq-drag-dismiss'] = node.onDismiss as EventHandler;
@@ -1076,7 +1083,9 @@ function lowerSheetSurface(
   // sweep would paint blue over the cells and fight the band.
   const view = element(
     'div',
-    { outline: 'none', 'user-select': 'none', '-webkit-user-select': 'none' },
+    // A sheet surface takes the pointer for its own cell hit-testing, so it declares itself a
+    // target — `none` inherits from any transparent row above it.
+    { 'pointer-events': 'auto', outline: 'none', 'user-select': 'none', '-webkit-user-select': 'none' },
     child ? [child] : [],
   );
   view.attributes['tabindex'] = '0';
@@ -1234,6 +1243,10 @@ function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: s
   const view = element(
     'div',
     {
+      // The C# twin: a scroller takes the wheel, the drag and the touch, so it declares itself a
+      // target — `pointer-events: none` inherits from any transparent row above it, and a
+      // scroller that is not a target does not scroll.
+      'pointer-events': 'auto',
       width: sizeValue(node.width),
       // A scroll view IS the window its parent gives it — never its content (native parity: the
       // realizer hands it layout bounds and clips always). Auto height would grow with content

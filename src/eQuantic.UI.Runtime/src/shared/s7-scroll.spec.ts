@@ -36,8 +36,17 @@ describe('S7 scroll semantics (C# cross-pin)', () => {
     const layer = (node: VisualNodeValue) =>
       Number(/z-index: (\d+)/.exec(effectiveStyle(lowerVisualNode(node, ctx)))?.[1]);
 
-    const floating = layer({ nodeKind: 'sticky', child: box(), offset: 0, float: true } as unknown as VisualNodeValue);
-    const pinned = layer({ nodeKind: 'sticky', child: box(), offset: 96 } as unknown as VisualNodeValue);
+    const floating = layer({
+      nodeKind: 'sticky',
+      child: box(),
+      offset: 0,
+      float: true,
+    } as unknown as VisualNodeValue);
+    const pinned = layer({
+      nodeKind: 'sticky',
+      child: box(),
+      offset: 96,
+    } as unknown as VisualNodeValue);
 
     expect(floating).toBe(110);
     expect(pinned).toBe(100);
