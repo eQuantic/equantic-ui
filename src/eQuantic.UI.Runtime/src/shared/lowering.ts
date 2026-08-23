@@ -632,6 +632,17 @@ function revealCaret(path: string): void {
  * Chrome is TWO bands: a floating header and a pinned rail would otherwise tie on one number and
  * let document order decide, which is how a rail painted over an open mega menu.
  */
+/**
+ * The paragraph as PLAIN text: its content, or the runs joined — the C# `Text.PlainContent` twin.
+ * A Text built from runs carries an EMPTY content, so anything that asks the field directly gets
+ * nothing and silently decides as if the paragraph were empty.
+ */
+function plainContent(text: TextNode): string {
+  return text.spans && text.spans.length > 0
+    ? text.spans.map((run) => run.content).join('')
+    : text.content;
+}
+
 const PINNED_LAYER = '100';
 const FLOATING_CHROME_LAYER = '110';
 
@@ -2093,8 +2104,10 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
     'text-align': text.align === 'center' ? 'center' : text.align === 'end' ? 'end' : undefined,
     // Authored \n is a HARD break (pre-line keeps normal wrapping between them) — C# twin.
     // Mono text is CODE (indentation survives); plain text only keeps its newlines.
+    // plainContent, not content: a paragraph built from RUNS has an empty content, so reading the
+    // field instead of what the node says lost the break entirely (C# twin's PlainContent).
     'white-space':
-      text.mono === true ? 'pre-wrap' : text.content.includes('\n') ? 'pre-line' : undefined,
+      text.mono === true ? 'pre-wrap' : plainContent(text).includes('\n') ? 'pre-line' : undefined,
     'font-family': text.mono === true ? MONO_STACK : undefined,
     'font-variant-numeric': text.tabular === true ? 'tabular-nums' : undefined,
     // The slant (C# twin): the node's own, or the ROLE's when the theme cuts that role italic.

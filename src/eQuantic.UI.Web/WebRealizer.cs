@@ -455,10 +455,15 @@ public static class WebRealizer
     }
 
     /// <summary>The panel's visible text, flattened — what the tooltip id hashes. Walking the
-    /// VISUAL tree (not the lowered one) keeps the answer identical on both producers.</summary>
+    /// VISUAL tree (not the lowered one) keeps the answer identical on both producers.
+    /// <para>
+    /// PlainContent, not Content: a paragraph built from RUNS has an empty Content, so every
+    /// styled panel hashed the same empty string and shared one id with all the others — and the
+    /// aria-describedby pointing at it then named somebody else's panel.
+    /// </para></summary>
     private static string TextContentOf(VisualNode node) => node switch
     {
-        Text text => text.Content,
+        Text text => text.PlainContent,
         Box box => box.Child is { } child ? TextContentOf(child) : "",
         FlexNode flex => string.Concat(flex.Children.Select(TextContentOf)),
         Pressable pressable => TextContentOf(pressable.Child),
@@ -1837,8 +1842,11 @@ public static class WebRealizer
                 // Authored \n is a HARD break (the designed headline's line turns) — pre-line
                 // keeps normal wrapping between them.
                 // Mono text is CODE (indentation survives); plain text only keeps its newlines.
+                // PlainContent, not Content: a paragraph built from RUNS has an empty Content, so
+                // reading the field instead of what the node says lost the break entirely — the
+                // headline ran on in one line and nothing said why.
                 WhiteSpace = mono ? "pre-wrap"
-                    : text.Content.Contains('\n') ? "pre-line" : null,
+                    : text.PlainContent.Contains('\n') ? "pre-line" : null,
                 FontFamily = mono ? TokenCss.MonoStack : null,
                 FontVariantNumeric = text.Tabular ? "tabular-nums" : null,
                 FontStyle = italic ? "italic" : null,
