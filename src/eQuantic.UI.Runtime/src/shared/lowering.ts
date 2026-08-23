@@ -2175,8 +2175,13 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
   // The OUTLINE, not the type scale — the C# WebRealizer's twin. `h1`–`h6` when the author placed
   // this text in the document's structure, a span when they did not, and the token sheet cancels
   // the UA margin and size so the choice moves nothing on screen.
-  const level = text.headingLevel ?? 0;
-  const node = element(level > 0 ? `h${level}` : 'span', style, children);
+  // A hydration payload is a plain object that may predate this field or carry anything at all,
+  // and a lowering that threw would cost the page. So the tag is only taken from a level HTML
+  // actually has, and everything else — absent, 7, negative, not a number — is the span it was
+  // before. The Text CLASS throws on the same values, because there the caller is code.
+  const level = text.headingLevel;
+  const heading = typeof level === 'number' && Number.isInteger(level) && level >= 1 && level <= 6;
+  const node = element(heading ? `h${level}` : 'span', style, children);
   prependClass(node, `eq-type-${text.role.toLowerCase()}`);
   return node;
 }

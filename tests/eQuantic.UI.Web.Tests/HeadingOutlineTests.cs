@@ -87,12 +87,17 @@ public class HeadingOutlineTests
     }
 
     [Fact]
-    public void ALevelOutsideTheSixIsABuildError()
+    public void ALevelOutsideTheSixIsRefused_AtEveryDoor()
     {
         var seven = () => new Text("Nope", headingLevel: 7);
         seven.Should().Throw<ArgumentOutOfRangeException>();
 
         var negative = () => new Text("Nope", headingLevel: -1);
         negative.Should().Throw<ArgumentOutOfRangeException>();
+
+        // The door a parameter check leaves open. An initializer assigns straight to the property,
+        // so a guard that only sat on the constructor would let an `h7` through to the realizer.
+        var initializer = () => new Text("Nope") { HeadingLevel = 7 };
+        initializer.Should().Throw<ArgumentOutOfRangeException>();
     }
 }

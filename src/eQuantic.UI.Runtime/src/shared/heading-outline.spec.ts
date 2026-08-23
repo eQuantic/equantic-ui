@@ -38,6 +38,24 @@ describe('heading outline', () => {
     expect(tagOf(lowerVisualNode(legacy as unknown as VisualNodeValue, ctx))).toBe('span');
   });
 
+  it('a level HTML does not have degrades to a span, it does not take the page down', () => {
+    // The lowering reads PLAIN OBJECTS from hydration, so it cannot trust the field. `h7` is not
+    // an element and `h-1` is not a tag; both were reachable from a malformed payload.
+    for (const bad of [7, -1, 1.5, '2', null, Number.NaN]) {
+      const payload = { nodeKind: 'text', content: 'Total', role: 'bodyL', maxLines: 0, headingLevel: bad };
+      expect(tagOf(lowerVisualNode(payload as unknown as VisualNodeValue, ctx))).toBe('span');
+    }
+  });
+
+  it('the Text CLASS refuses the same values, because there the caller is code', () => {
+    const seven = () => new Text('Nope', 'bodyL', null, 0, undefined, undefined, undefined, undefined, 7);
+    expect(seven).toThrow(RangeError);
+
+    // The config form is the other door into the same field.
+    const viaConfig = () => new Text('Nope', 'bodyL', null, 0, { headingLevel: 7 });
+    expect(viaConfig).toThrow(RangeError);
+  });
+
   it('the level does not touch the paint — only the tag differs', () => {
     const plain = lowerVisualNode(new Text('Portfolio', 'heading') as unknown as VisualNodeValue, ctx);
     const levelled = lowerVisualNode(

@@ -570,6 +570,21 @@ export class Column extends FlexNode {
   }
 }
 
+/**
+ * A heading level as the C# `Text` accepts it — 1 to 6, or 0 for text that is not a heading.
+ * Throws where C# throws, because whoever builds a Text is CODE and a wrong level is a bug in it.
+ * The lowering is the other half and behaves differently on purpose: it reads plain objects that
+ * may predate the field, so it degrades rather than taking the page down.
+ */
+function level(value: number): number {
+  if (!Number.isInteger(value) || value < 0 || value > 6) {
+    throw new RangeError(
+      `Heading level ${value} is not 1 to 6 — HTML has six, and 0 is text that is not a heading.`,
+    );
+  }
+  return value;
+}
+
 interface TextConfig {
   styleOverride?: TypeStyleValue | null;
   /** 1..6, or 0 for text that is not part of the outline. */
@@ -632,13 +647,17 @@ export class Text extends VisualNode {
     this.maxLines = maxLines;
     if (typeof align === 'object' && align !== null) {
       Object.assign(this, align);
+      this.headingLevel = level(this.headingLevel);
       return;
     }
     if (align !== undefined) this.align = align;
     if (mono !== undefined) this.mono = mono;
     if (tabular !== undefined) this.tabular = tabular;
     if (styleOverride !== undefined && styleOverride !== null) this.styleOverride = styleOverride;
-    if (headingLevel !== undefined) this.headingLevel = headingLevel;
+    if (headingLevel !== undefined) this.headingLevel = level(headingLevel);
+    // The config form reaches the same door: `new Text('x', 'bodyL', null, 0, {headingLevel: 7})`
+    // assigns through Object.assign above, so the check has to run after it too.
+    this.headingLevel = level(this.headingLevel);
     if (config) Object.assign(this, config);
   }
 }

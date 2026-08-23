@@ -1421,11 +1421,6 @@ public sealed class Text : VisualNode
         int maxLines = 0, TextAlignment align = TextAlignment.Start, bool mono = false,
         bool tabular = false, TypeStyle? styleOverride = null, int headingLevel = 0)
     {
-        if (headingLevel is < 0 or > 6)
-            throw new ArgumentOutOfRangeException(nameof(headingLevel), headingLevel,
-                "A heading level is 1 to 6 — HTML has six, and every other target's outline is "
-                + "read from the same number. 0 is text that is not a heading.");
-
         Content = content;
         Role = role;
         Color = color;
@@ -1462,7 +1457,19 @@ public sealed class Text : VisualNode
     /// framework emitted no heading element anywhere, so every document was one flat run of spans.
     /// </para>
     /// </summary>
-    public int HeadingLevel { get; init; }
+    public int HeadingLevel
+    {
+        get => _headingLevel;
+        // On the ACCESSOR, not the constructor parameter, so an object initializer cannot walk
+        // past it: `new Text("x") { HeadingLevel = 7 }` is the door a parameter check leaves open,
+        // and it would reach a realizer as an `h7` that no browser has.
+        init => _headingLevel = value is >= 0 and <= 6 ? value
+            : throw new ArgumentOutOfRangeException(nameof(HeadingLevel), value,
+                "A heading level is 1 to 6 — HTML has six, and every other target's outline is "
+                + "read from the same number. 0 is text that is not a heading.");
+    }
+
+    private readonly int _headingLevel;
 
     /// <summary>
     /// LINE alignment inside the paragraph's own box (CSS <c>text-align</c>): a centered display
