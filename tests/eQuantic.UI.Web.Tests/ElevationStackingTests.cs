@@ -63,7 +63,16 @@ public class ElevationStackingTests
         var raised = Layer(StyleOf(new Box(new BoxStyle { Elevation = 5, Width = 40, Height = 40 })));
 
         chrome.Should().BeGreaterThan(raised, "a pinned header is a plane, not a raised card");
-        floating.Should().Be(chrome, "both are chrome; they differ in whether they take space");
+        floating.Should().BeGreaterThan(raised, "and so is a floating one");
+        // This line used to read `floating.Should().Be(chrome)` — both are chrome, differing only
+        // in whether they take space. True right up until a page had BOTH, which the site then
+        // did: a pinned rail and a floating header tied on one number, so the winner was whichever
+        // came later in the document, and the rail painted over the header's open mega menu. The
+        // header's own panel could not climb out either — its z-index lives inside the header's
+        // stacking context and never rises above a sibling of the header. Two chrome elements on
+        // one plane is the page's structure deciding a paint order nobody chose.
+        floating.Should().BeGreaterThan(chrome,
+            "a header whose dropdown falls behind the page is not a trade-off to offer an author");
     }
 
     private static int Layer(string css) =>

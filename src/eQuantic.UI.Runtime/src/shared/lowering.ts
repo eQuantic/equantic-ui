@@ -628,8 +628,12 @@ function revealCaret(path: string): void {
  * CONTENT is elevation 1–5 — the design system's own scale, and the only one an author names.
  * CHROME is above all of it: a pinned header is not a raised card. Photon needs none of this, since
  * paint order IS child order there.
+ *
+ * Chrome is TWO bands: a floating header and a pinned rail would otherwise tie on one number and
+ * let document order decide, which is how a rail painted over an open mega menu.
  */
-const CHROME_LAYER = '100';
+const PINNED_LAYER = '100';
+const FLOATING_CHROME_LAYER = '110';
 
 /** The caret's width in px — the C# `PhotonRealizer.CaretWidth` twin. */
 const CARET_WIDTH = 2;
@@ -2954,11 +2958,11 @@ function lowerSticky(node: StickyNode, context: LoweringContext, path: string): 
     top: px(node.offset),
     left: float ? '0' : undefined,
     right: float ? '0' : undefined,
-    // CHROME, both of them — a band of its own, above anything the CONTENT can reach (C# twin's
-    // ChromeLayer). Plain sticky sat at 1, one step above nothing, which is a number competing with
-    // other numbers: a raised card (elevation carries 1–5) would out-stack the pinned header and
-    // scroll straight over it.
-    'z-index': CHROME_LAYER,
+    // CHROME, above anything the CONTENT can reach (C# twin's PinnedLayer). Plain sticky sat at 1,
+    // one step above nothing, which is a number competing with other numbers: a raised card
+    // (elevation carries 1–5) would out-stack the pinned header and scroll straight over it.
+    // FLOATING chrome is a band above PINNED chrome, so two of them on one page do not tie.
+    'z-index': float ? FLOATING_CHROME_LAYER : PINNED_LAYER,
     // Spec S6 (C# twin): the scrolled swap GLIDES instead of flipping in one frame.
     transition: node.transition ? transitionValue(node.transition) : undefined,
   });
