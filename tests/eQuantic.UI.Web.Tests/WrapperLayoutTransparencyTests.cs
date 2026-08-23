@@ -7,8 +7,8 @@ using Xunit;
 namespace eQuantic.UI.Web.Tests;
 
 /// <summary>
-/// The three wrappers that stand between a child and its flex parent — Pressable, Hoverable and
-/// Link — carry the child's WIDTH CONTRACT, not half of it.
+/// The four wrappers that stand between a child and its flex parent — Pressable, Hoverable, Link
+/// and Adjustable — carry the child's WIDTH CONTRACT, not half of it.
 /// <para>
 /// Each takes `width: 100%` from a Fill child, because a wrapper that hugged would collapse the
 /// child's own 100% against a shrink-to-fit box. None of them took the child's MAX-WIDTH, so a

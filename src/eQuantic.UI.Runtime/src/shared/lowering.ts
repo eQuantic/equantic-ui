@@ -2198,9 +2198,11 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
   return node;
 }
 
-/** Whether a node requests Fill per axis — wrappers must stretch for the 100% chain to reach it. */
 /**
- * The cap a FILL child puts on itself — the C# `CapsAt` twin, walked the way `fills` walks below.
+ * The cap a FILL child puts on itself — the C# `CapsAt` twin, and it walks the SAME chain by NAME
+ * rather than by "anything with a child". A structural walk would pull a max-width through node
+ * kinds the C# side does not traverse, and the two would disagree about a layout on a page where
+ * nothing else is wrong.
  *
  * A wrapper stands in for its child in the parent's layout, so it carries the WHOLE width
  * contract: taking the 100% and dropping the max-width leaves a full-width wrapper holding a
@@ -2209,10 +2211,22 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
 function capsAt(node: unknown): number {
   const value = node as { nodeKind?: string; style?: { maxWidth?: number }; child?: unknown } | null;
   if (!value) return 0;
-  if (value.nodeKind === 'box') return value.style?.maxWidth ?? 0;
-  return value.child ? capsAt(value.child) : 0;
+  switch (value.nodeKind) {
+    case 'box':
+      return value.style?.maxWidth ?? 0;
+    case 'pressable':
+    case 'hoverable':
+    case 'adjustable':
+    case 'flexible':
+    case 'loopMotion':
+    case 'link':
+      return capsAt(value.child);
+    default:
+      return 0;
+  }
 }
 
+/** Whether a node requests Fill per axis — wrappers must stretch for the 100% chain to reach it. */
 function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
   switch (node.nodeKind) {
     case 'box': {
