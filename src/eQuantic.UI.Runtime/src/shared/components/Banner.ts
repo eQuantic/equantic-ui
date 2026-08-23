@@ -24,9 +24,9 @@ export class Banner extends StatelessComponent {
         let tint = context.theme.colors(this.status);
         let glyph: IconsValue = (() => { const _s = this.status; if (_s === 'success') return 'checkCircle'; if (_s === 'warning') return 'warning'; if (_s === 'destructive') return 'error'; return 'info'; })();
         let column = new Column(4);
-        column.add(new Text(this.title, 'caption', tint.onSubtle, 2, 'start', false, false, null, { styleOverride: new TypeStyle(13, 18, 'semiBold', 0, Math.fround(1.3)) }));
+        column.add(new Text(this.title, 'caption', tint.onSubtle, 2, 'start', false, false, null, 0, { styleOverride: new TypeStyle(13, 18, 'semiBold', 0, Math.fround(1.3)) }));
         if (this.body != null) {
-            column.add(new Text(this.body, 'caption', tint.onSubtle, 4, 'start', false, false, null, { styleOverride: new TypeStyle(13, 18, 'regular', 0, Math.fround(1.3)) }));
+            column.add(new Text(this.body, 'caption', tint.onSubtle, 4, 'start', false, false, null, 0, { styleOverride: new TypeStyle(13, 18, 'regular', 0, Math.fround(1.3)) }));
         }
         if (this.primaryAction != null || this.secondaryAction != null) {
             let actions = new Row(8);

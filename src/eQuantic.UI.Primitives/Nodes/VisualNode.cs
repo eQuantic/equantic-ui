@@ -1419,8 +1419,13 @@ public sealed class Text : VisualNode
     /// </summary>
     public Text(string content, TypeRole role = TypeRole.BodyL, ColorToken? color = null,
         int maxLines = 0, TextAlignment align = TextAlignment.Start, bool mono = false,
-        bool tabular = false, TypeStyle? styleOverride = null)
+        bool tabular = false, TypeStyle? styleOverride = null, int headingLevel = 0)
     {
+        if (headingLevel is < 0 or > 6)
+            throw new ArgumentOutOfRangeException(nameof(headingLevel), headingLevel,
+                "A heading level is 1 to 6 — HTML has six, and every other target's outline is "
+                + "read from the same number. 0 is text that is not a heading.");
+
         Content = content;
         Role = role;
         Color = color;
@@ -1429,6 +1434,7 @@ public sealed class Text : VisualNode
         Mono = mono;
         Tabular = tabular;
         StyleOverride = styleOverride;
+        HeadingLevel = headingLevel;
     }
 
     public string Content { get; init; }
@@ -1439,6 +1445,24 @@ public sealed class Text : VisualNode
 
     /// <summary>0 = unlimited lines.</summary>
     public int MaxLines { get; init; }
+
+    /// <summary>
+    /// Where this text sits in the document's OUTLINE — 1 to 6, or 0 for text that is not a
+    /// heading (design system A9).
+    /// <para>
+    /// Deliberately independent of <see cref="Role"/>, which is the type scale. A section title
+    /// can be the second level of the outline and visually smaller than a number above it, and a
+    /// jumbo figure can be the largest thing on the page and no heading at all. Tying the two
+    /// would make every layout decision a semantic one.
+    /// </para>
+    /// <para>
+    /// It is not decoration on any target. The web emits the real <c>h1</c>–<c>h6</c>, which is
+    /// what lets a screen reader jump by heading and a crawler read the page's shape; the native
+    /// bridges report the platform's heading trait for the same navigation. Before this the whole
+    /// framework emitted no heading element anywhere, so every document was one flat run of spans.
+    /// </para>
+    /// </summary>
+    public int HeadingLevel { get; init; }
 
     /// <summary>
     /// LINE alignment inside the paragraph's own box (CSS <c>text-align</c>): a centered display

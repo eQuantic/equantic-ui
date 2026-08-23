@@ -572,6 +572,8 @@ export class Column extends FlexNode {
 
 interface TextConfig {
   styleOverride?: TypeStyleValue | null;
+  /** 1..6, or 0 for text that is not part of the outline. */
+  headingLevel?: number;
   mono?: boolean;
   /** The SLANTED cut for the whole paragraph (C# `Text.Italic`). */
   italic?: boolean;
@@ -603,6 +605,8 @@ export class Text extends VisualNode {
   spans: import('./nodes').TextRunValue[] | null = null;
   /** Spec S6: animates color changes (the design's transition-colors). */
   transition: TransitionSpec | null = null;
+  /** Where this text sits in the document's OUTLINE — 1..6, 0 for text that is not a heading. */
+  headingLevel = 0;
 
   /**
    * Two shapes, like the flex containers: transpiled C# passes the knobs positionally, hand-written
@@ -618,6 +622,7 @@ export class Text extends VisualNode {
     mono?: boolean,
     tabular?: boolean,
     styleOverride?: TypeStyleValue | null,
+    headingLevel?: number,
     config?: TextConfig,
   ) {
     super();
@@ -633,6 +638,7 @@ export class Text extends VisualNode {
     if (mono !== undefined) this.mono = mono;
     if (tabular !== undefined) this.tabular = tabular;
     if (styleOverride !== undefined && styleOverride !== null) this.styleOverride = styleOverride;
+    if (headingLevel !== undefined) this.headingLevel = headingLevel;
     if (config) Object.assign(this, config);
   }
 }

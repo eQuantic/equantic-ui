@@ -1806,7 +1806,12 @@ public static class WebRealizer
         // The slant reads the same two places for the same reason: a role may BE italic (a
         // theme's caption), and a node may slant a paragraph of an upright role.
         var italic = text.Italic || (text.StyleOverride?.Italic ?? context.Theme.Type(text.Role).Italic);
-        var element = new RealizedElement("span")
+        // The OUTLINE, not the type scale: `h1`–`h6` when the author placed this text in the
+        // document's structure, and a span when they did not. The heading's own UA margin and
+        // size are cancelled in the token sheet (`.eq-type-*` owns the size), so choosing a level
+        // moves nothing on screen — which is the point, since the level is a semantic decision and
+        // a designer must not have to pay for it in layout.
+        var element = new RealizedElement(text.HeadingLevel > 0 ? $"h{text.HeadingLevel}" : "span")
         {
             ClassName = $"eq-type-{text.Role.ToString().ToLowerInvariant()}",
             InnerHtml = text.Spans is null ? text.Content : null,

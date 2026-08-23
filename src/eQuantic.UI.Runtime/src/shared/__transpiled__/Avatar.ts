@@ -35,7 +35,7 @@ export class Avatar extends StatelessComponent {
         let clipped = this.initials.length > 2 ? $eq.text.substring(this.initials, 0, 2) : this.initials;
         let hasInitials = clipped.length > 0;
         let glyphSize = (() => { const _s = this.size; if (_s === 'small') return 16; if (_s === 'medium') return 20; if (_s === 'large') return 24; return 32; })();
-        let face = hasInitials ? new Text(clipped, 'caption', tint.onSubtle, 1, 'start', false, false, null, { styleOverride: new TypeStyle(labelSize, labelSize, 'semiBold', 0, Math.fround(1.3)) }) : new Icon('person', glyphSize, theme.textMuted);
+        let face = hasInitials ? new Text(clipped, 'caption', tint.onSubtle, 1, 'start', false, false, null, 0, { styleOverride: new TypeStyle(labelSize, labelSize, 'semiBold', 0, Math.fround(1.3)) }) : new Icon('person', glyphSize, theme.textMuted);
         let content = face.centered();
         let circle = new Box(new BoxStyle({ width: side, height: side, background: hasInitials ? tint.subtle : theme.surfaceSubtle, cornerRadius: new CornerRadii(theme.shape('full')) }), content);
         return this.status === 'none' ? circle : this.withStatusDot(circle, side, theme);

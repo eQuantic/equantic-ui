@@ -473,6 +473,12 @@ public static class PhotonCssGenerator
         // with it. Centring here fixes every composition instead of asking each one to remember a
         // Row, and a multi-line entry is unaffected (its height is its own, and centring a single
         // child that already fills the line is a no-op).
+        // A heading is a heading for the OUTLINE, never for the paint: the type role already
+        // carries size, weight and line height, and the browser's own h1–h6 rules would add a
+        // margin and a font size on top of it. Zeroed here rather than per element, so choosing a
+        // level costs nothing in the atomic sheet.
+        css.AppendLine("h1, h2, h3, h4, h5, h6 { margin: 0; font-size: inherit; "
+            + "font-weight: inherit; line-height: inherit; }");
         css.AppendLine(".eq-field { display: flex; align-items: center; height: 100%; }");
         css.AppendLine(".eq-entry::placeholder { color: var(--eq-color-text-muted); }");
         // AUTOFILL. Chrome paints its own background and text colour over an autofilled control,

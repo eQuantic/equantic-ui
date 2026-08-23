@@ -94,8 +94,8 @@ public static class UI
     /// <summary>A shaped paragraph (spec A8) — role-driven type, token color.</summary>
     public static Text Text(string content, TypeRole role = TypeRole.BodyL, ColorToken? color = null,
         int maxLines = 0, TextAlignment align = TextAlignment.Start, bool mono = false,
-        bool tabular = false, TypeStyle? styleOverride = null) =>
-        new Text(content, role, color, maxLines, align, mono, tabular, styleOverride);
+        bool tabular = false, TypeStyle? styleOverride = null, int headingLevel = 0) =>
+        new Text(content, role, color, maxLines, align, mono, tabular, styleOverride, headingLevel);
 
     /// <summary>Single-line entry (spec B9): value + change/submit callbacks.</summary>
     public static TextEntry TextEntry(string value, Action<string>? onChanged = null) =>

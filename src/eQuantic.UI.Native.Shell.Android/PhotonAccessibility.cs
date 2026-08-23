@@ -115,6 +115,11 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
         // screen-reader user walks blind.
         info.Selected = node.Current || node.Selected == true;
 
+        // What TalkBack's heading swipe walks. Like UIKit, the platform records THAT an element is
+        // a heading and not how deep — the level is the document's shape, and the gesture only
+        // needs the stops.
+        info.Heading = node.HeadingLevel > 0;
+
         info.Focusable = true;
         info.AccessibilityFocused = _focused == virtualViewId;
         info.AddAction(_focused == virtualViewId

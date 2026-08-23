@@ -26,7 +26,7 @@ export class PageIndicator extends StatelessComponent {
         let active = theme.colors(this.variant).base;
         let label = `Page ${this.currentIndex + 1} of ${this.count}`;
         if (this.count > PageIndicator.maxDots) {
-            return new Text(label, 'caption', theme.textSecondary, 1, 'start', false, false, null, { tabular: true });
+            return new Text(label, 'caption', theme.textSecondary, 1, 'start', false, false, null, 0, { tabular: true });
         }
         let row = new Row(4, 'start', 'center', false, null, null, { cross: 'center' });
         for (let i = 0; i < this.count; i++) {

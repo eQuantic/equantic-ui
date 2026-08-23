@@ -2172,7 +2172,11 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
           return runNode;
         })
       : [textLeaf(text.content)];
-  const node = element('span', style, children);
+  // The OUTLINE, not the type scale — the C# WebRealizer's twin. `h1`–`h6` when the author placed
+  // this text in the document's structure, a span when they did not, and the token sheet cancels
+  // the UA margin and size so the choice moves nothing on screen.
+  const level = text.headingLevel ?? 0;
+  const node = element(level > 0 ? `h${level}` : 'span', style, children);
   prependClass(node, `eq-type-${text.role.toLowerCase()}`);
   return node;
 }

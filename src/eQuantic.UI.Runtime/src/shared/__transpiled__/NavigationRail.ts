@@ -45,7 +45,7 @@ export class NavigationRail extends StatelessComponent {
             let pill = new Box(new BoxStyle({ width: 52, height: 30, background: isActive ? primary.subtle : null, cornerRadius: new CornerRadii(theme.shape('full')) }), iconNode.centered());
             let column = new Column(2, 'start', 'stretch', false, null, null, { width: SizeValue.fill, height: 56, main: 'center', cross: 'center' });
             column.add(pill);
-            column.add(new Text(item.label, 'caption', tint, 1, 'start', false, false, null, { styleOverride: isActive ? new TypeStyle(12, 16, 'bold', 0, Math.fround(1.3)) : null }));
+            column.add(new Text(item.label, 'caption', tint, 1, 'start', false, false, null, 0, { styleOverride: isActive ? new TypeStyle(12, 16, 'bold', 0, Math.fround(1.3)) : null }));
             destinations.add(new Pressable(column, this.onSelect == null ? null : () => this.onSelect(index), { label: item.label, pressedBackground: theme.surfaceSubtle, role: 'destination', selected: isActive }));
         }
         let rail = new Column(8, 'start', 'stretch', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, cross: 'center', main: this.alignment });
