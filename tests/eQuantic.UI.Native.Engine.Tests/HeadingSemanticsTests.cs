@@ -40,6 +40,24 @@ public class HeadingSemanticsTests
     }
 
     [Fact]
+    public void RichTextIsAnnounced_AndItsHeadingIsToo()
+    {
+        // A paragraph with runs carries EMPTY Content — the words live in the spans, which is why
+        // PlainContent exists and says it is what accessibility reads. Reading Content instead
+        // dropped the whole node: a heading built from rich text reached the native tree as
+        // nothing at all, and so did any styled paragraph.
+        var rich = new Text("", TypeRole.Heading, headingLevel: 2)
+        {
+            Spans = [new TextRun("Q3 "), new TextRun("revenue")],
+        };
+
+        var node = SemanticsOf(rich).Should().ContainSingle(n => n.Role == SemanticRole.StaticText)
+            .Which;
+        node.Label.Should().Be("Q3 revenue");
+        node.HeadingLevel.Should().Be(2);
+    }
+
+    [Fact]
     public void ItIsATraitOnStaticText_NotARoleOfItsOwn()
     {
         // A heading is still text: it reads as text, it is copied as text, and only the NAVIGATION

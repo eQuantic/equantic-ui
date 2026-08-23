@@ -168,9 +168,13 @@ public static class SemanticsTree
                     adjustable.Label, null, false));
                 return;
 
-            case Text text when text.Content.Length > 0:
+            // PLAIN content, never Content: a paragraph with runs carries an EMPTY Content — the
+            // words live in the spans — so reading the field dropped the whole node and a styled
+            // paragraph reached a screen reader as nothing at all. PlainContent's own summary says
+            // it is what accessibility reads; this is the caller that was not doing it.
+            case Text text when text.PlainContent.Length > 0:
                 nodes.Add(new(SemanticRole.StaticText, node.Path ?? "", node.Bounds,
-                    text.Content, null, false, HeadingLevel: text.HeadingLevel));
+                    text.PlainContent, null, false, HeadingLevel: text.HeadingLevel));
                 return;
 
             // A labelled icon announces; an unlabelled one is decoration and stays silent.
