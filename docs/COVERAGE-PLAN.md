@@ -52,6 +52,22 @@ A plan without a stop condition chases an ideal forever. Three numbers end it:
    each widening has produced findings. The condition should be read as "widening the grammar
    stops yielding divergences", which is a stronger claim than any seed count.
 
+   **First reading against that bar (2026-08-23).** Two widenings in one sitting, covering
+   everything the grammar had never written on the numeric and text side: the narrow integers
+   (byte/sbyte/short/ushort, and uint's wrap at 2^32), `ulong` as a BigInt, `double` and `float`
+   with the store-rounding rule, every bitwise operator, the exact members of `Math`, the ordinal
+   string surface (`IndexOf`, `LastIndexOf`, `Split`, `Contains`, `Insert`, `TrimEnd`,
+   `ToLowerInvariant`), and index-from-end and ranges over both arrays and strings. **3000
+   programs, zero divergences.** The one failure was the generator testing ITSELF — `~` and `>>>`
+   put a value at 2^31 from small operands, and the fold then reached the default-context int
+   overflow this instrument exists not to hunt.
+
+   That is the first widening in this arc to yield nothing, which is what the condition asks for
+   — but on ONE axis. What the grammar still does not write: tuples, structs and user-defined
+   operators, `checked`/`unchecked` blocks, labelled break/continue, local functions, `HashSet`,
+   `StringBuilder`, and the whole async surface. The condition holds when a widening on an axis
+   nobody has walked yet also comes back empty.
+
 When the three hold, the compiler is finished in the sense that matters, and the effort moves to
 PERFORMANCE — which this whole arc has never once measured.
 
