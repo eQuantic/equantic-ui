@@ -302,7 +302,8 @@ public static class UI
         Action<int>? onChanged = null, string? placeholder = null) =>
         new Select(options, selectedIndex, onChanged, placeholder);
 
-    /// <summary>The full text field: label, helper, error, leading icon.</summary>
+    /// <summary>The full text field: label, helper, error, leading icon, and a trailing SLOT
+    /// for whatever belongs at the end of the row — a picker's opener, a clear affordance.</summary>
     public static TextInput TextInput(string value, Action<string>? onChanged = null, string label = "",
         string? placeholder = null, string? helper = null, string? error = null,
         Icons? leading = null, SizeVariant size = SizeVariant.Large, VisualNode? trailing = null) =>

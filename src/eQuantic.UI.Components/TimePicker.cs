@@ -15,6 +15,7 @@ namespace eQuantic.UI.Components;
 public sealed class TimePicker : StatefulComponent
 {
     private bool _open;
+    private int _highlight;
 
     public TimePicker(TimeOnly? selected = null, Action<TimeOnly>? onChanged = null,
         int stepMinutes = 30, TimeOnly? min = null, TimeOnly? max = null, string label = "")
@@ -59,6 +60,7 @@ public sealed class TimePicker : StatefulComponent
         // step that is 1440 rows, each with its own closure, skipped on every render until the
         // field is pressed.
         var open = _open && !Disabled;
+        var times = open ? Slots() : [];
 
         var field = new Row(gap: Space.S2) { Cross = CrossAlign.Center, Width = SizeValue.Fill, Height = SizeValue.Fill };
         field.Add(new Icon(Icons.Clock, IconSize.Dense, theme.TextMuted));
@@ -81,10 +83,13 @@ public sealed class TimePicker : StatefulComponent
         }, field);
 
         var list = new Column(gap: 0) { Width = SizeValue.Fill };
-        foreach (var time in open ? Slots() : [])
+        for (var i = 0; i < times.Count; i++)
         {
-            var slot = time;
+            var slot = times[i];
             var picked = Selected == slot;
+            // The keyboard's row wears the hover coat — one visual language for "you are here",
+            // whichever hand is steering. Same rule the Select keeps.
+            var highlighted = i == _highlight;
             var row = new Row(gap: Space.S2) { Cross = CrossAlign.Center, Width = SizeValue.Fill, Height = SizeValue.Fill };
             row.Add(new Text(Format(slot), TypeRole.BodyM,
                 picked ? theme.Colors(Variant.Primary).OnSubtle : theme.TextPrimary, maxLines: 1));
@@ -94,7 +99,8 @@ public sealed class TimePicker : StatefulComponent
                 Height = Sizing.Height(SizeVariant.Medium, context.Density),
                 Padding = EdgeInsets.Symmetric(Space.S3, 0),
                 Width = SizeValue.Fill,
-                Background = picked ? theme.Colors(Variant.Primary).Subtle : null,
+                Background = picked ? theme.Colors(Variant.Primary).Subtle
+                    : highlighted ? theme.SurfaceSubtle : null,
                 Hover = picked ? null : new StyleDiff { Background = theme.SurfaceSubtle },
             }, row), () => Pick(slot))
             {
@@ -125,9 +131,27 @@ public sealed class TimePicker : StatefulComponent
             OnDismiss = Close,
             MatchAnchorWidth = true,
             PanelRole = AnchorPanelRole.Listbox,
+            // The half of the combobox pattern a painted highlight cannot supply: the options are
+            // reachable by pointer only until the trigger SAYS which one the keyboard is on.
+            ActiveIndex = open ? _highlight : -1,
         };
 
-        if (open) picker = new Shortcut(picker, KeyChord.Escape, Close);
+        // The keyboard, exactly while the panel is up — a closed picker owns no keys at all.
+        // Without this a keyboard user could open the list and then not move in it: the rows are
+        // tabindex=-1 by the listbox pattern, which is the whole reason the highlight travels on
+        // aria-activedescendant instead.
+        if (open)
+        {
+            picker = new Shortcut(picker, KeyChord.Escape, Close);
+            if (times.Count > 0)
+            {
+                picker = new Shortcut(picker, KeyChord.ArrowDown,
+                    () => SetState(() => _highlight = Math.Min(times.Count - 1, _highlight + 1)));
+                picker = new Shortcut(picker, KeyChord.ArrowUp,
+                    () => SetState(() => _highlight = Math.Max(0, _highlight - 1)));
+                picker = new Shortcut(picker, KeyChord.Enter, () => Pick(times[_highlight]));
+            }
+        }
         return picker;
     }
 
@@ -152,7 +176,25 @@ public sealed class TimePicker : StatefulComponent
         SetState(() => _open = false);
     }
 
-    private void Toggle() => SetState(() => _open = !_open);
+    private void Toggle() => SetState(() =>
+    {
+        _open = !_open;
+        // The keyboard starts where the VALUE is: Enter straight away re-commits the current time,
+        // and the list opens scrolled to it rather than to midnight.
+        if (_open) _highlight = Selected is { } value ? SlotOf(value) : 0;
+    });
+
+    /// <summary>Where a time sits among the slots, or the first one when it is not one of them —
+    /// a step the app narrowed can leave the current value off the list it now offers.</summary>
+    private int SlotOf(TimeOnly value)
+    {
+        var times = Slots();
+        for (var i = 0; i < times.Count; i++)
+        {
+            if (times[i] == value) return i;
+        }
+        return 0;
+    }
 
     private void Close() => SetState(() => _open = false);
 

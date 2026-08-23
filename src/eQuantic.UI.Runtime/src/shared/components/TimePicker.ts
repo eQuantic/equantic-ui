@@ -2,6 +2,7 @@ import { $eq, Anchored, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeIn
 
 export class TimePicker extends SharedStatefulComponent {
     _open: boolean = false;
+    _highlight: number = 0;
     static panelHeight: number = 260;
     declare selected: any;
     declare onChanged: any;
@@ -33,6 +34,7 @@ export class TimePicker extends SharedStatefulComponent {
     build(context: BuildContext) {
         let theme = context.theme;
         let open = this._open && !this.disabled;
+        let times = open ? this.slots() : [];
         let field = new Row(8, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });
         field.add(new Icon('clock', 20, theme.textMuted));
         let value: any; 
@@ -41,16 +43,24 @@ export class TimePicker extends SharedStatefulComponent {
         field.add(new Icon('chevronDown', 16, theme.textSecondary));
         let box = new Box(new BoxStyle({ height: Sizing.height('medium', context.density), width: SizeValue.fill, padding: EdgeInsets.symmetric(12, 0), background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: 1, borderColor: theme.borderStrong, opacity: this.disabled ? theme.disabledOpacity : null, hover: this.disabled ? null : new StyleDiff({ borderColor: theme.colors('primary').base }) }), field);
         let list = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
-        for (const time of open ? this.slots() : []) {
-            let slot = time;
+        for (let i = 0; i < times.length; i++) {
+            let slot = times[i];
             let picked = $eq.equals(this.selected, slot);
+            let highlighted = i === this._highlight;
             let row = new Row(8, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });
             row.add(new Text(TimePicker.format(slot), 'bodyM', picked ? theme.colors('primary').onSubtle : theme.textPrimary, 1));
-            list.add(new Pressable(new Box(new BoxStyle({ height: Sizing.height('medium', context.density), padding: EdgeInsets.symmetric(12, 0), width: SizeValue.fill, background: picked ? theme.colors('primary').subtle : null, hover: picked ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), () => this.pick(slot), { role: 'option', selected: picked }));
+            list.add(new Pressable(new Box(new BoxStyle({ height: Sizing.height('medium', context.density), padding: EdgeInsets.symmetric(12, 0), width: SizeValue.fill, background: picked ? theme.colors('primary').subtle : highlighted ? theme.surfaceSubtle : null, hover: picked ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), () => this.pick(slot), { role: 'option', selected: picked }));
         }
         let panel = new Box(new BoxStyle({ background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: 1, borderColor: theme.border, elevation: 2, padding: EdgeInsets.symmetric(0, 4), height: SizeValue.fixed(TimePicker.panelHeight), clip: true }), new ScrollView(list));
-        let picker: VisualNode = new Anchored(this.disabled ? box : new Pressable(box, this.toggle.bind(this), { label: this.label.length > 0 ? this.label : SdkStrings.chooseTime, expanded: this._open }), panel, { open: open, onDismiss: this.close.bind(this), matchAnchorWidth: true, panelRole: 'listbox' });
-        if (open) picker = new Shortcut(picker, KeyChord.escape, this.close.bind(this));
+        let picker: VisualNode = new Anchored(this.disabled ? box : new Pressable(box, this.toggle.bind(this), { label: this.label.length > 0 ? this.label : SdkStrings.chooseTime, expanded: this._open }), panel, { open: open, onDismiss: this.close.bind(this), matchAnchorWidth: true, panelRole: 'listbox', activeIndex: open ? this._highlight : -1 });
+        if (open) {
+            picker = new Shortcut(picker, KeyChord.escape, this.close.bind(this));
+            if (times.length > 0) {
+                picker = new Shortcut(picker, KeyChord.arrowDown, () => this.setState(() => this._highlight = Math.min(times.length - 1, this._highlight + 1)));
+                picker = new Shortcut(picker, KeyChord.arrowUp, () => this.setState(() => this._highlight = Math.max(0, this._highlight - 1)));
+                picker = new Shortcut(picker, KeyChord.enter, () => this.pick(times[this._highlight]));
+            }
+        }
         return picker;
     }
 
@@ -86,7 +96,21 @@ export class TimePicker extends SharedStatefulComponent {
     }
 
     toggle() {
-        return this.setState(() => this._open = !this._open);
+        return this.setState(() => {
+            this._open = !this._open;
+            if (this._open) {
+                let value: any; 
+                this._highlight = (value = this.selected) != null ? this.slotOf(value) : 0;
+            }
+        });
+    }
+
+    slotOf(value: TimeOnly) {
+        let times = this.slots();
+        for (let i = 0; i < times.length; i++) {
+            if (times[i].equals(value)) return i;
+        }
+        return 0;
     }
 
     close() {

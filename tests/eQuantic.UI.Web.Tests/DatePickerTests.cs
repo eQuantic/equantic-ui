@@ -148,6 +148,18 @@ public class DatePickerTests
         }
     }
 
+    /// <summary>
+    /// Fires a chord the way the browser would. A Shortcut lowers to a `data-eq-shortcut`
+    /// attribute and its handler lives in the runtime, so there is nothing in the HTML to invoke —
+    /// the binding is the NODE, and this finds it in the built tree.
+    /// </summary>
+    private static void Keys(UiComponent component, KeyChord chord)
+    {
+        var bound = Nodes(component).OfType<Shortcut>().FirstOrDefault(s => s.Chord == chord);
+        bound.Should().NotBeNull($"nothing is listening for {chord}");
+        bound!.OnPressed();
+    }
+
     /// <summary>The tree after the field has been pressed once — the open state.</summary>
     private static HtmlNode Reopen(UiComponent picker)
     {
@@ -345,6 +357,32 @@ public class DatePickerTests
         TypeInto(typing, "07/01/2026");
         Under("en-US", () => typing.AdoptConfig(new DatePicker(new DateOnly(2026, 7, 1))));
         ValueOf(Render(typing)).Should().Be("07/01/2026", "the reader is still mid-word");
+    }
+
+    [Fact]
+    public void TheTimeListIsSteerableByKeyboard_NotOnlyByPointer()
+    {
+        // The listbox pattern puts the rows at tabindex=-1 on purpose: the highlight is meant to
+        // travel on aria-activedescendant off the trigger. Which means that without arrows and an
+        // Enter, a keyboard user can open this list and then do nothing in it.
+        var picker = new TimePicker(new TimeOnly(9, 0), stepMinutes: 60);
+        Press(Trigger(Render(picker)));
+
+        var trigger = Trigger(Render(picker));
+        // Opening starts on the VALUE, not on midnight: 09:00 is the tenth slot of whole hours.
+        trigger.Attributes.Should().ContainKey("aria-activedescendant");
+        var onNine = trigger.Attributes["aria-activedescendant"];
+
+        Keys(picker, KeyChord.ArrowDown);
+        var moved = Trigger(Render(picker)).Attributes["aria-activedescendant"];
+        moved.Should().NotBe(onNine, "the arrow has to move the stated highlight, not only paint");
+
+        TimeOnly? committed = null;
+        var listening = new TimePicker(new TimeOnly(9, 0), t => committed = t, stepMinutes: 60);
+        Press(Trigger(Render(listening)));
+        Keys(listening, KeyChord.ArrowDown);
+        Keys(listening, KeyChord.Enter);
+        committed.Should().Be(new TimeOnly(10, 0), "Enter commits the row the arrows reached");
     }
 
     [Fact]
