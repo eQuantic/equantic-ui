@@ -291,4 +291,39 @@ public class RecordStaticMemberTests
         new ComponentCompiler().CompileSource(source, "Flags.cs")
             .Should().NotContain(r => r.ComponentName == "Flags");
     }
+
+    [Fact]
+    public void AConversionFromAConstructedTypeIsNamedWithAValidIdentifier()
+    {
+        const string source = """
+            using System.Collections.Generic;
+            using eQuantic.UI.Core;
+            using eQuantic.UI.Primitives;
+
+            public sealed record Bag
+            {
+                public static implicit operator Bag(List<int> v) => new();
+            }
+
+            [Page("/bag")]
+            public sealed class BagPage : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context)
+                {
+                    Bag b = new List<int>();
+                    return new Text("x", TypeRole.BodyM);
+                }
+            }
+            """;
+
+        var emitted = new ComponentCompiler().CompileSource(source, "Bag.cs").ToList();
+        var twin = emitted.Single(r => r.ComponentName == "Bag").TypeScript;
+        var page = emitted.Single(r => r.ComponentName == "BagPage").TypeScript;
+
+        // `List<int>` reached the namer verbatim and produced `fromList<int>` — written as a method
+        // name and called as one, which no JavaScript parser accepts. Both sides go through the one
+        // namer, so both had it, and the page simply did not run.
+        twin.Should().Contain("static fromListInt(").And.NotContain("fromList<");
+        page.Should().Contain("Bag.fromListInt(").And.NotContain("fromList<");
+    }
 }

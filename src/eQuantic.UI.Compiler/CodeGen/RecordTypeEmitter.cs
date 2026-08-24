@@ -481,8 +481,18 @@ public class RecordTypeEmitter
         var bare = typeText.Trim().TrimEnd('?');
         var dot = bare.LastIndexOf('.');
         if (dot >= 0) bare = bare[(dot + 1)..];
-        var pascal = bare.Length == 0 ? bare : char.ToUpperInvariant(bare[0]) + bare[1..];
-        return (from ? "from" : "to") + pascal;
+
+        // A CONSTRUCTED type is not an identifier. `List<int>` reached here verbatim and produced
+        // `fromList<int>` — emitted as a method name and used as one by the call site, which no
+        // JavaScript parser accepts. Every segment of the type becomes part of the name instead, so
+        // `List<int>` is `fromListInt` and `Dictionary<string, int>` is `fromDictionaryStringInt`:
+        // still readable, still deterministic, and different constructed types stay different names.
+        var parts = bare.Split(new[] { '<', '>', ',', ' ', '[', ']', '.', '?' },
+            System.StringSplitOptions.RemoveEmptyEntries);
+        var identifier = string.Concat(parts.Select(part =>
+            part.Length == 0 ? part : char.ToUpperInvariant(part[0]) + part[1..]));
+
+        return (from ? "from" : "to") + identifier;
     }
 
     /// <summary>A converted block comes back braced; a method body wants its contents.</summary>
