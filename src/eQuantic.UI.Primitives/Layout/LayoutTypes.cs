@@ -58,7 +58,13 @@ public readonly record struct SizeValue(SizeKind Kind, float Value)
 
     /// <summary>The window on this axis, less <paramref name="inset"/> dp. See
     /// <see cref="SizeKind.WindowMinus"/> for why a constant cannot express it.</summary>
-    public static SizeValue WindowMinus(float inset) => new(SizeKind.WindowMinus, inset);
+    public static SizeValue WindowMinus(float inset) => inset >= 0
+        ? new(SizeKind.WindowMinus, inset)
+        // A negative inset asks for MORE than the window, which the name says it is not — and it
+        // reaches the browser as `calc(100vh - -10px)`, which reads as a typo because it is one.
+        : throw new ArgumentOutOfRangeException(nameof(inset), inset,
+            "A window inset is what to SUBTRACT from the window, so it is never negative. "
+            + "For more than the window, ask for the size you want.");
 
     /// <summary>A bare number is an explicit size — <c>Width = 120</c>.</summary>
     public static implicit operator SizeValue(float dp) => Fixed(dp);

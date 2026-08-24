@@ -49,6 +49,35 @@ public class WindowRelativeLayoutTests
     }
 
     [Fact]
+    public void AWindowSmallerThanTheInsetCapsAtZero_ItDoesNotFreeTheBox()
+    {
+        // The sentinel bug the review found: downstream a non-positive max used to mean "no cap",
+        // so a window smaller than the inset did not clamp the panel, it FREED it — the opposite
+        // of the declaration, and only in the window where the cap matters most.
+        Measure(TallPanel(SizeValue.WindowMinus(88)), 60).Should().BeApproximately(0, 0.5f);
+    }
+
+    [Theory]
+    [InlineData(900, 88, 812)]
+    [InlineData(400, 24, 376)]
+    public void TheKindIsALSOaSize_NotOnlyACap(float window, float inset, float expected)
+    {
+        // It resolved only as MaxWidth/MaxHeight, so `Height = WindowMinus(24)` hugged natively
+        // while the web sized it — a cross-target divergence in the feature's own first release.
+        var box = new Box(new BoxStyle { Height = SizeValue.WindowMinus(inset) },
+            new Box(new BoxStyle { Height = 10 }));
+
+        Measure(box, window).Should().BeApproximately(expected, 0.5f);
+    }
+
+    [Fact]
+    public void ANegativeInsetIsRefused()
+    {
+        var negative = () => SizeValue.WindowMinus(-10);
+        negative.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
     public void AShortPanelIsNotStretchedToTheCap()
     {
         // A cap is a ceiling, never a height — a panel that fits keeps its own size.

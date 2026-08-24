@@ -126,7 +126,7 @@ public readonly record struct BoxStyle
     /// <see cref="SizeValue.WindowMinus"/> is the window less an inset. Unbounded is Hug and NOT
     /// zero: a zero here is a box zero wide.
     /// </summary>
-public SizeValue MaxWidth { get; init; }
+    public SizeValue MaxWidth { get; init; }
 
     /// <summary>
     /// The tallest this box may be — <c>Hug</c> (the default) is unbounded, a number is dp, and
