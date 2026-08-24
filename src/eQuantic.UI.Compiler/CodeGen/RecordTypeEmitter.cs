@@ -23,7 +23,25 @@ public class RecordTypeEmitter
     /// <summary>True for the value types this emitter handles: any record, or a struct, that exposes at
     /// least one value member (positional parameter, auto-property, or public field).</summary>
     public static bool CanEmit(TypeDeclarationSyntax type) =>
-        type is RecordDeclarationSyntax or StructDeclarationSyntax && type.ValueMembers().Count > 0;
+        type is RecordDeclarationSyntax or StructDeclarationSyntax
+        && (type.ValueMembers().Count > 0 || HasStaticSurface(type));
+
+    /// <summary>
+    /// Something the twin must carry even though the type holds no instance value: a const, a static
+    /// field, a static property, a static method. DISCOVERY is a separate question from what the
+    /// record's VALUE is made of, and conflating them deleted a type outright — excluding consts
+    /// from the value (rightly) took `record Limits { const int MaxRows; static Describe(); }` down
+    /// with it, and the page calling `Limits.describe()` referenced a module nobody emitted.
+    /// </summary>
+    private static bool HasStaticSurface(TypeDeclarationSyntax type) =>
+        type.Members.Any(m => m switch
+        {
+            FieldDeclarationSyntax f => f.Modifiers.Any(x =>
+                x.IsKind(SyntaxKind.StaticKeyword) || x.IsKind(SyntaxKind.ConstKeyword)),
+            PropertyDeclarationSyntax p => p.Modifiers.Any(SyntaxKind.StaticKeyword),
+            MethodDeclarationSyntax me => me.Modifiers.Any(SyntaxKind.StaticKeyword),
+            _ => false,
+        });
 
     /// <summary>A model that can answer about THIS declaration. Roslyn throws for a node from
     /// another tree, so the COMPILATION is asked for that tree's own model; when even it does not
@@ -36,6 +54,12 @@ public class RecordTypeEmitter
             ? model.Compilation.GetSemanticModel(node.SyntaxTree)
             : null;
     }
+
+    /// <summary>Every accessor bodyless and no expression body — an auto-property and nothing else.</summary>
+    private static bool IsPureAuto(PropertyDeclarationSyntax property) =>
+        property.ExpressionBody is null
+        && property.AccessorList is { } list
+        && list.Accessors.All(a => a.Body is null && a.ExpressionBody is null);
 
     /// <summary>Whether the emitted class carries VALUE semantics (structural equals, `with`).</summary>
     private static bool IsValueShape(TypeDeclarationSyntax type) =>
@@ -255,17 +279,41 @@ public class RecordTypeEmitter
         // Static FIELDS — `public static readonly CodePosition Start = new(0, 0);`. The other half of
         // the "well-known value" idiom, and nothing emitted them: `CodePosition.start` was
         // undefined, so every comparison against the origin silently failed.
-        foreach (var field in type.Members.OfType<FieldDeclarationSyntax>())
+        // ONE pass, in SOURCE ORDER, over both spellings of a static value: the field
+        // (`static readonly T F = …`) and the auto-property (`static T P { get; } = …`). Two passes
+        // would initialise every field before every property whatever the source said, and C# runs
+        // static initialisers in declaration order — `static A = B;` written above `static B = 1;`
+        // reads B's DEFAULT in .NET, and would have read 1 here.
+        //
+        // Absent an initialiser the member takes its TYPE's default, not `undefined`: C# gives
+        // `static int Count { get; set; }` a 0, and a twin answering undefined disagrees with the
+        // server about a number.
+        foreach (var member in type.Members)
         {
-            if (!field.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword) || m.IsKind(SyntaxKind.ConstKeyword)))
-                continue;
             _converter.SetCurrentClass(name);
-            foreach (var variable in field.Declaration.Variables)
+            switch (member)
             {
-                var value = variable.Initializer is { } init
-                    ? _converter.ConvertExpression(init.Value, field.Declaration.Type.ToString())
-                    : "undefined";
-                sb.Append($"static {variable.Identifier.Text.ToCamelCase()} = {value}; ");
+                case FieldDeclarationSyntax field when field.Modifiers.Any(m =>
+                        m.IsKind(SyntaxKind.StaticKeyword) || m.IsKind(SyntaxKind.ConstKeyword)):
+                    foreach (var variable in field.Declaration.Variables)
+                    {
+                        var fieldValue = variable.Initializer is { } init
+                            ? _converter.ConvertExpression(init.Value, field.Declaration.Type.ToString())
+                            : TypeDeclarationExtensions.DefaultFor(field.Declaration.Type);
+                        sb.Append($"static {variable.Identifier.Text.ToCamelCase()} = {fieldValue}; ");
+                    }
+                    break;
+
+                // A PURE auto-property only — every accessor bodyless, no expression body. One with a
+                // custom setter is behaviour, and emitting it as a plain field would silently throw
+                // that behaviour away; it stays unemitted, as it was before, rather than emitted wrong.
+                case PropertyDeclarationSyntax prop
+                    when prop.Modifiers.Any(SyntaxKind.StaticKeyword) && IsPureAuto(prop):
+                    var propValue = prop.Initializer is { } propInit
+                        ? _converter.ConvertExpression(propInit.Value, prop.Type.ToString())
+                        : TypeDeclarationExtensions.DefaultFor(prop.Type);
+                    sb.Append($"static {prop.Identifier.Text.ToCamelCase()} = {propValue}; ");
+                    break;
             }
         }
 
@@ -294,7 +342,9 @@ public class RecordTypeEmitter
                 sb.Append($"{prefix}get {propertyName}() {{ ")
                   .Append(Unwrap(_converter.Convert(block)))
                   .Append(" } ");
+                continue;
             }
+
         }
 
         // .NET record ToString ("Name { X = …, Y = … }") unless the user overrode it.
