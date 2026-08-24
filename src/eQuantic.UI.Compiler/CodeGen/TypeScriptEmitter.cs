@@ -1616,12 +1616,24 @@ public class TypeScriptEmitter
             EmitExtensionBlocks(cls, c);
     }
 
-    /// <summary>An operator's body in either spelling, or null where it has neither (a partial
-    /// declaration) and there is nothing to write.</summary>
-    private string? OperatorBody(BaseMethodDeclarationSyntax op) =>
-        op.ExpressionBody is { } expression
+    /// <summary>
+    /// An operator's body in either spelling, or null where it has neither (a partial declaration)
+    /// and there is nothing to write.
+    /// <para>
+    /// The hoisted locals come first, as they do for an ordinary method: `int.TryParse(s, out var n)`
+    /// inside an operator emits `n = …` with nothing declaring `n`, and an ES module is strict, so
+    /// the operator threw a ReferenceError the first time it ran instead of returning a value.
+    /// </para>
+    /// </summary>
+    private string? OperatorBody(BaseMethodDeclarationSyntax op)
+    {
+        var body = op.ExpressionBody is { } expression
             ? ExpressionBodyReturn(expression.Expression)
             : op.Body is { } block ? StripJsBraces(_converter.Convert(block)) : null;
+        return body is null
+            ? null
+            : OutParameters.HoistedLocals(op.Body ?? (SyntaxNode?)op.ExpressionBody) + body;
+    }
 
     /// <summary>
     /// C# 14 extension blocks (<c>extension(T receiver) { … }</c>): every member lowers to a

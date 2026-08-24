@@ -73,4 +73,44 @@ public class PlainClassOperatorTests
         names.Where(n => record.Contains($"static {n}("))
             .Should().BeEquivalentTo(names.Where(n => plain.Contains($"static {n}(")));
     }
+
+    private static string OutVarSource(string keyword) => $$"""
+        using eQuantic.UI.Core;
+        using eQuantic.UI.Primitives;
+
+        public sealed {{keyword}} Tag
+        {
+            public string Label { get; init; } = "";
+
+            public static Tag operator +(Tag a, Tag b)
+            {
+                int.TryParse(a.Label, out var n);
+                return new Tag { Label = (n + 1).ToString() };
+            }
+        }
+
+        [Page("/tag")]
+        public sealed class TagPage : StatelessComponent
+        {
+            public override VisualNode Build(ComponentContext context)
+                => new Text("x", TypeRole.BodyM);
+        }
+        """;
+
+    [Theory]
+    [InlineData("record")]
+    [InlineData("class")]
+    public void AnOperatorBodyDeclaresItsOutVariables(string keyword)
+    {
+        var twin = new ComponentCompiler()
+            .CompileSource(OutVarSource(keyword), "Tag.cs")
+            .Single(r => r.ComponentName == "Tag").TypeScript;
+
+        // `out var n` emitted `n = parseInt(…)` with nothing declaring n. An ES module is strict, so
+        // the operator threw a ReferenceError the first time it ran rather than returning a value —
+        // and both emitters had it, which is why both are pinned here.
+        var opAdd = twin[twin.IndexOf("opAdd", StringComparison.Ordinal)..];
+        opAdd[..opAdd.IndexOf("return", StringComparison.Ordinal)]
+            .Should().Contain("let n", "the hoisted declaration comes before the body that assigns it");
+    }
 }
