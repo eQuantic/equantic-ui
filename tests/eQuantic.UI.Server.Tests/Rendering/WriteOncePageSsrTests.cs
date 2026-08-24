@@ -61,6 +61,47 @@ public class WriteOncePageSsrTests
     }
 
     /// <summary>
+    /// A page that TAKES A DEPENDENCY and prefetches — the ordinary shape of a real page, and the
+    /// one that used to lose everything. The captured field is an interface the client resolves for
+    /// itself, so it belongs nowhere near the payload.
+    /// </summary>
+    private interface IPageAmbient;
+
+    /// <summary>
+    /// What a real ambient looks like to a serializer: it refers back to itself, exactly as an
+    /// IHttpContextAccessor reaches a request that reaches it. Writing one throws.
+    /// </summary>
+    private sealed class RequestAmbient : IPageAmbient
+    {
+        public RequestAmbient Current => this;
+    }
+
+    /// <summary>
+    /// The ambient that serializes PERFECTLY, and is the reason dropping-on-failure is not enough:
+    /// nothing throws, so nothing is dropped, and a server-side value is published in the HTML of
+    /// every page that took the dependency.
+    /// </summary>
+    private sealed class ConfiguredAmbient : IPageAmbient
+    {
+        public string ConnectionString => "Server=db;Password=hunter2";
+    }
+
+    [Page("/prefetch-with-dependency")]
+    private sealed class PrefetchWithDependencyPage(IPageAmbient? ambient = null)
+        : Primitives.StatelessComponent, IServerPrefetch
+    {
+        private readonly IPageAmbient? _injected = ambient;
+        private long _downloads = 627_000;
+
+        [ServerOnly]
+        public async Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+            => _downloads = await services.GetRequiredService<ITestStats>().GetAsync(cancellationToken);
+
+        public override VisualNode Build(ComponentContext context) =>
+            new Text($"Downloads: {_downloads}", TypeRole.Heading);
+    }
+
+    /// <summary>
     /// A page that serves MANY documents from one route — a docs slug, a product id — and describes
     /// itself from what it loaded. This is the shape that made the ordering matter.
     /// </summary>
@@ -315,6 +356,50 @@ public class WriteOncePageSsrTests
         // render starts from the server's value instead of flashing the default.
         result.SerializedState.Should().NotBeNull()
             .And.Contain("_downloads").And.Contain("675617");
+    }
+
+    [Fact]
+    public async Task ADependencyDoesNotSilenceTheWholePayload()
+    {
+        var service = CreateService();
+        var context = new DefaultHttpContext
+        {
+            RequestServices = new ServiceCollection()
+                .AddSingleton<ITestStats, TestStats>()
+                .AddSingleton<IPageAmbient, RequestAmbient>()
+                .BuildServiceProvider(),
+        };
+
+        var result = await service.RenderPageAsync(nameof(PrefetchWithDependencyPage), context);
+
+        // One unused constructor dependency used to take the ENTIRE payload with it: the interface
+        // field threw, the catch returned null, and the page the server had loaded correctly reset
+        // itself to its defaults the instant it hydrated. What the prefetch loaded must survive,
+        // and the dependency must not be in there at all — the client resolves that one itself.
+        result.SerializedState.Should().NotBeNull()
+            .And.Contain("675617").And.NotContain("_injected");
+    }
+
+    [Fact]
+    public async Task ADependencyNeverRidesThePayload()
+    {
+        var service = CreateService();
+        var context = new DefaultHttpContext
+        {
+            RequestServices = new ServiceCollection()
+                .AddSingleton<ITestStats, TestStats>()
+                .AddSingleton<IPageAmbient, ConfiguredAmbient>()
+                .BuildServiceProvider(),
+        };
+
+        var result = await service.RenderPageAsync(nameof(PrefetchWithDependencyPage), context);
+
+        // This one hurts more than losing the payload, because nothing looks wrong. The ambient
+        // writes cleanly, so no guard that only drops FAILURES would catch it, and whatever the
+        // service holds is published in the page source. A dependency is not state: the client
+        // resolves it, so it is never handed over — serializable or not.
+        result.SerializedState.Should().NotBeNull().And.Contain("675617")
+            .And.NotContain("_injected").And.NotContain("hunter2");
     }
 
     [Fact]
