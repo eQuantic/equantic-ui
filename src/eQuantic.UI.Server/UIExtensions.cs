@@ -651,6 +651,39 @@ public static class UIExtensions
         var ssrEnabled = false;
         string? serializedState = null;
 
+        // ONE adoption for BOTH doors to the same page: the mapped route, and the fallback every
+        // URL that matched nothing comes through. They were two copies of this and drifted — the
+        // fallback quietly kept neither the payload nor the assets, so a not-found page that loads
+        // its branding served it and then hydrated blank, unstyled. A local function instead of a
+        // second copy, because the next thing a render result carries has one place to be adopted.
+        void AdoptSsr(Rendering.ServerRenderResult adopted)
+        {
+            ssrContent = adopted.Html!;
+            vectorDefs = adopted.VectorDefs;
+            ssrEnabled = true;
+            serializedState = adopted.SerializedState;
+
+            if (adopted.Metadata != null)
+            {
+                if (!string.IsNullOrEmpty(adopted.Metadata.Title))
+                    metadata.Title = adopted.Metadata.Title;
+
+                foreach (var tag in adopted.Metadata.Tags)
+                    metadata.AddOrUpdate(tag);
+            }
+
+            // The page's atomic CSS rides here. Without it the fallback served the right markup
+            // with none of its classes defined.
+            if (adopted.Assets != null)
+            {
+                foreach (var tag in adopted.Assets.RenderTags())
+                {
+                    if (!headTags.Contains(tag))
+                        headTags.Add(tag);
+                }
+            }
+        }
+
         if (pageName != null && options.EnableSsr)
         {
             var renderingService = context.RequestServices.GetService<IServerRenderingService>();
@@ -661,37 +694,17 @@ public static class UIExtensions
                     var result = await renderingService.RenderPageAsync(pageName, context);
                     if (result.Success && result.Html != null)
                     {
-                        ssrContent = result.Html;
-                        vectorDefs = result.VectorDefs;
-                        ssrEnabled = true;
-                        serializedState = result.SerializedState;
+                        AdoptSsr(result);
 
                         // What the PAGE asked to answer with (IHandleStatus). A route that matched
                         // while its content did not exist renders the right thing for a reader and
                         // must not tell every machine the request succeeded — a crawler would index
                         // the empty page and a link checker would call the site healthy.
+                        //
+                        // This one stays HERE and not in AdoptSsr: the fallback's status is already
+                        // 404 from the endpoint, and a page answering 200 must not raise it back.
                         if (result.StatusCode != StatusCodes.Status200OK)
                             context.Response.StatusCode = result.StatusCode;
-
-                        // Merge metadata from SSR
-                        if (result.Metadata != null)
-                        {
-                            if (!string.IsNullOrEmpty(result.Metadata.Title))
-                                metadata.Title = result.Metadata.Title;
-
-                            foreach(var tag in result.Metadata.Tags)
-                                metadata.AddOrUpdate(tag);
-                        }
-
-                        // Merge asset dependencies from components
-                        if (result.Assets != null)
-                        {
-                            foreach (var tag in result.Assets.RenderTags())
-                            {
-                                if (!headTags.Contains(tag))
-                                    headTags.Add(tag);
-                            }
-                        }
                     }
                 }
                 catch (Exception ex)
@@ -739,20 +752,33 @@ public static class UIExtensions
                             var result = await renderingService.RenderPageAsync(pageName, context);
                             if (result.Success && result.Html != null)
                             {
-                                ssrContent = result.Html;
-                        vectorDefs = result.VectorDefs;
-                                ssrEnabled = true;
-                                if (!string.IsNullOrEmpty(result.Metadata?.Title)) metadata.Title = result.Metadata.Title;
+                                AdoptSsr(result);
                             }
                         }
                     }
-                    catch { /* Ignore 404 render errors */ }
+                    catch (Exception ex)
+                    {
+                        // The 404 page failing must not fail the 404, so this still swallows — but
+                        // SILENTLY is how the missing line above survived: a page that threw here
+                        // looked exactly like a page that rendered.
+                        context.RequestServices.GetService<ILoggerFactory>()?
+                            .CreateLogger("eQuantic.UI.NotFound")
+                            .LogWarning(ex, "The registered /404 page failed to render; serving the shell without it");
+                    }
                 }
             }
         }
 
-        // 500 Error Handling during SSR
-        if (!ssrEnabled && pageName != null && options.EnableSsr)
+        // 500 Error Handling during SSR.
+        //
+        // NOT when the answer is already 404. Reaching here with a 404 means the app's own
+        // not-found page failed to render, and the request is still what it was: a URL that
+        // matches nothing. Upgrading it to 500 tells every crawler and link checker the server
+        // broke, when what happened is the resource does not exist — and it undoes the contract
+        // the branch above exists to hold, that a 404 page failing must not fail the 404.
+        var alreadyNotFound = context.Response.StatusCode == StatusCodes.Status404NotFound;
+
+        if (!ssrEnabled && pageName != null && options.EnableSsr && !alreadyNotFound)
         {
             // If we are here, it means SSR failed or was disabled.
             // We need to check if it failed due to an exception (which we can't easily track from here without earlier logic change)
@@ -776,10 +802,9 @@ public static class UIExtensions
                              context.Response.StatusCode = 500;
                              pageName = errorPageName;
                              pageValue = $"'{pageName}'";
-                             ssrContent = result.Html;
-                        vectorDefs = result.VectorDefs;
-                             ssrEnabled = true; // Enabled for the error page
-                             if (!string.IsNullOrEmpty(result.Metadata?.Title)) metadata.Title = result.Metadata.Title;
+                             // The THIRD door to a rendered page, and it was drifting like the other
+                             // two: an error page that loads its own branding kept none of it.
+                             AdoptSsr(result);
                          }
                     }
                 }
