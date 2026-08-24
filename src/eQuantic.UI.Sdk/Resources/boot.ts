@@ -108,6 +108,10 @@ export async function boot(): Promise<void> {
     return;
   }
 
+  // Read BEFORE anything can touch the root: whether the server sent a rendered page is what
+  // decides, further down, that a failure degrades instead of blanking what the reader can see.
+  const servedContent = root.children.length > 0;
+
   try {
     const config = window.__EQ_CONFIG ?? {};
     const pageName = resolvePageName(config);
@@ -201,6 +205,13 @@ export async function boot(): Promise<void> {
       (window as unknown as { __eqRouter?: Router }).__eqRouter = router;
     }
   } catch (error) {
+    // Same rule as loadAndMountPage: what the server rendered stays. By the time boot throws, the
+    // reader is already looking at the page, and swapping it for a 500 is the client making the
+    // page worse than it found it.
+    if (servedContent && !isDev()) {
+      console.error('eQuantic.UI: boot failed. Serving the server-rendered page as-is.', error);
+      return;
+    }
     renderError(root, error as Error);
   }
 }
@@ -289,6 +300,21 @@ async function loadAndMountPage(
 
   const ComponentClass = await loadPageModule(pageName, config);
   if (!ComponentClass) {
+    // DEGRADE, never destroy. The server rendered this page correctly and it is on screen: a
+    // bundle that did not arrive costs interactivity, not content. Replacing it with a 404 tells
+    // the reader the page does not exist while they are looking at it — and a chunk lost to a CDN
+    // hiccup or a deploy race is exactly when that happens.
+    //
+    // In DEV the loud page stays, because there it is the feature: a developer whose page silently
+    // renders without behaving would hunt for hours. isDev() is the same seam the error overlay
+    // and the boot logs already use.
+    if (hasSSRContent && !isDev()) {
+      console.error(
+        `eQuantic.UI: '${pageName}' did not load. Serving the server-rendered page without ` +
+          `interactivity — nothing on it will respond.`,
+      );
+      return;
+    }
     render404(root, pageName);
     return;
   }
