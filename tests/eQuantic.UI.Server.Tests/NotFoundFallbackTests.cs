@@ -46,9 +46,9 @@ public class NotFoundFallbackTests
 
     /// <summary>Registered only by the test that wants the 404 page to fail, so the page can break
     /// on demand without a static flag that leaks into every other test in the class.</summary>
-    private interface IBreakTheNotFoundPage;
+    private interface IBreakTheNotFoundPage { }
 
-    private sealed class BreakIt : IBreakTheNotFoundPage;
+    private sealed class BreakIt : IBreakTheNotFoundPage { }
 
     /// <summary>The app's 500 page, so the error path has somewhere to go.</summary>
     [eQuantic.UI.Core.Page("/500")]
