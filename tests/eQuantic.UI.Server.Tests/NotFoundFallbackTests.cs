@@ -16,15 +16,7 @@ public class NotFoundFallbackTests
 {
     /// <summary>An app page occupying a normal route, so known-route behavior is contrasted.</summary>
     [eQuantic.UI.Core.Page("/known")]
-    public class KnownPage { 
-    /// <summary>The document head, which is where everything a render result contributes lands.</summary>
-    private static string Head(string html)
-    {
-        var start = html.IndexOf("<head", StringComparison.OrdinalIgnoreCase);
-        var end = html.IndexOf("</head>", StringComparison.OrdinalIgnoreCase);
-        return start >= 0 && end > start ? html[start..end] : html;
-    }
-}
+    public class KnownPage { }
 
     /// <summary>
     /// The app's branded not-found page. A REAL component that prefetches, because the branding on
