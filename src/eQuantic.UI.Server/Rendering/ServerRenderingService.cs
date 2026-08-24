@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -436,9 +437,6 @@ public class ServerRenderingService : IServerRenderingService
     }
 
     /// <summary>
-    /// Serializes component state to JSON for client-side hydration.
-    /// </summary>
-    /// <summary>
     /// An interface from anywhere but System — the SAME rule the compiler applies when it decides
     /// a constructor parameter is a capability to resolve rather than a value to pass. The
     /// normative statement is <c>CapabilityRule.IsDependency</c> in <c>src/Shared</c>; it reads a
@@ -457,6 +455,9 @@ public class ServerRenderingService : IServerRenderingService
         && type.Namespace is { } space
         && !space.StartsWith("System", StringComparison.Ordinal);
 
+    /// <summary>
+    /// Serializes component state to JSON for client-side hydration.
+    /// </summary>
     private string? SerializeState(object state)
     {
         try
@@ -544,7 +545,11 @@ public class ServerRenderingService : IServerRenderingService
             {
                 try
                 {
-                    System.Text.Json.JsonSerializer.Serialize(value, options);
+                    // To NOWHERE. The question is only "does this throw?", and answering it with
+                    // Serialize(value) builds a string per field per render that is read once and
+                    // dropped — on a page whose payload is then written a second time anyway.
+                    using var writer = new System.Text.Json.Utf8JsonWriter(Stream.Null);
+                    System.Text.Json.JsonSerializer.Serialize(writer, value, options);
                 }
                 catch (Exception ex)
                 {

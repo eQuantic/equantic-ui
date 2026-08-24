@@ -65,7 +65,7 @@ public class WriteOncePageSsrTests
     /// one that used to lose everything. The captured field is an interface the client resolves for
     /// itself, so it belongs nowhere near the payload.
     /// </summary>
-    private interface IPageAmbient;
+    private interface IPageAmbient { }
 
     /// <summary>
     /// What a real ambient looks like to a serializer: it refers back to itself, exactly as an
