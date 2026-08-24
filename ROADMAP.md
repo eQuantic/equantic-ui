@@ -291,6 +291,23 @@ culture-aware FORMATTING subset and 3+ form plurals) in `docs/I18N-PLAN.md`. 202
 now also covers the SDK's OWN component strings (D14/W8 — a11y announcements were hardcoded
 English), the `CurrentCulture`/`CurrentUICulture` pair, and `<html lang>` from the request culture.
 
+## Track M — Email rendering
+
+Added 2026-08-24 (Edgar's question): author an email in C# with the same components a page is
+written with, and get back HTML an email client will actually render. Email is a THIRD REALIZER
+beside web and Photon — a target whose engine is merely very restrictive, which is architecturally
+the same shape as a target with no DOM, so nothing in the authoring layer changes.
+
+Two pieces already exist: `WebRealizer.Lower(..., styles: null)` keeps styles INLINE instead of
+atomising them into classes, and `HtmlRenderer.RenderNode` turns the lowered tree into a string.
+What is missing is the medium — nested-table layout for Outlook's Word engine, literal colors
+instead of custom properties, absolute image URLs, a 600px shell, and a fence over everything an
+email cannot do (`ScrollView`, `Pressable`, hover, `position: absolute`).
+
+Full design, slices and fences: wiki **[Email Rendering](https://github.com/eQuantic/equantic-ui/wiki/EmailRealizer)**.
+M0 MEASURES what the two existing calls already survive in Gmail, Outlook and Apple Mail before M1
+builds anything — half a day, no new code, and it decides the size of the rest.
+
 ## Definition of "production-ready" (per pillar)
 - **0 JS**: any unsupported C# fails the build with a clear message; conformance suite green; C#
   debuggable in the browser.
