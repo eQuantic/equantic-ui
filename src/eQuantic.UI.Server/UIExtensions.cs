@@ -651,6 +651,39 @@ public static class UIExtensions
         var ssrEnabled = false;
         string? serializedState = null;
 
+        // ONE adoption for BOTH doors to the same page: the mapped route, and the fallback every
+        // URL that matched nothing comes through. They were two copies of this and drifted — the
+        // fallback quietly kept neither the payload nor the assets, so a not-found page that loads
+        // its branding served it and then hydrated blank, unstyled. A local function instead of a
+        // second copy, because the next thing a render result carries has one place to be adopted.
+        void AdoptSsr(Rendering.ServerRenderResult adopted)
+        {
+            ssrContent = adopted.Html!;
+            vectorDefs = adopted.VectorDefs;
+            ssrEnabled = true;
+            serializedState = adopted.SerializedState;
+
+            if (adopted.Metadata != null)
+            {
+                if (!string.IsNullOrEmpty(adopted.Metadata.Title))
+                    metadata.Title = adopted.Metadata.Title;
+
+                foreach (var tag in adopted.Metadata.Tags)
+                    metadata.AddOrUpdate(tag);
+            }
+
+            // The page's atomic CSS rides here. Without it the fallback served the right markup
+            // with none of its classes defined.
+            if (adopted.Assets != null)
+            {
+                foreach (var tag in adopted.Assets.RenderTags())
+                {
+                    if (!headTags.Contains(tag))
+                        headTags.Add(tag);
+                }
+            }
+        }
+
         if (pageName != null && options.EnableSsr)
         {
             var renderingService = context.RequestServices.GetService<IServerRenderingService>();
@@ -661,37 +694,17 @@ public static class UIExtensions
                     var result = await renderingService.RenderPageAsync(pageName, context);
                     if (result.Success && result.Html != null)
                     {
-                        ssrContent = result.Html;
-                        vectorDefs = result.VectorDefs;
-                        ssrEnabled = true;
-                        serializedState = result.SerializedState;
+                        AdoptSsr(result);
 
                         // What the PAGE asked to answer with (IHandleStatus). A route that matched
                         // while its content did not exist renders the right thing for a reader and
                         // must not tell every machine the request succeeded — a crawler would index
                         // the empty page and a link checker would call the site healthy.
+                        //
+                        // This one stays HERE and not in AdoptSsr: the fallback's status is already
+                        // 404 from the endpoint, and a page answering 200 must not raise it back.
                         if (result.StatusCode != StatusCodes.Status200OK)
                             context.Response.StatusCode = result.StatusCode;
-
-                        // Merge metadata from SSR
-                        if (result.Metadata != null)
-                        {
-                            if (!string.IsNullOrEmpty(result.Metadata.Title))
-                                metadata.Title = result.Metadata.Title;
-
-                            foreach(var tag in result.Metadata.Tags)
-                                metadata.AddOrUpdate(tag);
-                        }
-
-                        // Merge asset dependencies from components
-                        if (result.Assets != null)
-                        {
-                            foreach (var tag in result.Assets.RenderTags())
-                            {
-                                if (!headTags.Contains(tag))
-                                    headTags.Add(tag);
-                            }
-                        }
                     }
                 }
                 catch (Exception ex)
@@ -739,15 +752,7 @@ public static class UIExtensions
                             var result = await renderingService.RenderPageAsync(pageName, context);
                             if (result.Success && result.Html != null)
                             {
-                                ssrContent = result.Html;
-                                vectorDefs = result.VectorDefs;
-                                ssrEnabled = true;
-                                // The SAME page reached by an unmatched URL instead of by /404, so it
-                                // hydrates from the same payload. Without this line the branches
-                                // differed by one: /404 rendered and kept its prefetched state, and
-                                // /anything-else rendered identically and then hydrated from nothing.
-                                serializedState = result.SerializedState;
-                                if (!string.IsNullOrEmpty(result.Metadata?.Title)) metadata.Title = result.Metadata.Title;
+                                AdoptSsr(result);
                             }
                         }
                     }

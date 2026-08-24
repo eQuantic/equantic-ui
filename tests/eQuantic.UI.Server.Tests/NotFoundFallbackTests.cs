@@ -16,7 +16,15 @@ public class NotFoundFallbackTests
 {
     /// <summary>An app page occupying a normal route, so known-route behavior is contrasted.</summary>
     [eQuantic.UI.Core.Page("/known")]
-    public class KnownPage { }
+    public class KnownPage { 
+    /// <summary>The document head, which is where everything a render result contributes lands.</summary>
+    private static string Head(string html)
+    {
+        var start = html.IndexOf("<head", StringComparison.OrdinalIgnoreCase);
+        var end = html.IndexOf("</head>", StringComparison.OrdinalIgnoreCase);
+        return start >= 0 && end > start ? html[start..end] : html;
+    }
+}
 
     /// <summary>
     /// The app's branded not-found page. A REAL component that prefetches, because the branding on
@@ -47,8 +55,9 @@ public class NotFoundFallbackTests
         builder.WebHost.UseTestServer();
         builder.Services.AddUI(options =>
         {
-            // SSR off: these tests pin the ROUTING contract (status + which page boots), not
-            // rendering. The test page types aren't real components and have no compiled bundles.
+            // SSR OFF by default: most of these pin the ROUTING contract — the status, and which
+            // page boots — and the routing pages are not real components. The payload test turns it
+            // on, because what it compares is what SSR hands over.
             options.EnableSsr = ssr;
             if (scanTestPages) options.ScanAssembly(Assembly.GetExecutingAssembly());
         });
@@ -116,5 +125,19 @@ public class NotFoundFallbackTests
         mappedHtml.Should().Contain("__INITIAL_STATE__").And.Contain("northwind-brand");
         fallbackHtml.Should().Contain("__INITIAL_STATE__").And.Contain("northwind-brand");
         fallback.StatusCode.Should().Be(HttpStatusCode.NotFound, "branding does not make a page found");
+
+        // And the HEAD, not only the payload: the page's atomic CSS rides in the render result's
+        // assets, so a fallback that adopts less of the result serves the right markup with none of
+        // its classes defined. Comparing the <head> is what makes "one page, two doors" testable at
+        // all — anything a render result grows later is covered by the same line.
+        Head(mappedHtml).Should().Be(Head(fallbackHtml), "one page cannot have two heads");
+    }
+
+    /// <summary>The document head, which is where everything a render result contributes lands.</summary>
+    private static string Head(string html)
+    {
+        var start = html.IndexOf("<head", StringComparison.OrdinalIgnoreCase);
+        var end = html.IndexOf("</head>", StringComparison.OrdinalIgnoreCase);
+        return start >= 0 && end > start ? html[start..end] : html;
     }
 }
