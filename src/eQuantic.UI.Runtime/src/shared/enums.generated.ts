@@ -102,7 +102,7 @@ export type SheetEditKindValue =
 
 export type SheetMotionValue = 'cell' | 'dataEdge' | 'rowBoundary' | 'sheetBoundary';
 
-export type SizeKindValue = 'hug' | 'fill' | 'fixed';
+export type SizeKindValue = 'hug' | 'fill' | 'fixed' | 'windowMinus';
 
 export type SizeVariantValue = 'small' | 'medium' | 'large' | 'xLarge';
 

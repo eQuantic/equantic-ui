@@ -194,8 +194,9 @@ export interface BoxStyleValue {
   height?: SizeValueValue;
   minWidth?: number;
   minHeight?: number;
-  maxWidth?: number;
-  maxHeight?: number;
+  /** A cap: `SizeValue` (the C# twin), or a bare number from a payload written before it was one. */
+  maxWidth?: SizeValueValue | number;
+  maxHeight?: SizeValueValue | number;
   padding?: EdgeInsetsValue;
   background?: ColorTokenValue | null;
   cornerRadius?: CornerRadiiValue;
