@@ -769,8 +769,16 @@ public static class UIExtensions
             }
         }
 
-        // 500 Error Handling during SSR
-        if (!ssrEnabled && pageName != null && options.EnableSsr)
+        // 500 Error Handling during SSR.
+        //
+        // NOT when the answer is already 404. Reaching here with a 404 means the app's own
+        // not-found page failed to render, and the request is still what it was: a URL that
+        // matches nothing. Upgrading it to 500 tells every crawler and link checker the server
+        // broke, when what happened is the resource does not exist — and it undoes the contract
+        // the branch above exists to hold, that a 404 page failing must not fail the 404.
+        var alreadyNotFound = context.Response.StatusCode == StatusCodes.Status404NotFound;
+
+        if (!ssrEnabled && pageName != null && options.EnableSsr && !alreadyNotFound)
         {
             // If we are here, it means SSR failed or was disabled.
             // We need to check if it failed due to an exception (which we can't easily track from here without earlier logic change)
@@ -794,10 +802,9 @@ public static class UIExtensions
                              context.Response.StatusCode = 500;
                              pageName = errorPageName;
                              pageValue = $"'{pageName}'";
-                             ssrContent = result.Html;
-                        vectorDefs = result.VectorDefs;
-                             ssrEnabled = true; // Enabled for the error page
-                             if (!string.IsNullOrEmpty(result.Metadata?.Title)) metadata.Title = result.Metadata.Title;
+                             // The THIRD door to a rendered page, and it was drifting like the other
+                             // two: an error page that loads its own branding kept none of it.
+                             AdoptSsr(result);
                          }
                     }
                 }

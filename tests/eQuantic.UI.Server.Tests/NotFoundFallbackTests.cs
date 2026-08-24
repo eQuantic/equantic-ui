@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Reflection;
 using Microsoft.AspNetCore.Builder;
@@ -32,6 +33,9 @@ public class NotFoundFallbackTests
         [eQuantic.UI.Core.ServerOnly]
         public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
         {
+            if (services.GetService(typeof(IBreakTheNotFoundPage)) != null)
+                throw new InvalidOperationException("the branded 404 page could not load its branding");
+
             _brand = "northwind-brand";
             return Task.CompletedTask;
         }
@@ -40,8 +44,22 @@ public class NotFoundFallbackTests
             new eQuantic.UI.Primitives.Text(_brand, eQuantic.UI.Primitives.TypeRole.Heading);
     }
 
+    /// <summary>Registered only by the test that wants the 404 page to fail, so the page can break
+    /// on demand without a static flag that leaks into every other test in the class.</summary>
+    private interface IBreakTheNotFoundPage;
+
+    private sealed class BreakIt : IBreakTheNotFoundPage;
+
+    /// <summary>The app's 500 page, so the error path has somewhere to go.</summary>
+    [eQuantic.UI.Core.Page("/500")]
+    public class AppError : eQuantic.UI.Primitives.StatelessComponent
+    {
+        public override eQuantic.UI.Primitives.VisualNode Build(eQuantic.UI.Primitives.ComponentContext context) =>
+            new eQuantic.UI.Primitives.Text("something broke", eQuantic.UI.Primitives.TypeRole.Heading);
+    }
+
     private static async Task<(WebApplication App, HttpClient Client)> StartAppAsync(
-        bool scanTestPages, bool ssr = false)
+        bool scanTestPages, bool ssr = false, bool breakNotFound = false)
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
@@ -53,6 +71,8 @@ public class NotFoundFallbackTests
             options.EnableSsr = ssr;
             if (scanTestPages) options.ScanAssembly(Assembly.GetExecutingAssembly());
         });
+
+        if (breakNotFound) builder.Services.AddSingleton<IBreakTheNotFoundPage, BreakIt>();
 
         var app = builder.Build();
         app.MapUI();
@@ -123,6 +143,21 @@ public class NotFoundFallbackTests
         // its classes defined. Comparing the <head> is what makes "one page, two doors" testable at
         // all — anything a render result grows later is covered by the same line.
         Head(mappedHtml).Should().Be(Head(fallbackHtml), "one page cannot have two heads");
+    }
+
+    [Fact]
+    public async Task A404PageThatFailsStillAnswers404()
+    {
+        var (app, client) = await StartAppAsync(scanTestPages: true, ssr: true, breakNotFound: true);
+        await using var _ = app;
+
+        var response = await client.GetAsync("/definitely-not-a-page");
+
+        // The request has not changed: it is still a URL that matches nothing. The app's own 404
+        // page failing is the SERVER's problem and not the reader's, and answering 500 tells every
+        // crawler and link checker the server broke — which also undoes the whole reason the
+        // fallback swallows that failure in the first place.
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     /// <summary>The document head, which is where everything a render result contributes lands.</summary>
