@@ -165,4 +165,165 @@ public class RecordStaticMemberTests
         // and silently drop the halving — the worst kind of wrong, because it looks like it works.
         ShapesTwin().Should().NotContain("static half = ");
     }
+
+    /// <summary>One SHAPE per fixture: a fixture carrying both an operator and a conversion proves
+    /// neither arm, because either one alone keeps the type discoverable.</summary>
+    private static string OnlySurface(string member) => $$"""
+        using eQuantic.UI.Core;
+        using eQuantic.UI.Primitives;
+
+        public sealed record Money
+        {
+            {{member}}
+        }
+
+        [Page("/money")]
+        public sealed class MoneyPage : StatelessComponent
+        {
+            public override VisualNode Build(ComponentContext context)
+                => new Text("x", TypeRole.BodyM);
+        }
+        """;
+
+    [Fact]
+    public void ARecordWhoseOnlySurfaceIsAnOPERATORStillGetsATwin()
+    {
+        // Emit writes an operator as a static method and a call site lowers to it, so a type whose
+        // only surface is one still needs its twin.
+        var twin = new ComponentCompiler()
+            .CompileSource(OnlySurface("public static Money operator +(Money a, Money b) => a;"), "Money.cs")
+            .Single(r => r.ComponentName == "Money").TypeScript;
+
+        twin.Should().Contain("static opAdd(");
+    }
+
+    [Fact]
+    public void ARecordWhoseOnlySurfaceIsA_CONVERSION_StillGetsATwin()
+    {
+        var twin = new ComponentCompiler()
+            .CompileSource(OnlySurface("public static implicit operator Money(int v) => new();"), "Money.cs")
+            .Single(r => r.ComponentName == "Money").TypeScript;
+
+        // And under the name the CALL SITE will use: both sides go through ConversionNameFor now,
+        // so a qualified declaration cannot make the emitted method and the call disagree.
+        twin.Should().Contain("static fromInt(");
+    }
+
+    [Fact]
+    public void AQualifiedConversionIsNamedTheWayItIsCalled()
+    {
+        const string source = """
+            using eQuantic.UI.Core;
+            using eQuantic.UI.Primitives;
+
+            namespace App;
+
+            public sealed record Money
+            {
+                public static implicit operator global::App.Money(int v) => new();
+            }
+            """;
+
+        // Written with a qualified name, the syntax says "global::App.Money" and the simple name
+        // says "Money" — the emitter used to read that as a conversion AWAY from the type and emit
+        // the wrong method, while the call site read the symbol and called fromInt. Undefined, with
+        // a green build.
+        new ComponentCompiler().CompileSource(source, "Money.cs")
+            .Single(r => r.ComponentName == "Money").TypeScript
+            .Should().Contain("static fromInt(");
+    }
+
+    [Fact]
+    public void AStaticCharOrEnumTakesTheDefaultDOTNETGivesIt()
+    {
+        const string source = """
+            using eQuantic.UI.Core;
+            using eQuantic.UI.Primitives;
+
+            public enum Kind { Low, High }
+
+            public sealed record Marks(string Tag)
+            {
+                public static char Sep { get; set; }
+                public static Kind Level { get; set; }
+            }
+
+            [Page("/marks")]
+            public sealed class MarksPage : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context)
+                    => new Text(Marks.Sep.ToString(), TypeRole.BodyM);
+            }
+            """;
+
+        var twin = new ComponentCompiler().CompileSource(source, "Marks.cs")
+            .Single(r => r.ComponentName == "Marks").TypeScript;
+
+        // A syntax-only default cannot see through a NAME: it answers null for both, where .NET
+        // gives '\0' and the zero-valued member. The symbol can, and the server would have said so.
+        twin.Should().Contain(@"static sep = '\0'");
+        twin.Should().Contain("static level = 'low'");
+    }
+
+    [Fact]
+    public void AnOperatorEmitCannotWriteDoesNotConjureATwin()
+    {
+        const string source = """
+            using eQuantic.UI.Core;
+            using eQuantic.UI.Primitives;
+
+            public sealed record Flags
+            {
+                public static Flags operator &(Flags a, Flags b) => a;
+            }
+
+            [Page("/flags")]
+            public sealed class FlagsPage : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context)
+                    => new Text("x", TypeRole.BodyM);
+            }
+            """;
+
+        // Emit has no method name for `&`, so it writes nothing for this operator and no call site
+        // can lower it either. Discovery must answer the same question Emit does — saying yes here
+        // would emit an empty module standing in for an operator nobody can use.
+        new ComponentCompiler().CompileSource(source, "Flags.cs")
+            .Should().NotContain(r => r.ComponentName == "Flags");
+    }
+
+    [Fact]
+    public void AConversionFromAConstructedTypeIsNamedWithAValidIdentifier()
+    {
+        const string source = """
+            using System.Collections.Generic;
+            using eQuantic.UI.Core;
+            using eQuantic.UI.Primitives;
+
+            public sealed record Bag
+            {
+                public static implicit operator Bag(List<int> v) => new();
+            }
+
+            [Page("/bag")]
+            public sealed class BagPage : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context)
+                {
+                    Bag b = new List<int>();
+                    return new Text("x", TypeRole.BodyM);
+                }
+            }
+            """;
+
+        var emitted = new ComponentCompiler().CompileSource(source, "Bag.cs").ToList();
+        var twin = emitted.Single(r => r.ComponentName == "Bag").TypeScript;
+        var page = emitted.Single(r => r.ComponentName == "BagPage").TypeScript;
+
+        // `List<int>` reached the namer verbatim and produced `fromList<int>` — written as a method
+        // name and called as one, which no JavaScript parser accepts. Both sides go through the one
+        // namer, so both had it, and the page simply did not run.
+        twin.Should().Contain("static fromListInt(").And.NotContain("fromList<");
+        page.Should().Contain("Bag.fromListInt(").And.NotContain("fromList<");
+    }
 }

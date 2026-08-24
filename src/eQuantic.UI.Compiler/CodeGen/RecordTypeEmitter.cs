@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Strategies;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -40,6 +41,19 @@ public class RecordTypeEmitter
                 x.IsKind(SyntaxKind.StaticKeyword) || x.IsKind(SyntaxKind.ConstKeyword)),
             PropertyDeclarationSyntax p => p.Modifiers.Any(SyntaxKind.StaticKeyword),
             MethodDeclarationSyntax me => me.Modifiers.Any(SyntaxKind.StaticKeyword),
+            // Emit writes these as static methods (`Money.opAdd`, `Money.fromInt`), and a call site
+            // lowers to them — so a type whose only surface is one of them is a type whose twin must
+            // exist.
+            //
+            // The operator asks the SAME mapping Emit asks, because Emit skips the tokens it has no
+            // name for (`&`, `|`, `^`, shifts, `++`, `true`/`false`). Discovery answering yes where
+            // Emit writes nothing would produce an empty twin for a type that has no lowering
+            // either — a module standing in for an operator no call site can use.
+            OperatorDeclarationSyntax op => (op.ParameterList.Parameters.Count == 1
+                ? UnaryOperatorMethodName(op.OperatorToken.Text)
+                : OperatorMethodName(op.OperatorToken.Text)) is not null,
+            // Every conversion IS written — that loop has no such skip.
+            ConversionOperatorDeclarationSyntax => true,
             _ => false,
         });
 
@@ -54,6 +68,17 @@ public class RecordTypeEmitter
             ? model.Compilation.GetSemanticModel(node.SyntaxTree)
             : null;
     }
+
+    /// <summary>
+    /// The default of a declared type, asked of the SYMBOL where one is available. The syntax-only
+    /// fallback cannot see through a name: it answers <c>null</c> for <c>char</c> and for every
+    /// enum, where C# gives <c>'\0'</c> and the zero-valued member. A static of either type would
+    /// then hold a different value in the twin than on the server, silently.
+    /// </summary>
+    private string DefaultOf(TypeSyntax type) =>
+        ModelFor(type)?.GetTypeInfo(type).Type is { } symbol
+            ? DefaultValue.Of(symbol)
+            : TypeDeclarationExtensions.DefaultFor(type);
 
     /// <summary>Every accessor bodyless and no expression body — an auto-property and nothing else.</summary>
     private static bool IsPureAuto(PropertyDeclarationSyntax property) =>
@@ -265,8 +290,16 @@ public class RecordTypeEmitter
         foreach (var conversion in type.Members.OfType<ConversionOperatorDeclarationSyntax>())
         {
             var parameter = conversion.ParameterList.Parameters[0];
-            var toSelf = conversion.Type.ToString() == name;
-            var opName = ConversionMethodName(toSelf ? parameter.Type!.ToString() : conversion.Type.ToString(), from: toSelf);
+            // The NAME comes from the symbol wherever there is one, through the same function the
+            // call site uses. The two used to compute it apart — this side compared type SYNTAX
+            // (`conversion.Type.ToString() == name`) and the call site compared SYMBOLS — so a
+            // conversion written with a qualified name emitted `toMoney` and was called as
+            // `fromInt`. Undefined at runtime, with a green build.
+            var opName = ModelFor(conversion)?.GetDeclaredSymbol(conversion) is { } symbol
+                ? ConversionNameFor(symbol)
+                : ConversionMethodName(
+                    conversion.Type.ToString() == name ? parameter.Type!.ToString() : conversion.Type.ToString(),
+                    from: conversion.Type.ToString() == name);
             var par = tsTypeDeclarations
                 ? $"{parameter.Identifier.Text.ToJsIdentifier()}: {TsTypeOf(parameter.Type)}"
                 : parameter.Identifier.Text.ToJsIdentifier();
@@ -299,7 +332,7 @@ public class RecordTypeEmitter
                     {
                         var fieldValue = variable.Initializer is { } init
                             ? _converter.ConvertExpression(init.Value, field.Declaration.Type.ToString())
-                            : TypeDeclarationExtensions.DefaultFor(field.Declaration.Type);
+                            : DefaultOf(field.Declaration.Type);
                         sb.Append($"static {variable.Identifier.Text.ToCamelCase()} = {fieldValue}; ");
                     }
                     break;
@@ -311,7 +344,7 @@ public class RecordTypeEmitter
                     when prop.Modifiers.Any(SyntaxKind.StaticKeyword) && IsPureAuto(prop):
                     var propValue = prop.Initializer is { } propInit
                         ? _converter.ConvertExpression(propInit.Value, prop.Type.ToString())
-                        : TypeDeclarationExtensions.DefaultFor(prop.Type);
+                        : DefaultOf(prop.Type);
                     sb.Append($"static {prop.Identifier.Text.ToCamelCase()} = {propValue}; ");
                     break;
             }
@@ -395,6 +428,21 @@ public class RecordTypeEmitter
     /// The static-method name an operator becomes. Named for the operation, not for the CLR's
     /// <c>op_Addition</c> mangling: the emitted class is read by people too.
     /// </summary>
+    /// <summary>
+    /// What a conversion is CALLED, from the symbol — the one place that decides it, so the emitted
+    /// method and every call site cannot drift apart. Direction is symbol equality against the
+    /// declaring type, and the other side's name uses the minimally-qualified display the call site
+    /// has always used.
+    /// </summary>
+    internal static string ConversionNameFor(IMethodSymbol conversion)
+    {
+        var toSelf = SymbolEqualityComparer.Default.Equals(
+            conversion.ReturnType, conversion.ContainingType);
+        var other = toSelf ? conversion.Parameters[0].Type : conversion.ReturnType;
+        return ConversionMethodName(
+            other.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat), from: toSelf);
+    }
+
     internal static string? OperatorMethodName(string token) => token switch
     {
         "+" => "opAdd",
@@ -433,8 +481,18 @@ public class RecordTypeEmitter
         var bare = typeText.Trim().TrimEnd('?');
         var dot = bare.LastIndexOf('.');
         if (dot >= 0) bare = bare[(dot + 1)..];
-        var pascal = bare.Length == 0 ? bare : char.ToUpperInvariant(bare[0]) + bare[1..];
-        return (from ? "from" : "to") + pascal;
+
+        // A CONSTRUCTED type is not an identifier. `List<int>` reached here verbatim and produced
+        // `fromList<int>` — emitted as a method name and used as one by the call site, which no
+        // JavaScript parser accepts. Every segment of the type becomes part of the name instead, so
+        // `List<int>` is `fromListInt` and `Dictionary<string, int>` is `fromDictionaryStringInt`:
+        // still readable, still deterministic, and different constructed types stay different names.
+        var parts = bare.Split(new[] { '<', '>', ',', ' ', '[', ']', '.', '?' },
+            System.StringSplitOptions.RemoveEmptyEntries);
+        var identifier = string.Concat(parts.Select(part =>
+            part.Length == 0 ? part : char.ToUpperInvariant(part[0]) + part[1..]));
+
+        return (from ? "from" : "to") + identifier;
     }
 
     /// <summary>A converted block comes back braced; a method body wants its contents.</summary>
