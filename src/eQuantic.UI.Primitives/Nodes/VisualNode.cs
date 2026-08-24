@@ -121,8 +121,12 @@ public readonly record struct BoxStyle
     public SizeValue Height { get; init; }
     public float MinWidth { get; init; }
     public float MinHeight { get; init; }
-    /// <summary>0 = unbounded.</summary>
-    public SizeValue MaxWidth { get; init; }
+    /// <summary>
+    /// The widest this box may be — <c>Hug</c> (the default) is unbounded, a number is dp, and
+    /// <see cref="SizeValue.WindowMinus"/> is the window less an inset. Unbounded is Hug and NOT
+    /// zero: a zero here is a box zero wide.
+    /// </summary>
+public SizeValue MaxWidth { get; init; }
 
     /// <summary>
     /// The tallest this box may be — <c>Hug</c> (the default) is unbounded, a number is dp, and

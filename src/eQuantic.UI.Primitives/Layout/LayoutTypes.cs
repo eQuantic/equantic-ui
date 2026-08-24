@@ -44,7 +44,12 @@ public enum SizeKind : byte
     WindowMinus = 3,
 }
 
-/// <summary>One dimension of a node's requested size: Hug (default) · Fill · explicit dp.</summary>
+/// <summary>
+/// How big a thing asks to be: <see cref="SizeKind.Hug"/> its content, <see cref="SizeKind.Fill"/>
+/// what the parent offers, a <see cref="SizeKind.Fixed"/> number of dp, or
+/// <see cref="SizeKind.WindowMinus"/> — the window on this axis, less an inset. A bare number
+/// converts to Fixed, so <c>Width = 120</c> keeps working.
+/// </summary>
 public readonly record struct SizeValue(SizeKind Kind, float Value)
 {
     public static readonly SizeValue Hug = new(SizeKind.Hug, 0);
