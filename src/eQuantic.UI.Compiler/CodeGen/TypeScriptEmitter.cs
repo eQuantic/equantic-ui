@@ -1617,8 +1617,8 @@ public class TypeScriptEmitter
     }
 
     /// <summary>
-    /// An operator's body in either spelling, or null where it has neither (a partial declaration)
-    /// and there is nothing to write.
+    /// An operator's body in either spelling, or null where it has neither — `extern`, or a
+    /// declaration in an interface — and there is nothing to write.
     /// <para>
     /// The hoisted locals come first, as they do for an ordinary method: `int.TryParse(s, out var n)`
     /// inside an operator emits `n = …` with nothing declaring `n`, and an ES module is strict, so
