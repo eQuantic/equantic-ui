@@ -38,9 +38,16 @@ namespace eQuantic.UI.Primitives;
 /// rule is the same on both sides: what crosses is what the page may show.
 /// </para>
 /// <para>
-/// The one exception is a DEPENDENCY: a field whose type is an interface from outside
-/// <c>System</c> is skipped, because the client resolves that for itself. Everything else travels,
-/// including a <c>string</c> nobody meant to publish.
+/// What does NOT travel is a DEPENDENCY: a field whose type is an interface from outside
+/// <c>System</c>, which the client resolves for itself. The <c>System</c> exclusion is deliberate
+/// and not a detail — <c>IReadOnlyList&lt;T&gt;</c> is how a component RECEIVES its items, so
+/// skipping every interface would delete state rather than protect anything.
+/// </para>
+/// <para>
+/// Everything else that CAN be written travels, including a <c>string</c> nobody meant to publish.
+/// A null, a delegate, and a value that fails to serialize are left out — but read that as what it
+/// is, a robustness rule so one field cannot empty the payload. It is NOT a protection: never rely
+/// on a value being unserializable to keep it off the page.
 /// </para>
 /// <para>
 /// Native fence: Photon hosts render locally, so nothing prefetches for them — a native shell loads
