@@ -169,6 +169,14 @@ public class ServerActionsMiddleware
             return;
         }
 
+        // Where a component finds a capability DURING the action — the same request container the
+        // renderer arms, so GetService<T>() answers here exactly as it answers inside Build. It did
+        // not, and the gap forced a page to choose: take services through the constructor and reach
+        // them in actions, or take none and keep its prefetched state. Neither half was optional,
+        // and no page could have both.
+        var outerScope = Primitives.CapabilityScope.Current;
+        Primitives.CapabilityScope.Current = context.RequestServices.GetService;
+
         try
         {
             // Built from THIS REQUEST's services. A middleware is a singleton, so the provider it
@@ -219,6 +227,12 @@ public class ServerActionsMiddleware
                 : "An error occurred while processing the request.";
 
             await WriteErrorResponse(context, errorMessage);
+        }
+        finally
+        {
+            // RESTORED, not cleared: whatever armed the scope before this action is entitled to
+            // still be in force after it.
+            Primitives.CapabilityScope.Current = outerScope;
         }
     }
 

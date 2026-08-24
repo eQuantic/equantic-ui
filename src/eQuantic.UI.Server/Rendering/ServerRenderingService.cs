@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -436,6 +437,25 @@ public class ServerRenderingService : IServerRenderingService
     }
 
     /// <summary>
+    /// An interface from anywhere but System — the SAME rule the compiler applies when it decides
+    /// a constructor parameter is a capability to resolve rather than a value to pass. The
+    /// normative statement is <c>CapabilityRule.IsDependency</c> in <c>src/Shared</c>; it reads a
+    /// Roslyn <c>ITypeSymbol</c> and cannot be called here, so the two must be kept saying the
+    /// same thing.
+    /// <para>
+    /// The System exclusion is the whole point and the comment on the shared rule says why: the
+    /// first version of it dropped <c>IReadOnlyList&lt;AccordionItem&gt;</c>, which is how a
+    /// component RECEIVES its items. Treating that as a dependency here would silently delete
+    /// state from the payload — the exact failure this method exists to stop, arriving from the
+    /// other side.
+    /// </para>
+    /// </summary>
+    private static bool IsDependency(Type type) =>
+        type.IsInterface
+        && type.Namespace is { } space
+        && !space.StartsWith("System", StringComparison.Ordinal);
+
+    /// <summary>
     /// Serializes component state to JSON for client-side hydration.
     /// </summary>
     private string? SerializeState(object state)
@@ -453,6 +473,24 @@ public class ServerRenderingService : IServerRenderingService
             
             foreach (var field in fields)
             {
+                // A DEPENDENCY, not data. A constructor parameter whose type is a dependency is
+                // captured as a field, and the client resolves it for itself — the emitter writes
+                // `this.clock = $eq.services.resolve('IClock')` for exactly these — so it must
+                // never ride the payload. It also cannot: serializing an IMediator threw inside
+                // the single Serialize below, and the catch dropped the WHOLE page's state.
+                //
+                // The symptom was the worst kind. The server rendered correctly, hydration rebuilt
+                // from an empty payload, and what the prefetch had loaded vanished in front of the
+                // reader a moment after the page appeared. `curl` sees perfect HTML; only a
+                // browser shows it.
+                if (IsDependency(field.FieldType))
+                {
+                    _logger.LogDebug(
+                        "[SSR Hydration] Skipping {FieldName}: a {TypeName} is a dependency the "
+                        + "client resolves, not state to carry", field.Name, field.FieldType.Name);
+                    continue;
+                }
+
                 var fieldName = field.Name;
                 
                 // For auto-properties, the backing field name is typically <PropertyName>k__BackingField
@@ -498,6 +536,29 @@ public class ServerRenderingService : IServerRenderingService
             // EqJson serializes Int64/UInt64 as strings so values beyond 2^53 survive into the
             // client BigInt-backed `long` runtime (matches the Server Action wire protocol).
             var options = eQuantic.UI.Server.Json.EqJson.Options;
+
+            // FIELD BY FIELD, so one value that cannot be written does not take the rest with it.
+            // The interface guard above catches the common case by design; this catches the rest
+            // by construction — a concrete type nobody thought of stays a missing field instead of
+            // an empty page, and says so in the log rather than in silence.
+            foreach (var (key, value) in stateDict.ToList())
+            {
+                try
+                {
+                    // To NOWHERE. The question is only "does this throw?", and answering it with
+                    // Serialize(value) builds a string per field per render that is read once and
+                    // dropped — on a page whose payload is then written a second time anyway.
+                    using var writer = new System.Text.Json.Utf8JsonWriter(Stream.Null);
+                    System.Text.Json.JsonSerializer.Serialize(writer, value, options);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex,
+                        "[SSR Hydration] Dropping {FieldName}: it cannot be written to the payload. "
+                        + "The rest of the page's state is unaffected.", key);
+                    stateDict.Remove(key);
+                }
+            }
 
             var json = System.Text.Json.JsonSerializer.Serialize(stateDict, options);
             _logger.LogInformation($"[SSR Hydration] Serialized state: {json}");
