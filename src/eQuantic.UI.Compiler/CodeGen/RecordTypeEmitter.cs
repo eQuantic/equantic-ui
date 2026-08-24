@@ -290,8 +290,16 @@ public class RecordTypeEmitter
         foreach (var conversion in type.Members.OfType<ConversionOperatorDeclarationSyntax>())
         {
             var parameter = conversion.ParameterList.Parameters[0];
-            var toSelf = conversion.Type.ToString() == name;
-            var opName = ConversionMethodName(toSelf ? parameter.Type!.ToString() : conversion.Type.ToString(), from: toSelf);
+            // The NAME comes from the symbol wherever there is one, through the same function the
+            // call site uses. The two used to compute it apart — this side compared type SYNTAX
+            // (`conversion.Type.ToString() == name`) and the call site compared SYMBOLS — so a
+            // conversion written with a qualified name emitted `toMoney` and was called as
+            // `fromInt`. Undefined at runtime, with a green build.
+            var opName = ModelFor(conversion)?.GetDeclaredSymbol(conversion) is { } symbol
+                ? ConversionNameFor(symbol)
+                : ConversionMethodName(
+                    conversion.Type.ToString() == name ? parameter.Type!.ToString() : conversion.Type.ToString(),
+                    from: conversion.Type.ToString() == name);
             var par = tsTypeDeclarations
                 ? $"{parameter.Identifier.Text.ToJsIdentifier()}: {TsTypeOf(parameter.Type)}"
                 : parameter.Identifier.Text.ToJsIdentifier();
@@ -420,6 +428,21 @@ public class RecordTypeEmitter
     /// The static-method name an operator becomes. Named for the operation, not for the CLR's
     /// <c>op_Addition</c> mangling: the emitted class is read by people too.
     /// </summary>
+    /// <summary>
+    /// What a conversion is CALLED, from the symbol — the one place that decides it, so the emitted
+    /// method and every call site cannot drift apart. Direction is symbol equality against the
+    /// declaring type, and the other side's name uses the minimally-qualified display the call site
+    /// has always used.
+    /// </summary>
+    internal static string ConversionNameFor(IMethodSymbol conversion)
+    {
+        var toSelf = SymbolEqualityComparer.Default.Equals(
+            conversion.ReturnType, conversion.ContainingType);
+        var other = toSelf ? conversion.Parameters[0].Type : conversion.ReturnType;
+        return ConversionMethodName(
+            other.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat), from: toSelf);
+    }
+
     internal static string? OperatorMethodName(string token) => token switch
     {
         "+" => "opAdd",

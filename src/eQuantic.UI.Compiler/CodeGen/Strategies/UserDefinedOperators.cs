@@ -20,11 +20,10 @@ public static class UserDefinedOperators
     public static JsExpr? Conversion(IMethodSymbol method, string operand)
     {
         if (!IsInSource(method) || method.Parameters.Length != 1) return null;
-        var declaring = method.ContainingType;
-        var toSelf = SymbolEqualityComparer.Default.Equals(method.ReturnType, declaring);
-        var other = toSelf ? method.Parameters[0].Type : method.ReturnType;
-        var name = RecordTypeEmitter.ConversionMethodName(Display(other), from: toSelf);
-        return JsExpr.Callish($"{declaring.Name}.{name}({operand})");
+        // ONE function names a conversion, and the emitter calls the same one — they used to
+        // compute it apart, and a qualified declaration made them disagree in silence.
+        var name = RecordTypeEmitter.ConversionNameFor(method);
+        return JsExpr.Callish($"{method.ContainingType.Name}.{name}({operand})");
     }
 
     /// <summary>The unary operator called on its operand, or null.</summary>
@@ -42,6 +41,4 @@ public static class UserDefinedOperators
     }
 
     /// <summary>The keyword form a symbol displays (`int`, not Int32), the text the emitter read.</summary>
-    private static string Display(ITypeSymbol type) =>
-        type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
 }

@@ -166,32 +166,71 @@ public class RecordStaticMemberTests
         ShapesTwin().Should().NotContain("static half = ");
     }
 
+    /// <summary>One SHAPE per fixture: a fixture carrying both an operator and a conversion proves
+    /// neither arm, because either one alone keeps the type discoverable.</summary>
+    private static string OnlySurface(string member) => $$"""
+        using eQuantic.UI.Core;
+        using eQuantic.UI.Primitives;
+
+        public sealed record Money
+        {
+            {{member}}
+        }
+
+        [Page("/money")]
+        public sealed class MoneyPage : StatelessComponent
+        {
+            public override VisualNode Build(ComponentContext context)
+                => new Text("x", TypeRole.BodyM);
+        }
+        """;
+
     [Fact]
-    public void ARecordWhoseOnlySurfaceIsAnOperatorStillGetsATwin()
+    public void ARecordWhoseOnlySurfaceIsAnOPERATORStillGetsATwin()
+    {
+        // Emit writes an operator as a static method and a call site lowers to it, so a type whose
+        // only surface is one still needs its twin.
+        var twin = new ComponentCompiler()
+            .CompileSource(OnlySurface("public static Money operator +(Money a, Money b) => a;"), "Money.cs")
+            .Single(r => r.ComponentName == "Money").TypeScript;
+
+        twin.Should().Contain("static opAdd(");
+    }
+
+    [Fact]
+    public void ARecordWhoseOnlySurfaceIsA_CONVERSION_StillGetsATwin()
+    {
+        var twin = new ComponentCompiler()
+            .CompileSource(OnlySurface("public static implicit operator Money(int v) => new();"), "Money.cs")
+            .Single(r => r.ComponentName == "Money").TypeScript;
+
+        // And under the name the CALL SITE will use: both sides go through ConversionNameFor now,
+        // so a qualified declaration cannot make the emitted method and the call disagree.
+        twin.Should().Contain("static fromInt(");
+    }
+
+    [Fact]
+    public void AQualifiedConversionIsNamedTheWayItIsCalled()
     {
         const string source = """
             using eQuantic.UI.Core;
             using eQuantic.UI.Primitives;
 
+            namespace App;
+
             public sealed record Money
             {
-                public static Money operator +(Money a, Money b) => a;
-                public static implicit operator Money(int v) => new();
-            }
-
-            [Page("/money")]
-            public sealed class MoneyPage : StatelessComponent
-            {
-                public override VisualNode Build(ComponentContext context)
-                    => new Text("x", TypeRole.BodyM);
+                public static implicit operator global::App.Money(int v) => new();
             }
             """;
 
-        // Emit writes an operator as a static method and a call site lowers to it, so a type whose
-        // only surface is one still needs its twin. Discovery has to know every shape Emit writes,
-        // or it deletes a type the emitted code goes on referencing.
+        // Written with a qualified name, the syntax says "global::App.Money" and the simple name
+        // says "Money" — the emitter used to read that as a conversion AWAY from the type and emit
+        // the wrong method, while the call site read the symbol and called fromInt. Undefined, with
+        // a green build.
         new ComponentCompiler().CompileSource(source, "Money.cs")
-            .Should().Contain(r => r.ComponentName == "Money");
+            .Single(r => r.ComponentName == "Money").TypeScript
+            .Should().Contain("static fromInt(");
     }
 
     [Fact]
