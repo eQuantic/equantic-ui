@@ -29,14 +29,18 @@ namespace eQuantic.UI.Primitives;
 /// EVERY FIELD IS PUBLIC. The payload is written into the served HTML, so a value a prefetch stores
 /// is readable by anyone who views the page source — it is not "server data" once it lands in a
 /// field. Load what the page DISPLAYS, and nothing else: an access token used to fetch, the
-/// connection string behind the query, the internal id you only needed while loading. Where a
-/// secret is unavoidable, keep it out of the fields and off the tree — resolve it inside a
-/// <c>[ServerAction]</c>, which runs on the server and returns only its result.
+/// connection string behind the query, the internal id you only needed while loading.
+/// </para>
+/// <para>
+/// A secret belongs in neither place. A <c>[ServerAction]</c> runs on the server and may USE one —
+/// read a token, open a connection, call an API with it — but its return value is serialized to the
+/// browser exactly as a field is, so return the ANSWER and never the secret that produced it. The
+/// rule is the same on both sides: what crosses is what the page may show.
+/// </para>
 /// <para>
 /// The one exception is a DEPENDENCY: a field whose type is an interface from outside
 /// <c>System</c> is skipped, because the client resolves that for itself. Everything else travels,
 /// including a <c>string</c> nobody meant to publish.
-/// </para>
 /// </para>
 /// <para>
 /// Native fence: Photon hosts render locally, so nothing prefetches for them — a native shell loads
