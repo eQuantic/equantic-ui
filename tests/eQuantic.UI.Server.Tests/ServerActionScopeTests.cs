@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using Primitives = eQuantic.UI.Primitives;
 using eQuantic.UI.Server.Authorization;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
@@ -36,6 +37,20 @@ public class ServerActionScopeTests
         public string WhoAmI() => tenant.Name;
     }
 
+    /// <summary>
+    /// The page that asks for what it needs INSIDE the action instead of through its constructor.
+    /// Both shapes have to work, and until the middleware armed the capability scope only one did:
+    /// a page had to choose between reaching its services here and keeping its prefetched state,
+    /// because the very constructor injection that bought the first used to silence the second.
+    /// </summary>
+    private sealed class AmbientActions : Primitives.StatelessComponent
+    {
+        public string WhoAmI() => GetService<ICurrentTenant>()?.Name ?? "(nothing armed a resolver)";
+
+        public override Primitives.VisualNode Build(Primitives.ComponentContext context) =>
+            new Primitives.Text("unused", Primitives.TypeRole.BodyM);
+    }
+
     private sealed class AlwaysAllowed : IServerActionAuthorizationService
     {
         public Task<ServerActionAuthorizationResult> AuthorizeAsync(
@@ -43,14 +58,18 @@ public class ServerActionScopeTests
             Task.FromResult(ServerActionAuthorizationResult.Success());
     }
 
-    private static async Task<(int Status, string Body)> Invoke(ServiceProvider root)
+    private static async Task<(int Status, string Body)> Invoke(
+        ServiceProvider root, Type component = null!, string method = "WhoAmI")
     {
+        component ??= typeof(TenantActions);
+        var actionId = $"{component.Name}/{method}";
+
         var registry = new ServerActionRegistry();
-        registry.RegisterAction("TenantActions/WhoAmI", new ServerActionDescriptor
+        registry.RegisterAction(actionId, new ServerActionDescriptor
         {
-            ActionId = "TenantActions/WhoAmI",
-            ComponentType = typeof(TenantActions),
-            Method = typeof(TenantActions).GetMethod(nameof(TenantActions.WhoAmI))!,
+            ActionId = actionId,
+            ComponentType = component,
+            Method = component.GetMethod(method)!,
         });
 
         var options = new UIOptions();
@@ -69,7 +88,7 @@ public class ServerActionScopeTests
         context.Request.Path = "/api/_equantic/actions";
         context.Request.Method = "POST";
         context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(
-            JsonSerializer.Serialize(new { actionId = "TenantActions/WhoAmI", arguments = Array.Empty<object>() })));
+            JsonSerializer.Serialize(new { actionId, arguments = Array.Empty<object>() })));
         var responseBody = new MemoryStream();
         context.Response.Body = responseBody;
 
@@ -92,5 +111,35 @@ public class ServerActionScopeTests
 
         status.Should().Be(StatusCodes.Status200OK, body);
         body.Should().Contain("acme");
+    }
+
+    [Fact]
+    public async Task AnActionResolvingFromTheAmbientScope_ReachesTheRequestContainer()
+    {
+        var root = new ServiceCollection()
+            .AddScoped<ICurrentTenant, Tenant>()
+            .BuildServiceProvider(validateScopes: true);
+
+        var (status, body) = await Invoke(root, typeof(AmbientActions));
+
+        // GetService<T>() answers "from anywhere in the component" — a lifecycle hook, an event
+        // handler, Build itself. An action is anywhere. It used to return null here, and the page
+        // could not tell a missing registration from a scope nobody armed.
+        status.Should().Be(StatusCodes.Status200OK, body);
+        body.Should().Contain("acme");
+    }
+
+    [Fact]
+    public async Task TheAmbientScope_DoesNotOutliveTheAction()
+    {
+        var root = new ServiceCollection()
+            .AddScoped<ICurrentTenant, Tenant>()
+            .BuildServiceProvider(validateScopes: true);
+
+        await Invoke(root, typeof(AmbientActions));
+
+        // The request's container is gone once the request is; leaving it armed would let the NEXT
+        // caller resolve scoped services out of a scope that has already been disposed.
+        Primitives.CapabilityScope.Current.Should().BeNull();
     }
 }
