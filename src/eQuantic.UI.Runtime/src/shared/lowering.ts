@@ -237,13 +237,30 @@ function rigid(
   return width?.kind === 'fixed' || height?.kind === 'fixed' ? '0' : undefined;
 }
 
-function sizeValue(size: SizeValueValue | undefined): string | undefined {
+/**
+ * A size on ONE axis — the C# `Size` twin. The axis matters for exactly one kind: the window is
+ * `100vh` down and `100vw` across, and every other kind reads the same either way.
+ */
+/** A cap as a SizeValue, whichever shape the payload used. */
+function asSize(cap: SizeValueValue | number | undefined): SizeValueValue | undefined {
+  if (cap === undefined || cap === null) return undefined;
+  if (typeof cap === 'number') return cap > 0 ? ({ kind: 'fixed', value: cap } as SizeValueValue) : undefined;
+  return cap;
+}
+
+function sizeValue(size: SizeValueValue | undefined, vertical = false): string | undefined {
   if (!size) return undefined;
   switch (size.kind) {
     case 'fixed':
       return px(size.value);
     case 'fill':
       return '100%';
+    // The window, less an inset. `calc` rather than a bare `vh` because the inset is the point:
+    // "as tall as the window allows, minus the bar above me" is a cap no constant can express.
+    case 'windowMinus':
+      return size.value > 0
+        ? `calc(100${vertical ? 'vh' : 'vw'} - ${px(size.value)})`
+        : `100${vertical ? 'vh' : 'vw'}`;
     default:
       return undefined; // hug = auto
   }
@@ -741,7 +758,7 @@ function lowerLink(node: LinkNode, context: LoweringContext, path: string): Html
   const linkStyle = atomicAttrs({
     'pointer-events': 'auto',
     width: linkFill.width ? '100%' : undefined,
-    'max-width': linkCap > 0 ? `${linkCap}px` : undefined,
+    'max-width': sizeValue(linkCap),
     height: linkFill.height ? '100%' : undefined,
   });
   if (linkStyle.class) anchor.attributes.class = `eq-link ${linkStyle.class}`;
@@ -1251,7 +1268,7 @@ function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: s
       // A scroll view IS the window its parent gives it — never its content (native parity: the
       // realizer hands it layout bounds and clips always). Auto height would grow with content
       // and scroll nothing.
-      height: sizeValue(node.height) ?? '100%',
+      height: sizeValue(node.height, true) ?? '100%',
       // …and never PUSHED wider than it either: a flex item's min-width defaults to auto, so one
       // long line grew the scroller and every ancestor instead of scrolling (C# twin).
       'min-width': '0',
@@ -1341,7 +1358,7 @@ function lowerWebFrame(node: WebFrameNode): HtmlNode {
   const attributes: Record<string, string> = {
     ...atomicAttrs({
       width: sizeValue(node.width),
-      height: sizeValue(node.height),
+      height: sizeValue(node.height, true),
       'flex-shrink': rigid(node.width, node.height),
       border: '0',
       display: 'block',
@@ -1789,7 +1806,7 @@ function lowerStack(node: StackNode, context: LoweringContext, path: string): Ht
       position: 'relative',
       top: undefined,
       width: sizeValue(node.width),
-      height: sizeValue(node.height),
+      height: sizeValue(node.height, true),
       'flex-shrink': rigid(node.width, node.height),
     },
     children,
@@ -1833,7 +1850,7 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
   const entries: Record<string, string | undefined> = {
     'box-sizing': 'border-box',
     width: sizeValue(style.width),
-    height: sizeValue(style.height),
+    height: sizeValue(style.height, true),
     'flex-shrink': rigid(style.width, style.height),
     // FILL is a CEILING (C# twin): an item's automatic minimum size overrides width, so a Fill
     // box grew past its parent to fit its longest content. An explicit minWidth still wins.
@@ -1849,8 +1866,10 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
         : style.height?.kind === 'fill'
           ? '0'
           : undefined,
-    'max-width': style.maxWidth && style.maxWidth > 0 ? px(style.maxWidth) : undefined,
-    'max-height': style.maxHeight && style.maxHeight > 0 ? px(style.maxHeight) : undefined,
+    // The caps go through the same axis-aware translation as the sizes, and tolerate a bare
+    // number: a hydration payload written before the cap became a SizeValue still says `620`.
+    'max-width': sizeValue(asSize(style.maxWidth)),
+    'max-height': sizeValue(asSize(style.maxHeight), true),
     padding:
       style.padding && !isZeroInsets(style.padding) ? paddingValue(style.padding) : undefined,
     'background-color': style.background ? tokenValue(style.background) : undefined,
@@ -2035,7 +2054,7 @@ function lowerFlex(flex: FlexNodeValue, context: LoweringContext, path: string):
     'justify-content': mainAlign(flex.main),
     'align-items': crossAlign(flex.cross),
     width: sizeValue(flex.width),
-    height: sizeValue(flex.height),
+    height: sizeValue(flex.height, true),
     'flex-shrink': rigid(flex.width, flex.height),
     // FILL means "the parent's extent, never more" — and a flex item's automatic minimum size
     // OVERRIDES width, so long content grew a Fill row past its parent (C# twin).
@@ -2253,12 +2272,13 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
  * contract: taking the 100% and dropping the max-width leaves a full-width wrapper holding a
  * narrower block, the child pinned to the start edge, and a centring row with nothing to centre.
  */
-function capsAt(node: unknown): number {
-  const value = node as { nodeKind?: string; style?: { maxWidth?: number }; child?: unknown } | null;
-  if (!value) return 0;
+function capsAt(node: unknown): SizeValueValue | undefined {
+  const value = node as
+    { nodeKind?: string; style?: { maxWidth?: SizeValueValue | number }; child?: unknown } | null;
+  if (!value) return undefined;
   switch (value.nodeKind) {
     case 'box':
-      return value.style?.maxWidth ?? 0;
+      return asSize(value.style?.maxWidth);
     case 'pressable':
     case 'hoverable':
     case 'adjustable':
@@ -2267,7 +2287,7 @@ function capsAt(node: unknown): number {
     case 'link':
       return capsAt(value.child);
     default:
-      return 0;
+      return undefined;
   }
 }
 
@@ -2336,7 +2356,7 @@ function lowerPressable(
     cursor: disabled ? undefined : 'pointer',
     // A Fill child needs the 100% chain to pass through the button (scrim et al.).
     width: fill.width ? '100%' : undefined,
-    'max-width': cap > 0 ? `${cap}px` : undefined,
+    'max-width': sizeValue(cap),
     'pointer-events': 'auto',
     height: fill.height ? '100%' : undefined,
   });
@@ -2676,7 +2696,7 @@ function lowerAdjustable(node: AdjustableNode, context: LoweringContext, path: s
   const cap = capsAt(node.child);
   const host = element('div', {
     width: fill.width ? '100%' : undefined,
-    'max-width': cap > 0 ? `${cap}px` : undefined,
+    'max-width': sizeValue(cap),
     'pointer-events': 'auto',
     height: fill.height ? '100%' : undefined,
   });
@@ -2969,7 +2989,7 @@ function lowerHoverable(node: HoverableNode, context: LoweringContext, path: str
   const cap = capsAt(node.child);
   const host = element('div', {
     width: fill.width ? '100%' : undefined,
-    'max-width': cap > 0 ? `${cap}px` : undefined,
+    'max-width': sizeValue(cap),
     'pointer-events': 'auto',
     height: fill.height ? '100%' : undefined,
   });
@@ -3161,7 +3181,7 @@ function lowerGrid(grid: GridNode, context: LoweringContext, path: string): Html
           ? px(grid.gap)
           : undefined,
     width: sizeValue(grid.width),
-    height: sizeValue(grid.height),
+    height: sizeValue(grid.height, true),
     'flex-shrink': rigid(grid.width, grid.height),
     padding: grid.padding && !isZeroInsets(grid.padding) ? paddingValue(grid.padding) : undefined,
   });

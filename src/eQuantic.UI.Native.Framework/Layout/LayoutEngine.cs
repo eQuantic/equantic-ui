@@ -27,6 +27,17 @@ public sealed class LayoutContext
     /// </summary>
     public Dictionary<(string Parent, int Index), string>? PathCache { get; init; }
 
+    /// <summary>
+    /// The WINDOW this pass is laying out into, in dp. Set by <see cref="LayoutEngine.Layout"/>
+    /// from the viewport it is handed, because a window-relative cap
+    /// (<see cref="SizeKind.WindowMinus"/>) cannot be resolved from the available space: an
+    /// overlay deep in a tree is offered whatever its parent has left, which is not the window.
+    /// </summary>
+    internal float WindowWidth { get; set; }
+
+    /// <inheritdoc cref="WindowWidth"/>
+    internal float WindowHeight { get; set; }
+
     /// <summary>The node pool the OWNING host lends for this pass — null (tests, one-shot
     /// layouts) allocates fresh. The ownership story lives on <see cref="LayoutNodePool"/>.</summary>
     public LayoutNodePool? Pool { get; init; }
@@ -240,6 +251,8 @@ public static class LayoutEngine
     {
         // NOTE: the reconciler pass is ENDED BY THE CALLER (PhotonRealizer) — one frame may run
         // several Layout calls (the page plus each Overlay subtree) sharing one retention pass.
+        context.WindowWidth = viewportWidth;
+        context.WindowHeight = viewportHeight;
         var node = Measure(root, viewportWidth, viewportHeight, context, rootPath);
         Absolutize(node, 0, 0);
         return node;
@@ -833,12 +846,18 @@ public static class LayoutEngine
         var inheritedIndeterminateW = ctx.IndeterminateWidth;
         var inheritedIndeterminateH = ctx.IndeterminateHeight;
 
-        var selfMaxW = CapMax(maxW, style.MaxWidth);
-        var selfMaxH = CapMax(maxH, style.MaxHeight);
+        var maxWidthDp = CapDp(style.MaxWidth, ctx.WindowWidth);
+        var maxHeightDp = CapDp(style.MaxHeight, ctx.WindowHeight);
+        var selfMaxW = CapMax(maxW, maxWidthDp);
+        var selfMaxH = CapMax(maxH, maxHeightDp);
 
         // Content box the child may use (explicit/Fill pin it; Hug passes the available through).
-        var childMaxW = ResolveForChild(style.Width, selfMaxW) - style.Padding.Horizontal;
-        var childMaxH = ResolveForChild(style.Height, selfMaxH) - style.Padding.Vertical;
+        var childMaxW = (style.Width.Kind == SizeKind.WindowMinus
+            ? WindowSize(style.Width, ctx.WindowWidth)
+            : ResolveForChild(style.Width, selfMaxW)) - style.Padding.Horizontal;
+        var childMaxH = (style.Height.Kind == SizeKind.WindowMinus
+            ? WindowSize(style.Height, ctx.WindowHeight)
+            : ResolveForChild(style.Height, selfMaxH)) - style.Padding.Vertical;
 
         LayoutNode? child = null;
         if (box.Child is not null)
@@ -892,12 +911,12 @@ public static class LayoutEngine
             result.Children.Add(child);
         }
 
-        var width = ResolveSelf(style.Width, selfMaxW, (child?.Bounds.Width ?? 0) + style.Padding.Horizontal,
+        var width = ResolveSelf(style.Width, selfMaxW, (child?.Bounds.Width ?? 0) + style.Padding.Horizontal, ctx.WindowWidth,
             indeterminate: inheritedIndeterminateW, stretched: stretchW != StretchKind.None);
-        var height = ResolveSelf(style.Height, selfMaxH, (child?.Bounds.Height ?? 0) + style.Padding.Vertical,
+        var height = ResolveSelf(style.Height, selfMaxH, (child?.Bounds.Height ?? 0) + style.Padding.Vertical, ctx.WindowHeight,
             indeterminate: inheritedIndeterminateH, stretched: stretchH != StretchKind.None);
-        width = Clamp(width, style.MinWidth, style.MaxWidth);
-        height = Clamp(height, style.MinHeight, style.MaxHeight);
+        width = Clamp(width, style.MinWidth, maxWidthDp);
+        height = Clamp(height, style.MinHeight, maxHeightDp);
 
         // Min/Max REFLOW (the CSS twin): when the clamp changed the box's extent after the child
         // was already measured, the child measured against a lie. Re-measure it against the final
@@ -906,16 +925,16 @@ public static class LayoutEngine
         // width inside a wider frame. Runs only when a Min/Max actually bit, so the common path
         // stays single-pass.
         if (child is not null
-            && ((style.MinWidth > 0 || style.MaxWidth > 0)
+            && ((style.MinWidth > 0 || maxWidthDp >= 0)
                 && MathF.Abs(width - style.Padding.Horizontal - child.Bounds.Width) > 0.5f
-                || (style.MinHeight > 0 || style.MaxHeight > 0)
+                || (style.MinHeight > 0 || maxHeightDp >= 0)
                 && MathF.Abs(height - style.Padding.Vertical - child.Bounds.Height) > 0.5f))
         {
             var outerW2 = ctx.IndeterminateWidth;
             var outerH2 = ctx.IndeterminateHeight;
             ctx.IndeterminateWidth = false;
             ctx.IndeterminateHeight = style.Height.Kind == SizeKind.Hug
-                && style.MinHeight <= 0 && style.MaxHeight <= 0 && outerH2;
+                && style.MinHeight <= 0 && maxHeightDp < 0 && outerH2;
             // The clamped width is a DECIDED size — block semantics again: the child stretches
             // across it, which is what centres a Stepper's reading inside its MinWidth cell.
             ctx.StretchWidth = StretchKind.Block;
@@ -935,9 +954,9 @@ public static class LayoutEngine
             var widthSet = style.Width.Kind != SizeKind.Hug;
             var heightSet = style.Height.Kind != SizeKind.Hug;
             if (widthSet && !heightSet)
-                height = Clamp(width / style.AspectRatio, style.MinHeight, style.MaxHeight);
+                height = Clamp(width / style.AspectRatio, style.MinHeight, maxHeightDp);
             else if (heightSet && !widthSet)
-                width = Clamp(height * style.AspectRatio, style.MinWidth, style.MaxWidth);
+                width = Clamp(height * style.AspectRatio, style.MinWidth, maxWidthDp);
         }
 
         // A Fill child stretches to the resolved content box (its own measurement saw the max already;
@@ -1665,8 +1684,25 @@ public static class LayoutEngine
         _ => SizeKind.Hug,
     };
 
+    /// <summary>A cap as a NUMBER, or 0 for unbounded — the one place a window-relative cap turns
+    /// into dp, from the window the pass was handed rather than the space the parent had left.</summary>
+    private static float CapDp(SizeValue cap, float window) => cap.Kind switch
+    {
+        SizeKind.Fixed => cap.Value,
+        // A window smaller than the inset caps at ZERO, and zero has to survive: downstream a
+        // non-positive max used to mean "no cap", so a phone-sized window did not clamp the panel,
+        // it FREED it — the opposite of what the declaration asks for, and only in the window
+        // where it matters most. Unbounded is -1 from here on, and zero is a real cap of zero.
+        SizeKind.WindowMinus => MathF.Max(0, window - cap.Value),
+        SizeKind.Fill => window,
+        _ => Unbounded,
+    };
+
+    /// <summary>What a resolved cap says when there is none — NOT zero, which is a cap of zero.</summary>
+    private const float Unbounded = -1f;
+
     private static float CapMax(float available, float styleMax) =>
-        styleMax > 0 ? MathF.Min(available, styleMax) : available;
+        styleMax >= 0 ? MathF.Min(available, styleMax) : available;
 
     /// <summary>Max extent a child may use, given the node's own size request.</summary>
     private static float ResolveForChild(SizeValue size, float available) => size.Kind switch
@@ -1675,8 +1711,20 @@ public static class LayoutEngine
         _ => available,
     };
 
+    /// <summary>A window-relative SIZE — the same arithmetic the caps do, for a node that asks to
+    /// BE the window less an inset rather than to be capped by it. Without this the kind resolved
+    /// only as a cap, and `Width = WindowMinus(24)` hugged natively while the web sized it.</summary>
+    private static float WindowSize(SizeValue size, float window) => MathF.Max(0, window - size.Value);
+
     /// <summary>Own size: explicit &gt; Fill &gt; Hug (spec A1). On an INDETERMINATE axis — one the
     /// parent is sizing from its content — Fill has nothing to fill and falls back to Hug.</summary>
+    /// <summary>The size a node asks to BE, with the window in hand — the window-relative kind is
+    /// the one that cannot be answered from the available space alone.</summary>
+    private static float ResolveSelf(SizeValue size, float available, float hug, float window,
+        bool indeterminate = false, bool stretched = false) => size.Kind == SizeKind.WindowMinus
+        ? WindowSize(size, window)
+        : ResolveSelf(size, available, hug, indeterminate, stretched);
+
     private static float ResolveSelf(SizeValue size, float available, float hug, bool indeterminate = false,
         bool stretched = false) => size.Kind switch
     {
@@ -1687,10 +1735,12 @@ public static class LayoutEngine
         _ => hug,
     };
 
+    /// <summary>Min is a dp (0 = none); MAX follows the resolved-cap convention — negative is
+    /// unbounded, and zero is a real cap of zero. See <see cref="Unbounded"/>.</summary>
     private static float Clamp(float value, float min, float max)
     {
         if (min > 0) value = MathF.Max(value, min);
-        if (max > 0) value = MathF.Min(value, max);
+        if (max >= 0) value = MathF.Min(value, max);
         return value;
     }
 
