@@ -65,6 +65,32 @@ public class WindowRelativeSizeTests
     }
 
     [Fact]
+    public void AnAnchoredPanelRefusesToOutgrowTheWindow()
+    {
+        // The default, which is the other half of Edgar's call. The panel already refused to
+        // outgrow the window ACROSS — max-width has been there since the start — and this is the
+        // same refusal DOWN. Without it a menu taller than the window ran past the bottom of it
+        // with its content unreachable, and every dropdown and picker shares the rule.
+        var css = PhotonCssGenerator.Generate(Theme);
+
+        css.Should().Contain("max-height: 100vh").And.Contain("overflow-y: auto");
+        css.Should().Contain(".eq-anchor-panel { position: absolute; z-index: 1050; "
+            + "width: max-content; max-width: min(92vw, 420px); max-height: 100vh; overflow-y: auto; }");
+    }
+
+    [Fact]
+    public void TheDefaultIsTheWindow_TheVocabularyIsForBeingExact()
+    {
+        // CSS cannot know where a panel STARTS — it is positioned against its anchor, and the
+        // distance to the top of the window is a runtime fact. So the default caps at the whole
+        // window, and an author who knows their own offset says it exactly. The two compose: the
+        // explicit cap wins because it is on the element, and the class is a class.
+        var panel = new Box(new BoxStyle { MaxHeight = SizeValue.WindowMinus(88) }, new Text("menu"));
+
+        StyleOf(panel).Should().Contain("max-height: calc(100vh - 88px)");
+    }
+
+    [Fact]
     public void NoCapIsStillNoCap()
     {
         StyleOf(new Box(new BoxStyle { Background = Theme.Surface }, new Text("x")))

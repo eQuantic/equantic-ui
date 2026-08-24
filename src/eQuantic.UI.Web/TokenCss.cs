@@ -373,7 +373,19 @@ public static class PhotonCssGenerator
         // therefore collapsed onto its own min-width and wrapped any label longer than that ("
         // Workspace settings" came out on two lines inside a one-line row). The panel measures its
         // CONTENT instead, still bounded: never wider than the viewport it must stay inside.
-        css.AppendLine(".eq-anchor-panel { position: absolute; z-index: 1050; width: max-content; max-width: min(92vw, 420px); }");
+        // The panel already refused to outgrow the window ACROSS — `max-width: min(92vw, 420px)`
+        // has been there since the start. This is the same refusal DOWN, and it was missing: a
+        // panel taller than the window ran past the bottom of it with its content unreachable,
+        // and every menu, dropdown and picker in the library shares this rule.
+        //
+        // 100vh and not less, because CSS cannot know where the panel STARTS: it is positioned
+        // against its anchor, and the distance from there to the top of the window is a runtime
+        // fact. So the default is the safety net — never taller than the whole window, scrolls
+        // instead of overflowing — and an author who knows their own offset says it exactly:
+        // `MaxHeight = SizeValue.WindowMinus(88)`. The default protects everyone; the vocabulary
+        // is for being precise.
+        css.AppendLine(".eq-anchor-panel { position: absolute; z-index: 1050; width: max-content; "
+            + "max-width: min(92vw, 420px); max-height: 100vh; overflow-y: auto; }");
         // A PAINTED scrim (ScrimStyle) must dim the page, never its own anchor: the anchor lifts
         // between the scrim (1040) and the panel (1050).
         css.AppendLine(".eq-anchor-above { position: relative; z-index: 1045; }");
