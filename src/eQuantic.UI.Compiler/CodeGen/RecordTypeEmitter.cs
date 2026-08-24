@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Strategies;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
@@ -40,6 +41,11 @@ public class RecordTypeEmitter
                 x.IsKind(SyntaxKind.StaticKeyword) || x.IsKind(SyntaxKind.ConstKeyword)),
             PropertyDeclarationSyntax p => p.Modifiers.Any(SyntaxKind.StaticKeyword),
             MethodDeclarationSyntax me => me.Modifiers.Any(SyntaxKind.StaticKeyword),
+            // Emit writes both of these as static methods (`Money.opAdd`, `Money.fromInt`), and a
+            // call site lowers to them — so a type whose only surface is an operator or a conversion
+            // is one whose twin must exist.
+            OperatorDeclarationSyntax => true,
+            ConversionOperatorDeclarationSyntax => true,
             _ => false,
         });
 
@@ -54,6 +60,17 @@ public class RecordTypeEmitter
             ? model.Compilation.GetSemanticModel(node.SyntaxTree)
             : null;
     }
+
+    /// <summary>
+    /// The default of a declared type, asked of the SYMBOL where one is available. The syntax-only
+    /// fallback cannot see through a name: it answers <c>null</c> for <c>char</c> and for every
+    /// enum, where C# gives <c>'\0'</c> and the zero-valued member. A static of either type would
+    /// then hold a different value in the twin than on the server, silently.
+    /// </summary>
+    private string DefaultOf(TypeSyntax type) =>
+        ModelFor(type)?.GetTypeInfo(type).Type is { } symbol
+            ? DefaultValue.Of(symbol)
+            : TypeDeclarationExtensions.DefaultFor(type);
 
     /// <summary>Every accessor bodyless and no expression body — an auto-property and nothing else.</summary>
     private static bool IsPureAuto(PropertyDeclarationSyntax property) =>
@@ -299,7 +316,7 @@ public class RecordTypeEmitter
                     {
                         var fieldValue = variable.Initializer is { } init
                             ? _converter.ConvertExpression(init.Value, field.Declaration.Type.ToString())
-                            : TypeDeclarationExtensions.DefaultFor(field.Declaration.Type);
+                            : DefaultOf(field.Declaration.Type);
                         sb.Append($"static {variable.Identifier.Text.ToCamelCase()} = {fieldValue}; ");
                     }
                     break;
@@ -311,7 +328,7 @@ public class RecordTypeEmitter
                     when prop.Modifiers.Any(SyntaxKind.StaticKeyword) && IsPureAuto(prop):
                     var propValue = prop.Initializer is { } propInit
                         ? _converter.ConvertExpression(propInit.Value, prop.Type.ToString())
-                        : TypeDeclarationExtensions.DefaultFor(prop.Type);
+                        : DefaultOf(prop.Type);
                     sb.Append($"static {prop.Identifier.Text.ToCamelCase()} = {propValue}; ");
                     break;
             }

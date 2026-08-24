@@ -165,4 +165,64 @@ public class RecordStaticMemberTests
         // and silently drop the halving — the worst kind of wrong, because it looks like it works.
         ShapesTwin().Should().NotContain("static half = ");
     }
+
+    [Fact]
+    public void ARecordWhoseOnlySurfaceIsAnOperatorStillGetsATwin()
+    {
+        const string source = """
+            using eQuantic.UI.Core;
+            using eQuantic.UI.Primitives;
+
+            public sealed record Money
+            {
+                public static Money operator +(Money a, Money b) => a;
+                public static implicit operator Money(int v) => new();
+            }
+
+            [Page("/money")]
+            public sealed class MoneyPage : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context)
+                    => new Text("x", TypeRole.BodyM);
+            }
+            """;
+
+        // Emit writes an operator as a static method and a call site lowers to it, so a type whose
+        // only surface is one still needs its twin. Discovery has to know every shape Emit writes,
+        // or it deletes a type the emitted code goes on referencing.
+        new ComponentCompiler().CompileSource(source, "Money.cs")
+            .Should().Contain(r => r.ComponentName == "Money");
+    }
+
+    [Fact]
+    public void AStaticCharOrEnumTakesTheDefaultDOTNETGivesIt()
+    {
+        const string source = """
+            using eQuantic.UI.Core;
+            using eQuantic.UI.Primitives;
+
+            public enum Kind { Low, High }
+
+            public sealed record Marks(string Tag)
+            {
+                public static char Sep { get; set; }
+                public static Kind Level { get; set; }
+            }
+
+            [Page("/marks")]
+            public sealed class MarksPage : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context)
+                    => new Text(Marks.Sep.ToString(), TypeRole.BodyM);
+            }
+            """;
+
+        var twin = new ComponentCompiler().CompileSource(source, "Marks.cs")
+            .Single(r => r.ComponentName == "Marks").TypeScript;
+
+        // A syntax-only default cannot see through a NAME: it answers null for both, where .NET
+        // gives '\0' and the zero-valued member. The symbol can, and the server would have said so.
+        twin.Should().Contain(@"static sep = '\0'");
+        twin.Should().Contain("static level = 'low'");
+    }
 }
