@@ -740,13 +740,26 @@ public static class UIExtensions
                             if (result.Success && result.Html != null)
                             {
                                 ssrContent = result.Html;
-                        vectorDefs = result.VectorDefs;
+                                vectorDefs = result.VectorDefs;
                                 ssrEnabled = true;
+                                // The SAME page reached by an unmatched URL instead of by /404, so it
+                                // hydrates from the same payload. Without this line the branches
+                                // differed by one: /404 rendered and kept its prefetched state, and
+                                // /anything-else rendered identically and then hydrated from nothing.
+                                serializedState = result.SerializedState;
                                 if (!string.IsNullOrEmpty(result.Metadata?.Title)) metadata.Title = result.Metadata.Title;
                             }
                         }
                     }
-                    catch { /* Ignore 404 render errors */ }
+                    catch (Exception ex)
+                    {
+                        // The 404 page failing must not fail the 404, so this still swallows — but
+                        // SILENTLY is how the missing line above survived: a page that threw here
+                        // looked exactly like a page that rendered.
+                        context.RequestServices.GetService<ILoggerFactory>()?
+                            .CreateLogger("eQuantic.UI.NotFound")
+                            .LogWarning(ex, "The registered /404 page failed to render; serving the shell without it");
+                    }
                 }
             }
         }
