@@ -277,9 +277,12 @@ public class RecordTypeEmitter
                 .Select(p => tsTypeDeclarations
                     ? $"{p.Identifier.Text.ToJsIdentifier()}: {TsTypeOf(p.Type)}"
                     : p.Identifier.Text.ToJsIdentifier()));
-            var body = op.ExpressionBody is { } expr
-                ? $"return {_converter.ConvertExpression(expr.Expression)};"
-                : op.Body is { } block ? Unwrap(_converter.Convert(block)) : "";
+            // Hoisted locals first — `out var` inside an operator emits an assignment with nothing
+            // declaring the name, and an ES module is strict.
+            var body = OutParameters.HoistedLocals(op.Body ?? (SyntaxNode?)op.ExpressionBody)
+                + (op.ExpressionBody is { } expr
+                    ? $"return {_converter.ConvertExpression(expr.Expression)};"
+                    : op.Body is { } block ? Unwrap(_converter.Convert(block)) : "");
             sb.Append($"static {opName}({pars}) {{ {body} }} ");
         }
 
@@ -303,9 +306,10 @@ public class RecordTypeEmitter
             var par = tsTypeDeclarations
                 ? $"{parameter.Identifier.Text.ToJsIdentifier()}: {TsTypeOf(parameter.Type)}"
                 : parameter.Identifier.Text.ToJsIdentifier();
-            var body = conversion.ExpressionBody is { } expr
-                ? $"return {_converter.ConvertExpression(expr.Expression)};"
-                : conversion.Body is { } block ? Unwrap(_converter.Convert(block)) : "";
+            var body = OutParameters.HoistedLocals(conversion.Body ?? (SyntaxNode?)conversion.ExpressionBody)
+                + (conversion.ExpressionBody is { } expr
+                    ? $"return {_converter.ConvertExpression(expr.Expression)};"
+                    : conversion.Body is { } block ? Unwrap(_converter.Convert(block)) : "");
             sb.Append($"static {opName}({par}) {{ {body} }} ");
         }
 

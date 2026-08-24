@@ -1575,7 +1575,64 @@ public class TypeScriptEmitter
                     + (isAsync ? "async " : "");
                 c.Member(JsClassMember.Method(modifiers, mn, generics, pars, "", JsStatement.Raw(mbody)), m);
             }
+            // USER-DEFINED OPERATORS — the same family a record's twin already carries, and for the
+            // same reason: JavaScript cannot overload an operator, so the call site lowers `a + b`
+            // on two in-source objects to `T.opAdd(a, b)` whatever kind of type T is. It did that
+            // for a plain class too while nothing here wrote the method, so the page compiled, the
+            // server rendered it, and the browser said "T.opAdd is not a function".
+            //
+            // The NAMES come from RecordTypeEmitter, which is also where the call-site lowering gets
+            // them. Three places, one spelling — computing it here instead is how the two sides of a
+            // conversion came to disagree once already.
+            foreach (var op in cls.Members.OfType<OperatorDeclarationSyntax>())
+            {
+                var opName = op.ParameterList.Parameters.Count == 1
+                    ? RecordTypeEmitter.UnaryOperatorMethodName(op.OperatorToken.Text)
+                    : RecordTypeEmitter.OperatorMethodName(op.OperatorToken.Text);
+                // No name means the call site cannot lower it either, so writing a method nobody
+                // calls would only add a second way to be wrong.
+                if (opName is null) continue;
+                if (OperatorBody(op) is not { } opBody) continue;
+                var opPars = string.Join(", ", op.ParameterList.Parameters
+                    .Select(pp => pp.Identifier.Text.ToJsIdentifier()));
+                c.Member(JsClassMember.Method("static ", opName, "", opPars, "", JsStatement.Raw(opBody)), op);
+            }
+
+            foreach (var conversion in cls.Members.OfType<ConversionOperatorDeclarationSyntax>())
+            {
+                if (OperatorBody(conversion) is not { } convBody) continue;
+                var declared = _semanticModel?.GetDeclaredSymbol(conversion) as IMethodSymbol;
+                var convName = declared is not null
+                    ? RecordTypeEmitter.ConversionNameFor(declared)
+                    : RecordTypeEmitter.ConversionMethodName(
+                        conversion.Type.ToString() == cls.Identifier.Text
+                            ? conversion.ParameterList.Parameters[0].Type!.ToString()
+                            : conversion.Type.ToString(),
+                        from: conversion.Type.ToString() == cls.Identifier.Text);
+                var convPar = conversion.ParameterList.Parameters[0].Identifier.Text.ToJsIdentifier();
+                c.Member(JsClassMember.Method("static ", convName, "", convPar, "", JsStatement.Raw(convBody)), conversion);
+            }
+
             EmitExtensionBlocks(cls, c);
+    }
+
+    /// <summary>
+    /// An operator's body in either spelling, or null where it has neither — `extern`, or a
+    /// declaration in an interface — and there is nothing to write.
+    /// <para>
+    /// The hoisted locals come first, as they do for an ordinary method: `int.TryParse(s, out var n)`
+    /// inside an operator emits `n = …` with nothing declaring `n`, and an ES module is strict, so
+    /// the operator threw a ReferenceError the first time it ran instead of returning a value.
+    /// </para>
+    /// </summary>
+    private string? OperatorBody(BaseMethodDeclarationSyntax op)
+    {
+        var body = op.ExpressionBody is { } expression
+            ? ExpressionBodyReturn(expression.Expression)
+            : op.Body is { } block ? StripJsBraces(_converter.Convert(block)) : null;
+        return body is null
+            ? null
+            : OutParameters.HoistedLocals(op.Body ?? (SyntaxNode?)op.ExpressionBody) + body;
     }
 
     /// <summary>
