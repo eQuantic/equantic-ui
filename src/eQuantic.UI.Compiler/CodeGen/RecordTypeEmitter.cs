@@ -41,10 +41,18 @@ public class RecordTypeEmitter
                 x.IsKind(SyntaxKind.StaticKeyword) || x.IsKind(SyntaxKind.ConstKeyword)),
             PropertyDeclarationSyntax p => p.Modifiers.Any(SyntaxKind.StaticKeyword),
             MethodDeclarationSyntax me => me.Modifiers.Any(SyntaxKind.StaticKeyword),
-            // Emit writes both of these as static methods (`Money.opAdd`, `Money.fromInt`), and a
-            // call site lowers to them — so a type whose only surface is an operator or a conversion
-            // is one whose twin must exist.
-            OperatorDeclarationSyntax => true,
+            // Emit writes these as static methods (`Money.opAdd`, `Money.fromInt`), and a call site
+            // lowers to them — so a type whose only surface is one of them is a type whose twin must
+            // exist.
+            //
+            // The operator asks the SAME mapping Emit asks, because Emit skips the tokens it has no
+            // name for (`&`, `|`, `^`, shifts, `++`, `true`/`false`). Discovery answering yes where
+            // Emit writes nothing would produce an empty twin for a type that has no lowering
+            // either — a module standing in for an operator no call site can use.
+            OperatorDeclarationSyntax op => (op.ParameterList.Parameters.Count == 1
+                ? UnaryOperatorMethodName(op.OperatorToken.Text)
+                : OperatorMethodName(op.OperatorToken.Text)) is not null,
+            // Every conversion IS written — that loop has no such skip.
             ConversionOperatorDeclarationSyntax => true,
             _ => false,
         });

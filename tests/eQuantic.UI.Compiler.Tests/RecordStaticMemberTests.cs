@@ -225,4 +225,31 @@ public class RecordStaticMemberTests
         twin.Should().Contain(@"static sep = '\0'");
         twin.Should().Contain("static level = 'low'");
     }
+
+    [Fact]
+    public void AnOperatorEmitCannotWriteDoesNotConjureATwin()
+    {
+        const string source = """
+            using eQuantic.UI.Core;
+            using eQuantic.UI.Primitives;
+
+            public sealed record Flags
+            {
+                public static Flags operator &(Flags a, Flags b) => a;
+            }
+
+            [Page("/flags")]
+            public sealed class FlagsPage : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context)
+                    => new Text("x", TypeRole.BodyM);
+            }
+            """;
+
+        // Emit has no method name for `&`, so it writes nothing for this operator and no call site
+        // can lower it either. Discovery must answer the same question Emit does — saying yes here
+        // would emit an empty module standing in for an operator nobody can use.
+        new ComponentCompiler().CompileSource(source, "Flags.cs")
+            .Should().NotContain(r => r.ComponentName == "Flags");
+    }
 }
