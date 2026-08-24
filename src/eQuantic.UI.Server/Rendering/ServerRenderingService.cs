@@ -438,6 +438,25 @@ public class ServerRenderingService : IServerRenderingService
     /// <summary>
     /// Serializes component state to JSON for client-side hydration.
     /// </summary>
+    /// <summary>
+    /// An interface from anywhere but System — the SAME rule the compiler applies when it decides
+    /// a constructor parameter is a capability to resolve rather than a value to pass. The
+    /// normative statement is <c>CapabilityRule.IsDependency</c> in <c>src/Shared</c>; it reads a
+    /// Roslyn <c>ITypeSymbol</c> and cannot be called here, so the two must be kept saying the
+    /// same thing.
+    /// <para>
+    /// The System exclusion is the whole point and the comment on the shared rule says why: the
+    /// first version of it dropped <c>IReadOnlyList&lt;AccordionItem&gt;</c>, which is how a
+    /// component RECEIVES its items. Treating that as a dependency here would silently delete
+    /// state from the payload — the exact failure this method exists to stop, arriving from the
+    /// other side.
+    /// </para>
+    /// </summary>
+    private static bool IsDependency(Type type) =>
+        type.IsInterface
+        && type.Namespace is { } space
+        && !space.StartsWith("System", StringComparison.Ordinal);
+
     private string? SerializeState(object state)
     {
         try
@@ -453,7 +472,7 @@ public class ServerRenderingService : IServerRenderingService
             
             foreach (var field in fields)
             {
-                // A DEPENDENCY, not data. A constructor parameter whose type is an INTERFACE is
+                // A DEPENDENCY, not data. A constructor parameter whose type is a dependency is
                 // captured as a field, and the client resolves it for itself — the emitter writes
                 // `this.clock = $eq.services.resolve('IClock')` for exactly these — so it must
                 // never ride the payload. It also cannot: serializing an IMediator threw inside
@@ -463,7 +482,7 @@ public class ServerRenderingService : IServerRenderingService
                 // from an empty payload, and what the prefetch had loaded vanished in front of the
                 // reader a moment after the page appeared. `curl` sees perfect HTML; only a
                 // browser shows it.
-                if (field.FieldType.IsInterface)
+                if (IsDependency(field.FieldType))
                 {
                     _logger.LogDebug(
                         "[SSR Hydration] Skipping {FieldName}: a {TypeName} is a dependency the "

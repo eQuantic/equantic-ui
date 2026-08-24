@@ -83,7 +83,29 @@ public class WriteOncePageSsrTests
     /// </summary>
     private sealed class ConfiguredAmbient : IPageAmbient
     {
-        public string ConnectionString => "Server=db;Password=hunter2";
+        public string InternalEndpoint => "billing.internal.svc.cluster.local";
+    }
+
+    /// <summary>
+    /// A page whose state is INTERFACE-TYPED, which is ordinary: a list of rows is received as
+    /// IReadOnlyList, not resolved from a container. The rule that skips dependencies must not
+    /// reach this, or it deletes state — the same silent loss it exists to prevent, from the other
+    /// side. It is why the rule excludes System, and why the compiler's rule does too.
+    /// </summary>
+    [Page("/prefetch-collection")]
+    private sealed class PrefetchCollectionPage : Primitives.StatelessComponent, IServerPrefetch
+    {
+        private IReadOnlyList<string> _rows = [];
+
+        [ServerOnly]
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            _rows = ["alpha", "beta"];
+            return Task.CompletedTask;
+        }
+
+        public override VisualNode Build(ComponentContext context) =>
+            new Text($"{_rows.Count} rows", TypeRole.Heading);
     }
 
     [Page("/prefetch-with-dependency")]
@@ -399,7 +421,25 @@ public class WriteOncePageSsrTests
         // service holds is published in the page source. A dependency is not state: the client
         // resolves it, so it is never handed over — serializable or not.
         result.SerializedState.Should().NotBeNull().And.Contain("675617")
-            .And.NotContain("_injected").And.NotContain("hunter2");
+            .And.NotContain("_injected").And.NotContain("billing.internal");
+    }
+
+    [Fact]
+    public async Task InterfaceTypedStateIsNotMistakenForADependency()
+    {
+        var service = CreateService();
+        var context = new DefaultHttpContext
+        {
+            RequestServices = new ServiceCollection().BuildServiceProvider(),
+        };
+
+        var result = await service.RenderPageAsync(nameof(PrefetchCollectionPage), context);
+
+        // IReadOnlyList<T> is how a component RECEIVES its items, never something it resolves. A
+        // rule that skipped every interface would drop this field and the page would hydrate
+        // showing no rows, having just rendered two.
+        result.SerializedState.Should().NotBeNull()
+            .And.Contain("_rows").And.Contain("alpha").And.Contain("beta");
     }
 
     [Fact]
