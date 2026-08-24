@@ -294,6 +294,23 @@ public class RecordTypeEmitter
                 sb.Append($"{prefix}get {propertyName}() {{ ")
                   .Append(Unwrap(_converter.Convert(block)))
                   .Append(" } ");
+                continue;
+            }
+
+            // A STATIC AUTO-property — `static Chrome Default { get; } = new(…)`, the other spelling
+            // of the well-known-value idiom beside the static field above. It has no getter of any
+            // kind, so the three branches above all skipped it and nothing else emitted it: the twin
+            // simply had no `default`, while every call site still wrote `Chrome.default.tag`. Build
+            // green, server correct, and the page threw the moment it hydrated.
+            //
+            // Static ONLY. An instance auto-property is the record's value and is emitted from
+            // ValueMembers; taking it here as well would give the twin the member twice.
+            if (isStatic)
+            {
+                var value = property.Initializer is { } propInit
+                    ? _converter.ConvertExpression(propInit.Value, property.Type.ToString())
+                    : "undefined";
+                sb.Append($"static {propertyName} = {value}; ");
             }
         }
 

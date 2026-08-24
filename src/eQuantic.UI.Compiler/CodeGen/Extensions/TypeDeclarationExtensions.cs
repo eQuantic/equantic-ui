@@ -65,8 +65,16 @@ public static class TypeDeclarationExtensions
                     break;
 
                 // Public instance fields (common in plain structs).
+                //
+                // A `const` is NOT one of them, and it does not carry the `static` keyword to say so
+                // — C# makes it static implicitly. Reading the syntax alone let `public const string
+                // Marker` through as value state: the twin took an extra positional parameter C#
+                // does not have, compared it in equals, offered it to `with`, and printed
+                // `Marker = undefined` where .NET printed nothing.
                 case FieldDeclarationSyntax field
-                    when field.Modifiers.Any(SyntaxKind.PublicKeyword) && !field.Modifiers.Any(SyntaxKind.StaticKeyword):
+                    when field.Modifiers.Any(SyntaxKind.PublicKeyword)
+                         && !field.Modifiers.Any(SyntaxKind.StaticKeyword)
+                         && !field.Modifiers.Any(SyntaxKind.ConstKeyword):
                     foreach (var v in field.Declaration.Variables)
                         members.Add(new ValueMember(v.Identifier.Text, v.Identifier.Text.ToCamelCase(), DefaultFor(field.Declaration.Type), TsTypeFor(field.Declaration.Type, model)));
                     break;
