@@ -282,3 +282,129 @@ public class EmailMediaTests
         html.Should().Contain("href=\"mailto:support@equantic.dev\"");
     }
 }
+
+/// <summary>The review's ten, each pinned — most were silent losses, two were injection holes.</summary>
+public class EmailReviewFindingsTests
+{
+    private static readonly IAppTheme Theme = PhotonTheme.Instance;
+
+    private static string Html(VisualNode node) => EmailRealizer.Lower(node, Theme);
+
+    [Fact]
+    public void AttributeValuesCannotBreakOutOfTheirQuotes()
+    {
+        var html = Html(new Image("https://cdn.example.com/a.png?w=1&h=2", 10, 10,
+            alt: "he said \"hi\" & left"));
+
+        html.Should().Contain("a.png?w=1&amp;h=2", "a bare & is malformed HTML some clients rewrite");
+        html.Should().Contain("&quot;hi&quot;", "a quote would end the attribute and inject markup");
+        html.Should().NotContain("alt=\"he said \"");
+    }
+
+    [Fact]
+    public void AMailtoImageIsAnErrorNotABrokenPicture()
+    {
+        var act = () => Html(new Image("mailto:x@y.z", 10, 10));
+
+        act.Should().Throw<NotSupportedException>();
+    }
+
+    [Fact]
+    public void FractionalSizesSurviveInvariantly()
+    {
+        var html = Html(new Text("x", styleOverride: new TypeStyle(13.5f, 20, FontWeight.Regular, 0.25f, 1f)));
+
+        // (int) truncation turned 13.5 into 13 — and a pt-PT machine would print 13,5, which CSS
+        // cannot read. Invariant, fraction-preserving.
+        html.Should().Contain("font-size: 13.5px").And.Contain("letter-spacing: 0.25px");
+    }
+
+    [Fact]
+    public void RunsKeepTheirEmphasisColorAndLink()
+    {
+        var text = new Text("")
+        {
+            Spans =
+            [
+                new TextRun("plain "),
+                new TextRun("bold") { Weight = FontWeight.Bold },
+                new TextRun(" and "),
+                new TextRun("a link") { Destination = "https://example.com/x" },
+            ],
+        };
+
+        var html = Html(text);
+
+        // Flattening to PlainContent silently dropped every run's emphasis — and turned a LINKED
+        // run into text the reader cannot act on, which in a transactional mail is the content.
+        html.Should().Contain("font-weight: 700").And.Contain("href=\"https://example.com/x\"");
+        html.Should().Contain(">bold<").And.Contain(">a link<");
+    }
+
+    [Fact]
+    public void ATranslucentTokenIsFlattenedNotEightDigitHex()
+    {
+        var translucent = new ColorToken(Color.FromRgba(0, 0, 0, 128));
+        var html = Html(new Text("x", color: translucent));
+
+        // #RRGGBBAA is CSS Color 4 — Word's engine does not read it, and the ink would be LOST
+        // there, not dimmed. Flattened over the theme's surface instead: a mid-gray, six digits.
+        html.Should().NotContainAny("#00000080", "rgba(");
+        html.Should().MatchRegex("color: #[0-9a-f]{6}[\";]");
+    }
+
+    [Fact]
+    public void ANestedComponentExpandsInsteadOfThrowing()
+    {
+        var column = new Column(gap: Space.S2);
+        column.Add(new Footer());
+
+        var html = Html(column);
+
+        html.Should().Contain("from a component");
+    }
+
+    private sealed class Footer : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context)
+            => new Text("from a component", TypeRole.Caption);
+    }
+
+    [Fact]
+    public void MonoItalicTrackingAndAlignmentReachTheInlineStyle()
+    {
+        var html = Html(new Text("42", TypeRole.BodyM, mono: true, tabular: true, align: TextAlignment.Center));
+
+        html.Should().Contain("monospace").And.Contain("tabular-nums").And.Contain("text-align: center");
+    }
+
+    [Fact]
+    public void ContainScalesByWidthAndLetsHeightFollow()
+    {
+        var html = Html(new Image("https://cdn.example.com/a.png", 300, 200, ImageFit.Contain));
+
+        // No object-fit exists in this medium. Contain = whole source visible: width pinned,
+        // height auto, the box's height follows the image instead of cropping it.
+        html.Should().Contain("height: auto").And.NotContain("height=\"200\"");
+    }
+}
+
+/// <summary>Renderer-level findings: the shell constant and the plain-text gap.</summary>
+public class EmailRendererReviewTests
+{
+    private static readonly IAppTheme Theme = PhotonTheme.Instance;
+
+    [Fact]
+    public void ThePlainTextSeparatesSectionsLikeTheHtmlDoes()
+    {
+        var tree = new Column(gap: Space.S4);
+        tree.Add(new Text("First section", TypeRole.Heading));
+        tree.Add(new Text("Second section", TypeRole.BodyM));
+
+        var message = EmailRenderer.Render(tree, Theme);
+
+        // The gap that separates sections in the HTML separates them here too — the documented
+        // contract the walker was ignoring.
+        message.PlainText.Should().Contain("First section\n\nSecond section");
+    }
+}

@@ -30,7 +30,7 @@ public static class EmailRenderer
     public static EmailMessage Render(VisualNode tree, IAppTheme theme, string? preheader = null)
     {
         var body = EmailRealizer.Lower(tree, theme);
-        return new EmailMessage(Shell(body, theme, preheader), PlainText(tree));
+        return new EmailMessage(Shell(body, theme, preheader), PlainText(tree, theme));
     }
 
     private static string Shell(string body, IAppTheme theme, string? preheader)
@@ -62,7 +62,7 @@ public static class EmailRenderer
 
         html.Append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse: collapse\">");
         html.Append("<tr><td align=\"center\" style=\"padding: 24px 12px\">");
-        html.Append($"<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse: collapse; width: 600px; max-width: 100%; background-color: {surface}\">");
+        html.Append($"<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse: collapse; width: {BodyWidth}px; max-width: 100%; background-color: {surface}\">");
         html.Append("<tr><td style=\"padding: 24px\">");
         html.Append(body);
         html.Append("</td></tr></table>");
@@ -76,14 +76,14 @@ public static class EmailRenderer
     /// gap separated sections. Writing it by hand is how the two parts drift; walking the tree is
     /// how they cannot.
     /// </summary>
-    private static string PlainText(VisualNode node)
+    private static string PlainText(VisualNode node, IAppTheme theme)
     {
         var text = new StringBuilder();
-        WalkText(node, text);
+        WalkText(node, theme, text);
         return text.ToString().Trim();
     }
 
-    private static void WalkText(VisualNode node, StringBuilder text)
+    private static void WalkText(VisualNode node, IAppTheme theme, StringBuilder text)
     {
         switch (node)
         {
@@ -91,33 +91,44 @@ public static class EmailRenderer
                 text.AppendLine(t.PlainContent);
                 break;
             case Column column:
-                foreach (var child in column.Children) WalkText(child, text);
+                // The gap that separates sections in the HTML separates them here too — a blank
+                // line between children, never after the last, the same rule the spacer rows follow.
+                var firstChild = true;
+                foreach (var child in column.Children)
+                {
+                    if (!firstChild && column.Gap > 0) text.AppendLine();
+                    firstChild = false;
+                    WalkText(child, theme, text);
+                }
                 break;
             case Row row:
                 var parts = new List<string>();
                 foreach (var child in row.Children)
                 {
                     var part = new StringBuilder();
-                    WalkText(child, part);
+                    WalkText(child, theme, part);
                     var line = part.ToString().Trim();
                     if (line.Length > 0) parts.Add(line);
                 }
                 if (parts.Count > 0) text.AppendLine(string.Join("  ", parts));
                 break;
             case Box box when box.Child is { } child:
-                WalkText(child, text);
+                WalkText(child, theme, text);
                 break;
             case Link link:
                 // The address IS the content: a text alternative without the URL is a message the
                 // reader cannot act on. Label first, address after, the convention every plain-text
                 // mail has always used.
                 var label = new StringBuilder();
-                WalkText(link.Child, label);
+                WalkText(link.Child, theme, label);
                 var trimmed = label.ToString().Trim();
                 text.AppendLine(trimmed.Length > 0 ? $"{trimmed}: {link.Destination}" : link.Destination);
                 break;
             case Image image when image.Alt.Length > 0:
                 text.AppendLine(image.Alt);
+                break;
+            case UiComponent component:
+                WalkText(component.BuildContained(new ComponentContext(theme)), theme, text);
                 break;
         }
     }
