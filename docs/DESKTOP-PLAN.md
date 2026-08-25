@@ -47,9 +47,15 @@ commitments.
 `DrawCommandKind.FillAnnularSector` (center, inner/outer radius, start/end angle, angular gap,
 corner smoothing) as an exact SDF in `Sdf.slang`, Reference↔Metal↔Vulkan parity like every other
 command. This is NOT a path engine — it is one more shape in the SDF family the engine is built
-on, and the existing radial gradient covers its shading. For blob-like art: `FillConvexPolygon`
-(triangulated fan or half-plane SDF) **or** an eviction path in `IconRasterCache` + the dynamic
-texture route — decide on the consumer's spike, not here.
+on, and the existing radial gradient covers its shading.
+
+For blob-like art the decision stays OPEN, and the constraint that decides it is spelled out so
+the consumer's spike measures both routes: the shape is DYNAMIC — on the order of 16 points
+re-tessellated **every frame**. A `FillConvexPolygon` command (triangulated fan or half-plane SDF)
+pays per-vertex work on the GPU each frame; the texture route (`IconRasterCache` eviction + the
+dynamic-texture path that `TextureData.Version` already supports) pays a CPU re-raster per frame
+instead. Neither is obviously right at that cadence — the spike benchmarks both on the real
+16-point blob before W1 commits to either.
 
 Unblocks: sunburst charts, ring selections, donut gauges, mascot bodies.
 
