@@ -98,6 +98,21 @@ export class SizeValue {
     return new SizeValue('fixed', dp);
   }
 
+  /**
+   * C#'s `SizeValue.WindowMinus(inset)` — the window's extent less a fixed inset. The C# side threw
+   * for a negative inset with this exact reasoning, and the twin agrees: an inset is what to
+   * SUBTRACT, so it is never negative; for more than the window, ask for the size you want.
+   */
+  static windowMinus(inset: number): SizeValue {
+    if (inset < 0) {
+      throw new RangeError(
+        'A window inset is what to SUBTRACT from the window, so it is never negative. ' +
+          'For more than the window, ask for the size you want.',
+      );
+    }
+    return new SizeValue('windowMinus', inset);
+  }
+
   /** C#'s implicit float→SizeValue: numbers appearing where a size is expected become Fixed. */
   static from(value: SizeValue | number | undefined | null): SizeValue | undefined {
     if (value === undefined || value === null) return undefined;
@@ -199,7 +214,9 @@ export class TypeStyle implements TypeStyleValue {
    */
   withSize(size: number): TypeStyle {
     const lineHeight =
-      this.size <= 0 ? this.lineHeight : dotnetRound(((this.lineHeight * size) / this.size) * 2) / 2;
+      this.size <= 0
+        ? this.lineHeight
+        : dotnetRound(((this.lineHeight * size) / this.size) * 2) / 2;
     return new TypeStyle(
       size,
       lineHeight,
