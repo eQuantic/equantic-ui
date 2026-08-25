@@ -160,20 +160,20 @@ public class ForeignRecordHydrationTests
             .Cast<Microsoft.CodeAnalysis.MetadataReference>()
             .ToList();
         var domainPath = Path.Combine(Path.GetTempPath(), $"acme-domain-{Guid.NewGuid():N}.dll");
-        var domain = Microsoft.CodeAnalysis.CSharp.CSharpCompilation.Create(
-                "Acme.Domain",
-                [Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(Domain)],
-                processRefs,
-                new Microsoft.CodeAnalysis.CSharp.CSharpCompilationOptions(
-                    Microsoft.CodeAnalysis.OutputKind.DynamicallyLinkedLibrary));
-        using (var output = File.Create(domainPath))
-            domain.Emit(output).Success.Should().BeTrue(
-                string.Join("; ", domain.GetDiagnostics()
-                    .Where(d => d.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error)));
-
         var pagePath = Path.Combine(Path.GetTempPath(), $"acme-page-{Guid.NewGuid():N}");
         try
         {
+            var domain = Microsoft.CodeAnalysis.CSharp.CSharpCompilation.Create(
+                    "Acme.Domain",
+                    [Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(Domain)],
+                    processRefs,
+                    new Microsoft.CodeAnalysis.CSharp.CSharpCompilationOptions(
+                        Microsoft.CodeAnalysis.OutputKind.DynamicallyLinkedLibrary));
+            using (var output = File.Create(domainPath))
+                domain.Emit(output).Success.Should().BeTrue(
+                    string.Join("; ", domain.GetDiagnostics()
+                        .Where(d => d.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error)));
+
             Directory.CreateDirectory(pagePath);
             File.WriteAllText(Path.Combine(pagePath, "HomePage.cs"), Page);
 
@@ -212,7 +212,7 @@ public class ForeignRecordHydrationTests
         finally
         {
             if (Directory.Exists(pagePath)) Directory.Delete(pagePath, recursive: true);
-            File.Delete(domainPath);
+            if (File.Exists(domainPath)) File.Delete(domainPath);
         }
     }
 }
