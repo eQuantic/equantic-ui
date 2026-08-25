@@ -12,7 +12,7 @@ import { SizeValue } from './value-types';
 describe('SizeValue statics mirror the C# surface', () => {
   it('carries every C# factory by its camelCase name', () => {
     for (const name of ['hug', 'fill', 'fixed', 'from', 'windowMinus'])
-      expect(Object.hasOwn(SizeValue, name), `SizeValue.${name}`).toBe(true);
+      expect(Object.prototype.hasOwnProperty.call(SizeValue, name), `SizeValue.${name}`).toBe(true);
   });
 
   it('windowMinus builds the kind the lowering already understands', () => {
