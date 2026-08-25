@@ -133,6 +133,9 @@ public static class EmailRenderer
                 var label = new StringBuilder();
                 WalkText(link.Child, theme, label);
                 var trimmed = label.ToString().Trim();
+                // The same fallback the HTML's aria-label carries: an icon-only link with an empty
+                // alt is exactly what Label exists for, and the two alternatives must not drift.
+                if (trimmed.Length == 0 && !string.IsNullOrEmpty(link.Label)) trimmed = link.Label;
                 text.AppendLine(trimmed.Length > 0 ? $"{trimmed}: {link.Destination}" : link.Destination);
                 break;
             case Image image when image.Alt.Length > 0:

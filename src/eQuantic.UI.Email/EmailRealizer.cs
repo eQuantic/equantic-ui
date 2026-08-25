@@ -75,8 +75,22 @@ public static class EmailRealizer
     /// property — is a SPACER ROW with an explicit height, between children and never after the
     /// last, which is exactly what <c>gap</c> means.
     /// </summary>
+    /// <summary>
+    /// MainAlign is VACUOUS here, on both axes, and that is documented rather than fenced: an email
+    /// table sizes to its content, so there is no free space for Start/Center/End to distribute and
+    /// no gap for SpaceBetween to widen — every value renders identically, which is faithful, not
+    /// divergent. Cross is real (a narrower child sits somewhere in a full-width column) and maps
+    /// to the cell's align; padding wraps the table in the one-cell shell email understands.
+    /// </summary>
     private static void WriteColumn(Column column, ComponentContext context, StringBuilder html)
     {
+        OpenPadding(column.Padding, html);
+        var align = column.Cross switch
+        {
+            CrossAlign.Center => " align=\"center\"",
+            CrossAlign.End => " align=\"right\"",
+            _ => "",
+        };
         html.Append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse: collapse\">");
         var first = true;
         foreach (var child in column.Children)
@@ -85,16 +99,33 @@ public static class EmailRealizer
                 html.Append($"<tr><td style=\"height: {Px(column.Gap)}; line-height: {Px(column.Gap)}; font-size: 0\">&nbsp;</td></tr>");
             first = false;
 
-            html.Append("<tr><td style=\"vertical-align: top\">");
+            html.Append($"<tr><td{align} style=\"vertical-align: top\">");
             Write(child, context, html);
             html.Append("</td></tr>");
         }
         html.Append("</table>");
+        ClosePadding(column.Padding, html);
+    }
+
+    /// <summary>Container padding, in the one form every client honours: a one-cell wrapper table.</summary>
+    private static void OpenPadding(EdgeInsets padding, StringBuilder html)
+    {
+        if (padding == EdgeInsets.Zero) return;
+        var value = padding.Top == padding.End && padding.End == padding.Bottom && padding.Bottom == padding.Start
+            ? Px(padding.Top)
+            : $"{Px(padding.Top)} {Px(padding.End)} {Px(padding.Bottom)} {Px(padding.Start)}";
+        html.Append($"<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse: collapse\"><tr><td style=\"padding: {value}\">");
+    }
+
+    private static void ClosePadding(EdgeInsets padding, StringBuilder html)
+    {
+        if (padding != EdgeInsets.Zero) html.Append("</td></tr></table>");
     }
 
     /// <summary>A Row is exactly one table row; its gap is a spacer CELL with an explicit width.</summary>
     private static void WriteRow(Row row, ComponentContext context, StringBuilder html)
     {
+        OpenPadding(row.Padding, html);
         html.Append("<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse: collapse\"><tr>");
         var first = true;
         foreach (var child in row.Children)
@@ -108,6 +139,7 @@ public static class EmailRealizer
             html.Append("</td>");
         }
         html.Append("</tr></table>");
+        ClosePadding(row.Padding, html);
     }
 
     /// <summary>
@@ -118,6 +150,19 @@ public static class EmailRealizer
     /// </summary>
     private static void WriteText(Text text, IAppTheme theme, StringBuilder html)
     {
+        // The two Text options this medium cannot express, fenced rather than approximated:
+        // gradient ink (background-clip: text is not email CSS — a solid stand-in would be a
+        // different ink nobody chose) and MaxLines (no client clamps lines, and showing MORE text
+        // than the author bounded is a content divergence, not a style one).
+        if (text.Gradient is not null)
+            throw new NotSupportedException(
+                "Gradient text cannot be realized in an email — no client paints it. Give the "
+                + "email's text a solid color.");
+        if (text.MaxLines > 0)
+            throw new NotSupportedException(
+                "MaxLines cannot be realized in an email — no client clamps lines, so the whole "
+                + "text would show. Shorten the content for this medium instead.");
+
         var style = text.StyleOverride ?? theme.Type(text.Role);
         var ink = Literal(text.Color ?? theme.TextPrimary, theme);
 

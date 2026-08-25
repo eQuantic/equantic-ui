@@ -533,3 +533,71 @@ public class EmailSecondWaveTests
             .Should().Contain("Reset your password (https://example.com/reset)");
     }
 }
+
+/// <summary>Third wave: shared properties this medium cannot express are fenced or honoured — and
+/// the one that is VACUOUS here is documented as such, not fenced.</summary>
+public class EmailThirdWaveTests
+{
+    private static readonly IAppTheme Theme = PhotonTheme.Instance;
+
+    private static string Html(VisualNode node) => EmailRealizer.Lower(node, Theme);
+
+    [Fact]
+    public void GradientInkIsFencedNotApproximated()
+    {
+        var act = () => Html(new Text("Hero", TypeRole.Heading)
+        {
+            Gradient = new LinearGradient(Theme.Colors(Variant.Primary).Base, Theme.Colors(Variant.Info).Base),
+        });
+
+        // A solid stand-in would be a different ink nobody chose.
+        act.Should().Throw<NotSupportedException>().WithMessage("*Gradient*");
+    }
+
+    [Fact]
+    public void MaxLinesIsFencedBecauseNoClientClamps()
+    {
+        var act = () => Html(new Text("long", TypeRole.BodyM, maxLines: 2));
+
+        // Showing MORE than the author bounded is a content divergence, not a style one.
+        act.Should().Throw<NotSupportedException>().WithMessage("*MaxLines*");
+    }
+
+    [Fact]
+    public void ContainerPaddingWrapsInTheOneCellShell()
+    {
+        var column = new Column(gap: 0, padding: EdgeInsets.All(24));
+        column.Add(new Text("x", TypeRole.BodyM));
+
+        Html(column).Should().Contain("padding: 24px");
+    }
+
+    [Fact]
+    public void ColumnCrossAlignsTheCells()
+    {
+        var column = new Column(gap: 0, cross: CrossAlign.Center);
+        column.Add(new Text("x", TypeRole.BodyM));
+
+        // Cross is REAL in a full-width column (a narrower child sits somewhere); Main is vacuous —
+        // a content-sized table has no free space to distribute — and stays undeclared on purpose.
+        Html(column).Should().Contain("align=\"center\"");
+    }
+}
+
+/// <summary>Third wave, renderer half.</summary>
+public class EmailRendererThirdWaveTests
+{
+    private static readonly IAppTheme Theme = PhotonTheme.Instance;
+
+    [Fact]
+    public void AnIconOnlyLinkFallsBackToItsLabelInPlainText()
+    {
+        var link = new Link("https://example.com/dash",
+            new Image("https://cdn.example.com/gear.png", 16, 16)) { Label = "Open the dashboard" };
+
+        var message = EmailRenderer.Render(link, Theme);
+
+        // The same name the HTML carries as aria-label — the two alternatives must not drift.
+        message.PlainText.Should().Contain("Open the dashboard: https://example.com/dash");
+    }
+}
