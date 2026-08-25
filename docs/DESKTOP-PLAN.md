@@ -114,10 +114,10 @@ auto-update story. W4's notification work lands on it.
 Raised by Edgar on 2026-08-25, and verified: TODAY only the DESKTOP loop is one command —
 `dotnet run` opens the Photon window, `dotnet watch` hot-reloads it in process (the window wakes).
 Running on a SIMULATOR or EMULATOR is a hand recipe: discover the device (`xcrun simctl list` /
-`adb devices`), boot it, install, launch with environment — steps that live in nobody's build.
+`adb devices`), boot it, install, launch with environment variables — steps that live in nobody's build.
 
 - **One command per target, embedded in `Sdk.Native`**: `dotnet build -t:RunIos` (find or boot a
-  simulator, install, `simctl launch` with env), `-t:RunAndroid` (`adb` discovery, `-gpu host`
+  simulator, install, `simctl launch` with environment variables), `-t:RunAndroid` (`adb` discovery, `-gpu host`
   boot when needed, install, `am start`). The recipe already exists as prose; it becomes MSBuild.
 - **`launchSettings.json` profiles in the native template**, so Rider/VS run/debug are one click:
   a "Photon (desktop)" profile (`commandName: Project` — full debugging, it IS the project

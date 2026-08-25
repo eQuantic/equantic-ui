@@ -318,8 +318,8 @@ Windows/Linux shells stay post-M5 as the engine plan already decided.
 
 W7 (added same day, raised by Edgar): the DEVELOPER LOOP — one command per target with device
 discovery embedded in `Sdk.Native` (`-t:RunIos` / `-t:RunAndroid`), `launchSettings.json` profiles
-so Rider/VS run one-click, hot reload staying `dotnet watch` on desktop and redeploy-on-save as the
-simulator's first honest rung.
+so Rider/VS run and debug in one click, hot reload staying `dotnet watch` on desktop and
+redeploy-on-save as the first honest rung on simulators and emulators.
 
 Full gaps-with-evidence, sequencing and per-workstream acceptance: `docs/DESKTOP-PLAN.md`.
 
