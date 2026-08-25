@@ -16,7 +16,7 @@ Each was verified by reading the code, not the docs. File references are the pro
 | W-B3 | No app-facing frame clock | `IClock.cs` — the fence is verbatim: "this is a PERIODIC clock, not a frame clock… Per-frame animation is a [different thing]" |
 | W-B4 | Hit-testing is rectangle-only | `PhotonHost.cs:1431-1459` — every pointer resolution is `Bounds.Contains(point)` on AABBs; `OnPressed` carries no coordinates |
 | W-B5 | No desktop shell surface (menus, tray, file dialogs, notifications, deep links, drag & drop, dock, launch-at-login) | the macOS shell exposes a window + capabilities; none of these seams exist |
-| W-B6 | Ad-hoc signing, no notarization hook | `Sdk.Native/Sdk/Sdk.targets:121` — `codesign --force --deep --sign -`; TCC grants (Full Disk Access) are keyed to the identity, so they break every build |
+| W-B6 | Ad-hoc signing, no notarization hook | `src/eQuantic.UI.Sdk.Native/Sdk/Sdk.targets:121` — `codesign --force --deep --sign -`; TCC grants (Full Disk Access) are keyed to the identity, so they break every build |
 | W-B7 | One window per process | `PhotonContentView` / `PhotonAccessibility` hold static fields; `PhotonWindow.Run` blocks |
 
 **What already exists and shrinks the work** — found in the same sweep, and the reason estimates
