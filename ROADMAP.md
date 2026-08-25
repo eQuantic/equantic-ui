@@ -316,7 +316,7 @@ entitlements, notarization, publish-based bundling, minimal updater — sequence
 independents because the identity unblocks TCC, notifications and updates at once; W6
 Windows/Linux shells stay post-M5 as the engine plan already decided.
 
-W7 (added same day, raised by Edgar): the DEVELOPER LOOP — one command per target with device
+W7 (added 2026-08-25, raised by Edgar): the DEVELOPER LOOP — one command per target with device
 discovery embedded in `Sdk.Native` (`-t:RunIos` / `-t:RunAndroid`), `launchSettings.json` profiles
 so Rider/VS run and debug in one click, hot reload staying `dotnet watch` on desktop and
 redeploy-on-save as the first honest rung on simulators and emulators.
