@@ -214,7 +214,9 @@ export class TypeStyle implements TypeStyleValue {
    */
   withSize(size: number): TypeStyle {
     const lineHeight =
-      this.size <= 0 ? this.lineHeight : dotnetRound(((this.lineHeight * size) / this.size) * 2) / 2;
+      this.size <= 0
+        ? this.lineHeight
+        : dotnetRound(((this.lineHeight * size) / this.size) * 2) / 2;
     return new TypeStyle(
       size,
       lineHeight,
