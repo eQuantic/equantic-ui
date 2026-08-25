@@ -291,6 +291,33 @@ culture-aware FORMATTING subset and 3+ form plurals) in `docs/I18N-PLAN.md`. 202
 now also covers the SDK's OWN component strings (D14/W8 — a11y announcements were hardcoded
 English), the `CurrentCulture`/`CurrentUICulture` pair, and `<html lang>` from the request culture.
 
+## Track W — Photon on the desktop
+
+Added 2026-08-25, born from the OS Cleaner migration plan (the app's own plan maps its S1–S6 onto
+W1–W6 here) — but nothing in it is app-specific: these are the fences Photon has to close to claim
+DESKTOP APP, each verified in code, not docs. Eight draw commands and no arbitrary paths
+(`DisplayList.cs`); a deliberately PERIODIC `IClock` whose own fence names the frame clock as the
+thing not yet built; rectangle-only hit-testing (`PhotonHost.cs` — `Bounds.Contains` on AABBs); no
+desktop shell surface (menus, tray, file dialogs, notifications, deep links); ad-hoc signing
+(`--sign -`) that breaks TCC grants every build; one window per process.
+
+The sweep also found what SHRINKS the work: a deterministic time channel already runs through
+layout (`TransitionStore`, pure in `(path, target, timeMs)`, wired at two call sites), the 120 Hz
+driver exists (as a run-loop timer — the ticker work upgrades it to a display link), two-stop
+radial gradients exist, and the shader toolchain self-resolves — so W1 (annular-sector SDF) is
+startable immediately.
+
+Workstreams: W1 engine shapes (annular sector + convex polygon, SDF family, NOT a path engine);
+W2 frame clock + tweens/springs + `BoxStyle.Transition` honored natively + `IUiDispatcher`
+(revised DOWN from the consumer's estimate — the store and time thread exist); W3 a custom drawing
+node with local-coordinate pointer events (also the hit-testing seam the headless-browser
+instrument has waited for); W4 the macOS desktop shell surface; W5 real packaging — signing,
+entitlements, notarization, publish-based bundling, minimal updater — sequenced FIRST among the
+independents because the identity unblocks TCC, notifications and updates at once; W6
+Windows/Linux shells stay post-M5 as the engine plan already decided.
+
+Full gaps-with-evidence, sequencing and per-workstream acceptance: `docs/DESKTOP-PLAN.md`.
+
 ## Track M — Email rendering
 
 Added 2026-08-24 (Edgar's question): author an email in C# with the same components a page is
