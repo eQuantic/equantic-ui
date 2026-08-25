@@ -104,11 +104,12 @@ export class SizeValue {
    * SUBTRACT, so it is never negative; for more than the window, ask for the size you want.
    */
   static windowMinus(inset: number): SizeValue {
-    if (inset < 0)
+    if (inset < 0) {
       throw new RangeError(
         'A window inset is what to SUBTRACT from the window, so it is never negative. ' +
           'For more than the window, ask for the size you want.',
       );
+    }
     return new SizeValue('windowMinus', inset);
   }
 
