@@ -45,6 +45,12 @@ public static class EmailRealizer
             case Box box:
                 WriteBox(box, theme, html);
                 break;
+            case Image image:
+                WriteImage(image, html);
+                break;
+            case Link link:
+                WriteLink(link, theme, html);
+                break;
             default:
                 // Fail loud with the node's name and the reason, because the alternative is a page
                 // that renders without a piece of itself and says nothing.
@@ -138,6 +144,60 @@ public static class EmailRealizer
             .Append($"<tr><td style=\"{cell}\">");
         if (box.Child is { } child) Write(child, theme, html);
         html.Append("</td></tr></table>");
+    }
+
+    /// <summary>
+    /// An image by ABSOLUTE address, sized by ATTRIBUTES. The reader's client opens the message
+    /// with no origin to resolve a relative URL against, and Gmail strips <c>data:</c> URIs — so
+    /// either one is an error here, not a broken picture in someone's inbox. Word's engine sizes
+    /// images from the width/height attributes, and <c>display: block</c> kills the baseline gap
+    /// every client adds under an inline image.
+    /// </summary>
+    private static void WriteImage(Image image, StringBuilder html)
+    {
+        RequireAbsolute(image.Source, "An image in an email");
+
+        // One mode, decided once: colors take the theme's light leg, artwork takes the light source.
+        html.Append($"<img src=\"{image.Source}\" width=\"{(int)image.Width}\" height=\"{(int)image.Height}\" ")
+            .Append($"alt=\"{Escape(image.Alt)}\" ")
+            .Append($"style=\"display: block; border: 0; width: {(int)image.Width}px; height: {(int)image.Height}px");
+        if (image.CornerRadius != CornerRadii.Zero)
+            html.Append($"; border-radius: {(int)image.CornerRadius.TopLeft}px");
+        html.Append("\">");
+    }
+
+    /// <summary>
+    /// A Link is a destination and a child; the child says what it looks like. A TEXT child is
+    /// underlined — there is no hover in this medium to reveal a link, so it must look like one. A
+    /// painted child (the bulletproof-button pattern: a Box around a label) is not — the box is the
+    /// affordance — and the anchor is inline-block so it takes the box's size.
+    /// </summary>
+    private static void WriteLink(Link link, IAppTheme theme, StringBuilder html)
+    {
+        RequireAbsolute(link.Destination, "A link in an email");
+
+        var textual = link.Child is Text;
+        html.Append($"<a href=\"{link.Destination}\" ")
+            .Append(textual
+                ? "style=\"text-decoration: underline; color: inherit\">"
+                : "style=\"text-decoration: none; color: inherit; display: inline-block\">");
+        Write(link.Child, theme, html);
+        html.Append("</a>");
+    }
+
+    /// <summary>Absolute https/http or mailto — the only addresses that mean anything in an inbox.</summary>
+    private static void RequireAbsolute(string address, string what)
+    {
+        if (address.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+            throw new NotSupportedException(
+                $"{what} cannot use a data: URI — Gmail strips them. Serve the asset from an "
+                + "absolute https URL.");
+        if (!address.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+            && !address.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+            && !address.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase))
+            throw new NotSupportedException(
+                $"{what} needs an absolute address ('{address}' is relative): the reader's client "
+                + "opens the message with no origin to resolve it against.");
     }
 
     internal static string Hex(Color color) =>

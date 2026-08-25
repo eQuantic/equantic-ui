@@ -107,6 +107,18 @@ public static class EmailRenderer
             case Box box when box.Child is { } child:
                 WalkText(child, text);
                 break;
+            case Link link:
+                // The address IS the content: a text alternative without the URL is a message the
+                // reader cannot act on. Label first, address after, the convention every plain-text
+                // mail has always used.
+                var label = new StringBuilder();
+                WalkText(link.Child, label);
+                var trimmed = label.ToString().Trim();
+                text.AppendLine(trimmed.Length > 0 ? $"{trimmed}: {link.Destination}" : link.Destination);
+                break;
+            case Image image when image.Alt.Length > 0:
+                text.AppendLine(image.Alt);
+                break;
         }
     }
 }

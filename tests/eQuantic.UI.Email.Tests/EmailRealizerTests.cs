@@ -167,11 +167,118 @@ public class EmailRendererTests
     }
 
     [Fact]
+    public void ThePlainTextCarriesLinksAndImageAlts()
+    {
+        var tree = new Column(gap: Space.S4);
+        tree.Add(new Image("https://cdn.example.com/logo.png", 132, 26, alt: "eQuantic"));
+        tree.Add(new Link("https://example.com/confirm", new Text("Confirm your account", TypeRole.Label)));
+
+        var message = EmailRenderer.Render(tree, Theme);
+
+        // The URL is the only ACTIONABLE thing in most transactional mail — a text alternative
+        // without it is a message the reader cannot act on. The convention: label, then address.
+        message.PlainText.Should().Contain("Confirm your account: https://example.com/confirm");
+        message.PlainText.Should().Contain("eQuantic");
+    }
+
+    [Fact]
     public void APreheaderRidesInvisiblyWhenGiven()
     {
         var message = EmailRenderer.Render(new WelcomeEmail(), Theme, preheader: "Your account is ready");
 
         // The inbox preview line: present in the HTML, hidden in the rendering.
         message.Html.Should().Contain("Your account is ready").And.Contain("display: none");
+    }
+}
+
+/// <summary>
+/// Images and links — the two nodes where email's rules are about ADDRESSES, not layout: the
+/// message is opened with no origin to resolve a relative URL against, and Gmail drops data: URIs.
+/// </summary>
+public class EmailMediaTests
+{
+    private static readonly IAppTheme Theme = PhotonTheme.Instance;
+
+    private static string Html(VisualNode node) => EmailRealizer.Lower(node, Theme);
+
+    [Fact]
+    public void AnImageCarriesItsAddressSizeAndAlt()
+    {
+        var html = Html(new Image("https://cdn.example.com/logo.png", 132, 26, alt: "eQuantic"));
+
+        // Width/height as ATTRIBUTES, not only CSS: Word's engine sizes images from the attributes.
+        html.Should().Contain("src=\"https://cdn.example.com/logo.png\"")
+            .And.Contain("width=\"132\"").And.Contain("height=\"26\"")
+            .And.Contain("alt=\"eQuantic\"");
+        // display:block kills the mystery baseline gap every mail client adds under inline images.
+        html.Should().Contain("display: block");
+    }
+
+    [Fact]
+    public void ARelativeOrDataImageIsAnErrorNotABrokenPicture()
+    {
+        // The reader's client opens this with NO ORIGIN: /brand.svg points nowhere, and Gmail
+        // strips data: URIs. A broken picture in someone's inbox is not a rendering choice.
+        var relative = () => Html(new Image("/brand.svg", 132, 26));
+        var data = () => Html(new Image("data:image/png;base64,AAAA", 10, 10));
+
+        relative.Should().Throw<NotSupportedException>().WithMessage("*absolute*");
+        data.Should().Throw<NotSupportedException>().WithMessage("*data:*");
+    }
+
+    [Fact]
+    public void TheDarkArtworkIsResolvedTheSameWayColorsAre()
+    {
+        // One mode, decided once: colors take the light leg, artwork takes the light source.
+        var html = Html(new Image("https://cdn.example.com/logo.png", 132, 26)
+        {
+            DarkSource = "https://cdn.example.com/logo-white.png",
+        });
+
+        html.Should().Contain("logo.png").And.NotContain("logo-white.png");
+    }
+
+    [Fact]
+    public void ATextLinkIsAnUnderlinedAnchor()
+    {
+        var html = Html(new Link("https://example.com/confirm", new Text("Confirm", TypeRole.Label)));
+
+        // A text link must LOOK like a link: there is no hover in this medium to reveal it.
+        html.Should().Contain("<a href=\"https://example.com/confirm\"")
+            .And.Contain("text-decoration: underline");
+    }
+
+    [Fact]
+    public void ABoxLinkIsTheBulletproofButton()
+    {
+        var button = new Link("https://example.com/confirm",
+            new Box(new BoxStyle
+            {
+                Background = Theme.Colors(Variant.Primary).Base,
+                Padding = EdgeInsets.Symmetric(Space.S4, Space.S2),
+            }, new Text("Confirm", TypeRole.Label, Theme.Colors(Variant.Primary).OnBase)));
+
+        var html = Html(button);
+
+        // The button pattern: the anchor wraps the painted table, and is NOT underlined — the box
+        // is the affordance. display:inline-block so the anchor takes the box's size.
+        html.Should().Contain("<a href=").And.Contain("text-decoration: none")
+            .And.Contain("background-color: #");
+    }
+
+    [Fact]
+    public void ARelativeLinkIsAnErrorToo()
+    {
+        var act = () => Html(new Link("/confirm", new Text("Confirm", TypeRole.Label)));
+
+        act.Should().Throw<NotSupportedException>().WithMessage("*absolute*");
+    }
+
+    [Fact]
+    public void MailtoIsAValidDestination()
+    {
+        var html = Html(new Link("mailto:support@equantic.dev", new Text("Support", TypeRole.Label)));
+
+        html.Should().Contain("href=\"mailto:support@equantic.dev\"");
     }
 }
