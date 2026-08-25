@@ -79,7 +79,52 @@ public static class HydrationSpec
             return named.Name;
         }
 
+        // A data type from a REFERENCED assembly has no twin to name — a page library's domain
+        // record is the ordinary case — but the model still knows its members, so the boundary
+        // stays typed STRUCTURALLY: `{ members: { downloads: 'long' } }` coerces the named members
+        // onto a copy of the plain object, no prototype involved. Without this, a foreign record's long crossed as the
+        // string EqJson wrote and met BigInt arithmetic in the browser — on a page the build had
+        // accepted and the server had rendered perfectly.
+        //
+        // Outside System/Microsoft only: the BCL's data shapes are either scalars handled above or
+        // types whose members are not payload.
+        if (!named.Locations.Any(location => location.IsInSource)
+            && !IsPlatformNamespace(named)
+            && visiting.Add(named))
+        {
+            // A recursion STACK, not a memo: the mark exists so a self-referential foreign type
+            // cannot recurse forever, and it comes off on the way out — left on, the SECOND field
+            // of the same foreign record silently got no spec at all.
+            try
+            {
+                return MembersSpec(named, referenced, visiting);
+            }
+            finally
+            {
+                visiting.Remove(named);
+            }
+        }
+
         return null;
+    }
+
+    /// <summary>The structural member map for a type with no twin, or null when no member needs
+    /// coercion. Names are camelCased exactly as EqJson writes them.</summary>
+    private static string? MembersSpec(INamedTypeSymbol named, ISet<string> referenced, HashSet<INamedTypeSymbol> visiting)
+    {
+        var entries = DataMembers(named)
+            .Select(member => (member.Name, Spec: Of(member.Type, referenced, visiting)))
+            .Where(member => member.Spec is not null)
+            .Select(member => $"{member.Name.ToCamelCase()}: {member.Spec}")
+            .ToList();
+        return entries.Count > 0 ? $"{{ members: {{ {string.Join(", ", entries)} }} }}" : null;
+    }
+
+    private static bool IsPlatformNamespace(INamedTypeSymbol named)
+    {
+        var space = named.ContainingNamespace?.ToDisplayString() ?? string.Empty;
+        return space == "System" || space.StartsWith("System.", System.StringComparison.Ordinal)
+            || space == "Microsoft" || space.StartsWith("Microsoft.", System.StringComparison.Ordinal);
     }
 
     /// <summary>The date/time compat scalars, by their one full name each.</summary>

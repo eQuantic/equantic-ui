@@ -44,6 +44,7 @@ export type HydrationSpec =
   | readonly [HydrationSpec]
   | { readonly dict: HydrationSpec }
   | { readonly tuple: readonly (HydrationSpec | null)[] }
+  | { readonly members: Readonly<Record<string, HydrationSpec>> }
   | HydratableConstructor;
 
 /** The value coerced to what the spec says it is. Null and undefined pass through untouched. */
@@ -60,6 +61,19 @@ export function hydrate(incoming: unknown, spec: HydrationSpec): unknown {
     const parts = (spec as { tuple: readonly (HydrationSpec | null)[] }).tuple;
     if (!Array.isArray(incoming)) return incoming;
     return incoming.map((element, i) => (parts[i] == null ? element : hydrate(element, parts[i]!)));
+  }
+  // A type with NO twin — a domain record from a referenced assembly — coerces STRUCTURALLY: a
+  // shallow COPY of the plain object with the named members hydrated, everything else verbatim,
+  // and no prototype involved because there is none to rebuild. A copy, not a mutation: the
+  // payload object may still be read by whoever else holds it.
+  if ('members' in (spec as { members?: Readonly<Record<string, HydrationSpec>> })) {
+    const members = (spec as { members: Readonly<Record<string, HydrationSpec>> }).members;
+    if (typeof incoming !== 'object' || Array.isArray(incoming)) return incoming;
+    const source = incoming as Record<string, unknown>;
+    const result: Record<string, unknown> = { ...source };
+    for (const key of Object.keys(members))
+      if (key in source) result[key] = hydrate(source[key], members[key]);
+    return result;
   }
   if ('dict' in (spec as { dict?: HydrationSpec })) {
     const inner = (spec as { dict: HydrationSpec }).dict;
