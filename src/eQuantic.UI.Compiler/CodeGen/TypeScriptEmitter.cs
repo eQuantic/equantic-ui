@@ -373,6 +373,11 @@ public class TypeScriptEmitter
                         var tsDefault = prop.DefaultValueNode != null 
                             ? _converter.ConvertExpression(prop.DefaultValueNode, prop.Type)
                             : ConvertToTsValue(prop.DefaultValue, prop.Type);
+                        // The default rides into the CONSTRUCTOR as text, past the converter's
+                        // helper tracking — `$eq.num.long(0)` in a module that never imported $eq
+                        // was "ReferenceError: $eq is not defined" at `new`, containing the
+                        // component on a page the server had rendered perfectly.
+                        if (tsDefault.Contains("$eq.")) component.UsedHelpers.Add(Eq.Import);
                         ctorStatements.Add(DefaultIfUndefined(camelName, tsDefault));
                     }
 
@@ -533,6 +538,9 @@ public class TypeScriptEmitter
                                 var def = p.DefaultValueNode != null
                                     ? _converter.ConvertExpression(p.DefaultValueNode, p.Type)
                                     : p.ImplicitDefaultJs!;
+                                // Same seam as above: ImplicitDefaultJs is parser-made text the
+                                // converter never saw, so the $eq it may carry is marked here.
+                                if (def.Contains("$eq.")) component.UsedHelpers.Add(Eq.Import);
                                 statements.Add(DefaultIfUndefined(cn, def));
                             }
                             var bodyLine = statements.Count + 1;
