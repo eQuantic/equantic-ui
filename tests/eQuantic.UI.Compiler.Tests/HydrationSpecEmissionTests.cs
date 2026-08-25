@@ -1,4 +1,8 @@
+using System;
+using System.IO;
+using System.Linq;
 using eQuantic.UI.Compiler;
+using FluentAssertions;
 using Xunit;
 
 namespace eQuantic.UI.Compiler.Tests;
@@ -97,5 +101,105 @@ public class HydrationSpecEmissionTests
         var page = results.Single(r => r.ComponentName == "Wallet");
         Assert.True(page.Success, string.Join("\n", page.Errors.Select(e => e.Message)));
         return page.TypeScript;
+    }
+}
+
+/// <summary>
+/// The STRUCTURAL half of the boundary: a domain record from a REFERENCED assembly — the ordinary
+/// shape of a page library — has no twin to name, so its spec names the members instead. Found by
+/// the web site: an array of foreign records carried its longs as the strings EqJson wrote, and the
+/// first division met "Cannot mix BigInt and other types", in the browser only.
+/// </summary>
+public class ForeignRecordHydrationTests
+{
+    private const string Domain = """
+        namespace Acme.Domain;
+
+        public enum PackageCategory { Data, Web }
+
+        public sealed record PackageSummary(
+            string Id, string Version, long Downloads, PackageCategory Category)
+        {
+            public bool IsPrerelease => Version.Contains('-');
+        }
+        """;
+
+    private const string Page = """
+        using System.Threading.Tasks;
+        using Acme.Domain;
+        using eQuantic.UI.Core;
+        using eQuantic.UI.Primitives;
+
+        [Page("/home")]
+        public sealed class HomePage : StatelessComponent, IServerPrefetch
+        {
+            private long _downloads = 790_000;
+            private PackageSummary[] _top = [];
+
+            [ServerOnly]
+            public Task PrefetchAsync(System.IServiceProvider services, System.Threading.CancellationToken ct)
+                => Task.CompletedTask;
+
+            public override VisualNode Build(ComponentContext context)
+                => new Text($"{_downloads}", TypeRole.BodyM);
+        }
+        """;
+
+    [Fact]
+    public void AForeignRecordsMembersKeepTheBoundaryTyped()
+    {
+        // The domain assembly is REAL metadata, not source — compiled here and referenced by path,
+        // exactly as a page library's consumer builds.
+        var processRefs = AppDomain.CurrentDomain.GetAssemblies()
+            .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
+            .Select(a => Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(a.Location))
+            .Cast<Microsoft.CodeAnalysis.MetadataReference>()
+            .ToList();
+        var domainPath = Path.Combine(Path.GetTempPath(), $"acme-domain-{Guid.NewGuid():N}.dll");
+        var domain = Microsoft.CodeAnalysis.CSharp.CSharpCompilation.Create(
+                "Acme.Domain",
+                [Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(Domain)],
+                processRefs,
+                new Microsoft.CodeAnalysis.CSharp.CSharpCompilationOptions(
+                    Microsoft.CodeAnalysis.OutputKind.DynamicallyLinkedLibrary));
+        using (var output = File.Create(domainPath))
+            domain.Emit(output).Success.Should().BeTrue(
+                string.Join("; ", domain.GetDiagnostics()
+                    .Where(d => d.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error)));
+
+        try
+        {
+            var pagePath = Path.Combine(Path.GetTempPath(), $"acme-page-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(pagePath);
+            File.WriteAllText(Path.Combine(pagePath, "HomePage.cs"), Page);
+
+            var refs = AppDomain.CurrentDomain.GetAssemblies()
+                .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
+                .Select(a => a.Location)
+                .Append(domainPath)
+                .Distinct()
+                .ToList();
+            var compilation = eQuantic.UI.Compiler.Services.ProjectCompilationHelper
+                .CreateCompilationFromSources(
+                    [Path.Combine(pagePath, "HomePage.cs")], refs, "Acme.Site");
+
+            var compiler = new ComponentCompiler();
+            compiler.SetProjectCompilation(compilation);
+            var twin = compiler.CompileDirectory(pagePath)
+                .Single(r => r.ComponentName == "HomePage").TypeScript;
+
+            // The scalar keeps its tag, and the foreign array gets the STRUCTURAL spec — member
+            // names camelCased exactly as EqJson writes them, the computed property absent (it is
+            // not a payload slot), no import of a module that exists nowhere.
+            twin.Should().Contain("_downloads: 'long'");
+            twin.Should().Contain("_top: [{ members: { downloads: 'long' } }]");
+            twin.Should().NotContain("from \"./PackageSummary\"");
+
+            Directory.Delete(pagePath, recursive: true);
+        }
+        finally
+        {
+            File.Delete(domainPath);
+        }
     }
 }
