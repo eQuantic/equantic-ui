@@ -62,9 +62,10 @@ export function hydrate(incoming: unknown, spec: HydrationSpec): unknown {
     if (!Array.isArray(incoming)) return incoming;
     return incoming.map((element, i) => (parts[i] == null ? element : hydrate(element, parts[i]!)));
   }
-  // A type with NO twin — a domain record from a referenced assembly — coerces STRUCTURALLY: the
-  // named members are hydrated in place on the plain object, everything else copies verbatim, and
-  // no prototype is involved because there is none to rebuild.
+  // A type with NO twin — a domain record from a referenced assembly — coerces STRUCTURALLY: a
+  // shallow COPY of the plain object with the named members hydrated, everything else verbatim,
+  // and no prototype involved because there is none to rebuild. A copy, not a mutation: the
+  // payload object may still be read by whoever else holds it.
   if ('members' in (spec as { members?: Readonly<Record<string, HydrationSpec>> })) {
     const members = (spec as { members: Readonly<Record<string, HydrationSpec>> }).members;
     if (typeof incoming !== 'object' || Array.isArray(incoming)) return incoming;

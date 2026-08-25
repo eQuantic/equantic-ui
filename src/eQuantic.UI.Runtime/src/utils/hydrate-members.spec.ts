@@ -4,12 +4,13 @@ import { hydrate } from './hydrate';
 
 /**
  * The STRUCTURAL half of the typed boundary: a domain record from a referenced assembly has no twin
- * to name, so its spec names the MEMBERS instead, and the plain object is coerced in place. Found
+ * to name, so its spec names the MEMBERS instead, and a copy of the plain object carries the
+ * coerced members. Found
  * by the web site: an array of foreign records carried `downloads: "121892"`, and the first
  * division met "Cannot mix BigInt and other types" — in the browser only, after a build the
  * compiler had accepted and a page the server had rendered perfectly.
  */
-describe('members specs coerce a twinless object in place', () => {
+describe('members specs coerce a copy of the twinless object', () => {
   it('coerces exactly the named members and copies the rest', () => {
     const incoming = { id: 'eQuantic.Core.Data', downloads: '121892', isPrerelease: false };
 

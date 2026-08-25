@@ -81,8 +81,8 @@ public static class HydrationSpec
 
         // A data type from a REFERENCED assembly has no twin to name — a page library's domain
         // record is the ordinary case — but the model still knows its members, so the boundary
-        // stays typed STRUCTURALLY: `{ members: { downloads: 'long' } }` coerces the plain object
-        // in place, no prototype involved. Without this, a foreign record's long crossed as the
+        // stays typed STRUCTURALLY: `{ members: { downloads: 'long' } }` coerces the named members
+        // onto a copy of the plain object, no prototype involved. Without this, a foreign record's long crossed as the
         // string EqJson wrote and met BigInt arithmetic in the browser — on a page the build had
         // accepted and the server had rendered perfectly.
         //
@@ -91,7 +91,19 @@ public static class HydrationSpec
         if (!named.Locations.Any(location => location.IsInSource)
             && !IsPlatformNamespace(named)
             && visiting.Add(named))
-            return MembersSpec(named, referenced, visiting);
+        {
+            // A recursion STACK, not a memo: the mark exists so a self-referential foreign type
+            // cannot recurse forever, and it comes off on the way out — left on, the SECOND field
+            // of the same foreign record silently got no spec at all.
+            try
+            {
+                return MembersSpec(named, referenced, visiting);
+            }
+            finally
+            {
+                visiting.Remove(named);
+            }
+        }
 
         return null;
     }

@@ -135,6 +135,7 @@ public class ForeignRecordHydrationTests
         {
             private long _downloads = 790_000;
             private PackageSummary[] _top = [];
+            private PackageSummary[] _alsoTop = [];
 
             [ServerOnly]
             public Task PrefetchAsync(System.IServiceProvider services, System.Threading.CancellationToken ct)
@@ -167,9 +168,9 @@ public class ForeignRecordHydrationTests
                 string.Join("; ", domain.GetDiagnostics()
                     .Where(d => d.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error)));
 
+        var pagePath = Path.Combine(Path.GetTempPath(), $"acme-page-{Guid.NewGuid():N}");
         try
         {
-            var pagePath = Path.Combine(Path.GetTempPath(), $"acme-page-{Guid.NewGuid():N}");
             Directory.CreateDirectory(pagePath);
             File.WriteAllText(Path.Combine(pagePath, "HomePage.cs"), Page);
 
@@ -195,10 +196,13 @@ public class ForeignRecordHydrationTests
             twin.Should().Contain("_top: [{ members: { downloads: 'long' } }]");
             twin.Should().NotContain("from \"./PackageSummary\"");
 
-            Directory.Delete(pagePath, recursive: true);
+            // TWO fields of the same foreign type: the cycle guard is a recursion STACK, not a
+            // memo — left marked, the second field silently got no spec at all.
+            twin.Should().Contain("_alsoTop: [{ members: { downloads: 'long' } }]");
         }
         finally
         {
+            if (Directory.Exists(pagePath)) Directory.Delete(pagePath, recursive: true);
             File.Delete(domainPath);
         }
     }
