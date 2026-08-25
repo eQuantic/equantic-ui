@@ -109,6 +109,26 @@ Sequenced FIRST among the independents deliberately: signing identity unblocks t
 once — TCC grants that survive builds, notifications (which require a signed bundle), and any
 auto-update story. W4's notification work lands on it.
 
+### W7 — The developer loop: run, debug, hot reload (2–3 w)
+
+Raised by Edgar on 2026-08-25, and verified: TODAY only the DESKTOP loop is one command —
+`dotnet run` opens the Photon window, `dotnet watch` hot-reloads it in process (the window wakes).
+Running on a SIMULATOR or EMULATOR is a hand recipe: discover the device (`xcrun simctl list` /
+`adb devices`), boot it, install, launch with environment — steps that live in nobody's build.
+
+- **One command per target, embedded in `Sdk.Native`**: `dotnet build -t:RunIos` (find or boot a
+  simulator, install, `simctl launch` with env), `-t:RunAndroid` (`adb` discovery, `-gpu host`
+  boot when needed, install, `am start`). The recipe already exists as prose; it becomes MSBuild.
+- **`launchSettings.json` profiles in the native template**, so Rider/VS run/debug are one click:
+  a "Photon (desktop)" profile (`commandName: Project` — full debugging, it IS the project
+  process) and "iOS Simulator"/"Android Emulator" profiles invoking the targets. Honest limit:
+  DEBUGGING inside a simulator/emulator process is its own story (attach), out of this slice.
+- **Hot reload**: desktop stays `dotnet watch` (works today). For simulator/emulator the first
+  honest rung is REDEPLOY-on-save through the same targets; true in-process hot reload across the
+  device boundary is future work and says so.
+
+Unblocks: the everyday loop of every native app — and the OS Cleaner's F1 onward.
+
 ### W6 — Shells Windows/Linux (post-M5, quarters)
 
 Out of this plan's horizon, as the engine roadmap already says (D3D12-vs-Vulkan decision is
