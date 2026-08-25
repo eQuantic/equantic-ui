@@ -71,4 +71,63 @@ public static class Sdf
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static float Coverage(float deviceDistance) =>
         Math.Clamp(0.5f - deviceDistance, 0f, 1f);
+
+    /// <summary>
+    /// Signed distance to an ANNULAR SECTOR (ring slice) centered at the origin — the W1 primitive
+    /// (docs/DESKTOP-PLAN.md): sunburst arcs, ring gauges, donut charts. EXACT, derived from the
+    /// folded geometry rather than an intersection bound, so the rounded variant stays a true SDF:
+    /// <para>
+    /// Angles are RADIANS, 0 along +X, increasing toward +Y — y grows down, so angles run CLOCKWISE
+    /// on screen. The sector spans <paramref name="startAngle"/>→<paramref name="endAngle"/>
+    /// (sweep ≤ 2π; a full ring is sweep 2π with rounding 0 — rounding at 2π rounds the seam).
+    /// <paramref name="rounding"/> rounds all four corners by insetting every boundary and
+    /// subtracting: the radii move in by ρ, the straight edges move in PERPENDICULARLY by ρ (an
+    /// euclidean inset, not an angular one — an angular shift would round thin inner corners more
+    /// than outer ones), and the final distance is the inset shape's minus ρ.
+    /// </para>
+    /// <para>
+    /// The fold: rotate by −mid so the sector is symmetric about +X, mirror to the upper half. With
+    /// w = the perpendicular distance to the edge line (inside-positive), a point angularly inside
+    /// the inset wedge (w ≥ ρ) sees only radial boundaries and that line — <c>max(rIn−r, r−rOut,
+    /// ρ−w)</c> is the exact signed distance; a point beyond it sees the inset edge SEGMENT, whose
+    /// endpoints sit where the inset line meets the inset arcs (<c>s = √(r² − ρ²)</c>).
+    /// </para>
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static float AnnularSector(Point p, float innerRadius, float outerRadius,
+        float startAngle, float endAngle, float rounding)
+    {
+        var rIn = innerRadius + rounding;
+        var rOut = outerRadius - rounding;
+        var mid = (startAngle + endAngle) / 2;
+        var half = (endAngle - startAngle) / 2;
+
+        var cosMid = MathF.Cos(mid);
+        var sinMid = MathF.Sin(mid);
+        var qx = cosMid * p.X + sinMid * p.Y;
+        var qy = MathF.Abs(-sinMid * p.X + cosMid * p.Y);
+        var r = MathF.Sqrt(qx * qx + qy * qy);
+
+        var sinHalf = MathF.Sin(half);
+        var cosHalf = MathF.Cos(half);
+        var w = qx * sinHalf - qy * cosHalf;
+
+        float d;
+        if (w >= rounding)
+        {
+            d = MathF.Max(MathF.Max(rIn - r, r - rOut), rounding - w);
+        }
+        else
+        {
+            var s = Math.Clamp(qx * cosHalf + qy * sinHalf,
+                MathF.Sqrt(MathF.Max(rIn * rIn - rounding * rounding, 0f)),
+                MathF.Sqrt(MathF.Max(rOut * rOut - rounding * rounding, 0f)));
+            var ex = s * cosHalf + rounding * sinHalf;
+            var ey = s * sinHalf - rounding * cosHalf;
+            var dx = qx - ex;
+            var dy = qy - ey;
+            d = MathF.Sqrt(dx * dx + dy * dy);
+        }
+        return d - rounding;
+    }
 }

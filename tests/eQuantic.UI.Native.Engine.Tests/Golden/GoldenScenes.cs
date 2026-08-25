@@ -49,6 +49,21 @@ public static class GoldenScenes
         ["circle"] = b =>
             b.FillRRect(new RRect(new Rect(55, 35, 50, 50), new CornerRadii(25)), Paint.Solid(Accent)),
 
+        // W1: the annular sector, in the shapes a sunburst actually draws — a plain slice, a
+        // ROUNDED slice with an angular gap, a slice shaded by the existing radial gradient, and a
+        // full ring (sweep 2π, rounding 0). One scene, three judges.
+        ["annular-sunburst"] = b =>
+        {
+            var c = new Point(80, 60);
+            b.FillAnnularSector(c, 14, 26, -2.9f, -0.6f, Paint.Solid(Accent), rounding: 2);
+            b.FillAnnularSector(c, 14, 26, -0.4f, 1.6f, Paint.Solid(Warm), rounding: 2);
+            b.FillAnnularSector(c, 30, 48,
+                -2.6f, -1.2f,
+                Paint.Radial(c, 48, 48, Warm, Mint), rounding: 3);
+            b.FillAnnularSector(c, 30, 48, -1.0f, 0.9f, Paint.Solid(Mint));
+            b.FillAnnularSector(c, 6, 10, 0, 2 * MathF.PI, Paint.Solid(Warm));
+        },
+
         ["border"] = b =>
             b.StrokeRRect(new RRect(new Rect(30, 25, 100, 70), new CornerRadii(12)), 4, Paint.Solid(Mint)),
 

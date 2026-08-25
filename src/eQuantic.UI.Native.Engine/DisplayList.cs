@@ -38,6 +38,15 @@ public enum DrawCommandKind : byte
     /// isolated from the backdrop; blurring through it needs the layer's own backdrop chain).
     /// </summary>
     BackdropBlur = 7,
+
+    /// <summary>
+    /// W1 (docs/DESKTOP-PLAN.md): fill an ANNULAR SECTOR — a ring slice. One more shape in the SDF
+    /// family, NOT a path engine. Slot reuse, the flat-command idiom StrokeWidth already set:
+    /// <see cref="DrawCommand.Shape"/>.Rect is the bounding square (center + outer radius), and
+    /// Radii carries [inner radius, start angle, end angle, corner rounding] — angles in radians,
+    /// 0 along +X, increasing toward +Y (y grows down: clockwise on screen).
+    /// </summary>
+    FillAnnularSector = 8,
 }
 
 /// <summary>
@@ -198,6 +207,33 @@ public sealed class DisplayListBuilder
         Transform = _current,
         Clip = _clip,
     });
+
+    /// <summary>
+    /// W1: an annular sector (ring slice) around <paramref name="center"/>, from
+    /// <paramref name="startAngle"/> to <paramref name="endAngle"/> (radians, 0 = +X, increasing
+    /// toward +Y — clockwise on screen, y grows down). <paramref name="rounding"/> rounds all four
+    /// corners. Sweep is capped at 2π; a full ring is sweep 2π with rounding 0.
+    /// </summary>
+    public void FillAnnularSector(Point center, float innerRadius, float outerRadius,
+        float startAngle, float endAngle, in Paint paint, float rounding = 0)
+    {
+        if (outerRadius <= 0 || endAngle <= startAngle) return;
+        innerRadius = Math.Clamp(innerRadius, 0, outerRadius);
+        endAngle = MathF.Min(endAngle, startAngle + 2 * MathF.PI);
+        // Rounding beyond half the band inverts the inset shape; clamp is the honest degenerate.
+        rounding = Math.Clamp(rounding, 0, (outerRadius - innerRadius) / 2);
+        var rect = new Rect(center.X - outerRadius, center.Y - outerRadius, outerRadius * 2, outerRadius * 2);
+        _commands.Add(new DrawCommand
+        {
+            Kind = DrawCommandKind.FillAnnularSector,
+            // NOT Normalized(): these slots are not corner radii (see the kind's doc), and the
+            // normalizer would clamp the angles against the rect.
+            Shape = new RRect(rect, new CornerRadii(innerRadius, startAngle, endAngle, rounding)),
+            Paint = paint,
+            Transform = _current,
+            Clip = _clip,
+        });
+    }
 
     public void StrokeRRect(in RRect shape, float strokeWidth, in Paint paint)
     {

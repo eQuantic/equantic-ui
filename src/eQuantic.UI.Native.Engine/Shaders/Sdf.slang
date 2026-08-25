@@ -52,6 +52,48 @@ float sdRoundedRect(float2 p, float2 halfSize, float4 radii)
     return outside + inside - r;
 }
 
+// Sdf.AnnularSector — the W1 ring-slice primitive. EXACT transliteration of the normative C#:
+// fold to the sector's symmetric half, then either the radial/edge-line max (angularly inside the
+// inset wedge) or the distance to the inset edge segment; rounding is an euclidean inset + subtract.
+// Radii slot reuse: [inner radius, start angle, end angle, rounding] (angles in radians, 0 = +X,
+// increasing toward +Y — y grows down, clockwise on screen).
+float sdAnnularSector(float2 p, float innerRadius, float outerRadius,
+    float startAngle, float endAngle, float rounding)
+{
+    float rIn = innerRadius + rounding;
+    float rOut = outerRadius - rounding;
+    float mid = (startAngle + endAngle) / 2.0;
+    float half = (endAngle - startAngle) / 2.0;
+
+    float cosMid = cos(mid);
+    float sinMid = sin(mid);
+    float qx = cosMid * p.x + sinMid * p.y;
+    float qy = abs(-sinMid * p.x + cosMid * p.y);
+    float r = sqrt(qx * qx + qy * qy);
+
+    float sinHalf = sin(half);
+    float cosHalf = cos(half);
+    float w = qx * sinHalf - qy * cosHalf;
+
+    float d;
+    if (w >= rounding)
+    {
+        d = max(max(rIn - r, r - rOut), rounding - w);
+    }
+    else
+    {
+        float s = clamp(qx * cosHalf + qy * sinHalf,
+            sqrt(max(rIn * rIn - rounding * rounding, 0.0)),
+            sqrt(max(rOut * rOut - rounding * rounding, 0.0)));
+        float ex = s * cosHalf + rounding * sinHalf;
+        float ey = s * sinHalf - rounding * cosHalf;
+        float dx = qx - ex;
+        float dy = qy - ey;
+        d = sqrt(dx * dx + dy * dy);
+    }
+    return d - rounding;
+}
+
 [shader("vertex")]
 float4 fullscreen_vertex(uint vid: SV_VertexID) : SV_Position
 {
@@ -69,12 +111,21 @@ float4 sdf_fragment(float4 position: SV_Position) : SV_Target
         pixel.x * u.inv0.x + pixel.y * u.inv0.y + u.inv0.z,
         pixel.x * u.inv1.x + pixel.y * u.inv1.y + u.inv1.z);
 
-    float d = sdRoundedRect(local - u.rect.xy, u.rect.zw, u.radii);
-    if (u.flags.x > 0.5 && u.flags.x < 1.5)
-        d = abs(d) - u.inv1.w / 2.0;  // Sdf.Stroke — centered band
+    // flags.x: 0 fill · 1 stroke · 2 shadow · 3 ANNULAR SECTOR (radii slots carry its params).
+    float d;
+    if (u.flags.x > 2.5)
+    {
+        d = sdAnnularSector(local - u.rect.xy, u.radii.x, u.rect.z, u.radii.y, u.radii.z, u.radii.w);
+    }
+    else
+    {
+        d = sdRoundedRect(local - u.rect.xy, u.rect.zw, u.radii);
+        if (u.flags.x > 0.5 && u.flags.x < 1.5)
+            d = abs(d) - u.inv1.w / 2.0;  // Sdf.Stroke — centered band
+    }
 
     float coverage;
-    if (u.flags.x > 1.5)
+    if (u.flags.x > 1.5 && u.flags.x < 2.5)
     {
         // Sdf.ShadowCoverage (§05): 1 − smoothstep(−1.5σ, +1.5σ, d), σ = blur/2 — device-scaled.
         float sigma = u.inv1.w * u.inv0.w / 2.0;
