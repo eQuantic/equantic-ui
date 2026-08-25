@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>eQuantic.UI.Email</PackageId>
+    <Description>eQuantic.UI EMAIL REALIZER — lowers the shared abstract components (eQuantic.UI.Primitives) to the HTML an email client will actually render: nested tables instead of flex, every style inline, every color literal. A third realizer beside web and Photon; the medium is merely more restrictive. Track M — wiki/EmailRealizer.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\eQuantic.UI.Core\eQuantic.UI.Core.csproj" />
+    <ProjectReference Include="..\eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
+  </ItemGroup>
+
+</Project>
