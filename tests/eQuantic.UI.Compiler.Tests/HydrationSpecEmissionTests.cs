@@ -122,6 +122,8 @@ public class ForeignRecordHydrationTests
         {
             public bool IsPrerelease => Version.Contains('-');
         }
+
+        public sealed record Movers(PackageSummary Rising, PackageSummary Falling);
         """;
 
     private const string Page = """
@@ -136,6 +138,7 @@ public class ForeignRecordHydrationTests
             private long _downloads = 790_000;
             private PackageSummary[] _top = [];
             private PackageSummary[] _alsoTop = [];
+            private Movers? _movers;
 
             [ServerOnly]
             public Task PrefetchAsync(System.IServiceProvider services, System.Threading.CancellationToken ct)
@@ -196,9 +199,15 @@ public class ForeignRecordHydrationTests
             twin.Should().Contain("_top: [{ members: { downloads: 'long' } }]");
             twin.Should().NotContain("from \"./PackageSummary\"");
 
-            // TWO fields of the same foreign type: the cycle guard is a recursion STACK, not a
-            // memo — left marked, the second field silently got no spec at all.
+            // A second FIELD of the same foreign type gets its own walk (the public overload
+            // starts a fresh visiting set per field), so it was never at risk — pinned anyway.
             twin.Should().Contain("_alsoTop: [{ members: { downloads: 'long' } }]");
+
+            // The shape that WAS at risk: two members of the same foreign type inside ONE spec
+            // share the walk's visiting set. The guard is a recursion STACK, not a memo — left
+            // marked after the first member, the second silently got no spec at all.
+            twin.Should().Contain(
+                "_movers: { members: { rising: { members: { downloads: 'long' } }, falling: { members: { downloads: 'long' } } } }");
         }
         finally
         {
