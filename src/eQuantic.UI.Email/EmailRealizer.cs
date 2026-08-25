@@ -85,12 +85,6 @@ public static class EmailRealizer
     private static void WriteColumn(Column column, ComponentContext context, StringBuilder html)
     {
         OpenPadding(column.Padding, html);
-        var align = column.Cross switch
-        {
-            CrossAlign.Center => " align=\"center\"",
-            CrossAlign.End => " align=\"right\"",
-            _ => "",
-        };
         html.Append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse: collapse\">");
         var first = true;
         foreach (var child in column.Children)
@@ -99,6 +93,14 @@ public static class EmailRealizer
                 html.Append($"<tr><td style=\"height: {Px(column.Gap)}; line-height: {Px(column.Gap)}; font-size: 0\">&nbsp;</td></tr>");
             first = false;
 
+            // Per CHILD, because AlignSelf overrides the column's cross for that child alone —
+            // each child owns a cell here, so the medium expresses it for free.
+            var align = (child.AlignSelf ?? column.Cross) switch
+            {
+                CrossAlign.Center => " align=\"center\"",
+                CrossAlign.End => " align=\"right\"",
+                _ => "",
+            };
             html.Append($"<tr><td{align} style=\"vertical-align: top\">");
             Write(child, context, html);
             html.Append("</td></tr>");
@@ -134,7 +136,7 @@ public static class EmailRealizer
                 html.Append($"<td style=\"width: {Px(row.Gap)}; font-size: 0\">&nbsp;</td>");
             first = false;
 
-            html.Append($"<td style=\"vertical-align: {CrossOf(row.Cross)}\">");
+            html.Append($"<td style=\"vertical-align: {CrossOf(child.AlignSelf ?? row.Cross)}\">");
             Write(child, context, html);
             html.Append("</td>");
         }

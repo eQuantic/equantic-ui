@@ -573,6 +573,20 @@ public class EmailThirdWaveTests
     }
 
     [Fact]
+    public void AlignSelfOverridesTheColumnsCrossForThatChildAlone()
+    {
+        var column = new Column(gap: 0);
+        column.Add(new Text("start", TypeRole.BodyM));
+        column.Add(new Text("end", TypeRole.BodyM) { AlignSelf = CrossAlign.End });
+
+        var html = Html(column);
+
+        // Each child owns a cell, so the medium expresses the override for free: one right-aligned
+        // cell, and the sibling untouched.
+        html.Split("align=\"right\"").Length.Should().Be(2, "exactly the overriding child's cell");
+    }
+
+    [Fact]
     public void ColumnCrossAlignsTheCells()
     {
         var column = new Column(gap: 0, cross: CrossAlign.Center);
