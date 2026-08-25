@@ -53,10 +53,12 @@ public static class EmailRealizer
                 WriteLink(link, context, html);
                 break;
             case UiComponent component:
-                // A shared component nested anywhere in the tree expands here, exactly as it does
-                // on the web — BuildContained, so one component's throw costs that component's
-                // subtree and not the whole message.
-                Write(component.BuildContained(context), context, html);
+                // A shared component expands here — via Build, NOT the web's BuildContained, and
+                // the divergence is deliberate: BuildContained catches a component's throw and
+                // renders a describe-box in its place, which is right on a live page a developer
+                // is looking at and wrong in a message about to be SENT to a reader. In email, a
+                // broken component must fail the send, never reach an inbox dressed as content.
+                Write(component.Build(context), context, html);
                 break;
             default:
                 // Fail loud with the node's name and the reason, because the alternative is a page
@@ -101,7 +103,7 @@ public static class EmailRealizer
                 html.Append($"<td style=\"width: {Px(row.Gap)}; font-size: 0\">&nbsp;</td>");
             first = false;
 
-            html.Append("<td style=\"vertical-align: middle\">");
+            html.Append($"<td style=\"vertical-align: {CrossOf(row.Cross)}\">");
             Write(child, context, html);
             html.Append("</td>");
         }
@@ -125,13 +127,17 @@ public static class EmailRealizer
         if (aligned)
             html.Append($"<div style=\"text-align: {(text.Align == TextAlignment.Center ? "center" : "right")}\">");
 
-        html.Append("<span style=\"")
-            .Append($"font-size: {Px(style.Size)}; ")
+        // A heading level keeps its ELEMENT — outline navigation in the clients and screen readers
+        // that offer it — with margin zeroed so the tag is semantics, not layout.
+        var tag = text.HeadingLevel is >= 1 and <= 6 ? $"h{text.HeadingLevel}" : "span";
+        html.Append($"<{tag} style=\"");
+        if (tag != "span") html.Append("margin: 0; display: inline; ");
+        html.Append($"font-size: {Px(style.Size)}; ")
             .Append($"line-height: {Px(style.LineHeight)}; ")
             .Append($"font-weight: {(int)style.Weight}; ");
         if (style.Tracking != 0)
             html.Append($"letter-spacing: {Px(style.Tracking)}; ");
-        if (style.Italic)
+        if (style.Italic || text.Italic)
             html.Append("font-style: italic; ");
         if (text.Tabular)
             html.Append("font-variant-numeric: tabular-nums; ");
@@ -141,11 +147,20 @@ public static class EmailRealizer
         if (text.Spans is { Count: > 0 } spans)
             foreach (var run in spans) WriteRun(run, theme, html);
         else
-            html.Append(Escape(text.Content));
+            html.Append(Text(text.PlainContent));
 
-        html.Append("</span>");
+        html.Append($"</{tag}>");
         if (aligned) html.Append("</div>");
     }
+
+    private static string CrossOf(CrossAlign cross) => cross switch
+    {
+        CrossAlign.Start => "top",
+        CrossAlign.End => "bottom",
+        // vertical-align cannot stretch; top is the least surprising reading of "fill the row".
+        CrossAlign.Stretch => "top",
+        _ => "middle",
+    };
 
     /// <summary>One run: only what it OVERRIDES is declared, and a destination makes it an anchor.</summary>
     private static void WriteRun(TextRun run, IAppTheme theme, StringBuilder html)
@@ -155,11 +170,15 @@ public static class EmailRealizer
         if (run.Weight is { } weight) overrides.Append($"font-weight: {(int)weight}; ");
         if (run.Italic) overrides.Append("font-style: italic; ");
         if (run.Mono) overrides.Append($"font-family: {Family(mono: true)}; ");
+        // The run-level escape hatch — inline code at 13.5 inside a 16 paragraph — carries its own
+        // size and line, exactly as Text.StyleOverride does at paragraph level.
+        if (run.StyleOverride is { } runStyle)
+            overrides.Append($"font-size: {Px(runStyle.Size)}; line-height: {Px(runStyle.LineHeight)}; ");
 
         var tag = run.Destination is not null ? "a" : overrides.Length > 0 ? "span" : null;
         if (tag is null)
         {
-            html.Append(Escape(run.Content));
+            html.Append(Text(run.Content));
             return;
         }
 
@@ -175,7 +194,7 @@ public static class EmailRealizer
         }
         if (overrides.Length > 0)
             html.Append($" style=\"{overrides.ToString().TrimEnd(' ', ';')}\"");
-        html.Append('>').Append(Escape(run.Content)).Append($"</{tag}>");
+        html.Append('>').Append(Text(run.Content)).Append($"</{tag}>");
     }
 
     /// <summary>A Box paints a background and padding on its cell — the two things a Box means here.</summary>
@@ -194,8 +213,25 @@ public static class EmailRealizer
                     : $"{Px(padding.Top)} {Px(padding.End)} {Px(padding.Bottom)} {Px(padding.Start)}");
         // A radius is honoured by the clients that can (Apple Mail, Gmail) and squarely ignored by
         // Word's engine — a degradation, not a divergence: the box is the same box with corners.
+        // Per-corner, because CornerRadii is per-corner and collapsing to TopLeft changed shapes.
         if (box.Style.CornerRadius is { } radius && radius != CornerRadii.Zero)
-            cell.Append($"; border-radius: {Px(radius.TopLeft)}");
+            cell.Append("; border-radius: ").Append(Radius(radius));
+
+        // The inside border, in the forms CSS can say inline. Start/End resolve as left/right, the
+        // same LTR promise the padding makes.
+        if (box.Style is { BorderWidth: > 0, BorderSides: not BorderSides.None } bordered)
+        {
+            var line = $"{Px(bordered.BorderWidth)} solid {Literal(bordered.BorderColor, context.Theme)}";
+            if (bordered.BorderSides == BorderSides.All)
+                cell.Append($"; border: {line}");
+            else
+            {
+                if (bordered.BorderSides.HasFlag(BorderSides.Top)) cell.Append($"; border-top: {line}");
+                if (bordered.BorderSides.HasFlag(BorderSides.End)) cell.Append($"; border-right: {line}");
+                if (bordered.BorderSides.HasFlag(BorderSides.Bottom)) cell.Append($"; border-bottom: {line}");
+                if (bordered.BorderSides.HasFlag(BorderSides.Start)) cell.Append($"; border-left: {line}");
+            }
+        }
 
         html.Append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse: collapse\">")
             .Append($"<tr><td style=\"{cell}\">");
@@ -230,7 +266,7 @@ public static class EmailRealizer
             .Append($"style=\"display: block; border: 0; width: {Px(image.Width)}; ")
             .Append(image.Fit == ImageFit.Contain ? "height: auto" : $"height: {Px(image.Height)}");
         if (image.CornerRadius != CornerRadii.Zero)
-            html.Append($"; border-radius: {Px(image.CornerRadius.TopLeft)}");
+            html.Append("; border-radius: ").Append(Radius(image.CornerRadius));
         html.Append("\">");
     }
 
@@ -244,8 +280,19 @@ public static class EmailRealizer
     {
         RequireAbsolute(link.Destination, "A link in an email", allowMailto: true);
 
+        // Nested anchors are invalid HTML with an ambiguous destination — and both were said by the
+        // AUTHOR, so neither can silently win.
+        if (link.Child is Text { Spans: { Count: > 0 } } inner
+            && inner.Spans.Any(run => run.Destination is not null))
+            throw new NotSupportedException(
+                "A Link around a Text that contains linked runs would nest anchors, which no HTML "
+                + "allows. Link the runs, or the paragraph — one of them.");
+
         var textual = link.Child is Text;
-        html.Append($"<a href=\"{EscapeAttribute(link.Destination)}\" ")
+        html.Append($"<a href=\"{EscapeAttribute(link.Destination)}\" ");
+        if (!string.IsNullOrEmpty(link.Label))
+            html.Append($"aria-label=\"{EscapeAttribute(link.Label)}\" ");
+        html.Append("")
             .Append(textual
                 ? "style=\"text-decoration: underline; color: inherit\">"
                 : "style=\"text-decoration: none; color: inherit; display: inline-block\">");
@@ -264,12 +311,19 @@ public static class EmailRealizer
                 $"{what} cannot use a data: URI — Gmail strips them. Serve the asset from an "
                 + "absolute https URL.");
         if (allowMailto && address.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase))
+        {
+            if (address.Length <= "mailto:".Length)
+                throw new NotSupportedException($"{what} has a mailto: with nobody in it.");
             return;
-        if (!address.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
-            && !address.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+        }
+        // A real parse, not a prefix check: "https://" alone, or a host-less address, passed the
+        // prefix and became a guaranteed-broken src/href — the exact thing this fence exists for.
+        if (!Uri.TryCreate(address, UriKind.Absolute, out var uri)
+            || (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp)
+            || uri.Host.Length == 0)
             throw new NotSupportedException(
-                $"{what} needs an absolute address ('{address}' is not): the reader's client "
-                + "opens the message with no origin to resolve it against.");
+                $"{what} needs an absolute http(s) address ('{address}' is not): the reader's "
+                + "client opens the message with no origin to resolve it against.");
     }
 
     /// <summary>
@@ -286,9 +340,9 @@ public static class EmailRealizer
         var surface = theme.Surface.Resolve(ThemeMode.Light);
         var alpha = color.A / 255f;
         return Hex(Color.FromRgb(
-            (byte)float.Round(color.R * alpha + surface.R * (1 - alpha)),
-            (byte)float.Round(color.G * alpha + surface.G * (1 - alpha)),
-            (byte)float.Round(color.B * alpha + surface.B * (1 - alpha))));
+            (byte)MathF.Round(color.R * alpha + surface.R * (1 - alpha)),
+            (byte)MathF.Round(color.G * alpha + surface.G * (1 - alpha)),
+            (byte)MathF.Round(color.B * alpha + surface.B * (1 - alpha))));
     }
 
     internal static string Hex(Color color) => $"#{color.R:x2}{color.G:x2}{color.B:x2}";
@@ -301,8 +355,21 @@ public static class EmailRealizer
         ? "ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', Menlo, Consolas, monospace"
         : "-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
+    /// <summary>Four corners in CSS order, one value when uniform.</summary>
+    private static string Radius(CornerRadii radius) =>
+        radius.TopLeft == radius.TopRight && radius.TopRight == radius.BottomRight
+            && radius.BottomRight == radius.BottomLeft
+            ? Px(radius.TopLeft)
+            : $"{Px(radius.TopLeft)} {Px(radius.TopRight)} {Px(radius.BottomRight)} {Px(radius.BottomLeft)}";
+
     internal static string Escape(string text) => text
         .Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+
+    /// <summary>
+    /// Body text: escaped, with authored line breaks kept as <c>&lt;br&gt;</c> — HTML collapses a
+    /// raw newline to a space, and <c>white-space</c> is exactly the kind of CSS Word ignores.
+    /// </summary>
+    internal static string Text(string content) => Escape(content).Replace("\n", "<br>");
 
     /// <summary>
     /// Attribute values additionally escape the QUOTE: an alt or URL containing one would end the

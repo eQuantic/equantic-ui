@@ -62,7 +62,7 @@ public static class EmailRenderer
 
         html.Append("<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse: collapse\">");
         html.Append("<tr><td align=\"center\" style=\"padding: 24px 12px\">");
-        html.Append($"<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"border-collapse: collapse; width: {BodyWidth}px; max-width: 100%; background-color: {surface}\">");
+        html.Append($"<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"{BodyWidth}\" style=\"border-collapse: collapse; width: {BodyWidth}px; max-width: 100%; background-color: {surface}\">");
         html.Append("<tr><td style=\"padding: 24px\">");
         html.Append(body);
         html.Append("</td></tr></table>");
@@ -87,6 +87,17 @@ public static class EmailRenderer
     {
         switch (node)
         {
+            case Text t when t.Spans is { Count: > 0 } spans:
+                // Run by run, so a LINKED run keeps its address — inline, the convention is
+                // "label (URL)", the paragraph-level Link keeps "label: URL".
+                var inline = new StringBuilder();
+                foreach (var run in spans)
+                {
+                    inline.Append(run.Content);
+                    if (run.Destination is { } destination) inline.Append($" ({destination})");
+                }
+                text.AppendLine(inline.ToString());
+                break;
             case Text t:
                 text.AppendLine(t.PlainContent);
                 break;
@@ -128,7 +139,9 @@ public static class EmailRenderer
                 text.AppendLine(image.Alt);
                 break;
             case UiComponent component:
-                WalkText(component.BuildContained(new ComponentContext(theme)), theme, text);
+                // Build, not BuildContained — the same deliberate divergence the HTML walker makes:
+                // a broken component fails the SEND, it does not reach an inbox dressed as content.
+                WalkText(component.Build(new ComponentContext(theme)), theme, text);
                 break;
         }
     }

@@ -408,3 +408,128 @@ public class EmailRendererReviewTests
         message.PlainText.Should().Contain("First section\n\nSecond section");
     }
 }
+
+/// <summary>The second review wave, pinned — plus the one claim that was wrong, kept as a note.</summary>
+public class EmailSecondWaveTests
+{
+    private static readonly IAppTheme Theme = PhotonTheme.Instance;
+
+    private static string Html(VisualNode node) => EmailRealizer.Lower(node, Theme);
+
+    [Fact]
+    public void TheNodeLevelItalicFlagSlants()
+        => Html(new Text("x", TypeRole.BodyM) { Italic = true }).Should().Contain("font-style: italic");
+
+    [Fact]
+    public void ARunsSizeOverrideIsItsOwn()
+    {
+        var text = new Text("")
+        {
+            Spans = [new TextRun("code") { Mono = true, StyleOverride = new TypeStyle(13.5f, 20, FontWeight.Regular, 0, 1f) }],
+        };
+
+        Html(text).Should().Contain("font-size: 13.5px");
+    }
+
+    [Fact]
+    public void AuthoredLineBreaksSurviveAsBr()
+        // HTML collapses a raw newline to a space, and white-space is exactly the kind of CSS
+        // Word ignores — the break becomes an element.
+        => Html(new Text("one\ntwo", TypeRole.BodyM)).Should().Contain("one<br>two");
+
+    [Fact]
+    public void PerCornerRadiiKeepTheirShape()
+    {
+        var box = new Box(new BoxStyle { CornerRadius = new CornerRadii(8, 8, 0, 0) });
+
+        Html(box).Should().Contain("border-radius: 8px 8px 0px 0px");
+    }
+
+    [Fact]
+    public void ABorderedBoxCarriesItsOutline()
+    {
+        var card = new Box(new BoxStyle { BorderWidth = 1, BorderColor = Theme.Border });
+        var divider = new Box(new BoxStyle { BorderWidth = 1, BorderColor = Theme.Border, BorderSides = BorderSides.Top });
+
+        Html(card).Should().MatchRegex("border: 1px solid #[0-9a-f]{6}");
+        Html(divider).Should().Contain("border-top: 1px").And.NotContain("border: 1px");
+    }
+
+    [Fact]
+    public void RowCrossAlignmentReachesTheCells()
+    {
+        var row = new Row(gap: 0, cross: CrossAlign.End);
+        row.Add(new Text("x", TypeRole.BodyM));
+
+        Html(row).Should().Contain("vertical-align: bottom");
+    }
+
+    [Fact]
+    public void AHeadingLevelKeepsItsElement()
+        => Html(new Text("Title", TypeRole.Heading, headingLevel: 2))
+            .Should().Contain("<h2 ").And.Contain("margin: 0").And.Contain("</h2>");
+
+    [Fact]
+    public void ALinkLabelNamesTheAnchor()
+    {
+        var link = new Link("https://example.com/x",
+            new Image("https://cdn.example.com/logo.png", 10, 10)) { Label = "Open the dashboard" };
+
+        Html(link).Should().Contain("aria-label=\"Open the dashboard\"");
+    }
+
+    [Fact]
+    public void AHostlessAddressFailsTheParse()
+    {
+        // "https://" alone passed the old prefix check and became a guaranteed-broken href.
+        var act = () => Html(new Link("https://", new Text("x", TypeRole.BodyM)));
+
+        act.Should().Throw<NotSupportedException>();
+    }
+
+    [Fact]
+    public void ALinkAroundLinkedRunsRefusesToNestAnchors()
+    {
+        var text = new Text("") { Spans = [new TextRun("inner") { Destination = "https://example.com/a" }] };
+        var act = () => Html(new Link("https://example.com/b", text));
+
+        act.Should().Throw<NotSupportedException>().WithMessage("*nest*");
+    }
+
+    [Fact]
+    public void AThrowingComponentFailsTheSendNotTheReader()
+    {
+        var column = new Column(gap: 0);
+        column.Add(new Exploding());
+
+        // The web catches a component's throw and renders a describe-box in its place — right on a
+        // live page a developer is watching, wrong in a message about to be SENT. Email propagates:
+        // a broken component fails the send, it never reaches an inbox dressed as content.
+        var act = () => Html(column);
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*broken on purpose*");
+    }
+
+    private sealed class Exploding : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context)
+            => throw new InvalidOperationException("broken on purpose");
+    }
+
+    [Fact]
+    public void TheShellTableCarriesTheWidthAttribute()
+        => EmailRenderer.Render(new Text("x", TypeRole.BodyM), Theme)
+            .Html.Should().Contain("width=\"600\"");
+
+    [Fact]
+    public void ALinkedRunKeepsItsAddressInPlainText()
+    {
+        var text = new Text("")
+        {
+            Spans = [new TextRun("Reset your password") { Destination = "https://example.com/reset" }],
+        };
+
+        EmailRenderer.Render(text, Theme).PlainText
+            .Should().Contain("Reset your password (https://example.com/reset)");
+    }
+}
