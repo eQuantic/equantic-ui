@@ -1,0 +1,9 @@
+<Project>
+    <!-- Samples are APPS, not packages: `dotnet pack` at solution level was shipping
+         PhotonDesktop and WalletMobile as nupkgs into the local feed, and a feed with sample
+         apps in it is a feed whose package count nobody can reconcile. -->
+    <PropertyGroup>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+    <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+</Project>
