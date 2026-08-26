@@ -208,6 +208,15 @@ public sealed class DisplayListBuilder
         Clip = _clip,
     });
 
+    /// <summary>A filled circle — sugar over <see cref="FillRRect"/> at full radius, here because
+    /// the F0 consumer's hub reached for an annular sector with rIn 0 and sweep 2π to draw one.</summary>
+    public void FillCircle(Point center, float radius, in Paint paint)
+    {
+        if (radius <= 0) return;
+        var rect = new Rect(center.X - radius, center.Y - radius, radius * 2, radius * 2);
+        FillRRect(new RRect(rect, new CornerRadii(radius)), paint);
+    }
+
     /// <summary>
     /// W1: an annular sector (ring slice) around <paramref name="center"/>, from
     /// <paramref name="startAngle"/> to <paramref name="endAngle"/> (radians, 0 = +X, increasing

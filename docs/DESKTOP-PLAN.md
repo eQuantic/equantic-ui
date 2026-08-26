@@ -59,6 +59,15 @@ instead. Neither is obviously right at that cadence — the spike benchmarks bot
 
 Unblocks: sunburst charts, ring selections, donut gauges, mascot bodies.
 
+**F0 consumption feedback (2026-08-26, the consumer's spike passed all three proofs):** the
+signature `(center, rIn, rOut, start, end, paint, rounding)` carried a full partition layout with
+zero friction; rounding 3 with the builder's clamp behaves on thin slices; and the ANGULAR-GAP
+question is CLOSED — call-site shaving (min(0.006 rad, 15% of sweep) per side, children laid inside
+the parent's unshaved span) is the right home, so gap does not become an engine parameter. A real
+sunburst of a 5.38M-file scan rendered headless through the Reference backend. `FillCircle` sugar
+was added for the hub (a circle is `FillRRect` at full radius; the sugar exists so nobody reaches
+for a 2π sector to draw one).
+
 ### W2 — Framework: frame clock + animation (3–6 w, revised down)
 
 The `IClock` fence closed from the side it names: an `IFrameTicker` exposed from the shell's
