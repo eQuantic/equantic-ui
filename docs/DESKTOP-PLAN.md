@@ -44,8 +44,9 @@ commitments.
 
 ### W1 — Engine: annular sector + convex polygon (3–5 w)
 
-`DrawCommandKind.FillAnnularSector` (center, inner/outer radius, start/end angle, angular gap,
-corner smoothing) as an exact SDF in `Sdf.slang`, Reference↔Metal↔Vulkan parity like every other
+`DrawCommandKind.FillAnnularSector` (center, inner/outer radius, start/end angle, corner
+smoothing — angular gap is a CALL-SITE concern, see the F0 feedback below) as an exact SDF in
+`Sdf.slang`, Reference↔Metal↔Vulkan parity like every other
 command. This is NOT a path engine — it is one more shape in the SDF family the engine is built
 on, and the existing radial gradient covers its shading.
 
@@ -58,6 +59,15 @@ instead. Neither is obviously right at that cadence — the spike benchmarks bot
 16-point blob before W1 commits to either.
 
 Unblocks: sunburst charts, ring selections, donut gauges, mascot bodies.
+
+**F0 consumption feedback (2026-08-26, the consumer's spike passed all three proofs):** the
+signature `(center, rIn, rOut, start, end, paint, rounding)` carried a full partition layout with
+zero friction; rounding 3 with the builder's clamp behaves on thin slices; and the ANGULAR-GAP
+question is CLOSED — call-site shaving (min(0.006 rad, 15% of sweep) per side, children laid inside
+the parent's unshaved span) is the right home, so gap does not become an engine parameter. A real
+sunburst of a 5.38M-file scan rendered headless through the Reference backend. `FillCircle` sugar
+was added for the hub (a circle is `FillRRect` at full radius; the sugar exists so nobody reaches
+for a 2π sector to draw one).
 
 ### W2 — Framework: frame clock + animation (3–6 w, revised down)
 

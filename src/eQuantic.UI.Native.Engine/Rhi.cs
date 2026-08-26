@@ -111,7 +111,13 @@ public struct DrawUniforms
         uniforms.ColorB = ToFloat4(paint.EndColor);
         uniforms.Gradient = new Float4(paint.GradientStart.X, paint.GradientStart.Y, paint.GradientEnd.X, paint.GradientEnd.Y);
         uniforms.Flags = new Float4(
-            command.Kind switch { DrawCommandKind.StrokeRRect => 1, DrawCommandKind.ShadowRRect => 2, _ => 0 },
+            command.Kind switch
+            {
+                DrawCommandKind.StrokeRRect => 1,
+                DrawCommandKind.ShadowRRect => 2,
+                DrawCommandKind.FillAnnularSector => 3,
+                _ => 0,
+            },
             // 0 solid · 1 linear · 2 radial — the paint kinds share the `Gradient` slot, so a radial
             // needed no new uniform: center rides .xy and the radii .zw.
             paint.Kind switch { PaintKind.LinearGradient => 1, PaintKind.RadialGradient => 2, _ => 0 },

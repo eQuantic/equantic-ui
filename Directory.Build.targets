@@ -60,16 +60,14 @@
         </PropertyGroup>
 
         <ItemGroup>
-            <_EQuanticCacheDirs Include="$(_NuGetCache)/equantic.ui.core" />
-            <_EQuanticCacheDirs Include="$(_NuGetCache)/equantic.ui.components" />
-            <_EQuanticCacheDirs Include="$(_NuGetCache)/equantic.ui.compiler" />
-            <_EQuanticCacheDirs Include="$(_NuGetCache)/equantic.ui.server" />
-            <_EQuanticCacheDirs Include="$(_NuGetCache)/equantic.ui.sdk" />
-            <_EQuanticCacheDirs Include="$(_NuGetCache)/equantic.ui.runtime" />
-            <_EQuanticCacheDirs Include="$(_NuGetCache)/equantic.ui.runtime.osx64" />
-            <_EQuanticCacheDirs Include="$(_NuGetCache)/equantic.ui.runtime.win64" />
-            <_EQuanticCacheDirs Include="$(_NuGetCache)/equantic.ui.runtime.linux64" />
-            <_EQuanticCacheDirs Include="$(_NuGetCache)/equantic.ui.tailwind" />
+            <!-- REACTIVE, never a list: the hand-written list was written when the SDK had ten
+                 packages and silently stopped covering it — no native package, no sdk.native, no
+                 arm64 runtime was ever cleared, so a local-feed consumer rebuilt the SDK and kept
+                 restoring the stale 1.0.0-dev from the cache. Whatever equantic.ui.* the cache
+                 holds is what gets cleared. -->
+            <_EQuanticCacheDirs
+                Include="$([System.IO.Directory]::GetDirectories('$(_NuGetCache)', 'equantic.*'))"
+                Condition="Exists('$(_NuGetCache)')" />
         </ItemGroup>
 
         <RemoveDir Directories="@(_EQuanticCacheDirs)" />

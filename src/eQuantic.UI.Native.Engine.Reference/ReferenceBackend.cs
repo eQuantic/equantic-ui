@@ -35,6 +35,7 @@ public sealed class ReferenceBackend : IRenderBackend
                 case DrawCommandKind.FillRRect:
                 case DrawCommandKind.StrokeRRect:
                 case DrawCommandKind.ShadowRRect:
+                case DrawCommandKind.FillAnnularSector:
                     RasterizeRRect(target, in command);
                     break;
                 case DrawCommandKind.Texture:
@@ -188,7 +189,12 @@ public sealed class ReferenceBackend : IRenderBackend
                 var device = new Point(px + 0.5f, py + 0.5f);
                 var local = inv.Transform(device);
 
-                var d = Sdf.RoundedRect(local - center, halfSize, shape.Radii);
+                // FillAnnularSector reuses the Radii slots: [inner, startAngle, endAngle, rounding]
+                // (see the kind's doc) — the rect stays the bounding square, so the AABB above holds.
+                var d = command.Kind == DrawCommandKind.FillAnnularSector
+                    ? Sdf.AnnularSector(local - center, shape.Radii.TopLeft, halfSize.Width,
+                        shape.Radii.TopRight, shape.Radii.BottomRight, shape.Radii.BottomLeft)
+                    : Sdf.RoundedRect(local - center, halfSize, shape.Radii);
                 if (command.Kind == DrawCommandKind.StrokeRRect)
                     d = Sdf.Stroke(d, command.StrokeWidth);
 
