@@ -12,6 +12,13 @@ namespace eQuantic.Studio;
 /// Authored in the write-once vocabulary ONLY, so the same tree runs as GPU pixels in this NSWindow
 /// and as DOM in the browser. Nothing in this file knows which target it is on.
 /// </para>
+/// <para>
+/// SIGNPOST — this file predates the declarative factory surface and composes nodes imperatively
+/// (<c>new Column</c>, <c>.Add</c>). Do not learn app authoring here: the canonical idiom is
+/// factories with no <c>new</c> — injected by both SDKs — and
+/// <c>DefaultUIDashboard/Screens/DeclarativeScreen.cs</c> is the proof screen. The Studio stays
+/// imperative on purpose: it is a framework instrument whose walk tests build trees piecewise.
+/// </para>
 /// </summary>
 public sealed class StudioShell : StatefulComponent
 {

@@ -155,6 +155,34 @@ W3 (primitives) ──────────────►  with W2 (pointer 
 W4 (shell)      ──── partial early (file dialogs + deep links), rest after W5
 ```
 
+## First-contact friction ledger (consumer reports)
+
+What tripped a fresh consumer on their FIRST build — none blocking, all resolved at the call
+site. Recorded because each cost someone a build cycle, and the fix (rename, new API, doc line,
+editor suggestion) is a decision, not an oversight. Newest first.
+
+- **`SizeValue` has no Fraction** (2026-08-26, OS Cleaner F1): width proportional to the parent —
+  usage/size bars, a common data-app pattern — is done today with `Flexible` weights sharing
+  leftover main-axis space (`Row[Flexible(used), Flexible(free)]`), or by computing dp by hand.
+  That IS the intended idiom; whether `SizeKind.Fraction` earns a slot is open and waits for a
+  consumer the weights idiom cannot serve.
+- **`VariantColors.Base` reads as `.Solid` from web-land** (2026-08-26, OS Cleaner F1): the record
+  is `Base/OnBase/Pressed/Subtle/OnSubtle` (`ColorToken.cs`) — the `On*` pairing is the Material
+  contract, and `Base` is the anchor that pairing names. A rename is a surface decision, not a
+  patch; registered, not promised.
+- **`Devices/` types live in the ROOT namespace** (2026-08-26, OS Cleaner F1): `using
+  eQuantic.UI.Primitives.Devices` fails by design — Primitives is ONE flat namespace and folders
+  only organize files. Every capability (`IClock`, `ICamera`, `ILocation`…) is
+  `eQuantic.UI.Primitives`.
+- **The imperative native samples taught the wrong idiom** (2026-08-26, OS Cleaner F1): the
+  canonical authoring surface — factories, no `new` — is injected by BOTH SDKs (web
+  `Sdk.props:136`, native `Sdk.props:24`); `DefaultUIDashboard/Screens/DeclarativeScreen.cs` is
+  the proof screen. PhotonDesktop's Studio and WalletMobile predate the surface and compose
+  primitives imperatively as framework instruments; both now carry a signpost saying so.
+- **`TypeRole.Body` does not exist** (2026-08-25, OS Cleaner F0): the ramp's body rungs are
+  `BodyL/BodyM` (the dense-scale work split them). Second and third consumers hit the same
+  guess; an editor suggestion for role names is Track I territory.
+
 ## What stays fenced, on purpose
 
 - Generic vector paths (the "v2+" fence in the engine plan stands; W1 adds a shape, not a path
