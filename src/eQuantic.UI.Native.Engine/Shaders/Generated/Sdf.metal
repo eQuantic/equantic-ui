@@ -260,11 +260,29 @@ struct pixelOutput_0
 #line 110
     bool _S10;
 
-#line 110
+#line 116
+    if((u_2->flags_0.x) > 2.5f)
+    {
+
+#line 116
+        _S10 = (u_2->flags_0.x) < 3.5f;
+
+#line 116
+    }
+    else
+    {
+
+#line 116
+        _S10 = false;
+
+#line 116
+    }
+
+#line 116
     float d_1;
 
 #line 116
-    if((u_2->flags_0.x) > 2.5f)
+    if(_S10)
     {
 
 #line 116

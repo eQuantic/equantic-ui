@@ -113,7 +113,7 @@ float4 sdf_fragment(float4 position: SV_Position) : SV_Target
 
     // flags.x: 0 fill · 1 stroke · 2 shadow · 3 ANNULAR SECTOR (radii slots carry its params).
     float d;
-    if (u.flags.x > 2.5)
+    if (u.flags.x > 2.5 && u.flags.x < 3.5)
     {
         d = sdAnnularSector(local - u.rect.xy, u.radii.x, u.rect.z, u.radii.y, u.radii.z, u.radii.w);
     }

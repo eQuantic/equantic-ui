@@ -68,6 +68,11 @@ public class AnnularSectorTests
         var builder = new DisplayListBuilder();
         builder.FillAnnularSector(new Point(0, 0), 10, 40, 1f, 0.5f, Paint.Solid(Color.FromRgb(1, 2, 3)));
         builder.FillAnnularSector(new Point(0, 0), 10, 0, 0, 1, Paint.Solid(Color.FromRgb(1, 2, 3)));
-        builder.Build().Count.Should().Be(0, "an empty sweep and a zero outer radius draw nothing");
+        // A zero-width band (inner == outer, or inner beyond outer) has no interior, but the SDF
+        // is exactly 0 on the shared circle — AA would ink a hairline arc if the command shipped.
+        builder.FillAnnularSector(new Point(0, 0), 40, 40, 0, 1, Paint.Solid(Color.FromRgb(1, 2, 3)));
+        builder.FillAnnularSector(new Point(0, 0), 50, 40, 0, 1, Paint.Solid(Color.FromRgb(1, 2, 3)));
+        builder.Build().Count.Should().Be(0,
+            "an empty sweep, a zero outer radius, and a zero-width band draw nothing");
     }
 }

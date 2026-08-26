@@ -226,7 +226,9 @@ public sealed class DisplayListBuilder
     public void FillAnnularSector(Point center, float innerRadius, float outerRadius,
         float startAngle, float endAngle, in Paint paint, float rounding = 0)
     {
-        if (outerRadius <= 0 || endAngle <= startAngle) return;
+        // innerRadius >= outerRadius is a zero-width band: the SDF has no negative interior,
+        // so AA would still ink a hairline arc — degenerate inputs must draw nothing.
+        if (outerRadius <= 0 || endAngle <= startAngle || innerRadius >= outerRadius) return;
         innerRadius = Math.Clamp(innerRadius, 0, outerRadius);
         endAngle = MathF.Min(endAngle, startAngle + 2 * MathF.PI);
         // Rounding beyond half the band inverts the inset shape; clamp is the honest degenerate.
