@@ -73,3 +73,7 @@ extensions/vscode/icon.png
 # Only the marker, never the packages a local build drops there.
 artifacts/packages/*
 !artifacts/packages/.gitkeep
+
+# Local NuGet feed for end-to-end consumer validation (the recipe in docs/DESKTOP-PLAN.md):
+# packed on demand at 1.0.0-dev, never committed.
+artifacts/local-feed/

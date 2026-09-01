@@ -155,6 +155,45 @@ W3 (primitives) ──────────────►  with W2 (pointer 
 W4 (shell)      ──── partial early (file dialogs + deep links), rest after W5
 ```
 
+## First-contact friction ledger (consumer reports)
+
+What tripped a fresh consumer on their FIRST build — none blocking, all resolved at the call
+site. Recorded because each cost someone a build cycle, and the fix (rename, new API, doc line,
+editor suggestion) is a decision, not an oversight. Newest first.
+
+- **`SizeValue` has no Fraction** (2026-08-26, OS Cleaner F1): width proportional to the parent —
+  usage/size bars, a common data-app pattern — is done today with `Flexible` weights sharing
+  leftover main-axis space: `Row(children: [Flexible(bar, flex: 62), Flexible(track, flex: 38)])`.
+  That IS the intended idiom — with an honest wrinkle the same consumer hit: `flex` is an `int`
+  clamped to ≥ 1, so a CONTINUOUS fraction (disk usage 0..1) scales first —
+  `flex: (int)(fraction * 1000)` — and a 0%/100% side still occupies weight 1 of 1001. Whether
+  `SizeKind.Fraction` (or a float weight) earns a slot is open and waits on this pressure
+  repeating.
+- **`VariantColors.Base` reads as `.Solid` from web-land** (2026-08-26, OS Cleaner F1): the record
+  is `Base/OnBase/Pressed/Subtle/OnSubtle` (`ColorToken.cs`) — the `On*` pairing is the Material
+  contract, and `Base` is the anchor that pairing names. A rename is a surface decision, not a
+  patch; registered, not promised.
+- **`Devices/` types live in the ROOT namespace** (2026-08-26, OS Cleaner F1): `using
+  eQuantic.UI.Primitives.Devices` fails by design — Primitives is ONE flat namespace and folders
+  only organize files. Every capability (`IClock`, `ICamera`, `ILocation`…) is
+  `eQuantic.UI.Primitives`.
+- **The imperative native samples taught the wrong idiom** (2026-08-26, OS Cleaner F1): the
+  canonical authoring surface — factories, no `new` — is injected by BOTH SDKs (web
+  `Sdk.props:136`, native `Sdk.props:24`); `samples/DefaultUIDashboard/Screens/DeclarativeScreen.cs`
+  is the proof screen. PhotonDesktop's Studio and WalletMobile predate the surface and compose
+  primitives imperatively as framework instruments; both now carry a signpost saying so.
+- **The `Pressable` factory cannot express accessibility state** (2026-08-26, OS Cleaner F1): the
+  factory mirrors the constructor — `Pressable(child, onPressed)` — and `Label`, `Selected` and
+  `PressedBackground` are init-only properties the mirror never reaches. `Label`/`Selected` feed
+  the SEMANTICS tree, so a fully declarative screen today cannot mark a nav item selected or name
+  an icon-only button for VoiceOver; the consumer stayed imperative deliberately rather than work
+  around it. The fix path the mirror rule already implies: widen the CONSTRUCTOR with optional
+  parameters and the factory follows — a Primitives surface change with its own tests, not a docs
+  patch.
+- **`TypeRole.Body` does not exist** (2026-08-25, OS Cleaner F0): the ramp's body rungs are
+  `BodyL/BodyM` (the dense-scale work split them). Second and third consumers hit the same
+  guess; an editor suggestion for role names is Track I territory.
+
 ## What stays fenced, on purpose
 
 - Generic vector paths (the "v2+" fence in the engine plan stands; W1 adds a shape, not a path
