@@ -185,6 +185,9 @@ public class ComponentParser
                     Services.ResourceClasses.DesignerPathFor(declared));
                 continue;
             }
+            // [ServerOnly] on the class: it never crosses, so no module — the class-level twin of the
+            // method rule below, for the Roslyn service or hosted warm-up that lives in the web project.
+            if (IsServerOnly(classDecl)) continue;
             if (classDecl.Modifiers.Any(SyntaxKind.StaticKeyword))
             {
                 results.Add(new ComponentDefinition
@@ -271,6 +274,7 @@ public class ComponentParser
             if (componentNames.Contains(classDecl.Identifier.Text)) continue; // component path
             if (stateNames.Contains(classDecl.Identifier.Text)) continue;     // owned by its page
             if (classDecl.Members.Count == 0) continue;
+            if (IsServerOnly(classDecl)) continue;                             // never crosses: no module
             // Track L D2: a resx Designer is a plain non-static class by shape, and a module of
             // ResourceManager.GetString calls cannot run in a browser — its accessors rewrite to
             // $eq.str at every use site instead. Recorded on the way past (see the static-helper
@@ -537,6 +541,12 @@ public class ComponentParser
     /// server surface (an SSR prefetch's HttpClient, EF, the request's services). The counterpart of
     /// <c>[ServerAction]</c>, which keeps the method callable FROM the browser through an RPC stub.
     /// </summary>
+    /// <summary>The class-level form: <c>[ServerOnly]</c> on a static helper or a plain class says
+    /// the whole type stays on the server, and the parser emits no module for it.</summary>
+    private static bool IsServerOnly(ClassDeclarationSyntax classDecl) =>
+        classDecl.AttributeLists.SelectMany(list => list.Attributes)
+            .Any(attribute => attribute.Name.ToString() is "ServerOnly" or "ServerOnlyAttribute");
+
     private static bool IsServerOnly(MethodDeclarationSyntax method) =>
         method.AttributeLists.SelectMany(list => list.Attributes)
             .Any(attribute => attribute.Name.ToString() is "ServerOnly" or "ServerOnlyAttribute");
