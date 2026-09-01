@@ -871,11 +871,13 @@ export class Link extends VisualNode {
   label: string | null = null;
   /** Keeps the reader where they are instead of starting the new page at its top (C# twin). */
   keepsPosition = false;
+  /** This link points at the page the reader is ON — aria-current="page" (C# twin). */
+  current = false;
 
   constructor(
     destination: string,
     child: VisualChild,
-    config?: { label?: string | null; keepsPosition?: boolean },
+    config?: { label?: string | null; keepsPosition?: boolean; current?: boolean },
   ) {
     super();
     this.destination = destination;

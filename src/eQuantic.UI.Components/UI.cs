@@ -13,7 +13,10 @@ namespace eQuantic.UI.Components;
 /// ])
 /// </code>
 /// Contract: a factory mirrors its type's constructor EXACTLY (same parameter names, same order,
-/// same defaults — named arguments carry over unchanged), and container nodes append a trailing
+/// same defaults — named arguments carry over unchanged); an optional TAIL of parameters may
+/// follow, each matching an <c>init</c> property by name and type (the factory applies them via
+/// an initializer — how a declarative screen reaches semantics like <c>Label</c>/<c>Selected</c>
+/// that constructors deliberately do not carry); and container nodes append a final trailing
 /// <c>children</c> parameter that accepts a collection expression. Rarer <c>init</c> properties
 /// keep the constructor + initializer form; the factories are sugar, never a second API.
 /// <para>
@@ -97,17 +100,52 @@ public static class UI
         bool tabular = false, TypeStyle? styleOverride = null, int headingLevel = 0) =>
         new Text(content, role, color, maxLines, align, mono, tabular, styleOverride, headingLevel);
 
-    /// <summary>Single-line entry (spec B9): value + change/submit callbacks.</summary>
-    public static TextEntry TextEntry(string value, Action<string>? onChanged = null) =>
-        new TextEntry(value, onChanged);
+    /// <summary>Single-line entry (spec B9): value + change/submit callbacks. The optional tail is
+    /// the field's own semantic surface — the accessible name (a placeholder is only a hint), the
+    /// hint itself, the disabled bit and password obscuring; validation display and focus plumbing
+    /// belong to the composing form component and stay initializer-only.</summary>
+    public static TextEntry TextEntry(string value, Action<string>? onChanged = null,
+        string? label = null, string? placeholder = null, bool disabled = false,
+        bool obscure = false) =>
+        new TextEntry(value, onChanged)
+        {
+            Label = label,
+            Placeholder = placeholder,
+            Disabled = disabled,
+            Obscure = obscure,
+        };
 
-    /// <summary>Press surface with the §08 hit contract; the child owns all visuals.</summary>
-    public static Pressable Pressable(VisualNode child, Action? onPressed = null) =>
-        new Pressable(child, onPressed);
+    /// <summary>Press surface with the §08 hit contract; the child owns all visuals. The optional
+    /// tail is the SEMANTIC surface a standalone button needs — the accessible name, the
+    /// toggle/pick state (aria-pressed/checked), the disabled bit, the pressed-state fill and the
+    /// disclosure state (aria-expanded). Without it a declarative screen could not name an
+    /// icon-only button or mark a nav item selected at all (the OS Cleaner F1 report). Composite
+    /// and modal machinery — <see cref="Primitives.Pressable.Role"/>,
+    /// <see cref="Primitives.Pressable.Mixed"/>, <see cref="Primitives.Pressable.InitialFocus"/> —
+    /// stays initializer-only: those belong to the components that own the pattern.</summary>
+    public static Pressable Pressable(VisualNode child, Action? onPressed = null,
+        string? label = null, bool? selected = null, bool disabled = false,
+        ColorToken? pressedBackground = null, bool? expanded = null) =>
+        new Pressable(child, onPressed)
+        {
+            Label = label,
+            Selected = selected,
+            Disabled = disabled,
+            PressedBackground = pressedBackground,
+            Expanded = expanded,
+        };
 
-    /// <summary>Navigation semantics: the child becomes a link to <paramref name="destination"/>.</summary>
-    public static Link Link(string destination, VisualNode child) =>
-        new Link(destination, child);
+    /// <summary>Navigation semantics: the child becomes a link to <paramref name="destination"/>.
+    /// <paramref name="label"/> names an icon-only link; <paramref name="current"/> marks the link
+    /// that points at the page the reader is ON (<c>aria-current="page"</c> — a sidebar's active
+    /// row stated to assistive tech, not just painted).</summary>
+    public static Link Link(string destination, VisualNode child, string? label = null,
+        bool current = false) =>
+        new Link(destination, child)
+        {
+            Label = label,
+            Current = current,
+        };
 
     /// <summary>
     /// A PACK glyph — what an icon package's catalog hands out (<c>MaterialSymbolsIcons.Home</c>,
