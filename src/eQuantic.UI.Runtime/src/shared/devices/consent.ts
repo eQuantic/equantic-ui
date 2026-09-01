@@ -21,8 +21,16 @@ export class WebConsent {
   /** The C# `State` twin, read from the cookie every time — another tab may have answered. */
   get state(): ConsentStateValue {
     if (typeof document === 'undefined') return 'unknown';
-    const match = document.cookie.match(/(?:^|; )eq-consent=([^;]*)/);
-    const value = match ? decodeURIComponent(match[1]) : '';
+    const match = document.cookie.match(new RegExp(`(?:^|; )${CONSENT_COOKIE}=([^;]*)`));
+    if (!match) return 'unknown';
+    let value: string;
+    try {
+      value = decodeURIComponent(match[1]);
+    } catch {
+      // A malformed escape is a tampered or foreign cookie — it reads as unanswered, never as
+      // consent, and never as an exception in the middle of a render.
+      return 'unknown';
+    }
     return value === 'granted' || value === 'denied' ? value : 'unknown';
   }
 

@@ -1,3 +1,4 @@
+using System.Globalization;
 using eQuantic.UI.Core;
 using eQuantic.UI.Primitives;
 using eQuantic.UI.Web;
@@ -30,10 +31,15 @@ public class CookieConsentTests
                 yield return descendant;
     }
 
+    // Culture-EXPLICIT: the SDK ships pt-BR and es resources too, and these assertions read the
+    // English copy, so the render is pinned to `en` rather than to whatever culture the machine
+    // or a neighbouring test left behind.
     private static List<HtmlNode> Rendered(IConsent? consent, VisualNode node)
     {
         var outer = CapabilityScope.Current;
+        var culture = CultureInfo.CurrentUICulture;
         CapabilityScope.Current = type => type == typeof(IConsent) ? consent : null;
+        CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en");
         try
         {
             return Walk(WebRealizer.Lower(node, Theme).Render()).ToList();
@@ -41,6 +47,7 @@ public class CookieConsentTests
         finally
         {
             CapabilityScope.Current = outer;
+            CultureInfo.CurrentUICulture = culture;
         }
     }
 

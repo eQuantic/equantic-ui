@@ -41,4 +41,9 @@ describe('WebConsent (IConsent realization)', () => {
     document.cookie = `${CONSENT_COOKIE}=yes-please; path=/`;
     expect(new WebConsent().state).toBe('unknown');
   });
+
+  it('treats a malformed escape as unanswered instead of throwing mid-render', () => {
+    document.cookie = `${CONSENT_COOKIE}=%E0%A4%A; path=/`;
+    expect(new WebConsent().state).toBe('unknown');
+  });
 });
