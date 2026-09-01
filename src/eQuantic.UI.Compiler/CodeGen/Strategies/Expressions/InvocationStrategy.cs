@@ -356,7 +356,8 @@ public class InvocationStrategy : IExpressionIrStrategy
         context.Report(node, ConversionSeverity.Error, "EQ2004",
             $"'{declaring.ToDisplayString()}.{symbol.Name}' has no JavaScript translation. "
             + "The transpiler only knows the constructs it maps explicitly; add a strategy for it, "
-            + "or move the call behind a [ServerAction].");
+            + "move the call behind a [ServerAction], or — if the class this call sits in only ever "
+            + "runs on the server — mark THAT class [ServerOnly] so no module is emitted for it.");
     }
 
     /// <summary>Does the file import the declarative factory surface with `using static`? Matched on
