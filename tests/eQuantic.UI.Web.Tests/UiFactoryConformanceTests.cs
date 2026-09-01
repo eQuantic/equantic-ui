@@ -149,7 +149,7 @@ public class UiFactoryConformanceTests
                 if (!prefixMirrors) return false;
 
                 // Parameters past the constructor are the SEMANTIC tail: each one must be optional
-                // and land on a public settable (init-only) property of the same name and type —
+                // and land on a public INIT-ONLY property of the same name and type —
                 // that is the object initializer the factory body writes, stated as a rule. The
                 // constructor itself stays narrow on purpose: its trailing slot is where the
                 // compiler lands object initializers, so widening it would break emitted code.
@@ -157,8 +157,15 @@ public class UiFactoryConformanceTests
                     parameter.HasDefaultValue
                     && parameter.Name is { Length: > 0 } name
                     && factory.ReturnType.GetProperty(char.ToUpperInvariant(name[0]) + name[1..])
-                        is { CanWrite: true } property
-                    && property.PropertyType == parameter.ParameterType);
+                        is { SetMethod: { IsPublic: true } setter } property
+                    && property.PropertyType == parameter.ParameterType
+                    // INIT-ONLY, as claimed: the compiler marks an init accessor with the
+                    // IsExternalInit modreq. A plain mutable setter is a different contract —
+                    // the vocabulary's nodes are immutable after construction, and a tail that
+                    // quietly landed on a mutable property would hide that a node broke the rule.
+                    && setter.ReturnParameter.GetRequiredCustomModifiers()
+                        .Any(modifier => modifier.FullName ==
+                            "System.Runtime.CompilerServices.IsExternalInit"));
             });
             match.Should().BeTrue(
                 $"{factory.Name} must mirror a public {factory.ReturnType.Name} constructor exactly "
