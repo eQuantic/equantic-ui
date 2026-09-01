@@ -96,19 +96,32 @@
             single stray .pdb leaves the app unsigned; and an unsigned app is refused by the very
             capabilities that check who is asking. LocalAuthentication simply never showed its sheet
             and never said why, which cost an afternoon to find.
+
+            runtimes/ is an ALLOWLIST (osx*, unix*), not a denylist: only RIDs a macOS process can
+            actually load belong in the bundle. The denylist this replaces named win/linux/android/
+            ios and let `browser-wasm` through — Microsoft.Data.Sqlite ships a static archive
+            (e_sqlite3.a) under it, which is not Mach-O, and codesign refused the ENTIRE bundle
+            (found by the OS Cleaner's F1 build). The next RID the ecosystem invents is excluded
+            here by construction instead of re-opening this.
         -->
         <ItemGroup>
             <_EqBundlePayload Include="$(TargetDir)**/*"
                               Exclude="$(TargetDir)$(_EqAppName).app/**/*;$(TargetDir)**/*.app/**/*;
                                        $(TargetDir)**/*.pdb;
-                                       $(TargetDir)runtimes/win*/**/*;
-                                       $(TargetDir)runtimes/linux*/**/*;
-                                       $(TargetDir)runtimes/android*/**/*;
-                                       $(TargetDir)runtimes/ios*/**/*" />
+                                       $(TargetDir)runtimes/**/*" />
+            <_EqBundlePayload Include="$(TargetDir)runtimes/osx*/**/*;
+                                       $(TargetDir)runtimes/unix*/**/*" />
         </ItemGroup>
+        <!--
+            Contents/MacOS is REBUILT from the payload every time, not accreted: the copy alone
+            never removes anything, so a file the payload stopped including (a package dropped, a
+            RID newly excluded) stayed in the bundle forever — and kept failing codesign long
+            after the exclusion was fixed. Everything under MacOS comes from this copy, so
+            removing the directory first is exactly "the bundle is the payload".
+        -->
+        <RemoveDir Directories="$(_EqBundleDir)/Contents/MacOS" />
         <Copy SourceFiles="@(_EqBundlePayload)"
-              DestinationFiles="@(_EqBundlePayload->'$(_EqBundleDir)/Contents/MacOS/%(RecursiveDir)%(Filename)%(Extension)')"
-              SkipUnchangedFiles="true" />
+              DestinationFiles="@(_EqBundlePayload->'$(_EqBundleDir)/Contents/MacOS/%(RecursiveDir)%(Filename)%(Extension)')" />
         <Exec Command="chmod +x &quot;$(_EqBundleDir)/Contents/MacOS/$(AssemblyName)&quot;" />
 
         <!--
@@ -117,9 +130,14 @@
             calling gets an answer that names nothing. Ad hoc is right for a development build: it
             proves nothing about origin, which is honest, and it is what a local app needs to be
             treated as an app at all. A shipped build re-signs with a real identity.
+
+            A signing failure FAILS THE BUILD. It used to be a warning, and the .app kept whatever
+            signature the previous build left — an identity that silently flips is how a TCC grant
+            (Full Disk Access) evaporates between builds, and nobody connects a lost permission to
+            a warning that scrolled past yesterday. A loud build is the cheap version of that hour.
         -->
         <Exec Command="codesign --force --deep --sign - --identifier &quot;$(_EqBundleId)&quot; &quot;$(_EqBundleDir)&quot;"
-              ContinueOnError="true" StandardOutputImportance="normal" />
+              StandardOutputImportance="normal" />
     </Target>
 
     <!--
