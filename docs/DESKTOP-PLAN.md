@@ -182,14 +182,21 @@ editor suggestion) is a decision, not an oversight. Newest first.
   `Sdk.props:136`, native `Sdk.props:24`); `samples/DefaultUIDashboard/Screens/DeclarativeScreen.cs`
   is the proof screen. PhotonDesktop's Studio and WalletMobile predate the surface and compose
   primitives imperatively as framework instruments; both now carry a signpost saying so.
-- **The `Pressable` factory cannot express accessibility state** (2026-08-26, OS Cleaner F1): the
-  factory mirrors the constructor — `Pressable(child, onPressed)` — and `Label`, `Selected` and
-  `PressedBackground` are init-only properties the mirror never reaches. `Label`/`Selected` feed
-  the SEMANTICS tree, so a fully declarative screen today cannot mark a nav item selected or name
-  an icon-only button for VoiceOver; the consumer stayed imperative deliberately rather than work
-  around it. The fix path the mirror rule already implies: widen the CONSTRUCTOR with optional
-  parameters and the factory follows — a Primitives surface change with its own tests, not a docs
-  patch.
+- **The `Pressable` factory cannot express accessibility state** (2026-08-26, OS Cleaner F1;
+  RESOLVED): the factory mirrored the constructor — `Pressable(child, onPressed)` — and `Label`,
+  `Selected` and `PressedBackground` were init-only properties the mirror never reached, so a
+  fully declarative screen could not mark a nav item selected or name an icon-only button for
+  VoiceOver; the consumer stayed imperative deliberately rather than work around it. The fix
+  widened the FACTORY pair, not the constructor: the constructor's trailing slot is where eqc
+  lands object initializers (`new Pressable(c, p) { Label = x }` →
+  `new Pressable(c, p, { label: x })`), so reshaping it would have broken every emitted
+  initializer — the factory tail applies the same properties via an initializer and compiles
+  through the existing protocol. Shipped for the three factory-bearing nodes with semantic
+  init-only props: `Pressable` (+label, selected, disabled, pressedBackground, expanded), `Link`
+  (+label, current — and the vocabulary twin gained the typed `current` the C# side already had),
+  `TextEntry` (+label, placeholder, disabled, obscure). Composite/modal machinery (`Role`,
+  `Mixed`, `InitialFocus`) stays initializer-only on purpose — it belongs to the components that
+  own those patterns. Pinned by `FactorySemanticSurfaceTests` (factory call → rendered ARIA).
 - **`TypeRole.Body` does not exist** (2026-08-25, OS Cleaner F0): the ramp's body rungs are
   `BodyL/BodyM` (the dense-scale work split them). Second and third consumers hit the same
   guess; an editor suggestion for role names is Track I territory.

@@ -11,8 +11,12 @@ namespace eQuantic.UI.Web.Tests;
 /// The declarative factory contract (<see cref="UI"/>): every factory is named EXACTLY like the
 /// type it returns and mirrors one of that type's public constructors parameter-for-parameter
 /// (same names, same types, same defaults) — named arguments must carry between `new X(…)` and
-/// `X(…)` unchanged. Containers may append one trailing `children` parameter. And because the
-/// class transpiles to a JS twin, no factory may overload — JS methods cannot.
+/// `X(…)` unchanged. Two legal tails may follow the mirrored prefix: OPTIONAL parameters that
+/// each correspond to a public init-only property of the type (same name PascalCased, same type
+/// — the factory applies them via an object initializer, which is how a declarative screen
+/// reaches semantics like <c>Label</c>/<c>Selected</c> that the constructor deliberately does not
+/// carry), and, on containers, one final <c>children</c> parameter. And because the class
+/// transpiles to a JS twin, no factory may overload — JS methods cannot.
 /// </summary>
 public class UiFactoryConformanceTests
 {
@@ -136,16 +140,31 @@ public class UiFactoryConformanceTests
             var match = factory.ReturnType.GetConstructors().Any(ctor =>
             {
                 var ctorParameters = ctor.GetParameters();
-                if (ctorParameters.Length != mirrored.Length) return false;
-                return ctorParameters.Zip(mirrored).All(pair =>
+                if (ctorParameters.Length > mirrored.Length) return false;
+                var prefixMirrors = ctorParameters.Zip(mirrored[..ctorParameters.Length]).All(pair =>
                     pair.First.Name == pair.Second.Name
                     && pair.First.ParameterType == pair.Second.ParameterType
                     && pair.First.HasDefaultValue == pair.Second.HasDefaultValue
                     && Equals(pair.First.RawDefaultValue, pair.Second.RawDefaultValue));
+                if (!prefixMirrors) return false;
+
+                // Parameters past the constructor are the SEMANTIC tail: each one must be optional
+                // and land on a public settable (init-only) property of the same name and type —
+                // that is the object initializer the factory body writes, stated as a rule. The
+                // constructor itself stays narrow on purpose: its trailing slot is where the
+                // compiler lands object initializers, so widening it would break emitted code.
+                return mirrored[ctorParameters.Length..].All(parameter =>
+                    parameter.HasDefaultValue
+                    && parameter.Name is { Length: > 0 } name
+                    && factory.ReturnType.GetProperty(char.ToUpperInvariant(name[0]) + name[1..])
+                        is { CanWrite: true } property
+                    && property.PropertyType == parameter.ParameterType);
             });
             match.Should().BeTrue(
                 $"{factory.Name} must mirror a public {factory.ReturnType.Name} constructor exactly "
-                + "(names, types, defaults) — named arguments carry between the two forms");
+                + "(names, types, defaults), optionally followed by a tail of optional parameters "
+                + "that each match an init-only property (name, type) — named arguments carry "
+                + "between the two forms");
         }
     }
 

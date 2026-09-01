@@ -45,16 +45,16 @@ export class UI {
         return new Text(content, role, color, maxLines, align, mono, tabular, styleOverride, headingLevel);
     }
 
-    static textEntry(value: string, onChanged: ((string: string) => void) | null = null) {
-        return new TextEntry(value, onChanged);
+    static textEntry(value: string, onChanged: ((string: string) => void) | null = null, label: string | null = null, placeholder: string | null = null, disabled: boolean = false, obscure: boolean = false) {
+        return new TextEntry(value, onChanged, { label: label, placeholder: placeholder, disabled: disabled, obscure: obscure });
     }
 
-    static pressable(child: VisualNode, onPressed: (() => void) | null = null) {
-        return new Pressable(child, onPressed);
+    static pressable(child: VisualNode, onPressed: (() => void) | null = null, label: string | null = null, selected: boolean | null = null, disabled: boolean = false, pressedBackground: ColorToken | null = null, expanded: boolean | null = null) {
+        return new Pressable(child, onPressed, { label: label, selected: selected, disabled: disabled, pressedBackground: pressedBackground, expanded: expanded });
     }
 
-    static link(destination: string, child: VisualNode) {
-        return new Link(destination, child);
+    static link(destination: string, child: VisualNode, label: string | null = null, current: boolean = false) {
+        return new Link(destination, child, { label: label, current: current });
     }
 
     static glyph(glyph: IconGlyph, size: number = 24, color: ColorToken | null = null, label: string | null = null) {
