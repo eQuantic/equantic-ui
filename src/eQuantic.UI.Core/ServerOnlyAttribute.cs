@@ -18,8 +18,10 @@ namespace eQuantic.UI.Core;
 /// top-level static class and every plain class in an app is otherwise mirrored to JavaScript — a
 /// Roslyn compilation service, a hosted warm-up, a repository living in the web project failed the
 /// build with EQ2004 on their first server-only call, and nothing short of moving them to another
-/// assembly could say "this never ships". A component cannot be ServerOnly; a class the client's
-/// code instantiates or calls must not be either, for the same reason as the method.
+/// assembly could say "this never ships". On a COMPONENT it has no effect — the component path
+/// ignores it, because a component always ships. And a class the client's code instantiates or
+/// calls must not carry it, for the same reason as the method: the reference would resolve to
+/// nothing at runtime.
 /// </para>
 /// </summary>
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
