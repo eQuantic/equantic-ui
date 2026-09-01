@@ -16,7 +16,7 @@ namespace eQuantic.Studio;
 /// SIGNPOST — this file predates the declarative factory surface and composes nodes imperatively
 /// (<c>new Column</c>, <c>.Add</c>). Do not learn app authoring here: the canonical idiom is
 /// factories with no <c>new</c> — injected by both SDKs — and
-/// <c>DefaultUIDashboard/Screens/DeclarativeScreen.cs</c> is the proof screen. The Studio stays
+/// <c>samples/DefaultUIDashboard/Screens/DeclarativeScreen.cs</c> is the proof screen. The Studio stays
 /// imperative on purpose: it is a framework instrument whose walk tests build trees piecewise.
 /// </para>
 /// </summary>

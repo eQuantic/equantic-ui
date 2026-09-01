@@ -16,7 +16,7 @@ namespace eQuantic.Wallet;
 /// SIGNPOST — this file predates the declarative factory surface and composes nodes imperatively
 /// (<c>new Column</c>, <c>.Add</c>). Do not learn app authoring here: the canonical idiom is
 /// factories with no <c>new</c> — injected by both SDKs — and
-/// <c>DefaultUIDashboard/Screens/DeclarativeScreen.cs</c> is the proof screen.
+/// <c>samples/DefaultUIDashboard/Screens/DeclarativeScreen.cs</c> is the proof screen.
 /// </para>
 /// </summary>
 public sealed class WalletApp : StatefulComponent
