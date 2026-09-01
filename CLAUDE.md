@@ -46,7 +46,8 @@ small and focused; the PR is the unit that must be substantial.
 
 ## Project Overview
 
-**eQuantic.UI** is a Flutter-inspired component-based UI framework for .NET that compiles C# components directly to optimized JavaScript at build time (not WASM). It provides type-safe, HTML-native components with a minimal runtime (~85 KB gzipped).
+**eQuantic.UI** is a Flutter-inspired component-based UI framework for .NET that compiles C# components directly to optimized JavaScript at build time (not WASM). It provides type-safe, HTML-native components with a small runtime (its gzip size is measured by the site's
+build and not quoted here — it changes every release).
 
 ### Core Principles
 

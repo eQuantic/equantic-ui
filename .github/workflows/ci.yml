@@ -217,55 +217,33 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
 
-          # The complete public package set — every ID the two SDKs (and their templates)
-          # resolve, plus the extras. eQuantic.Build and eQuantic.UI.Native.Build are embedded
-          # into the SDK packages as tools and are deliberately NOT here.
-          PACKAGES=(
-            eQuantic.UI.Core
-            eQuantic.UI.Primitives
-            eQuantic.UI.Codegen
-            eQuantic.UI.Compiler
-            eQuantic.UI.Components
-            eQuantic.UI.Generators
-            eQuantic.UI.Server
-            eQuantic.UI.Web
-            eQuantic.UI.Gtm
-            eQuantic.UI.Native.Components
-            eQuantic.UI.Native.Engine
-            eQuantic.UI.Native.Engine.Metal
-            eQuantic.UI.Native.Engine.Reference
-            eQuantic.UI.Native.Engine.Vulkan
-            eQuantic.UI.Native.Framework
-            eQuantic.UI.Native.Generators
-            eQuantic.UI.Native.Hosting
-            eQuantic.UI.Native.Shell.Apple
-            eQuantic.UI.Native.Shell.MacOS
-            eQuantic.UI.Native.Shell.iOS
-            eQuantic.UI.Native.Shell.Android
-            eQuantic.UI.BootstrapIcons
-            eQuantic.UI.FontAwesome6.Brands
-            eQuantic.UI.FontAwesome6.Regular
-            eQuantic.UI.FontAwesome6.Solid
-            eQuantic.UI.Heroicons
-            eQuantic.UI.Iconoir
-            eQuantic.UI.MaterialSymbols
-            eQuantic.UI.Lucide
-            eQuantic.UI.Material
-            eQuantic.UI.Phosphor
-            eQuantic.UI.RadixIcons
-            eQuantic.UI.SimpleIcons
-            eQuantic.UI.TablerIcons
-            eQuantic.UI.Images
-            eQuantic.UI.Lottie
-            eQuantic.UI.Charts
-            eQuantic.UI.Charts.ApexCharts
-            eQuantic.UI.Charts.ChartJs
-          )
-          for pkg in "${PACKAGES[@]}"; do
-            # Glob, not name convention: a few folders and their csproj names diverge.
-            dotnet build src/"$pkg"/*.csproj -c Release -p:Version=$VERSION
-            dotnet pack  src/"$pkg"/*.csproj -c Release --no-build -p:Version=$VERSION
+          # The package set is DISCOVERED, not listed: every project under src/ that says
+          # IsPackable (the csproj is the one place that decision already lives) is built and
+          # packed here. The hand-kept roster this replaces missed eQuantic.UI.Email for two
+          # releases — it never reached nuget.org while the release notes announced it. Tools
+          # that ride inside the SDK packages (eQuantic.Build, eQuantic.UI.Native.Build) and
+          # design-time projects say IsPackable=false themselves. Left out on purpose: the
+          # per-RID runtime packs (the platform matrix packs them) and the four projects below,
+          # whose pack targets stage tools and must not run with --no-build.
+          SEPARATE="eQuantic.UI.Runtime eQuantic.UI.Sdk eQuantic.UI.Sdk.Native eQuantic.UI.Templates"
+          PACKED=0
+          for csproj in src/*/*.csproj; do
+            name=$(basename "$(dirname "$csproj")")
+            case " $SEPARATE " in *" $name "*) continue;; esac
+            case "$name" in eQuantic.UI.Runtime.*) continue;; esac
+            # tr, not ${var,,}: the macOS runner's bash is 3.2, which has no case conversion —
+            # the same reason the Test step avoids globstar.
+            packable=$(dotnet msbuild "$csproj" -getProperty:IsPackable -nologo 2>/dev/null | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
+            if [ "$packable" = "false" ]; then continue; fi
+            echo "::group::pack $name"
+            dotnet build "$csproj" -c Release -p:Version=$VERSION
+            dotnet pack  "$csproj" -c Release --no-build -p:Version=$VERSION
+            echo "::endgroup::"
+            PACKED=$((PACKED + 1))
           done
+          echo "::notice::packed $PACKED discovered packages"
+          # A discovery that finds nothing is a broken discovery, not an empty repository.
+          [ "$PACKED" -ge 30 ] || { echo "::error::only $PACKED packable projects found under src/"; exit 1; }
 
           # The Runtime meta-package and the SDKs pack WITHOUT --no-build: their pack targets
           # stage tools (eqc, eQuantic.Build, eqicon) and stamp versions.
