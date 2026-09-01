@@ -1,8 +1,8 @@
-import { AdaptiveNode, Adjustable, AlignmentValue, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxStyle, Button, Calendar, Card, Checkbox, Chip, ColorToken, Column, CookieConsent, CrossAlignValue, CultureOption, CultureSwitcher, DateOnly, DatePicker, DateTime, DateTimePicker, Dialog, DialogAction, Divider, DragDismiss, Draggable, Drawer, Drawing, EdgeInsets, EmptyState, Flexible, Grid, GridTrack, Hoverable, Icon, IconButton, IconGlyph, IconsValue, Image, ImageFitValue, InFlow, InView, KeyChord, Link, ListDetail, ListItem, ListView, MainAlignValue, Markdown, Mermaid, NavigationRail, NavItem, Overlay, Positioned, Presence, PresenceMotionValue, Pressable, ProgressBar, Row, SafeArea, ScrollAxisValue, ScrollView, SearchField, Select, Shortcut, Simulated, SizeVariantValue, Skeleton, Slider, Spacer, Spinner, Stack, Stepper, Sticky, Switch, Tabs, Text, TextAlignmentValue, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TypeRoleValue, TypeStyle, VariantValue, Vector, VectorDrawing, VisualNode } from "@equantic/runtime";
+import { AdaptiveNode, Adjustable, AlignmentValue, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxStyle, Button, Calendar, Card, Checkbox, Chip, ColorToken, Column, CookieConsent, CrossAlignValue, CultureOption, CultureSwitcher, DateOnly, DatePicker, DateTime, DateTimePicker, Dialog, DialogAction, Divider, DragDismiss, Draggable, Drawer, Drawing, EdgeInsets, EmptyState, Flexible, Grid, GridTrack, Hoverable, Icon, IconButton, IconGlyph, IconsValue, Image, ImageFitValue, InFlow, InView, KeyChord, Link, ListDetail, ListItem, ListView, MainAlignValue, Markdown, Mermaid, NavigationRail, NavItem, Overlay, Positioned, Presence, PresenceMotionValue, Pressable, PressableRoleValue, ProgressBar, Row, SafeArea, ScrollAxisValue, ScrollView, SearchField, Select, Shortcut, Simulated, SizeValue, SizeVariantValue, Skeleton, Slider, Spacer, Spinner, Stack, Stepper, Sticky, Switch, Tabs, Text, TextAlignmentValue, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TypeRoleValue, TypeStyle, VariantValue, Vector, VectorDrawing, VisualNode } from "@equantic/runtime";
 
 export class UI {
-    static column(gap: number = 0, main: MainAlignValue = 'start', cross: CrossAlignValue = 'stretch', wrap: boolean = false, runGap: number | null = null, padding: EdgeInsets | null = null, children: VisualNode[] | null = null) {
-        let node = new Column(gap, main, cross, wrap, runGap, padding);
+    static column(gap: number = 0, main: MainAlignValue = 'start', cross: CrossAlignValue = 'stretch', wrap: boolean = false, runGap: number | null = null, padding: EdgeInsets | null = null, width?: SizeValue, height?: SizeValue, children: VisualNode[] | null = null) {
+        let node = new Column(gap, main, cross, wrap, runGap, padding, { width: width, height: height });
         if (children != null) for (const child of children) node.add(child);
         return node;
     }
@@ -19,20 +19,20 @@ export class UI {
         return new Simulated(state, child);
     }
 
-    static row(gap: number = 0, main: MainAlignValue = 'start', cross: CrossAlignValue = 'center', wrap: boolean = false, runGap: number | null = null, padding: EdgeInsets | null = null, children: VisualNode[] | null = null) {
-        let node = new Row(gap, main, cross, wrap, runGap, padding);
+    static row(gap: number = 0, main: MainAlignValue = 'start', cross: CrossAlignValue = 'center', wrap: boolean = false, runGap: number | null = null, padding: EdgeInsets | null = null, width?: SizeValue, height?: SizeValue, children: VisualNode[] | null = null) {
+        let node = new Row(gap, main, cross, wrap, runGap, padding, { width: width, height: height });
         if (children != null) for (const child of children) node.add(child);
         return node;
     }
 
-    static grid(columns: GridTrack[], gap: number = 0, rowGap: number | null = null, children: VisualNode[] | null = null) {
-        let node = new Grid(columns, gap, rowGap);
+    static grid(columns: GridTrack[], gap: number = 0, rowGap: number | null = null, width?: SizeValue, height?: SizeValue, children: VisualNode[] | null = null) {
+        let node = new Grid(columns, gap, rowGap, { width: width, height: height });
         if (children != null) for (const child of children) node.add(child);
         return node;
     }
 
-    static stack(align: AlignmentValue = 'topStart', children: VisualNode[] | null = null) {
-        let node = new Stack(align);
+    static stack(align: AlignmentValue = 'topStart', width?: SizeValue, height?: SizeValue, children: VisualNode[] | null = null) {
+        let node = new Stack(align, { width: width, height: height });
         if (children != null) for (const child of children) node.add(child);
         return node;
     }
@@ -49,8 +49,8 @@ export class UI {
         return new TextEntry(value, onChanged, { label: label, placeholder: placeholder, disabled: disabled, obscure: obscure });
     }
 
-    static pressable(child: VisualNode, onPressed: (() => void) | null = null, label: string | null = null, selected: boolean | null = null, disabled: boolean = false, pressedBackground: ColorToken | null = null, expanded: boolean | null = null) {
-        return new Pressable(child, onPressed, { label: label, selected: selected, disabled: disabled, pressedBackground: pressedBackground, expanded: expanded });
+    static pressable(child: VisualNode, onPressed: (() => void) | null = null, label: string | null = null, selected: boolean | null = null, disabled: boolean = false, pressedBackground: ColorToken | null = null, expanded: boolean | null = null, role: PressableRoleValue = 'button') {
+        return new Pressable(child, onPressed, { label: label, selected: selected, disabled: disabled, pressedBackground: pressedBackground, expanded: expanded, role: role });
     }
 
     static link(destination: string, child: VisualNode, label: string | null = null, current: boolean = false) {
@@ -97,8 +97,8 @@ export class UI {
         return new Positioned(child, top, end, bottom, start);
     }
 
-    static scrollView(child: VisualNode, axis: ScrollAxisValue = 'vertical') {
-        return new ScrollView(child, axis);
+    static scrollView(child: VisualNode, axis: ScrollAxisValue = 'vertical', width?: SizeValue, height?: SizeValue) {
+        return new ScrollView(child, axis, { width: width, height: height });
     }
 
     static safeArea(child: VisualNode, edges: number = 15) {
@@ -273,8 +273,8 @@ export class UI {
         return new ListItem(title, subtitle, onPressed);
     }
 
-    static listView(count: number, itemExtent: number, itemBuilder: (value: number) => VisualNode) {
-        return new ListView(count, itemExtent, itemBuilder);
+    static listView(count: number, itemExtent: number, itemBuilder: (value: number) => VisualNode, width?: SizeValue, height?: SizeValue) {
+        return new ListView(count, itemExtent, itemBuilder, { width: width, height: height });
     }
 
     static listDetail(list: VisualNode, detail: VisualNode | null = null, onBack: (() => void) | null = null) {

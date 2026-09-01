@@ -94,3 +94,43 @@ public class FactorySemanticSurfaceTests
         input.Attributes.Should().ContainKey("disabled");
     }
 }
+
+/// <summary>
+/// The LAYOUT tail — the OS Cleaner's report after migrating its whole UI to the declarative surface:
+/// 49 places could not say a container's width or height (init-only on VisualNode, no factory
+/// parameter), so `new Row(...) { Width = SizeValue.Fill }` stayed the only spelling of the most
+/// common layout there is. And 3 places needed a Pressable's composite role.
+/// </summary>
+public class FactoryLayoutTailTests
+{
+    private static readonly IAppTheme Theme = PhotonTheme.Instance;
+
+    [Fact]
+    public void EveryContainerFactory_ReachesWidthAndHeight()
+    {
+        Row(width: SizeValue.Fill).Width.Should().Be(SizeValue.Fill);
+        Column(height: SizeValue.Fill).Height.Should().Be(SizeValue.Fill);
+        Grid([GridTrack.Flex()], width: SizeValue.Fill).Width.Should().Be(SizeValue.Fill);
+        Stack(width: SizeValue.Fixed(320), height: SizeValue.Fixed(200)).Height.Should().Be(SizeValue.Fixed(200));
+        ScrollView(Text("x"), height: SizeValue.Fill).Height.Should().Be(SizeValue.Fill);
+        ListView(3, 44, i => Text($"{i}"), width: SizeValue.Fill).Width.Should().Be(SizeValue.Fill);
+    }
+
+    [Fact]
+    public void LeavingTheTailOut_MeansHug_ExactlyAsAnInitializerWould()
+    {
+        // default(SizeValue) is Hug: the factory without a width is the constructor without one.
+        Row().Width.Should().Be(new Row(gap: 0).Width);
+        Column(children: [Text("a")]).Height.Should().Be(SizeValue.Hug);
+    }
+
+    [Fact]
+    public void PressableFactoryStatesItsCompositeRole()
+    {
+        var node = Pressable(Text("Overview"), () => { }, selected: true, role: PressableRole.Radio);
+        var html = WebRealizer.Lower(node, Theme).Render();
+        IEnumerable<HtmlNode> Walk(HtmlNode n) { yield return n; foreach (var c in n.Children) foreach (var d in Walk(c)) yield return d; }
+        var radio = Walk(html).First(n => n.Attributes.TryGetValue("role", out var role) && role == "radio");
+        radio.Attributes["aria-checked"].Should().Be("true", "a radio states its selection as checked, not pressed");
+    }
+}

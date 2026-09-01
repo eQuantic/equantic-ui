@@ -14,7 +14,7 @@ describe('UI factories (no-new authoring twin)', () => {
     // structurally, so a component in a children slot needs the cast only here in the spec.
     // children is TRAILING (the container contract) — the alignment knobs sit between it and gap,
     // so it is named the moment a container takes more than a gap.
-    const tree = UI.column(12, 'start', 'stretch', false, null, null, [
+    const tree = UI.column(12, 'start', 'stretch', false, null, null, undefined, undefined, [
       UI.text('Count: 0', 'display'),
       UI.button('Up', 'primary', 'medium', () => {}) as unknown as VisualNode,
     ]);
@@ -51,7 +51,7 @@ describe('UI factories (no-new authoring twin)', () => {
   });
 
   it('the factory tree renders through the same lowering as constructed nodes', () => {
-    const factoryNode = UI.column(8, 'start', 'stretch', false, null, null, [
+    const factoryNode = UI.column(8, 'start', 'stretch', false, null, null, undefined, undefined, [
       UI.text('hello', 'bodyM'),
     ]).render();
     const constructed = (() => {
