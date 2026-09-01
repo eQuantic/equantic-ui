@@ -109,8 +109,16 @@
                               Exclude="$(TargetDir)$(_EqAppName).app/**/*;$(TargetDir)**/*.app/**/*;
                                        $(TargetDir)**/*.pdb;
                                        $(TargetDir)runtimes/**/*" />
-            <_EqBundlePayload Include="$(TargetDir)runtimes/osx*/**/*;
-                                       $(TargetDir)runtimes/unix*/**/*" />
+            <!--
+                The allowed runtimes ride a SEPARATE item rooted at runtimes/ — with the RID in the
+                include pattern itself (runtimes/osx*/**), %(RecursiveDir) starts AFTER the RID
+                folder, the copy drops the runtimes/osx-arm64/ segment, and two RIDs shipping the
+                same filename collide in the bundle. Rooting ** at runtimes/ keeps the RID inside
+                %(RecursiveDir); the filter is per-item metadata.
+            -->
+            <_EqRuntimesAll Include="$(TargetDir)runtimes/**/*" />
+            <_EqRuntimesPayload Include="@(_EqRuntimesAll)"
+                                Condition="$([System.String]::new('%(RecursiveDir)').StartsWith('osx')) or $([System.String]::new('%(RecursiveDir)').StartsWith('unix'))" />
         </ItemGroup>
         <!--
             Contents/MacOS is REBUILT from the payload every time, not accreted: the copy alone
@@ -122,6 +130,8 @@
         <RemoveDir Directories="$(_EqBundleDir)/Contents/MacOS" />
         <Copy SourceFiles="@(_EqBundlePayload)"
               DestinationFiles="@(_EqBundlePayload->'$(_EqBundleDir)/Contents/MacOS/%(RecursiveDir)%(Filename)%(Extension)')" />
+        <Copy SourceFiles="@(_EqRuntimesPayload)"
+              DestinationFiles="@(_EqRuntimesPayload->'$(_EqBundleDir)/Contents/MacOS/runtimes/%(RecursiveDir)%(Filename)%(Extension)')" />
         <Exec Command="chmod +x &quot;$(_EqBundleDir)/Contents/MacOS/$(AssemblyName)&quot;" />
 
         <!--
