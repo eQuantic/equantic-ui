@@ -144,4 +144,40 @@ public class GtmTests
         while ((at = text.IndexOf(needle, at, StringComparison.Ordinal)) >= 0) { count++; at += needle.Length; }
         return count;
     }
+
+    [Fact]
+    public void WithConsent_LoadsTheContainerOnlyOnAGrantedAnswer()
+    {
+        var all = string.Join("\n", HeadOf(gtm => gtm.WithConsent()));
+
+        // Google Consent Mode defaults to DENIED before any container exists to read them.
+        all.Should().Contain("gtag('consent','default',{ad_storage:'denied'");
+        all.Should().Contain("analytics_storage:'denied'");
+        // The container is fetched only when the shared cookie says granted, or when the browser
+        // announces a grant — the event IConsent's web realization dispatches.
+        all.Should().Contain("eq-consent=([^;]*)");
+        all.Should().Contain("m[1]==='granted'");
+        all.Should().Contain("addEventListener('eq:consent'");
+        all.Should().Contain("googletagmanager.com/gtm.js?id='+i");
+        // And the installer declaration still arms IAnalytics: pushes land in the dataLayer array,
+        // which the container replays when it finally loads.
+        all.Should().Contain("window.__EQ_ANALYTICS__={dataLayer:'dataLayer'}");
+    }
+
+    [Fact]
+    public void WithoutConsent_TheContainerLoadsUnconditionally_AsBefore()
+    {
+        var all = string.Join("\n", HeadOf());
+        all.Should().NotContain("eq-consent");
+        all.Should().NotContain("'consent','default'");
+    }
+
+    /// <summary>The cookie name is spelled in two packages on purpose (Gtm stays dependency-free);
+    /// this is what keeps the two spellings one.</summary>
+    [Fact]
+    public void TheConsentCookie_IsTheOneTheServerReads()
+    {
+        var all = string.Join("\n", HeadOf(gtm => gtm.WithConsent()));
+        all.Should().Contain(ConsentCookie.Name + "=([^;]*)");
+    }
 }

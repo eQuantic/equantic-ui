@@ -32,6 +32,31 @@ namespace eQuantic.UI.Components
             get { return ResourceManager.GetString("Dismiss", Culture)!; }
         }
 
+        internal static string CookieConsentTitle
+        {
+            get { return ResourceManager.GetString("CookieConsentTitle", Culture)!; }
+        }
+
+        internal static string CookieConsentBody
+        {
+            get { return ResourceManager.GetString("CookieConsentBody", Culture)!; }
+        }
+
+        internal static string AcceptCookies
+        {
+            get { return ResourceManager.GetString("AcceptCookies", Culture)!; }
+        }
+
+        internal static string RejectCookies
+        {
+            get { return ResourceManager.GetString("RejectCookies", Culture)!; }
+        }
+
+        internal static string PrivacyPolicy
+        {
+            get { return ResourceManager.GetString("PrivacyPolicy", Culture)!; }
+        }
+
         internal static string Remove
         {
             get { return ResourceManager.GetString("Remove", Culture)!; }

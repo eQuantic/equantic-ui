@@ -40,6 +40,11 @@ public static class GtmExtensions
     /// id installs a container that silently collects nothing, discovered weeks later.</summary>
     private static readonly Regex ContainerId = new("^GTM-[A-Z0-9]{4,10}$", RegexOptions.Compiled);
 
+    /// <summary>The cookie the IConsent realizations write and the server reads (`ConsentCookie.Name`
+    /// in eQuantic.UI.Server). Spelled here as a literal so this package stays server-only and
+    /// dependency-free — the tests pin the two spellings together.</summary>
+    private const string ConsentCookieName = "eq-consent";
+
     /// <summary>The dataLayer each shell already declared — how a second UseGtm (the
     /// agency-plus-client case) knows to add only its container, on the SAME dataLayer.</summary>
     private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<UIOptions, string>
@@ -86,12 +91,41 @@ public static class GtmExtensions
                 && gtm.EnvironmentPreview is { Length: > 0 } preview
                 ? $"+'&gtm_auth={JsString(Uri.EscapeDataString(auth))}&gtm_preview={JsString(Uri.EscapeDataString(preview))}&gtm_cookies_win=x'"
                 : "";
-            shell.AddHeadTag(
-                "<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),"
+            var snippet =
+                "(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),"
                 + "event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),"
                 + "dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl"
                 + environment + ";f.parentNode.insertBefore(j,f);})"
-                + $"(window,document,'script','{JsString(gtm.DataLayerName)}','{JsString(containerId)}');</script>");
+                + $"(window,document,'script','{JsString(gtm.DataLayerName)}','{JsString(containerId)}');";
+
+            if (!gtm.RequireConsent)
+            {
+                shell.AddHeadTag($"<script>{snippet}</script>");
+            }
+            else
+            {
+                // Consent-gated (GDPR / LGPD). Google Consent Mode defaults to DENIED through the
+                // gtag stub, which pushes into the same dataLayer the container will read when it
+                // arrives. The container itself is fetched only on a granted answer — read from
+                // the eq-consent cookie the IConsent realizations share, or delivered live by the
+                // eq:consent event the browser dispatches when the visitor answers. Denied or
+                // unanswered visitors never download the tag manager; the `loaded` flag keeps a
+                // re-grant from injecting it twice.
+                var layer = JsString(gtm.DataLayerName);
+                shell.AddHeadTag(
+                    "<script>(function(){"
+                    + $"var l='{layer}';window[l]=window[l]||[];"
+                    + "function gtag(){window[l].push(arguments);}"
+                    + "gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',wait_for_update:500});"
+                    + "var loaded=false;"
+                    + "function granted(){if(loaded)return;loaded=true;"
+                    + "gtag('consent','update',{ad_storage:'granted',ad_user_data:'granted',ad_personalization:'granted',analytics_storage:'granted'});"
+                    + snippet + "}"
+                    + $"var m=document.cookie.match(/(?:^|; ){ConsentCookieName}=([^;]*)/);"
+                    + "if(m&&m[1]==='granted')granted();"
+                    + "document.addEventListener('eq:consent',function(e){if(e.detail&&e.detail.state==='granted')granted();});"
+                    + "})();</script>");
+            }
 
             // SPA page views: the router announces every committed navigation on the document
             // (eq:navigate), and the container cannot see those on its own. page_path/page_title

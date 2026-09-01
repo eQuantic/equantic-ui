@@ -8,10 +8,13 @@
  */
 
 export const sdkNeutralStrings: Record<string, string> = {
+  'AcceptCookies': "Accept",
   'Back': "Back",
   'ChooseDate': "Choose a date",
   'ChooseTime': "Choose a time",
   'ClearSearch': "Clear search",
+  'CookieConsentBody': "Analytics cookies help us understand how the site is used. Nothing is set until you accept, and declining keeps the site fully usable.",
+  'CookieConsentTitle': "We use cookies",
   'DateFormatLetters': "DMY",
   'Dismiss': "Dismiss",
   'Find': "Find",
@@ -20,6 +23,8 @@ export const sdkNeutralStrings: Record<string, string> = {
   'NothingSelected': "Nothing selected",
   'PreviousMatch': "Previous match",
   'PreviousMonth': "Previous month",
+  'PrivacyPolicy': "Privacy policy",
+  'RejectCookies': "Decline",
   'Remove': "Remove",
   'SearchPlaceholder': "Search\u2026",
   'Spreadsheet': "Spreadsheet",

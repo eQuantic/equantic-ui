@@ -9,6 +9,7 @@ import { WebPhotoLibrary } from './photo-library';
 import { WebTextClipboard } from './text-clipboard';
 import { WebCultureController } from './culture-controller';
 import { WebAnalytics } from './analytics';
+import { WebConsent } from './consent';
 import { WebClock } from './clock';
 import { WebThemeController } from './theme-controller';
 
@@ -48,4 +49,7 @@ export function registerDeviceCapabilities(): void {
   // Analytics: registered even without an installer — a page that tracks must RESOLVE something,
   // and the realization itself goes quiet when no collector declared itself (__EQ_ANALYTICS__).
   services.registerSingleton('IAnalytics', () => new WebAnalytics());
+  // Consent: the visitor's answer to non-essential tracking, in the cookie the server and the GTM
+  // installer read too. Registered unconditionally — a page that asks must resolve something.
+  services.registerSingleton('IConsent', () => new WebConsent());
 }

@@ -113,6 +113,9 @@ public static class UIExtensions
         // middleware negotiated — a switcher rendering server-side must show the language the page
         // is actually in, and a component that resolves nothing has to guess.
         services.TryAddSingleton<eQuantic.UI.Primitives.ICultureController, SsrCultureController>();
+        // Consent is read from the request's eq-consent cookie, so the server paints the same
+        // answer the browser holds — see SsrConsent for why that is knowledge, not simulation.
+        services.TryAddSingleton<eQuantic.UI.Primitives.IConsent, SsrConsent>();
 
         // What a device capability IS during server rendering: absent — see AbsentCapabilities.
         // A page that takes a camera or the app's storage has to be CONSTRUCTIBLE here, or the one

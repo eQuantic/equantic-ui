@@ -1,4 +1,4 @@
-import { AdaptiveNode, Adjustable, AlignmentValue, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxStyle, Button, Calendar, Card, Checkbox, Chip, ColorToken, Column, CrossAlignValue, CultureOption, CultureSwitcher, DateOnly, DatePicker, DateTime, DateTimePicker, Dialog, DialogAction, Divider, DragDismiss, Draggable, Drawer, Drawing, EdgeInsets, EmptyState, Flexible, Grid, GridTrack, Hoverable, Icon, IconButton, IconGlyph, IconsValue, Image, ImageFitValue, InFlow, InView, KeyChord, Link, ListDetail, ListItem, ListView, MainAlignValue, Markdown, Mermaid, NavigationRail, NavItem, Overlay, Positioned, Presence, PresenceMotionValue, Pressable, ProgressBar, Row, SafeArea, ScrollAxisValue, ScrollView, SearchField, Select, Shortcut, Simulated, SizeVariantValue, Skeleton, Slider, Spacer, Spinner, Stack, Stepper, Sticky, Switch, Tabs, Text, TextAlignmentValue, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TypeRoleValue, TypeStyle, VariantValue, Vector, VectorDrawing, VisualNode } from "../runtime-exports";
+import { AdaptiveNode, Adjustable, AlignmentValue, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxStyle, Button, Calendar, Card, Checkbox, Chip, ColorToken, Column, CookieConsent, CrossAlignValue, CultureOption, CultureSwitcher, DateOnly, DatePicker, DateTime, DateTimePicker, Dialog, DialogAction, Divider, DragDismiss, Draggable, Drawer, Drawing, EdgeInsets, EmptyState, Flexible, Grid, GridTrack, Hoverable, Icon, IconButton, IconGlyph, IconsValue, Image, ImageFitValue, InFlow, InView, KeyChord, Link, ListDetail, ListItem, ListView, MainAlignValue, Markdown, Mermaid, NavigationRail, NavItem, Overlay, Positioned, Presence, PresenceMotionValue, Pressable, ProgressBar, Row, SafeArea, ScrollAxisValue, ScrollView, SearchField, Select, Shortcut, Simulated, SizeVariantValue, Skeleton, Slider, Spacer, Spinner, Stack, Stepper, Sticky, Switch, Tabs, Text, TextAlignmentValue, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TypeRoleValue, TypeStyle, VariantValue, Vector, VectorDrawing, VisualNode } from "../runtime-exports";
 
 export class UI {
     static column(gap: number = 0, main: MainAlignValue = 'start', cross: CrossAlignValue = 'stretch', wrap: boolean = false, runGap: number | null = null, padding: EdgeInsets | null = null, children: VisualNode[] | null = null) {
@@ -147,6 +147,10 @@ export class UI {
 
     static button(label: string, variant: VariantValue = 'primary', size: SizeVariantValue = 'medium', onPressed: (() => void) | null = null) {
         return new Button(label, variant, size, onPressed);
+    }
+
+    static cookieConsent(policyHref: string | null = null) {
+        return new CookieConsent(policyHref);
     }
 
     static card(child: VisualNode, kind: string = 'elevated') {
