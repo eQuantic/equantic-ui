@@ -50,4 +50,19 @@
   <data name="DateFormatLetters" xml:space="preserve">
     <value>DMA</value>
   </data>
+  <data name="CookieConsentTitle" xml:space="preserve">
+    <value>Usamos cookies</value>
+  </data>
+  <data name="CookieConsentBody" xml:space="preserve">
+    <value>Cookies de analytics nos ajudam a entender como o site é usado. Nada é gravado até você aceitar, e recusar mantém o site totalmente utilizável.</value>
+  </data>
+  <data name="AcceptCookies" xml:space="preserve">
+    <value>Aceitar</value>
+  </data>
+  <data name="RejectCookies" xml:space="preserve">
+    <value>Recusar</value>
+  </data>
+  <data name="PrivacyPolicy" xml:space="preserve">
+    <value>Política de privacidade</value>
+  </data>
 </root>

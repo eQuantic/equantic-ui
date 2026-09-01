@@ -27,6 +27,12 @@ public static class SdkStrings
     /// <summary>The scrim/affordance label every dismissible surface shares (Banner, Dialog,
     /// Drawer, BottomSheet) — one string, one casing, for all of them.</summary>
     public static string Dismiss => SdkResources.Dismiss;
+    // CookieConsent — the question, the two answers and the policy link.
+    public static string CookieConsentTitle => SdkResources.CookieConsentTitle;
+    public static string CookieConsentBody => SdkResources.CookieConsentBody;
+    public static string AcceptCookies => SdkResources.AcceptCookies;
+    public static string RejectCookies => SdkResources.RejectCookies;
+    public static string PrivacyPolicy => SdkResources.PrivacyPolicy;
 
     /// <summary>An Input chip's trailing remove affordance.</summary>
     public static string Remove => SdkResources.Remove;

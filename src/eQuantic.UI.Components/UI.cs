@@ -265,6 +265,11 @@ public static class UI
         SizeVariant size = SizeVariant.Medium, Action? onPressed = null) =>
         new Button(label, variant, size, onPressed);
 
+    /// <summary>The GDPR/LGPD consent card — drawn while the visitor's answer is unknown, gone after
+    /// it; <paramref name="policyHref"/> adds the privacy-policy link the card should never lack.</summary>
+    public static CookieConsent CookieConsent(string? policyHref = null) =>
+        new CookieConsent(policyHref);
+
     /// <summary>The surface container (spec A13).</summary>
     public static Card Card(VisualNode child, CardKind kind = CardKind.Elevated) =>
         new Card(child, kind);

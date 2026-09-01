@@ -5,6 +5,26 @@ export class SdkStrings {
         return $eq.str("SdkResources", "Dismiss");
     }
 
+    static get cookieConsentTitle(): string {
+        return $eq.str("SdkResources", "CookieConsentTitle");
+    }
+
+    static get cookieConsentBody(): string {
+        return $eq.str("SdkResources", "CookieConsentBody");
+    }
+
+    static get acceptCookies(): string {
+        return $eq.str("SdkResources", "AcceptCookies");
+    }
+
+    static get rejectCookies(): string {
+        return $eq.str("SdkResources", "RejectCookies");
+    }
+
+    static get privacyPolicy(): string {
+        return $eq.str("SdkResources", "PrivacyPolicy");
+    }
+
     static get remove(): string {
         return $eq.str("SdkResources", "Remove");
     }

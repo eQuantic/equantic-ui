@@ -36,6 +36,7 @@ export { CodeMetrics } from './CodeMetrics';
 export { CodePosition } from './CodePosition';
 export { CodeRange } from './CodeRange';
 export { CodeToken } from './CodeToken';
+export { CookieConsent } from './CookieConsent';
 export { Crumb } from './Crumb';
 export { CultureOption } from './CultureOption';
 export { CultureSwitcher } from './CultureSwitcher';

@@ -42,6 +42,8 @@ export type CodeTokenKindValue =
   'plain' | 'keyword' | 'type' | 'string' | 'number' | 'comment' | 'operator' | 'punctuation'
   | 'function' | 'attribute' | 'property' | 'constant';
 
+export type ConsentStateValue = 'unknown' | 'granted' | 'denied';
+
 export type CrossAlignValue = 'start' | 'center' | 'end' | 'stretch';
 
 export type DensityValue = 'comfortable' | 'compact';

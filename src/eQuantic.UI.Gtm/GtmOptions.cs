@@ -42,6 +42,23 @@ public sealed class GtmOptions
         return this;
     }
 
+    /// <summary>
+    /// Load the container only AFTER the visitor consents (GDPR / LGPD). The head declares Google
+    /// Consent Mode defaults of <c>denied</c>, and the container script is fetched only when the
+    /// shared <c>eq-consent</c> cookie says <c>granted</c> — or the moment the visitor grants it,
+    /// announced by <c>IConsent</c> as the document event <c>eq:consent</c>. A visitor who declines
+    /// or never answers downloads no tag manager at all, which is what "no cookie until consent"
+    /// means in practice. Off by default: an installer that already ran without asking keeps
+    /// running; turning this on is the app's decision, paired with a consent component.
+    /// </summary>
+    public bool RequireConsent { get; set; }
+
+    public GtmOptions WithConsent()
+    {
+        RequireConsent = true;
+        return this;
+    }
+
     /// <summary>Fluent spelling of the GTM environment pair.</summary>
     public GtmOptions WithEnvironment(string auth, string preview)
     {

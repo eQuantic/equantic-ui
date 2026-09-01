@@ -58,4 +58,19 @@
     <value>DMY</value>
     <comment>Day, month and year as this language letters them, in that fixed order — the ARRANGEMENT comes from the culture's date pattern, not from here.</comment>
   </data>
+  <data name="CookieConsentTitle" xml:space="preserve">
+    <value>We use cookies</value>
+  </data>
+  <data name="CookieConsentBody" xml:space="preserve">
+    <value>Analytics cookies help us understand how the site is used. Nothing is set until you accept, and declining keeps the site fully usable.</value>
+  </data>
+  <data name="AcceptCookies" xml:space="preserve">
+    <value>Accept</value>
+  </data>
+  <data name="RejectCookies" xml:space="preserve">
+    <value>Decline</value>
+  </data>
+  <data name="PrivacyPolicy" xml:space="preserve">
+    <value>Privacy policy</value>
+  </data>
 </root>
