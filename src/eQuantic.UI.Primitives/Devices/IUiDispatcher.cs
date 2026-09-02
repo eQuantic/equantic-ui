@@ -32,9 +32,13 @@ public interface IUiDispatcher
     bool IsOnUiThread { get; }
 
     /// <summary>
-    /// Runs <paramref name="work"/> on the UI thread, soon — the next frame, not this instant, and
-    /// never inline from another thread. Posting from the UI thread itself is legal and still
-    /// defers, which is what makes a queue drained during a frame safe to post into.
+    /// Runs <paramref name="work"/> on the UI thread, and never inline from ANOTHER thread — that
+    /// much every realization owes. WHEN is the target's to say, and they differ honestly: a Photon
+    /// host runs it at the top of the next frame (posting from the UI thread itself still defers,
+    /// which is what makes a queue drained during a frame safe to post into); the browser runs it on
+    /// the next microtask, before the next paint; and during server rendering it runs IMMEDIATELY,
+    /// because a request is rendered on the thread that asked and the frame a queue would wait for
+    /// never comes. So: rely on "on the UI thread", never on "not yet".
     /// <para>
     /// Fire-and-forget by design: there is no handle to wait on, because a worker thread that
     /// BLOCKS on the UI thread is the other half of every deadlock this exists to prevent.

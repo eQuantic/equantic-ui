@@ -35,17 +35,21 @@ public class UiDispatcherTests
     private sealed class FakeDispatcher : IUiDispatcher
     {
         private readonly int _uiThreadId = Environment.CurrentManagedThreadId;
-        private readonly List<Action> _posted = [];
+
+        // A CONCURRENT queue, like the real one: Post is called from a worker and Drain from the UI
+        // thread. Today's tests Join the worker first, so a plain List would be safe by happens-
+        // before — but a fake that only works because of how the test is written teaches the wrong
+        // shape, and the next test to post without joining would fail for a reason about itself.
+        private readonly System.Collections.Concurrent.ConcurrentQueue<Action> _posted = new();
 
         public bool IsOnUiThread => Environment.CurrentManagedThreadId == _uiThreadId;
         public int PostedCount => _posted.Count;
 
-        public void Post(Action work) => _posted.Add(work);
+        public void Post(Action work) => _posted.Enqueue(work);
 
         public void Drain()
         {
-            foreach (var work in _posted) work();
-            _posted.Clear();
+            while (_posted.TryDequeue(out var work)) work();
         }
     }
 
