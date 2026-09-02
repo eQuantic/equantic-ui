@@ -846,6 +846,19 @@ public static class LayoutEngine
         var result = ctx.Node(box);
         var style = box.Style;
 
+        // Spec S6, the Size channel: a FIXED width or height that changed glides to its new value
+        // under the box's own Transition — measured at the interpolated size, so everything that
+        // depends on it (the child's wrap, the siblings' share of the row) follows the glide too,
+        // which is what `transition: width` does in a browser. Hug/Fill have no number to glide.
+        if (ctx.Transitions is { } glide
+            && TransitionStore.Only(style.Transition, StyleChannels.Size) is { } sizeSpec)
+        {
+            if (style.Width.Kind == SizeKind.Fixed)
+                style = style with { Width = glide.Resolve(path + ":w", style.Width.Value, ctx.TimeMs, sizeSpec, ctx.ReducedMotion) };
+            if (style.Height.Kind == SizeKind.Fixed)
+                style = style with { Height = glide.Resolve(path + ":h", style.Height.Value, ctx.TimeMs, sizeSpec, ctx.ReducedMotion) };
+        }
+
         // The indeterminate flags AS INHERITED — what the PARENT said about this axis, before this
         // box restates them for its own child below. A Fill on an axis the parent is sizing from
         // content has nothing to fill; the flex container has honoured that from the start, but a
