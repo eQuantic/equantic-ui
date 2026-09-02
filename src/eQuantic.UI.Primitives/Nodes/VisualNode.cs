@@ -874,7 +874,7 @@ public sealed class DragDismiss : VisualNode
 /// <summary>
 /// NAVIGATION semantics in the vocabulary: the child becomes a link to <see cref="Destination"/>. The child
 /// owns ALL visuals (like Pressable) — Link adds only the semantics and the interaction. Web lowers
-/// to a real <c>&lt;a destination&gt;</c> (SSR-crawlable; the SPA router intercepts internal clicks, so
+/// to a real <c>&lt;a href&gt;</c> (SSR-crawlable; the SPA router intercepts internal clicks, so
 /// guards/prefetch apply); native registers a link region and resolves a tap through the HOST's
 /// navigation seam (<c>PhotonHost.NavigationRequested</c> — the platform shell maps hrefs to pages).
 /// Pressables INSIDE a link win the tap (topmost dispatch), exactly like a button inside an anchor.

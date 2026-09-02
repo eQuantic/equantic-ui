@@ -2236,7 +2236,7 @@ public static class WebRealizer
     }
 
     /// <summary>
-    /// Navigation semantics: a REAL <c>&lt;a destination&gt;</c> (SSR-crawlable, router-intercepted) whose
+    /// Navigation semantics: a REAL <c>&lt;a href&gt;</c> (SSR-crawlable, router-intercepted) whose
     /// UA chrome is neutralized — the child owns all visuals, exactly the Pressable contract. A Fill
     /// child gets the 100% pass-through chain the same way.
     /// </summary>
