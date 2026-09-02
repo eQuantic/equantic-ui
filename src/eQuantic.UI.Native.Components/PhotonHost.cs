@@ -181,6 +181,11 @@ public sealed class PhotonHost
         PhotonDispatcher.Shared.BindToCurrentThread();
         PhotonDispatcher.Shared.Drain();
 
+        // Then the frame clock: whoever moves every frame gets this frame's time BEFORE the tree is
+        // built, so what they SetState here is what this frame draws. After the drain, so a worker's
+        // posted result and the tick that reads it land in the same frame, in that order.
+        PhotonFrameTicker.Shared.Fire(timeMs);
+
         // An edit landed since the last frame: drop the content caches BEFORE realizing, on this
         // thread, where they are owned. Most edits would miss them anyway (the keys are content),
         // but a patched rasterizer or an edited icon path re-rasters fresh — once.
@@ -225,7 +230,9 @@ public sealed class PhotonHost
             _rootMounted = true;
             rootStateful.NotifyMounted();
         }
-        NeedsRender = _lastFrame.HasActiveMotion || gliding;
+        // A subscribed frame ticker IS motion: frames keep flowing while anyone wants them, and the
+        // loop goes idle the moment the last subscription is disposed.
+        NeedsRender = _lastFrame.HasActiveMotion || gliding || PhotonFrameTicker.Shared.HasSubscribers;
 
         // The caret is 2Hz motion, not vsync motion. Holding NeedsRender for it pinned the whole
         // loop to the display's refresh — 120 presents a second on a ProMotion panel, measured, to

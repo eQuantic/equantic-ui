@@ -463,17 +463,19 @@ public static class PhotonRealizer
         // components GLIDE to their new values under the box's own spec (colours and shadow glide
         // in the Box case below). The guard reads the INTERPOLATED values, not the declared ones: a
         // box whose opacity just went 0.4 → 1 still needs its layer while it is still fading in.
-        var glide = node.Source is Box gliding ? gliding.Style.Transition : null;
-        var glidePath = node.Path ?? "";
-        var store = motion.Transitions;
-        var opacityNow = node.Source is Box ob
-            ? store?.Resolve(glidePath + ":opacity", ob.Style.Opacity ?? 1f, motion.TimeMs,
-                TransitionStore.Only(glide, StyleChannels.Opacity), motion.Reduced) ?? (ob.Style.Opacity ?? 1f)
-            : 1f;
-        var transformNow = node.Source is Box tb
-            ? GlideTransform(store, glidePath, tb.Style.Transform ?? IdentityTransform, motion.TimeMs,
-                TransitionStore.Only(glide, StyleChannels.Transform), motion.Reduced)
-            : IdentityTransform;
+        // A box that declares NO Transition pays nothing here — not even the track-key strings: the
+        // allocation harness pins steady frames under a ceiling, and the first version of this
+        // built keys for every box in every frame. Only a Transition opens the gliding path.
+        var opacityNow = node.Source is Box ob ? ob.Style.Opacity ?? 1f : 1f;
+        var transformNow = node.Source is Box tb ? tb.Style.Transform ?? IdentityTransform : IdentityTransform;
+        if (node.Source is Box gliding && gliding.Style.Transition is { } glide && motion.Transitions is { } store)
+        {
+            var glidePath = node.Path ?? "";
+            if ((glide.Channels & StyleChannels.Opacity) != 0)
+                opacityNow = store.Resolve(glidePath + ":opacity", opacityNow, motion.TimeMs, glide, motion.Reduced);
+            if ((glide.Channels & StyleChannels.Transform) != 0)
+                transformNow = GlideTransform(store, glidePath, transformNow, motion.TimeMs, glide, motion.Reduced);
+        }
         if (node.Source is Box styled && (opacityNow < 1f || !transformNow.IsIdentity))
         {
             var opacity = opacityNow < 1f ? opacityNow : (float?)null;
@@ -601,24 +603,34 @@ public static class PhotonRealizer
                 // stops, so native paints From→To until the 3-stop paint lands.
 
                 // §05: the analytic shadow draws under the fill (one per node, theme-resolved).
+                if (TransitionStore.Only(box.Style.Transition, StyleChannels.Shadow) is { } shadowSpec
+                    && motion.Transitions is { } st)
                 {
                     // The elevation's shadow glides as its resolved components, so a card that lifts
                     // from level 1 to 3 on hover grows its shadow instead of swapping it — and one
                     // that drops to 0 fades it, which "if (Elevation > 0)" alone could never draw.
                     var target = box.Style.Elevation > 0 ? theme.Elevation(box.Style.Elevation) : default;
-                    var shadowSpec = TransitionStore.Only(box.Style.Transition, StyleChannels.Shadow);
                     var sp = (node.Path ?? "") + ":elev";
-                    var st = motion.Transitions;
-                    var offsetY = st?.Resolve(sp + ".y", target.OffsetY, motion.TimeMs, shadowSpec, motion.Reduced) ?? target.OffsetY;
-                    var blur = st?.Resolve(sp + ".b", target.Blur, motion.TimeMs, shadowSpec, motion.Reduced) ?? target.Blur;
-                    var spread = st?.Resolve(sp + ".s", target.Spread, motion.TimeMs, shadowSpec, motion.Reduced) ?? target.Spread;
+                    var offsetY = st.Resolve(sp + ".y", target.OffsetY, motion.TimeMs, shadowSpec, motion.Reduced);
+                    var blur = st.Resolve(sp + ".b", target.Blur, motion.TimeMs, shadowSpec, motion.Reduced);
+                    var spread = st.Resolve(sp + ".s", target.Spread, motion.TimeMs, shadowSpec, motion.Reduced);
                     // Fading OUT keeps the last real tint: level 0 has no colour of its own.
                     var shadowColor = (box.Style.Elevation > 0 ? target.Color : theme.Elevation(1).Color).Resolve(mode);
-                    shadowColor = st?.ResolveColor(sp + ".c", shadowColor, motion.TimeMs, shadowSpec, motion.Reduced) ?? shadowColor;
+                    shadowColor = st.ResolveColor(sp + ".c", shadowColor, motion.TimeMs, shadowSpec, motion.Reduced);
                     if (blur > 0 || offsetY != 0 || spread != 0)
                     {
                         builder.ShadowRRect(new RRect(node.Bounds, box.Style.CornerRadius),
                             offsetY, blur, spread, shadowColor);
+                    }
+                }
+                else if (box.Style.Elevation > 0)
+                {
+                    // The plain path, byte-for-byte what it was: no transition, no tracks, no strings.
+                    var spec = theme.Elevation(box.Style.Elevation);
+                    if (!spec.IsNone)
+                    {
+                        builder.ShadowRRect(new RRect(node.Bounds, box.Style.CornerRadius),
+                            spec.OffsetY, spec.Blur, spec.Spread, spec.Color.Resolve(mode));
                     }
                 }
 

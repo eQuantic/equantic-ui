@@ -50,6 +50,7 @@
   "Flexible",
   "FormController",
   "FormField",
+  "FrameTick",
   "GeoLocation",
   "Grid",
   "GridPattern",
