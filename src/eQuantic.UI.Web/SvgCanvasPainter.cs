@@ -1,4 +1,3 @@
-using System.Globalization;
 using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Web;
@@ -28,7 +27,10 @@ internal sealed class SvgCanvasPainter(float width, float height) : ICanvasPaint
     /// <summary>What was drawn, in call order — paint order, exactly as on Photon.</summary>
     public IReadOnlyList<Core.IComponent> Shapes => _shapes;
 
-    private static string N(float value) => value.ToString("0.###", CultureInfo.InvariantCulture);
+    // TokenCss.Number, not a format of this file's own: every other number the web target writes
+    // goes through it, and a shape rounded to three decimals inside a container rounded to four is
+    // a sub-pixel mismatch that shows as a hairline against the viewBox.
+    private static string N(float value) => TokenCss.Number(value);
 
     /// <summary>
     /// The token as CSS, NOT resolved to a mode: `light-dark(...)` lets the browser answer, so a

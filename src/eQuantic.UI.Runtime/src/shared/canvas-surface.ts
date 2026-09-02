@@ -19,6 +19,7 @@
  */
 
 import { paintCanvas } from './canvas-painter';
+import { num } from './css-values';
 import type { ICanvasPainter } from './nodes';
 
 interface CanvasDeclaration {
@@ -57,16 +58,23 @@ function repaint(element: MeasuredCanvas): void {
   const box = element.getBoundingClientRect();
   if (box.width <= 0 || box.height <= 0) return;
 
+  // ROUNDED to the same convention the painter writes its coordinates in. A bounding rect carries
+  // long, unstable decimals — a scrollbar settling changes the box by 0.0001 — and two costs
+  // follow: the cache below never matches, so every observer callback redraws the whole picture,
+  // and the viewBox disagrees with the shapes inside it by a sub-pixel that shows as a hairline.
+  const width = parseFloat(num(box.width));
+  const height = parseFloat(num(box.height));
+
   // Nothing to do when the box has not changed: a resize observer fires for reasons that are not
   // a new size (a re-observe, a scrollbar settling), and redrawing then would throw away the DOM
   // the reconciler just diffed.
-  const size = `${box.width}x${box.height}`;
+  const size = `${width}x${height}`;
   if (element.__eqCanvasSize === size) return;
   element.__eqCanvasSize = size;
 
-  const painter = paintCanvas(box.width, box.height);
+  const painter = paintCanvas(width, height);
   draw(painter);
-  element.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
+  element.setAttribute('viewBox', `0 0 ${num(width)} ${num(height)}`);
   element.replaceChildren(...painter.elements());
 }
 

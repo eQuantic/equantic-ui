@@ -95,3 +95,36 @@ describe('canvas pointer modifiers', () => {
     expect(modifiersOf({})).toBe(0);
   });
 });
+
+describe('a measured box is rounded before it is used', () => {
+  let svg: SVGElement;
+  let draws: number;
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('data-eq-canvas-fill', 'root/0');
+    document.body.appendChild(svg);
+    draws = 0;
+    vi.stubGlobal('ResizeObserver', class {
+      observe(): void {}
+      disconnect(): void {}
+    });
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  const size = (width: number, height: number): void => {
+    svg.getBoundingClientRect = () => ({ width, height, top: 0, left: 0, right: width, bottom: height, x: 0, y: 0, toJSON: () => ({}) });
+  };
+
+  it('writes a viewBox in the same convention the shapes use', () => {
+    size(200.00004, 99.999996);
+    declareCanvas('root/0', { draw: () => { draws++; } });
+    commitCanvasSurfaces();
+
+    // Four decimals, like every other number this target writes — a viewBox carrying a raw float
+    // disagrees with the shapes inside it by a sub-pixel, which shows as a hairline.
+    expect(svg.getAttribute('viewBox')).toBe('0 0 200 100');
+  });
+});
