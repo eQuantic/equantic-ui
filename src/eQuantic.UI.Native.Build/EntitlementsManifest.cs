@@ -39,7 +39,15 @@ public static class EntitlementsManifest
             .Distinct(StringComparer.Ordinal)
             .OrderBy(key => key, StringComparer.Ordinal)
             .ToList();
-        if (declared.Count == 0) return false;
+        if (declared.Count == 0)
+        {
+            // DELETE, not just "write nothing": obj/ survives between builds, and the signing step
+            // decides by whether the file exists. Leaving yesterday's file there would sign
+            // yesterday's entitlements into an app whose declarations were removed — the app would
+            // keep a permission its source no longer asks for, which nobody would ever notice.
+            if (File.Exists(plistPath)) File.Delete(plistPath);
+            return false;
+        }
 
         Directory.CreateDirectory(Path.GetDirectoryName(plistPath)!);
         File.WriteAllText(plistPath, PropertyListWriter.Document(plist =>

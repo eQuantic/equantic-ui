@@ -156,6 +156,13 @@
             the signed build. No catch sees it; the process is simply gone.
         -->
         <PropertyGroup>
+            <!-- A real identity turns the hardened runtime on WITH it — decided here, before
+                 anything reads it, because the entitlements below depend on the answer. It used to
+                 be settled further down, next to the codesign call, so an app that set only
+                 EQuanticSigningIdentity got hardened signing with NO runtime entitlements: the
+                 exact launch failure this whole block exists to prevent, produced by the block. -->
+            <EQuanticHardenedRuntime Condition="'$(EQuanticHardenedRuntime)' == '' AND '$(EQuanticSigningIdentity)' != ''">true</EQuanticHardenedRuntime>
+
             <!--
                 What the RUNTIME needs, which the SDK adds because it already knows every fact the
                 answer depends on — and because the alternative is an app author learning that .NET
@@ -188,7 +195,6 @@
                  both and entitlements mean nothing without them. -->
             <_EqSignIdentity>-</_EqSignIdentity>
             <_EqSignIdentity Condition="'$(EQuanticSigningIdentity)' != ''">$(EQuanticSigningIdentity)</_EqSignIdentity>
-            <EQuanticHardenedRuntime Condition="'$(EQuanticHardenedRuntime)' == '' AND '$(EQuanticSigningIdentity)' != ''">true</EQuanticHardenedRuntime>
             <_EqHardenedArg Condition="'$(EQuanticHardenedRuntime)' == 'true'">--options runtime</_EqHardenedArg>
         </PropertyGroup>
 
