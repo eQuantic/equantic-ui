@@ -1,7 +1,9 @@
 # eQuantic.UI — Roadmap & Honest State Assessment
 
-> Last updated: 2026-06-10. This document is an honest, evidence-based assessment of where
-> eQuantic.UI stands against its vision, and a prioritized roadmap to close the gaps.
+> Last updated: 2026-09-02 (a freshness pass: measured numbers replaced by where the count lives,
+> shipped work marked with the release that carries it). This document is an honest, evidence-based
+> assessment of where eQuantic.UI stands against its vision, and a prioritized roadmap to close the
+> gaps.
 >
 > **Update (2026-06-10): Phase 1 (transpiler correctness & conformance) is essentially complete.** The
 > correctness net now exists — a **differential conformance harness** (emitted JS run via embedded Bun and

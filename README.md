@@ -44,7 +44,7 @@
 | Challenge | Blazor WASM | JavaScript frameworks | **eQuantic.UI** |
 |-----------|-------------|----------------------|-----------------|
 | **Language** | C# | JavaScript/TypeScript | **C#, end to end** |
-| **Web payload** | ~2 MB+ runtime | varies | a **small gzipped runtime** (the site measures it at build time and shows the number on its landing), per-page code splitting |
+| **Web payload** | ~2 MB+ runtime | varies | a **small gzipped runtime** (the site measures it at build time and shows the number on its landing page), per-page code splitting |
 | **Native apps** | separate MAUI codebase | separate React Native/Electron | **the same components**, GPU-rendered |
 | **Styling** | CSS/Razor | CSS-in-JS / utility classes | **typed C# — no CSS authored**, atomic classes generated |
 | **Server calls** | SignalR setup | REST/GraphQL setup | **built-in RPC** (`[ServerAction]`) |
