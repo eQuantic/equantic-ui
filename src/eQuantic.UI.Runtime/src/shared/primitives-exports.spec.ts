@@ -47,6 +47,10 @@ const NO_TWIN_OWED = new Set([
   // asks for IConsent-style capabilities by name, and the browser's IUiDispatcher (registered in
   // register.ts) reports itself already on the only thread there is.
   'UiDispatcher',
+  // BUILD TIME ONLY, and macOS at that: the keys a signed .app declares to the operating system.
+  // Read off the compiled assembly by the SDK's signing step; they never exist at run time, on any
+  // target — a browser has no code signature to carry them.
+  'PhotonEntitlements',
 ]);
 
 describe('Primitives ⇄ runtime export parity', () => {

@@ -18,7 +18,7 @@ public sealed class SearchScreen : StatefulComponent
         },
         new Column(gap: Space.S4) { Height = SizeValue.Fill }
             .With(SearchField(_query, value => SetState(() => _query = value), "Search"))
-            .With(Flexible(EmptyState(Icons.Search,
+            .With(Flexible(EmptyState(Icon(Icons.Search),
                 _query.Length == 0 ? "Start typing" : $"Nothing matches \"{_query}\"",
                 "Wire this to a [ServerAction] on the web, or to your own service on the device."))));
 }

@@ -3,6 +3,7 @@
 import { effectiveStyle } from './style-atomizer';
 import { describe, expect, it } from 'vitest';
 import { Checkbox } from './__transpiled__/Checkbox';
+import { Icon } from './vocabulary';
 import { IconButton } from './__transpiled__/IconButton';
 import { List } from './__transpiled__/List';
 import { ListItem } from './__transpiled__/ListItem';
@@ -33,7 +34,7 @@ describe('wave-2 transpiled components (real eqc output)', () => {
 
   it('IconButton fires and renders the 40dp default', () => {
     let fired = false;
-    const node = new IconButton('search', 'Search', 'standard', 'medium', () => {
+    const node = new IconButton(new Icon('search'), 'Search', 'standard', 'medium', () => {
       fired = true;
     }).render();
     expect(effectiveStyle(node.children[0])).toContain('width: 40px');

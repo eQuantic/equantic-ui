@@ -342,17 +342,17 @@ public sealed class CodeEditor : StatefulComponent
         {
             Tabular = true,
         });
-        row.Add(new IconButton(Icons.ChevronUp, SdkStrings.PreviousMatch)
+        row.Add(new IconButton(new Icon(Icons.ChevronUp), SdkStrings.PreviousMatch)
         {
             Size = SizeVariant.Small,
             OnPressed = () => Step(false),
         });
-        row.Add(new IconButton(Icons.ChevronDown, SdkStrings.NextMatch)
+        row.Add(new IconButton(new Icon(Icons.ChevronDown), SdkStrings.NextMatch)
         {
             Size = SizeVariant.Small,
             OnPressed = () => Step(true),
         });
-        row.Add(new IconButton(Icons.Close, "Close find")
+        row.Add(new IconButton(new Icon(Icons.Close), "Close find")
         {
             Size = SizeVariant.Small,
             OnPressed = () => SetState(() => { _findOpen = false; _findText = ""; }),

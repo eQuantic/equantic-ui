@@ -24,6 +24,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Engine\eQuantic.UI.Native.Engine.csproj" />
+    <!-- The build tool, so the entitlements manifest is tested against a REAL assembly: this
+         test assembly declares the attributes and the reader reads them back off its own PE file. -->
+    <ProjectReference Include="..\..\src\eQuantic.UI.Native.Build\eQuantic.UI.Native.Build.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Framework\eQuantic.UI.Native.Framework.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Engine.Reference\eQuantic.UI.Native.Engine.Reference.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Engine.Metal\eQuantic.UI.Native.Engine.Metal.csproj" />

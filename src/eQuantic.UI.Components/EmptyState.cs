@@ -10,14 +10,18 @@ namespace eQuantic.UI.Components;
 /// </summary>
 public sealed class EmptyState : StatelessComponent
 {
-    public EmptyState(Icons icon, string title, string? body = null)
+    public EmptyState(Icon icon, string title, string? body = null)
     {
         Icon = icon;
         Title = title;
         Body = body;
     }
 
-    public Icons Icon { get; init; }
+    /// <summary>The icon, as a NODE rather than a curated enum member — <c>Icon(Icons.Inbox)</c> or
+    /// <c>Glyph(MaterialSymbolsIcons.FolderOffRounded)</c>, so a pack's 16,284 glyphs are reachable
+    /// here and not only the design system's own set. Its SIZE and COLOR are this component's to
+    /// decide (a 48dp muted well), so only the glyph travels.</summary>
+    public Icon Icon { get; init; }
     public string Title { get; init; }
     public string? Body { get; init; }
     public Button? Action { get; init; }
@@ -27,7 +31,7 @@ public sealed class EmptyState : StatelessComponent
     {
         var theme = context.Theme;
 
-        var wellContent = new Icon(Icon, IconSize.Lg, theme.TextMuted).Centered();
+        var wellContent = new Icon(Icon.Glyph, IconSize.Lg, theme.TextMuted).Centered();
         var well = new Box(new BoxStyle
         {
             Width = 64,

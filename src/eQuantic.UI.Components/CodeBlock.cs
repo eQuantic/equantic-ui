@@ -280,7 +280,7 @@ public sealed class CodeBlock : StatelessComponent
         }
         if (OnCopy is { } copy)
         {
-            corner.Add(new IconButton(Icons.Copy, "Copy code")
+            corner.Add(new IconButton(new Icon(Icons.Copy), "Copy code")
             {
                 Size = SizeVariant.Small,
                 OnPressed = copy,

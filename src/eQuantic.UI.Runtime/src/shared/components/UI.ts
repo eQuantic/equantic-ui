@@ -1,4 +1,4 @@
-import { AdaptiveNode, Adjustable, AlignmentValue, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxStyle, Button, Calendar, Card, Checkbox, Chip, ColorToken, Column, CookieConsent, CrossAlignValue, CultureOption, CultureSwitcher, DateOnly, DatePicker, DateTime, DateTimePicker, Dialog, DialogAction, Divider, DragDismiss, Draggable, Drawer, Drawing, EdgeInsets, EmptyState, Flexible, Grid, GridTrack, Hoverable, Icon, IconButton, IconGlyph, IconsValue, Image, ImageFitValue, InFlow, InView, KeyChord, Link, ListDetail, ListItem, ListView, MainAlignValue, Markdown, Mermaid, NavigationRail, NavItem, Overlay, Positioned, Presence, PresenceMotionValue, Pressable, PressableRoleValue, ProgressBar, Row, SafeArea, ScrollAxisValue, ScrollView, SearchField, Select, Shortcut, Simulated, SizeValue, SizeVariantValue, Skeleton, Slider, Spacer, Spinner, Stack, Stepper, Sticky, Switch, Tabs, Text, TextAlignmentValue, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TypeRoleValue, TypeStyle, VariantValue, Vector, VectorDrawing, VisualNode } from "../runtime-exports";
+import { AdaptiveNode, Adjustable, AlignmentValue, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxStyle, Button, Calendar, Card, Checkbox, Chip, ColorToken, Column, CookieConsent, CrossAlignValue, CultureOption, CultureSwitcher, DateOnly, DatePicker, DateTime, DateTimePicker, Dialog, DialogAction, Divider, DragDismiss, Draggable, Drawer, Drawing, EdgeInsets, EmptyState, Flexible, Grid, GridTrack, Hoverable, Icon, IconButton, IconGlyph, IconsValue, Image, ImageFitValue, InFlow, InView, KeyChord, Link, ListDetail, ListItem, ListView, MainAlignValue, Markdown, Mermaid, NavigationRail, NavItem, Overlay, Positioned, Presence, PresenceMotionValue, Pressable, PressableRoleValue, ProgressBar, Row, SafeArea, ScrollAxisValue, ScrollView, SearchField, SegmentedControl, Select, Shortcut, Simulated, SizeValue, SizeVariantValue, Skeleton, Slider, Spacer, Spinner, Stack, Stepper, Sticky, Switch, Tabs, Text, TextAlignmentValue, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TypeRoleValue, TypeStyle, VariantValue, Vector, VectorDrawing, VisualNode } from "../runtime-exports";
 
 export class UI {
     static column(gap: number = 0, main: MainAlignValue = 'start', cross: CrossAlignValue = 'stretch', wrap: boolean = false, runGap: number | null = null, padding: EdgeInsets | null = null, width?: SizeValue, height?: SizeValue, children: VisualNode[] | null = null) {
@@ -177,12 +177,12 @@ export class UI {
         return new Banner(status, title, body);
     }
 
-    static checkbox(checked: boolean, onChanged: (() => void) | null = null, label: string | null = null) {
-        return new Checkbox(checked, onChanged, label);
+    static checkbox(checked: boolean, onChanged: (() => void) | null = null, label: string | null = null, disabled: boolean = false) {
+        return new Checkbox(checked, onChanged, label, { disabled: disabled });
     }
 
-    static switch(on: boolean, onChanged: (() => void) | null = null) {
-        return new Switch(on, onChanged);
+    static switch(on: boolean, onChanged: (() => void) | null = null, label: string | null = null, disabled: boolean = false) {
+        return new Switch(on, onChanged, { label: label, disabled: disabled });
     }
 
     static slider(value: number, onChanged: ((float: number) => void) | null = null) {
@@ -241,12 +241,16 @@ export class UI {
         return new CultureSwitcher(options);
     }
 
-    static iconButton(glyph: IconsValue, label: string, kind: string = 'standard', size: SizeVariantValue = 'medium', onPressed: (() => void) | null = null) {
+    static iconButton(glyph: Icon, label: string, kind: string = 'standard', size: SizeVariantValue = 'medium', onPressed: (() => void) | null = null) {
         return new IconButton(glyph, label, kind, size, onPressed);
     }
 
-    static emptyState(icon: IconsValue, title: string, body: string | null = null) {
+    static emptyState(icon: Icon, title: string, body: string | null = null) {
         return new EmptyState(icon, title, body);
+    }
+
+    static segmentedControl(segments: string[], selectedIndex: number, onChanged: ((int: number) => void) | null = null, stretch: boolean = true) {
+        return new SegmentedControl(segments, selectedIndex, onChanged, { stretch: stretch });
     }
 
     static tabs(labels: string[], selected: number, onSelect: ((int: number) => void) | null = null) {

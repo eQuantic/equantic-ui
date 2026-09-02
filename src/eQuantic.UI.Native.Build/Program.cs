@@ -30,6 +30,8 @@ using Microsoft.CodeAnalysis.CSharp;
 
 // `capabilities` — the Apple manifest keys for what the app declared. Read off the compiled
 // assembly, where the generator put them; written where the SDK hands them to Apple's packaging.
+if (args.Length > 0 && args[0] == "entitlements") return Entitlements(args);
+
 if (args.Length > 0 && args[0] == "capabilities")
 {
     string? Arg(string flag)
@@ -51,6 +53,33 @@ if (args.Length > 0 && args[0] == "capabilities")
     Console.WriteLine(wrote
         ? $"eqicon: wrote {plist}"
         : "eqicon: no device capabilities declared");
+    return 0;
+}
+
+// The RELEASE half of the same idea: what the app needs the SYSTEM to permit, read from
+// `[assembly: PhotonEntitlement(…)]` and written where codesign can be handed it.
+static int Entitlements(string[] args)
+{
+    string? Arg(string flag)
+    {
+        var index = Array.IndexOf(args, flag);
+        return index >= 0 && args.Length > index + 1 ? args[index + 1].Trim() : null;
+    }
+
+    var appAssembly = Arg("--assembly");
+    var plist = Arg("--plist");
+    if (appAssembly is null || plist is null)
+    {
+        Console.Error.WriteLine("Usage: eqicon entitlements --assembly <app.dll> --plist <out.entitlements>");
+        return 1;
+    }
+
+    if (!File.Exists(appAssembly)) return 0;      // nothing built yet; the build will come back
+    var required = (Arg("--also") ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries
+        | StringSplitOptions.TrimEntries);
+    Console.WriteLine(EntitlementsManifest.Write(appAssembly, plist, required)
+        ? $"eqicon: wrote {plist}"
+        : "eqicon: no entitlements declared");
     return 0;
 }
 

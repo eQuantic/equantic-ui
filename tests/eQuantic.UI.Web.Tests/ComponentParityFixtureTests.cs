@@ -74,7 +74,7 @@ public class ComponentParityFixtureTests
         ("search-field", new SearchField("term"), NoPresses),
         ("text-input", new TextInput("value", null, "Label"), NoPresses),
         ("radio-group", new RadioGroup(["a", "b"], 0), NoPresses),
-        ("empty-state", new EmptyState(Icons.Search, "Nothing here", "Try another term"), NoPresses),
+        ("empty-state", new EmptyState(new Icon(Icons.Search), "Nothing here", "Try another term"), NoPresses),
 
         // COMPOSITES: the components that build a tree rather than a control. They have the most
         // structure, so the most surface on which two lowerings can quietly disagree — and every

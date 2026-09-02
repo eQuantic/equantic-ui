@@ -30,7 +30,7 @@ public class PressSweepTests(ITestOutputHelper output)
             }
 
             Row("Button", new Button("Save", onPressed: () => Fired.Add("Button")));
-            Row("IconButton", new IconButton(Icons.Search, "Search", onPressed: () => Fired.Add("IconButton")));
+            Row("IconButton", new IconButton(new Icon(Icons.Search), "Search", onPressed: () => Fired.Add("IconButton")));
             Row("Checkbox", new Checkbox(false, () => Fired.Add("Checkbox"), "Remember me"));
             Row("Switch", new Switch(false, () => Fired.Add("Switch")));
             Row("Chip", new Chip("Income", selected: false, onPressed: () => Fired.Add("Chip")));

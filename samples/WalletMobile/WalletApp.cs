@@ -324,8 +324,8 @@ public sealed class WalletApp : StatefulComponent
     {
         var bar = new AppBar("Transactions")
         {
-            Leading = new IconButton(Icons.ChevronLeft, "Back"),
-            Actions = [new IconButton(Icons.Search, "Filter")],
+            Leading = new IconButton(new Icon(Icons.ChevronLeft), "Back"),
+            Actions = [new IconButton(new Icon(Icons.Search), "Filter")],
         };
 
         var search = new Box(new BoxStyle
@@ -431,7 +431,7 @@ public sealed class WalletApp : StatefulComponent
         }
 
         var content = new Column(gap: Space.S4) { Width = SizeValue.Fill };
-        content.Add(new AppBar("") { Leading = new IconButton(Icons.ChevronLeft, "Back") });
+        content.Add(new AppBar("") { Leading = new IconButton(new Icon(Icons.ChevronLeft), "Back") });
         content.Add(identity);
         content.Add(Grouped(theme, rows));
         content.Add(new Accordion([
@@ -615,7 +615,7 @@ public sealed class WalletApp : StatefulComponent
 
     private VisualNode Cards(IAppTheme theme)
     {
-        var empty = new EmptyState(Icons.Mail, "No cards yet",
+        var empty = new EmptyState(new Icon(Icons.Mail), "No cards yet",
             "Add a physical or virtual card to start paying with eQuantic Wallet.")
         {
             Action = new Button("Add card", Variant.Primary)
@@ -628,8 +628,8 @@ public sealed class WalletApp : StatefulComponent
         var page = new Column(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill };
         page.Add(new AppBar("Cards")
         {
-            Leading = new IconButton(Icons.ChevronLeft, "Back"),
-            Actions = [new IconButton(Icons.Plus, "Add card")],
+            Leading = new IconButton(new Icon(Icons.ChevronLeft), "Back"),
+            Actions = [new IconButton(new Icon(Icons.Plus), "Add card")],
         });
         page.Add(new Flexible(empty, 1));
         page.Add(new Box(new BoxStyle
@@ -654,7 +654,7 @@ public sealed class WalletApp : StatefulComponent
     private VisualNode Onboarding(IAppTheme theme)
     {
         var head = new Row(gap: Space.S2) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
-        head.Add(new IconButton(Icons.Close, "Cancel"));
+        head.Add(new IconButton(new Icon(Icons.Close), "Cancel"));
         head.Add(new Spacer(1));
         head.Add(new Text("Step 2 of 4", TypeRole.Caption, theme.TextMuted, maxLines: 1));
 

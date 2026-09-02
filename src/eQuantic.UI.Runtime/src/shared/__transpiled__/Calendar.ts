@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CalendarNames, Column, CornerRadii, DateOnly, Flexible, IconButton, Navigable, NavigableMoveValue, Pressable, Row, SdkStrings, SharedStatefulComponent, SizeValue, Spacer, StyleDiff, Text, UiComponent } from "@equantic/runtime";
+import { $eq, Box, BoxStyle, BuildContext, CalendarNames, Column, CornerRadii, DateOnly, Flexible, Icon, IconButton, Navigable, NavigableMoveValue, Pressable, Row, SdkStrings, SharedStatefulComponent, SizeValue, Spacer, StyleDiff, Text, UiComponent } from "@equantic/runtime";
 
 export class Calendar extends SharedStatefulComponent {
     _month: DateOnly;
@@ -33,8 +33,8 @@ export class Calendar extends SharedStatefulComponent {
         let header = new Row(4, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill });
         header.add(new Text(this.label ?? monthTitle, 'titleSmall', theme.textPrimary, 1));
         header.add(new Flexible(new Spacer()));
-        header.add(new IconButton('chevronLeft', SdkStrings.previousMonth, 'standard', 'small', () => this.page(-1)));
-        header.add(new IconButton('chevronRight', SdkStrings.nextMonth, 'standard', 'small', () => this.page(1)));
+        header.add(new IconButton(new Icon('chevronLeft'), SdkStrings.previousMonth, 'standard', 'small', () => this.page(-1)));
+        header.add(new IconButton(new Icon('chevronRight'), SdkStrings.nextMonth, 'standard', 'small', () => this.page(1)));
         let names = CalendarNames.dayNamesShort;
         let dayRow = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill });
         for (let column = 0; column < 7; column++) {
