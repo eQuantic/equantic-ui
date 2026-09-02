@@ -68,7 +68,7 @@ public sealed class AppShell : StatefulComponent
                     // Docked, the bar has nothing to open — an affordance that opens what is
                     // already open is exactly how an adaptive shell reads as broken.
                     Leading = withMenuButton
-                        ? IconButton(Icons.Menu, "Open navigation",
+                        ? IconButton(Icon(Icons.Menu), "Open navigation",
                             onPressed: () => SetState(() => _open = true))
                         : null,
                 })

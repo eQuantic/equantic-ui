@@ -136,3 +136,102 @@ public class FactoryLayoutTailTests
         radio.Attributes["aria-checked"].Should().Be("true", "a radio states its selection as checked, not pressed");
     }
 }
+
+/// <summary>
+/// The OS Cleaner's F5 report, ported to tests: a system utility could not dress itself.
+/// <para>
+/// Its nine sections drew <c>"✓"</c> and <c>"▾"</c> inside <c>Text()</c> — glyphs that do not scale
+/// with icon metrics — because `EmptyState` and `IconButton` required the CURATED enum, and the
+/// curated enum is the design system's own vocabulary (25 glyphs, spec A10), not an icon library.
+/// The packs were always there (Material Symbols alone publishes 16,284 glyphs); those two
+/// components were the door that was shut.
+/// </para>
+/// </summary>
+public class IconSourceTests
+{
+    private static readonly IAppTheme Theme = PhotonTheme.Instance;
+
+    /// <summary>A pack's glyph — the shape `MaterialSymbolsIcons.PowerRounded` hands out.</summary>
+    private static readonly IconGlyph PackGlyph =
+        new("power_rounded", "M12 2 L14 8 H10 Z", IconGlyphStyle.Fill);
+
+    private static IEnumerable<HtmlNode> Walk(HtmlNode node)
+    {
+        yield return node;
+        foreach (var child in node.Children)
+            foreach (var descendant in Walk(child))
+                yield return descendant;
+    }
+
+    private static IReadOnlyList<HtmlNode> Rendered(VisualNode node) =>
+        Walk(WebRealizer.Lower(node, Theme).Render()).ToList();
+
+    [Fact]
+    public void EmptyState_TakesAPackGlyph_AndTheCuratedSet_ThroughTheSameParameter()
+    {
+        // Both factories already existed and both make an Icon; what changed is that the component
+        // now takes the NODE, so neither source is privileged.
+        var fromPack = Rendered(EmptyState(Glyph(PackGlyph), "Nothing installed"));
+        var fromCurated = Rendered(EmptyState(Icon(Icons.Info), "Nothing installed"));
+
+        fromPack.Any(n => n.Attributes.TryGetValue("d", out var d) && d == PackGlyph.Path)
+            .Should().BeTrue("the pack's own path data reaches the SVG");
+        fromCurated.Any(n => n.Attributes.ContainsKey("d"))
+            .Should().BeTrue("and the curated set still draws, through the same door");
+    }
+
+    [Fact]
+    public void IconButton_TakesAPackGlyph_Too()
+    {
+        var rendered = Rendered(IconButton(Glyph(PackGlyph), "Disable at login"));
+
+        rendered.Any(n => n.Attributes.TryGetValue("d", out var d) && d == PackGlyph.Path)
+            .Should().BeTrue();
+        rendered.Any(n => n.Attributes.TryGetValue("aria-label", out var l) && l == "Disable at login")
+            .Should().BeTrue();
+    }
+
+    [Fact]
+    public void TheComponentImposesItsOwnSize_NotTheCallersIcon()
+    {
+        // The caller says WHICH glyph; the component says how big it is in its own well, so an icon
+        // built at 16 for a list row does not shrink an EmptyState's 32dp illustration.
+        var rendered = Rendered(EmptyState(Icon(Icons.Info, IconSize.Sm), "Nothing here"));
+
+        // The size rides the inline style on the <svg>, which is where the realizer puts it.
+        rendered.Any(n => n.Tag == "svg" && n.Attributes.TryGetValue("style", out var style)
+                && style.Contains("width: 32px"))
+            .Should().BeTrue("the well is 32dp whatever size the caller's Icon was built at");
+    }
+}
+
+/// <summary>The rest of the same report: three controls a settings screen could not finish
+/// declaratively — the switch that names itself, the check that goes inert, the segmented picker
+/// that had no factory at all.</summary>
+public class SettingsControlTailTests
+{
+    [Fact]
+    public void SwitchStatesItsNameAndItsDisabledBit()
+    {
+        var node = Switch(on: true, label: "Launch at login", disabled: true);
+
+        node.Label.Should().Be("Launch at login");
+        node.Disabled.Should().BeTrue();
+    }
+
+    [Fact]
+    public void CheckboxGoesInert()
+    {
+        Checkbox(true, label: "Include system files", disabled: true).Disabled.Should().BeTrue();
+    }
+
+    [Fact]
+    public void SegmentedControlHasAFactory_AndReachesStretch()
+    {
+        var node = SegmentedControl(["Apps", "Login items"], 1, _ => { }, stretch: false);
+
+        node.SelectedIndex.Should().Be(1);
+        node.Stretch.Should().BeFalse("a tab strip sizes to its content; a settings row fills");
+        SegmentedControl(["A", "B"], 0).Stretch.Should().BeTrue("the default is what it always was");
+    }
+}

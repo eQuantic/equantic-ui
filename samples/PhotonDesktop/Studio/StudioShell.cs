@@ -270,7 +270,7 @@ public sealed class StudioShell : StatefulComponent
         // The corner the SYSTEM owns: close/minimize/zoom float here (the window has no bar of
         // its own), and the navigation arrows sit immediately to their right, per the handoff.
         row.Add(Gap(74));
-        row.Add(new IconButton(Icons.ChevronLeft, "Back")
+        row.Add(new IconButton(new Icon(Icons.ChevronLeft), "Back")
         {
             Size = SizeVariant.Small,
             Disabled = _past.Count == 0,
@@ -281,7 +281,7 @@ public sealed class StudioShell : StatefulComponent
                 _past.RemoveAt(_past.Count - 1);
             }),
         });
-        row.Add(new IconButton(Icons.ChevronRight, "Forward")
+        row.Add(new IconButton(new Icon(Icons.ChevronRight), "Forward")
         {
             Size = SizeVariant.Small,
             Disabled = _ahead.Count == 0,
@@ -293,7 +293,7 @@ public sealed class StudioShell : StatefulComponent
             }),
         });
         row.Add(new Flexible(title, 1));
-        row.Add(new IconButton(Icons.Refresh, "Re-render", IconButtonKind.Tonal)
+        row.Add(new IconButton(new Icon(Icons.Refresh), "Re-render", IconButtonKind.Tonal)
         {
             Size = SizeVariant.Small,
             OnPressed = () => SetState(() => { }),

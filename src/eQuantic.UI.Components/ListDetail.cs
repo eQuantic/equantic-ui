@@ -95,7 +95,7 @@ public sealed class ListDetail : StatelessComponent
 
         IconButton? Back() => OnBack is null
             ? null
-            : new IconButton(Icons.ChevronLeft, SdkStrings.Back, onPressed: OnBack);
+            : new IconButton(new Icon(Icons.ChevronLeft), SdkStrings.Back, onPressed: OnBack);
 
         var compact = Detail is { } chosen
             ? Pane(Title, chosen, Back())
@@ -117,5 +117,5 @@ public sealed class ListDetail : StatelessComponent
 
     /// <summary>The last resort when an app gave no <see cref="Placeholder"/>: still a designed
     /// screen rather than a blank half.</summary>
-    private static VisualNode Nothing() => new EmptyState(Icons.Info, SdkStrings.NothingSelected);
+    private static VisualNode Nothing() => new EmptyState(new Icon(Icons.Info), SdkStrings.NothingSelected);
 }
