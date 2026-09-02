@@ -95,3 +95,66 @@ public class UiDispatcherTests : IDisposable
         runs.Should().Be(2);
     }
 }
+
+/// <summary>
+/// The two things a PROCESS-STATIC queue must not do: hold dead hosts alive, and pay for its own
+/// size every frame.
+/// </summary>
+public class PhotonDispatcherLifetimeTests
+{
+    private sealed class Screen : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) => new Text("x", TypeRole.BodyM);
+    }
+
+    [Fact]
+    public void AHostThatIsGone_IsCollectable_AndStopsBeingWoken()
+    {
+        // Subscribing to a static must not be a lifetime: an app that opens and closes windows would
+        // otherwise keep every one of them, with its whole tree, until the process ends.
+        static WeakReference MountAndForget()
+        {
+            var host = new PhotonHost(new Screen(), PhotonTheme.Instance, ThemeMode.Light, 100, 100);
+            host.RenderFrame(new DisplayListBuilder());
+            return new WeakReference(host);
+        }
+
+        var reference = MountAndForget();
+
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        reference.IsAlive.Should().BeFalse("the dispatcher holds hosts weakly, like PhotonHotReload");
+
+        // And waking survives the collection rather than throwing on a dead entry.
+        PhotonDispatcher.Shared.Post(() => { });
+    }
+
+    [Fact]
+    public void DrainDoesNotWalkTheQueueToMeasureIt()
+    {
+        // The guarantee is behavioural, so it is tested behaviourally: everything queued when the
+        // frame started runs, nothing queued during it does, and neither depends on a count.
+        var host = new PhotonHost(new Screen(), PhotonTheme.Instance, ThemeMode.Light, 100, 100);
+        host.RenderFrame(new DisplayListBuilder());
+
+        var ran = new List<int>();
+        for (var i = 0; i < 5; i++)
+        {
+            var index = i;
+            PhotonDispatcher.Shared.Post(() =>
+            {
+                ran.Add(index);
+                if (index == 0) PhotonDispatcher.Shared.Post(() => ran.Add(99));
+            });
+        }
+
+        host.RenderFrame(new DisplayListBuilder(), 16);
+
+        ran.Should().Equal(0, 1, 2, 3, 4);
+
+        host.RenderFrame(new DisplayListBuilder(), 32);
+        ran.Should().Equal(0, 1, 2, 3, 4, 99);
+    }
+}

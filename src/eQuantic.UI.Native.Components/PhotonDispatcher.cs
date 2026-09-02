@@ -28,9 +28,17 @@ public sealed class PhotonDispatcher : IUiDispatcher
     private readonly ConcurrentQueue<Action> _queue = new();
     private int _uiThreadId;
 
-    /// <summary>Raised when work arrives, so an IDLE window comes back to drain it — a queue nobody
-    /// wakes is a queue that runs whenever something else happens to need a frame.</summary>
-    public event Action? WorkPosted;
+    // Hosts to wake when work arrives — a queue nobody wakes is a queue that runs whenever
+    // something else happens to need a frame. WEAK, because this is a process static: an event with
+    // a closure over `this` would pin every host the app ever built, for the life of the app.
+    private readonly List<WeakReference<PhotonHost>> _waking = [];
+
+    /// <summary>Wakes <paramref name="host"/> whenever work is posted, for as long as it lives —
+    /// the same weak contract <c>PhotonHotReload.Register</c> makes, and for the same reason.</summary>
+    public void WakeOnPost(PhotonHost host)
+    {
+        lock (_waking) _waking.Add(new WeakReference<PhotonHost>(host));
+    }
 
     /// <summary>
     /// Declares the CALLING thread the one that draws. The host says this from inside its own frame
@@ -48,7 +56,21 @@ public sealed class PhotonDispatcher : IUiDispatcher
     public void Post(Action work)
     {
         _queue.Enqueue(work);
-        WorkPosted?.Invoke();
+        Wake();
+    }
+
+    /// <summary>Asks every live host for a frame, forgetting the ones that are gone — the sweep is
+    /// nothing next to the frame it is asking for, and this is the only place a dead entry shows.</summary>
+    private void Wake()
+    {
+        lock (_waking)
+        {
+            for (var i = _waking.Count - 1; i >= 0; i--)
+            {
+                if (_waking[i].TryGetTarget(out var host)) host.Invalidate();
+                else _waking.RemoveAt(i);
+            }
+        }
     }
 
     /// <summary>
@@ -58,7 +80,21 @@ public sealed class PhotonDispatcher : IUiDispatcher
     /// </summary>
     public void Drain()
     {
-        for (var remaining = _queue.Count; remaining > 0 && _queue.TryDequeue(out var work); remaining--)
+        // A SENTINEL marks where this frame's work ends, rather than a count: ConcurrentQueue.Count
+        // walks the queue's segments, so capping by it paid a per-frame cost proportional to how
+        // much had been posted — on the one thread that must not be doing arithmetic about itself.
+        // The marker goes in first and stops the loop when it comes back out, so work posted BY
+        // work still belongs to the next frame.
+        if (_queue.IsEmpty) return;
+        _queue.Enqueue(EndOfFrame);
+        while (_queue.TryDequeue(out var work))
+        {
+            if (ReferenceEquals(work, EndOfFrame)) return;
             work();
+        }
     }
+
+    /// <summary>Not work: the marker <see cref="Drain"/> enqueues to find its own end. Identity is
+    /// the whole point, so it is one instance, compared by reference and never invoked.</summary>
+    private static readonly Action EndOfFrame = () => { };
 }

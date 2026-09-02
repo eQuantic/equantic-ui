@@ -38,7 +38,9 @@ public sealed class PhotonHost
 
         // Work posted from a worker thread has to WAKE an idle window, or it runs whenever something
         // else next needs a frame — a scanner's results appearing on the next mouse move.
-        PhotonDispatcher.Shared.WorkPosted += () => NeedsRender = true;
+        // WEAKLY, like PhotonHotReload.Register below and for the same reason: the dispatcher is a
+        // process static, and a host is not kept alive by having subscribed to one.
+        PhotonDispatcher.Shared.WakeOnPost(this);
 
         // Hot reload reaches a running app through a static seam — every live host signs up, so an
         // applied edit wakes this one too. Weakly: a host is not kept alive by having existed.
