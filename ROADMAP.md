@@ -1,10 +1,12 @@
 # eQuantic.UI — Roadmap & Honest State Assessment
 
-> Last updated: 2026-06-10. This document is an honest, evidence-based assessment of where
-> eQuantic.UI stands against its vision, and a prioritized roadmap to close the gaps.
+> Last updated: 2026-09-02 (a freshness pass: measured numbers replaced by where the count lives,
+> shipped work marked with the release that carries it). This document is an honest, evidence-based
+> assessment of where eQuantic.UI stands against its vision, and a prioritized roadmap to close the
+> gaps.
 >
 > **Update (2026-06-10): Phase 1 (transpiler correctness & conformance) is essentially complete.** The
-> correctness net now exists — a **492-case conformance harness** (emitted JS run via embedded Bun and
+> correctness net now exists — a **differential conformance harness** (emitted JS run via embedded Bun and
 > compared to .NET), **fail-on-unsupported** diagnostics (no silent miscompiles), and a documented
 > supported subset (`docs/DOTNET-COVERAGE-PROGRAM.md` + wiki `SupportedFeatures`). The "honest state"
 > below describes the pre-hardening starting point; the transpiler rows are updated inline. The forward
@@ -23,7 +25,7 @@ eQuantic.UI aims to be a **true 100% C# UI SDK**:
 ## Current State (honest)
 
 eQuantic.UI is a **technically real, ambitious project at an advanced-alpha stage** — not vaporware.
-What genuinely exists and works: a Roslyn-based C#→JS transpiler (**118 conversion strategies**),
+What genuinely exists and works: a Roslyn-based C#→JS transpiler (**one strategy per C# construct**, writing an IR),
 SSR, Server Actions with authorization, a keyed-LIS reconciler, a theming/StyleBuilder system,
 Tailwind integration, embedded Bun, and large auto-generated icon packages.
 
@@ -33,15 +35,15 @@ miscompilations (integer division producing floats, `Math.Truncate` crashing at 
 representing as a number in one path and a string in another, `.ToString("F2")` dropping its format,
 `Text` dropping its content, SVG created in the wrong DOM namespace, source-map columns all wrong,
 hydration mis-aligning on whitespace). These have been fixed, and their *nature* was the real signal —
-so the correctness net has since been built (Phase 1): a 530-case conformance harness, fail-on-unsupported
+so the correctness net has since been built (Phase 1): a conformance harness that executes every case on both sides (the suite counts them; this file does not), fail-on-unsupported
 diagnostics, and a documented supported subset. That was the linchpin; it is now in place.
 
 ### Evidence snapshot
 
 | Area | State |
 |------|-------|
-| Transpiler | 120+ strategies; **correctness net in place** — 530-case Bun-vs-.NET conformance harness, fail-on-unsupported diagnostics (`EQ2001/2002/21xx/1001/1002`), documented supported subset; the silent fallbacks are resolved to support or explicit diagnostics |
-| Components | **77** component files (Inputs 14, Overlays 11, Display 11, Navigation 8, Layout 8, Surfaces 6, Feedback 5, Forms 3 + primitives); some were half-implemented |
+| Transpiler | A strategy per construct over an IR; **correctness net in place** — the Bun-vs-.NET conformance harness (over a thousand cases, counted by the suite), fail-on-unsupported diagnostics (`EQ2001/2002/21xx/1001/1002`), documented supported subset; the silent fallbacks are resolved to support or explicit diagnostics |
+| Components | The write-once catalog (index: the wiki's Components page); some were half-implemented |
 | Client routing | **Shipped** — link-driven client router (`src/router`), layout preserved across navigation by reconcile-on-navigate. A typed programmatic `Navigator` API is still ahead |
 | Forms & validation | **Shipped** — `FormController`/`FormField`/`Rules` in Primitives (write-once, quiet-until-touched, cross-field, conditional via `Rules.When`/`relevantWhen`), `FormInput`/`FormSubmit` surface, async submit through Server Actions with `ApplyServerErrors`, and the `[FormModel]` DataAnnotations bridge (build-time, no second engine) |
 | State management | Component-local `SetState` only; **no global state / signals / context** |
@@ -60,7 +62,7 @@ fixed were silent miscompilations — the worst failure mode for a C#-only devel
 appears in the browser with no C# vocabulary to debug it. The transpiler-correctness gaps are now done:
 - ✅ A **defined, documented supported subset** of C# (`DOTNET-COVERAGE-PROGRAM.md` + wiki).
 - ✅ **Compile-time errors for unsupported constructs** — never silent wrong output (`EQ20xx/21xx/10xx`).
-- ✅ A **conformance suite that executes the emitted JS (via Bun) and compares to .NET** — 492 cases.
+- ✅ A **conformance suite that executes the emitted JS (via Bun) and compares to .NET** — every case runs on both sides; the number lives in the test run, not here.
 - 🔄 **Source maps** validated (generation/decode); in-browser C# stack-trace smoke test still to add.
 
 Still genuinely missing (UI surface, not transpiler correctness):
@@ -78,14 +80,16 @@ The `Build(context)` model is genuinely Flutter-like. Missing the productivity m
 components, and layout/diagnostic tooling.
 
 ### 4. shadcn-like components
-77 components is a respectable start, but shadcn's value is **polish + accessibility + variants**.
+The catalog (the wiki's Components page is its index) is a respectable start, but shadcn's value is **polish + accessibility + variants**.
 Missing: serious a11y (focus management, keyboard nav, correct `aria-*`, focus-trap in overlays),
 consistent variant coverage, and finishing the half-baked ones. Quality > quantity here.
 
-### 5. Pluggable CSS engine
-The abstraction exists (`IStyleProvider`). Missing: at least one **complete first-party embedded
-engine** (utility parser → CSS, purge/tree-shake, design tokens) working end-to-end without Node,
-plus a documented contract so third parties (UnoCSS, etc.) can implement a provider.
+### 5. Pluggable CSS engine — **resolved by decision, not by plugging**
+The first-party engine shipped (Track S): typed C# styles lowered to deduplicated atomic classes,
+generated at build time from the shared `Primitives` tokens — the same design system Photon paints —
+and byte-identical between SSR and hydration. Pluggability is deliberately NOT pursued: the framework
+ships exactly ONE styling engine, and any external CSS a consumer brings is their own build concern.
+The raw-HTML/CSS escape hatch (`HtmlElement`, `ClassBuilder`) stays for web-only pages.
 
 ### Cross-cutting maturity (framework → SDK)
 - **Compiler diagnostics**: actionable messages with C# `file:line` + suggestions.
@@ -94,7 +98,21 @@ plus a documented contract so third parties (UnoCSS, etc.) can implement a provi
 - **Docs & examples**: essential for a "0 JS" audience — the supported subset and recipes.
 - **SSR/hydration robustness**: the hydration mis-alignment shows this path is still fragile.
 - **Security**: hardened in this pass (deserialization allow-list, SignalR relay, payload cap);
-  needs a formal hardening review + CSP guidance.
+  needs a formal hardening review + CSP guidance. **Consent before cookies (2026-09)**: `IConsent` as
+  a capability, the `CookieConsent` card, and `UseGtm(...).WithConsent()` — Consent Mode defaults to
+  denied and the container is fetched only on a granted answer, on the first paint and live.
+- **Server-only code in a web project**: `[ServerOnly]` on a CLASS (2026-09) says the type never
+  crosses; before it, a Roslyn service or a hosted warm-up in the web project failed the build on its
+  first server-only call, and only another assembly could say otherwise.
+- **The declarative surface says everything a screen needs (2026-09)**: factory tails for semantics
+  (`label`, `selected`, `expanded`, `role`…) and layout (`width`/`height` on the containers), each an
+  init-only property the mirrored constructor deliberately does not carry — reported by the first
+  real consumer after migrating its whole UI, counted (49 places), and closed by a contract rule
+  rather than an exemption.
+- **A real consumer program**: the OS Cleaner (Track W's first consumer) builds against the SDK from
+  LOCAL packages (wiki: Build Flow → "Consuming an unreleased SDK from local packages"), renders
+  byte-identically from packages and from source, and files every first-contact friction in the
+  ledger at the end of `docs/DESKTOP-PLAN.md` — the input a rename or an editor hint needs.
 
 ---
 
@@ -104,7 +122,7 @@ plus a documented contract so third parties (UnoCSS, etc.) can implement a provi
 > missing SPA primitives (routing, forms, state), then DX (hot reload) and component/CSS polish.
 
 - **Phase 1 — Transpiler correctness & conformance** *(linchpin)* — **✅ essentially complete**:
-  supported-subset spec, fail-on-unsupported diagnostics, conformance harness (530 cases, emitted JS via
+  supported-subset spec, fail-on-unsupported diagnostics, conformance harness (emitted JS via
   Bun vs .NET) all in place; remaining polish is the in-browser source-map smoke test.
   → see `docs/IMPLEMENTATION-PLAN.md`.
 - **Phase 2 — Client router** — **✅ complete**: navigation without reload, typed route params, persistent
@@ -132,7 +150,9 @@ plus a documented contract so third parties (UnoCSS, etc.) can implement a provi
   (`PressableRole.Destination` / `Link.Current` → `aria-current="page"`, the Selected trait on both
   mobiles), which no existing role could express. Remaining: variant coverage, a component test
   harness.
-- **Phase 6 — First-party embedded CSS engine** + documented provider contract. **Normative
+- **Phase 6 — First-party embedded CSS engine** — **✅ shipped** (Track S: atomic classes deduplicated
+  by a hash cross-pinned between C# and TypeScript, theme tokens as custom properties with
+  fallbacks, one engine and no provider contract by decision — see pillar 5). **Normative
   (2026-07-03): the embedded CSS follows exactly the same design system as mobile** — the Photon
   Design System, generated at build time from the shared `eQuantic.UI.Primitives` tokens (single
   source of truth; no hand-maintained CSS values, parity tested). Tailwind/other engines remain
@@ -295,7 +315,7 @@ English), the `CurrentCulture`/`CurrentUICulture` pair, and `<html lang>` from t
 
 Added 2026-08-25, born from the OS Cleaner migration plan (the app's own plan maps its S1–S6 onto
 W1–W6 here) — but nothing in it is app-specific: these are the fences Photon has to close to claim
-DESKTOP APP, each verified in code, not docs. Eight draw commands and no arbitrary paths
+DESKTOP APP, each verified in code, not docs. Nine draw commands and no arbitrary paths
 (`DisplayList.cs`); a deliberately PERIODIC `IClock` whose own fence names the frame clock as the
 thing not yet built; rectangle-only hit-testing (`PhotonHost.cs` — `Bounds.Contains` on AABBs); no
 desktop shell surface (menus, tray, file dialogs, notifications, deep links); ad-hoc signing
@@ -304,8 +324,10 @@ desktop shell surface (menus, tray, file dialogs, notifications, deep links); ad
 The sweep also found what SHRINKS the work: a deterministic time channel already runs through
 layout (`TransitionStore`, pure in `(path, target, timeMs)`, wired at two call sites), the 120 Hz
 driver exists (as a run-loop timer — the ticker work upgrades it to a display link), two-stop
-radial gradients exist, and the shader toolchain self-resolves — so W1 (annular-sector SDF) is
-startable immediately.
+radial gradients exist, and the shader toolchain self-resolves — and **W1's first shape is
+DONE**: `FillAnnularSector` shipped in 0.2.0-preview.45 as an exact SDF with Reference↔Metal↔Vulkan
+parity, consumer-proven on a real 5.38-million-file sunburst; the polygon-vs-texture decision waits
+on the consumer's blob benchmark (W2).
 
 Workstreams: W1 engine shapes (annular sector + convex polygon, SDF family, NOT a path engine);
 W2 frame clock + tweens/springs + `BoxStyle.Transition` honored natively + `IUiDispatcher`
@@ -314,7 +336,10 @@ node with local-coordinate pointer events (also the hit-testing seam the headles
 instrument has waited for); W4 the macOS desktop shell surface; W5 real packaging — signing,
 entitlements, notarization, publish-based bundling, minimal updater — sequenced FIRST among the
 independents because the identity unblocks TCC, notifications and updates at once; W6
-Windows/Linux shells stay post-M5 as the engine plan already decided.
+Windows/Linux shells stay post-M5 as the engine plan already decided. Landed ahead of W5's real
+identity (0.2.0-preview.45): the ad-hoc bundle is rebuilt from the payload every build, `runtimes/` is
+an allowlist, and a signing failure fails the build — an identity that flips between builds is how a
+TCC grant evaporates, and that was happening.
 
 W7 (added 2026-08-25, raised by Edgar): the DEVELOPER LOOP — one command per target with device
 discovery embedded in `Sdk.Native` (`-t:RunIos` / `-t:RunAndroid`), `launchSettings.json` profiles
@@ -336,9 +361,12 @@ What is missing is the medium — nested-table layout for Outlook's Word engine,
 instead of custom properties, absolute image URLs, a 600px shell, and a fence over everything an
 email cannot do (`ScrollView`, `Pressable`, hover, `position: absolute`).
 
-Full design, slices and fences: wiki **[Email Rendering](https://github.com/eQuantic/equantic-ui/wiki/EmailRealizer)**.
-M0 MEASURES what the two existing calls already survive in Gmail, Outlook and Apple Mail before M1
-builds anything — half a day, no new code, and it decides the size of the rest.
+**Status: the core SHIPPED in 0.2.0-preview.45** — `eQuantic.UI.Email` (`EmailRealizer`/`EmailRenderer`):
+nested tables with spacer cells for gaps, inline styles, literal colors (translucent flattened over
+the surface), absolute-URL guard, a 600px shell, a plain-text twin from the same tree, and the fences
+(gradients, `MaxLines`, anything an email cannot do) as build-time refusals. Ahead: the real-client
+matrix (a generated sample against Gmail, Outlook and Apple Mail) and HTML pins once the output
+settles. Full design and fences: wiki **[Email Rendering](https://github.com/eQuantic/equantic-ui/wiki/EmailRealizer)**.
 
 ## Definition of "production-ready" (per pillar)
 - **0 JS**: any unsupported C# fails the build with a clear message; conformance suite green; C#

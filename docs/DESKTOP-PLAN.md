@@ -12,11 +12,11 @@ Each was verified by reading the code, not the docs. File references are the pro
 | # | Gap | Evidence |
 |---|---|---|
 | W-B1 | No Windows/Linux shell; Vulkan creates only Android surfaces | `VulkanSurfaceNative.cs` — `vkCreateAndroidSurfaceKHR` is the only surface entry point |
-| W-B2 | No arbitrary paths/arcs in the engine — 8 draw commands, all SDF/texture | `DisplayList.cs` — `Clear..BackdropBlur` (0..7); paths are a normative "v2+" fence in `NATIVE-GPU-ENGINE-PLAN.md` |
+| W-B2 | No arbitrary paths/arcs in the engine — nine draw commands, all SDF/texture (the ninth, `FillAnnularSector`, is W1's first shape, shipped 0.2.0-preview.45) | `DisplayList.cs` — `Clear..FillAnnularSector` (0..8); paths are a normative "v2+" fence in `NATIVE-GPU-ENGINE-PLAN.md` |
 | W-B3 | No app-facing frame clock | `IClock.cs` — the fence is verbatim: "this is a PERIODIC clock, not a frame clock… Per-frame animation is a [different thing]" |
 | W-B4 | Hit-testing is rectangle-only | `PhotonHost.cs:1431-1459` — every pointer resolution is `Bounds.Contains(point)` on AABBs; `OnPressed` carries no coordinates |
 | W-B5 | No desktop shell surface (menus, tray, file dialogs, notifications, deep links, drag & drop, dock, launch-at-login) | the macOS shell exposes a window + capabilities; none of these seams exist |
-| W-B6 | Ad-hoc signing, no notarization hook | `src/eQuantic.UI.Sdk.Native/Sdk/Sdk.targets:121` — `codesign --force --deep --sign -`; TCC grants (Full Disk Access) are keyed to the identity, so they break every build |
+| W-B6 | Ad-hoc signing, no notarization hook | `src/eQuantic.UI.Sdk.Native/Sdk/Sdk.targets` — grep `codesign --force --deep --sign -` (cited by line until 0.2.0-preview.45 moved it: an anchor that rots is not proof); TCC grants (Full Disk Access) are keyed to the identity, so they break every build — **the bundle's three rules landed in 0.2.0-preview.45** (rebuilt from the payload, RID allowlist, a signing failure fails the build); the real identity, entitlements and notarization remain W5 |
 | W-B7 | One window per process | `PhotonContentView` / `PhotonAccessibility` hold static fields; `PhotonWindow.Run` blocks |
 
 **What already exists and shrinks the work** — found in the same sweep, and the reason estimates
@@ -33,7 +33,7 @@ below are smaller than a cold reading suggests:
 - **Two-stop elliptical radial gradients exist** (`Paint.cs` — `RadialGradient = 2`, center +
   radii), which is the shading an annular sector needs.
 - **The shader toolchain self-resolves** (`scripts/generate-shaders.sh` downloads and
-  SHA-256-verifies the pinned slangc), so W1 is startable immediately.
+  SHA-256-verifies the pinned slangc) — which is how W1's first shape shipped within days.
 - **Headless screenshots** (`--Photon:ScreenshotPath`, Reference backend) already give any
   desktop app golden tests in CI.
 
@@ -149,7 +149,7 @@ capability or `IPlatformStrategy`-style seam, as today.
 
 ```
 W5 (packaging)  ──────────────►  smallest independent; unblocks TCC/notifications/updates
-W1 (engine)     ──────────────►  startable now (toolchain self-resolves); consumer spike gates it
+W1 (engine)     ──────────────►  sector SHIPPED (0.2.0-preview.45, consumer-proven); polygon decision waits on W2's blob benchmark
 W2 (framework)  ──────────────►  after W1's first shape lands (shares the golden harness)
 W3 (primitives) ──────────────►  with W2 (pointer events ride the same host loop work)
 W4 (shell)      ──── partial early (file dialogs + deep links), rest after W5
