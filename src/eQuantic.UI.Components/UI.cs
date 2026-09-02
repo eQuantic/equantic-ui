@@ -404,7 +404,6 @@ public static class UI
     public static EmptyState EmptyState(Icon icon, string title, string? body = null) =>
         new EmptyState(icon, title, body);
 
-    /// <summary>Horizontal tab strip.</summary>
     /// <summary>The segmented picker (spec B7) — one row of mutually exclusive choices.
     /// <paramref name="stretch"/> is the tail: true fills the width evenly (the default a settings
     /// row wants), false lets the control size to its content (what a tab strip above a panel
@@ -413,6 +412,7 @@ public static class UI
         Action<int>? onChanged = null, bool stretch = true) =>
         new SegmentedControl(segments, selectedIndex, onChanged) { Stretch = stretch };
 
+    /// <summary>Horizontal tab strip.</summary>
     public static Tabs Tabs(IReadOnlyList<string> labels, int selected, Action<int>? onSelect = null) =>
         new Tabs(labels, selected, onSelect);
 
