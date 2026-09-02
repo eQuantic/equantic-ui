@@ -33,7 +33,7 @@ below are smaller than a cold reading suggests:
 - **Two-stop elliptical radial gradients exist** (`Paint.cs` — `RadialGradient = 2`, center +
   radii), which is the shading an annular sector needs.
 - **The shader toolchain self-resolves** (`scripts/generate-shaders.sh` downloads and
-  SHA-256-verifies the pinned slangc), so W1 is startable immediately.
+  SHA-256-verifies the pinned slangc) — which is how W1's first shape shipped within days.
 - **Headless screenshots** (`--Photon:ScreenshotPath`, Reference backend) already give any
   desktop app golden tests in CI.
 
