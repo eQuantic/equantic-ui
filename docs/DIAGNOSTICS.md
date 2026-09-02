@@ -96,13 +96,14 @@ than pick for you, eqc asks.
 | `EQ2111` | `GetService` with no type argument to cross — the registry is keyed by the interface NAME, and there is nothing to key on. | Call the generic overload. |
 | `EQ2113` | `ConfigureAwait` is dropped — there is one context to resume on — and dropping it would discard a NON-CONSTANT argument without evaluating it. | Pass a constant, or evaluate the expression into a local first. |
 
-## EQ3001–EQ3003 — the Photon app generator
+## EQ3001–EQ3004 — the Photon app generator
 
 | Code | Meaning |
 |---|---|
 | `EQ3001` | A Photon app has no program. |
 | `EQ3002` | A Photon app has more than one program. |
 | `EQ3003` | A capability's reason must be a constant. |
+| `EQ3004` | An entitlement's key must be a constant — it is signed into the app at build time, so a key built at run time never reaches the signature. |
 
 ## EQ3101–EQ3105 — the source generators
 

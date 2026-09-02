@@ -30,6 +30,11 @@ public partial class Program
             .UsePhotoLibrary("Attach a receipt to a payment.")
             .UseBiometrics("Confirm a transfer with Face ID.");
 
+        // The RELEASE-time half, in the same place and the same language: what the system must
+        // permit once this ships signed. Only what THIS app's code needs — what the .NET runtime
+        // needs under the hardened runtime, the SDK declares by itself.
+        builder.Entitlements.RequireNetworkClient();
+
         builder.Configure(photon =>
         {
             photon.Theme = PhotonTheme.Instance;

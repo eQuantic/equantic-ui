@@ -42,6 +42,10 @@ const NO_TWIN_OWED = new Set([
   // The seam a HOST arms so `context.GetService<T>()` can answer. A page names the capability, not
   // the scope; the client's twin of it is the ComponentContext.getService method.
   'CapabilityScope',
+  // BUILD TIME ONLY, and macOS at that: the keys a signed .app declares to the operating system.
+  // Read off the compiled assembly by the SDK's signing step; they never exist at run time, on any
+  // target — a browser has no code signature to carry them.
+  'PhotonEntitlements',
 ]);
 
 describe('Primitives ⇄ runtime export parity', () => {

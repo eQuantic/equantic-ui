@@ -2,6 +2,44 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## THE PRODUCT PRINCIPLE (read this first — it decides designs)
+
+**A developer using eQuantic.UI never writes a line of Swift, an Xcode setting, an Android
+manifest, a plist, JavaScript, HTML or CSS. Everything is C#, `appsettings`, and fluent
+configuration in `Program.cs` — inside ordinary Microsoft .NET semantics.**
+
+The SDK is **self-aware**: it resolves the platform's details itself, and the developer states
+only simple, meaningful settings. Every design decision is measured against this, and a feature
+that satisfies the requirement while making someone learn a platform artifact has NOT satisfied it.
+
+What this rules out, concretely:
+
+- A doc that says "add this key to your Info.plist" or "create an entitlements file". The SDK
+  writes those from a C# declaration.
+- A knob whose value is a platform incantation the developer must look up. If the SDK can derive
+  it from something it already knows, it derives it.
+- An escape hatch offered as the primary path. Escape hatches exist (`HtmlElement`, a raw key);
+  they are the exception with a stated reason, never the answer to "how do I do X".
+
+What it looks like when honored — the measured example: a framework-dependent .NET app signed with
+the macOS hardened runtime **cannot launch** (library validation refuses Microsoft's own dylibs)
+and needs the JIT entitlement for .NET's own JIT. The wrong design tells the developer to declare
+both, and warns when they forget. The right one — the SDK knows whether the app is AOT and whether
+hardening is on, so it declares them ITSELF, logs what it added, and leaves the developer declaring
+only what their own code needs (`builder.Entitlements.RequireNetworkClient()`).
+
+The existing idioms this principle produced, to imitate rather than reinvent:
+
+- **Fluent on the builder** in `Program.cs` (`builder.Capabilities.UseCamera("why")`), read by a
+  source generator into an assembly attribute, read by the build into the platform's file.
+- **Typed C# everywhere a string would be a platform incantation** (`ColorToken`, `Space`,
+  `TypeRole`, `PhotonEntitlements.AllowJit`).
+- **`appsettings.json` + the standard configuration binder** for what varies per environment.
+- **MSBuild properties in the csproj** for build-time facts, named like .NET's own
+  (`EQuanticSigningIdentity` beside `PublishAot`).
+
+---
+
 ## Git Commit Guidelines
 
 **CRITICAL — commit format**: `emoji type: description` — the emoji comes FIRST, always
