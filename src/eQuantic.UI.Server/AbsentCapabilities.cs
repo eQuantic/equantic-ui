@@ -138,6 +138,13 @@ internal static class AbsentCapabilities
     /// gets is the first paint the component was built with, and the ticking starts when the page
     /// hydrates in their browser.
     /// </summary>
+    /// <summary>No frames on a server: subscribing succeeds and never fires, so the first paint is
+    /// the state the component was built with — the same answer the periodic clock gives.</summary>
+    internal sealed class FrameTicker : IFrameTicker
+    {
+        public IDisposable OnFrame(Action<FrameTick> onFrame) => NoSubscription.Instance;
+    }
+
     internal sealed class Clock : IClock
     {
         public IDisposable Every(TimeSpan interval, Action onTick) => NoSubscription.Instance;

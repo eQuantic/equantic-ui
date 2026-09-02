@@ -89,6 +89,37 @@ public sealed class TransitionStore
         return current;
     }
 
+    /// <summary>
+    /// <paramref name="spec"/> if it animates <paramref name="channel"/>, else null — so a channel
+    /// the author left out of <c>Channels</c> SNAPS through the same <see cref="Resolve(string, float, float, TransitionSpec?, bool)"/>
+    /// call that glides the ones they put in. One code path per property, and the spec decides.
+    /// </summary>
+    public static TransitionSpec? Only(TransitionSpec? spec, StyleChannels channel) =>
+        spec is { } s && (s.Channels & channel) != 0 ? s : null;
+
+    /// <summary>
+    /// A colour glide as four float tracks — red, green, blue and alpha interpolated separately in
+    /// sRGB bytes, which is what CSS does for <c>transition: background-color</c>: not perceptually
+    /// perfect, and exactly what the web realizer's output does, so the two targets agree.
+    /// </summary>
+    public Color ResolveColor(string path, Color target, float timeMs, TransitionSpec? spec, bool reducedMotion)
+    {
+        if (spec is null || reducedMotion)
+        {
+            // Snap AND forget the four tracks, so a later spec starts from the shown colour.
+            _tracks.Remove(path + ".r"); _tracks.Remove(path + ".g");
+            _tracks.Remove(path + ".b"); _tracks.Remove(path + ".a");
+            return target;
+        }
+        return new Color(
+            Byte(Resolve(path + ".r", target.R, timeMs, spec, false)),
+            Byte(Resolve(path + ".g", target.G, timeMs, spec, false)),
+            Byte(Resolve(path + ".b", target.B, timeMs, spec, false)),
+            Byte(Resolve(path + ".a", target.A, timeMs, spec, false)));
+    }
+
+    private static byte Byte(float channel) => (byte)Math.Clamp(MathF.Round(channel), 0, 255);
+
     private static float ValueAt(Transition track, float timeMs)
     {
         if (track.From == track.To) return track.To;

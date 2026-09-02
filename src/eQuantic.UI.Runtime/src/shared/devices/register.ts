@@ -11,6 +11,7 @@ import { WebCultureController } from './culture-controller';
 import { WebAnalytics } from './analytics';
 import { WebConsent } from './consent';
 import { WebClock } from './clock';
+import { WebFrameTicker } from './frame-ticker';
 import { WebThemeController } from './theme-controller';
 
 /**
@@ -46,6 +47,9 @@ export function registerDeviceCapabilities(): void {
   // TIME as a capability: a carousel that advances itself asks for this the way a photo picker asks
   // for the library, and never learns that here it is one setInterval.
   services.registerSingleton('IClock', () => new WebClock());
+  // The FRAME clock, over requestAnimationFrame — one loop for every subscriber, running only
+  // while someone is subscribed. Most motion never needs it: a style change glides on its own.
+  services.registerSingleton('IFrameTicker', () => new WebFrameTicker());
   // Analytics: registered even without an installer — a page that tracks must RESOLVE something,
   // and the realization itself goes quiet when no collector declared itself (__EQ_ANALYTICS__).
   services.registerSingleton('IAnalytics', () => new WebAnalytics());

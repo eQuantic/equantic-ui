@@ -252,6 +252,7 @@ public static class PhotonRealizer
         var motion = new MotionScope(timeMs, reducedMotion)
         {
             Presences = presences,
+            Transitions = transitions,
             ViewportW = viewportWidth,
             ViewportH = viewportHeight,
             TextRasterizer = textRasterizer,
@@ -353,6 +354,9 @@ public static class PhotonRealizer
         /// <summary>The host's presence clock — the emit pass snapshots each live presence subtree's
         /// commands into it (the exit replay source). Null = no exit machinery (layout-only tests).</summary>
         public PresenceStore? Presences { get; init; }
+        /// <summary>Spec S6 at PAINT time: the same store layout uses for flex weights, so a box's
+        /// colours, opacity, transform and shadow glide under its own <c>Transition</c>.</summary>
+        public TransitionStore? Transitions { get; init; }
     }
 
     /// <summary>Carries the held press through the emit walk: entering the pressed Pressable arms the
@@ -455,14 +459,28 @@ public static class PhotonRealizer
         // Spec S1 — group opacity + static transform wrap the WHOLE box (chrome and children):
         // opacity is one PushLayer composite (overlaps never double-blend); the transform is the
         // center-anchored Matrix2D twin of the CSS list, paint-only (layout already ran).
-        if (node.Source is Box styled &&
-            (styled.Style.Opacity is { } sAlpha && sAlpha < 1f || styled.Style.Transform is { IsIdentity: false }))
+        // Spec S6: when the box declares a Transition, the layer's alpha and the transform's
+        // components GLIDE to their new values under the box's own spec (colours and shadow glide
+        // in the Box case below). The guard reads the INTERPOLATED values, not the declared ones: a
+        // box whose opacity just went 0.4 → 1 still needs its layer while it is still fading in.
+        var glide = node.Source is Box gliding ? gliding.Style.Transition : null;
+        var glidePath = node.Path ?? "";
+        var store = motion.Transitions;
+        var opacityNow = node.Source is Box ob
+            ? store?.Resolve(glidePath + ":opacity", ob.Style.Opacity ?? 1f, motion.TimeMs,
+                TransitionStore.Only(glide, StyleChannels.Opacity), motion.Reduced) ?? (ob.Style.Opacity ?? 1f)
+            : 1f;
+        var transformNow = node.Source is Box tb
+            ? GlideTransform(store, glidePath, tb.Style.Transform ?? IdentityTransform, motion.TimeMs,
+                TransitionStore.Only(glide, StyleChannels.Transform), motion.Reduced)
+            : IdentityTransform;
+        if (node.Source is Box styled && (opacityNow < 1f || !transformNow.IsIdentity))
         {
-            var opacity = styled.Style.Opacity is { } a && a < 1f ? a : (float?)null;
+            var opacity = opacityNow < 1f ? opacityNow : (float?)null;
             if (opacity is { } layerAlpha) builder.PushLayer(layerAlpha);
-            var transformed = styled.Style.Transform is { IsIdentity: false } t;
+            var transformed = !transformNow.IsIdentity;
             if (transformed)
-                builder.PushTransform(CenterAnchored(styled.Style.Transform!.Value, node.Bounds.Center));
+                builder.PushTransform(CenterAnchored(transformNow, node.Bounds.Center));
 
             EmitNode(node, theme, mode, builder, input, scrollMeta, press, motion, overlays);
 
@@ -576,20 +594,31 @@ public static class PhotonRealizer
                 if (box.Style.BackdropBlur > 0)
                     builder.BackdropBlur(new RRect(node.Bounds, box.Style.CornerRadius), box.Style.BackdropBlur);
 
-                // Spec S6 FENCE: `BoxStyle.Transition` (and its Anchored/Sticky/Text siblings) is a
-                // WEB-only glide today — native SNAPS to each new value until the style interpolator
-                // lands. Honesty over smoothness, the same fence Flexible.AnimateChanges documents.
+                // Spec S6 — honoured: `BoxStyle.Transition` glides colours, opacity, transform and
+                // shadow under the box's own spec (the Anchored/Sticky/Text siblings still snap, and
+                // a gradient fill snaps: only solid tokens interpolate). Size glides in layout.
                 // Spec S1 FENCE: a gradient's `Via` midpoint is ignored — the shader interpolates two
                 // stops, so native paints From→To until the 3-stop paint lands.
 
                 // §05: the analytic shadow draws under the fill (one per node, theme-resolved).
-                if (box.Style.Elevation > 0)
                 {
-                    var spec = theme.Elevation(box.Style.Elevation);
-                    if (!spec.IsNone)
+                    // The elevation's shadow glides as its resolved components, so a card that lifts
+                    // from level 1 to 3 on hover grows its shadow instead of swapping it — and one
+                    // that drops to 0 fades it, which "if (Elevation > 0)" alone could never draw.
+                    var target = box.Style.Elevation > 0 ? theme.Elevation(box.Style.Elevation) : default;
+                    var shadowSpec = TransitionStore.Only(box.Style.Transition, StyleChannels.Shadow);
+                    var sp = (node.Path ?? "") + ":elev";
+                    var st = motion.Transitions;
+                    var offsetY = st?.Resolve(sp + ".y", target.OffsetY, motion.TimeMs, shadowSpec, motion.Reduced) ?? target.OffsetY;
+                    var blur = st?.Resolve(sp + ".b", target.Blur, motion.TimeMs, shadowSpec, motion.Reduced) ?? target.Blur;
+                    var spread = st?.Resolve(sp + ".s", target.Spread, motion.TimeMs, shadowSpec, motion.Reduced) ?? target.Spread;
+                    // Fading OUT keeps the last real tint: level 0 has no colour of its own.
+                    var shadowColor = (box.Style.Elevation > 0 ? target.Color : theme.Elevation(1).Color).Resolve(mode);
+                    shadowColor = st?.ResolveColor(sp + ".c", shadowColor, motion.TimeMs, shadowSpec, motion.Reduced) ?? shadowColor;
+                    if (blur > 0 || offsetY != 0 || spread != 0)
                     {
                         builder.ShadowRRect(new RRect(node.Bounds, box.Style.CornerRadius),
-                            spec.OffsetY, spec.Blur, spec.Spread, spec.Color.Resolve(mode));
+                            offsetY, blur, spread, shadowColor);
                     }
                 }
 
@@ -631,6 +660,17 @@ public static class PhotonRealizer
                     if (hover.BorderColor is { } hoverBorder) borderColor = hoverBorder;
                     if (hover.BorderWidth is { } hoverWidth) borderWidth = hoverWidth;
                 }
+                // Colours glide as resolved sRGB (what CSS does), wrapped back into a token that
+                // resolves the same in both modes — the interpolation already picked the mode.
+                if (TransitionStore.Only(box.Style.Transition, StyleChannels.Colors) is { } colorSpec
+                    && motion.Transitions is { } colorStore)
+                {
+                    var cp = node.Path ?? "";
+                    if (fill is { } solidFill)
+                        fill = new ColorToken(colorStore.ResolveColor(cp + ":bg", solidFill.Resolve(mode), motion.TimeMs, colorSpec, motion.Reduced));
+                    borderColor = new ColorToken(colorStore.ResolveColor(cp + ":bd", borderColor.Resolve(mode), motion.TimeMs, colorSpec, motion.Reduced));
+                }
+
                 EmitChrome(node.Bounds, fill, box.Style.CornerRadius,
                     borderColor, borderWidth, theme, mode, builder,
                     box.Style.Gradient, box.Style.Pattern, box.Style.Glow, box.Style.BorderSides);
@@ -1114,6 +1154,27 @@ public static class PhotonRealizer
         var phase = motion.TimeMs % loop.DurationMs / loop.DurationMs;
         if (phase < 0) phase += 1;
         return (loop.FromX + (loop.ToX - loop.FromX) * phase) * width;
+    }
+
+    /// <summary>
+    /// The identity, spelled through the PRIMARY constructor. <c>new Transform2D()</c> is the record
+    /// struct's parameterless constructor and zeroes every field — ScaleX = ScaleY = 0 — which drew
+    /// every box that declared no transform at zero size: an empty golden, found by 81 of them.
+    /// </summary>
+    private static readonly Transform2D IdentityTransform = new(ScaleX: 1, ScaleY: 1);
+
+    /// <summary>The five components of a transform, each its own track — so a rotate-and-scale
+    /// hover glides both together under one spec, and removing the transform glides back to identity.</summary>
+    private static Transform2D GlideTransform(TransitionStore? store, string path, Transform2D target,
+        float timeMs, TransitionSpec? spec, bool reduced)
+    {
+        if (store is null) return target;
+        return new Transform2D(
+            store.Resolve(path + ":tx", target.TranslateX, timeMs, spec, reduced),
+            store.Resolve(path + ":ty", target.TranslateY, timeMs, spec, reduced),
+            store.Resolve(path + ":rot", target.RotationDegrees, timeMs, spec, reduced),
+            store.Resolve(path + ":sx", target.ScaleX, timeMs, spec, reduced),
+            store.Resolve(path + ":sy", target.ScaleY, timeMs, spec, reduced));
     }
 
     private static void EmitChrome(Rect bounds, ColorToken? background, CornerRadii radius,
