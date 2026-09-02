@@ -121,6 +121,7 @@
   "TypeScriptLanguage",
   "TypeStyle",
   "UiComponent",
+  "UiDispatcher",
   "VariantColors",
   "Vector",
   "VectorDrawing",

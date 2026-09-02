@@ -36,6 +36,10 @@ public sealed class PhotonHost
         _instances.InstanceRetained += retained =>
             retained.StateInvalidated += () => NeedsRender = true;
 
+        // Work posted from a worker thread has to WAKE an idle window, or it runs whenever something
+        // else next needs a frame — a scanner's results appearing on the next mouse move.
+        PhotonDispatcher.Shared.WorkPosted += () => NeedsRender = true;
+
         // Hot reload reaches a running app through a static seam — every live host signs up, so an
         // applied edit wakes this one too. Weakly: a host is not kept alive by having existed.
         PhotonHotReload.Register(this);
@@ -153,6 +157,13 @@ public sealed class PhotonHost
     /// </summary>
     public RealizeResult RenderFrame(DisplayListBuilder builder, float timeMs = 0)
     {
+        // FIRST, before anything is read: this thread is the one that draws, and whatever a worker
+        // thread posted runs here, where mutating a component's fields races nothing. Both halves
+        // belong at the top of the frame — the binding because the thread that renders is the only
+        // one whose identity matters, the drain because this is the moment nothing is being built.
+        PhotonDispatcher.Shared.BindToCurrentThread();
+        PhotonDispatcher.Shared.Drain();
+
         // An edit landed since the last frame: drop the content caches BEFORE realizing, on this
         // thread, where they are owned. Most edits would miss them anyway (the keys are content),
         // but a patched rasterizer or an edited icon path re-rasters fresh — once.
