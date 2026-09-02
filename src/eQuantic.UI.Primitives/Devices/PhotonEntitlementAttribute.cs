@@ -63,6 +63,7 @@ public static class PhotonEntitlements
     /// runtime library validation refuses it before a single line of the app runs: "mapping process
     /// and mapped file (non-platform) have different Team IDs". So this is the FIRST entitlement a
     /// hardened Photon app needs — earlier than <see cref="AllowJit"/>, which the app never reaches.
+    /// </para>
     /// <para>
     /// Shipping the runtime INSIDE the bundle does not help, which is the reasonable guess and the
     /// wrong one: a self-contained hardened bundle re-signed with only <see cref="AllowJit"/> dies on
