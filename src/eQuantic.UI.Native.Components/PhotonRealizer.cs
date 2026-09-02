@@ -609,14 +609,17 @@ public static class PhotonRealizer
                     // The elevation's shadow glides as its resolved components, so a card that lifts
                     // from level 1 to 3 on hover grows its shadow instead of swapping it — and one
                     // that drops to 0 fades it, which "if (Elevation > 0)" alone could never draw.
-                    var target = box.Style.Elevation > 0 ? theme.Elevation(box.Style.Elevation) : default;
+                    // Level 0 is a real spec — zero geometry and a TRANSPARENT colour — so there is
+                    // no special case to write: asking the theme for the level the box declares
+                    // gives the right target every time, and the alpha fades with the geometry the
+                    // way `box-shadow: none` interpolates in CSS.
+                    var target = theme.Elevation(box.Style.Elevation);
                     var sp = (node.Path ?? "") + ":elev";
                     var offsetY = st.Resolve(sp + ".y", target.OffsetY, motion.TimeMs, shadowSpec, motion.Reduced);
                     var blur = st.Resolve(sp + ".b", target.Blur, motion.TimeMs, shadowSpec, motion.Reduced);
                     var spread = st.Resolve(sp + ".s", target.Spread, motion.TimeMs, shadowSpec, motion.Reduced);
-                    // Fading OUT keeps the last real tint: level 0 has no colour of its own.
-                    var shadowColor = (box.Style.Elevation > 0 ? target.Color : theme.Elevation(1).Color).Resolve(mode);
-                    shadowColor = st.ResolveColor(sp + ".c", shadowColor, motion.TimeMs, shadowSpec, motion.Reduced);
+                    var shadowColor = st.ResolveColor(sp + ".c", target.Color.Resolve(mode),
+                        motion.TimeMs, shadowSpec, motion.Reduced);
                     if (blur > 0 || offsetY != 0 || spread != 0)
                     {
                         builder.ShadowRRect(new RRect(node.Bounds, box.Style.CornerRadius),
