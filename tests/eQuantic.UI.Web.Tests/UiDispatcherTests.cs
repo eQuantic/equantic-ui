@@ -13,6 +13,18 @@ namespace eQuantic.UI.Web.Tests;
 /// collection enumerated while it grows, no exception to find it by.
 /// </para>
 /// </summary>
+/// <remarks>
+/// NOT IN PARALLEL with anything else, and the reason is the feature itself: the dispatcher is a
+/// PROCESS seam, so while this class has one armed, a <c>SetState</c> in any other test class
+/// running on another thread sees "not the UI thread" and has its mutation posted into this class's
+/// queue instead of running. It showed up exactly as that kind of bug does — the whole suite red
+/// three times in a run that passed on its own, then green on the next. Serializing it is the fix;
+/// making the fake lie about which threads are the UI thread would hide the hazard instead.
+/// </remarks>
+[CollectionDefinition(nameof(UiDispatcherTests), DisableParallelization = true)]
+public sealed class UiDispatcherCollection;
+
+[Collection(nameof(UiDispatcherTests))]
 public class UiDispatcherTests
 {
     private sealed class Counter : StatefulComponent
