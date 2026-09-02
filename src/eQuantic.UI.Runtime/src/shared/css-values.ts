@@ -31,3 +31,23 @@ export function tokenValue(token: ColorTokenValue): string {
   const dark = hex(token.dark);
   return light === dark ? light : `light-dark(${light}, ${dark})`;
 }
+
+/**
+ * The C# `[Flags] KeyModifiers` an event is carrying: shift 1, alt 2, command 4.
+ *
+ * `command` is the PLATFORM key — ⌘ on Apple, Ctrl elsewhere — so `ctrlKey` answers it, which is
+ * the same resolution the shortcut controller makes. `Control` (8) is deliberately not reported:
+ * the flag means "literally Control on every platform", and a browser cannot tell that apart from
+ * the command key it just answered. One expression, every caller — the key path and the canvas
+ * pointer disagreeing about ⌘ would be a difference nobody could explain.
+ */
+export function modifiersOf(event: {
+  shiftKey?: boolean;
+  altKey?: boolean;
+  metaKey?: boolean;
+  ctrlKey?: boolean;
+}): number {
+  return (
+    (event.shiftKey ? 1 : 0) | (event.altKey ? 2 : 0) | (event.metaKey || event.ctrlKey ? 4 : 0)
+  );
+}

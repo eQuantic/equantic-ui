@@ -15,7 +15,7 @@ import { round as dotnetRound } from '../utils/dotnet-math';
 import type { EventHandler, HtmlNode } from '../core/types';
 import { CanvasPointer } from './canvas-pointer';
 // Leaf helpers — see css-values for why they are not defined here.
-import { hex, num, tokenValue } from './css-values';
+import { hex, modifiersOf, num, tokenValue } from './css-values';
 export { num, tokenValue };
 import { DomCanvasPainter } from './canvas-painter';
 import { declareCanvas } from './canvas-surface';
@@ -562,8 +562,7 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
 
   const changed = () => node.onChanged?.();
   surface.events['keydown'] = ((event: KeyboardEvent) => {
-    const modifiers =
-      (event.shiftKey ? 1 : 0) | (event.altKey ? 2 : 0) | (event.metaKey || event.ctrlKey ? 4 : 0);
+    const modifiers = modifiersOf(event);
     if (handleCodeKey(editor, event.key, modifiers)) {
       event.preventDefault();
       changed();
@@ -1656,10 +1655,14 @@ function lowerCanvas(node: CanvasNodeValue, path: string): HtmlNode {
   const local = (event: PointerEvent, pressed: boolean): CanvasPointer => {
     const target = event.currentTarget as SVGElement | null;
     const box = target?.getBoundingClientRect();
+    // The same expression the key path uses — an app that gestures differently under ⌘ must read
+    // the same number wherever it asks, and this reported a constant 0 before.
+    const modifiers = modifiersOf(event);
     return new CanvasPointer(
       event.clientX - (box?.left ?? 0),
       event.clientY - (box?.top ?? 0),
       pressed,
+      modifiers,
     );
   };
 

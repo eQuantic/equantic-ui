@@ -8,6 +8,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { commitCanvasSurfaces, declareCanvas } from './canvas-surface';
 import type { ICanvasPainter } from './nodes';
+import { modifiersOf } from './css-values';
 
 const INK = { light: { r: 1, g: 2, b: 3, a: 255 }, dark: { r: 1, g: 2, b: 3, a: 255 } };
 
@@ -79,5 +80,18 @@ describe('canvas surfaces measure before they draw', () => {
 
     expect(svg.querySelector('circle')).toBeNull();
     expect(svg.querySelectorAll('rect')).toHaveLength(1);
+  });
+});
+
+describe('canvas pointer modifiers', () => {
+  it('maps each DOM flag to the bit C# names, through the ONE shared expression', () => {
+    expect(modifiersOf({ shiftKey: true })).toBe(1);
+    expect(modifiersOf({ altKey: true })).toBe(2);
+    expect(modifiersOf({ metaKey: true })).toBe(4);
+    // Ctrl IS the command key off Apple, which is what `command` means — and the key path in the
+    // lowering has always resolved it this way, so the canvas must not invent a second rule.
+    expect(modifiersOf({ ctrlKey: true })).toBe(4);
+    expect(modifiersOf({ shiftKey: true, altKey: true, metaKey: true })).toBe(1 | 2 | 4);
+    expect(modifiersOf({})).toBe(0);
   });
 });
