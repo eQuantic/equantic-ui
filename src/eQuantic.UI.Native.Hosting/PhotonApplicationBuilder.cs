@@ -62,6 +62,14 @@ public sealed class PhotonApplicationBuilder
     /// </summary>
     public PhotonCapabilitiesBuilder Capabilities { get; } = new();
 
+    /// <summary>
+    /// What this app needs the SYSTEM to permit when it ships signed — the release-time counterpart
+    /// of <see cref="Capabilities"/>, and stated the same way: in C#, on the builder, never in a
+    /// plist. Only your own code's needs; what the .NET runtime needs under the hardened runtime
+    /// the SDK declares by itself.
+    /// </summary>
+    public PhotonEntitlementsBuilder Entitlements { get; } = new();
+
     public PhotonApplication Build()
     {
         // LAST, so anything the app registered itself already sits in the collection and the

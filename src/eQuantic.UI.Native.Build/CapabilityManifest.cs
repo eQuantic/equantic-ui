@@ -70,7 +70,10 @@ public static class CapabilityManifest
     }
 
     /// <summary>The attribute's own type name, whichever way it was referenced.</summary>
-    private static string? NameOf(MetadataReader metadata, CustomAttribute attribute) =>
+    /// <summary>The attribute's simple name. Shared with EntitlementsManifest: one reader of the
+    /// metadata shape, two callers, so a change to how attributes are found cannot fix one and
+    /// miss the other.</summary>
+    internal static string? NameOf(MetadataReader metadata, CustomAttribute attribute) =>
         attribute.Constructor.Kind switch
         {
             HandleKind.MemberReference => metadata.GetString(
