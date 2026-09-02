@@ -196,6 +196,6 @@ public class UiFactoryConformanceTests
         Row().Children.Should().BeEmpty();
         Grid([GridTrack.Flex(), GridTrack.Flex()], Space.S2, children: [Text("x")])
             .Children.Should().HaveCount(1);
-        Stack(Alignment.Center, [Text("y")]).Children.Should().HaveCount(1);
+        Stack(Alignment.Center, children: [Text("y")]).Children.Should().HaveCount(1);
     }
 }

@@ -151,7 +151,10 @@ public class FactoryAuthoringTests
             """);
 
         Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
-        Assert.Contains("UI.column(12, 'start', 'stretch', false, null, null, [UI.text('x', 'bodyM')])",
+        // width/height are two more knobs between gap and the trailing children — each omitted one is
+        // filled with its own default (`default(SizeValue)` has no JS literal: undefined, which the
+        // twin's constructor reads as "unset"), never by shifting the array left.
+        Assert.Contains("UI.column(12, 'start', 'stretch', false, null, null, undefined, undefined, [UI.text('x', 'bodyM')])",
             result.TypeScript);
     }
 

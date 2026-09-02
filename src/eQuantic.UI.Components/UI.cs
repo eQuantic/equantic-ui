@@ -16,6 +16,7 @@ namespace eQuantic.UI.Components;
 /// same defaults — named arguments carry over unchanged); an optional TAIL of parameters may
 /// follow, each matching an <c>init</c> property by name and type (the factory applies them via
 /// an initializer — how a declarative screen reaches semantics like <c>Label</c>/<c>Selected</c>
+/// and layout like <c>Width</c>/<c>Height</c> on a container
 /// that constructors deliberately do not carry); and container nodes append a final trailing
 /// <c>children</c> parameter that accepts a collection expression. Rarer <c>init</c> properties
 /// keep the constructor + initializer form; the factories are sugar, never a second API.
@@ -33,9 +34,10 @@ public static class UI
     /// <summary>Vertical flex without <c>new</c> — <c>Column(gap: Space.S3, children: [ … ])</c>.</summary>
     public static Column Column(float gap = 0, MainAlign main = MainAlign.Start,
         CrossAlign cross = CrossAlign.Stretch, bool wrap = false, float? runGap = null,
-        EdgeInsets? padding = null, VisualNode[]? children = null)
+        EdgeInsets? padding = null, SizeValue width = default, SizeValue height = default,
+        VisualNode[]? children = null)
     {
-        var node = new Column(gap, main, cross, wrap, runGap, padding);
+        var node = new Column(gap, main, cross, wrap, runGap, padding) { Width = width, Height = height };
         if (children != null)
             foreach (var child in children)
                 node.Add(child);
@@ -58,9 +60,10 @@ public static class UI
 
     public static Row Row(float gap = 0, MainAlign main = MainAlign.Start,
         CrossAlign cross = CrossAlign.Center, bool wrap = false, float? runGap = null,
-        EdgeInsets? padding = null, VisualNode[]? children = null)
+        EdgeInsets? padding = null, SizeValue width = default, SizeValue height = default,
+        VisualNode[]? children = null)
     {
-        var node = new Row(gap, main, cross, wrap, runGap, padding);
+        var node = new Row(gap, main, cross, wrap, runGap, padding) { Width = width, Height = height };
         if (children != null)
             foreach (var child in children)
                 node.Add(child);
@@ -69,9 +72,9 @@ public static class UI
 
     /// <summary>True 2D layout (spec S4) — tracks first, then the auto-flowing children.</summary>
     public static Grid Grid(IReadOnlyList<GridTrack> columns, float gap = 0, float? rowGap = null,
-        VisualNode[]? children = null)
+        SizeValue width = default, SizeValue height = default, VisualNode[]? children = null)
     {
-        var node = new Grid(columns, gap, rowGap);
+        var node = new Grid(columns, gap, rowGap) { Width = width, Height = height };
         if (children != null)
             foreach (var child in children)
                 node.Add(child);
@@ -79,9 +82,10 @@ public static class UI
     }
 
     /// <summary>Z-axis composition (spec A3) — paint order is child order, last on top.</summary>
-    public static Stack Stack(Alignment align = Alignment.TopStart, VisualNode[]? children = null)
+    public static Stack Stack(Alignment align = Alignment.TopStart, SizeValue width = default,
+        SizeValue height = default, VisualNode[]? children = null)
     {
-        var node = new Stack(align);
+        var node = new Stack(align) { Width = width, Height = height };
         if (children != null)
             foreach (var child in children)
                 node.Add(child);
@@ -118,14 +122,17 @@ public static class UI
     /// <summary>Press surface with the §08 hit contract; the child owns all visuals. The optional
     /// tail is the SEMANTIC surface a standalone button needs — the accessible name, the
     /// toggle/pick state (aria-pressed/checked), the disabled bit, the pressed-state fill and the
-    /// disclosure state (aria-expanded). Without it a declarative screen could not name an
-    /// icon-only button or mark a nav item selected at all (the OS Cleaner F1 report). Composite
-    /// and modal machinery — <see cref="Primitives.Pressable.Role"/>,
-    /// <see cref="Primitives.Pressable.Mixed"/>, <see cref="Primitives.Pressable.InitialFocus"/> —
-    /// stays initializer-only: those belong to the components that own the pattern.</summary>
+    /// disclosure state (aria-expanded), and the composite ROLE (tab, radio, switch — a custom
+    /// navigation's items are radios to assistive tech, and a declarative screen could not say so).
+    /// Without it a declarative screen could not name an icon-only button or mark a nav item
+    /// selected at all (the OS Cleaner F1 report; the role joined after its full migration).
+    /// Modal machinery — <see cref="Primitives.Pressable.Mixed"/>,
+    /// <see cref="Primitives.Pressable.InitialFocus"/> — stays initializer-only: it belongs to the
+    /// components that own the pattern.</summary>
     public static Pressable Pressable(VisualNode child, Action? onPressed = null,
         string? label = null, bool? selected = null, bool disabled = false,
-        ColorToken? pressedBackground = null, bool? expanded = null) =>
+        ColorToken? pressedBackground = null, bool? expanded = null,
+        PressableRole role = PressableRole.Button) =>
         new Pressable(child, onPressed)
         {
             Label = label,
@@ -133,6 +140,7 @@ public static class UI
             Disabled = disabled,
             PressedBackground = pressedBackground,
             Expanded = expanded,
+            Role = role,
         };
 
     /// <summary>Navigation semantics: the child becomes a link to <paramref name="destination"/>.
@@ -210,8 +218,9 @@ public static class UI
         new Positioned(child, top, end, bottom, start);
 
     /// <summary>A scrolling viewport over bounded content (spec A6).</summary>
-    public static ScrollView ScrollView(VisualNode child, ScrollAxis axis = ScrollAxis.Vertical) =>
-        new ScrollView(child, axis);
+    public static ScrollView ScrollView(VisualNode child, ScrollAxis axis = ScrollAxis.Vertical,
+        SizeValue width = default, SizeValue height = default) =>
+        new ScrollView(child, axis) { Width = width, Height = height };
 
     /// <summary>Keeps the child clear of system-owned display regions (notch, home indicator).</summary>
     public static SafeArea SafeArea(VisualNode child, SafeEdges edges = SafeEdges.All) =>
@@ -416,8 +425,9 @@ public static class UI
         new ListItem(title, subtitle, onPressed);
 
     /// <summary>A list built ON DEMAND from an index, for a collection too long to materialize.</summary>
-    public static ListView ListView(int count, float itemExtent, Func<int, VisualNode> itemBuilder) =>
-        new ListView(count, itemExtent, itemBuilder);
+    public static ListView ListView(int count, float itemExtent, Func<int, VisualNode> itemBuilder,
+        SizeValue width = default, SizeValue height = default) =>
+        new ListView(count, itemExtent, itemBuilder) { Width = width, Height = height };
 
     /// <summary>A list beside a detail on a wide window, one pane at a time on a phone (spec B4).
     /// The titles, the wide placeholder and the threshold are init slots.</summary>
