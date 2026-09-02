@@ -19,6 +19,11 @@ public sealed class TransitionStore
         public float From;
         public float To;
         public float StartMs;
+        // The spec the track was retargeted under — duration and curve are the AUTHOR's, per node,
+        // not one constant for every animation on the target.
+        public float DurationMs;
+        public float DelayMs;
+        public Curve Easing;
     }
 
     private readonly Dictionary<string, Transition> _tracks = new();
@@ -34,9 +39,22 @@ public sealed class TransitionStore
     /// snaps and clears tracking; otherwise a changed target starts a Base-duration interpolation
     /// from the currently shown value.
     /// </summary>
-    public float Resolve(string path, float target, float timeMs, bool animate, bool reducedMotion)
+    /// <summary>The flex-weight form (spec B14): glides over the base motion on the standard curve.</summary>
+    public float Resolve(string path, float target, float timeMs, bool animate, bool reducedMotion) =>
+        Resolve(path, target, timeMs, animate ? Default : null, reducedMotion);
+
+    private static readonly TransitionSpec Default = new(StyleChannels.Size);
+
+    /// <summary>
+    /// The value to LAY OUT or PAINT for <paramref name="path"/> this frame. A null
+    /// <paramref name="spec"/> snaps and forgets the track; a spec animates changes under ITS
+    /// duration, delay and curve — so the box that said <c>Transition = TransitionSpec.Of(Colors,
+    /// Motion.Press)</c> moves in 100 ms on the standard curve, and the one beside it that said
+    /// nothing snaps, exactly as the same two boxes do in a browser.
+    /// </summary>
+    public float Resolve(string path, float target, float timeMs, TransitionSpec? spec, bool reducedMotion)
     {
-        if (!animate || reducedMotion)
+        if (spec is not { } motion || reducedMotion || motion.DurationMs <= 0)
         {
             _tracks.Remove(path);
             return target;
@@ -45,17 +63,25 @@ public sealed class TransitionStore
         if (!_tracks.TryGetValue(path, out var track))
         {
             // First sighting: mount AT the target — transitions animate changes, not appearances.
-            _tracks[path] = new Transition { From = target, To = target, StartMs = timeMs };
+            _tracks[path] = new Transition
+            {
+                From = target, To = target, StartMs = timeMs,
+                DurationMs = motion.DurationMs, DelayMs = motion.DelayMs, Easing = motion.Easing,
+            };
             return target;
         }
 
         var current = ValueAt(track, timeMs);
         if (track.To != target)
         {
-            // Retarget: continue from wherever the interpolation currently is.
+            // Retarget: continue from wherever the interpolation currently is, under the spec in
+            // force NOW — an author who changed the duration between renders meant the new one.
             track.From = current;
             track.To = target;
             track.StartMs = timeMs;
+            track.DurationMs = motion.DurationMs;
+            track.DelayMs = motion.DelayMs;
+            track.Easing = motion.Easing;
             current = ValueAt(track, timeMs);
         }
 
@@ -66,8 +92,10 @@ public sealed class TransitionStore
     private static float ValueAt(Transition track, float timeMs)
     {
         if (track.From == track.To) return track.To;
-        var t = Math.Clamp((timeMs - track.StartMs) / Motion.BaseMs, 0f, 1f);
-        var eased = t * t * (3f - 2f * t); // smoothstep — the standard-curve stand-in (motion fence)
-        return track.From + (track.To - track.From) * eased;
+        // The delay holds the FROM value; the curve is the author's, evaluated for real — the
+        // smoothstep that stood in here made every Photon animation move on one curve while the
+        // web moved on the one the token named.
+        var t = Math.Clamp((timeMs - track.StartMs - track.DelayMs) / track.DurationMs, 0f, 1f);
+        return track.From + (track.To - track.From) * track.Easing.Ease(t);
     }
 }
