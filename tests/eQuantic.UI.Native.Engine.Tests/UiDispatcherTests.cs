@@ -158,3 +158,33 @@ public class PhotonDispatcherLifetimeTests
         ran.Should().Equal(0, 1, 2, 3, 4, 99);
     }
 }
+
+public class PhotonDispatcherFaultTests
+{
+    private sealed class Screen : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) => new Text("x", TypeRole.BodyM);
+    }
+
+    [Fact]
+    public void AFaultingItem_SurfacesItsFault_AndDoesNotStarveTheNextFrame()
+    {
+        var host = new PhotonHost(new Screen(), PhotonTheme.Instance, ThemeMode.Light, 100, 100);
+        host.RenderFrame(new DisplayListBuilder());
+        var ran = new List<string>();
+
+        PhotonDispatcher.Shared.Post(() => throw new InvalidOperationException("boom"));
+        PhotonDispatcher.Shared.Post(() => ran.Add("after the fault"));
+
+        var act = () => host.RenderFrame(new DisplayListBuilder(), 16);
+        act.Should().Throw<InvalidOperationException>().WithMessage("boom");
+
+        // The item behind the fault was not lost and nothing is wedged: the next frame runs it.
+        host.RenderFrame(new DisplayListBuilder(), 32);
+        ran.Should().Equal("after the fault");
+
+        PhotonDispatcher.Shared.Post(() => ran.Add("later"));
+        host.RenderFrame(new DisplayListBuilder(), 48);
+        ran.Should().Equal("after the fault", "later");
+    }
+}

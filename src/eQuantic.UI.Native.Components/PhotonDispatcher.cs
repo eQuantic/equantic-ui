@@ -25,7 +25,8 @@ public sealed class PhotonDispatcher : IUiDispatcher
     /// <see cref="UiDispatcher.Current"/> and to the container as the same instance.</summary>
     public static readonly PhotonDispatcher Shared = new();
 
-    private readonly ConcurrentQueue<Action> _queue = new();
+    // Not readonly: Drain SWAPS it for an empty one, so posts during a frame land in the next.
+    private ConcurrentQueue<Action> _queue = new();
     private int _uiThreadId;
 
     // Hosts to wake when work arrives — a queue nobody wakes is a queue that runs whenever
@@ -80,21 +81,30 @@ public sealed class PhotonDispatcher : IUiDispatcher
     /// </summary>
     public void Drain()
     {
-        // A SENTINEL marks where this frame's work ends, rather than a count: ConcurrentQueue.Count
-        // walks the queue's segments, so capping by it paid a per-frame cost proportional to how
-        // much had been posted — on the one thread that must not be doing arithmetic about itself.
-        // The marker goes in first and stops the loop when it comes back out, so work posted BY
-        // work still belongs to the next frame.
         if (_queue.IsEmpty) return;
-        _queue.Enqueue(EndOfFrame);
-        while (_queue.TryDequeue(out var work))
+
+        // SWAP, not sentinel: this frame's work is whatever was queued when it started, and taking
+        // the whole queue out and putting an empty one in says exactly that — a post made by the
+        // work itself goes into the new queue and runs next frame. It also costs nothing per item
+        // (ConcurrentQueue.Count walks the segments), and it has no marker to get wedged behind.
+        var frame = Interlocked.Exchange(ref _queue, new ConcurrentQueue<Action>());
+        try
         {
-            if (ReferenceEquals(work, EndOfFrame)) return;
-            work();
+            while (frame.TryDequeue(out var work)) work();
+        }
+        catch
+        {
+            // A faulting item must not take the rest of the frame's work with it, and must not
+            // leave anything stranded in a queue nobody reads again: what it had not reached goes
+            // back to the FRONT of the live queue, ahead of anything posted meanwhile, so order
+            // among the survivors is kept. Then the fault surfaces where it always did.
+            if (!frame.IsEmpty)
+            {
+                var live = Interlocked.Exchange(ref _queue, new ConcurrentQueue<Action>());
+                while (frame.TryDequeue(out var remaining)) _queue.Enqueue(remaining);
+                while (live.TryDequeue(out var posted)) _queue.Enqueue(posted);
+            }
+            throw;
         }
     }
-
-    /// <summary>Not work: the marker <see cref="Drain"/> enqueues to find its own end. Identity is
-    /// the whole point, so it is one instance, compared by reference and never invoked.</summary>
-    private static readonly Action EndOfFrame = () => { };
 }
