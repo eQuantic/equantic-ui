@@ -1,3 +1,4 @@
+using System.Threading;
 using eQuantic.UI.Native.Engine;
 using eQuantic.UI.Native.Framework;
 using eQuantic.UI.Primitives;
@@ -65,7 +66,21 @@ public sealed class PhotonHost
 
     /// <summary>True when state changed since the last <see cref="RenderFrame"/> (starts true), or
     /// when the last frame carried running loop motion — animated frames keep the loop hot.</summary>
-    public bool NeedsRender { get; private set; } = true;
+    /// <summary>
+    /// VOLATILE, because <see cref="Invalidate"/> is now called from any thread — the dispatcher
+    /// wakes an idle window when work is posted from a worker. A plain bool write is atomic but
+    /// carries no barrier, so the render loop could keep reading a cached false and the frame the
+    /// posted work is waiting for would arrive whenever something else happened to need one. That
+    /// is not a crash; it is a scanner's results appearing on the next mouse move, which is the
+    /// symptom this whole path exists to remove.
+    /// </summary>
+    public bool NeedsRender
+    {
+        get => Volatile.Read(ref _needsRender);
+        private set => Volatile.Write(ref _needsRender, value);
+    }
+
+    private bool _needsRender = true;
 
     /// <summary>When the next frame is due even though nothing is dirty — the caret's next blink
     /// transition, in the same clock <see cref="RenderFrame"/> is fed. Null = nothing scheduled.</summary>
