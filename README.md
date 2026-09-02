@@ -44,7 +44,7 @@
 | Challenge | Blazor WASM | JavaScript frameworks | **eQuantic.UI** |
 |-----------|-------------|----------------------|-----------------|
 | **Language** | C# | JavaScript/TypeScript | **C#, end to end** |
-| **Web payload** | ~2 MB+ runtime | varies | **~85 KB** gzipped runtime, per-page code splitting |
+| **Web payload** | ~2 MB+ runtime | varies | a **small gzipped runtime** (the site measures it at build time and shows the number on its landing), per-page code splitting |
 | **Native apps** | separate MAUI codebase | separate React Native/Electron | **the same components**, GPU-rendered |
 | **Styling** | CSS/Razor | CSS-in-JS / utility classes | **typed C# — no CSS authored**, atomic classes generated |
 | **Server calls** | SignalR setup | REST/GraphQL setup | **built-in RPC** (`[ServerAction]`) |
@@ -240,7 +240,7 @@ Each package owns its artifacts and the SDK wires them together through NuGet-ge
 
 ## Supported C# Features
 
-Fidelity is enforced by a **conformance harness** (500+ cases) that runs each C# construct as both
+Fidelity is enforced by a **conformance harness** (over a thousand cases, counted by the suite rather than here) that runs each C# construct as both
 transpiled JS and real .NET and asserts identical results. Every construct resolves to one of three
 mechanisms: a native JS strategy, a faithful `$eq.*` compat helper, or a build error when it's
 genuinely impossible.
