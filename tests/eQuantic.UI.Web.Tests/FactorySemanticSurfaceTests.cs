@@ -111,7 +111,9 @@ public class FactoryLayoutTailTests
         Row(width: SizeValue.Fill).Width.Should().Be(SizeValue.Fill);
         Column(height: SizeValue.Fill).Height.Should().Be(SizeValue.Fill);
         Grid([GridTrack.Flex()], width: SizeValue.Fill).Width.Should().Be(SizeValue.Fill);
-        Stack(width: SizeValue.Fixed(320), height: SizeValue.Fixed(200)).Height.Should().Be(SizeValue.Fixed(200));
+        var stack = Stack(width: SizeValue.Fixed(320), height: SizeValue.Fixed(200));
+        stack.Width.Should().Be(SizeValue.Fixed(320));
+        stack.Height.Should().Be(SizeValue.Fixed(200));
         ScrollView(Text("x"), height: SizeValue.Fill).Height.Should().Be(SizeValue.Fill);
         ListView(3, 44, i => Text($"{i}"), width: SizeValue.Fill).Width.Should().Be(SizeValue.Fill);
     }

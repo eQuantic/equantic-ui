@@ -137,10 +137,25 @@ public sealed class InspectTests : IDisposable
     [Fact]
     public void AnInitOnlyMember_OnAFactoryCall_IsReportedUnreachableWithTheReason()
     {
-        var width = Inspect("Row(gap:").Properties.Single(p => p.Name == "Width");
+        // AlignSelf is init-only on VisualNode and no factory carries it — the shape Width had until
+        // the layout tail (width/height on the containers) turned Width into a parameter; see below.
+        var alignSelf = Inspect("Row(gap:").Properties.Single(p => p.Name == "AlignSelf");
 
-        width.Editable.Should().BeFalse();
-        width.Reason.Should().Contain("object initializer");
+        alignSelf.Editable.Should().BeFalse();
+        alignSelf.Reason.Should().Contain("object initializer");
+    }
+
+    /// <summary>The inspector reads the FACTORY's parameters, not a list: when Row gained `width` and
+    /// `height`, both showed up here as editable arguments — and the init-only property they cover
+    /// left the unreachable list — without anyone telling the inspector.</summary>
+    [Fact]
+    public void AMemberTheFactoryCarries_IsAnEditableArgument_EvenThoughThePropertyIsInitOnly()
+    {
+        var properties = Inspect("Row(gap:").Properties;
+
+        properties.Single(p => p.Name == "width").Editable.Should().BeTrue();
+        properties.Single(p => p.Name == "height").Editable.Should().BeTrue();
+        properties.Should().NotContain(p => p.Name == "Width", "covered by the parameter, so not listed twice");
     }
 
     /// <summary>Inherited members count: a Row's Width lives on FlexNode and its Key on VisualNode,
