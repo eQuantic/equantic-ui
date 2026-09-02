@@ -37,6 +37,14 @@ public interface ICanvasPainter
     /// A filled ring segment — the shape a sunburst, a donut gauge or a ring selection is made of.
     /// Angles are in RADIANS, measured clockwise from three o'clock, the convention the engine's own
     /// sector uses. <paramref name="cornerSmoothing"/> rounds the four corners of the segment.
+    /// <para>
+    /// DEGENERATE INPUT DRAWS NOTHING, and the rules are the engine's own so both targets agree: a
+    /// non-positive outer radius, an end angle at or before the start (sectors sweep clockwise, and
+    /// a reversed one is a mistake rather than a counter-clockwise wish), or an inner radius that
+    /// reaches the outer. What is merely out of range is CLAMPED instead: a sweep past a full turn
+    /// stops at one, and smoothing beyond half the band's width stops there — past it the inset
+    /// shape inverts.
+    /// </para>
     /// </summary>
     void FillAnnularSector(float centerX, float centerY, float innerRadius, float outerRadius,
         float startAngle, float endAngle, ColorToken color, float cornerSmoothing = 0);

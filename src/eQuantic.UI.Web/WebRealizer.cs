@@ -741,8 +741,6 @@ public static class WebRealizer
         return svg;
     }
 
-    /// <summary>A vector shape lowers exactly like an icon — the differences are that its size is
-    /// the author's rather than the §07 whitelist's, and that its box need not be square.</summary>
     /// <summary>
     /// W3 lowering: the app's own drawing as one inline <c>&lt;svg&gt;</c> whose children are the
     /// shapes it painted, in call order.
@@ -762,8 +760,16 @@ public static class WebRealizer
     {
         var width = canvas.Width.Kind == SizeKind.Fixed ? canvas.Width.Value : 0;
         var height = canvas.Height.Kind == SizeKind.Fixed ? canvas.Height.Value : 0;
+        var measured = width > 0 && height > 0;
+
+        // A FIXED canvas knows its box here, so SSR carries the finished picture. A FILLING one
+        // does not — CSS decides its box after this markup exists — so the server emits the shell
+        // and the runtime draws it once the element has been measured (canvas-surface.ts), then
+        // again on every resize. Photon needs none of this: it lays out and paints every frame, so
+        // the painter there always answers with the real box. Drawing here at zero instead would
+        // put every `Width / 2` in the top-left corner and leave it there.
         var painter = new SvgCanvasPainter(width, height);
-        canvas.Draw(painter);
+        if (measured) canvas.Draw(painter);
 
         var svg = new RealizedElement("svg")
         {
@@ -779,7 +785,7 @@ public static class WebRealizer
         };
         // A viewBox only when the box is known: with a filling canvas the app draws in the SAME
         // coordinates the browser lays out, so no scaling should happen at all.
-        if (width > 0 && height > 0)
+        if (measured)
             svg.RawAttributes["viewBox"] = $"0 0 {TokenCss.Number(width)} {TokenCss.Number(height)}";
 
         if (canvas.Label is { Length: > 0 } label)
@@ -789,16 +795,38 @@ public static class WebRealizer
         }
         else svg.RawAttributes["aria-hidden"] = "true";
 
-        if (canvas.OnPointerDown is not null || canvas.OnPointerMove is not null
-            || canvas.OnPointerUp is not null || canvas.OnPointerLeave is not null)
+        var interactive = canvas.OnPointerDown is not null || canvas.OnPointerMove is not null
+            || canvas.OnPointerUp is not null || canvas.OnPointerLeave is not null;
+        if (!measured)
         {
+            // The marker the runtime's surface controller finds after the DOM is written — the
+            // twin of the TS lowering's own, so SSR and hydration mark the same elements.
+            svg.DataAttributes ??= new Dictionary<string, string>();
+            svg.DataAttributes["eq-canvas-fill"] = "1";
+        }
+
+        if (interactive)
+        {
+            // DataAttributes is nullable and starts null — indexing it would have thrown on the
+            // first interactive canvas anyone wrote.
+            svg.DataAttributes ??= new Dictionary<string, string>();
             svg.DataAttributes["eq-canvas"] = "1";
+        }
+        else
+        {
+            // A DECORATIVE canvas must not swallow the press that belongs to what is under it —
+            // Photon's hit-testing skips a canvas with no handlers (it registers no region at all),
+            // and the DOM has no such rule: a filling svg over a Stack would eat every click. This
+            // is the line that makes the two targets behave the same.
+            svg.Style.PointerEvents = "none";
         }
 
         foreach (var shape in painter.Shapes) svg.Children.Add(shape);
         return svg;
     }
 
+    /// <summary>A vector shape lowers exactly like an icon — the differences are that its size is
+    /// the author's rather than the §07 whitelist's, and that its box need not be square.</summary>
     private static HtmlElement LowerVector(Vector vector) =>
         LowerGlyph(vector.Glyph, vector.Size, vector.Height, vector.Color, vector.Label);
 

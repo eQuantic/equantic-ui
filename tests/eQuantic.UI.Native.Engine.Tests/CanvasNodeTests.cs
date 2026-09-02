@@ -173,3 +173,45 @@ public class CanvasNodeTests
         pressed.Should().BeTrue("a decorative canvas is not in the way");
     }
 }
+
+/// <summary>
+/// The same degenerate inputs the web pins, asserted on the ENGINE — so the two targets are pinned
+/// against one rule rather than against each other's implementations.
+/// </summary>
+public class CanvasDegenerateSectorTests
+{
+    private static readonly ColorToken Ink = new(new Color(10, 20, 30, 255));
+
+    private static int Sectors(Action<ICanvasPainter> draw)
+    {
+        var host = new PhotonHost(new Primitives.Canvas(draw), PhotonTheme.Instance, ThemeMode.Light, 200, 200);
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder, 0);
+        return builder.Build().Commands.ToArray().Count(c => c.Kind == DrawCommandKind.FillAnnularSector);
+    }
+
+    [Theory]
+    [InlineData(0f, 0f, 0f, 1f)]
+    [InlineData(5f, 20f, 1f, 1f)]
+    [InlineData(5f, 20f, 1f, 0.5f)]
+    [InlineData(20f, 20f, 0f, 1f)]
+    [InlineData(30f, 20f, 0f, 1f)]
+    public void DegenerateSectorsDrawNothing(float inner, float outer, float start, float end)
+    {
+        Sectors(p => p.FillAnnularSector(50, 50, inner, outer, start, end, Ink)).Should().Be(0);
+    }
+
+    [Fact]
+    public void AZeroInnerRadiusIsAPieSlice_AndDraws()
+    {
+        Sectors(p => p.FillAnnularSector(50, 50, 0, 20, 0, 1, Ink)).Should().Be(1);
+    }
+
+    [Fact]
+    public void AFullRingIsOneCommand_WhereTheWebNeedsTwo()
+    {
+        // The one place the targets differ in SPELLING: SVG has no ring primitive and an arc whose
+        // ends coincide draws nothing, so the web splits. The engine has no such trouble.
+        Sectors(p => p.FillAnnularSector(50, 50, 10, 20, 0, MathF.Tau, Ink)).Should().Be(1);
+    }
+}

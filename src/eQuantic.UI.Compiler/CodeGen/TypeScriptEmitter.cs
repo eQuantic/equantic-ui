@@ -1859,6 +1859,21 @@ public class TypeScriptEmitter
             ? lifted.TypeArguments[0]
             : resolvedRaw;
 
+        // A generic's TYPE ARGUMENTS are symbols here even when the string mapper already rewrote
+        // the shape around them (`Action<IPainter>` → `(iPainter: IPainter) => void`). An interface
+        // among them must answer the same `any` a bare interface parameter does, or the module
+        // names something the runtime can export no value for — an interface has none. Asked of
+        // the symbol, so there is no state to keep, evict, or share between compilations.
+        if (!echoed && resolved is INamedTypeSymbol { TypeArguments.Length: > 0 } generic)
+        {
+            foreach (var argument in generic.TypeArguments)
+            {
+                if (argument.TypeKind != TypeKind.Interface) continue;
+                mapped = System.Text.RegularExpressions.Regex.Replace(
+                    mapped, $@"\b{System.Text.RegularExpressions.Regex.Escape(argument.Name)}\b", "any");
+            }
+        }
+
         var core = (echoed ? resolved : null) switch
         {
             // An enum crosses as its member STRING — unless it is [Flags], whose members COMBINE
@@ -2308,13 +2323,6 @@ public class TypeScriptEmitter
         {
             var itemType = tsType.Substring(7, tsType.Length - 8);
             tsType = $"({itemType.ToCamelCase()}: {CSharpTypeToTypeScript(itemType)}) => void";
-        }
-        else if (Services.RuntimeProvidedTypeScanner.IsKnownInterface(tsType))
-        {
-            // An INTERFACE, which the symbol-based mapper below already answers this way: it exists
-            // only in the C# type system and the runtime can export no value for it, so a module
-            // that named it would import something that is not there.
-            tsType = "any";
         }
         else if (tsType == "Action")
         {

@@ -80,11 +80,21 @@ internal sealed class SvgCanvasPainter(float width, float height) : ICanvasPaint
     {
         // The one shape SVG has no primitive for. Two arcs and two radial lines, which is what the
         // engine's SDF describes analytically — same result, different spelling.
-        if (outerRadius <= 0 || endAngle == startAngle) return;
+        //
+        // The guards and clamps are COPIED FROM THE ENGINE, deliberately and verbatim in effect
+        // (DisplayList.FillAnnularSector): a target that quietly drew a reversed sector, or inked a
+        // hairline where the band has no width, would be a write-once promise broken in the one
+        // place nobody looks — degenerate input.
+        if (outerRadius <= 0 || endAngle <= startAngle || innerRadius >= outerRadius) return;
+        innerRadius = Math.Clamp(innerRadius, 0, outerRadius);
+        endAngle = MathF.Min(endAngle, startAngle + MathF.Tau);
+        cornerSmoothing = Math.Clamp(cornerSmoothing, 0, (outerRadius - innerRadius) / 2);
 
         var sweep = endAngle - startAngle;
-        // A full ring cannot be one arc (start and end coincide): SVG needs two halves.
-        if (MathF.Abs(sweep) >= MathF.Tau - 1e-4f)
+        // A full ring cannot be one arc (start and end coincide): SVG needs two halves. The
+        // smoothing is NOT forwarded to them — a full ring has no corners on Photon, so rounding
+        // the halves would draw a seam that exists on one target only.
+        if (sweep >= MathF.Tau - 1e-4f)
         {
             FillAnnularSector(centerX, centerY, innerRadius, outerRadius, startAngle, startAngle + MathF.PI, color);
             FillAnnularSector(centerX, centerY, innerRadius, outerRadius, startAngle + MathF.PI, startAngle + MathF.Tau, color);

@@ -21,6 +21,7 @@ import { installHoverRevealSuppression } from '../dom/hover-reveal';
 import { attachCameraStreams } from './devices/camera';
 import { commitScrollViewports } from './scroll-viewports';
 import { scheduleInViewCommit } from './in-view';
+import { scheduleCanvasCommit } from './canvas-surface';
 
 /** The duck-typed surface of a transpiled shared-stateful instance (marker set by the base class). */
 interface SharedStatefulLike {
@@ -156,6 +157,7 @@ export function exitPass(): void {
   // pass produced a tree; the render manager writes it once the pass has returned. So the commit
   // waits for the microtask after the write (see scheduleInViewCommit).
   scheduleInViewCommit();
+  scheduleCanvasCommit();
   activePass = null;
 }
 

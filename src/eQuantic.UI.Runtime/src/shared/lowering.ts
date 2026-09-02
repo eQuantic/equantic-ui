@@ -14,6 +14,11 @@
 import { round as dotnetRound } from '../utils/dotnet-math';
 import type { EventHandler, HtmlNode } from '../core/types';
 import { CanvasPointer } from './canvas-pointer';
+// Leaf helpers — see css-values for why they are not defined here.
+import { hex, num, tokenValue } from './css-values';
+export { num, tokenValue };
+import { DomCanvasPainter } from './canvas-painter';
+import { declareCanvas } from './canvas-surface';
 import { installDraggableController } from '../dom/draggable';
 import { installDragDismissController } from '../dom/drag-dismiss';
 import {
@@ -44,7 +49,6 @@ import type {
   ColorValue,
   ComponentNode,
   CanvasNodeValue,
-  ICanvasPainter,
   DrawingNode,
   VectorGradientValue,
   VectorPaintValue,
@@ -146,11 +150,6 @@ export function lowerVisualNode(node: VisualNodeValue, context: LoweringContext)
 
 // ---- token → CSS value formatting (mirrors C# TokenCss) ------------------------------------------
 
-function hex(color: ColorValue): string {
-  const channel = (v: number) => v.toString(16).padStart(2, '0');
-  const base = `#${channel(color.r)}${channel(color.g)}${channel(color.b)}`;
-  return color.a === 255 ? base : base + channel(color.a);
-}
 
 /** The same token at a fraction of its alpha — the C# `Color.WithOpacity` twin. */
 function withAlpha(token: ColorTokenValue, alpha: number): ColorTokenValue {
@@ -161,11 +160,6 @@ function withAlpha(token: ColorTokenValue, alpha: number): ColorTokenValue {
   return { light: fade(token.light), dark: fade(token.dark) };
 }
 
-export function tokenValue(token: ColorTokenValue): string {
-  const light = hex(token.light);
-  const dark = hex(token.dark);
-  return light === dark ? light : `light-dark(${light}, ${dark})`;
-}
 
 /**
  * The C# `BorderSides` flags, by value: Top 1, End 2, Bottom 4, Start 8, All 15. They cross as
@@ -195,10 +189,6 @@ export function px(dp: number): string {
   return `${parseFloat(dp.toFixed(2))}px`;
 }
 
-/** Bare invariant number — mirrors C# TokenCss.Number ("0.####"). */
-function num(value: number): string {
-  return `${parseFloat(value.toFixed(4))}`;
-}
 
 /** Mirrors C# TokenCss.Transform: translate → rotate → scale, only non-neutral parts. */
 function transformValue(t: TransformValue): string | undefined {
@@ -1632,113 +1622,28 @@ function gradientElement(id: string, paint: VectorPaintValue): HtmlNode {
   };
 }
 
-/**
- * The DOM half of the canvas painter: every call becomes one SVG child, in call order, which is
- * paint order — exactly as the display list treats it on Photon.
- *
- * Colours stay `light-dark(...)` rather than being resolved: this target has a cascade to defer to,
- * so a canvas follows the theme the way every other colour here does.
- */
-class DomCanvasPainter implements ICanvasPainter {
-  readonly shapes: HtmlNode[] = [];
-
-  constructor(
-    readonly width: number,
-    readonly height: number,
-  ) {}
-
-  private shape(tag: string, attributes: Record<string, string | undefined>): void {
-    this.shapes.push({ tag, attributes, events: {}, children: [] });
-  }
-
-  fillRect(x: number, y: number, width: number, height: number, color: ColorTokenValue, cornerRadius = 0): void {
-    this.shape('rect', {
-      x: num(x), y: num(y), width: num(width), height: num(height),
-      fill: tokenValue(color),
-      rx: cornerRadius > 0 ? num(cornerRadius) : undefined,
-    });
-  }
-
-  strokeRect(x: number, y: number, width: number, height: number, color: ColorTokenValue,
-    strokeWidth: number, cornerRadius = 0): void {
-    // Inset by half the stroke: SVG centres a stroke on its path, and every border in this
-    // framework is drawn INSIDE its bounds (the C# painter says the same, for the same reason).
-    const inset = strokeWidth / 2;
-    this.shape('rect', {
-      x: num(x + inset), y: num(y + inset),
-      width: num(Math.max(0, width - strokeWidth)),
-      height: num(Math.max(0, height - strokeWidth)),
-      fill: 'none', stroke: tokenValue(color), 'stroke-width': num(strokeWidth),
-      rx: cornerRadius > 0 ? num(Math.max(0, cornerRadius - inset)) : undefined,
-    });
-  }
-
-  fillCircle(centerX: number, centerY: number, radius: number, color: ColorTokenValue): void {
-    this.shape('circle', {
-      cx: num(centerX), cy: num(centerY), r: num(radius), fill: tokenValue(color),
-    });
-  }
-
-  fillAnnularSector(centerX: number, centerY: number, innerRadius: number, outerRadius: number,
-    startAngle: number, endAngle: number, color: ColorTokenValue, cornerSmoothing = 0): void {
-    if (outerRadius <= 0 || endAngle === startAngle) return;
-    const sweep = endAngle - startAngle;
-    // A full ring cannot be one arc — start and end coincide, and SVG draws nothing.
-    if (Math.abs(sweep) >= Math.PI * 2 - 1e-4) {
-      this.fillAnnularSector(centerX, centerY, innerRadius, outerRadius, startAngle, startAngle + Math.PI, color, cornerSmoothing);
-      this.fillAnnularSector(centerX, centerY, innerRadius, outerRadius, startAngle + Math.PI, startAngle + Math.PI * 2, color, cornerSmoothing);
-      return;
-    }
-
-    const at = (radius: number, angle: number): [number, number] => [
-      centerX + radius * Math.cos(angle),
-      centerY + radius * Math.sin(angle),
-    ];
-    const largeArc = Math.abs(sweep) > Math.PI ? 1 : 0;
-    const clockwise = sweep > 0 ? 1 : 0;
-    const [ox1, oy1] = at(outerRadius, startAngle);
-    const [ox2, oy2] = at(outerRadius, endAngle);
-    const [ix2, iy2] = at(innerRadius, endAngle);
-    const [ix1, iy1] = at(innerRadius, startAngle);
-
-    const d = innerRadius <= 0
-      ? `M ${num(centerX)} ${num(centerY)} L ${num(ox1)} ${num(oy1)} `
-        + `A ${num(outerRadius)} ${num(outerRadius)} 0 ${largeArc} ${clockwise} ${num(ox2)} ${num(oy2)} Z`
-      : `M ${num(ox1)} ${num(oy1)} `
-        + `A ${num(outerRadius)} ${num(outerRadius)} 0 ${largeArc} ${clockwise} ${num(ox2)} ${num(oy2)} `
-        + `L ${num(ix2)} ${num(iy2)} `
-        + `A ${num(innerRadius)} ${num(innerRadius)} 0 ${largeArc} ${1 - clockwise} ${num(ix1)} ${num(iy1)} Z`;
-
-    this.shape('path', {
-      d,
-      fill: tokenValue(color),
-      stroke: cornerSmoothing > 0 ? tokenValue(color) : undefined,
-      'stroke-width': cornerSmoothing > 0 ? num(cornerSmoothing) : undefined,
-      'stroke-linejoin': cornerSmoothing > 0 ? 'round' : undefined,
-    });
-  }
-
-  line(x1: number, y1: number, x2: number, y2: number, color: ColorTokenValue, strokeWidth: number): void {
-    this.shape('line', {
-      x1: num(x1), y1: num(y1), x2: num(x2), y2: num(y2),
-      stroke: tokenValue(color), 'stroke-width': num(strokeWidth),
-    });
-  }
-}
-
 /** W3: the app's own drawing as one inline `<svg>`, with its pointer handlers attached. */
 function lowerCanvas(node: CanvasNodeValue, path: string): HtmlNode {
   const width = node.width?.kind === 'fixed' ? node.width.value : 0;
   const height = node.height?.kind === 'fixed' ? node.height.value : 0;
+  const measured = width > 0 && height > 0;
+
+  // A FIXED canvas knows its box here, so it draws once and SSR carries the final picture. A
+  // FILLING one does not — CSS decides its box after this markup exists — so it is DECLARED and
+  // drawn again the moment the element has been measured (see canvas-surface). Drawing it now at
+  // zero would put every `p.Width / 2` in the top-left corner and leave it there.
   const painter = new DomCanvasPainter(width, height);
-  node.draw(painter);
+  if (measured) node.draw(painter);
+  else declareCanvas(path, { draw: node.draw });
 
   const attributes: Record<string, string | undefined> = {
     style: `display:block;width:${width > 0 ? `${num(width)}px` : '100%'};height:${height > 0 ? `${num(height)}px` : '100%'}`,
   };
   // A viewBox only when the box is known: a filling canvas draws in the same coordinates the
   // browser lays out, so nothing should scale.
-  if (width > 0 && height > 0) attributes['viewBox'] = `0 0 ${num(width)} ${num(height)}`;
+  if (measured) attributes['viewBox'] = `0 0 ${num(width)} ${num(height)}`;
+  // The marker the surface controller finds after the DOM is written.
+  if (!measured) attributes['data-eq-canvas-fill'] = path;
   if (node.label) {
     attributes['role'] = 'img';
     attributes['aria-label'] = node.label;
@@ -1780,7 +1685,15 @@ function lowerCanvas(node: CanvasNodeValue, path: string): HtmlNode {
   if (node.onPointerLeave) {
     events['pointerleave'] = () => node.onPointerLeave?.();
   }
-  if (Object.keys(events).length > 0) attributes['data-eq-canvas'] = '1';
+  if (Object.keys(events).length > 0) {
+    attributes['data-eq-canvas'] = '1';
+  } else {
+    // A DECORATIVE canvas must not swallow the press that belongs to what is under it. Photon's
+    // hit-testing skips a canvas with no handlers (it registers no region at all); the DOM has no
+    // such rule, so a filling svg over a Stack would eat every click. Same behaviour, said in the
+    // two languages — the C# realizer sets the identical style for SSR.
+    attributes['style'] = `${attributes['style'] ?? ''};pointer-events:none`;
+  }
 
   return { tag: 'svg', attributes, events, children: painter.shapes, key: path };
 }

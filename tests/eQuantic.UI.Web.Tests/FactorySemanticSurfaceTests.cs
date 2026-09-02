@@ -278,7 +278,8 @@ public class CanvasWebLoweringTests
         // The web has a cascade to defer to, so a token crosses as light-dark(...) — the same
         // reason every other colour on this target is not resolved by the realizer.
         var twoTone = new ColorToken(new Color(1, 2, 3, 255), new Color(4, 5, 6, 255));
-        var circle = Render(new Canvas(p => p.FillCircle(5, 5, 5, twoTone))).First(n => n.Tag == "circle");
+        var circle = Render(new Canvas(p => p.FillCircle(5, 5, 5, twoTone),
+            SizeValue.Fixed(20), SizeValue.Fixed(20))).First(n => n.Tag == "circle");
 
         circle.Attributes["fill"].Should().StartWith("light-dark(");
     }
@@ -287,8 +288,8 @@ public class CanvasWebLoweringTests
     public void AnAnnularSector_BecomesAnArcPath()
     {
         // The one engine shape SVG has no primitive for: two arcs and two radial lines.
-        var path = Render(new Canvas(p => p.FillAnnularSector(50, 50, 20, 40, 0, MathF.PI / 2, Ink)))
-            .First(n => n.Tag == "path");
+        var path = Render(new Canvas(p => p.FillAnnularSector(50, 50, 20, 40, 0, MathF.PI / 2, Ink),
+            SizeValue.Fixed(100), SizeValue.Fixed(100))).First(n => n.Tag == "path");
 
         path.Attributes["d"].Should().Contain("A 40 40").And.Contain("A 20 20");
     }
@@ -297,8 +298,8 @@ public class CanvasWebLoweringTests
     public void AFullRingIsDrawnAsTwoHalves()
     {
         // An arc whose start and end coincide draws nothing in SVG — a full ring must be split.
-        var paths = Render(new Canvas(p =>
-            p.FillAnnularSector(50, 50, 20, 40, 0, MathF.Tau, Ink))).Where(n => n.Tag == "path").ToList();
+        var paths = Render(new Canvas(p => p.FillAnnularSector(50, 50, 20, 40, 0, MathF.Tau, Ink),
+            SizeValue.Fixed(100), SizeValue.Fixed(100))).Where(n => n.Tag == "path").ToList();
 
         paths.Should().HaveCount(2, "a full ring cannot be one arc");
     }
@@ -313,5 +314,118 @@ public class CanvasWebLoweringTests
             .First(n => n.Tag == "svg");
         labelled.Attributes["role"].Should().Be("img");
         labelled.Attributes["aria-label"].Should().Be("Disk usage by folder");
+    }
+}
+
+/// <summary>
+/// The canvas behaves the same on both targets where it MATTERS, and degenerate input is where a
+/// divergence hides best. Photon's own guards are the reference: these pin the web to them.
+/// </summary>
+public class CanvasCrossTargetTests
+{
+    private static readonly IAppTheme Theme = PhotonTheme.Instance;
+    private static readonly ColorToken Ink = new(new Color(10, 20, 30, 255));
+
+    private static IEnumerable<HtmlNode> Walk(HtmlNode node)
+    {
+        yield return node;
+        foreach (var child in node.Children)
+            foreach (var descendant in Walk(child))
+                yield return descendant;
+    }
+
+    private static IReadOnlyList<HtmlNode> Render(VisualNode node) =>
+        Walk(WebRealizer.Lower(node, Theme).Render()).ToList();
+
+    /// <summary>Shapes a canvas emits AT SSR — which needs a fixed size, because only then is the
+    /// box knowable before the browser lays anything out.</summary>
+    private static int Shapes(Action<ICanvasPainter> draw) =>
+        Render(new Canvas(draw, SizeValue.Fixed(100), SizeValue.Fixed(100)))
+            .Count(n => n.Tag is "path" or "rect" or "circle" or "line");
+
+    [Theory]
+    // Exactly the engine's early returns (DisplayList.FillAnnularSector), which used to draw an
+    // inside-out path here while Photon drew nothing at all.
+    [InlineData(0f, 0f, 0f, 1f)]             // no outer radius (inner 0 with a real outer is a PIE
+                                             // slice and must still draw — the first draft of this
+                                             // row said 10 and caught the test, not the code)
+    [InlineData(5f, 20f, 1f, 1f)]            // end at the start
+    [InlineData(5f, 20f, 1f, 0.5f)]          // end BEFORE the start: a mistake, not a wish
+    [InlineData(20f, 20f, 0f, 1f)]           // zero-width band
+    [InlineData(30f, 20f, 0f, 1f)]           // inner past outer
+    public void DegenerateSectorsDrawNothing_AsOnPhoton(float inner, float outer, float start, float end)
+    {
+        Shapes(p => p.FillAnnularSector(50, 50, inner, outer, start, end, Ink)).Should().Be(0);
+    }
+
+    [Fact]
+    public void AZeroInnerRadiusIsAPieSlice_AndDraws()
+    {
+        // The neighbour of the degenerate rows above, kept beside them on purpose: inner 0 is the
+        // sector reaching the centre, which both targets draw.
+        Shapes(p => p.FillAnnularSector(50, 50, 0, 20, 0, 1, Ink)).Should().Be(1);
+    }
+
+    [Fact]
+    public void ASweepPastAFullTurn_StopsAtOne()
+    {
+        // Clamped rather than refused, exactly as the engine clamps it — and a full ring is two
+        // halves here because an arc whose ends coincide draws nothing in SVG.
+        Shapes(p => p.FillAnnularSector(50, 50, 10, 20, 0, MathF.Tau * 3, Ink)).Should().Be(2);
+    }
+
+    [Fact]
+    public void AFullRingIsNotSmoothed_SoNoSeamAppears()
+    {
+        // Photon draws a full ring as ONE sector whose angular edges coincide, so its rounding has
+        // nothing to round. Forwarding the smoothing to the two SVG halves would stroke four
+        // corners and draw a seam at 0 and π that exists on this target only.
+        var halves = Render(new Canvas(p => p.FillAnnularSector(50, 50, 10, 20, 0, MathF.Tau, Ink, 4),
+                SizeValue.Fixed(100), SizeValue.Fixed(100)))
+            .Where(n => n.Tag == "path").ToList();
+
+        halves.Should().HaveCount(2);
+        halves.Should().OnlyContain(n => !n.Attributes.ContainsKey("stroke"));
+    }
+
+    [Fact]
+    public void AFillingCanvasIsMarkedForMeasurement_RatherThanDrawnAtZero()
+    {
+        // CSS decides a filling canvas's box AFTER this markup exists, so the server emits the
+        // shell and the runtime draws once it has measured (canvas-surface.ts). Drawing here would
+        // put every `Width / 2` in the top-left corner and leave it there — the divergence from
+        // Photon, which lays out and paints every frame and always knows the real box.
+        var svg = Render(new Canvas(p => p.FillCircle(p.Width / 2, p.Height / 2, 10, Ink)))
+            .First(n => n.Tag == "svg");
+
+        svg.Children.Should().BeEmpty("nothing is drawn until the box is known");
+        svg.Attributes.Should().ContainKey("data-eq-canvas-fill");
+        svg.Attributes.Should().NotContainKey("viewBox", "there is no box to describe yet");
+    }
+
+    [Fact]
+    public void AFixedSizeCanvasIsDrawnByTheServer()
+    {
+        var svg = Render(new Canvas(p => p.FillCircle(p.Width / 2, p.Height / 2, 10, Ink),
+                SizeValue.Fixed(80), SizeValue.Fixed(40)))
+            .First(n => n.Tag == "svg");
+
+        svg.Attributes["viewBox"].Should().Be("0 0 80 40");
+        svg.Children.Should().ContainSingle();
+        svg.Children[0].Attributes["cx"].Should().Be("40", "the painter answered with the real box");
+    }
+
+    [Fact]
+    public void ADecorativeCanvasDoesNotSwallowThePressUnderIt()
+    {
+        // Photon registers NO region for a handler-less canvas, so the press reaches what is under
+        // it. The DOM has no such rule — a filling svg over a Stack eats every click — so the
+        // decorative case says so in CSS.
+        var decorative = Render(new Canvas(_ => { })).First(n => n.Tag == "svg");
+        decorative.Attributes["style"].Should().Contain("pointer-events");
+
+        var interactive = Render(new Canvas(_ => { }) { OnPointerDown = _ => { } }).First(n => n.Tag == "svg");
+        interactive.Attributes.TryGetValue("style", out var style);
+        (style ?? "").Should().NotContain("pointer-events", "a canvas that listens must receive");
     }
 }
