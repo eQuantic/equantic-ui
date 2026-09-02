@@ -51,6 +51,14 @@ const NO_TWIN_OWED = new Set([
   // Read off the compiled assembly by the SDK's signing step; they never exist at run time, on any
   // target — a browser has no code signature to carry them.
   'PhotonEntitlements',
+  // The cubic-bezier solver behind `Curve`. On the web a transition IS a CSS
+  // `transition-timing-function`, so the browser evaluates the curve and nothing in a page bundle
+  // ever asks this — it exists for the targets that have to do the arithmetic themselves.
+  'CurveEvaluator',
+  // The frame clock's tick payload. `IFrameTicker` is realized per target (requestAnimationFrame
+  // here), and the web realization defines its own tick shape in devices/frame-ticker.ts rather
+  // than importing a C# record's twin.
+  'FrameTick',
 ]);
 
 describe('Primitives ⇄ runtime export parity', () => {

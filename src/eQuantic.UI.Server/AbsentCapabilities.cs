@@ -143,6 +143,14 @@ internal static class AbsentCapabilities
         public IDisposable Every(TimeSpan interval, Action onTick) => NoSubscription.Instance;
     }
 
+    /// <summary>No frames on a server: subscribing succeeds and never fires, so the first paint is
+    /// the state the component was built with — the same answer the periodic clock above gives, for
+    /// the same reason.</summary>
+    internal sealed class FrameTicker : IFrameTicker
+    {
+        public IDisposable OnFrame(Action<FrameTick> onFrame) => NoSubscription.Instance;
+    }
+
     /// <summary>Analytics during server rendering: a no-op, and not an apology — analytics
     /// describes what a USER did, and SSR is not a user. A page that tracks on the server would
     /// count its own crawlers.</summary>

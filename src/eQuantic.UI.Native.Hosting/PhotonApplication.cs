@@ -119,6 +119,9 @@ public sealed class PhotonApplication
         // native target because all three shells call RenderFrame on the platform's main thread.
         services.TryAddSingleton<eQuantic.UI.Primitives.IUiDispatcher>(
             Native.Components.PhotonDispatcher.Shared);
+        // The frame clock, same reasoning: the loop that draws is the process's, so one ticker.
+        services.TryAddSingleton<eQuantic.UI.Primitives.IFrameTicker>(
+            Native.Components.PhotonFrameTicker.Shared);
 
         foreach (var declaration in ShellAssemblies()
             .SelectMany(assembly => assembly.GetCustomAttributes<PhotonCapabilitiesAttribute>())
