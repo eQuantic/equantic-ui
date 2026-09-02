@@ -116,6 +116,8 @@ public static class UIExtensions
         // Consent is read from the request's eq-consent cookie, so the server paints the same
         // answer the browser holds — see SsrConsent for why that is knowledge, not simulation.
         services.TryAddSingleton<eQuantic.UI.Primitives.IConsent, SsrConsent>();
+        // The request's thread is the UI thread here: SetState runs inline, posted work runs now.
+        services.TryAddSingleton<eQuantic.UI.Primitives.IUiDispatcher, SsrUiDispatcher>();
 
         // What a device capability IS during server rendering: absent — see AbsentCapabilities.
         // A page that takes a camera or the app's storage has to be CONSTRUCTIBLE here, or the one

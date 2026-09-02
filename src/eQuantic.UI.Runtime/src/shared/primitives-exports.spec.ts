@@ -42,6 +42,11 @@ const NO_TWIN_OWED = new Set([
   // The seam a HOST arms so `context.GetService<T>()` can answer. A page names the capability, not
   // the scope; the client's twin of it is the ComponentContext.getService method.
   'CapabilityScope',
+  // The same shape, for the UI thread — and on this target it would name something that does not
+  // exist. The seam says "the process's one drawing thread", which is a native fact; a page here
+  // asks for IConsent-style capabilities by name, and the browser's IUiDispatcher (registered in
+  // register.ts) reports itself already on the only thread there is.
+  'UiDispatcher',
   // BUILD TIME ONLY, and macOS at that: the keys a signed .app declares to the operating system.
   // Read off the compiled assembly by the SDK's signing step; they never exist at run time, on any
   // target — a browser has no code signature to carry them.

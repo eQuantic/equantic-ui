@@ -1,3 +1,4 @@
+using System.Threading;
 using eQuantic.UI.Native.Engine;
 using eQuantic.UI.Native.Framework;
 using eQuantic.UI.Primitives;
@@ -36,6 +37,12 @@ public sealed class PhotonHost
         _instances.InstanceRetained += retained =>
             retained.StateInvalidated += () => NeedsRender = true;
 
+        // Work posted from a worker thread has to WAKE an idle window, or it runs whenever something
+        // else next needs a frame — a scanner's results appearing on the next mouse move.
+        // WEAKLY, like PhotonHotReload.Register below and for the same reason: the dispatcher is a
+        // process static, and a host is not kept alive by having subscribed to one.
+        PhotonDispatcher.Shared.WakeOnPost(this);
+
         // Hot reload reaches a running app through a static seam — every live host signs up, so an
         // applied edit wakes this one too. Weakly: a host is not kept alive by having existed.
         PhotonHotReload.Register(this);
@@ -59,7 +66,21 @@ public sealed class PhotonHost
 
     /// <summary>True when state changed since the last <see cref="RenderFrame"/> (starts true), or
     /// when the last frame carried running loop motion — animated frames keep the loop hot.</summary>
-    public bool NeedsRender { get; private set; } = true;
+    /// <remarks>
+    /// VOLATILE, because <see cref="Invalidate"/> is now called from any thread — the dispatcher
+    /// wakes an idle window when work is posted from a worker. A plain bool write is atomic but
+    /// carries no barrier, so the render loop could keep reading a cached false and the frame the
+    /// posted work is waiting for would arrive whenever something else happened to need one. That
+    /// is not a crash; it is a scanner's results appearing on the next mouse move, which is the
+    /// symptom this whole path exists to remove.
+    /// </remarks>
+    public bool NeedsRender
+    {
+        get => Volatile.Read(ref _needsRender);
+        private set => Volatile.Write(ref _needsRender, value);
+    }
+
+    private bool _needsRender = true;
 
     /// <summary>When the next frame is due even though nothing is dirty — the caret's next blink
     /// transition, in the same clock <see cref="RenderFrame"/> is fed. Null = nothing scheduled.</summary>
@@ -153,6 +174,13 @@ public sealed class PhotonHost
     /// </summary>
     public RealizeResult RenderFrame(DisplayListBuilder builder, float timeMs = 0)
     {
+        // FIRST, before anything is read: this thread is the one that draws, and whatever a worker
+        // thread posted runs here, where mutating a component's fields races nothing. Both halves
+        // belong at the top of the frame — the binding because the thread that renders is the only
+        // one whose identity matters, the drain because this is the moment nothing is being built.
+        PhotonDispatcher.Shared.BindToCurrentThread();
+        PhotonDispatcher.Shared.Drain();
+
         // An edit landed since the last frame: drop the content caches BEFORE realizing, on this
         // thread, where they are owned. Most edits would miss them anyway (the keys are content),
         // but a patched rasterizer or an edited icon path re-rasters fresh — once.
@@ -211,12 +239,6 @@ public sealed class PhotonHost
         return _lastFrame;
     }
 
-    /// <summary>
-    /// Dispatches a tap against the LAST rendered frame: the topmost containing hit region (paint
-    /// order — last registered wins, matching Stack semantics) receives the press; disabled regions
-    /// swallow the tap without firing (they still exist for accessibility). Returns whether any
-    /// region was hit.
-    /// </summary>
     /// <summary>The positional reconciler: nested stateful components retain identity (and state)
     /// across parent rebuilds — see ComponentInstanceStore.</summary>
     private readonly ComponentInstanceStore _instances = new();
@@ -1823,6 +1845,12 @@ public sealed class PhotonHost
         return false;
     }
 
+    /// <summary>
+    /// Dispatches a tap against the LAST rendered frame: the topmost containing hit region (paint
+    /// order — last registered wins, matching Stack semantics) receives the press; disabled regions
+    /// swallow the tap without firing (they still exist for accessibility). Returns whether any
+    /// region was hit.
+    /// </summary>
     public bool Tap(float x, float y)
     {
         if (_lastFrame is null) return false;
@@ -1840,17 +1868,6 @@ public sealed class PhotonHost
     }
 
     /// <summary>
-    /// Spec S8 — a key press from the shell (desktop windows have a real keyboard): fires the LAST
-    /// matching <see cref="Shortcut"/> of the current frame (the dialog on top wins the chord) and
-    /// returns whether it was handled, so the shell can stop propagating it. Being on screen IS the
-    /// subscription — an unmounted dialog's Esc simply is not in the frame any more.
-    /// <para>
-    /// <paramref name="modifiers"/> carries <see cref="KeyModifiers.Command"/> for the PLATFORM's
-    /// command key (⌘ on macOS, Ctrl elsewhere) — the shell resolves that, exactly like the browser
-    /// twin, so one authored chord is right everywhere.
-    /// </para>
-    /// </summary>
-    /// <summary>
     /// WHERE the keyboard focus is, as the stable path the frame's <see cref="FocusStop"/>s carry
     /// — null when nothing holds it. Read-only and public because the host is not the only thing
     /// that needs the answer: a platform accessibility bridge has to report the focused element,
@@ -1864,6 +1881,17 @@ public sealed class PhotonHost
     /// </summary>
     public string? FocusedPath => _textPath ?? _focusedPath;
 
+    /// <summary>
+    /// Spec S8 — a key press from the shell (desktop windows have a real keyboard): fires the LAST
+    /// matching <see cref="Shortcut"/> of the current frame (the dialog on top wins the chord) and
+    /// returns whether it was handled, so the shell can stop propagating it. Being on screen IS the
+    /// subscription — an unmounted dialog's Esc simply is not in the frame any more.
+    /// <para>
+    /// <paramref name="modifiers"/> carries <see cref="KeyModifiers.Command"/> for the PLATFORM's
+    /// command key (⌘ on macOS, Ctrl elsewhere) — the shell resolves that, exactly like the browser
+    /// twin, so one authored chord is right everywhere.
+    /// </para>
+    /// </summary>
     public bool KeyDown(string key, KeyModifiers modifiers = KeyModifiers.None)
     {
         // An app's own chord wins: ⌘K is the app's, and a control holding focus has no claim on it.

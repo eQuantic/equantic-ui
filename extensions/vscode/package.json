@@ -147,5 +147,8 @@
     "preview",
     "visual editor"
   ],
-  "icon": "icon.png"
+  "icon": "icon.png",
+  "overrides": {
+    "fast-uri": "^3.1.6"
+  }
 }
