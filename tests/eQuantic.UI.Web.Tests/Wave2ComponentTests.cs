@@ -17,15 +17,15 @@ public class Wave2ComponentTests
     [Fact]
     public void IconButton_SizesAndSelectedGlyphSwap()
     {
-        var node = Render(new IconButton(Icons.Heart, "Favorite", IconButtonKind.Filled, SizeVariant.Large, () => { }));
+        var node = Render(new IconButton(new Icon(Icons.Heart), "Favorite", IconButtonKind.Filled, SizeVariant.Large, () => { }));
         node.Tag.Should().Be("button");
         node.Attributes["aria-label"].Should().Be("Favorite");
         node.Children[0].Attributes["style"].Should().Contain("width: 48px");
 
-        var selected = Render(new IconButton(Icons.Heart, "Favorite", onPressed: () => { })
+        var selected = Render(new IconButton(new Icon(Icons.Heart), "Favorite", onPressed: () => { })
         {
             Selected = true,
-            SelectedGlyph = Icons.HeartFilled,
+            SelectedGlyph = new Icon(Icons.HeartFilled),
         });
         selected.Children[0].Children[0].Children[0].Children[0].Attributes["d"]
             .Should().Be(IconRegistry.Path(Icons.HeartFilled), "selected swaps outline → filled glyph");
@@ -127,7 +127,7 @@ public class Wave2ComponentTests
     [Fact]
     public void EmptyState_WellTitleAndAction()
     {
-        var node = Render(new EmptyState(Icons.Search, "No results", "Try a broader term.")
+        var node = Render(new EmptyState(new Icon(Icons.Search), "No results", "Try a broader term.")
         {
             Action = new Button("Clear filters"),
         });
@@ -149,7 +149,7 @@ public class Wave2ComponentTests
     {
         var node = Render(new AppBar("Portfolio")
         {
-            Actions = [new IconButton(Icons.Search, "Search"), new IconButton(Icons.Mail, "Mail")],
+            Actions = [new IconButton(new Icon(Icons.Search), "Search"), new IconButton(new Icon(Icons.Mail), "Mail")],
         });
         node.Attributes["style"].Should().Contain("height: 56px");
         node.Attributes["style"].Should().Contain("padding: 0 4px 0 4px");
@@ -158,8 +158,8 @@ public class Wave2ComponentTests
         {
             Actions =
             [
-                new IconButton(Icons.Search, "1"), new IconButton(Icons.Mail, "2"),
-                new IconButton(Icons.Close, "3"), new IconButton(Icons.Info, "4"),
+                new IconButton(new Icon(Icons.Search), "1"), new IconButton(new Icon(Icons.Mail), "2"),
+                new IconButton(new Icon(Icons.Close), "3"), new IconButton(new Icon(Icons.Info), "4"),
             ],
         });
         overflow.Should().Throw<ArgumentException>("max 3 actions per spec B3");
@@ -212,7 +212,7 @@ public class Wave2ComponentTests
         // A header is not a destination: it rides above them and never joins the count.
         var withHeader = Render(new NavigationRail(four, selected: 0, _ => { })
         {
-            Leading = new IconButton(Icons.Plus, "Compose"),
+            Leading = new IconButton(new Icon(Icons.Plus), "Compose"),
         });
         Walk(withHeader).Count(child => child.Tag == "button").Should().Be(5);
 

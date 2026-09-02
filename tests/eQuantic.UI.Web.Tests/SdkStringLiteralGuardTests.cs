@@ -55,7 +55,7 @@ public class SdkStringLiteralGuardTests
                     offenders.Add($"{name}: {target} = \"{literal.Token.ValueText}\"");
             }
 
-            // `new IconButton(Icons.Close, "Dismiss")` reached by NAME — `label: "…"`.
+            // `new IconButton(new Icon(Icons.Close), "Dismiss")` reached by NAME — `label: "…"`.
             foreach (var argument in root.DescendantNodes().OfType<ArgumentSyntax>())
             {
                 if (argument.NameColon is null) continue;

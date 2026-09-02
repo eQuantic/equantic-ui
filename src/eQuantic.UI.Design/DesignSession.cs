@@ -1422,7 +1422,19 @@ public sealed class DesignSession
 
         // A child slot gets something VISIBLE. An empty Box inside a Card is indistinguishable from
         // the insert having done nothing at all.
-        if (bare.IsVisualNode()) return $"Text(\"{componentName}\")";
+        //
+        // A node-typed slot is not always a slot for ANY node: `EmptyState(Icon icon, …)` and
+        // `IconButton(Icon glyph, …)` name the concrete node they draw, so a Text placeholder does
+        // not compile there. The placeholder follows the DECLARED type — the same rule, read one
+        // level more carefully.
+        if (bare.IsVisualNode())
+        {
+            return bare.Name switch
+            {
+                "Icon" => "Icon(Icons.Info)",
+                _ => $"Text(\"{componentName}\")",
+            };
+        }
 
         if (bare.TypeKind == TypeKind.Enum)
         {

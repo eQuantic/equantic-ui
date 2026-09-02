@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeDecoration, CodeEditorController, CodeGutterMarker, CodeLanguages, CodeRange, CodeSurface, CornerRadii, EdgeInsets, Flexible, IconButton, KeyChord, Positioned, Row, ScrollView, SdkStrings, SharedStatefulComponent, Shortcut, SizeValue, SizeVariantValue, Stack, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeDecoration, CodeEditorController, CodeGutterMarker, CodeLanguages, CodeRange, CodeSurface, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, KeyChord, Positioned, Row, ScrollView, SdkStrings, SharedStatefulComponent, Shortcut, SizeValue, SizeVariantValue, Stack, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
 
 export class CodeEditor extends SharedStatefulComponent {
     _editor: any;
@@ -153,9 +153,9 @@ export class CodeEditor extends SharedStatefulComponent {
         let row = new Row(8, 'start', 'center', false, null, null, { cross: 'center' });
         row.add(new Box(new BoxStyle({ width: 168 }), new TextEntry(this._findText, (value: string) => this.setState(() => this._findText = value), { placeholder: SdkStrings.find, label: SdkStrings.find, autofocus: true, onSubmit: () => step(true) })));
         row.add(new Text(matches === 0 ? this._findText.length === 0 ? '' : '0' : `${index}/${matches}`, 'labelSmall', theme.textMuted, 1, 'start', false, false, null, 0, { tabular: true }));
-        row.add(new IconButton('chevronUp', SdkStrings.previousMatch, 'standard', 'medium', null, { size: 'small', onPressed: () => step(false) }));
-        row.add(new IconButton('chevronDown', SdkStrings.nextMatch, 'standard', 'medium', null, { size: 'small', onPressed: () => step(true) }));
-        row.add(new IconButton('close', 'Close find', 'standard', 'medium', null, { size: 'small', onPressed: () => this.setState(() => {
+        row.add(new IconButton(new Icon('chevronUp'), SdkStrings.previousMatch, 'standard', 'medium', null, { size: 'small', onPressed: () => step(false) }));
+        row.add(new IconButton(new Icon('chevronDown'), SdkStrings.nextMatch, 'standard', 'medium', null, { size: 'small', onPressed: () => step(true) }));
+        row.add(new IconButton(new Icon('close'), 'Close find', 'standard', 'medium', null, { size: 'small', onPressed: () => this.setState(() => {
             this._findOpen = false;
             this._findText = '';
         }) }));

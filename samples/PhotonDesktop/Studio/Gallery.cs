@@ -232,7 +232,7 @@ public static class Gallery
 
         var kinds = new Row(gap: Space.S3) { Width = SizeValue.Fill, Wrap = true, Cross = CrossAlign.Center };
         foreach (var kind in Enum.GetValues<IconButtonKind>())
-            kinds.Add(new IconButton(Icons.Heart, $"{kind} icon button", kind));
+            kinds.Add(new IconButton(new Icon(Icons.Heart), $"{kind} icon button", kind));
         kinds.Add(new Text("IconButton \u00b7 Standard \u00b7 Tonal \u00b7 Filled \u00b7 Outline",
             TypeRole.Caption, theme.TextMuted, maxLines: 1));
 
@@ -425,7 +425,7 @@ public static class Gallery
         titles.Add(new Text("Monthly spend", TypeRole.TitleSmall, theme.TextPrimary, maxLines: 1));
         titles.Add(new Text("April · 14 categories", TypeRole.LabelSmall, theme.TextMuted, maxLines: 1));
         heading.Add(new Flexible(titles, 1));
-        heading.Add(new IconButton(Icons.ChevronDown, "More", IconButtonKind.Standard)
+        heading.Add(new IconButton(new Icon(Icons.ChevronDown), "More", IconButtonKind.Standard)
         {
             Size = SizeVariant.Small,
             OnPressed = () => { },
@@ -537,13 +537,13 @@ public static class Gallery
             "PageIndicator · position, not navigation", 200);
 
         var actions = new Row(gap: Space.S3) { Cross = CrossAlign.Center };
-        actions.Add(new Tooltip(new IconButton(Icons.Search, "Search", IconButtonKind.Tonal)
+        actions.Add(new Tooltip(new IconButton(new Icon(Icons.Search), "Search", IconButtonKind.Tonal)
         {
             OnPressed = () => { },
         }, "Search ⌘K"));
-        actions.Add(new Tooltip(new IconButton(Icons.Mail, "Messages") { OnPressed = () => { } },
+        actions.Add(new Tooltip(new IconButton(new Icon(Icons.Mail), "Messages") { OnPressed = () => { } },
             "Messages"));
-        actions.Add(new Tooltip(new IconButton(Icons.Notifications, "Alerts") { OnPressed = () => { } },
+        actions.Add(new Tooltip(new IconButton(new Icon(Icons.Notifications), "Alerts") { OnPressed = () => { } },
             "Alerts"));
         var tooltips = Labelled(theme, actions, "Tooltip · hover any of them", 180);
 
@@ -594,7 +594,7 @@ public static class Gallery
             },
             "Toast · inverse surface, docks bottom-trailing, leaves on its own", 240);
 
-        var empty = new EmptyState(Icons.Search, "No transactions yet",
+        var empty = new EmptyState(new Icon(Icons.Search), "No transactions yet",
             "They will appear here once you transfer.")
         {
             Action = new Button("New transfer", Variant.Primary, SizeVariant.Small)

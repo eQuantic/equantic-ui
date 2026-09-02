@@ -22,10 +22,10 @@ public class Wave2GoldenTests
         column.Add(new Tabs(["Overview", "Holdings", "Activity"], selected: 0));
 
         var iconRow = new Row(gap: Space.S2) { Cross = CrossAlign.Center };
-        iconRow.Add(new IconButton(Icons.Search, "Search"));
-        iconRow.Add(new IconButton(Icons.Heart, "Favorite", IconButtonKind.Tonal) { Selected = true, SelectedGlyph = Icons.HeartFilled });
-        iconRow.Add(new IconButton(Icons.Mail, "Mail", IconButtonKind.Filled));
-        iconRow.Add(new IconButton(Icons.Close, "Close", IconButtonKind.Outline));
+        iconRow.Add(new IconButton(new Icon(Icons.Search), "Search"));
+        iconRow.Add(new IconButton(new Icon(Icons.Heart), "Favorite", IconButtonKind.Tonal) { Selected = true, SelectedGlyph = new Icon(Icons.HeartFilled) });
+        iconRow.Add(new IconButton(new Icon(Icons.Mail), "Mail", IconButtonKind.Filled));
+        iconRow.Add(new IconButton(new Icon(Icons.Close), "Close", IconButtonKind.Outline));
         column.Add(iconRow);
 
         var forms = new Row(gap: Space.S5) { Cross = CrossAlign.Center };

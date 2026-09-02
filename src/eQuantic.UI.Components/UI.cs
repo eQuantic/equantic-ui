@@ -313,12 +313,18 @@ public static class UI
         new Banner(status, title, body);
 
     /// <summary>Binary check control.</summary>
-    public static Checkbox Checkbox(bool @checked, Action? onChanged = null, string? label = null) =>
-        new Checkbox(@checked, onChanged, label);
+    /// <summary>A check, with the tail a form row needs: the accessible name it announces, and the
+    /// disabled bit a batch operation turns on across a whole list.</summary>
+    public static Checkbox Checkbox(bool @checked, Action? onChanged = null, string? label = null,
+        bool disabled = false) =>
+        new Checkbox(@checked, onChanged, label) { Disabled = disabled };
 
-    /// <summary>Binary toggle.</summary>
-    public static Switch Switch(bool on, Action? onChanged = null) =>
-        new Switch(on, onChanged);
+    /// <summary>Binary toggle. <paramref name="label"/> is what assistive tech announces — a list of
+    /// switches with no names is a list of identical controls — and <paramref name="disabled"/> is
+    /// what makes them inert while a batch applies.</summary>
+    public static Switch Switch(bool on, Action? onChanged = null, string? label = null,
+        bool disabled = false) =>
+        new Switch(on, onChanged) { Label = label, Disabled = disabled };
 
     /// <summary>Continuous value control.</summary>
     public static Slider Slider(float value, Action<float>? onChanged = null) =>
@@ -389,16 +395,24 @@ public static class UI
         new CultureSwitcher(options);
 
     /// <summary>Icon-only button; the label is what assistive tech announces.</summary>
-    public static IconButton IconButton(Icons glyph, string label,
+    public static IconButton IconButton(Icon glyph, string label,
         IconButtonKind kind = IconButtonKind.Standard, SizeVariant size = SizeVariant.Medium,
         Action? onPressed = null) =>
         new IconButton(glyph, label, kind, size, onPressed);
 
     /// <summary>The nothing-here state (spec B12).</summary>
-    public static EmptyState EmptyState(Icons icon, string title, string? body = null) =>
+    public static EmptyState EmptyState(Icon icon, string title, string? body = null) =>
         new EmptyState(icon, title, body);
 
     /// <summary>Horizontal tab strip.</summary>
+    /// <summary>The segmented picker (spec B7) — one row of mutually exclusive choices.
+    /// <paramref name="stretch"/> is the tail: true fills the width evenly (the default a settings
+    /// row wants), false lets the control size to its content (what a tab strip above a panel
+    /// wants).</summary>
+    public static SegmentedControl SegmentedControl(IReadOnlyList<string> segments, int selectedIndex,
+        Action<int>? onChanged = null, bool stretch = true) =>
+        new SegmentedControl(segments, selectedIndex, onChanged) { Stretch = stretch };
+
     public static Tabs Tabs(IReadOnlyList<string> labels, int selected, Action<int>? onSelect = null) =>
         new Tabs(labels, selected, onSelect);
 

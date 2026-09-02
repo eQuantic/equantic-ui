@@ -1,4 +1,4 @@
-import { AdaptiveNode, AppBar, Box, BoxStyle, BuildContext, Column, Divider, EmptyState, Flexible, IconButton, Row, SdkStrings, SizeValue, StatelessComponent, VisualNode } from "../runtime-exports";
+import { AdaptiveNode, AppBar, Box, BoxStyle, BuildContext, Column, Divider, EmptyState, Flexible, Icon, IconButton, Row, SdkStrings, SizeValue, StatelessComponent, VisualNode } from "../runtime-exports";
 
 export class ListDetail extends StatelessComponent {
     declare list: VisualNode;
@@ -31,7 +31,7 @@ export class ListDetail extends StatelessComponent {
             return column;
         };
         const back = () => {
-            return this.onBack == null ? null : new IconButton('chevronLeft', SdkStrings.back, 'standard', 'medium', this.onBack);
+            return this.onBack == null ? null : new IconButton(new Icon('chevronLeft'), SdkStrings.back, 'standard', 'medium', this.onBack);
         };
         let chosen: any; 
         let compact = (chosen = this.detail) != null ? pane(this.title, chosen, back()) : pane(this.listTitle, this.list);
@@ -43,7 +43,7 @@ export class ListDetail extends StatelessComponent {
     }
 
     static nothing() {
-        return new EmptyState('info', SdkStrings.nothingSelected);
+        return new EmptyState(new Icon('info'), SdkStrings.nothingSelected);
     }
 }
 

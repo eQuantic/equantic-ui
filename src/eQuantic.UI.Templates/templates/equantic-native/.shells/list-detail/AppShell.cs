@@ -37,7 +37,7 @@ public sealed class AppShell : StatefulComponent
         {
             ListTitle = "Inbox",
             Title = _selected is { } open ? Inbox.Items[open].Title : null,
-            Placeholder = EmptyState(Icons.Mail, "Pick a message",
+            Placeholder = EmptyState(Icon(Icons.Mail), "Pick a message",
                 "Choose one on the left and it opens here."),
         }, SafeEdges.Top));
 }

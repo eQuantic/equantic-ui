@@ -24,7 +24,7 @@ public enum IconButtonKind : byte
 /// </summary>
 public sealed class IconButton : StatelessComponent
 {
-    public IconButton(Icons glyph, string label, IconButtonKind kind = IconButtonKind.Standard,
+    public IconButton(Icon glyph, string label, IconButtonKind kind = IconButtonKind.Standard,
         SizeVariant size = SizeVariant.Medium, Action? onPressed = null)
     {
         Glyph = glyph;
@@ -34,7 +34,10 @@ public sealed class IconButton : StatelessComponent
         OnPressed = onPressed;
     }
 
-    public Icons Glyph { get; init; }
+    /// <summary>The glyph, as a NODE — <c>Icon(Icons.Close)</c> or <c>Glyph(LucideIcons.Power)</c>,
+    /// so any pack serves. Size and color are the button's (the §07 whitelist by Kind), so only the
+    /// glyph travels.</summary>
+    public Icon Glyph { get; init; }
     public string Label { get; init; }
     public IconButtonKind Kind { get; init; }
     public SizeVariant Size { get; init; }
@@ -45,7 +48,7 @@ public sealed class IconButton : StatelessComponent
     public bool Selected { get; init; }
 
     /// <summary>The filled counterpart glyph shown while selected (outline↔filled are distinct glyphs).</summary>
-    public Icons? SelectedGlyph { get; init; }
+    public Icon? SelectedGlyph { get; init; }
 
     public override VisualNode Build(ComponentContext context)
     {
@@ -78,7 +81,7 @@ public sealed class IconButton : StatelessComponent
             tint = tint.WithOpacity(opacity);
         }
 
-        var glyph = Selected && SelectedGlyph is { } filledGlyph ? filledGlyph : Glyph;
+        var glyph = (Selected && SelectedGlyph is { } filledGlyph ? filledGlyph : Glyph).Glyph;
         var content = new Icon(glyph, iconSize, tint).Centered();
 
         ColorToken? pressedFill = Kind switch

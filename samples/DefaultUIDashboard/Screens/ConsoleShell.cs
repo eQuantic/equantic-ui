@@ -178,14 +178,14 @@ public static class ConsoleShell
             Height = SizeValue.Fill,
             Cross = CrossAlign.Center,
         };
-        row.Add(new IconButton(Icons.Menu, "Navigation", IconButtonKind.Standard, SizeVariant.Small)
+        row.Add(new IconButton(new Icon(Icons.Menu), "Navigation", IconButtonKind.Standard, SizeVariant.Small)
         { OnPressed = actions.OnToggleNav });
         row.Add(new Flexible(new Breadcrumb(crumbs), 1));
         if (actions.HasPageActions)
         {
-            row.Add(new IconButton(Icons.Search, "Search payments", IconButtonKind.Standard, SizeVariant.Small)
+            row.Add(new IconButton(new Icon(Icons.Search), "Search payments", IconButtonKind.Standard, SizeVariant.Small)
             { OnPressed = actions.OnOpenPalette });
-            row.Add(new IconButton(Icons.Plus, "New payment", IconButtonKind.Filled, SizeVariant.Small)
+            row.Add(new IconButton(new Icon(Icons.Plus), "New payment", IconButtonKind.Filled, SizeVariant.Small)
             { OnPressed = actions.OnNewPayment });
         }
 
@@ -364,7 +364,7 @@ public static class ConsoleShell
         row.Add(new Avatar("AB", SizeVariant.Small, "Ana Beatriz"));
         row.Add(new Flexible(text, 1));
         row.Add(new Menu(
-            new IconButton(Icons.ChevronDown, "Account menu", IconButtonKind.Standard, SizeVariant.Small),
+            new IconButton(new Icon(Icons.ChevronDown), "Account menu", IconButtonKind.Standard, SizeVariant.Small),
             [new MenuItem("Profile") { Icon = Icons.Person },
              new MenuItem("Workspace settings") { Icon = Icons.ChevronRight },
              new MenuItem("Sign out") { Destructive = true }],
@@ -396,14 +396,14 @@ public static class ConsoleShell
         // A Menu owns its own open/close and dismisses on an outside tap, so the frame states WHAT
         // the entries are and nothing about when the panel is up.
         row.Add(new Menu(
-            new IconButton(Icons.Notifications, "Notifications", IconButtonKind.Standard, SizeVariant.Small),
+            new IconButton(new Icon(Icons.Notifications), "Notifications", IconButtonKind.Standard, SizeVariant.Small),
             [new MenuItem("Julia Lemos approved #3841"), new MenuItem("Risk engine flagged #3838"),
              new MenuItem("Webhook retried payment.settled"), new MenuItem("Dispute opened by Loja Verde")],
             index => actions.OnHelp(index))
         { Placement = AnchorPlacement.BottomEnd });
 
         row.Add(new Menu(
-            new IconButton(Icons.Info, "Help", IconButtonKind.Standard, SizeVariant.Small),
+            new IconButton(new Icon(Icons.Info), "Help", IconButtonKind.Standard, SizeVariant.Small),
             [new MenuItem("Documentation") { Icon = Icons.Info },
              new MenuItem("Keyboard shortcuts") { Icon = Icons.Search },
              new MenuItem("Contact support") { Icon = Icons.Mail }],

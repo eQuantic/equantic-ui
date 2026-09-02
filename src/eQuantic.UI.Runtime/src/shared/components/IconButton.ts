@@ -1,7 +1,7 @@
-import { Box, BoxStyle, BuildContext, CornerRadii, Icon, IconsValue, Pressable, SizeVariantValue, Sizing, StatelessComponent, StyleDiff } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, CornerRadii, Icon, Pressable, SizeVariantValue, Sizing, StatelessComponent, StyleDiff } from "../runtime-exports";
 
 export class IconButton extends StatelessComponent {
-    declare glyph: IconsValue;
+    declare glyph: Icon;
     declare label: string;
     declare kind: string;
     declare size: SizeVariantValue;
@@ -17,7 +17,6 @@ export class IconButton extends StatelessComponent {
         if (kind !== undefined) this.kind = kind;
         if (size !== undefined) this.size = size;
         if (onPressed !== undefined) this.onPressed = onPressed;
-        if (this.glyph === undefined) this.glyph = 'search';
         if (this.kind === undefined) this.kind = 'standard';
         if (this.size === undefined) this.size = 'small';
         if (this.disabled === undefined) this.disabled = false;
@@ -44,7 +43,7 @@ export class IconButton extends StatelessComponent {
             tint = tint.withOpacity(opacity);
         }
         let filledGlyph: any; 
-        let glyph: IconsValue = this.selected && (filledGlyph = this.selectedGlyph) != null ? filledGlyph : this.glyph;
+        let glyph = (this.selected && (filledGlyph = this.selectedGlyph) != null ? filledGlyph : this.glyph).glyph;
         let content = new Icon(glyph, iconSize, tint).centered();
         let pressedFill = (() => { const _s = this.kind; if (_s === 'filled') return primary.pressed; if (_s === 'tonal') return primary.pressed.withOpacity(Math.fround(0.24)); return theme.surfaceSubtle; })();
         let hoverFill = (() => { const _s = this.kind; if (_s === 'filled') return primary.hover; if (_s === 'tonal') return primary.subtle.midpointWith(primary.pressed.withOpacity(Math.fround(0.24))); return theme.surfaceSubtle; })();

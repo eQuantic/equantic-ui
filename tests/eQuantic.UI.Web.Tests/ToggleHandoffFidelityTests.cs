@@ -38,10 +38,10 @@ public class ToggleHandoffFidelityTests
     [InlineData(false, "false")]
     public void AToggleIconButtonStatesItsState(bool selected, string pressed)
     {
-        var control = Control(new IconButton(Icons.Heart, "Favourite", onPressed: () => { })
+        var control = Control(new IconButton(new Icon(Icons.Heart), "Favourite", onPressed: () => { })
         {
             Selected = selected,
-            SelectedGlyph = Icons.HeartFilled,
+            SelectedGlyph = new Icon(Icons.HeartFilled),
         });
 
         control.Attributes["aria-pressed"].Should().Be(pressed);
@@ -56,7 +56,7 @@ public class ToggleHandoffFidelityTests
     [Fact]
     public void APlainIconButtonSaysNothingAboutSelection()
     {
-        var control = Control(new IconButton(Icons.Search, "Search", onPressed: () => { }));
+        var control = Control(new IconButton(new Icon(Icons.Search), "Search", onPressed: () => { }));
 
         control.Attributes.Should().NotContainKey("aria-pressed");
     }
