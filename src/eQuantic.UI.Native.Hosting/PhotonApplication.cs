@@ -2,6 +2,7 @@ using System.Reflection;
 using eQuantic.UI.Primitives;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
@@ -97,6 +98,13 @@ public sealed class PhotonApplication
         // not per render: a native app has one container and one surface, and the tree is rebuilt
         // on it from the first frame to the last.
         eQuantic.UI.Primitives.CapabilityScope.Current = Services.GetService;
+
+        // The UI thread's door, armed for the PROCESS: the scope above is AsyncLocal and so is
+        // invisible to a thread the platform hands back from elsewhere, which is exactly the thread
+        // a SetState must be marshalled from. Same instance the container holds, so a component that
+        // injects IUiDispatcher and the SetState that marshals are talking about one queue.
+        eQuantic.UI.Primitives.UiDispatcher.Current = Native.Components.PhotonDispatcher.Shared;
+
         FindRunner().Run(this);
     }
 
@@ -107,6 +115,11 @@ public sealed class PhotonApplication
     /// </summary>
     internal static void RegisterCapabilities(IServiceCollection services)
     {
+        // Not a shell's to offer: which thread draws is the FRAMEWORK's fact, identical on every
+        // native target because all three shells call RenderFrame on the platform's main thread.
+        services.TryAddSingleton<eQuantic.UI.Primitives.IUiDispatcher>(
+            Native.Components.PhotonDispatcher.Shared);
+
         foreach (var declaration in ShellAssemblies()
             .SelectMany(assembly => assembly.GetCustomAttributes<PhotonCapabilitiesAttribute>())
             .Select(attribute => attribute.ProviderType)

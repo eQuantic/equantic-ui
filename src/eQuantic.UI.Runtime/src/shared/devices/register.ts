@@ -10,6 +10,7 @@ import { WebTextClipboard } from './text-clipboard';
 import { WebCultureController } from './culture-controller';
 import { WebAnalytics } from './analytics';
 import { WebConsent } from './consent';
+import { WebUiDispatcher } from './ui-dispatcher';
 import { WebClock } from './clock';
 import { WebThemeController } from './theme-controller';
 
@@ -52,4 +53,7 @@ export function registerDeviceCapabilities(): void {
   // Consent: the visitor's answer to non-essential tracking, in the cookie the server and the GTM
   // installer read too. Registered unconditionally — a page that asks must resolve something.
   services.registerSingleton('IConsent', () => new WebConsent());
+  // The UI thread's door. On the web it reports itself already on it — JavaScript has one thread —
+  // so SetState never marshals here; a page can still post work to run after the current task.
+  services.registerSingleton('IUiDispatcher', () => new WebUiDispatcher());
 }

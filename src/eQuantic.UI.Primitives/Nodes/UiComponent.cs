@@ -162,6 +162,23 @@ public abstract class StatefulComponent : UiComponent
 
     protected void SetState(Action mutate)
     {
+        // OFF the UI thread, the whole mutation is posted rather than run: the fields this touches
+        // are read by the render thread while it builds, so mutating them here is a data race whose
+        // symptom is a frame drawn from half-old state — no exception, no stack, once a week. The
+        // check is the dispatcher's, not a thread-id comparison of ours, because only the host knows
+        // which thread draws. Where nothing needs marshalling (the browser has one thread; a request
+        // is rendered on the thread that asked) no dispatcher is armed and this runs inline, exactly
+        // as it always did.
+        if (UiDispatcher.Current is { IsOnUiThread: false } dispatcher)
+        {
+            dispatcher.Post(() =>
+            {
+                mutate();
+                StateInvalidated?.Invoke();
+            });
+            return;
+        }
+
         mutate();
         StateInvalidated?.Invoke();
     }
