@@ -2309,6 +2309,13 @@ public class TypeScriptEmitter
             var itemType = tsType.Substring(7, tsType.Length - 8);
             tsType = $"({itemType.ToCamelCase()}: {CSharpTypeToTypeScript(itemType)}) => void";
         }
+        else if (Services.RuntimeProvidedTypeScanner.IsKnownInterface(tsType))
+        {
+            // An INTERFACE, which the symbol-based mapper below already answers this way: it exists
+            // only in the C# type system and the runtime can export no value for it, so a module
+            // that named it would import something that is not there.
+            tsType = "any";
+        }
         else if (tsType == "Action")
         {
             tsType = "() => void";

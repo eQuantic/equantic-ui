@@ -235,3 +235,83 @@ public class SettingsControlTailTests
         SegmentedControl(["A", "B"], 0).Stretch.Should().BeTrue("the default is what it always was");
     }
 }
+
+/// <summary>
+/// W3 on the WEB: the same canvas the Photon engine paints becomes inline SVG, so a visualization
+/// authored once runs on both targets. SVG rather than &lt;canvas&gt; because it SSRs to the same
+/// pixels it hydrates to, which a blank rectangle filled by script could never do.
+/// </summary>
+public class CanvasWebLoweringTests
+{
+    private static readonly IAppTheme Theme = PhotonTheme.Instance;
+    private static readonly ColorToken Ink = new(new Color(10, 20, 30, 255));
+
+    private static IEnumerable<HtmlNode> Walk(HtmlNode node)
+    {
+        yield return node;
+        foreach (var child in node.Children)
+            foreach (var descendant in Walk(child))
+                yield return descendant;
+    }
+
+    private static IReadOnlyList<HtmlNode> Render(VisualNode node) =>
+        Walk(WebRealizer.Lower(node, Theme).Render()).ToList();
+
+    [Fact]
+    public void TheShapesBecomeSvgChildren_InPaintOrder()
+    {
+        var rendered = Render(new Canvas(p =>
+        {
+            p.FillCircle(20, 20, 10, Ink);
+            p.FillRect(0, 0, 5, 5, Ink);
+        }, width: SizeValue.Fixed(40), height: SizeValue.Fixed(40)));
+
+        var svg = rendered.First(n => n.Tag == "svg");
+        // The params overload would swallow a `because` string as a third expected item.
+        svg.Children.Select(c => c.Tag).Should().Equal(["circle", "rect"]);
+        svg.Attributes["viewBox"].Should().Be("0 0 40 40");
+    }
+
+    [Fact]
+    public void ColoursFollowTheTheme_RatherThanBeingResolvedToOneMode()
+    {
+        // The web has a cascade to defer to, so a token crosses as light-dark(...) — the same
+        // reason every other colour on this target is not resolved by the realizer.
+        var twoTone = new ColorToken(new Color(1, 2, 3, 255), new Color(4, 5, 6, 255));
+        var circle = Render(new Canvas(p => p.FillCircle(5, 5, 5, twoTone))).First(n => n.Tag == "circle");
+
+        circle.Attributes["fill"].Should().StartWith("light-dark(");
+    }
+
+    [Fact]
+    public void AnAnnularSector_BecomesAnArcPath()
+    {
+        // The one engine shape SVG has no primitive for: two arcs and two radial lines.
+        var path = Render(new Canvas(p => p.FillAnnularSector(50, 50, 20, 40, 0, MathF.PI / 2, Ink)))
+            .First(n => n.Tag == "path");
+
+        path.Attributes["d"].Should().Contain("A 40 40").And.Contain("A 20 20");
+    }
+
+    [Fact]
+    public void AFullRingIsDrawnAsTwoHalves()
+    {
+        // An arc whose start and end coincide draws nothing in SVG — a full ring must be split.
+        var paths = Render(new Canvas(p =>
+            p.FillAnnularSector(50, 50, 20, 40, 0, MathF.Tau, Ink))).Where(n => n.Tag == "path").ToList();
+
+        paths.Should().HaveCount(2, "a full ring cannot be one arc");
+    }
+
+    [Fact]
+    public void ADecorativeCanvasIsHidden_AndALabelledOneIsAnImage()
+    {
+        Render(new Canvas(_ => { })).First(n => n.Tag == "svg")
+            .Attributes.Should().ContainKey("aria-hidden");
+
+        var labelled = Render(new Canvas(_ => { }) { Label = "Disk usage by folder" })
+            .First(n => n.Tag == "svg");
+        labelled.Attributes["role"].Should().Be("img");
+        labelled.Attributes["aria-label"].Should().Be("Disk usage by folder");
+    }
+}

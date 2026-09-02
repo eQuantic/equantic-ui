@@ -9,6 +9,8 @@
   "CSharpLanguage",
   "CalendarNames",
   "CameraPreview",
+  "Canvas",
+  "CanvasPointer",
   "CapabilityScope",
   "CellRef",
   "CodeCompletionItem",

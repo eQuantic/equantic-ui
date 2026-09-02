@@ -157,6 +157,7 @@ public static class WebRealizer
         Icon icon => LowerIcon(icon, context),
         Vector vector => LowerVector(vector),
         Drawing drawing => LowerDrawing(drawing),
+        Canvas canvas => LowerCanvas(canvas),
         Spinner spinner => LowerSpinner(spinner, context),
         Primitives.Image image => LowerImage(image),
         CameraPreview camera => LowerCameraPreview(camera),
@@ -742,6 +743,62 @@ public static class WebRealizer
 
     /// <summary>A vector shape lowers exactly like an icon — the differences are that its size is
     /// the author's rather than the §07 whitelist's, and that its box need not be square.</summary>
+    /// <summary>
+    /// W3 lowering: the app's own drawing as one inline <c>&lt;svg&gt;</c> whose children are the
+    /// shapes it painted, in call order.
+    /// <para>
+    /// SVG rather than <c>&lt;canvas&gt;</c> for the reasons the rest of this realizer chose it: it
+    /// SSRs to the same pixels it hydrates to, it scales with the device pixel ratio for free, and
+    /// the reconciler diffs it like any other markup. A <c>&lt;canvas&gt;</c> would be a blank
+    /// rectangle on the server and a second rendering model to keep in step.
+    /// </para>
+    /// <para>
+    /// The pointer handlers are MARKED here (<c>data-eq-canvas</c>) and wired by the runtime, which
+    /// is the same contract Shortcut uses: SSR has no pointer events, so the marker is the whole
+    /// server-side story and the hydrated DOM is identical.
+    /// </para>
+    /// </summary>
+    private static HtmlElement LowerCanvas(Canvas canvas)
+    {
+        var width = canvas.Width.Kind == SizeKind.Fixed ? canvas.Width.Value : 0;
+        var height = canvas.Height.Kind == SizeKind.Fixed ? canvas.Height.Value : 0;
+        var painter = new SvgCanvasPainter(width, height);
+        canvas.Draw(painter);
+
+        var svg = new RealizedElement("svg")
+        {
+            Style = new HtmlStyle
+            {
+                // Block for the same reason every other inline svg here is: an inline one would
+                // sit on the text baseline of whatever box holds it.
+                Display = Core.Display.Block,
+                Width = canvas.Width.Kind == SizeKind.Fixed ? TokenCss.Px(width) : "100%",
+                Height = canvas.Height.Kind == SizeKind.Fixed ? TokenCss.Px(height) : "100%",
+            },
+            RawAttributes = new Dictionary<string, string>(),
+        };
+        // A viewBox only when the box is known: with a filling canvas the app draws in the SAME
+        // coordinates the browser lays out, so no scaling should happen at all.
+        if (width > 0 && height > 0)
+            svg.RawAttributes["viewBox"] = $"0 0 {TokenCss.Number(width)} {TokenCss.Number(height)}";
+
+        if (canvas.Label is { Length: > 0 } label)
+        {
+            svg.RawAttributes["role"] = "img";
+            svg.RawAttributes["aria-label"] = label;
+        }
+        else svg.RawAttributes["aria-hidden"] = "true";
+
+        if (canvas.OnPointerDown is not null || canvas.OnPointerMove is not null
+            || canvas.OnPointerUp is not null || canvas.OnPointerLeave is not null)
+        {
+            svg.DataAttributes["eq-canvas"] = "1";
+        }
+
+        foreach (var shape in painter.Shapes) svg.Children.Add(shape);
+        return svg;
+    }
+
     private static HtmlElement LowerVector(Vector vector) =>
         LowerGlyph(vector.Glyph, vector.Size, vector.Height, vector.Color, vector.Label);
 

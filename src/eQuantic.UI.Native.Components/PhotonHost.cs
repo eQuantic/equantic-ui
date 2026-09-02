@@ -1192,6 +1192,22 @@ public sealed class PhotonHost
     /// </summary>
     public void PointerMove(float x, float y, PointerKind kind = PointerKind.Mouse)
     {
+        // A canvas being dragged keeps the pointer even when it leaves the box; otherwise the
+        // topmost canvas under the point gets the move, and the one being left gets its leave.
+        var overCanvas = _pressedCanvas ?? CanvasUnder(new Point(x, y));
+        if (!Equals(overCanvas, _hoveredCanvas))
+        {
+            _hoveredCanvas?.Node.OnPointerLeave?.Invoke();
+            _hoveredCanvas = overCanvas;
+        }
+        if (overCanvas is { } active)
+        {
+            active.Node.OnPointerMove?.Invoke(
+                Local(active, new Point(x, y), _pressedCanvas is not null, KeyModifiers.None));
+            NeedsRender = true;
+            if (_pressedCanvas is not null) return;   // a drag belongs to the canvas alone
+        }
+
         // A fill drag: the preview follows the pointer, one dominant axis at a time.
         if (_sheetFilling && _lastFrame is not null)
         {
@@ -1490,6 +1506,13 @@ public sealed class PhotonHost
     /// <summary>The pointer left the window (or the input is touch) — hover clears.</summary>
     public void PointerLeave()
     {
+        if (_hoveredCanvas is { } leaving)
+        {
+            _hoveredCanvas = null;
+            leaving.Node.OnPointerLeave?.Invoke();
+            NeedsRender = true;
+        }
+
         if (_hovered is null && _hoverNodes.Count == 0) return;
         foreach (var node in _hoverNodes)
             if (node is Hoverable left) left.OnChanged(false); // S5 programmable hover
@@ -1510,6 +1533,17 @@ public sealed class PhotonHost
     {
         if (_lastFrame is null) return false;
         var point = new Point(x, y);
+
+        // W3: a canvas owns the pointer inside its box. It is asked FIRST because it draws its own
+        // content and therefore knows its own hit-testing — the engine has no idea what is under
+        // the point there, and a rectangle-shaped guess would be worse than asking.
+        if (CanvasUnder(point) is { } pressed)
+        {
+            _pressedCanvas = pressed;
+            pressed.Node.OnPointerDown?.Invoke(Local(pressed, point, pressedNow: true, modifiers));
+            NeedsRender = true;
+            return true;
+        }
 
         // Gestures v2: arm the topmost drag surface under the point as a CANDIDATE — it only
         // becomes a drag once the pointer travels past the slop (taps inside keep working).
@@ -1712,6 +1746,16 @@ public sealed class PhotonHost
     /// </summary>
     public bool PressUp(float x, float y, PointerKind kind = PointerKind.Mouse)
     {
+        // The canvas that took the press gets the release, wherever it happens — a drag that ends
+        // outside the box still ends, which is what every gesture on every platform means by "up".
+        if (_pressedCanvas is { } canvas)
+        {
+            _pressedCanvas = null;
+            canvas.Node.OnPointerUp?.Invoke(Local(canvas, new Point(x, y), pressedNow: false, KeyModifiers.None));
+            NeedsRender = true;
+            return true;
+        }
+
         // A finger that lifts is GONE — no pointer rests over anything, whatever set the hover
         // during the sequence. A mouse stays where it is, so its hover survives the click
         // (clearing it would flicker on every press).
@@ -1851,6 +1895,30 @@ public sealed class PhotonHost
     /// swallow the tap without firing (they still exist for accessibility). Returns whether any
     /// region was hit.
     /// </summary>
+    /// <summary>The canvas being dragged — it keeps the pointer until the release, wherever that
+    /// lands.</summary>
+    private CanvasRegion? _pressedCanvas;
+
+    /// <summary>The canvas the pointer is over, so leaving one can be announced exactly once.</summary>
+    private CanvasRegion? _hoveredCanvas;
+
+    /// <summary>The TOPMOST canvas under a point — paint order, last registered wins, the same rule
+    /// every other region resolution here uses.</summary>
+    private CanvasRegion? CanvasUnder(Point point)
+    {
+        if (_lastFrame is null) return null;
+        var regions = _lastFrame.CanvasRegions;
+        for (var i = regions.Count - 1; i >= 0; i--)
+            if (regions[i].Bounds.Contains(point)) return regions[i];
+        return null;
+    }
+
+    /// <summary>The point in the CANVAS's coordinates — the translation that makes the arithmetic
+    /// the app's. Outside the box the numbers go negative or past the size, which is correct: a
+    /// drag that left still has a position.</summary>
+    private static CanvasPointer Local(CanvasRegion region, Point point, bool pressedNow, KeyModifiers modifiers) =>
+        new(point.X - region.Bounds.X, point.Y - region.Bounds.Y, pressedNow, modifiers);
+
     public bool Tap(float x, float y)
     {
         if (_lastFrame is null) return false;

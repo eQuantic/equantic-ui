@@ -28,6 +28,26 @@ public static class RuntimeProvidedTypeScanner
     /// </summary>
     public static readonly HashSet<string> ComponentModelMemberNames = new() { "SetState" };
 
+    /// <summary>
+    /// Interface names this compilation has SEEN — so the string-based type mapper, which has no
+    /// semantic model to ask, can apply the same rule the symbol-based one does: an interface
+    /// crosses as <c>any</c>.
+    /// <para>
+    /// The rule was in two places and reachable from one. A bare <c>ICanvasPainter</c> parameter
+    /// already became <c>any</c> (the symbol path knows the TypeKind), but the same interface
+    /// inside an <c>Action&lt;T&gt;</c> went through the string path and echoed its own name — a
+    /// module importing a value the runtime cannot export, because an interface has none. One
+    /// question, one answer, two callers.
+    /// </para>
+    /// </summary>
+    private static readonly HashSet<string> SeenInterfaces = [];
+
+    /// <summary>Whether <paramref name="name"/> is an interface this compilation resolved.</summary>
+    public static bool IsKnownInterface(string name)
+    {
+        lock (SeenInterfaces) return SeenInterfaces.Contains(name);
+    }
+
     public static bool IsRuntimeProvidedNamespace(string ns) =>
         ns == "eQuantic.UI.Primitives"
         || ns.StartsWith("eQuantic.UI.Primitives.")
@@ -99,7 +119,12 @@ public static class RuntimeProvidedTypeScanner
             }
 
             // Interfaces exist only in the C# type system — they produce no JS value to import.
-            if (type.TypeKind == TypeKind.Interface) continue;
+            // Remembered by name so the string-based type mapper can reach the same conclusion.
+            if (type.TypeKind == TypeKind.Interface)
+            {
+                lock (SeenInterfaces) SeenInterfaces.Add(type.Name);
+                continue;
+            }
 
             // A RESOURCE class is rewritten away (Track L D2): `SdkResources.Checked` leaves as
             // `$eq.str("SdkResources", "Checked")`, so the class ships no module to import — and

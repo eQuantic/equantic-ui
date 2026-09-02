@@ -81,6 +81,23 @@ public static class UI
         return node;
     }
 
+    /// <summary>A component draws its OWN pixels in the box the layout gives it, once per frame
+    /// (W3) — a sunburst, a simulation, a chart whose geometry is recomputed from data that never
+    /// stops. Pointer events arrive in the CANVAS's coordinates, so polar hit-testing and
+    /// per-particle picking are the app's arithmetic. Fills its box unless told otherwise.</summary>
+    public static Canvas Canvas(Action<ICanvasPainter> draw, SizeValue width = default,
+        SizeValue height = default, Action<CanvasPointer>? onPointerDown = null,
+        Action<CanvasPointer>? onPointerMove = null, Action<CanvasPointer>? onPointerUp = null,
+        Action? onPointerLeave = null, string? label = null) =>
+        new Canvas(draw, width, height)
+        {
+            OnPointerDown = onPointerDown,
+            OnPointerMove = onPointerMove,
+            OnPointerUp = onPointerUp,
+            OnPointerLeave = onPointerLeave,
+            Label = label,
+        };
+
     /// <summary>Z-axis composition (spec A3) — paint order is child order, last on top.</summary>
     public static Stack Stack(Alignment align = Alignment.TopStart, SizeValue width = default,
         SizeValue height = default, VisualNode[]? children = null)

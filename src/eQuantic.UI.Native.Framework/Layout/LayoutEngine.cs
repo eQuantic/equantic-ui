@@ -319,6 +319,12 @@ public static class LayoutEngine
         Drawing drawing => ctx.Node(drawing, new Rect(0, 0, drawing.Width, drawing.Height)),
         // The Spinner shares the icon em-box contract (spec B15: sizes = the §07 whitelist).
         Spinner spinner => ctx.Node(spinner, new Rect(0, 0, spinner.Size, spinner.Size)),
+        // A canvas takes the box its SizeValue asks for — Fill by default, because a visualization
+        // wants the room it is offered. It has no content to hug: what it draws is arithmetic over
+        // whatever box it ends up with, which is the whole point of it.
+        Canvas canvas => ctx.Node(canvas, new Rect(0, 0,
+            ResolveSelf(canvas.Width, maxW, 0, ctx.WindowWidth, ctx.IndeterminateWidth),
+            ResolveSelf(canvas.Height, maxH, 0, ctx.WindowHeight, ctx.IndeterminateHeight))),
         // The INLINE-BLOCK barrier (CSS twin): a button, a link and an input are not block-level —
         // a BLOCK container does not stretch them (they hug), while a FLEX stretch reaches
         // through (align-items: stretch stretches any item, buttons included).
@@ -407,6 +413,8 @@ public static class LayoutEngine
         Icon icon => icon.Size,
         Vector vector => vector.Size,
         Drawing drawing => drawing.Width,
+        // A canvas's floor is whatever it was told to be, or nothing when it fills.
+        Canvas canvas => canvas.Width.Kind == SizeKind.Fixed ? canvas.Width.Value : 0,
         Spinner spinner => spinner.Size,
         CameraPreview camera => camera.Width,
         Spacer spacer => spacer.FixedLength,

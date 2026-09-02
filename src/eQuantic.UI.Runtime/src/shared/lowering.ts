@@ -13,6 +13,7 @@
 
 import { round as dotnetRound } from '../utils/dotnet-math';
 import type { EventHandler, HtmlNode } from '../core/types';
+import { CanvasPointer } from './canvas-pointer';
 import { installDraggableController } from '../dom/draggable';
 import { installDragDismissController } from '../dom/drag-dismiss';
 import {
@@ -42,6 +43,8 @@ import type {
   ColorTokenValue,
   ColorValue,
   ComponentNode,
+  CanvasNodeValue,
+  ICanvasPainter,
   DrawingNode,
   VectorGradientValue,
   VectorPaintValue,
@@ -360,6 +363,9 @@ function lowerNodeKind(
         vector.label ?? null,
       );
     }
+    // C# twin (W3): the app's own shapes as inline SVG, in call order.
+    case 'canvas':
+      return lowerCanvas(node as unknown as CanvasNodeValue, path);
     // C# twin: artwork stays VECTOR in the DOM — one <path> per shape, the paint the file chose.
     case 'drawing':
       return lowerDrawing(node as unknown as DrawingNode);
@@ -1624,6 +1630,159 @@ function gradientElement(id: string, paint: VectorPaintValue): HtmlNode {
       return { tag: 'stop', attributes: stopAttributes, events: {}, children: [] };
     }),
   };
+}
+
+/**
+ * The DOM half of the canvas painter: every call becomes one SVG child, in call order, which is
+ * paint order — exactly as the display list treats it on Photon.
+ *
+ * Colours stay `light-dark(...)` rather than being resolved: this target has a cascade to defer to,
+ * so a canvas follows the theme the way every other colour here does.
+ */
+class DomCanvasPainter implements ICanvasPainter {
+  readonly shapes: HtmlNode[] = [];
+
+  constructor(
+    readonly width: number,
+    readonly height: number,
+  ) {}
+
+  private shape(tag: string, attributes: Record<string, string | undefined>): void {
+    this.shapes.push({ tag, attributes, events: {}, children: [] });
+  }
+
+  fillRect(x: number, y: number, width: number, height: number, color: ColorTokenValue, cornerRadius = 0): void {
+    this.shape('rect', {
+      x: num(x), y: num(y), width: num(width), height: num(height),
+      fill: tokenValue(color),
+      rx: cornerRadius > 0 ? num(cornerRadius) : undefined,
+    });
+  }
+
+  strokeRect(x: number, y: number, width: number, height: number, color: ColorTokenValue,
+    strokeWidth: number, cornerRadius = 0): void {
+    // Inset by half the stroke: SVG centres a stroke on its path, and every border in this
+    // framework is drawn INSIDE its bounds (the C# painter says the same, for the same reason).
+    const inset = strokeWidth / 2;
+    this.shape('rect', {
+      x: num(x + inset), y: num(y + inset),
+      width: num(Math.max(0, width - strokeWidth)),
+      height: num(Math.max(0, height - strokeWidth)),
+      fill: 'none', stroke: tokenValue(color), 'stroke-width': num(strokeWidth),
+      rx: cornerRadius > 0 ? num(Math.max(0, cornerRadius - inset)) : undefined,
+    });
+  }
+
+  fillCircle(centerX: number, centerY: number, radius: number, color: ColorTokenValue): void {
+    this.shape('circle', {
+      cx: num(centerX), cy: num(centerY), r: num(radius), fill: tokenValue(color),
+    });
+  }
+
+  fillAnnularSector(centerX: number, centerY: number, innerRadius: number, outerRadius: number,
+    startAngle: number, endAngle: number, color: ColorTokenValue, cornerSmoothing = 0): void {
+    if (outerRadius <= 0 || endAngle === startAngle) return;
+    const sweep = endAngle - startAngle;
+    // A full ring cannot be one arc — start and end coincide, and SVG draws nothing.
+    if (Math.abs(sweep) >= Math.PI * 2 - 1e-4) {
+      this.fillAnnularSector(centerX, centerY, innerRadius, outerRadius, startAngle, startAngle + Math.PI, color, cornerSmoothing);
+      this.fillAnnularSector(centerX, centerY, innerRadius, outerRadius, startAngle + Math.PI, startAngle + Math.PI * 2, color, cornerSmoothing);
+      return;
+    }
+
+    const at = (radius: number, angle: number): [number, number] => [
+      centerX + radius * Math.cos(angle),
+      centerY + radius * Math.sin(angle),
+    ];
+    const largeArc = Math.abs(sweep) > Math.PI ? 1 : 0;
+    const clockwise = sweep > 0 ? 1 : 0;
+    const [ox1, oy1] = at(outerRadius, startAngle);
+    const [ox2, oy2] = at(outerRadius, endAngle);
+    const [ix2, iy2] = at(innerRadius, endAngle);
+    const [ix1, iy1] = at(innerRadius, startAngle);
+
+    const d = innerRadius <= 0
+      ? `M ${num(centerX)} ${num(centerY)} L ${num(ox1)} ${num(oy1)} `
+        + `A ${num(outerRadius)} ${num(outerRadius)} 0 ${largeArc} ${clockwise} ${num(ox2)} ${num(oy2)} Z`
+      : `M ${num(ox1)} ${num(oy1)} `
+        + `A ${num(outerRadius)} ${num(outerRadius)} 0 ${largeArc} ${clockwise} ${num(ox2)} ${num(oy2)} `
+        + `L ${num(ix2)} ${num(iy2)} `
+        + `A ${num(innerRadius)} ${num(innerRadius)} 0 ${largeArc} ${1 - clockwise} ${num(ix1)} ${num(iy1)} Z`;
+
+    this.shape('path', {
+      d,
+      fill: tokenValue(color),
+      stroke: cornerSmoothing > 0 ? tokenValue(color) : undefined,
+      'stroke-width': cornerSmoothing > 0 ? num(cornerSmoothing) : undefined,
+      'stroke-linejoin': cornerSmoothing > 0 ? 'round' : undefined,
+    });
+  }
+
+  line(x1: number, y1: number, x2: number, y2: number, color: ColorTokenValue, strokeWidth: number): void {
+    this.shape('line', {
+      x1: num(x1), y1: num(y1), x2: num(x2), y2: num(y2),
+      stroke: tokenValue(color), 'stroke-width': num(strokeWidth),
+    });
+  }
+}
+
+/** W3: the app's own drawing as one inline `<svg>`, with its pointer handlers attached. */
+function lowerCanvas(node: CanvasNodeValue, path: string): HtmlNode {
+  const width = node.width?.kind === 'fixed' ? node.width.value : 0;
+  const height = node.height?.kind === 'fixed' ? node.height.value : 0;
+  const painter = new DomCanvasPainter(width, height);
+  node.draw(painter);
+
+  const attributes: Record<string, string | undefined> = {
+    style: `display:block;width:${width > 0 ? `${num(width)}px` : '100%'};height:${height > 0 ? `${num(height)}px` : '100%'}`,
+  };
+  // A viewBox only when the box is known: a filling canvas draws in the same coordinates the
+  // browser lays out, so nothing should scale.
+  if (width > 0 && height > 0) attributes['viewBox'] = `0 0 ${num(width)} ${num(height)}`;
+  if (node.label) {
+    attributes['role'] = 'img';
+    attributes['aria-label'] = node.label;
+  } else {
+    attributes['aria-hidden'] = 'true';
+  }
+
+  // The pointer, in the CANVAS's coordinates. `getBoundingClientRect` is what turns the page's
+  // point into the canvas's — the browser's equivalent of the host subtracting the box's origin.
+  const local = (event: PointerEvent, pressed: boolean): CanvasPointer => {
+    const target = event.currentTarget as SVGElement | null;
+    const box = target?.getBoundingClientRect();
+    return new CanvasPointer(
+      event.clientX - (box?.left ?? 0),
+      event.clientY - (box?.top ?? 0),
+      pressed,
+    );
+  };
+
+  const events: HtmlNode['events'] = {};
+  if (node.onPointerDown) {
+    events['pointerdown'] = (event) => {
+      const pointer = event as PointerEvent;
+      // Capture: a drag that leaves the box still belongs to the canvas that took the press —
+      // the browser's equivalent of the native host holding on to `_pressedCanvas`.
+      (pointer.currentTarget as Element | null)?.setPointerCapture?.(pointer.pointerId);
+      node.onPointerDown?.(local(pointer, true));
+    };
+  }
+  if (node.onPointerMove) {
+    events['pointermove'] = (event) => {
+      const pointer = event as PointerEvent;
+      node.onPointerMove?.(local(pointer, pointer.buttons !== 0));
+    };
+  }
+  if (node.onPointerUp) {
+    events['pointerup'] = (event) => node.onPointerUp?.(local(event as PointerEvent, false));
+  }
+  if (node.onPointerLeave) {
+    events['pointerleave'] = () => node.onPointerLeave?.();
+  }
+  if (Object.keys(events).length > 0) attributes['data-eq-canvas'] = '1';
+
+  return { tag: 'svg', attributes, events, children: painter.shapes, key: path };
 }
 
 function lowerDrawing(node: DrawingNode): HtmlNode {
