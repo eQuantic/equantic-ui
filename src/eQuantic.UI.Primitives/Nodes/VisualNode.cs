@@ -564,7 +564,7 @@ public sealed class Overlay : VisualNode
     // ANCESTOR that creates a stacking context (a Stack cell's paint-order z-index, a transform, a
     // filter) traps it — the layer then stacks inside that ancestor instead of over the page. Keep
     // Overlays out of such subtrees (a Column is layout-neutral and safe) until they portal to the
-    // document root. Native has no such rule: overlay layers queue against the viewport.</summary>
+    // document root. Native has no such rule: overlay layers queue against the viewport.
 }
 
 /// <summary>Where an <see cref="Anchored"/> panel attaches relative to its anchor (wave 3 v1: the
@@ -581,20 +581,6 @@ public enum AnchorPlacement : byte
     TopCenter = 5,
 }
 
-/// <summary>
-/// The ANCHORED overlay (wave 3): a floating <see cref="Panel"/> positioned relative to the
-/// in-flow <see cref="Anchor"/> — the primitive under menus, selects and popovers. The anchor owns
-/// layout (the node is layout-transparent); the panel exists only while <see cref="Open"/> and
-/// paints ABOVE the page. When <see cref="OnDismiss"/> is set, an invisible viewport scrim behind
-/// the panel consumes the outside tap and fires it (tap-outside-closes). Web realizes as a
-/// position:relative host with an absolute panel — pure CSS, no JS positioning, SSR-exact; native
-/// queues a synthetic overlay layer with the panel <c>Positioned</c> from the anchor's absolute
-/// bounds. A dismissible OPEN panel declares Escape through the shortcut pipeline (close = the
-/// same <see cref="OnDismiss"/> the scrim fires), and a hover-revealed one is Esc-SUPPRESSED by
-/// the runtime controller (WCAG 1.4.13). v1 fences: viewport flip/clamp (a panel near the edge
-/// does not reposition), escape from clipping ancestors on web (keep anchors out of
-/// overflow-hidden scrollers).
-/// </summary>
 /// <summary>What an <see cref="Anchored"/> panel IS to assistive tech. Grows with the composites
 /// that need it, never speculatively — the same rule <see cref="PressableRole"/> follows.</summary>
 public enum AnchorPanelRole : byte
@@ -618,6 +604,20 @@ public enum AnchorPanelRole : byte
     Dialog = 3,
 }
 
+/// <summary>
+/// The ANCHORED overlay (wave 3): a floating <see cref="Panel"/> positioned relative to the
+/// in-flow <see cref="Anchor"/> — the primitive under menus, selects and popovers. The anchor owns
+/// layout (the node is layout-transparent); the panel exists only while <see cref="Open"/> and
+/// paints ABOVE the page. When <see cref="OnDismiss"/> is set, an invisible viewport scrim behind
+/// the panel consumes the outside tap and fires it (tap-outside-closes). Web realizes as a
+/// position:relative host with an absolute panel — pure CSS, no JS positioning, SSR-exact; native
+/// queues a synthetic overlay layer with the panel <c>Positioned</c> from the anchor's absolute
+/// bounds. A dismissible OPEN panel declares Escape through the shortcut pipeline (close = the
+/// same <see cref="OnDismiss"/> the scrim fires), and a hover-revealed one is Esc-SUPPRESSED by
+/// the runtime controller (WCAG 1.4.13). v1 fences: viewport flip/clamp (a panel near the edge
+/// does not reposition), escape from clipping ancestors on web (keep anchors out of
+/// overflow-hidden scrollers).
+/// </summary>
 public sealed class Anchored : VisualNode
 {
     public override string NodeKind => "anchored";
@@ -872,9 +872,9 @@ public sealed class DragDismiss : VisualNode
 }
 
 /// <summary>
-/// NAVIGATION semantics in the vocabulary: the child becomes a link to <see cref="Href"/>. The child
+/// NAVIGATION semantics in the vocabulary: the child becomes a link to <see cref="Destination"/>. The child
 /// owns ALL visuals (like Pressable) — Link adds only the semantics and the interaction. Web lowers
-/// to a real <c>&lt;a destination&gt;</c> (SSR-crawlable; the SPA router intercepts internal clicks, so
+/// to a real <c>&lt;a href&gt;</c> (SSR-crawlable; the SPA router intercepts internal clicks, so
 /// guards/prefetch apply); native registers a link region and resolves a tap through the HOST's
 /// navigation seam (<c>PhotonHost.NavigationRequested</c> — the platform shell maps hrefs to pages).
 /// Pressables INSIDE a link win the tap (topmost dispatch), exactly like a button inside an anchor.
@@ -1379,7 +1379,7 @@ public sealed record TextRun(string Content, ColorToken? Color = null, bool Mono
     /// <para>
     /// A link is a TARGET-NEUTRAL idea — a run of text that goes somewhere when you touch it, which
     /// every platform has. What is missing is realization, not meaning: the native realizer reads
-    /// neither this, nor <see cref="Text.Spans"/>, nor even <see cref="Link.Href"/>, so a paragraph
+    /// neither this, nor <see cref="Text.Spans"/>, nor even <see cref="Link.Destination"/>, so a paragraph
     /// with links draws on Photon as its text, unlinked. Closing that needs per-run hit testing (the
     /// engine has to know each run's rect) and a navigation action a shell can answer.
     /// </para>
@@ -1391,11 +1391,12 @@ public sealed record TextRun(string Content, ColorToken? Color = null, bool Mono
     /// </para>
     /// <para>
     /// The NAME is not universal, and it is worth being exact about that. Apple says <c>link</c>,
-    /// Android says <c>URLSpan</c>, and <c>destination</c> is HTML's word. It is used here for internal
-    /// consistency with <see cref="Link.Href"/>, which shipped first — one concept with two names
-    /// inside one vocabulary would be worse than one borrowed name. That is a consistency argument,
-    /// not a neutrality one; the abstract layer otherwise avoids a target's vocabulary on purpose
-    /// (<see cref="Pressable"/>, not "Button" or "Clickable").
+    /// Android says <c>URLSpan</c>, and <c>href</c> is HTML's word. <c>Destination</c> is none of
+    /// theirs, and it is used here for internal consistency with <see cref="Link.Destination"/>,
+    /// which shipped first — one concept with two names inside one vocabulary would be worse than
+    /// one word shared with the node that wraps it. The abstract layer avoids a target's vocabulary
+    /// on purpose (<see cref="Pressable"/>, not "Button" or "Clickable"), and this name is the rule,
+    /// not an exception to it.
     /// </para>
     /// </summary>
     public string? Destination { get; init; }
