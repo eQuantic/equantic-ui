@@ -6,7 +6,7 @@ namespace eQuantic.UI.Primitives;
 /// A screen is built, laid out and drawn on ONE thread — the platform's main thread on every native
 /// target, and the only thread there is in a browser. Everything else an app does happens elsewhere:
 /// a scanner walking a disk, a download, a database read. When one of those finishes it wants to
-/// show what it found, and <see cref="UiComponent.SetState"/> is how — but a mutation from a worker
+/// show what it found, and <see cref="StatefulComponent.SetState"/> is how — but a mutation from a worker
 /// thread lands in the component's fields while the render thread is reading that very tree, which
 /// is a data race with no error message: a frame drawn from half-old state, a collection enumerated
 /// while it grows, a crash that reproduces once a week.
