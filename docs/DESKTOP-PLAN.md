@@ -108,16 +108,36 @@ The largest slice, all of it generic:
   launch-at-login (`SMAppService`), global shortcuts
 - Dynamic DPI on monitor change — `backingScaleFactor` is read once today (`PhotonWindow.cs:122`)
 
-### W5 — Sdk.Native: real packaging (4–6 w; SEQUENCE FIRST)
+### W5 — Sdk.Native: real packaging (4–6 w; SEQUENCE FIRST) — DELIVERED but for one proof
 
 MSBuild properties for a real signing identity, entitlements, hardened runtime and notarization
-(`notarytool` + stapler); arbitrary `Info.plist` keys (the set is fixed today); bundling from
-PUBLISH output (trimming/self-contained never reach the .app today); DMG generation; a minimal
-`IAppUpdater` (manifest endpoint → download → verify → swap → relaunch).
+(`notarytool` + stapler); arbitrary `Info.plist` keys; bundling from PUBLISH output; DMG generation;
+a minimal `IAppUpdater` (manifest endpoint → download → verify → swap → relaunch).
 
 Sequenced FIRST among the independents deliberately: signing identity unblocks three things at
 once — TCC grants that survive builds, notifications (which require a signed bundle), and any
 auto-update story. W4's notification work lands on it.
+
+**State.** Signing identity and entitlements shipped in 0.2.0-preview.46. The rest landed together:
+the bundle is assembled from the PUBLISH output (it was assembled from the build output, so trimming
+and self-contained never reached the `.app` — measured 172 MB against a 23 MB publish), the plist is
+declared in C# (`builder.Bundle.Copyright(…).Category(…).Agent().UrlScheme(…)`), notarization runs
+`ditto` → `notarytool submit --wait` → `stapler staple`, and `EQuanticPackageFormat=Dmg` writes a
+signed image. Trimming had to be made to WORK for any of it to mean anything: four defects, all of
+them the trimmer reading the same evidence the design relies on and concluding the opposite.
+
+**Owed.** Two things, and neither is more code:
+
+- **A notarized bundle has never been produced.** The steps run in order and fail loudly on a
+  credential that does not exist, but nobody on this machine holds a Developer ID. This is the one
+  line of the acceptance below still open, and it needs a certificate.
+- **`IAppUpdater` is not started.** It is the last piece of W5 and the natural next slice, and the
+  acceptance ("installed and relaunched by the minimal updater") depends on it.
+
+**Handed to W4.** `builder.Bundle.UrlScheme("acme")` now declares the scheme, so macOS launches the
+app for `acme://…` — and nothing delivers the URL, because `kAEGetURL` handling is W4's and the
+macOS shell has none. The plist half shipped first deliberately (a handler for a scheme no app can
+declare would be the wrong order), and the delivery seam is the first thing W4 should take.
 
 ### W7 — The developer loop: run, debug, hot reload (2–3 w)
 
