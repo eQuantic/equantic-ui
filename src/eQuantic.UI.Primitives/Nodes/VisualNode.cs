@@ -15,6 +15,41 @@ public abstract class VisualNode
     public string? Key { get; init; }
 
     /// <summary>
+    /// A named place in the screen that a link can reach — <c>Link("#features", …)</c> arrives at
+    /// the node that says <c>Bookmark = "features"</c>.
+    /// </summary>
+    /// <remarks>
+    /// NOT called Anchor, though that is the word the web uses: <see cref="Anchored"/> already
+    /// spends it on the node a popover is positioned against, and one vocabulary cannot hold two
+    /// meanings for one word. Not <see cref="Key"/> either, which the two were confused for until a
+    /// site's whole landing nav turned out to be dead links: a Key need only be unique among
+    /// SIBLINGS, and in a list it is typically "1", "2", "3" — projecting that onto a screen-wide
+    /// name would collide on the first repeated list. A Key answers "which node is this, across
+    /// rebuilds"; a Bookmark answers "what may point at it". A node can have both, and a node whose
+    /// Key is a real reconciliation key must not have that key leak into the document.
+    /// <para>
+    /// Nothing validates the value beyond emptiness, on purpose. These are frequently GENERATED —
+    /// a documentation rail slugs the headings it finds — so the author often never types one, and
+    /// refusing a duplicate at build time would fail a docs page because the source it renders grew
+    /// a repeated heading. A collision is the page's to fix, not the SDK's to forbid.
+    /// </para>
+    /// <para>
+    /// On the web this becomes the element's <c>id</c>, and the realizer also gives it room to
+    /// land: a browser scrolls a target to the very top, so under a sticky header the target
+    /// arrives HIDDEN. The offset comes from the sticky the app already declared, measured at run
+    /// time, never a number the author repeats — one app here has a 60dp nav on one page and a
+    /// 56dp topbar on another, and states neither.
+    /// </para>
+    /// <para>
+    /// ON PHOTON it is inert TODAY, and that is a fence rather than an oversight: a bookmark is
+    /// somewhere to scroll to, and the desktop track has no programmatic scrolling yet (Track W's
+    /// W4 owns it). Declaring one there is not wrong and costs nothing — it is the same screen,
+    /// written once — it simply has nothing to answer until there is something that scrolls.
+    /// </para>
+    /// </remarks>
+    public string? Bookmark { get; init; }
+
+    /// <summary>
     /// WHERE IN THE SOURCE this node was constructed — <c>path|startLine:startCol|endLine:endCol</c>,
     /// zero-based — or <c>null</c>, which is what production always is.
     /// <para>

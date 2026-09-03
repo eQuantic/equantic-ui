@@ -126,6 +126,21 @@ public static class WebRealizer
     private static HtmlElement? LowerNode(VisualNode node, ComponentContext context, bool? horizontalAxis)
     {
         var lowered = LowerNodeKind(node, context, horizontalAxis);
+
+        // The one funnel every node passes through, which is where a property that belongs to ALL
+        // of them has to be written — an in-page link may point at any node, not at a chosen few.
+        if (lowered is not null && node.Bookmark is { Length: > 0 } bookmark)
+        {
+            lowered.Id = bookmark;
+            // ROOM TO LAND. A browser scrolls a target to the very top, so under a sticky header
+            // the anchor arrives hidden behind it — the link "works" and still looks broken, which
+            // is the more expensive bug of the two. The offset is a variable the sticky itself
+            // publishes (see the runtime's sticky measurement), never a number the author repeats:
+            // one page here has a 60dp nav and another a 56dp topbar, and neither states either.
+            lowered.Style ??= new HtmlStyle();
+            lowered.Style.ScrollMarginTop = "var(--eq-anchor-offset, 0px)";
+        }
+
         if (lowered is not null && node.Origin is { Length: > 0 } origin)
         {
             // DataAttributes and not RawAttributes: RawAttributes lives on RealizedElement (it exists
@@ -637,6 +652,11 @@ public static class WebRealizer
 
         if (LowerNode(sticky.Child, context, horizontalAxis: null) is { } child)
             element.Children.Add(child);
+        // Marked so the runtime can MEASURE it: a bookmark keeps room above itself equal to the
+        // chrome that would cover it, and the height of a content-sized bar is not knowable here.
+        // Emitted by SSR too, or the hydrated DOM would differ from this one by an attribute.
+        (element.DataAttributes ??= new Dictionary<string, string>())["eq-sticky"] = "1";
+
         return element;
     }
 

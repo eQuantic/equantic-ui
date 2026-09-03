@@ -311,6 +311,12 @@ export interface ComponentChild {
 }
 
 export interface VisualNodeValue {
+  /**
+   * The C# `VisualNode.Bookmark` — a named place a link can reach, which becomes the element's
+   * `id`. Distinct from `key`, which is reconciler identity and need only be unique among siblings;
+   * and not called `anchor`, a word `Anchored` already spends on popover positioning.
+   */
+  bookmark?: string | null;
   nodeKind: string;
   key?: string | null;
   /** Spec S4: grid column span (parent-interpreted; 0/1 = one column). */

@@ -281,6 +281,26 @@ function lowerNode(
   path: string,
 ): HtmlNode | null {
   const lowered = lowerNodeKind(node, context, horizontalAxis, path);
+
+  // The C# twin writes exactly this (WebRealizer.LowerNode), because an in-page link may point at
+  // ANY node — and because SSR and hydration disagreeing by one attribute is a diverged tree.
+  const bookmarked = node as { bookmark?: string };
+  if (lowered && bookmarked.bookmark) {
+    lowered.attributes['id'] = bookmarked.bookmark;
+    // Room to land under a sticky header — the variable the sticky itself publishes, never a
+    // number the author repeats. See the C# side for the reasoning.
+    // An ATOMIC CLASS, not an inline declaration. Under the style sink the C# realizer atomises
+    // every declaration and leaves inline only the custom-property tail — so writing this one
+    // inline here would put SSR and hydration one attribute apart on every bookmarked element,
+    // and the reconciler would patch it on every hydrate. The hash is the same on both sides
+    // (that cross-pin is what the atomiser exists for), so the class list stays byte-identical.
+    const room = atomizeEntries({ 'scroll-margin-top': 'var(--eq-anchor-offset, 0px)' });
+    if (room.class) {
+      const existing = lowered.attributes['class'];
+      lowered.attributes['class'] = existing ? `${existing} ${room.class}` : room.class;
+    }
+  }
+
   const stamped = node as { origin?: string; originLabel?: string };
   if (lowered && stamped.origin) {
     lowered.attributes['data-eq-origin'] = stamped.origin;
@@ -3190,6 +3210,11 @@ function lowerSticky(node: StickyNode, context: LoweringContext, path: string): 
 
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) wrapper.children.push(child);
+
+  // Marked so the offset publisher can MEASURE it — the C# realizer emits the identical attribute,
+  // because a bookmark's room above itself is the height of the chrome covering it, and that
+  // height is not knowable before layout.
+  wrapper.attributes['data-eq-sticky'] = '1';
   return wrapper;
 }
 
