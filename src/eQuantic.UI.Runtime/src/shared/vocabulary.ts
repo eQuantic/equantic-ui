@@ -8,7 +8,7 @@
  * `render()` like on any other component; the reconciler never learns about abstract nodes).
  */
 
-import type { AnchorPlacementValue, ComponentChild, NavigableMoveValue } from './nodes';
+import type { AnchorPlacementValue, ComponentChild, ICanvasPainter, NavigableMoveValue } from './nodes';
 import type { HtmlNode } from '../core/types';
 import { setCenterWrapper } from '../core/types';
 import { iconPaths } from './icons.generated';
@@ -21,6 +21,8 @@ import type {
   MainAlignValue,
   TypeStyleValue,
 } from './nodes';
+import { CanvasPointer } from './canvas-pointer';
+export { CanvasPointer };
 import { lowerVisualNode } from './lowering';
 import { ambientLoweringContext } from './photon-context';
 import { CornerRadii, EdgeInsets, SizeValue, StyleChannels } from './value-types';
@@ -1405,6 +1407,44 @@ export class Vector extends VisualNode {
     this.height = height > 0 ? height : size;
     this.color = color;
     this.label = label;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/**
+ * W3: a component draws its OWN pixels inside the box the layout gives it, once per frame.
+ *
+ * Everything else in the vocabulary is composed from nodes, which is right for a user interface
+ * and wrong for a visualization: a sunburst of a million files, a physics-driven set of bubbles, a
+ * chart recomputed from data that never stops. Those are ARITHMETIC over a box.
+ *
+ * Pointer events arrive in the canvas's OWN coordinates, which is what makes the hit test the
+ * app's: polar for a sunburst, per-particle for a simulation. The engine hands over the point and
+ * does not pretend to know what was drawn there.
+ */
+export class Canvas extends VisualNode {
+  readonly nodeKind = 'canvas';
+  draw: (painter: ICanvasPainter) => void;
+  width: SizeValue;
+  height: SizeValue;
+  onPointerDown: ((pointer: CanvasPointer) => void) | null = null;
+  onPointerMove: ((pointer: CanvasPointer) => void) | null = null;
+  onPointerUp: ((pointer: CanvasPointer) => void) | null = null;
+  onPointerLeave: (() => void) | null = null;
+  label: string | null = null;
+
+  constructor(
+    draw: (painter: ICanvasPainter) => void,
+    width?: SizeValue,
+    height?: SizeValue,
+    config?: EqConfig,
+  ) {
+    super();
+    this.draw = draw;
+    // Hug becomes Fill: a canvas with no stated size wants the room it is offered, which is what a
+    // visualization almost always means (the C# constructor makes the same substitution).
+    this.width = width && width.kind !== 'hug' ? width : SizeValue.fill;
+    this.height = height && height.kind !== 'hug' ? height : SizeValue.fill;
     if (config) Object.assign(this, config);
   }
 }

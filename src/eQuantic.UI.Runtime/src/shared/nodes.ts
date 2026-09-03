@@ -746,6 +746,43 @@ export interface VectorNode extends VisualNodeValue {
   label?: string | null;
 }
 
+/**
+ * W3: a component draws its OWN shapes inside the box the layout gives it, once per frame — a
+ * sunburst, a simulation, a chart recomputed from data that never stops. The painter's vocabulary
+ * is the ENGINE's (rects, circles, annular sectors, strokes), so the same calls draw on both
+ * targets; here they become inline SVG.
+ */
+export interface CanvasNodeValue extends VisualNodeValue {
+  nodeKind: 'canvas';
+  draw: (painter: ICanvasPainter) => void;
+  width?: SizeValueValue;
+  height?: SizeValueValue;
+  onPointerDown?: ((pointer: CanvasPointerValue) => void) | null;
+  onPointerMove?: ((pointer: CanvasPointerValue) => void) | null;
+  onPointerUp?: ((pointer: CanvasPointerValue) => void) | null;
+  onPointerLeave?: (() => void) | null;
+  label?: string | null;
+}
+
+/** The C# `ICanvasPainter` twin — the shapes a canvas can draw, in its own coordinates. */
+export interface ICanvasPainter {
+  readonly width: number;
+  readonly height: number;
+  fillRect(x: number, y: number, width: number, height: number, color: ColorTokenValue, cornerRadius?: number): void;
+  strokeRect(x: number, y: number, width: number, height: number, color: ColorTokenValue, strokeWidth: number, cornerRadius?: number): void;
+  fillCircle(centerX: number, centerY: number, radius: number, color: ColorTokenValue): void;
+  fillAnnularSector(centerX: number, centerY: number, innerRadius: number, outerRadius: number, startAngle: number, endAngle: number, color: ColorTokenValue, cornerSmoothing?: number): void;
+  line(x1: number, y1: number, x2: number, y2: number, color: ColorTokenValue, strokeWidth: number): void;
+}
+
+/** A pointer event in a canvas's own coordinates (the C# `CanvasPointer` twin). */
+export interface CanvasPointerValue {
+  x: number;
+  y: number;
+  pressed: boolean;
+  modifiers: number;
+}
+
 /** `VectorPaintKind` transpiles to camelCase member strings. */
 export type { VectorPaintKindValue } from './enums.generated';
 

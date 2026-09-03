@@ -1,6 +1,7 @@
 using Android.Graphics;
 using eQuantic.UI.Native.Framework;
 using eQuantic.UI.Primitives;
+using Canvas = Android.Graphics.Canvas;
 using Color = Android.Graphics.Color;
 using Path = Android.Graphics.Path;
 // The vocabulary and the platform both have a PathVerb; the shared parser's is the one being read.

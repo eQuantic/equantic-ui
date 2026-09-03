@@ -13,6 +13,12 @@
 
 import { round as dotnetRound } from '../utils/dotnet-math';
 import type { EventHandler, HtmlNode } from '../core/types';
+import { CanvasPointer } from './canvas-pointer';
+// Leaf helpers — see css-values for why they are not defined here.
+import { hex, modifiersOf, num, tokenValue } from './css-values';
+export { num, tokenValue };
+import { DomCanvasPainter } from './canvas-painter';
+import { declareCanvas } from './canvas-surface';
 import { installDraggableController } from '../dom/draggable';
 import { installDragDismissController } from '../dom/drag-dismiss';
 import {
@@ -42,6 +48,7 @@ import type {
   ColorTokenValue,
   ColorValue,
   ComponentNode,
+  CanvasNodeValue,
   DrawingNode,
   VectorGradientValue,
   VectorPaintValue,
@@ -143,11 +150,6 @@ export function lowerVisualNode(node: VisualNodeValue, context: LoweringContext)
 
 // ---- token → CSS value formatting (mirrors C# TokenCss) ------------------------------------------
 
-function hex(color: ColorValue): string {
-  const channel = (v: number) => v.toString(16).padStart(2, '0');
-  const base = `#${channel(color.r)}${channel(color.g)}${channel(color.b)}`;
-  return color.a === 255 ? base : base + channel(color.a);
-}
 
 /** The same token at a fraction of its alpha — the C# `Color.WithOpacity` twin. */
 function withAlpha(token: ColorTokenValue, alpha: number): ColorTokenValue {
@@ -158,11 +160,6 @@ function withAlpha(token: ColorTokenValue, alpha: number): ColorTokenValue {
   return { light: fade(token.light), dark: fade(token.dark) };
 }
 
-export function tokenValue(token: ColorTokenValue): string {
-  const light = hex(token.light);
-  const dark = hex(token.dark);
-  return light === dark ? light : `light-dark(${light}, ${dark})`;
-}
 
 /**
  * The C# `BorderSides` flags, by value: Top 1, End 2, Bottom 4, Start 8, All 15. They cross as
@@ -192,10 +189,6 @@ export function px(dp: number): string {
   return `${parseFloat(dp.toFixed(2))}px`;
 }
 
-/** Bare invariant number — mirrors C# TokenCss.Number ("0.####"). */
-function num(value: number): string {
-  return `${parseFloat(value.toFixed(4))}`;
-}
 
 /** Mirrors C# TokenCss.Transform: translate → rotate → scale, only non-neutral parts. */
 function transformValue(t: TransformValue): string | undefined {
@@ -376,6 +369,9 @@ function lowerNodeKind(
         vector.label ?? null,
       );
     }
+    // C# twin (W3): the app's own shapes as inline SVG, in call order.
+    case 'canvas':
+      return lowerCanvas(node as unknown as CanvasNodeValue, path);
     // C# twin: artwork stays VECTOR in the DOM — one <path> per shape, the paint the file chose.
     case 'drawing':
       return lowerDrawing(node as unknown as DrawingNode);
@@ -582,8 +578,7 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
 
   const changed = () => node.onChanged?.();
   surface.events['keydown'] = ((event: KeyboardEvent) => {
-    const modifiers =
-      (event.shiftKey ? 1 : 0) | (event.altKey ? 2 : 0) | (event.metaKey || event.ctrlKey ? 4 : 0);
+    const modifiers = modifiersOf(event);
     if (handleCodeKey(editor, event.key, modifiers)) {
       event.preventDefault();
       changed();
@@ -1640,6 +1635,89 @@ function gradientElement(id: string, paint: VectorPaintValue): HtmlNode {
       return { tag: 'stop', attributes: stopAttributes, events: {}, children: [] };
     }),
   };
+}
+
+/** W3: the app's own drawing as one inline `<svg>`, with its pointer handlers attached. */
+function lowerCanvas(node: CanvasNodeValue, path: string): HtmlNode {
+  const width = node.width?.kind === 'fixed' ? node.width.value : 0;
+  const height = node.height?.kind === 'fixed' ? node.height.value : 0;
+  const measured = width > 0 && height > 0;
+
+  // A FIXED canvas knows its box here, so it draws once and SSR carries the final picture. A
+  // FILLING one does not — CSS decides its box after this markup exists — so it is DECLARED and
+  // drawn again the moment the element has been measured (see canvas-surface). Drawing it now at
+  // zero would put every `p.Width / 2` in the top-left corner and leave it there.
+  const painter = new DomCanvasPainter(width, height);
+  if (measured) node.draw(painter);
+  else declareCanvas(path, { draw: node.draw });
+
+  const attributes: Record<string, string | undefined> = {
+    style: `display:block;width:${width > 0 ? `${num(width)}px` : '100%'};height:${height > 0 ? `${num(height)}px` : '100%'}`,
+  };
+  // A viewBox only when the box is known: a filling canvas draws in the same coordinates the
+  // browser lays out, so nothing should scale.
+  if (measured) attributes['viewBox'] = `0 0 ${num(width)} ${num(height)}`;
+  // The marker the surface controller finds after the DOM is written.
+  if (!measured) attributes['data-eq-canvas-fill'] = path;
+  if (node.label) {
+    attributes['role'] = 'img';
+    attributes['aria-label'] = node.label;
+  } else {
+    attributes['aria-hidden'] = 'true';
+  }
+
+  // The pointer, in the CANVAS's coordinates. `getBoundingClientRect` is what turns the page's
+  // point into the canvas's — the browser's equivalent of the host subtracting the box's origin.
+  const local = (event: PointerEvent, pressed: boolean): CanvasPointer => {
+    const target = event.currentTarget as SVGElement | null;
+    const box = target?.getBoundingClientRect();
+    // The same expression the key path uses — an app that gestures differently under ⌘ must read
+    // the same number wherever it asks, and this reported a constant 0 before.
+    const modifiers = modifiersOf(event);
+    return new CanvasPointer(
+      event.clientX - (box?.left ?? 0),
+      event.clientY - (box?.top ?? 0),
+      pressed,
+      modifiers,
+    );
+  };
+
+  const events: HtmlNode['events'] = {};
+  const listens = Boolean(node.onPointerDown || node.onPointerMove || node.onPointerUp || node.onPointerLeave);
+  if (listens) {
+    // The press is captured whenever the canvas listens for ANYTHING, not only when it listens for
+    // the press itself: on Photon `PressDown` sets the pressed canvas unconditionally, so a canvas
+    // with only OnPointerMove/OnPointerUp still owns the drag that leaves its box. Installing this
+    // handler only for onPointerDown made the web disagree with a case the native tests pin.
+    events['pointerdown'] = (event) => {
+      const pointer = event as PointerEvent;
+      (pointer.currentTarget as Element | null)?.setPointerCapture?.(pointer.pointerId);
+      node.onPointerDown?.(local(pointer, true));
+    };
+  }
+  if (node.onPointerMove) {
+    events['pointermove'] = (event) => {
+      const pointer = event as PointerEvent;
+      node.onPointerMove?.(local(pointer, pointer.buttons !== 0));
+    };
+  }
+  if (node.onPointerUp) {
+    events['pointerup'] = (event) => node.onPointerUp?.(local(event as PointerEvent, false));
+  }
+  if (node.onPointerLeave) {
+    events['pointerleave'] = () => node.onPointerLeave?.();
+  }
+  if (Object.keys(events).length > 0) {
+    attributes['data-eq-canvas'] = '1';
+  } else {
+    // A DECORATIVE canvas must not swallow the press that belongs to what is under it. Photon's
+    // hit-testing skips a canvas with no handlers (it registers no region at all); the DOM has no
+    // such rule, so a filling svg over a Stack would eat every click. Same behaviour, said in the
+    // two languages — the C# realizer sets the identical style for SSR.
+    attributes['style'] = `${attributes['style'] ?? ''};pointer-events:none`;
+  }
+
+  return { tag: 'svg', attributes, events, children: painter.shapes, key: path };
 }
 
 function lowerDrawing(node: DrawingNode): HtmlNode {

@@ -6,6 +6,7 @@
 export { Component, HtmlElement } from './core/types';
 export { DynamicElement } from './core/dynamic-element';
 export type { IComponent, HtmlNode, RenderContext, StyleClass, EventHandler } from './core/types';
+export type { ICanvasPainter } from './shared/nodes';
 // The C# `BuildContext` mirror — transpiled components declare `build(context: BuildContext)`, so the
 // name must resolve here exactly as it does in shared/runtime-exports.
 export type { RenderContext as BuildContext } from './core/types';
@@ -146,6 +147,8 @@ export {
   Positioned,
   Icon,
   Vector,
+  Canvas,
+  CanvasPointer,
   Drawing,
   VectorDrawing,
   VectorGradient,

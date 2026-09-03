@@ -12,6 +12,7 @@
 export type * from './enums.generated';
 
 export { $eq } from '../eq';
+export type { ICanvasPainter } from './nodes';
 export { Component, HtmlElement } from '../core/types';
 // The C# `UiComponent` base as it surfaces in transpiled signatures (AdoptConfig, composition).
 export { Component as UiComponent } from '../core/types';
@@ -70,6 +71,8 @@ export {
   Sticky,
   AdaptiveNode,
   Vector,
+  Canvas,
+  CanvasPointer,
   Drawing,
   VectorDrawing,
   VectorGradient,

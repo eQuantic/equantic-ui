@@ -20,6 +20,13 @@ public readonly record struct HoverRegion(Rect Bounds, VisualNode Node, string P
 /// TOPMOST region under the pointer and adjusts its stored offset (clamped to MaxOffset).</summary>
 public readonly record struct ScrollRegion(Rect Bounds, string Path, float MaxOffset, ScrollAxis Axis, float Fallback);
 
+/// <summary>
+/// W3: a <see cref="Canvas"/> the host routes pointer events to, in the canvas's OWN coordinates.
+/// The engine knows only that a point landed in the box — what was drawn there, and therefore what
+/// was hit, is the app's arithmetic.
+/// </summary>
+public readonly record struct CanvasRegion(Rect Bounds, Canvas Node, string Path);
+
 /// <summary>Gestures v2: a drag-to-dismiss surface — the host tracks a press that travels past the
 /// slop as a vertical drag on the TOPMOST region under the start point (paint-order last-wins).</summary>
 /// <summary>
@@ -89,12 +96,14 @@ public sealed class RealizeResult
         IReadOnlyList<ShortcutBinding>? shortcuts = null, IReadOnlyList<TextRegion>? textRegions = null,
         IReadOnlyList<FocusStop>? focusStops = null, IReadOnlyList<CodeRegion>? codeRegions = null,
         IReadOnlyList<LayoutNode>? overlayRoots = null, IReadOnlyList<SheetRegion>? sheetRegions = null,
-        IReadOnlyList<CursorRegion>? cursorRegions = null)
+        IReadOnlyList<CursorRegion>? cursorRegions = null,
+        IReadOnlyList<CanvasRegion>? canvasRegions = null)
     {
         Root = root;
         OverlayRoots = overlayRoots ?? Array.Empty<LayoutNode>();
         SheetRegions = sheetRegions ?? Array.Empty<SheetRegion>();
         CursorRegions = cursorRegions ?? Array.Empty<CursorRegion>();
+        CanvasRegions = canvasRegions ?? Array.Empty<CanvasRegion>();
         HitRegions = hitRegions;
         HasActiveMotion = hasActiveMotion;
         HoverRegions = hoverRegions ?? Array.Empty<HoverRegion>();
@@ -106,6 +115,9 @@ public sealed class RealizeResult
         FocusStops = focusStops ?? Array.Empty<FocusStop>();
         CodeRegions = codeRegions ?? Array.Empty<CodeRegion>();
     }
+
+    /// <summary>Canvases the pointer can reach, in paint order (topmost last).</summary>
+    public IReadOnlyList<CanvasRegion> CanvasRegions { get; }
 
     /// <summary>Editable code surfaces, in paint order (topmost last).</summary>
     public IReadOnlyList<CodeRegion> CodeRegions { get; }
@@ -273,7 +285,8 @@ public static class PhotonRealizer
         var codes = new List<CodeRegion>();
         var sheets = new List<SheetRegion>();
         var cursors = new List<CursorRegion>();
-        var input = new InputSink(hits, hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes, sheets, cursors);
+        var canvases = new List<CanvasRegion>();
+        var input = new InputSink(hits, hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes, sheets, cursors, canvases);
         Emit(layout, theme, mode, builder, input, context.ScrollMeta!, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredPaths) { ScrollOffset = scrollOffset, MarkedText = markedText, Surface = new Rect(0, 0, viewportWidth, viewportHeight), InView = inViewStore }, motion, overlays);
 
         // Overlay pass (Phase C): each queued layer lays out against the VIEWPORT and paints ABOVE
@@ -316,7 +329,7 @@ public static class PhotonRealizer
         return new RealizeResult(layout, hits,
             motion.Active || transitions is { AnyActive: true } || presences is { AnyActive: true }
                 || drags is { AnyActive: true },
-            hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes, overlayRoots, sheets, cursors);
+            hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes, overlayRoots, sheets, cursors, canvases);
     }
 
     /// <summary>The frame clock for loop motion: offsets resolve as a PURE function of
@@ -879,6 +892,19 @@ public static class PhotonRealizer
                         MathF.Max(maxY - minY, 0) * unitY);
                 }
 
+                break;
+            }
+
+            case Canvas canvas:
+            {
+                // The app draws its own pixels here, in ITS coordinates, once per frame. The
+                // painter is handed out for THIS frame only — it is the frame being built.
+                canvas.Draw(new PhotonCanvasPainter(builder, node.Bounds, mode));
+                if (canvas.OnPointerDown is not null || canvas.OnPointerMove is not null
+                    || canvas.OnPointerUp is not null || canvas.OnPointerLeave is not null)
+                {
+                    input.Add(new CanvasRegion(node.Bounds, canvas, node.Path ?? ""));
+                }
                 break;
             }
 

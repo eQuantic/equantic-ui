@@ -172,6 +172,7 @@ public static class WebRealizer
         Icon icon => LowerIcon(icon, context),
         Vector vector => LowerVector(vector),
         Drawing drawing => LowerDrawing(drawing),
+        Canvas canvas => LowerCanvas(canvas),
         Spinner spinner => LowerSpinner(spinner, context),
         Primitives.Image image => LowerImage(image),
         CameraPreview camera => LowerCameraPreview(camera),
@@ -757,6 +758,89 @@ public static class WebRealizer
             };
             svg.Children.Add(bar);
         }
+        return svg;
+    }
+
+    /// <summary>
+    /// W3 lowering: the app's own drawing as one inline <c>&lt;svg&gt;</c> whose children are the
+    /// shapes it painted, in call order.
+    /// <para>
+    /// SVG rather than <c>&lt;canvas&gt;</c> for the reasons the rest of this realizer chose it: it
+    /// SSRs to the same pixels it hydrates to, it scales with the device pixel ratio for free, and
+    /// the reconciler diffs it like any other markup. A <c>&lt;canvas&gt;</c> would be a blank
+    /// rectangle on the server and a second rendering model to keep in step.
+    /// </para>
+    /// <para>
+    /// The pointer handlers are MARKED here (<c>data-eq-canvas</c>) and wired by the runtime, which
+    /// is the same contract Shortcut uses: SSR has no pointer events, so the marker is the whole
+    /// server-side story and the hydrated DOM is identical.
+    /// </para>
+    /// </summary>
+    private static HtmlElement LowerCanvas(Canvas canvas)
+    {
+        var width = canvas.Width.Kind == SizeKind.Fixed ? canvas.Width.Value : 0;
+        var height = canvas.Height.Kind == SizeKind.Fixed ? canvas.Height.Value : 0;
+        var measured = width > 0 && height > 0;
+
+        // A FIXED canvas knows its box here, so SSR carries the finished picture. A FILLING one
+        // does not — CSS decides its box after this markup exists — so the server emits the shell
+        // and the runtime draws it once the element has been measured (canvas-surface.ts), then
+        // again on every resize. Photon needs none of this: it lays out and paints every frame, so
+        // the painter there always answers with the real box. Drawing here at zero instead would
+        // put every `Width / 2` in the top-left corner and leave it there.
+        var painter = new SvgCanvasPainter(width, height);
+        if (measured) canvas.Draw(painter);
+
+        var svg = new RealizedElement("svg")
+        {
+            Style = new HtmlStyle
+            {
+                // Block for the same reason every other inline svg here is: an inline one would
+                // sit on the text baseline of whatever box holds it.
+                Display = Core.Display.Block,
+                Width = canvas.Width.Kind == SizeKind.Fixed ? TokenCss.Px(width) : "100%",
+                Height = canvas.Height.Kind == SizeKind.Fixed ? TokenCss.Px(height) : "100%",
+            },
+            RawAttributes = new Dictionary<string, string>(),
+        };
+        // A viewBox only when the box is known: with a filling canvas the app draws in the SAME
+        // coordinates the browser lays out, so no scaling should happen at all.
+        if (measured)
+            svg.RawAttributes["viewBox"] = $"0 0 {TokenCss.Number(width)} {TokenCss.Number(height)}";
+
+        if (canvas.Label is { Length: > 0 } label)
+        {
+            svg.RawAttributes["role"] = "img";
+            svg.RawAttributes["aria-label"] = label;
+        }
+        else svg.RawAttributes["aria-hidden"] = "true";
+
+        var interactive = canvas.OnPointerDown is not null || canvas.OnPointerMove is not null
+            || canvas.OnPointerUp is not null || canvas.OnPointerLeave is not null;
+        // NO marker from the server, and that is deliberate rather than an omission. The runtime's
+        // surface controller looks a declaration up BY PATH, and the path is a client-side identity
+        // this realizer does not have — emitting a placeholder instead would be worse than emitting
+        // nothing, because the reconciler adds a missing data attribute but does not overwrite one
+        // that is already there, so the placeholder would stick and the canvas would never paint.
+        // The client marks it on hydration, exactly as InView does for the same reason.
+
+        if (interactive)
+        {
+            // DataAttributes is nullable and starts null — indexing it would have thrown on the
+            // first interactive canvas anyone wrote.
+            svg.DataAttributes ??= new Dictionary<string, string>();
+            svg.DataAttributes["eq-canvas"] = "1";
+        }
+        else
+        {
+            // A DECORATIVE canvas must not swallow the press that belongs to what is under it —
+            // Photon's hit-testing skips a canvas with no handlers (it registers no region at all),
+            // and the DOM has no such rule: a filling svg over a Stack would eat every click. This
+            // is the line that makes the two targets behave the same.
+            svg.Style.PointerEvents = "none";
+        }
+
+        foreach (var shape in painter.Shapes) svg.Children.Add(shape);
         return svg;
     }
 
