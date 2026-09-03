@@ -66,8 +66,27 @@ public class BookmarkTests
         var bookmarked = Render(new Box(new BoxStyle()) { Bookmark = "features" })
             .First(n => n.Attributes.GetValueOrDefault("id") == "features");
 
+        // WITHOUT the sink the declaration stays inline, which is what this realizer does with
+        // every style when nothing is collecting atoms.
         bookmarked.Attributes["style"].Should().Contain("scroll-margin-top")
             .And.Contain("--eq-anchor-offset");
+    }
+
+    [Fact]
+    public void UnderTheAtomicSink_TheRoomIsAClass_LikeEveryOtherDeclaration()
+    {
+        // The shape a real SSR run produces: the atomiser turns every declaration into a class and
+        // leaves inline only the custom-property tail. The runtime must produce the SAME class or
+        // SSR and hydration are one attribute apart on every bookmarked element — which is what
+        // the first version of this did, by writing the declaration inline on the client.
+        var sink = new StyleSink();
+        var html = WebRealizer.Lower(new Box(new BoxStyle()) { Bookmark = "features" },
+            Theme, 1f, sink).Render();
+        var bookmarked = Walk(html).First(n => n.Attributes.GetValueOrDefault("id") == "features");
+
+        bookmarked.Attributes.Should().ContainKey("class");
+        bookmarked.Attributes.GetValueOrDefault("style", "").Should().NotContain("scroll-margin-top",
+            "the declaration became a class; only custom properties stay inline");
     }
 
     [Fact]

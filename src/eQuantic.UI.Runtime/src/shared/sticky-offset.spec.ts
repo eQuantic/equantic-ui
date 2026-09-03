@@ -82,3 +82,24 @@ describe('the offset reaches a real run', () => {
     expect(document.documentElement.style.getPropertyValue('--eq-anchor-offset')).toBe('56px');
   });
 });
+
+describe('the room a bookmark keeps is an atomic class', () => {
+  it('matches what the C# atomiser produces, not an inline declaration', async () => {
+    // SSR under the style sink turns every declaration into a class and leaves inline only the
+    // custom-property tail. Writing this one inline on the client — which the first version did —
+    // put SSR and hydration one attribute apart on every bookmarked element, and the reconciler
+    // would patch it on every hydrate.
+    const { atomizeEntries } = await import('./style-atomizer');
+    const { lowerVisualNode } = await import('./lowering');
+    const { Box, BoxStyle } = await import('./vocabulary');
+
+    const box = new Box(new BoxStyle({}));
+    (box as unknown as { bookmark: string }).bookmark = 'features';
+    const node = lowerVisualNode(box as never, {} as never);
+
+    const expected = atomizeEntries({ 'scroll-margin-top': 'var(--eq-anchor-offset, 0px)' }).class;
+    expect(expected).not.toBe('');
+    expect(node.attributes['class'] ?? '').toContain(expected);
+    expect(node.attributes['style'] ?? '').not.toContain('scroll-margin-top');
+  });
+});

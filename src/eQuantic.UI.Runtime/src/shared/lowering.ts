@@ -289,12 +289,16 @@ function lowerNode(
     lowered.attributes['id'] = bookmarked.bookmark;
     // Room to land under a sticky header — the variable the sticky itself publishes, never a
     // number the author repeats. See the C# side for the reasoning.
-    // `; ` and `: ` exactly as the C# HtmlStyle serializer writes them: SSR and hydration produce
-    // the same element, and a style attribute differing by a space is a diff the reconciler would
-    // have to apply on every hydrate.
-    const style = lowered.attributes['style'];
-    lowered.attributes['style'] =
-      `${style ? `${style}; ` : ''}scroll-margin-top: var(--eq-anchor-offset, 0px)`;
+    // An ATOMIC CLASS, not an inline declaration. Under the style sink the C# realizer atomises
+    // every declaration and leaves inline only the custom-property tail — so writing this one
+    // inline here would put SSR and hydration one attribute apart on every bookmarked element,
+    // and the reconciler would patch it on every hydrate. The hash is the same on both sides
+    // (that cross-pin is what the atomiser exists for), so the class list stays byte-identical.
+    const room = atomizeEntries({ 'scroll-margin-top': 'var(--eq-anchor-offset, 0px)' });
+    if (room.class) {
+      const existing = lowered.attributes['class'];
+      lowered.attributes['class'] = existing ? `${existing} ${room.class}` : room.class;
+    }
   }
 
   const stamped = node as { origin?: string; originLabel?: string };
