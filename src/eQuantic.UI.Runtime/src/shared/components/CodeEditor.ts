@@ -1,6 +1,6 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeDecoration, CodeEditorController, CodeGutterMarker, CodeLanguages, CodeRange, CodeSurface, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, KeyChord, Positioned, Row, ScrollView, SdkStrings, SharedStatefulComponent, Shortcut, SizeValue, SizeVariantValue, Stack, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeDecoration, CodeEditorController, CodeGutterMarker, CodeLanguages, CodeRange, CodeSurface, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, KeyChord, Positioned, Row, ScrollView, SdkStrings, Shortcut, SizeValue, SizeVariantValue, Stack, StatefulComponent, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
 
-export class CodeEditor extends SharedStatefulComponent {
+export class CodeEditor extends StatefulComponent {
     _editor: any;
     _findOpen: boolean = false;
     _findText: string = '';

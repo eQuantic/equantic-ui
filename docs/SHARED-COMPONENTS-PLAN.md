@@ -150,7 +150,7 @@ rejected.)
    Slice 2C ✅ (2026-07-04): shared STATEFUL components run on web + SDK wiring. The Primitives
    stateful shape (fields on the component + direct `SetState`, no `CreateState` split) transpiles —
    the parser routes a base that RESOLVES to `eQuantic.UI.Primitives.StatefulComponent` (semantic,
-   not name-based) to the runtime's new `SharedStatefulComponent` (deliberately parallel to the Core
+   not name-based) to the runtime's new `StatefulComponent` (deliberately parallel to the Core
    `StatefulComponent`; the Core unification consolidates them). En-route compiler fixes, each one a
    silent-wrong-code class: named arguments now REORDER to the constructor's real parameter
    positions with skipped parameters filled from their C# defaults (JS has no named args — before,
@@ -200,7 +200,7 @@ rejected.)
    `[Page]` is a full page with no Core wrapper: the server's SSR scan accepts `UiComponent` types
    and bridges them through `VisualNodeComponent`/WebRealizer (the Server package now references the
    Web realizer — the natural dependency); the client mounts the transpiled class directly
-   (`SharedStatefulComponent.mount/hydrate`, already in place since 2C). Metadata unwraps to the real
+   (`StatefulComponent.mount/hydrate`, already in place since 2C). Metadata unwraps to the real
    page instance (`IHandleMetadata` through the bridge). v1 fence: initial state = field defaults (no
    server-driven state serialization for the shared shape). Also fixed: runtime-provided names no
    longer seed the per-app dependency resolver (a vocabulary `Row` pulled the WEB Row's `Flex` chain
@@ -306,7 +306,7 @@ rejected.)
    `ComponentInstanceStore` (TS) and wraps its render in an ambient PASS; nested lowerings
    (`VisualNodeComponent` bridges — rebuilt every pass, so they cannot own retention) JOIN the
    page's pass, and each lowered root takes a unique order-stable prefix (`r0`, `r1`, …) so
-   bridges cannot collide on identity. `SharedStatefulComponent` gained `nodeKind='component'`
+   bridges cannot collide on identity. `StatefulComponent` gained `nodeKind='component'`
    (nested instances expand through the store instead of the legacy self-render seam), `key`, and
    an `_invalidationHook` — a retained child's SetState re-renders the HOST page, which reconciles
    back onto the same instance. Transpiled `AdoptConfig(UiComponent next)` works end to end; the

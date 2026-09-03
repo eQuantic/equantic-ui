@@ -8,7 +8,7 @@
  */
 
 import { afterEach, describe, expect, it } from 'vitest';
-import { SharedStatefulComponent } from '../core/component';
+import { StatefulComponent } from '../core/component';
 import { photonTheme } from './design-system.generated';
 import { setPhotonTheme } from './photon-context';
 import { Column, Text } from './vocabulary';
@@ -22,7 +22,7 @@ const nextFrame = () =>
     requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
   );
 
-class ToggleHost extends SharedStatefulComponent {
+class ToggleHost extends StatefulComponent {
   open = true;
 
   build(): Column {

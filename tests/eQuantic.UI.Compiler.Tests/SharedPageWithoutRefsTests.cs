@@ -45,7 +45,7 @@ public class SharedPageWithoutRefsTests
         var result = new ComponentCompiler().CompileSource(source, "Decl.cs").Single();
 
         Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
-        Assert.Contains("class Decl extends SharedStatefulComponent", result.TypeScript);
+        Assert.Contains("class Decl extends StatefulComponent", result.TypeScript);
         // The declarative children initializer survives as a config array.
         Assert.Contains("children: [", result.TypeScript);
         Assert.Contains("new Text(", result.TypeScript);

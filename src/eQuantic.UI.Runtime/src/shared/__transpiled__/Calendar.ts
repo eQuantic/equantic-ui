@@ -1,6 +1,6 @@
-import { $eq, Box, BoxStyle, BuildContext, CalendarNames, Column, CornerRadii, DateOnly, Flexible, Icon, IconButton, Navigable, NavigableMoveValue, Pressable, Row, SdkStrings, SharedStatefulComponent, SizeValue, Spacer, StyleDiff, Text, UiComponent } from "@equantic/runtime";
+import { $eq, Box, BoxStyle, BuildContext, CalendarNames, Column, CornerRadii, DateOnly, Flexible, Icon, IconButton, Navigable, NavigableMoveValue, Pressable, Row, SdkStrings, SizeValue, Spacer, StatefulComponent, StyleDiff, Text, UiComponent } from "@equantic/runtime";
 
-export class Calendar extends SharedStatefulComponent {
+export class Calendar extends StatefulComponent {
     _month: DateOnly;
     _cursor: any;
     static cellSize: number = 44;

@@ -1,6 +1,6 @@
-import { $eq, BuildContext, DateOnly, DatePicker, Flexible, Row, SharedStatefulComponent, SizeValue, TimeOnly, TimePicker, UiComponent } from "@equantic/runtime";
+import { $eq, BuildContext, DateOnly, DatePicker, Flexible, Row, SizeValue, StatefulComponent, TimeOnly, TimePicker, UiComponent } from "@equantic/runtime";
 
-export class DateTimePicker extends SharedStatefulComponent {
+export class DateTimePicker extends StatefulComponent {
     _date: any;
     _time: any;
     static $hydration = { _date: 'dateOnly', _time: 'timeOnly', selected: 'dateTime', min: 'dateTime', max: 'dateTime' };

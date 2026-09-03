@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { StatefulComponent, SharedStatefulComponent, ComponentState } from './component';
+import { StatefulComponent } from './component';
 import { Component, HtmlNode } from './types';
 
 /**
@@ -30,30 +30,8 @@ class Label extends Component {
   }
 }
 
-/** Core `StatefulComponent` shape: state object + createState. */
-class CounterState extends ComponentState {
-  count = 0;
-
-  /** Stands in for a timer/socket callback: mutate + schedule, with no frame in sight. */
-  bump(): void {
-    this.setState(() => {
-      this.count++;
-    });
-  }
-
-  build(): Component {
-    return new Label(`count: ${this.count}`);
-  }
-}
-
-class CounterPage extends StatefulComponent {
-  createState(): ComponentState {
-    return new CounterState();
-  }
-}
-
-/** Shared (Primitives) shape: state lives on the component, setState rebuilds directly. */
-class SharedCounter extends SharedStatefulComponent {
+/** The stateful shape: state lives on the component, setState rebuilds directly. */
+class SharedCounter extends StatefulComponent {
   count = 0;
 
   bump(): void {
@@ -97,43 +75,7 @@ describe('re-render scheduling in a hidden tab', () => {
     delete (document as unknown as Record<string, unknown>)['visibilityState'];
   });
 
-  it('StatefulComponent: setState repaints through the timer fallback, never asking for a frame', async () => {
-    const raf = vi.fn(); // captures nothing and never fires — a backgrounded tab
-    vi.stubGlobal('requestAnimationFrame', raf);
-    setHidden(true);
-
-    const page = new CounterPage();
-    const container = mountIn(page);
-    expect(container.textContent).toContain('count: 0');
-
-    (page.state as CounterState).bump();
-    await flushTimers();
-
-    expect(container.textContent).toContain('count: 1');
-    expect(raf).not.toHaveBeenCalled();
-  });
-
-  it('StatefulComponent: later setState calls are not swallowed by the stuck frame', async () => {
-    vi.stubGlobal('requestAnimationFrame', vi.fn());
-    setHidden(true);
-
-    const page = new CounterPage();
-    const container = mountIn(page);
-    const state = page.state as CounterState;
-
-    // Two mutations inside one batch still coalesce into a single flush...
-    state.bump();
-    state.bump();
-    await flushTimers();
-    expect(container.textContent).toContain('count: 2');
-
-    // ...and the scheduled flag was released, so the next one lands too (the original freeze).
-    state.bump();
-    await flushTimers();
-    expect(container.textContent).toContain('count: 3');
-  });
-
-  it('SharedStatefulComponent: setState repaints through the timer fallback', async () => {
+  it('StatefulComponent: setState repaints through the timer fallback', async () => {
     const raf = vi.fn();
     vi.stubGlobal('requestAnimationFrame', raf);
     setHidden(true);
@@ -158,15 +100,15 @@ describe('re-render scheduling in a hidden tab', () => {
     vi.stubGlobal('requestAnimationFrame', raf);
     setHidden(false);
 
-    const page = new CounterPage();
+    const page = new SharedCounter();
     const container = mountIn(page);
 
-    (page.state as CounterState).bump();
+    page.bump();
     expect(raf).toHaveBeenCalledTimes(1); // visible: the frame IS the fast path
-    expect(container.textContent).toContain('count: 0'); // ...but it never fires
+    expect(container.textContent).toContain('shared: 0'); // ...but it never fires
 
     await flushBackstop();
-    expect(container.textContent).toContain('count: 1');
+    expect(container.textContent).toContain('shared: 1');
   });
 
   it('keeps rAF as the fast path while visible', () => {
@@ -177,14 +119,14 @@ describe('re-render scheduling in a hidden tab', () => {
     vi.stubGlobal('requestAnimationFrame', raf);
     setHidden(false);
 
-    const page = new CounterPage();
+    const page = new SharedCounter();
     const container = mountIn(page);
 
-    (page.state as CounterState).bump();
+    page.bump();
 
     // The frame drove the flush — no timer wait needed.
     expect(raf).toHaveBeenCalledTimes(1);
-    expect(container.textContent).toContain('count: 1');
+    expect(container.textContent).toContain('shared: 1');
   });
 
   it('flushes pending work on visibilitychange without waiting for the throttled timer', () => {
@@ -192,15 +134,15 @@ describe('re-render scheduling in a hidden tab', () => {
     vi.useFakeTimers(); // background timers are throttled to >=1s; never advance them here
     setHidden(true);
 
-    const page = new CounterPage();
+    const page = new SharedCounter();
     const container = mountIn(page);
 
-    (page.state as CounterState).bump();
-    expect(container.textContent).toContain('count: 0'); // no frame, no timer
+    page.bump();
+    expect(container.textContent).toContain('shared: 0'); // no frame, no timer
 
     setHidden(false);
     document.dispatchEvent(new Event('visibilitychange'));
 
-    expect(container.textContent).toContain('count: 1');
+    expect(container.textContent).toContain('shared: 1');
   });
 });

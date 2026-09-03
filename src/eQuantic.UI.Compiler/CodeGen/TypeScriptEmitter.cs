@@ -685,7 +685,7 @@ public class TypeScriptEmitter
         }
         else if (component.IsSharedStateful)
         {
-            coreImports.Add("SharedStatefulComponent");
+            coreImports.Add("StatefulComponent");
         }
         else if (!component.IsPrimitive)
         {
@@ -1000,7 +1000,7 @@ public class TypeScriptEmitter
         {
             "HtmlNode" or "HtmlStyle" or "ServiceKey" or "ServiceProvider" => true,
             "Component" or "BuildContext" or "HtmlElement" => true,
-            "StatefulComponent" or "StatelessComponent" or "SharedStatefulComponent" or "ComponentState" => true,
+            "StatefulComponent" or "StatelessComponent" or "StatefulComponent" or "ComponentState" => true,
             "getServerActionsClient" or "getRootServiceProvider" => true,
             // The .NET-compat VALUE TYPES — see RuntimeValueTypes.
             _ when RuntimeValueTypes.Contains(typeName) => true,
@@ -2124,7 +2124,7 @@ public class TypeScriptEmitter
 
         // The lifecycle keeps its own name across the crossing. It used to arrive as `onInit`, from
         // the days when the only base was the legacy page state, and that name is the reason
-        // OnMount had never once run on the web: `SharedStatefulComponent` — what every write-once
+        // OnMount had never once run on the web: `StatefulComponent` — what every write-once
         // component extends — declares `onMount`, calls it from `notifyMounted`, and has no
         // `onInit` at all, so the override landed on nothing. The legacy `onInit` is also skipped
         // for any page that HYDRATED, which is every server-rendered page there is.

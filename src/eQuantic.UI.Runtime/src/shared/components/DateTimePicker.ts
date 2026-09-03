@@ -1,6 +1,6 @@
-import { $eq, BuildContext, DateOnly, DatePicker, Flexible, Row, SharedStatefulComponent, SizeValue, TimeOnly, TimePicker, UiComponent } from "../runtime-exports";
+import { $eq, BuildContext, DateOnly, DatePicker, Flexible, Row, SizeValue, StatefulComponent, TimeOnly, TimePicker, UiComponent } from "../runtime-exports";
 
-export class DateTimePicker extends SharedStatefulComponent {
+export class DateTimePicker extends StatefulComponent {
     _date: any;
     _time: any;
     static $hydration = { _date: 'dateOnly', _time: 'timeOnly', selected: 'dateTime', min: 'dateTime', max: 'dateTime' };

@@ -16,7 +16,7 @@ namespace eQuantic.UI.Compiler.Services;
 public static class RuntimeProvidedTypeScanner
 {
     /// <summary>Component-model base names — the emitter owns the emitted base class (e.g. the shared
-    /// stateful shape swaps to <c>SharedStatefulComponent</c>), so the sweep must not import them.</summary>
+    /// stateful shape swaps to <c>StatefulComponent</c>), so the sweep must not import them.</summary>
     private static readonly HashSet<string> ComponentModelBaseNames =
         new() { "UiComponent", "StatelessComponent", "StatefulComponent" };
 

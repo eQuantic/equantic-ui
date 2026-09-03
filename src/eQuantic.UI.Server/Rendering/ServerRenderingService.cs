@@ -352,7 +352,7 @@ public class ServerRenderingService : IServerRenderingService
 
         // A WRITE-ONCE page (eQuantic.UI.Primitives.UiComponent) is not an IComponent — bridge it
         // through the web-realizer adapter so the SSR pipeline stays IComponent-only. The client
-        // needs no counterpart: the transpiled page extends SharedStatefulComponent, which mounts/
+        // needs no counterpart: the transpiled page extends StatefulComponent, which mounts/
         // hydrates directly (v1 fence: no server-driven initial state — field defaults render).
         if (instance is Primitives.UiComponent visual)
         {

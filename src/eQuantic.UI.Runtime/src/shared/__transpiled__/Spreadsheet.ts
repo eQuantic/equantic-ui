@@ -1,6 +1,6 @@
-import { $eq, Box, BoxStyle, BuildContext, CellRef, Column, Draggable, EdgeInsets, Flexible, Positioned, Pressable, Row, ScrollView, SdkStrings, SharedStatefulComponent, SheetAxisValue, SheetController, SheetDocument, SheetSurface, SizeValue, Spacer, Stack, Text, UiComponent } from "@equantic/runtime";
+import { $eq, Box, BoxStyle, BuildContext, CellRef, Column, Draggable, EdgeInsets, Flexible, Positioned, Pressable, Row, ScrollView, SdkStrings, SheetAxisValue, SheetController, SheetDocument, SheetSurface, SizeValue, Spacer, Stack, StatefulComponent, Text, UiComponent } from "@equantic/runtime";
 
-export class Spreadsheet extends SharedStatefulComponent {
+export class Spreadsheet extends StatefulComponent {
     _offset: number = 0;
     _viewport: number = 0;
     _first: number = 0;

@@ -6,7 +6,7 @@
 
 import { effectiveStyle } from './style-atomizer';
 import { describe, expect, it } from 'vitest';
-import { SharedStatefulComponent } from '../core/component';
+import { StatefulComponent } from '../core/component';
 import { photonTheme } from './design-system.generated';
 import { lowerVisualNode, tokenValue } from './lowering';
 import { setPhotonTheme } from './photon-context';
@@ -59,7 +59,7 @@ describe('overlay lowering (C# cross-pin)', () => {
 });
 
 /** Confirm flow host: the dialog exists only while state says so. */
-class ConfirmHost extends SharedStatefulComponent {
+class ConfirmHost extends StatefulComponent {
   confirming = false;
   outcome = 'none';
 
@@ -98,7 +98,7 @@ class ConfirmHost extends SharedStatefulComponent {
   }
 }
 
-class DismissibleHost extends SharedStatefulComponent {
+class DismissibleHost extends StatefulComponent {
   open = true;
   dismissed = 0;
 

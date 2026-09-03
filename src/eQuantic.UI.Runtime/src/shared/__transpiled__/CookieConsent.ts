@@ -1,6 +1,6 @@
-import { Box, BoxStyle, BuildContext, Button, Column, CornerRadii, EdgeInsets, Link, Row, SdkStrings, SharedStatefulComponent, SizeValue, Spacer, Text } from "@equantic/runtime";
+import { Box, BoxStyle, BuildContext, Button, Column, CornerRadii, EdgeInsets, Link, Row, SdkStrings, SizeValue, Spacer, StatefulComponent, Text } from "@equantic/runtime";
 
-export class CookieConsent extends SharedStatefulComponent {
+export class CookieConsent extends StatefulComponent {
     declare policyHref: any;
     declare title: any;
     declare body: any;

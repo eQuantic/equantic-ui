@@ -20,8 +20,6 @@ export type { RenderContext as BuildContext } from '../core/types';
 export {
   StatelessComponent,
   StatefulComponent,
-  SharedStatefulComponent,
-  ComponentState,
 } from '../core/component';
 export {
   VisualNode,

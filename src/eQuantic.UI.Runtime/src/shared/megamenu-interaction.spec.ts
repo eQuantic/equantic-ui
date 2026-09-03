@@ -7,7 +7,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { SharedStatefulComponent, StatelessComponent } from '../core/component';
+import { StatefulComponent, StatelessComponent } from '../core/component';
 import {
   Anchored,
   Box,
@@ -25,7 +25,7 @@ const nextFrame = () =>
     requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
   );
 
-class MenuHeader extends SharedStatefulComponent {
+class MenuHeader extends StatefulComponent {
   _open = '';
 
   toggle(id: string) {

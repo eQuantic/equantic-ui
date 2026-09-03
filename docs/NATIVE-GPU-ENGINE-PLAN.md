@@ -461,7 +461,7 @@ Bun and the JS bundling chain, the TypeScript runtime.
 - **2026-07-04 — Web slice 2C landed: shared STATEFUL components on web + SDK wiring.** The
   `SharedCounter` proof — the same fields+SetState+Build shape as the native CounterAppTests
   component — is real eqc output executing in vitest: mount → click → `setState` → rAF re-render,
-  the web mirror of the native tap → SetState → rebuild golden. New `SharedStatefulComponent`
+  the web mirror of the native tap → SetState → rebuild golden. New `StatefulComponent`
   runtime base (direct-SetState, no state-class split); the parser routes bases that semantically
   resolve to `eQuantic.UI.Primitives.StatefulComponent` there. Three silent-wrong-code compiler
   fixes en route: named-argument REORDERING to real parameter positions (defaults fill the gaps),
@@ -495,7 +495,7 @@ Bun and the JS bundling chain, the TypeScript runtime.
 
 - **2026-07-05 — Unification slice 3 landed: WRITE-ONCE PAGES.** A Primitives `StatefulComponent`
   with `[Page]` is a full page — the server SSR scan accepts `UiComponent` types and bridges them
-  through the web realizer; the client mounts the transpiled `SharedStatefulComponent` directly.
+  through the web realizer; the client mounts the transpiled `StatefulComponent` directly.
   Live: `/counter-shared` serves `data-ssr="true"` HTML with the initial state, hydrates, and
   re-renders on click — and the page class is verbatim PhotonHost-compatible (the same file could
   drive the native host today). Suites: vitest 289, web 39, compiler 412, conformance 526,

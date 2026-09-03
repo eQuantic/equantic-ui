@@ -323,10 +323,10 @@ public class ComponentParser
                 // the component itself and SetState rebuilds directly — no CreateState/ComponentState
                 // split. Structurally it parses like a stateless component (Build + ctors + methods +
                 // fields on the class); the emitter swaps the base for the runtime's
-                // SharedStatefulComponent.
+                // StatefulComponent.
                 definition.IsStateful = false;
                 definition.IsSharedStateful = true;
-                definition.BaseClassName = "SharedStatefulComponent";
+                definition.BaseClassName = "StatefulComponent";
                 ParsePageAttributes(classDecl, definition);
                 ParseServerActions(classDecl, definition);
 
