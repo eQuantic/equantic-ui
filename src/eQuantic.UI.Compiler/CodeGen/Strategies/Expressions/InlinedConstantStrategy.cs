@@ -111,16 +111,24 @@ public class InlinedConstantStrategy : IConversionStrategy
         glyphTypeName = null!;
 
         if (context.SemanticModel is null) return false;
-        if (context.SemanticHelper.GetSymbol(node) is not IFieldSymbol
-            {
-                IsStatic: true,
-                Type: INamedTypeSymbol fieldType,
-            } field)
+        // A FIELD or a PROPERTY — the rule was always about the VALUE, not about which kind of
+        // member holds it, and the distinction turned out to matter for a reason far from here: a
+        // pack of 16,284 `static readonly` fields is one static constructor, so the IL trimmer
+        // cannot drop the 16,279 an app never names and a native bundle carries 14.5 MB to draw
+        // five glyphs (measured). Expression-bodied properties are 16,284 separate method bodies,
+        // which the trimmer removes one by one — the whole pack assembly disappears from the
+        // publish. That shape only works if inlining follows it here.
+        var member = context.SemanticHelper.GetSymbol(node);
+        ITypeSymbol? memberType = member switch
         {
-            return false;
-        }
+            IFieldSymbol { IsStatic: true } f => f.Type,
+            IPropertySymbol { IsStatic: true, GetMethod: not null } p => p.Type,
+            _ => null,
+        };
+        if (memberType is not INamedTypeSymbol fieldType || member is null) return false;
+
         // Track L D2: same belt as TryResolveConstant — resource-shaped owners never inline.
-        if (Services.ResourceClasses.IsResourceClass(field.ContainingType)) return false;
+        if (Services.ResourceClasses.IsResourceClass(member.ContainingType)) return false;
 
         // Scoped to the write-once IconGlyph contract (the concrete, safe case). The type check is
         // by fully-qualified name so only the real Primitives type triggers.
@@ -130,11 +138,21 @@ public class InlinedConstantStrategy : IConversionStrategy
             return false;
         }
 
-        // The initializer must be reachable — it lives in the pack SOURCE (a reference-source tree),
-        // not in metadata (which carries no field initializer bodies).
-        var declaration = field.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax();
-        if (declaration is not VariableDeclaratorSyntax { Initializer.Value: { } value })
-            return false;
+        // The value must be reachable AS C# SYNTAX, which is why a pack has to enter the
+        // compilation as SOURCE (a reference-source tree) rather than as a plain assembly
+        // reference. Metadata is not empty here — the IL of a field initializer and of a property
+        // getter are both in it — but this strategy converts a syntax node, and
+        // DeclaringSyntaxReferences has nothing to give for a type that arrived compiled.
+        var declaration = member.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax();
+        var value = declaration switch
+        {
+            VariableDeclaratorSyntax { Initializer.Value: { } initialized } => initialized,
+            // `public static IconGlyph X => new("x", "M…");` — one expression, no accessor body,
+            // which is exactly as side-effect-free as the field initializer it replaces.
+            PropertyDeclarationSyntax { ExpressionBody.Expression: { } bodied } => bodied,
+            _ => null,
+        };
+        if (value is null) return false;
 
         // Side-effect-free values only: a constructor of the glyph, or a literal.
         if (value is not (ObjectCreationExpressionSyntax or ImplicitObjectCreationExpressionSyntax
