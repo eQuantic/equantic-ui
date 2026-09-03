@@ -9,6 +9,9 @@ using FluentAssertions;
 [assembly: PhotonBundleKey("LSMinimumSystemVersion", "13.0", PhotonBundleValueKind.Text)]
 [assembly: PhotonBundleKey("", "acme", PhotonBundleValueKind.UrlScheme)]
 [assembly: PhotonBundleKey("", "acme-beta", PhotonBundleValueKind.UrlScheme)]
+// A key the FRAMEWORK writes itself, declared anyway — the app wins, and it appears once.
+[assembly: PhotonBundleKey("CFBundleDisplayName", "Acme Pro", PhotonBundleValueKind.Text)]
+[assembly: PhotonBundleKey("NSHighResolutionCapable", "false", PhotonBundleValueKind.Flag)]
 
 namespace eQuantic.UI.Native.Engine.Tests;
 
@@ -56,6 +59,36 @@ public class MacAppPackagingTests
             // whichever the parser reaches last, which is how a declaration silently loses.
             Occurrences(plist, "<key>LSMinimumSystemVersion</key>").Should().Be(1);
             Occurrences(plist, "<key>LSUIElement</key>").Should().Be(1);
+        }
+        finally
+        {
+            Directory.Delete(bundle, recursive: true);
+        }
+    }
+
+    /// <summary>
+    /// EVERY key the framework writes, not the two the first version of this consulted. A list of
+    /// "the ones the framework owns" is wrong the moment a key is added above it, and its failure
+    /// is silent — a plist with a key twice is not an error anywhere.
+    /// </summary>
+    [Fact]
+    public void ADeclarationBeatsAnyFrameworkKey_AndNoKeyIsWrittenTwice()
+    {
+        var bundle = Bundle();
+        try
+        {
+            MacAppBundle.Write(bundle, "Acme", "Acme", "com.acme.app", "1.2.3", null, ThisAssembly);
+            var plist = File.ReadAllText(Path.Combine(bundle, "Contents", "Info.plist"));
+
+            plist.Should().Contain("<key>CFBundleDisplayName</key>\n\t<string>Acme Pro</string>");
+            plist.Should().Contain("<key>NSHighResolutionCapable</key>\n\t<false/>");
+
+            // Not one key twice, anywhere in the document.
+            var keys = System.Text.RegularExpressions.Regex
+                .Matches(plist, @"<key>([^<]+)</key>")
+                .Select(match => match.Groups[1].Value)
+                .ToList();
+            keys.Should().OnlyHaveUniqueItems();
         }
         finally
         {
