@@ -6,6 +6,13 @@
         <TargetFramework>net10.0</TargetFramework>
         <OutputType>Exe</OutputType>
         <ApplicationTitle>eQuantic Studio</ApplicationTitle>
+
+        <!-- Published TRIMMED, deliberately: this sample is the repository's proving ground, and a
+             shipped app is a published one. Trimming is where the framework's reflection seams show
+             (a shell nothing references in code, a root component the container builds, options
+             bound from configuration), and each of those was a real app that opened a window and
+             then did nothing. Measured here: 86 MB → 23 MB, same 110 accessibility elements. -->
+        <PublishTrimmed>true</PublishTrimmed>
     </PropertyGroup>
 
     <Import Project="../../src/eQuantic.UI.Sdk.Native/Sdk/Sdk.targets" />

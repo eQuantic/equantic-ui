@@ -10,6 +10,15 @@
     <PropertyGroup>
         <ImplicitUsings Condition="'$(ImplicitUsings)' == ''">enable</ImplicitUsings>
         <Nullable Condition="'$(Nullable)' == ''">enable</Nullable>
+
+        <!--
+            Configuration bound by GENERATED code rather than by reflection. Every Photon app binds
+            PhotonOptions from appsettings.json in the builder's own constructor, so without this
+            every app that trims gets a warning it did not cause, about a call it did not make, in
+            a framework method — and the binding it warns about is one the trimmer may remove.
+            The app author has no way to know this and no reason to; the SDK knows.
+        -->
+        <EnableConfigurationBindingGenerator Condition="'$(EnableConfigurationBindingGenerator)' == ''">true</EnableConfigurationBindingGenerator>
     </PropertyGroup>
 
     <!-- The DECLARATIVE factory surface, available in every file without an import, exactly as on
@@ -189,5 +198,39 @@
     <ItemGroup Condition="'$(_EqPlatform)' == '' AND '$(IsEQuanticDevMode)' != 'true'">
         <PackageReference Include="eQuantic.UI.Native.Shell.MacOS" Version="$(EQuanticUIVersion)" />
         <PackageReference Include="eQuantic.UI.Native.Engine.Reference" Version="$(EQuanticUIVersion)" />
+    </ItemGroup>
+
+    <!--
+        WHAT TRIMMING MUST NOT REMOVE. An app never names its shell in code — that is the whole
+        point of the design: the SDK adds the one its target framework implies, and the app writes
+        C#. The trimmer reads exactly the same evidence and reaches the opposite conclusion: nothing
+        references this assembly, so it goes.
+
+        The result is an app that builds, publishes and DIES at launch with "No platform shell is
+        referenced" — the message that tells you to check your SDK, in a project whose SDK put the
+        shell there. Measured on this repo's desktop sample the first time a publish was trimmed.
+
+        So the SDK roots what the SDK added: it is the only party that knows the shell is reachable,
+        and asking the app author to know it would be asking them to know the thing this design
+        exists to hide.
+
+        RootMode="library" — keep every visible member, because what reaches into these assemblies
+        is an attribute and a Type, not a call. It is also REQUIRED rather than merely right: the
+        Android SDK's own ILLink targets read %(RootMode) unqualified, so an item without it fails
+        the whole Android build with MSB4096.
+    -->
+    <ItemGroup Condition="'$(_EqPlatform)' == ''">
+        <TrimmerRootAssembly Include="eQuantic.UI.Native.Shell.MacOS" RootMode="library" />
+        <TrimmerRootAssembly Include="eQuantic.UI.Native.Shell.Apple" RootMode="library" />
+        <TrimmerRootAssembly Include="eQuantic.UI.Native.Engine.Reference" RootMode="library" />
+        <TrimmerRootAssembly Include="eQuantic.UI.Native.Engine.Metal" RootMode="library" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(_EqPlatform)' == 'ios'">
+        <TrimmerRootAssembly Include="eQuantic.UI.Native.Shell.iOS" RootMode="library" />
+        <TrimmerRootAssembly Include="eQuantic.UI.Native.Engine.Metal" RootMode="library" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(_EqPlatform)' == 'android'">
+        <TrimmerRootAssembly Include="eQuantic.UI.Native.Shell.Android" RootMode="library" />
+        <TrimmerRootAssembly Include="eQuantic.UI.Native.Engine.Vulkan" RootMode="library" />
     </ItemGroup>
 </Project>

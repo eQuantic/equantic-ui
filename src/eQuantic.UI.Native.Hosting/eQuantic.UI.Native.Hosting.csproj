@@ -5,6 +5,18 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <Description>The host a Photon app is built and run through: PhotonApplication.CreateBuilder(args), Services / Configuration / Environment / Logging, and app.Run&lt;TRoot&gt;(). The same shape as WebApplicationBuilder, because a .NET developer already knows it.</Description>
+
+        <!--
+            PhotonOptions is bound by GENERATED code, not by reflection. It has to be set HERE and
+            not on the app: the binding generator works by intercepting the call, and the call is
+            this assembly's — `_host.Services.AddOptions<PhotonOptions>().Bind(...)` in the builder's
+            constructor. Setting it on the app's project leaves that call reflective, the trimmer
+            removes the property setters nothing appears to use, and the app comes up with every
+            option at its default: a window that opens and ignores every setting, silently.
+            Measured on this repo's desktop sample, where the Photon:MaxFrames argument stopped
+            being read and the app simply never finished.
+        -->
+        <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
     </PropertyGroup>
 
     <ItemGroup>
