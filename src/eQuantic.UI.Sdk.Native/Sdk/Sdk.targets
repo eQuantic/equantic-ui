@@ -26,6 +26,16 @@
         <_EqIconDir>$(MSBuildProjectDirectory)/obj/eQuantic</_EqIconDir>
         <_EqAssetsGenerated>$(EQuanticGeneratedAssetsDir)</_EqAssetsGenerated>
         <_EqIconSetDir>$(_EqIconDir)/Assets.xcassets</_EqIconSetDir>
+
+        <!--
+            Whether this project is a macOS HEAD, which the three packaging targets below all ask.
+            Spelled once here rather than three times on the targets — but only the half that can
+            be answered at EVALUATION time: `Exists(eqicon.dll)` stays on each target, because the
+            tool is built by this same solution and a cold build evaluates before it exists. A
+            packaging condition that answers "no" on the first build of the day and "yes" on the
+            second is the kind of bug nobody reproduces.
+        -->
+        <_EqMacHead Condition="'$(_EqPlatform)' == '' AND '$(TargetFramework)' != '' AND '$(OutputType)' == 'Exe' AND '$([MSBuild]::IsOSPlatform(`OSX`))' == 'true' AND '$(EQuanticMacAppBundle)' != 'false'">true</_EqMacHead>
     </PropertyGroup>
 
     <!--
@@ -65,97 +75,23 @@
         Dock tile, no menu bar, no app switcher, and nothing the OS will treat as an app.
         Skipped when an app opts out (EQuanticMacAppBundle=false) or is not an executable.
     -->
-    <Target Name="EQuanticMacAppBundle" AfterTargets="Build"
-            Condition="'$(_EqPlatform)' == '' AND '$(TargetFramework)' != '' AND '$(OutputType)' == 'Exe' AND '$([MSBuild]::IsOSPlatform(`OSX`))' == 'true' AND '$(EQuanticMacAppBundle)' != 'false' AND Exists('$(_EqIconToolDir)eqicon.dll')">
+    <!--
+        WHAT SIGNING THIS APP MEANS — resolved once, and read by both the development bundle and
+        the shipped one. It used to live inside the single build-time target, which is why there
+        was no shipped one: everything an app needs in order to be distributable was tangled with
+        the thing that runs after every Build.
+    -->
+    <Target Name="EQuanticResolveMacPackaging"
+            Condition="'$(_EqMacHead)' == 'true' AND Exists('$(_EqIconToolDir)eqicon.dll')">
         <PropertyGroup>
             <!-- The name the user reads, which a project already states as ApplicationTitle —
                  the same property MAUI uses, so nobody learns a second one. -->
             <_EqAppName>$(AssemblyName)</_EqAppName>
             <_EqAppName Condition="'$(ApplicationTitle)' != ''">$(ApplicationTitle)</_EqAppName>
-            <!-- ALWAYS beside the build output, never beside the sources. In an outer multi-TFM
-                 pass TargetDir is empty, and a bundle written there lands in the project folder —
-                 where the next build reads its own obj/ back as source files and fails on
-                 duplicate assembly attributes. -->
-            <_EqBundleDir>$([MSBuild]::EnsureTrailingSlash('$(TargetDir)'))$(_EqAppName).app</_EqBundleDir>
             <_EqBundleId Condition="'$(EQuanticBundleId)' == ''">com.equantic.$(AssemblyName.ToLowerInvariant())</_EqBundleId>
             <_EqBundleId Condition="'$(EQuanticBundleId)' != ''">$(EQuanticBundleId)</_EqBundleId>
             <_EqIcns>$(_EqIconDir)/$(_EqAppName).icns</_EqIcns>
-        </PropertyGroup>
 
-        <Exec Condition="'$(EQuanticAppIconSource)' != ''"
-              Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; --source &quot;$(EQuanticAppIconSource)&quot; --macos &quot;$(_EqIcns)&quot;"
-              StandardOutputImportance="normal" />
-
-        <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; bundle --app &quot;$(_EqBundleDir)&quot; --exec &quot;$(AssemblyName)&quot; --name &quot;$(_EqAppName)&quot; --id &quot;$(_EqBundleId)&quot; --version &quot;$(Version)&quot; --icns &quot;$(_EqIcns)&quot; --capabilities &quot;$(TargetDir)$(TargetFileName)&quot;"
-              StandardOutputImportance="normal" />
-
-        <!--
-            The payload: what the app needs to RUN, and nothing else. Debug symbols and the runtime
-            packs for other operating systems are not payload — and they are not merely wasteful.
-            codesign refuses to sign a bundle with unsignable files under Contents/MacOS, so a
-            single stray .pdb leaves the app unsigned; and an unsigned app is refused by the very
-            capabilities that check who is asking. LocalAuthentication simply never showed its sheet
-            and never said why, which cost an afternoon to find.
-
-            runtimes/ is an ALLOWLIST (osx*, unix*), not a denylist: only RIDs a macOS process can
-            actually load belong in the bundle. The denylist this replaces named win/linux/android/
-            ios and let `browser-wasm` through — Microsoft.Data.Sqlite ships a static archive
-            (e_sqlite3.a) under it, which is not Mach-O, and codesign refused the ENTIRE bundle
-            (found by the OS Cleaner's F1 build). The next RID the ecosystem invents is excluded
-            here by construction instead of re-opening this.
-        -->
-        <ItemGroup>
-            <_EqBundlePayload Include="$(TargetDir)**/*"
-                              Exclude="$(TargetDir)$(_EqAppName).app/**/*;$(TargetDir)**/*.app/**/*;
-                                       $(TargetDir)**/*.pdb;
-                                       $(TargetDir)runtimes/**/*" />
-            <!--
-                The allowed runtimes ride a SEPARATE item rooted at runtimes/ — with the RID in the
-                include pattern itself (runtimes/osx*/**), %(RecursiveDir) starts AFTER the RID
-                folder, the copy drops the runtimes/osx-arm64/ segment, and two RIDs shipping the
-                same filename collide in the bundle. Rooting ** at runtimes/ keeps the RID inside
-                %(RecursiveDir); the filter is per-item metadata.
-            -->
-            <_EqRuntimesAll Include="$(TargetDir)runtimes/**/*" />
-            <_EqRuntimesPayload Include="@(_EqRuntimesAll)"
-                                Condition="$([System.String]::new('%(RecursiveDir)').StartsWith('osx')) or $([System.String]::new('%(RecursiveDir)').StartsWith('unix'))" />
-        </ItemGroup>
-        <!--
-            Contents/MacOS is REBUILT from the payload every time, not accreted: the copy alone
-            never removes anything, so a file the payload stopped including (a package dropped, a
-            RID newly excluded) stayed in the bundle forever — and kept failing codesign long
-            after the exclusion was fixed. Everything under MacOS comes from this copy, so
-            removing the directory first is exactly "the bundle is the payload".
-        -->
-        <RemoveDir Directories="$(_EqBundleDir)/Contents/MacOS" />
-        <Copy SourceFiles="@(_EqBundlePayload)"
-              DestinationFiles="@(_EqBundlePayload->'$(_EqBundleDir)/Contents/MacOS/%(RecursiveDir)%(Filename)%(Extension)')" />
-        <Copy SourceFiles="@(_EqRuntimesPayload)"
-              DestinationFiles="@(_EqRuntimesPayload->'$(_EqBundleDir)/Contents/MacOS/runtimes/%(RecursiveDir)%(Filename)%(Extension)')" />
-        <Exec Command="chmod +x &quot;$(_EqBundleDir)/Contents/MacOS/$(AssemblyName)&quot;" />
-
-        <!--
-            And SIGN it, ad hoc, under the bundle's own identifier. Without this the identity is
-            whatever the apphost was signed as — "apphost" — and a capability that asks who is
-            calling gets an answer that names nothing. Ad hoc is right for a development build: it
-            proves nothing about origin, which is honest, and it is what a local app needs to be
-            treated as an app at all. A shipped build re-signs with a real identity.
-
-            A signing failure FAILS THE BUILD. It used to be a warning, and the .app kept whatever
-            signature the previous build left — an identity that silently flips is how a TCC grant
-            (Full Disk Access) evaporates between builds, and nobody connects a lost permission to
-            a warning that scrolled past yesterday. A loud build is the cheap version of that hour.
-        -->
-        <!--
-            ENTITLEMENTS — what the app needs the SYSTEM to permit, read from its own
-            `[assembly: PhotonEntitlement(…)]` declarations. This is the release half of the
-            capability idea and it is invisible until release, which is what makes it dangerous: a
-            development build signs ad hoc, where the hardened runtime is not in force and nothing
-            needs permitting, so an app that JITs (a WASM engine, a scripting VM) runs perfectly for
-            months and is then killed with SIGKILL/CODESIGNING on the first machine that installs
-            the signed build. No catch sees it; the process is simply gone.
-        -->
-        <PropertyGroup>
             <!-- A real identity turns the hardened runtime on WITH it — decided here, before
                  anything reads it, because the entitlements below depend on the answer. It used to
                  be settled further down, next to the codesign call, so an app that set only
@@ -182,8 +118,17 @@
         </PropertyGroup>
 
         <Message Condition="'$(_EqRuntimeEntitlements)' != ''" Importance="normal"
-                 Text="eQuantic.UI: hardened runtime — the SDK is declaring what the .NET runtime itself needs ($(_EqRuntimeEntitlements)); your app declares only what its own code needs." />
+                 Text="eQuantic.UI: hardened runtime — the SDK is declaring what the .NET runtime itself needs ($(_EqRuntimeEntitlements)); your app declares only its own." />
 
+        <!--
+            ENTITLEMENTS — what the app needs the SYSTEM to permit, read from its own
+            `[assembly: PhotonEntitlement(…)]` declarations. This is the release half of the
+            capability idea and it is invisible until release, which is what makes it dangerous: a
+            development build signs ad hoc, where the hardened runtime is not in force and nothing
+            needs permitting, so an app that JITs (a WASM engine, a scripting VM) runs perfectly for
+            months and is then killed with SIGKILL/CODESIGNING on the first machine that installs
+            the signed build. No catch sees it; the process is simply gone.
+        -->
         <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; entitlements --assembly &quot;$(TargetDir)$(TargetFileName)&quot; --plist &quot;$(_EqIconDir)/$(AssemblyName).entitlements&quot; --also &quot;$(_EqRuntimeEntitlements)&quot;"
               StandardOutputImportance="normal" />
 
@@ -207,15 +152,169 @@
              prevent, so say plainly when the two halves disagree rather than shipping a bundle whose
              declarations are decoration. -->
         <Warning Condition="Exists('$(_EqEntitlements)') AND '$(EQuanticHardenedRuntime)' != 'true'"
-                 Text="This app declares entitlements, but they are only consulted under the hardened runtime — set EQuanticSigningIdentity (which turns it on) before publishing, or the signed build will be killed where the development build ran." />
+                 Text="This app declares entitlements, but they are only consulted under the hardened runtime — set EQuanticSigningIdentity (which turns it on) or EQuanticHardenedRuntime=true, or the declarations do nothing." />
+    </Target>
 
-        <!-- And the other direction, which is worse because the build is green and the app is dead:
-             a framework-dependent .NET app under the hardened runtime cannot load Microsoft's
-             libhostfxr.dylib at all (library validation: "different Team IDs"), so it dies at LAUNCH,
-             before any code of yours runs. Measured on this repo's own sample, not inferred. A
-             self-contained or fully AOT app loads no foreign-team dylib and is exempt. -->
+    <!--
+        THE DEVELOPMENT BUNDLE, beside the build output: what `dotnet run` launches and what a
+        debugger attaches to. Ad-hoc signed, from the build's own files.
+    -->
+    <Target Name="EQuanticMacAppBundle" AfterTargets="Build"
+            DependsOnTargets="EQuanticResolveMacPackaging"
+            Condition="'$(_EqMacHead)' == 'true' AND Exists('$(_EqIconToolDir)eqicon.dll')">
+        <PropertyGroup>
+            <!-- ALWAYS beside the build output, never beside the sources. In an outer multi-TFM
+                 pass TargetDir is empty, and a bundle written there lands in the project folder —
+                 where the next build reads its own obj/ back as source files and fails on
+                 duplicate assembly attributes. -->
+            <_EqBundleDir>$([MSBuild]::EnsureTrailingSlash('$(TargetDir)'))$(_EqAppName).app</_EqBundleDir>
+        </PropertyGroup>
+
+        <!--
+            ANOTHER BUILD OF THIS APP IS NOT PAYLOAD OF THIS ONE. .NET nests its output
+            directories: a RID-specific build lands in `bin/<config>/<tfm>/<rid>/` and its publish
+            tree inside that again — both UNDER the plain build's own output directory. So a
+            developer who publishes for osx-arm64 and then builds again has an entire second copy of
+            the app inside the directory the development bundle is assembled from.
+
+            The failure is not quiet, which is the one mercy: codesign refuses the whole bundle over
+            the disk image it finds in there, and an ordinary `dotnet build` fails with a signing
+            error naming a file nobody put there.
+
+            Recognised by CONTENT rather than by name: a subdirectory holding this app's own
+            assembly is another build of it. A rule that matched "publish" or a RID-shaped name
+            instead would be guessing, and would take an app's own content folder with it.
+        -->
+        <ItemGroup>
+            <_EqOutputChild Include="$([System.IO.Directory]::GetDirectories('$(TargetDir)', '*', System.IO.SearchOption.TopDirectoryOnly))"
+                            Condition="Exists('$(TargetDir)')" />
+            <_EqOtherBuild Include="%(_EqOutputChild.Identity)"
+                           Condition="Exists('%(_EqOutputChild.Identity)/$(TargetFileName)')" />
+            <_EqOtherBuild Include="%(_EqOutputChild.Identity)/publish"
+                           Condition="Exists('%(_EqOutputChild.Identity)/publish')" />
+        </ItemGroup>
+        <PropertyGroup>
+            <_EqExcludeArgs>--exclude &quot;$([System.IO.Path]::GetFullPath('$(PublishDir)'))&quot;</_EqExcludeArgs>
+            <_EqExcludeArgs Condition="'@(_EqOtherBuild)' != ''">$(_EqExcludeArgs) --exclude &quot;@(_EqOtherBuild, '&quot; --exclude &quot;')&quot;</_EqExcludeArgs>
+        </PropertyGroup>
+
+        <Exec Condition="'$(EQuanticAppIconSource)' != ''"
+              Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; --source &quot;$(EQuanticAppIconSource)&quot; --macos &quot;$(_EqIcns)&quot;"
+              StandardOutputImportance="normal" />
+
+        <!--
+            The bundle AND its payload in one call. What belongs inside is decided in C#
+            (MacAppPayload) rather than by a glob, because every one of those rules was learned from
+            a bundle that failed to sign, and a glob is where they cannot be tested.
+
+            The publish directory is excluded BY PATH: it lives under the build output, and a
+            build-output bundle that swallows it ships an entire second copy of the app inside
+            itself — 86 MB of it, measured on this repo's own desktop sample after one publish.
+        -->
+        <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; bundle --app &quot;$(_EqBundleDir)&quot; --exec &quot;$(AssemblyName)&quot; --name &quot;$(_EqAppName)&quot; --id &quot;$(_EqBundleId)&quot; --version &quot;$(Version)&quot; --icns &quot;$(_EqIcns)&quot; --capabilities &quot;$(TargetDir)$(TargetFileName)&quot; --payload &quot;$(TargetDir)&quot; $(_EqExcludeArgs)"
+              StandardOutputImportance="normal" />
+        <Exec Command="chmod +x &quot;$(_EqBundleDir)/Contents/MacOS/$(AssemblyName)&quot;" />
+
+        <!--
+            And SIGN it, ad hoc, under the bundle's own identifier. Without this the identity is
+            whatever the apphost was signed as — "apphost" — and a capability that asks who is
+            calling gets an answer that names nothing. Ad hoc is right for a development build: it
+            proves nothing about origin, which is honest, and it is what a local app needs to be
+            treated as an app at all. A shipped build re-signs with a real identity.
+
+            A signing failure FAILS THE BUILD. It used to be a warning, and the .app kept whatever
+            signature the previous build left — an identity that silently flips is how a TCC grant
+            (Full Disk Access) evaporates between builds, and nobody connects a lost permission to
+            a warning that scrolled past yesterday. A loud build is the cheap version of that hour.
+        -->
         <Exec Command="codesign --force --deep --sign &quot;$(_EqSignIdentity)&quot; $(_EqHardenedArg) $(_EqEntitlementsArg) --identifier &quot;$(_EqBundleId)&quot; &quot;$(_EqBundleDir)&quot;"
               StandardOutputImportance="normal" />
+    </Target>
+
+    <!--
+        THE SHIPPED BUNDLE — the one `dotnet publish` produces, and the reason this target exists at
+        all.
+
+        Until it did, the .app was assembled from the BUILD output and `publish/` held loose files
+        with no bundle in it. Every publish decision therefore stopped at the bundle's door:
+        trimming, self-contained, single-file, AOT. Measured on this repo's desktop sample with
+        PublishTrimmed on: publish 23 MB, bundle 172 MB — the app you would ship was seven times the
+        app you asked for, and none of the trimming reached it.
+
+        The bundle lands INSIDE the publish directory, next to the loose files, which is where MAUI
+        puts its own and therefore where tooling already looks.
+    -->
+    <Target Name="EQuanticMacAppPackage" AfterTargets="Publish"
+            DependsOnTargets="EQuanticResolveMacPackaging"
+            Condition="'$(_EqMacHead)' == 'true' AND Exists('$(_EqIconToolDir)eqicon.dll')">
+        <PropertyGroup>
+            <_EqPublishDir>$([MSBuild]::EnsureTrailingSlash('$([System.IO.Path]::GetFullPath('$(PublishDir)'))'))</_EqPublishDir>
+            <_EqShipDir>$(_EqPublishDir)$(_EqAppName).app</_EqShipDir>
+            <_EqDmg>$(_EqPublishDir)$(_EqAppName).dmg</_EqDmg>
+            <_EqNotaryZip>$(_EqIconDir)/$(AssemblyName).notarize.zip</_EqNotaryZip>
+
+            <!-- Credentials, never the project's business to hold: either a notarytool keychain
+                 profile a developer stored once, or the three values a CI holds as secrets. Both
+                 spellings, because a laptop has a keychain and a build agent does not. -->
+            <_EqNotaryArgs Condition="'$(EQuanticNotaryProfile)' != ''">--keychain-profile &quot;$(EQuanticNotaryProfile)&quot;</_EqNotaryArgs>
+            <_EqNotaryArgs Condition="'$(_EqNotaryArgs)' == '' AND '$(EQuanticNotaryAppleId)' != '' AND '$(EQuanticNotaryTeamId)' != '' AND '$(EQuanticNotaryPassword)' != ''">--apple-id &quot;$(EQuanticNotaryAppleId)&quot; --team-id &quot;$(EQuanticNotaryTeamId)&quot; --password &quot;$(EQuanticNotaryPassword)&quot;</_EqNotaryArgs>
+        </PropertyGroup>
+
+        <Exec Condition="'$(EQuanticAppIconSource)' != ''"
+              Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; --source &quot;$(EQuanticAppIconSource)&quot; --macos &quot;$(_EqIcns)&quot;"
+              StandardOutputImportance="normal" />
+
+        <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; bundle --app &quot;$(_EqShipDir)&quot; --exec &quot;$(AssemblyName)&quot; --name &quot;$(_EqAppName)&quot; --id &quot;$(_EqBundleId)&quot; --version &quot;$(Version)&quot; --icns &quot;$(_EqIcns)&quot; --capabilities &quot;$(TargetDir)$(TargetFileName)&quot; --payload &quot;$(_EqPublishDir)&quot; --exclude &quot;$(_EqDmg)&quot;"
+              StandardOutputImportance="normal" />
+        <Exec Command="chmod +x &quot;$(_EqShipDir)/Contents/MacOS/$(AssemblyName)&quot;" />
+        <Exec Command="codesign --force --deep --sign &quot;$(_EqSignIdentity)&quot; $(_EqHardenedArg) $(_EqEntitlementsArg) --identifier &quot;$(_EqBundleId)&quot; &quot;$(_EqShipDir)&quot;"
+              StandardOutputImportance="normal" />
+
+        <!-- Ad hoc is fine on a laptop and is NOT distributable: Gatekeeper refuses it on any
+             machine that did not build it. Said once, at publish, where it is actionable. -->
+        <Warning Condition="'$(EQuanticSigningIdentity)' == ''"
+                 Text="This bundle is signed AD HOC, which Gatekeeper refuses on every machine but this one. Set EQuanticSigningIdentity to a Developer ID Application certificate to ship it." />
+
+        <!--
+            NOTARIZATION — Apple scanning the signed app and issuing a ticket, without which a
+            downloaded app is refused with "cannot be opened because the developer cannot be
+            verified". Three steps that are always the same three steps, so the SDK does them: zip
+            the way notarytool expects (ditto, keeping the bundle), submit and WAIT, then staple the
+            ticket into the bundle so it verifies with no network at all.
+        -->
+        <Message Condition="'$(_EqNotaryArgs)' != ''" Importance="high"
+                 Text="eQuantic.UI: submitting $(_EqAppName).app for notarization — Apple decides how long this takes." />
+        <Exec Condition="'$(_EqNotaryArgs)' != ''"
+              Command="ditto -c -k --keepParent &quot;$(_EqShipDir)&quot; &quot;$(_EqNotaryZip)&quot;" />
+        <Exec Condition="'$(_EqNotaryArgs)' != ''"
+              Command="xcrun notarytool submit &quot;$(_EqNotaryZip)&quot; $(_EqNotaryArgs) --wait"
+              StandardOutputImportance="high" />
+        <Exec Condition="'$(_EqNotaryArgs)' != ''"
+              Command="xcrun stapler staple &quot;$(_EqShipDir)&quot;"
+              StandardOutputImportance="normal" />
+        <Delete Condition="'$(_EqNotaryArgs)' != ''" Files="$(_EqNotaryZip)" />
+
+        <!-- Notarizing an AD-HOC signature cannot succeed — Apple has nothing to attach a ticket
+             to. Better to say which of the two is missing than to let notarytool answer it in its
+             own vocabulary five minutes later. -->
+        <Warning Condition="'$(_EqNotaryArgs)' != '' AND '$(EQuanticSigningIdentity)' == ''"
+                 Text="Notarization needs a real signature: set EQuanticSigningIdentity as well, or Apple has nothing to issue a ticket for." />
+
+        <!--
+            THE DISK IMAGE, when the app is distributed as one. Built from the stapled bundle, so
+            the ticket travels inside it and the app verifies offline the moment it is dragged out;
+            the image itself is signed with the same identity so the download is not a stranger.
+        -->
+        <Delete Condition="'$(EQuanticPackageFormat)' == 'Dmg'" Files="$(_EqDmg)" />
+        <Exec Condition="'$(EQuanticPackageFormat)' == 'Dmg'"
+              Command="hdiutil create -volname &quot;$(_EqAppName)&quot; -srcfolder &quot;$(_EqShipDir)&quot; -ov -format UDZO &quot;$(_EqDmg)&quot;"
+              StandardOutputImportance="normal" />
+        <Exec Condition="'$(EQuanticPackageFormat)' == 'Dmg' AND '$(EQuanticSigningIdentity)' != ''"
+              Command="codesign --force --sign &quot;$(_EqSignIdentity)&quot; &quot;$(_EqDmg)&quot;"
+              StandardOutputImportance="normal" />
+
+        <Message Importance="high" Text="eQuantic.UI: $(_EqShipDir)" />
+        <Message Condition="'$(EQuanticPackageFormat)' == 'Dmg'" Importance="high" Text="eQuantic.UI: $(_EqDmg)" />
     </Target>
 
     <!--
