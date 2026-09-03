@@ -1,3 +1,4 @@
+using eQuantic.UI;
 using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Native.Hosting;
@@ -59,9 +60,11 @@ public sealed class PhotonBundleBuilder
     /// </summary>
     public PhotonBundleBuilder UrlScheme(string scheme)
     {
-        var trimmed = scheme?.Trim();
-        if (!string.IsNullOrEmpty(trimmed) && !_schemes.Contains(trimmed, StringComparer.Ordinal))
-            _schemes.Add(trimmed);
+        if (BundleFactRule.Scheme(scheme) is { } accepted
+            && !_schemes.Contains(accepted, StringComparer.Ordinal))
+        {
+            _schemes.Add(accepted);
+        }
         return this;
     }
 
@@ -69,7 +72,7 @@ public sealed class PhotonBundleBuilder
     /// methods where one exists: they say what the key MEANS, which a key never does.</summary>
     public PhotonBundleBuilder Key(string key, string value)
     {
-        if (!string.IsNullOrWhiteSpace(key)) _keys[key.Trim()] = (value, PhotonBundleValueKind.Text);
+        if (BundleFactRule.Key(key) is { } named) _keys[named] = (value, PhotonBundleValueKind.Text);
         return this;
     }
 
@@ -77,8 +80,8 @@ public sealed class PhotonBundleBuilder
     /// plist is typed: a reader asking for a boolean gets the wrong answer from a string.</summary>
     public PhotonBundleBuilder Flag(string key, bool value)
     {
-        if (!string.IsNullOrWhiteSpace(key))
-            _keys[key.Trim()] = (value ? "true" : "false", PhotonBundleValueKind.Flag);
+        if (BundleFactRule.Key(key) is { } named)
+            _keys[named] = (value ? "true" : "false", PhotonBundleValueKind.Flag);
         return this;
     }
 

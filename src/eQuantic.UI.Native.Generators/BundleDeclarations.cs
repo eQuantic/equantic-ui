@@ -1,3 +1,4 @@
+using eQuantic.UI;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -101,26 +102,25 @@ internal static class BundleDeclarations
             case "UrlScheme":
                 // Not written under a key of its own: the schemes are collected into the one
                 // CFBundleURLTypes array the system reads.
-                //
-                // TRIMMED here, because PhotonBundleBuilder trims too and the two must agree: the
-                // generator reads the CALL, not the method body, so " acme " would reach the plist
-                // with its spaces from one path and without them from the other — and two spellings
-                // of one scheme also defeat the de-duplication downstream.
                 if (Constant(arguments, 0) is not { } declared) return Unreadable("UrlScheme");
-                // An EMPTY constant is not an unreadable one: the builder drops it silently, so
+                // An EMPTY constant is not an unreadable one: the shared rule drops it, and
                 // reporting "this value is built at run time" over a literal "" would be a
                 // diagnostic that describes the wrong problem.
-                return declared.Trim() is { Length: > 0 } scheme ? Fact("", scheme, "UrlScheme") : null;
+                return BundleFactRule.Scheme(declared) is { } scheme ? Fact("", scheme, "UrlScheme") : null;
 
+            // The KEY goes through the shared rule; the VALUE is left exactly as written, because a
+            // copyright line's spacing is the app's business and an Apple key's never is.
             case "Key":
-                return Constant(arguments, 0) is { } key && Constant(arguments, 1) is { } value
-                    ? Fact(key, value, "Text")
-                    : Unreadable("Text");
+                if (Constant(arguments, 0) is not { } key || Constant(arguments, 1) is not { } value)
+                    return Unreadable("Text");
+                return BundleFactRule.Key(key) is { } named ? Fact(named, value, "Text") : null;
 
             case "Flag":
-                return Constant(arguments, 0) is { } flagKey && Boolean(arguments, 1) is { } flag
-                    ? Fact(flagKey, flag ? "true" : "false", "Flag")
-                    : Unreadable("Flag");
+                if (Constant(arguments, 0) is not { } flagKey || Boolean(arguments, 1) is not { } flag)
+                    return Unreadable("Flag");
+                return BundleFactRule.Key(flagKey) is { } namedFlag
+                    ? Fact(namedFlag, flag ? "true" : "false", "Flag")
+                    : null;
 
             default:
                 return null;
