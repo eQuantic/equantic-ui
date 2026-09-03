@@ -32,10 +32,10 @@ public sealed class MacOSCapabilities : IPhotonCapabilities
         // The platform's vault, for what IAppStorage must never hold. Keychain on both Apple
         // platforms — one realization, because SecItem* is one API on both.
         services.TryAddSingleton<ISecretStore, AppleSecretStore>();
-        // The URLs this app is opened WITH. Registered as the INSTANCE the shell already installed:
-        // the AppleEvent handler has to be listening before the app finishes launching, so the
-        // object exists before the container does, and asking the container to build a second one
-        // would give the app a listener that hears nothing.
+        // The URLs this app is opened WITH. The runner installs the handler as its FIRST act, well
+        // before the run loop that delivers AppleEvents; Install() is idempotent, so whichever of
+        // the two runs first — the runner, or the first app that resolves this — the other gets the
+        // same relay. Building a second one here would give the app a listener that hears nothing.
         services.TryAddSingleton<IDeepLinks>(_ => AppleDeepLinks.Install());
         // Asking a PERSON for a file — the one way a sandboxed app touches what it was not given.
         services.TryAddSingleton<IFileDialogs, MacFileDialogs>();

@@ -21,7 +21,6 @@ namespace eQuantic.UI.Primitives;
 /// reads it, in the one line the two-callers shape asks for.</item>
 /// </list>
 /// <para>
-/// <para>
 /// SUBSCRIBE if you must not miss it. <see cref="Launch"/> is not readable in a constructor on
 /// macOS, measured rather than assumed: the launch URL arrives as an AppleEvent, AppleEvents are
 /// delivered BY the run loop, and the run loop starts after the first tree is built. A cold launch
@@ -106,9 +105,10 @@ public sealed class DeepLinkRelay : IDeepLinks
         Action<Uri>[] listeners;
         lock (_gate)
         {
-            // The FIRST one is the launch URL. It is answered by Launch rather than delivered,
-            // because on a cold start nothing is subscribed yet — the app that will read it does
-            // not exist when this runs.
+            // The FIRST one is the launch URL, whoever else also hears it. Recording it is what
+            // lets an app ASK later what it was opened with — including the app that heard it
+            // through a subscription a moment ago and wants to answer the question again on a
+            // screen built after.
             _launch ??= url;
             listeners = [.. _listeners];
         }
