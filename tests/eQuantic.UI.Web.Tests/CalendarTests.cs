@@ -17,6 +17,20 @@ namespace eQuantic.UI.Web.Tests;
 public class CalendarTests
 {
     private static readonly IAppTheme Theme = PhotonTheme.Instance;
+    /// <summary>The culture <see cref="Render"/> pins, so an expectation built here reads the same
+    /// day and month names the tree does.</summary>
+    private static readonly CultureInfo Culture = new("en-US");
+
+    /// <summary>A day that is deliberately NOT today, on any day this ever runs.</summary>
+    /// <remarks>
+    /// The dates here used to be literals, and one of them (2026-09-03) became today — the cell's
+    /// accessible name gains ", today" on exactly that date, and a test asserting the plain name
+    /// went red for one day. A calendar reads <c>DateTime.Now</c> and no test can pin it, so the
+    /// dates a test asserts on must be chosen RELATIVE to today rather than written down.
+    /// </remarks>
+    private static DateOnly NotToday(int daysFromNow) =>
+        DateOnly.FromDateTime(DateTime.Now).AddDays(daysFromNow == 0 ? 1 : daysFromNow);
+
     private static readonly DateOnly July17 = new(2026, 7, 17);
 
     private static IEnumerable<HtmlNode> Walk(HtmlNode node)
@@ -183,13 +197,18 @@ public class CalendarTests
         var mounted = new Calendar(July17);
         Render(mounted);
 
-        mounted.AdoptConfig(new Calendar(new DateOnly(2026, 9, 3)));
+        // Far enough ahead that it is never today, and never the same MONTH as today either —
+        // the assertion below names the month the view moved to.
+        var moved = NotToday(90);
+        mounted.AdoptConfig(new Calendar(moved));
         var after = Render(mounted);
 
+        var month = moved.ToDateTime(TimeOnly.MinValue).ToString("MMMM yyyy", Culture);
         Walk(after).Single(n => n.Attributes.GetValueOrDefault("role") == "grid")
-            .Attributes["aria-label"].Should().Be("September 2026");
+            .Attributes["aria-label"].Should().Be(month);
         Cells(after).Single(c => c.Attributes["aria-selected"] == "true")
-            .Attributes["aria-label"].Should().Be("Thursday, 3 September 2026");
+            .Attributes["aria-label"].Should().Be(
+                moved.ToDateTime(TimeOnly.MinValue).ToString("dddd, d MMMM yyyy", Culture));
     }
 
     [Fact]
