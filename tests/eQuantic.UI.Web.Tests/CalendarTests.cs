@@ -17,19 +17,17 @@ namespace eQuantic.UI.Web.Tests;
 public class CalendarTests
 {
     private static readonly IAppTheme Theme = PhotonTheme.Instance;
-    /// <summary>
-    /// A day that is deliberately NOT today, on any day this ever runs.
-    /// <para>
-    /// The dates here used to be literals, and one of them (2026-09-03) became today — the cell's
-    /// accessible name gains ", today" on exactly that date, and a test asserting the plain name
-    /// went red for one day. A calendar reads <c>DateTime.Now</c> and no test can pin it, so the
-    /// dates a test asserts on must be chosen RELATIVE to today rather than written down.
-    /// </para>
-    /// </summary>
     /// <summary>The culture <see cref="Render"/> pins, so an expectation built here reads the same
     /// day and month names the tree does.</summary>
     private static readonly CultureInfo Culture = new("en-US");
 
+    /// <summary>A day that is deliberately NOT today, on any day this ever runs.</summary>
+    /// <remarks>
+    /// The dates here used to be literals, and one of them (2026-09-03) became today — the cell's
+    /// accessible name gains ", today" on exactly that date, and a test asserting the plain name
+    /// went red for one day. A calendar reads <c>DateTime.Now</c> and no test can pin it, so the
+    /// dates a test asserts on must be chosen RELATIVE to today rather than written down.
+    /// </remarks>
     private static DateOnly NotToday(int daysFromNow) =>
         DateOnly.FromDateTime(DateTime.Now).AddDays(daysFromNow == 0 ? 1 : daysFromNow);
 
