@@ -75,17 +75,27 @@ public class WikiVersionMarkTests
 
         var commits = Git(root, $"log --all --reverse --format=%H -S\"{search}\"{path}")
             .Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        if (commits.Length == 0) return null;
 
-        var tags = Git(root, $"tag --contains {commits[0]}")
-            .Split('\n', StringSplitOptions.RemoveEmptyEntries)
-            .Where(tag => tag.StartsWith("v0.", StringComparison.Ordinal))
-            .Select(tag => (Tag: tag, Order: PreviewOrder(tag)))
-            .Where(entry => entry.Order >= 0)
-            .OrderBy(entry => entry.Order)
-            .ToList();
+        // The first commit a RELEASE contains, not simply the first commit. Every change reaches
+        // main as a SQUASH, so the branch commit that introduced a symbol is older than the commit
+        // that shipped it and no tag will ever contain it. Reading `commits[0]` alone therefore
+        // answered "not released yet" for every symbol whose branch still exists on the remote —
+        // and null is the answer this guard reads as "nothing to check", so the newest marks, the
+        // ones most likely to be wrong, were the ones silently skipped.
+        foreach (var commit in commits)
+        {
+            var tags = Git(root, $"tag --contains {commit}")
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Where(tag => tag.StartsWith("v0.", StringComparison.Ordinal))
+                .Select(tag => (Tag: tag, Order: PreviewOrder(tag)))
+                .Where(entry => entry.Order >= 0)
+                .OrderBy(entry => entry.Order)
+                .ToList();
 
-        return tags.Count == 0 ? null : tags[0].Tag[1..];
+            if (tags.Count > 0) return tags[0].Tag[1..];
+        }
+
+        return null;
     }
 
     /// <summary>Sorts preview.9 BEFORE preview.10 — the whole point of the check is off-by-one
