@@ -147,6 +147,13 @@ public class HtmlStyle
     public string? Visibility { get; set; }
     public string? PointerEvents { get; set; }
 
+    /// <summary>
+    /// How much room an in-page link's target keeps above itself when the browser scrolls to it.
+    /// Without it a target under a sticky header arrives hidden behind the header — the link works
+    /// and still looks broken.
+    /// </summary>
+    public string? ScrollMarginTop { get; set; }
+
     /// <summary>How the user may resize the box (a multi-line entry: <c>vertical</c>).</summary>
     public string? Resize { get; set; }
     public string? Cursor { get; set; }
@@ -262,6 +269,7 @@ public class HtmlStyle
         AddProperty(properties, "opacity", Opacity);
         AddProperty(properties, "visibility", Visibility);
         AddProperty(properties, "pointer-events", PointerEvents);
+        AddProperty(properties, "scroll-margin-top", ScrollMarginTop);
         AddProperty(properties, "resize", Resize);
         AddProperty(properties, "backdrop-filter", BackdropFilter);
         AddProperty(properties, "-webkit-backdrop-filter", BackdropFilter);

@@ -40,6 +40,14 @@ export type EqConfig = Record<string, unknown>;
 export abstract class VisualNode {
   abstract readonly nodeKind: string;
   key?: string | null;
+  /**
+   * A named place a link can reach (the C# `VisualNode.Bookmark`), which becomes this element's
+   * `id`. Distinct from `key`: a key is reconciler identity and need only be unique among siblings,
+   * so projecting it onto a screen-wide name would collide on the first repeated list. And not
+   * called `anchor` — `Anchored` already spends that word on popover positioning, and the type
+   * system said so: its own `anchor` is the NODE a popover sits against.
+   */
+  bookmark?: string | null;
   /** Spec S1 `align-self` — overrides the parent flex container's cross alignment for this child. */
   alignSelf?: CrossAlignValue | null;
   /** Spec S4 — how many grid COLUMNS this child spans. */

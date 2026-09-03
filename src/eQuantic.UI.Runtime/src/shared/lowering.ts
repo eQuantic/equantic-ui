@@ -288,6 +288,19 @@ function lowerNode(
   path: string,
 ): HtmlNode | null {
   const lowered = lowerNodeKind(node, context, horizontalAxis, path);
+
+  // The C# twin writes exactly this (WebRealizer.LowerNode), because an in-page link may point at
+  // ANY node — and because SSR and hydration disagreeing by one attribute is a diverged tree.
+  const bookmarked = node as { bookmark?: string };
+  if (lowered && bookmarked.bookmark) {
+    lowered.attributes['id'] = bookmarked.bookmark;
+    // Room to land under a sticky header — the variable the sticky itself publishes, never a
+    // number the author repeats. See the C# side for the reasoning.
+    const style = lowered.attributes['style'];
+    lowered.attributes['style'] =
+      `${style ? `${style};` : ''}scroll-margin-top:var(--eq-anchor-offset, 0px)`;
+  }
+
   const stamped = node as { origin?: string; originLabel?: string };
   if (lowered && stamped.origin) {
     lowered.attributes['data-eq-origin'] = stamped.origin;
@@ -3112,6 +3125,11 @@ function lowerSticky(node: StickyNode, context: LoweringContext, path: string): 
 
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) wrapper.children.push(child);
+
+  // Marked so the offset publisher can MEASURE it — the C# realizer emits the identical attribute,
+  // because a bookmark's room above itself is the height of the chrome covering it, and that
+  // height is not knowable before layout.
+  wrapper.attributes['data-eq-sticky'] = '1';
   return wrapper;
 }
 
