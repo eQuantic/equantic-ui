@@ -104,7 +104,7 @@ than pick for you, eqc asks.
 | `EQ3002` | A Photon app has more than one program. |
 | `EQ3003` | A capability's reason must be a constant. |
 | `EQ3004` | An entitlement's key must be a constant — it is signed into the app at build time, so a key built at run time never reaches the signature. |
-| `EQ3005` | A bundle key's value must be a constant — the Info.plist is written at build time, so a value built at run time never reaches the app's manifest. Applies to whatever the method takes: a string, a bool, an `AppCategory`. |
+| `EQ3005` | A bundle fact must be constant — the Info.plist is written at build time, so an argument built at run time never reaches the app's manifest. Either argument counts, and whatever the method takes: a string, a bool, an `AppCategory`. |
 
 ## EQ3101–EQ3105 — the source generators
 

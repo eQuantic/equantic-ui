@@ -253,7 +253,11 @@
             DependsOnTargets="EQuanticResolveMacPackaging"
             Condition="'$(_EqMacHead)' == 'true' AND Exists('$(_EqIconToolDir)eqicon.dll')">
         <PropertyGroup>
-            <_EqPublishDir>$([MSBuild]::EnsureTrailingSlash('$([System.IO.Path]::GetFullPath('$(PublishDir)'))'))</_EqPublishDir>
+            <!-- Two steps rather than one nested call. The nested form parses and works — this
+                 target published a signed bundle and a disk image with it — but a reader has to
+                 count quotes to be sure, and that is a poor reason to make anyone read carefully. -->
+            <_EqPublishDir>$([System.IO.Path]::GetFullPath('$(PublishDir)'))</_EqPublishDir>
+            <_EqPublishDir>$([MSBuild]::EnsureTrailingSlash('$(_EqPublishDir)'))</_EqPublishDir>
             <_EqShipDir>$(_EqPublishDir)$(_EqAppName).app</_EqShipDir>
             <_EqDmg>$(_EqPublishDir)$(_EqAppName).dmg</_EqDmg>
             <_EqNotaryZip>$(_EqIconDir)/$(AssemblyName).notarize.zip</_EqNotaryZip>

@@ -22,11 +22,13 @@ internal static class BundleDeclarations
 
     internal static readonly DiagnosticDescriptor ValueMustBeConstant = new(
         "EQ3005", "A bundle key's value must be a constant",
-        // Not "use a const STRING": these methods take a bool and an enum too, and a message that
-        // names the wrong shape sends someone looking for a conversion that was never the problem.
-        "The value passed to builder.Bundle.{0}() is built at run time, and the Info.plist is "
-        + "written at BUILD time — so this one would never reach the app's manifest. Pass something "
-        + "the compiler can evaluate: a literal, a const, or an AppCategory member.",
+        // "An argument", not "the value": Key and Flag take a key as well, and it is just as
+        // likely to be the non-constant one — a message that names the wrong argument sends
+        // someone to the wrong half of their own call. Nor "a const STRING": these methods take a
+        // bool and an enum too.
+        "An argument passed to builder.Bundle.{0}() is built at run time, and the Info.plist is "
+        + "written at BUILD time — so it would never reach the app's manifest. Pass something the "
+        + "compiler can evaluate: a literal, a const, or an AppCategory member.",
         "eQuantic.UI", DiagnosticSeverity.Error, isEnabledByDefault: true);
 
     /// <summary>
