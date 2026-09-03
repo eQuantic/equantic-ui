@@ -126,7 +126,7 @@ public class InlinedConstantTests
         // glyph becomes a member access into a pack module that tree-shaking can no longer reduce.
         // The suite was green either way before this test existed, because the fixture used only
         // the field shape the packs had stopped shipping.
-        var javascript = Transpile("""
+        var ts = Transpile("""
             using eQuantic.UI.Lucide;
             using eQuantic.UI.Primitives;
 
@@ -139,8 +139,8 @@ public class InlinedConstantTests
             }
             """);
 
-        javascript.Should().Contain("'camera'").And.Contain("M14.5 4h-5L7 7");
-        javascript.Should().NotContain("LucideIcons",
+        ts.Should().Contain("'camera'").And.Contain("M14.5 4h-5L7 7");
+        ts.Should().NotContain("LucideIcons",
             "the construction lands at the use site, so the pack itself is never named");
     }
 }

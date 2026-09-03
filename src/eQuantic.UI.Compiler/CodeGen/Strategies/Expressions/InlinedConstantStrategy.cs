@@ -138,8 +138,11 @@ public class InlinedConstantStrategy : IConversionStrategy
             return false;
         }
 
-        // The value must be reachable — it lives in the pack SOURCE (a reference-source tree), not
-        // in metadata, which carries neither field initializers nor property bodies.
+        // The value must be reachable AS C# SYNTAX, which is why a pack has to enter the
+        // compilation as SOURCE (a reference-source tree) rather than as a plain assembly
+        // reference. Metadata is not empty here — the IL of a field initializer and of a property
+        // getter are both in it — but this strategy converts a syntax node, and
+        // DeclaringSyntaxReferences has nothing to give for a type that arrived compiled.
         var declaration = member.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax();
         var value = declaration switch
         {
