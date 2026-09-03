@@ -128,3 +128,21 @@ describe('a measured box is rounded before it is used', () => {
     expect(svg.getAttribute('viewBox')).toBe('0 0 200 100');
   });
 });
+
+describe('a listening canvas captures the press', () => {
+  it('installs pointerdown even when only move and up are handled', async () => {
+    // Photon's PressDown sets the pressed canvas unconditionally, so a canvas with only
+    // OnPointerMove/OnPointerUp owns a drag that leaves its box — the native tests pin exactly
+    // that case. Without a pointerdown listener the browser never captures, the events stop at the
+    // edge, and the same code behaves differently on the two targets.
+    const { lowerVisualNode } = await import('./lowering');
+    const { Canvas } = await import('./vocabulary');
+
+    const canvas = new Canvas(() => {});
+    canvas.onPointerMove = () => {};
+    canvas.onPointerUp = () => {};
+
+    const node = lowerVisualNode(canvas as never, {} as never);
+    expect(Object.keys(node?.events ?? {})).toContain('pointerdown');
+  });
+});

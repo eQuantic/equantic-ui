@@ -1667,11 +1667,14 @@ function lowerCanvas(node: CanvasNodeValue, path: string): HtmlNode {
   };
 
   const events: HtmlNode['events'] = {};
-  if (node.onPointerDown) {
+  const listens = Boolean(node.onPointerDown || node.onPointerMove || node.onPointerUp || node.onPointerLeave);
+  if (listens) {
+    // The press is captured whenever the canvas listens for ANYTHING, not only when it listens for
+    // the press itself: on Photon `PressDown` sets the pressed canvas unconditionally, so a canvas
+    // with only OnPointerMove/OnPointerUp still owns the drag that leaves its box. Installing this
+    // handler only for onPointerDown made the web disagree with a case the native tests pin.
     events['pointerdown'] = (event) => {
       const pointer = event as PointerEvent;
-      // Capture: a drag that leaves the box still belongs to the canvas that took the press —
-      // the browser's equivalent of the native host holding on to `_pressedCanvas`.
       (pointer.currentTarget as Element | null)?.setPointerCapture?.(pointer.pointerId);
       node.onPointerDown?.(local(pointer, true));
     };
