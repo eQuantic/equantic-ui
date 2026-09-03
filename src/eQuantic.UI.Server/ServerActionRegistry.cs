@@ -30,15 +30,12 @@ public class ServerActionRegistry : IServerActionRegistry
     
     public void ScanAssembly(Assembly assembly)
     {
-        // BOTH component families carry actions: the Core split shape AND the write-once page
-        // (Primitives.StatefulComponent). The first real action on a write-once page answered
-        // "Action not found" because this scan only knew the Core bases.
+        // Every component is a write-once one, so one base answers for all of them. This used to
+        // test the Core split shape too, and the first real action on a write-once page answered
+        // "Action not found" because the scan only knew those.
         var componentTypes = assembly.GetTypes()
-            .Where(t => t.IsClass && !t.IsAbstract && 
-                   (typeof(StatefulComponent).IsAssignableFrom(t) || 
-                    typeof(StatelessComponent).IsAssignableFrom(t) ||
-                    typeof(Primitives.StatefulComponent).IsAssignableFrom(t) ||
-                    typeof(Primitives.StatelessComponent).IsAssignableFrom(t)));
+            .Where(t => t.IsClass && !t.IsAbstract &&
+                   typeof(Primitives.UiComponent).IsAssignableFrom(t));
         
         foreach (var type in componentTypes)
         {

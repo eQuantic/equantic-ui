@@ -7,8 +7,11 @@ namespace eQuantic.UI.Lottie;
 /// Renders a Lottie animation using @dotlottie/player-component.
 /// Supports both .json and .dotlottie formats.
 /// </summary>
-public class LottiePlayer : StatelessComponent, IRequireAssets
+public class LottiePlayer : HtmlElement, IRequireAssets
 {
+    // Escape hatch (CLAUDE.md §Styling): this wraps a third-party JS library, so it emits raw
+    // markup instead of the write-once vocabulary. It builds an HtmlElement DIRECTLY — the
+    // Core component bases it used to derive from were the pre-write-once model and are gone.
     /// <summary>
     /// URL to the .json or .dotlottie animation file.
     /// </summary>
@@ -55,7 +58,9 @@ public class LottiePlayer : StatelessComponent, IRequireAssets
         assets.AddScript("https://unpkg.com/@dotlottie/player-component@latest/dist/dotlottie-player.mjs", defer: true);
     }
 
-    public override IComponent Build(RenderContext context)
+    public override HtmlNode Render() => BuildElement().Render();
+
+    private IComponent BuildElement()
     {
         var attributes = new Dictionary<string, string>
         {
