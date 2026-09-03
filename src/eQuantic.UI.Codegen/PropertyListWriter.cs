@@ -56,6 +56,17 @@ public sealed class PropertyListWriter : CodeWriter
         return this;
     }
 
+    /// <summary>An array of dictionaries — the shape Apple uses for the lists that have more than
+    /// one thing to say about each entry (CFBundleURLTypes, CFBundleDocumentTypes).</summary>
+    public PropertyListWriter DictionaryArray(string key, params Action<PropertyListWriter>[] entries)
+    {
+        Key(key);
+        using (BeginScope("<array>", "</array>"))
+            foreach (var entry in entries)
+                using (BeginScope("<dict>", "</dict>")) entry(this);
+        return this;
+    }
+
     public PropertyListWriter StringArray(string key, params string[] values)
     {
         Key(key);

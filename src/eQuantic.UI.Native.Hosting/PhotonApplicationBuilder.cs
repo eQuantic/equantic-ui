@@ -70,6 +70,14 @@ public sealed class PhotonApplicationBuilder
     /// </summary>
     public PhotonEntitlementsBuilder Entitlements { get; } = new();
 
+    /// <summary>
+    /// What the system reads ABOUT this app before it runs — its copyright line, its category, the
+    /// oldest macOS it starts on, whether it takes a Dock tile, the URLs it answers to. The same
+    /// journey as the other two: a call here, an assembly declaration from the generator, and the
+    /// SDK writes the Info.plist.
+    /// </summary>
+    public PhotonBundleBuilder Bundle { get; } = new();
+
     public PhotonApplication Build()
     {
         // LAST, so anything the app registered itself already sits in the collection and the
