@@ -127,6 +127,18 @@ public static partial class ObjC
     public static partial IntPtr Send(IntPtr receiver, IntPtr selector,
         CGRect rect, ulong options, IntPtr owner, IntPtr userInfo);
 
+    // The shape NSAppleEventManager wants: a target, a selector, and two four-character codes.
+    // An AEEventClass and an AEEventID are UInt32, and passing them as anything wider puts the code
+    // in the wrong half of the register on a big-endian reading of the same four bytes — they are
+    // literally the characters 'GURL', so a wrong width is a handler that is never called.
+    [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
+    public static partial void SendVoid(IntPtr receiver, IntPtr selector,
+        IntPtr handler, IntPtr handlerSelector, uint eventClass, uint eventId);
+
+    /// <summary>An AppleEvent parameter, by its four-character keyword.</summary>
+    [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
+    public static partial IntPtr Send(IntPtr receiver, IntPtr selector, uint keyword);
+
     [LibraryImport(ObjCLib, EntryPoint = "objc_msgSend")]
     public static partial void SendVoid(IntPtr receiver, IntPtr selector);
 

@@ -37,9 +37,24 @@ public sealed class StudioShell : StatefulComponent
     public StudioShell(IConfiguration configuration, IPhotoLibrary? library = null,
         IBiometrics? biometrics = null, INetworkStatus? network = null, IMotionSensor? motion = null,
         ILocation? location = null, ICamera? camera = null, IThemeController? themeSwitch = null,
-        ITextClipboard? clipboard = null, ICultureController? culture = null)
+        ITextClipboard? clipboard = null, ICultureController? culture = null,
+        IDeepLinks? deepLinks = null)
     {
         _clipboard = clipboard;
+
+        // A LINK INTO THE APP. `builder.Bundle.UrlScheme("equantic-studio")` is what makes macOS
+        // launch this app for equantic-studio://…; this is the other half — reading what it was
+        // launched with, and hearing the ones that arrive while it runs.
+        //
+        // Both halves, because a URL arrives at two moments and an app that handles one is broken
+        // half the time. Printed rather than shown: this is the sample's live proof, and `open
+        // equantic-studio://hello` from a terminal is how it is checked.
+        if (deepLinks is not null)
+        {
+            if (deepLinks.Launch is { } launched)
+                Console.WriteLine($"[photon] launched by {launched}");
+            _deepLink = deepLinks.Subscribe(url => Console.WriteLine($"[photon] opened by {url}"));
+        }
         // The light/dark hand arrives like any capability. Seed from whatever the host opened
         // with, so the toggle never starts out of step with the window.
         _themeSwitch = themeSwitch;
@@ -167,6 +182,10 @@ public sealed class StudioShell : StatefulComponent
     private ThemeMode _mode = ThemeMode.Light;
     private readonly IThemeController? _themeSwitch;
     private readonly ITextClipboard? _clipboard;
+
+    /// <summary>Held so the app stops listening when the shell goes — the same contract every
+    /// capability subscription has.</summary>
+    private readonly IDisposable? _deepLink;
     private Density _density = Density.Comfortable;
 
     // The inspector drives the Buttons section's live specimen. Loading and Disabled are
