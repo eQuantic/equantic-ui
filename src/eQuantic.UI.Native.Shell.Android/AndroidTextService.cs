@@ -4,6 +4,7 @@ using eQuantic.UI.Native.Framework;
 using eQuantic.UI.Primitives;
 // Both the platform and the vocabulary have a Color. Here the platform's is the one being set on a
 // platform Paint; the engine's never reaches this file, because a coverage raster carries no colour.
+using Canvas = Android.Graphics.Canvas;
 using Color = Android.Graphics.Color;
 
 namespace eQuantic.UI.Native.Shell.Android;

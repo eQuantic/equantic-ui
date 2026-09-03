@@ -49,6 +49,7 @@ public static class RuntimeProvidedTypeScanner
     public static void Collect(SyntaxNode root, SemanticModel model,
         ISet<string> runtimeProvided, ISet<string> enumTypes, ISet<string>? appTypes = null)
     {
+
         // A `with` on a vocabulary record REBUILDS through the constructor —
         // `theme.Type(role) with { Size = 15 }` emits `new TypeStyle({ … })` — and the name it
         // constructs appears NOWHERE in the source, so no identifier sweep can find it. Same hole
