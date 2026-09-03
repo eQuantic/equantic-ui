@@ -47,6 +47,14 @@ describe('the anchor offset comes from the sticky, not from a constant', () => {
     expect(offset()).toBe('0px');
   });
 
+  it('never under-offsets on a fractional device pixel', () => {
+    // 55.4 rounds DOWN to 55 and leaves the target four tenths of a pixel behind the bar. Visible;
+    // the extra sub-pixel in the other direction is not.
+    sticky(0, 55.4);
+    publishAnchorOffset();
+    expect(offset()).toBe('56px');
+  });
+
   it('is zero when the page has no chrome at all', () => {
     publishAnchorOffset();
     expect(offset()).toBe('0px');

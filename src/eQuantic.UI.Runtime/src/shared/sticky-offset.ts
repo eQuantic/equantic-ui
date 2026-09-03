@@ -30,7 +30,10 @@ function overlappingChrome(): number {
     if (box.top > 1 || box.height <= 0) continue;
     tallest = Math.max(tallest, box.bottom);
   }
-  return Math.max(0, Math.round(tallest));
+  // CEIL, not round: a bar measured at 55.4 device pixels rounds down to 55 and leaves the target
+  // four tenths of a pixel behind it — under-offsetting is visible and over-offsetting by less than
+  // one pixel is not, so the error is spent on the harmless side.
+  return Math.max(0, Math.ceil(tallest));
 }
 
 /**
