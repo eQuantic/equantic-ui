@@ -192,9 +192,14 @@
                            Condition="Exists('%(_EqOutputChild.Identity)/$(TargetFileName)')" />
             <_EqOtherBuild Include="%(_EqOutputChild.Identity)/publish"
                            Condition="Exists('%(_EqOutputChild.Identity)/publish')" />
+            <_EqOtherBuild Include="$(TargetDir)publish" Condition="Exists('$(TargetDir)publish')" />
         </ItemGroup>
         <PropertyGroup>
-            <_EqExcludeArgs>--exclude &quot;$([System.IO.Path]::GetFullPath('$(PublishDir)'))&quot;</_EqExcludeArgs>
+            <!-- GUARDED: GetFullPath of an empty string is not "the current directory", it is
+                 MSB4184 — the whole build fails on a property that is normally set by the SDK and
+                 is not guaranteed to be. Nothing here needs PublishDir to exist; the sibling-build
+                 rule below finds a publish tree anyway. -->
+            <_EqExcludeArgs Condition="'$(PublishDir)' != ''">--exclude &quot;$([System.IO.Path]::GetFullPath('$(PublishDir)'))&quot;</_EqExcludeArgs>
             <_EqExcludeArgs Condition="'@(_EqOtherBuild)' != ''">$(_EqExcludeArgs) --exclude &quot;@(_EqOtherBuild, '&quot; --exclude &quot;')&quot;</_EqExcludeArgs>
         </PropertyGroup>
 

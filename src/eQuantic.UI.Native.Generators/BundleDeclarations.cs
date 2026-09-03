@@ -101,7 +101,16 @@ internal static class BundleDeclarations
             case "UrlScheme":
                 // Not written under a key of its own: the schemes are collected into the one
                 // CFBundleURLTypes array the system reads.
-                return Constant(arguments, 0) is { } scheme ? Fact("", scheme, "UrlScheme") : Unreadable("UrlScheme");
+                //
+                // TRIMMED here, because PhotonBundleBuilder trims too and the two must agree: the
+                // generator reads the CALL, not the method body, so " acme " would reach the plist
+                // with its spaces from one path and without them from the other — and two spellings
+                // of one scheme also defeat the de-duplication downstream.
+                if (Constant(arguments, 0) is not { } declared) return Unreadable("UrlScheme");
+                // An EMPTY constant is not an unreadable one: the builder drops it silently, so
+                // reporting "this value is built at run time" over a literal "" would be a
+                // diagnostic that describes the wrong problem.
+                return declared.Trim() is { Length: > 0 } scheme ? Fact("", scheme, "UrlScheme") : null;
 
             case "Key":
                 return Constant(arguments, 0) is { } key && Constant(arguments, 1) is { } value
