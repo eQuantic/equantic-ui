@@ -215,3 +215,30 @@ public class CanvasDegenerateSectorTests
         Sectors(p => p.FillAnnularSector(50, 50, 10, 20, 0, MathF.Tau, Ink)).Should().Be(1);
     }
 }
+
+public class CanvasLeaveRepaintTests
+{
+    [Fact]
+    public void LeavingACanvasForEmptySpace_AsksForAFrame()
+    {
+        // A canvas that clears its hover highlight on leave must be repainted to show it gone —
+        // and the leave-to-nothing path fell past the branch that asked, so the highlight stayed
+        // until something else happened to need a frame.
+        var canvas = new Primitives.Canvas(_ => { })
+        {
+            OnPointerMove = _ => { },
+            OnPointerLeave = () => { },
+            Width = SizeValue.Fixed(50),
+            Height = SizeValue.Fixed(50),
+        };
+        var host = new PhotonHost(canvas, PhotonTheme.Instance, ThemeMode.Light, 200, 200);
+        host.RenderFrame(new DisplayListBuilder(), 0);
+
+        host.PointerMove(10, 10);
+        host.RenderFrame(new DisplayListBuilder(), 16);
+        host.NeedsRender.Should().BeFalse("settled while inside");
+
+        host.PointerMove(150, 150);
+        host.NeedsRender.Should().BeTrue("the leave owes a frame");
+    }
+}

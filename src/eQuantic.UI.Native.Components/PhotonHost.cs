@@ -1204,6 +1204,11 @@ public sealed class PhotonHost
         var overCanvas = _pressedCanvas ?? CanvasUnder(new Point(x, y));
         if (!Equals(overCanvas, _hoveredCanvas))
         {
+            // The frame is owed HERE, not only below: leaving a canvas for empty space announces
+            // the leave and then falls past the `overCanvas is { }` branch, so a canvas that clears
+            // a hover highlight in OnPointerLeave would have kept it on screen until something else
+            // happened to need a frame. Every other pointer path here asks for one explicitly.
+            if (_hoveredCanvas is not null) NeedsRender = true;
             _hoveredCanvas?.Node.OnPointerLeave?.Invoke();
             _hoveredCanvas = overCanvas;
         }
