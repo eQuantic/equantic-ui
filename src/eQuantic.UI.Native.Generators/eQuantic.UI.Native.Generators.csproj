@@ -25,4 +25,11 @@
               PackagePath="analyzers/dotnet/cs" Visible="false" />
     </ItemGroup>
 
+    <!-- One rule, two callers: what a bundle key and a URL scheme look like once accepted. The
+         builder and the generator cannot reference each other, and they drifted the moment only
+         one of them trimmed. -->
+    <ItemGroup>
+        <Compile Include="../Shared/BundleFactRule.cs" Link="Shared/BundleFactRule.cs" />
+    </ItemGroup>
+
 </Project>

@@ -18,6 +18,14 @@ public partial class Program
         builder.Capabilities.UseLocation("Shows where this Mac is — the capability demo.");
         builder.Capabilities.UseCamera("Shows a live preview in the Device section.");
 
+        // And what the SYSTEM reads about the app before it runs — the Get Info panel, the Finder
+        // category, the URLs it answers to. The same journey again: a call here, an assembly
+        // declaration from the generator, the Info.plist from the build. No plist anywhere.
+        builder.Bundle
+               .Copyright("© 2026 eQuantic")
+               .Category(AppCategory.DeveloperTools)
+               .UrlScheme("equantic-studio");
+
         builder.Configure(photon =>
         {
             photon.Theme = PhotonTheme.Instance;

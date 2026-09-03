@@ -24,7 +24,14 @@ public interface IPhotonCapabilities
 
 /// <summary>A shell assembly's declaration of what it can offer the device.</summary>
 [AttributeUsage(AttributeTargets.Assembly)]
-public sealed class PhotonCapabilitiesAttribute(Type providerType) : Attribute
+public sealed class PhotonCapabilitiesAttribute(
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(
+        System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+    Type providerType) : Attribute
 {
+    /// <summary>The provider, constructed by the host — annotated for the trimmer for the same
+    /// reason <see cref="PhotonRunnerAttribute.RunnerType"/> is.</summary>
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(
+        System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
     public Type ProviderType { get; } = providerType;
 }

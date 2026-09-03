@@ -123,17 +123,46 @@ if (args.Length > 0 && args[0] == "bundle")
     if (bundle is null || executable is null)
     {
         Console.Error.WriteLine("Usage: eqicon bundle --app <Name.app> --exec <executable> "
-            + "[--name <display>] [--id <bundle id>] [--version <x.y.z>] [--icns <file>]");
+            + "[--name <display>] [--id <bundle id>] [--version <x.y.z>] [--icns <file>] "
+            + "[--payload <dir> [--exclude <dir>]]");
         return 1;
     }
 
+    var declaredVersion = Arg("--version") ?? "1.0.0";
     MacAppBundle.Write(bundle, executable,
         Arg("--name") ?? executable,
         Arg("--id") ?? $"com.equantic.{executable.ToLowerInvariant()}",
-        Arg("--version") ?? "1.0.0",
+        declaredVersion,
         Arg("--icns"),
         Arg("--capabilities"));
-    Console.WriteLine($"eqicon: wrote {bundle}");
+
+    // Said once, where it is actionable: Apple's version is one to three integers, and a .NET
+    // prerelease version is not that. Trimming it silently would mean the app reports a version
+    // nobody chose; the alternative — passing it through — is a bundle notarization refuses.
+    if (MacAppBundle.AppleVersion(declaredVersion) is var apple && apple != declaredVersion)
+    {
+        Console.WriteLine($"eqicon: the bundle version is {apple} — Apple accepts one to three "
+            + $"integers, so the rest of \"{declaredVersion}\" cannot travel in the plist.");
+    }
+
+    // The payload — what the app needs to RUN — when the caller says where it is. Optional so the
+    // verb still writes a bundle SHELL for anything that fills it another way; the SDK always
+    // passes it, because deciding what belongs inside is the half that cannot live in a glob.
+    if (Arg("--payload") is { } payload)
+    {
+        var excluded = args
+            .Select((value, index) => (value, index))
+            .Where(entry => entry.value == "--exclude" && args.Length > entry.index + 1)
+            .Select(entry => args[entry.index + 1])
+            .ToArray();
+        var copied = MacAppPayload.Populate(payload, bundle, excluded);
+        Console.WriteLine($"eqicon: wrote {bundle} ({copied} file(s))");
+    }
+    else
+    {
+        Console.WriteLine($"eqicon: wrote {bundle}");
+    }
+
     return 0;
 }
 

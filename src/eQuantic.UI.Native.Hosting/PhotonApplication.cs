@@ -70,7 +70,10 @@ public sealed class PhotonApplication
     /// The screen this app opens on, resolved from the container — so a component takes its
     /// dependencies through its constructor like anything else in .NET.
     /// </summary>
-    public PhotonApplication UseRoot<TRoot>() where TRoot : VisualNode
+    public PhotonApplication UseRoot<
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(
+            System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
+        TRoot>() where TRoot : VisualNode
     {
         Root = () => ActivatorUtilities.CreateInstance<TRoot>(Services);
         return this;
@@ -123,31 +126,39 @@ public sealed class PhotonApplication
         services.TryAddSingleton<eQuantic.UI.Primitives.IFrameTicker>(
             Native.Components.PhotonFrameTicker.Shared);
 
-        foreach (var declaration in ShellAssemblies()
-            .SelectMany(assembly => assembly.GetCustomAttributes<PhotonCapabilitiesAttribute>())
-            .Select(attribute => attribute.ProviderType)
-            .Distinct())
+        // Constructed from the ATTRIBUTE, not from a Type that travelled through a LINQ pipeline
+        // first. The annotation that tells the trimmer to keep the provider's constructor lives on
+        // the property, and it does not survive a Select into an IEnumerable<Type> — so the pretty
+        // version compiles, publishes, and leaves the app with no capabilities at run time.
+        var registered = new HashSet<Type>();
+        foreach (var assembly in ShellAssemblies())
+        foreach (var declaration in assembly.GetCustomAttributes<PhotonCapabilitiesAttribute>())
         {
-            ((IPhotonCapabilities)Activator.CreateInstance(declaration)!).Register(services);
+            if (!registered.Add(declaration.ProviderType)) continue;
+            ((IPhotonCapabilities)Activator.CreateInstance(declaration.ProviderType)!).Register(services);
         }
     }
 
     private static IPhotonRunner FindRunner()
     {
-        var declarations = ShellAssemblies()
-            .SelectMany(assembly => assembly.GetCustomAttributes<PhotonRunnerAttribute>())
-            .Select(attribute => attribute.RunnerType)
-            .Distinct()
-            .ToArray();
-
-        return declarations.Length switch
+        // Same as the capability loop above: the runner is constructed from the attribute, where
+        // the trimmer can still see the annotation that keeps its constructor.
+        var declarations = new List<PhotonRunnerAttribute>();
+        var seen = new HashSet<Type>();
+        foreach (var assembly in ShellAssemblies())
+        foreach (var declaration in assembly.GetCustomAttributes<PhotonRunnerAttribute>())
         {
-            1 => (IPhotonRunner)Activator.CreateInstance(declarations[0])!,
+            if (seen.Add(declaration.RunnerType)) declarations.Add(declaration);
+        }
+
+        return declarations.Count switch
+        {
+            1 => (IPhotonRunner)Activator.CreateInstance(declarations[0].RunnerType)!,
             0 => throw new InvalidOperationException(
                 "No platform shell is referenced. The SDK adds one per target framework — check that "
                 + "this project builds through eQuantic.UI.Sdk.Native."),
             _ => throw new InvalidOperationException(
-                $"More than one platform shell is referenced ({string.Join(", ", declarations.Select(t => t.Name))}). "
+                $"More than one platform shell is referenced ({string.Join(", ", declarations.Select(d => d.RunnerType.Name))}). "
                 + "An app runs on the device its target framework names, and only that one."),
         };
     }
@@ -158,6 +169,15 @@ public sealed class PhotonApplication
     /// What actually ships is what is in the folder beside the program — which on a phone is the
     /// app bundle, and on a desktop the output directory.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("SingleFile", "IL3000",
+        Justification = "Guarded: a single-file app has no base directory to scan, and the loaded "
+                        + "assemblies above are the whole answer there.")]
+    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026",
+        Justification = "The SDK ROOTS the shell it referenced (TrimmerRootAssembly in Sdk.props), "
+                        + "so a trimmed app finds it among the already-loaded assemblies and never "
+                        + "reaches this scan. The scan stays for the case the design allows and the "
+                        + "trimmer cannot see: a shell dropped beside the app rather than "
+                        + "referenced. It loads nothing it did not find in the app's own folder.")]
     private static IEnumerable<Assembly> ShellAssemblies()
     {
         const string prefix = "eQuantic.UI.Native.Shell.";

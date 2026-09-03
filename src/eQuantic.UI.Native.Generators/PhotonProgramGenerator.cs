@@ -63,11 +63,38 @@ public sealed class PhotonProgramGenerator : IIncrementalGenerator
             .Where(static declaration => declaration is not null)
             .Collect();
 
+        // And what the system reads ABOUT the app — its copyright, its category, the URLs it
+        // answers to. Same idiom again, and the last of the three platform-fact families.
+        var bundle = context.SyntaxProvider.CreateSyntaxProvider(
+                predicate: static (node, _) => BundleDeclarations.MightDeclare(node),
+                transform: static (ctx, _) => BundleDeclarations.Read(ctx))
+            .Where(static declaration => declaration is not null)
+            .Collect();
+
+        // The three declaration families travel together rather than as three more levels of
+        // Combine: `input.Left.Left.Left.Left.Left` is not a thing anyone can read, and the next
+        // family would add another one.
+        var declarations = capabilities.Combine(entitlements).Combine(bundle);
+
         context.RegisterSourceOutput(
-            context.CompilationProvider.Combine(programs).Combine(icon).Combine(capabilities)
-                .Combine(entitlements),
-            static (context, input) => Emit(context, input.Left.Left.Left.Left,
-                input.Left.Left.Left.Right, input.Left.Left.Right, input.Left.Right, input.Right));
+            context.CompilationProvider.Combine(programs).Combine(icon).Combine(declarations),
+            static (context, input) => Emit(context,
+                input.Left.Left.Left,       // compilation
+                input.Left.Left.Right,      // programs
+                input.Left.Right,           // has an app icon
+                input.Right.Left.Left,      // capabilities
+                input.Right.Left.Right,     // entitlements
+                input.Right.Right));        // bundle facts
+    }
+
+    /// <summary>Ordered, so the generated file is the same file for the same declarations: a
+    /// manifest that reshuffles is a diff nobody can review.</summary>
+    private static System.Collections.Generic.List<string> Sorted(
+        System.Collections.Generic.IEnumerable<string> keys)
+    {
+        var list = new System.Collections.Generic.List<string>(keys);
+        list.Sort(System.StringComparer.Ordinal);
+        return list;
     }
 
     /// <summary>A C# string literal for a value that came from the app's own source.</summary>
@@ -91,7 +118,8 @@ public sealed class PhotonProgramGenerator : IIncrementalGenerator
     private static void Emit(SourceProductionContext context, Compilation compilation,
         System.Collections.Immutable.ImmutableArray<INamedTypeSymbol?> programs, bool hasIcon,
         System.Collections.Immutable.ImmutableArray<CapabilityDeclaration?> capabilities,
-        System.Collections.Immutable.ImmutableArray<(string? Key, Location Location)?> entitlements)
+        System.Collections.Immutable.ImmutableArray<(string? Key, Location Location)?> entitlements,
+        System.Collections.Immutable.ImmutableArray<BundleDeclarations.Declaration?> bundle)
     {
         // Nothing to write for a library that merely REFERENCES the hosting assembly.
         if (compilation.GetTypeByMetadataName(ApplicationType) is null) return;
@@ -170,6 +198,63 @@ public sealed class PhotonProgramGenerator : IIncrementalGenerator
             foreach (var key in entitled)
                 file.AppendLine($"[assembly: global::eQuantic.UI.Primitives.PhotonEntitlement({Quote(key)})]");
             context.AddSource("PhotonEntitlements.g.cs", file.ToString());
+        }
+
+        // ---- What the system reads ABOUT the app -----------------------------------------------
+        // One more step along the same road: fluent call → assembly attribute → Info.plist. The
+        // keys are Apple's; the app author never types one unless they reach for the escape hatch.
+        var facts = new System.Collections.Generic.List<BundleDeclarations.Declaration>();
+        foreach (var stated in bundle)
+        {
+            if (stated is not { } declaration) continue;
+            if (declaration.Key is null)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(
+                    BundleDeclarations.ValueMustBeConstant, declaration.Location, declaration.Method));
+                continue;
+            }
+            facts.Add(declaration);
+        }
+
+        if (facts.Count > 0)
+        {
+            // LAST WINS for a repeated key, and the URL schemes accumulate — the same semantics the
+            // builder itself has, so what the generated file declares is what the C# said.
+            var byKey = new System.Collections.Generic.Dictionary<string, BundleDeclarations.Declaration>(
+                System.StringComparer.Ordinal);
+            var schemes = new System.Collections.Generic.List<string>();
+            foreach (var fact in facts)
+            {
+                if (fact.Kind == "UrlScheme")
+                {
+                    if (!schemes.Contains(fact.Value)) schemes.Add(fact.Value);
+                }
+                else
+                {
+                    byKey[fact.Key!] = fact;
+                }
+            }
+
+            var manifest = new System.Text.StringBuilder();
+            manifest.AppendLine("// <auto-generated/> Written by eQuantic.UI.Native.Generators.");
+            manifest.AppendLine("#nullable enable");
+            manifest.AppendLine();
+            manifest.AppendLine("// What the system reads about this app before it runs, said once on the builder. The");
+            manifest.AppendLine("// SDK reads these off the compiled assembly and writes the Info.plist — nobody opens one.");
+            foreach (var key in Sorted(byKey.Keys))
+            {
+                var fact = byKey[key];
+                manifest.AppendLine($"[assembly: global::eQuantic.UI.Primitives.PhotonBundleKey("
+                    + $"{Quote(key)}, {Quote(fact.Value)}, "
+                    + $"global::eQuantic.UI.Primitives.PhotonBundleValueKind.{fact.Kind})]");
+            }
+            foreach (var scheme in schemes)
+            {
+                manifest.AppendLine($"[assembly: global::eQuantic.UI.Primitives.PhotonBundleKey("
+                    + $"\"\", {Quote(scheme)}, "
+                    + "global::eQuantic.UI.Primitives.PhotonBundleValueKind.UrlScheme)]");
+            }
+            context.AddSource("PhotonBundle.g.cs", manifest.ToString());
         }
 
         // ---- What the app asked of the device ------------------------------------------------
