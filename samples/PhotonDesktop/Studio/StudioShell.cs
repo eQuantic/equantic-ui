@@ -37,9 +37,17 @@ public sealed class StudioShell : StatefulComponent
     public StudioShell(IConfiguration configuration, IPhotoLibrary? library = null,
         IBiometrics? biometrics = null, INetworkStatus? network = null, IMotionSensor? motion = null,
         ILocation? location = null, ICamera? camera = null, IThemeController? themeSwitch = null,
-        ITextClipboard? clipboard = null, ICultureController? culture = null)
+        ITextClipboard? clipboard = null, ICultureController? culture = null,
+        IDeepLinks? deepLinks = null)
     {
         _clipboard = clipboard;
+
+        // A LINK INTO THE APP. `builder.Bundle.UrlScheme("equantic-studio")` is what makes macOS
+        // launch this app for equantic-studio://…; this is the other half — reading what it was
+        // launched with, and hearing the ones that arrive while it runs. Kept, subscribed in
+        // OnMount: the reconciler builds a fresh instance every pass and keeps the retained one, so
+        // a subscription started HERE is started again for an instance that is then thrown away.
+        _deepLinks = deepLinks;
         // The light/dark hand arrives like any capability. Seed from whatever the host opened
         // with, so the toggle never starts out of step with the window.
         _themeSwitch = themeSwitch;
@@ -167,6 +175,12 @@ public sealed class StudioShell : StatefulComponent
     private ThemeMode _mode = ThemeMode.Light;
     private readonly IThemeController? _themeSwitch;
     private readonly ITextClipboard? _clipboard;
+
+    private readonly IDeepLinks? _deepLinks;
+
+    /// <summary>Held so the app stops listening when the shell goes — the same contract every
+    /// capability subscription has.</summary>
+    private IDisposable? _deepLink;
     private Density _density = Density.Comfortable;
 
     // The inspector drives the Buttons section's live specimen. Loading and Disabled are
@@ -187,6 +201,32 @@ public sealed class StudioShell : StatefulComponent
 
     /// <summary>Section-local demo state, so every control on screen is really interactive.</summary>
     private readonly SectionState _demo = new();
+
+    /// <summary>
+    /// Both halves of a deep link, which is the point: a URL arrives at two very different moments
+    /// and an app that handles one is broken half the time. `Launch` answers what started this
+    /// process — and on macOS it is still null here, because AppleEvents are delivered by the run
+    /// loop and the run loop starts after this build. So the subscription is what actually catches
+    /// a cold launch, and reading `Launch` is what answers the question later.
+    /// <para>
+    /// Printed rather than shown: this is the sample's live proof, and
+    /// <c>open equantic-studio://hello</c> from a terminal is how it is checked.
+    /// </para>
+    /// </summary>
+    protected override void OnMount()
+    {
+        if (_deepLinks is null) return;
+        if (_deepLinks.Launch is { } launched) Console.WriteLine($"[photon] launched by {launched}");
+        _deepLink = _deepLinks.Subscribe(url => Console.WriteLine($"[photon] opened by {url}"));
+    }
+
+    /// <summary>The other half of the pair, which ships with it — without this every mount is a
+    /// leak.</summary>
+    protected override void OnUnmount()
+    {
+        _deepLink?.Dispose();
+        _deepLink = null;
+    }
 
     public override VisualNode Build(ComponentContext context)
     {

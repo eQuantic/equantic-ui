@@ -28,6 +28,14 @@ public sealed class MacOSPhotonRunner : IPhotonRunner
                 + "needs no window at all.");
         }
 
+        // BEFORE anything else, and before the run loop exists: a cold launch delivers its URL as
+        // an AppleEvent within milliseconds of the process starting, so the handler has to be
+        // listening already. Installing it when a component first asks for IDeepLinks is installing
+        // it after the only delivery that mattered. Idempotent — the container hands out this same
+        // instance.
+        AppKit.LoadFrameworks();
+        Shell.Apple.AppleDeepLinks.Install();
+
         var options = app.Options;
 
         // The platform's locale, copied onto .NET BEFORE anything renders (screenshots included):

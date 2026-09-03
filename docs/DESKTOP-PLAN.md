@@ -96,6 +96,13 @@ hit-testing seam the headless-browser instrument proposal has been waiting for.
 
 The largest slice, all of it generic:
 
+**Started (2026-09-03).** The two the plan sequences early are in: `IDeepLinks` delivers the URL
+for the scheme W5 made declarable (`kAEGetURL`, installed before the run loop), and `IFileDialogs`
+wraps NSOpenPanel/NSSavePanel. One thing the live test taught, which is now in the contract's own
+docs: `Launch` is NOT readable in a constructor on macOS. AppleEvents are delivered by the run loop
+and the run loop starts after the first tree is built, so a cold launch reaches a SUBSCRIBER and
+finds the property still null a moment earlier. An app that does both is right everywhere.
+
 - Native menu bar (`NSMenu`, declarative) + context menus (right-click is not even delivered today)
 - Status item (tray) + an auxiliary panel window (`NSPanel`) — closes W-B7 for the real use case;
   general multi-window can wait
@@ -180,6 +187,27 @@ W4 (shell)      ──── partial early (file dialogs + deep links), rest aft
 What tripped a fresh consumer on their FIRST build — none blocking, all resolved at the call
 site. Recorded because each cost someone a build cycle, and the fix (rename, new API, doc line,
 editor suggestion) is a decision, not an oversight. Newest first.
+
+- **`ICanvasPainter` is a narrow window onto a display list that has more** (2026-09-03, OS Cleaner
+  sunburst + bubbles). Three reports in one day, and the third made the first two into one finding:
+  the painter draws no TEXT, takes a colour where the engine takes a PAINT, and draws no TEXTURES.
+  Each was met by redesigning around it, and the consumer judged two of the three redesigns better
+  — but they were choices made without a choice.
+  - *Text* is the deep one. There is no rotated text anywhere in Photon, `Text` included: the raster
+    measures an ink box and draws it upright. Giving the painter text is one thing; text along an
+    arc needs rotation in the rasterizer, and they are separate tickets so neither hides the other.
+  - *Gradient* looked like the cheap one and is NOT, which is worth recording because the wrong
+    estimate went out before it was checked. `Paint.Radial` exists and the shader honours it, but
+    its ramp starts at the CENTRE (`Sdf.slang`: `t = clamp(distance / radius, 0, 1)`) — there is no
+    inner radius, so a two-stop gradient ACROSS a band is not expressible. Extrapolating the stops
+    closes the arithmetic and dies on the representation: `Color` is a byte per channel, so the
+    extrapolated endpoints saturate exactly when the band is thin, which is every outer ring of a
+    sunburst. It needs an inner radius in the radial paint: a shader change with Reference↔Metal↔
+    Vulkan parity goldens behind it, W1-sized.
+  - *Texture* is decoration and they are content with the approximation.
+  - The consumer's own finding on the workaround is the part worth keeping: approximating that
+    gradient with TWO concentric bands LIES — the boundary reads as an extra ring, so a uniform disk
+    appears to have eight levels when it has four. Five bands is their floor, pinned by a test.
 
 - **`SizeValue` has no Fraction** (2026-08-26, OS Cleaner F1): width proportional to the parent —
   usage/size bars, a common data-app pattern — is done today with `Flexible` weights sharing
