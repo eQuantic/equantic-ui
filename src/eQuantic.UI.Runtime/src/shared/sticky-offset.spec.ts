@@ -68,11 +68,17 @@ describe('the offset reaches a real run', () => {
     });
     document.body.appendChild(bar);
 
-    const { ComponentInstanceStore } = await import('./instance-store');
-    const { enterPass, exitPass } = await import('./instance-store');
+    const { ComponentInstanceStore, enterPass, exitPass } = await import('./instance-store');
     enterPass(new ComponentInstanceStore(), null);
     exitPass();
 
+    // NOT yet: the pass ends before the render manager writes its tree, so the measurement is
+    // deferred to the microtask after the write. This assertion is the one that would have caught
+    // the synchronous version — the spec put the chrome in the DOM by hand and so measured
+    // something that a real client-only render would not have had yet.
+    expect(document.documentElement.style.getPropertyValue('--eq-anchor-offset')).toBe('');
+
+    await Promise.resolve();
     expect(document.documentElement.style.getPropertyValue('--eq-anchor-offset')).toBe('56px');
   });
 });

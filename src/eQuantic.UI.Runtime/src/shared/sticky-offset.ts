@@ -34,6 +34,25 @@ function overlappingChrome(): number {
 }
 
 /**
+ * Publishes AFTER the pass's DOM has been written.
+ *
+ * The pass ends while the tree it produced is still a value — the render manager writes it once
+ * `exitPass` has returned. Measuring inside the pass therefore looks for chrome that does not
+ * exist yet and finds none: on a client-only render the variable would sit at 0px until some
+ * later pass happened to run, and every bookmark in between would land under the header.
+ *
+ * The same shape, and the same reason, as `scheduleInViewCommit` — whose comment three lines from
+ * the call site said exactly this, which is where I should have read it.
+ */
+export function scheduleAnchorOffset(): void {
+  if (typeof queueMicrotask !== 'function') {
+    publishAnchorOffset();
+    return;
+  }
+  queueMicrotask(publishAnchorOffset);
+}
+
+/**
  * Measures and publishes. Idempotent and cheap enough to call after every pass — it writes only
  * when the number changed, so it never invalidates style for nothing.
  */

@@ -21,7 +21,7 @@ import { installHoverRevealSuppression } from '../dom/hover-reveal';
 import { attachCameraStreams } from './devices/camera';
 import { commitScrollViewports } from './scroll-viewports';
 import { scheduleInViewCommit } from './in-view';
-import { publishAnchorOffset } from './sticky-offset';
+import { scheduleAnchorOffset } from './sticky-offset';
 
 /** The duck-typed surface of a transpiled shared-stateful instance (marker set by the base class). */
 interface SharedStatefulLike {
@@ -157,9 +157,10 @@ export function exitPass(): void {
   // pass produced a tree; the render manager writes it once the pass has returned. So the commit
   // waits for the microtask after the write (see scheduleInViewCommit).
   scheduleInViewCommit();
-  // Republished per pass: the chrome a bookmark has to clear can change height — a bar that wraps
-  // at a narrow width, a larger type scale — and it costs a write only when the number moved.
-  publishAnchorOffset();
+  // Republished per pass, and DEFERRED for the same reason the in-view commit above is: the chrome
+  // is not in the document until the render manager writes this pass's tree, so measuring here
+  // would find nothing on a client-only render. Costs a write only when the number moved.
+  scheduleAnchorOffset();
   activePass = null;
 }
 
