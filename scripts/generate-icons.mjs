@@ -193,7 +193,13 @@ async function generate(prefix, projectName, className, outputDir) {
         if (needStyle || needViewBox || needWidth) args.push(`IconGlyphStyle.${flat.style}`);
         if (needViewBox || needWidth) args.push(`"${viewBox}"`);
         if (needWidth) args.push(`${flat.strokeWidth}f`);
-        lines.push(`    public static readonly IconGlyph ${pascal(name)} = new(${args.join(', ')});`);
+        // An expression-bodied PROPERTY, not a static readonly field, and the reason is the IL
+        // trimmer: 16,284 field initializers are one static constructor, so a native app that
+        // names five glyphs still ships the whole 14.5 MB pack (measured — the publish went from
+        // 35.2 MB to 20.9 MB when this changed, and the pack assembly left the output entirely).
+        // Property bodies are separate methods the trimmer drops one by one. On the web nothing
+        // changes: eqc inlines the construction at the use site either way.
+        lines.push(`    public static IconGlyph ${pascal(name)} => new(${args.join(', ')});`);
     }
 
     const srcDir = path.join(outputDir, projectName);

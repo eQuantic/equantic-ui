@@ -30,7 +30,12 @@ public class InlinedConstantTests
         namespace eQuantic.UI.Lucide;
         public static class LucideIcons
         {
-            public static readonly IconGlyph Camera = new("camera", "M14.5 4h-5L7 7", IconGlyphStyle.Stroke);
+            // The shape the packs SHIP (expression-bodied properties, so the IL trimmer can drop
+            // the thousands an app never names — a field pack is one static constructor and ships
+            // whole: 14.5 MB to draw five glyphs, measured).
+            public static IconGlyph Camera => new("camera", "M14.5 4h-5L7 7", IconGlyphStyle.Stroke);
+            // And the FIELD shape, which must keep inlining: the rule is about the value, not
+            // about which kind of member holds it, and a hand-written pack may still use one.
             public static readonly IconGlyph Heart = new("heart", "M12 21l-1-1");
         }
         """;
@@ -111,5 +116,31 @@ public class InlinedConstantTests
             """);
         ts.Should().Contain("'stroke'");
         ts.Should().NotContain("new IconGlyph");
+    }
+
+    [Fact]
+    public void APackShapedProperty_InlinesLikeAField()
+    {
+        // The regression this guards is silent and expensive: change the packs to properties so the
+        // IL trimmer can drop what a native app never names, and the WEB stops inlining — every
+        // glyph becomes a member access into a pack module that tree-shaking can no longer reduce.
+        // The suite was green either way before this test existed, because the fixture used only
+        // the field shape the packs had stopped shipping.
+        var javascript = Transpile("""
+            using eQuantic.UI.Lucide;
+            using eQuantic.UI.Primitives;
+
+            namespace App;
+
+            public class IconStrip : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) =>
+                    new Icon(LucideIcons.Camera);
+            }
+            """);
+
+        javascript.Should().Contain("'camera'").And.Contain("M14.5 4h-5L7 7");
+        javascript.Should().NotContain("LucideIcons",
+            "the construction lands at the use site, so the pack itself is never named");
     }
 }
