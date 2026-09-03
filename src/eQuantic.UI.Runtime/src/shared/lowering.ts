@@ -296,9 +296,12 @@ function lowerNode(
     lowered.attributes['id'] = bookmarked.bookmark;
     // Room to land under a sticky header — the variable the sticky itself publishes, never a
     // number the author repeats. See the C# side for the reasoning.
+    // `; ` and `: ` exactly as the C# HtmlStyle serializer writes them: SSR and hydration produce
+    // the same element, and a style attribute differing by a space is a diff the reconciler would
+    // have to apply on every hydrate.
     const style = lowered.attributes['style'];
     lowered.attributes['style'] =
-      `${style ? `${style};` : ''}scroll-margin-top:var(--eq-anchor-offset, 0px)`;
+      `${style ? `${style}; ` : ''}scroll-margin-top: var(--eq-anchor-offset, 0px)`;
   }
 
   const stamped = node as { origin?: string; originLabel?: string };
