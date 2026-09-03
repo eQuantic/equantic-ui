@@ -399,8 +399,12 @@ public class CanvasCrossTargetTests
             .First(n => n.Tag == "svg");
 
         svg.Children.Should().BeEmpty("nothing is drawn until the box is known");
-        svg.Attributes.Should().ContainKey("data-eq-canvas-fill");
         svg.Attributes.Should().NotContainKey("viewBox", "there is no box to describe yet");
+        // And NO marker from the server: the runtime looks a declaration up by a client-side path
+        // this realizer does not have, and a placeholder would stick — the reconciler adds a
+        // missing data attribute on hydration but does not overwrite one already there, so the
+        // canvas would never paint. The client marks it, as InView does for the same reason.
+        svg.Attributes.Should().NotContainKey("data-eq-canvas-fill");
     }
 
     [Fact]

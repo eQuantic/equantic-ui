@@ -8,11 +8,11 @@
  * browser the box is decided by CSS AFTER the markup exists, so a canvas that FILLS its space has
  * no size to report while its own SVG is being built.
  *
- * So a filling canvas is drawn twice on this target: once at lowering, where the size is unknown
- * and honestly reported as zero, and again the moment the element has been measured — and after
- * every resize, which is the same redraw Photon performs for free by rebuilding each frame. A
- * canvas with a FIXED size skips all of it: its box was knowable, so SSR draws the final picture
- * and hydration changes nothing.
+ * So a filling canvas is NOT drawn at lowering at all: it is declared, and drawn the moment the
+ * element has been measured — and again after every resize, which is the same redraw Photon
+ * performs for free by rebuilding each frame. Drawing it at lowering would mean drawing it at zero,
+ * which puts every `p.width / 2` in the top-left corner. A canvas with a FIXED size skips all of
+ * this: its box was knowable, so SSR draws the final picture and hydration changes nothing.
  *
  * The declaration is collected during the pass and committed after the DOM is written, the same
  * shape `in-view` uses and for the same reason: an element cannot be measured before it exists.

@@ -797,13 +797,12 @@ public static class WebRealizer
 
         var interactive = canvas.OnPointerDown is not null || canvas.OnPointerMove is not null
             || canvas.OnPointerUp is not null || canvas.OnPointerLeave is not null;
-        if (!measured)
-        {
-            // The marker the runtime's surface controller finds after the DOM is written — the
-            // twin of the TS lowering's own, so SSR and hydration mark the same elements.
-            svg.DataAttributes ??= new Dictionary<string, string>();
-            svg.DataAttributes["eq-canvas-fill"] = "1";
-        }
+        // NO marker from the server, and that is deliberate rather than an omission. The runtime's
+        // surface controller looks a declaration up BY PATH, and the path is a client-side identity
+        // this realizer does not have — emitting a placeholder instead would be worse than emitting
+        // nothing, because the reconciler adds a missing data attribute but does not overwrite one
+        // that is already there, so the placeholder would stick and the canvas would never paint.
+        // The client marks it on hydration, exactly as InView does for the same reason.
 
         if (interactive)
         {
