@@ -120,10 +120,19 @@ public class PrimitivesRuntimeExportTests
         var summary = string.Join("; ", new[] { Describe("added", added), Describe("removed", removed) }
             .Where(part => part.Length > 0));
 
-        json.TrimEnd().Should().Be(current!.TrimEnd(),
-            $"the Primitives type list changed ({summary}) — every public type there silently "
-            + "promises a runtime export of the same name. Give each new one an export, or a REASON "
-            + "in NO_TWIN_OWED (primitives-exports.spec.ts), then regenerate with "
-            + "EQ_UPDATE_PRIMITIVES_FIXTURE=1 and commit the fixture WITH the change that caused it");
+        // Same NAMES, different bytes: indentation or ordering, not a type. Worth its own sentence
+        // rather than an empty pair of brackets — the answer is "regenerate", with nothing to
+        // decide about exports, and reading "changed ()" would send someone looking for a type
+        // that is not there.
+        var reason = summary.Length > 0
+            ? $"the Primitives type list changed ({summary}) — every public type there silently "
+              + "promises a runtime export of the same name. Give each new one an export, or a "
+              + "REASON in NO_TWIN_OWED (primitives-exports.spec.ts), then regenerate with "
+              + "EQ_UPDATE_PRIMITIVES_FIXTURE=1 and commit the fixture WITH the change that caused it"
+            : "the fixture names exactly the same types and the FILE still differs — formatting or "
+              + "ordering drift rather than a type. Nothing to decide about exports: regenerate "
+              + "with EQ_UPDATE_PRIMITIVES_FIXTURE=1 and commit it";
+
+        json.TrimEnd().Should().Be(current!.TrimEnd(), reason);
     }
 }
