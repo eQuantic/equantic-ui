@@ -431,13 +431,6 @@ public class TypeScriptEmitter
                         EmitMethod(method, c, component, component.Name);
                     }
                 }
-                else if (component.IsStateful)
-                {
-                    c.Member(JsClassMember.Method("", "createState", "", "", "", JsStatement.Block(new[]
-                    {
-                        JsStatement.Raw($"return new {component.StateClassName}(this)"),
-                    })));
-                }
                 // A concrete component, OR an abstract base that still defines a concrete Build/members for
                 // its subclasses to inherit (a pure-abstract class with no Build emits nothing here).
                 else if (!component.IsAbstract || component.BuildMethodNode != null)
@@ -604,14 +597,6 @@ public class TypeScriptEmitter
                 }
             }, component.TypeParameters);
 
-        // State class logic hooks into builder via EmitStateClass (already refactored)
-        // We just need to ensure EmitStateClass writes to builder, OR we inline it here if we want full builder control in one pass.
-        // Given current structure, we rely on EmitStateClass using _builder.
-        if (component.IsStateful)
-        {
-            EmitStatefulComponent(component); // This method needs update to NOT use WriteLn manually if we want full builder purity, but for now we mix.
-        }
-
         // Generate component code without imports
         var componentCode = _builder.ToString();
 
@@ -679,11 +664,6 @@ public class TypeScriptEmitter
         var coreImports = new HashSet<string> { "Component", "BuildContext", "HtmlElement" };
 
         if (component.IsStateful)
-        {
-            coreImports.Add("StatefulComponent");
-            coreImports.Add("ComponentState");
-        }
-        else if (component.IsSharedStateful)
         {
             coreImports.Add("StatefulComponent");
         }
@@ -1000,7 +980,7 @@ public class TypeScriptEmitter
         {
             "HtmlNode" or "HtmlStyle" or "ServiceKey" or "ServiceProvider" => true,
             "Component" or "BuildContext" or "HtmlElement" => true,
-            "StatefulComponent" or "StatelessComponent" or "StatefulComponent" or "ComponentState" => true,
+            "StatefulComponent" or "StatelessComponent" => true,
             "getServerActionsClient" or "getRootServiceProvider" => true,
             // The .NET-compat VALUE TYPES — see RuntimeValueTypes.
             _ when RuntimeValueTypes.Contains(typeName) => true,
@@ -1104,68 +1084,6 @@ public class TypeScriptEmitter
         }
     }
     
-    private void EmitStatefulComponent(ComponentDefinition component)
-    {
-        // Only emit the State class. The Component class is emitted by the main Emit method.
-        
-        WriteLn();
-        
-        _builder.Class(component.StateClassName!, "ComponentState", c =>
-        {
-            // Private component reference
-            c.Field("_component", component.Name);
-            c.Field("_needsRender", "boolean", "false");
-            
-            // Typed fields
-            foreach (var field in component.StateFields)
-            {
-                var tsType = Annotate(field.Type);
-                // A compat-typed field must DEFAULT to its runtime type (0n, dec(0)) — the default
-                // is also the witness legacy hydration reads a field's type from.
-                var tsDefault = field.DefaultValueNode != null
-                    ? _converter.ConvertExpression(field.DefaultValueNode, field.Type)
-                    : (field.Type.EndsWith('?') ? null : ValueTypeDefault(field.Type, field.TypeNode))
-                      ?? ConvertToTsValue(field.DefaultValue ?? GetDefaultForType(field.Type), field.Type);
-                if (tsDefault.Contains("$eq.")) component.UsedHelpers.Add(Eq.Import);
-                c.Field(field.Name, tsType, tsDefault);
-            }
-
-            // The state's typed boundary — what SSR hydration coerces each field by (see
-            // component.ts: `static $hydration` wins; fields without a spec keep the witness).
-            EmitHydrationMap(c, component.StateFields.Select(field => (field.Name, field.TypeNode)));
-
-            // Constructor
-            c.Member(JsClassMember.Constructor($"component: {component.Name}", JsStatement.Block(new[]
-            {
-                JsStatement.Expression(JsExpr.Call(JsExpr.Identifier("super"))),
-                Assign(JsExpr.ThisMember("_component"), JsExpr.Identifier("component")),
-            })));
-            
-            // SetState
-            c.Member(JsClassMember.Method("", "setState", "", Param("fn", "() => void"), "", JsStatement.Block(new[]
-            {
-                JsStatement.Expression(JsExpr.Call(JsExpr.Identifier("fn"))),
-                Assign(JsExpr.ThisMember("_needsRender"), JsExpr.Literal("true")),
-                JsStatement.Expression(JsExpr.Call(JsExpr.Member(JsExpr.ThisMember("_component"), "_scheduleRender"))),
-            })));
-
-            // Custom methods (Phase 2: Semantic Body)
-            foreach (var method in component.Methods)
-            {
-                EmitMethod(method, c, component, component.StateClassName);
-            }
-            
-            // Build method
-            // The state's Build: its block, its expression as a return (before that branch existed an
-            // expression-bodied Build fell through to the empty Container and lost the page's tree),
-            // or the empty Container.
-            _converter.SetCurrentClass(component.StateClassName);
-            var (stateBody, stateSource) = BuildBody(component.BuildMethodNode, JsStatement.Raw("return new Container({});"));
-            c.Member(JsClassMember.Method("", "build", "", Param("context", "BuildContext"), "", stateBody),
-                bodySource: stateSource);
-        });
-        WriteLn();
-    }
     
     private void EmitStatelessComponent(ComponentDefinition component)
     {

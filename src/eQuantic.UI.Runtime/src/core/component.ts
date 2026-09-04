@@ -191,12 +191,9 @@ export abstract class StatelessComponent extends Component {
 
 
 /**
- * Base class for SHARED stateful components — the `eQuantic.UI.Primitives.StatefulComponent` shape:
- * state lives as fields on the component itself and `setState` triggers the rebuild directly (no
- * `createState`/`ComponentState` split). eqc routes shared components here when their base resolves
- * to the Primitives namespace. Deliberately parallel to {@link StatefulComponent} rather than
- * refactored into a common base — the planned Core unification (SHARED-COMPONENTS-PLAN) owns that
- * consolidation; duplicating the mount plumbing today keeps the battle-tested path untouched.
+ * The stateful component — the twin of `eQuantic.UI.Primitives.StatefulComponent`: state lives as
+ * fields on the component itself and `setState` triggers the rebuild directly. eqc emits every
+ * stateful component against this base.
  */
 export abstract class StatefulComponent extends Component {
   private _renderManager: RenderManager = new RenderManager();

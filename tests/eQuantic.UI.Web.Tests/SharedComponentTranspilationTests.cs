@@ -393,7 +393,7 @@ public class SharedComponentTranspilationTests
     {
         var counter = TranspileSharedComponents()["SharedCounter"];
 
-        // The Primitives stateful shape: direct SetState on the component, no CreateState split.
+        // The stateful shape: direct SetState on the component.
         counter.Should().Contain("extends StatefulComponent");
         counter.Should().NotContain("createState");
 

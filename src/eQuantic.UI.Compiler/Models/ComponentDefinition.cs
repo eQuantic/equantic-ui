@@ -31,12 +31,9 @@ public class ComponentDefinition
     /// Emitted extending the runtime's <c>StatefulComponent</c>; structurally handled like a
     /// stateless component otherwise (<see cref="IsStateful"/> stays false).
     /// </summary>
-    public bool IsSharedStateful { get; set; }
     
     /// <summary>
     /// Name of the state class (for stateful components)
-    /// </summary>
-    public string? StateClassName { get; set; }
     
     /// <summary>
     /// Page routes from [Page] attributes

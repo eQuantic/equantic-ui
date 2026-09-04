@@ -245,24 +245,7 @@ public class ComponentParser
             }
         }
 
-        // A ComponentState<T> subclass is owned by its page: the page's module emits it COMPLETE (state
-        // fields + setState + handlers + ctor + build, via ParseStateClass) and `createState()` news it up
-        // from that same module. Emitting it ALSO as a standalone component module produced a broken,
-        // duplicated `<State>.ts/.js` carrying only `build()` — referencing state fields/handlers that
-        // module never declares. It is detected as a component here only because it has a `Build` method
-        // (and ComponentState is itself a component base), so drop state classes from the standalone set.
         var stateNames = new HashSet<string>();
-        foreach (var c in classes)
-        {
-            bool isState = model?.GetDeclaredSymbol(c) is INamedTypeSymbol s
-                ? s.IsComponentState()
-                : BaseName(c) == "ComponentState";
-            if (isState)
-            {
-                componentNames.Remove(c.Identifier.Text);
-                stateNames.Add(c.Identifier.Text);
-            }
-        }
 
         // A PLAIN class — not a component, not static, not a state class — is a model the developer
         // wrote: a bucket, a builder, a small state machine. Nothing emitted one, so `new Bucket()`
@@ -317,15 +300,12 @@ public class ComponentParser
                 IsAbstract = classDecl.Modifiers.Any(SyntaxKind.AbstractKeyword)
             };
 
-            if (baseType == "StatefulComponent" && BaseResolvesToPrimitives(classDecl))
+            if (baseType == "StatefulComponent")
             {
-                // The SHARED stateful shape (eQuantic.UI.Primitives.StatefulComponent): state lives on
-                // the component itself and SetState rebuilds directly — no CreateState/ComponentState
-                // split. Structurally it parses like a stateless component (Build + ctors + methods +
-                // fields on the class); the emitter swaps the base for the runtime's
-                // StatefulComponent.
-                definition.IsStateful = false;
-                definition.IsSharedStateful = true;
+                // The stateful shape: state lives on the component itself and SetState rebuilds
+                // directly. Structurally it parses like a stateless component (Build + ctors +
+                // methods + fields on the class).
+                definition.IsStateful = true;
                 definition.BaseClassName = "StatefulComponent";
                 ParsePageAttributes(classDecl, definition);
                 ParseServerActions(classDecl, definition);
@@ -340,46 +320,6 @@ public class ComponentParser
 
                 ParseConstructors(classDecl, definition);
                 ParseMethods(classDecl, definition);
-                ParseComponentFields(classDecl, definition);
-            }
-            else if (baseType == "StatefulComponent")
-            {
-                definition.IsStateful = true;
-
-                // Parse Page attributes and ServerActions
-                ParsePageAttributes(classDecl, definition);
-                ParseServerActions(classDecl, definition);
-                
-                // Find state class name from CreateState method
-                var createStateMethod = classDecl.DescendantNodes()
-                    .OfType<MethodDeclarationSyntax>()
-                    .FirstOrDefault(m => m.Identifier.Text == "CreateState");
-                
-                if (createStateMethod != null)
-                {
-                    var newExpr = createStateMethod.DescendantNodes()
-                        .OfType<ObjectCreationExpressionSyntax>()
-                        .FirstOrDefault();
-                    
-                    if (newExpr != null)
-                    {
-                        definition.StateClassName = newExpr.Type.ToString();
-                    }
-                }
-
-                definition.BaseClassName = baseType;
-                
-                // If we found a state class name, find it in the same file
-                if (!string.IsNullOrEmpty(definition.BaseClassName) && !string.IsNullOrEmpty(definition.StateClassName))
-                {
-                    var stateClass = classes.FirstOrDefault(c => c.Identifier.Text == definition.StateClassName);
-                    if (stateClass != null)
-                    {
-                        ParseStateClass(stateClass, definition);
-                    }
-                }
-
-                // Static/instance data fields declared on the stateful component class itself.
                 ParseComponentFields(classDecl, definition);
             }
             else if (baseType == "StatelessComponent")
@@ -438,13 +378,6 @@ public class ComponentParser
             }
 
             CollectRuntimeProvidedTypes(classDecl, definition);
-            // A stateful component's Build lives in its STATE class — runtime-provided references
-            // there (e.g. the VisualNodeComponent bridge) must route the same way.
-            if (!string.IsNullOrEmpty(definition.StateClassName))
-            {
-                var stateDecl = classes.FirstOrDefault(c => c.Identifier.Text == definition.StateClassName);
-                if (stateDecl != null) CollectRuntimeProvidedTypes(stateDecl, definition);
-            }
 
             results.Add(definition);
         }
@@ -762,39 +695,6 @@ public class ComponentParser
         }
     }
 
-    /// <summary>True when the class's direct base type resolves (semantically) into the shared
-    /// <c>eQuantic.UI.Primitives</c> namespace — the write-once component model, whose stateful shape
-    /// (direct <c>SetState</c>) differs from the Core <c>CreateState</c> split.</summary>
-    private bool BaseResolvesToPrimitives(ClassDeclarationSyntax classDecl)
-    {
-        // The SHAPE decides first — syntactic, cheap, and unambiguous when it matches: only the
-        // write-once page declares `VisualNode Build(ComponentContext …)` on the class itself
-        // (the Core split declares CreateState() and builds on a ComponentState). This must not
-        // depend on a semantic model: in-memory CompileSource without references (the
-        // playground's mode) resolves the base to an ERROR symbol, and defaulting to the Core
-        // shape miscompiled the page SILENTLY — a nameless state class, the Build body dropped
-        // for an empty Container.
-        var buildsVisualNode = classDecl.Members.OfType<MethodDeclarationSyntax>().Any(m =>
-            m.Identifier.Text == "Build"
-            && m.ReturnType.ToString().EndsWith("VisualNode")
-            && m.ParameterList.Parameters.Count == 1
-            && m.ParameterList.Parameters[0].Type?.ToString().EndsWith("ComponentContext") == true);
-        if (buildsVisualNode) return true;
-
-        // The semantic model settles everything the shape cannot (aliases, indirect bases).
-        var baseSyntax = classDecl.BaseList?.Types.FirstOrDefault()?.Type;
-        if (baseSyntax == null) return false;
-        var model = TryGetSemanticModel(classDecl.SyntaxTree);
-        if (model == null) return false;
-
-        ISymbol? symbol;
-        try { symbol = model.GetSymbolInfo(baseSyntax).Symbol; }
-        catch { return false; }
-
-        var ns = (symbol as INamedTypeSymbol)?.ContainingNamespace?.ToDisplayString() ?? string.Empty;
-        return ns == "eQuantic.UI.Primitives" || ns.StartsWith("eQuantic.UI.Primitives.");
-    }
-
     /// <summary>
     /// Collects the simple names of referenced RUNTIME-PROVIDED types (and referenced enums) into the
     /// definition — semantic-model driven via <see cref="RuntimeProvidedTypeScanner"/>, following
@@ -844,70 +744,6 @@ public class ComponentParser
                     IsStatic = isStatic
                 });
             }
-        }
-    }
-
-    private void ParseStateClass(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
-    {
-        // Extract fields
-        var fields = classDecl.DescendantNodes()
-            .OfType<FieldDeclarationSyntax>()
-            .Where(f => f.Modifiers.Any(SyntaxKind.PrivateKeyword));
-        
-        foreach (var field in fields)
-        {
-            foreach (var variable in field.Declaration.Variables)
-            {
-                definition.StateFields.Add(new StateField
-                {
-                    Name = variable.Identifier.Text,
-                    Type = field.Declaration.Type.ToString(),
-                    TypeNode = field.Declaration.Type,
-                    DefaultValue = variable.Initializer?.Value.ToString(),
-                    DefaultValueNode = variable.Initializer?.Value
-                });
-            }
-        }
-        
-        // Extract methods (excluding Build)
-        var methods = classDecl.DescendantNodes()
-            .OfType<MethodDeclarationSyntax>()
-            .Where(m => m.Identifier.Text != "Build");
-        
-        foreach (var method in methods)
-        {
-            if (IsServerOnly(method)) continue;
-
-            var methodDef = new MethodDefinition
-            {
-                Name = method.Identifier.Text,
-                ReturnType = method.ReturnType.ToString(),
-                TypeParameters = method.TypeParameterList?.Parameters.Select(p => p.Identifier.Text).ToList() ?? new List<string>(),
-                Body = method.Body?.ToString() ?? method.ExpressionBody?.Expression.ToString() ?? "",
-                IsStatic = method.Modifiers.Any(SyntaxKind.StaticKeyword),
-                SyntaxNode = method
-            };
-            
-            foreach (var param in method.ParameterList.Parameters)
-            {
-                methodDef.Parameters.Add(new ParameterDefinition
-                {
-                    Name = param.Identifier.ValueText,
-                    Type = param.Type?.ToString() ?? "object"
-                });
-            }
-            
-            definition.Methods.Add(methodDef);
-        }
-        
-        // Parse Build method for component tree
-        var buildMethod = classDecl.DescendantNodes()
-            .OfType<MethodDeclarationSyntax>()
-            .FirstOrDefault(m => IsBuildEntryPoint(m, "Build"));
-        
-        if (buildMethod != null)
-        {
-            definition.BuildMethodNode = buildMethod;
         }
     }
     
