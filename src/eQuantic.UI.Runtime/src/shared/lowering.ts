@@ -1346,7 +1346,7 @@ function lowerCameraPreview(node: CameraPreviewNode): HtmlNode {
       autoplay: '',
       muted: '',
       playsinline: '',
-      'aria-label': node.alt ?? '',
+      'aria-label': node.label ?? '',
     },
     events: {},
     children: [],
@@ -1402,7 +1402,7 @@ function lowerImage(node: ImageNode): HtmlNode {
   });
   const light: HtmlNode = {
     tag: 'img',
-    attributes: { ...sizing, src: node.source, alt: node.alt ?? '' },
+    attributes: { ...sizing, src: node.source, alt: node.label ?? '' },
     events: {},
     children: [],
   };
@@ -1415,7 +1415,7 @@ function lowerImage(node: ImageNode): HtmlNode {
     : 'eq-themed-light';
   const dark: HtmlNode = {
     tag: 'img',
-    attributes: { ...sizing, class: 'eq-themed-dark', src: node.darkSource, alt: node.alt ?? '' },
+    attributes: { ...sizing, class: 'eq-themed-dark', src: node.darkSource, alt: node.label ?? '' },
     events: {},
     children: [],
   };

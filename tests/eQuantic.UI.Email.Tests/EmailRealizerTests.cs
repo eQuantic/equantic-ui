@@ -170,7 +170,7 @@ public class EmailRendererTests
     public void ThePlainTextCarriesLinksAndImageAlts()
     {
         var tree = new Column(gap: Space.S4);
-        tree.Add(new Image("https://cdn.example.com/logo.png", 132, 26, alt: "eQuantic"));
+        tree.Add(new Image("https://cdn.example.com/logo.png", 132, 26, label: "eQuantic"));
         tree.Add(new Link("https://example.com/confirm", new Text("Confirm your account", TypeRole.Label)));
 
         var message = EmailRenderer.Render(tree, Theme);
@@ -204,7 +204,7 @@ public class EmailMediaTests
     [Fact]
     public void AnImageCarriesItsAddressSizeAndAlt()
     {
-        var html = Html(new Image("https://cdn.example.com/logo.png", 132, 26, alt: "eQuantic"));
+        var html = Html(new Image("https://cdn.example.com/logo.png", 132, 26, label: "eQuantic"));
 
         // Width/height as ATTRIBUTES, not only CSS: Word's engine sizes images from the attributes.
         html.Should().Contain("src=\"https://cdn.example.com/logo.png\"")
@@ -294,7 +294,7 @@ public class EmailReviewFindingsTests
     public void AttributeValuesCannotBreakOutOfTheirQuotes()
     {
         var html = Html(new Image("https://cdn.example.com/a.png?w=1&h=2", 10, 10,
-            alt: "he said \"hi\" & left"));
+            label: "he said \"hi\" & left"));
 
         html.Should().Contain("a.png?w=1&amp;h=2", "a bare & is malformed HTML some clients rewrite");
         html.Should().Contain("&quot;hi&quot;", "a quote would end the attribute and inject markup");

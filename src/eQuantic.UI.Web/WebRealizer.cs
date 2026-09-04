@@ -1437,7 +1437,7 @@ public static class WebRealizer
                 ["autoplay"] = "",
                 ["muted"] = "",
                 ["playsinline"] = "",
-                ["aria-label"] = camera.Alt,
+                ["aria-label"] = camera.Label,
             },
         };
     }
@@ -1504,7 +1504,7 @@ public static class WebRealizer
             RawAttributes = new Dictionary<string, string>
             {
                 ["src"] = image.Source,
-                ["alt"] = image.Alt,
+                ["alt"] = image.Label,
             },
         };
         if (image.DarkSource is not { Length: > 0 } darkSource) return element;
@@ -1520,7 +1520,7 @@ public static class WebRealizer
             RawAttributes = new Dictionary<string, string>
             {
                 ["src"] = darkSource,
-                ["alt"] = image.Alt,
+                ["alt"] = image.Label,
             },
         };
         var pair = new RealizedElement("span")

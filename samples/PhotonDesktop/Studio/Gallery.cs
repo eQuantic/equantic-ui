@@ -1031,7 +1031,7 @@ public static class Gallery
         filming.Add(new CameraPreview(state.CameraSession, 320, 240)
         {
             CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Medium)),
-            Alt = "Live camera preview",
+            Label = "Live camera preview",
         });
         if (state.Captured is { } still)
         {

@@ -200,8 +200,8 @@ public static class UI
 
     /// <summary>A bitmap with explicit dimensions (layout never waits for the network).</summary>
     public static Image Image(string source, float width, float height, ImageFit fit = ImageFit.Cover,
-        string alt = "") =>
-        new Image(source, width, height, fit, alt);
+        string label = "") =>
+        new Image(source, width, height, fit, label);
 
     /// <summary>The indeterminate progress ring.</summary>
     public static Spinner Spinner(float size = IconSize.Dense, ColorToken? color = null) =>

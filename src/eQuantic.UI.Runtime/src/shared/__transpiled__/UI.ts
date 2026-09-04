@@ -77,8 +77,8 @@ export class UI {
         return new Drawing(artwork, width, height, tint, label);
     }
 
-    static image(source: string, width: number, height: number, fit: ImageFitValue = 'cover', alt: string = '') {
-        return new Image(source, width, height, fit, alt);
+    static image(source: string, width: number, height: number, fit: ImageFitValue = 'cover', label: string = '') {
+        return new Image(source, width, height, fit, label);
     }
 
     static spinner(size: number = 20, color: ColorToken | null = null) {

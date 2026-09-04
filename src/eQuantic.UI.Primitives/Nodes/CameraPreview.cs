@@ -34,5 +34,5 @@ public sealed class CameraPreview : VisualNode
     public CornerRadii CornerRadius { get; init; }
 
     /// <summary>What assistive tech reads for a surface it cannot describe. Empty = decorative.</summary>
-    public string Alt { get; init; } = "";
+    public string Label { get; init; } = "";
 }

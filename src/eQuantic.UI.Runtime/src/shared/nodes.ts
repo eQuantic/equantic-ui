@@ -684,7 +684,7 @@ export interface CameraPreviewNode extends VisualNodeValue {
   width: number;
   height: number;
   cornerRadius?: CornerRadiiValue | null;
-  alt?: string;
+  label?: string;
 }
 
 /**
@@ -711,7 +711,7 @@ export interface ImageNode extends VisualNodeValue {
   height: number;
   /** ImageFit as camelCase member string ('contain' | 'cover' | 'stretch'). */
   fit: string;
-  alt: string;
+  label: string;
   cornerRadius?: CornerRadiiValue;
 }
 

@@ -1196,7 +1196,7 @@ export class Image extends VisualNode {
   width: number;
   height: number;
   fit: string;
-  alt: string;
+  label: string;
   cornerRadius?: CornerRadii;
 
   constructor(
@@ -1204,7 +1204,7 @@ export class Image extends VisualNode {
     width: number,
     height: number,
     fit = 'cover',
-    alt = '',
+    label = '',
     config?: { cornerRadius?: CornerRadii },
   ) {
     super();
@@ -1212,7 +1212,7 @@ export class Image extends VisualNode {
     this.width = width;
     this.height = height;
     this.fit = fit;
-    this.alt = alt;
+    this.label = label;
     if (config) Object.assign(this, config);
   }
 }
@@ -1283,13 +1283,13 @@ export class CameraPreview extends VisualNode {
   width: number;
   height: number;
   cornerRadius?: CornerRadii;
-  alt = '';
+  label = '';
 
   constructor(
     session: { id: string } | null,
     width: number,
     height: number,
-    config?: { cornerRadius?: CornerRadii; alt?: string },
+    config?: { cornerRadius?: CornerRadii; label?: string },
   ) {
     super();
     this.session = session;
