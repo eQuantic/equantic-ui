@@ -55,6 +55,19 @@ an HTML element?* If yes, the target's word IS the right word.
 The tell that a borrowed name is wrong is usually already in the tree: `CameraPreview.Alt` lowered
 to `aria-label` and never to `alt`, and `KeyModifiers.Alt` — the KEY — carried the same word.
 
+### What the developer's csproj says
+
+`<Project Sdk="eQuantic.UI.Sdk">` and nothing else. No `PackageReference` — the SDK adds Core,
+Components, Web, Server, Runtime and the right embedded-bun package itself. The developer writes
+one only to opt IN to something extra, an icon pack being the usual case.
+
+That is why the bun ships as per-OS, per-architecture packages (`eQuantic.UI.Runtime.Osx64`,
+`.WinArm64`, …) selected by condition in `Sdk.props`: bundling is a build-time need the developer
+never asked for, so they never install a toolchain, never learn which one, and never see it fail on
+a machine of a different shape. A reference in that file is often a DELIVERY VEHICLE rather than a
+code dependency — removing one because no code calls it breaks the consumer's restore, not our
+build.
+
 ### The bar for a decision
 
 Decisions here are **robust and durable**: the goal is to stabilise the SDK while keeping it ready
