@@ -1,7 +1,7 @@
 using System.Text;
 using eQuantic.UI.Primitives;
 
-namespace eQuantic.UI.Web;
+namespace eQuantic.UI.Web.Build;
 
 /// <summary>Generates <c>icons.generated.ts</c> from <see cref="IconRegistry"/> — the client never
 /// hand-writes glyph path data (the CSS/theme generation rule applied to icons).</summary>
