@@ -27,7 +27,7 @@ public class GraphicSemanticsTests
     [Fact]
     public void AnImageWithAltTextAnnounces()
     {
-        var nodes = SemanticsOf(new Image("logo.png", 120, 40, alt: "Company logo"));
+        var nodes = SemanticsOf(new Image("logo.png", 120, 40, label: "Company logo"));
 
         nodes.Should().ContainSingle()
             .Which.Should().BeEquivalentTo(new { Role = SemanticRole.Image, Label = "Company logo" },
@@ -49,7 +49,7 @@ public class GraphicSemanticsTests
     {
         var column = new Column(gap: 0)
         {
-            new Image("logo.png", 120, 40, alt: "Company logo"),
+            new Image("logo.png", 120, 40, label: "Company logo"),
             new Icon(Icons.Heart, IconSize.Md, label: "Favourite"),
         };
 

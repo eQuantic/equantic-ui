@@ -200,8 +200,8 @@ public static class UI
 
     /// <summary>A bitmap with explicit dimensions (layout never waits for the network).</summary>
     public static Image Image(string source, float width, float height, ImageFit fit = ImageFit.Cover,
-        string alt = "") =>
-        new Image(source, width, height, fit, alt);
+        string label = "") =>
+        new Image(source, width, height, fit, label);
 
     /// <summary>The indeterminate progress ring.</summary>
     public static Spinner Spinner(float size = IconSize.Dense, ColorToken? color = null) =>
@@ -244,8 +244,8 @@ public static class UI
         new SafeArea(child, edges);
 
     /// <summary>Scroll-anchored chrome (spec S7): pins to the viewport start once scrolled.</summary>
-    public static Sticky Sticky(VisualNode child, float offset = 0) =>
-        new Sticky(child, offset);
+    public static Pinned Pinned(VisualNode child, float offset = 0) =>
+        new Pinned(child, offset);
 
     /// <summary>The viewport layer: the child escapes the page flow and paints above it.</summary>
     public static Overlay Overlay(VisualNode child) =>

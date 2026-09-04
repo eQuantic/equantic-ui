@@ -289,9 +289,9 @@ public static class LayoutEngine
         // Spec S6: an AdaptiveNode IS its resolved variant on native — the other variants never
         // measure, never paint (the web keeps them, CSS-gated).
         AdaptiveNode adaptive => MeasureRearmed(adaptive.Resolve(ctx.SizeClass), maxW, maxH, ctx, ctx.ChildPath(path, 0), stretchW, stretchH),
-        // Spec S7: Sticky renders IN FLOW on native until engine scrolling lands (correct at scroll
+        // Spec S7: Pinned renders IN FLOW on native until engine scrolling lands (correct at scroll
         // offset 0); the pinning joins the scroll compositor (fence on the node's doc).
-        Sticky sticky => MeasureWrapper(sticky, sticky.Child, maxW, maxH, ctx, path, stretchW, stretchH),
+        Pinned pinned => MeasureWrapper(pinned, pinned.Child, maxW, maxH, ctx, path, stretchW, stretchH),
         // The system's own margins. A desktop window has no cutouts, so the host reports zero and
         // the node measures as its child plus whatever padding the caller asked for on top — the
         // SAME tree an iPhone insets, with the numbers coming from the host rather than the app.
@@ -619,13 +619,13 @@ public static class LayoutEngine
             }
         }
 
-        // Spec S7 z-order: children paint (and hit-test, topmost-last) in ZIndex order — a stable
+        // Spec S7 z-order: children paint (and hit-test, topmost-last) in Layer order — a stable
         // sort keeps declaration order for equal values (flow order = the painter's default).
-        if (result.Children.Where((node, i) => PositionedOf(stack.Children[i], node) is { ZIndex: not 0 }).Any())
+        if (result.Children.Where((node, i) => PositionedOf(stack.Children[i], node) is { Layer: not 0 }).Any())
         {
             var ordered = result.Children
                 .Select((node, i) => (Node: node,
-                    Z: PositionedOf(stack.Children[i], node) is { } p ? p.ZIndex : 0, I: i))
+                    Z: PositionedOf(stack.Children[i], node) is { } p ? p.Layer : 0, I: i))
                 .OrderBy(e => e.Z).ThenBy(e => e.I)
                 .Select(e => e.Node)
                 .ToList();
@@ -692,7 +692,7 @@ public static class LayoutEngine
             Y = horizontal ? 0 : -offset,
         };
 
-        // Spec S7 — Sticky PINNING (vertical v1): a Sticky at content-y y0 shows at y0 - offset;
+        // Spec S7 — Pinned PINNING (vertical v1): a Pinned at content-y y0 shows at y0 - offset;
         // once that would pass its own Offset from the viewport start, it pins there instead.
         if (!horizontal && offset > 0)
             PinSticky(child, accumulatedY: child.Bounds.Y);
@@ -700,7 +700,7 @@ public static class LayoutEngine
         return result;
     }
 
-    /// <summary>Walks the scrolled content for Sticky wrappers and clamps their viewport-relative Y
+    /// <summary>Walks the scrolled content for Pinned wrappers and clamps their viewport-relative Y
     /// (v1: vertical, no end-of-container release — that fence joins the compositor polish). Nested
     /// ScrollViews own their own pinning pass.</summary>
     private static void PinSticky(LayoutNode node, float accumulatedY)
@@ -709,9 +709,9 @@ public static class LayoutEngine
         {
             if (child.Source is ScrollView) continue;
             var viewportY = accumulatedY + child.Bounds.Y;
-            if (child.Source is Sticky sticky && viewportY < sticky.Offset)
+            if (child.Source is Pinned pinned && viewportY < pinned.Offset)
             {
-                child.Bounds = child.Bounds with { Y = child.Bounds.Y + (sticky.Offset - viewportY) };
+                child.Bounds = child.Bounds with { Y = child.Bounds.Y + (pinned.Offset - viewportY) };
                 continue; // the pinned subtree moves as one — no need to descend
             }
             PinSticky(child, accumulatedY + child.Bounds.Y);
@@ -1694,7 +1694,7 @@ public static class LayoutEngine
         Spinner => SizeKind.Fixed,
         Grid grid => (horizontal ? grid.Height : grid.Width).Kind,
         // Layout-transparent wrappers delegate to what they wrap.
-        Sticky sticky => CrossSizeKind(sticky.Child, horizontal),
+        Pinned pinned => CrossSizeKind(pinned.Child, horizontal),
         Draggable draggable => CrossSizeKind(draggable.Child, horizontal),
         SafeArea safeArea => CrossSizeKind(safeArea.Child, horizontal),
         Presence presence => CrossSizeKind(presence.Child, horizontal),

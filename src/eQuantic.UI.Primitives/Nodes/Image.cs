@@ -22,13 +22,13 @@ public sealed class Image : VisualNode
 {
     public sealed override string NodeKind => "image";
 
-    public Image(string source, float width, float height, ImageFit fit = ImageFit.Cover, string alt = "")
+    public Image(string source, float width, float height, ImageFit fit = ImageFit.Cover, string label = "")
     {
         Source = source;
         Width = width;
         Height = height;
         Fit = fit;
-        Alt = alt;
+        Label = label;
     }
 
     public string Source { get; }
@@ -46,7 +46,7 @@ public sealed class Image : VisualNode
     public ImageFit Fit { get; init; }
 
     /// <summary>Empty string = decorative (per HTML semantics).</summary>
-    public string Alt { get; init; }
+    public string Label { get; init; }
 
     /// <summary>Radius token clips via rrect — per-corner allowed (spec A11).</summary>
     public CornerRadii CornerRadius { get; init; }

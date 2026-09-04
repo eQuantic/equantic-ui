@@ -309,7 +309,7 @@ public static class EmailRealizer
         html.Append($"<img src=\"{EscapeAttribute(image.Source)}\" width=\"{(int)image.Width}\" ");
         if (image.Fit != ImageFit.Contain)
             html.Append($"height=\"{(int)image.Height}\" ");
-        html.Append($"alt=\"{EscapeAttribute(image.Alt)}\" ")
+        html.Append($"alt=\"{EscapeAttribute(image.Label)}\" ")
             .Append($"style=\"display: block; border: 0; width: {Px(image.Width)}; ")
             .Append(image.Fit == ImageFit.Contain ? "height: auto" : $"height: {Px(image.Height)}");
         if (image.CornerRadius != CornerRadii.Zero)

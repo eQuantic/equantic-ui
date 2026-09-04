@@ -7,8 +7,8 @@ namespace eQuantic.UI.Components;
 /// row on a BorderStrong hairline, 44dp body rows separated by hairlines, equal flex columns.
 /// Write-once by construction: the SAME Grid lowers to CSS Grid on web and the track-sizing pass
 /// on Photon. Data changes are the caller's re-render (controlled, like everything).
-/// v1 fences: column widths/alignment, sorting, row selection, rich cells (VisualNode), sticky
-/// header (compose with Sticky yourself), virtualization (the List recycling fence).
+/// v1 fences: column widths/alignment, sorting, row selection, rich cells (VisualNode), pinned
+/// header (compose with Pinned yourself), virtualization (the List recycling fence).
 /// </summary>
 public sealed class Table : StatelessComponent
 {

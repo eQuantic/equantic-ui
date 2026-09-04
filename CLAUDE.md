@@ -38,6 +38,50 @@ The existing idioms this principle produced, to imitate rather than reinvent:
 - **MSBuild properties in the csproj** for build-time facts, named like .NET's own
   (`EQuanticSigningIdentity` beside `PublishAot`).
 
+### The vocabulary speaks NO target's language
+
+Never bring a target's nomenclature into a component — **unless the component IS the transcription
+of that target's element**. The SDK needs a neutral idiom that works on web, desktop and mobile;
+it was strongly inspired by Flutter, so when a name is missing, look there before inventing one
+(`EdgeInsets`, `MainAxisAlignment`, `Positioned`, `Stack` all came from it).
+
+Two questions settle every case. *Would this name exist if the web did not?* If no — *is this type
+an HTML element?* If yes, the target's word IS the right word.
+
+| correct | wrong, and why |
+|---|---|
+| `HtmlStyle.ZIndex`, `HtmlElement.Alt`, `DynamicElement.TagName` — the escape hatch transcribes the DOM on purpose | `Positioned.ZIndex` → `Layer`, `Image.Alt` → `Label` — abstract vocabulary borrowing a target's word |
+
+The tell that a borrowed name is wrong is usually already in the tree: `CameraPreview.Alt` lowered
+to `aria-label` and never to `alt`, and `KeyModifiers.Alt` — the KEY — carried the same word.
+
+### What the developer's csproj says
+
+`<Project Sdk="eQuantic.UI.Sdk">` and nothing else. No `PackageReference` — the SDK adds Core,
+Components, Web, Server, Runtime and the right embedded-bun package itself. The developer writes
+one only to opt IN to something extra, an icon pack being the usual case.
+
+That is why the bun ships as per-OS, per-architecture packages (`eQuantic.UI.Runtime.Osx64`,
+`.WinArm64`, …) selected by condition in `Sdk.props`: bundling is a build-time need the developer
+never asked for, so they never install a toolchain, never learn which one, and never see it fail on
+a machine of a different shape. A reference in that file is often a DELIVERY VEHICLE rather than a
+code dependency — removing one because no code calls it breaks the consumer's restore, not our
+build.
+
+### The bar for a decision
+
+Decisions here are **robust and durable**: the goal is to stabilise the SDK while keeping it ready
+for new features, on strongly defined architectural lines, using the best of what .NET itself
+offers. **The transpiler is the bar** — Strategy per construct, an IR with one writer per level,
+coverage suites that enumerate by reflection against a baseline that may only shrink — and the
+rest of the SDK is measured against it, not excused from it.
+
+In practice: prefer the structural fix to the patch (declaring a build dependency beats warning
+that it is missing); prefer the mechanism .NET already has to a home-grown one (a
+`ProjectReference` with `ReferenceOutputAssembly=false` beats a `Condition="Exists(…)"` over the
+solution's own output); and prefer an instrument that FAILS to one that warns — a pin that compares
+and fails, regenerated behind an env var, never one that silently rewrites itself.
+
 ---
 
 ## Git Commit Guidelines

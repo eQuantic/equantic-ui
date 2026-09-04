@@ -100,8 +100,8 @@ export interface SafeAreaNode {
   extra?: EdgeInsetsValue | null;
 }
 
-export interface StickyNode {
-  nodeKind: 'sticky';
+export interface PinnedNode {
+  nodeKind: 'pinned';
   key?: string | null;
   child: VisualNodeValue;
   offset: number;
@@ -684,7 +684,7 @@ export interface CameraPreviewNode extends VisualNodeValue {
   width: number;
   height: number;
   cornerRadius?: CornerRadiiValue | null;
-  alt?: string;
+  label?: string;
 }
 
 /**
@@ -711,7 +711,7 @@ export interface ImageNode extends VisualNodeValue {
   height: number;
   /** ImageFit as camelCase member string ('contain' | 'cover' | 'stretch'). */
   fit: string;
-  alt: string;
+  label: string;
   cornerRadius?: CornerRadiiValue;
 }
 
@@ -863,7 +863,7 @@ export interface PositionedNode extends VisualNodeValue {
   bottom?: number | null;
   start?: number | null;
   /** Spec S7: explicit stacking inside the Stack — higher paints on top; 0 = flow order. */
-  zIndex?: number;
+  layer?: number;
 }
 
 /** A shared component: the lowering expands it by calling `build(context)` (pure, mode-free). */

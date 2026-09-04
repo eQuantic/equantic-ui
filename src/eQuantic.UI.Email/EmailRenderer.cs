@@ -138,8 +138,8 @@ public static class EmailRenderer
                 if (trimmed.Length == 0 && !string.IsNullOrEmpty(link.Label)) trimmed = link.Label;
                 text.AppendLine(trimmed.Length > 0 ? $"{trimmed}: {link.Destination}" : link.Destination);
                 break;
-            case Image image when image.Alt.Length > 0:
-                text.AppendLine(image.Alt);
+            case Image image when image.Label.Length > 0:
+                text.AppendLine(image.Label);
                 break;
             case UiComponent component:
                 // Build, not BuildContained — the same deliberate divergence the HTML walker makes:

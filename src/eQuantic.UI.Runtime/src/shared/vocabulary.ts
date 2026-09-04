@@ -353,7 +353,7 @@ export class Anchored extends VisualNode {
   }
 }
 
-/** Mirror of the C# `Sticky` (spec S7): scroll-anchored chrome. */
+/** Mirror of the C# `Pinned` (spec S7): scroll-anchored chrome. */
 /** Mirror of the C# `Draggable` — a continuous gesture whose rules travel with the node. */
 export class Draggable extends VisualNode {
   readonly nodeKind = 'draggable';
@@ -406,8 +406,8 @@ export class SafeArea extends VisualNode {
   }
 }
 
-export class Sticky extends VisualNode {
-  readonly nodeKind = 'sticky';
+export class Pinned extends VisualNode {
+  readonly nodeKind = 'pinned';
   float = false;
   scrolledStyle: StyleDiff | null = null;
   /** Spec S6: animates the swap into/out of `scrolledStyle` (null = snap). */
@@ -1196,7 +1196,7 @@ export class Image extends VisualNode {
   width: number;
   height: number;
   fit: string;
-  alt: string;
+  label: string;
   cornerRadius?: CornerRadii;
 
   constructor(
@@ -1204,7 +1204,7 @@ export class Image extends VisualNode {
     width: number,
     height: number,
     fit = 'cover',
-    alt = '',
+    label = '',
     config?: { cornerRadius?: CornerRadii },
   ) {
     super();
@@ -1212,7 +1212,7 @@ export class Image extends VisualNode {
     this.width = width;
     this.height = height;
     this.fit = fit;
-    this.alt = alt;
+    this.label = label;
     if (config) Object.assign(this, config);
   }
 }
@@ -1283,13 +1283,13 @@ export class CameraPreview extends VisualNode {
   width: number;
   height: number;
   cornerRadius?: CornerRadii;
-  alt = '';
+  label = '';
 
   constructor(
     session: { id: string } | null,
     width: number,
     height: number,
-    config?: { cornerRadius?: CornerRadii; alt?: string },
+    config?: { cornerRadius?: CornerRadii; label?: string },
   ) {
     super();
     this.session = session;
@@ -1684,7 +1684,7 @@ export class Positioned extends VisualNode {
   bottom: number | null;
   start: number | null;
   /** Spec S7: explicit stacking order inside the Stack (0 = the child's own depth). */
-  zIndex = 0;
+  layer = 0;
 
   constructor(
     child: VisualChild,
@@ -1697,7 +1697,7 @@ export class Positioned extends VisualNode {
       end?: number | null;
       bottom?: number | null;
       start?: number | null;
-      zIndex?: number;
+      layer?: number;
       key?: string | null;
     },
   ) {

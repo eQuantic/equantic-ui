@@ -8,7 +8,7 @@ import * as vocabulary from './shared/vocabulary';
  * runtime.js every site serves, re-exports) and `shared/runtime-exports.ts` (what the vite dist
  * exposes, and what every TRANSPILED component twin imports from). They are maintained as
  * separate lists, and drift between them is invisible until something fails far away:
- * WebFrame missing from one served a bundle without the export; AdaptiveNode/Sticky/Vector
+ * WebFrame missing from one served a bundle without the export; AdaptiveNode/Pinned/Vector
  * missing from the other broke the bun build the moment a twin referenced them. Both directions
  * are checked here, so the failure lands in this file instead.
  */

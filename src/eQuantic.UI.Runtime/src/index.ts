@@ -129,7 +129,7 @@ export {
   Shortcut,
   KeyChord,
   KeyModifiers,
-  Sticky,
+  Pinned,
   Text,
   Pressable,
   CodeSurface,

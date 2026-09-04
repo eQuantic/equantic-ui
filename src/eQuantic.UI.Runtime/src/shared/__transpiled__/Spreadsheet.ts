@@ -113,7 +113,7 @@ export class Spreadsheet extends StatefulComponent {
         let inBand = c >= selection.leftCol && c <= selection.rightCol;
         let stack = new Stack();
         stack.add(Spreadsheet.headerCell(Spreadsheet.columnName(c), document.colWidth(c), Spreadsheet.headerHeight, theme, inBand, () => this.setState(() => this.controller.selectCols(col, col))));
-        stack.add(new Positioned(new Draggable(new Box(new BoxStyle({ width: SizeValue.fixed(Spreadsheet.grip), height: SizeValue.fixed(Spreadsheet.headerHeight), cursor: 'colResize' })), null, { axis: 'horizontal', min: -4000, max: 4000, follows: false, onMoved: (delta: number) => this.previewResize('cols', col, delta), onReleased: (delta: number) => this.commitResize('cols', col, delta) }), 0, 0, null, null, { zIndex: 1 }));
+        stack.add(new Positioned(new Draggable(new Box(new BoxStyle({ width: SizeValue.fixed(Spreadsheet.grip), height: SizeValue.fixed(Spreadsheet.headerHeight), cursor: 'colResize' })), null, { axis: 'horizontal', min: -4000, max: 4000, follows: false, onMoved: (delta: number) => this.previewResize('cols', col, delta), onReleased: (delta: number) => this.commitResize('cols', col, delta) }), 0, 0, null, null, { layer: 1 }));
         return stack;
     }
 
@@ -123,7 +123,7 @@ export class Spreadsheet extends StatefulComponent {
         let inBand = r >= selection.topRow && r <= selection.bottomRow;
         let stack = new Stack();
         stack.add(Spreadsheet.headerCell(`${r + 1}`, Spreadsheet.headerWidth, document.rowHeight(r), theme, inBand, () => this.setState(() => this.controller.selectRows(row, row))));
-        stack.add(new Positioned(new Draggable(new Box(new BoxStyle({ width: SizeValue.fixed(Spreadsheet.headerWidth), height: SizeValue.fixed(Spreadsheet.grip), cursor: 'rowResize' })), null, { axis: 'vertical', min: -4000, max: 4000, follows: false, onMoved: (delta: number) => this.previewResize('rows', row, delta), onReleased: (delta: number) => this.commitResize('rows', row, delta) }), null, null, 0, 0, { zIndex: 1 }));
+        stack.add(new Positioned(new Draggable(new Box(new BoxStyle({ width: SizeValue.fixed(Spreadsheet.headerWidth), height: SizeValue.fixed(Spreadsheet.grip), cursor: 'rowResize' })), null, { axis: 'vertical', min: -4000, max: 4000, follows: false, onMoved: (delta: number) => this.previewResize('rows', row, delta), onReleased: (delta: number) => this.commitResize('rows', row, delta) }), null, null, 0, 0, { layer: 1 }));
         return stack;
     }
 
@@ -174,7 +174,7 @@ export class Spreadsheet extends StatefulComponent {
             if (!editingHere && row === selection.bottomRow && c === selection.rightCol) {
                 let handled = new Stack();
                 handled.add(box);
-                handled.add(new Positioned(new Box(new BoxStyle({ width: SizeValue.fixed(Spreadsheet.fillHandle), height: SizeValue.fixed(Spreadsheet.fillHandle), background: theme.focusRing, borderColor: theme.surface, borderWidth: 1, cursor: 'crosshair' })), null, -1, -1, null, { zIndex: 2 }));
+                handled.add(new Positioned(new Box(new BoxStyle({ width: SizeValue.fixed(Spreadsheet.fillHandle), height: SizeValue.fixed(Spreadsheet.fillHandle), background: theme.focusRing, borderColor: theme.surface, borderWidth: 1, cursor: 'crosshair' })), null, -1, -1, null, { layer: 2 }));
                 line.add(handled);
                 continue;
             }

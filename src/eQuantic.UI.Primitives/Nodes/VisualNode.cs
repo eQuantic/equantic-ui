@@ -35,8 +35,8 @@ public abstract class VisualNode
     /// </para>
     /// <para>
     /// On the web this becomes the element's <c>id</c>, and the realizer also gives it room to
-    /// land: a browser scrolls a target to the very top, so under a sticky header the target
-    /// arrives HIDDEN. The offset comes from the sticky the app already declared, measured at run
+    /// land: a browser scrolls a target to the very top, so under a pinned header the target
+    /// arrives HIDDEN. The offset comes from the pinned the app already declared, measured at run
     /// time, never a number the author repeats — one app here has a 60dp nav on one page and a
     /// 56dp topbar on another, and states neither.
     /// </para>
@@ -1940,7 +1940,7 @@ public sealed class Positioned : VisualNode
 
     /// <summary>Spec S7: explicit stacking inside the Stack — higher paints (and hit-tests) on top.
     /// Equal values keep declaration order (stable). 0 = flow order.</summary>
-    public int ZIndex { get; init; }
+    public int Layer { get; init; }
 }
 
 /// <summary>Scroll axis (spec A6).</summary>
@@ -2001,11 +2001,11 @@ public sealed class SafeArea : VisualNode
 /// native scroll compositor when engine scrolling lands — until then it renders in flow (correct
 /// at scroll offset 0).
 /// </summary>
-public sealed class Sticky : VisualNode
+public sealed class Pinned : VisualNode
 {
-    public override string NodeKind => "sticky";
+    public override string NodeKind => "pinned";
 
-    public Sticky(VisualNode child, float offset = 0)
+    public Pinned(VisualNode child, float offset = 0)
     {
         Child = child;
         Offset = offset;

@@ -66,7 +66,7 @@ public static class TestHelper
             // parameters.
             public class Anchor {{
                 public Anchor(string child, int? top = null, int? end = null, int? bottom = null, int? start = null) {{ }}
-                public int ZIndex {{ get; set; }}
+                public int Layer {{ get; set; }}
             }}
 
             public class TestClass {{

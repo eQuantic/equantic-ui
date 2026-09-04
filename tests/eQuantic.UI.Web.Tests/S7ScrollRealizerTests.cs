@@ -3,15 +3,15 @@ using FluentAssertions;
 
 namespace eQuantic.UI.Web.Tests;
 
-/// <summary>Spec S7 on the web realizer: Sticky → position:sticky, Positioned.ZIndex → z-index,
+/// <summary>Spec S7 on the web realizer: Pinned → position:sticky, Positioned.Layer → z-index,
 /// ScrollAxis.Both → auto on both axes. Literal strings the TS lowering mirrors.</summary>
 public class S7ScrollRealizerTests
 {
     [Fact]
-    public void Sticky_LowersToPositionSticky_AtTheOffset()
+    public void Pinned_LowersToPositionSticky_AtTheOffset()
     {
         var style = WebRealizer.Lower(
-            new Sticky(new Primitives.Box(new BoxStyle { Height = 32 }), offset: 8),
+            new Pinned(new Primitives.Box(new BoxStyle { Height = 32 }), offset: 8),
             PhotonTheme.Instance).Style!.ToCssString();
 
         // Chrome sits on its own plane, above anything the CONTENT can reach — see
@@ -20,11 +20,11 @@ public class S7ScrollRealizerTests
     }
 
     [Fact]
-    public void PositionedZIndex_RidesTheAnchor()
+    public void PositionedLayer_RidesTheAnchor()
     {
         var stack = new Stack();
         stack.Add(new Primitives.Box(new BoxStyle { Width = 10, Height = 10 }));
-        stack.Add(new Positioned(new Primitives.Box(new BoxStyle { Width = 10, Height = 10 }), top: 0) { ZIndex = 3 });
+        stack.Add(new Positioned(new Primitives.Box(new BoxStyle { Width = 10, Height = 10 }), top: 0) { Layer = 3 });
 
         var element = WebRealizer.Lower(stack, PhotonTheme.Instance);
         ((Core.HtmlElement)element.Children[1]).Style!.ToCssString().Should().Contain("z-index: 3");

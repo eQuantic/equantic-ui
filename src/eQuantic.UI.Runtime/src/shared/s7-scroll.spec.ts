@@ -14,10 +14,10 @@ const box = (): VisualNodeValue =>
 
 /** Spec S7 client lowering — the LITERAL strings the C# S7ScrollRealizerTests pin. */
 describe('S7 scroll semantics (C# cross-pin)', () => {
-  it('sticky lowers to position:sticky at the offset', () => {
+  it('pinned lowers to position: sticky at the offset', () => {
     const style = effectiveStyle(
       lowerVisualNode(
-        { nodeKind: 'sticky', child: box(), offset: 8 } as unknown as VisualNodeValue,
+        { nodeKind: 'pinned', child: box(), offset: 8 } as unknown as VisualNodeValue,
         ctx,
       ),
     );
@@ -37,13 +37,13 @@ describe('S7 scroll semantics (C# cross-pin)', () => {
       Number(/z-index: (\d+)/.exec(effectiveStyle(lowerVisualNode(node, ctx)))?.[1]);
 
     const floating = layer({
-      nodeKind: 'sticky',
+      nodeKind: 'pinned',
       child: box(),
       offset: 0,
       float: true,
     } as unknown as VisualNodeValue);
     const pinned = layer({
-      nodeKind: 'sticky',
+      nodeKind: 'pinned',
       child: box(),
       offset: 96,
     } as unknown as VisualNodeValue);
@@ -53,11 +53,11 @@ describe('S7 scroll semantics (C# cross-pin)', () => {
     expect(floating).toBeGreaterThan(pinned);
   });
 
-  it('positioned zIndex rides the anchor', () => {
+  it('positioned layer rides the anchor', () => {
     const stack = {
       nodeKind: 'stack',
       align: 'topStart',
-      children: [box(), { nodeKind: 'positioned', child: box(), top: 0, zIndex: 3 }],
+      children: [box(), { nodeKind: 'positioned', child: box(), top: 0, layer: 3 }],
     } as unknown as VisualNodeValue;
     const node = lowerVisualNode(stack, ctx);
     expect(effectiveStyle(node.children[1])).toContain('z-index: 3');

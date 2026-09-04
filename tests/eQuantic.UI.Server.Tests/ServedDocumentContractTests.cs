@@ -43,8 +43,8 @@ public class ServedDocumentContractTests
         public override VisualNode Build(ComponentContext context)
         {
             var page = new Column();
-            page.Add(new Sticky(new Box(new BoxStyle { Height = 64 })) { Float = true });
-            page.Add(new Sticky(new Box(new BoxStyle { Height = 32 }), offset: 96));
+            page.Add(new Pinned(new Box(new BoxStyle { Height = 64 })) { Float = true });
+            page.Add(new Pinned(new Box(new BoxStyle { Height = 32 }), offset: 96));
             page.Add(new Text($"{Downloads}", TypeRole.BodyM));
             return page;
         }

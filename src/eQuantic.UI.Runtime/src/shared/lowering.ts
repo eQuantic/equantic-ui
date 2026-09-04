@@ -91,7 +91,7 @@ import type {
   GridNode,
   AnchoredNode,
   SafeAreaNode,
-  StickyNode,
+  PinnedNode,
   StyleDiffValue,
   TextEntryNode,
   TextNode,
@@ -287,7 +287,7 @@ function lowerNode(
   const bookmarked = node as { bookmark?: string };
   if (lowered && bookmarked.bookmark) {
     lowered.attributes['id'] = bookmarked.bookmark;
-    // Room to land under a sticky header — the variable the sticky itself publishes, never a
+    // Room to land under a pinned header — the variable the pinned itself publishes, never a
     // number the author repeats. See the C# side for the reasoning.
     // An ATOMIC CLASS, not an inline declaration. Under the style sink the C# realizer atomises
     // every declaration and leaves inline only the custom-property tail — so writing this one
@@ -389,8 +389,8 @@ function lowerNodeKind(
       return lowerAdaptive(node as unknown as AdaptiveNodeValue, context, path);
     case 'shortcut':
       return lowerShortcut(node as unknown as ShortcutNode, context, horizontalAxis, path);
-    case 'sticky':
-      return lowerSticky(node as unknown as StickyNode, context, path);
+    case 'pinned':
+      return lowerPinned(node as unknown as PinnedNode, context, path);
     case 'safeArea':
       return lowerSafeArea(node as unknown as SafeAreaNode, context, path);
     case 'anchored':
@@ -1346,7 +1346,7 @@ function lowerCameraPreview(node: CameraPreviewNode): HtmlNode {
       autoplay: '',
       muted: '',
       playsinline: '',
-      'aria-label': node.alt ?? '',
+      'aria-label': node.label ?? '',
     },
     events: {},
     children: [],
@@ -1402,7 +1402,7 @@ function lowerImage(node: ImageNode): HtmlNode {
   });
   const light: HtmlNode = {
     tag: 'img',
-    attributes: { ...sizing, src: node.source, alt: node.alt ?? '' },
+    attributes: { ...sizing, src: node.source, alt: node.label ?? '' },
     events: {},
     children: [],
   };
@@ -1415,7 +1415,7 @@ function lowerImage(node: ImageNode): HtmlNode {
     : 'eq-themed-light';
   const dark: HtmlNode = {
     tag: 'img',
-    attributes: { ...sizing, class: 'eq-themed-dark', src: node.darkSource, alt: node.alt ?? '' },
+    attributes: { ...sizing, class: 'eq-themed-dark', src: node.darkSource, alt: node.label ?? '' },
     events: {},
     children: [],
   };
@@ -1850,7 +1850,7 @@ function lowerStack(node: StackNode, context: LoweringContext, path: string): Ht
           {
             position: 'absolute',
             // Spec S7 (C# twin): explicit stacking WINS; otherwise the child's own depth.
-            'z-index': `${(positioned.zIndex ?? 0) !== 0 ? positioned.zIndex : i + 1}`,
+            'z-index': `${(positioned.layer ?? 0) !== 0 ? positioned.layer : i + 1}`,
             top: positioned.top != null ? px(positioned.top) : spanY ? '0' : undefined,
             right: positioned.end != null ? px(positioned.end) : spanX ? '0' : undefined,
             bottom: positioned.bottom != null ? px(positioned.bottom) : spanY ? '0' : undefined,
@@ -2573,7 +2573,7 @@ function lowerFlexible(
   return node;
 }
 
-/** Spec S7 mirror of the C# LowerSticky: CSS sticky at `offset` from the viewport start. */
+/** Spec S7 mirror of the C# LowerPinned: CSS `position: sticky` at `offset` from the viewport start. */
 /**
  * Wave 3 mirror of the C# LowerAnchored: position:relative host (generated .eq-anchorhost),
  * invisible fixed scrim as a REAL pressable while dismissible, and the absolute panel positioned
@@ -3173,15 +3173,15 @@ function lowerSafeArea(node: SafeAreaNode, context: LoweringContext, path: strin
   return wrapper;
 }
 
-function lowerSticky(node: StickyNode, context: LoweringContext, path: string): HtmlNode {
+function lowerPinned(node: PinnedNode, context: LoweringContext, path: string): HtmlNode {
   const float = node.float === true;
   const wrapper = element('div', {
-    // Floating chrome (the fixed header) paints above the page; plain sticky stays in flow.
+    // Floating chrome (the fixed header) paints above the page; plain pinned stays in flow.
     position: float ? 'fixed' : 'sticky',
     top: px(node.offset),
     left: float ? '0' : undefined,
     right: float ? '0' : undefined,
-    // CHROME, above anything the CONTENT can reach (C# twin's PinnedLayer). Plain sticky sat at 1,
+    // CHROME, above anything the CONTENT can reach (C# twin's PinnedLayer). Plain pinned sat at 1,
     // one step above nothing, which is a number competing with other numbers: a raised card
     // (elevation carries 1–5) would out-stack the pinned header and scroll straight over it.
     // FLOATING chrome is a band above PINNED chrome, so two of them on one page do not tie.
@@ -3214,7 +3214,7 @@ function lowerSticky(node: StickyNode, context: LoweringContext, path: string): 
   // Marked so the offset publisher can MEASURE it — the C# realizer emits the identical attribute,
   // because a bookmark's room above itself is the height of the chrome covering it, and that
   // height is not knowable before layout.
-  wrapper.attributes['data-eq-sticky'] = '1';
+  wrapper.attributes['data-eq-pinned'] = '1';
   return wrapper;
 }
 
@@ -3226,7 +3226,7 @@ function mergeScrolledClasses(node: HtmlNode, classes: string): void {
 
 let scrolledControllerInstalled = false;
 
-/** The scroll listener behind Sticky.ScrolledStyle: `eq-scrolled` on <html> past 8px. */
+/** The scroll listener behind Pinned.ScrolledStyle: `eq-scrolled` on <html> past 8px. */
 function installScrolledController(): void {
   if (scrolledControllerInstalled || typeof window === 'undefined') return;
   scrolledControllerInstalled = true;
