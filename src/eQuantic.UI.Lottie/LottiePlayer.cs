@@ -52,10 +52,18 @@ public class LottiePlayer : HtmlElement, IRequireAssets
     /// </summary>
     public bool Controls { get; set; }
 
+    /// <summary>
+    /// The player version to load. PINNED, like the chart wrappers pin theirs: a moving
+    /// <c>@latest</c> means the same app build behaves differently on two days, and hands whoever
+    /// controls that tag a way into every page that renders one.
+    /// </summary>
+    public string Version { get; set; } = "2.7.12";
+
     public void ConfigureAssets(AssetBuilder assets)
     {
-        // Load the dotlottie player component from CDN
-        assets.AddScript("https://unpkg.com/@dotlottie/player-component@latest/dist/dotlottie-player.mjs", defer: true);
+        assets.AddScript(
+            $"https://cdn.jsdelivr.net/npm/@dotlottie/player-component@{Version}/dist/dotlottie-player.mjs",
+            defer: true);
     }
 
     public override HtmlNode Render() => BuildElement().Render();
