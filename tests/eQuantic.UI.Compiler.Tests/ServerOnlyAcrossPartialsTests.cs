@@ -67,4 +67,34 @@ public class ServerOnlyAcrossPartialsTests
             dir.Delete(recursive: true);
         }
     }
+
+    /// <summary>
+    /// The syntax-only fallback — no model at all — has to recognise the attribute however C# lets
+    /// it be spelled. Exact comparison of <c>Name.ToString()</c> missed the qualified form, and an
+    /// author writes the namespace out exactly where two namespaces both offer the name.
+    /// <para>
+    /// This goes through the PARSER directly, with no provider set, because that is the only way to
+    /// reach the fallback: <c>ComponentCompiler</c> always installs one, and even without references
+    /// the symbol path answers first — an unresolved attribute binds to an error symbol that still
+    /// carries the last segment written. Through the compiler, this test passed against the very
+    /// bug it exists to catch. Through the bare parser it fails against it.
+    /// </para>
+    /// </summary>
+    [Theory]
+    [InlineData("[ServerOnly]")]
+    [InlineData("[ServerOnlyAttribute]")]
+    [InlineData("[eQuantic.UI.Primitives.ServerOnly]")]
+    [InlineData("[eQuantic.UI.Primitives.ServerOnlyAttribute]")]
+    [InlineData("[global::eQuantic.UI.Primitives.ServerOnly]")]
+    public void ServerOnly_IsRecognisedInEverySpelling_WithoutAModel(string spelling)
+    {
+        var parser = new eQuantic.UI.Compiler.Parser.ComponentParser(); // no provider: syntax only
+        var definitions = parser.ParseSource($$"""
+            namespace App;
+            {{spelling}}
+            public sealed class Seed { public string Books() => "books"; }
+            """, "Seed.cs").ToList();
+
+        definitions.Should().BeEmpty($"{spelling} says the type never crosses, in any spelling");
+    }
 }

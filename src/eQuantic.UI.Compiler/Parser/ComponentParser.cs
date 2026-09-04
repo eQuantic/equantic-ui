@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.Models;
 using eQuantic.UI.Compiler.Services;
 
@@ -480,7 +481,7 @@ public class ComponentParser
     /// <para>
     /// Asked of the SYMBOL, which unifies partial declarations, and not of the declaration in hand.
     /// The syntactic form answered per file, so a partial class spread across six files was
-    /// unmutable: C# rejects the attribute on more than one declaration (CS0579, "Duplicate
+    /// impossible to silence: C# rejects the attribute on more than one declaration (CS0579, "Duplicate
     /// 'ServerOnly' attribute"), and one declaration silenced only its own — a consumer measured
     /// four of five EQ1006 warnings surviving, with no way at all to silence them short of merging
     /// the files. A type is server-only or it is not; which file says so is not the transpiler's
@@ -504,12 +505,12 @@ public class ComponentParser
             return true;
 
         return classDecl.AttributeLists.SelectMany(list => list.Attributes)
-            .Any(attribute => attribute.Name.ToString() is "ServerOnly" or "ServerOnlyAttribute");
+            .Any(attribute => attribute.IsNamed("ServerOnly"));
     }
 
     private static bool IsServerOnly(MethodDeclarationSyntax method) =>
         method.AttributeLists.SelectMany(list => list.Attributes)
-            .Any(attribute => attribute.Name.ToString() is "ServerOnly" or "ServerOnlyAttribute");
+            .Any(attribute => attribute.IsNamed("ServerOnly"));
 
     private void ParseMethods(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
     {
@@ -547,7 +548,7 @@ public class ComponentParser
             // emitter writes from definition.ServerActions. Transpiling the body here shipped
             // server code (DbContexts, Stopwatches, the compiler itself) into the browser.
             if (method.AttributeLists.SelectMany(a => a.Attributes)
-                .Any(a => a.Name.ToString() is "ServerAction" or "ServerActionAttribute")) continue;
+                .Any(a => a.IsNamed("ServerAction"))) continue;
 
             var methodName = method.Identifier.Text;
             if (methodName == "CreateState") continue;
