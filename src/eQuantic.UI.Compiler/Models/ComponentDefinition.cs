@@ -21,20 +21,12 @@ public class ComponentDefinition
     public List<string> TypeParameters { get; set; } = new();
     
     /// <summary>
-    /// Whether it's a stateful (has state) or stateless component
+    /// The stateful shape: state as fields on the component itself, mutated through
+    /// <c>SetState</c>. Emitted extending the runtime's <c>StatefulComponent</c>; structurally
+    /// parsed like a stateless component (Build + ctors + methods + fields on the class).
     /// </summary>
     public bool IsStateful { get; set; }
 
-    /// <summary>
-    /// True for the SHARED stateful shape (<c>eQuantic.UI.Primitives.StatefulComponent</c>): state as
-    /// fields on the component itself, direct <c>SetState</c> — no <c>CreateState</c>/state-class split.
-    /// Emitted extending the runtime's <c>StatefulComponent</c>; structurally handled like a
-    /// stateless component otherwise (<see cref="IsStateful"/> stays false).
-    /// </summary>
-    
-    /// <summary>
-    /// Name of the state class (for stateful components)
-    
     /// <summary>
     /// Page routes from [Page] attributes
     /// </summary>
@@ -46,14 +38,8 @@ public class ComponentDefinition
     public List<ServerActionInfo> ServerActions { get; set; } = new();
     
     /// <summary>
-    /// State fields (field name -> type)
-    /// </summary>
-    public List<StateField> StateFields { get; set; } = new();
-
-    /// <summary>
-    /// Fields declared directly on the component class itself (static data, consts, instance fields) —
-    /// distinct from <see cref="StateFields"/> which belong to a stateful component's state class.
-    /// Emitted as class members on the component.
+    /// Fields declared directly on the component class itself (static data, consts, instance
+    /// fields). Emitted as class members on the component.
     /// </summary>
     public List<StateField> ComponentFields { get; set; } = new();
 

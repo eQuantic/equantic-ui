@@ -692,11 +692,10 @@ public class TypeScriptEmitter
 
         // Scan field initializers too — a type referenced ONLY in a static/instance field
         // initializer (e.g. `static People = new() { new Person(...) }`) still needs its import, or the
-        // emitted static initializer throws "Person is not defined" at module load. BOTH field
-        // collections: a data class of nested records parses into StateFields, and its initializer
-        // is exactly where the nested type is the ONLY mention (the catalogue shape every content
-        // file takes).
-        foreach (var field in component.ComponentFields.Concat(component.StateFields))
+        // emitted static initializer throws "Person is not defined" at module load. A data class of
+        // nested records parses into these fields, and its initializer is exactly where the nested
+        // type is the ONLY mention (the catalogue shape every content file takes).
+        foreach (var field in component.ComponentFields)
         {
             if (field.DefaultValueNode == null) continue;
             foreach (var t in CollectComponentTypesFromNode(field.DefaultValueNode, new HashSet<string> { component.Name }))
