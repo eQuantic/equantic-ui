@@ -1,8 +1,9 @@
+using eQuantic.UI.Primitives;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using eQuantic.UI.Core;
+using eQuantic.UI.Web;
 
 namespace eQuantic.UI.Server;
 

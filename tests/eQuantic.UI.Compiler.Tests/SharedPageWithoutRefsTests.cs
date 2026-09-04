@@ -13,7 +13,6 @@ namespace eQuantic.UI.Compiler.Tests;
 public class SharedPageWithoutRefsTests
 {
     private static string Page(string build) => $$"""
-        using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
 
         [Page("/")]

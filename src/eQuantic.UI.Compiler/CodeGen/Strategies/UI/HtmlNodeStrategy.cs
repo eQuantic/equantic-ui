@@ -26,7 +26,7 @@ public class HtmlNodeStrategy : IConversionStrategy
         if (symbol != null)
         {
             var typeName = symbol.ContainingType.ToDisplayString();
-            return typeName.EndsWith("HtmlNode"); // eQuantic.UI.Core.HtmlNode
+            return typeName.EndsWith("HtmlNode"); // eQuantic.UI.Web.HtmlNode
         }
 
         // Fallback: check static access "HtmlNode.Text"

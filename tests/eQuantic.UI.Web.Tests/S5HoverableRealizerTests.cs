@@ -23,8 +23,8 @@ public class S5HoverableRealizerTests
         element.OnMouseEnter.Should().NotBeNull();
         element.OnMouseLeave.Should().NotBeNull();
 
-        element.OnMouseEnter!(new Core.Events.MouseEventArgs());
-        element.OnMouseLeave!(new Core.Events.MouseEventArgs());
+        element.OnMouseEnter!(new MouseEventArgs());
+        element.OnMouseLeave!(new MouseEventArgs());
         log.Should().Equal(true, false);
     }
 
@@ -48,9 +48,9 @@ public class S5HoverableRealizerTests
             ScrimStyle = new BoxStyle { Background = new ColorToken(new Color(5, 6, 13, 140)) },
         }, Theme);
 
-        var scrim = (Core.HtmlElement)element.Children[1];
+        var scrim = (HtmlElement)element.Children[1];
         scrim.ClassName.Should().Contain("eq-anchor-scrim");
-        var veil = (Core.HtmlElement)scrim.Children[0];
+        var veil = (HtmlElement)scrim.Children[0];
         veil.Style!.BackgroundColor.Should().NotBeNull("the scrim paints the page veil");
         veil.Style.Width.Should().Be("100%", "the veil fills the fixed scrim");
     }

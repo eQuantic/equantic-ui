@@ -4,11 +4,11 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.UI;
 
 /// <summary>
-/// Generic strategy for runtime utility classes from eQuantic.UI.Core.* namespaces.
+/// Generic strategy for runtime utility classes from eQuantic.UI.Web.* namespaces.
 /// Automatically detects types that have TypeScript equivalents in @equantic/runtime.
 /// Maps C# API (PascalCase) to TypeScript runtime API (camelCase).
 ///
-/// This strategy is namespace-driven: any type from eQuantic.UI.Core.* namespaces
+/// This strategy is namespace-driven: any type from eQuantic.UI.Web.* namespaces
 /// is assumed to have a runtime equivalent unless explicitly excluded.
 /// </summary>
 public class RuntimeUtilityStrategy : IConversionStrategy
@@ -16,9 +16,9 @@ public class RuntimeUtilityStrategy : IConversionStrategy
     // Core namespaces that contain runtime utilities
     private static readonly HashSet<string> RuntimeNamespaces = new()
     {
-        "eQuantic.UI.Core.Styling",    // ClassBuilder, StyleBuilder
-        "eQuantic.UI.Core.Utils",      // Future: formatters, validators
-        "eQuantic.UI.Core.Helpers"     // Future: other helpers
+        "eQuantic.UI.Web.Styling",    // ClassBuilder, StyleBuilder
+        "eQuantic.UI.Web.Utils",      // Future: formatters, validators
+        "eQuantic.UI.Web.Helpers"     // Future: other helpers
     };
 
     // Types to explicitly exclude (e.g., base classes, interfaces that don't have runtime equivalents)

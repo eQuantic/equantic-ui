@@ -22,7 +22,6 @@ public class CompatSlotAgreementTests
 {
     private const string Source = """
         using System;
-        using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
 
         [Component]
@@ -99,7 +98,6 @@ public class CompatSlotAgreementTests
     public void AComponentWithNoFieldsAtAll_StillGetsItsBoundary()
     {
         const string source = """
-            using eQuantic.UI.Core;
             using eQuantic.UI.Primitives;
 
             [Component]
@@ -124,7 +122,6 @@ public class CompatSlotAgreementTests
     {
         const string source = """
             using System;
-            using eQuantic.UI.Core;
             using eQuantic.UI.Primitives;
 
             [Flags]

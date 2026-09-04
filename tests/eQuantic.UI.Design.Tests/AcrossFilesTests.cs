@@ -20,7 +20,6 @@ public sealed class AcrossFilesTests : IDisposable
     private readonly DesignSession _session = new();
 
     private const string PageSource = """
-        using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
         using static eQuantic.UI.Components.UI;
         using StatefulComponent = eQuantic.UI.Primitives.StatefulComponent;
@@ -60,7 +59,7 @@ public sealed class AcrossFilesTests : IDisposable
             {
                 typeof(eQuantic.UI.Primitives.VisualNode).Assembly,
                 typeof(eQuantic.UI.Components.UI).Assembly,
-                typeof(eQuantic.UI.Core.PageAttribute).Assembly,
+                typeof(eQuantic.UI.Primitives.PageAttribute).Assembly,
                 typeof(object).Assembly,
             }
             .Concat(AppDomain.CurrentDomain.GetAssemblies())

@@ -19,7 +19,6 @@ public class ServerOnlyClassTests
 {
     private static string Source(string attribute) => $$"""
         using System.Diagnostics;
-        using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
 
         {{attribute}}

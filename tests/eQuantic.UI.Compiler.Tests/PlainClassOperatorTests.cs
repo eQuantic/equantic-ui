@@ -23,7 +23,6 @@ public class PlainClassOperatorTests
 {
     private static string Source(string keyword) => $$"""
         using System.Collections.Generic;
-        using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
 
         public sealed {{keyword}} Vec
@@ -75,7 +74,6 @@ public class PlainClassOperatorTests
     }
 
     private static string OutVarSource(string keyword) => $$"""
-        using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
 
         public sealed {{keyword}} Tag

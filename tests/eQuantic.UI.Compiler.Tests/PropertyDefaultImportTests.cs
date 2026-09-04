@@ -16,7 +16,6 @@ namespace eQuantic.UI.Compiler.Tests;
 public class PropertyDefaultImportTests
 {
     private const string Page = """
-        using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
 
         public sealed class Hero : StatefulComponent

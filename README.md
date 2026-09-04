@@ -275,7 +275,7 @@ genuinely impossible.
 
 ```
 src/
-├── eQuantic.UI.Core/           # Core abstractions (IComponent, HtmlElement — the web escape hatch)
+├── eQuantic.UI.Web/           # Web realizer + the DOM escape hatch (IComponent, HtmlElement)
 ├── eQuantic.UI.Primitives/     # The abstract visual vocabulary + design tokens (zero deps)
 ├── eQuantic.UI.Components/     # WRITE-ONCE component library (one source, both targets)
 ├── eQuantic.UI.Compiler/       # Roslyn-based C# → TypeScript transpiler (eqc)

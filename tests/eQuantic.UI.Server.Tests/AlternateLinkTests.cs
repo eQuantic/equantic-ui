@@ -1,4 +1,4 @@
-using eQuantic.UI.Core.Metadata;
+using eQuantic.UI.Server.Metadata;
 using eQuantic.UI.Server;
 using FluentAssertions;
 using Microsoft.AspNetCore.Builder;

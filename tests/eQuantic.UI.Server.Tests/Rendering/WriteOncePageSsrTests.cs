@@ -1,4 +1,4 @@
-using eQuantic.UI.Core;
+using eQuantic.UI.Web;
 using eQuantic.UI.Primitives;
 using eQuantic.UI.Server.Rendering;
 using FluentAssertions;
@@ -129,7 +129,7 @@ public class WriteOncePageSsrTests
     /// </summary>
     [Page("/prefetch-metadata-test")]
     private sealed class MetadataFromPrefetchPage
-        : Primitives.StatelessComponent, IServerPrefetch, Core.Metadata.IHandleMetadata
+        : Primitives.StatelessComponent, IServerPrefetch, Metadata.IHandleMetadata
     {
         private string _slug = "(not loaded)";
 
@@ -139,7 +139,7 @@ public class WriteOncePageSsrTests
             return Task.CompletedTask;
         }
 
-        public void ConfigureMetadata(Core.Metadata.SeoBuilder seo) =>
+        public void ConfigureMetadata(Metadata.SeoBuilder seo) =>
             seo.Title($"Docs — {_slug}").Canonical($"https://example.test/docs/{_slug}");
 
         public override VisualNode Build(ComponentContext context) => new Text(_slug, TypeRole.Heading);

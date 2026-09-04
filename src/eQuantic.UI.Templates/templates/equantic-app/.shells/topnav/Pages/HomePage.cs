@@ -1,5 +1,4 @@
 using eQuantic.UI.Components;
-using eQuantic.UI.Core;
 using eQuantic.UI.Primitives;
 using EQuanticApp.Components;
 using EQuanticApp.Resources;

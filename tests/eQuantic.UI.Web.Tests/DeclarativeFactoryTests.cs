@@ -19,7 +19,6 @@ public class DeclarativeFactoryTests
     private const string Page = """
         using static eQuantic.UI.Components.UI;
         using StatefulComponent = eQuantic.UI.Primitives.StatefulComponent;
-        using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
 
         [Page("/")]
@@ -53,7 +52,7 @@ public class DeclarativeFactoryTests
                 typeof(Enumerable).Assembly,
                 typeof(eQuantic.UI.Components.UI).Assembly,
                 typeof(eQuantic.UI.Primitives.VisualNode).Assembly,
-                typeof(eQuantic.UI.Core.PageAttribute).Assembly,
+                typeof(eQuantic.UI.Primitives.PageAttribute).Assembly,
             };
             var references = anchors.Concat(AppDomain.CurrentDomain.GetAssemblies())
                 .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
@@ -112,7 +111,6 @@ public class DeclarativeFactoryTests
         var js = compiler.CompileSource("""
             using static eQuantic.UI.Components.UI;
             using StatelessComponent = eQuantic.UI.Primitives.StatelessComponent;
-            using eQuantic.UI.Core;
             using eQuantic.UI.Primitives;
 
             public sealed class HomePage : StatelessComponent

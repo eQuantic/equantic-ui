@@ -22,7 +22,7 @@ public class PlainJavaScriptSyntaxTests
 {
     private const string AnnotationHeavySource = """
         using System.Collections.Generic;
-        using eQuantic.UI.Core;
+        using eQuantic.UI.Web;
         using eQuantic.UI.Primitives;
 
         public sealed record Row(string Id, string Label);

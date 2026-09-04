@@ -15,7 +15,6 @@ namespace eQuantic.UI.Compiler.Tests;
 public class FieldDefaultTests
 {
     private const string Page = """
-        using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
         using Amount = System.Decimal;
 

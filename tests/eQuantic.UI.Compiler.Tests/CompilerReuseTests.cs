@@ -12,7 +12,6 @@ public class CompilerReuseTests
 {
     /// <summary>A component that pulls in helpers: interpolation, LINQ, a lambda, a collection.</summary>
     private const string HelperHungrySource = """
-        using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
 
         public sealed class Busy : StatefulComponent
@@ -33,7 +32,6 @@ public class CompilerReuseTests
 
     /// <summary>A component that needs almost nothing — its import line is the thing under test.</summary>
     private const string FrugalSource = """
-        using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
 
         public sealed class Frugal : StatelessComponent

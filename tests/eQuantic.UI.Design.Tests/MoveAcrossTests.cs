@@ -18,7 +18,6 @@ public sealed class MoveAcrossTests : IDisposable
     private readonly DesignSession _session = new();
 
     private const string Source = """
-        using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
         using eQuantic.UI.Components;
         using static eQuantic.UI.Components.UI;
@@ -69,7 +68,7 @@ public sealed class MoveAcrossTests : IDisposable
             {
                 typeof(eQuantic.UI.Primitives.VisualNode).Assembly,
                 typeof(eQuantic.UI.Components.UI).Assembly,
-                typeof(eQuantic.UI.Core.PageAttribute).Assembly,
+                typeof(eQuantic.UI.Primitives.PageAttribute).Assembly,
                 typeof(object).Assembly,
             }
             .Concat(AppDomain.CurrentDomain.GetAssemblies())

@@ -21,7 +21,6 @@ public class OriginTierTests
     private const string Path = "/app/Screens/Probe.cs";
 
     private const string Source = """
-        using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
 
         [Page("/probe")]

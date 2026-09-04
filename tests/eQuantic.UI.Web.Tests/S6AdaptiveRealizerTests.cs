@@ -17,9 +17,9 @@ public class S6AdaptiveRealizerTests
             PhotonTheme.Instance, 1f, sink);
 
         element.Children.Should().HaveCount(3);
-        ((Core.HtmlElement)element.Children[0]).ClassName.Should().StartWith(AdaptiveGates.CompactUntil(600));
-        ((Core.HtmlElement)element.Children[1]).ClassName.Should().StartWith(AdaptiveGates.MediumFrom(600, 840));
-        ((Core.HtmlElement)element.Children[2]).ClassName.Should().StartWith(AdaptiveGates.ExpandedFrom(840));
+        ((HtmlElement)element.Children[0]).ClassName.Should().StartWith(AdaptiveGates.CompactUntil(600));
+        ((HtmlElement)element.Children[1]).ClassName.Should().StartWith(AdaptiveGates.MediumFrom(600, 840));
+        ((HtmlElement)element.Children[2]).ClassName.Should().StartWith(AdaptiveGates.ExpandedFrom(840));
 
         sink.Css.Should().Contain(".eq-vc600{display:contents}@media (min-width: 600px){.eq-vc600{display:none}}")
             .And.Contain("@media (min-width: 600px) and (max-width: 839.98px){.eq-vm600-840{display:contents}}")
@@ -34,7 +34,7 @@ public class S6AdaptiveRealizerTests
             PhotonTheme.Instance, 1f, sink);
 
         element.Children.Should().HaveCount(2);
-        ((Core.HtmlElement)element.Children[0]).ClassName.Should().StartWith(AdaptiveGates.CompactUntil(840),
+        ((HtmlElement)element.Children[0]).ClassName.Should().StartWith(AdaptiveGates.CompactUntil(840),
             "no Medium variant → Compact hides only at 840dp (the fallback chain, same as native Resolve)");
         sink.Css.Should().Contain("@media (min-width: 840px){.eq-vc840{display:none}}");
     }

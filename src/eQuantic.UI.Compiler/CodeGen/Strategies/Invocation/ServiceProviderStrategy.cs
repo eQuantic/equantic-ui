@@ -53,7 +53,7 @@ public class ServiceProviderStrategy : IConversionStrategy
             // which drops type arguments. Every page asked for a capability by no name at all.
             return containingType.Contains("IServiceProvider") ||
                    containingType.Contains("ServiceProvider") ||
-                   containingType == "eQuantic.UI.Core.RenderContext" ||
+                   containingType == "eQuantic.UI.Web.RenderContext" ||
                    containingType.EndsWith(".RenderContext") ||
                    containingType == "eQuantic.UI.Primitives.ComponentContext" ||
                    containingType.EndsWith(".ComponentContext") ||

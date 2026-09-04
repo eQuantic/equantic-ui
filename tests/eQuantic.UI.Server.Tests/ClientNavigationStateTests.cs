@@ -1,7 +1,7 @@
 using System.Net;
 using System.Reflection;
 using System.Text.Json;
-using eQuantic.UI.Core.Metadata;
+using eQuantic.UI.Server.Metadata;
 using FluentAssertions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -29,7 +29,7 @@ namespace eQuantic.UI.Server.Tests;
 public class ClientNavigationStateTests
 {
     /// <summary>A page that only has anything to say once the server has loaded it.</summary>
-    [eQuantic.UI.Core.Page("/probe")]
+    [eQuantic.UI.Primitives.Page("/probe")]
     public sealed class ProbePage : eQuantic.UI.Primitives.StatelessComponent,
         eQuantic.UI.Primitives.IServerPrefetch, IHandleMetadata
     {

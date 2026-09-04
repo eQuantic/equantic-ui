@@ -11,7 +11,6 @@ namespace eQuantic.UI.Compiler.Tests;
 public class PlainJavaScriptEmissionTests
 {
     private const string Counter = """
-        using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
 
         [Page("/")]

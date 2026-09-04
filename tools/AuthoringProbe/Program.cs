@@ -29,7 +29,7 @@ var source = File.ReadAllText(path);
 
 // Build a compilation that references the real eQuantic assemblies so the semantic model resolves the
 // component base types and standard components exactly like the SDK build does.
-var coreDll = typeof(eQuantic.UI.Core.IComponent).Assembly.Location;
+var domDll = typeof(eQuantic.UI.Web.IComponent).Assembly.Location;
 var componentsDll = typeof(eQuantic.UI.Components.Button).Assembly.Location;
 var refs = new List<string>
 {
@@ -38,7 +38,7 @@ var refs = new List<string>
     typeof(List<>).Assembly.Location,
     Assembly.Load("System.Runtime").Location,
     Assembly.Load("System.Collections").Location,
-    coreDll,
+    domDll,
     componentsDll,
 };
 

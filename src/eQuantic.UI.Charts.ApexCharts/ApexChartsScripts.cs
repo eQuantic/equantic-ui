@@ -1,4 +1,4 @@
-using eQuantic.UI.Core;
+using eQuantic.UI.Web;
 
 namespace eQuantic.UI.Charts.ApexCharts;
 

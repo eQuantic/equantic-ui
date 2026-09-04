@@ -17,7 +17,6 @@ public class StandaloneImportResolutionTests
     {
         var compiler = new ComponentCompiler { TypeAnnotations = false };
         var result = compiler.CompileSource("""
-            using eQuantic.UI.Core;
             using eQuantic.UI.Primitives;
 
             public sealed class Probe : StatefulComponent
@@ -48,7 +47,6 @@ public class StandaloneImportResolutionTests
         // the page is still theirs, and still imports as its own module.
         var compiler = new ComponentCompiler { TypeAnnotations = false };
         var results = compiler.CompileSource("""
-            using eQuantic.UI.Core;
             using eQuantic.UI.Primitives;
 
             public sealed class Badge : StatelessComponent
@@ -80,7 +78,6 @@ public class StandaloneImportResolutionTests
         // reroute anything the scanner already classified.
         var compiler = new ComponentCompiler();
         var result = compiler.CompileSource("""
-            using eQuantic.UI.Core;
             using eQuantic.UI.Primitives;
 
             public sealed class Probe : StatelessComponent
@@ -102,7 +99,6 @@ public class StandaloneImportResolutionTests
         // Object.assign, which is its exact C# semantics.
         var compiler = new ComponentCompiler { TypeAnnotations = false };
         var result = compiler.CompileSource("""
-            using eQuantic.UI.Core;
             using eQuantic.UI.Primitives;
 
             public sealed class Probe : StatelessComponent

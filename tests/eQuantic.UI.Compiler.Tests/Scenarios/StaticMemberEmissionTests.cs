@@ -23,7 +23,7 @@ public class StaticMemberEmissionTests
     public void PrivateStaticHelper_EmitsAsStaticMember()
     {
         var ts = EmitComponent(@"
-using eQuantic.UI.Core;
+using eQuantic.UI.Web;
 
 namespace Sample;
 
@@ -44,7 +44,7 @@ public class Users : StatelessComponent
     public void PrivateStaticHelper_CarriesItsTranspiledBody()
     {
         var ts = EmitComponent(@"
-using eQuantic.UI.Core;
+using eQuantic.UI.Web;
 
 namespace Sample;
 
@@ -73,7 +73,7 @@ public class Users : StatelessComponent
     public void InstanceHelper_StaysOnThePrototype()
     {
         var ts = EmitComponent(@"
-using eQuantic.UI.Core;
+using eQuantic.UI.Web;
 
 namespace Sample;
 

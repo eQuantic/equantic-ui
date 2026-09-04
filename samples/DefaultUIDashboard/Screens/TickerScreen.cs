@@ -1,4 +1,3 @@
-using eQuantic.UI.Core;
 using eQuantic.UI.Primitives;
 
 namespace eQuantic.Console;

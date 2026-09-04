@@ -1,5 +1,5 @@
 using eQuantic.UI.Compiler.Analysis;
-using eQuantic.UI.Core.Styling;
+using eQuantic.UI.Web.Styling;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -32,7 +32,7 @@ public class CompileTimeEvaluatorTests
     {
         // Arrange
         var code = @"
-using eQuantic.UI.Core.Styling;
+using eQuantic.UI.Web.Styling;
 
 namespace Test;
 
@@ -79,7 +79,7 @@ public class Usage
     {
         // Arrange
         var code = @"
-using eQuantic.UI.Core.Styling;
+using eQuantic.UI.Web.Styling;
 
 namespace Test;
 
@@ -120,7 +120,7 @@ public class Usage
     {
         // Arrange
         var code = @"
-using eQuantic.UI.Core.Styling;
+using eQuantic.UI.Web.Styling;
 
 namespace Test;
 

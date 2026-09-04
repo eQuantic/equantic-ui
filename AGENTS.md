@@ -70,7 +70,6 @@ npm run format         # prettier
 The SDK depends on other packages. Run these in order before a full solution build:
 
 ```bash
-dotnet pack src/eQuantic.UI.Core/eQuantic.UI.Core.csproj --configuration Release
 dotnet pack src/eQuantic.UI.Components/eQuantic.UI.Components.csproj --configuration Release
 dotnet pack src/eQuantic.UI.Server/eQuantic.UI.Server.csproj --configuration Release
 dotnet pack src/eQuantic.UI.Sdk/eQuantic.UI.Sdk.csproj --configuration Release
@@ -103,7 +102,7 @@ dotnet msbuild -t:ClearEQuanticCache
 
 ```
 src/
-├── eQuantic.UI.Core/        # Core abstractions (IComponent, HtmlElement, HtmlNode)
+├── eQuantic.UI.Web/          # WEB REALIZER + the DOM escape hatch (HtmlElement, HtmlNode)
 ├── eQuantic.UI.Primitives/  # Abstract visual vocabulary + design tokens (zero deps)
 ├── eQuantic.UI.Components/  # WRITE-ONCE component library (authored against Primitives; realized per target)
 ├── eQuantic.UI.Web.Components/  # Legacy web-only set (deprecated; dies piece by piece)

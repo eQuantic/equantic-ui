@@ -22,8 +22,8 @@ public class S4GridRealizerTests
         style.Should().Contain("display: grid")
             .And.Contain("grid-template-columns: 1fr 3fr 240px")
             .And.Contain("gap: 16px 12px", "row-gap then column-gap");
-        ((Core.HtmlElement)element.Children[0]).Style!.ToCssString().Should().Contain("grid-column: span 2");
-        ((Core.HtmlElement)element.Children[1]).Style!.ToCssString().Should().NotContain("grid-column");
+        ((HtmlElement)element.Children[0]).Style!.ToCssString().Should().Contain("grid-column: span 2");
+        ((HtmlElement)element.Children[1]).Style!.ToCssString().Should().NotContain("grid-column");
     }
 
     [Fact]

@@ -16,7 +16,6 @@ namespace eQuantic.UI.Compiler.Tests;
 public class RecordStaticMemberTests
 {
     private const string Page = """
-        using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
 
         public sealed record Chrome(string Tag)
@@ -42,7 +41,6 @@ public class RecordStaticMemberTests
     /// <summary>A record whose only DECLARED data is a const — no positional parameters, no
     /// instance members. It is still a type the app names, and it still needs its twin.</summary>
     private const string ConstOnly = """
-        using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
 
         public sealed record Limits
@@ -115,7 +113,6 @@ public class RecordStaticMemberTests
     }
 
     private const string Shapes = """
-        using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
 
         public sealed record Shapes(string Tag)
@@ -169,7 +166,6 @@ public class RecordStaticMemberTests
     /// <summary>One SHAPE per fixture: a fixture carrying both an operator and a conversion proves
     /// neither arm, because either one alone keeps the type discoverable.</summary>
     private static string OnlySurface(string member) => $$"""
-        using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
 
         public sealed record Money
@@ -213,7 +209,6 @@ public class RecordStaticMemberTests
     public void AQualifiedConversionIsNamedTheWayItIsCalled()
     {
         const string source = """
-            using eQuantic.UI.Core;
             using eQuantic.UI.Primitives;
 
             namespace App;
@@ -237,7 +232,6 @@ public class RecordStaticMemberTests
     public void AStaticCharOrEnumTakesTheDefaultDOTNETGivesIt()
     {
         const string source = """
-            using eQuantic.UI.Core;
             using eQuantic.UI.Primitives;
 
             public enum Kind { Low, High }
@@ -269,7 +263,6 @@ public class RecordStaticMemberTests
     public void AnOperatorEmitCannotWriteDoesNotConjureATwin()
     {
         const string source = """
-            using eQuantic.UI.Core;
             using eQuantic.UI.Primitives;
 
             public sealed record Flags
@@ -297,7 +290,6 @@ public class RecordStaticMemberTests
     {
         const string source = """
             using System.Collections.Generic;
-            using eQuantic.UI.Core;
             using eQuantic.UI.Primitives;
 
             public sealed record Bag

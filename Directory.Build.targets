@@ -7,8 +7,10 @@
         <!-- Projects that should be auto-packed -->
         <IsPackableProject
             Condition="
-            '$(MSBuildProjectName)' == 'eQuantic.UI.Core' Or
+            '$(MSBuildProjectName)' == 'eQuantic.UI.Primitives' Or
             '$(MSBuildProjectName)' == 'eQuantic.UI.Components' Or
+            '$(MSBuildProjectName)' == 'eQuantic.UI.Web' Or
+            '$(MSBuildProjectName)' == 'eQuantic.UI.Generators' Or
             '$(MSBuildProjectName)' == 'eQuantic.UI.Compiler' Or
             '$(MSBuildProjectName)' == 'eQuantic.UI.Server' Or
             '$(MSBuildProjectName)' == 'eQuantic.UI.Sdk' Or

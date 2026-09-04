@@ -1,4 +1,4 @@
-using eQuantic.UI.Core.Images;
+using eQuantic.UI.Images;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace eQuantic.UI.Images.Tests;

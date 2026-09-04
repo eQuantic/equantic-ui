@@ -14,7 +14,6 @@ namespace eQuantic.UI.Compiler.Tests;
 public class SharedPageServerActionTests
 {
     private const string Page = """
-        using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
 
         [Page("/probe")]

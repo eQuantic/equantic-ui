@@ -21,7 +21,7 @@ public class AppFactorySurfaceGeneratorTests
             .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
             .Select(p => (MetadataReference)MetadataReference.CreateFromFile(p))
             .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location))
-            .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Core.PageAttribute).Assembly.Location));
+            .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.PageAttribute).Assembly.Location));
         var compilation = CSharpCompilation.Create("App", [tree], references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
                 nullableContextOptions: NullableContextOptions.Enable));
@@ -149,7 +149,6 @@ public class AppFactorySurfaceGeneratorTests
     public void APage_GetsNoFactory()
     {
         var (source, _) = Run("""
-            using eQuantic.UI.Core;
             using eQuantic.UI.Primitives;
 
             namespace Demo;

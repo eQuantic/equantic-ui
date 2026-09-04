@@ -125,7 +125,7 @@ public class EqJsonTests
         // every client-side comparison silently — and nested values (a record inside an array in the
         // SSR payload) are exactly where that bites.
         var json = System.Text.Json.JsonSerializer.Serialize(
-            new[] { new Row("eQuantic.Core.Data", Shelf.DataAccess, Channels.Colors | Channels.Shadow) },
+            new[] { new Row("eQuantic.Data", Shelf.DataAccess, Channels.Colors | Channels.Shadow) },
             EqJson.Options);
 
         json.Should().Contain("\"shelf\":\"dataAccess\"");

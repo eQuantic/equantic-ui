@@ -1,4 +1,4 @@
-using eQuantic.UI.Core.Images;
+using eQuantic.UI.Images;
 using eQuantic.UI.Server;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;

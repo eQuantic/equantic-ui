@@ -21,7 +21,7 @@ public class InFlowOverlayTests
     private static (string Html, string Css) Render(VisualNode node)
     {
         var sink = new StyleSink();
-        var html = Core.Rendering.HtmlRenderer.RenderNode(
+        var html = HtmlRenderer.RenderNode(
             WebRealizer.Lower(node, Theme, 1f, sink).Render());
         return (html, sink.Css);
     }

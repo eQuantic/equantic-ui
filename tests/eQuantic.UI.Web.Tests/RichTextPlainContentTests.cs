@@ -24,7 +24,7 @@ public class RichTextPlainContentTests
     [Fact]
     public void AHardBreakInsideARun_StillTurnsTheLine()
     {
-        var css = ((Core.HtmlElement)WebRealizer.Lower(Styled("first\nsecond"), PhotonTheme.Instance))
+        var css = ((HtmlElement)WebRealizer.Lower(Styled("first\nsecond"), PhotonTheme.Instance))
             .Style!.ToCssString();
 
         css.Should().Contain("pre-line");
@@ -35,7 +35,7 @@ public class RichTextPlainContentTests
     [Fact]
     public void ARunWithoutABreak_AsksForNoWhiteSpaceRule()
     {
-        var css = ((Core.HtmlElement)WebRealizer.Lower(Styled("one line"), PhotonTheme.Instance))
+        var css = ((HtmlElement)WebRealizer.Lower(Styled("one line"), PhotonTheme.Instance))
             .Style!.ToCssString();
 
         css.Should().NotContain("pre-line").And.NotContain("pre-wrap");
@@ -59,7 +59,7 @@ public class RichTextPlainContentTests
                 DescribesAnchor = true,
             };
             var element = WebRealizer.Lower(tooltip, PhotonTheme.Instance);
-            return ((Core.HtmlElement)element.Children[^1]).Id!;
+            return ((HtmlElement)element.Children[^1]).Id!;
         }
 
         TooltipId("saves the draft").Should().NotBe(TooltipId("discards the draft"),

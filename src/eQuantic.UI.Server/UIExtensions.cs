@@ -1,3 +1,5 @@
+using eQuantic.UI.Primitives;
+using eQuantic.UI.Web;
 using System;
 using System.Collections.Generic;
 using System.IO.Compression;
@@ -6,8 +8,8 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using eQuantic.UI.Core.Assets;
-using eQuantic.UI.Core.Metadata;
+using eQuantic.UI.Server.Assets;
+using eQuantic.UI.Server.Metadata;
 using eQuantic.UI.Server.Authorization;
 using eQuantic.UI.Server.Rendering;
 using Microsoft.AspNetCore.Builder;
@@ -222,7 +224,7 @@ public static class UIExtensions
         where TPage : class
     {
         var pageType = typeof(TPage);
-        if (!typeof(Core.IComponent).IsAssignableFrom(pageType)
+        if (!typeof(IComponent).IsAssignableFrom(pageType)
             && !typeof(Primitives.UiComponent).IsAssignableFrom(pageType))
         {
             throw new ArgumentException(
@@ -279,11 +281,11 @@ public static class UIExtensions
         foreach (var assembly in options.AssembliesToScan)
         {
             var pageTypes = assembly.GetTypes()
-                .Where(t => t.GetCustomAttributes<Core.PageAttribute>().Any());
+                .Where(t => t.GetCustomAttributes<PageAttribute>().Any());
 
             foreach (var pageType in pageTypes)
             {
-                var pageAttrs = pageType.GetCustomAttributes<Core.PageAttribute>();
+                var pageAttrs = pageType.GetCustomAttributes<PageAttribute>();
                 
                 foreach (var pageAttr in pageAttrs) 
                 {
@@ -726,11 +728,11 @@ public static class UIExtensions
         {
             var pageType = options.AssembliesToScan
                 .SelectMany(a => a.GetTypes())
-                .FirstOrDefault(t => t.Name == pageName && t.GetCustomAttributes<Core.PageAttribute>().Any());
+                .FirstOrDefault(t => t.Name == pageName && t.GetCustomAttributes<PageAttribute>().Any());
 
             if (pageType != null)
             {
-                var attr = pageType.GetCustomAttributes<Core.PageAttribute>().FirstOrDefault()!;
+                var attr = pageType.GetCustomAttributes<PageAttribute>().FirstOrDefault()!;
                 if (!string.IsNullOrEmpty(attr.Title) && string.IsNullOrEmpty(metadata.Title))
                     seo.Title(attr.Title);
 
@@ -830,7 +832,7 @@ public static class UIExtensions
         static string JsStr(string s) => s.Replace("\\", "\\\\").Replace("'", "\\'");
         var routeEntries = options.AssembliesToScan
             .SelectMany(a => a.GetTypes())
-            .SelectMany(t => t.GetCustomAttributes<Core.PageAttribute>()
+            .SelectMany(t => t.GetCustomAttributes<PageAttribute>()
                 .Select(attr => (Pattern: attr.Route, Page: t.Name, attr.Title)))
             .Concat(options.DeclaredRoutes.Select(r => (Pattern: r.Pattern, Page: r.Page.Name, r.Title)))
             // The prefixed URLs go in the table too, or the FIRST client-side navigation inside a
@@ -879,7 +881,7 @@ public static class UIExtensions
         var hasServerActions = options.AssembliesToScan
             .SelectMany(a => a.GetTypes())
             .SelectMany(t => t.GetMethods())
-            .Any(m => m.GetCustomAttributes(typeof(Core.ServerActionAttribute), false).Any());
+            .Any(m => m.GetCustomAttributes(typeof(ServerActionAttribute), false).Any());
 
         var template = HtmlTemplateEngine.FromResource("eQuantic.UI.Server.Templates.app-shell.html");
         var html = template.Render(ctx =>
@@ -1337,11 +1339,11 @@ public class UIOptions
 
         // Scan for Error Pages
         var pageTypes = assembly.GetTypes()
-            .Where(t => t.GetCustomAttributes<Core.PageAttribute>().Any());
+            .Where(t => t.GetCustomAttributes<PageAttribute>().Any());
 
         foreach (var type in pageTypes)
         {
-            var attr = type.GetCustomAttributes<Core.PageAttribute>().First();
+            var attr = type.GetCustomAttributes<PageAttribute>().First();
             RegisterErrorPage(type, attr.Route);
         }
 
@@ -1416,9 +1418,9 @@ public class HtmlShellOptions
     /// things a global is for.
     /// </para>
     /// </summary>
-    public HtmlShellOptions ConfigureMetadata(Action<Core.Metadata.SeoBuilder> configure)
+    public HtmlShellOptions ConfigureMetadata(Action<Metadata.SeoBuilder> configure)
     {
-        configure(new Core.Metadata.SeoBuilder(DefaultMetadata));
+        configure(new Metadata.SeoBuilder(DefaultMetadata));
         return this;
     }
 
@@ -1427,7 +1429,7 @@ public class HtmlShellOptions
     /// what the merge reads and what a test has to be able to assert on — the seeding order is the
     /// whole contract, and a contract nothing can observe is one nothing can hold you to.
     /// </summary>
-    public Core.Metadata.MetadataCollection DefaultMetadata { get; } = new();
+    public Metadata.MetadataCollection DefaultMetadata { get; } = new();
 
     /// <summary>The default <c>&lt;meta name="description"&gt;</c> — a page's own replaces it.</summary>
     public HtmlShellOptions AddDescription(string description) =>
