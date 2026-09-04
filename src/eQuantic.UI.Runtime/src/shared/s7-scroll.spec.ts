@@ -53,11 +53,11 @@ describe('S7 scroll semantics (C# cross-pin)', () => {
     expect(floating).toBeGreaterThan(pinned);
   });
 
-  it('positioned zIndex rides the anchor', () => {
+  it('positioned layer rides the anchor', () => {
     const stack = {
       nodeKind: 'stack',
       align: 'topStart',
-      children: [box(), { nodeKind: 'positioned', child: box(), top: 0, zIndex: 3 }],
+      children: [box(), { nodeKind: 'positioned', child: box(), top: 0, layer: 3 }],
     } as unknown as VisualNodeValue;
     const node = lowerVisualNode(stack, ctx);
     expect(effectiveStyle(node.children[1])).toContain('z-index: 3');

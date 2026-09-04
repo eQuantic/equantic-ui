@@ -863,7 +863,7 @@ export interface PositionedNode extends VisualNodeValue {
   bottom?: number | null;
   start?: number | null;
   /** Spec S7: explicit stacking inside the Stack — higher paints on top; 0 = flow order. */
-  zIndex?: number;
+  layer?: number;
 }
 
 /** A shared component: the lowering expands it by calling `build(context)` (pure, mode-free). */

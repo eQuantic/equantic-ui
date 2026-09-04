@@ -1684,7 +1684,7 @@ export class Positioned extends VisualNode {
   bottom: number | null;
   start: number | null;
   /** Spec S7: explicit stacking order inside the Stack (0 = the child's own depth). */
-  zIndex = 0;
+  layer = 0;
 
   constructor(
     child: VisualChild,
@@ -1697,7 +1697,7 @@ export class Positioned extends VisualNode {
       end?: number | null;
       bottom?: number | null;
       start?: number | null;
-      zIndex?: number;
+      layer?: number;
       key?: string | null;
     },
   ) {

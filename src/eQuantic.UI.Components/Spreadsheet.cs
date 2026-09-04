@@ -206,7 +206,7 @@ public sealed class Spreadsheet : StatefulComponent
             Follows = false,
             OnMoved = delta => PreviewResize(SheetAxis.Cols, col, delta),
             OnReleased = delta => CommitResize(SheetAxis.Cols, col, delta),
-        }, top: 0, end: 0) { ZIndex = 1 });
+        }, top: 0, end: 0) { Layer = 1 });
         return stack;
     }
 
@@ -231,7 +231,7 @@ public sealed class Spreadsheet : StatefulComponent
             Follows = false,
             OnMoved = delta => PreviewResize(SheetAxis.Rows, row, delta),
             OnReleased = delta => CommitResize(SheetAxis.Rows, row, delta),
-        }, bottom: 0, start: 0) { ZIndex = 1 });
+        }, bottom: 0, start: 0) { Layer = 1 });
         return stack;
     }
 
@@ -325,7 +325,7 @@ public sealed class Spreadsheet : StatefulComponent
                     BorderColor = theme.Surface,
                     BorderWidth = 1f,
                     Cursor = PointerCursor.Crosshair,
-                }), bottom: -1, end: -1) { ZIndex = 2 });
+                }), bottom: -1, end: -1) { Layer = 2 });
                 line.Add(handled);
                 continue;
             }

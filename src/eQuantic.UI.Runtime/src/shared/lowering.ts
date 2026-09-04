@@ -1850,7 +1850,7 @@ function lowerStack(node: StackNode, context: LoweringContext, path: string): Ht
           {
             position: 'absolute',
             // Spec S7 (C# twin): explicit stacking WINS; otherwise the child's own depth.
-            'z-index': `${(positioned.zIndex ?? 0) !== 0 ? positioned.zIndex : i + 1}`,
+            'z-index': `${(positioned.layer ?? 0) !== 0 ? positioned.layer : i + 1}`,
             top: positioned.top != null ? px(positioned.top) : spanY ? '0' : undefined,
             right: positioned.end != null ? px(positioned.end) : spanX ? '0' : undefined,
             bottom: positioned.bottom != null ? px(positioned.bottom) : spanY ? '0' : undefined,

@@ -1940,7 +1940,7 @@ public sealed class Positioned : VisualNode
 
     /// <summary>Spec S7: explicit stacking inside the Stack — higher paints (and hit-tests) on top.
     /// Equal values keep declaration order (stable). 0 = flow order.</summary>
-    public int ZIndex { get; init; }
+    public int Layer { get; init; }
 }
 
 /// <summary>Scroll axis (spec A6).</summary>

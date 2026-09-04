@@ -621,11 +621,11 @@ public static class LayoutEngine
 
         // Spec S7 z-order: children paint (and hit-test, topmost-last) in ZIndex order — a stable
         // sort keeps declaration order for equal values (flow order = the painter's default).
-        if (result.Children.Where((node, i) => PositionedOf(stack.Children[i], node) is { ZIndex: not 0 }).Any())
+        if (result.Children.Where((node, i) => PositionedOf(stack.Children[i], node) is { Layer: not 0 }).Any())
         {
             var ordered = result.Children
                 .Select((node, i) => (Node: node,
-                    Z: PositionedOf(stack.Children[i], node) is { } p ? p.ZIndex : 0, I: i))
+                    Z: PositionedOf(stack.Children[i], node) is { } p ? p.Layer : 0, I: i))
                 .OrderBy(e => e.Z).ThenBy(e => e.I)
                 .Select(e => e.Node)
                 .ToList();

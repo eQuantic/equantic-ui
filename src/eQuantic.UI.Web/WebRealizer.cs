@@ -269,7 +269,7 @@ public static class WebRealizer
                         Bottom = positioned.Bottom is { } bottom ? TokenCss.Px(bottom) : spanY ? "0" : null,
                         Left = positioned.Start is { } start ? TokenCss.Px(start) : spanX ? "0" : null,
                         // Spec S7: explicit stacking WINS; otherwise the child's own depth.
-                        ZIndex = (positioned.ZIndex != 0 ? positioned.ZIndex : depth).ToString(),
+                        ZIndex = (positioned.Layer != 0 ? positioned.Layer : depth).ToString(),
                     },
                 };
                 anchor.Children.Add(lowered);
