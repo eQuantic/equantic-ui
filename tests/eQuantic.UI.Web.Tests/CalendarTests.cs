@@ -2,7 +2,6 @@ using System.Globalization;
 using eQuantic.UI.Components;
 using eQuantic.UI.Web;
 using eQuantic.UI.Primitives;
-using eQuantic.UI.Web;
 using FluentAssertions;
 // The component, not System.Globalization's — this file needs both namespaces.
 using Calendar = eQuantic.UI.Components.Calendar;

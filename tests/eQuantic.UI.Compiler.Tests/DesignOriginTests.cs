@@ -18,10 +18,11 @@ namespace eQuantic.UI.Compiler.Tests;
 /// </summary>
 public class DesignOriginTests
 {
-    // The canonical write-once shape (see samples): Components + Primitives, and NO
-    // `using eQuantic.UI.Primitives;` — importing Core makes StatefulComponent ambiguous (CS0104) and
-    // leaves Button unresolvable, which under an authoritative model is an EQ2006 build error
-    // rather than a shrug. The attribute is qualified for the same reason.
+    // The canonical write-once shape (see samples): Components + Primitives, and nothing else.
+    // This comment used to warn against also importing eQuantic.UI.Core, which made
+    // StatefulComponent ambiguous (CS0104) and left Button unresolvable — an EQ2006 build error
+    // under an authoritative model rather than a shrug. Core is dissolved and the ambiguity with
+    // it; the shape stays canonical because it is the one a page actually writes.
     private const string Source = """
         using eQuantic.UI.Components;
         using eQuantic.UI.Primitives;

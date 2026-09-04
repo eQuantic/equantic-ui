@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using eQuantic.UI.Web;
-using eQuantic.UI.Web;
 using FluentAssertions;
 using Xunit;
 
