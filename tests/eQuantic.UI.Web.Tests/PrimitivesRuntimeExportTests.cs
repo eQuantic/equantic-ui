@@ -46,6 +46,14 @@ public class PrimitivesRuntimeExportTests
         "ComponentBoundary",
     ];
 
+    /// <summary>The names inside a serialized list, so a failure says WHICH type appeared rather
+    /// than that two JSON documents differ.</summary>
+    private static IEnumerable<string> Names(string json) =>
+        System.Text.Json.JsonSerializer.Deserialize<List<string>>(json) ?? [];
+
+    private static string Describe(string verb, IReadOnlyCollection<string> names) =>
+        names.Count == 0 ? "" : $"{verb} {string.Join(", ", names)}";
+
     private static string FixturePath()
     {
         var here = new DirectoryInfo(AppContext.BaseDirectory);
@@ -86,10 +94,36 @@ public class PrimitivesRuntimeExportTests
         var current = File.Exists(path) ? File.ReadAllText(path) : null;
         if (current?.TrimEnd() == json.TrimEnd()) return;
 
-        File.WriteAllText(path, json + Environment.NewLine);
+        // REGENERATE ONLY WHEN ASKED, like every other pin in this repository
+        // (EQ_UPDATE_TRANSPILED, EQ_UPDATE_ENUMS_TS, EQ_UPDATE_IR_BASELINE,
+        // EQ_UPDATE_DIAGNOSTICS_BASELINE). This one used to rewrite the file and pass, reasoning
+        // that the list is DERIVED so a stale copy is the only way it can be wrong. True, and it
+        // misses what the fixture is FOR: it is the QUESTION vitest asks, so rewriting it silently
+        // means the new question is never asked until somebody notices a dirty working tree and
+        // commits it. Nothing made them.
+        //
+        // Found for real: DeepLinkRelay and FileFilter arrived in 0.2.0-preview.47, this test
+        // rewrote the fixture, went green, and left main naming neither — so the runtime side went
+        // on answering the previous release's question, and two types owed an export nobody asked
+        // them for.
+        if (Environment.GetEnvironmentVariable("EQ_UPDATE_PRIMITIVES_FIXTURE") == "1")
+        {
+            File.WriteAllText(path, json + Environment.NewLine);
+            return;
+        }
+
         current.Should().NotBeNull(
-            "the fixture did not exist and has now been written — commit it and re-run");
-        // Regenerated rather than failed: the list is DERIVED, and a stale copy is the only way it
-        // can be wrong. What must not drift is the runtime's answer to it, and vitest asks that.
+            "the fixture does not exist — write it with EQ_UPDATE_PRIMITIVES_FIXTURE=1 and commit it");
+
+        var added = Names(json).Except(Names(current!)).ToList();
+        var removed = Names(current!).Except(Names(json)).ToList();
+        var summary = string.Join("; ", new[] { Describe("added", added), Describe("removed", removed) }
+            .Where(part => part.Length > 0));
+
+        json.TrimEnd().Should().Be(current!.TrimEnd(),
+            $"the Primitives type list changed ({summary}) — every public type there silently "
+            + "promises a runtime export of the same name. Give each new one an export, or a REASON "
+            + "in NO_TWIN_OWED (primitives-exports.spec.ts), then regenerate with "
+            + "EQ_UPDATE_PRIMITIVES_FIXTURE=1 and commit the fixture WITH the change that caused it");
     }
 }
