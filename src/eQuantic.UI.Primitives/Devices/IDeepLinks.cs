@@ -34,6 +34,14 @@ namespace eQuantic.UI.Primitives;
 /// deciding on the app's behalf and leaving no evidence.
 /// </para>
 /// <para>
+/// READ THE HOST, NOT THE PATH. macOS normalises a scheme URL by appending a slash, so
+/// <c>open myapp://refresh</c> arrives as <c>myapp://refresh/</c>: the host is <c>refresh</c> and
+/// the path is <c>/</c>. An app that switches on <c>Uri.AbsolutePath</c> works everywhere it is
+/// tested and fails on the platform it ships to, which is the worst shape a bug can take. The
+/// capability delivers the URL exactly as the platform gave it — normalising it here would hide a
+/// difference the app is entitled to see.
+/// </para>
+/// <para>
 /// The callback may arrive on any thread the platform chooses; a component's <c>SetState</c>
 /// already marshals through <see cref="IUiDispatcher"/>.
 /// </para>
