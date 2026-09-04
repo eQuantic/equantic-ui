@@ -34,8 +34,14 @@ public class MarkerParityTests
 
         var source = File.ReadAllText(Path.Combine(
             here!.FullName, "src", "eQuantic.UI.Runtime", "src", "shared", "markers.ts"));
-        var match = Regex.Match(source, $@"export const {constant} = '([^']+)'");
-        match.Success.Should().BeTrue($"markers.ts must declare {constant}");
+        // Tolerant of formatting, strict about the VALUE. A pin that breaks when prettier changes
+        // a quote style reports drift that did not happen, and a guard people learn to re-run
+        // instead of read is worse than none.
+        var match = Regex.Match(
+            source, $@"export\s+const\s+{Regex.Escape(constant)}\s*=\s*['""]([^'""]+)['""]");
+        match.Success.Should().BeTrue(
+            $"markers.ts must declare {constant} as a string literal — this test reads it as the "
+            + "single source both languages answer to");
         return match.Groups[1].Value;
     }
 
