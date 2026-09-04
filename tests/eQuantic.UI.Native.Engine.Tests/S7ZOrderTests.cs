@@ -10,7 +10,7 @@ namespace eQuantic.UI.Native.Engine.Tests;
 public class S7ZOrderTests
 {
     [Fact]
-    public void ZIndex_ReordersPaint_HigherOnTop()
+    public void Layer_ReordersPaint_HigherOnTop()
     {
         var stack = new Stack();
         stack.Add(new Positioned(Marker(0x30), top: 0) { Layer = 2 });   // declared first, paints LAST

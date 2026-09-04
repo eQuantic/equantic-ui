@@ -619,7 +619,7 @@ public static class LayoutEngine
             }
         }
 
-        // Spec S7 z-order: children paint (and hit-test, topmost-last) in ZIndex order — a stable
+        // Spec S7 z-order: children paint (and hit-test, topmost-last) in Layer order — a stable
         // sort keeps declaration order for equal values (flow order = the painter's default).
         if (result.Children.Where((node, i) => PositionedOf(stack.Children[i], node) is { Layer: not 0 }).Any())
         {

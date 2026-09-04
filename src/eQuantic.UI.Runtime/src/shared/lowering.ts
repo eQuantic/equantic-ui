@@ -2573,7 +2573,7 @@ function lowerFlexible(
   return node;
 }
 
-/** Spec S7 mirror of the C# LowerSticky: CSS pinned at `offset` from the viewport start. */
+/** Spec S7 mirror of the C# LowerPinned: CSS `position: sticky` at `offset` from the viewport start. */
 /**
  * Wave 3 mirror of the C# LowerAnchored: position:relative host (generated .eq-anchorhost),
  * invisible fixed scrim as a REAL pressable while dismissible, and the absolute panel positioned

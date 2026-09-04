@@ -90,7 +90,7 @@ public class BookmarkTests
     }
 
     [Fact]
-    public void AStickyIsMarkedSoItCanBeMeasured()
+    public void APinnedIsMarkedSoItCanBeMeasured()
     {
         // The height of a content-sized bar is not knowable at lowering, so the runtime measures
         // it — and the marker must come from SSR too, or the hydrated DOM differs by an attribute.

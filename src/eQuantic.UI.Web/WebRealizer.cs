@@ -160,7 +160,7 @@ public static class WebRealizer
         Stack stack => LowerStack(stack, context),
         Grid grid => LowerGrid(grid, context),
         AdaptiveNode adaptive => LowerAdaptive(adaptive, context),
-        Pinned pinned => LowerSticky(pinned, context),
+        Pinned pinned => LowerPinned(pinned, context),
         SafeArea safeArea => LowerSafeArea(safeArea, context),
         Anchored anchored => LowerAnchored(anchored, context),
         ScrollView scroll => LowerScrollView(scroll, context),
@@ -324,7 +324,7 @@ public static class WebRealizer
     /// never leaks. The programmatic Offset is a native-side concept (browser scroll state lives in
     /// the DOM).</summary>
     /// <summary>Spec S7: scroll-anchored chrome — in flow until scrolling would push it out, then
-    /// pinned at <c>Offset</c> from the viewport start (CSS pinned; v1 vertical).</summary>
+    /// pinned at <c>Offset</c> from the viewport start (CSS <c>position: sticky</c>; v1 vertical).</summary>
     /// <summary>
     /// Wave 3 anchored overlay: a position:relative host wrapping the anchor; while Open, an
     /// invisible fixed scrim (a real Pressable — tap-outside dismisses through the ordinary event
@@ -607,7 +607,7 @@ public static class WebRealizer
     /// <summary>Floating chrome — see <see cref="PinnedLayer"/> for why it is a band of its own.</summary>
     private const string FloatingChromeLayer = "110";
 
-    private static HtmlElement LowerSticky(Pinned pinned, ComponentContext context)
+    private static HtmlElement LowerPinned(Pinned pinned, ComponentContext context)
     {
         var element = new RealizedElement("div")
         {

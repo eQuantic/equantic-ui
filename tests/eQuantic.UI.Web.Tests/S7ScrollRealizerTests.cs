@@ -8,7 +8,7 @@ namespace eQuantic.UI.Web.Tests;
 public class S7ScrollRealizerTests
 {
     [Fact]
-    public void Sticky_LowersToPositionSticky_AtTheOffset()
+    public void Pinned_LowersToPositionSticky_AtTheOffset()
     {
         var style = WebRealizer.Lower(
             new Pinned(new Primitives.Box(new BoxStyle { Height = 32 }), offset: 8),
@@ -20,7 +20,7 @@ public class S7ScrollRealizerTests
     }
 
     [Fact]
-    public void PositionedZIndex_RidesTheAnchor()
+    public void PositionedLayer_RidesTheAnchor()
     {
         var stack = new Stack();
         stack.Add(new Primitives.Box(new BoxStyle { Width = 10, Height = 10 }));
