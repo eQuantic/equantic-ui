@@ -59,6 +59,19 @@ const NO_TWIN_OWED = new Set([
   // here), and the web realization defines its own tick shape in devices/frame-ticker.ts rather
   // than importing a C# record's twin.
   'FrameTick',
+  // The buffering and fan-out behind `IDeepLinks`, which is Photon-only BY DESIGN: on the web a
+  // deep link is the address bar and the router already owns it. Nothing in a page bundle can
+  // construct one or be handed one — the capability is not registered on this target at all.
+  'DeepLinkRelay',
+  // The format list `IFileDialogs` takes, and that capability is desktop-only for a reason of its
+  // own: a phone's picker answers with a security-scoped URL and not a path. A component that
+  // reaches for a file dialog is a desktop component, so its web twin has nothing to ask.
+  //
+  // The one shape that would change this answer: a SHARED component constructing a FileFilter in
+  // code that also transpiles. Then it owes a twin, because the failure would land at module load
+  // (an undefined class takes the page down) rather than at capability resolution (one feature
+  // reports itself absent). None does today.
+  'FileFilter',
 ]);
 
 describe('Primitives ⇄ runtime export parity', () => {
