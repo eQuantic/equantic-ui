@@ -16,6 +16,12 @@ namespace eQuantic.UI.Primitives;
 /// to, and "nothing happened" is the one outcome a person cannot diagnose.
 /// </para>
 /// <para>
+/// The line between the two is WHO was wrong. False means the SYSTEM declined something that could
+/// have been asked. An argument the system could never have been handed — a relative path, a
+/// relative URL, null — is the caller's mistake and THROWS, because answering false to it would
+/// send the developer looking at the operating system for a bug that is in their own call.
+/// </para>
+/// <para>
 /// It opens what the APP names, never what a document does. Everything here reaches outside the
 /// app's own window, so a URL that arrived in content — a link in a rendered document, a value that
 /// came back from a server — is the app's to decide about before it gets here. The capability does
@@ -51,5 +57,20 @@ public interface IWorkspace
     /// </summary>
     /// <returns>False when the URL is not one the system can route, which includes the ordinary
     /// case of a scheme no installed app claims.</returns>
+    /// <remarks>
+    /// False is NOT silent for an unclaimed scheme. macOS answers false AND shows the person a
+    /// dialog of its own — "There is no application set to open the URL…", with a button to search
+    /// the App Store. That is the right thing for a link a person clicked, and the wrong thing for a
+    /// check: an app that wants to know whether <c>acme://</c> has a handler must ask with
+    /// <see cref="CanOpen"/>, not by trying. Measured by trying, on a desk that was not expecting
+    /// the dialog.
+    /// </remarks>
     bool OpenUrl(Uri url);
+
+    /// <summary>
+    /// Whether something on this machine claims the URL's scheme — a QUESTION, with no side effect.
+    /// The way to decide whether to show a "Open in Acme" button at all, rather than showing it and
+    /// letting the system explain to the person that Acme is not installed.
+    /// </summary>
+    bool CanOpen(Uri url);
 }

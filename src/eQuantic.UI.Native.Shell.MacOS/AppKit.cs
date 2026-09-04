@@ -17,8 +17,11 @@ internal static partial class AppKit
     internal static void LoadFrameworks() => dlopen(AppKitFramework, 2 /* RTLD_NOW */);
 
     /// <summary>
-    /// An AppKit class, with the framework LOADED first — the only way anything here should reach
-    /// for one.
+    /// An Objective-C class by name, with AppKit — and everything AppKit links, which is Foundation
+    /// and UniformTypeIdentifiers among others — LOADED first. So it is the right door for
+    /// <c>NSURL</c> and <c>UTType</c> too, not only for <c>NSOpenPanel</c>: the classes this shell
+    /// reaches for all arrive through that one load, and the only way anything here should reach
+    /// for one is this.
     /// <para>
     /// `objc_getClass` on a framework that is not loaded answers NIL, and a message to nil is a
     /// silent no-op that returns zero. So a capability written without this does not throw and does
