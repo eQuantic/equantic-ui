@@ -1,6 +1,6 @@
-import { BuildContext, Button, Column, SharedStatefulComponent, Text, UiComponent } from "@equantic/runtime";
+import { BuildContext, Button, Column, StatefulComponent, Text, UiComponent } from "@equantic/runtime";
 
-export class NestedChild extends SharedStatefulComponent {
+export class NestedChild extends StatefulComponent {
     _count: number = 0;
     _label: string;
 

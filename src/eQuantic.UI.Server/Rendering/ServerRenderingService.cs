@@ -53,11 +53,9 @@ public class ServerRenderingService : IServerRenderingService
                 var pageTypes = assembly.GetTypes()
                     .Where(t => t.GetCustomAttributes<PageAttribute>().Any() &&
                                !t.IsAbstract &&
-                               (typeof(StatelessComponent).IsAssignableFrom(t) ||
-                                typeof(StatefulComponent).IsAssignableFrom(t) ||
-                                // WRITE-ONCE pages (Photon vocabulary) — SSR bridges them through
-                                // the web realizer (see CreateComponentInstance).
-                                typeof(Primitives.UiComponent).IsAssignableFrom(t)));
+                               // WRITE-ONCE pages (Photon vocabulary) — SSR bridges them through
+                               // the web realizer (see CreateComponentInstance).
+                               typeof(Primitives.UiComponent).IsAssignableFrom(t));
 
                 foreach (var type in pageTypes)
                 {
@@ -174,31 +172,6 @@ public class ServerRenderingService : IServerRenderingService
                     metadataHandler.ConfigureMetadata(new SeoBuilder(metadata));
                 }
 
-                // For stateful components, we need to initialize state
-                if (component is StatefulComponent stateful)
-                {
-                    // Initialize state synchronously for SSR
-                    // The state's OnInit will be called
-                    var state = stateful.GetType()
-                        .GetProperty("State", BindingFlags.Instance | BindingFlags.NonPublic)?
-                        .GetValue(stateful);
-
-                    // If there's an async initialization, we should await it
-                    if (state is ComponentState cs)
-                    {
-                        // Call OnMount if it exists and is async
-                        var onMountMethod = cs.GetType().GetMethod("OnMount");
-                        if (onMountMethod != null)
-                        {
-                            var result = onMountMethod.Invoke(cs, null);
-                            if (result is Task task)
-                            {
-                                await task;
-                            }
-                        }
-                    }
-                }
-
                 // THE DRAWING, and everything that only the drawing needs. A client navigation asks
                 // for none of it: the browser already has the component and builds the tree itself,
                 // so markup rendered here would be markup thrown away — a whole tree build, plus its
@@ -250,24 +223,13 @@ public class ServerRenderingService : IServerRenderingService
                     if (!gradients.IsEmpty) vectorDefs = RenderComponent(gradients.Container());
                 }
 
-                // Serialize state for hydration. A WRITE-ONCE page carries its state in its OWN
+                // Serialize state for hydration. A write-once page carries its state in its OWN
                 // fields (there is no separate state object), and the transpiled twin declares the
-                // same field names — so the payload crosses by name, exactly like the Core path.
+                // same field names — so the payload crosses by name.
                 string? serializedState = null;
                 if (component is Web.VisualNodeComponent writeOnce && writeOnce.Node is Primitives.IServerPrefetch)
                 {
                     serializedState = SerializeState(writeOnce.Node);
-                }
-                else if (component is StatefulComponent statefulComp)
-                {
-                    var state = statefulComp.GetType()
-                        .GetProperty("State", BindingFlags.Instance | BindingFlags.NonPublic)?
-                        .GetValue(statefulComp);
-
-                    if (state != null)
-                    {
-                        serializedState = SerializeState(state);
-                    }
                 }
 
                 _logger.LogDebug("SSR completed for page: {PageType}, HTML length: {Length}",
@@ -354,20 +316,6 @@ public class ServerRenderingService : IServerRenderingService
         {
             CollectAssets(child, assets, services, visited);
         }
-
-        // For StatelessComponent, also walk Build() result to find nested components
-        if (component is StatelessComponent stateless)
-        {
-            try
-            {
-                var built = stateless.Build(new RenderContext());
-                CollectAssets(built, assets, services, visited);
-            }
-            catch
-            {
-                // Build may fail for components requiring DI - skip gracefully
-            }
-        }
     }
 
     /// <summary>
@@ -404,7 +352,7 @@ public class ServerRenderingService : IServerRenderingService
 
         // A WRITE-ONCE page (eQuantic.UI.Primitives.UiComponent) is not an IComponent — bridge it
         // through the web-realizer adapter so the SSR pipeline stays IComponent-only. The client
-        // needs no counterpart: the transpiled page extends SharedStatefulComponent, which mounts/
+        // needs no counterpart: the transpiled page extends StatefulComponent, which mounts/
         // hydrates directly (v1 fence: no server-driven initial state — field defaults render).
         if (instance is Primitives.UiComponent visual)
         {

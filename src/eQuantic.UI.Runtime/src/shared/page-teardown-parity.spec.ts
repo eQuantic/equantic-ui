@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as componentModule from '../core/component';
-import {
-  ComponentState,
-  SharedStatefulComponent,
-  StatefulComponent,
-  StatelessComponent,
-} from '../core/component';
+import { StatefulComponent, StatelessComponent } from '../core/component';
 import type { VisualNodeValue } from './nodes';
 import { Column, Text } from './vocabulary';
 
@@ -27,7 +22,7 @@ import { Column, Text } from './vocabulary';
 describe('every page shape releases what it retained', () => {
   let unmounted = 0;
 
-  class Leaf extends SharedStatefulComponent {
+  class Leaf extends StatefulComponent {
     onUnmount(): void {
       unmounted++;
     }
@@ -52,21 +47,10 @@ describe('every page shape releases what it retained', () => {
         }
       })(),
 
-    SharedStatefulComponent: () =>
-      new (class extends SharedStatefulComponent {
-        build(): VisualNodeValue {
-          return subtree();
-        }
-      })(),
-
     StatefulComponent: () =>
       new (class extends StatefulComponent {
-        createState(): ComponentState {
-          return new (class extends ComponentState {
-            build(): VisualNodeValue {
-              return subtree();
-            }
-          })();
+        build(): VisualNodeValue {
+          return subtree();
         }
       })(),
   };

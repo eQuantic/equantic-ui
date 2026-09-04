@@ -9,7 +9,7 @@
 import type { HtmlNode } from '../core/types';
 import { effectiveStyle, hashDeclaration } from './style-atomizer';
 import { describe, expect, it } from 'vitest';
-import { SharedStatefulComponent } from '../core/component';
+import { StatefulComponent } from '../core/component';
 import { photonTheme } from './design-system.generated';
 import { lowerVisualNode, tokenValue } from './lowering';
 import { setPhotonTheme } from './photon-context';
@@ -124,7 +124,7 @@ describe('text entry primitive (C# cross-pin)', () => {
 });
 
 /** The controlled-form host: app state echoes what the field reports. */
-class FormHost extends SharedStatefulComponent {
+class FormHost extends StatefulComponent {
   email = '';
 
   build(): Column {
@@ -196,7 +196,7 @@ describe('TextInput end to end (transpiled component, controlled loop)', () => {
 });
 
 /** Search host: clear must route "" through onChanged (the controlled model). */
-class SearchHost extends SharedStatefulComponent {
+class SearchHost extends StatefulComponent {
   query = 'rio';
   submitted = 0;
 

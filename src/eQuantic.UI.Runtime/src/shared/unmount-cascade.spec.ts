@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SharedStatefulComponent, StatelessComponent } from '../core/component';
+import { StatefulComponent, StatelessComponent } from '../core/component';
 import { Column, Text } from './vocabulary';
 import type { VisualNodeValue } from './nodes';
 
@@ -16,7 +16,7 @@ import type { VisualNodeValue } from './nodes';
  * pair ships together."
  */
 describe('leaving the tree reaches every depth', () => {
-  class Leaf extends SharedStatefulComponent {
+  class Leaf extends StatefulComponent {
     static mounted = 0;
     static unmounted = 0;
 
@@ -33,7 +33,7 @@ describe('leaving the tree reaches every depth', () => {
     }
   }
 
-  class Section extends SharedStatefulComponent {
+  class Section extends StatefulComponent {
     build(): VisualNodeValue {
       // The leaf is nested inside THIS component, which is itself nested in the page: two component
       // boundaries between the page and the subscription.
@@ -43,7 +43,7 @@ describe('leaving the tree reaches every depth', () => {
     }
   }
 
-  class Page extends SharedStatefulComponent {
+  class Page extends StatefulComponent {
     build(): VisualNodeValue {
       const column = new Column(0);
       column.add(new Section());

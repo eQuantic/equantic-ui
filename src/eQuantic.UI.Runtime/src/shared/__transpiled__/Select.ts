@@ -1,6 +1,6 @@
-import { Anchored, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, KeyChord, Pressable, Row, SharedStatefulComponent, Shortcut, SizeValue, Sizing, Spacer, StyleDiff, Text, UiComponent, VisualNode } from "@equantic/runtime";
+import { Anchored, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, KeyChord, Pressable, Row, Shortcut, SizeValue, Sizing, Spacer, StatefulComponent, StyleDiff, Text, UiComponent, VisualNode } from "@equantic/runtime";
 
-export class Select extends SharedStatefulComponent {
+export class Select extends StatefulComponent {
     _open: boolean = false;
     _highlight: number = 0;
     declare options: string[];

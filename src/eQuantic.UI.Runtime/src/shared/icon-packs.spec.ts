@@ -10,7 +10,7 @@ import { photonTheme } from './design-system.generated';
 import { lowerVisualNode } from './lowering';
 import { setPhotonTheme } from './photon-context';
 import { Icon, IconGlyph, Vector } from './vocabulary';
-import { SharedStatefulComponent } from '../core/component';
+import { StatefulComponent } from '../core/component';
 
 setPhotonTheme(photonTheme);
 
@@ -55,7 +55,7 @@ const nextFrame = () =>
  * glyphs (what eqc emits for `LucideIcons.Camera` / `LucideIcons.Heart`) on setState, and the real
  * DOM path updates — no pack module, just the glyph constructors the compiler inlines.
  */
-class GlyphToggle extends SharedStatefulComponent {
+class GlyphToggle extends StatefulComponent {
   private cameraShown = true;
   private readonly camera = new IconGlyph('camera', 'M14.5 4h-5L7 7', 'stroke');
   private readonly heart = new IconGlyph('heart', 'M12 21l-1-1');

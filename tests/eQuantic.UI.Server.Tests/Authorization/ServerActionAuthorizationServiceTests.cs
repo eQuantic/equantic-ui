@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Security.Claims;
 using eQuantic.UI.Core;
+using eQuantic.UI.Primitives;
 using eQuantic.UI.Server.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,60 +26,55 @@ public class ServerActionAuthorizationServiceTests
     // Component without any authorization
     public class PublicComponent : StatelessComponent
     {
-        [ServerAction]
-        public void PublicAction() { }
+        public override VisualNode Build(ComponentContext context) => new Text(string.Empty);
 
-        public override IComponent Build(RenderContext context) => null!;
-    }
+        [ServerAction]
+        public void PublicAction() { }    }
 
     // Component with class-level authorization
     [Authorize]
     public class SecureComponent : StatelessComponent
     {
+        public override VisualNode Build(ComponentContext context) => new Text(string.Empty);
+
         [ServerAction]
         public void SecureAction() { }
 
         [ServerAction]
         [AllowAnonymous]
-        public void PublicAction() { }
-
-        public override IComponent Build(RenderContext context) => null!;
-    }
+        public void PublicAction() { }    }
 
     // Component with role-based authorization
     public class RoleBasedComponent : StatelessComponent
     {
+        public override VisualNode Build(ComponentContext context) => new Text(string.Empty);
+
         [ServerAction]
         [Authorize(Roles = "Admin,Manager")]
         public void AdminAction() { }
 
         [ServerAction]
         [Authorize(Roles = "User")]
-        public void UserAction() { }
-
-        public override IComponent Build(RenderContext context) => null!;
-    }
+        public void UserAction() { }    }
 
     // Component with policy-based authorization
     public class PolicyBasedComponent : StatelessComponent
     {
+        public override VisualNode Build(ComponentContext context) => new Text(string.Empty);
+
         [ServerAction]
         [Authorize(Policy = "CanEditUsers")]
-        public void EditUserAction() { }
-
-        public override IComponent Build(RenderContext context) => null!;
-    }
+        public void EditUserAction() { }    }
 
     // Component with combined authorization (class + method)
     [Authorize]
     public class CombinedAuthComponent : StatelessComponent
     {
+        public override VisualNode Build(ComponentContext context) => new Text(string.Empty);
+
         [ServerAction]
         [Authorize(Roles = "Admin")]
-        public void AdminOnlyAction() { }
-
-        public override IComponent Build(RenderContext context) => null!;
-    }
+        public void AdminOnlyAction() { }    }
 
     #endregion
 

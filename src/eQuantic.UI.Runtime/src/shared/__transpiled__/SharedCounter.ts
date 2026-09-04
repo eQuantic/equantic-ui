@@ -1,6 +1,6 @@
-import { BuildContext, Button, Column, SharedStatefulComponent, Text } from "@equantic/runtime";
+import { BuildContext, Button, Column, StatefulComponent, Text } from "@equantic/runtime";
 
-export class SharedCounter extends SharedStatefulComponent {
+export class SharedCounter extends StatefulComponent {
     _count: number = 0;
 
     build(_context: BuildContext) {

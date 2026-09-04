@@ -15,8 +15,6 @@ export { CalendarNames } from './shared/calendar-names';
 export {
   StatelessComponent,
   StatefulComponent,
-  SharedStatefulComponent,
-  ComponentState,
 } from './core/component';
 // The C# `eQuantic.UI.Primitives.UiComponent` base surfaces in transpiled signatures (e.g. the
 // reconciler's `AdoptConfig(UiComponent next)`) — on the runtime it aliases the Component base.

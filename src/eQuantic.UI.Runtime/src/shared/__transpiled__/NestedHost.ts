@@ -1,7 +1,7 @@
-import { BuildContext, Button, Column, SharedStatefulComponent } from "@equantic/runtime";
+import { BuildContext, Button, Column, StatefulComponent } from "@equantic/runtime";
 import { NestedChild } from "./NestedChild";
 
-export class NestedHost extends SharedStatefulComponent {
+export class NestedHost extends StatefulComponent {
     _generation: number = 0;
 
     build(_context: BuildContext) {

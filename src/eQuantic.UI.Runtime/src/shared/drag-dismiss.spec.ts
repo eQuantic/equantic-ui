@@ -6,7 +6,7 @@
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { resetDragDismissController } from '../dom/drag-dismiss';
-import { SharedStatefulComponent } from '../core/component';
+import { StatefulComponent } from '../core/component';
 import { photonTheme } from './design-system.generated';
 import { setPhotonTheme } from './photon-context';
 import { Column, Text } from './vocabulary';
@@ -19,7 +19,7 @@ const nextFrame = () =>
     requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
   );
 
-class SheetHost extends SharedStatefulComponent {
+class SheetHost extends StatefulComponent {
   open = true;
   dismissals = 0;
 

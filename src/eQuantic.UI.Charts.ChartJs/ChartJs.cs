@@ -4,8 +4,11 @@ using eQuantic.UI.Charts.ChartJs.Models;
 
 namespace eQuantic.UI.Charts.ChartJs;
 
-public class ChartJs<T> : StatelessComponent, IChart
+public class ChartJs<T> : HtmlElement, IChart
 {
+    // Escape hatch (CLAUDE.md §Styling): this wraps a third-party JS library, so it emits raw
+    // markup instead of the write-once vocabulary. It builds an HtmlElement DIRECTLY — the
+    // Core component bases it used to derive from were the pre-write-once model and are gone.
     public string? Title { get; set; }
     public bool Responsive { get; set; } = true;
     public string Type { get; set; } = "line";
@@ -14,7 +17,9 @@ public class ChartJs<T> : StatelessComponent, IChart
     public string? Width { get; set; } = "100%";
     public string? Height { get; set; } = "400px";
 
-    public override IComponent Build(RenderContext context)
+    public override HtmlNode Render() => BuildElement().Render();
+
+    private IComponent BuildElement()
     {
         var id = Id ?? $"chart-{Guid.NewGuid():N}";
         

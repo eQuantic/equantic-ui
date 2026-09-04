@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { SharedStatefulComponent } from '../core/component';
+import { StatefulComponent } from '../core/component';
 import { ComponentInstanceStore } from './instance-store';
 import { Column, Pressable, Text } from './vocabulary';
 import { NestedHost } from './__transpiled__/NestedHost';
@@ -54,7 +54,7 @@ describe('positional reconciler on web (transpiled NestedHost/NestedChild, real 
 });
 
 /** Hand-written nested stateful for the key/identity mechanics (mirror of the native KeyChange test). */
-class TickChild extends SharedStatefulComponent {
+class TickChild extends StatefulComponent {
   ticks = 0;
 
   build(): Column {
@@ -69,7 +69,7 @@ class TickChild extends SharedStatefulComponent {
   }
 }
 
-class KeyedHost extends SharedStatefulComponent {
+class KeyedHost extends StatefulComponent {
   childKey = 'a';
 
   swapKey(): void {

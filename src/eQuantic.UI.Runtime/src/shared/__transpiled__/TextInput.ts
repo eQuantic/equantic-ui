@@ -1,6 +1,6 @@
-import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, Row, SharedStatefulComponent, SizeValue, SizeVariantValue, Sizing, Text, TextEntry, UiComponent } from "@equantic/runtime";
+import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, Row, SizeValue, SizeVariantValue, Sizing, StatefulComponent, Text, TextEntry, UiComponent } from "@equantic/runtime";
 
-export class TextInput extends SharedStatefulComponent {
+export class TextInput extends StatefulComponent {
     _focused: boolean = false;
     declare value: string;
     declare onChanged: ((string: string) => void) | null;

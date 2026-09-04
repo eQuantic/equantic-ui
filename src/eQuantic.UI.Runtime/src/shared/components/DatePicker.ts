@@ -1,6 +1,6 @@
-import { $eq, Anchored, Box, BoxStyle, BuildContext, Calendar, CornerRadii, DateOnly, EdgeInsets, Icon, KeyChord, Pressable, SdkStrings, SharedStatefulComponent, Shortcut, TextInput, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, Anchored, Box, BoxStyle, BuildContext, Calendar, CornerRadii, DateOnly, EdgeInsets, Icon, KeyChord, Pressable, SdkStrings, Shortcut, StatefulComponent, TextInput, UiComponent, VisualNode } from "../runtime-exports";
 
-export class DatePicker extends SharedStatefulComponent {
+export class DatePicker extends StatefulComponent {
     _open: boolean = false;
     _typing: any;
     static $hydration = { selected: 'dateOnly', min: 'dateOnly', max: 'dateOnly' };

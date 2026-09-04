@@ -1,6 +1,6 @@
-import { BuildContext, Column, ScrollView, SharedStatefulComponent, SizeValue, Spacer, UiComponent } from "@equantic/runtime";
+import { BuildContext, Column, ScrollView, SizeValue, Spacer, StatefulComponent, UiComponent } from "@equantic/runtime";
 
-export class ListView extends SharedStatefulComponent {
+export class ListView extends StatefulComponent {
     _offset: number = 0;
     _viewport: number = 0;
     _first: number = 0;

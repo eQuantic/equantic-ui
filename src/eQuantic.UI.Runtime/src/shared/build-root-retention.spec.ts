@@ -13,7 +13,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { SharedStatefulComponent, StatelessComponent } from '../core/component';
+import { StatefulComponent, StatelessComponent } from '../core/component';
 import { Column, Positioned, Pressable, Stack, Text } from './vocabulary';
 
 const nextFrame = () =>
@@ -22,7 +22,7 @@ const nextFrame = () =>
   );
 
 /** A counter with a press: the smallest thing whose state is visible in the DOM. */
-class Counter extends SharedStatefulComponent {
+class Counter extends StatefulComponent {
   _count = 0;
 
   build(): Column {
@@ -65,7 +65,7 @@ class Panel extends StatelessComponent {
 }
 
 /** A host that rebuilds on its own press, producing a FRESH Panel each time, as a real one does. */
-class HostAroundAPanel extends SharedStatefulComponent {
+class HostAroundAPanel extends StatefulComponent {
   _ticks = 0;
 
   build(): Column {
@@ -109,7 +109,7 @@ describe('a STATELESS wrapper around a stateful child', () => {
 });
 
 /** The same wrapper, STATEFUL — the control for the case below. */
-class PinnedCornerStateful extends SharedStatefulComponent {
+class PinnedCornerStateful extends StatefulComponent {
   build(): Positioned {
     return new Positioned(new Text('badge', 'label'), 4, 4);
   }
