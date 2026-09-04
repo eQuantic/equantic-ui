@@ -610,7 +610,7 @@ public static class PhotonRealizer
                     builder.BackdropBlur(new RRect(node.Bounds, box.Style.CornerRadius), box.Style.BackdropBlur);
 
                 // Spec S6 — honoured: `BoxStyle.Transition` glides colours, opacity, transform and
-                // shadow under the box's own spec (the Anchored/Sticky/Text siblings still snap, and
+                // shadow under the box's own spec (the Anchored/Pinned/Text siblings still snap, and
                 // a gradient fill snaps: only solid tokens interpolate). Size glides in layout.
                 // Spec S1 FENCE: a gradient's `Via` midpoint is ignored — the shader interpolates two
                 // stops, so native paints From→To until the 3-stop paint lands.

@@ -64,7 +64,7 @@ public static class StyleAtomizer
             element.ClassName = string.IsNullOrEmpty(element.ClassName) ? gate : $"{element.ClassName} {gate}";
         }
 
-        // Scroll-linked variant classes (Sticky.ScrolledStyle) — root-gated rules, appended like
+        // Scroll-linked variant classes (Pinned.ScrolledStyle) — root-gated rules, appended like
         // pseudo variants.
         if (element is IScrolledStyled { ScrolledDeclarations: { Count: > 0 } scrolledDecls })
         {
@@ -125,7 +125,7 @@ public interface IPseudoStyled
     List<(string Pseudo, string Prop, string Value)> PseudoDeclarations { get; }
 }
 
-/// <summary>Scroll-linked channel (Sticky.ScrolledStyle): declarations gated by the root's
+/// <summary>Scroll-linked channel (Pinned.ScrolledStyle): declarations gated by the root's
 /// <c>eq-scrolled</c> class.</summary>
 public interface IScrolledStyled
 {
@@ -208,7 +208,7 @@ public sealed class StyleSink
     /// class, byte-identical to the TS twin.</summary>
     public void AddAdaptiveGate(string gate) => _rules.TryAdd(gate, "\u0002" + AdaptiveGates.Css(gate));
 
-    /// <summary>SCROLL-LINKED variant (Sticky.ScrolledStyle): the declaration only applies while
+    /// <summary>SCROLL-LINKED variant (Pinned.ScrolledStyle): the declaration only applies while
     /// the root carries <c>eq-scrolled</c> (the runtime's scroll listener toggles it). Root-gated
     /// selector, same hash family as pseudo variants ("scrolled|" prefix).</summary>
     public string ClassForScrolled(string property, string value)

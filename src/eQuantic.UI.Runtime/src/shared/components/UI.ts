@@ -1,4 +1,4 @@
-import { AdaptiveNode, Adjustable, AlignmentValue, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxStyle, Button, Calendar, Canvas, CanvasPointer, Card, Checkbox, Chip, ColorToken, Column, CookieConsent, CrossAlignValue, CultureOption, CultureSwitcher, DateOnly, DatePicker, DateTime, DateTimePicker, Dialog, DialogAction, Divider, DragDismiss, Draggable, Drawer, Drawing, EdgeInsets, EmptyState, Flexible, Grid, GridTrack, Hoverable, Icon, IconButton, IconGlyph, IconsValue, Image, ImageFitValue, InFlow, InView, KeyChord, Link, ListDetail, ListItem, ListView, MainAlignValue, Markdown, Mermaid, NavigationRail, NavItem, Overlay, Positioned, Presence, PresenceMotionValue, Pressable, PressableRoleValue, ProgressBar, Row, SafeArea, ScrollAxisValue, ScrollView, SearchField, SegmentedControl, Select, Shortcut, Simulated, SizeValue, SizeVariantValue, Skeleton, Slider, Spacer, Spinner, Stack, Stepper, Sticky, Switch, Tabs, Text, TextAlignmentValue, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TypeRoleValue, TypeStyle, VariantValue, Vector, VectorDrawing, VisualNode } from "../runtime-exports";
+import { AdaptiveNode, Adjustable, AlignmentValue, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxStyle, Button, Calendar, Canvas, CanvasPointer, Card, Checkbox, Chip, ColorToken, Column, CookieConsent, CrossAlignValue, CultureOption, CultureSwitcher, DateOnly, DatePicker, DateTime, DateTimePicker, Dialog, DialogAction, Divider, DragDismiss, Draggable, Drawer, Drawing, EdgeInsets, EmptyState, Flexible, Grid, GridTrack, Hoverable, Icon, IconButton, IconGlyph, IconsValue, Image, ImageFitValue, InFlow, InView, KeyChord, Link, ListDetail, ListItem, ListView, MainAlignValue, Markdown, Mermaid, NavigationRail, NavItem, Overlay, Pinned, Positioned, Presence, PresenceMotionValue, Pressable, PressableRoleValue, ProgressBar, Row, SafeArea, ScrollAxisValue, ScrollView, SearchField, SegmentedControl, Select, Shortcut, Simulated, SizeValue, SizeVariantValue, Skeleton, Slider, Spacer, Spinner, Stack, Stepper, Switch, Tabs, Text, TextAlignmentValue, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TypeRoleValue, TypeStyle, VariantValue, Vector, VectorDrawing, VisualNode } from "../runtime-exports";
 
 export class UI {
     static column(gap: number = 0, main: MainAlignValue = 'start', cross: CrossAlignValue = 'stretch', wrap: boolean = false, runGap: number | null = null, padding: EdgeInsets | null = null, width?: SizeValue, height?: SizeValue, children: VisualNode[] | null = null) {
@@ -109,8 +109,8 @@ export class UI {
         return new SafeArea(child, edges);
     }
 
-    static sticky(child: VisualNode, offset: number = 0) {
-        return new Sticky(child, offset);
+    static pinned(child: VisualNode, offset: number = 0) {
+        return new Pinned(child, offset);
     }
 
     static overlay(child: VisualNode) {

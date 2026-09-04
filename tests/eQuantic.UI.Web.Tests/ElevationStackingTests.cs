@@ -10,7 +10,7 @@ namespace eQuantic.UI.Web.Tests;
 /// painted after it covers is not raised. Chrome that pins while the page scrolls is the case that
 /// names it — content passed over the header — and the cures on offer were both wrong. A `ZIndex`
 /// on the node is CSS vocabulary, which the abstract layer does not speak; moving the chrome into a
-/// layer of its own is what `Overlay` is, and a sticky header is not that (it is in the flow until
+/// layer of its own is what `Overlay` is, and a pinned header is not that (it is in the flow until
 /// it pins).
 /// </para>
 /// <para>
@@ -57,8 +57,8 @@ public class ElevationStackingTests
     [Fact]
     public void PinnedChrome_OutranksTheMostElevatedContentThereIs()
     {
-        var chrome = Layer(StyleOf(new Sticky(new Box(new BoxStyle { Height = 56 }), offset: 0)));
-        var floating = Layer(StyleOf(new Sticky(new Box(new BoxStyle { Height = 56 })) { Float = true }));
+        var chrome = Layer(StyleOf(new Pinned(new Box(new BoxStyle { Height = 56 }), offset: 0)));
+        var floating = Layer(StyleOf(new Pinned(new Box(new BoxStyle { Height = 56 })) { Float = true }));
         // 5 is the top of the elevation scale — the highest a page can raise its own content.
         var raised = Layer(StyleOf(new Box(new BoxStyle { Elevation = 5, Width = 40, Height = 40 })));
 

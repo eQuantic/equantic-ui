@@ -132,10 +132,10 @@ public static class WebRealizer
         if (lowered is not null && node.Bookmark is { Length: > 0 } bookmark)
         {
             lowered.Id = bookmark;
-            // ROOM TO LAND. A browser scrolls a target to the very top, so under a sticky header
+            // ROOM TO LAND. A browser scrolls a target to the very top, so under a pinned header
             // the anchor arrives hidden behind it — the link "works" and still looks broken, which
-            // is the more expensive bug of the two. The offset is a variable the sticky itself
-            // publishes (see the runtime's sticky measurement), never a number the author repeats:
+            // is the more expensive bug of the two. The offset is a variable the pinned itself
+            // publishes (see the runtime's pinned measurement), never a number the author repeats:
             // one page here has a 60dp nav and another a 56dp topbar, and neither states either.
             lowered.Style ??= new HtmlStyle();
             lowered.Style.ScrollMarginTop = "var(--eq-anchor-offset, 0px)";
@@ -160,7 +160,7 @@ public static class WebRealizer
         Stack stack => LowerStack(stack, context),
         Grid grid => LowerGrid(grid, context),
         AdaptiveNode adaptive => LowerAdaptive(adaptive, context),
-        Sticky sticky => LowerSticky(sticky, context),
+        Pinned pinned => LowerSticky(pinned, context),
         SafeArea safeArea => LowerSafeArea(safeArea, context),
         Anchored anchored => LowerAnchored(anchored, context),
         ScrollView scroll => LowerScrollView(scroll, context),
@@ -324,7 +324,7 @@ public static class WebRealizer
     /// never leaks. The programmatic Offset is a native-side concept (browser scroll state lives in
     /// the DOM).</summary>
     /// <summary>Spec S7: scroll-anchored chrome — in flow until scrolling would push it out, then
-    /// pinned at <c>Offset</c> from the viewport start (CSS sticky; v1 vertical).</summary>
+    /// pinned at <c>Offset</c> from the viewport start (CSS pinned; v1 vertical).</summary>
     /// <summary>
     /// Wave 3 anchored overlay: a position:relative host wrapping the anchor; while Open, an
     /// invisible fixed scrim (a real Pressable — tap-outside dismisses through the ordinary event
@@ -607,35 +607,35 @@ public static class WebRealizer
     /// <summary>Floating chrome — see <see cref="PinnedLayer"/> for why it is a band of its own.</summary>
     private const string FloatingChromeLayer = "110";
 
-    private static HtmlElement LowerSticky(Sticky sticky, ComponentContext context)
+    private static HtmlElement LowerSticky(Pinned pinned, ComponentContext context)
     {
         var element = new RealizedElement("div")
         {
             Style = new HtmlStyle
             {
                 // FLOATING chrome (the fixed header) paints above the page and takes no layout
-                // space; plain sticky stays in flow and pins when scrolling reaches it.
-                Position = sticky.Float ? Core.Position.Fixed : Core.Position.Sticky,
-                Top = TokenCss.Px(sticky.Offset),
-                Left = sticky.Float ? "0" : null,
-                Right = sticky.Float ? "0" : null,
-                // CHROME, above anything the CONTENT can reach. Plain sticky used to sit at 1, one
+                // space; plain pinned stays in flow and pins when scrolling reaches it.
+                Position = pinned.Float ? Core.Position.Fixed : Core.Position.Sticky,
+                Top = TokenCss.Px(pinned.Offset),
+                Left = pinned.Float ? "0" : null,
+                Right = pinned.Float ? "0" : null,
+                // CHROME, above anything the CONTENT can reach. Plain pinned used to sit at 1, one
                 // step above nothing, which is a number competing with other numbers: a raised card
                 // (elevation carries 1–5 now) or a deep enough stack cell would out-stack the pinned
                 // header and scroll straight over it. Chrome is not "slightly raised content", it is
                 // a different plane, and saying so here is what keeps the author out of the argument.
                 // FLOATING chrome is a band above PINNED chrome, so a header and a rail on one page
                 // do not tie and let document order pick the winner.
-                ZIndex = sticky.Float ? FloatingChromeLayer : PinnedLayer,
+                ZIndex = pinned.Float ? FloatingChromeLayer : PinnedLayer,
                 // Spec S6: the scrolled swap GLIDES (the design's transparent-until-scrolled bar
                 // fades its veil in) instead of flipping in one frame.
-                Transition = sticky.Transition is { } transition ? TokenCss.Transition(transition) : null,
+                Transition = pinned.Transition is { } transition ? TokenCss.Transition(transition) : null,
             },
         };
 
         // SCROLL-LINKED diff: each declaration lands under the root-gated scrolled variant; the
         // runtime's scroll listener toggles `eq-scrolled` on <html>.
-        if (sticky.ScrolledStyle is { IsEmpty: false } scrolled)
+        if (pinned.ScrolledStyle is { IsEmpty: false } scrolled)
         {
             if (scrolled.Background is { } bg)
                 element.ScrolledDeclarations.Add(("background-color", TokenCss.Value(bg)));
@@ -650,12 +650,12 @@ public static class WebRealizer
             }
         }
 
-        if (LowerNode(sticky.Child, context, horizontalAxis: null) is { } child)
+        if (LowerNode(pinned.Child, context, horizontalAxis: null) is { } child)
             element.Children.Add(child);
         // Marked so the runtime can MEASURE it: a bookmark keeps room above itself equal to the
         // chrome that would cover it, and the height of a content-sized bar is not knowable here.
         // Emitted by SSR too, or the hydrated DOM would differ from this one by an attribute.
-        (element.DataAttributes ??= new Dictionary<string, string>())["eq-sticky"] = "1";
+        (element.DataAttributes ??= new Dictionary<string, string>())["eq-pinned"] = "1";
 
         return element;
     }
@@ -1645,13 +1645,13 @@ public static class WebRealizer
         // anything drawn after it covers is not raised. The case that names it is chrome that pins
         // while the page scrolls — content passes over the header, and the only cures on offer were
         // a z-index on the node (CSS vocabulary, which the abstract layer does not speak) or moving
-        // the chrome into a layer of its own (which is what Overlay is, and a sticky header is not).
+        // the chrome into a layer of its own (which is what Overlay is, and a pinned header is not).
         // Elevation is the word the design system already has for "above".
         if (style.Elevation > 0)
         {
             element.Style!.ZIndex = style.Elevation.ToString(System.Globalization.CultureInfo.InvariantCulture);
             // z-index needs a positioned box, and `relative` is the one that changes nothing else.
-            // A box that already positions itself — sticky chrome, an absolute anchor — keeps its own.
+            // A box that already positions itself — pinned chrome, an absolute anchor — keeps its own.
             element.Style.Position ??= Core.Position.Relative;
         }
 
@@ -2577,7 +2577,7 @@ internal sealed class RealizedElement : HtmlElement, IPseudoStyled, IAdaptiveGat
     /// the atomizer pass (pseudo-classes need the ATOMIC pipeline — inline styles can't express them).</summary>
     public List<(string Pseudo, string Prop, string Value)> PseudoDeclarations { get; } = new();
 
-    /// <summary>Sticky.ScrolledStyle: declarations gated by the root's <c>eq-scrolled</c> class
+    /// <summary>Pinned.ScrolledStyle: declarations gated by the root's <c>eq-scrolled</c> class
     /// (the runtime scroll listener) — converted by the atomizer like pseudo variants.</summary>
     public List<(string Prop, string Value)> ScrolledDeclarations { get; } = new();
 

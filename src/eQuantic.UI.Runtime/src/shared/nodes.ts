@@ -100,8 +100,8 @@ export interface SafeAreaNode {
   extra?: EdgeInsetsValue | null;
 }
 
-export interface StickyNode {
-  nodeKind: 'sticky';
+export interface PinnedNode {
+  nodeKind: 'pinned';
   key?: string | null;
   child: VisualNodeValue;
   offset: number;

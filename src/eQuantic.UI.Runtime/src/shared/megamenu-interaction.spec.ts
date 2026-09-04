@@ -1,6 +1,6 @@
 /**
  * The mega-menu interaction end to end — the exact structure the site's SiteHeader uses:
- * Sticky > Anchored(anchor: bar with Hoverable(Pressable), panel, ScrimStyle) driven by component
+ * Pinned > Anchored(anchor: bar with Hoverable(Pressable), panel, ScrimStyle) driven by component
  * state. Press must open the shared surface (scrim + panel appear), outside-tap must dismiss, and
  * Hoverable's mouseenter must open it too. This is the integration the browser exercises after
  * hydration; failures here reproduce site defects deterministically.
@@ -16,7 +16,7 @@ import {
   Hoverable,
   Pressable,
   Row,
-  Sticky,
+  Pinned,
   Text,
 } from './vocabulary';
 
@@ -36,7 +36,7 @@ class MenuHeader extends StatefulComponent {
     if (entered) this.setState(() => (this._open = id));
   }
 
-  build(): Sticky {
+  build(): Pinned {
     const bar = new Row(8);
     bar.add(
       new Hoverable(
@@ -50,7 +50,7 @@ class MenuHeader extends StatefulComponent {
     const panel = new Column(0);
     panel.add(new Text(this._open === 'products' ? 'PANEL-PRODUCTS' : 'PANEL-NONE', 'label'));
 
-    return new Sticky(
+    return new Pinned(
       new Anchored(new Box(new BoxStyle({}), bar), panel, {
         open: this._open.length > 0,
         onDismiss: () => this.setState(() => (this._open = '')),
@@ -62,7 +62,7 @@ class MenuHeader extends StatefulComponent {
   }
 }
 
-describe('mega-menu interaction (Sticky > Anchored + Hoverable(Pressable) + state)', () => {
+describe('mega-menu interaction (Pinned > Anchored + Hoverable(Pressable) + state)', () => {
   it('press opens the surface, outside-tap dismisses', async () => {
     const container = document.createElement('div');
     document.body.appendChild(container);

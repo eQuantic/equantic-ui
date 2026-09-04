@@ -3,7 +3,7 @@ using FluentAssertions;
 
 namespace eQuantic.UI.Web.Tests;
 
-/// <summary>Spec S7 on the web realizer: Sticky → position:sticky, Positioned.Layer → z-index,
+/// <summary>Spec S7 on the web realizer: Pinned → position:sticky, Positioned.Layer → z-index,
 /// ScrollAxis.Both → auto on both axes. Literal strings the TS lowering mirrors.</summary>
 public class S7ScrollRealizerTests
 {
@@ -11,7 +11,7 @@ public class S7ScrollRealizerTests
     public void Sticky_LowersToPositionSticky_AtTheOffset()
     {
         var style = WebRealizer.Lower(
-            new Sticky(new Primitives.Box(new BoxStyle { Height = 32 }), offset: 8),
+            new Pinned(new Primitives.Box(new BoxStyle { Height = 32 }), offset: 8),
             PhotonTheme.Instance).Style!.ToCssString();
 
         // Chrome sits on its own plane, above anything the CONTENT can reach — see

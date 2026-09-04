@@ -60,8 +60,8 @@ public class BookmarkTests
     [Fact]
     public void ABookmarkKeepsRoomAboveItself()
     {
-        // A browser scrolls the target to the very top, so under a sticky header it arrives hidden:
-        // the link works and the page looks broken. The offset is the variable the sticky publishes
+        // A browser scrolls the target to the very top, so under a pinned header it arrives hidden:
+        // the link works and the page looks broken. The offset is the variable the pinned publishes
         // after being measured, never a number the author writes.
         var bookmarked = Render(new Box(new BoxStyle()) { Bookmark = "features" })
             .First(n => n.Attributes.GetValueOrDefault("id") == "features");
@@ -94,8 +94,8 @@ public class BookmarkTests
     {
         // The height of a content-sized bar is not knowable at lowering, so the runtime measures
         // it — and the marker must come from SSR too, or the hydrated DOM differs by an attribute.
-        Render(new Sticky(new Box(new BoxStyle())))
-            .Should().Contain(n => n.Attributes.ContainsKey("data-eq-sticky"));
+        Render(new Pinned(new Box(new BoxStyle())))
+            .Should().Contain(n => n.Attributes.ContainsKey("data-eq-pinned"));
     }
 
     [Fact]

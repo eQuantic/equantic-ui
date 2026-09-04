@@ -244,8 +244,8 @@ public static class UI
         new SafeArea(child, edges);
 
     /// <summary>Scroll-anchored chrome (spec S7): pins to the viewport start once scrolled.</summary>
-    public static Sticky Sticky(VisualNode child, float offset = 0) =>
-        new Sticky(child, offset);
+    public static Pinned Pinned(VisualNode child, float offset = 0) =>
+        new Pinned(child, offset);
 
     /// <summary>The viewport layer: the child escapes the page flow and paints above it.</summary>
     public static Overlay Overlay(VisualNode child) =>

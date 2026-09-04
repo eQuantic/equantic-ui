@@ -8,17 +8,17 @@ namespace eQuantic.UI.Native.Engine.Tests;
 
 /// <summary>
 /// Scroll compositor v1: the host routes wheel input to the topmost viewport, offsets clamp to the
-/// measured extent, and a Sticky child PINS at the viewport start while the content scrolls past —
-/// the native twin of CSS position:sticky.
+/// measured extent, and a Pinned child PINS at the viewport start while the content scrolls past —
+/// the native twin of CSS position: sticky.
 /// </summary>
 public class ScrollCompositorTests
 {
     private static PhotonHost Host(out ScrollView scroll)
     {
-        // Content: sticky header (h24) at y=100, inside a 500-tall column; viewport 200.
+        // Content: pinned header (h24) at y=100, inside a 500-tall column; viewport 200.
         var content = new Column(gap: 0) { Width = SizeValue.Fill };
         content.Add(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 100 }));
-        content.Add(new Sticky(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 24 })));
+        content.Add(new Pinned(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 24 })));
         content.Add(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 376 }));
         scroll = new ScrollView(content) { Width = SizeValue.Fill, Height = 200 };
         // The MECHANICS, not the glide: these pin where a wheel puts the content and where the
@@ -31,7 +31,7 @@ public class ScrollCompositorTests
 
     private static LayoutNode StickyNode(RealizeResult frame)
     {
-        // scroll → content column → children[1] is the Sticky wrapper.
+        // scroll → content column → children[1] is the Pinned wrapper.
         return frame.Root.Children[0].Children[1];
     }
 

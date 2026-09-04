@@ -9,7 +9,7 @@ namespace eQuantic.UI.Components;
 /// <c>eq-consent</c> cookie, which the server reads too, so a returning visitor's first paint has
 /// no banner in it).
 /// <para>
-/// A CARD, not a layer: the app decides where it sits — a <c>Sticky</c> at the bottom of the page
+/// A CARD, not a layer: the app decides where it sits — a <c>Pinned</c> at the bottom of the page
 /// is the usual home — because a consent surface that pins itself would fight every shell that
 /// already owns the bottom edge. It asks for <see cref="IConsent"/> through the context like any
 /// capability; where none is registered (a native host with no tag manager to gate) it draws

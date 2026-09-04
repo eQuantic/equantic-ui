@@ -353,7 +353,7 @@ export class Anchored extends VisualNode {
   }
 }
 
-/** Mirror of the C# `Sticky` (spec S7): scroll-anchored chrome. */
+/** Mirror of the C# `Pinned` (spec S7): scroll-anchored chrome. */
 /** Mirror of the C# `Draggable` — a continuous gesture whose rules travel with the node. */
 export class Draggable extends VisualNode {
   readonly nodeKind = 'draggable';
@@ -406,8 +406,8 @@ export class SafeArea extends VisualNode {
   }
 }
 
-export class Sticky extends VisualNode {
-  readonly nodeKind = 'sticky';
+export class Pinned extends VisualNode {
+  readonly nodeKind = 'pinned';
   float = false;
   scrolledStyle: StyleDiff | null = null;
   /** Spec S6: animates the swap into/out of `scrolledStyle` (null = snap). */

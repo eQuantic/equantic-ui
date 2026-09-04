@@ -66,7 +66,7 @@ export {
   CuratedIcons,
   Draggable,
   SafeArea,
-  Sticky,
+  Pinned,
   AdaptiveNode,
   Vector,
   Canvas,
