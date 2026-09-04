@@ -38,7 +38,7 @@ public sealed class MacFileDialogs : IFileDialogs
     private static List<string> Open(string? title, IReadOnlyList<FileFilter>? filters, string? startIn,
         bool folders, bool multiple)
     {
-        var panel = Send(objc_getClass("NSOpenPanel"), Sel("openPanel"));
+        var panel = Send(AppKit.Class("NSOpenPanel"), Sel("openPanel"));
         if (panel == IntPtr.Zero) return [];
 
         SendVoid(panel, Sel("setCanChooseFiles:"), !folders);
@@ -66,7 +66,7 @@ public sealed class MacFileDialogs : IFileDialogs
     private static string? Save(string? suggestedName, string? title, IReadOnlyList<FileFilter>? filters,
         string? startIn)
     {
-        var panel = Send(objc_getClass("NSSavePanel"), Sel("savePanel"));
+        var panel = Send(AppKit.Class("NSSavePanel"), Sel("savePanel"));
         if (panel == IntPtr.Zero) return null;
 
         if (!string.IsNullOrWhiteSpace(suggestedName))
@@ -88,7 +88,7 @@ public sealed class MacFileDialogs : IFileDialogs
 
         if (!string.IsNullOrWhiteSpace(startIn) && Directory.Exists(startIn))
         {
-            var url = Send(objc_getClass("NSURL"), Sel("fileURLWithPath:"), NSString(startIn));
+            var url = Send(AppKit.Class("NSURL"), Sel("fileURLWithPath:"), NSString(startIn));
             if (url != IntPtr.Zero) SendVoid(panel, Sel("setDirectoryURL:"), url);
         }
 
@@ -109,10 +109,10 @@ public sealed class MacFileDialogs : IFileDialogs
     {
         if (filters is null || filters.Count == 0) return null;
 
-        var utType = objc_getClass("UTType");
+        var utType = AppKit.Class("UTType");
         if (utType == IntPtr.Zero) return null;
 
-        var types = Send(objc_getClass("NSMutableArray"), Sel("array"));
+        var types = Send(AppKit.Class("NSMutableArray"), Sel("array"));
         foreach (var extension in filters
                      .SelectMany(filter => filter.Extensions)
                      .Select(extension => extension.TrimStart('.').Trim())

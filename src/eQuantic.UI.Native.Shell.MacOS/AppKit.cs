@@ -16,6 +16,29 @@ internal static partial class AppKit
 
     internal static void LoadFrameworks() => dlopen(AppKitFramework, 2 /* RTLD_NOW */);
 
+    /// <summary>
+    /// An AppKit class, with the framework LOADED first — the only way anything here should reach
+    /// for one.
+    /// <para>
+    /// `objc_getClass` on a framework that is not loaded answers NIL, and a message to nil is a
+    /// silent no-op that returns zero. So a capability written without this does not throw and does
+    /// not log: it answers false, or null, or "the person cancelled", and every one of those is a
+    /// legitimate answer it might have given for real. `MacWorkspace.Reveal("/Applications")`
+    /// returning false is what found it, and `MacFileDialogs` had the same hole — a picker that
+    /// never opened was indistinguishable from a picker someone closed.
+    /// </para>
+    /// <para>
+    /// It works anyway inside a running app, because the runner loads AppKit as its first act. That
+    /// is exactly what makes it dangerous: the bug is invisible until a capability is used from a
+    /// test, a tool, or any process that has no window.
+    /// </para>
+    /// </summary>
+    internal static IntPtr Class(string name)
+    {
+        LoadFrameworks();
+        return Shell.Apple.ObjC.objc_getClass(name);
+    }
+
     // ---- The run loop, so a frame can be drawn from INSIDE someone else's loop -----------------
 
     /// <summary>
