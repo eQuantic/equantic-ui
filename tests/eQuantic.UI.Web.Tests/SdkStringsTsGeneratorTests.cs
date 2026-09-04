@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using FluentAssertions;
+using eQuantic.UI.Web.Build;
 
 namespace eQuantic.UI.Web.Tests;
 

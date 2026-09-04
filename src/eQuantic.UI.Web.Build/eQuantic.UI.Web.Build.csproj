@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    BUILD-TIME ONLY. These generators write the TypeScript twins of C# sources of truth — the
+    vocabulary's enums, the icon paths, the design tokens, the SDK's own strings — and the files
+    they produce are COMMITTED and pinned byte-for-byte by the tests that call them.
+
+    Named for the precedent: eQuantic.UI.Native.Build is the same kind of thing on the other
+    track — a build-time tool of OURS that never reaches the developer. (eQuantic.UI.Codegen is a
+    different kind again: the CodeWriter/JsonWriter library that tools like these write THROUGH.)
+
+    They lived in eQuantic.UI.Web until now, which every web app installs and runs. Nothing in
+    production ever called them: they are reachable only from the pinning tests and from tooling.
+    Shipping them meant a consumer's app carried code that generates TypeScript, exposed as public
+    API nobody should call, with a `typeof(VisualNode).Assembly.GetTypes()` sweep inside it for the
+    trimmer to reason about. This project is not packed and is referenced only by the tests.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
+    <ProjectReference Include="..\eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
+    <!-- IconRegistry is the single source the icon twin reads. It belongs to the realizer, which
+         resolves glyphs at render time; this only borrows it. -->
+    <ProjectReference Include="..\eQuantic.UI.Web\eQuantic.UI.Web.csproj" />
+  </ItemGroup>
+
+</Project>

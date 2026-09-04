@@ -10,7 +10,7 @@ namespace eQuantic.UI.Web;
 /// BRIDGE. The server emits this blob into <c>window.__EQ_THEME__</c> next to <c>__EQ_CONFIG</c>, and
 /// boot calls <c>setPhotonTheme</c> with it before hydration, so client re-renders resolve the SAME
 /// colors/shape the SSR markup baked in (both sides read resolved values, not CSS vars — see
-/// <see cref="TokenCss.Value"/>). The wire shape mirrors <see cref="DesignSystemTsGenerator"/>'s
+/// <see cref="TokenCss.Value"/>). The wire shape mirrors the <c>DesignSystemTsGenerator</c>'s
 /// <c>photonTheme</c> exactly; the round-trip is cross-pinned in vitest against <c>photonTheme</c>.
 /// </summary>
 public static class ThemeBridge

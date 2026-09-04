@@ -3,7 +3,7 @@ using System.Reflection;
 using System.Text;
 using eQuantic.UI.Primitives;
 
-namespace eQuantic.UI.Web;
+namespace eQuantic.UI.Web.Build;
 
 /// <summary>
 /// Generates the TypeScript design-system module the browser runtime ships

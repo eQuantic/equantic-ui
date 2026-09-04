@@ -2,7 +2,7 @@ using System.Reflection;
 using System.Text;
 using eQuantic.UI.Primitives;
 
-namespace eQuantic.UI.Web;
+namespace eQuantic.UI.Web.Build;
 
 /// <summary>
 /// Generates the TypeScript module that NAMES every vocabulary enum on the other side

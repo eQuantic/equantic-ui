@@ -2,7 +2,7 @@ using System.Text;
 using System.Text.Json;
 using System.Xml.Linq;
 
-namespace eQuantic.UI.Web;
+namespace eQuantic.UI.Web.Build;
 
 /// <summary>
 /// Generates <c>sdk-strings.generated.ts</c> — the SDK's own NEUTRAL strings, baked into the
