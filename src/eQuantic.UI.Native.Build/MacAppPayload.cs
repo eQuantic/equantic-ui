@@ -67,8 +67,18 @@ public static class MacAppPayload
     {
         var segments = relative.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
-        // A bundle inside the payload is the OUTPUT of a previous run, never its input.
-        if (segments.Any(segment => segment.EndsWith(".app", StringComparison.OrdinalIgnoreCase)))
+        // A bundle inside the payload is the OUTPUT of a previous run, never its input. A bundle
+        // is a DIRECTORY, so only the segments that name directories can be one — every segment
+        // but the last, which names the file.
+        //
+        // This used to test every segment, including the file's own name, and ate the apphost of
+        // any project whose assembly ends in `.app`. `Something.App` is the most ordinary layer
+        // name in .NET and the default AssemblyName is the project name, so the one file
+        // CFBundleExecutable points at was the one file dropped — leaving Contents/MacOS with the
+        // DLLs and no binary, and failing two steps later on `chmod +x` with a message that says
+        // nothing about packaging.
+        if (segments.Take(segments.Length - 1)
+            .Any(segment => segment.EndsWith(".app", StringComparison.OrdinalIgnoreCase)))
             return false;
 
         // Debug symbols are not payload. They are also not merely wasteful: codesign cannot sign

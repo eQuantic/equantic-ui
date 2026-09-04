@@ -17,13 +17,15 @@
  * from — the two are in different subtrees, so a variable on the sticky itself would not reach.
  */
 
+import { PINNED_MARKER } from './markers';
+
 const VARIABLE = '--eq-anchor-offset';
 
 /** The sticky chrome that overlaps the top of the viewport, tallest first. */
 function overlappingChrome(): number {
   if (typeof document === 'undefined') return 0;
   let tallest = 0;
-  for (const element of document.querySelectorAll<HTMLElement>('[data-eq-sticky]')) {
+  for (const element of document.querySelectorAll<HTMLElement>(`[${PINNED_MARKER}]`)) {
     const box = element.getBoundingClientRect();
     // Only what actually sits AT the top: a sticky that has not pinned yet, or one pinned to the
     // bottom, covers nothing a bookmark would land under.

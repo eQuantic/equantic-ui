@@ -6,11 +6,54 @@
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { publishAnchorOffset } from './sticky-offset';
+import { PINNED_MARKER } from './markers';
+import { lowerVisualNode } from './lowering';
+import { photonTheme } from './design-system.generated';
+import type { LoweringContext } from './lowering';
+import type { VisualNodeValue } from './nodes';
+
+/**
+ * The reader and the emitter must agree on the marker, and NOTHING in the type system says so. This
+ * suite used to set the attribute by hand, which meant it tested the reader against markup nothing
+ * emits: the `Sticky` → `Pinned` rename moved both emitters, missed the reader, and every fragment
+ * link on a live site landed behind the header for a release while this file stayed green.
+ *
+ * The first test below now takes the attribute FROM THE LOWERING — the same function the runtime
+ * calls — so the two cannot drift again without it failing.
+ */
+describe('the marker the reader queries is the one the lowering writes', () => {
+  it('a lowered Pinned carries the attribute overlappingChrome looks for', () => {
+    const ctx: LoweringContext = { textPrimary: photonTheme.textPrimary };
+    const lowered = lowerVisualNode(
+      {
+        nodeKind: 'pinned',
+        child: { nodeKind: 'box', style: {} } as unknown as VisualNodeValue,
+        offset: 0,
+      } as unknown as VisualNodeValue,
+      ctx,
+    );
+
+    const marked = document.createElement('div');
+    for (const [name, value] of Object.entries(lowered?.attributes ?? {})) {
+      if (typeof value === 'string') marked.setAttribute(name, value);
+    }
+    marked.getBoundingClientRect = () => ({
+      top: 0, height: 61, bottom: 61, left: 0, right: 0, width: 0, x: 0, y: 0, toJSON: () => ({}),
+    });
+    document.body.appendChild(marked);
+
+    publishAnchorOffset();
+    expect(document.documentElement.style.getPropertyValue('--eq-anchor-offset')).toBe('61px');
+
+    marked.remove();
+    document.documentElement.style.removeProperty('--eq-anchor-offset');
+  });
+});
 
 describe('the anchor offset comes from the sticky, not from a constant', () => {
   const sticky = (top: number, height: number): HTMLElement => {
     const element = document.createElement('div');
-    element.setAttribute('data-eq-sticky', '1');
+    element.setAttribute(PINNED_MARKER, '1');
     element.getBoundingClientRect = () => ({
       top, height, bottom: top + height, left: 0, right: 0, width: 0, x: 0, y: top, toJSON: () => ({}),
     });
@@ -70,7 +113,7 @@ describe('the offset reaches a real run', () => {
     document.documentElement.style.removeProperty('--eq-anchor-offset');
 
     const bar = document.createElement('div');
-    bar.setAttribute('data-eq-sticky', '1');
+    bar.setAttribute(PINNED_MARKER, '1');
     bar.getBoundingClientRect = () => ({
       top: 0, height: 56, bottom: 56, left: 0, right: 0, width: 0, x: 0, y: 0, toJSON: () => ({}),
     });
