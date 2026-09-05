@@ -161,7 +161,7 @@
          on a FIRST build the file does not exist until the target writes it. -->
     <Target Name="CompileEQuanticUI" BeforeTargets="Build"
         DependsOnTargets="ResolveReferences;FindReferenceAssembliesForReferences;GenerateGlobalUsings"
-        Condition="'$(EnableEQuanticUICompilation)' == 'true' And '$(EqcCliPath)' != ''">
+        Condition="'$(EnableEQuanticUICompilation)' == 'true'">
         <PropertyGroup>
             <!-- Standard components source files are packaged in eQuantic.UI.Components package -->
             <!-- Try NuGet cache first (consumer scenario) -->
@@ -344,7 +344,7 @@
     <Target Name="EQuanticRequireIconTool" BeforeTargets="EQuanticVectors;EQuanticWebAppIcon"
         Condition="(Exists('$(EQuanticAssetsDir)') OR '$(EQuanticAppIconSource)' != '') AND !Exists('$(_EqIconToolDir)eqicon.dll')">
         <Error Code="EQ4001"
-            Text="This project has assets to generate from ($(EQuanticAssetsDir)) but the eQuantic icon tool is missing at '$(_EqIconToolDir)eqicon.dll'. In a source-tree build this is a broken build graph (eQuantic.UI.Native.Build did not build first); from a package it is a broken SDK package. Neither is fixed by building twice." />
+            Text="This project generates assets with the eQuantic icon tool (the vector catalog from '$(EQuanticAssetsDir)', the app icon from '$(EQuanticAppIconSource)'), and the tool is missing at '$(_EqIconToolDir)eqicon.dll'. In a source-tree build this is a broken build graph (eQuantic.UI.Native.Build did not build first); from a package it is a broken SDK package. Neither is fixed by building twice." />
     </Target>
 
     <Target Name="EQuanticVectors" BeforeTargets="BeforeCompile;CompileEQuanticUI"
@@ -368,9 +368,16 @@
             StandardOutputImportance="normal" />
     </Target>
 
-    <Target Name="WarnNoCli" BeforeTargets="Build"
-        Condition="'$(EnableEQuanticUICompilation)' == 'true' And '$(EqcCliPath)' == ''">
-        <Warning
-            Text="eQuantic.UI: Compiler CLI not found. Run 'dotnet build src/eQuantic.Build' first." />
+    <!--
+        FAIL LOUD, never skip — the compiler's turn. EqcCliPath always has a value now, so the
+        warning that fired when it was empty could never fire again; and what it guarded was worse
+        than the guard: CompileEQuanticUI skipped in silence and the build shipped a page with no
+        JavaScript behind a warning. A missing eqc is a broken tree, a broken package, or a wrong
+        EqcCliPath, and it fails here by name before the compiler would have run.
+    -->
+    <Target Name="EQuanticRequireCompiler" BeforeTargets="CompileEQuanticUI"
+        Condition="'$(EnableEQuanticUICompilation)' == 'true' AND !Exists('$(EqcCliPath)')">
+        <Error Code="EQ4002"
+            Text="The eQuantic compiler (eqc) is missing at '$(EqcCliPath)'. In a source-tree build this is a broken build graph (eQuantic.Build did not build); from a package it is a broken SDK package; with an explicit EqcCliPath it is a path to a file that is not there. Neither is fixed by building twice." />
     </Target>
 </Project>

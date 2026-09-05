@@ -41,3 +41,4 @@ EQ3103 eQuantic.UI.Generators/FormModelGenerator.cs
 EQ3104 eQuantic.UI.Generators/FormModelGenerator.cs
 EQ3105 eQuantic.UI.Generators/FormModelGenerator.cs
 EQ4001 eQuantic.UI.Sdk.Native/Sdk/Sdk.targets eQuantic.UI.Sdk/Sdk/Sdk.targets
+EQ4002 eQuantic.UI.Sdk/Sdk/Sdk.targets
