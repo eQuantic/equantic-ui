@@ -15,7 +15,7 @@ namespace eQuantic.UI.Native.Shell.MacOS;
 internal sealed class MacClipboard : ITextClipboard
 {
     private static IntPtr General() =>
-        Send(objc_getClass("NSPasteboard"), Sel("generalPasteboard"));
+        Send(AppKit.Class("NSPasteboard"), Sel("generalPasteboard"));
 
     public string? Read() =>
         FromNSString(Send(General(), Sel("stringForType:"), NSString("public.utf8-plain-text")));

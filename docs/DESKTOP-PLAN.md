@@ -103,6 +103,15 @@ docs: `Launch` is NOT readable in a constructor on macOS. AppleEvents are delive
 and the run loop starts after the first tree is built, so a cold launch reaches a SUBSCRIBER and
 finds the property still null a moment earlier. An app that does both is right everywhere.
 
+`IWorkspace` followed (reveal in Finder, open a file, open a URL), and finding it work took finding
+why it did not: every one of its answers was FALSE, including revealing a folder that plainly
+exists. `objc_getClass` on a framework nobody loaded answers nil, a message to nil is a silent
+no-op, and the zero it returns is indistinguishable from the system declining. `MacFileDialogs` had
+the same hole and was worse for it — a panel that never opened looks exactly like a panel someone
+closed. Both go through one `AppKit.Class(name)` now, which loads before it looks. It works inside
+a running app either way, because the runner loads AppKit as its first act, and that is precisely
+what kept it invisible.
+
 - Native menu bar (`NSMenu`, declarative) + context menus (right-click is not even delivered today)
 - Status item (tray) + an auxiliary panel window (`NSPanel`) — closes W-B7 for the real use case;
   general multi-window can wait
@@ -138,8 +147,20 @@ them the trimmer reading the same evidence the design relies on and concluding t
 - **A notarized bundle has never been produced.** The steps run in order and fail loudly on a
   credential that does not exist, but nobody on this machine holds a Developer ID. This is the one
   line of the acceptance below still open, and it needs a certificate.
-- **`IAppUpdater` is not started.** It is the last piece of W5 and the natural next slice, and the
-  acceptance ("installed and relaunched by the minimal updater") depends on it.
+- **`IAppUpdater` is not started.** It is the last piece of W5, and the acceptance ("installed and
+  relaunched by the minimal updater") depends on it.
+
+  **It comes AFTER the certificate, and that ordering is a decision rather than a queue.** A
+  consumer proposed it as a new track, reasonably: the SDK already knows how to sign, notarize,
+  staple and build the disk image, so the app knows how to be born and not how to grow. The pieces
+  are ours and the design is not hard. What decides the order is the `verify` step: it verifies a
+  SIGNATURE, and no bundle has ever carried a real one. Building the updater first means shipping
+  a security step that has never once said no — the same shape as the consumer's own best finding
+  this week, where an error card rendered as a perfectly valid 42 KB PNG and their render script
+  went green on a broken section. An instrument that cannot fail is not an instrument.
+
+  So: certificate, then the updater, and then W5's acceptance closes with a measurement instead of
+  an intention.
 
 **Handed to W4.** `builder.Bundle.UrlScheme("acme")` now declares the scheme, so macOS launches the
 app for `acme://…` — and nothing delivers the URL, because `kAEGetURL` handling is W4's and the
