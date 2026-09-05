@@ -331,7 +331,7 @@ public class BlogPostPage : StatelessComponent, IHandleMetadata
 
 ## Version Management
 
-Global version is defined in `Directory.Build.props` (currently 0.1.2). Debug builds auto-pack to `artifacts/packages/` for local testing.
+Global version is defined in `Directory.Build.props`.
 
 ## Compiler Boundaries (Server vs Client)
 

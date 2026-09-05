@@ -21,19 +21,24 @@
     </ItemGroup>
 
     <PropertyGroup>
-        <_EqIconToolDir>$(MSBuildThisFileDirectory)../tools/net10.0/</_EqIconToolDir>
-        <_EqIconToolDir Condition="!Exists('$(_EqIconToolDir)eqicon.dll')">$(MSBuildThisFileDirectory)../../eQuantic.UI.Native.Build/bin/$(Configuration)/net10.0/</_EqIconToolDir>
+        <!-- A build from this repository's own tree, as opposed to a consumer restoring the SDK from
+             NuGet — the same distinction the web Sdk.targets draws. A source tree runs the tool its
+             ProjectReference just built (Sdk.props declares the edge); a package runs what it shipped
+             under tools/. One question, asked once: a fallback that preferred whichever copy existed
+             ran a stale tool on the tree, and hid a missing one from every test that cold-built it. -->
+        <_EqSourceTree Condition="Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Native.Build/eQuantic.UI.Native.Build.csproj')">true</_EqSourceTree>
+        <_EqIconToolDir Condition="'$(_EqSourceTree)' == 'true'">$(MSBuildThisFileDirectory)../../eQuantic.UI.Native.Build/bin/$(Configuration)/net10.0/</_EqIconToolDir>
+        <_EqIconToolDir Condition="'$(_EqIconToolDir)' == ''">$(MSBuildThisFileDirectory)../tools/net10.0/</_EqIconToolDir>
         <_EqIconDir>$(MSBuildProjectDirectory)/obj/eQuantic</_EqIconDir>
         <_EqAssetsGenerated>$(EQuanticGeneratedAssetsDir)</_EqAssetsGenerated>
         <_EqIconSetDir>$(_EqIconDir)/Assets.xcassets</_EqIconSetDir>
 
         <!--
             Whether this project is a macOS HEAD, which the three packaging targets below all ask.
-            Spelled once here rather than three times on the targets — but only the half that can
-            be answered at EVALUATION time: `Exists(eqicon.dll)` stays on each target, because the
-            tool is built by this same solution and a cold build evaluates before it exists. A
-            packaging condition that answers "no" on the first build of the day and "yes" on the
-            second is the kind of bug nobody reproduces.
+            Spelled once here rather than three times on the targets. Whether the TOOL they run
+            exists is not part of it: the edge in Sdk.props guarantees it in a source tree and the
+            package ships it, so a missing tool is a broken tree or a broken package, and
+            EQuanticRequireIconTool names that instead of letting a target skip.
         -->
         <_EqMacHead Condition="'$(_EqPlatform)' == '' AND '$(TargetFramework)' != '' AND '$(OutputType)' == 'Exe' AND '$([MSBuild]::IsOSPlatform(`OSX`))' == 'true' AND '$(EQuanticMacAppBundle)' != 'false'">true</_EqMacHead>
     </PropertyGroup>
@@ -62,10 +67,44 @@
         invocation that finishes first, and what it leaves on disk the build simply finds.
     -->
 
+    <!--
+        An InitialTarget runs in EVERY invocation of the project — restore, design-time, each nested
+        build — and before any ordinary target, ResolveProjectReferences included. The old
+        `Exists(eqicon.dll)` on its Condition therefore answered "no" on a cold source tree (the edge
+        had not been walked yet), skipped in silence, and the build that followed failed with five
+        XA2001s about PNG files — an error about resources, for a cause about a tool.
+    -->
     <Target Name="EQuanticAndroidIcon"
-            Condition="'$(_EqPlatform)' == 'android' AND '$(EQuanticAppIconSource)' != '' AND Exists('$(_EqIconToolDir)eqicon.dll')">
+            Condition="'$(_EqPlatform)' == 'android' AND '$(EQuanticAppIconSource)' != '' AND '$(ExcludeRestorePackageImports)' != 'true' AND '$(DesignTimeBuild)' != 'true'">
+        <!--
+            An InitialTarget runs before ResolveProjectReferences, so the edge Sdk.props declares has
+            not been walked when this needs the tool. Pull that ONE edge now, with the properties
+            ResolveProjectReferences would use: the same project instance the solution builds, so
+            MSBuild serializes the two requests instead of racing them into one bin/ — which is what
+            an inline build under its own properties did. Not during restore (NuGet's own marker; a
+            restore builds nothing) and not in a design-time build.
+        -->
+        <MSBuild Condition="'$(_EqSourceTree)' == 'true' AND '%(ProjectReference.EqBuildTool)' == 'true'"
+                 Projects="@(ProjectReference)" Targets="Build"
+                 RemoveProperties="%(ProjectReference.GlobalPropertiesToRemove)" />
+        <Error Condition="!Exists('$(_EqIconToolDir)eqicon.dll')" Code="EQ4001"
+               Text="This app declares an icon ($(EQuanticAppIconSource)) but the eQuantic icon tool is missing at '$(_EqIconToolDir)eqicon.dll'. In a source-tree build this is a broken build graph (eQuantic.UI.Native.Build did not build); from a package the SDK package is broken. Neither is fixed by building twice." />
         <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; --source &quot;$(EQuanticAppIconSource)&quot; --android &quot;$(_EqAssetsGenerated)/android/res&quot;"
               StandardOutputImportance="normal" />
+    </Target>
+
+    <!--
+        FAIL LOUD, never skip. Every target below that runs the tool used to carry
+        `Exists(eqicon.dll)` on its own Condition, so a missing tool meant no bundle, no icon, no
+        capability manifest — and no explanation. The tool is a graph edge in a source tree and a
+        shipped file in a package, so in either healthy state it is there; this guard names the
+        unhealthy one, once, before any of them would have skipped.
+    -->
+    <Target Name="EQuanticRequireIconTool"
+            BeforeTargets="EQuanticResolveMacPackaging;EQuanticMacAppBundle;EQuanticMacAppPackage;EQuanticCapabilityManifest;EQuanticAppIcon"
+            Condition="('$(_EqMacHead)' == 'true' OR '$(_EqPlatform)' == 'ios' OR '$(EQuanticAppIconSource)' != '') AND !Exists('$(_EqIconToolDir)eqicon.dll')">
+        <Error Code="EQ4001"
+               Text="This app needs the eQuantic icon tool (app icon, bundle, capability manifest) and it is missing at '$(_EqIconToolDir)eqicon.dll'. In a source-tree build this is a broken build graph (eQuantic.UI.Native.Build did not build); from a package the SDK package is broken. Neither is fixed by building twice." />
     </Target>
 
     <!--
@@ -82,7 +121,7 @@
         the thing that runs after every Build.
     -->
     <Target Name="EQuanticResolveMacPackaging"
-            Condition="'$(_EqMacHead)' == 'true' AND Exists('$(_EqIconToolDir)eqicon.dll')">
+            Condition="'$(_EqMacHead)' == 'true'">
         <PropertyGroup>
             <!-- The name the user reads, which a project already states as ApplicationTitle —
                  the same property MAUI uses, so nobody learns a second one. -->
@@ -161,7 +200,7 @@
     -->
     <Target Name="EQuanticMacAppBundle" AfterTargets="Build"
             DependsOnTargets="EQuanticResolveMacPackaging"
-            Condition="'$(_EqMacHead)' == 'true' AND Exists('$(_EqIconToolDir)eqicon.dll')">
+            Condition="'$(_EqMacHead)' == 'true'">
         <PropertyGroup>
             <!-- ALWAYS beside the build output, never beside the sources. In an outer multi-TFM
                  pass TargetDir is empty, and a bundle written there lands in the project folder —
@@ -251,7 +290,7 @@
     -->
     <Target Name="EQuanticMacAppPackage" AfterTargets="Publish"
             DependsOnTargets="EQuanticResolveMacPackaging"
-            Condition="'$(_EqMacHead)' == 'true' AND Exists('$(_EqIconToolDir)eqicon.dll')">
+            Condition="'$(_EqMacHead)' == 'true'">
         <PropertyGroup>
             <!-- Two steps rather than one nested call. The nested form parses and works — this
                  target published a signed bundle and a disk image with it — but a reader has to
@@ -352,7 +391,7 @@
     </Target>
 
     <Target Name="EQuanticCapabilityManifest" AfterTargets="Compile"
-            Condition="'$(_EqPlatform)' == 'ios' AND Exists('$(_EqIconToolDir)eqicon.dll')">
+            Condition="'$(_EqPlatform)' == 'ios'">
         <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; capabilities --assembly &quot;@(IntermediateAssembly)&quot; --plist &quot;$(_EqCapabilityPlist)&quot;"
               StandardOutputImportance="normal" />
         <ItemGroup Condition="Exists('$(_EqCapabilityPlist)')">
@@ -361,7 +400,7 @@
     </Target>
 
     <Target Name="EQuanticAppIcon"
-            Condition="'$(EQuanticAppIconSource)' != '' AND Exists('$(_EqIconToolDir)eqicon.dll')"
+            Condition="'$(EQuanticAppIconSource)' != ''"
             BeforeTargets="_CompileAppManifest;_CoreCompileImageAssets;_CompileImageAssets;_UpdateAndroidResgen;CoreCompile">
         <PropertyGroup>
             <!-- No TargetFramework during restore: write EVERYTHING the app's platforms could ask

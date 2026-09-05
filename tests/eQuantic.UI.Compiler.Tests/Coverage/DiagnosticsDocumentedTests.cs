@@ -17,11 +17,15 @@ namespace eQuantic.UI.Compiler.Tests.Coverage;
 /// </summary>
 public class DiagnosticsDocumentedTests
 {
-    // Two idioms raise a diagnostic: a code passed as its own argument ("EQ2007", …), and one
-    // written straight into an MSBuild-canonical line ($"…: error EQ1005: {message}"). Matching
-    // only the first missed every diagnostic the build HOST raises, which is where EQ1005 lives.
+    // Three idioms raise a diagnostic: a code passed as its own argument ("EQ2007", …), one
+    // written straight into an MSBuild-canonical line ($"…: error EQ1005: {message}"), and an
+    // <Error Code="EQ4001"> in one of the SDK's own .targets/.props. Matching only the first
+    // missed every diagnostic the build HOST raises, which is where EQ1005 lives; matching only
+    // C# missed every diagnostic the BUILD raises before the compiler runs, which is where EQ4001
+    // lives.
     private static readonly Regex CodeLiteral =
-        new(@"""(EQ\d{4})""|(?:error|warning)\s+(EQ\d{4})", RegexOptions.Compiled);
+        new(@"""(EQ\d{4})""|(?:error|warning)\s+(EQ\d{4})|Code=""(EQ\d{4})""", RegexOptions.Compiled);
+    private static readonly string[] ReportingFiles = ["*.cs", "*.targets", "*.props"];
     private static readonly Regex DocumentedRow = new(@"^\|\s*`(EQ\d{4})`", RegexOptions.Multiline);
 
     private static string RepoRoot()
@@ -37,14 +41,14 @@ public class DiagnosticsDocumentedTests
     {
         var reported = new SortedDictionary<string, SortedSet<string>>(StringComparer.Ordinal);
         var src = Path.Combine(RepoRoot(), "src");
-        foreach (var file in Directory.EnumerateFiles(src, "*.cs", SearchOption.AllDirectories))
+        foreach (var file in ReportingFiles.SelectMany(pattern => Directory.EnumerateFiles(src, pattern, SearchOption.AllDirectories)))
         {
             if (file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") ||
                 file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
                 continue;
             foreach (Match match in CodeLiteral.Matches(File.ReadAllText(file)))
             {
-                var code = match.Groups[1].Success ? match.Groups[1].Value : match.Groups[2].Value;
+                var code = match.Groups.Cast<Group>().Skip(1).First(group => group.Success).Value;
                 if (!reported.TryGetValue(code, out var files))
                     reported[code] = files = new SortedSet<string>(StringComparer.Ordinal);
                 // The path RELATIVE to src, not the filename: src has seven Program.cs, so a

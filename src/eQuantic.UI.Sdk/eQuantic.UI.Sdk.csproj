@@ -21,10 +21,16 @@
         <Content Include="Sdk\Sdk.targets" PackagePath="build\eQuantic.UI.Sdk.targets" />
     </ItemGroup>
 
-    <!-- Build tools (do not flow to consuming projects) -->
+    <!-- The two tools the package ships under tools/, as edges of THIS project's build graph: the
+         build that precedes the pack builds them, restored with the rest of the graph, as the one
+         instance the solution builds. Nothing links against them (ReferenceOutputAssembly=false),
+         nothing copies them here (Private=false), and they are not package dependencies
+         (PrivateAssets=All) — CollectBuildOutput carries their files instead. -->
     <ItemGroup>
         <ProjectReference Include="..\eQuantic.Build\eQuantic.Build.csproj"
-            ReferenceOutputAssembly="false" PrivateAssets="All" />
+            ReferenceOutputAssembly="false" Private="false" PrivateAssets="All" />
+        <ProjectReference Include="..\eQuantic.UI.Native.Build\eQuantic.UI.Native.Build.csproj"
+            ReferenceOutputAssembly="false" Private="false" PrivateAssets="All" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -33,18 +39,9 @@
     </PropertyGroup>
 
     <Target Name="CollectBuildOutput">
-        <MSBuild Projects="..\eQuantic.Build\eQuantic.Build.csproj" Targets="Restore;Build"
-            Properties="Configuration=$(Configuration)" />
-        <!--
-            eqicon is a SECOND tool this SDK runs — the `Assets/*.svg` vector catalog and the web app
-            icon both go through it — and it lives in its own project. Sdk.targets guards both with
-            Exists(), so a package without it drew neither and said nothing.
-        -->
-        <!-- Restore;Build, not Build. `Build` alone assumes someone has already restored that project,
-             which is true on a machine that has built this repo before and false on every other one —
-             CI packs from a clean checkout and got NETSDK1004 for a missing project.assets.json. -->
-        <MSBuild Projects="..\eQuantic.UI.Native.Build\eQuantic.UI.Native.Build.csproj" Targets="Restore;Build"
-            Properties="Configuration=$(Configuration)" />
+        <!-- eqicon is a SECOND tool this SDK runs — the `Assets/*.svg` vector catalog and the web app
+             icon both go through it — and it lives in its own project. Both are built by the edges
+             above before this target collects them. -->
         <ItemGroup>
             <_BuildOutput Include="..\eQuantic.Build\bin\$(Configuration)\net10.0\**"
                 Exclude="..\eQuantic.Build\bin\$(Configuration)\net10.0\*.pdb" />

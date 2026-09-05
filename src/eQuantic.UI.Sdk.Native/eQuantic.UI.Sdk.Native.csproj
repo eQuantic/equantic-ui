@@ -13,12 +13,21 @@
         <Content Include="Sdk\**" PackagePath="Sdk" />
     </ItemGroup>
 
+    <!-- The tool the package ships under tools/, as an edge of THIS project's build graph: the
+         build that precedes the pack builds it, restored with the rest of the graph, as the one
+         instance the solution builds. Nothing links against it (ReferenceOutputAssembly=false),
+         nothing copies it here (Private=false), and it is not a package dependency
+         (PrivateAssets=All) — CollectIconTool carries its files instead. -->
+    <ItemGroup>
+        <ProjectReference Include="..\eQuantic.UI.Native.Build\eQuantic.UI.Native.Build.csproj"
+            ReferenceOutputAssembly="false" Private="false" PrivateAssets="All" />
+    </ItemGroup>
+
     <!--
-        eqicon travels INSIDE the package, staged at pack time from a build of its own project in
-        the pack's configuration — the shape the web SDK already uses for eqc. Sdk.targets looks for
-        it at `<package>/tools/net10.0/`, and every target that runs it is guarded by Exists(): a
-        package without it does not fail, it silently stops drawing app icons and vector catalogs,
-        which is what shipped until this.
+        eqicon travels INSIDE the package, collected at pack time from the build the edge above
+        guarantees — the shape the web SDK uses for eqc. Sdk.targets looks for it at
+        `<package>/tools/net10.0/`, and a package without it fails by name (EQ4001) the moment an
+        app needs it, where it used to silently stop drawing app icons and vector catalogs.
     -->
     <PropertyGroup>
         <TargetsForTfmSpecificContentInPackage>
@@ -26,11 +35,6 @@
     </PropertyGroup>
 
     <Target Name="CollectIconTool">
-        <!-- Restore;Build, not Build. `Build` alone assumes someone has already restored that project,
-             which is true on a machine that has built this repo before and false on every other one —
-             CI packs from a clean checkout and got NETSDK1004 for a missing project.assets.json. -->
-        <MSBuild Projects="..\eQuantic.UI.Native.Build\eQuantic.UI.Native.Build.csproj" Targets="Restore;Build"
-            Properties="Configuration=$(Configuration)" />
         <ItemGroup>
             <_IconTool Include="..\eQuantic.UI.Native.Build\bin\$(Configuration)\net10.0\**"
                 Exclude="..\eQuantic.UI.Native.Build\bin\$(Configuration)\net10.0\*.pdb" />
