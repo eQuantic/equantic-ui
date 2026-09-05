@@ -1,13 +1,4 @@
-<!--
-    InitialTargets, because ANDROID validates that every declared resource EXISTS before any
-    ordinary target runs — earlier than BeforeBuild, earlier than anything BeforeTargets can reach.
-    An imported project contributes its InitialTargets to the one importing it, and they run before
-    the build's first target. That is the only hook early enough, and it removes the two workarounds
-    this cost before it was found: files committed to the repository, and generation at restore.
-    Android only: Apple's packaging takes the catalog from an item an ordinary target hands it, and
-    running that target this early is exactly what stops the item from ever arriving.
--->
-<Project InitialTargets="EQuanticAndroidIcon">
+<Project>
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
     <!--
@@ -20,406 +11,52 @@
         <PartialAppManifest Include="$(MSBuildThisFileDirectory)PhotonApp.plist" />
     </ItemGroup>
 
+    <!--
+        The app icon, from the C# that declares it. `AppIcon.cs` by convention — an app that keeps
+        it elsewhere points at it and writes no more XML than that.
+    -->
     <PropertyGroup>
-        <!-- A build from this repository's own tree, as opposed to a consumer restoring the SDK from
-             NuGet — the same distinction the web Sdk.targets draws. A source tree runs the tool its
-             ProjectReference just built (Sdk.props declares the edge); a package runs what it shipped
-             under tools/. One question, asked once: a fallback that preferred whichever copy existed
-             ran a stale tool on the tree, and hid a missing one from every test that cold-built it. -->
-        <_EqSourceTree Condition="Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Native.Build/eQuantic.UI.Native.Build.csproj')">true</_EqSourceTree>
-        <_EqIconToolDir Condition="'$(_EqSourceTree)' == 'true'">$(MSBuildThisFileDirectory)../../eQuantic.UI.Native.Build/bin/$(Configuration)/net10.0/</_EqIconToolDir>
-        <_EqIconToolDir Condition="'$(_EqIconToolDir)' == ''">$(MSBuildThisFileDirectory)../tools/net10.0/</_EqIconToolDir>
-        <_EqIconDir>$(MSBuildProjectDirectory)/obj/eQuantic</_EqIconDir>
-        <_EqAssetsGenerated>$(EQuanticGeneratedAssetsDir)</_EqAssetsGenerated>
-        <_EqIconSetDir>$(_EqIconDir)/Assets.xcassets</_EqIconSetDir>
+        <EQuanticAppIconSource
+            Condition="'$(EQuanticAppIconSource)' == '' AND Exists('$(MSBuildProjectDirectory)/AppIcon.cs')">$(MSBuildProjectDirectory)/AppIcon.cs</EQuanticAppIconSource>
 
-        <!--
-            Whether this project is a macOS HEAD, which the three packaging targets below all ask.
-            Spelled once here rather than three times on the targets. Whether the TOOL they run
-            exists is not part of it: the edge in Sdk.props guarantees it in a source tree and the
-            package ships it, so a missing tool is a broken tree or a broken package, and
-            EQuanticRequireIconTool names that instead of letting a target skip.
-        -->
-        <_EqMacHead Condition="'$(_EqPlatform)' == '' AND '$(TargetFramework)' != '' AND '$(OutputType)' == 'Exe' AND '$([MSBuild]::IsOSPlatform(`OSX`))' == 'true' AND '$(EQuanticMacAppBundle)' != 'false'">true</_EqMacHead>
+        <_EqIconToolDir>$(MSBuildThisFileDirectory)../tools/net10.0/</_EqIconToolDir>
+        <_EqIconToolDir Condition="!Exists('$(_EqIconToolDir)eqicon.dll')">$(MSBuildThisFileDirectory)../../eQuantic.UI.Native.Build/bin/$(Configuration)/net10.0/</_EqIconToolDir>
+        <_EqIconDir>$(MSBuildProjectDirectory)/obj/eQuantic</_EqIconDir>
+        <_EqIconSetDir>$(_EqIconDir)/Assets.xcassets</_EqIconSetDir>
     </PropertyGroup>
 
     <!--
         Apple reads the icon's LOCATION from the app manifest rather than from a build property, so
-        the tool that writes the catalog writes that too.
-        Both platforms collect their assets in a nested build whose evaluation precedes every target
-        of ours, so both are named at evaluation by LITERAL path and written by the InitialTarget
-        before anything reads them. One rule, two platforms, and nothing committed to a repository.
+        the tool that writes the catalog writes that too. The item is declared before the file
+        exists on purpose: a clean build renders it before anything reads it.
     -->
     <ItemGroup Condition="'$(_EqPlatform)' == 'ios' AND '$(EQuanticAppIconSource)' != ''">
         <PartialAppManifest Include="$(_EqIconDir)/AppIcon.plist" />
     </ItemGroup>
 
-    <!--
-        ONE target: render the icon, then hand the catalog to Apple's packaging. The items are
-        created HERE rather than declared up front because a wildcard evaluated before the build
-        runs is empty on every clean build — and actool then compiles nothing while reporting
-        success. eqicon skips its own work when the icon has not changed, so this stays cheap.
-    -->
-    <!--
-        Also at RESTORE, which is the only pass early enough for Android. Android collects its
-        resources during the build's EVALUATION, before any target of ours has run — so a file
-        written by a build target is invisible to it however early we hook. Restore is a separate
-        invocation that finishes first, and what it leaves on disk the build simply finds.
-    -->
-
-    <!--
-        An InitialTarget runs in EVERY invocation of the project — restore, design-time, each nested
-        build — and before any ordinary target, ResolveProjectReferences included. The old
-        `Exists(eqicon.dll)` on its Condition therefore answered "no" on a cold source tree (the edge
-        had not been walked yet), skipped in silence, and the build that followed failed with five
-        XA2001s about PNG files — an error about resources, for a cause about a tool.
-    -->
-    <Target Name="EQuanticAndroidIcon"
-            Condition="'$(_EqPlatform)' == 'android' AND '$(EQuanticAppIconSource)' != '' AND '$(ExcludeRestorePackageImports)' != 'true' AND '$(DesignTimeBuild)' != 'true'">
-        <!--
-            An InitialTarget runs before ResolveProjectReferences, so the edge Sdk.props declares has
-            not been walked when this needs the tool. Pull that ONE edge now, with the properties
-            ResolveProjectReferences would use: the same project instance the solution builds, so
-            MSBuild serializes the two requests instead of racing them into one bin/ — which is what
-            an inline build under its own properties did. Not during restore (NuGet's own marker; a
-            restore builds nothing) and not in a design-time build.
-        -->
-        <MSBuild Condition="'$(_EqSourceTree)' == 'true' AND '%(ProjectReference.EqBuildTool)' == 'true'"
-                 Projects="@(ProjectReference)" Targets="Build"
-                 RemoveProperties="%(ProjectReference.GlobalPropertiesToRemove)" />
-        <Error Condition="!Exists('$(_EqIconToolDir)eqicon.dll')" Code="EQ4001"
-               Text="This app declares an icon ($(EQuanticAppIconSource)) but the eQuantic icon tool is missing at '$(_EqIconToolDir)eqicon.dll'. In a source-tree build this is a broken build graph (eQuantic.UI.Native.Build did not build); from a package the SDK package is broken. Neither is fixed by building twice." />
-        <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; --source &quot;$(EQuanticAppIconSource)&quot; --android &quot;$(_EqAssetsGenerated)/android/res&quot;"
+    <Target Name="EQuanticRenderAppIcon"
+            Condition="'$(EQuanticAppIconSource)' != '' AND '$(TargetFramework)' != '' AND Exists('$(_EqIconToolDir)eqicon.dll')"
+            Inputs="$(EQuanticAppIconSource)"
+            Outputs="$(_EqIconSetDir)/AppIcon.appiconset/Contents.json"
+            BeforeTargets="_DetectAppManifest;_CompileAppManifest;_CoreCompileImageAssets;_CompileImageAssets;CoreCompile">
+        <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; --source &quot;$(EQuanticAppIconSource)&quot; --out &quot;$(_EqIconSetDir)&quot;"
               StandardOutputImportance="normal" />
     </Target>
 
     <!--
-        FAIL LOUD, never skip. Every target below that runs the tool used to carry
-        `Exists(eqicon.dll)` on its own Condition, so a missing tool meant no bundle, no icon, no
-        capability manifest — and no explanation. The tool is a graph edge in a source tree and a
-        shipped file in a package, so in either healthy state it is there; this guard names the
-        unhealthy one, once, before any of them would have skipped.
+        The catalog joins the build AFTER it has been rendered — a wildcard evaluated up front is
+        empty on every clean build, and actool then compiles nothing while reporting success.
     -->
-    <Target Name="EQuanticRequireIconTool"
-            BeforeTargets="EQuanticResolveMacPackaging;EQuanticMacAppBundle;EQuanticMacAppPackage;EQuanticCapabilityManifest;EQuanticAppIcon"
-            Condition="('$(_EqMacHead)' == 'true' OR '$(_EqPlatform)' == 'ios' OR '$(EQuanticAppIconSource)' != '') AND !Exists('$(_EqIconToolDir)eqicon.dll')">
-        <Error Code="EQ4001"
-               Text="This app needs the eQuantic icon tool (app icon, bundle, capability manifest) and it is missing at '$(_EqIconToolDir)eqicon.dll'. In a source-tree build this is a broken build graph (eQuantic.UI.Native.Build did not build); from a package the SDK package is broken. Neither is fixed by building twice." />
-    </Target>
-
-    <!--
-        The macOS head ships as an APPLICATION. Everything the build produced goes inside the
-        bundle, the Info.plist states what the system needs to know, and the icon is the same
-        Assets/AppIcon that feeds the phones. Without this the head is a process with a window: no
-        Dock tile, no menu bar, no app switcher, and nothing the OS will treat as an app.
-        Skipped when an app opts out (EQuanticMacAppBundle=false) or is not an executable.
-    -->
-    <!--
-        WHAT SIGNING THIS APP MEANS — resolved once, and read by both the development bundle and
-        the shipped one. It used to live inside the single build-time target, which is why there
-        was no shipped one: everything an app needs in order to be distributable was tangled with
-        the thing that runs after every Build.
-    -->
-    <Target Name="EQuanticResolveMacPackaging"
-            Condition="'$(_EqMacHead)' == 'true'">
-        <PropertyGroup>
-            <!-- The name the user reads, which a project already states as ApplicationTitle —
-                 the same property MAUI uses, so nobody learns a second one. -->
-            <_EqAppName>$(AssemblyName)</_EqAppName>
-            <_EqAppName Condition="'$(ApplicationTitle)' != ''">$(ApplicationTitle)</_EqAppName>
-            <_EqBundleId Condition="'$(EQuanticBundleId)' == ''">com.equantic.$(AssemblyName.ToLowerInvariant())</_EqBundleId>
-            <_EqBundleId Condition="'$(EQuanticBundleId)' != ''">$(EQuanticBundleId)</_EqBundleId>
-            <_EqIcns>$(_EqIconDir)/$(_EqAppName).icns</_EqIcns>
-
-            <!-- A real identity turns the hardened runtime on WITH it — decided here, before
-                 anything reads it, because the entitlements below depend on the answer. It used to
-                 be settled further down, next to the codesign call, so an app that set only
-                 EQuanticSigningIdentity got hardened signing with NO runtime entitlements: the
-                 exact launch failure this whole block exists to prevent, produced by the block. -->
-            <EQuanticHardenedRuntime Condition="'$(EQuanticHardenedRuntime)' == '' AND '$(EQuanticSigningIdentity)' != ''">true</EQuanticHardenedRuntime>
-
-            <!--
-                What the RUNTIME needs, which the SDK adds because it already knows every fact the
-                answer depends on — and because the alternative is an app author learning that .NET
-                on macOS has a library-validation problem. Measured on this repo's own sample: a
-                framework-dependent app under the hardened runtime dies at LAUNCH loading Microsoft's
-                libhostfxr.dylib ("different Team IDs"), before a line of its code runs; and any
-                non-AOT app executes JIT-compiled methods from its first instruction.
-
-                SELF-CONTAINED is NOT exempt, which is worth stating because the opposite is the
-                reasonable guess: the app ships its own copy of the runtime, so surely validation is
-                satisfied. It is not — measured by re-signing one self-contained hardened bundle with
-                allow-jit alone and watching it die on libhostfxr exactly like the framework-dependent
-                one. Only PublishAot, which loads no dylib at all, gets neither.
-            -->
-            <_EqRuntimeEntitlements Condition="'$(EQuanticHardenedRuntime)' == 'true' AND '$(PublishAot)' != 'true'">com.apple.security.cs.disable-library-validation;com.apple.security.cs.allow-jit</_EqRuntimeEntitlements>
-            <_EqRuntimeEntitlements Condition="'$(EQuanticHardenedRuntime)' == 'true' AND '$(PublishAot)' == 'true'"></_EqRuntimeEntitlements>
-        </PropertyGroup>
-
-        <Message Condition="'$(_EqRuntimeEntitlements)' != ''" Importance="normal"
-                 Text="eQuantic.UI: hardened runtime — the SDK is declaring what the .NET runtime itself needs ($(_EqRuntimeEntitlements)); your app declares only its own." />
-
-        <!--
-            ENTITLEMENTS — what the app needs the SYSTEM to permit, read from its own
-            `[assembly: PhotonEntitlement(…)]` declarations. This is the release half of the
-            capability idea and it is invisible until release, which is what makes it dangerous: a
-            development build signs ad hoc, where the hardened runtime is not in force and nothing
-            needs permitting, so an app that JITs (a WASM engine, a scripting VM) runs perfectly for
-            months and is then killed with SIGKILL/CODESIGNING on the first machine that installs
-            the signed build. No catch sees it; the process is simply gone.
-        -->
-        <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; entitlements --assembly &quot;$(TargetDir)$(TargetFileName)&quot; --plist &quot;$(_EqIconDir)/$(AssemblyName).entitlements&quot; --also &quot;$(_EqRuntimeEntitlements)&quot;"
-              StandardOutputImportance="normal" />
-
-        <PropertyGroup>
-            <_EqEntitlements>$(_EqIconDir)/$(AssemblyName).entitlements</_EqEntitlements>
-            <!-- Only when the app declared some: signing WITH an empty entitlements file is not the
-                 same as signing without one, and it grants nothing while still changing the signature. -->
-            <_EqEntitlementsArg Condition="Exists('$(_EqEntitlements)')">--entitlements "$(_EqEntitlements)"</_EqEntitlementsArg>
-
-            <!-- Ad hoc unless the app names a real identity. Ad hoc is right for development and
-                 says so honestly: it proves nothing about origin, and it is what lets a local app be
-                 treated as an app at all. A published build sets EQuanticSigningIdentity to a
-                 Developer ID and gets the hardened runtime with it, because notarization requires
-                 both and entitlements mean nothing without them. -->
-            <_EqSignIdentity>-</_EqSignIdentity>
-            <_EqSignIdentity Condition="'$(EQuanticSigningIdentity)' != ''">$(EQuanticSigningIdentity)</_EqSignIdentity>
-            <_EqHardenedArg Condition="'$(EQuanticHardenedRuntime)' == 'true'">--options runtime</_EqHardenedArg>
-        </PropertyGroup>
-
-        <!-- An entitlement the app declares but never gets is the failure this whole block exists to
-             prevent, so say plainly when the two halves disagree rather than shipping a bundle whose
-             declarations are decoration. -->
-        <Warning Condition="Exists('$(_EqEntitlements)') AND '$(EQuanticHardenedRuntime)' != 'true'"
-                 Text="This app declares entitlements, but they are only consulted under the hardened runtime — set EQuanticSigningIdentity (which turns it on) or EQuanticHardenedRuntime=true, or the declarations do nothing." />
-    </Target>
-
-    <!--
-        THE DEVELOPMENT BUNDLE, beside the build output: what `dotnet run` launches and what a
-        debugger attaches to. Ad-hoc signed, from the build's own files.
-    -->
-    <Target Name="EQuanticMacAppBundle" AfterTargets="Build"
-            DependsOnTargets="EQuanticResolveMacPackaging"
-            Condition="'$(_EqMacHead)' == 'true'">
-        <PropertyGroup>
-            <!-- ALWAYS beside the build output, never beside the sources. In an outer multi-TFM
-                 pass TargetDir is empty, and a bundle written there lands in the project folder —
-                 where the next build reads its own obj/ back as source files and fails on
-                 duplicate assembly attributes. -->
-            <_EqBundleDir>$([MSBuild]::EnsureTrailingSlash('$(TargetDir)'))$(_EqAppName).app</_EqBundleDir>
-        </PropertyGroup>
-
-        <!--
-            ANOTHER BUILD OF THIS APP IS NOT PAYLOAD OF THIS ONE. .NET nests its output
-            directories: a RID-specific build lands in `bin/<config>/<tfm>/<rid>/` and its publish
-            tree inside that again — both UNDER the plain build's own output directory. So a
-            developer who publishes for osx-arm64 and then builds again has an entire second copy of
-            the app inside the directory the development bundle is assembled from.
-
-            The failure is not quiet, which is the one mercy: codesign refuses the whole bundle over
-            the disk image it finds in there, and an ordinary `dotnet build` fails with a signing
-            error naming a file nobody put there.
-
-            Recognised by CONTENT rather than by name: a subdirectory holding this app's own
-            assembly is another build of it. A rule that matched "publish" or a RID-shaped name
-            instead would be guessing, and would take an app's own content folder with it.
-        -->
+    <Target Name="EQuanticCollectAppIcon"
+            Condition="'$(_EqPlatform)' == 'ios' AND '$(EQuanticAppIconSource)' != ''"
+            DependsOnTargets="EQuanticRenderAppIcon"
+            BeforeTargets="_CoreCompileImageAssets;_CompileImageAssets">
         <ItemGroup>
-            <_EqOutputChild Include="$([System.IO.Directory]::GetDirectories('$(TargetDir)', '*', System.IO.SearchOption.TopDirectoryOnly))"
-                            Condition="Exists('$(TargetDir)')" />
-            <_EqOtherBuild Include="%(_EqOutputChild.Identity)"
-                           Condition="Exists('%(_EqOutputChild.Identity)/$(TargetFileName)')" />
-            <_EqOtherBuild Include="%(_EqOutputChild.Identity)/publish"
-                           Condition="Exists('%(_EqOutputChild.Identity)/publish')" />
-            <_EqOtherBuild Include="$(TargetDir)publish" Condition="Exists('$(TargetDir)publish')" />
-        </ItemGroup>
-        <PropertyGroup>
-            <!-- GUARDED: GetFullPath of an empty string is not "the current directory", it is
-                 MSB4184 — the whole build fails on a property that is normally set by the SDK and
-                 is not guaranteed to be. Nothing here needs PublishDir to exist; the sibling-build
-                 rule below finds a publish tree anyway. -->
-            <_EqExcludeArgs Condition="'$(PublishDir)' != ''">--exclude &quot;$([System.IO.Path]::GetFullPath('$(PublishDir)'))&quot;</_EqExcludeArgs>
-            <_EqExcludeArgs Condition="'@(_EqOtherBuild)' != ''">$(_EqExcludeArgs) --exclude &quot;@(_EqOtherBuild, '&quot; --exclude &quot;')&quot;</_EqExcludeArgs>
-        </PropertyGroup>
-
-        <Exec Condition="'$(EQuanticAppIconSource)' != ''"
-              Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; --source &quot;$(EQuanticAppIconSource)&quot; --macos &quot;$(_EqIcns)&quot;"
-              StandardOutputImportance="normal" />
-
-        <!--
-            The bundle AND its payload in one call. What belongs inside is decided in C#
-            (MacAppPayload) rather than by a glob, because every one of those rules was learned from
-            a bundle that failed to sign, and a glob is where they cannot be tested.
-
-            The publish directory is excluded BY PATH: it lives under the build output, and a
-            build-output bundle that swallows it ships an entire second copy of the app inside
-            itself — 86 MB of it, measured on this repo's own desktop sample after one publish.
-        -->
-        <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; bundle --app &quot;$(_EqBundleDir)&quot; --exec &quot;$(AssemblyName)&quot; --name &quot;$(_EqAppName)&quot; --id &quot;$(_EqBundleId)&quot; --version &quot;$(Version)&quot; --icns &quot;$(_EqIcns)&quot; --capabilities &quot;$(TargetDir)$(TargetFileName)&quot; --payload &quot;$(TargetDir)&quot; $(_EqExcludeArgs)"
-              StandardOutputImportance="normal" />
-        <Exec Command="chmod +x &quot;$(_EqBundleDir)/Contents/MacOS/$(AssemblyName)&quot;" />
-
-        <!--
-            And SIGN it, ad hoc, under the bundle's own identifier. Without this the identity is
-            whatever the apphost was signed as — "apphost" — and a capability that asks who is
-            calling gets an answer that names nothing. Ad hoc is right for a development build: it
-            proves nothing about origin, which is honest, and it is what a local app needs to be
-            treated as an app at all. A shipped build re-signs with a real identity.
-
-            A signing failure FAILS THE BUILD. It used to be a warning, and the .app kept whatever
-            signature the previous build left — an identity that silently flips is how a TCC grant
-            (Full Disk Access) evaporates between builds, and nobody connects a lost permission to
-            a warning that scrolled past yesterday. A loud build is the cheap version of that hour.
-        -->
-        <Exec Command="codesign --force --deep --sign &quot;$(_EqSignIdentity)&quot; $(_EqHardenedArg) $(_EqEntitlementsArg) --identifier &quot;$(_EqBundleId)&quot; &quot;$(_EqBundleDir)&quot;"
-              StandardOutputImportance="normal" />
-    </Target>
-
-    <!--
-        THE SHIPPED BUNDLE — the one `dotnet publish` produces, and the reason this target exists at
-        all.
-
-        Until it did, the .app was assembled from the BUILD output and `publish/` held loose files
-        with no bundle in it. Every publish decision therefore stopped at the bundle's door:
-        trimming, self-contained, single-file, AOT. Measured on this repo's desktop sample with
-        PublishTrimmed on: publish 23 MB, bundle 172 MB — the app you would ship was seven times the
-        app you asked for, and none of the trimming reached it.
-
-        The bundle lands INSIDE the publish directory, next to the loose files, which is where MAUI
-        puts its own and therefore where tooling already looks.
-    -->
-    <Target Name="EQuanticMacAppPackage" AfterTargets="Publish"
-            DependsOnTargets="EQuanticResolveMacPackaging"
-            Condition="'$(_EqMacHead)' == 'true'">
-        <PropertyGroup>
-            <!-- Two steps rather than one nested call. The nested form parses and works — this
-                 target published a signed bundle and a disk image with it — but a reader has to
-                 count quotes to be sure, and that is a poor reason to make anyone read carefully. -->
-            <_EqPublishDir>$([System.IO.Path]::GetFullPath('$(PublishDir)'))</_EqPublishDir>
-            <_EqPublishDir>$([MSBuild]::EnsureTrailingSlash('$(_EqPublishDir)'))</_EqPublishDir>
-            <_EqShipDir>$(_EqPublishDir)$(_EqAppName).app</_EqShipDir>
-            <_EqDmg>$(_EqPublishDir)$(_EqAppName).dmg</_EqDmg>
-            <_EqNotaryZip>$(_EqIconDir)/$(AssemblyName).notarize.zip</_EqNotaryZip>
-
-            <!-- Credentials, never the project's business to hold: either a notarytool keychain
-                 profile a developer stored once, or the three values a CI holds as secrets. Both
-                 spellings, because a laptop has a keychain and a build agent does not. -->
-            <_EqNotaryArgs Condition="'$(EQuanticNotaryProfile)' != ''">--keychain-profile &quot;$(EQuanticNotaryProfile)&quot;</_EqNotaryArgs>
-            <_EqNotaryArgs Condition="'$(_EqNotaryArgs)' == '' AND '$(EQuanticNotaryAppleId)' != '' AND '$(EQuanticNotaryTeamId)' != '' AND '$(EQuanticNotaryPassword)' != ''">--apple-id &quot;$(EQuanticNotaryAppleId)&quot; --team-id &quot;$(EQuanticNotaryTeamId)&quot; --password &quot;$(EQuanticNotaryPassword)&quot;</_EqNotaryArgs>
-        </PropertyGroup>
-
-        <Exec Condition="'$(EQuanticAppIconSource)' != ''"
-              Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; --source &quot;$(EQuanticAppIconSource)&quot; --macos &quot;$(_EqIcns)&quot;"
-              StandardOutputImportance="normal" />
-
-        <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; bundle --app &quot;$(_EqShipDir)&quot; --exec &quot;$(AssemblyName)&quot; --name &quot;$(_EqAppName)&quot; --id &quot;$(_EqBundleId)&quot; --version &quot;$(Version)&quot; --icns &quot;$(_EqIcns)&quot; --capabilities &quot;$(TargetDir)$(TargetFileName)&quot; --payload &quot;$(_EqPublishDir)&quot; --exclude &quot;$(_EqDmg)&quot;"
-              StandardOutputImportance="normal" />
-        <Exec Command="chmod +x &quot;$(_EqShipDir)/Contents/MacOS/$(AssemblyName)&quot;" />
-        <Exec Command="codesign --force --deep --sign &quot;$(_EqSignIdentity)&quot; $(_EqHardenedArg) $(_EqEntitlementsArg) --identifier &quot;$(_EqBundleId)&quot; &quot;$(_EqShipDir)&quot;"
-              StandardOutputImportance="normal" />
-
-        <!-- Ad hoc is fine on a laptop and is NOT distributable: Gatekeeper refuses it on any
-             machine that did not build it. Said once, at publish, where it is actionable. -->
-        <Warning Condition="'$(EQuanticSigningIdentity)' == ''"
-                 Text="This bundle is signed AD HOC, which Gatekeeper refuses on every machine but this one. Set EQuanticSigningIdentity to a Developer ID Application certificate to ship it." />
-
-        <!--
-            NOTARIZATION — Apple scanning the signed app and issuing a ticket, without which a
-            downloaded app is refused with "cannot be opened because the developer cannot be
-            verified". Three steps that are always the same three steps, so the SDK does them: zip
-            the way notarytool expects (ditto, keeping the bundle), submit and WAIT, then staple the
-            ticket into the bundle so it verifies with no network at all.
-        -->
-        <Message Condition="'$(_EqNotaryArgs)' != ''" Importance="high"
-                 Text="eQuantic.UI: submitting $(_EqAppName).app for notarization — Apple decides how long this takes." />
-        <Exec Condition="'$(_EqNotaryArgs)' != ''"
-              Command="ditto -c -k --keepParent &quot;$(_EqShipDir)&quot; &quot;$(_EqNotaryZip)&quot;" />
-        <Exec Condition="'$(_EqNotaryArgs)' != ''"
-              Command="xcrun notarytool submit &quot;$(_EqNotaryZip)&quot; $(_EqNotaryArgs) --wait"
-              StandardOutputImportance="high" />
-        <Exec Condition="'$(_EqNotaryArgs)' != ''"
-              Command="xcrun stapler staple &quot;$(_EqShipDir)&quot;"
-              StandardOutputImportance="normal" />
-        <Delete Condition="'$(_EqNotaryArgs)' != ''" Files="$(_EqNotaryZip)" />
-
-        <!-- Notarizing an AD-HOC signature cannot succeed — Apple has nothing to attach a ticket
-             to. Better to say which of the two is missing than to let notarytool answer it in its
-             own vocabulary five minutes later. -->
-        <Warning Condition="'$(_EqNotaryArgs)' != '' AND '$(EQuanticSigningIdentity)' == ''"
-                 Text="Notarization needs a real signature: set EQuanticSigningIdentity as well, or Apple has nothing to issue a ticket for." />
-
-        <!--
-            THE DISK IMAGE, when the app is distributed as one. Built from the stapled bundle, so
-            the ticket travels inside it and the app verifies offline the moment it is dragged out;
-            the image itself is signed with the same identity so the download is not a stranger.
-        -->
-        <Delete Condition="'$(EQuanticPackageFormat)' == 'Dmg'" Files="$(_EqDmg)" />
-        <Exec Condition="'$(EQuanticPackageFormat)' == 'Dmg'"
-              Command="hdiutil create -volname &quot;$(_EqAppName)&quot; -srcfolder &quot;$(_EqShipDir)&quot; -ov -format UDZO &quot;$(_EqDmg)&quot;"
-              StandardOutputImportance="normal" />
-        <Exec Condition="'$(EQuanticPackageFormat)' == 'Dmg' AND '$(EQuanticSigningIdentity)' != ''"
-              Command="codesign --force --sign &quot;$(_EqSignIdentity)&quot; &quot;$(_EqDmg)&quot;"
-              StandardOutputImportance="normal" />
-
-        <Message Importance="high" Text="eQuantic.UI: $(_EqShipDir)" />
-        <Message Condition="'$(EQuanticPackageFormat)' == 'Dmg'" Importance="high" Text="eQuantic.UI: $(_EqDmg)" />
-    </Target>
-
-    <!--
-        The permission keys an Apple platform reads, from what the app declared on its builder. The
-        generator put the declarations on the assembly; this reads them back off the compiled
-        output and writes the partial manifest. One statement in C#, and no app author opens an
-        Info.plist — which is the promise the whole SDK is making.
-    -->
-    <PropertyGroup Condition="'$(_EqPlatform)' == 'ios'">
-        <_EqCapabilityPlist>$(_EqIconDir)/Capabilities.plist</_EqCapabilityPlist>
-    </PropertyGroup>
-
-    <!-- The MSBuild-resolved reference list, for TOOLING rather than for eqc: the native SDK never
-         transpiles, but the VS Code design host builds a Roslyn compilation of the project and needs
-         the exact assemblies csc compiles against — without them named arguments are emitted in
-         syntactic order, silently. Same file, same rules as the web SDK's: the item comes from
-         FindReferenceAssembliesForReferences (declared as a dependency, since standalone invocations
-         see it empty otherwise), and an empty set is never worth writing over a good one. -->
-    <Target Name="EQuanticDesignRefs" AfterTargets="Compile"
-        DependsOnTargets="ResolveReferences;FindReferenceAssembliesForReferences">
-        <MakeDir Directories="$(MSBuildProjectDirectory)/$(IntermediateOutputPath)" />
-        <WriteLinesToFile File="$(MSBuildProjectDirectory)/$(IntermediateOutputPath)equantic.refs.txt"
-            Lines="@(ReferencePathWithRefAssemblies)"
-            Overwrite="true" WriteOnlyWhenDifferent="true"
-            Condition="'@(ReferencePathWithRefAssemblies)' != ''" />
-    </Target>
-
-    <Target Name="EQuanticCapabilityManifest" AfterTargets="Compile"
-            Condition="'$(_EqPlatform)' == 'ios'">
-        <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; capabilities --assembly &quot;@(IntermediateAssembly)&quot; --plist &quot;$(_EqCapabilityPlist)&quot;"
-              StandardOutputImportance="normal" />
-        <ItemGroup Condition="Exists('$(_EqCapabilityPlist)')">
-            <PartialAppManifest Include="$(_EqCapabilityPlist)" />
-        </ItemGroup>
-    </Target>
-
-    <Target Name="EQuanticAppIcon"
-            Condition="'$(EQuanticAppIconSource)' != ''"
-            BeforeTargets="_CompileAppManifest;_CoreCompileImageAssets;_CompileImageAssets;_UpdateAndroidResgen;CoreCompile">
-        <PropertyGroup>
-            <!-- No TargetFramework during restore: write EVERYTHING the app's platforms could ask
-                 for. Deriving four small PNGs nobody reads costs less than a build that cannot see
-                 the one it needs. -->
-            <_EqIconArgs Condition="'$(TargetFramework)' == ''">--android "$(_EqAssetsGenerated)/android/res"</_EqIconArgs>
-            <_EqIconArgs Condition="'$(_EqPlatform)' == 'ios'">--out "$(_EqIconSetDir)"</_EqIconArgs>
-        </PropertyGroup>
-        <ItemGroup Condition="'$(_EqPlatform)' == 'ios'">
-            <!-- Items born inside a target carry no provenance, and Apple's packaging asks for it.
-                 Only the LOCAL one: DefiningProjectFullPath is MSBuild's own reserved metadata. -->
+            <!-- Items born inside a target carry no provenance, and Apple's packaging asks for it. -->
             <ImageAsset Include="$(_EqIconSetDir)/**/*">
+                <DefiningProjectFullPath>$(MSBuildProjectFullPath)</DefiningProjectFullPath>
                 <LocalDefiningProjectFullPath>$(MSBuildProjectFullPath)</LocalDefiningProjectFullPath>
-                <LocalMSBuildProjectFullPath>$(MSBuildProjectFullPath)</LocalMSBuildProjectFullPath>
             </ImageAsset>
         </ItemGroup>
-        <Exec Condition="'$(_EqIconArgs)' != ''"
-              Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; --source &quot;$(EQuanticAppIconSource)&quot; $(_EqIconArgs)"
-              StandardOutputImportance="normal" />
     </Target>
-
 </Project>

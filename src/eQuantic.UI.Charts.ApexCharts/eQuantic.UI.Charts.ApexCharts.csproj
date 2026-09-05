@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\eQuantic.UI.Charts\eQuantic.UI.Charts.csproj" />
     <ProjectReference Include="..\eQuantic.UI.Server\eQuantic.UI.Server.csproj" />
   </ItemGroup>
 
