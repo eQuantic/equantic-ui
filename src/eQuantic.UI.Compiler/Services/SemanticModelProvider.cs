@@ -110,6 +110,10 @@ public class SemanticModelProvider
         catch (FileNotFoundException) { return null; }
         catch (FileLoadException) { return null; }
         catch (BadImageFormatException) { return null; }
+        // A malformed or empty name is ArgumentException (ArgumentNullException derives from it).
+        // The names here are literals, so this is belt-and-braces — but the summary promises
+        // "never throws", and a promise the code does not keep is worse than no promise.
+        catch (ArgumentException) { return null; }
     }
 
     public SemanticModel GetSemanticModel(string sourceCode)
