@@ -931,7 +931,7 @@ public sealed unsafe class VulkanDevice : IRhiDevice
         // loaders don't expose the extension and take the plain path.
         // Presentation: a surface to draw at, and the platform's way of naming one. Absent on a
         // headless host, where the backend stays exactly what it was — offscreen.
-        foreach (var surfaceExtension in (string[])["VK_KHR_surface", "VK_KHR_android_surface"])
+        foreach (var surfaceExtension in (string[])["VK_KHR_surface", "VK_KHR_android_surface", "VK_KHR_win32_surface"])
             if (InstanceExtensionPresent(surfaceExtension))
                 extensions.Add(surfaceExtension);
 

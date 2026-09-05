@@ -16,6 +16,12 @@ internal static unsafe partial class VkSurface
     internal static partial int vkCreateAndroidSurfaceKHR(IntPtr instance,
         VkAndroidSurfaceCreateInfoKHR* createInfo, IntPtr allocator, ulong* surface);
 
+    /// <summary>A Win32 surface, from the HWND the Windows shell created — <c>VK_KHR_win32_surface</c>,
+    /// which every desktop Windows ICD exposes and the loader advertises when one is installed.</summary>
+    [LibraryImport(Lib)]
+    internal static partial int vkCreateWin32SurfaceKHR(IntPtr instance,
+        VkWin32SurfaceCreateInfoKHR* createInfo, IntPtr allocator, ulong* surface);
+
     [LibraryImport(Lib)]
     internal static partial void vkDestroySurfaceKHR(IntPtr instance, ulong surface, IntPtr allocator);
 
@@ -68,6 +74,17 @@ internal unsafe struct VkAndroidSurfaceCreateInfoKHR
     public IntPtr PNext;
     public uint Flags;
     public IntPtr Window;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+internal unsafe struct VkWin32SurfaceCreateInfoKHR
+{
+    public VkStructureType SType;
+    public IntPtr PNext;
+    public uint Flags;
+    /// <summary>The module the window class was registered by — <c>GetModuleHandle(null)</c>.</summary>
+    public IntPtr Hinstance;
+    public IntPtr Hwnd;
 }
 
 [StructLayout(LayoutKind.Sequential)]
