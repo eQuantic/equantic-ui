@@ -74,6 +74,12 @@ public interface ICanvasPainter
 /// canvas is not an escape hatch into arbitrary drawing; it is the same nine commands, addressed
 /// directly.
 /// </para>
+/// <para>
+/// The painter does not rotate. For a thin shape that has to READ as turning — confetti, a coin, a
+/// card on edge — animate its WIDTH instead: a rectangle that narrows to almost nothing and opens
+/// again reads as paper seen edge-on, and does so with the physics a flat rotation lacks. A
+/// consumer found this beat the SVG rotate it replaced.
+/// </para>
 /// </summary>
 public sealed class Canvas : VisualNode
 {

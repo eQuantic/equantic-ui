@@ -146,12 +146,19 @@ public abstract class StatelessComponent : UiComponent
 }
 
 /// <summary>
-/// A component with internal state mutated through <see cref="SetState"/> — the web SDK's contract.
-/// v1 caveat (pre-reconciler): state lives on the component INSTANCE, so it persists where the
-/// instance persists — the retained root a host holds, or children a parent retains in fields.
-/// Instance-per-build children lose state; positional state retention arrives with the reconciler
-/// (plan W6), and parity with the web's `CreateState`/`ComponentState` split is resolved at the
-/// Core unification.
+/// A component with internal state, mutated through <see cref="SetState"/>. State lives as fields on
+/// the instance, and the instance is RETAINED across the parent's rebuilds by position (same type,
+/// same key) — so a counter keeps counting while the page around it re-renders.
+/// <para>
+/// THE THING TO KNOW BEFORE YOUR FIRST PARAMETERIZED CONSTRUCTOR: the parent's <c>Build</c> still
+/// runs <c>new YourComponent(args)</c> every time, but that fresh instance is NOT the one that
+/// renders. The retained one does — and it learns about the fresh arguments only through
+/// <see cref="UiComponent.AdoptConfig"/>, whose default copies nothing. Leave it alone and the
+/// retained instance shows its FIRST configuration forever: a mood set at frame one, a root folder
+/// that never changes when you navigate. Override <c>AdoptConfig</c> to copy the constructor/init
+/// props across; state fields stay yours. Three components in one consumer app shipped this bug
+/// before the rule was written here.
+/// </para>
 /// </summary>
 public abstract class StatefulComponent : UiComponent
 {
