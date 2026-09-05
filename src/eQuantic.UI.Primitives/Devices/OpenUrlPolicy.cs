@@ -41,16 +41,24 @@ namespace eQuantic.UI.Primitives;
 /// </summary>
 public sealed class OpenUrlPolicy
 {
+    private const string FileHasTypedDoors = "file: URLs do not go through OpenUrl. Hand the path to "
+        + "IWorkspace.OpenFile or IWorkspace.Reveal, which check that it exists and never launch a "
+        + "folder — the checks a file: URL would skip.";
+
     private readonly HashSet<string> _schemes;
 
-    private OpenUrlPolicy(HashSet<string> schemes) => _schemes = schemes;
+    private OpenUrlPolicy(HashSet<string> schemes)
+    {
+        _schemes = schemes;
+        Schemes = new System.Collections.ObjectModel.ReadOnlySet<string>(schemes);
+    }
 
     /// <summary>The default: <c>http</c> and <c>https</c>, and nothing else.</summary>
     public static OpenUrlPolicy Web { get; } =
         new(new HashSet<string>(StringComparer.Ordinal) { Uri.UriSchemeHttp, Uri.UriSchemeHttps });
 
     /// <summary>The schemes this policy hands over, lower-case, in no particular order.</summary>
-    public IReadOnlyCollection<string> Schemes => _schemes;
+    public IReadOnlySet<string> Schemes { get; }
 
     /// <summary>
     /// Whether <paramref name="url"/> may be handed to the system. A relative URL has no scheme and
@@ -73,6 +81,10 @@ public sealed class OpenUrlPolicy
         if (Allows(url)) return null;
         if (!url.IsAbsoluteUri)
             return $"\"{url.OriginalString}\" is relative: nothing can route a URL without a scheme.";
+        // The one scheme whose fix is NOT a declaration. Telling the developer to declare it would
+        // send them to a line that throws — the answer is the typed door, said here first.
+        if (url.Scheme == Uri.UriSchemeFile)
+            return $"IWorkspace.OpenUrl refused a \"{Uri.UriSchemeFile}\" URL. {FileHasTypedDoors}";
         return $"IWorkspace.OpenUrl refused a \"{url.Scheme}\" URL: this app hands only {Describe()} "
             + $"URLs to the system. If it means to open {url.Scheme}: links, declare "
             + $"builder.Workspace.Opens(\"{url.Scheme}\") in Program.cs. A URL that came from content "
@@ -111,10 +123,7 @@ public sealed class OpenUrlPolicy
                 + "\"mailto\", not \"mailto:\" or \"mailto://\".", nameof(scheme));
 
         var lower = name.ToLowerInvariant();
-        if (lower == Uri.UriSchemeFile)
-            throw new ArgumentException("file: URLs do not go through OpenUrl. Hand the path to "
-                + "IWorkspace.OpenFile or IWorkspace.Reveal, which check that it exists and never "
-                + "launch a folder — the checks a file: URL would skip.", nameof(scheme));
+        if (lower == Uri.UriSchemeFile) throw new ArgumentException(FileHasTypedDoors, nameof(scheme));
         return lower;
     }
 

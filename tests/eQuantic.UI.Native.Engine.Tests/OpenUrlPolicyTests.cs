@@ -122,6 +122,19 @@ public class OpenUrlPolicyTests
             .And.Contain("http, https", "it says what IS open, so the developer sees the gap");
     }
 
+    /// <summary>
+    /// For `file` the fix is not a declaration — `Opens("file")` throws — so the log must not send
+    /// the developer there. It names the typed doors instead, the same sentence the builder throws.
+    /// </summary>
+    [Fact]
+    public void AFileRefusalNamesTheTypedDoors_NotADeclarationThatWouldThrow()
+    {
+        var refusal = OpenUrlPolicy.Web.Refusal(new Uri("file:///Applications"));
+
+        refusal.Should().Contain("OpenFile").And.Contain("Reveal")
+            .And.NotContain("Opens(\"file\")");
+    }
+
     [Fact]
     public void AnAllowedUrlHasNoRefusal()
     {
