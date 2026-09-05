@@ -1,44 +1,23 @@
 <Project>
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk.Web" />
-    <PropertyGroup>
-        <!-- Use paths relative to the targets file locations -->
-        <_SdkToolsDir>$(MSBuildThisFileDirectory)../tools/net10.0/</_SdkToolsDir>
-        <_SourceBuildDir>$(MSBuildThisFileDirectory)../../eQuantic.Build/bin/Release/net10.0/</_SourceBuildDir>
-        <_SourceBuildDirDebug>$(MSBuildThisFileDirectory)../../eQuantic.Build/bin/Debug/net10.0/</_SourceBuildDirDebug>
-    </PropertyGroup>
-    <PropertyGroup Condition="Exists('$(_SdkToolsDir)eqc.dll')">
-        <EqcCliPath>$(_SdkToolsDir)eqc.dll</EqcCliPath>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(EqcCliPath)' == '' And Exists('$(_SourceBuildDir)eqc.dll')">
-        <EqcCliPath>$(_SourceBuildDir)eqc.dll</EqcCliPath>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(EqcCliPath)' == '' And Exists('$(_SourceBuildDirDebug)eqc.dll')">
-        <EqcCliPath>$(_SourceBuildDirDebug)eqc.dll</EqcCliPath>
-    </PropertyGroup>
-
     <!--
-        A build from THIS repository's own tree — the samples, the site, a scaffold under test —
-        runs the compiler the WORKING TREE describes, never the copy staged beside the SDK by the
-        last pack. That copy is a build artifact and is happily days old: the dashboard sample spent
-        a day emitting yesterday's JavaScript and reading as proof of today's, which is the one
-        thing a sample must never do. A consumer restoring from NuGet has no source tree here, so
-        none of this applies to them and the staged tools stay exactly what they run.
+        Where the two tools this SDK runs — eqc (the transpiler) and eqicon (vectors, app icons) —
+        are found. ONE question decides both: is this a build from the repository's own tree (the
+        samples, the site, a scaffold under test), or a consumer restoring the SDK from NuGet? A
+        source tree runs what its ProjectReferences just built — Sdk.props declares them as graph
+        edges — never a copy staged beside the SDK by an earlier build: that copy is stale by
+        construction, and the dashboard sample once spent a day emitting yesterday's JavaScript and
+        reading as proof of today's. A package has no tree here and runs exactly what it shipped
+        under tools/. An EqcCliPath the project states wins over both.
     -->
-    <PropertyGroup Condition="Exists('$(MSBuildThisFileDirectory)../../eQuantic.Build/eQuantic.Build.csproj')">
-        <_EqSourceTree>true</_EqSourceTree>
+    <PropertyGroup>
+        <_SdkToolsDir>$(MSBuildThisFileDirectory)../tools/net10.0/</_SdkToolsDir>
+        <_EqSourceTree Condition="Exists('$(MSBuildThisFileDirectory)../../eQuantic.Build/eQuantic.Build.csproj')">true</_EqSourceTree>
+        <EqcCliPath Condition="'$(EqcCliPath)' == '' AND '$(_EqSourceTree)' == 'true'">$(MSBuildThisFileDirectory)../../eQuantic.Build/bin/$(Configuration)/net10.0/eqc.dll</EqcCliPath>
+        <EqcCliPath Condition="'$(EqcCliPath)' == ''">$(_SdkToolsDir)eqc.dll</EqcCliPath>
+        <_EqIconToolDir Condition="'$(_EqSourceTree)' == 'true'">$(MSBuildThisFileDirectory)../../eQuantic.UI.Native.Build/bin/$(Configuration)/net10.0/</_EqIconToolDir>
+        <_EqIconToolDir Condition="'$(_EqIconToolDir)' == ''">$(_SdkToolsDir)</_EqIconToolDir>
     </PropertyGroup>
-
-    <Target Name="EQuanticToolsFromSource" Condition="'$(_EqSourceTree)' == 'true'"
-        BeforeTargets="CompileEQuanticUI;EQuanticVectors;EQuanticWebAppIcon">
-        <MSBuild Projects="$(MSBuildThisFileDirectory)../../eQuantic.Build/eQuantic.Build.csproj"
-            Targets="Restore;Build" Properties="Configuration=$(Configuration)" />
-        <MSBuild Projects="$(MSBuildThisFileDirectory)../../eQuantic.UI.Native.Build/eQuantic.UI.Native.Build.csproj"
-            Targets="Restore;Build" Properties="Configuration=$(Configuration)" />
-        <PropertyGroup>
-            <EqcCliPath>$(MSBuildThisFileDirectory)../../eQuantic.Build/bin/$(Configuration)/net10.0/eqc.dll</EqcCliPath>
-            <_EqIconToolDir>$(MSBuildThisFileDirectory)../../eQuantic.UI.Native.Build/bin/$(Configuration)/net10.0/</_EqIconToolDir>
-        </PropertyGroup>
-    </Target>
     <PropertyGroup>
         <_EqOsArch Condition="'$(_EqOsArch)' == ''">$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)</_EqOsArch>
         <_EqIsArm64 Condition="'$(_EqOsArch)' == 'Arm64'">true</_EqIsArm64>
@@ -337,9 +316,6 @@
              have called it anyway. -->
         <ApplicationTitle Condition="'$(ApplicationTitle)' == ''">$(AssemblyName)</ApplicationTitle>
         <ApplicationTitle Condition="'$(ApplicationTitle)' == ''">$(MSBuildProjectName)</ApplicationTitle>
-
-        <_EqIconToolDir>$(_SdkToolsDir)</_EqIconToolDir>
-        <_EqIconToolDir Condition="!Exists('$(_EqIconToolDir)eqicon.dll')">$(MSBuildThisFileDirectory)../../eQuantic.UI.Native.Build/bin/$(Configuration)/net10.0/</_EqIconToolDir>
     </PropertyGroup>
 
     <!--
@@ -357,8 +333,22 @@
         <EQuanticVectorsNamespace Condition="'$(EQuanticVectorsNamespace)' == ''">$(AssemblyName)</EQuanticVectorsNamespace>
     </PropertyGroup>
 
+    <!--
+        FAIL LOUD, never skip. `EQuanticVectors` used to carry `Exists(eqicon.dll)` on its own
+        Condition, so a missing tool meant no Vectors.g.cs and a CS0103 on `Vectors` two targets
+        later — an error about a symbol, for a cause about a tool, on a cold build only. With the
+        tool declared as a graph edge it is present in dev mode by construction, and present in
+        package mode because the SDK ships it under tools/; the only way to get here without it is a
+        broken package or a broken tree, and that deserves its own name.
+    -->
+    <Target Name="EQuanticRequireIconTool" BeforeTargets="EQuanticVectors;EQuanticWebAppIcon"
+        Condition="(Exists('$(EQuanticAssetsDir)') OR '$(EQuanticAppIconSource)' != '') AND !Exists('$(_EqIconToolDir)eqicon.dll')">
+        <Error Code="EQ4001"
+            Text="This project has assets to generate from ($(EQuanticAssetsDir)) but the eQuantic icon tool is missing at '$(_EqIconToolDir)eqicon.dll'. In a source-tree build this is a broken build graph (eQuantic.UI.Native.Build did not build first); from a package it is a broken SDK package. Neither is fixed by building twice." />
+    </Target>
+
     <Target Name="EQuanticVectors" BeforeTargets="BeforeCompile;CompileEQuanticUI"
-        Condition="Exists('$(EQuanticAssetsDir)') AND Exists('$(_EqIconToolDir)eqicon.dll')"
+        Condition="Exists('$(EQuanticAssetsDir)')"
         Inputs="$(EQuanticAssetsDir)/**/*.svg" Outputs="$(EQuanticVectorsFile)">
         <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; vectors --assets &quot;$(EQuanticAssetsDir)&quot; --out &quot;$(MSBuildProjectDirectory)/$(EQuanticVectorsFile)&quot; --namespace &quot;$(EQuanticVectorsNamespace)&quot;"
             StandardOutputImportance="normal" />
@@ -373,7 +363,7 @@
     </Target>
 
     <Target Name="EQuanticWebAppIcon" BeforeTargets="Build"
-        Condition="'$(EQuanticAppIconSource)' != '' AND Exists('$(_EqIconToolDir)eqicon.dll')">
+        Condition="'$(EQuanticAppIconSource)' != ''">
         <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; --source &quot;$(EQuanticAppIconSource)&quot; --web &quot;$(MSBuildProjectDirectory)/wwwroot/_equantic/icons&quot; --app &quot;$(ApplicationTitle)&quot;"
             StandardOutputImportance="normal" />
     </Target>
