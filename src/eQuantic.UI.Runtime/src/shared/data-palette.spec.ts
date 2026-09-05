@@ -15,7 +15,11 @@ describe('DataPalette', () => {
   it('reaches the client with eight fixed series slots, and is the default', () => {
     expect(photonTheme.data.series).toHaveLength(DataPalette.seriesCeiling);
     expect(DataPalette.default).toBe(photonTheme.data);
-    expect(photonTheme.data.status.good).toEqual(photonTheme.data.status.good);
+    // The four status steps are fixed and never themed: the same hex in both modes, by design.
+    const status = photonTheme.data.status;
+    for (const step of [status.good, status.warning, status.serious, status.critical]) {
+      expect(step.dark).toEqual(step.light);
+    }
   });
 
   it('crosses the SSR bridge to the same values', () => {
