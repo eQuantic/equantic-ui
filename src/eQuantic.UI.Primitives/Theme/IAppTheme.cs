@@ -95,6 +95,16 @@ public interface IAppTheme
     float DisabledOpacity { get; }
 
     /// <summary>
+    /// The colours a chart draws DATA with — identity, magnitude, polarity and state — as distinct
+    /// from the colours the interface is drawn with. DEFAULTED to the validated reference instance
+    /// (<see cref="DataPalette.Default"/>) so a theme that never thought about charts still serves
+    /// one correctly; a theme with brand ramps overrides this and nothing else, and holds the result
+    /// to the same audit (<see cref="PaletteAudit"/>) — eight hues in a fixed order that clear the
+    /// colour-vision gates, which is what makes a palette safe to change.
+    /// </summary>
+    DataPalette Data => DataPalette.Default;
+
+    /// <summary>
     /// The colour of a code token. DEFAULTED from the palette the theme already has — a design
     /// system that ships one set of variants should not have to invent a second one to show code,
     /// and a theme that wants a real syntax palette overrides this and nothing else.
