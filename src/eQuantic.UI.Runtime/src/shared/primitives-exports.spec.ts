@@ -72,6 +72,13 @@ const NO_TWIN_OWED = new Set([
   // (an undefined class takes the page down) rather than at capability resolution (one feature
   // reports itself absent). None does today.
   'FileFilter',
+  // AUTHORING TIME ONLY: the audit a data palette is held to (OKLab lightness band, chroma floor,
+  // colour-vision separation, contrast) runs where a theme is written and tested — a brand's build,
+  // the SDK's own tests. The browser never audits a palette; it receives one already validated, as
+  // `data` on the theme. What crosses is the DataPalette itself, and that IS exported.
+  'PaletteAudit',
+  'AuditLine',
+  'AuditReport',
 ]);
 
 describe('Primitives ⇄ runtime export parity', () => {

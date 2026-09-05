@@ -8,6 +8,7 @@
 
 import { round as dotnetRound } from '../utils/dotnet-math';
 import type { ColorValue, SizeKindValue, TypeStyleValue } from './nodes';
+import type { DataPalette } from './data-palette';
 
 /**
  * Companion of the C# `Color` struct — the statics transpiled code references. The surface must
@@ -278,6 +279,8 @@ export interface AppTheme {
   focusRing: ColorToken;
   linkColor: ColorToken;
   scrim: ColorToken;
+  /** The colours a chart draws DATA with (C# `IAppTheme.Data`): series, sequential, diverging, other, status. */
+  data: DataPalette;
   disabledOpacity: number;
   colors(variant: string): VariantColors;
   type(role: string): TypeStyle;

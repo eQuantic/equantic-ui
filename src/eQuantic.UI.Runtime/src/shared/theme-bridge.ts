@@ -9,6 +9,7 @@
 import { ColorToken, TypeStyle, VariantColors, codeTokenColor } from './value-types';
 import type { AppTheme, ShadowSpec } from './value-types';
 import type { ColorValue } from './nodes';
+import { DataPalette, DivergingScale, StatusScale } from './data-palette';
 
 type RgbaTuple = readonly [number, number, number, number];
 type TokenTuple = readonly [RgbaTuple, RgbaTuple];
@@ -21,6 +22,15 @@ export interface ThemeData {
   type: Record<string, readonly [number, number, string, number, number]>;
   elevations: ReadonlyArray<readonly [number, number, number, TokenTuple]>;
   shape: Record<string, number>;
+  /** The data palette: series and sequential as token lists, diverging as [negative, midpoint,
+   * positive], status as [good, warning, serious, critical]. */
+  data: {
+    series: readonly TokenTuple[];
+    sequential: readonly TokenTuple[];
+    diverging: readonly [TokenTuple, TokenTuple, TokenTuple];
+    other: TokenTuple;
+    status: readonly [TokenTuple, TokenTuple, TokenTuple, TokenTuple];
+  };
 }
 
 const color = (t: RgbaTuple): ColorValue => ({ r: t[0], g: t[1], b: t[2], a: t[3] });
@@ -60,8 +70,25 @@ export function materializeTheme(data: ThemeData): AppTheme {
     color: token(c),
   }));
 
+  const palette = new DataPalette(
+    data.data.series.map(token),
+    data.data.sequential.map(token),
+    new DivergingScale(
+      token(data.data.diverging[0]),
+      token(data.data.diverging[1]),
+      token(data.data.diverging[2]),
+    ),
+    token(data.data.other),
+    new StatusScale(
+      token(data.data.status[0]),
+      token(data.data.status[1]),
+      token(data.data.status[2]),
+      token(data.data.status[3]),
+    ),
+  );
   return {
     ...(surfaces as unknown as Pick<AppTheme, never>),
+    data: palette,
     disabledOpacity: data.disabledOpacity,
     colors(variant: string): VariantColors {
       return variants[variant] ?? variants.primary;

@@ -12,10 +12,7 @@ export type { ICanvasPainter } from './shared/nodes';
 export type { RenderContext as BuildContext } from './core/types';
 export { CalendarNames } from './shared/calendar-names';
 
-export {
-  StatelessComponent,
-  StatefulComponent,
-} from './core/component';
+export { StatelessComponent, StatefulComponent } from './core/component';
 // The C# `eQuantic.UI.Primitives.UiComponent` base surfaces in transpiled signatures (e.g. the
 // reconciler's `AdoptConfig(UiComponent next)`) — on the runtime it aliases the Component base.
 export { Component as UiComponent } from './core/types';
@@ -194,6 +191,7 @@ export {
   photonComponentContext,
   ambientLoweringContext,
 } from './shared/photon-context';
+export { DataPalette, DivergingScale, StatusScale } from './shared/data-palette';
 export { materializeTheme } from './shared/theme-bridge';
 export type { ThemeData } from './shared/theme-bridge';
 export { VisualNodeComponent } from './shared/visual-node-component';
