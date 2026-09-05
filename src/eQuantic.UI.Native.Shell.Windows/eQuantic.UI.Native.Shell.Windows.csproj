@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsAotCompatible>true</IsAotCompatible>
+    <!-- Every call in here is a Windows API; saying so once lets the analyzer stop asking at each
+         site and tells a consumer on another OS the truth at compile time. -->
+    <SupportedOSPlatform>windows</SupportedOSPlatform>
+    <Description>The Windows platform shell for the Photon engine: a real Win32 window (per-monitor DPI, dark-mode follow, unified chrome) presenting through Vulkan where an ICD exists and through the Reference backend where none does, with DirectWrite text, Direct2D icons and WIC images — system APIs only, through slim typed bindings (no COM interop framework, no third-party package).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../eQuantic.UI.Primitives/eQuantic.UI.Primitives.csproj" />
+    <ProjectReference Include="../eQuantic.UI.Native.Hosting/eQuantic.UI.Native.Hosting.csproj" />
+    <ProjectReference Include="../eQuantic.UI.Native.Engine/eQuantic.UI.Native.Engine.csproj" />
+    <ProjectReference Include="../eQuantic.UI.Native.Engine.Vulkan/eQuantic.UI.Native.Engine.Vulkan.csproj" />
+    <ProjectReference Include="../eQuantic.UI.Native.Engine.Reference/eQuantic.UI.Native.Engine.Reference.csproj" />
+    <ProjectReference Include="../eQuantic.UI.Native.Framework/eQuantic.UI.Native.Framework.csproj" />
+    <ProjectReference Include="../eQuantic.UI.Native.Components/eQuantic.UI.Native.Components.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -8,6 +8,18 @@
     running that target this early is exactly what stops the item from ever arriving.
 -->
 <Project InitialTargets="EQuanticAndroidIcon">
+    <!--
+        A DESKTOP head on Windows is a windowed executable, not a console one: an `Exe` opens a black
+        console window behind every Photon window, which no app author asked for and every one of
+        them would have to learn to switch off. Decided here, BEFORE the .NET SDK's own targets read
+        OutputType, the way MAUI decides it for its Windows head. The runner attaches to the parent's
+        console when there is one, so `dotnet run` still prints. Opt out (a tool that wants a real
+        console beside its window) with <EQuanticConsole>true</EQuanticConsole>.
+    -->
+    <PropertyGroup Condition="'$(_EqPlatform)' == '' AND '$(OutputType)' == 'Exe' AND '$(EQuanticConsole)' != 'true' AND $([MSBuild]::IsOSPlatform('Windows'))">
+        <OutputType>WinExe</OutputType>
+    </PropertyGroup>
+
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
     <!--
@@ -41,6 +53,22 @@
             EQuanticRequireIconTool names that instead of letting a target skip.
         -->
         <_EqMacHead Condition="'$(_EqPlatform)' == '' AND '$(TargetFramework)' != '' AND '$(OutputType)' == 'Exe' AND '$([MSBuild]::IsOSPlatform(`OSX`))' == 'true' AND '$(EQuanticMacAppBundle)' != 'false'">true</_EqMacHead>
+
+        <!-- And its Windows twin: the head being built INTO an executable on a Windows machine.
+             What it owes the app is smaller — no bundle, the .exe IS the app — but the icon the
+             taskbar shows comes from the same Assets/AppIcon, and it is embedded below. -->
+        <_EqWindowsHead Condition="'$(_EqPlatform)' == '' AND '$(TargetFramework)' != '' AND ('$(OutputType)' == 'Exe' OR '$(OutputType)' == 'WinExe') AND '$([MSBuild]::IsOSPlatform(`Windows`))' == 'true'">true</_EqWindowsHead>
+        <_EqWindowsIco>$(_EqIconDir)/$(AssemblyName).ico</_EqWindowsIco>
+    </PropertyGroup>
+
+    <!--
+        The executable's icon on Windows, from the same Assets/AppIcon — set at EVALUATION by literal
+        path, the same trick the Android resources use: the property has to be known before the
+        compiler reads it, and the file only has to exist when the compiler runs, which is after the
+        target below has written it. An app that names its own ApplicationIcon keeps it.
+    -->
+    <PropertyGroup Condition="'$(_EqWindowsHead)' == 'true' AND '$(EQuanticAppIconSource)' != '' AND '$(ApplicationIcon)' == ''">
+        <ApplicationIcon>$(_EqWindowsIco)</ApplicationIcon>
     </PropertyGroup>
 
     <!--
@@ -408,6 +436,7 @@
                  the one it needs. -->
             <_EqIconArgs Condition="'$(TargetFramework)' == ''">--android "$(_EqAssetsGenerated)/android/res"</_EqIconArgs>
             <_EqIconArgs Condition="'$(_EqPlatform)' == 'ios'">--out "$(_EqIconSetDir)"</_EqIconArgs>
+            <_EqIconArgs Condition="'$(_EqWindowsHead)' == 'true'">--windows "$(_EqWindowsIco)"</_EqIconArgs>
         </PropertyGroup>
         <ItemGroup Condition="'$(_EqPlatform)' == 'ios'">
             <!-- Items born inside a target carry no provenance, and Apple's packaging asks for it.

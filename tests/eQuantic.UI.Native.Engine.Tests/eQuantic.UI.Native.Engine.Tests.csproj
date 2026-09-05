@@ -33,6 +33,9 @@
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Engine.Vulkan\eQuantic.UI.Native.Engine.Vulkan.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Components\eQuantic.UI.Native.Components.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Shell.Apple\eQuantic.UI.Native.Shell.Apple.csproj" />
+    <!-- The Windows shell, for the same reason the Apple one is here: its bindings are exercised
+         against the real system where the system IS Windows, and skip with a reason elsewhere. -->
+    <ProjectReference Include="..\..\src\eQuantic.UI.Native.Shell.Windows\eQuantic.UI.Native.Shell.Windows.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Codegen\eQuantic.UI.Codegen.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Hosting\eQuantic.UI.Native.Hosting.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Build\eQuantic.UI.Native.Build.csproj" />
