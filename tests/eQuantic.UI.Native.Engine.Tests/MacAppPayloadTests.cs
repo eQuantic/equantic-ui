@@ -96,6 +96,26 @@ public class MacAppPayloadTests : IDisposable
     }
 
     /// <summary>
+    /// The symmetric case, and the one that cost a consumer a broken build: a bundle is a
+    /// DIRECTORY, so a FILE whose name ends in `.app` is not one.
+    /// <para>
+    /// The exclusion used to test every path segment including the file's own name, which ate the
+    /// apphost of any project whose assembly ends in `.App` — the most ordinary layer name in .NET,
+    /// and the default AssemblyName is the project name. The one file <c>CFBundleExecutable</c>
+    /// points at was the one file dropped, leaving <c>Contents/MacOS</c> with the DLLs and no
+    /// binary; the build then failed two steps later on <c>chmod +x</c>, with a message that says
+    /// nothing about packaging.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void AFileNamedLikeABundle_IsPayload()
+    {
+        Given("OSCleaner.App", "OSCleaner.dll", "Nested.app/Contents/MacOS/Nested");
+
+        Selected().Should().Equal("OSCleaner.App", "OSCleaner.dll");
+    }
+
+    /// <summary>
     /// The publish directory lives UNDER the build output, so a build-output bundle that does not
     /// exclude it ships an entire second copy of the app inside itself — 86 MB of it, measured on
     /// this repository's own desktop sample after a single publish.

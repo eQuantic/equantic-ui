@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using System.Reflection;
 using eQuantic.UI.Primitives;
 using Microsoft.Extensions.Configuration;
@@ -107,6 +108,24 @@ public sealed class PhotonApplication
         // a SetState must be marshalled from. Same instance the container holds, so a component that
         // injects IUiDispatcher and the SetState that marshals are talking about one queue.
         eQuantic.UI.Primitives.UiDispatcher.Current = Native.Components.PhotonDispatcher.Shared;
+
+        // A contained failure has to SAY something. ComponentBoundary catches a Build that throws
+        // and draws a card in its place, which is right — one broken section must not take the
+        // window with it — but on Photon nothing was listening, so a section that threw wrote
+        // nowhere at all. The web has had `console.error` from the start; native had silence.
+        //
+        // What that costs: a consumer's headless render script measured the PNG and passed a broken
+        // section for days, because an error card is a perfectly good 42 KB image. Armed here, by
+        // default, so an app gets it without asking — and an app that wants it elsewhere assigns
+        // its own. The reverse is not reachable: by the time someone discovers they needed the
+        // report, the exception has already been swallowed.
+        eQuantic.UI.Primitives.ComponentBoundary.Report ??= (component, error) =>
+        {
+            var log = Services.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
+            var message = $"[eQuantic.UI] {component.GetType().Name} failed to render and was contained";
+            if (log is not null) log.CreateLogger("eQuantic.UI.Photon").LogError(error, "{Message}", message);
+            else Console.Error.WriteLine($"{message}: {error}");
+        };
 
         FindRunner().Run(this);
     }

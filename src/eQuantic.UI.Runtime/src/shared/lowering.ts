@@ -12,6 +12,7 @@
  */
 
 import { round as dotnetRound } from '../utils/dotnet-math';
+import { PINNED_MARKER } from './markers';
 import type { EventHandler, HtmlNode } from '../core/types';
 import { CanvasPointer } from './canvas-pointer';
 // Leaf helpers — see css-values for why they are not defined here.
@@ -3214,7 +3215,7 @@ function lowerPinned(node: PinnedNode, context: LoweringContext, path: string): 
   // Marked so the offset publisher can MEASURE it — the C# realizer emits the identical attribute,
   // because a bookmark's room above itself is the height of the chrome covering it, and that
   // height is not knowable before layout.
-  wrapper.attributes['data-eq-pinned'] = '1';
+  wrapper.attributes[PINNED_MARKER] = '1';
   return wrapper;
 }
 
