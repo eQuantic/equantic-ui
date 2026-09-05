@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.Models;
 using eQuantic.UI.Compiler.Services;
 
@@ -474,15 +475,42 @@ public class ComponentParser
     /// server surface (an SSR prefetch's HttpClient, EF, the request's services). The counterpart of
     /// <c>[ServerAction]</c>, which keeps the method callable FROM the browser through an RPC stub.
     /// </summary>
-    /// <summary>The class-level form: <c>[ServerOnly]</c> on a static helper or a plain class says
-    /// the whole type stays on the server, and the parser emits no module for it.</summary>
-    private static bool IsServerOnly(ClassDeclarationSyntax classDecl) =>
-        classDecl.AttributeLists.SelectMany(list => list.Attributes)
-            .Any(attribute => attribute.Name.ToString() is "ServerOnly" or "ServerOnlyAttribute");
+    /// <summary>
+    /// The class-level form: <c>[ServerOnly]</c> on a static helper or a plain class says the whole
+    /// type stays on the server, and the parser emits no module for it.
+    /// <para>
+    /// Asked of the SYMBOL, which unifies partial declarations, and not of the declaration in hand.
+    /// The syntactic form answered per file, so a partial class spread across six files was
+    /// impossible to silence: C# rejects the attribute on more than one declaration (CS0579, "Duplicate
+    /// 'ServerOnly' attribute"), and one declaration silenced only its own — a consumer measured
+    /// four of five EQ1006 warnings surviving, with no way at all to silence them short of merging
+    /// the files. A type is server-only or it is not; which file says so is not the transpiler's
+    /// business.
+    /// </para>
+    /// <para>
+    /// Falls back to the syntax when the model cannot be asked — standalone CompileSource has no
+    /// references, so the attribute resolves to an error symbol there and its NAME is all there is.
+    /// That is the repo's rule: a name heuristic is legal only where the model has nothing to say.
+    /// </para>
+    /// </summary>
+    private bool IsServerOnly(ClassDeclarationSyntax classDecl)
+    {
+        // Both spellings: with the reference resolved the symbol is `ServerOnlyAttribute`, and in a
+        // compilation without it the attribute binds to an error symbol carrying the name as
+        // WRITTEN. The second is the playground's world, and a type that says it stays on the
+        // server must be believed there too.
+        if (TryGetSemanticModel(classDecl.SyntaxTree)?.GetDeclaredSymbol(classDecl) is { } symbol
+            && symbol.GetAttributes()
+                .Any(a => a.AttributeClass?.Name is "ServerOnly" or "ServerOnlyAttribute"))
+            return true;
+
+        return classDecl.AttributeLists.SelectMany(list => list.Attributes)
+            .Any(attribute => attribute.IsNamed("ServerOnly"));
+    }
 
     private static bool IsServerOnly(MethodDeclarationSyntax method) =>
         method.AttributeLists.SelectMany(list => list.Attributes)
-            .Any(attribute => attribute.Name.ToString() is "ServerOnly" or "ServerOnlyAttribute");
+            .Any(attribute => attribute.IsNamed("ServerOnly"));
 
     private void ParseMethods(ClassDeclarationSyntax classDecl, ComponentDefinition definition)
     {
@@ -520,7 +548,7 @@ public class ComponentParser
             // emitter writes from definition.ServerActions. Transpiling the body here shipped
             // server code (DbContexts, Stopwatches, the compiler itself) into the browser.
             if (method.AttributeLists.SelectMany(a => a.Attributes)
-                .Any(a => a.Name.ToString() is "ServerAction" or "ServerActionAttribute")) continue;
+                .Any(a => a.IsNamed("ServerAction"))) continue;
 
             var methodName = method.Identifier.Text;
             if (methodName == "CreateState") continue;
