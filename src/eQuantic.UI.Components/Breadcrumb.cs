@@ -2,7 +2,7 @@ using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Components;
 
-/// <summary>One step of a <see cref="Breadcrumb"/>. A crumb with no <see cref="Href"/> is not a link
+/// <summary>One step of a <see cref="Breadcrumb"/>. A crumb with no <see cref="Crumb.Destination"/> is not a link
 /// — the last crumb is where you already are, and a link to here is a lie.</summary>
 public sealed record Crumb(string Label, string? Destination = null);
 
