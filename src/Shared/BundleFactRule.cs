@@ -31,7 +31,12 @@ internal static class BundleFactRule
     /// <summary>
     /// A URL scheme as it should be stored, or null when there is nothing to store. Same rule as a
     /// key, and for one more reason: two spellings of one scheme defeat the de-duplication that
-    /// collects them into a single <c>CFBundleURLTypes</c> array.
+    /// collects them into a single <c>CFBundleURLTypes</c> array. And one rule more, because a
+    /// scheme has a grammar a key does not: what is not a scheme NAME by RFC 3986 — a letter, then
+    /// letters, digits, "+", "-" or "." — is nothing to store either. <c>"acme://"</c> is the usual
+    /// way to write one wrong, and LaunchServices would route nothing to it. .NET already knows the
+    /// grammar, so it is asked rather than restated.
     /// </summary>
-    internal static string? Scheme(string? scheme) => Key(scheme);
+    internal static string? Scheme(string? scheme) =>
+        Key(scheme) is { } name && Uri.CheckSchemeName(name) ? name : null;
 }
