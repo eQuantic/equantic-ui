@@ -66,7 +66,13 @@ public sealed class MacWorkspace : IWorkspace
     public bool CanOpen(Uri url)
     {
         ArgumentNullException.ThrowIfNull(url);
-        if (!url.IsAbsoluteUri) return false;
+        // The same rule as OpenUrl, or the two would disagree about the same argument: a relative
+        // Uri is nobody's to route, so it is the caller's mistake and not a "no" from the system.
+        // The first version of this returned false here, which is precisely the confusion the
+        // contract forbids — written one method up, by the same hand.
+        if (!url.IsAbsoluteUri)
+            throw new ArgumentException("A URL to check must be absolute — nothing can route "
+                + $"\"{url.OriginalString}\" without a scheme.", nameof(url));
         // `URLForApplicationToOpenURL:` is the QUERY form of openURL: — nil when nothing claims the
         // scheme, and no dialog either way. The action form puts up "There is no application set to
         // open the URL…" on the person's screen, which is exactly what a check must not do.
