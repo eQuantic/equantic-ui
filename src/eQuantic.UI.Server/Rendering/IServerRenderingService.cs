@@ -1,9 +1,10 @@
+using eQuantic.UI.Web;
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 
-using eQuantic.UI.Core.Assets;
-using eQuantic.UI.Core.Metadata;
+using eQuantic.UI.Server.Assets;
+using eQuantic.UI.Server.Metadata;
 
 namespace eQuantic.UI.Server.Rendering;
 
@@ -56,7 +57,7 @@ public interface IServerRenderingService
     /// </summary>
     /// <param name="component">The component instance to render.</param>
     /// <returns>The rendered HTML string.</returns>
-    string RenderComponent(Core.IComponent component);
+    string RenderComponent(IComponent component);
 
     /// <summary>
     /// Checks if SSR is enabled for a specific page.

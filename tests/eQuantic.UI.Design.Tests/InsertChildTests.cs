@@ -23,7 +23,6 @@ public sealed class InsertChildTests : IDisposable
         // reachable with no import in any file — exactly as the SDK does for its own.
         global using static AppUI;
 
-        using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
         // The component TYPES, not only the factory surface — the SDK puts this in every file of a
         // real project, and a palette entry naming an enum (Skeleton(SkeletonShape.Line, …)) needs
@@ -71,7 +70,7 @@ public sealed class InsertChildTests : IDisposable
             {
                 typeof(eQuantic.UI.Primitives.VisualNode).Assembly,
                 typeof(eQuantic.UI.Components.UI).Assembly,
-                typeof(eQuantic.UI.Core.PageAttribute).Assembly,
+                typeof(eQuantic.UI.Primitives.PageAttribute).Assembly,
                 typeof(object).Assembly,
             }
             .Concat(AppDomain.CurrentDomain.GetAssemblies())

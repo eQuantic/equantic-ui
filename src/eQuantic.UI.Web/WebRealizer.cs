@@ -1,5 +1,5 @@
 using System.Linq;
-using eQuantic.UI.Core;
+
 using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Web;
@@ -107,7 +107,7 @@ public static class WebRealizer
             // anything; the server emits the same element so the two trees have the same shape and
             // hydration is an attribute diff rather than a replaced subtree (the same split
             // ScrollView's viewport reporting uses).
-            Style = new HtmlStyle { Display = Core.Display.Contents },
+            Style = new HtmlStyle { Display = Display.Contents },
         };
         wrapper.Children.Add(child);
         return wrapper;
@@ -225,8 +225,8 @@ public static class WebRealizer
         {
             Style = new HtmlStyle
             {
-                Display = Core.Display.Grid,
-                Position = Core.Position.Relative,
+                Display = Display.Grid,
+                Position = Position.Relative,
                 Width = Size(stack.Width),
                 Height = Size(stack.Height, vertical: true),
                 FlexShrink = Rigid(stack.Width, stack.Height),
@@ -263,7 +263,7 @@ public static class WebRealizer
                 {
                     Style = new HtmlStyle
                     {
-                        Position = Core.Position.Absolute,
+                        Position = Position.Absolute,
                         Top = positioned.Top is { } top ? TokenCss.Px(top) : spanY ? "0" : null,
                         Right = positioned.End is { } end ? TokenCss.Px(end) : spanX ? "0" : null,
                         Bottom = positioned.Bottom is { } bottom ? TokenCss.Px(bottom) : spanY ? "0" : null,
@@ -287,7 +287,7 @@ public static class WebRealizer
                     Style = new HtmlStyle
                     {
                         GridArea = "1 / 1",
-                        Display = Core.Display.Flex,
+                        Display = Display.Flex,
                         JustifyContent = AlignmentJustify(stack.Align),
                         AlignItems = AlignmentAlign(stack.Align),
                         Width = "100%",
@@ -458,7 +458,7 @@ public static class WebRealizer
 
     /// <summary>Walks the lowered panel and ids every menuitem/option row: <c>{panelId}-0</c>,
     /// <c>-1</c>… in tree order — the TS twin numbers the same way.</summary>
-    private static void NumberItemRows(Core.HtmlElement element, string panelId, ref int next)
+    private static void NumberItemRows(HtmlElement element, string panelId, ref int next)
     {
         if (element.Role is "menuitem" or "option")
         {
@@ -466,7 +466,7 @@ public static class WebRealizer
             next++;
         }
         foreach (var child in element.Children)
-            if (child is Core.HtmlElement childElement)
+            if (child is HtmlElement childElement)
                 NumberItemRows(childElement, panelId, ref next);
     }
 
@@ -615,7 +615,7 @@ public static class WebRealizer
             {
                 // FLOATING chrome (the fixed header) paints above the page and takes no layout
                 // space; plain pinned stays in flow and pins when scrolling reaches it.
-                Position = pinned.Float ? Core.Position.Fixed : Core.Position.Sticky,
+                Position = pinned.Float ? Position.Fixed : Position.Sticky,
                 Top = TokenCss.Px(pinned.Offset),
                 Left = pinned.Float ? "0" : null,
                 Right = pinned.Float ? "0" : null,
@@ -797,7 +797,7 @@ public static class WebRealizer
             {
                 // Block for the same reason every other inline svg here is: an inline one would
                 // sit on the text baseline of whatever box holds it.
-                Display = Core.Display.Block,
+                Display = Display.Block,
                 Width = canvas.Width.Kind == SizeKind.Fixed ? TokenCss.Px(width) : "100%",
                 Height = canvas.Height.Kind == SizeKind.Fixed ? TokenCss.Px(height) : "100%",
             },
@@ -871,7 +871,7 @@ public static class WebRealizer
             {
                 // Block for the same reason a glyph is: an inline svg sits on the text baseline of
                 // whatever holds it and picks up a line box it never asked for.
-                Display = Core.Display.Block,
+                Display = Display.Block,
                 Width = TokenCss.Px(drawing.Width),
                 Height = TokenCss.Px(drawing.Height),
                 Color = drawing.Tint is { } tint ? TokenCss.Value(tint) : null,
@@ -1001,7 +1001,7 @@ public static class WebRealizer
             {
                 // Out of flow and zero-sized — NOT display:none, which is what makes a paint server
                 // unusable and is the bug this replaces.
-                Position = Core.Position.Absolute,
+                Position = Position.Absolute,
                 Width = "0",
                 Height = "0",
                 Overflow = "hidden",
@@ -1079,7 +1079,7 @@ public static class WebRealizer
                 // holds it, and inherits a line box — a 9dp arrowhead inside a positioned
                 // wrapper rendered ~a descender below the line it was aimed at. Flex items
                 // ignore display, so every icon in a Row is unaffected.
-                Display = Core.Display.Block,
+                Display = Display.Block,
                 Width = TokenCss.Px(width),
                 Height = TokenCss.Px(height),
                 Color = color is { } tint ? TokenCss.Value(tint) : null,
@@ -1364,7 +1364,7 @@ public static class WebRealizer
             var row = new RealizedElement("div")
             {
                 // Transparent to layout: the row is an accessibility fact, not a box.
-                Style = new HtmlStyle { Display = Core.Display.Contents },
+                Style = new HtmlStyle { Display = Display.Contents },
                 RawAttributes = new Dictionary<string, string> { ["role"] = "row" },
             };
             if (LowerNode(navigable.Rows[index], context, null) is { } lowered)
@@ -1383,7 +1383,7 @@ public static class WebRealizer
 
     /// <summary>Walks one lowered row and ids every gridcell in tree order — the id the host's
     /// aria-activedescendant points at, built the same way by the TS twin.</summary>
-    private static void NumberGridCells(Core.HtmlElement element, string scope, int row, ref int item)
+    private static void NumberGridCells(HtmlElement element, string scope, int row, ref int item)
     {
         if (element.Role == "gridcell")
         {
@@ -1391,17 +1391,17 @@ public static class WebRealizer
             item++;
         }
         foreach (var child in element.Children)
-            if (child is Core.HtmlElement childElement)
+            if (child is HtmlElement childElement)
                 NumberGridCells(childElement, scope, row, ref item);
     }
 
     /// <summary>The header row's cells NAME their columns (design system C15: the day names).
     /// They are the row content's DIRECT children — whatever the caller laid out, one element per
     /// column — so the rule is structural rather than a guess about what a header looks like.</summary>
-    private static void MarkColumnHeaders(Core.HtmlElement rowContent)
+    private static void MarkColumnHeaders(HtmlElement rowContent)
     {
         foreach (var child in rowContent.Children)
-            if (child is Core.HtmlElement cell)
+            if (child is HtmlElement cell)
                 cell.Role = "columnheader";
     }
 
@@ -1652,7 +1652,7 @@ public static class WebRealizer
             element.Style!.ZIndex = style.Elevation.ToString(System.Globalization.CultureInfo.InvariantCulture);
             // z-index needs a positioned box, and `relative` is the one that changes nothing else.
             // A box that already positions itself — pinned chrome, an absolute anchor — keeps its own.
-            element.Style.Position ??= Core.Position.Relative;
+            element.Style.Position ??= Position.Relative;
         }
 
         // A SIMULATED state REPLACES the base declarations; otherwise the diff rides the
@@ -1973,8 +1973,8 @@ public static class WebRealizer
                 // center too — container alignment only places the block.
                 TextAlign = text.Align switch
                 {
-                    TextAlignment.Center => Core.TextAlign.Center,
-                    TextAlignment.End => Core.TextAlign.End,
+                    TextAlignment.Center => TextAlign.Center,
+                    TextAlignment.End => TextAlign.End,
                     _ => null,
                 },
                 // Authored \n is a HARD break (the designed headline's line turns) — pre-line
@@ -2054,7 +2054,7 @@ public static class WebRealizer
             // what gives overflow something to clip against. Inline-block sizes to its content and
             // would spill again. Inside a flex row — where most single-line Texts live — the two
             // are identical, because a flex item is blockified either way.
-            element.Style.Display = Core.Display.Block;
+            element.Style.Display = Display.Block;
         }
         // MULTI-LINE clamp: the paragraph occupies exactly N lines and ends in an ellipsis — what
         // keeps a grid of cards on one baseline when the copy is not the site's to control (a
@@ -2062,7 +2062,7 @@ public static class WebRealizer
         // at the line the box allows.
         else if (text.MaxLines > 1)
         {
-            element.Style!.Display = Core.Display.WebkitBox;
+            element.Style!.Display = Display.WebkitBox;
             element.Style.WebkitBoxOrient = "vertical";
             element.Style.WebkitLineClamp = text.MaxLines.ToString();
             element.Style.Overflow = "hidden";

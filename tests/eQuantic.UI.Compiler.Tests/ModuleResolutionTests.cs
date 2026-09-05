@@ -20,7 +20,6 @@ public class ModuleResolutionTests
         using System;
         using System.Collections.Generic;
         using System.Threading.Tasks;
-        using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
 
         public sealed record Money(decimal Amount);

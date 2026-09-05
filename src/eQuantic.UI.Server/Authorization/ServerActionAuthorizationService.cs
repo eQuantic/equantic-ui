@@ -8,8 +8,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 // Use aliases to avoid ambiguity with Microsoft.AspNetCore.Authorization
-using AuthorizeAttribute = eQuantic.UI.Core.Authorization.AuthorizeAttribute;
-using AllowAnonymousAttribute = eQuantic.UI.Core.Authorization.AllowAnonymousAttribute;
+using AuthorizeAttribute = eQuantic.UI.Primitives.AuthorizeAttribute;
+using AllowAnonymousAttribute = eQuantic.UI.Primitives.AllowAnonymousAttribute;
 using IAuthorizationService = Microsoft.AspNetCore.Authorization.IAuthorizationService;
 
 namespace eQuantic.UI.Server.Authorization;

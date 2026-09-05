@@ -16,7 +16,7 @@ namespace eQuantic.UI.Server.Tests;
 public class NotFoundFallbackTests
 {
     /// <summary>An app page occupying a normal route, so known-route behavior is contrasted.</summary>
-    [eQuantic.UI.Core.Page("/known")]
+    [eQuantic.UI.Primitives.Page("/known")]
     public class KnownPage { }
 
     /// <summary>
@@ -25,12 +25,12 @@ public class NotFoundFallbackTests
     /// tenant's name — and it is reached two ways: mapped at /404, and by every URL that matched
     /// nothing. Both have to hydrate from the same payload.
     /// </summary>
-    [eQuantic.UI.Core.Page("/404")]
+    [eQuantic.UI.Primitives.Page("/404")]
     public class BrandedNotFound : eQuantic.UI.Primitives.StatelessComponent, eQuantic.UI.Primitives.IServerPrefetch
     {
         private string _brand = "(not loaded)";
 
-        [eQuantic.UI.Core.ServerOnly]
+        [eQuantic.UI.Primitives.ServerOnly]
         public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
         {
             if (services.GetService(typeof(IBreakTheNotFoundPage)) != null)
@@ -51,7 +51,7 @@ public class NotFoundFallbackTests
     private sealed class BreakIt : IBreakTheNotFoundPage { }
 
     /// <summary>The app's 500 page, so the error path has somewhere to go.</summary>
-    [eQuantic.UI.Core.Page("/500")]
+    [eQuantic.UI.Primitives.Page("/500")]
     public class AppError : eQuantic.UI.Primitives.StatelessComponent
     {
         public override eQuantic.UI.Primitives.VisualNode Build(eQuantic.UI.Primitives.ComponentContext context) =>

@@ -1,4 +1,4 @@
-using eQuantic.UI.Core.Images;
+using eQuantic.UI.Images;
 
 namespace eQuantic.UI.Images.Tests;
 

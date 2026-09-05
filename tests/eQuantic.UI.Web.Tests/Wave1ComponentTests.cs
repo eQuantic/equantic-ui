@@ -1,5 +1,5 @@
 using eQuantic.UI.Components;
-using eQuantic.UI.Core;
+using eQuantic.UI.Web;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
 using Variant = eQuantic.UI.Primitives.Variant;

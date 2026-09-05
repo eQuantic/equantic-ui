@@ -154,7 +154,7 @@ public class FlexConstructorTests
     private static readonly IAppTheme Theme = PhotonTheme.Instance;
 
     private static string Render(VisualNode node) =>
-        Core.Rendering.HtmlRenderer.RenderNode(WebRealizer.Lower(node, Theme).Render());
+        HtmlRenderer.RenderNode(WebRealizer.Lower(node, Theme).Render());
 
     [Fact]
     public void ARowStatesItsAlignment_WithoutAnObjectInitializer()

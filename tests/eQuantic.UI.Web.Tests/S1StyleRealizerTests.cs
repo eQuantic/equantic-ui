@@ -55,8 +55,8 @@ public class S1StyleRealizerTests
         row.Add(new Primitives.Box(new BoxStyle { Width = 10, Height = 10 }) { AlignSelf = CrossAlign.Start });
 
         var element = WebRealizer.Lower(row, Theme);
-        var first = (Core.HtmlElement)element.Children[0];
-        var second = (Core.HtmlElement)element.Children[1];
+        var first = (HtmlElement)element.Children[0];
+        var second = (HtmlElement)element.Children[1];
 
         first.Style!.ToCssString().Should().NotContain("align-self");
         second.Style!.ToCssString().Should().Contain("align-self: flex-start");

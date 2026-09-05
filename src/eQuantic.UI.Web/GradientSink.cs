@@ -55,5 +55,5 @@ public sealed class GradientSink
     /// out of the accessibility tree without taking it out of the render tree.
     /// </para>
     /// </summary>
-    public Core.HtmlElement Container() => WebRealizer.GradientContainer(_runs);
+    public HtmlElement Container() => WebRealizer.GradientContainer(_runs);
 }

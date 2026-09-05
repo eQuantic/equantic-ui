@@ -1,4 +1,4 @@
-using eQuantic.UI.Core;
+using eQuantic.UI.Web;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
 using SharedButton = eQuantic.UI.Components.Button;

@@ -20,7 +20,6 @@ public class HydrationSpecEmissionTests
     private const string Page = """
         using System.Collections.Generic;
         using System.Threading.Tasks;
-        using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
 
         public sealed record Money(decimal Amount, string Currency);
@@ -129,7 +128,6 @@ public class ForeignRecordHydrationTests
     private const string Page = """
         using System.Threading.Tasks;
         using Acme.Domain;
-        using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
 
         [Page("/home")]

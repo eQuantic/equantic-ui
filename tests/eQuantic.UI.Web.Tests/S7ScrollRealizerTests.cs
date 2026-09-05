@@ -27,7 +27,7 @@ public class S7ScrollRealizerTests
         stack.Add(new Positioned(new Primitives.Box(new BoxStyle { Width = 10, Height = 10 }), top: 0) { Layer = 3 });
 
         var element = WebRealizer.Lower(stack, PhotonTheme.Instance);
-        ((Core.HtmlElement)element.Children[1]).Style!.ToCssString().Should().Contain("z-index: 3");
+        ((HtmlElement)element.Children[1]).Style!.ToCssString().Should().Contain("z-index: 3");
     }
 
     [Fact]

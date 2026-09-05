@@ -19,13 +19,13 @@ namespace eQuantic.UI.Web;
 /// </summary>
 internal sealed class SvgCanvasPainter(float width, float height) : ICanvasPainter
 {
-    private readonly List<Core.IComponent> _shapes = [];
+    private readonly List<IComponent> _shapes = [];
 
     public float Width => width;
     public float Height => height;
 
     /// <summary>What was drawn, in call order — paint order, exactly as on Photon.</summary>
-    public IReadOnlyList<Core.IComponent> Shapes => _shapes;
+    public IReadOnlyList<IComponent> Shapes => _shapes;
 
     // TokenCss.Number, not a format of this file's own: every other number the web target writes
     // goes through it, and a shape rounded to three decimals inside a container rounded to four is
@@ -39,7 +39,7 @@ internal sealed class SvgCanvasPainter(float width, float height) : ICanvasPaint
     /// </summary>
     private static string Ink(ColorToken color) => TokenCss.Value(color);
 
-    private static Core.IComponent Shape(string tag, Dictionary<string, string> attributes) =>
+    private static IComponent Shape(string tag, Dictionary<string, string> attributes) =>
         new RealizedElement(tag) { RawAttributes = attributes };
 
     public void FillRect(float x, float y, float width, float height, ColorToken color, float cornerRadius = 0)

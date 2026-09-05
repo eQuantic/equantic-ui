@@ -13,7 +13,7 @@ public class AnchoredRealizerTests
 {
     private static readonly IAppTheme Theme = PhotonTheme.Instance;
 
-    private static Core.HtmlElement Lower(Anchored anchored) =>
+    private static HtmlElement Lower(Anchored anchored) =>
         WebRealizer.Lower(anchored, Theme);
 
     [Fact]
@@ -35,7 +35,7 @@ public class AnchoredRealizerTests
         });
 
         element.Children.Should().HaveCount(2, "no OnDismiss → no scrim");
-        var panel = (Core.HtmlElement)element.Children[^1];
+        var panel = (HtmlElement)element.Children[^1];
         panel.ClassName.Should().StartWith("eq-anchor-panel eq-anchor-b-end");
         panel.Style!.MarginTop.Should().Be("4px", "the default gap rides the placement axis");
     }
@@ -50,7 +50,7 @@ public class AnchoredRealizerTests
             Gap = 8,
         });
 
-        var panel = (Core.HtmlElement)element.Children[^1];
+        var panel = (HtmlElement)element.Children[^1];
         panel.ClassName.Should().StartWith("eq-anchor-panel eq-anchor-t-start");
         panel.Style!.MarginBottom.Should().Be("8px");
         panel.Style.MarginTop.Should().BeNull();
@@ -67,7 +67,7 @@ public class AnchoredRealizerTests
         });
 
         element.Children.Should().HaveCount(3);
-        var scrim = (Core.HtmlElement)element.Children[1];
+        var scrim = (HtmlElement)element.Children[1];
         scrim.Render().Tag.Should().Be("button", "the scrim is a REAL pressable — ordinary event pipeline");
         scrim.ClassName.Should().EndWith("eq-anchor-scrim");
         scrim.ClassName.Should().StartWith("eq-pressable");
@@ -85,7 +85,7 @@ public class AnchoredRealizerTests
             MatchAnchorWidth = true,
         });
 
-        var panel = (Core.HtmlElement)element.Children[^1];
+        var panel = (HtmlElement)element.Children[^1];
         panel.ClassName.Should().Be("eq-anchor-panel eq-anchor-b-start eq-anchor-match");
     }
 
@@ -100,7 +100,7 @@ public class AnchoredRealizerTests
 
         element.ClassName.Should().Be("eq-anchorhost eq-hoverreveal");
         element.Children.Should().HaveCount(2, "anchor + panel; CSS owns visibility — no scrim ever");
-        var panel = (Core.HtmlElement)element.Children[^1];
+        var panel = (HtmlElement)element.Children[^1];
         panel.ClassName.Should().StartWith("eq-anchor-panel eq-anchor-t-center");
         // HOVER BRIDGE: hover-open panels carry the gap as PADDING (part of the hoverable area) —
         // a margin gap drops the host's :hover for a few pixels and the panel vanishes en route.
@@ -117,7 +117,7 @@ public class AnchoredRealizerTests
         });
 
         element.Children.Should().HaveCount(2, "motion keeps the panel MOUNTED across open/close");
-        var panel = (Core.HtmlElement)element.Children[^1];
+        var panel = (HtmlElement)element.Children[^1];
         panel.Style!.Opacity.Should().Be("0");
         panel.Style.Visibility.Should().Be("hidden", "a closed panel leaves hit-testing and the Tab order");
         panel.Style.PointerEvents.Should().Be("none");
@@ -136,7 +136,7 @@ public class AnchoredRealizerTests
             Motion = new TransitionSpec(StyleChannels.Opacity, 200),
         });
 
-        var panel = (Core.HtmlElement)element.Children[^1];
+        var panel = (HtmlElement)element.Children[^1];
         panel.Style!.Opacity.Should().BeNull();
         panel.Style.Visibility.Should().BeNull();
         panel.Style.Transform.Should().BeNull();
@@ -154,10 +154,10 @@ public class AnchoredRealizerTests
         });
 
         element.Children.Should().HaveCount(3, "anchor + scrim + panel stay mounted");
-        var anchor = (Core.HtmlElement)element.Children[0];
+        var anchor = (HtmlElement)element.Children[0];
         anchor.ClassName.Should().Contain("eq-anchor-above",
             "the scrim is still fading out after close — the anchor must not dip behind it");
-        var scrim = (Core.HtmlElement)element.Children[1];
+        var scrim = (HtmlElement)element.Children[1];
         scrim.Style!.Opacity.Should().Be("0");
         scrim.Style.Visibility.Should().Be("hidden");
         scrim.Style.Transition.Should()
@@ -183,14 +183,14 @@ public class AnchoredRealizerTests
 
         var element = Lower(tooltip);
 
-        var anchor = (Core.HtmlElement)element.Children[0];
-        var panel = (Core.HtmlElement)element.Children[^1];
+        var anchor = (HtmlElement)element.Children[0];
+        var panel = (HtmlElement)element.Children[^1];
         panel.Role.Should().Be("tooltip");
         panel.Id.Should().NotBeNullOrEmpty().And.StartWith("eq-tip-");
         anchor.AriaDescribedBy.Should().Be(panel.Id, "the anchor names the panel that describes it");
 
         // Same text, same id — the determinism hydration depends on.
-        var again = (Core.HtmlElement)Lower(tooltip).Children[^1];
+        var again = (HtmlElement)Lower(tooltip).Children[^1];
         again.Id.Should().Be(panel.Id);
     }
 
@@ -204,8 +204,8 @@ public class AnchoredRealizerTests
             OpenOnHover = true,
         });
 
-        var panel = (Core.HtmlElement)element.Children[^1];
+        var panel = (HtmlElement)element.Children[^1];
         panel.Role.Should().BeNull();
-        ((Core.HtmlElement)element.Children[0]).AriaDescribedBy.Should().BeNull();
+        ((HtmlElement)element.Children[0]).AriaDescribedBy.Should().BeNull();
     }
 }

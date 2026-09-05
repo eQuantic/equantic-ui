@@ -14,7 +14,7 @@ public class S8ShortcutRealizerTests
     private static readonly IAppTheme Theme = PhotonTheme.Instance;
 
     /// <summary>The RENDERED node — the public surface (RealizedElement is internal).</summary>
-    private static Core.HtmlNode Lower(VisualNode node) => WebRealizer.Lower(node, Theme).Render();
+    private static HtmlNode Lower(VisualNode node) => WebRealizer.Lower(node, Theme).Render();
 
     private static VisualNode Marker() => new Primitives.Box(new BoxStyle { Width = 10, Height = 10 });
 
@@ -60,8 +60,8 @@ public class S8ShortcutRealizerTests
         var element = WebRealizer.Lower(
             new AdaptiveNode(Marker(), null, Marker()) { ExpandedFrom = 1024 }, Theme, 1f, sink);
 
-        ((Core.HtmlElement)element.Children[0]).ClassName.Should().Be("eq-vc1024");
-        ((Core.HtmlElement)element.Children[1]).ClassName.Should().Be("eq-vx1024");
+        ((HtmlElement)element.Children[0]).ClassName.Should().Be("eq-vc1024");
+        ((HtmlElement)element.Children[1]).ClassName.Should().Be("eq-vx1024");
         sink.Css.Should().Contain("@media (min-width: 1024px){.eq-vx1024{display:contents}}");
         AdaptiveGates.Css("eq-vc1024").Should()
             .Be(".eq-vc1024{display:contents}@media (min-width: 1024px){.eq-vc1024{display:none}}");

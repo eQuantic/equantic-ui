@@ -28,7 +28,7 @@ namespace eQuantic.UI.Server.Tests;
 public class ServedDocumentContractTests
 {
     /// <summary>Floating chrome, pinned chrome, and a `long` that has to cross the typed boundary.</summary>
-    [eQuantic.UI.Core.Page("/served-contract")]
+    [eQuantic.UI.Primitives.Page("/served-contract")]
     public sealed class ContractPage : StatelessComponent, IServerPrefetch
     {
         public long Downloads;

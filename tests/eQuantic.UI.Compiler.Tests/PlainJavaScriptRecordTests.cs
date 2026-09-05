@@ -17,7 +17,6 @@ namespace eQuantic.UI.Compiler.Tests;
 public class PlainJavaScriptRecordTests
 {
     private const string Source = """
-        using eQuantic.UI.Core;
         using eQuantic.UI.Primitives;
 
         public sealed record Payment(string Customer, decimal Amount, string Status);
@@ -54,7 +53,6 @@ public class PlainJavaScriptRecordTests
     {
         // How a visitor actually writes it: the record nested in the page that uses it.
         var result = new ComponentCompiler { TypeAnnotations = false }.CompileSource("""
-            using eQuantic.UI.Core;
             using eQuantic.UI.Primitives;
 
             [Page("/")]

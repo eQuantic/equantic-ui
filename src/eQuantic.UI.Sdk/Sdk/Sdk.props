@@ -41,7 +41,7 @@
     <PropertyGroup>
         <_DevRootDir>$(MSBuildThisFileDirectory)../../</_DevRootDir>
         <IsEQuanticDevMode
-            Condition="Exists('$(_DevRootDir)eQuantic.UI.Core/eQuantic.UI.Core.csproj')">true</IsEQuanticDevMode>
+            Condition="Exists('$(_DevRootDir)eQuantic.UI.Primitives/eQuantic.UI.Primitives.csproj')">true</IsEQuanticDevMode>
         <!-- Machine architecture: on macOS we pick the native arm64 bun on Apple Silicon, else the
              x64-baseline build. (OSArchitecture reflects the real machine, even under Rosetta.) -->
         <_EqOsArch>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)</_EqOsArch>
@@ -53,7 +53,7 @@
          those properties otherwise. Without it the consumer (NuGet) build can't locate the standard
          components, runtime.js or the embedded bun, and the targets fail. -->
     <ItemGroup Condition="'$(IsEQuanticDevMode)' != 'true'">
-        <PackageReference Include="eQuantic.UI.Core" Version="$(EQuanticUIVersion)" />
+        <PackageReference Include="eQuantic.UI.Primitives" Version="$(EQuanticUIVersion)" />
         <PackageReference Include="eQuantic.UI.Components" Version="$(EQuanticUIVersion)" GeneratePathProperty="true" />
         <PackageReference Include="eQuantic.UI.Web" Version="$(EQuanticUIVersion)" />
         <PackageReference Include="eQuantic.UI.Server" Version="$(EQuanticUIVersion)" />
@@ -77,7 +77,7 @@
 
     <!-- Project references for Dev Mode -->
     <ItemGroup Condition="'$(IsEQuanticDevMode)' == 'true'">
-        <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Core\eQuantic.UI.Core.csproj" />
+        <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
         <ProjectReference
             Include="$(_DevRootDir)eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Web\eQuantic.UI.Web.csproj" />

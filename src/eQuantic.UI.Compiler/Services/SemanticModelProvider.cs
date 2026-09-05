@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using System.IO;
 using System.Reflection;
 
 namespace eQuantic.UI.Compiler.Services;
@@ -53,17 +54,37 @@ public class SemanticModelProvider
         _projectCompilation?.SyntaxTrees.FirstOrDefault()?.Options as CSharpParseOptions
             ?? ParseDefaults.Options;
 
+    /// <summary>
+    /// The BCL, and — when the host happens to have them loaded — the framework assemblies a
+    /// snippet might mention.
+    /// <para>
+    /// This used to <c>Assembly.Load</c> a framework assembly by name in the array initializer,
+    /// OUTSIDE the try below. That worked only because the compiler referenced it, so the file sat
+    /// beside eqc; the day it did not, the load threw where nothing caught it and eqc aborted with
+    /// no message a developer could act on. A name-based load is a guess, and a guess must not be
+    /// able to kill the process.
+    /// </para>
+    /// <para>
+    /// The real reference set arrives from OUTSIDE, as <c>--refs</c> written by the SDK from
+    /// <c>@(ReferencePathWithRefAssemblies)</c> — the compiler READS user code, it does not build
+    /// against it. What remains here serves standalone <c>CompileSource</c> (the playground's mode),
+    /// where the source text is the user's whole universe.
+    /// </para>
+    /// </summary>
     private void LoadStandardReferences()
     {
-        var assemblies = new[]
+        var assemblies = new List<Assembly>
         {
-            typeof(object).Assembly, // System.Private.CoreLib
-            typeof(Console).Assembly, // System.Console
+            typeof(object).Assembly,     // System.Private.CoreLib
+            typeof(Console).Assembly,    // System.Console
             typeof(Enumerable).Assembly, // System.Linq
-            typeof(List<>).Assembly, // System.Collections
-            Assembly.Load("System.Runtime"),
-            Assembly.Load("eQuantic.UI.Core") // eQuantic Core
+            typeof(List<>).Assembly,     // System.Collections
         };
+
+        foreach (var name in new[] { "System.Runtime", "eQuantic.UI.Web" })
+        {
+            if (TryLoad(name) is { } loaded) assemblies.Add(loaded);
+        }
 
         foreach (var assembly in assemblies)
         {
@@ -79,6 +100,20 @@ public class SemanticModelProvider
                 // Ignore assemblies that can't be loaded
             }
         }
+    }
+
+    /// <summary>The assembly under that name, or null when this host does not have it. Never throws:
+    /// an optional reference that is absent is a smaller compilation, not a dead process.</summary>
+    private static Assembly? TryLoad(string name)
+    {
+        try { return Assembly.Load(name); }
+        catch (FileNotFoundException) { return null; }
+        catch (FileLoadException) { return null; }
+        catch (BadImageFormatException) { return null; }
+        // A malformed or empty name is ArgumentException (ArgumentNullException derives from it).
+        // The names here are literals, so this is belt-and-braces — but the summary promises
+        // "never throws", and a promise the code does not keep is worse than no promise.
+        catch (ArgumentException) { return null; }
     }
 
     public SemanticModel GetSemanticModel(string sourceCode)

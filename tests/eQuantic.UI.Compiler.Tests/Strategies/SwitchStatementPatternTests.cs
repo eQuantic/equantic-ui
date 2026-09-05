@@ -19,7 +19,7 @@ public class SwitchStatementPatternTests
     public SwitchStatementPatternTests(ITestOutputHelper o) => _out = o;
 
     private const string Header =
-        "using System; using eQuantic.UI.Core; using eQuantic.UI.Web.Components; namespace App; ";
+        "using System; using eQuantic.UI.Primitives; using eQuantic.UI.Web.Components; namespace App; ";
 
     private string Build(string method) =>
         new ComponentCompiler().CompileSource(

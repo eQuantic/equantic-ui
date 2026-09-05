@@ -116,7 +116,7 @@ public class CompileTimeEvaluator
         return typeSymbol.GetAttributes()
             .Any(attr =>
                 attr.AttributeClass?.Name == "CompileTimeEvaluateAttribute" &&
-                attr.AttributeClass.ContainingNamespace.ToDisplayString() == "eQuantic.UI.Core.Styling");
+                attr.AttributeClass.ContainingNamespace.ToDisplayString() == "eQuantic.UI.Web.Styling");
     }
 
     /// <summary>

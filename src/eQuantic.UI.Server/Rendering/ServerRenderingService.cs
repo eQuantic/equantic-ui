@@ -1,13 +1,13 @@
+using eQuantic.UI.Primitives;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using eQuantic.UI.Core;
-using eQuantic.UI.Core.Assets;
-using eQuantic.UI.Core.Metadata;
-using eQuantic.UI.Core.Rendering;
+using eQuantic.UI.Web;
+using eQuantic.UI.Server.Assets;
+using eQuantic.UI.Server.Metadata;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

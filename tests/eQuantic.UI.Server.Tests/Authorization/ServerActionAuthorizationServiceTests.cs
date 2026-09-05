@@ -1,6 +1,6 @@
 using System.Reflection;
 using System.Security.Claims;
-using eQuantic.UI.Core;
+using eQuantic.UI.Web;
 using eQuantic.UI.Primitives;
 using eQuantic.UI.Server.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -9,8 +9,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 // Use our custom attributes explicitly to avoid ambiguity
-using AuthorizeAttribute = eQuantic.UI.Core.Authorization.AuthorizeAttribute;
-using AllowAnonymousAttribute = eQuantic.UI.Core.Authorization.AllowAnonymousAttribute;
+using AuthorizeAttribute = eQuantic.UI.Primitives.AuthorizeAttribute;
+using AllowAnonymousAttribute = eQuantic.UI.Primitives.AllowAnonymousAttribute;
 using IAuthorizationService = Microsoft.AspNetCore.Authorization.IAuthorizationService;
 using AuthorizationResult = Microsoft.AspNetCore.Authorization.AuthorizationResult;
 

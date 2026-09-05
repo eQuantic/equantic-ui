@@ -31,7 +31,7 @@ public class ServerOnlyAcrossPartialsTests
             // The attribute is legal on exactly ONE of the declarations. This is not a style
             // choice the author could make differently — the compiler refuses the second.
             File.WriteAllText(Path.Combine(dir.FullName, "Seed.Books.cs"), """
-                using eQuantic.UI.Core;
+                using eQuantic.UI.Primitives;
                 namespace App;
                 [ServerOnly]
                 public sealed partial class Seed { public string Books() => "books"; }

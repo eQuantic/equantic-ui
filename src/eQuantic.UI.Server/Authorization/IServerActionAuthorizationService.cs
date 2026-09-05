@@ -8,8 +8,8 @@ namespace eQuantic.UI.Server.Authorization;
 /// </summary>
 /// <remarks>
 /// This service integrates with ASP.NET Core's authorization infrastructure
-/// to validate access to Server Actions based on <see cref="Core.Authorization.AuthorizeAttribute"/>
-/// and <see cref="Core.Authorization.AllowAnonymousAttribute"/> decorations.
+/// to validate access to Server Actions based on <see cref="eQuantic.UI.Primitives.AuthorizeAttribute"/>
+/// and <see cref="eQuantic.UI.Primitives.AllowAnonymousAttribute"/> decorations.
 /// </remarks>
 public interface IServerActionAuthorizationService
 {

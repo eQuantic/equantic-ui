@@ -15,7 +15,7 @@ public class IteratorTests
 {
     private const string Header =
         "using System; using System.Collections.Generic; using System.Linq; " +
-        "using eQuantic.UI.Core; using eQuantic.UI.Components; namespace App; ";
+        "using eQuantic.UI.Primitives; using eQuantic.UI.Components; namespace App; ";
 
     private static CompilationResult Compile(string members) =>
         new ComponentCompiler().CompileSource(

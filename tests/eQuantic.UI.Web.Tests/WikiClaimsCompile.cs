@@ -1,4 +1,4 @@
-using eQuantic.UI.Core;
+using eQuantic.UI.Web;
 using eQuantic.UI.Primitives;
 using Microsoft.Extensions.DependencyInjection;
 using static eQuantic.UI.Components.UI;

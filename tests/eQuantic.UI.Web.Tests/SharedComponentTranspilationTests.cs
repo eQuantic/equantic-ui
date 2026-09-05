@@ -291,7 +291,7 @@ public class SharedComponentTranspilationTests
 
     /// <summary>A CORE page composing shared components through the adapter — the unification bridge.</summary>
     private const string BridgePageSource = """
-        using eQuantic.UI.Core;
+        using eQuantic.UI.Primitives;
         using eQuantic.UI.Components;
         using eQuantic.UI.Web;
 
@@ -370,7 +370,7 @@ public class SharedComponentTranspilationTests
         // The shared-library Button (the ONLY Button since the legacy web set was excised) is
         // runtime-provided: the import routes to @equantic/runtime, never to a per-app module.
         var sharedPage = TranspilePage("""
-            using eQuantic.UI.Core;
+            using eQuantic.UI.Primitives;
             using eQuantic.UI.Components;
             using eQuantic.UI.Web;
 

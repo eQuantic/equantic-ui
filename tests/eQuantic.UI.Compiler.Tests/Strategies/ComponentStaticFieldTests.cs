@@ -22,7 +22,7 @@ public class ComponentStaticFieldTests
     {
         var src = @"
 using System.Collections.Generic;
-using eQuantic.UI.Core;
+using eQuantic.UI.Web;
 using eQuantic.UI.Web.Components;
 namespace App;
 public class Widget : StatelessComponent {

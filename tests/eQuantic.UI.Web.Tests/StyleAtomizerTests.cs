@@ -1,6 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Text;
-using eQuantic.UI.Core;
+using eQuantic.UI.Web;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
 

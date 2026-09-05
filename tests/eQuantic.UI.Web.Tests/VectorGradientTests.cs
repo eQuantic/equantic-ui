@@ -1,7 +1,6 @@
 using System.Runtime.CompilerServices;
-using eQuantic.UI.Core;
-using eQuantic.UI.Primitives;
 using eQuantic.UI.Web;
+using eQuantic.UI.Primitives;
 using FluentAssertions;
 
 namespace eQuantic.UI.Web.Tests;
