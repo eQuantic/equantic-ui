@@ -95,7 +95,9 @@ export interface DraggableNode extends VisualNodeValue {
 export interface SafeAreaNode {
   nodeKind: 'safeArea';
   child: VisualNodeValue;
-  /** SafeEdges flags — Top 1, Bottom 2, Start 4, End 8. */
+  /** SafeEdges flags — Top 1, Bottom 2, Start 4, End 8, WindowControls 16 (the corner a desktop
+   *  window's controls float in under a unified chrome; the browser owns its own chrome, so the
+   *  web reads it as zero). */
   edges: number;
   extra?: EdgeInsetsValue | null;
 }

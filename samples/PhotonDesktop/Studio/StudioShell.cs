@@ -307,9 +307,10 @@ public sealed class StudioShell : StatefulComponent
             Height = SizeValue.Fill,
             Cross = CrossAlign.Center,
         };
-        // The corner the SYSTEM owns: close/minimize/zoom float here (the window has no bar of
-        // its own), and the navigation arrows sit immediately to their right, per the handoff.
-        row.Add(Gap(74));
+        // The corner the SYSTEM owns — close/minimize/zoom float in it, the window having no bar
+        // of its own — is kept clear by the SafeArea below, on whichever side the platform put the
+        // controls: the start on a Mac, the end on Windows. The navigation arrows sit immediately
+        // beside them, per the handoff, and this file never learns which corner that was.
         row.Add(new IconButton(new Icon(Icons.ChevronLeft), "Back")
         {
             Size = SizeVariant.Small,
@@ -352,7 +353,7 @@ public sealed class StudioShell : StatefulComponent
             Background = theme.Surface,
             BorderWidth = 1,
             BorderColor = theme.Border,
-        }, row);
+        }, new SafeArea(row, SafeEdges.WindowControls));
     }
 
     /// <summary>Breadcrumb + the two per-page switches, exactly the handoff's second bar.</summary>

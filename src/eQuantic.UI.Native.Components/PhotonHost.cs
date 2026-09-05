@@ -148,6 +148,14 @@ public sealed class PhotonHost
     /// </summary>
     public EdgeInsets SafeAreaInsets { get; set; }
 
+    /// <summary>
+    /// The corner the system's WINDOW CONTROLS float in under <see cref="WindowChrome.Unified"/> —
+    /// Start on a Mac, End on Windows, Top the strip's height — for the one <see cref="SafeArea"/>
+    /// that asks for <see cref="SafeEdges.WindowControls"/>: the toolbar that is the title bar. Zero
+    /// on a phone, under a standard title bar, and anywhere else the window has a bar of its own.
+    /// </summary>
+    public EdgeInsets WindowControlsInsets { get; set; }
+
     /// <summary>The NAVIGATION seam (write-once Link): a tap no pressable claims, landing on a link
     /// region, reports the destination here — the platform shell maps it to a page (the native router's
     /// future home). Null = links are inert (visuals only).
@@ -211,7 +219,8 @@ public sealed class PhotonHost
             _focusVisible ? _focusedPath : null, _textPath, CaretIndex, CaretVisible,
             Selection.Start, Selection.End, density: Density,
             scrollOffset: path => _scrolls.Get(path), markedText: _marked, pathCache: _pathCache, hoveredPaths: _hoverPaths,
-            nodePool: RecycleFrames ? _nodePool : null, inViewStore: _inView);
+            nodePool: RecycleFrames ? _nodePool : null, inViewStore: _inView,
+            windowControlsInsets: WindowControlsInsets);
         if (RenderScale != 1f) builder.Pop();
         // The frame we just replaced is OURS to discard — nobody else holds production frames.
         // (Opt-in: anything that retains RealizeResults — tests, tooling — leaves this off and
