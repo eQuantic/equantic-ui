@@ -72,6 +72,13 @@ public readonly record struct VectorTransform(float A, float B, float C, float D
 /// elevate exactly, and arcs convert through the SVG F.6.5 endpoint→center parameterization split
 /// into ≤90° cubic segments. Numbers follow SVG lexing (".5.5", "1-2", compact arc flags).
 /// <para>
+/// A COMMA IS A SEPARATOR, NEVER A DECIMAL POINT. That is SVG's grammar, so <c>122,5</c> parses as
+/// two numbers — 122 and 5 — with no error anywhere. The trap is on the C# side: a path assembled
+/// with <c>float.ToString()</c> under a culture that writes decimals with a comma (pt, de, fr…)
+/// produces exactly that, and only on machines set to that culture. Format with
+/// <see cref="System.Globalization.CultureInfo.InvariantCulture"/>, always.
+/// </para>
+/// <para>
 /// Malformed data returns what parsed so far: a drawing renders best-effort and never throws at
 /// draw time, because a figure with one bad subpath is still worth showing.
 /// </para>
