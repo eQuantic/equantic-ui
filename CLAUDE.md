@@ -236,6 +236,11 @@ dotnet msbuild -t:ClearEQuanticCache
 
 ```
 src/
+├── eQuantic.UI.Native.*/    # PHOTON, the native track: Engine (+ .Metal/.Vulkan/.Reference backends),
+│                            # Framework, Components, Hosting, Build (eqicon), Generators, and the shells —
+│                            # Shell.Apple (shared Apple code), Shell.MacOS, Shell.iOS, Shell.Android,
+│                            # Shell.Windows (Win32 + DirectWrite/Direct2D/WIC; Vulkan or the Reference backend)
+├── eQuantic.UI.Sdk.Native/  # MSBuild SDK for Photon apps: picks the shell per TFM and, on desktop, per host OS
 ├── eQuantic.UI.Web/          # WEB REALIZER + the DOM escape hatch (HtmlElement, HtmlNode)
 ├── eQuantic.UI.Primitives/  # Abstract visual vocabulary + design tokens (zero deps)
 ├── eQuantic.UI.Components/  # WRITE-ONCE component library (authored against Primitives; realized per target)
