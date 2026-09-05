@@ -23,6 +23,18 @@ public class DrawingTests
     private static readonly LayoutContext Ctx =
         new(PhotonTheme.Instance, ApproximateTextMeasurer.Instance);
 
+    /// <summary>
+    /// The platform's REAL rasterizer — CoreGraphics on a Mac, Direct2D on Windows — so the same
+    /// assertions hold the two twins to the same answer; a host with neither skips rather than
+    /// failing on a framework it does not have.
+    /// </summary>
+    private static IIconRasterizer PlatformRasterizer()
+    {
+        if (OperatingSystem.IsMacOS()) return new CoreGraphicsIconRasterizer();
+        Skip.IfNot(OperatingSystem.IsWindows(), "Needs a platform icon rasterizer (CoreGraphics or Direct2D).");
+        return new eQuantic.UI.Native.Shell.Windows.Graphics.Direct2DIconRasterizer();
+    }
+
     /// <summary>A mark with two shapes in two colours, and one that asks to be tinted.</summary>
     private static VectorDrawing Mark() => SvgDocument.Parse("""
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40">
@@ -61,12 +73,12 @@ public class DrawingTests
     /// order, each carrying the colour the file chose. A single texture would have meant one tint
     /// for the whole mark, which is exactly what a drawing is not.
     /// </summary>
-    [Fact]
+    [SkippableFact]
     public void EveryShapeIsItsOwnTintedTexture()
     {
         var host = new PhotonHost(new Drawing(Mark(), 240), PhotonTheme.Instance, ThemeMode.Light, 400, 300)
         {
-            IconRasterizer = new CoreGraphicsIconRasterizer(),
+            IconRasterizer = PlatformRasterizer(),
         };
         var builder = new DisplayListBuilder();
         host.RenderFrame(builder);
@@ -81,14 +93,14 @@ public class DrawingTests
 
     /// <summary>The tint answers `currentColor` and NOTHING else — a full-colour mark ignores it,
     /// which is what lets one node serve both a monochrome logo and a painted one.</summary>
-    [Fact]
+    [SkippableFact]
     public void TheTintAnswersOnlyTheShapesThatAskedForIt()
     {
         var pink = new ColorToken(Color.FromRgb(255, 0, 128));
         var host = new PhotonHost(new Drawing(Mark(), 240) { Tint = pink },
             PhotonTheme.Instance, ThemeMode.Light, 400, 300)
         {
-            IconRasterizer = new CoreGraphicsIconRasterizer(),
+            IconRasterizer = PlatformRasterizer(),
         };
         var builder = new DisplayListBuilder();
         host.RenderFrame(builder);
@@ -103,14 +115,14 @@ public class DrawingTests
     /// in the left third of a 3:1 viewBox lands in the left third of the box — the check that
     /// catches a viewBox ignored, which is the failure that looks like "the logo is off".
     /// </summary>
-    [Fact]
+    [SkippableFact]
     public void AShapeLandsWhereItsViewBoxPutsIt()
     {
         var drawing = Mark();
         var circle = drawing.Shapes[1];
         var glyph = new IconGlyph("", circle.Path, IconGlyphStyle.Fill, drawing.ViewBox);
 
-        var raster = new CoreGraphicsIconRasterizer().Rasterize(glyph, 240, 80, 1f)!;
+        var raster = PlatformRasterizer().Rasterize(glyph, 240, 80, 1f)!;
 
         raster.Width.Should().Be(240);
         raster.Height.Should().Be(80);
@@ -144,9 +156,14 @@ public class DrawingTests
     /// person sees — the plate running dark to bright across the mark, and the bead lit from its
     /// own centre. Both come out of the mask the rasterizer already made, filled by the engine.
     /// </summary>
-    [Fact]
+    [SkippableFact]
     public void AGradientMarkPaints()
     {
+        // The golden was rasterized by CoreGraphics. Direct2D fills the same paths and paints the
+        // same gradient — the structural tests above hold it to that — but it anti-aliases its edges
+        // differently, and a pixel-for-pixel golden is the one assertion that has to name its
+        // rasterizer. A Direct2D golden is a decision for a Windows desk with a GPU, not a skip.
+        Skip.IfNot(OperatingSystem.IsMacOS(), "The drawing-gradient golden is CoreGraphics output.");
         var artwork = SvgDocument.Parse(
             "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 240 80\">"
             + "<defs>"
@@ -163,7 +180,7 @@ public class DrawingTests
 
         var host = new PhotonHost(new Drawing(artwork, 240), PhotonTheme.Instance, ThemeMode.Light, 260, 100)
         {
-            IconRasterizer = new CoreGraphicsIconRasterizer(),
+            IconRasterizer = PlatformRasterizer(),
         };
         var builder = new DisplayListBuilder();
         host.RenderFrame(builder);
