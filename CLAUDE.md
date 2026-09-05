@@ -512,8 +512,7 @@ public class BlogPostPage : StatelessComponent, IHandleMetadata
 
 ## Version Management
 
-Global version is defined in `Directory.Build.props` — ONE line, which is the whole bump. Debug
-builds auto-pack to `artifacts/packages/` for local testing.
+Global version is defined in `Directory.Build.props` — ONE line, which is the whole bump.
 
 A release is: commit the bump as `🔧 chore: <version>`, then tag `v<version>` and push the tag —
 the tag is what triggers publication to nuget.org. Never bump on your own initiative: choosing to

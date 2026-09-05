@@ -76,5 +76,5 @@ artifacts/packages/*
 
 # Local NuGet feed for end-to-end consumer validation (the recipe: wiki BuildFlow,
 # "Consuming an unreleased SDK from local packages"):
-# packed on demand at 1.0.0-dev, never committed.
+# packed on demand, never committed.
 artifacts/local-feed/
