@@ -1,6 +1,5 @@
 using System.Text.RegularExpressions;
 using eQuantic.UI.Primitives;
-using eQuantic.UI.Core;
 using eQuantic.UI.Web;
 using FluentAssertions;
 using Xunit;
