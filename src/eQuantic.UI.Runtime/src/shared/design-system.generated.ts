@@ -7,6 +7,7 @@
 import { ColorToken, TypeStyle, VariantColors, codeTokenColor } from './value-types';
 import type { AppTheme, ShadowSpec } from './value-types';
 import type { ColorValue } from './nodes';
+import { DataPalette, DivergingScale, StatusScale } from './data-palette';
 
 const c = (r: number, g: number, b: number, a: number): ColorValue => ({ r, g, b, a });
 const t = (light: ColorValue, dark: ColorValue): ColorToken => new ColorToken(light, dark);
@@ -309,6 +310,39 @@ const shapeScale: Record<string, number> = {
   full: 999,
 };
 
+// The data palette: eight series slots in a FIXED order, the sequential ramp, the diverging
+// pair, the de-emphasis gray and the four status steps (C# `DataPalette.Default`).
+const defaultData = new DataPalette(
+  [
+    t(c(42, 120, 214, 255), c(57, 135, 229, 255)),
+    t(c(235, 104, 52, 255), c(217, 89, 38, 255)),
+    t(c(27, 175, 122, 255), c(25, 158, 112, 255)),
+    t(c(237, 161, 0, 255), c(201, 133, 0, 255)),
+    t(c(232, 123, 164, 255), c(213, 81, 129, 255)),
+    t(c(0, 131, 0, 255), c(0, 131, 0, 255)),
+    t(c(74, 58, 167, 255), c(144, 133, 233, 255)),
+    t(c(227, 73, 72, 255), c(230, 103, 103, 255)),
+  ],
+  [
+    t(c(205, 226, 251, 255), c(13, 54, 107, 255)),
+    t(c(158, 197, 244, 255), c(24, 79, 149, 255)),
+    t(c(109, 167, 236, 255), c(37, 106, 191, 255)),
+    t(c(57, 135, 229, 255), c(57, 135, 229, 255)),
+    t(c(37, 106, 191, 255), c(109, 167, 236, 255)),
+    t(c(24, 79, 149, 255), c(158, 197, 244, 255)),
+    t(c(13, 54, 107, 255), c(205, 226, 251, 255)),
+  ],
+  new DivergingScale(t(c(42, 120, 214, 255), c(57, 135, 229, 255)), t(c(240, 239, 236, 255), c(56, 56, 53, 255)), t(c(227, 73, 72, 255), c(230, 103, 103, 255))),
+  t(c(137, 135, 129, 255), c(137, 135, 129, 255)),
+  new StatusScale(
+    t(c(12, 163, 12, 255), c(12, 163, 12, 255)),
+    t(c(250, 178, 25, 255), c(250, 178, 25, 255)),
+    t(c(236, 131, 90, 255), c(236, 131, 90, 255)),
+    t(c(208, 59, 59, 255), c(208, 59, 59, 255)),
+  ),
+);
+DataPalette.default = defaultData;
+
 export const photonTheme: AppTheme = {
   background: t(c(245, 246, 248, 255), c(12, 15, 19, 255)),
   surface: t(c(255, 255, 255, 255), c(20, 24, 30, 255)),
@@ -323,6 +357,7 @@ export const photonTheme: AppTheme = {
   focusRing: t(c(0, 80, 160, 255), c(124, 181, 238, 255)),
   linkColor: t(c(0, 80, 160, 255), c(124, 181, 238, 255)),
   scrim: t(c(11, 14, 18, 102), c(0, 0, 0, 143)),
+  data: defaultData,
   disabledOpacity: 0.38,
   colors(variant: string): VariantColors {
     return variantColors[variant] ?? variantColors.primary;

@@ -17,10 +17,7 @@ export { Component, HtmlElement } from '../core/types';
 // The C# `UiComponent` base as it surfaces in transpiled signatures (AdoptConfig, composition).
 export { Component as UiComponent } from '../core/types';
 export type { RenderContext as BuildContext } from '../core/types';
-export {
-  StatelessComponent,
-  StatefulComponent,
-} from '../core/component';
+export { StatelessComponent, StatefulComponent } from '../core/component';
 export {
   VisualNode,
   Box,
@@ -90,6 +87,7 @@ export {
   VariantColors,
 } from './value-types';
 export { ComponentContext } from './photon-context';
+export { DataPalette, DivergingScale, StatusScale } from './data-palette';
 // Primitives types route to @equantic/runtime implicitly, so a page reading its route needs this
 // name to resolve here or it dies at hydration on an unresolvable import.
 export { RouteValues } from './route-values';

@@ -16,7 +16,7 @@ namespace eQuantic.UI.Web;
 public static class ThemeBridge
 {
     /// <summary>The theme as a single-line JSON object: surfaces, disabledOpacity, per-variant color
-    /// groups, the type scale, elevations 0–5 and the shape scale — colors as <c>[[r,g,b,a],[r,g,b,a]]</c>
+    /// groups, the type scale, elevations 0–5, the shape scale and the data palette — colors as <c>[[r,g,b,a],[r,g,b,a]]</c>
     /// light/dark tuples, keys camelCased to match the enum-lowered names the client looks up.</summary>
     public static string SerializeJson(IAppTheme theme)
     {
@@ -88,8 +88,33 @@ public static class ThemeBridge
         }
         sb.Append('}');
 
+        sb.Append(",\"data\":{");
+        var data = theme.Data;
+        sb.Append("\"series\":");
+        Tokens(sb, data.Series);
+        sb.Append(",\"sequential\":");
+        Tokens(sb, data.Sequential);
+        sb.Append(",\"diverging\":");
+        Tokens(sb, [data.Diverging.Negative, data.Diverging.Midpoint, data.Diverging.Positive]);
+        sb.Append(",\"other\":");
+        Token(sb, data.Other);
+        sb.Append(",\"status\":");
+        Tokens(sb, [data.Status.Good, data.Status.Warning, data.Status.Serious, data.Status.Critical]);
+        sb.Append('}');
         sb.Append('}');
         return sb.ToString();
+    }
+
+    private static void Tokens(StringBuilder sb, IReadOnlyList<ColorToken> tokens)
+    {
+        sb.Append('[');
+        for (var i = 0; i < tokens.Count; i++)
+        {
+            if (i > 0) sb.Append(',');
+            Token(sb, tokens[i]);
+        }
+
+        sb.Append(']');
     }
 
     private static void Token(StringBuilder sb, ColorToken token)

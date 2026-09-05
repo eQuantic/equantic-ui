@@ -28,6 +28,7 @@ public static class DesignSystemTsGenerator
         ts.AppendLine("import { ColorToken, TypeStyle, VariantColors, codeTokenColor } from './value-types';");
         ts.AppendLine("import type { AppTheme, ShadowSpec } from './value-types';");
         ts.AppendLine("import type { ColorValue } from './nodes';");
+        ts.AppendLine("import { DataPalette, DivergingScale, StatusScale } from './data-palette';");
         ts.AppendLine();
         ts.AppendLine("const c = (r: number, g: number, b: number, a: number): ColorValue => ({ r, g, b, a });");
         ts.AppendLine("const t = (light: ColorValue, dark: ColorValue): ColorToken => new ColorToken(light, dark);");
@@ -261,6 +262,7 @@ public static class DesignSystemTsGenerator
 
     private static void AppendTheme(StringBuilder ts, IAppTheme theme)
     {
+        AppendDataPalette(ts, theme.Data);
         ts.AppendLine();
         ts.AppendLine("export const photonTheme: AppTheme = {");
         // Every ColorToken property of the theme CONTRACT, in declaration order — new tokens flow
@@ -271,6 +273,7 @@ public static class DesignSystemTsGenerator
             var token = (ColorToken)property.GetValue(theme)!;
             ts.AppendLine($"  {Camel(property.Name)}: {Token(token)},");
         }
+        ts.AppendLine("  data: defaultData,");
         ts.AppendLine($"  disabledOpacity: {Num(theme.DisabledOpacity)},");
         ts.AppendLine("  colors(variant: string): VariantColors {");
         ts.AppendLine($"    return variantColors[variant] ?? variantColors.{Camel(nameof(Variant.Primary))};");
@@ -291,6 +294,36 @@ public static class DesignSystemTsGenerator
         ts.AppendLine();
         ts.AppendLine("/** The transpiled shape of `PhotonTheme.Instance` references. */");
         ts.AppendLine("export const PhotonTheme = { instance: photonTheme };");
+    }
+
+    /// <summary>The data palette (C# <c>IAppTheme.Data</c>), emitted from the values the theme holds and
+    /// assigned to <c>DataPalette.default</c> here — this module is the one that knows the values, so no
+    /// hex is ever written twice.</summary>
+    private static void AppendDataPalette(StringBuilder ts, DataPalette data)
+    {
+        ts.AppendLine();
+        ts.AppendLine("// The data palette: eight series slots in a FIXED order, the sequential ramp, the diverging");
+        ts.AppendLine("// pair, the de-emphasis gray and the four status steps (C# `DataPalette.Default`).");
+        ts.AppendLine("const defaultData = new DataPalette(");
+        AppendTokenList(ts, data.Series);
+        AppendTokenList(ts, data.Sequential);
+        ts.AppendLine($"  new DivergingScale({Token(data.Diverging.Negative)}, {Token(data.Diverging.Midpoint)}, {Token(data.Diverging.Positive)}),");
+        ts.AppendLine($"  {Token(data.Other)},");
+        ts.AppendLine("  new StatusScale(");
+        ts.AppendLine($"    {Token(data.Status.Good)},");
+        ts.AppendLine($"    {Token(data.Status.Warning)},");
+        ts.AppendLine($"    {Token(data.Status.Serious)},");
+        ts.AppendLine($"    {Token(data.Status.Critical)},");
+        ts.AppendLine("  ),");
+        ts.AppendLine(");");
+        ts.AppendLine("DataPalette.default = defaultData;");
+    }
+
+    private static void AppendTokenList(StringBuilder ts, IReadOnlyList<ColorToken> tokens)
+    {
+        ts.AppendLine("  [");
+        foreach (var token in tokens) ts.AppendLine($"    {Token(token)},");
+        ts.AppendLine("  ],");
     }
 
     private static string Token(ColorToken token) => $"t({Color(token.Light)}, {Color(token.Dark)})";
