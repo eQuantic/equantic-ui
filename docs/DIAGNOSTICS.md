@@ -117,3 +117,11 @@ The generated factory surface and form models.
 | `EQ3103` | A form model property has a type no text box can hold. |
 | `EQ3104` | A validation attribute has no rule to become. |
 | `EQ3105` | A `[Compare]` names a property this form does not have. |
+
+## EQ4xxx — the SDK build
+
+Raised by the SDK's own MSBuild targets, before or after the compiler runs.
+
+| Code | Meaning | What to do |
+|---|---|---|
+| `EQ4001` | The eQuantic icon tool — `eqicon`, which writes app icons, the vector catalog, the capability manifest and the macOS bundle — is missing where the SDK looks for it. In a build from the repository's source tree, `eQuantic.UI.Native.Build` did not build before this project: a broken build graph. From a package, the package shipped without `tools/net10.0/eqicon.dll`. | Neither is fixed by building twice. From source, the tool is a `ProjectReference` of every app project, so look at the errors above this one — the tool's own build failed — or at whoever removed the edge. From a package, clear the eQuantic cache (`dotnet msbuild -t:ClearEQuanticCache`), restore again, and report the package version if it persists. |
