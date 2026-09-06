@@ -64,7 +64,42 @@ export function scheduleAnchorOffset(): void {
 export function publishAnchorOffset(): void {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
-  const next = `${overlappingChrome()}px`;
+  const measured = overlappingChrome();
+  const next = `${measured}px`;
   if (root.style.getPropertyValue(VARIABLE) === next) return;
   root.style.setProperty(VARIABLE, next);
+  realignColdLoad(measured);
+}
+
+/** Whether the first measurement has had its chance to correct a cold load's fragment jump. */
+let coldLoadHandled = false;
+
+/**
+ * A COLD load with a fragment lands the target UNDER the chrome, and this is the one place that can
+ * undo it.
+ *
+ * The browser performs the fragment jump while the document is still being set up, so
+ * `--eq-anchor-offset` is unset and `scroll-margin-top` resolves to its `0px` fallback: the target
+ * arrives at the very top of the viewport, behind the header, and nothing re-applies it once the
+ * real number is published a moment later. Measured on a fresh `/privacy#rights`: the page scrolled,
+ * `targetTop` 0 against an offset that had by then become 65px.
+ *
+ * Corrected ONCE, and only when the target really is behind the chrome — its top inside `[0, offset)`
+ * is exactly the broken state and nothing else. A reader who has already scrolled somewhere else
+ * leaves the band, and a later pass that republishes the same number never reaches here at all.
+ */
+function realignColdLoad(offset: number): void {
+  if (coldLoadHandled || offset <= 0) return;
+  coldLoadHandled = true;
+  if (typeof location === 'undefined' || location.hash.length <= 1) return;
+  const target = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+  if (!target) return;
+  const top = target.getBoundingClientRect().top;
+  if (top < 0 || top >= offset) return;
+  target.scrollIntoView();
+}
+
+/** Test seam: the correction is once per document, and a spec renders many. */
+export function resetColdLoadRealignmentForTests(): void {
+  coldLoadHandled = false;
 }

@@ -292,6 +292,85 @@ describe('Router (happy-dom)', () => {
     scrollTo.mockRestore();
   });
 
+  /**
+   * THE DEFECT THAT MADE `Bookmark` USELESS on a hydrated page. Chrome fires `popstate` for a
+   * same-document fragment navigation, so the `#section` click the router deliberately steps aside
+   * for comes back through `dispatch` a moment later. That entry was pushed by the BROWSER, so it
+   * carries none of our saved position, and the old default sent the page to the top — undoing the
+   * in-page scroll the router had just declined to intercept.
+   */
+  it('honours the fragment on a popstate the browser pushed, instead of going to the top', async () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    const target = document.createElement('div');
+    target.id = 'rights';
+    const scrollIntoView = vi.fn();
+    target.scrollIntoView = scrollIntoView;
+    document.body.appendChild(target);
+
+    window.history.pushState(null, '', '/counter#rights');
+    window.dispatchEvent(new window.PopStateEvent('popstate'));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(scrollIntoView).toHaveBeenCalled();
+    expect(scrollTo).not.toHaveBeenCalledWith(0, 0);
+    scrollTo.mockRestore();
+    target.remove();
+  });
+
+  /** A real back/forward returns the reader where they were, hash or no hash. */
+  it('prefers a saved position over the fragment on a genuine traversal', async () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    const target = document.createElement('div');
+    target.id = 'rights';
+    const scrollIntoView = vi.fn();
+    target.scrollIntoView = scrollIntoView;
+    document.body.appendChild(target);
+
+    window.history.pushState({ eqScroll: { x: 0, y: 900 } }, '', '/counter#rights');
+    // The listener reads the EVENT's state, which is what a browser hands it on a traversal.
+    window.dispatchEvent(
+      new window.PopStateEvent('popstate', { state: { eqScroll: { x: 0, y: 900 } } }),
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(scrollTo).toHaveBeenCalledWith(0, 900);
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    scrollTo.mockRestore();
+    target.remove();
+  });
+
+  /** And the forward half, which was wrong the same way: `/guide#install` ignored its fragment. */
+  it('honours the fragment on a forward navigation to another page', async () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    const target = document.createElement('div');
+    target.id = 'install';
+    const scrollIntoView = vi.fn();
+    target.scrollIntoView = scrollIntoView;
+    document.body.appendChild(target);
+
+    await router.navigate('/counter#install');
+
+    expect(scrollIntoView).toHaveBeenCalled();
+    expect(scrollTo).not.toHaveBeenCalledWith(0, 0);
+    scrollTo.mockRestore();
+    target.remove();
+  });
+
+  /** A fragment that names nothing leaves the page alone, rather than jumping it to the top. */
+  it('leaves the position when the fragment names no element', async () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
+    window.history.pushState(null, '', '/counter#nothing-here');
+    window.dispatchEvent(new window.PopStateEvent('popstate'));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(scrollTo).not.toHaveBeenCalled();
+    scrollTo.mockRestore();
+  });
+
   it('sets manual scroll restoration when supported', () => {
     if ('scrollRestoration' in window.history) {
       expect(window.history.scrollRestoration).toBe('manual');
