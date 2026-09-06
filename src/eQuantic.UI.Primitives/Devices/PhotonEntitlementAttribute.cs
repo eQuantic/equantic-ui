@@ -52,7 +52,9 @@ public static class PhotonEntitlements
     /// NOT enough on its own for every engine that compiles at run time, which is what the name
     /// suggests and what this comment used to say. An engine that writes plain executable memory
     /// rather than going through <c>MAP_JIT</c> needs <see cref="AllowUnsignedExecutableMemory"/>,
-    /// and wasmtime — so YARA-X, which embeds it — is exactly that case.
+    /// and wasmtime — so YARA-X, which embeds it — is measured to be that shape. Which shape a
+    /// given engine is, is the engine's own business: "a WASM runtime" is not the answer, because
+    /// nothing stops one from mapping the platform way.
     /// </para>
     /// <para>
     /// AN APP RARELY DECLARES THIS ONE. A hardened non-AOT build already gets it from the SDK
@@ -68,8 +70,9 @@ public static class PhotonEntitlements
     public const string AllowJit = "com.apple.security.cs.allow-jit";
 
     /// <summary>
-    /// Executable memory the app writes itself, outside <c>MAP_JIT</c> and unsigned — a WASM engine
-    /// such as wasmtime, some interpreters, older engines.
+    /// Executable memory the app writes itself, outside <c>MAP_JIT</c> and unsigned — wasmtime,
+    /// some interpreters, older engines. The shape is what decides, not the category: an engine is
+    /// this case because of how it maps its pages, and another WASM runtime may well not be.
     /// <para>
     /// NOT a broader fallback to try after <see cref="AllowJit"/>, which is what this comment used
     /// to say and which sent a consumer to ship a binary that died on its first scan. For an engine
@@ -77,8 +80,9 @@ public static class PhotonEntitlements
     /// is the REQUIREMENT.
     /// </para>
     /// <para>
-    /// So for a hardened NON-AOT app embedding a WASM engine, this is the ONE key the app declares:
-    /// <see cref="AllowJit"/> is already in the bundle from the SDK. Measured, all three rows with a
+    /// So for a hardened NON-AOT app embedding an engine of that shape — wasmtime is the one
+    /// measured — this is the ONE key the app declares: <see cref="AllowJit"/> is already in the
+    /// bundle from the SDK. Measured, all three rows with a
     /// real certificate — JIT alone SIGKILLs (<c>"namespace":"CODESIGNING"</c>,
     /// <c>"indicator":"Invalid Page"</c>); JIT plus this passes; and THIS ALONE passes too, which is
     /// what proved the JIT declaration was never the variable. Under <c>PublishAot</c> the SDK

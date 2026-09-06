@@ -26,16 +26,16 @@ public sealed class PhotonEntitlementsBuilder
 
     /// <summary>An engine that maps executable pages the platform way (<c>MAP_JIT</c>) — .NET's own
     /// JIT, JavaScriptCore. Rarely worth declaring: a hardened non-AOT build already gets this key
-    /// from the SDK, because the .NET runtime needs it for itself. A WASM engine is NOT this case
-    /// and calling this instead ships a binary that dies — see
-    /// <see cref="RequireUnsignedExecutableMemory"/> and <see cref="PhotonEntitlements.AllowJit"/>
-    /// for what was measured.</summary>
+    /// from the SDK, because the .NET runtime needs it for itself. An engine that writes plain
+    /// executable memory instead is NOT this case and calling this for it ships a binary that
+    /// dies — wasmtime is the one measured; see <see cref="RequireUnsignedExecutableMemory"/> and
+    /// <see cref="PhotonEntitlements.AllowJit"/>.</summary>
     public PhotonEntitlementsBuilder RequireJit() => Require(PhotonEntitlements.AllowJit);
 
-    /// <summary>Executable memory the app writes itself, outside <c>MAP_JIT</c> and unsigned — a
-    /// WASM engine such as wasmtime. NOT a fallback to reach for after <see cref="RequireJit"/>: for
-    /// an engine of that shape it is the requirement, and for a hardened non-AOT app it is the ONE
-    /// key to declare, since the SDK already puts the JIT key in the bundle.</summary>
+    /// <summary>Executable memory the app writes itself, outside <c>MAP_JIT</c> and unsigned —
+    /// wasmtime is the measured case. NOT a fallback to reach for after <see cref="RequireJit"/>:
+    /// for an engine of that shape it is the requirement, and for a hardened non-AOT app it is the
+    /// ONE key to declare, since the SDK already puts the JIT key in the bundle.</summary>
     public PhotonEntitlementsBuilder RequireUnsignedExecutableMemory() =>
         Require(PhotonEntitlements.AllowUnsignedExecutableMemory);
 
