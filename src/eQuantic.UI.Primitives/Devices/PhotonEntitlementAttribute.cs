@@ -51,11 +51,18 @@ public static class PhotonEntitlements
     /// <para>
     /// NOT enough on its own for every engine that compiles at run time, which is what the name
     /// suggests and what this comment used to say. An engine that writes plain executable memory
-    /// rather than going through <c>MAP_JIT</c> also needs
-    /// <see cref="AllowUnsignedExecutableMemory"/>, and wasmtime — so YARA-X, which embeds it — is
-    /// exactly that case. Measured by a consumer with a real certificate: <c>allow-jit</c> alone
-    /// SIGKILLs on the first scan (<c>"namespace":"CODESIGNING"</c>, <c>"indicator":"Invalid
-    /// Page"</c>); the two together pass.
+    /// rather than going through <c>MAP_JIT</c> needs <see cref="AllowUnsignedExecutableMemory"/>,
+    /// and wasmtime — so YARA-X, which embeds it — is exactly that case.
+    /// </para>
+    /// <para>
+    /// AN APP RARELY DECLARES THIS ONE. A hardened non-AOT build already gets it from the SDK
+    /// beside <see cref="DisableLibraryValidation"/>, because the .NET runtime JITs its own methods
+    /// (see <c>_EqRuntimeEntitlements</c> in the native SDK's targets). Declaring it again is a
+    /// harmless no-op — and worth knowing, because a consumer declared it, watched the crash stop,
+    /// and credited the wrong key: the entitlement that changed was the other one, and this had
+    /// been in every one of their bundles all along. Under <c>PublishAot</c> the SDK adds nothing,
+    /// so an AOT app that embeds such an engine declares whatever it needs itself — a case nobody
+    /// here has measured.
     /// </para>
     /// </summary>
     public const string AllowJit = "com.apple.security.cs.allow-jit";
@@ -67,7 +74,15 @@ public static class PhotonEntitlements
     /// NOT a broader fallback to try after <see cref="AllowJit"/>, which is what this comment used
     /// to say and which sent a consumer to ship a binary that died on its first scan. For an engine
     /// that maps executable pages the platform way, JIT is the answer; for one that does not, this
-    /// is the REQUIREMENT, and the measured pair for wasmtime is both keys together.
+    /// is the REQUIREMENT.
+    /// </para>
+    /// <para>
+    /// So for a hardened NON-AOT app embedding a WASM engine, this is the ONE key the app declares:
+    /// <see cref="AllowJit"/> is already in the bundle from the SDK. Measured, all three rows with a
+    /// real certificate — JIT alone SIGKILLs (<c>"namespace":"CODESIGNING"</c>,
+    /// <c>"indicator":"Invalid Page"</c>); JIT plus this passes; and THIS ALONE passes too, which is
+    /// what proved the JIT declaration was never the variable. Under <c>PublishAot</c> the SDK
+    /// declares nothing and the recipe is the app's own to work out; nobody has measured it.
     /// </para>
     /// <para>
     /// Nothing without a signing certificate exercises the hardened runtime, so a mistake here

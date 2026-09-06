@@ -192,9 +192,14 @@
             `[assembly: PhotonEntitlement(…)]` declarations. This is the release half of the
             capability idea and it is invisible until release, which is what makes it dangerous: a
             development build signs ad hoc, where the hardened runtime is not in force and nothing
-            needs permitting, so an app that JITs (a WASM engine, a scripting VM) runs perfectly for
-            months and is then killed with SIGKILL/CODESIGNING on the first machine that installs
-            the signed build. No catch sees it; the process is simply gone.
+            needs permitting, so an app that generates code (a scripting VM, a WASM engine) runs
+            perfectly for months and is then killed with SIGKILL/CODESIGNING on the first machine
+            that installs the signed build. No catch sees it; the process is simply gone.
+
+            Note which key each shape needs, because the names mislead: allow-jit below covers pages
+            mapped through MAP_JIT, which is what the .NET runtime uses and why it is here. An engine
+            that writes plain executable memory — wasmtime, so YARA-X — needs
+            allow-unsigned-executable-memory instead, and declares it itself.
         -->
         <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; entitlements --assembly &quot;$(TargetDir)$(TargetFileName)&quot; --plist &quot;$(_EqIconDir)/$(AssemblyName).entitlements&quot; --also &quot;$(_EqRuntimeEntitlements)&quot;"
               StandardOutputImportance="normal" />
