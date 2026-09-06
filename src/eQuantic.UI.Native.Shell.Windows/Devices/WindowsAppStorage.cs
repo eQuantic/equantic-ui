@@ -47,8 +47,17 @@ public sealed class WindowsAppStorage : IAppStorage
     {
         ArgumentException.ThrowIfNullOrEmpty(key);
         ArgumentNullException.ThrowIfNull(value);
-        using var store = Registry.CurrentUser.CreateSubKey(_keyPath);
-        store.SetValue(key, value, RegistryValueKind.String);
+        try
+        {
+            using var store = Registry.CurrentUser.CreateSubKey(_keyPath);
+            store.SetValue(key, value, RegistryValueKind.String);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            // A profile whose hive refuses the write — policy, a locked-down account — is a store
+            // that keeps nothing, not a reason to take the app down: NSUserDefaults and
+            // SharedPreferences never throw on a write either, and the next Get answers null.
+        }
     }
 
     public void Remove(string key)

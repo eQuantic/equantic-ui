@@ -50,26 +50,33 @@ public sealed class WindowsClipboard : ITextClipboard
     public void Write(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
-        if (!Open()) return;
+        // The new content is built BEFORE the clipboard is touched: emptying it first and then
+        // failing to allocate would leave the person with nothing where their previous copy was.
+        var bytes = (nuint)((text.Length + 1) * sizeof(char));
+        var memory = GlobalAlloc(GMEM_MOVEABLE, bytes);
+        if (memory == IntPtr.Zero) return;
+        var pointer = GlobalLock(memory);
+        if (pointer == IntPtr.Zero)
+        {
+            GlobalFree(memory);
+            return;
+        }
+        unsafe
+        {
+            var destination = new Span<char>((void*)pointer, text.Length + 1);
+            text.AsSpan().CopyTo(destination);
+            destination[text.Length] = '\0';
+        }
+        GlobalUnlock(memory);
+
+        if (!Open())
+        {
+            GlobalFree(memory);
+            return;
+        }
         try
         {
             EmptyClipboard();
-            var bytes = (nuint)((text.Length + 1) * sizeof(char));
-            var memory = GlobalAlloc(GMEM_MOVEABLE, bytes);
-            if (memory == IntPtr.Zero) return;
-            var pointer = GlobalLock(memory);
-            if (pointer == IntPtr.Zero)
-            {
-                GlobalFree(memory);
-                return;
-            }
-            unsafe
-            {
-                var destination = new Span<char>((void*)pointer, text.Length + 1);
-                text.AsSpan().CopyTo(destination);
-                destination[text.Length] = '\0';
-            }
-            GlobalUnlock(memory);
             // On success the system owns the memory; on failure it is still ours to free.
             if (SetClipboardData(CF_UNICODETEXT, memory) == IntPtr.Zero) GlobalFree(memory);
         }
