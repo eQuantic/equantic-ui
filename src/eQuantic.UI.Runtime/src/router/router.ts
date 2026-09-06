@@ -1,4 +1,5 @@
 import { setNavigationHandler } from './navigator';
+import { bookmarkTarget } from '../shared/bookmark-target';
 import { type RouteEntry, type RouteMatch, matchRoute } from './route-table';
 import { setCurrentRouteFrom } from './current-route';
 
@@ -60,8 +61,30 @@ export interface RouterOptions {
   win?: Window;
 }
 
-/** Where to scroll after a navigation renders: the top of the page, or a restored position (back/forward). */
-type ScrollTarget = 'top' | { x: number; y: number };
+/**
+ * Where to scroll after a navigation renders: the top of the page, a BOOKMARK named by the URL's
+ * fragment, or a restored position (back/forward).
+ */
+type ScrollTarget =
+  | 'top'
+  | { hash: string; whenMissing: 'top' | 'keep' }
+  | { x: number; y: number };
+
+/**
+ * Where a URL says its page should START. A fragment names a bookmark; anything else is the top.
+ * <br>
+ * ONE answer for both directions, because both were wrong in the same way. Forward, a link to
+ * `/guide#install` rendered the page and scrolled to its top, ignoring the fragment it carried.
+ * Backward is worse and is what made `Bookmark` useless on a hydrated page: Chrome fires `popstate`
+ * for a same-document fragment navigation, so a `#section` click the router deliberately let the
+ * browser handle came back through `dispatch` a quarter-second later, found no saved position on an
+ * entry the BROWSER had pushed, and scrolled to the top — undoing the in-page scroll it had just
+ * stepped aside for. The click was never prevented and everything the realizer emits was right;
+ * the router undid it one tick later.
+ */
+function startOf(url: URL, whenMissing: 'top' | 'keep'): ScrollTarget {
+  return url.hash.length > 1 ? { hash: url.hash, whenMissing } : 'top';
+}
 
 interface HistoryScrollState {
   eqScroll?: { x: number; y: number };
@@ -232,7 +255,10 @@ export class Router {
     const stay: ScrollTarget = { x: this.win.scrollX, y: this.win.scrollY };
     this.saveScroll();
     this.win.history.pushState(null, '', url.pathname + url.search + url.hash);
-    return this.activate(match, url, keepPosition ? stay : 'top');
+    // A fragment naming nothing on a page you are ARRIVING at still starts at the top, because a
+    // new page does: keeping the last page's offset would be a scroll position that belongs to
+    // something the reader is no longer looking at.
+    return this.activate(match, url, keepPosition ? stay : startOf(url, 'top'));
   }
 
   /**
@@ -255,9 +281,24 @@ export class Router {
   private async dispatch(href: string, state: unknown): Promise<void> {
     const url = new URL(href, this.win.location.href);
     const match = matchRoute(this.routes, url.pathname);
-    if (!match) return;
+    if (!match) {
+      // The URL has ALREADY moved — the browser did that before telling us — so returning here
+      // leaves the reader looking at the previous page under the new address, with nothing on
+      // screen to say so. Measured on a live site by traversing back to `/careers/%`: the address
+      // bar said one thing and the document was still the other. The click path answers this by
+      // letting the browser fetch what it cannot route, and the server has a 404 page; a traversal
+      // has no such fallback unless it asks for one, so it asks.
+      this.win.location.reload();
+      return;
+    }
+    // A saved position wins: a real back/forward returns the reader where they were, hash or no
+    // hash. Only an entry with nothing saved falls through to what the URL asks for — which is the
+    // case a FRAGMENT navigation lands in, because the browser pushed that entry rather than
+    // commitForward, so it carries no eqScroll of ours.
     const saved = (state as HistoryScrollState | null)?.eqScroll;
-    await this.activate(match, url, saved ?? 'top');
+    // …and on a TRAVERSAL it leaves the page alone, because the document has not changed: jumping
+    // to the top there is the very defect this fixes.
+    await this.activate(match, url, saved ?? startOf(url, 'keep'));
   }
 
   /**
@@ -294,8 +335,23 @@ export class Router {
   }
 
   private applyScroll(scroll: ScrollTarget): void {
-    if (scroll === 'top') this.win.scrollTo(0, 0);
-    else this.win.scrollTo(scroll.x, scroll.y);
+    if (scroll === 'top') {
+      this.win.scrollTo(0, 0);
+      return;
+    }
+    if ('hash' in scroll) {
+      // `scrollIntoView` honours `scroll-margin-top` exactly as a fragment navigation does, so the
+      // room a bookmark keeps under pinned chrome stays declarative — the router never learns the
+      // header's height, and never has to.
+      //
+      // A fragment nobody can decode is the same answer as one naming nothing, rather than an
+      // exception thrown through a navigation.
+      const target = bookmarkTarget(scroll.hash, this.win.document);
+      if (target) target.scrollIntoView();
+      else if (scroll.whenMissing === 'top') this.win.scrollTo(0, 0);
+      return;
+    }
+    this.win.scrollTo(scroll.x, scroll.y);
   }
 
   private onClick(e: MouseEvent): void {

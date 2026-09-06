@@ -5,7 +5,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { publishAnchorOffset } from './sticky-offset';
+import { publishAnchorOffset, resetColdLoadRealignmentForTests } from './sticky-offset';
 import { PINNED_MARKER } from './markers';
 import { lowerVisualNode } from './lowering';
 import { photonTheme } from './design-system.generated';
@@ -38,7 +38,15 @@ describe('the marker the reader queries is the one the lowering writes', () => {
       if (typeof value === 'string') marked.setAttribute(name, value);
     }
     marked.getBoundingClientRect = () => ({
-      top: 0, height: 61, bottom: 61, left: 0, right: 0, width: 0, x: 0, y: 0, toJSON: () => ({}),
+      top: 0,
+      height: 61,
+      bottom: 61,
+      left: 0,
+      right: 0,
+      width: 0,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
     });
     document.body.appendChild(marked);
 
@@ -55,7 +63,15 @@ describe('the anchor offset comes from the sticky, not from a constant', () => {
     const element = document.createElement('div');
     element.setAttribute(PINNED_MARKER, '1');
     element.getBoundingClientRect = () => ({
-      top, height, bottom: top + height, left: 0, right: 0, width: 0, x: 0, y: top, toJSON: () => ({}),
+      top,
+      height,
+      bottom: top + height,
+      left: 0,
+      right: 0,
+      width: 0,
+      x: 0,
+      y: top,
+      toJSON: () => ({}),
     });
     document.body.appendChild(element);
     return element;
@@ -68,7 +84,8 @@ describe('the anchor offset comes from the sticky, not from a constant', () => {
 
   afterEach(() => document.documentElement.style.removeProperty('--eq-anchor-offset'));
 
-  const offset = (): string => document.documentElement.style.getPropertyValue('--eq-anchor-offset');
+  const offset = (): string =>
+    document.documentElement.style.getPropertyValue('--eq-anchor-offset');
 
   it('publishes the height of the chrome pinned at the top', () => {
     sticky(0, 60);
@@ -115,7 +132,15 @@ describe('the offset reaches a real run', () => {
     const bar = document.createElement('div');
     bar.setAttribute(PINNED_MARKER, '1');
     bar.getBoundingClientRect = () => ({
-      top: 0, height: 56, bottom: 56, left: 0, right: 0, width: 0, x: 0, y: 0, toJSON: () => ({}),
+      top: 0,
+      height: 56,
+      bottom: 56,
+      left: 0,
+      right: 0,
+      width: 0,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
     });
     document.body.appendChild(bar);
 
@@ -152,5 +177,82 @@ describe('the room a bookmark keeps is an atomic class', () => {
     expect(expected).not.toBe('');
     expect(node.attributes['class'] ?? '').toContain(expected);
     expect(node.attributes['style'] ?? '').not.toContain('scroll-margin-top');
+  });
+});
+
+/**
+ * A COLD load with a fragment is the one case the offset arrives too late for. The browser performs
+ * the jump while `--eq-anchor-offset` is unset, so `scroll-margin-top` resolves to its `0px`
+ * fallback and the target lands at the very top of the viewport, behind the header. Measured on a
+ * live `/privacy#rights`: it scrolled, and it scrolled to the wrong place.
+ */
+describe('the first measurement corrects a cold load that landed under the chrome', () => {
+  function chrome(height: number): HTMLElement {
+    const bar = document.createElement('div');
+    bar.setAttribute(PINNED_MARKER, '');
+    bar.getBoundingClientRect = () =>
+      ({ top: 0, bottom: height, height, left: 0, right: 0, width: 0, x: 0, y: 0 }) as DOMRect;
+    document.body.appendChild(bar);
+    return bar;
+  }
+
+  function bookmark(id: string, top: number): { element: HTMLElement; seen: () => number } {
+    const element = document.createElement('div');
+    element.id = id;
+    let calls = 0;
+    element.scrollIntoView = () => {
+      calls += 1;
+    };
+    element.getBoundingClientRect = () =>
+      ({ top, bottom: top, height: 0, left: 0, right: 0, width: 0, x: 0, y: top }) as DOMRect;
+    document.body.appendChild(element);
+    return { element, seen: () => calls };
+  }
+
+  beforeEach(() => {
+    resetColdLoadRealignmentForTests();
+    document.documentElement.style.removeProperty('--eq-anchor-offset');
+    window.history.replaceState(null, '', '/probe');
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+    window.history.replaceState(null, '', '/probe');
+  });
+
+  it('re-scrolls the fragment target that the browser left behind the header', () => {
+    const bar = chrome(64);
+    const target = bookmark('rights', 0); // where a 0px scroll-margin left it
+    window.history.replaceState(null, '', '/probe#rights');
+
+    publishAnchorOffset();
+
+    expect(target.seen()).toBe(1);
+    bar.remove();
+  });
+
+  it('leaves a reader who has scrolled somewhere else alone', () => {
+    const bar = chrome(64);
+    // Well clear of the chrome: this is not the broken state, so nothing may move.
+    const target = bookmark('rights', 400);
+    window.history.replaceState(null, '', '/probe#rights');
+
+    publishAnchorOffset();
+
+    expect(target.seen()).toBe(0);
+    bar.remove();
+  });
+
+  it('corrects once, so a later pass never yanks the page back', () => {
+    const bar = chrome(64);
+    const target = bookmark('rights', 0);
+    window.history.replaceState(null, '', '/probe#rights');
+
+    publishAnchorOffset();
+    document.documentElement.style.removeProperty('--eq-anchor-offset');
+    publishAnchorOffset();
+
+    expect(target.seen()).toBe(1);
+    bar.remove();
   });
 });

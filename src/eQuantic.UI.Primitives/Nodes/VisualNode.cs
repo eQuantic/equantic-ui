@@ -46,6 +46,17 @@ public abstract class VisualNode
     /// W4 owns it). Declaring one there is not wrong and costs nothing — it is the same screen,
     /// written once — it simply has nothing to answer until there is something that scrolls.
     /// </para>
+    /// <para>
+    /// ONE PLACE WHERE THE COLLISION IS NOT THE PAGE'S FAULT: a subtree placed in two arms of an
+    /// <see cref="AdaptiveNode"/>. The web realizer emits every declared arm and hides the ones the
+    /// media query rejects, so ONE bookmark the author typed reaches the document TWICE — and a
+    /// browser resolves a fragment to the first in DOCUMENT order, which is the compact arm, sitting
+    /// at zero height under <c>display:none</c>. The link works, the console is clean, and the page
+    /// does not move. It is the same shape as SVG gradient ids (see the note in the web realizer's
+    /// gradient hoisting), except an id cannot be hoisted to one container the way a gradient can.
+    /// The cure is compositional and is worth reaching for anyway: put the shared subtree in the
+    /// tree ONCE and make only the varying part adaptive.
+    /// </para>
     /// </remarks>
     public string? Bookmark { get; init; }
 
@@ -1847,6 +1858,14 @@ public static class WindowSizeClasses
 /// different grid, a different direction — with ZERO listeners: the web realizer emits every
 /// declared variant gated by build-time media queries (display:contents/none); Photon lays out only
 /// the variant matching the window class and re-lays-out when the class crosses a threshold.
+/// <para>
+/// Because the web emits EVERY arm, anything inside one that must be unique in the document is
+/// emitted once per arm it appears in — a <see cref="VisualNode.Bookmark"/> most visibly, since a
+/// fragment then resolves to the copy in the hidden arm and the page does not move. So put the
+/// shared subtree in the tree ONCE and make only the varying part adaptive: a legal page went from
+/// two arms each holding the same article to one row whose ASIDE is the adaptive node, which reads
+/// better besides.
+/// </para>
 /// </summary>
 public sealed class AdaptiveNode : VisualNode
 {

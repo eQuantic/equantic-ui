@@ -28,6 +28,20 @@ describe('matchPattern / matchRoute', () => {
     expect(matchRoute(routes, '/users/new')?.page).toBe('NewUser');
   });
 
+  /**
+   * A path segment is user input, and `decodeURIComponent` throws on a malformed escape. `/users/%`
+   * raised a URIError from inside the click handler and the popstate handler alike — a URL nobody
+   * can decode now matches no route, which is the answer an unknown path already gets.
+   */
+  it('treats a malformed escape as no match rather than throwing', () => {
+    expect(() => matchPattern('/users/{id}', '/users/%')).not.toThrow();
+    expect(matchPattern('/users/{id}', '/users/%')).toBeNull();
+    expect(matchRoute(routes, '/users/%')).toBeNull();
+    expect(matchRoute(routes, '/users/%E0%A4%A')).toBeNull();
+    // A well-formed escape still decodes, so the guard cannot be "give up on percent signs".
+    expect(matchPattern('/users/{id}', '/users/a%20b')).toEqual({ id: 'a b' });
+  });
+
   it('returns null for unknown / wrong-arity paths', () => {
     expect(matchRoute(routes, '/missing')).toBeNull();
     expect(matchRoute(routes, '/users/1/extra')).toBeNull();
@@ -290,6 +304,124 @@ describe('Router (happy-dom)', () => {
     expect(scrollTo).toHaveBeenCalledWith(0, 640);
     expect(scrollTo).not.toHaveBeenCalledWith(0, 0);
     scrollTo.mockRestore();
+  });
+
+  /**
+   * THE DEFECT THAT MADE `Bookmark` USELESS on a hydrated page. Chrome fires `popstate` for a
+   * same-document fragment navigation, so the `#section` click the router deliberately steps aside
+   * for comes back through `dispatch` a moment later. That entry was pushed by the BROWSER, so it
+   * carries none of our saved position, and the old default sent the page to the top — undoing the
+   * in-page scroll the router had just declined to intercept.
+   */
+  it('honours the fragment on a popstate the browser pushed, instead of going to the top', async () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    const target = document.createElement('div');
+    target.id = 'rights';
+    const scrollIntoView = vi.fn();
+    target.scrollIntoView = scrollIntoView;
+    document.body.appendChild(target);
+
+    window.history.pushState(null, '', '/counter#rights');
+    window.dispatchEvent(new window.PopStateEvent('popstate'));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(scrollIntoView).toHaveBeenCalled();
+    expect(scrollTo).not.toHaveBeenCalledWith(0, 0);
+    scrollTo.mockRestore();
+    target.remove();
+  });
+
+  /** A real back/forward returns the reader where they were, hash or no hash. */
+  it('prefers a saved position over the fragment on a genuine traversal', async () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    const target = document.createElement('div');
+    target.id = 'rights';
+    const scrollIntoView = vi.fn();
+    target.scrollIntoView = scrollIntoView;
+    document.body.appendChild(target);
+
+    window.history.pushState({ eqScroll: { x: 0, y: 900 } }, '', '/counter#rights');
+    // The listener reads the EVENT's state, which is what a browser hands it on a traversal.
+    window.dispatchEvent(
+      new window.PopStateEvent('popstate', { state: { eqScroll: { x: 0, y: 900 } } }),
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(scrollTo).toHaveBeenCalledWith(0, 900);
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    scrollTo.mockRestore();
+    target.remove();
+  });
+
+  /** And the forward half, which was wrong the same way: `/guide#install` ignored its fragment. */
+  it('honours the fragment on a forward navigation to another page', async () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    const target = document.createElement('div');
+    target.id = 'install';
+    const scrollIntoView = vi.fn();
+    target.scrollIntoView = scrollIntoView;
+    document.body.appendChild(target);
+
+    await router.navigate('/counter#install');
+
+    expect(scrollIntoView).toHaveBeenCalled();
+    expect(scrollTo).not.toHaveBeenCalledWith(0, 0);
+    scrollTo.mockRestore();
+    target.remove();
+  });
+
+  /**
+   * Arriving at ANOTHER page still starts at the top when its fragment names nothing — a new page
+   * does, and keeping the last one's offset would be a position belonging to something the reader
+   * is no longer looking at. The opposite of the traversal rule below, and the two are not the same
+   * question: one changed the document, the other did not.
+   */
+  it('starts a forward navigation at the top when its fragment names no element', async () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
+    await router.navigate('/counter#nothing-here');
+
+    expect(scrollTo).toHaveBeenCalledWith(0, 0);
+    scrollTo.mockRestore();
+  });
+
+  /** A fragment that names nothing leaves the page alone on a TRAVERSAL, rather than jumping it to
+   * the top: the document has not changed, and jumping is the defect this fixes. */
+  it('leaves the position when the fragment names no element', async () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
+    window.history.pushState(null, '', '/counter#nothing-here');
+    window.dispatchEvent(new window.PopStateEvent('popstate'));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(scrollTo).not.toHaveBeenCalled();
+    scrollTo.mockRestore();
+  });
+
+  /**
+   * A traversal to a URL the router cannot match leaves the reader on the previous page under the
+   * new address — the browser moved the URL before telling us, and returning silently means the
+   * document and the address bar disagree with nothing on screen to say so. Measured live on
+   * `/careers/%`: the title was still the previous document's. The click path already defers to the
+   * browser for what it cannot route, and the server has a 404 page; a traversal asks for the same.
+   */
+  it('lets the server answer a traversal it cannot route, instead of leaving a stale page', async () => {
+    const reload = vi.spyOn(window.location, 'reload').mockImplementation(() => {});
+    try {
+      window.history.pushState(null, '', '/no-such-route');
+      window.dispatchEvent(new window.PopStateEvent('popstate'));
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(reload).toHaveBeenCalled();
+      expect(onNavigate).not.toHaveBeenCalled();
+    } finally {
+      reload.mockRestore();
+      window.history.replaceState(null, '', '/');
+    }
   });
 
   it('sets manual scroll restoration when supported', () => {
