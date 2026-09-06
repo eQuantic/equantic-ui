@@ -75,9 +75,13 @@ public class PackRosterTests
 
         // A guard that reads NOTHING passes. Whatever reshapes this file — a rename, a reformat,
         // another generator — has to leave the rows readable or say so here, rather than leave a
-        // green test looking at an empty match set. One row per project, per configuration, per
-        // ActiveCfg/Build.0: the floor is far below that and still far above zero.
-        rows.Count.Should().BeGreaterThan(300,
+        // green test looking at an empty match set.
+        //
+        // The floor is ONE ROW PER PROJECT, taken from the roster so it tracks the repository
+        // instead of a constant somebody has to remember to raise. Deliberately far below the real
+        // count (twelve rows per project today): asking for all of them would make THIS test fail
+        // for a missing row, which is the sibling's question, reported in the sibling's words.
+        rows.Count.Should().BeGreaterThanOrEqualTo(names.Count,
             "the solution's configuration rows have to be READ for this to assert anything — if the "
             + "file's shape changed, teach the pattern rather than let it match nothing");
 
