@@ -1,6 +1,7 @@
 using System.Globalization;
 using eQuantic.UI.Components;
 using eQuantic.UI.Primitives;
+using eQuantic.UI.Charts;
 
 namespace eQuantic.Studio;
 
@@ -17,11 +18,12 @@ public enum GallerySection
     Containers = 4,
     Progress = 5,
     Sheets = 6,
-    Navigation = 7,
-    Feedback = 8,
-    Overlays = 9,
-    Device = 10,
-    Culture = 11,
+    Charts = 7,
+    Navigation = 8,
+    Feedback = 9,
+    Overlays = 10,
+    Device = 11,
+    Culture = 12,
 }
 
 /// <summary>
@@ -53,6 +55,7 @@ public static class Gallery
         GallerySection.Feedback => "Banners & toasts",
         GallerySection.Overlays => "Overlays",
         GallerySection.Sheets => "Spreadsheet",
+        GallerySection.Charts => "Charts",
         GallerySection.Culture => "Language",
         _ => "Device",
     };
@@ -63,7 +66,7 @@ public static class Gallery
     {
         GallerySection.Buttons or GallerySection.Inputs or GallerySection.Selection => "Primitives",
         GallerySection.DataDisplay or GallerySection.Containers or GallerySection.Progress
-            or GallerySection.Sheets => "Data display",
+            or GallerySection.Sheets or GallerySection.Charts => "Data display",
         GallerySection.Navigation => "Navigation",
         GallerySection.Feedback or GallerySection.Overlays => "Feedback",
         _ => "Device",   // Language belongs here too: what the MACHINE says, taken as a service.
@@ -99,6 +102,8 @@ public static class Gallery
             "Surfaces over the page — and how each one maps to a desktop window.",
         GallerySection.Sheets =>
             "The editable grid: Excel's keyboard, TSV clipboard, drag-resize — one C# for every target.",
+        GallerySection.Charts =>
+            "Bars from the theme's data palette, drawn with the engine's own shapes — one C# for the web and this window.",
         GallerySection.Culture =>
             "Two cultures in one window: resx strings and .NET formats, switched without a reload.",
         _ => "What the DEVICE can do, taken through a constructor like any other dependency.",
@@ -116,6 +121,7 @@ public static class Gallery
         GallerySection.Feedback => Icons.Notifications,
         GallerySection.Overlays => Icons.Info,
         GallerySection.Sheets => Icons.Table,
+        GallerySection.Charts => Icons.Table,
         GallerySection.Culture => Icons.Mail,
         _ => Icons.Person,
     };
@@ -133,6 +139,7 @@ public static class Gallery
         GallerySection.Feedback => 4,
         GallerySection.Overlays => 4,
         GallerySection.Sheets => 1,
+        GallerySection.Charts => 1,
         GallerySection.Culture => 2,
         _ => 6,
     };
@@ -151,6 +158,7 @@ public static class Gallery
         GallerySection.Feedback => Feedback(theme, state, mutate),
         GallerySection.Overlays => Overlays(theme, state, mutate),
         GallerySection.Sheets => Sheets(theme, state),
+        GallerySection.Charts => Charts(theme),
         GallerySection.Culture => Culture(theme, state),
         _ => Device(theme, state, mutate),
     };
@@ -755,6 +763,39 @@ public static class Gallery
     /// The two columns exist to show the D13 PAIR: resources and formats are separate decisions,
     /// because a reader can want a Portuguese interface with the formats of where they live.
     /// </summary>
+    /// <summary>The chart layer's first component, drawn here by Photon from the same code the web
+    /// dashboard draws it with (docs/CHARTS-PLAN.md, slice 1).</summary>
+    private static VisualNode Charts(IAppTheme theme)
+    {
+        var column = Column(Space.S3);
+        column.Add(Caption(theme,
+            "Grouped or stacked bars from the theme's data palette, drawn with the engine's own shapes. "
+            + "Hover a bar for its value; press a legend entry to isolate a series; the footer switches to the table."));
+        column.Add(BarChart(
+            title: "Revenue by quarter",
+            subtitle: "Three regions, side by side",
+            series:
+            [
+                ChartSeries("Europe", [120, 138, 149, 171]),
+                ChartSeries("Americas", [98, 105, 100, 132]),
+                ChartSeries("Asia", [61, 73, 88, 96]),
+            ],
+            categories: CategoryAxis(["Q1", "Q2", "Q3", "Q4"]),
+            values: ValueAxis(format: "N0", title: "kEUR")));
+        column.Add(BarChart(
+            title: "Stacked",
+            series:
+            [
+                ChartSeries("Europe", [120, 138, 149, 171]),
+                ChartSeries("Americas", [98, 105, 100, 132]),
+                ChartSeries("Asia", [61, 73, 88, 96]),
+            ],
+            categories: CategoryAxis(["Q1", "Q2", "Q3", "Q4"]),
+            layout: BarLayout.Stacked,
+            plotHeight: 180));
+        return Section(theme, "Charts", column);
+    }
+
     private static VisualNode Culture(IAppTheme theme, SectionState state)
     {
         var column = Column(Space.S3);
