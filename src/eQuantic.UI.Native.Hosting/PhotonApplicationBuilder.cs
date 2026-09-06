@@ -78,6 +78,14 @@ public sealed class PhotonApplicationBuilder
     /// </summary>
     public PhotonBundleBuilder Bundle { get; } = new();
 
+    /// <summary>
+    /// What this app hands to the SYSTEM — which URL schemes <see cref="IWorkspace.OpenUrl"/> opens.
+    /// The web and the app's own schemes already; <c>mailto</c>, <c>tel</c> or another app's scheme
+    /// only when said here. Nothing about it reaches a manifest: it is composed at <see cref="Build"/>
+    /// into the <see cref="OpenUrlPolicy"/> every realization consults.
+    /// </summary>
+    public PhotonWorkspaceBuilder Workspace { get; } = new();
+
     public PhotonApplication Build()
     {
         // LAST, so anything the app registered itself already sits in the collection and the
@@ -102,6 +110,10 @@ public sealed class PhotonApplicationBuilder
         _host.Services.TryAddSingleton<PhotonCultureController>();
         _host.Services.TryAddSingleton<eQuantic.UI.Primitives.ICultureController>(
             services => services.GetRequiredService<PhotonCultureController>());
+        // What OpenUrl hands to the system: the web, the app's OWN schemes — declared once, for the
+        // manifest, and read here so nobody says them twice — and whatever Program.cs opened
+        // besides. TryAdd, like every capability: an app that registered its own policy has decided.
+        _host.Services.TryAddSingleton(Workspace.Declared.Allowing(Bundle.UrlSchemes));
         PhotonApplication.RegisterCapabilities(_host.Services);
         return new PhotonApplication(_host.Build(), Args);
     }

@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using eQuantic.UI.Primitives;
+using Microsoft.Extensions.Logging;
 
 namespace eQuantic.UI.Native.Shell.Windows;
 
@@ -14,8 +15,17 @@ namespace eQuantic.UI.Native.Shell.Windows;
 /// been handed (a relative path, a relative URL) is the caller's mistake and throws, as the
 /// contract says.
 /// </para>
+/// <para>
+/// Except for what never reaches the shell at all. A URL is handed over only if this app's
+/// <see cref="OpenUrlPolicy"/> hands its scheme over — the web, the app's own schemes, and what
+/// <c>builder.Workspace</c> opened — because <c>ShellExecuteEx</c> routes to whatever claims the
+/// scheme, and a URL that arrived in content must not get to pick. The same rule the Mac applies,
+/// from the same object, so the two shells cannot disagree about one URL. A refusal answers false,
+/// as the shell would for a scheme nothing claims, and is logged so a developer who typed the URL
+/// themselves is told the one line that opens it.
+/// </para>
 /// </summary>
-public sealed unsafe class WindowsWorkspace : IWorkspace
+public sealed unsafe class WindowsWorkspace(OpenUrlPolicy policy, ILogger<WindowsWorkspace> logger) : IWorkspace
 {
     private const uint SEE_MASK_NOASYNC = 0x00000100;
     private const uint SEE_MASK_FLAG_NO_UI = 0x00000400;
@@ -101,6 +111,14 @@ public sealed unsafe class WindowsWorkspace : IWorkspace
         if (!url.IsAbsoluteUri)
             throw new ArgumentException("A URL to open must be absolute — nothing can route "
                 + $"\"{url.OriginalString}\" without a scheme.", nameof(url));
+        // The POLICY, before the platform: a refused URL never reaches ShellExecuteEx. Logged,
+        // because false alone is the one answer nobody can diagnose — and a developer who typed
+        // mailto: themselves should find the fix at the first click.
+        if (policy.Refusal(url) is { } refusal)
+        {
+            logger.LogWarning("{Refusal}", refusal);
+            return false;
+        }
         return Execute(url.AbsoluteUri);
     }
 
@@ -111,6 +129,10 @@ public sealed unsafe class WindowsWorkspace : IWorkspace
         if (!url.IsAbsoluteUri)
             throw new ArgumentException("A URL to check must be absolute — nothing can route "
                 + $"\"{url.OriginalString}\" without a scheme.", nameof(url));
+        // The same policy OpenUrl applies, or the two would disagree about the same URL: a button
+        // gated by CanOpen has to disappear for exactly the links OpenUrl would refuse. Not logged —
+        // a QUESTION has no side effect, and a screen may ask it on every build.
+        if (!policy.Allows(url)) return false;
         // The QUERY form: which command opens this protocol. S_OK with a command means something
         // claims it; anything else means nothing does — and no dialog either way, which is exactly
         // what a check must not put on the person's screen.

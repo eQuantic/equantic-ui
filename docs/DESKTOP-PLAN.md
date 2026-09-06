@@ -259,6 +259,26 @@ What tripped a fresh consumer on their FIRST build — none blocking, all resolv
 site. Recorded because each cost someone a build cycle, and the fix (rename, new API, doc line,
 editor suggestion) is a decision, not an oversight. Newest first.
 
+- **`IWorkspace.OpenUrl` handed every scheme to the system** (2026-09-05, OS Cleaner on adopting
+  0.2.0-preview.49; RESOLVED). The consumer kept its own `/usr/bin/open` strategy rather than adopt
+  the capability, because that strategy is where its `http`/`https` filter lives — the licensing
+  site's URL and the release feed's arrive from outside and pass through that one door and no other
+  — and `OpenUrl` had no door at all: `open` obeys any scheme registered on the machine, a `file://`
+  opens a folder or launches what it names, and some schemes execute. Their words: "se o OpenUrl
+  vier a recusar esquemas fora de http/https por omissão, aí a troca paga-se." It does now.
+  `OpenUrlPolicy` (Primitives) is the one rule every realization applies before a URL reaches the
+  platform: `http`, `https`, every scheme the app declared with `builder.Bundle.UrlScheme(…)` — the
+  SDK knows those, nobody says them twice — and what `builder.Workspace.Opens(…)` added
+  (`OpensMail()`, `OpensPhone()`, `OpensMessages()`, or a name). A refused URL answers `false`, as
+  the system does for a scheme nothing claims, and the realization logs the scheme and the one line
+  that opens it; it is not an exception, because the policy exists for URLs the app did not write
+  and a hostile link must not need a try/catch. `CanOpen` applies the same policy, so a gated button
+  disappears for exactly the links `OpenUrl` refuses. `file` cannot be opted in: `OpenFile` and
+  `Reveal` are its typed doors and check what a URL would skip. The consumer's other case — sending
+  a person to the Full Disk Access pane, `x-apple.systempreferences:…?Privacy_AllFiles` — is one
+  `builder.Workspace.Opens("x-apple.systempreferences")`. On the way, `builder.Bundle.UrlScheme`
+  stopped accepting what is not a scheme name (`"acme://"`) — it throws at its own line instead of
+  shipping a `CFBundleURLTypes` entry nothing matches.
 - **A unified-chrome toolbar knew which corner the window controls were in** (2026-09-05, the
   Windows shell's first run of the Studio; RESOLVED). The sample reserved the traffic lights'
   corner with a `Gap(74)` — a platform fact hard-coded in an app, and on Windows the caption

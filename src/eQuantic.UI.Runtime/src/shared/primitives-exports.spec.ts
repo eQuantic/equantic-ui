@@ -51,6 +51,12 @@ const NO_TWIN_OWED = new Set([
   // Read off the compiled assembly by the SDK's signing step; they never exist at run time, on any
   // target — a browser has no code signature to carry them.
   'PhotonEntitlements',
+  // HOST CONFIGURATION, composed in Program.cs and consulted by the native shells: which URL
+  // schemes IWorkspace.OpenUrl hands to the operating system. A page names the capability
+  // (IWorkspace, an interface, resolved by name); the policy is what the shell behind it applies,
+  // and the browser has no IWorkspace at all — a link there is an anchor the browser already
+  // routes, and nothing in a page bundle ever asks this.
+  'OpenUrlPolicy',
   // The cubic-bezier solver behind `Curve`. On the web a transition IS a CSS
   // `transition-timing-function`, so the browser evaluates the curve and nothing in a page bundle
   // ever asks this — it exists for the targets that have to do the arithmetic themselves.
