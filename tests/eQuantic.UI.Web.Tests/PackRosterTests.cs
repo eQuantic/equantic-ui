@@ -78,8 +78,18 @@ public class PackRosterTests
         // Named down to the PLATFORM row, because one platform can drift while its siblings are
         // right, and "Release is wrong" would then send the reader through three rows to find which.
         // ActiveCfg and Build.0 are one decision written twice, so the pair collapses to one line.
-        var drift = Regex.Matches(section.Value,
-                @"(\{[0-9A-Fa-f-]{36}\})\.([^.|]+\|[^.]+)\.(?:ActiveCfg|Build\.0) = ([^|\r\n]+)\|")
+        var rows = Regex.Matches(section.Value,
+            @"(\{[0-9A-Fa-f-]{36}\})\.([^.|]+\|[^.]+)\.(?:ActiveCfg|Build\.0) = ([^|\r\n]+)\|");
+
+        // A guard that reads NOTHING passes. Whatever reshapes this file — a rename, a reformat,
+        // another generator — has to leave the rows readable or say so here, rather than leave a
+        // green test looking at an empty match set. One row per project, per configuration, per
+        // ActiveCfg/Build.0: the floor is far below that and still far above zero.
+        rows.Count.Should().BeGreaterThan(300,
+            "the solution's configuration rows have to be READ for this to assert anything — if the "
+            + "file's shape changed, teach the pattern rather than let it match nothing");
+
+        var drift = rows
             .Where(m => !string.Equals(m.Groups[2].Value.Split('|')[0].Trim(), m.Groups[3].Value.Trim(),
                 StringComparison.Ordinal))
             .Select(m => $"{names.GetValueOrDefault(m.Groups[1].Value, m.Groups[1].Value)}: the solution's "
