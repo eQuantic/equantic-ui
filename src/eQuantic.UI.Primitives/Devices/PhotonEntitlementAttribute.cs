@@ -44,14 +44,55 @@ public sealed class PhotonEntitlementAttribute(string entitlement) : Attribute
 /// </summary>
 public static class PhotonEntitlements
 {
-    /// <summary>Required by any embedded engine that compiles code at run time — a WASM runtime
-    /// (wasmtime, YARA-X), a scripting VM, a regex JIT. Without it the hardened runtime kills the
-    /// process at the first executable page it maps, with SIGKILL/CODESIGNING: no exception, no
-    /// stack, the process is simply gone.</summary>
+    /// <summary>
+    /// Pages the app maps through Apple's JIT protocol (<c>MAP_JIT</c>) — .NET's own JIT,
+    /// JavaScriptCore. Without it the hardened runtime kills the process at the first such page,
+    /// with SIGKILL/CODESIGNING: no exception, no stack, the process is simply gone.
+    /// <para>
+    /// NOT enough on its own for every engine that compiles at run time, which is what the name
+    /// suggests and what this comment used to say. An engine that writes plain executable memory
+    /// rather than going through <c>MAP_JIT</c> needs <see cref="AllowUnsignedExecutableMemory"/>,
+    /// and wasmtime — so YARA-X, which embeds it — is measured to be that shape. Which shape a
+    /// given engine is, is the engine's own business: "a WASM runtime" is not the answer, because
+    /// nothing stops one from mapping the platform way.
+    /// </para>
+    /// <para>
+    /// AN APP RARELY DECLARES THIS ONE. A hardened non-AOT build already gets it from the SDK
+    /// beside <see cref="DisableLibraryValidation"/>, because the .NET runtime JITs its own methods
+    /// (see <c>_EqRuntimeEntitlements</c> in the native SDK's targets). Declaring it again is a
+    /// harmless no-op — and worth knowing, because a consumer declared it, watched the crash stop,
+    /// and credited the wrong key: the entitlement that changed was the other one, and this had
+    /// been in every one of their bundles all along. Under <c>PublishAot</c> the SDK adds nothing,
+    /// so an AOT app that embeds such an engine declares whatever it needs itself — a case nobody
+    /// here has measured.
+    /// </para>
+    /// </summary>
     public const string AllowJit = "com.apple.security.cs.allow-jit";
 
-    /// <summary>Executable memory the app writes itself and did not sign — some interpreters and
-    /// older engines. Broader than <see cref="AllowJit"/>: reach for JIT first.</summary>
+    /// <summary>
+    /// Executable memory the app writes itself, outside <c>MAP_JIT</c> and unsigned — wasmtime,
+    /// some interpreters, older engines. The shape is what decides, not the category: an engine is
+    /// this case because of how it maps its pages, and another WASM runtime may well not be.
+    /// <para>
+    /// NOT a broader fallback to try after <see cref="AllowJit"/>, which is what this comment used
+    /// to say and which sent a consumer to ship a binary that died on its first scan. For an engine
+    /// that maps executable pages the platform way, JIT is the answer; for one that does not, this
+    /// is the REQUIREMENT.
+    /// </para>
+    /// <para>
+    /// So for a hardened NON-AOT app embedding an engine of that shape — wasmtime is the one
+    /// measured — this is the ONE key the app declares: <see cref="AllowJit"/> is already in the
+    /// bundle from the SDK. Measured, all three rows with a
+    /// real certificate — JIT alone SIGKILLs (<c>"namespace":"CODESIGNING"</c>,
+    /// <c>"indicator":"Invalid Page"</c>); JIT plus this passes; and THIS ALONE passes too, which is
+    /// what proved the JIT declaration was never the variable. Under <c>PublishAot</c> the SDK
+    /// declares nothing and the recipe is the app's own to work out; nobody has measured it.
+    /// </para>
+    /// <para>
+    /// Nothing without a signing certificate exercises the hardened runtime, so a mistake here
+    /// survives a fully green suite and appears at the first notarized release.
+    /// </para>
+    /// </summary>
     public const string AllowUnsignedExecutableMemory =
         "com.apple.security.cs.allow-unsigned-executable-memory";
 
