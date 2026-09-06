@@ -275,7 +275,16 @@ export class Router {
   private async dispatch(href: string, state: unknown): Promise<void> {
     const url = new URL(href, this.win.location.href);
     const match = matchRoute(this.routes, url.pathname);
-    if (!match) return;
+    if (!match) {
+      // The URL has ALREADY moved — the browser did that before telling us — so returning here
+      // leaves the reader looking at the previous page under the new address, with nothing on
+      // screen to say so. Measured on a live site by traversing back to `/careers/%`: the address
+      // bar said one thing and the document was still the other. The click path answers this by
+      // letting the browser fetch what it cannot route, and the server has a 404 page; a traversal
+      // has no such fallback unless it asks for one, so it asks.
+      this.win.location.reload();
+      return;
+    }
     // A saved position wins: a real back/forward returns the reader where they were, hash or no
     // hash. Only an entry with nothing saved falls through to what the URL asks for — which is the
     // case a FRAGMENT navigation lands in, because the browser pushed that entry rather than

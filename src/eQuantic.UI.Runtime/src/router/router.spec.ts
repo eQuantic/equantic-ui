@@ -385,6 +385,29 @@ describe('Router (happy-dom)', () => {
     scrollTo.mockRestore();
   });
 
+  /**
+   * A traversal to a URL the router cannot match leaves the reader on the previous page under the
+   * new address — the browser moved the URL before telling us, and returning silently means the
+   * document and the address bar disagree with nothing on screen to say so. Measured live on
+   * `/careers/%`: the title was still the previous document's. The click path already defers to the
+   * browser for what it cannot route, and the server has a 404 page; a traversal asks for the same.
+   */
+  it('lets the server answer a traversal it cannot route, instead of leaving a stale page', async () => {
+    const reload = vi.spyOn(window.location, 'reload').mockImplementation(() => {});
+    try {
+      window.history.pushState(null, '', '/no-such-route');
+      window.dispatchEvent(new window.PopStateEvent('popstate'));
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(reload).toHaveBeenCalled();
+      expect(onNavigate).not.toHaveBeenCalled();
+    } finally {
+      reload.mockRestore();
+      window.history.replaceState(null, '', '/');
+    }
+  });
+
   it('sets manual scroll restoration when supported', () => {
     if ('scrollRestoration' in window.history) {
       expect(window.history.scrollRestoration).toBe('manual');
