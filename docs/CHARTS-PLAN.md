@@ -232,6 +232,17 @@ mirrored parameter for parameter, no `new`.
   nothing on Photon), and identity in a virtualized list was positional on BOTH realizers — the
   Photon path shifted with the window, and the web funnel never handed `VisualNode.Key` to the
   reconciler. A keyed child now takes its key as its path segment, and the web writes the key.
+- **The mute canvas**, the third and by far the most expensive, corrected in the same slice and
+  under-described in its commit. On the web, a layout node that PAINTS NOTHING is not a hit target
+  (`LowerFlex` follows Flutter's `hitTestSelf`, not the DOM's every-element-is-a-target) and
+  `pointer-events` inherits, so an interactive `Canvas` inside almost any unpainted `Row` or
+  `Column` inherited the disclaimer and never received a pointer. Not "inside a `Stack`", which is
+  how the commit put it — no `Stack` is required. It had shipped that way for four versions, and a
+  consumer lost the hover, the drill-in and the marking of its main component to it without a
+  single red test: the arithmetic behind the canvas was tested and correct, and a headless render
+  gate draws a frame without passing a pointer through it. A mute canvas draws exactly like a live
+  one. The net is `CanvasUnderALayerTests` on both realizers (Photon never had the defect and now
+  says so), and it is the strongest case yet for measuring geometry and hit-testing in a browser.
 
 ## Fenced, on purpose
 

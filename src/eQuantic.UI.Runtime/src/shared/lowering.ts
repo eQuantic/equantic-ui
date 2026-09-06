@@ -1664,8 +1664,31 @@ function lowerCanvas(node: CanvasNodeValue, path: string): HtmlNode {
   if (measured) node.draw(painter);
   else declareCanvas(path, { draw: node.draw });
 
+  // Whether anything listens decides the pointer declaration below, so it is settled BEFORE the
+  // style is built rather than appended to a finished string.
+  const listens = Boolean(
+    node.onPointerDown || node.onPointerMove || node.onPointerUp || node.onPointerLeave,
+  );
+
   const attributes: Record<string, string | undefined> = {
-    style: `display:block;width:${width > 0 ? `${num(width)}px` : '100%'};height:${height > 0 ? `${num(height)}px` : '100%'}`,
+    // DECLARATIONS, not a hand-built string: `atomicAttrs` hashes each (property, value) into the
+    // same atomic class the C# atomizer produces for the same pair, so one canvas is one set of
+    // shared classes whichever side rendered it. Written as a string, the client emitted an inline
+    // style where SSR had emitted classes — the same element styled two ways depending on who drew
+    // it, which is exactly what the atomizer exists to prevent.
+    ...atomicAttrs({
+      display: 'block',
+      width: width > 0 ? px(width) : '100%',
+      height: height > 0 ? px(height) : '100%',
+      // A canvas that listens TAKES the pointer, and one that does not stays out of the way.
+      // `pointer-events` inherits, and a layout node that paints nothing disclaims it (see
+      // LowerFlex), so an interactive canvas inside almost any layout inherited the disclaimer and
+      // went mute: the handlers were never called and the arithmetic behind them stayed right,
+      // which is how a green suite kept saying nothing was wrong. Photon needs neither line — it
+      // registers a region per canvas and skips one with no handlers — so this is the same rule
+      // said in the DOM's language. The C# realizer writes the identical pair.
+      'pointer-events': listens ? 'auto' : 'none',
+    }),
   };
   // A viewBox only when the box is known: a filling canvas draws in the same coordinates the
   // browser lays out, so nothing should scale.
@@ -1678,6 +1701,7 @@ function lowerCanvas(node: CanvasNodeValue, path: string): HtmlNode {
   } else {
     attributes['aria-hidden'] = 'true';
   }
+  if (listens) attributes['data-eq-canvas'] = '1';
 
   // The pointer, in the CANVAS's coordinates. `getBoundingClientRect` is what turns the page's
   // point into the canvas's — the browser's equivalent of the host subtracting the box's origin.
@@ -1696,7 +1720,6 @@ function lowerCanvas(node: CanvasNodeValue, path: string): HtmlNode {
   };
 
   const events: HtmlNode['events'] = {};
-  const listens = Boolean(node.onPointerDown || node.onPointerMove || node.onPointerUp || node.onPointerLeave);
   if (listens) {
     // The press is captured whenever the canvas listens for ANYTHING, not only when it listens for
     // the press itself: on Photon `PressDown` sets the pressed canvas unconditionally, so a canvas
@@ -1720,21 +1743,6 @@ function lowerCanvas(node: CanvasNodeValue, path: string): HtmlNode {
   if (node.onPointerLeave) {
     events['pointerleave'] = () => node.onPointerLeave?.();
   }
-  if (Object.keys(events).length > 0) {
-    attributes['data-eq-canvas'] = '1';
-    // And it TAKES the pointer, explicitly: `pointer-events` inherits, and a Stack's layers switch
-    // it off so a picture on top never blocks the control beneath — which silenced a chart's own
-    // canvas inside its plot Stack (the hover fell through to the card behind it). The C# realizer
-    // writes the identical declaration, so SSR and hydration agree.
-    attributes['style'] = `${attributes['style'] ?? ''};pointer-events:auto`;
-  } else {
-    // A DECORATIVE canvas must not swallow the press that belongs to what is under it. Photon's
-    // hit-testing skips a canvas with no handlers (it registers no region at all); the DOM has no
-    // such rule, so a filling svg over a Stack would eat every click. Same behaviour, said in the
-    // two languages — the C# realizer sets the identical style for SSR.
-    attributes['style'] = `${attributes['style'] ?? ''};pointer-events:none`;
-  }
-
   return { tag: 'svg', attributes, events, children: painter.shapes, key: path };
 }
 
