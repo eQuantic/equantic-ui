@@ -26,14 +26,19 @@ public class DrawingTests
     /// <summary>
     /// The platform's REAL rasterizer — CoreGraphics on a Mac, Direct2D on Windows — so the same
     /// assertions hold the two twins to the same answer; a host with neither skips rather than
-    /// failing on a framework it does not have.
+    /// failing on a framework it does not have. ONE per test run, as a window has one: the Direct2D
+    /// rasterizer owns COM factories, and a fresh one per test would leave them behind for the life
+    /// of the process.
     /// </summary>
-    private static IIconRasterizer PlatformRasterizer()
+    private static readonly Lazy<IIconRasterizer?> Platform = new(() =>
     {
         if (OperatingSystem.IsMacOS()) return new CoreGraphicsIconRasterizer();
         if (OperatingSystem.IsWindows()) return new eQuantic.UI.Native.Shell.Windows.Graphics.Direct2DIconRasterizer();
-        throw new SkipException("Needs a platform icon rasterizer (CoreGraphics or Direct2D).");
-    }
+        return null;
+    });
+
+    private static IIconRasterizer PlatformRasterizer() =>
+        Platform.Value ?? throw new SkipException("Needs a platform icon rasterizer (CoreGraphics or Direct2D).");
 
     /// <summary>A mark with two shapes in two colours, and one that asks to be tinted.</summary>
     private static VectorDrawing Mark() => SvgDocument.Parse("""

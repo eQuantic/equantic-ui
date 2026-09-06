@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Runtime.InteropServices;
 using eQuantic.UI.Native.Hosting;
 using eQuantic.UI.Primitives;
 using Microsoft.Win32;
@@ -101,15 +100,20 @@ public static class WindowsDeepLinks
     public static void RegisterScheme(string scheme)
     {
         var executable = Environment.ProcessPath;
-        if (string.IsNullOrEmpty(executable) || string.IsNullOrWhiteSpace(scheme)) return;
+        if (string.IsNullOrEmpty(executable)) return;
+        // Trimmed by the rule the builder and the generator share, then checked the way .NET checks
+        // a scheme — a letter first, then letters, digits, "+", "-" or ".". A name that fails would
+        // produce a class Windows never matches, and a registration that cannot fire is worse than
+        // none: it looks like a link handler and is not.
+        if (BundleFactRule.Scheme(scheme) is not { } accepted || !Uri.CheckSchemeName(accepted)) return;
         var command = $"\"{executable}\" \"%1\"";
         try
         {
-            using var classes = Registry.CurrentUser.CreateSubKey(@"Software\Classes\" + scheme);
+            using var classes = Registry.CurrentUser.CreateSubKey(@"Software\Classes\" + accepted);
             if (classes is null) return;
             using var open = classes.CreateSubKey(@"shell\open\command");
             if (open?.GetValue(null) as string == command) return;
-            classes.SetValue(null, $"URL:{scheme} protocol");
+            classes.SetValue(null, $"URL:{accepted} protocol");
             classes.SetValue("URL Protocol", "");
             open?.SetValue(null, command);
         }

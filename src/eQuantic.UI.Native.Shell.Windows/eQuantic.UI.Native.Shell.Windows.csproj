@@ -23,4 +23,11 @@
     <ProjectReference Include="../eQuantic.UI.Native.Components/eQuantic.UI.Native.Components.csproj" />
   </ItemGroup>
 
+  <!-- One rule, three callers now: what a URL scheme looks like once accepted. The builder trims
+       it, the generator trims it, and the registration this shell writes under HKCU must trim it
+       the same way — or two spellings of one scheme register twice. -->
+  <ItemGroup>
+    <Compile Include="../Shared/BundleFactRule.cs" Link="Shared/BundleFactRule.cs" />
+  </ItemGroup>
+
 </Project>

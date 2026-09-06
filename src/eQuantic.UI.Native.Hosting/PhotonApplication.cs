@@ -224,13 +224,14 @@ public sealed class PhotonApplication
 
     /// <summary>
     /// Whether a shell is a candidate on THIS operating system. A shell that declares the platform
-    /// it exists for — <c>[assembly: SupportedOSPlatform("windows")]</c>, which the Windows shell's
-    /// project states — is a candidate there and nowhere else; one that declares nothing is a
-    /// candidate everywhere, as before. Two shells beside one app is an ordinary sight now: the test
-    /// project that exercises the Windows bindings on Windows and the Mac's on a Mac carries both,
-    /// and so does a folder published for more than one desktop. Without this the Mac found two
-    /// runners and refused to start, and the Windows capabilities could shadow the Mac's in the
-    /// container by registering first.
+    /// it exists for — <c>[assembly: SupportedOSPlatform("windows")]</c> — is a candidate there and
+    /// nowhere else; one that declares nothing is a candidate everywhere, as before. Every
+    /// first-party shell declares: the desktop ones in source (the SDK writes the attribute only for
+    /// platform-specific target frameworks), the phone ones through their TFMs. Two shells beside one
+    /// app is an ordinary sight now: the test project that exercises the Windows bindings on Windows
+    /// and the Mac's on a Mac carries both, and so does a folder published for more than one desktop.
+    /// Without this the Mac found two runners and refused to start, and the Windows capabilities
+    /// could shadow the Mac's in the container by registering first.
     /// </summary>
     private static bool ForThisOperatingSystem(Assembly shell)
     {

@@ -74,6 +74,14 @@ public class HostingTests
             .Should().Contain(platform => platform.PlatformName.StartsWith("windows", StringComparison.Ordinal),
                 "the host treats a shell declared for another OS as not there");
 
+    /// <summary>The Mac's shell says so too — by name, because this project reaches it only through
+    /// the sample and only on a Mac, where the sample's SDK picked it.</summary>
+    [MacFact]
+    public void TheMacShellDeclaresItsOperatingSystem() =>
+        Assembly.Load(new AssemblyName("eQuantic.UI.Native.Shell.MacOS"))
+            .GetCustomAttributes<System.Runtime.Versioning.SupportedOSPlatformAttribute>()
+            .Should().Contain(platform => platform.PlatformName.StartsWith("macos", StringComparison.OrdinalIgnoreCase));
+
     /// <summary>
     /// AppKit is a main-thread framework, and xUnit runs nowhere near the main thread — so this
     /// is the message a developer gets for calling Run() from a worker (a test, a Task, a

@@ -306,6 +306,18 @@ public class WindowsShellTests
             new Uri("acme://activate")).Should().BeFalse();
     }
 
+    /// <summary>A name that is not a scheme registers NOTHING: a class Windows would never match
+    /// looks like a link handler and is not.</summary>
+    [WindowsFact]
+    public void ANameThatIsNotASchemeIsNotRegistered()
+    {
+        var bogus = "not a scheme " + Guid.NewGuid().ToString("N")[..6];
+        WindowsDeepLinks.RegisterScheme(bogus);
+        using var key = Registry.CurrentUser.OpenSubKey(@"Software\Classes\" + bogus);
+        key.Should().BeNull();
+        WindowsDeepLinks.RegisterScheme("   ");   // and nothing to register is not an error
+    }
+
     // ---- The window itself -----------------------------------------------------------------------------------
 
     /// <summary>
