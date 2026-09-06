@@ -1,4 +1,5 @@
 import { setNavigationHandler } from './navigator';
+import { bookmarkTarget } from '../shared/bookmark-target';
 import { type RouteEntry, type RouteMatch, matchRoute } from './route-table';
 import { setCurrentRouteFrom } from './current-route';
 
@@ -325,11 +326,12 @@ export class Router {
       // `scrollIntoView` honours `scroll-margin-top` exactly as a fragment navigation does, so the
       // room a bookmark keeps under pinned chrome stays declarative — the router never learns the
       // header's height, and never has to.
-      const id = decodeURIComponent(scroll.hash.slice(1));
-      const target = id ? this.win.document.getElementById(id) : null;
+      //
       // A fragment that names nothing leaves the page where it is. Scrolling to the top instead
-      // would undo the position on a same-page navigation, which is the whole defect this fixes.
-      if (target) target.scrollIntoView();
+      // would undo the position on a same-page navigation, which is the whole defect this fixes —
+      // and a fragment nobody can decode is exactly the same answer, rather than an exception
+      // thrown through a navigation.
+      bookmarkTarget(scroll.hash, this.win.document)?.scrollIntoView();
       return;
     }
     this.win.scrollTo(scroll.x, scroll.y);

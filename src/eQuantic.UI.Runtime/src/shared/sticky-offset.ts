@@ -17,6 +17,7 @@
  * from — the two are in different subtrees, so a variable on the sticky itself would not reach.
  */
 
+import { bookmarkTarget } from './bookmark-target';
 import { PINNED_MARKER } from './markers';
 
 const VARIABLE = '--eq-anchor-offset';
@@ -91,8 +92,8 @@ let coldLoadHandled = false;
 function realignColdLoad(offset: number): void {
   if (coldLoadHandled || offset <= 0) return;
   coldLoadHandled = true;
-  if (typeof location === 'undefined' || location.hash.length <= 1) return;
-  const target = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+  if (typeof location === 'undefined') return;
+  const target = bookmarkTarget(location.hash, document);
   if (!target) return;
   const top = target.getBoundingClientRect().top;
   if (top < 0 || top >= offset) return;
