@@ -272,7 +272,9 @@ public class WindowsShellTests
     [WindowsFact]
     public void TheWorkspaceRefusesRelativePaths_AndAnswersFalseForWhatIsGone()
     {
-        var workspace = new WindowsWorkspace();
+        // The web policy and no logger: what the container hands it, minus the app's own schemes.
+        var workspace = new WindowsWorkspace(OpenUrlPolicy.Web,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<WindowsWorkspace>.Instance);
         var reveal = () => workspace.Reveal("relative/path");
         reveal.Should().Throw<ArgumentException>();
         var open = () => workspace.OpenUrl(new Uri("about", UriKind.Relative));
