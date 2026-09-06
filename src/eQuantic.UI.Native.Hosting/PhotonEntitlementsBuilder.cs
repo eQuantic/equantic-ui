@@ -24,12 +24,16 @@ public sealed class PhotonEntitlementsBuilder
     /// <summary>What this app declared, in case it wants to explain itself.</summary>
     public IReadOnlyCollection<string> Declared => _declared;
 
-    /// <summary>An embedded engine that compiles code at run time — a WASM runtime, a scripting VM.
-    /// Without it the hardened runtime kills the process at its first generated page.</summary>
+    /// <summary>An engine that maps executable pages the platform way (<c>MAP_JIT</c>) — .NET's own
+    /// JIT, JavaScriptCore. Without it the hardened runtime kills the process at its first such
+    /// page. Not enough on its own for an engine that writes plain executable memory: a WASM
+    /// runtime needs <see cref="RequireUnsignedExecutableMemory"/> beside it (see
+    /// <see cref="PhotonEntitlements.AllowJit"/> for what was measured).</summary>
     public PhotonEntitlementsBuilder RequireJit() => Require(PhotonEntitlements.AllowJit);
 
-    /// <summary>Executable memory the app writes itself and did not sign. Broader than
-    /// <see cref="RequireJit"/> — reach for that one first.</summary>
+    /// <summary>Executable memory the app writes itself, outside <c>MAP_JIT</c> and unsigned — a
+    /// WASM engine such as wasmtime. NOT a fallback to reach for after <see cref="RequireJit"/>:
+    /// for an engine of that shape it is the requirement, and the measured pair is both.</summary>
     public PhotonEntitlementsBuilder RequireUnsignedExecutableMemory() =>
         Require(PhotonEntitlements.AllowUnsignedExecutableMemory);
 

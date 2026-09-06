@@ -44,14 +44,36 @@ public sealed class PhotonEntitlementAttribute(string entitlement) : Attribute
 /// </summary>
 public static class PhotonEntitlements
 {
-    /// <summary>Required by any embedded engine that compiles code at run time — a WASM runtime
-    /// (wasmtime, YARA-X), a scripting VM, a regex JIT. Without it the hardened runtime kills the
-    /// process at the first executable page it maps, with SIGKILL/CODESIGNING: no exception, no
-    /// stack, the process is simply gone.</summary>
+    /// <summary>
+    /// Pages the app maps through Apple's JIT protocol (<c>MAP_JIT</c>) — .NET's own JIT,
+    /// JavaScriptCore. Without it the hardened runtime kills the process at the first such page,
+    /// with SIGKILL/CODESIGNING: no exception, no stack, the process is simply gone.
+    /// <para>
+    /// NOT enough on its own for every engine that compiles at run time, which is what the name
+    /// suggests and what this comment used to say. An engine that writes plain executable memory
+    /// rather than going through <c>MAP_JIT</c> also needs
+    /// <see cref="AllowUnsignedExecutableMemory"/>, and wasmtime — so YARA-X, which embeds it — is
+    /// exactly that case. Measured by a consumer with a real certificate: <c>allow-jit</c> alone
+    /// SIGKILLs on the first scan (<c>"namespace":"CODESIGNING"</c>, <c>"indicator":"Invalid
+    /// Page"</c>); the two together pass.
+    /// </para>
+    /// </summary>
     public const string AllowJit = "com.apple.security.cs.allow-jit";
 
-    /// <summary>Executable memory the app writes itself and did not sign — some interpreters and
-    /// older engines. Broader than <see cref="AllowJit"/>: reach for JIT first.</summary>
+    /// <summary>
+    /// Executable memory the app writes itself, outside <c>MAP_JIT</c> and unsigned — a WASM engine
+    /// such as wasmtime, some interpreters, older engines.
+    /// <para>
+    /// NOT a broader fallback to try after <see cref="AllowJit"/>, which is what this comment used
+    /// to say and which sent a consumer to ship a binary that died on its first scan. For an engine
+    /// that maps executable pages the platform way, JIT is the answer; for one that does not, this
+    /// is the REQUIREMENT, and the measured pair for wasmtime is both keys together.
+    /// </para>
+    /// <para>
+    /// Nothing without a signing certificate exercises the hardened runtime, so a mistake here
+    /// survives a fully green suite and appears at the first notarized release.
+    /// </para>
+    /// </summary>
     public const string AllowUnsignedExecutableMemory =
         "com.apple.security.cs.allow-unsigned-executable-memory";
 
