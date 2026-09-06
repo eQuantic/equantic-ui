@@ -1,5 +1,11 @@
 # Compile-Time Evaluation - Implementation Summary
 
+> **Status note.** The `TW.*` syntax on this page belongs to the `eQuantic.UI.Tailwind`
+> adapter, removed in 0704a3d0 (2026-08-08) — the atomic styling engine is the product, and
+> the framework ships exactly one styling engine. What survives is the generic mechanism:
+> `[CompileTimeEvaluate]` and `ClassBuilder`, now in `eQuantic.UI.Web.Styling`. Read the
+> examples as illustrations of the mechanism, not as an API you can call today.
+
 ## Problem Statement
 
 We needed a **generic, extensible solution** for compile-time evaluation of CSS class builders (Tailwind, Bootstrap, Material UI, etc.) **without hardcoding** framework-specific logic in the compiler.
@@ -12,7 +18,7 @@ A marker attribute that tells the compiler to evaluate expressions at compile-ti
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    eQuantic.UI.Core                         │
+│                    eQuantic.UI.Web                          │
 │  ┌───────────────────────────────────────────────────────┐  │
 │  │  CompileTimeEvaluateAttribute                         │  │
 │  │  - Generic marker for any CSS framework              │  │
@@ -46,9 +52,9 @@ A marker attribute that tells the compiler to evaluate expressions at compile-ti
 
 ## Implementation
 
-### 1. Core Attribute
+### 1. The attribute
 
-**File:** `src/eQuantic.UI.Core/Styling/CompileTimeEvaluateAttribute.cs`
+**File:** `src/eQuantic.UI.Web/Styling/CompileTimeEvaluateAttribute.cs`
 
 ```csharp
 [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
@@ -64,9 +70,9 @@ public sealed class CompileTimeEvaluateAttribute : Attribute
 - Configurable fallback behavior
 - Framework-agnostic
 
-### 2. Tailwind Implementation
+### 2. Tailwind Implementation (removed)
 
-**File:** `src/eQuantic.UI.Tailwind/TailwindClass.cs`
+**File:** `src/eQuantic.UI.Tailwind/TailwindClass.cs` — gone with the adapter (0704a3d0)
 
 ```csharp
 [CompileTimeEvaluate]
@@ -126,7 +132,7 @@ private bool IsCompileTimeEvaluatable(ITypeSymbol typeSymbol)
 {
     return typeSymbol.GetAttributes()
         .Any(attr => attr.AttributeClass?.Name == "CompileTimeEvaluateAttribute" &&
-                     attr.AttributeClass.ContainingNamespace.ToDisplayString() == "eQuantic.UI.Core.Styling");
+                     attr.AttributeClass.ContainingNamespace.ToDisplayString() == "eQuantic.UI.Web.Styling");
 }
 ```
 
@@ -267,11 +273,11 @@ className: "flex gap-4 p-6"
 
 ### Created
 
-1. **`src/eQuantic.UI.Core/Styling/CompileTimeEvaluateAttribute.cs`**
+1. **`src/eQuantic.UI.Web/Styling/CompileTimeEvaluateAttribute.cs`**
    - Generic attribute for any CSS framework
    - Configurable fallback behavior
 
-2. **`src/eQuantic.UI.Core/Styling/ClassBuilder.cs`**
+2. **`src/eQuantic.UI.Web/Styling/ClassBuilder.cs`**
    - Generic fluent builder for CSS classes
    - Can be used by any framework (Tailwind, Bootstrap, etc.)
 
@@ -286,7 +292,7 @@ className: "flex gap-4 p-6"
 
 1. **`src/eQuantic.UI.Tailwind/TailwindClass.cs`**
    - Added `[CompileTimeEvaluate]` attribute
-   - Added `using eQuantic.UI.Core.Styling;`
+   - Added `using eQuantic.UI.Web.Styling;`
 
 2. **`src/eQuantic.UI.Tailwind/TWBuilder.cs`**
    - Simplified to delegate to `ClassBuilder`

@@ -1,5 +1,11 @@
 # Compile-Time Evaluation in eQuantic.UI Compiler
 
+> **Status note.** The `TW.*` syntax on this page belongs to the `eQuantic.UI.Tailwind`
+> adapter, removed in 0704a3d0 (2026-08-08) — the atomic styling engine is the product, and
+> the framework ships exactly one styling engine. What survives is the generic mechanism:
+> `[CompileTimeEvaluate]` and `ClassBuilder`, now in `eQuantic.UI.Web.Styling`. Read the
+> examples as illustrations of the mechanism, not as an API you can call today.
+
 ## Overview
 
 The eQuantic.UI compiler supports **compile-time evaluation** of expressions involving types marked with the `[CompileTimeEvaluate]` attribute. This allows CSS class builders and similar constructs to be evaluated during compilation, producing optimized JavaScript output.
@@ -32,7 +38,7 @@ className: "flex gap-4 p-6"  // ✅ Pre-evaluated at compile time
 ### 1. Mark Type with Attribute
 
 ```csharp
-using eQuantic.UI.Core.Styling;
+using eQuantic.UI.Web.Styling;
 
 [CompileTimeEvaluate]
 public readonly struct TailwindClass
@@ -70,7 +76,7 @@ private bool IsCompileTimeEvaluatable(ITypeSymbol typeSymbol)
 {
     return typeSymbol.GetAttributes()
         .Any(attr => attr.AttributeClass?.Name == "CompileTimeEvaluateAttribute" &&
-                     attr.AttributeClass.ContainingNamespace.ToDisplayString() == "eQuantic.UI.Core.Styling");
+                     attr.AttributeClass.ContainingNamespace.ToDisplayString() == "eQuantic.UI.Web.Styling");
 }
 ```
 
@@ -384,7 +390,7 @@ public void CompileTimeEvaluation_OperatorOverload_EmitsConstantString()
 
 ## Examples from Real Projects
 
-### TodoListApp Example
+### The Tailwind sample, as it was written
 
 ```csharp
 // Before (string - no type safety)

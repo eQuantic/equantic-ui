@@ -27,10 +27,12 @@ if (!existsSync(project)) {
 // the way it did two releases ago.
 rmSync(output, { recursive: true, force: true });
 
-// The repository's NuGet.config declares a LOCAL package source, `artifacts/packages`, which a Debug
-// build fills and a fresh clone does not have. NuGet refuses to restore against a source that is not
-// there (NU1301) — so a clean checkout could not publish the host, which is exactly what CI is. The
-// host needs nothing from it; it only has to exist.
+// The repository's nuget.config declares a LOCAL package source, `artifacts/packages`, and NuGet
+// refuses to restore against a source that is not there (NU1301) — so a checkout without it could
+// not publish the host, which is exactly what CI is. Nothing fills that directory any more (the
+// Debug auto-pack that once did went in #88); it only has to EXIST, and a tracked `.gitkeep` is what
+// makes a fresh clone have it. This mkdir is the belt to that pair of braces — it costs nothing and
+// covers a working copy where the directory was cleaned away.
 mkdirSync(resolve(extension, '../../artifacts/packages'), { recursive: true });
 
 const result = spawnSync(
