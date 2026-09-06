@@ -196,10 +196,11 @@
             perfectly for months and is then killed with SIGKILL/CODESIGNING on the first machine
             that installs the signed build. No catch sees it; the process is simply gone.
 
-            Note which key each shape needs, because the names mislead: allow-jit below covers pages
-            mapped through MAP_JIT, which is what the .NET runtime uses and why it is here. An engine
-            that writes plain executable memory — wasmtime, so YARA-X — needs
-            allow-unsigned-executable-memory instead, and declares it itself.
+            Note which key each shape needs, because the names mislead: the allow-jit in
+            _EqRuntimeEntitlements covers pages mapped through MAP_JIT, which is what the .NET
+            runtime uses and why the SDK declares it. An engine that writes plain executable
+            memory — wasmtime, so YARA-X — needs allow-unsigned-executable-memory instead, and
+            declares that one itself.
         -->
         <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; entitlements --assembly &quot;$(TargetDir)$(TargetFileName)&quot; --plist &quot;$(_EqIconDir)/$(AssemblyName).entitlements&quot; --also &quot;$(_EqRuntimeEntitlements)&quot;"
               StandardOutputImportance="normal" />
