@@ -1722,6 +1722,11 @@ function lowerCanvas(node: CanvasNodeValue, path: string): HtmlNode {
   }
   if (Object.keys(events).length > 0) {
     attributes['data-eq-canvas'] = '1';
+    // And it TAKES the pointer, explicitly: `pointer-events` inherits, and a Stack's layers switch
+    // it off so a picture on top never blocks the control beneath — which silenced a chart's own
+    // canvas inside its plot Stack (the hover fell through to the card behind it). The C# realizer
+    // writes the identical declaration, so SSR and hydration agree.
+    attributes['style'] = `${attributes['style'] ?? ''};pointer-events:auto`;
   } else {
     // A DECORATIVE canvas must not swallow the press that belongs to what is under it. Photon's
     // hit-testing skips a canvas with no handlers (it registers no region at all); the DOM has no

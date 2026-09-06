@@ -427,8 +427,10 @@ public class CanvasCrossTargetTests
         var decorative = Render(new Canvas(_ => { })).First(n => n.Tag == "svg");
         decorative.Attributes["style"].Should().Contain("pointer-events");
 
+        // A canvas that listens must RECEIVE — and says so, because `pointer-events` inherits and
+        // the layers of a Stack switch it off: silent, a chart's canvas inside its plot Stack let
+        // the hover fall through to the card behind it.
         var interactive = Render(new Canvas(_ => { }) { OnPointerDown = _ => { } }).First(n => n.Tag == "svg");
-        interactive.Attributes.TryGetValue("style", out var style);
-        (style ?? "").Should().NotContain("pointer-events", "a canvas that listens must receive");
+        interactive.Attributes["style"].Should().Contain("pointer-events: auto", "a canvas that listens must receive");
     }
 }

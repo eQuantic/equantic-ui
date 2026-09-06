@@ -837,6 +837,12 @@ public static class WebRealizer
             // first interactive canvas anyone wrote.
             svg.DataAttributes ??= new Dictionary<string, string>();
             svg.DataAttributes["eq-canvas"] = "1";
+            // And it TAKES the pointer, explicitly: `pointer-events` inherits, and the layers of a
+            // Stack switch it off so the picture on top never blocks the control beneath — which
+            // silenced a chart's own canvas inside its plot Stack: the hover fell through to the
+            // card behind it and the tooltip never came. On Photon the canvas registers its own
+            // region; this is the same statement in the DOM's language (see lowering.ts).
+            svg.Style.PointerEvents = "auto";
         }
         else
         {
