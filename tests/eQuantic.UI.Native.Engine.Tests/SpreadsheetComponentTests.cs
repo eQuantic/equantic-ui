@@ -233,6 +233,39 @@ public class SpreadsheetComponentTests
             .Should().Be(CursorShape.Crosshair, "the fill handle says crosshair");
     }
 
+    /// <summary>
+    /// Tab down the row headers, past the rows the window began with. The window slides under the
+    /// ring — rows leave at the top, rows arrive at the bottom — and the ring must not slide with
+    /// it: every Tab lands on the NEXT row, brought into view, and the walk never restarts from the
+    /// first control. Rows are keyed by number, which is what makes their paths survive the slide.
+    /// </summary>
+    [Fact]
+    public void TabbingDownTheRowHeaders_KeepsTheRing_WhileTheWindowSlides()
+    {
+        var (host, _) = Open();
+        var initial = host.RenderFrame(new DisplayListBuilder(), 32).FocusStops.Count;
+
+        var visited = new List<string>();
+        for (var i = 0; i < initial + 20; i++)
+        {
+            host.KeyDown("Tab");
+            var frame = host.RenderFrame(new DisplayListBuilder(), 48 + 16 * i);
+            var focused = host.FocusedPath;
+            focused.Should().NotBeNull($"Tab #{i + 1} left the focus nowhere");
+            visited.Add(focused!);
+
+            var stop = frame.FocusStops.FirstOrDefault(s => s.Path == focused);
+            stop.Path.Should().Be(focused, $"Tab #{i + 1} focused {focused}, which the frame does not have");
+            stop.Bounds.Y.Should().BeLessThan(400, $"Tab #{i + 1} focused {focused} below the window");
+            (stop.Bounds.Y + stop.Bounds.Height).Should().BeGreaterThan(0, $"Tab #{i + 1} focused {focused} above the window");
+        }
+
+        visited.Should().OnlyHaveUniqueItems("the ring restarted, or a row was visited twice");
+        visited[^1].Should().Contain("/[", "the walk ended on a keyed row well past the first window");
+        host.ScrollOffsetOf(host.RenderFrame(new DisplayListBuilder()).ScrollRegions
+            .Single(r => r.MaxOffset > 0).Path).Should().BeGreaterThan(0, "the sheet scrolled to follow the ring");
+    }
+
     [Fact]
     public void TheKeyboard_ReachesTheSheet_ThroughTheComponent()
     {

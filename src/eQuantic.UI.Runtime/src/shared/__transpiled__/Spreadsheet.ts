@@ -33,7 +33,7 @@ export class Spreadsheet extends StatefulComponent {
         let headerRow = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill });
         headerRow.add(Spreadsheet.headerCell('', Spreadsheet.headerWidth, Spreadsheet.headerHeight, theme, false, () => this.setState(this.controller.selectAll.bind(this.controller))));
         for (let c = 0; c < document.cols; c++) headerRow.add(this.columnHeader(c, document, theme));
-        let windowRows = new Row(0);
+        let windowRows = new Row(0, 'start', 'center', false, null, null, { key: 'window' });
         let rowHeaders = new Column(0);
         let grid = new Column(0);
         for (let r = this._first; r <= this._last; r++) {
@@ -57,6 +57,10 @@ export class Spreadsheet extends StatefulComponent {
     adoptConfig(next: UiComponent) {
         let fresh: any; 
         if ((next instanceof Spreadsheet && (fresh = next, true))) this.controller = fresh.controller;
+    }
+
+    static rowKey(row: number) {
+        return String(row);
     }
 
     static columnName(col: number) {
@@ -121,7 +125,7 @@ export class Spreadsheet extends StatefulComponent {
         let row = r;
         let selection = this.controller.selection;
         let inBand = r >= selection.topRow && r <= selection.bottomRow;
-        let stack = new Stack();
+        let stack = new Stack('topStart', { key: Spreadsheet.rowKey(r) });
         stack.add(Spreadsheet.headerCell(`${r + 1}`, Spreadsheet.headerWidth, document.rowHeight(r), theme, inBand, () => this.setState(() => this.controller.selectRows(row, row))));
         stack.add(new Positioned(new Draggable(new Box(new BoxStyle({ width: SizeValue.fixed(Spreadsheet.headerWidth), height: SizeValue.fixed(Spreadsheet.grip), cursor: 'rowResize' })), null, { axis: 'vertical', min: -4000, max: 4000, follows: false, onMoved: (delta: number) => this.previewResize('rows', row, delta), onReleased: (delta: number) => this.commitResize('rows', row, delta) }), null, null, 0, 0, { layer: 1 }));
         return stack;
@@ -152,7 +156,7 @@ export class Spreadsheet extends StatefulComponent {
         let selection = this.controller.selection;
         let active = this.controller.activeCell;
         let fillTarget = this.controller.fillTarget;
-        let line = new Row(0);
+        let line = new Row(0, 'start', 'center', false, null, null, { key: Spreadsheet.rowKey(row) });
         for (let c = 0; c < document.cols; c++) {
             let cell = new CellRef(row, c);
             let isActive = $eq.equals(cell, active);

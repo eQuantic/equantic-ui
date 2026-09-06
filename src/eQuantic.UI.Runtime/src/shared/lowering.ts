@@ -283,6 +283,14 @@ function lowerNode(
 ): HtmlNode | null {
   const lowered = lowerNodeKind(node, context, horizontalAxis, path);
 
+  // A node's Key is its identity among siblings — the same one property Photon reads into a
+  // keyed path segment — and here it becomes the reconciler's key, so a keyed row that moved
+  // from the third position to the first is a MOVED row, not a rewritten one, and the focus,
+  // the hover and the scroll state on its element move with it. The C# twin
+  // (WebRealizer.LowerNode) writes the same field; SSR emits no attribute for it.
+  const keyed = node as { key?: string | null };
+  if (lowered && keyed.key) lowered.key = keyed.key;
+
   // The C# twin writes exactly this (WebRealizer.LowerNode), because an in-page link may point at
   // ANY node — and because SSR and hydration disagreeing by one attribute is a diverged tree.
   const bookmarked = node as { bookmark?: string };

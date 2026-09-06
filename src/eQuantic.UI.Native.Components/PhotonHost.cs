@@ -471,7 +471,7 @@ public sealed class PhotonHost
 
     /// <summary>Path strings survive frames here — a path is identity, and the tree's shape barely
     /// changes, so steady state re-uses the same strings instead of re-concatenating them.</summary>
-    private readonly Dictionary<(string Parent, int Index), string> _pathCache = new();
+    private readonly Dictionary<(string Parent, int Index, string? Key), string> _pathCache = new();
     private int _caret;
 
     /// <summary>

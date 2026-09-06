@@ -290,6 +290,15 @@ public abstract class HtmlElement : IComponent
     #endregion
 
     /// <summary>
+    /// Reconciliation identity among siblings, carried to <see cref="HtmlNode.Key"/> when the element
+    /// renders. Never an attribute — the DOM does not change — only the client's keyed diff reads
+    /// it, so an element whose key moved is moved, not rewritten in place. The realizer stamps it
+    /// from <see cref="Primitives.VisualNode.Key"/>; an app authoring <see cref="HtmlElement"/>s
+    /// directly sets it the way it sets <see cref="Id"/>.
+    /// </summary>
+    public string? Key { get; set; }
+
+    /// <summary>
     /// Render the element to a virtual DOM node
     /// </summary>
     public abstract HtmlNode Render();

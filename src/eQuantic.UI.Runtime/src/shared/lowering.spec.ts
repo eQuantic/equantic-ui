@@ -50,6 +50,16 @@ describe('token → CSS formatting (mirrors C# TokenCss)', () => {
   });
 });
 
+describe('lowering — identity', () => {
+  it("a node's key becomes the reconciler's key on the element it lowers to", () => {
+    // The one Key both realizers read: Photon spells it into the path, the web hands it to the
+    // keyed diff — so a virtualized row that changed position is moved, not rebuilt.
+    const keyed = { ...box({}), key: '17' } as VisualNodeValue;
+    expect(lowerVisualNode(keyed, ctx).key).toBe('17');
+    expect(lowerVisualNode(box({}), ctx).key).toBeUndefined();
+  });
+});
+
 describe('lowering — cross-pinned with the C# WebRealizer', () => {
   it('Box lowers to div with the EXACT pinned style string', () => {
     const node = lowerVisualNode(
