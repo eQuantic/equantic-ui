@@ -56,16 +56,19 @@ generic pieces (`ClassBuilder`, `[CompileTimeEvaluate]`) are what remains.
 
 ## Implementation Status
 
-### ✅ Completed
+### ✅ Completed, and still here
 
-- [x] `[CompileTimeEvaluate]` attribute in Core
-- [x] `TailwindClass` struct with implicit operators
-- [x] Complete typed object implementation (Display, Flex, Bg, Text, etc.)
-- [x] Helper methods (Dark, Hover, Responsive, etc.)
-- [x] `ClassBuilder` in Core (framework-agnostic)
-- [x] Simplified `TWBuilder` (no inheritance code smell)
+- [x] `[CompileTimeEvaluate]` attribute, in `eQuantic.UI.Web.Styling`
+- [x] `ClassBuilder` (framework-agnostic), in `eQuantic.UI.Web.Styling`
 - [x] Comprehensive documentation
 - [x] Examples and use cases
+
+### 🗑 Completed, then removed with the Tailwind adapter (0704a3d0, 2026-08-08)
+
+- `TailwindClass` struct with implicit operators
+- Complete typed object implementation (Display, Flex, Bg, Text, etc.)
+- Helper methods (Dark, Hover, Responsive, etc.)
+- Simplified `TWBuilder` (no inheritance code smell)
 
 ### ⏳ Pending (Compiler Work)
 
@@ -204,7 +207,7 @@ When implementing compile-time evaluation in the compiler:
 - **v0.1.2**
   - Added `[CompileTimeEvaluate]` attribute
   - Implemented `TailwindClass` with typed objects
-  - Created `ClassBuilder` in Core
+  - Created `ClassBuilder` (in `eQuantic.UI.Core`, where it lived at the time)
   - Comprehensive documentation
   - Awaiting compiler implementation
 - **Since then**
