@@ -84,6 +84,7 @@
   "Navigable",
   "Navigator",
   "NetworkState",
+  "OpenUrlPolicy",
   "Overlay",
   "PaletteAudit",
   "PhotonEntitlements",
