@@ -89,7 +89,7 @@ public class WorkspaceBuilderTests
         var bundle = () => builder.Bundle.UrlScheme("acme://");
         var workspace = () => builder.Workspace.Opens("mailto:");
 
-        bundle.Should().Throw<ArgumentException>().WithMessage("*\"acme://\" is not a URL scheme*");
+        bundle.Should().Throw<ArgumentException>().WithMessage("*\"acme://\" cannot be this app's URL scheme*");
         workspace.Should().Throw<ArgumentException>().WithMessage("*\"mailto:\" is not a URL scheme*");
     }
 

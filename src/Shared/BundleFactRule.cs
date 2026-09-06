@@ -35,8 +35,17 @@ internal static class BundleFactRule
     /// scheme has a grammar a key does not: what is not a scheme NAME by RFC 3986 — a letter, then
     /// letters, digits, "+", "-" or "." — is nothing to store either. <c>"acme://"</c> is the usual
     /// way to write one wrong, and LaunchServices would route nothing to it. .NET already knows the
-    /// grammar, so it is asked rather than restated.
+    /// grammar, so it is asked rather than restated. What IS a scheme is stored lower-case, the
+    /// canonical spelling RFC 3986 gives it: schemes compare without regard to case everywhere they
+    /// are matched, so <c>"Acme"</c> and <c>"acme"</c> are one entry and not two, and the policy that
+    /// reads these back finds the spelling it stores its own in. And <c>file</c> is nothing to store:
+    /// it is the system's own scheme, no app answers to it however the manifest is written, and the
+    /// policy that inherits an app's schemes refuses it by name — better refused here, at the line
+    /// that declared it, than there, at the moment the app is built.
     /// </summary>
     internal static string? Scheme(string? scheme) =>
-        Key(scheme) is { } name && Uri.CheckSchemeName(name) ? name : null;
+        Key(scheme) is { } name && Uri.CheckSchemeName(name)
+        && !string.Equals(name, Uri.UriSchemeFile, StringComparison.OrdinalIgnoreCase)
+            ? name.ToLowerInvariant()
+            : null;
 }

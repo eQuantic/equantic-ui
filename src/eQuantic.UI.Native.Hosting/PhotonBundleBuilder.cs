@@ -61,12 +61,14 @@ public sealed class PhotonBundleBuilder
     public PhotonBundleBuilder UrlScheme(string scheme)
     {
         // Refused by NAME rather than dropped: a scheme the system would never route — "acme://", a
-        // digit first, a space inside — is a mistake in THIS line, and the place to hear about it is
-        // here, not a CFBundleURLTypes entry that nothing ever matches. The generator sees the same
-        // call and drops it; the app never starts to find out, because this throws first.
+        // digit first, a space inside, or file, which is the system's own — is a mistake in THIS
+        // line, and the place to hear about it is here, not a CFBundleURLTypes entry that nothing
+        // ever matches. The generator sees the same call and drops it; the app never starts to find
+        // out, because this throws first.
         var accepted = BundleFactRule.Scheme(scheme)
-            ?? throw new ArgumentException($"\"{scheme}\" is not a URL scheme. Give the NAME alone — "
-                + "\"acme\", not \"acme://\".", nameof(scheme));
+            ?? throw new ArgumentException($"\"{scheme}\" cannot be this app's URL scheme. Give the "
+                + "NAME alone — \"acme\", not \"acme://\" — and not file, which is the system's own.",
+                nameof(scheme));
         if (!_schemes.Contains(accepted, StringComparer.Ordinal)) _schemes.Add(accepted);
         return this;
     }
