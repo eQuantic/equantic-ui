@@ -205,7 +205,10 @@ public sealed class PhotonApplication
             .ToList();
 
         var seen = loaded.Select(assembly => assembly.GetName().Name).ToHashSet(StringComparer.Ordinal);
-        foreach (var assembly in loaded) yield return assembly;
+        foreach (var assembly in loaded)
+        {
+            if (ForThisOperatingSystem(assembly)) yield return assembly;
+        }
 
         if (!Directory.Exists(AppContext.BaseDirectory)) yield break;
         foreach (var path in Directory.EnumerateFiles(AppContext.BaseDirectory, prefix + "*.dll"))
@@ -215,7 +218,30 @@ public sealed class PhotonApplication
             try { shell = Assembly.LoadFrom(path); }
             catch (BadImageFormatException) { continue; }
             catch (FileLoadException) { continue; }
-            yield return shell;
+            if (ForThisOperatingSystem(shell)) yield return shell;
         }
+    }
+
+    /// <summary>
+    /// Whether a shell is a candidate on THIS operating system. A shell that declares the platform
+    /// it exists for — <c>[assembly: SupportedOSPlatform("windows")]</c>, which the Windows shell's
+    /// project states — is a candidate there and nowhere else; one that declares nothing is a
+    /// candidate everywhere, as before. Two shells beside one app is an ordinary sight now: the test
+    /// project that exercises the Windows bindings on Windows and the Mac's on a Mac carries both,
+    /// and so does a folder published for more than one desktop. Without this the Mac found two
+    /// runners and refused to start, and the Windows capabilities could shadow the Mac's in the
+    /// container by registering first.
+    /// </summary>
+    private static bool ForThisOperatingSystem(Assembly shell)
+    {
+        var declared = shell.GetCustomAttributes<System.Runtime.Versioning.SupportedOSPlatformAttribute>().ToList();
+        if (declared.Count == 0) return true;
+        foreach (var platform in declared)
+        {
+            // "windows10.0.19041" → "windows": the name is what IsOSPlatform answers about.
+            var name = platform.PlatformName.TrimEnd('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.');
+            if (name.Length > 0 && OperatingSystem.IsOSPlatform(name)) return true;
+        }
+        return false;
     }
 }
