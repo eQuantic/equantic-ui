@@ -109,12 +109,19 @@ public class BarChartPhotonTests
     /// method throws away is thrown away on every interaction.</summary>
     private sealed class Screen : StatefulComponent
     {
+        /// <summary>Drop a category, the way a filter or a fresh fetch does.</summary>
+        public bool Fewer { get; set; }
+
         public override VisualNode Build(ComponentContext context)
         {
             var column = new Column { Width = SizeValue.Fill };
-            column.Add(Chart());
+            column.Add(Fewer
+                ? new BarChart([new ChartSeries("Alpha", [12, 18])], new CategoryAxis(["Q1", "Q2"]), title: "Revenue")
+                : Chart());
             return column;
         }
+
+        public void Reshape() => SetState(() => Fewer = true);
     }
 
     /// <summary>
@@ -167,6 +174,34 @@ public class BarChartPhotonTests
         host.PointerMove(2, 2);   // off the plot: the tooltip goes
         host.RenderFrame(new DisplayListBuilder(), 32);
         Labels(host).Should().NotContain("12");
+    }
+
+    /// <summary>
+    /// The other half of the hover rule: an index only MEANS a bar while the plot has the same
+    /// shape. Fewer categories renumber every bar, so the remembered index would name a different
+    /// one — and the tooltip that was up must go rather than tell a lie.
+    /// </summary>
+    [Fact]
+    public void ReshapingThePlot_DropsTheHover_BecauseTheIndexNoLongerMeansThatBar()
+    {
+        var screen = new Screen();
+        var host = new PhotonHost(screen, Theme, ThemeMode.Light, 400, 320);
+        var first = new DisplayListBuilder();
+        host.RenderFrame(first, 0);
+
+        var alpha = Theme.Data.SeriesColor(0).Resolve(ThemeMode.Light);
+        var bar = Marks(first.Build().Commands.ToArray(), alpha).First().Shape.Rect;
+        host.PointerMove(bar.X + bar.Width / 2, bar.Y + bar.Height / 2);
+        host.RenderFrame(new DisplayListBuilder(), 16);
+        Labels(host).Should().Contain("12", "the hover is up");
+
+        screen.Reshape();
+        host.RenderFrame(new DisplayListBuilder(), 32);
+        // "12" is Alpha's first value and no tick of either scale, so it can only come from a
+        // tooltip: kept, the index would land on the NEW bar 0 and print it again as if nothing
+        // had changed. Its absence is what says the hover was dropped.
+        Labels(host).Should().NotContain("12", "no tooltip survives a reshape");
+        Labels(host).Should().Contain("Q1", "the chart itself is still there");
     }
 
     private static List<string> Labels(PhotonHost host) =>
