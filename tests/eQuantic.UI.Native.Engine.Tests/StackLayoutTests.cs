@@ -14,6 +14,30 @@ public class StackLayoutTests
     private static LayoutNode Layout(VisualNode root, float w = 200, float h = 200) =>
         LayoutEngine.Layout(root, w, h, new LayoutContext(PhotonTheme.Instance, new ApproximateTextMeasurer()));
 
+    /// <summary>
+    /// The cell IS the stack's available space — the contract the web's grid keeps. A stack with a
+    /// height of its own hands it to a Fill child whatever the parent said: under an unbounded axis
+    /// (a scroll view's) and under an indeterminate one (a hugging column's) alike. Before this, a
+    /// Fill canvas inside a 240dp stack measured ZERO there, and a chart drew nothing on Photon.
+    /// </summary>
+    [Fact]
+    public void AFillChild_TakesTheStacksOwnBox_WhateverTheParentOffers()
+    {
+        var unbounded = new Stack { Width = SizeValue.Fill, Height = SizeValue.Fixed(240) };
+        unbounded.Add(new Canvas(_ => { }, SizeValue.Fill, SizeValue.Fill));
+        var under = Layout(unbounded, 300, float.PositiveInfinity);
+        under.Children[0].Bounds.Height.Should().Be(240, "the stack's own height, not the unbounded axis");
+        under.Children[0].Bounds.Width.Should().Be(300);
+
+        var hugging = new Column();
+        var inside = new Stack { Width = SizeValue.Fixed(120), Height = SizeValue.Fixed(80) };
+        inside.Add(new Primitives.Box(new BoxStyle { Width = SizeValue.Fill, Height = SizeValue.Fill }));
+        hugging.Add(inside);
+        var box = Layout(hugging, 200, 200).Children[0].Children[0];
+        box.Bounds.Width.Should().Be(120, "an explicit axis is determinate for the children");
+        box.Bounds.Height.Should().Be(80);
+    }
+
     [Fact]
     public void SizesToTheLargestNonPositionedChild()
     {

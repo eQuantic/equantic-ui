@@ -598,18 +598,33 @@ public static class LayoutEngine
     private static LayoutNode MeasureStack(Stack stack, float maxW, float maxH, LayoutContext ctx, string path)
     {
         var result = ctx.Node(stack);
+        // The cell IS the stack's available space — the contract the web's grid keeps (LowerStack):
+        // a Fill child covers a stack that has a size of its own. Measured against the INCOMING
+        // constraints instead, a Fill canvas under a scroll view's unbounded axis measured zero
+        // inside a stack standing 240dp tall — the first chart drew nothing on Photon while the
+        // browser drew it. An explicit axis decides for the children, and is determinate for them
+        // whatever the parent said; the other axes pass the question through unchanged.
+        var childMaxW = stack.Width.Kind == SizeKind.Fixed ? stack.Width.Value : maxW;
+        var childMaxH = stack.Height.Kind == SizeKind.Fixed ? stack.Height.Value : maxH;
+        var outerIndeterminateW = ctx.IndeterminateWidth;
+        var outerIndeterminateH = ctx.IndeterminateHeight;
+        if (stack.Width.Kind == SizeKind.Fixed) ctx.IndeterminateWidth = false;
+        if (stack.Height.Kind == SizeKind.Fixed) ctx.IndeterminateHeight = false;
         var contentW = 0f;
         var contentH = 0f;
 
         for (var stackIndex = 0; stackIndex < stack.Children.Count; stackIndex++)
         {
             var child = stack.Children[stackIndex];
-            var measured = Measure(child, maxW, maxH, ctx, ctx.ChildPath(path, stackIndex));
+            var measured = Measure(child, childMaxW, childMaxH, ctx, ctx.ChildPath(path, stackIndex));
             result.Children.Add(measured);
             if (PositionedOf(child, measured) is not null) continue;
             contentW = MathF.Max(contentW, measured.Bounds.Width);
             contentH = MathF.Max(contentH, measured.Bounds.Height);
         }
+
+        ctx.IndeterminateWidth = outerIndeterminateW;
+        ctx.IndeterminateHeight = outerIndeterminateH;
 
         var width = ResolveSelf(stack.Width, maxW, contentW);
         var height = ResolveSelf(stack.Height, maxH, contentH);
