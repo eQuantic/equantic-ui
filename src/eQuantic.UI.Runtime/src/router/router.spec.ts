@@ -372,7 +372,23 @@ describe('Router (happy-dom)', () => {
     target.remove();
   });
 
-  /** A fragment that names nothing leaves the page alone, rather than jumping it to the top. */
+  /**
+   * Arriving at ANOTHER page still starts at the top when its fragment names nothing — a new page
+   * does, and keeping the last one's offset would be a position belonging to something the reader
+   * is no longer looking at. The opposite of the traversal rule below, and the two are not the same
+   * question: one changed the document, the other did not.
+   */
+  it('starts a forward navigation at the top when its fragment names no element', async () => {
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
+    await router.navigate('/counter#nothing-here');
+
+    expect(scrollTo).toHaveBeenCalledWith(0, 0);
+    scrollTo.mockRestore();
+  });
+
+  /** A fragment that names nothing leaves the page alone on a TRAVERSAL, rather than jumping it to
+   * the top: the document has not changed, and jumping is the defect this fixes. */
   it('leaves the position when the fragment names no element', async () => {
     const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
 
