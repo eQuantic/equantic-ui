@@ -57,6 +57,7 @@ public class DynamicElement : HtmlElement
         return new HtmlNode
         {
             Tag = TagName,
+            Key = Key,
             Attributes = attributes,
             Events = BuildEvents(),
             Children = children

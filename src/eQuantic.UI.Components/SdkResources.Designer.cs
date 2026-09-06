@@ -101,6 +101,16 @@ namespace eQuantic.UI.Components
         {
             get { return ResourceManager.GetString("NothingSelected", Culture)!; }
         }
+
+        internal static string ShowAsTable
+        {
+            get { return ResourceManager.GetString("ShowAsTable", Culture)!; }
+        }
+
+        internal static string ShowAsChart
+        {
+            get { return ResourceManager.GetString("ShowAsChart", Culture)!; }
+        }
     
         internal static string PreviousMonth
         {

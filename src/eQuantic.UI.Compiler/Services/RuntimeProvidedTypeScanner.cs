@@ -7,8 +7,8 @@ namespace eQuantic.UI.Compiler.Services;
 /// Semantic classifier of RUNTIME-PROVIDED type references — the single implementation behind every
 /// emission path (components, state classes, static helpers). A referenced type routes to
 /// <c>@equantic/runtime</c> when it lives in the shared vocabulary (<c>eQuantic.UI.Primitives</c>),
-/// the shared component library (<c>eQuantic.UI.Components</c>, whose transpiled modules ship
-/// embedded in the runtime — this is also what disambiguates the deliberate name reuse against the
+/// the shared component libraries (<c>eQuantic.UI.Components</c> and <c>eQuantic.UI.Charts</c>, whose
+/// transpiled modules ship embedded in the runtime — this is also what disambiguates the deliberate name reuse against the
 /// standard web components: the file's usings decide which type a name binds to), or carries
 /// <c>[RuntimeProvided]</c>. Enums are tracked separately: they lower to camelCase member-name string
 /// literals and must never be imported.
@@ -32,7 +32,11 @@ public static class RuntimeProvidedTypeScanner
         ns == "eQuantic.UI.Primitives"
         || ns.StartsWith("eQuantic.UI.Primitives.")
         || ns == "eQuantic.UI.Components"
-        || ns.StartsWith("eQuantic.UI.Components.");
+        || ns.StartsWith("eQuantic.UI.Components.")
+        // The chart library: a second shared component library, embedded in the runtime the same way
+        // (docs/CHARTS-PLAN.md) — a page that names BarChart imports it from the runtime.
+        || ns == "eQuantic.UI.Charts"
+        || ns.StartsWith("eQuantic.UI.Charts.");
 
     /// <summary>Walks every identifier under <paramref name="root"/>, resolving symbols through
     /// <paramref name="model"/>, and buckets runtime-provided type names, enum type names, and —

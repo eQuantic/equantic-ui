@@ -27,6 +27,8 @@ export const sdkNeutralStrings: Record<string, string> = {
   'RejectCookies': "Decline",
   'Remove': "Remove",
   'SearchPlaceholder': "Search\u2026",
+  'ShowAsChart': "Show as chart",
+  'ShowAsTable': "Show as table",
   'Spreadsheet': "Spreadsheet",
   'Today': "Today",
 };

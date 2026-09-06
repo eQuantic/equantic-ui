@@ -80,6 +80,7 @@ public static class ConsoleShell
         // is the same defect as advertising a route that 404s, pointing the other way.
         new(Icons.Check, "Forms", "/form"),
         new(Icons.Search, "Localization", "/i18n"),
+        new(Icons.Table, "Charts", "/charts"),
         // A page with no state of its own, hosting a component that has a clock — the shape whose
         // teardown the framework used to skip.
         new(Icons.Refresh, "Ticker", "/ticker"),

@@ -19,6 +19,8 @@ interface DynamicElementConfig {
 }
 
 export class DynamicElement extends HtmlElement {
+  /** Mirror of the C# `HtmlElement.Key`: reconciliation identity among siblings, never an attribute. */
+  key?: string;
   tagName = 'div';
   innerText?: string;
   customAttributes?: Record<string, string>;
@@ -55,6 +57,6 @@ export class DynamicElement extends HtmlElement {
     const events: Record<string, EventHandler> = {};
     if (this.onClick) events['click'] = this.onClick as unknown as EventHandler;
 
-    return { tag: this.tagName, attributes, events, children } as HtmlNode;
+    return { tag: this.tagName, key: this.key, attributes, events, children } as HtmlNode;
   }
 }

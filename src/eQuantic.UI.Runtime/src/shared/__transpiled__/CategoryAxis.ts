@@ -1,0 +1,3 @@
+import { $eq } from "@equantic/runtime";
+
+export class CategoryAxis { declare categories: string[]; declare title: string | null; constructor(categories: any = null, title: any = null) { this.categories = categories; this.title = title; } equals(o: unknown) { return o instanceof CategoryAxis && $eq.equals(this.categories, o.categories) && $eq.equals(this.title, o.title); } with(patch: any) { return new CategoryAxis(('categories' in patch ? patch.categories : this.categories), ('title' in patch ? patch.title : this.title)); } toString() { return `CategoryAxis { Categories = ${this.categories}, Title = ${this.title} }`; } }

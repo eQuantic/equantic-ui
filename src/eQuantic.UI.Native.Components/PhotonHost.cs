@@ -424,7 +424,13 @@ public sealed class PhotonHost
         else if (end > viewEnd - margin) delta = end - viewEnd + margin;
         if (delta == 0) return;
 
-        _scrolls.ScrollBy(regions[best].Path, delta, regions[best].MaxOffset, regions[best].Fallback);
+        // Brought into view NOW, not glided to: the ring has to be on screen in the frame that draws
+        // it, and the next Tab may arrive before a glide would have landed — the browser scrolls a
+        // focused element into view the same way. A wheel still glides; only focus jumps. (Found by
+        // the first gallery section tall enough to put a control below the fold: the glide's first
+        // frame had not moved, and the walk read the ring off-screen.)
+        var current = _scrolls.Get(regions[best].Path) ?? regions[best].Fallback;
+        _scrolls.ScrollTo(regions[best].Path, current + delta, regions[best].MaxOffset);
         NeedsRender = true;
     }
 
@@ -465,7 +471,7 @@ public sealed class PhotonHost
 
     /// <summary>Path strings survive frames here — a path is identity, and the tree's shape barely
     /// changes, so steady state re-uses the same strings instead of re-concatenating them.</summary>
-    private readonly Dictionary<(string Parent, int Index), string> _pathCache = new();
+    private readonly Dictionary<(string Parent, int Index, string? Key), string> _pathCache = new();
     private int _caret;
 
     /// <summary>

@@ -31,6 +31,7 @@
          `Gap(34)` and `new Spacer(1)` becomes `Spacer(1)`. -->
     <ItemGroup Condition="'$(EQuanticImplicitFactoryUsing)' != 'false'">
         <Using Include="eQuantic.UI.Components.UI" Static="true" />
+        <Using Include="eQuantic.UI.Charts.ChartsUI" Static="true" />
     </ItemGroup>
 
     <!--
@@ -113,11 +114,13 @@
                           GlobalPropertiesToRemove="$(_EqToolGlobalsToRemove)" EqBuildTool="true" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
+        <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Charts\eQuantic.UI.Charts.csproj" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Native.Hosting\eQuantic.UI.Native.Hosting.csproj" />
     </ItemGroup>
     <ItemGroup Condition="'$(IsEQuanticDevMode)' != 'true'">
         <PackageReference Include="eQuantic.UI.Primitives" Version="$(EQuanticUIVersion)" />
         <PackageReference Include="eQuantic.UI.Components" Version="$(EQuanticUIVersion)" />
+        <PackageReference Include="eQuantic.UI.Charts" Version="$(EQuanticUIVersion)" />
         <PackageReference Include="eQuantic.UI.Native.Hosting" Version="$(EQuanticUIVersion)" />
     </ItemGroup>
 

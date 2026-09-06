@@ -217,7 +217,7 @@ public static class PhotonRealizer
         // underlined, without the value changing (the value only changes on commit).
         string markedText = "",
         // The host's cross-frame path-string cache (see LayoutContext.PathCache).
-        Dictionary<(string Parent, int Index), string>? pathCache = null,
+        Dictionary<(string Parent, int Index, string? Key), string>? pathCache = null,
         // The owning host's node recycler (see LayoutNodePool) — null allocates fresh.
         LayoutNodePool? nodePool = null,
         // Which InView nodes were on screen LAST frame — the node is rebuilt every pass and cannot

@@ -217,6 +217,22 @@ mirrored parameter for parameter, no `new`.
 | **4** | `RadarChart` (web via `Vector`), `CandlestickChart`, annotations, enter animations, zoom/pan on time, export through a capability | |
 | **5** | parity measured against the table; wrappers deleted; `Charts` wiki page rewritten; migration notes | the table has no empty cell |
 
+## Where the slices stand
+
+- **Slice 0** landed 2026-09-05: the plan, `DataPalette`, `PaletteAudit`, the palette's web twin.
+- **Slice 1** landed 2026-09-06: `eQuantic.UI.Charts` transpiled by eqc as a runtime-provided
+  library, `BarChart` in its three arrangements with legend, tooltip and table view,
+  `ChartSeries`/`CategoryAxis`/`ValueAxis`/`ValueScale`, the cross-pinned layout fixture, the
+  dashboard's `/charts` page and the Studio's Charts section, the wiki page. Two deviations from
+  the row above, both deliberate: `ChartFrame` is not a type yet — the bar chart carries its chrome
+  inline, and the frame is extracted when the second chart (slice 2) shows what it must abstract
+  rather than guessed from one; and the empty state is the chrome standing without marks (title, a
+  clean 0..1 axis), not a message. Two engine facts the slice surfaced and fixed: a `Fill` child
+  under an unbounded axis measured zero inside a `Stack` of fixed height (the first chart drew
+  nothing on Photon), and identity in a virtualized list was positional on BOTH realizers — the
+  Photon path shifted with the window, and the web funnel never handed `VisualNode.Key` to the
+  reconciler. A keyed child now takes its key as its path segment, and the web writes the key.
+
 ## Fenced, on purpose
 
 - **Dual axes** — never; the API cannot express one.
@@ -230,6 +246,8 @@ mirrored parameter for parameter, no `new`.
 ## Open, for Edgar
 
 - Whether `eQuantic.UI.Charts` is implicit in the SDK (recommended above) or an opt-in like an
-  icon pack.
+  icon pack. **Slice 1 shipped it implicit**, on the recommendation — one line in each SDK's
+  `Sdk.props` reverses it, and no consumer code changes either way.
 - Whether the wrappers go at slice 5 or the moment slices 1–3 land (the site and the finance
-  product use neither today).
+  product use neither today). **Still open**; slice 1 only gave them private copies of the three
+  types they were using, so nothing forces the date.

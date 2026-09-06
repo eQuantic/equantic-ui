@@ -283,6 +283,14 @@ function lowerNode(
 ): HtmlNode | null {
   const lowered = lowerNodeKind(node, context, horizontalAxis, path);
 
+  // A node's Key is its identity among siblings — the same one property Photon reads into a
+  // keyed path segment — and here it becomes the reconciler's key, so a keyed row that moved
+  // from the third position to the first is a MOVED row, not a rewritten one, and the focus,
+  // the hover and the scroll state on its element move with it. The C# twin
+  // (WebRealizer.LowerNode) writes the same field; SSR emits no attribute for it.
+  const keyed = node as { key?: string | null };
+  if (lowered && keyed.key) lowered.key = keyed.key;
+
   // The C# twin writes exactly this (WebRealizer.LowerNode), because an in-page link may point at
   // ANY node — and because SSR and hydration disagreeing by one attribute is a diverged tree.
   const bookmarked = node as { bookmark?: string };
@@ -1714,6 +1722,11 @@ function lowerCanvas(node: CanvasNodeValue, path: string): HtmlNode {
   }
   if (Object.keys(events).length > 0) {
     attributes['data-eq-canvas'] = '1';
+    // And it TAKES the pointer, explicitly: `pointer-events` inherits, and a Stack's layers switch
+    // it off so a picture on top never blocks the control beneath — which silenced a chart's own
+    // canvas inside its plot Stack (the hover fell through to the card behind it). The C# realizer
+    // writes the identical declaration, so SSR and hydration agree.
+    attributes['style'] = `${attributes['style'] ?? ''};pointer-events:auto`;
   } else {
     // A DECORATIVE canvas must not swallow the press that belongs to what is under it. Photon's
     // hit-testing skips a canvas with no handlers (it registers no region at all); the DOM has no

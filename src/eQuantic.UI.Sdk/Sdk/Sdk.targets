@@ -179,6 +179,13 @@
                  components need no wiring either: they live in the app and flow through the primary
                  scan (docs/SHARED-COMPONENTS-PLAN.md, unification slice 2). -->
             <_EqcSourceDirs>$(MSBuildProjectDirectory);$(_StandardComponentsDir)</_EqcSourceDirs>
+
+            <!-- The chart library is a SECOND shared, runtime-provided library (docs/CHARTS-PLAN.md), and
+                 its sources reach eqc the same two ways: the package's tools/source, or the tree. -->
+            <_ChartsSourceDir Condition="'$(PkgeQuantic_UI_Charts)' != ''">$(PkgeQuantic_UI_Charts)/tools/source</_ChartsSourceDir>
+            <_DevChartsDir>$(MSBuildThisFileDirectory)../../eQuantic.UI.Charts</_DevChartsDir>
+            <_ChartsSourceDir Condition="'$(_ChartsSourceDir)' == '' And Exists('$(_DevChartsDir)')">$(_DevChartsDir)</_ChartsSourceDir>
+            <_EqcSourceDirs Condition="'$(_ChartsSourceDir)' != '' And Exists('$(_ChartsSourceDir)')">$(_EqcSourceDirs);$(_ChartsSourceDir)</_EqcSourceDirs>
         </PropertyGroup>
 
         <Error

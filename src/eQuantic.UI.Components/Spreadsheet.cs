@@ -56,6 +56,10 @@ public sealed class Spreadsheet : StatefulComponent
         if (next is Spreadsheet fresh) Controller = fresh.Controller;
     }
 
+    /// <summary>The reconciliation key of a row's nodes: its number, unique among the siblings of
+    /// the window and the same whichever window holds it.</summary>
+    private static string RowKey(int row) => row.ToString();
+
     /// <summary>Column name the way every spreadsheet spells it: A..Z, AA..</summary>
     public static string ColumnName(int col)
     {
@@ -123,7 +127,10 @@ public sealed class Spreadsheet : StatefulComponent
             headerRow.Add(ColumnHeader(c, document, theme));
 
         // ---- the scrolling half: row headers + the surface, INSIDE the scroll --------------------
-        var windowRows = new Row(gap: 0);
+        // Keyed too: the spacer standing in for the rows above appears the moment the window leaves
+        // row 0, and would push this row from the first position to the second — a keyed row inside
+        // a shifted parent is a moved row all the same.
+        var windowRows = new Row(gap: 0) { Key = "window" };
         var rowHeaders = new Column(gap: 0);
         var grid = new Column(gap: 0);
         for (var r = _first; r <= _last; r++)
@@ -215,7 +222,11 @@ public sealed class Spreadsheet : StatefulComponent
         var row = r;
         var selection = Controller.Selection;
         var inBand = r >= selection.TopRow && r <= selection.BottomRow;
-        var stack = new Stack();
+        // Keyed by ROW: the window slides, and a header's identity must not slide with it — focus
+        // and hover are remembered by path on Photon and by key on the web, and both realizers read
+        // this one Key. Without it, Tab down the headers restarted from the first control the
+        // moment the window shifted past the rows it began with.
+        var stack = new Stack { Key = RowKey(r) };
         stack.Add(HeaderCell($"{r + 1}", HeaderWidth, document.RowHeight(r), theme,
             selected: inBand, onPressed: () => SetState(() => Controller.SelectRows(row, row))));
         stack.Add(new Positioned(new Draggable(new Box(new BoxStyle
@@ -271,7 +282,7 @@ public sealed class Spreadsheet : StatefulComponent
         var selection = Controller.Selection;
         var active = Controller.ActiveCell;
         var fillTarget = Controller.FillTarget;
-        var line = new Row(gap: 0);
+        var line = new Row(gap: 0) { Key = RowKey(row) };
         for (var c = 0; c < document.Cols; c++)
         {
             var cell = new CellRef(row, c);

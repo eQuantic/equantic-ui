@@ -9,9 +9,12 @@ namespace eQuantic.UI.Web;
 public class HtmlNode
 {
     /// <summary>
-    /// Unique key for reconciliation optimization
+    /// Reconciliation identity among siblings — the client's keyed diff moves an element whose key
+    /// moved instead of rewriting it in place. Never an attribute: SSR emits nothing for it.
+    /// Settable because the realizer's funnel (<c>WebRealizer.LowerNode</c>) stamps it on the
+    /// element after the kind-specific lowering built it, the way it stamps the bookmark id.
     /// </summary>
-    public string? Key { get; init; }
+    public string? Key { get; set; }
 
     /// <summary>
     /// HTML tag name (div, button, input, etc.)

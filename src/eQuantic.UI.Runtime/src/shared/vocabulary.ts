@@ -255,6 +255,7 @@ export class Box extends VisualNode {
 }
 
 interface FlexConfig {
+  key?: string | null;
   main?: MainAlignValue;
   cross?: CrossAlignValue;
   wrap?: boolean;
@@ -1655,7 +1656,7 @@ export class Stack extends VisualNode {
 
   constructor(
     align = 'topStart',
-    config?: { width?: SizeValue | number; height?: SizeValue | number },
+    config?: { width?: SizeValue | number; height?: SizeValue | number; key?: string | null },
   ) {
     super();
     this.align = align;

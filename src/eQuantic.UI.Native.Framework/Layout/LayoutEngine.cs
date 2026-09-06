@@ -23,9 +23,11 @@ public sealed class LayoutContext
     /// Cross-frame cache of child path strings. A path is IDENTITY — "0/1/2" this frame must be
     /// the very same string next frame — and the tree's shape barely changes between frames, so
     /// the host lends a dictionary that survives them and steady-state path allocation drops to
-    /// zero. Null (tests, one-shot layouts) simply concatenates.
+    /// zero. Null (tests, one-shot layouts) simply concatenates. A keyed segment (see
+    /// <see cref="ChildPath(string, int, VisualNode)"/>) caches under its key, an indexed one under
+    /// null.
     /// </summary>
-    public Dictionary<(string Parent, int Index), string>? PathCache { get; init; }
+    public Dictionary<(string Parent, int Index, string? Key), string>? PathCache { get; init; }
 
     /// <summary>
     /// The WINDOW this pass is laying out into, in dp. Set by <see cref="LayoutEngine.Layout"/>
@@ -55,10 +57,42 @@ public sealed class LayoutContext
     internal string ChildPath(string parent, int index)
     {
         if (PathCache is not { } cache) return parent + "/" + index;
-        if (!cache.TryGetValue((parent, index), out var cached))
-            cache[(parent, index)] = cached = parent + "/" + index;
+        if (!cache.TryGetValue((parent, index, null), out var cached))
+            cache[(parent, index, null)] = cached = parent + "/" + index;
         return cached;
     }
+
+    /// <summary>
+    /// The path of a child AMONG SIBLINGS. A child that says <see cref="VisualNode.Key"/> takes the
+    /// key as its segment, spelled <c>[key]</c> so it can never collide with a position; every other
+    /// child takes its position. This is the web's keyed reconciliation arriving on Photon, where
+    /// the path IS identity — focus, hover, scroll offsets, a drag in flight are all remembered by
+    /// it. A virtualized list that materializes rows 2..20 one frame and 3..21 the next shifts every
+    /// positional path by one: the ring that sat on row 17 pointed at row 18, and when the index ran
+    /// past the window it pointed at nothing and Tab restarted from the first control. A keyed row
+    /// keeps its path whatever its neighbours do.
+    /// </summary>
+    internal string ChildPath(string parent, int index, VisualNode child)
+    {
+        if (child.Key is not { Length: > 0 } key) return ChildPath(parent, index);
+        if (PathCache is not { } cache) return parent + "/[" + Escape(key) + "]";
+        if (!cache.TryGetValue((parent, 0, key), out var cached))
+            cache[(parent, 0, key)] = cached = parent + "/[" + Escape(key) + "]";
+        return cached;
+    }
+
+    /// <summary>
+    /// A key made safe to be ONE segment. Keys are frequently generated — a row id, a heading slug,
+    /// a URL — and a '/' inside one would read as a path boundary, quietly turning a single child
+    /// into a nested pair and pointing focus, hover and scroll state at a node that does not exist.
+    /// The escape doubles '~' and spells '/' as "~s", which is injective: two different keys can
+    /// never collapse onto one segment, so the identity the path carries stays the key's own. A key
+    /// with neither character — every key anyone has written so far — allocates nothing.
+    /// </summary>
+    private static string Escape(string key) =>
+        key.IndexOf('~') < 0 && key.IndexOf('/') < 0
+            ? key
+            : key.Replace("~", "~~").Replace("/", "~s");
 
     public LayoutContext(IAppTheme theme, ITextMeasurer measurer, float typeScale = 1f,
         Density density = Density.Comfortable)
@@ -598,18 +632,33 @@ public static class LayoutEngine
     private static LayoutNode MeasureStack(Stack stack, float maxW, float maxH, LayoutContext ctx, string path)
     {
         var result = ctx.Node(stack);
+        // The cell IS the stack's available space — the contract the web's grid keeps (LowerStack):
+        // a Fill child covers a stack that has a size of its own. Measured against the INCOMING
+        // constraints instead, a Fill canvas under a scroll view's unbounded axis measured zero
+        // inside a stack standing 240dp tall — the first chart drew nothing on Photon while the
+        // browser drew it. An explicit axis decides for the children, and is determinate for them
+        // whatever the parent said; the other axes pass the question through unchanged.
+        var childMaxW = stack.Width.Kind == SizeKind.Fixed ? stack.Width.Value : maxW;
+        var childMaxH = stack.Height.Kind == SizeKind.Fixed ? stack.Height.Value : maxH;
+        var outerIndeterminateW = ctx.IndeterminateWidth;
+        var outerIndeterminateH = ctx.IndeterminateHeight;
+        if (stack.Width.Kind == SizeKind.Fixed) ctx.IndeterminateWidth = false;
+        if (stack.Height.Kind == SizeKind.Fixed) ctx.IndeterminateHeight = false;
         var contentW = 0f;
         var contentH = 0f;
 
         for (var stackIndex = 0; stackIndex < stack.Children.Count; stackIndex++)
         {
             var child = stack.Children[stackIndex];
-            var measured = Measure(child, maxW, maxH, ctx, ctx.ChildPath(path, stackIndex));
+            var measured = Measure(child, childMaxW, childMaxH, ctx, ctx.ChildPath(path, stackIndex, child));
             result.Children.Add(measured);
             if (PositionedOf(child, measured) is not null) continue;
             contentW = MathF.Max(contentW, measured.Bounds.Width);
             contentH = MathF.Max(contentH, measured.Bounds.Height);
         }
+
+        ctx.IndeterminateWidth = outerIndeterminateW;
+        ctx.IndeterminateHeight = outerIndeterminateH;
 
         var width = ResolveSelf(stack.Width, maxW, contentW);
         var height = ResolveSelf(stack.Height, maxH, contentH);
@@ -1121,11 +1170,11 @@ public static class LayoutEngine
                 case Flexible f:
                     // Spec B14: an AnimateChanges weight LAYS OUT at the animator's interpolated
                     // value — forward changes glide over Motion.Base, everything else snaps.
-                    flexWeights[i] = ctx.Transitions?.Resolve(ctx.ChildPath(path, i), f.Flex, ctx.TimeMs,
+                    flexWeights[i] = ctx.Transitions?.Resolve(ctx.ChildPath(path, i, f), f.Flex, ctx.TimeMs,
                         f.AnimateChanges, ctx.ReducedMotion) ?? f.Flex;
                     continue;
                 case Spacer { Flex: > 0 } s:
-                    flexWeights[i] = ctx.Transitions?.Resolve(ctx.ChildPath(path, i), s.Flex, ctx.TimeMs,
+                    flexWeights[i] = ctx.Transitions?.Resolve(ctx.ChildPath(path, i, s), s.Flex, ctx.TimeMs,
                         s.AnimateChanges, ctx.ReducedMotion) ?? s.Flex;
                     continue;
                 case Spacer fixedSpacer:
@@ -1137,7 +1186,7 @@ public static class LayoutEngine
             var childMaxW = horizontal ? mainAvail : crossAvail;
             var childMaxH = horizontal ? crossAvail : mainAvail;
             MarkStretch(children[i]);
-            var child = MeasureChild(children[i], childMaxW, childMaxH, ctx.ChildPath(path, i));
+            var child = MeasureChild(children[i], childMaxW, childMaxH, ctx.ChildPath(path, i, children[i]));
             laid[i] = child;
             mains[i] = horizontal ? child.Bounds.Width : child.Bounds.Height;
             rigidSum += mains[i];
@@ -1212,7 +1261,7 @@ public static class LayoutEngine
                             var childMaxW2 = horizontal ? bound : crossAvail;
                             var childMaxH2 = horizontal ? crossAvail : bound;
                             MarkStretch(children[i]);
-                            var reflowed = MeasureChild(children[i], childMaxW2, childMaxH2, ctx.ChildPath(path, i));
+                            var reflowed = MeasureChild(children[i], childMaxW2, childMaxH2, ctx.ChildPath(path, i, children[i]));
                             laid[i] = reflowed;
                             var shrunk = horizontal ? reflowed.Bounds.Width : reflowed.Bounds.Height;
                             rigidSum -= mains[i] - shrunk;
@@ -1241,7 +1290,7 @@ public static class LayoutEngine
             {
                 MarkStretch(unbounded);
                 var intrinsic = MeasureChild(unbounded.Child, horizontal ? mainAvail : crossAvail,
-                    horizontal ? crossAvail : mainAvail, ctx.ChildPath(ctx.ChildPath(path, i), 0));
+                    horizontal ? crossAvail : mainAvail, ctx.ChildPath(ctx.ChildPath(path, i, unbounded), 0));
                 mains[i] = horizontal ? intrinsic.Bounds.Width : intrinsic.Bounds.Height;
                 rigidSum += mains[i];
                 var grown = ctx.Node(unbounded, intrinsic.Bounds);
@@ -1266,7 +1315,7 @@ public static class LayoutEngine
                 // lays out inside it — a flex-grow item's autos fill the cell, per CSS.
                 if (horizontal) ctx.StretchWidth = StretchKind.Flex;
                 else ctx.StretchHeight = StretchKind.Flex;
-                var child = MeasureChild(flexible.Child, childMaxW, childMaxH, ctx.ChildPath(ctx.ChildPath(path, i), 0),
+                var child = MeasureChild(flexible.Child, childMaxW, childMaxH, ctx.ChildPath(ctx.ChildPath(path, i, flexible), 0),
                     mainGranted: true);
                 // The flexible slot IS the share on the main axis (the child fills it).
                 child.Bounds = horizontal
@@ -1412,7 +1461,7 @@ public static class LayoutEngine
             // is going to get rather than at the whole line's.
             var basis = flexible is { Basis: > 0 } ? flexible.Basis : 0f;
             var constraint = basis > 0 ? MathF.Min(basis, mainAvail) : mainAvail;
-            var node = Measure(child, constraint, crossMax - padCross, ctx, ctx.ChildPath(path, i));
+            var node = Measure(child, constraint, crossMax - padCross, ctx, ctx.ChildPath(path, i, source));
 
             measured.Add(node);
             sources.Add(source);
@@ -1487,7 +1536,7 @@ public static class LayoutEngine
                     {
                         var child = sources[i] is Flexible f ? f.Child : sources[i];
                         var remeasured = Measure(child, horizontal ? size : crossMax - padCross,
-                            horizontal ? crossMax - padCross : size, ctx, ctx.ChildPath(path, i));
+                            horizontal ? crossMax - padCross : size, ctx, ctx.ChildPath(path, i, sources[i]));
                         // A flex item OCCUPIES the size it resolved to, even when its content is
                         // shorter — otherwise the ones after it slide left and the line no longer
                         // fills what it was given.
@@ -1637,7 +1686,7 @@ public static class LayoutEngine
             var (node, c, span, r) = placements[i];
             var cellW = grid.Gap * (span - 1);
             for (var k = c; k < c + span; k++) cellW += widths[k];
-            var child = Measure(node, cellW, maxH, ctx, ctx.ChildPath(path, i));
+            var child = Measure(node, cellW, maxH, ctx, ctx.ChildPath(path, i, node));
             // A Fill-width child pins to the cell (the realizer paints the full extent).
             if (CrossSizeKind(node, horizontal: false) == SizeKind.Fill || WidthKind(node) == SizeKind.Fill)
                 child.Bounds = child.Bounds with { Width = cellW };

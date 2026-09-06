@@ -127,6 +127,13 @@ public static class WebRealizer
     {
         var lowered = LowerNodeKind(node, context, horizontalAxis);
 
+        // A node's Key is its identity among siblings — the same one property Photon reads into a
+        // keyed path segment — and here it becomes the reconciler's key, so a keyed row that moved
+        // from the third position to the first is a MOVED row, not a rewritten one. Written in the
+        // funnel because it belongs to every node; SSR emits no attribute for it, so the DOM is
+        // unchanged and the twin in lowering.ts writes exactly the same field.
+        if (lowered is not null && node.Key is { Length: > 0 } key) lowered.Key = key;
+
         // The one funnel every node passes through, which is where a property that belongs to ALL
         // of them has to be written — an in-page link may point at any node, not at a chosen few.
         if (lowered is not null && node.Bookmark is { Length: > 0 } bookmark)
@@ -830,6 +837,12 @@ public static class WebRealizer
             // first interactive canvas anyone wrote.
             svg.DataAttributes ??= new Dictionary<string, string>();
             svg.DataAttributes["eq-canvas"] = "1";
+            // And it TAKES the pointer, explicitly: `pointer-events` inherits, and the layers of a
+            // Stack switch it off so the picture on top never blocks the control beneath — which
+            // silenced a chart's own canvas inside its plot Stack: the hover fell through to the
+            // card behind it and the tooltip never came. On Photon the canvas registers its own
+            // region; this is the same statement in the DOM's language (see lowering.ts).
+            svg.Style.PointerEvents = "auto";
         }
         else
         {
@@ -2599,6 +2612,7 @@ internal sealed class RealizedElement : HtmlElement, IPseudoStyled, IAdaptiveGat
         return new HtmlNode
         {
             Tag = Tag,
+            Key = Key,
             Attributes = attributes,
             Events = BuildEvents(),
             Children = children,
