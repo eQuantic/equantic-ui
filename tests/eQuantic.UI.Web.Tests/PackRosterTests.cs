@@ -43,4 +43,54 @@ public class PackRosterTests
             "a packable project the solution does not list vanishes from `dotnet pack` of the solution "
             + "while CI keeps publishing it — add it with `dotnet sln add`");
     }
+
+    /// <summary>
+    /// Building the solution in Release builds every project in Release.
+    /// <para>
+    /// A solution maps each of ITS configurations onto one of each project's, and the two halves are
+    /// not alike: the PLATFORM legitimately differs, because these projects are AnyCPU and
+    /// <c>Release|x64</c> reaching <c>Release|Any CPU</c> is how that is written. The CONFIGURATION
+    /// may not, because <c>$(Configuration)</c> is what every output path and every tool path in this
+    /// SDK is keyed on.
+    /// </para>
+    /// <para>
+    /// Measured: <c>DefaultUIDashboard</c> mapped all three Release configurations onto
+    /// <c>Debug|Any CPU</c> from 2026-02-07, so `dotnet build eQuantic.UI.sln -c Release` built that
+    /// sample in DEBUG and said nothing — Debug binaries in a Release build for seven months. It
+    /// became visible only when EQ4001 arrived and the sample went looking for an icon tool in a
+    /// Debug folder a Release build never writes. Nothing in a diff shows this: the rows are one
+    /// word different, in a file nobody reads, for a project that still compiled.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void EveryProjectBuildsInTheConfigurationTheSolutionAsksFor()
+    {
+        var solution = File.ReadAllText(Path.Combine(RepoRoot(), "eQuantic.UI.sln"));
+        var section = Regex.Match(solution,
+            @"GlobalSection\(ProjectConfigurationPlatforms\).*?EndGlobalSection", RegexOptions.Singleline);
+        section.Success.Should().BeTrue("the solution has to say what it builds");
+
+        // The GUID names the project only in the declaration lines, so the drift is reported by NAME:
+        // a bare GUID sends the reader hunting for which project it is.
+        var names = Regex.Matches(solution, @"Project\(""\{[0-9A-F-]+\}""\) = ""([^""]+)"", ""[^""]+\.csproj"", ""(\{[0-9A-Fa-f-]{36}\})""")
+            .ToDictionary(m => m.Groups[2].Value, m => m.Groups[1].Value, StringComparer.OrdinalIgnoreCase);
+
+        // Named down to the PLATFORM row, because one platform can drift while its siblings are
+        // right, and "Release is wrong" would then send the reader through three rows to find which.
+        // ActiveCfg and Build.0 are one decision written twice, so the pair collapses to one line.
+        var drift = Regex.Matches(section.Value,
+                @"(\{[0-9A-Fa-f-]{36}\})\.([^.|]+\|[^.]+)\.(?:ActiveCfg|Build\.0) = ([^|\r\n]+)\|")
+            .Where(m => !string.Equals(m.Groups[2].Value.Split('|')[0].Trim(), m.Groups[3].Value.Trim(),
+                StringComparison.Ordinal))
+            .Select(m => $"{names.GetValueOrDefault(m.Groups[1].Value, m.Groups[1].Value)}: the solution's "
+                       + $"{m.Groups[2].Value.Trim()} builds it as {m.Groups[3].Value.Trim()}")
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(line => line, StringComparer.Ordinal)
+            .ToList();
+
+        drift.Should().BeEmpty(
+            "a project that builds Debug inside a Release solution build produces Debug binaries "
+            + "beside everyone else's Release ones, and resolves every $(Configuration) path — the "
+            + "SDK's own tool paths included — to a folder that build never wrote");
+    }
 }
