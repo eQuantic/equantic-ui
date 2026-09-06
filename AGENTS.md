@@ -100,13 +100,16 @@ src/
 ├── eQuantic.UI.Server/         # ASP.NET Core SSR, Server Actions, metadata and assets
 ├── eQuantic.UI.Compiler/       # Roslyn-based C# to JavaScript transpiler (the library)
 ├── eQuantic.Build/             # eqc — the transpiler CLI the SDK runs; ships as tools/net10.0/eqc.dll
-├── eQuantic.UI.Native.Build/   # eqicon — vectors, app icons, manifests; ships as tools/net10.0/eqicon.dll
 ├── eQuantic.UI.Generators/     # Source generator: the declarative factory surface for an app's own components
 ├── eQuantic.UI.Sdk/            # MSBuild SDK for web apps (Sdk.props, Sdk.targets, Resources/boot.ts)
-├── eQuantic.UI.Sdk.Native/     # MSBuild SDK for device apps (macOS, iOS, Android)
 ├── eQuantic.UI.Runtime/        # TypeScript browser runtime (reconciler, state, events) → runtime.js
 ├── eQuantic.UI.Runtime.*/      # Embedded Bun, one package per OS+arch (Osx64, OsxArm64, Win64, WinArm64, Linux64, LinuxArm64)
-├── eQuantic.UI.Native.*/       # Photon: Engine (+ Metal, Vulkan, Reference), Framework, Hosting, Components, Shell.*
+├── eQuantic.UI.Native.*/       # PHOTON, the native track: Engine (+ .Metal/.Vulkan/.Reference backends),
+│                               # Framework, Components, Hosting, Build (eqicon — vectors, app icons, manifests;
+│                               # ships as tools/net10.0/eqicon.dll), Generators, and the shells —
+│                               # Shell.Apple (shared Apple code), Shell.MacOS, Shell.iOS, Shell.Android,
+│                               # Shell.Windows (Win32 + DirectWrite/Direct2D/WIC; Vulkan or the Reference backend)
+├── eQuantic.UI.Sdk.Native/     # MSBuild SDK for Photon apps: picks the shell per TFM and, on desktop, per host OS
 ├── eQuantic.UI.Templates/      # dotnet new equantic-app / equantic-native
 ├── eQuantic.UI.Codegen/        # Writers for generated files (one CodeWriter, one writer per file type)
 ├── eQuantic.UI.Web.Build/      # Generators of the runtime's TypeScript twins (design system, enum unions, icons, SDK strings)
