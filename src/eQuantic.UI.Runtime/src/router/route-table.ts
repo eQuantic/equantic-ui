@@ -87,7 +87,17 @@ export function matchPattern(pattern: string, path: string): Record<string, stri
     if (param === null) {
       if (pat[i].toLowerCase() !== seg[i].toLowerCase()) return null;
     } else {
-      const value = decodeURIComponent(seg[i]);
+      // A path segment is USER INPUT — typed, pasted, crawled — and `decodeURIComponent` throws on
+      // a malformed escape, so `/users/%` raised a URIError from inside the click handler and the
+      // popstate handler alike. A URL nobody can decode matches no route, which is the same answer
+      // an unknown path already gets: the click falls through to the browser and the server says
+      // what it is. (Shipped that way; found pulling the thread on the fragment decode beside it.)
+      let value: string;
+      try {
+        value = decodeURIComponent(seg[i]);
+      } catch {
+        return null;
+      }
       if (!satisfiesConstraint(value, param.constraint)) return null;
       params[param.name] = value;
     }

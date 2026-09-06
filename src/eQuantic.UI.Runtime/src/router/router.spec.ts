@@ -28,6 +28,20 @@ describe('matchPattern / matchRoute', () => {
     expect(matchRoute(routes, '/users/new')?.page).toBe('NewUser');
   });
 
+  /**
+   * A path segment is user input, and `decodeURIComponent` throws on a malformed escape. `/users/%`
+   * raised a URIError from inside the click handler and the popstate handler alike — a URL nobody
+   * can decode now matches no route, which is the answer an unknown path already gets.
+   */
+  it('treats a malformed escape as no match rather than throwing', () => {
+    expect(() => matchPattern('/users/{id}', '/users/%')).not.toThrow();
+    expect(matchPattern('/users/{id}', '/users/%')).toBeNull();
+    expect(matchRoute(routes, '/users/%')).toBeNull();
+    expect(matchRoute(routes, '/users/%E0%A4%A')).toBeNull();
+    // A well-formed escape still decodes, so the guard cannot be "give up on percent signs".
+    expect(matchPattern('/users/{id}', '/users/a%20b')).toEqual({ id: 'a b' });
+  });
+
   it('returns null for unknown / wrong-arity paths', () => {
     expect(matchRoute(routes, '/missing')).toBeNull();
     expect(matchRoute(routes, '/users/1/extra')).toBeNull();
