@@ -17,9 +17,11 @@ namespace eQuantic.UI.Native.Shell.Windows;
 /// are unreadable to any other account, and go with the app's data when it is removed.
 /// </para>
 /// <para>
-/// Every failure answers rather than throws. A blob another user's profile wrote, a file a restore
-/// brought back onto a different machine — the contract already says a null read means "sign in
-/// again", which is the only useful response to any of them.
+/// Every failure answers rather than throws — reads AND writes, as the Keychain and Keystore
+/// realizations do. A blob another user's profile wrote, a file a restore brought back onto a
+/// different machine, a folder the profile cannot write, DPAPI declining: the contract already
+/// says a null read means "sign in again", and a write that could not land is the same fact one
+/// step earlier — the vault is unavailable, and the next read says so.
 /// </para>
 /// </summary>
 public sealed unsafe class WindowsSecretStore : ISecretStore
@@ -75,10 +77,19 @@ public sealed unsafe class WindowsSecretStore : ISecretStore
     {
         ArgumentException.ThrowIfNullOrEmpty(key);
         ArgumentNullException.ThrowIfNull(value);
-        var protectedBytes = Protect(Encoding.UTF8.GetBytes(value))
-            ?? throw new InvalidOperationException("The platform declined to protect the secret.");
-        Directory.CreateDirectory(_directory);
-        File.WriteAllBytes(PathFor(key), protectedBytes);
+        // A vault that cannot protect or cannot write answers like the Apple and Android ones: the
+        // write does not land, and the next Get returns null — "sign in again". Throwing here would
+        // make the one platform without a vault the one platform where a sign-in crashes.
+        var protectedBytes = Protect(Encoding.UTF8.GetBytes(value));
+        if (protectedBytes is null) return;
+        try
+        {
+            Directory.CreateDirectory(_directory);
+            File.WriteAllBytes(PathFor(key), protectedBytes);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+        }
     }
 
     public void Remove(string key)

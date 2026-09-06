@@ -96,7 +96,7 @@ public sealed unsafe class WindowsNetworkStatus : INetworkStatus, IDisposable
     {
         WindowsNetworkStatus[] listening;
         lock (Gate) listening = [.. Listening];
-        var state = new NetworkState(IsOnline(hint.ConnectivityLevel), KindNow());
+        var state = StateOf(hint.ConnectivityLevel);
         foreach (var monitor in listening) monitor.Publish(state);
     }
 
@@ -116,6 +116,16 @@ public sealed unsafe class WindowsNetworkStatus : INetworkStatus, IDisposable
     {
         NL_NETWORK_CONNECTIVITY_HINT hint;
         var level = GetNetworkConnectivityHint(&hint) == 0 ? hint.ConnectivityLevel : LevelUnknown;
+        return StateOf(level);
+    }
+
+    /// <summary>
+    /// ONE reading from a connectivity level, for the first read and every change alike. Offline
+    /// carries <see cref="NetworkKind.None"/> — "offline over Wi-Fi" is not a state, and the
+    /// adapters are only enumerated when there is a route to name.
+    /// </summary>
+    private static NetworkState StateOf(int level)
+    {
         var online = IsOnline(level);
         return new NetworkState(online, online ? KindNow() : NetworkKind.None);
     }
