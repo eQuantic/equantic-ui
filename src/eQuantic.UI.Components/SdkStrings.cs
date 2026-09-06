@@ -132,4 +132,8 @@ public static class SdkStrings
     // ListDetail's compact pane: going back to the list, and the wide pane with nothing chosen.
     public static string Back => SdkResources.Back;
     public static string NothingSelected => SdkResources.NothingSelected;
+
+    // A chart's footer: the switch to its table view (the WCAG twin of every chart) and back.
+    public static string ShowAsTable => SdkResources.ShowAsTable;
+    public static string ShowAsChart => SdkResources.ShowAsChart;
 }

@@ -26,9 +26,11 @@ public class SharedComponentTranspilationTests
     /// </summary>
     private static string[] SharedSources() =>
         Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Components"), "*.cs")
-            .Select(Path.GetFileName)
-            .OrderBy(name => name, StringComparer.Ordinal)
-            .ToArray()!;
+            // The chart library is the second shared library, runtime-provided the same way
+            // (docs/CHARTS-PLAN.md): its directory IS its roster too.
+            .Concat(Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Charts"), "*.cs"))
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .ToArray();
 
     /// <summary>
     /// Pure MODEL that the components are written against and that has no platform in it — the code
@@ -141,7 +143,7 @@ public class SharedComponentTranspilationTests
     {
         var root = RepoRoot();
         var sourcePaths = SharedModelSources()
-            .Concat(SharedSources().Select(name => Path.Combine(root, "src", "eQuantic.UI.Components", name)))
+            .Concat(SharedSources())
             .ToList();
 
         // The same semantic setup the SDK gives eqc (full resolved references — the SDK passes

@@ -89,6 +89,14 @@ export class SdkStrings {
         return $eq.str("SdkResources", "NothingSelected");
     }
 
+    static get showAsTable(): string {
+        return $eq.str("SdkResources", "ShowAsTable");
+    }
+
+    static get showAsChart(): string {
+        return $eq.str("SdkResources", "ShowAsChart");
+    }
+
     static hint(pattern: string, letters: string) {
         let day = letters.length > 0 ? letters[0] : 'D';
         let month = letters.length > 1 ? letters[1] : 'M';

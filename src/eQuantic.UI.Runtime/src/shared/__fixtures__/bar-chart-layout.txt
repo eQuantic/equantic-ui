@@ -1,0 +1,76 @@
+== grouped-vertical ==
+size 320x200 vertical
+ticks -5 25 step 5 count 7
+baseline 166.667
+bar c0 s0 2,86.667 24x80 end
+bar c0 s1 28,66.667 24x100 end
+bar c0 s2 54,166.667 24x20 neg end
+bar c1 s0 82,46.667 24x120 end
+bar c1 s1 108,26.667 24x140 end
+bar c1 s2 134,126.667 24x40 end
+bar c2 s0 162,106.667 24x60 end
+bar c2 s1 188,73.333 24x93.333 end
+bar c2 s2 214,166.667 24x0 end
+bar c3 s0 242,140 24x26.667 end
+bar c3 s1 268,113.333 24x53.333 end
+bar c3 s2 294,100 24x66.667 end
+== stacked-vertical ==
+size 320x200 vertical
+ticks -10 50 step 10 count 7
+baseline 166.667
+bar c0 s0 28,128.667 24x38
+bar c0 s1 28,76.667 24x50 end
+bar c0 s2 28,166.667 24x10 neg end
+bar c1 s0 108,108.667 24x58
+bar c1 s1 108,38.667 24x68
+bar c1 s2 108,16.667 24x20 end
+bar c2 s0 188,138.667 24x28
+bar c2 s1 188,92 24x44.667
+bar c2 s2 188,90 24x0 end
+bar c3 s0 268,155.333 24x11.333
+bar c3 s1 268,128.667 24x24.667
+bar c3 s2 268,93.333 24x33.333 end
+== grouped-horizontal ==
+size 320x200 horizontal
+ticks -5 25 step 5 count 7
+baseline 53.333
+bar c0 s0 53.333,2 128x14 end
+bar c0 s1 53.333,18 160x14 end
+bar c0 s2 21.333,34 32x14 neg end
+bar c1 s0 53.333,52 192x14 end
+bar c1 s1 53.333,68 224x14 end
+bar c1 s2 53.333,84 64x14 end
+bar c2 s0 53.333,102 96x14 end
+bar c2 s1 53.333,118 149.333x14 end
+bar c2 s2 53.333,134 0x14 end
+bar c3 s0 53.333,152 42.667x14 end
+bar c3 s1 53.333,168 85.333x14 end
+bar c3 s2 53.333,184 106.667x14 end
+== stacked-horizontal-hidden ==
+size 320x200 horizontal
+ticks -5 25 step 5 count 7
+baseline 53.333
+bar c0 s0 53.333,13 128x24 end
+bar c0 s2 21.333,13 32x24 neg end
+bar c1 s0 53.333,63 190x24
+bar c1 s2 245.333,63 64x24 end
+bar c2 s0 53.333,113 94x24
+bar c2 s2 149.333,113 0x24 end
+bar c3 s0 53.333,163 40.667x24
+bar c3 s2 96,163 106.667x24 end
+== grouped-fixed-axis ==
+size 250x100 vertical
+ticks 0 40 step 10 count 5
+baseline 100
+bar c0 s0 2,70 18.167x30 end
+bar c0 s1 22.167,62.5 18.167x37.5 end
+bar c0 s2 42.333,100 18.167x7.5 neg end
+bar c1 s0 64.5,55 18.167x45 end
+bar c1 s1 84.667,47.5 18.167x52.5 end
+bar c1 s2 104.833,85 18.167x15 end
+bar c2 s0 127,77.5 18.167x22.5 end
+bar c2 s1 147.167,65 18.167x35 end
+bar c2 s2 167.333,100 18.167x0 end
+bar c3 s0 189.5,90 18.167x10 end
+bar c3 s1 209.667,80 18.167x20 end
+bar c3 s2 229.833,75 18.167x25 end

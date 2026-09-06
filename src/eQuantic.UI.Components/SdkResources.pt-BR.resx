@@ -65,4 +65,10 @@
   <data name="PrivacyPolicy" xml:space="preserve">
     <value>Política de privacidade</value>
   </data>
+  <data name="ShowAsTable" xml:space="preserve">
+    <value>Ver como tabela</value>
+  </data>
+  <data name="ShowAsChart" xml:space="preserve">
+    <value>Ver como gráfico</value>
+  </data>
 </root>
