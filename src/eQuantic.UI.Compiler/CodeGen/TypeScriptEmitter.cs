@@ -450,7 +450,10 @@ public class TypeScriptEmitter
                         .Where(p => !p.IsStatic && IsAutoProperty(p)
                                     && (p.DefaultValueNode != null || p.ImplicitDefaultJs != null))
                         .ToList();
-                    var hasCtorBody = ctorDef?.BodyNode != null;
+                    // EITHER form of body counts: a block, or the arrow a one-line constructor is
+                    // written with. Only the block was read, so `public Chart(x) => _x = x;` emitted a
+                    // constructor that assigned nothing and left the field undefined.
+                    var hasCtorBody = ctorDef?.BodyNode != null || ctorDef?.ExpressionBodyNode != null;
                     if (ctorParams.Count > 0 || autoDefaults.Count > 0 || hasCtorBody)
                     {
                         // C# optional parameters keep their defaults as JS default parameters
@@ -514,12 +517,21 @@ public class TypeScriptEmitter
                             foreach (var param in passed)
                             {
                                 var camelName = param.Name.ToCamelCase();
+                                var target = component.Properties
+                                    .FirstOrDefault(pr => !pr.IsStatic && pr.Name.ToCamelCase() == camelName);
                                 // PRIMARY-constructor params are implicit fields — always assign. With an
                                 // EXPLICIT ctor body, only params that map onto a real auto-property assign
                                 // here; one that merely feeds a private/state field (`NestedChild(label)` →
                                 // `_label`) has no `this.<name>` to write — the C# ctor body does the wiring.
-                                if (hasCtorBody && !component.Properties.Any(pr => !pr.IsStatic && pr.Name.ToCamelCase() == camelName))
-                                    continue;
+                                if (hasCtorBody && target == null) continue;
+                                // Nor does one whose twin is a GETTER: `Series => _series;` beside a `series`
+                                // parameter emitted `get series()` and `this.series = series` into one class,
+                                // which tsc rejects and which throws at `new` in the browser. The value still
+                                // arrives, through the constructor body the author wrote — writing the field
+                                // themselves is what a read-only property is FOR. Only the explicit-ctor path
+                                // skips: a primary constructor has no body to do that wiring, so dropping the
+                                // assignment there would lose the value instead of relocating it.
+                                if (hasCtorBody && target != null && !IsAssignableSlot(target)) continue;
                                 statements.Add(JsStatement.If(
                                     JsExpr.Binary(JsExpr.Identifier(camelName), "!==", JsExpr.Identifier("undefined")),
                                     Assign(JsExpr.ThisMember(camelName), JsExpr.Identifier(camelName)), null));
@@ -537,11 +549,13 @@ public class TypeScriptEmitter
                                 statements.Add(DefaultIfUndefined(cn, def));
                             }
                             var bodyLine = statements.Count + 1;
-                            if (hasCtorBody) statements.Add(Contents(ctorDef!.BodyNode!));
+                            if (ctorDef?.BodyNode is { } ctorBlock) statements.Add(Contents(ctorBlock));
+                            else if (ctorDef?.ExpressionBodyNode is { } ctorExpression)
+                                statements.Add(JsStatement.Raw(ExpressionBodyStatement(ctorExpression)));
                             // …and the initializer last, which is where C# runs it.
                             statements.Add(JsStatement.Raw("if (props && typeof props === 'object') Object.assign(this, props);"));
                             c.Member(JsClassMember.Constructor(signature, JsStatement.Block(statements)),
-                                bodySource: ctorDef?.BodyNode, bodyLine: bodyLine);
+                                bodySource: (SyntaxNode?)ctorDef?.BodyNode ?? ctorDef?.ExpressionBodyNode, bodyLine: bodyLine);
                         }
                     }
 
@@ -1162,6 +1176,33 @@ public class TypeScriptEmitter
         if (node.ExpressionBody != null) return false;
         if (node.AccessorList == null) return true;
         return node.AccessorList.Accessors.All(a => a.Body == null && a.ExpressionBody == null);
+    }
+
+    /// <summary>
+    /// True when the emitted class has a slot this property can be WRITTEN to, which is what decides
+    /// whether the constructor protocol may assign a same-named parameter onto it.
+    /// <para>
+    /// An auto-property is emitted type-only and filled from outside (the base `Object.assign(props)`
+    /// or the constructor), so it takes an assignment. Anything with a real accessor takes one only
+    /// when a SETTER is emitted beside the getter — and an expression-bodied property
+    /// (`Series => _series;`) emits a getter alone.
+    /// </para>
+    /// <para>
+    /// Getting this wrong is not a cosmetic mismatch. `get series()` and `this.series = series` in
+    /// one class is TS2540 to the type checker, and a class body is strict-mode code, so the
+    /// assignment THROWS a TypeError at `new` — a component the server rendered perfectly dies at
+    /// hydration. Found while writing the first chart, whose shape (private field, read-only
+    /// property, constructor parameter of the same name) is ordinary C# any consumer can write.
+    /// </para>
+    /// </summary>
+    private static bool IsAssignableSlot(PropertyDefinition p)
+    {
+        // No syntax to read (a property the parser knew without a declaration): keep the old answer
+        // rather than guess a new one.
+        if (IsAutoProperty(p)) return true;
+        if (p.Node?.AccessorList is not { } list) return false;   // expression-bodied: a getter alone
+        var setter = list.Accessors.FirstOrDefault(a => a.Keyword.Text is "set" or "init");
+        return setter is not null && (setter.Body != null || setter.ExpressionBody != null);
     }
 
     /// <summary>Unwrap a converted block body (`{ … }`) to its inner statements for inlining into an

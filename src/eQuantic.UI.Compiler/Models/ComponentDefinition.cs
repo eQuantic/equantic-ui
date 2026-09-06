@@ -223,6 +223,13 @@ public class MethodDefinition
     /// <see cref="MethodDeclarationSyntax"/>), so the emitter can transpile and run a ctor's body.</summary>
     public Microsoft.CodeAnalysis.CSharp.Syntax.BlockSyntax? BodyNode { get; set; }
     /// <summary>
+    /// The other half a body can take: <c>public Chart(x) =&gt; _x = x;</c>. Held beside
+    /// <see cref="BodyNode"/> because a constructor written this way has no block, and reading only
+    /// the block dropped the author's wiring on the floor — the twin ran a constructor that did
+    /// nothing while the C# one assigned a field. Form decides first, then behaviour.
+    /// </summary>
+    public Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? ExpressionBodyNode { get; set; }
+    /// <summary>
     /// A C# 12 PRIMARY constructor, whose parameters are implicit fields rather than locals: members
     /// read them as <c>this.name</c>, so whatever the constructor puts in one has to land there.
     /// </summary>

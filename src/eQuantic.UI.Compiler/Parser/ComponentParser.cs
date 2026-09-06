@@ -711,7 +711,8 @@ public class ComponentParser
                 ReturnType = "void",
                 Body = ctor.Body?.ToString() ?? ctor.ExpressionBody?.Expression.ToString() ?? "",
                 SyntaxNode = null,
-                BodyNode = ctor.Body
+                BodyNode = ctor.Body,
+                ExpressionBodyNode = ctor.ExpressionBody?.Expression,
             };
 
             foreach (var param in ctor.ParameterList.Parameters)
