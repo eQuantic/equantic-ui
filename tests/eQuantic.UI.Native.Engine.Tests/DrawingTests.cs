@@ -31,8 +31,8 @@ public class DrawingTests
     private static IIconRasterizer PlatformRasterizer()
     {
         if (OperatingSystem.IsMacOS()) return new CoreGraphicsIconRasterizer();
-        Skip.IfNot(OperatingSystem.IsWindows(), "Needs a platform icon rasterizer (CoreGraphics or Direct2D).");
-        return new eQuantic.UI.Native.Shell.Windows.Graphics.Direct2DIconRasterizer();
+        if (OperatingSystem.IsWindows()) return new eQuantic.UI.Native.Shell.Windows.Graphics.Direct2DIconRasterizer();
+        throw new SkipException("Needs a platform icon rasterizer (CoreGraphics or Direct2D).");
     }
 
     /// <summary>A mark with two shapes in two colours, and one that asks to be tinted.</summary>

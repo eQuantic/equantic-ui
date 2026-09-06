@@ -8,6 +8,12 @@ using eQuantic.UI.Primitives;
 using static eQuantic.UI.Native.Shell.Windows.Win32;
 
 [assembly: PhotonRunner(typeof(eQuantic.UI.Native.Shell.Windows.WindowsPhotonRunner))]
+// Which operating system this shell exists for. The host reads it: a Mac that carries this
+// assembly beside its own shell — the test project, a publish for more than one desktop — must
+// find ONE runner, and the Windows capabilities must not shadow the Mac's by registering first.
+// Stated in source because the SDK only writes the attribute for a platform-specific target
+// framework, and this shell builds for plain net10.0 on every host.
+[assembly: System.Runtime.Versioning.SupportedOSPlatform("windows")]
 
 namespace eQuantic.UI.Native.Shell.Windows;
 

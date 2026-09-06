@@ -1,3 +1,4 @@
+using System.Reflection;
 using eQuantic.UI.Native.Hosting;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
@@ -58,6 +59,20 @@ public class HostingTests
         app.Options.MaxFrames.Should().Be(120, "nothing in the program overrode it");
         app.Options.Title.Should().Be("From code");
     }
+
+    /// <summary>
+    /// The Windows shell says which operating system it exists for. That one fact is what lets a
+    /// Mac that carries it beside its own shell — this very test project, or a publish for more
+    /// than one desktop — find ONE runner instead of refusing to start with two. The SDK writes the
+    /// attribute only for platform-specific target frameworks, so the shell states it in source;
+    /// this pins that it did.
+    /// </summary>
+    [Fact]
+    public void TheWindowsShellDeclaresItsOperatingSystem() =>
+        typeof(eQuantic.UI.Native.Shell.Windows.WindowsPhotonRunner).Assembly
+            .GetCustomAttributes<System.Runtime.Versioning.SupportedOSPlatformAttribute>()
+            .Should().Contain(platform => platform.PlatformName.StartsWith("windows", StringComparison.Ordinal),
+                "the host treats a shell declared for another OS as not there");
 
     /// <summary>
     /// AppKit is a main-thread framework, and xUnit runs nowhere near the main thread — so this
