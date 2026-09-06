@@ -22,6 +22,10 @@
         <ProjectReference Include="..\eQuantic.UI.Native.Components\eQuantic.UI.Native.Components.csproj" />
         <ProjectReference Include="..\eQuantic.UI.Native.Engine.Reference\eQuantic.UI.Native.Engine.Reference.csproj" />
         <ProjectReference Include="..\eQuantic.UI.Native.Shell.Apple\eQuantic.UI.Native.Shell.Apple.csproj" />
+        <!-- Both text stacks, so a C# icon's lettering is real glyphs on whichever machine builds it —
+             CoreText on a Mac, DirectWrite on Windows. Managed assemblies that touch nothing until
+             asked, so each is inert on the other's OS. -->
+        <ProjectReference Include="..\eQuantic.UI.Native.Shell.Windows\eQuantic.UI.Native.Shell.Windows.csproj" />
     </ItemGroup>
 
 </Project>

@@ -3,6 +3,11 @@ using eQuantic.UI.Native.Shell.Apple;
 using eQuantic.UI.Primitives;
 
 [assembly: PhotonRunner(typeof(eQuantic.UI.Native.Shell.MacOS.MacOSPhotonRunner))]
+// Which operating system this shell exists for, read by the host: a machine that carries this
+// assembly beside another desktop's shell — a publish for more than one desktop — finds ONE
+// runner. Stated in source because the SDK writes the attribute only for platform-specific target
+// frameworks, and this shell builds for plain net10.0; the phone shells get theirs from their TFMs.
+[assembly: System.Runtime.Versioning.SupportedOSPlatform("macos")]
 
 namespace eQuantic.UI.Native.Shell.MacOS;
 

@@ -37,6 +37,11 @@ public sealed class PhotonWindow
     /// under <see cref="WindowChrome.Unified"/>, so an app insets its own toolbar the same way it
     /// insets under a phone's notch.</summary>
     private const float TitleBarHeight = 28;
+
+    /// <summary>How far the traffic lights reach into the strip from the start: three 12pt buttons,
+    /// two 8pt gaps, the 12pt margin before and a matching one after — the corner a title-bar
+    /// toolbar keeps clear of, reported through <see cref="PhotonHost.WindowControlsInsets"/>.</summary>
+    private const float TrafficLightsWidth = 74;
     private const ulong EventTypeLeftMouseDown = 1;
     private const ulong EventTypeLeftMouseUp = 2;
     private const ulong EventTypeMouseMoved = 5;
@@ -177,6 +182,13 @@ public sealed class PhotonWindow
             // Whatever the system kept for itself is a safe area, exactly as a phone's notch is.
             SafeAreaInsets = _chrome == WindowChrome.Unified
                 ? new EdgeInsets(0, TitleBarHeight, 0, 0)
+                : default,
+            // And WHERE in that strip the controls sit — the traffic lights' corner at the START,
+            // as wide as the three of them and the margin the handoff leaves after them. A toolbar
+            // that is the title bar asks for SafeEdges.WindowControls and keeps clear of it; on
+            // Windows the same node keeps clear of the caption buttons at the END.
+            WindowControlsInsets = _chrome == WindowChrome.Unified
+                ? new EdgeInsets(TrafficLightsWidth, TitleBarHeight, 0, 0)
                 : default,
             // W4b: the Metal textured pipeline is live — REAL glyphs on screen.
             TextRasterizer = textService,

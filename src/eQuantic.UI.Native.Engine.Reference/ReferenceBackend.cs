@@ -11,6 +11,30 @@ public sealed class ReferenceBackend : IRenderBackend
 {
     public RenderBackendKind Kind => RenderBackendKind.Reference;
 
+    /// <summary>
+    /// How many rows of one shape are rasterized side by side. ONE by default, so the golden
+    /// harness stays the plain sequential rasterizer it was written as. A shell that PRESENTS
+    /// through this backend — the Windows fallback where no Vulkan driver exists — sets the
+    /// machine's core count instead, because a frame is not a golden and a second per frame on one
+    /// core is an eighth of that on eight. The pixels are identical either way: every pixel is a
+    /// function of the command and its own coordinates, rows never share a pixel, and the commands
+    /// still run strictly in order.
+    /// </summary>
+    public int MaxDegreeOfParallelism { get; init; } = 1;
+
+    /// <summary>Runs <paramref name="row"/> for every scanline in [<paramref name="y0"/>,
+    /// <paramref name="y1"/>) — sequentially, or across cores for a band tall enough to be worth
+    /// the scheduling.</summary>
+    private void Rows(int y0, int y1, Action<int> row)
+    {
+        if (MaxDegreeOfParallelism <= 1 || y1 - y0 < 16)
+        {
+            for (var py = y0; py < y1; py++) row(py);
+            return;
+        }
+        Parallel.For(y0, y1, new ParallelOptions { MaxDegreeOfParallelism = MaxDegreeOfParallelism }, row);
+    }
+
     public IRenderSurface CreateSurface(int width, int height) => new ReferenceSurface(width, height);
 
     public void Dispose()
@@ -36,10 +60,10 @@ public sealed class ReferenceBackend : IRenderBackend
                 case DrawCommandKind.StrokeRRect:
                 case DrawCommandKind.ShadowRRect:
                 case DrawCommandKind.FillAnnularSector:
-                    RasterizeRRect(target, in command);
+                    RasterizeRRect(target, command);
                     break;
                 case DrawCommandKind.Texture:
-                    RasterizeTexture(target, in command, displayList.Textures);
+                    RasterizeTexture(target, command, displayList.Textures);
                     break;
                 case DrawCommandKind.BeginLayer:
                     (layers ??= new()).Push((target, command.StrokeWidth));
@@ -70,7 +94,7 @@ public sealed class ReferenceBackend : IRenderBackend
     /// rasters are generated at device scale, so texels map 1:1 and stay crisp; the paint color is
     /// the tint. Clip multiplies exactly like the rrect path.
     /// </summary>
-    private static void RasterizeTexture(ReferenceSurface target, in DrawCommand command, IReadOnlyList<TextureData> textures)
+    private void RasterizeTexture(ReferenceSurface target, DrawCommand command, IReadOnlyList<TextureData> textures)
     {
         if (command.TextureId < 0 || command.TextureId >= textures.Count) return;
         var texture = textures[command.TextureId];
@@ -98,7 +122,7 @@ public sealed class ReferenceBackend : IRenderBackend
         var gradientTint = command.Paint.Kind != PaintKind.Solid;
         var tint = command.Paint.Color;
 
-        for (var py = y0; py < y1; py++)
+        Rows(y0, y1, py =>
         {
             for (var px = x0; px < x1; px++)
             {
@@ -148,10 +172,10 @@ public sealed class ReferenceBackend : IRenderBackend
                 }
                 target.BlendOver(px, py, ColorSpace.ToPremultipliedLinear(texel, coverage));
             }
-        }
+        });
     }
 
-    private static void RasterizeRRect(ReferenceSurface target, in DrawCommand command)
+    private void RasterizeRRect(ReferenceSurface target, DrawCommand command)
     {
         var shape = command.Shape;
         var transform = command.Transform;
@@ -182,7 +206,7 @@ public sealed class ReferenceBackend : IRenderBackend
         if (scale <= 0) return;
         var inv = inverse.Value;
 
-        for (var py = y0; py < y1; py++)
+        Rows(y0, y1, py =>
         {
             for (var px = x0; px < x1; px++)
             {
@@ -224,6 +248,6 @@ public sealed class ReferenceBackend : IRenderBackend
                 target.BlendOver(px, py,
                     ColorSpace.ToPremultipliedLinear(srgb with { A = 255 }, coverage * alpha));
             }
-        }
+        });
     }
 }

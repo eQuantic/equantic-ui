@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsAotCompatible>true</IsAotCompatible>
+    <!-- The assembly declares [SupportedOSPlatform("windows")] in WindowsPhotonRunner.cs — in
+         source, because the SDK only writes that attribute for a platform-specific target framework,
+         and this shell builds for plain net10.0 on every host. The host reads it to know this shell
+         is a candidate on Windows and nowhere else. -->
+    <Description>The Windows platform shell for the Photon engine: a real Win32 window (per-monitor DPI, dark-mode follow, unified chrome) presenting through Vulkan where an ICD exists and through the Reference backend where none does, with DirectWrite text, Direct2D icons and WIC images — system APIs only, through slim typed bindings (no COM interop framework, no third-party package).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../eQuantic.UI.Primitives/eQuantic.UI.Primitives.csproj" />
+    <ProjectReference Include="../eQuantic.UI.Native.Hosting/eQuantic.UI.Native.Hosting.csproj" />
+    <ProjectReference Include="../eQuantic.UI.Native.Engine/eQuantic.UI.Native.Engine.csproj" />
+    <ProjectReference Include="../eQuantic.UI.Native.Engine.Vulkan/eQuantic.UI.Native.Engine.Vulkan.csproj" />
+    <ProjectReference Include="../eQuantic.UI.Native.Engine.Reference/eQuantic.UI.Native.Engine.Reference.csproj" />
+    <ProjectReference Include="../eQuantic.UI.Native.Framework/eQuantic.UI.Native.Framework.csproj" />
+    <ProjectReference Include="../eQuantic.UI.Native.Components/eQuantic.UI.Native.Components.csproj" />
+  </ItemGroup>
+
+  <!-- One rule, three callers now: what a URL scheme looks like once accepted. The builder trims
+       it, the generator trims it, and the registration this shell writes under HKCU must trim it
+       the same way — or two spellings of one scheme register twice. -->
+  <ItemGroup>
+    <Compile Include="../Shared/BundleFactRule.cs" Link="Shared/BundleFactRule.cs" />
+  </ItemGroup>
+
+</Project>

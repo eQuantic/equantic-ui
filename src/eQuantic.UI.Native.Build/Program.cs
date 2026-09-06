@@ -170,16 +170,16 @@ var options = ParseArgs(args);
 if (options is null)
 {
     Console.Error.WriteLine("Usage: eqicon --source <file[;file]> [--out <dir>] [--web <dir> --app <name>] "
-        + "[--android <res-dir>] [--macos <file.icns>] [--size 1024] [--name AppIcon]");
+        + "[--android <res-dir>] [--macos <file.icns>] [--windows <file.ico>] [--size 1024] [--name AppIcon]");
     return 1;
 }
 
-var (sources, outDir, webDir, androidDir, macIcns, appName, size, name) = options.Value;
+var (sources, outDir, webDir, androidDir, macIcns, windowsIco, appName, size, name) = options.Value;
 
 // Nothing to do when every output is already newer than the icon — the SDK calls this on each
 // build, and rasterizing a megapixel to produce identical bytes is a build nobody wants. EVERY
 // output, not one of them: a check that watches a single file calls a half-written set finished.
-if (UpToDate(sources, Outputs(outDir, webDir, androidDir, macIcns, name))) return 0;
+if (UpToDate(sources, Outputs(outDir, webDir, androidDir, macIcns, windowsIco, name))) return 0;
 
 // A PNG needs no rendering: the artwork already exists and the platform's ceremony is what we owe.
 if (sources.FirstOrDefault(s => s.EndsWith(".png", StringComparison.OrdinalIgnoreCase)) is { } artwork)
@@ -214,8 +214,8 @@ if (sources.FirstOrDefault(s => s.EndsWith(".png", StringComparison.OrdinalIgnor
         pixels[i] = 255;
     }
 
-    Emit(outDir, webDir, androidDir, macIcns, appName, name, width, pixels);
-    Console.WriteLine($"eqicon: wrote {Where(outDir, webDir, androidDir, macIcns)} from " + Path.GetFileName(artwork)
+    Emit(outDir, webDir, androidDir, macIcns, windowsIco, appName, name, width, pixels);
+    Console.WriteLine($"eqicon: wrote {Where(outDir, webDir, androidDir, macIcns, windowsIco)} from " + Path.GetFileName(artwork)
         + (transparent ? " (flattened onto white — iOS icons cannot be transparent)" : ""));
     return 0;
 }
@@ -280,6 +280,12 @@ if (OperatingSystem.IsMacOS())
     catch (DllNotFoundException) { }
     catch (EntryPointNotFoundException) { }
 }
+else if (OperatingSystem.IsWindows())
+{
+    try { measurer = new eQuantic.UI.Native.Shell.Windows.Graphics.DirectWriteTextService(); }
+    catch (DllNotFoundException) { }
+    catch (InvalidOperationException) { }
+}
 
 // The icon is DESIGNED in dp, like every other tree, and rasterized at whatever density the
 // platform asks for — the same relationship a phone screen has with its own scale factor. Without
@@ -306,18 +312,20 @@ surface.ReadPixelsSrgb(rgba);
 // A home screen composites the icon against whatever it is showing, so alpha is not ours to keep.
 for (var i = 3; i < rgba.Length; i += 4) rgba[i] = 255;
 
-Emit(outDir, webDir, androidDir, macIcns, appName, name, (int)size, rgba);
-Console.WriteLine($"eqicon: wrote {Where(outDir, webDir, androidDir, macIcns)} from {iconType.FullName}");
+Emit(outDir, webDir, androidDir, macIcns, windowsIco, appName, name, (int)size, rgba);
+Console.WriteLine($"eqicon: wrote {Where(outDir, webDir, androidDir, macIcns, windowsIco)} from {iconType.FullName}");
 return 0;
 
 /// <summary>Everything this invocation is responsible for producing.</summary>
-static IEnumerable<string> Outputs(string? outDir, string? webDir, string? androidDir, string? macIcns, string name)
+static IEnumerable<string> Outputs(string? outDir, string? webDir, string? androidDir, string? macIcns,
+    string? windowsIco, string name)
 {
     if (outDir is not null) yield return Path.Combine(outDir, $"{name}.appiconset", $"{name}.png");
     if (outDir is not null) yield return Path.Combine(outDir, $"{name}.appiconset", "Contents.json");
     if (outDir is not null) yield return Path.Combine(outDir, "..", $"{name}.plist");
     if (androidDir is not null) yield return Path.Combine(androidDir, "mipmap-xxxhdpi", "ic_launcher.png");
     if (macIcns is not null) yield return macIcns;
+    if (windowsIco is not null) yield return windowsIco;
     if (webDir is null) yield break;
     yield return Path.Combine(webDir, "icon-512.png");
     yield return Path.Combine(webDir, "icon-192.png");
@@ -333,7 +341,8 @@ static bool UpToDate(string[] sources, IEnumerable<string> outputs)
 }
 
 /// <summary>Writes whichever outputs this invocation asked for — a catalog, a web set, or both.</summary>
-static void Emit(string? outDir, string? webDir, string? androidDir, string? macIcns, string appName, string name, int size, byte[] rgba)
+static void Emit(string? outDir, string? webDir, string? androidDir, string? macIcns, string? windowsIco,
+    string appName, string name, int size, byte[] rgba)
 {
     if (outDir is not null)
         WriteCatalog(outDir, name, () =>
@@ -347,10 +356,12 @@ static void Emit(string? outDir, string? webDir, string? androidDir, string? mac
         Directory.CreateDirectory(Path.GetDirectoryName(macIcns)!);
         MacIcons.Write(macIcns, size, rgba);
     }
+    // The executable's own icon on Windows — what the taskbar, the Start menu and Explorer show.
+    if (windowsIco is not null) WindowsIcons.Write(windowsIco, size, rgba);
 }
 
-static string Where(string? outDir, string? webDir, string? androidDir, string? macIcns) =>
-    string.Join(" and ", new[] { outDir, webDir, androidDir, macIcns }.Where(d => d is not null));
+static string Where(string? outDir, string? webDir, string? androidDir, string? macIcns, string? windowsIco) =>
+    string.Join(" and ", new[] { outDir, webDir, androidDir, macIcns, windowsIco }.Where(d => d is not null));
 
 /// <summary>The catalog around the artwork: the manifest key, the Contents.json, the file itself.</summary>
 static void WriteCatalog(string outDir, string name, Action writeArtwork)
@@ -385,7 +396,7 @@ static (int Width, int Height) PngSize(string path)
         BitConverter.ToInt32(header.AsSpan(20, 4).ToArray().Reverse().ToArray()));
 }
 
-static (string[] Sources, string? Out, string? Web, string? Android, string? Mac, string App, float Size, string Name)? ParseArgs(string[] args)
+static (string[] Sources, string? Out, string? Web, string? Android, string? Mac, string? Windows, string App, float Size, string Name)? ParseArgs(string[] args)
 {
     string? Value(string flag)
     {
@@ -398,10 +409,11 @@ static (string[] Sources, string? Out, string? Web, string? Android, string? Mac
     var web = Value("--web");
     var android = Value("--android");
     var mac = Value("--macos");
-    if (source is null || (output is null && web is null && android is null && mac is null)) return null;
+    var windows = Value("--windows");
+    if (source is null || (output is null && web is null && android is null && mac is null && windows is null)) return null;
 
     return (source.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
-        output, web, android, mac, Value("--app") ?? "App",
+        output, web, android, mac, windows, Value("--app") ?? "App",
         float.TryParse(Value("--size"), out var size) ? size : 1024f,
         Value("--name") ?? "AppIcon");
 }

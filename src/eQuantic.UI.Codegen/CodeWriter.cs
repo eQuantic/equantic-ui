@@ -51,10 +51,19 @@ public class CodeWriter
         return this;
     }
 
+    /// <summary>
+    /// The line break every writer here emits: LF, on every host. What this writes is read by
+    /// OTHER platforms — a plist by macOS, TypeScript by bun, a manifest by Android — and a
+    /// generated file that changes its line endings with the machine that generated it is a diff
+    /// nobody asked for and a test that passes on one desk and fails on the next.
+    /// <c>StringBuilder.AppendLine</c> would write CRLF on Windows.
+    /// </summary>
+    private const char LineBreak = '\n';
+
     /// <summary>Appends a whole line at the current depth.</summary>
     public CodeWriter AppendLine(string line)
     {
-        _content.Append(Indentation()).AppendLine(line);
+        _content.Append(Indentation()).Append(line).Append(LineBreak);
         CurrentLine += NewlinesIn(line) + 1;
         return this;
     }
@@ -79,7 +88,7 @@ public class CodeWriter
     /// <summary>A blank line carries no indentation — trailing whitespace is a diff nobody wants.</summary>
     public CodeWriter AppendLine()
     {
-        _content.AppendLine();
+        _content.Append(LineBreak);
         CurrentLine++;
         return this;
     }
@@ -93,7 +102,7 @@ public class CodeWriter
 
     public CodeWriter EndLine()
     {
-        _content.AppendLine();
+        _content.Append(LineBreak);
         CurrentLine++;
         return this;
     }

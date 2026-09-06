@@ -1,0 +1,24 @@
+# Line endings are LF in the working tree on EVERY host, whatever core.autocrlf says.
+#
+# Found on the first Windows checkout of this repository: with autocrlf=true, git handed the
+# working tree CRLF files, and nine tests compared generated text against committed fixtures that
+# had silently become a different byte sequence — a pin that fails for a reason nobody can see in
+# the diff. .editorconfig already says lf; this is what makes git agree.
+* text=auto eol=lf
+
+# What must never be touched by any conversion.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.icns binary
+*.zip binary
+*.spv binary
+*.metal binary
+*.metallib binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.nupkg binary
