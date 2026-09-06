@@ -96,6 +96,7 @@ targeted it never ran and is gone.
 src/
 ├── eQuantic.UI.Primitives/     # Abstract visual vocabulary, tokens and the contract attributes (zero deps)
 ├── eQuantic.UI.Components/     # WRITE-ONCE component library (authored against Primitives; realized per target)
+├── eQuantic.UI.Charts/         # WRITE-ONCE chart library (BarChart…): runtime-provided like Components, colour from IAppTheme.Data
 ├── eQuantic.UI.Web/            # WEB REALIZER + the DOM escape hatch (HtmlElement, HtmlNode, ClassBuilder)
 ├── eQuantic.UI.Server/         # ASP.NET Core SSR, Server Actions, metadata and assets
 ├── eQuantic.UI.Compiler/       # Roslyn-based C# to JavaScript transpiler (the library)
@@ -114,7 +115,7 @@ src/
 ├── eQuantic.UI.Codegen/        # Writers for generated files (one CodeWriter, one writer per file type)
 ├── eQuantic.UI.Web.Build/      # Generators of the runtime's TypeScript twins (design system, enum unions, icons, SDK strings)
 ├── eQuantic.UI.Design*/        # The visual editor's design host
-└── eQuantic.UI.<Pack>/         # Icon catalogs (Lucide, Heroicons, …), Charts*, Gtm, Images, Lottie, Email, Material
+└── eQuantic.UI.<Pack>/         # Icon catalogs (Lucide, Heroicons, …), Charts.ChartJs/.ApexCharts, Gtm, Images, Lottie, Email, Material
 ```
 
 ### Package Architecture (Self-Contained Design)
