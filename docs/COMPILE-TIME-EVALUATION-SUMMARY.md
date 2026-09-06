@@ -52,7 +52,7 @@ A marker attribute that tells the compiler to evaluate expressions at compile-ti
 
 ## Implementation
 
-### 1. Core Attribute
+### 1. The attribute
 
 **File:** `src/eQuantic.UI.Web/Styling/CompileTimeEvaluateAttribute.cs`
 
@@ -70,9 +70,9 @@ public sealed class CompileTimeEvaluateAttribute : Attribute
 - Configurable fallback behavior
 - Framework-agnostic
 
-### 2. Tailwind Implementation
+### 2. Tailwind Implementation (removed)
 
-**File:** `src/eQuantic.UI.Tailwind/TailwindClass.cs`
+**File:** `src/eQuantic.UI.Tailwind/TailwindClass.cs` — gone with the adapter (0704a3d0)
 
 ```csharp
 [CompileTimeEvaluate]
