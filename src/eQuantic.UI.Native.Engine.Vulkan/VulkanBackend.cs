@@ -48,7 +48,29 @@ public sealed unsafe class VulkanBackend : IRenderBackend
         ulong surface;
         Vk.Check(VkSurface.vkCreateAndroidSurfaceKHR(
             _device.Instance, &createInfo, IntPtr.Zero, &surface), "android surface creation");
+        return Swapchain(surface, width, height);
+    }
 
+    /// <summary>
+    /// The same swapchain for a WIN32 window: the desktop's HWND is what the Windows shell hands
+    /// over, and above the surface nothing knows which platform named it.
+    /// </summary>
+    public VulkanSwapchain CreateWin32Swapchain(IntPtr hinstance, IntPtr hwnd, int width, int height)
+    {
+        var createInfo = new VkWin32SurfaceCreateInfoKHR
+        {
+            SType = VkStructureType.Win32SurfaceCreateInfoKHR,
+            Hinstance = hinstance,
+            Hwnd = hwnd,
+        };
+        ulong surface;
+        Vk.Check(VkSurface.vkCreateWin32SurfaceKHR(
+            _device.Instance, &createInfo, IntPtr.Zero, &surface), "win32 surface creation");
+        return Swapchain(surface, width, height);
+    }
+
+    private VulkanSwapchain Swapchain(ulong surface, int width, int height)
+    {
         // A queue that cannot present to this surface would draw frames nobody ever sees.
         uint supported;
         Vk.Check(VkSurface.vkGetPhysicalDeviceSurfaceSupportKHR(

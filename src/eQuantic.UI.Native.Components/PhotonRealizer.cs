@@ -226,7 +226,10 @@ public static class PhotonRealizer
         // Where the hover LIVES across rebuilds — the press's path rule, applied to the pointer.
         // A CHAIN, not a single node: CSS :hover matches every ancestor under the pointer, and the
         // native realizer answers the same question the web twin answers.
-        IReadOnlyList<string>? hoveredPaths = null)
+        IReadOnlyList<string>? hoveredPaths = null,
+        // Where the system's window controls sit under a unified desktop chrome (see
+        // LayoutContext.WindowControlsInsets) — zero everywhere else.
+        EdgeInsets windowControlsInsets = default)
     {
         var context = new LayoutContext(theme, measurer ?? ApproximateTextMeasurer.Instance, typeScale,
             density)
@@ -236,6 +239,7 @@ public static class PhotonRealizer
             // The HOST's cutouts. Zero on a desktop window, and the shell's real numbers on a phone
             // — the tree is the same either way, which is the point of the node.
             SafeAreaInsets = safeAreaInsets,
+            WindowControlsInsets = windowControlsInsets,
             Instances = instances,
             SizeClass = WindowSizeClasses.FromWidth(viewportWidth),
             Transitions = transitions,

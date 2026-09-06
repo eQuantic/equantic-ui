@@ -115,6 +115,15 @@ public sealed class LayoutContext
     /// </summary>
     public EdgeInsets SafeAreaInsets { get; init; }
 
+    /// <summary>
+    /// The room the system's WINDOW CONTROLS take out of the app's top strip under a unified desktop
+    /// chrome — Start on a Mac (the traffic lights), End on Windows (the caption buttons), Top the
+    /// strip's height. Zero wherever the window has a bar of its own. Consumed only by a
+    /// <see cref="SafeArea"/> that asks for <see cref="SafeEdges.WindowControls"/>: the toolbar that
+    /// lives in the strip, and nothing below it.
+    /// </summary>
+    public EdgeInsets WindowControlsInsets { get; init; }
+
     /// <summary>Spec B14: the host's value-transition animator (null = values snap).</summary>
     public TransitionStore? Transitions { get; init; }
 
@@ -379,6 +388,13 @@ public static class LayoutEngine
         var bottom = (safeArea.Edges.HasFlag(SafeEdges.Bottom) ? host.Bottom : 0) + safeArea.Extra.Bottom;
         var start = (safeArea.Edges.HasFlag(SafeEdges.Start) ? host.Start : 0) + safeArea.Extra.Start;
         var end = (safeArea.Edges.HasFlag(SafeEdges.End) ? host.End : 0) + safeArea.Extra.End;
+        // The window controls' corner is HORIZONTAL room only: the toolbar that asks for it IS the
+        // strip they float over, so their height is its height, not a margin above it.
+        if (safeArea.Edges.HasFlag(SafeEdges.WindowControls))
+        {
+            start += ctx.WindowControlsInsets.Start;
+            end += ctx.WindowControlsInsets.End;
+        }
 
         // Transparent to stretch, like every wrapper: the system's margins shrink the box, they
         // do not change who decides the size.

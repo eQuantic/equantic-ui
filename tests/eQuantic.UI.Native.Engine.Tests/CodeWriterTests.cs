@@ -36,7 +36,7 @@ public class CodeWriterTests
                     "version" : 1
                 }
             }
-            """.ReplaceLineEndings());
+            """.ReplaceLineEndings("\n"));
     }
 
     [Fact]
@@ -96,6 +96,7 @@ public class CodeWriterTests
             using (writer.BeginBlock("total() {")) writer.AppendLine("return this.balance;");
         }
 
+        // LF, whatever the host: what the writer emits is read by other platforms.
         writer.ToString().Should().Be("""
             class Wallet {
                 balance = 0;
@@ -103,7 +104,7 @@ public class CodeWriterTests
                     return this.balance;
                 }
             }
-            """.ReplaceLineEndings() + System.Environment.NewLine);
+            """.ReplaceLineEndings("\n") + "\n");
         writer.IndentLevel.Should().Be(0, "every scope put back what it took");
     }
 

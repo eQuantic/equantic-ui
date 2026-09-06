@@ -335,8 +335,11 @@ W2 frame clock + tweens/springs + `BoxStyle.Transition` honored natively + `IUiD
 node with local-coordinate pointer events (also the hit-testing seam the headless-browser
 instrument has waited for); W4 the macOS desktop shell surface; W5 real packaging — signing,
 entitlements, notarization, publish-based bundling, minimal updater — sequenced FIRST among the
-independents because the identity unblocks TCC, notifications and updates at once; W6
-Windows/Linux shells stay post-M5 as the engine plan already decided. Landed ahead of W5's real
+independents because the identity unblocks TCC, notifications and updates at once; W6 the
+Windows shell — its first slice landed 2026-09-05 (a real window with per-monitor DPI and
+dark-mode follow, Vulkan-or-Reference presenting, DirectWrite/Direct2D/WIC, the desktop
+capabilities, `WinExe` + `.ico` from the SDK; UI Automation owed) while Linux stays post-M5 as
+the engine plan already decided. Landed ahead of W5's real
 identity (0.2.0-preview.45): the ad-hoc bundle is rebuilt from the payload every build, `runtimes/` is
 an allowlist, and a signing failure fails the build — an identity that flips between builds is how a
 TCC grant evaporates, and that was happening.

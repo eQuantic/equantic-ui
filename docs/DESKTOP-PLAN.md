@@ -11,7 +11,7 @@ Each was verified by reading the code, not the docs. File references are the pro
 
 | # | Gap | Evidence |
 |---|---|---|
-| W-B1 | No Windows/Linux shell; Vulkan creates only Android surfaces | `VulkanSurfaceNative.cs` — `vkCreateAndroidSurfaceKHR` is the only surface entry point |
+| W-B1 | No Windows/Linux shell; Vulkan creates only Android surfaces — **Windows CLOSED 2026-09-05** (`eQuantic.UI.Native.Shell.Windows`, `vkCreateWin32SurfaceKHR`; W6 below); Linux open | `VulkanSurfaceNative.cs` — `vkCreateAndroidSurfaceKHR` was the only surface entry point |
 | W-B2 | No arbitrary paths/arcs in the engine — nine draw commands, all SDF/texture (the ninth, `FillAnnularSector`, is W1's first shape, shipped 0.2.0-preview.45) | `DisplayList.cs` — `Clear..FillAnnularSector` (0..8); paths are a normative "v2+" fence in `NATIVE-GPU-ENGINE-PLAN.md` |
 | W-B3 | No app-facing frame clock | `IClock.cs` — the fence is verbatim: "this is a PERIODIC clock, not a frame clock… Per-frame animation is a [different thing]" |
 | W-B4 | Hit-testing is rectangle-only | `PhotonHost.cs:1431-1459` — every pointer resolution is `Bounds.Contains(point)` on AABBs; `OnPressed` carries no coordinates |
@@ -187,11 +187,61 @@ Running on a SIMULATOR or EMULATOR is a hand recipe: discover the device (`xcrun
 
 Unblocks: the everyday loop of every native app — and the OS Cleaner's F1 onward.
 
-### W6 — Shells Windows/Linux (post-M5, quarters)
+### W6 — Shells Windows/Linux (Windows STARTED 2026-09-05; Linux post-M5)
 
-Out of this plan's horizon, as the engine roadmap already says (D3D12-vs-Vulkan decision is
-post-M5). This track only requires that nothing new re-couples to macOS: every OS call behind a
-capability or `IPlatformStrategy`-style seam, as today.
+The Windows shell exists: `eQuantic.UI.Native.Shell.Windows`, the macOS shell's shape file for
+file, written on a Windows 11 ARM64 machine with no Vulkan driver — which is why it has two ways to
+put pixels on a window and both were exercised on the first day.
+
+- **Window + loop.** One HWND, per-monitor-V2 DPI (`WM_DPICHANGED` re-scales the host), the same
+  cooperative loop as the Mac (`MsgWaitForMultipleObjectsEx` blocks while idle, motion paces at
+  ~16 ms), a live resize drawn from `WM_SIZE` inside Windows' own modal loop with a timer for
+  motion that continues meanwhile, dark-mode FOLLOW (`AppsUseLightTheme` + `WM_SETTINGCHANGE` —
+  the seam W4 still lists for the Mac) and the system title bar tinted to match.
+- **Unified chrome.** `WM_NCCALCSIZE` removes the caption, `WM_NCHITTEST` keeps the strip
+  draggable and the frame resizable, and the shell DRAWS the three caption buttons into the display
+  list (hover wash, the red close). Its first consumption found the design gap: the Studio's toolbar
+  reserved the traffic lights' corner BY HAND, and Windows puts its controls in the other one.
+  Closed with `SafeEdges.WindowControls` + `PhotonHost.WindowControlsInsets` (the Mac reports
+  Start = 74, Windows End = 138): a title-bar toolbar keeps clear on whichever side the platform
+  chose, and the sample no longer knows a corner.
+- **Presenting.** Vulkan through `VK_KHR_win32_surface` (`VulkanBackend.CreateWin32Swapchain`)
+  where `VulkanBackend.IsSupported`; otherwise the NORMATIVE Reference backend blitted through GDI,
+  exactly as the Android shell falls back — a VM, a Remote Desktop session, a driver without an ICD.
+  The Reference backend gained an opt-in `MaxDegreeOfParallelism` for that one use (goldens stay
+  single-threaded and the pixels are the same). MEASURED on the 1-vCPU VM: 647 ms per frame for
+  the Studio at 1280×824 — correct and slow, as a fallback is allowed to be. The Vulkan path is
+  compiled and unproven until this runs on a machine with a driver.
+- **Text, icons, images.** DirectWrite measures AND rasterizes (uniform line spacing on the
+  style's grid with the face's ascent+descent centred, as CoreText is placed by hand; LINEAR
+  coverage through custom rendering params so a glyph weighs the same as on the Mac), Direct2D
+  fills and strokes icon paths, WIC decodes images to straight RGBA — all through hand-numbered
+  vtable slots (`Com.Method`), the Windows twin of `objc_msgSend`, with every slot exercised by
+  `WindowsShellTests` against the real system. The Studio screenshot came out of it on the first
+  run, Segoe UI and Cascadia Mono in place.
+- **Input.** Mouse with capture, wheel lines from the system, keys as DOM names (Ctrl IS
+  `KeyModifiers.Command`, the ⌘K/Ctrl+K idiom; the Windows key is nobody's), `WM_CHAR` text with
+  surrogate pairs, IME composition through `WM_IME_*` with the candidate window anchored at the
+  caret and the context associated only while a field holds focus.
+- **Capabilities.** `IFileDialogs` (the Common Item Dialog), `IWorkspace`
+  (`SHOpenFolderAndSelectItems`, `ShellExecuteEx`, association queries), `IPhotoLibrary` (the
+  picker IS the grant), `ITextClipboard`, `IAppStorage` (the registry under the app's own
+  Company\Product), `ISecretStore` (DPAPI files — the Credential Manager caps a blob at 2,560 bytes,
+  which a refresh token can pass), `INetworkStatus` (the connectivity hint), `IDeepLinks` (per-user
+  scheme registration from `builder.Bundle.UrlScheme`, the launch argument, `WM_COPYDATA`
+  forwarding to the instance already running). Biometrics, location and camera report themselves
+  Unavailable: they are WinRT, and the shell does not speak WinRT yet.
+- **SDK.** `Sdk.props` picks the desktop shell by HOST OS — the same csproj opens an NSWindow on a
+  Mac and an HWND on Windows, and nobody names either. `Sdk.targets` turns a Windows desktop head
+  into a `WinExe` (no console window behind the app; the runner attaches to the parent's so
+  `dotnet run` still prints) and embeds `Assets/AppIcon` as the executable's `.ico` (eqicon
+  `--windows`).
+
+**Owed:** a UI Automation provider — the semantics tree is there (110 elements on the Studio, the
+count VoiceOver gets) and nothing on Windows reads it yet; the IME verified with a real input
+method rather than by reading; the Vulkan path on a real GPU; and Linux, which stays post-M5 as the
+engine plan decided. This track's rule is unchanged: nothing new re-couples to a platform — every
+OS call behind a capability or a shell seam.
 
 ## Sequencing
 
@@ -229,6 +279,19 @@ editor suggestion) is a decision, not an oversight. Newest first.
   `builder.Workspace.Opens("x-apple.systempreferences")`. On the way, `builder.Bundle.UrlScheme`
   stopped accepting what is not a scheme name (`"acme://"`) — it throws at its own line instead of
   shipping a `CFBundleURLTypes` entry nothing matches.
+- **A unified-chrome toolbar knew which corner the window controls were in** (2026-09-05, the
+  Windows shell's first run of the Studio; RESOLVED). The sample reserved the traffic lights'
+  corner with a `Gap(74)` — a platform fact hard-coded in an app, and on Windows the caption
+  buttons sit in the OTHER corner, so "Run sample" opened under the close button. The fix is
+  vocabulary, not a wider gap: `SafeEdges.WindowControls` on a `SafeArea` pads the side the SHELL
+  reports through `PhotonHost.WindowControlsInsets` (Mac Start = 74, Windows End = 138, zero
+  wherever the window has a bar of its own, including the browser). Not part of `SafeEdges.All`:
+  only the row that lives in the strip wants it. Pinned by `SafeAreaTests`.
+- **Nine fixture tests failed on a Windows checkout for no reason the diff could show** (2026-09-05).
+  `core.autocrlf=true` handed the working tree CRLF fixtures and `CodeWriter.AppendLine` wrote CRLF
+  on Windows, so generated text and committed pins disagreed byte for byte while looking identical.
+  `.gitattributes` now fixes LF in every working tree and the writer emits LF on every host — a
+  plist for macOS or TypeScript for bun must not change with the machine that generated it.
 
 - **`ICanvasPainter` is a narrow window onto a display list that has more** (2026-09-03, OS Cleaner
   sunburst + bubbles). Three reports in one day, and the third made the first two into one finding:
@@ -297,7 +360,7 @@ editor suggestion) is a decision, not an oversight. Newest first.
   engine).
 - General multi-window (the auxiliary panel covers the desktop tray/popover case; a full
   multi-window story waits for a consumer that needs it).
-- Windows/Linux shells (W6) — the decision point is unchanged.
+- The Linux shell (W6) — Windows landed its first slice on 2026-09-05; Linux waits for a consumer.
 
 ## Acceptance, per workstream
 

@@ -28,6 +28,31 @@ public class SafeAreaTests
         tree.Children[0].Bounds.X.Should().Be(0, "this phone has no side cutouts");
     }
 
+    /// <summary>
+    /// The window controls' corner is its own edge: a title-bar toolbar keeps clear of it on the
+    /// side the shell reports — start on a Mac, end on Windows — and NOTHING else in the tree does,
+    /// so a SafeArea(All) below the strip is not pushed sideways by buttons it never sits under.
+    /// </summary>
+    [Fact]
+    public void TheWindowControlsCorner_IsKeptClearOnlyByWhoAsks()
+    {
+        var mac = new LayoutContext(PhotonTheme.Instance, ApproximateTextMeasurer.Instance)
+            { WindowControlsInsets = new EdgeInsets(74, 28, 0, 0) };
+        var windows = new LayoutContext(PhotonTheme.Instance, ApproximateTextMeasurer.Instance)
+            { WindowControlsInsets = new EdgeInsets(0, 32, 138, 0) };
+
+        var onMac = LayoutEngine.Layout(new SafeArea(Content(), SafeEdges.WindowControls), 400, 800, mac);
+        onMac.Children[0].Bounds.X.Should().Be(74, "the traffic lights sit at the start");
+        onMac.Children[0].Bounds.Y.Should().Be(0, "the toolbar IS the strip — its height is not a margin");
+
+        var onWindows = LayoutEngine.Layout(new SafeArea(Content(), SafeEdges.WindowControls), 400, 800, windows);
+        onWindows.Children[0].Bounds.X.Should().Be(0);
+        onWindows.Bounds.Width.Should().Be(200 + 138, "the caption buttons sit at the end");
+
+        var below = LayoutEngine.Layout(new SafeArea(Content()), 400, 800, windows);
+        below.Bounds.Width.Should().Be(200, "All does not include the controls' corner");
+    }
+
     [Fact]
     public void WithoutCutouts_TheNodeIsTransparent()
     {

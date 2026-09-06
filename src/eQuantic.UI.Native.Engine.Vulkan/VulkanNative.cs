@@ -339,6 +339,7 @@ internal enum VkStructureType : uint
     SwapchainCreateInfoKHR = 1000001000,
     PresentInfoKHR = 1000001001,
     AndroidSurfaceCreateInfoKHR = 1000008000,
+    Win32SurfaceCreateInfoKHR = 1000009000,
     CommandBufferAllocateInfo = 40,
     CommandBufferBeginInfo = 42,
     RenderPassBeginInfo = 43,

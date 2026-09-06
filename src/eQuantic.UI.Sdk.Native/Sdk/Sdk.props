@@ -209,14 +209,20 @@
         <PackageReference Include="eQuantic.UI.Native.Shell.Android" Version="$(EQuanticUIVersion)" />
     </ItemGroup>
 
-    <!-- No target platform: the desktop head, which is where a phone app is iterated on. The
-         Reference backend rides along so an app can render a frame offscreen without a window. -->
+    <!-- No target platform: the desktop head, which is where a phone app is iterated on. WHICH
+         desktop is the machine's to say, not the project's: the same csproj opens an NSWindow on a
+         Mac and an HWND on Windows, and the developer never names either. The Reference backend
+         rides along so an app can render a frame offscreen without a window. -->
+    <PropertyGroup Condition="'$(_EqPlatform)' == ''">
+        <_EqDesktopShell Condition="'$(_EqDesktopShell)' == '' AND $([MSBuild]::IsOSPlatform('Windows'))">Windows</_EqDesktopShell>
+        <_EqDesktopShell Condition="'$(_EqDesktopShell)' == ''">MacOS</_EqDesktopShell>
+    </PropertyGroup>
     <ItemGroup Condition="'$(_EqPlatform)' == '' AND '$(IsEQuanticDevMode)' == 'true'">
-        <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Native.Shell.MacOS\eQuantic.UI.Native.Shell.MacOS.csproj" />
+        <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Native.Shell.$(_EqDesktopShell)\eQuantic.UI.Native.Shell.$(_EqDesktopShell).csproj" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Native.Engine.Reference\eQuantic.UI.Native.Engine.Reference.csproj" />
     </ItemGroup>
     <ItemGroup Condition="'$(_EqPlatform)' == '' AND '$(IsEQuanticDevMode)' != 'true'">
-        <PackageReference Include="eQuantic.UI.Native.Shell.MacOS" Version="$(EQuanticUIVersion)" />
+        <PackageReference Include="eQuantic.UI.Native.Shell.$(_EqDesktopShell)" Version="$(EQuanticUIVersion)" />
         <PackageReference Include="eQuantic.UI.Native.Engine.Reference" Version="$(EQuanticUIVersion)" />
     </ItemGroup>
 
@@ -239,11 +245,16 @@
         Android SDK's own ILLink targets read %(RootMode) unqualified, so an item without it fails
         the whole Android build with MSB4096.
     -->
-    <ItemGroup Condition="'$(_EqPlatform)' == ''">
+    <ItemGroup Condition="'$(_EqPlatform)' == '' AND '$(_EqDesktopShell)' == 'MacOS'">
         <TrimmerRootAssembly Include="eQuantic.UI.Native.Shell.MacOS" RootMode="library" />
         <TrimmerRootAssembly Include="eQuantic.UI.Native.Shell.Apple" RootMode="library" />
         <TrimmerRootAssembly Include="eQuantic.UI.Native.Engine.Reference" RootMode="library" />
         <TrimmerRootAssembly Include="eQuantic.UI.Native.Engine.Metal" RootMode="library" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(_EqPlatform)' == '' AND '$(_EqDesktopShell)' == 'Windows'">
+        <TrimmerRootAssembly Include="eQuantic.UI.Native.Shell.Windows" RootMode="library" />
+        <TrimmerRootAssembly Include="eQuantic.UI.Native.Engine.Reference" RootMode="library" />
+        <TrimmerRootAssembly Include="eQuantic.UI.Native.Engine.Vulkan" RootMode="library" />
     </ItemGroup>
     <ItemGroup Condition="'$(_EqPlatform)' == 'ios'">
         <TrimmerRootAssembly Include="eQuantic.UI.Native.Shell.iOS" RootMode="library" />

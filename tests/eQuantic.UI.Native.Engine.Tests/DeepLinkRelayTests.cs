@@ -164,11 +164,14 @@ public class DeepLinkRelayTests
     public void ARootedPathArrivesAsAFileUrl()
     {
         var relay = new DeepLinkRelay();
+        // Rooted as THIS platform roots a path: a Unix path is not absolute to .NET on Windows,
+        // where a drive letter is what makes one — the rule under test is the same on both.
+        var path = OperatingSystem.IsWindows() ? @"C:\Users\someone\file.txt" : "/Users/someone/file.txt";
 
-        relay.Offer("/Users/someone/file.txt").Should().BeTrue();
+        relay.Offer(path).Should().BeTrue();
 
         relay.Launch!.Scheme.Should().Be("file");
-        relay.Launch!.AbsolutePath.Should().Be("/Users/someone/file.txt");
+        relay.Launch!.LocalPath.Should().Be(path);
     }
 
     [Fact]
