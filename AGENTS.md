@@ -14,7 +14,7 @@ All commits must be authored solely by the repository owner without any co-autho
 
 ## Project Overview
 
-**eQuantic.UI** is a Flutter-inspired component-based UI framework for .NET that compiles C# components directly to optimized JavaScript at build time (not WASM). It provides type-safe, HTML-native components with a minimal runtime (~49KB).
+**eQuantic.UI** is a Flutter-inspired component-based UI framework for .NET that compiles C# components directly to optimized JavaScript at build time (not WASM). It provides type-safe, HTML-native components with a small runtime (its gzip size is measured by the site's build and not quoted here — it changes every release).
 
 ### Core Principles
 
@@ -53,9 +53,9 @@ The TypeScript runtime is built using **embedded Bun** (bundled in platform-spec
 cd src/eQuantic.UI.Runtime
 
 # Build TypeScript runtime (using embedded Bun - auto-extracted if needed)
-# macOS:   uses src/eQuantic.UI.Runtime.Osx64/tools/bun/bun-darwin
-# Linux:   uses src/eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux
-# Windows: uses src/eQuantic.UI.Runtime.Win64/tools/bun/bun.exe
+# macOS:   src/eQuantic.UI.Runtime.OsxArm64 (Apple Silicon) or .Osx64 — tools/bun/bun-darwin
+# Linux:   src/eQuantic.UI.Runtime.LinuxArm64 or .Linux64 — tools/bun/bun-linux
+# Windows: src/eQuantic.UI.Runtime.WinArm64 or .Win64 — tools/bun/bun.exe
 
 # Run TypeScript tests
 npm run test           # vitest
@@ -65,36 +65,28 @@ npm run lint           # eslint
 npm run format         # prettier
 ```
 
-### Bootstrap Build (required before first build)
+### Development Workflow (building the samples)
 
-The SDK depends on other packages. Run these in order before a full solution build:
-
-```bash
-dotnet pack src/eQuantic.UI.Components/eQuantic.UI.Components.csproj --configuration Release
-dotnet pack src/eQuantic.UI.Server/eQuantic.UI.Server.csproj --configuration Release
-dotnet pack src/eQuantic.UI.Sdk/eQuantic.UI.Sdk.csproj --configuration Release
-```
-
-### Development Workflow (rebuilding with samples)
-
-When making changes to the framework and testing with samples, the full build chain must be rebuilt:
+The samples build against the framework PROJECTS, never against packages. `Sdk.props` sees the source
+tree beside it (`IsEQuanticDevMode`) and swaps every `PackageReference` for a `ProjectReference`;
+`Sdk.targets` runs the `eqc` and `eqicon` the graph just built (`_EqSourceTree`). The two tools are
+`ProjectReference` edges with `ReferenceOutputAssembly=false`, so a cold `dotnet build` orders them
+itself — no bootstrap pack, no local feed, no cache step between an edit and the sample that shows it:
 
 ```bash
-# Option 1: Use the dev-rebuild script (recommended)
-./scripts/dev-rebuild.sh              # Rebuilds all and tests with CounterApp
-./scripts/dev-rebuild.sh TodoListApp  # Specify different sample
-
-# Option 2: Manual steps
-cd src/eQuantic.UI.Runtime && npm run build  # If TypeScript changed
-dotnet pack -c Release                        # Pack all packages
-dotnet msbuild -t:ClearEQuanticCache          # Clear NuGet cache (eQuantic only)
-cd samples/CounterApp && dotnet restore --force && dotnet build
-
-# Option 3: Clear only NuGet cache
-dotnet msbuild -t:ClearEQuanticCache
+dotnet build samples/DefaultUIDashboard   # web; PhotonDesktop and WalletMobile are the native heads
 ```
 
-**Why is this needed?** The samples use NuGet packages (like a real consumer would). Changes to the framework must flow through: source → pack → NuGet cache → restore → build sample.
+`runtime.js` in a source-tree build is `src/eQuantic.UI.Runtime/dist/index.js`, which the Runtime
+project's `GenerateRuntimeBundle` target regenerates with the embedded bun (from
+`src/eQuantic.UI.Sdk/Resources/boot.ts`) whenever a runtime `.ts` changed — part of the same graph.
+
+To validate a change through the REAL consumer path — packages, `global.json`, restore — pack a local
+feed and consume it from an app; `dotnet msbuild -t:ClearEQuanticCache` clears every `equantic.*`
+package from the NuGet cache between repacks. The recipe is the wiki's
+[BuildFlow](https://github.com/equantic/equantic-ui/wiki/BuildFlow) page, "Consuming an unreleased
+SDK from local packages". `artifacts/packages/` is part of neither flow: the Debug auto-pack that once
+targeted it never ran and is gone.
 
 ## Architecture
 
@@ -102,18 +94,24 @@ dotnet msbuild -t:ClearEQuanticCache
 
 ```
 src/
-├── eQuantic.UI.Web/          # WEB REALIZER + the DOM escape hatch (HtmlElement, HtmlNode)
-├── eQuantic.UI.Primitives/  # Abstract visual vocabulary + design tokens (zero deps)
-├── eQuantic.UI.Components/  # WRITE-ONCE component library (authored against Primitives; realized per target)
-├── eQuantic.UI.Web.Components/  # Legacy web-only set (deprecated; dies piece by piece)
-├── eQuantic.UI.Compiler/    # Roslyn-based C# to JavaScript transpiler
-├── eQuantic.UI.Sdk/         # MSBuild SDK for project integration
-├── eQuantic.UI.Server/      # ASP.NET Core SSR and Server Actions
-├── eQuantic.UI.Runtime/     # TypeScript browser runtime (reconciler, state, events)
-├── eQuantic.UI.Runtime.*/   # Platform-specific Bun bundles (Osx64, Win64, Linux64)
-├── eQuantic.UI.Tailwind/    # Tailwind CSS integration
-├── eQuantic.UI.CLI/         # Developer CLI tools
-└── eQuantic.Build/          # MSBuild tasks
+├── eQuantic.UI.Primitives/     # Abstract visual vocabulary, tokens and the contract attributes (zero deps)
+├── eQuantic.UI.Components/     # WRITE-ONCE component library (authored against Primitives; realized per target)
+├── eQuantic.UI.Web/            # WEB REALIZER + the DOM escape hatch (HtmlElement, HtmlNode, ClassBuilder)
+├── eQuantic.UI.Server/         # ASP.NET Core SSR, Server Actions, metadata and assets
+├── eQuantic.UI.Compiler/       # Roslyn-based C# to JavaScript transpiler (the library)
+├── eQuantic.Build/             # eqc — the transpiler CLI the SDK runs; ships as tools/net10.0/eqc.dll
+├── eQuantic.UI.Native.Build/   # eqicon — vectors, app icons, manifests; ships as tools/net10.0/eqicon.dll
+├── eQuantic.UI.Generators/     # Source generator: the declarative factory surface for an app's own components
+├── eQuantic.UI.Sdk/            # MSBuild SDK for web apps (Sdk.props, Sdk.targets, Resources/boot.ts)
+├── eQuantic.UI.Sdk.Native/     # MSBuild SDK for device apps (macOS, iOS, Android)
+├── eQuantic.UI.Runtime/        # TypeScript browser runtime (reconciler, state, events) → runtime.js
+├── eQuantic.UI.Runtime.*/      # Embedded Bun, one package per OS+arch (Osx64, OsxArm64, Win64, WinArm64, Linux64, LinuxArm64)
+├── eQuantic.UI.Native.*/       # Photon: Engine (+ Metal, Vulkan, Reference), Framework, Hosting, Components, Shell.*
+├── eQuantic.UI.Templates/      # dotnet new equantic-app / equantic-native
+├── eQuantic.UI.Codegen/        # Writers for generated files (one CodeWriter, one writer per file type)
+├── eQuantic.UI.Web.Build/      # Generators of the runtime's TypeScript twins (design system, enum unions, icons, SDK strings)
+├── eQuantic.UI.Design*/        # The visual editor's design host
+└── eQuantic.UI.<Pack>/         # Icon catalogs (Lucide, Heroicons, …), Charts*, Gtm, Images, Lottie, Email, Material
 ```
 
 ### Package Architecture (Self-Contained Design)
@@ -122,28 +120,28 @@ eQuantic.UI follows a **self-contained package architecture** where each package
 
 **Key Packages:**
 
-- **eQuantic.UI.Runtime** - Packages `runtime.js` (~49KB) at `tools/runtime/runtime.js`
+- **eQuantic.UI.Runtime** - Packages `runtime.js` at `tools/runtime/runtime.js`
 - **eQuantic.UI.Components** - Packages C# source files at `tools/source/*.cs` for compiler type resolution
-- **eQuantic.UI.Sdk** - Orchestrates build, references other packages via `$(PkgeQuantic_UI_*)` NuGet properties
+- **eQuantic.UI.Sdk** - Orchestrates build, references other packages via `$(PkgeQuantic_UI_*)` NuGet properties, ships `eqc` and `eqicon` under `tools/net10.0/`
 
 **Design Principles:**
 
 1. ✅ Each package is self-contained (no embedding of other packages' artifacts)
 2. ✅ SDK references packages via NuGet-generated `$(Pkg*)` properties
-3. ✅ Enables independent versioning (e.g., Runtime 0.1.3 + SDK 0.1.2)
+3. ✅ Reads whatever version NuGet resolved — the packages ship at ONE version and the SDK pins its siblings to its own
 4. ✅ No artifact duplication across packages
 5. ✅ Clear interfaces between packages
 
 **Example Resolution:**
 
 ```xml
-<!-- Auto-generated by NuGet in obj/*.nuget.g.props -->
-<PkgeQuantic_UI_Runtime>~/.nuget/packages/equantic.ui.runtime/0.1.2</PkgeQuantic_UI_Runtime>
-<PkgeQuantic_UI_Components>~/.nuget/packages/equantic.ui.components/0.1.2</PkgeQuantic_UI_Components>
+<!-- Auto-generated by NuGet in obj/*.nuget.g.props — only for a PackageReference with GeneratePathProperty="true" -->
+<PkgeQuantic_UI_Runtime>~/.nuget/packages/equantic.ui.runtime/<version></PkgeQuantic_UI_Runtime>
+<PkgeQuantic_UI_Components>~/.nuget/packages/equantic.ui.components/<version></PkgeQuantic_UI_Components>
 
-<!-- Used in Sdk.targets -->
-<_RuntimeSource>$(PkgeQuantic_UI_Runtime)/tools/runtime/runtime.js</_RuntimeSource>
-<_ComponentsSource>$(PkgeQuantic_UI_Components)/tools/source</_ComponentsSource>
+<!-- Used in Sdk.targets; beside a source tree no $(Pkg*) is set and the tree's dist/ and sources are the fallback -->
+<_RuntimeSourcePath>$(PkgeQuantic_UI_Runtime)/tools/runtime/runtime.js</_RuntimeSourcePath>
+<_StandardComponentsDir>$(PkgeQuantic_UI_Components)/tools/source</_StandardComponentsDir>
 ```
 
 See [wiki/PackageArchitecture](https://github.com/equantic/equantic-ui/wiki/PackageArchitecture) for complete documentation.
@@ -155,11 +153,11 @@ dotnet build
     ↓
 MSBuild: CompileEQuanticUI (BeforeTargets="Build")
     ↓
-1. Roslyn parse /Pages/**/*.cs + Components source from $(PkgeQuantic_UI_Components)
+1. Roslyn parse /Pages/**/*.cs + Components source from $(PkgeQuantic_UI_Components) (or src/eQuantic.UI.Components beside a source tree)
 2. Detect StatefulComponent/StatelessComponent classes
 3. Generate TypeScript intermediate (.ts files)
 4. Invoke embedded Bun for bundling
-5. CopyEQuanticRuntime: Copy runtime.js from $(PkgeQuantic_UI_Runtime)
+5. CopyEQuanticRuntime: Copy runtime.js + equantic.css from $(PkgeQuantic_UI_Runtime) (or the tree's dist/index.js)
 6. Output: wwwroot/_equantic/
    ├─ runtime.js (from Runtime package)
    └─ *.js (compiled components)
@@ -221,10 +219,21 @@ src/
 
 ### Bundle Strategy
 
-1. **Core Runtime** (`/_equantic/runtime.js` ~15kb): Virtual DOM, events, state, server actions bridge
-2. **Component Library** (`/_equantic/widgets.js` ~30kb): Standard components
-3. **Page Bundles** (`/_equantic/pages/*.js`): Per-route lazy loading
-4. **Shared Chunks** (`/_equantic/chunks/`): Automatic code splitting
+What a build actually writes under `wwwroot/_equantic/` (sizes are measured by the site's build, not
+quoted here):
+
+1. **runtime.js** — virtual DOM, events, state, the server-actions bridge AND the shared component
+   library, whose transpiled modules ship INSIDE it (`[RuntimeProvided]`); eqc routes
+   `using eQuantic.UI.Components` imports there rather than emitting a per-app copy. The page reaches
+   it as the bare module `@equantic/runtime` through the shell's import map, and the Server serves its
+   own embedded copy at that route
+2. **`<Component>.js` + `.js.map`** — one module per page or component, flat (a hash suffix
+   disambiguates types that share a name). `boot.ts` imports the page's module dynamically on
+   navigation, so per-route lazy loading falls out of the module graph — there is no `pages/` folder
+   and no chunk splitting
+3. **equantic.css** — the base styles, copied from the Runtime package beside runtime.js
+4. **strings/`<culture>`.json** — the culture catalogs, when the app has `.resx`
+5. **icons/** — the app icon sizes and the web manifest, when an `AppIcon` is declared
 
 ## Component Attributes
 

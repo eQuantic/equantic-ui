@@ -134,7 +134,7 @@ public class ServiceProviderStrategy : IConversionStrategy
             var typeArg = genericName.TypeArgumentList.Arguments[0];
             var typeName = typeArg.ToString();
 
-            // Extract the simple interface name (e.g., IAppTheme from eQuantic.UI.Core.Theme.IAppTheme)
+            // Extract the simple interface name (e.g., IAppTheme from eQuantic.UI.Primitives.IAppTheme)
             var simpleTypeName = typeName;
             if (typeName.Contains('.'))
             {

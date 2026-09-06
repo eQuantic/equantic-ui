@@ -1,3 +1,4 @@
-# The local NuGet source NuGet.config declares. A Debug build fills it; a fresh clone must still
-# HAVE it, because NuGet refuses to restore against a source that is not there (NU1301) — which is
-# every CI job, and was two separate red builds before this file existed.
+# The local NuGet source nuget.config declares. Nothing in a source-tree build fills it any more —
+# the Debug auto-pack that once did never ran, and went in #88 — but a fresh clone must still HAVE
+# it, because NuGet refuses to restore against a source that is not there (NU1301) — which is every
+# CI job, and was two separate red builds before this file existed.

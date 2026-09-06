@@ -9,7 +9,7 @@ This directory contains comprehensive documentation for implementing **compile-t
 ### For Framework Users
 
 - **[README.md](README.md)** - Main project documentation with Tailwind examples
-- **[TYPED-EXAMPLES.md](src/eQuantic.UI.Tailwind/TYPED-EXAMPLES.md)** - Real-world examples using typed objects with + operator
+- **TYPED-EXAMPLES.md** - shipped with the Tailwind adapter and removed with it (see *Tailwind Implementation* below)
 
 ### For Compiler Developers
 
@@ -41,17 +41,18 @@ This directory contains comprehensive documentation for implementing **compile-t
 
 | File | Description |
 |------|-------------|
-| `src/eQuantic.UI.Core/Styling/CompileTimeEvaluateAttribute.cs` | Generic attribute for marking types |
-| `src/eQuantic.UI.Core/Styling/ClassBuilder.cs` | Generic CSS class builder (framework-agnostic) |
+| `src/eQuantic.UI.Web/Styling/CompileTimeEvaluateAttribute.cs` | Generic attribute for marking types |
+| `src/eQuantic.UI.Web/Styling/ClassBuilder.cs` | Generic CSS class builder (framework-agnostic) |
 
-### Tailwind Implementation
+Both lived in `eQuantic.UI.Core` until that assembly was dissolved into the ones that owned its parts
+(#83); the DOM-side styling helpers went to **Web**.
 
-| File | Description |
-|------|-------------|
-| `src/eQuantic.UI.Tailwind/TailwindClass.cs` | Typed value object with `[CompileTimeEvaluate]` |
-| `src/eQuantic.UI.Tailwind/TWTyped.cs` | All Tailwind utilities as typed objects |
-| `src/eQuantic.UI.Tailwind/TWBuilder.cs` | Fluent builder (delegates to ClassBuilder) |
-| `src/eQuantic.UI.Tailwind/TYPED-EXAMPLES.md` | Real-world usage examples |
+### Tailwind Implementation (removed)
+
+The `eQuantic.UI.Tailwind` project — `TailwindClass`, `TWTyped`, `TWBuilder` and `TYPED-EXAMPLES.md` —
+was removed in 0704a3d0 (2026-08-08): the atomic styling engine is the product, and the framework
+ships exactly one styling engine. The `TW.*` examples on this page describe that removed adapter; the
+generic pieces (`ClassBuilder`, `[CompileTimeEvaluate]`) are what remains.
 
 ## Implementation Status
 
@@ -72,7 +73,7 @@ This directory contains comprehensive documentation for implementing **compile-t
 - [ ] Expression evaluator implementation
 - [ ] Integration into code generator
 - [ ] Unit tests for compiler
-- [ ] End-to-end testing with TodoListApp
+- [ ] End-to-end testing with the web sample (`samples/DefaultUIDashboard`)
 
 ## Quick Example
 
@@ -161,23 +162,21 @@ ClassName = MUI.Flex + MUI.P(2)
 
 ### Manual Testing (Current)
 
-1. Build Core and Tailwind packages:
+The samples build against the framework PROJECTS — the SDK's `Sdk.props` switches to project
+references beside a source tree — so there is no pack, no local feed and no cache step between an
+edit and the sample:
+
+1. Build and run the web sample:
    ```bash
-   dotnet pack src/eQuantic.UI.Core -c Release -o artifacts/packages
-   dotnet pack src/eQuantic.UI.Tailwind -c Release -o artifacts/packages
+   dotnet build samples/DefaultUIDashboard
+   dotnet run --project samples/DefaultUIDashboard
    ```
 
-2. Clear cache and restore:
-   ```bash
-   dotnet msbuild samples/TodoListApp -t:ClearEQuanticCache
-   dotnet restore samples/TodoListApp --force-evaluate
-   ```
+2. Read the emitted JavaScript under `samples/DefaultUIDashboard/wwwroot/_equantic/`.
 
-3. Build and run:
-   ```bash
-   dotnet build samples/TodoListApp
-   dotnet run --project samples/TodoListApp
-   ```
+To validate the same change through the real consumer path (packages, `global.json`, restore), use
+the local-feed recipe on the wiki's [BuildFlow](https://github.com/equantic/equantic-ui/wiki/BuildFlow)
+page.
 
 ### Automated Testing (Pending)
 
@@ -195,19 +194,22 @@ When implementing compile-time evaluation in the compiler:
 
 ## Questions?
 
-- **For usage questions:** See examples in `TYPED-EXAMPLES.md`
+- **For usage questions:** `TYPED-EXAMPLES.md` went with the Tailwind adapter; the `ClassBuilder` tests are the living examples
 - **For architecture questions:** Read `COMPILE-TIME-EVALUATION-SUMMARY.md`
 - **For implementation questions:** Check `COMPILER-IMPLEMENTATION-GUIDE.md`
 - **For detailed specs:** Consult `COMPILER-COMPILE-TIME-EVALUATION.md`
 
 ## Version History
 
-- **v0.1.2** (Current)
+- **v0.1.2**
   - Added `[CompileTimeEvaluate]` attribute
   - Implemented `TailwindClass` with typed objects
   - Created `ClassBuilder` in Core
   - Comprehensive documentation
   - Awaiting compiler implementation
+- **Since then**
+  - The Tailwind adapter was removed (0704a3d0, 2026-08-08)
+  - `ClassBuilder` and `[CompileTimeEvaluate]` moved to `eQuantic.UI.Web` when Core was dissolved (#83)
 
 ---
 
