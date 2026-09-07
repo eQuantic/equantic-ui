@@ -21,6 +21,31 @@ const lower = (node: unknown) =>
     componentContext: { theme: photonTheme, typeScale: 1 },
   });
 
+/**
+ * The REPRESENTATION, beside the declaration the test below asserts. These eight class names are
+ * cross-pinned with the C# suite (`SpinnerRealizerTests.TheAtomizedBars_CarryTheSameClassesTheTwinProduces`),
+ * which asserts the same eight for the same spinner: a bar that carries a shared class when the
+ * server draws it and an inline style when the browser does is one element described twice, and
+ * asserting the declaration alone — which both suites already did — cannot see the difference.
+ */
+describe('spinner parity (C# SpinnerRealizerTests cross-pin)', () => {
+  it('the eight bars carry the eight classes the C# atomizer produces', () => {
+    const svg = lowerVisualNode(new Spinner(24), { textPrimary: photonTheme.textPrimary });
+
+    expect(svg.children.map((bar) => bar.attributes['class'])).toEqual([
+      'eq-153eepm',
+      'eq-1x7lrpl',
+      'eq-1uka0o0',
+      'eq-1rys0p3',
+      'eq-1lc4svq',
+      'eq-1e3tu7p',
+      'eq-bzqht8',
+      'eq-fh9n7',
+    ]);
+    expect(svg.children.every((bar) => bar.attributes['style'] === undefined)).toBe(true);
+  });
+});
+
 describe('spinner lowering (C# cross-pin)', () => {
   it('lowers to the eight-bar SVG with stagger delays', () => {
     const node = lower(new Spinner(24, photonTheme.colors('primary').base));

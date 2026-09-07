@@ -530,8 +530,15 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
       // caret stays behind, and a click is read at the column it would have hit unscrolled. The
       // scroll views live outside the surface now (CodeEditor), so this box travels WITH the code
       // and the arithmetic below is true wherever the file has been scrolled to.
-      // An editing surface takes the pointer and the caret, so it declares itself a target — the
-      // C# twin, and the reason is the same: `none` inherits from a transparent row above.
+      // An editing surface takes the pointer and the caret, so it declares itself a target:
+      // `none` inherits from a transparent row above.
+      //
+      // A STRING here on purpose, unlike every node beside it. There is no C# twin to agree with —
+      // the web realizer has no CodeSurface arm and falls to `_ => null`, so SSR emits nothing for
+      // an editor and the client builds the whole thing on hydration. Atomising would therefore buy
+      // no parity, and the dedup it buys is one element per editor. Checked when the spinner beside
+      // it was atomised for the opposite reason: that one HAS a twin, and carried a class from the
+      // server and an inline style from the browser.
       style: 'pointer-events:auto;position:relative;outline:none;white-space:pre;',
     },
     events: {},
@@ -1436,6 +1443,10 @@ function lowerImage(node: ImageNode): HtmlNode {
   };
 }
 
+/** The one revolution the eight bars stagger over — the C# `Spinner.RevolutionMs`, which divides by
+ * eight into each bar's delay. Named on both sides so the two cannot drift by a magic number. */
+const RevolutionMs = 800;
+
 /** Spec B15 mirror: 8 rrect bars in the 16 viewBox, phase stagger via per-bar negative
  * animation-delays over the generated 800ms fade — byte parity with the C# SSR realizer. */
 function lowerSpinner(node: SpinnerNode): HtmlNode {
@@ -1461,7 +1472,16 @@ function lowerSpinner(node: SpinnerNode): HtmlNode {
     svg.children.push({
       tag: 'rect',
       attributes: {
-        style: `animation-delay: -${i * 100}ms`,
+        // DECLARATIONS, not a string: the C# twin sets `AnimationDelay` on an HtmlStyle, which the
+        // atomizer turns into a shared class, and a hand-built style here made the same bar carry a
+        // class from the server and an inline style from the browser. Eight delays means eight
+        // classes, reused by every spinner on the page rather than repeated per element.
+        //
+        // A class only holds this delay because the stylesheet lets it. An inline style outranks
+        // every selector, so the string here used to win by accident, while the SERVER's class lost
+        // to `.eq-spinner rect` and the bars fell into phase. That rule is longhands now, and a
+        // guard in the C# suite keeps anything else from setting a bar's delay.
+        ...atomicAttrs({ 'animation-delay': `-${(i * RevolutionMs) / 8}ms` }),
         x: '7',
         y: '0',
         width: '2',

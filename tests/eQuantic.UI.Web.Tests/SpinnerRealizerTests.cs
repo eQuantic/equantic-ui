@@ -19,6 +19,26 @@ public class SpinnerRealizerTests
 
     private static HtmlNode Render(VisualNode node) => WebRealizer.Lower(node, Theme).Render();
 
+    /// <summary>
+    /// SSR and the client must describe one bar ONE way. The eight class names below are
+    /// cross-pinned with <c>spinner.spec.ts</c>, which asserts the same eight for the same spinner
+    /// built by the twin: the client used to hand-build an inline style here, so the same element
+    /// carried a shared class when the server drew it and an inline declaration when the browser
+    /// did. The suites either side of this one assert the DECLARATION and so could not tell.
+    /// </summary>
+    [Fact]
+    public void TheAtomizedBars_CarryTheSameClassesTheTwinProduces()
+    {
+        var rendered = WebRealizer.Lower(new Spinner(), Theme, 1f, new StyleSink()).Render();
+        var bars = rendered.Children.Where(child => child.Tag == "rect").ToList();
+
+        bars.Select(bar => bar.Attributes.GetValueOrDefault("class")).Should().Equal(
+            "eq-153eepm", "eq-1x7lrpl", "eq-1uka0o0", "eq-1rys0p3",
+            "eq-1lc4svq", "eq-1e3tu7p", "eq-bzqht8", "eq-fh9n7");
+        bars.Should().OnlyContain(bar => !bar.Attributes.ContainsKey("style"),
+            "every declaration became a shared class");
+    }
+
     [Fact]
     public void Spinner_LowersToTheEightBarSvg()
     {
