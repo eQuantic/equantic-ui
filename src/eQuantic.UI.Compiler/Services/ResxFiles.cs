@@ -19,6 +19,73 @@ public static class ResxFiles
         return designerPath[..^DesignerSuffix.Length] + ".resx";
     }
 
+    /// <summary>
+    /// The cultures a lookup falls back THROUGH, nearest first and the neutral catalogue (<c>""</c>)
+    /// last — the chain .NET's own <c>ResourceManager</c> walks, which is what the server already
+    /// answers with.
+    /// <para>
+    /// The client catalogue is flat, so it has to be built by folding these in order. Folding the
+    /// NEUTRAL alone is the same answer for a culture whose parent IS neutral, and a different page
+    /// for one whose parent is not: <c>pt-BR</c> falls back through <c>pt</c>, so a key translated
+    /// once in <c>Strings.pt.resx</c> and not repeated in <c>Strings.pt-BR.resx</c> came back in
+    /// ENGLISH on the client while the server rendered it in Portuguese. Invisible in this
+    /// repository's own resources, which declare <c>es</c> and <c>pt-BR</c> and no intermediate
+    /// parent — so their chain and the neutral fold happen to agree.
+    /// </para>
+    /// <para>
+    /// A name .NET does not know is not an error here: a resx variant may be named anything, and a
+    /// catalogue nobody can place a parent for still falls back to the neutral one.
+    /// </para>
+    /// </summary>
+    public static IReadOnlyList<string> FallbackChain(string culture)
+    {
+        if (culture.Length == 0) return [];
+        var chain = new List<string>();
+        try
+        {
+            for (var parent = System.Globalization.CultureInfo.GetCultureInfo(culture).Parent;
+                 parent.Name.Length > 0;
+                 parent = parent.Parent)
+            {
+                chain.Add(parent.Name);
+            }
+        }
+        catch (System.Globalization.CultureNotFoundException)
+        {
+            // Unknown to .NET: it still gets the neutral catalogue below, like every other culture.
+        }
+
+        chain.Add("");
+        return chain;
+    }
+
+    /// <summary>
+    /// Folds every named culture's catalogue along its <see cref="FallbackChain"/>, so a flat client
+    /// lookup answers what <c>ResourceManager</c> answers on the server. Nearest ancestor wins,
+    /// because each key is added only where it is still missing.
+    /// <para>
+    /// Order-independent by construction: each culture walks its WHOLE chain rather than trusting
+    /// its parent to have been folded already, so `pt-BR` reaches the neutral catalogue whether or
+    /// not `pt` has been visited yet.
+    /// </para>
+    /// </summary>
+    public static void FoldFallbackChains(
+        IReadOnlyDictionary<string, string> neutral,
+        IReadOnlyDictionary<string, SortedDictionary<string, string>> cultures)
+    {
+        foreach (var (culture, strings) in cultures)
+        {
+            foreach (var ancestor in FallbackChain(culture))
+            {
+                IReadOnlyDictionary<string, string>? values = ancestor.Length == 0
+                    ? neutral
+                    : cultures.TryGetValue(ancestor, out var parent) ? parent : null;
+                if (values is null) continue;
+                foreach (var (key, value) in values) strings.TryAdd(key, value);
+            }
+        }
+    }
+
     /// <summary>Every culture the resx family declares: <c>("", neutral)</c> first, then each
     /// <c>Base.{culture}.resx</c> variant found beside it. Only families that exist on disk.</summary>
     public static IEnumerable<(string Culture, string Path)> VariantsFor(string designerPath)

@@ -442,8 +442,9 @@ bool CompileAndBundle()
         if (hasErrors) return true;
 
         // Track L D3/D12: the per-culture string catalogs, from exactly the keys the compiled
-        // tree used. The fallback chain is FLATTENED here — a key present only in the neutral
-        // resx appears in every culture's catalog — so the runtime does a flat lookup and never
+        // tree used. The whole fallback chain is FLATTENED here — a key present only in a parent
+        // culture's resx, or only in the neutral one, appears in every catalog that falls back
+        // through it — so the runtime does a flat lookup and never
         // reimplements .NET's resolution.
         EmitStringCatalogs(compiler, outputDir, primarySourceDir);
 
@@ -606,10 +607,13 @@ static void EmitStringCatalogs(eQuantic.UI.Compiler.ComponentCompiler compiler, 
         }
     }
 
-    // D12: flatten — named cultures inherit every neutral-only key, so the client lookup is flat.
-    foreach (var strings in cultures.Values)
-        foreach (var (key, value) in neutral)
-            strings.TryAdd(key, value);
+    // D12: flatten — the client lookup is flat, so each culture is folded along the chain .NET's
+    // own ResourceManager walks, NEAREST ancestor first. Folding the neutral alone was the same
+    // answer whenever a culture's parent IS the neutral one, and a different page when it is not:
+    // `pt-BR` falls back through `pt`, so a key translated once in Strings.pt.resx and not repeated
+    // in Strings.pt-BR.resx came back in ENGLISH on the client while the server rendered it in
+    // Portuguese. TryAdd is what makes nearest win.
+    eQuantic.UI.Compiler.Services.ResxFiles.FoldFallbackChains(neutral, cultures);
 
     // D7: the FORMATTING facts ride with the strings. `{0:C}` needs an ISO currency code (Intl
     // takes no symbol and no browser API maps a locale to one), and .NET's `d`/`D`/`g` are
