@@ -458,7 +458,11 @@ public static class PhotonCssGenerator
         // negative delay (the rotation phase); the 400ms anti-flash appear; Reduce Motion zeroes
         // the stagger so the bars pulse IN PLACE — same fade, no rotation phase.
         css.AppendLine($"@keyframes eq-spinner-fade {{ from {{ opacity: 1; }} to {{ opacity: 0.3; }} }}");
-        css.AppendLine($".eq-spinner rect {{ animation: eq-spinner-fade {Spinner.RevolutionMs}ms linear infinite; }}");
+        // LONGHANDS, never the `animation` shorthand: a shorthand sets EVERY longhand it omits, so
+        // this rule would write `animation-delay: 0s` over all eight bars. Each bar carries its own
+        // delay as an atomic class, and a class alone (0,1,0) loses to a class-plus-type selector
+        // (0,1,1). The stagger is the rotation, so losing it leaves a ring that pulses in place.
+        css.AppendLine($".eq-spinner rect {{ animation-name: eq-spinner-fade; animation-duration: {Spinner.RevolutionMs}ms; animation-timing-function: linear; animation-iteration-count: infinite; }}");
         css.AppendLine("@keyframes eq-appear { to { opacity: 1; } }");
         css.AppendLine($".eq-spinner {{ opacity: 0; animation: eq-appear 1ms linear {Spinner.AppearDelayMs}ms forwards; }}");
         css.AppendLine("@media (prefers-reduced-motion: reduce) { .eq-spinner rect { animation-delay: 0ms !important; } }");
