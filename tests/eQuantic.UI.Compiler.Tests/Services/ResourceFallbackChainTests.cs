@@ -18,18 +18,18 @@ namespace eQuantic.UI.Compiler.Tests.Services;
 /// </summary>
 public class ResourceFallbackChainTests
 {
+    /// <summary>The empty entry IS the neutral catalogue, and every chain ends with it.</summary>
     [Theory]
     // A regional culture falls through its parent BEFORE the neutral catalogue.
-    [InlineData("pt-BR", "pt,")]
-    [InlineData("en-US", "en,")]
-    [InlineData("es-419", "es,")]
+    [InlineData("pt-BR", new[] { "pt", "" })]
+    [InlineData("en-US", new[] { "en", "" })]
+    [InlineData("es-419", new[] { "es", "" })]
     // A neutral culture has only the neutral catalogue behind it.
-    [InlineData("pt", "")]
-    [InlineData("es", "")]
-    public void TheChainIsNearestFirst_AndEndsAtTheNeutralCatalogue(string culture, string expected)
+    [InlineData("pt", new[] { "" })]
+    [InlineData("es", new[] { "" })]
+    public void TheChainIsNearestFirst_AndEndsAtTheNeutralCatalogue(string culture, string[] expected)
     {
-        // The empty entry IS the neutral catalogue, which is why the expectations end in a comma.
-        string.Join(",", ResxFiles.FallbackChain(culture)).Should().Be(expected);
+        ResxFiles.FallbackChain(culture).Should().Equal(expected);
     }
 
     /// <summary>Scripts stack: zh-Hans-CN walks its script before its language.</summary>
