@@ -1444,7 +1444,9 @@ function lowerImage(node: ImageNode): HtmlNode {
 }
 
 /** The one revolution the eight bars stagger over — the C# `Spinner.RevolutionMs`, which divides by
- * eight into each bar's delay. Named on both sides so the two cannot drift by a magic number. */
+ * eight into each bar's delay. A hand copy, and it may be one: the delays decide the atomic class
+ * NAMES, and both suites pin those literally, so a value that drifts from the C# one fails on both
+ * sides rather than quietly staggering by a different amount. */
 const RevolutionMs = 800;
 
 /** Spec B15 mirror: 8 rrect bars in the 16 viewBox, phase stagger via per-bar negative
