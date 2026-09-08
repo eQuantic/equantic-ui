@@ -851,7 +851,7 @@ public static class LayoutEngine
                 }
                 if (x == 0 && word == " ") continue;
 
-                fragments.Add(new TextFragment(word, runStyle, x, line * lineHeight, width,
+                fragments.Add(new TextFragment(word, runStyle, x, line * lineHeight, width, line,
                     run.Color, run.Destination is { Length: > 0 } ? run.Destination : null));
                 x += width;
             }

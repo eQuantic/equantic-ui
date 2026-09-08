@@ -739,7 +739,8 @@ public static class PhotonRealizer
                     foreach (var fragment in linked)
                         if (fragment.Destination is { Length: > 0 } destination)
                             input.Add(new LinkRegion(
-                                new Rect(node.Bounds.X + fragment.X, node.Bounds.Y + fragment.Y,
+                                new Rect(node.Bounds.X + fragment.X + RunShift(node, text, fragment),
+                                    node.Bounds.Y + fragment.Y,
                                     fragment.Width, node.Text?.LineHeight ?? node.Bounds.Height),
                                 destination));
                 break;
@@ -1370,6 +1371,20 @@ public static class PhotonRealizer
     /// drawn as a single Texture command over the node bounds. No service → the deterministic
     /// placeholder bars (tests, headless).
     /// </summary>
+    /// <summary>
+    /// How far a rich piece slides for its LINE's alignment. Asked by the draw and by the pressable
+    /// REGION, from one function on purpose: a link that moves on screen and not in the hit test is
+    /// a link that stops working, and this repo has already shipped a canvas that drew perfectly and
+    /// answered no pointer.
+    /// </summary>
+    private static float RunShift(LayoutNode node, Text text, TextFragment fragment)
+    {
+        var lines = node.Text?.Lines;
+        return lines is not null && fragment.Line < lines.Count
+            ? text.Align.Offset(node.Bounds.Width, lines[fragment.Line].Width)
+            : 0f;
+    }
+
     private static void EmitText(LayoutNode node, Text text, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder, MotionScope motion)
     {
         // A RICH paragraph is drawn PIECE BY PIECE — one raster per run per line, each in its own
@@ -1379,6 +1394,9 @@ public static class PhotonRealizer
         {
             var cache = motion.TextCache ?? TextRasterCache.Shared;
             var baseColor = (text.Color ?? theme.TextPrimary).Resolve(mode);
+            // Alignment cannot ride the raster here — each fragment is its own one-word raster and
+            // the LINE is what gets aligned, so the offset goes on the piece's x. The layout knows
+            // which line a piece landed on and the measurement knows that line's width.
             foreach (var fragment in fragments)
             {
                 if (fragment.Content == " ") continue;   // a space paints nothing
@@ -1386,7 +1404,7 @@ public static class PhotonRealizer
                     float.PositiveInfinity, 1, motion.RenderScale);
                 if (raster is null) continue;
                 var rect = new Rect(
-                    node.Bounds.X + fragment.X,
+                    node.Bounds.X + fragment.X + RunShift(node, text, fragment),
                     node.Bounds.Y + fragment.Y - raster.PadTop / motion.RenderScale,
                     raster.Texture.Width / motion.RenderScale,
                     raster.Texture.Height / motion.RenderScale);
@@ -1402,7 +1420,8 @@ public static class PhotonRealizer
             if (text.Mono) style = style with { Mono = true };
         if (text.Italic) style = style with { Italic = true };
             var raster = (motion.TextCache ?? TextRasterCache.Shared).Get(
-                rasterizer, text.PlainContent, style, motion.TypeScale, node.Bounds.Width, text.MaxLines, motion.RenderScale);
+                rasterizer, text.PlainContent, style, motion.TypeScale, node.Bounds.Width, text.MaxLines,
+                motion.RenderScale, text.Align);
             if (raster is not null)
             {
                 // The bitmap may carry ink ABOVE the line box (a tall ascender, an accent); it
@@ -1450,8 +1469,13 @@ public static class PhotonRealizer
             var line = measurement.Lines[i];
             if (line.Width <= 0) continue;
             var y = node.Bounds.Y + i * measurement.LineHeight + (measurement.LineHeight - barHeight) / 2;
+            // The bars align too. They stand in for the glyphs on a frame with no platform text
+            // service, which is every golden test — so this is where alignment is ASSERTABLE
+            // without a Mac, an emulator or a Windows box in the loop.
+            var barWidth = MathF.Min(line.Width, node.Bounds.Width);
             builder.FillRRect(
-                new RRect(new Rect(node.Bounds.X, y, MathF.Min(line.Width, node.Bounds.Width), barHeight),
+                new RRect(new Rect(node.Bounds.X + text.Align.Offset(node.Bounds.Width, barWidth), y,
+                        barWidth, barHeight),
                     new CornerRadii(barHeight / 3)),
                 Paint.Solid(color));
         }

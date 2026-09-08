@@ -10,6 +10,11 @@ public readonly record struct MeasuredLine(float Width, bool Ellipsized);
 /// where it sits inside the paragraph's box. A run that wraps produces several of these — a
 /// fragment is a run ON A LINE, which is the only unit that has a rectangle.
 /// </summary>
+/// <param name="Line">
+/// Which line of the paragraph this piece landed on. <see cref="Y"/> already implies it, but only
+/// by dividing back through the line height — and the caller that needs it is aligning the line,
+/// which means reading that line's width out of the measurement by index.
+/// </param>
 /// <param name="Destination">
 /// Where this piece navigates to, when it belongs to a linked run. The rectangle is why it is here:
 /// a link inside a sentence can only be pressed if something knows which pixels are the link, and
@@ -21,6 +26,7 @@ public readonly record struct TextFragment(
     float X,
     float Y,
     float Width,
+    int Line,
     Primitives.ColorToken? Color = null,
     string? Destination = null);
 
