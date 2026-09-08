@@ -24,9 +24,15 @@ public sealed class TextRasterCache
     /// <param name="align">Part of the KEY, not a detail of the draw: alignment changes the pixels
     /// (a centred block is as wide as its box and the short lines sit further in), so two
     /// alignments of one string are two rasters. Left out of the key, the first one drawn would be
-    /// served to the other.</param>
+    /// served to the other.
+    /// <para>
+    /// Required, like the rasterizer's own parameter and for the same reason. This is the seam the
+    /// CALLERS come through, so a default here would be the one that matters: a new draw site would
+    /// compile while quietly caching and drawing everything as <see cref="TextAlignment.Start"/> —
+    /// which is precisely how the property came to be dropped in the first place.
+    /// </para></param>
     public Entry? Get(ITextRasterizer rasterizer, string content, TypeStyle style, float typeScale,
-        float maxWidth, int maxLines, float scale, TextAlignment align = TextAlignment.Start)
+        float maxWidth, int maxLines, float scale, TextAlignment align)
     {
         var key = (content, style, typeScale, MathF.Round(maxWidth, 1), maxLines, scale, align);
         if (_entries.TryGetValue(key, out var cached)) return cached;

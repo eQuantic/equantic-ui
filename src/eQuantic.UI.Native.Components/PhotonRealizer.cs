@@ -1360,18 +1360,6 @@ public static class PhotonRealizer
     }
 
     /// <summary>
-    /// W4-pending placeholder: until the HarfBuzz/FreeType text stack lands, a text run renders as one
-    /// soft bar per measured line (55% of the line box, text color at 30% alpha) — deterministic,
-    /// verifies layout geometry in goldens, and is unmistakably a placeholder. Regenerating goldens
-    /// when real glyphs arrive is by design.
-    /// </summary>
-    /// <summary>
-    /// W4: REAL text when the platform service is present — one A8 raster per block (cached by
-    /// content/style/width/scale; the tint carries the color, so one raster serves both modes),
-    /// drawn as a single Texture command over the node bounds. No service → the deterministic
-    /// placeholder bars (tests, headless).
-    /// </summary>
-    /// <summary>
     /// How far a rich piece slides for its LINE's alignment. Asked by the draw and by the pressable
     /// REGION, from one function on purpose: a link that moves on screen and not in the hit test is
     /// a link that stops working, and this repo has already shipped a canvas that drew perfectly and
@@ -1385,6 +1373,22 @@ public static class PhotonRealizer
             : 0f;
     }
 
+    /// <summary>
+    /// W4: REAL text when the platform service is present — one A8 raster per block (cached by
+    /// content/style/width/scale/alignment; the tint carries the color, so one raster serves both
+    /// modes), drawn as a single Texture command over the node bounds.
+    /// <para>
+    /// With NO service, the deterministic placeholder bars (tests, headless): one soft bar per
+    /// measured line, 55% of the line box in the text color at 30% alpha, until the
+    /// HarfBuzz/FreeType stack lands. Unmistakably a placeholder, and it verifies layout geometry
+    /// in goldens — regenerating those when real glyphs arrive is by design.
+    /// </para>
+    /// <para>
+    /// Two summaries used to sit here, one per half, which is not valid on one member: the second
+    /// silently won and the placeholder half went undocumented wherever docs are read from the
+    /// assembly.
+    /// </para>
+    /// </summary>
     private static void EmitText(LayoutNode node, Text text, IAppTheme theme, ThemeMode mode, DisplayListBuilder builder, MotionScope motion)
     {
         // A RICH paragraph is drawn PIECE BY PIECE — one raster per run per line, each in its own
@@ -1400,8 +1404,10 @@ public static class PhotonRealizer
             foreach (var fragment in fragments)
             {
                 if (fragment.Content == " ") continue;   // a space paints nothing
+                // Start: a piece is one word rasterized ALONE, and the LINE it sits on is what
+                // gets aligned — below, on the piece's x.
                 var raster = cache.Get(runRasterizer, fragment.Content, fragment.Style, motion.TypeScale,
-                    float.PositiveInfinity, 1, motion.RenderScale);
+                    float.PositiveInfinity, 1, motion.RenderScale, TextAlignment.Start);
                 if (raster is null) continue;
                 var rect = new Rect(
                     node.Bounds.X + fragment.X + RunShift(node, text, fragment),
@@ -1574,9 +1580,11 @@ public static class PhotonRealizer
             // While EDITING, the raster is unbounded and the FIELD is the window onto it — the
             // browser's own input behaviour. Bounded-and-ellipsized is for reading, and an ellipsis
             // in a field someone is typing into hides exactly the characters they just typed.
+            // Start: a field is not a paragraph, and the caret arithmetic below reads the raster's
+            // WIDTH as the text's width — an aligned one is padded and would lie about it.
             var raster = (motion.TextCache ?? TextRasterCache.Shared)
                 .Get(rasterizer, shown, style, motion.TypeScale,
-                    editing ? float.MaxValue : node.Bounds.Width, 1, motion.RenderScale);
+                    editing ? float.MaxValue : node.Bounds.Width, 1, motion.RenderScale, TextAlignment.Start);
             if (raster is not null)
             {
                 var width = raster.Texture.Width / motion.RenderScale;
@@ -1713,7 +1721,8 @@ public static class PhotonRealizer
     {
         if (count <= 0) return 0;
         var raster = (motion.TextCache ?? TextRasterCache.Shared).Get(
-            rasterizer, value[..Math.Min(count, value.Length)], style, motion.TypeScale, float.MaxValue, 1, motion.RenderScale);
+            rasterizer, value[..Math.Min(count, value.Length)], style, motion.TypeScale, float.MaxValue, 1,
+            motion.RenderScale, TextAlignment.Start);   // a PREFIX's width: padding it would move the caret
         return raster is null ? 0 : raster.Texture.Width / motion.RenderScale;
     }
 

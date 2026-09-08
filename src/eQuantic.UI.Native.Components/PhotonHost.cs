@@ -931,7 +931,8 @@ public sealed class PhotonHost
             if (upTo > 0 && TextRasterizer is { } rasterizer)
             {
                 var raster = (_textCache ?? TextRasterCache.Shared).Get(
-                    rasterizer, composed[..upTo], style, _typeScale, float.MaxValue, 1, RenderScale);
+                    rasterizer, composed[..upTo], style, _typeScale, float.MaxValue, 1, RenderScale,
+                    TextAlignment.Start);   // a PREFIX's width: padding it would move the caret
                 if (raster is not null) advance = raster.Texture.Width / RenderScale;
             }
             // The same window-follows-caret clamp the realizer applies while editing.

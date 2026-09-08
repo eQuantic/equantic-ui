@@ -65,7 +65,7 @@ public class TextAlignmentPhotonTests
         bars.Should().HaveCount(2);
         // The block is the longest line — the box hugs it — so the long line does not move and the
         // short one centres against it. That IS centred text in a box cut to its content.
-        bars[0].X.Should().BeApproximately(bars[0].X, 0.01f);
+        bars[0].X.Should().BeApproximately(0, 0.01f, "the longest line IS the block, so it does not move");
         var slack = bars[0].Width - bars[1].Width;
         slack.Should().BeGreaterThan(1, "the fixture's two lines differ, or it proves nothing");
         (bars[1].X - bars[0].X).Should().BeApproximately(slack / 2, 0.01f);
