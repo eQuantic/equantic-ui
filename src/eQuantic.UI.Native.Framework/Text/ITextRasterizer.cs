@@ -28,6 +28,15 @@ public interface ITextRasterizer
     /// <paramref name="maxLines"/> (0 = unlimited), at <paramref name="scale"/> device pixels per
     /// dp. Lines sit on the STYLE's line-height grid (the layout's contract), not the font's.
     /// Null = the platform cannot rasterize this block (the caller falls back to bars).
+    /// <para>
+    /// <paramref name="align"/> places each line inside the block (<see cref="TextAlignmentExtensions"/>
+    /// owns that arithmetic, so the three platforms cannot drift). It carries NO default on purpose:
+    /// this parameter exists because every implementation silently dropped the property when there
+    /// was nowhere to pass it, and a default would let the next one do the same. For anything but
+    /// <see cref="TextAlignment.Start"/> the raster widens from the content to the box, since a
+    /// centred line needs the space it is centred in.
+    /// </para>
     /// </summary>
-    TextRaster? Rasterize(string content, TypeStyle style, float typeScale, float maxWidth, int maxLines, float scale);
+    TextRaster? Rasterize(string content, TypeStyle style, float typeScale, float maxWidth, int maxLines,
+        float scale, TextAlignment align);
 }

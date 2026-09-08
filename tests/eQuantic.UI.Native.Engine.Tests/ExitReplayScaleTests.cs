@@ -85,7 +85,7 @@ public class ExitReplayScaleTests
     private sealed class StubRasterizer : Framework.ITextRasterizer
     {
         public Framework.TextRaster? Rasterize(string content, TypeStyle style, float typeScale,
-            float maxWidth, int maxLines, float scale)
+            float maxWidth, int maxLines, float scale, TextAlignment align)
         {
             if (string.IsNullOrEmpty(content)) return null;
             var width = Math.Max(1, (int)(content.Length * 8 * scale));

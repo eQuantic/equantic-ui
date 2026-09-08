@@ -15,19 +15,23 @@ public sealed class TextRasterCache
     /// <summary>Fallback for callers that pass no cache (single-shot renders).</summary>
     public static readonly TextRasterCache Shared = new();
 
-    private readonly Dictionary<(string Content, TypeStyle Style, float TypeScale, float MaxWidth, int MaxLines, float Scale), Entry?> _entries = new();
+    private readonly Dictionary<(string Content, TypeStyle Style, float TypeScale, float MaxWidth, int MaxLines, float Scale, TextAlignment Align), Entry?> _entries = new();
 
     /// <param name="PadTop">Device pixels of ink ABOVE the line box (see <see cref="TextRaster"/>)
     /// — the draw rect rises by this much so the line box lands where layout put it.</param>
     public sealed record Entry(TextureData Texture, int PadTop = 0);
 
+    /// <param name="align">Part of the KEY, not a detail of the draw: alignment changes the pixels
+    /// (a centred block is as wide as its box and the short lines sit further in), so two
+    /// alignments of one string are two rasters. Left out of the key, the first one drawn would be
+    /// served to the other.</param>
     public Entry? Get(ITextRasterizer rasterizer, string content, TypeStyle style, float typeScale,
-        float maxWidth, int maxLines, float scale)
+        float maxWidth, int maxLines, float scale, TextAlignment align = TextAlignment.Start)
     {
-        var key = (content, style, typeScale, MathF.Round(maxWidth, 1), maxLines, scale);
+        var key = (content, style, typeScale, MathF.Round(maxWidth, 1), maxLines, scale, align);
         if (_entries.TryGetValue(key, out var cached)) return cached;
 
-        var raster = rasterizer.Rasterize(content, style, typeScale, maxWidth, maxLines, scale);
+        var raster = rasterizer.Rasterize(content, style, typeScale, maxWidth, maxLines, scale, align);
         var entry = raster is null || raster.Width <= 0 || raster.Height <= 0
             ? null
             : new Entry(new TextureData(raster.Width, raster.Height, raster.Alpha), raster.PadTop);

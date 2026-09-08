@@ -547,7 +547,7 @@ public class SelectionTests
     private sealed class FixedWidthRasterizer : Framework.ITextRasterizer
     {
         public Framework.TextRaster? Rasterize(string content, TypeStyle style, float typeScale,
-            float maxWidth, int maxLines, float scale)
+            float maxWidth, int maxLines, float scale, TextAlignment align)
         {
             if (string.IsNullOrEmpty(content)) return null;
             var width = Math.Max(1, (int)Math.Min(content.Length * 8 * scale, maxWidth * scale));
@@ -889,7 +889,7 @@ public class CaretFollowTests
     private sealed class WideRasterizer : Framework.ITextRasterizer
     {
         public Framework.TextRaster? Rasterize(string content, TypeStyle style, float typeScale,
-            float maxWidth, int maxLines, float scale)
+            float maxWidth, int maxLines, float scale, TextAlignment align)
         {
             if (string.IsNullOrEmpty(content)) return null;
             var width = Math.Max(1, (int)Math.Min(content.Length * 8 * scale, maxWidth * scale));

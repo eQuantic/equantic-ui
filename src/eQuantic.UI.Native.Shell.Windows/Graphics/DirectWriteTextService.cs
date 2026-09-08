@@ -229,7 +229,8 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
         }
     }
 
-    public TextRaster? Rasterize(string content, TypeStyle style, float typeScale, float maxWidth, int maxLines, float scale)
+    public TextRaster? Rasterize(string content, TypeStyle style, float typeScale, float maxWidth, int maxLines,
+        float scale, TextAlignment align)
     {
         if (content.Length == 0) return null;
         var size = style.ScaledSize(typeScale);
@@ -262,6 +263,19 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
             var widthDp = 0f;
             for (var i = 0; i < shown; i++) widthDp = MathF.Max(widthDp, lines[i].Width);
 
+            // One DrawTextLayout puts down every line, so unlike the Mac and Android there is no
+            // per-line x to set — DirectWrite's own alignment does the placing, inside the width
+            // the layout is told to hold. That width is set explicitly: unconstrained text was laid
+            // out in a 100_000dp box, and centring in THAT would put the glyphs off the bitmap.
+            var blockDp = align.BlockWidth(widthDp, maxWidth);
+            if (align != TextAlignment.Start)
+            {
+                Com.Check(DWrite.SetMaxWidth(layout, blockDp), "layout width");
+                Com.Check(DWrite.SetTextAlignment(layout, align == TextAlignment.Center
+                    ? DWrite.TextAlignmentCenter
+                    : DWrite.TextAlignmentTrailing), "text alignment");
+            }
+
             // The line box is the LAYOUT's; the ink is the FONT's, and it does not always fit — a
             // deep descender, an accent in any script. The overhang metrics say how far the ink
             // passes the box on each side, once the box is told how tall it is.
@@ -276,7 +290,7 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
             var padDp = padTopPx / scale;
             var inkBottom = shown * lineHeight + MathF.Max(0, overhang.Bottom);
 
-            var pxWidth = Math.Max(1, (int)MathF.Ceiling(widthDp * scale));
+            var pxWidth = Math.Max(1, (int)MathF.Ceiling(blockDp * scale));
             var pxHeight = Math.Max(1,
                 (int)MathF.Ceiling(MathF.Max(padDp + inkBottom, shown * lineHeight) * scale)) + guardPx;
 

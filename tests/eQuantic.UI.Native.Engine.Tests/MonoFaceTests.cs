@@ -47,8 +47,8 @@ public class MonoFaceTests
         var mono = proportional with { Mono = true };
 
         mono.Should().NotBe(proportional, "the cache keys on the style; two faces are two keys");
-        Service.Rasterize("if (x) return;", mono, 1f, float.PositiveInfinity, 1, 2f)!.Width
+        Service.Rasterize("if (x) return;", mono, 1f, float.PositiveInfinity, 1, 2f, TextAlignment.Start)!.Width
             .Should().NotBe(
-                Service.Rasterize("if (x) return;", proportional, 1f, float.PositiveInfinity, 1, 2f)!.Width);
+                Service.Rasterize("if (x) return;", proportional, 1f, float.PositiveInfinity, 1, 2f, TextAlignment.Start)!.Width);
     }
 }

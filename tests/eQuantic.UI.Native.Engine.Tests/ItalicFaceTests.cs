@@ -22,7 +22,7 @@ public class ItalicFaceTests
     private static readonly TypeStyle Upright = new(15, 20, FontWeight.Regular, 0f, 1.3f);
 
     private static byte[] Coverage(TypeStyle style) =>
-        Service.Rasterize("Handgloves", style, 1f, float.PositiveInfinity, 1, 2f)!.Alpha;
+        Service.Rasterize("Handgloves", style, 1f, float.PositiveInfinity, 1, 2f, TextAlignment.Start)!.Alpha;
 
     [MacFact]
     public void TheSlantChangesTheGlyphsThatAreDrawn()

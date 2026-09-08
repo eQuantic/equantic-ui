@@ -34,7 +34,7 @@ public class RichTextRunTests
         }
 
         public TextRaster? Rasterize(string content, TypeStyle style, float typeScale, float maxWidth,
-            int maxLines, float scale)
+            int maxLines, float scale, TextAlignment align)
         {
             if (content.Length == 0) return null;
             Rasterized.Add(style);
@@ -181,9 +181,9 @@ public class RichTextRunTests
             return lit;
         }
 
-        var plain = service.Rasterize("guide", body, 1f, float.PositiveInfinity, 1, 2f)!;
+        var plain = service.Rasterize("guide", body, 1f, float.PositiveInfinity, 1, 2f, TextAlignment.Start)!;
         var bold = service.Rasterize("guide", body with { Weight = FontWeight.Bold }, 1f,
-            float.PositiveInfinity, 1, 2f)!;
+            float.PositiveInfinity, 1, 2f, TextAlignment.Start)!;
 
         Ink(bold).Should().BeGreaterThan(Ink(plain), "a bold run is drawn in the bold cut");
     }

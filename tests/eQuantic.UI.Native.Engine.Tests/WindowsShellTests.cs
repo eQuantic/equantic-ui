@@ -76,7 +76,7 @@ public class WindowsShellTests
         const string content = "gjpqy Ágüé";
         const float scale = 2f;
         var measured = text.Measure(content, Body, 1f, float.PositiveInfinity, 0);
-        var raster = text.Rasterize(content, Body, 1f, float.PositiveInfinity, 0, scale);
+        var raster = text.Rasterize(content, Body, 1f, float.PositiveInfinity, 0, scale, TextAlignment.Start);
 
         raster.Should().NotBeNull();
         raster!.Width.Should().BeInRange((int)(measured.Width * scale) - 1, (int)(measured.Width * scale) + 3,
@@ -97,7 +97,7 @@ public class WindowsShellTests
     public void ARasterOfNothingIsNull()
     {
         using var text = new DirectWriteTextService();
-        text.Rasterize("", Body, 1f, float.PositiveInfinity, 0, 1f).Should().BeNull();
+        text.Rasterize("", Body, 1f, float.PositiveInfinity, 0, 1f, TextAlignment.Start).Should().BeNull();
     }
 
     // ---- Direct2D: icons ----------------------------------------------------------------------------

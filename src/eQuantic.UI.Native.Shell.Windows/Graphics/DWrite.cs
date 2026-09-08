@@ -135,6 +135,16 @@ internal static unsafe partial class DWrite
 
     // ---- IDWriteTextFormat --------------------------------------------------------------------
 
+    /// <summary>DWRITE_TEXT_ALIGNMENT: 0 leading, 1 trailing, 2 center, 3 justified. Index 3
+    /// because it is the FIRST method after IUnknown — and it takes a layout too, which derives
+    /// from the format and so repeats its whole table before adding its own at 28.</summary>
+    public static int SetTextAlignment(void* format, uint alignment) =>
+        ((delegate* unmanaged<void*, uint, int>)Com.Method(format, 3))(format, alignment);
+
+    public const uint TextAlignmentLeading = 0;
+    public const uint TextAlignmentTrailing = 1;
+    public const uint TextAlignmentCenter = 2;
+
     public static int SetWordWrapping(void* format, uint wrapping) =>
         ((delegate* unmanaged<void*, uint, int>)Com.Method(format, 5))(format, wrapping);
 
@@ -142,6 +152,9 @@ internal static unsafe partial class DWrite
         ((delegate* unmanaged<void*, uint, float, float, int>)Com.Method(format, 10))(format, method, lineSpacing, baseline);
 
     // ---- IDWriteTextLayout --------------------------------------------------------------------
+
+    public static int SetMaxWidth(void* layout, float maxWidth) =>
+        ((delegate* unmanaged<void*, float, int>)Com.Method(layout, 28))(layout, maxWidth);
 
     public static int SetMaxHeight(void* layout, float maxHeight) =>
         ((delegate* unmanaged<void*, float, int>)Com.Method(layout, 29))(layout, maxHeight);

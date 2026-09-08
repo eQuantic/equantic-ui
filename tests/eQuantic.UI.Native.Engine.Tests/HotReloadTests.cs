@@ -21,7 +21,7 @@ public class HotReloadTests
         public int Calls;
 
         public Framework.TextRaster? Rasterize(string content, TypeStyle style, float typeScale,
-            float maxWidth, int maxLines, float scale)
+            float maxWidth, int maxLines, float scale, TextAlignment align)
         {
             if (string.IsNullOrEmpty(content)) return null;
             Calls++;

@@ -32,7 +32,8 @@ public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
             lines.Select(line => new MeasuredLine(line.Width, line.Ellipsized)).ToArray());
     }
 
-    public TextRaster? Rasterize(string content, TypeStyle style, float typeScale, float maxWidth, int maxLines, float scale)
+    public TextRaster? Rasterize(string content, TypeStyle style, float typeScale, float maxWidth, int maxLines,
+        float scale, TextAlignment align)
     {
         if (content.Length == 0) return null;
 
@@ -44,7 +45,12 @@ public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
         // Measured with the SCALED paint, because a glyph's advance is not exactly linear in its
         // size: a width taken at 1x and multiplied comes out a hair short, and the last character
         // of every line is what gets sliced off.
-        var width = (int)MathF.Ceiling(lines.Max(line => paint.MeasureText(line.Text)));
+        var lineWidths = lines.Select(line => paint.MeasureText(line.Text)).ToArray();
+        // DEVICE pixels here, not dp: the widths come from the scaled paint, so the box has to be
+        // scaled to meet them before anything is centred against it.
+        var blockPx = align.BlockWidth(lineWidths.Max(),
+            float.IsFinite(maxWidth) ? maxWidth * scale : maxWidth);
+        var width = (int)MathF.Ceiling(blockPx);
         var height = (int)MathF.Ceiling(lines.Count * lineHeight * scale);
         if (width <= 0 || height <= 0) return null;
         var metrics = paint.GetFontMetrics()!;
@@ -54,8 +60,12 @@ public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
         using var bitmap = Bitmap.CreateBitmap(width, height, Bitmap.Config.Argb8888!)!;
         using var canvas = new Canvas(bitmap);
         paint.Color = Color.White;
+        // Placed line by line, so alignment is an x per line — the same arithmetic the Mac and
+        // the headless bars use, rather than StaticLayout's own alignment, which this draw path
+        // never goes through.
         for (var i = 0; i < lines.Count; i++)
-            canvas.DrawText(lines[i].Text, 0, i * lineHeight * scale + baseline, paint);
+            canvas.DrawText(lines[i].Text, align.Offset(blockPx, lineWidths[i]),
+                i * lineHeight * scale + baseline, paint);
 
         // A8 COVERAGE is what the engine's textured pipeline samples: the tint belongs to the draw
         // command, so one raster serves light and dark alike.

@@ -36,7 +36,7 @@ public class TextInkTests
         // Exactly how a Button dresses its label: the ladder's size, the role's everything else.
         var style = TypeStyle.OfSize(Sizing.LabelSize(size), FontWeight.SemiBold, 0.1f);
 
-        var raster = service.Rasterize("Large gjpqy", style, 1f, float.PositiveInfinity, 1, 2f);
+        var raster = service.Rasterize("Large gjpqy", style, 1f, float.PositiveInfinity, 1, 2f, TextAlignment.Start);
 
         raster.Should().NotBeNull();
         MaxAlpha(raster!, raster!.Height - 1).Should().Be(0,
@@ -55,7 +55,7 @@ public class TextInkTests
         var service = new CoreTextService();
         var cramped = new TypeStyle(20, 12, FontWeight.Regular, 0f, 1.3f);
 
-        var raster = service.Rasterize("gjpqy", cramped, 1f, float.PositiveInfinity, 1, 2f);
+        var raster = service.Rasterize("gjpqy", cramped, 1f, float.PositiveInfinity, 1, 2f, TextAlignment.Start);
 
         raster.Should().NotBeNull();
         raster!.Height.Should().BeGreaterThan((int)(cramped.LineHeight * 2),
@@ -73,7 +73,7 @@ public class TextInkTests
         var service = new CoreTextService();
         var roomy = new TypeStyle(12, 20, FontWeight.Regular, 0f, 1.3f);
 
-        var raster = service.Rasterize("Roomy", roomy, 1f, float.PositiveInfinity, 1, 2f);
+        var raster = service.Rasterize("Roomy", roomy, 1f, float.PositiveInfinity, 1, 2f, TextAlignment.Start);
 
         raster!.PadTop.Should().BeLessThanOrEqualTo(2, "one dp of antialiasing guard, no more");
     }

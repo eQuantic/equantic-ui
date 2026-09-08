@@ -204,7 +204,8 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
         }
     }
 
-    public TextRaster? Rasterize(string content, TypeStyle style, float typeScale, float maxWidth, int maxLines, float scale)
+    public TextRaster? Rasterize(string content, TypeStyle style, float typeScale, float maxWidth, int maxLines,
+        float scale, TextAlignment align)
     {
         if (content.Length == 0) return null;
         var size = style.ScaledSize(typeScale);
@@ -218,14 +219,20 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
             if (shown == 0) return null;
 
             var widthDp = 0f;
-            var metrics = new (IntPtr Line, float Ascent, float Descent)[shown];
+            var metrics = new (IntPtr Line, float Ascent, float Descent, float Width)[shown];
             for (var i = 0; i < shown; i++)
             {
                 var line = CFArrayGetValueAtIndex(ctLines, i);
                 var w = (float)CTLineGetTypographicBounds(line, out var ascent, out var descent, out _);
-                metrics[i] = (line, (float)ascent, (float)descent);
+                metrics[i] = (line, (float)ascent, (float)descent, w);
                 widthDp = MathF.Max(widthDp, w);
             }
+
+            // Every line is drawn by hand below, so alignment is an x per line rather than a
+            // paragraph style: CoreText's own placement lives in the frame's line origins, which
+            // this loop does not read. The block is the box when there is one to align inside and
+            // the longest line when there is not.
+            var blockDp = align.BlockWidth(widthDp, maxWidth);
 
             // The line box is the LAYOUT's; the ink is the FONT's, and it does not always fit —
             // a 17dp glyph in a 16dp line has its descender outside, and every accent in every
@@ -261,7 +268,7 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
             // The bitmap ends where the INK ends, measured from the padded top — deriving the
             // bottom from a second rounded pad left the last row of the descender outside by a
             // fraction of a pixel, which is exactly enough to cut a 'g'.
-            var pxWidth = Math.Max(1, (int)MathF.Ceiling(widthDp * scale));
+            var pxWidth = Math.Max(1, (int)MathF.Ceiling(blockDp * scale));
             var pxHeight = Math.Max(1,
                 (int)MathF.Ceiling(MathF.Max(padDp + inkBottom, shown * lineHeight) * scale)) + guardPx;
 
@@ -277,7 +284,8 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
                     // Center the glyph run on OUR line-height grid; CG is bottom-up.
                     var baselineFromTop = padDp + i * lineHeight
                         + (lineHeight - (metrics[i].Ascent + metrics[i].Descent)) / 2 + metrics[i].Ascent;
-                    CGContextSetTextPosition(context, 0, pxHeight / scale - baselineFromTop);
+                    CGContextSetTextPosition(context, align.Offset(blockDp, metrics[i].Width),
+                        pxHeight / scale - baselineFromTop);
                     CTLineDraw(metrics[i].Line, context);
                 }
 
