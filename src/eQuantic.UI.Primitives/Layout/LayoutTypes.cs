@@ -20,7 +20,21 @@ public enum SizeKind : byte
 {
     /// <summary>Size to content (the default — spec A1 resolution order: explicit &gt; Fill &gt; Hug).</summary>
     Hug = 0,
-    /// <summary>Fill the space the parent offers (collapses to Hug when the parent is unbounded).</summary>
+    /// <summary>
+    /// Fill the space the parent offers (collapses to Hug when the parent is unbounded).
+    /// <para>
+    /// EACH child asks independently, so two Fill siblings on a stack's MAIN axis do not split it
+    /// between them — they both take the whole extent and the second is laid out past the end. A
+    /// 300dp Column with two Fill children measures <c>y=0 h=300</c> and <c>y=300 h=300</c>: the
+    /// second is full size and outside its parent, where a clip is all that stands between it and
+    /// the viewer. It reads as a pane that simply is not there, with the tree, the hit regions and
+    /// the accessibility count all saying it is.
+    /// </para>
+    /// <para>
+    /// Splitting is <c>Flexible</c> with weights, which is also the only way a ratio between two
+    /// panes can be anything other than 1:1.
+    /// </para>
+    /// </summary>
     Fill = 1,
     /// <summary>An explicit dp value.</summary>
     Fixed = 2,

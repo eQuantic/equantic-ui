@@ -18,6 +18,20 @@ public sealed class PhotonOptions
     /// <summary>
     /// Null FOLLOWS the system's light/dark setting, which is what an app should do. A value pins
     /// it, which is what a screenshot wants.
+    /// <para>
+    /// Following is read at start on every target, and Windows additionally re-reads it when the
+    /// user changes the setting while the app is open (<c>WM_SETTINGCHANGE</c>). macOS does NOT yet
+    /// notice a change mid-session — the appearance is read once — so a Mac user switching to dark
+    /// with the app open sees it on the next launch. iOS and Android follow their own trait change.
+    /// </para>
+    /// <para>
+    /// An app that paints its OWN surfaces and leaves this alone is the trap here, and it fails
+    /// silently and totally rather than partially: every component resolves its foreground for the
+    /// mode this says, so dark panels under a light mode compute dark-on-dark and a whole pane goes
+    /// unreadable while remaining present in the tree and in the accessibility count. Painting your
+    /// own background is not a supported halfway house — own the palette by providing an
+    /// <see cref="IAppTheme"/>, which is what resolves the foregrounds too.
+    /// </para>
     /// </summary>
     public ThemeMode? Mode { get; set; }
 
@@ -70,6 +84,13 @@ public sealed class PhotonOptions
     /// Render ONE settled frame headlessly (reference backend) to this PNG path and exit — no
     /// window, no GPU. What a CI screenshot step or a fidelity pass against a design handoff
     /// calls: `--Photon:ScreenshotPath out.png` (+ `--Photon:Mode Dark` for the other palette).
+    /// <para>
+    /// A LAYOUT AND COLOUR check, not a behaviour one. A fixed number of frames is built against a
+    /// synthetic clock and the image is written: no real time passes, so anything the app started
+    /// asynchronously — a tool, a query, a file read — has not arrived and never will in that
+    /// image. A panel that says "loading…" in every screenshot is usually this and not a bug in the
+    /// panel. <see cref="MaxFrames"/> sits next to this property and does NOT apply to it.
+    /// </para>
     /// </summary>
     public string? ScreenshotPath { get; set; }
 }
