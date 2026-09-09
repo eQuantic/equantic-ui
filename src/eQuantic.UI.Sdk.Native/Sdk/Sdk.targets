@@ -37,8 +37,26 @@
             <_EqDevBranch Condition="'$(_EqDevHead)' != ''">$(_EqDevHead.Replace('ref: refs/heads/', ''))</_EqDevBranch>
             <_EqDevBranch Condition="'$(_EqDevBranch)' == ''">unknown</_EqDevBranch>
         </PropertyGroup>
+        <!--
+            The branch alone is not enough to answer "is this the same thing I built an hour ago" —
+            branches get rebased and reused — and it says nothing at all about UNCOMMITTED work,
+            which is the least reproducible state there is and the one with no file to read.
+
+            So one `git describe`, which answers both and one more: `v0.2.0-preview.50-12-g072cc166`
+            is the short SHA, how far past the last RELEASE this tree sits, and `-dirty` appended
+            when the working tree is modified. Failure is tolerated on purpose — no git, a tarball,
+            a shallow copy — and the line still names the branch and the path.
+        -->
+        <Exec Command="git -C &quot;$([System.IO.Path]::GetFullPath('$(_DevRootDir)..'))&quot; describe --always --dirty --abbrev=8"
+              ConsoleToMSBuild="true" StandardOutputImportance="low"
+              ContinueOnError="true" IgnoreExitCode="true">
+            <Output TaskParameter="ConsoleOutput" PropertyName="_EqDevDescribe" />
+        </Exec>
+        <PropertyGroup>
+            <_EqDevAt Condition="'$(_EqDevDescribe)' != ''"> @ $(_EqDevDescribe.Trim())</_EqDevAt>
+        </PropertyGroup>
         <Message Importance="high"
-                 Text="eQuantic.UI: building against SOURCE at $([System.IO.Path]::GetFullPath('$(_DevRootDir)..')) (branch: $(_EqDevBranch)) — not a released package." />
+                 Text="eQuantic.UI: building against SOURCE at $([System.IO.Path]::GetFullPath('$(_DevRootDir)..')) (branch: $(_EqDevBranch)$(_EqDevAt)) — not a released package." />
     </Target>
 
     <!--
