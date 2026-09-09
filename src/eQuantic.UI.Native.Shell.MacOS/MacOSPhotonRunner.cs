@@ -61,10 +61,17 @@ public sealed class MacOSPhotonRunner : IPhotonRunner
         // The concrete controller only — an app that registered its own IThemeController has
         // taken over the switch, and this attach quietly steps aside.
         var themeController = app.Services.GetService(typeof(IThemeController)) as PhotonThemeController;
-        window.Run(app.Root(), options.Theme, options.Mode ?? ThemeMode.Light, options.MaxFrames,
+        // Null MEANS follow the system, which is what the option has always documented and what
+        // iOS and Android have always done. This shell answered Light regardless, so a Mac in dark
+        // mode opened every Photon app light.
+        window.Run(app.Root(), options.Theme, options.Mode ?? SystemMode(), options.MaxFrames,
             themeController, cultureController);
         Console.WriteLine($"[photon] frames presented: {window.FramesPresented}");
     }
+
+    /// <summary>What the machine is set to, falling back to light when it cannot be read — the
+    /// same fallback this shell used to apply unconditionally.</summary>
+    private static ThemeMode SystemMode() => Shell.Apple.AppleAppearance.Resolve() ?? ThemeMode.Light;
 
     /// <summary>
     /// Headless: the SAME tree, laid out with the SAME CoreText metrics, rasterized by the
@@ -77,7 +84,7 @@ public sealed class MacOSPhotonRunner : IPhotonRunner
         var options = app.Options;
         var textService = new Shell.Apple.CoreTextService();
         var host = new Components.PhotonHost(app.Root(), options.Theme,
-            options.Mode ?? ThemeMode.Light, options.Width, options.Height, textService)
+            options.Mode ?? SystemMode(), options.Width, options.Height, textService)
         {
             TextRasterizer = textService,
             ImageLoader = new Shell.Apple.CoreGraphicsImageLoader(),

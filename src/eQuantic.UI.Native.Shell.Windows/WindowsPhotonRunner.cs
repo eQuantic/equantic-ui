@@ -89,7 +89,7 @@ public sealed class WindowsPhotonRunner : IPhotonRunner
         using var iconRasterizer = new Direct2DIconRasterizer();
         using var imageLoader = new WicImageLoader();
         var host = new PhotonHost(app.Root(), options.Theme,
-            options.Mode ?? ThemeMode.Light, options.Width, options.Height, textService)
+            options.Mode ?? WindowsTheme.SystemMode(), options.Width, options.Height, textService)
         {
             TextRasterizer = textService,
             ImageLoader = imageLoader,
