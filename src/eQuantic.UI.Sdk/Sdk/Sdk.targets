@@ -1,5 +1,36 @@
 <Project>
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk.Web" />
+
+    <!--
+        WHOSE SOURCE, AND ON WHICH BRANCH. Dev mode swaps the packages for the tree beside the SDK,
+        which for a repository OUTSIDE that tree means "whatever branch that repo happens to have
+        checked out". A consumer session found this on the native side: it believed it was building
+        the released SDK, was actually building an unreviewed feature branch of it, and the branch
+        had CHANGED behaviour under it between one build and the next. Neither end had a signal.
+
+        Said once, at high importance, and only for a consumer OUTSIDE the tree — the samples and
+        the site scaffolds are always in dev mode and a line on every build is noise nobody reads.
+        The comparison is against the REPOSITORY root, `$(_DevRootDir)..`: _DevRootDir is `src/`, and
+        measuring against it announces the samples too, since they do not live under src. The branch
+        comes out of .git/HEAD rather than from running git, so it costs a file read.
+    -->
+    <Target Name="EQuanticAnnounceDevSource" BeforeTargets="Build"
+            Condition="'$(IsEQuanticDevMode)' == 'true'
+                       AND !$(MSBuildProjectDirectory.StartsWith($([System.IO.Path]::GetFullPath('$(_DevRootDir)..'))))">
+        <PropertyGroup>
+            <_EqDevHeadFile>$([System.IO.Path]::GetFullPath('$(_DevRootDir)../.git/HEAD'))</_EqDevHeadFile>
+        </PropertyGroup>
+        <ReadLinesFromFile File="$(_EqDevHeadFile)" Condition="Exists('$(_EqDevHeadFile)')">
+            <Output TaskParameter="Lines" PropertyName="_EqDevHead" />
+        </ReadLinesFromFile>
+        <PropertyGroup>
+            <!-- "ref: refs/heads/main" on a branch, a bare SHA when detached (a bisect, a tag). -->
+            <_EqDevBranch Condition="'$(_EqDevHead)' != ''">$(_EqDevHead.Replace('ref: refs/heads/', ''))</_EqDevBranch>
+            <_EqDevBranch Condition="'$(_EqDevBranch)' == ''">unknown</_EqDevBranch>
+        </PropertyGroup>
+        <Message Importance="high"
+                 Text="eQuantic.UI: building against SOURCE at $([System.IO.Path]::GetFullPath('$(_DevRootDir)..')) (branch: $(_EqDevBranch)) — not a released package." />
+    </Target>
     <!--
         Where the two tools this SDK runs — eqc (the transpiler) and eqicon (vectors, app icons) —
         are found. ONE question decides both: is this a build from the repository's own tree (the

@@ -9,6 +9,39 @@
 -->
 <Project InitialTargets="EQuanticAndroidIcon">
     <!--
+        WHOSE SOURCE, AND ON WHICH BRANCH. Dev mode swaps the packages for the tree beside the SDK,
+        which for a repository OUTSIDE that tree means "whatever branch that repo happens to have
+        checked out". A consumer session found this the hard way: it believed it was building the
+        released SDK, was actually building an unreviewed feature branch of it, and the branch it
+        was on had CHANGED behaviour under it between one build and the next.
+
+        Neither end had a signal. So the build says it, once, at high importance — the branch is
+        read out of .git/HEAD rather than by running git, so it costs a file read and no process.
+
+        Only for a consumer OUTSIDE the tree: the samples are ALWAYS in dev mode and a line on every
+        one of their builds would be noise nobody reads, which is how a warning stops working. The
+        comparison is against the REPOSITORY root, `$(_DevRootDir)..` — _DevRootDir is `src/`, and
+        measuring against it announces the samples too, since they do not live under src.
+    -->
+    <Target Name="EQuanticAnnounceDevSource" BeforeTargets="Build"
+            Condition="'$(IsEQuanticDevMode)' == 'true'
+                       AND !$(MSBuildProjectDirectory.StartsWith($([System.IO.Path]::GetFullPath('$(_DevRootDir)..'))))">
+        <PropertyGroup>
+            <_EqDevHeadFile>$([System.IO.Path]::GetFullPath('$(_DevRootDir)../.git/HEAD'))</_EqDevHeadFile>
+        </PropertyGroup>
+        <ReadLinesFromFile File="$(_EqDevHeadFile)" Condition="Exists('$(_EqDevHeadFile)')">
+            <Output TaskParameter="Lines" PropertyName="_EqDevHead" />
+        </ReadLinesFromFile>
+        <PropertyGroup>
+            <!-- "ref: refs/heads/main" on a branch, a bare SHA when detached (a bisect, a tag). -->
+            <_EqDevBranch Condition="'$(_EqDevHead)' != ''">$(_EqDevHead.Replace('ref: refs/heads/', ''))</_EqDevBranch>
+            <_EqDevBranch Condition="'$(_EqDevBranch)' == ''">unknown</_EqDevBranch>
+        </PropertyGroup>
+        <Message Importance="high"
+                 Text="eQuantic.UI: building against SOURCE at $([System.IO.Path]::GetFullPath('$(_DevRootDir)..')) (branch: $(_EqDevBranch)) — not a released package." />
+    </Target>
+
+    <!--
         A DESKTOP head on Windows is a windowed executable, not a console one: an `Exe` opens a black
         console window behind every Photon window, which no app author asked for and every one of
         them would have to learn to switch off. Decided here, BEFORE the .NET SDK's own targets read
