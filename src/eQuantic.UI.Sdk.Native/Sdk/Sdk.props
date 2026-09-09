@@ -215,7 +215,15 @@
     <!-- No target platform: the desktop head, which is where a phone app is iterated on. WHICH
          desktop is the machine's to say, not the project's: the same csproj opens an NSWindow on a
          Mac and an HWND on Windows, and the developer never names either. The Reference backend
-         rides along so an app can render a frame offscreen without a window. -->
+         rides along so an app can render a frame offscreen without a window.
+
+         WHERE THE GPU BACKEND COMES FROM, since this file never names it and an app migrating off a
+         hand-written csproj is deleting an explicit `Engine.Metal` reference on our word: the SHELL
+         brings it. Shell.MacOS depends on Engine.Metal, Shell.Windows on Engine.Vulkan, and either
+         arrives transitively through the reference added just below. The only place either engine is
+         written down here is the trimmer roots further on, which is a list of what must SURVIVE and
+         reads nothing like a list of what is included. A consumer session had to settle this by
+         listing a bin directory; that is one round-trip this comment costs nothing to save. -->
     <PropertyGroup Condition="'$(_EqPlatform)' == ''">
         <_EqDesktopShell Condition="'$(_EqDesktopShell)' == '' AND $([MSBuild]::IsOSPlatform('Windows'))">Windows</_EqDesktopShell>
         <_EqDesktopShell Condition="'$(_EqDesktopShell)' == ''">MacOS</_EqDesktopShell>

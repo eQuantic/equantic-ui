@@ -38,6 +38,11 @@
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Shell.Windows\eQuantic.UI.Native.Shell.Windows.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Codegen\eQuantic.UI.Codegen.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Hosting\eQuantic.UI.Native.Hosting.csproj" />
+    <!-- Referenced as a LIBRARY, not as an analyzer: these tests drive the generator directly
+         through CSharpGeneratorDriver and assert its diagnostics. Wired as an analyzer it would
+         also run over this project's own code, where there is no program to find. -->
+    <ProjectReference Include="..\..\src\eQuantic.UI.Native.Generators\eQuantic.UI.Native.Generators.csproj"
+                      ReferenceOutputAssembly="true" OutputItemType="" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Build\eQuantic.UI.Native.Build.csproj" />
     <!-- The SAMPLE is a test subject: the Studio gallery is the SDK's own acceptance surface, and
          walking it is how a real page finds what a unit test never asks. -->

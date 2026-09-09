@@ -34,6 +34,15 @@ public sealed class PhotonProgramGenerator : IIncrementalGenerator
         "'{0}' and '{1}' both declare CreateApp(string[]). An app is one program.",
         "eQuantic.UI", DiagnosticSeverity.Error, isEnabledByDefault: true);
 
+    private static readonly DiagnosticDescriptor AppWritesTheEntryPoint = new(
+        "EQ3006", "A Photon app writes its own entry point",
+        "This app declares an entry point, and the SDK generates one from CreateApp — a program "
+        + "cannot have two. Delete the Main (or the top-level statements): the generated one is "
+        + "`CreateApp(args).Run()`, which is what yours would have to become. Whatever it did "
+        + "first belongs inside CreateApp, where every platform runs it — Android launches an "
+        + "Activity and no Main is ever called there.",
+        "eQuantic.UI", DiagnosticSeverity.Error, isEnabledByDefault: true);
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var programs = context.SyntaxProvider.CreateSyntaxProvider(
@@ -339,6 +348,22 @@ public sealed class PhotonProgramGenerator : IIncrementalGenerator
         }
 
         if (!executable) return;
+
+        // An app ADOPTING this SDK arrives with a Main already written, and until this check it got
+        // CS0017 — "more than one entry point" — pointing at its own line, naming a generated file
+        // it had never heard of and saying nothing about why a second one exists. Reported here
+        // instead, at the app's own Main, saying what to delete and where the work goes.
+        //
+        // GetEntryPoint is the whole test: THIS compilation does not contain the generated half
+        // yet, so anything it finds is the app's, and top-level statements (which synthesise a Main)
+        // are caught by the same call. Returning before the emit leaves ONE error rather than two.
+        var appEntryPoint = compilation.GetEntryPoint(context.CancellationToken);
+        if (appEntryPoint is not null)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(AppWritesTheEntryPoint,
+                appEntryPoint.Locations.FirstOrDefault()));
+            return;
+        }
 
         // The entry point lives in the GLOBAL namespace, as the other half of `Program` when the app
         // named its program that — which is the convention — and on its own when it did not.
