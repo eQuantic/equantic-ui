@@ -16,7 +16,7 @@
     -->
     <Target Name="EQuanticAnnounceDevSource" BeforeTargets="Build"
             Condition="'$(IsEQuanticDevMode)' == 'true'
-                       AND !$(MSBuildProjectDirectory.StartsWith($([System.IO.Path]::GetFullPath('$(_DevRootDir)..'))))">
+                       AND !$([MSBuild]::EnsureTrailingSlash('$(MSBuildProjectDirectory)').StartsWith($([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(_DevRootDir)..'))))))">
         <PropertyGroup>
             <_EqDevHeadFile>$([System.IO.Path]::GetFullPath('$(_DevRootDir)../.git/HEAD'))</_EqDevHeadFile>
         </PropertyGroup>

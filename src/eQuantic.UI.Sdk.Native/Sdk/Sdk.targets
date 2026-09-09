@@ -21,11 +21,15 @@
         Only for a consumer OUTSIDE the tree: the samples are ALWAYS in dev mode and a line on every
         one of their builds would be noise nobody reads, which is how a warning stops working. The
         comparison is against the REPOSITORY root, `$(_DevRootDir)..` — _DevRootDir is `src/`, and
-        measuring against it announces the samples too, since they do not live under src.
+        measuring against it announces the samples too, since they do not live under src. BOTH sides
+        get a trailing separator first: a bare StartsWith makes `/…/equantic-ui-web` look like it
+        lives inside `/…/equantic-ui`, and silences the one consumer the line exists for. Those
+        siblings are not hypothetical — equantic-ui-web, equantic-ui-compiler and equantic-ui.wiki
+        all sit beside this tree.
     -->
     <Target Name="EQuanticAnnounceDevSource" BeforeTargets="Build"
             Condition="'$(IsEQuanticDevMode)' == 'true'
-                       AND !$(MSBuildProjectDirectory.StartsWith($([System.IO.Path]::GetFullPath('$(_DevRootDir)..'))))">
+                       AND !$([MSBuild]::EnsureTrailingSlash('$(MSBuildProjectDirectory)').StartsWith($([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(_DevRootDir)..'))))))">
         <PropertyGroup>
             <_EqDevHeadFile>$([System.IO.Path]::GetFullPath('$(_DevRootDir)../.git/HEAD'))</_EqDevHeadFile>
         </PropertyGroup>
