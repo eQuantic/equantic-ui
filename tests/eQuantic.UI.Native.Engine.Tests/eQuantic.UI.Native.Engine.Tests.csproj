@@ -43,7 +43,6 @@
          also run over this project's own code, where there is no program to find. -->
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Generators\eQuantic.UI.Native.Generators.csproj"
                       ReferenceOutputAssembly="true" OutputItemType="" />
-    <ProjectReference Include="..\..\src\eQuantic.UI.Native.Build\eQuantic.UI.Native.Build.csproj" />
     <!-- The SAMPLE is a test subject: the Studio gallery is the SDK's own acceptance surface, and
          walking it is how a real page finds what a unit test never asks. -->
     <ProjectReference Include="..\..\samples\PhotonDesktop\PhotonDesktop.csproj" />

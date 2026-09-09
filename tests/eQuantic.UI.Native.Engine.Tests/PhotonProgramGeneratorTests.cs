@@ -34,10 +34,6 @@ public class PhotonProgramGeneratorTests
         var compilation = CSharpCompilation.Create("App", [tree], references,
             new CSharpCompilationOptions(kind, nullableContextOptions: NullableContextOptions.Enable));
 
-        CSharpGeneratorDriver.Create(new PhotonProgramGenerator())
-            .RunGeneratorsAndUpdateCompilation(compilation, out _, out _)
-            .GetRunResult();
-
         return CSharpGeneratorDriver.Create(new PhotonProgramGenerator())
             .RunGeneratorsAndUpdateCompilation(compilation, out _, out _)
             .GetRunResult().Results.Single().Diagnostics;
