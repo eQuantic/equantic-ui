@@ -8,11 +8,12 @@ namespace eQuantic.UI.Native.Shell.Apple;
 /// locale: a platform fact the app never states, resolved before anything renders.
 /// <para>
 /// <c>PhotonOptions.Mode</c> has always documented null as "FOLLOWS the system's light/dark
-/// setting", and iOS and Android have always honoured it — <c>PhotonViewController</c> reads
-/// <c>TraitCollection.UserInterfaceStyle</c>, <c>PhotonActivity</c> reads <c>UiMode.NightYes</c>.
-/// Both desktop shells answered <c>ThemeMode.Light</c> unconditionally instead, so a Mac in dark
-/// mode opened every Photon app light unless its developer pinned the mode by hand. The vocabulary
-/// promised something two of four targets delivered.
+/// setting", and most paths honoured it: <c>PhotonViewController</c> reads
+/// <c>TraitCollection.UserInterfaceStyle</c>, <c>PhotonActivity</c> reads <c>UiMode.NightYes</c>,
+/// and the Windows WINDOW has read the Personalize key all along — it even re-reads it on
+/// <c>WM_SETTINGCHANGE</c>. What did not: the macOS window, and BOTH screenshot paths, which
+/// answered <c>ThemeMode.Light</c> unconditionally. So a Mac in dark mode opened every Photon app
+/// light unless its developer pinned the mode by hand.
 /// </para>
 /// </summary>
 public static class AppleAppearance
