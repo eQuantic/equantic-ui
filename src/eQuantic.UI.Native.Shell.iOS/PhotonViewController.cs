@@ -242,6 +242,13 @@ public sealed class PhotonViewController : UIViewController
         if (forced && FramesPresented >= MaxFrames)
         {
             ProbeAccessibility(view);
+            // What the render CONTAINED, on the one line a self-test reads. No exit code here — a
+            // UIViewController has no process status to set — but silence was the worse half: this
+            // shell printed nothing at all, so a run whose whole chrome threw looked like a clean one.
+            var contained = eQuantic.UI.Primitives.ComponentBoundary.Contained;
+            Console.WriteLine(contained.Count == 0
+                ? $"[photon] frames presented: {FramesPresented}"
+                : $"[photon] frames presented: {FramesPresented} — CONTAINED: {string.Join(", ", contained)}");
             Stop();
         }
     }

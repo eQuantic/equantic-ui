@@ -75,8 +75,13 @@ public static class ComponentBoundary
     public static IReadOnlyCollection<string> Contained =>
         _contained.Value is { } seen ? seen.ToArray() : [];
 
-    /// <summary>Forgets what was contained — a host arms a render scope with this, as it does the
-    /// report sink, so one frame's failures are not read as the next one's.</summary>
+    /// <summary>
+    /// Forgets what was contained. A host arms a RUN with this, as it does the report sink — the
+    /// scope is the run and deliberately not the frame: a component that threw and then recovered
+    /// still threw, and a summary that drops it because the next frame was clean is the silence
+    /// this tally exists to remove. What it prevents is a later run being read as carrying an
+    /// earlier one's failures, which a long-lived host reaches immediately.
+    /// </summary>
     public static void ClearContained() => _contained.Value = null;
 
     /// <summary>
