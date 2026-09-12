@@ -321,6 +321,12 @@ public static class PhotonCssGenerator
             css.AppendLine($"  line-height: {TokenCss.Px(style.LineHeight)};");
             css.AppendLine($"  font-weight: {(int)style.Weight};");
             css.AppendLine($"  letter-spacing: {TokenCss.Px(style.Tracking)};");
+            // The face a theme cut this ROLE in, on the class rather than inline on every node. The
+            // client's lowering cannot read the theme's type scale — its component context is
+            // opaque there — so a role face emitted inline by SSR would vanish on the first
+            // client re-render. In the sheet both sides get it by not emitting anything.
+            if (style.Family is { Length: > 0 } face)
+                css.AppendLine($"  font-family: {TokenCss.Face(face, style.Mono)};");
             css.AppendLine("}");
         }
 

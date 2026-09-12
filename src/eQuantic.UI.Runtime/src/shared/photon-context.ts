@@ -77,7 +77,15 @@ export function measurePhotonText(text: string, style: TypeStyleValue, typeScale
   if (!text) return 0;
   const context = measuringContext();
   if (!context) return 0;
-  const family = style.mono ? monoStack() : SANS_STACK;
+  // The NAMED face first, then the stack that would have been used — the same order the lowering
+  // writes into `font-family`. Measuring with a different face than the one that draws is what the
+  // comment beside MONO_STACK calls a caret beside the character it is on, and a brand face is
+  // exactly the case where the two advance differently.
+  const base = style.mono ? monoStack() : SANS_STACK;
+  const family =
+    style.family !== undefined && style.family !== ''
+      ? `"${style.family.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}", ${base}`
+      : base;
   // NUMERIC weight: the enum arrives as a member name, and a name makes the whole shorthand
   // invalid — see cssFontWeight for what that cost.
   context.font = `${cssFontWeight(style.weight)} ${style.size * typeScale}px ${family}`;

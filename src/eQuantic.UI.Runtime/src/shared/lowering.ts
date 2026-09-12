@@ -2297,6 +2297,21 @@ function backgroundLayerSizes(style: BoxStyleValue): string | undefined {
 const MONO_STACK =
   "var(--eq-font-mono, ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace)";
 
+const SANS_STACK = 'var(--eq-font-family, system-ui, -apple-system, sans-serif)';
+
+/**
+ * A NAMED face in front of the stack the page would have used anyway — byte-for-byte the C# twin
+ * (`TokenCss.Face`), because the atomic class name is a hash of this string and a difference of one
+ * character is SSR and hydration disagreeing on the class.
+ *
+ * Quoted always: the common case has a space in it ("IBM Plex Sans"), and an unquoted family is a
+ * parse error that takes the whole declaration with it.
+ */
+function faceStack(family: string, mono: boolean): string {
+  const escaped = family.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  return `"${escaped}", ` + (mono ? MONO_STACK : SANS_STACK);
+}
+
 function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
   const style: StyleEntries = {
     color: tokenValue(text.color ?? context.textPrimary),
@@ -2309,7 +2324,19 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
     // field instead of what the node says lost the break entirely (C# twin's PlainContent).
     'white-space':
       text.mono === true ? 'pre-wrap' : plainContent(text).includes('\n') ? 'pre-line' : undefined,
-    'font-family': text.mono === true ? MONO_STACK : undefined,
+    // The face the node or its ROLE named, in front of the stack. Without this the server rendered
+    // the brand and the client re-rendered the system font on the first state change — and measured
+    // it differently too, which the comment above MONO_STACK already calls a caret beside the
+    // character it is on.
+    // Only what the NODE named — a ROLE's face rides its `.eq-type-*` class, which this element
+    // already carries, so both sides agree by emitting nothing for it. Byte-identical to the C#
+    // twin, because the atomic class name is a hash of this string.
+    'font-family':
+      text.styleOverride?.family !== undefined && text.styleOverride.family !== ''
+        ? faceStack(text.styleOverride.family, text.mono === true)
+        : text.mono === true
+          ? MONO_STACK
+          : undefined,
     'font-variant-numeric': text.tabular === true ? 'tabular-nums' : undefined,
     // The slant (C# twin): the node's own, or the ROLE's when the theme cuts that role italic.
     'font-style':

@@ -228,6 +228,10 @@ export class TypeStyle implements TypeStyleValue {
       this.maxScale,
       this.mono,
       this.italic,
+      // The face survives a resize. Dropping it here is invisible until a control that resizes its
+      // own label — SegmentedControl, Stepper — comes out in the system face beside siblings that
+      // did not resize and kept the brand's.
+      this.family,
     );
   }
 

@@ -62,7 +62,18 @@ public static class ThemeBridge
             var s = theme.Type(role);
             sb.Append('[').Append(Num(s.Size)).Append(',').Append(Num(s.LineHeight))
               .Append(",\"").Append(Camel(s.Weight.ToString())).Append("\",")
-              .Append(Num(s.Tracking)).Append(',').Append(Num(s.MaxScale)).Append(']');
+              .Append(Num(s.Tracking)).Append(',').Append(Num(s.MaxScale));
+            // The TAIL rides only when it says something. Five values were lossless for a theme
+            // whose roles are all proportional, upright and unnamed — which every shipped one is —
+            // and lossy for the first branded theme, which is the whole point of a face. Appended
+            // rather than always emitted so the common payload stays byte-identical.
+            if (s.Mono || s.Italic || s.Family is { Length: > 0 })
+            {
+                sb.Append(',').Append(s.Mono ? "true" : "false")
+                  .Append(',').Append(s.Italic ? "true" : "false");
+                if (s.Family is { Length: > 0 } face) sb.Append(",\"").Append(Escape(face)).Append('"');
+            }
+            sb.Append(']');
         }
         sb.Append('}');
 
@@ -138,6 +149,12 @@ public static class ThemeBridge
     }
 
     private static string Num(float value) => value.ToString("0.####", CultureInfo.InvariantCulture);
+
+    /// <summary>A JSON string body. The only free-form text on this wire is a font family, and a
+    /// family with a quote in it would end the payload early and take the rest of the theme with
+    /// it — the client parses this, so a malformed one is a page that does not boot.</summary>
+    private static string Escape(string value) =>
+        value.Replace("\\", "\\\\").Replace("\"", "\\\"");
 
     private static string Camel(string name) =>
         string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name[1..];

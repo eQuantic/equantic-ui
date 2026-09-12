@@ -19,7 +19,12 @@ export interface ThemeData {
   surfaces: Record<string, TokenTuple>;
   disabledOpacity: number;
   variants: Record<string, readonly TokenTuple[]>; // [base, onBase, pressed, subtle, onSubtle]
-  type: Record<string, readonly [number, number, string, number, number]>;
+  /** `[size, lineHeight, weight, tracking, maxScale]`, plus `mono, italic, family` when a role
+   *  carries any of them — the tail rides only when it says something. */
+  type: Record<
+    string,
+    readonly [number, number, string, number, number, boolean?, boolean?, string?]
+  >;
   elevations: ReadonlyArray<readonly [number, number, number, TokenTuple]>;
   shape: Record<string, number>;
   /** The data palette: series and sequential as token lists, diverging as [negative, midpoint,
@@ -59,8 +64,21 @@ export function materializeTheme(data: ThemeData): AppTheme {
 
   const typeScale: Record<string, TypeStyle> = {};
   for (const key of Object.keys(data.type)) {
-    const [size, lineHeight, weight, tracking, maxScale] = data.type[key];
-    typeScale[key] = new TypeStyle(size, lineHeight, weight, tracking, maxScale);
+    // The tail is OPTIONAL on the wire — a theme whose roles are all proportional, upright and
+    // unnamed sends five values, which is every theme shipped with the SDK. Reading it with
+    // defaults is what lets a branded theme keep its face through hydration; without this the
+    // server rendered the brand and the client re-rendered the system font.
+    const [size, lineHeight, weight, tracking, maxScale, mono, italic, family] = data.type[key];
+    typeScale[key] = new TypeStyle(
+      size,
+      lineHeight,
+      weight,
+      tracking,
+      maxScale,
+      mono ?? false,
+      italic ?? false,
+      family,
+    );
   }
 
   const elevations: ShadowSpec[] = data.elevations.map(([offsetY, blur, spread, c]) => ({
