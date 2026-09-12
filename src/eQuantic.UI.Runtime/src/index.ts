@@ -176,6 +176,7 @@ export {
   SizeValue,
   EdgeInsets,
   CornerRadii,
+  FaceName,
   Transform2D,
   TypeStyle,
   VariantColors,

@@ -1974,7 +1974,7 @@ public static class WebRealizer
         // because the client's lowering cannot read the theme's type scale and an inline role face
         // would be dropped on the first client re-render — SSR showing the brand and hydration
         // showing the system font is the hydration mismatch, not a cosmetic difference.
-        var face = text.StyleOverride?.Family;
+        var face = FaceName.Usable(text.StyleOverride?.Family);
         // The OUTLINE, not the type scale: `h1`–`h6` when the author placed this text in the
         // document's structure, and a span when they did not. The heading's own UA margin and
         // size are cancelled in the token sheet (`.eq-type-*` owns the size), so choosing a level

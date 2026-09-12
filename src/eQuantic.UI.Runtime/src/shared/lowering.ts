@@ -30,7 +30,7 @@ import {
 import { getActivePass } from './instance-store';
 import { getPhotonTheme, setInFlow } from './photon-context';
 import { declareInView } from './in-view';
-import { cssFontWeight } from './value-types';
+import { cssFontWeight, isWellFormedFace } from './value-types';
 import { CodeKeymap } from './components/CodeKeymap';
 import {
   atomizeEntries,
@@ -2308,8 +2308,9 @@ const SANS_STACK = 'var(--eq-font-family, system-ui, -apple-system, sans-serif)'
  * parse error that takes the whole declaration with it.
  */
 function faceStack(family: string, mono: boolean): string {
-  const escaped = family.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-  return `"${escaped}", ` + (mono ? MONO_STACK : SANS_STACK);
+  // QUOTES, does not sanitise — `isWellFormedFace` is what makes quoting sufficient, and the C#
+  // twin carries the identical note.
+  return `"${family}", ` + (mono ? MONO_STACK : SANS_STACK);
 }
 
 function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
@@ -2331,12 +2332,11 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
     // Only what the NODE named — a ROLE's face rides its `.eq-type-*` class, which this element
     // already carries, so both sides agree by emitting nothing for it. Byte-identical to the C#
     // twin, because the atomic class name is a hash of this string.
-    'font-family':
-      text.styleOverride?.family !== undefined && text.styleOverride.family !== ''
-        ? faceStack(text.styleOverride.family, text.mono === true)
-        : text.mono === true
-          ? MONO_STACK
-          : undefined,
+    'font-family': isWellFormedFace(text.styleOverride?.family)
+      ? faceStack(text.styleOverride.family as string, text.mono === true)
+      : text.mono === true
+        ? MONO_STACK
+        : undefined,
     'font-variant-numeric': text.tabular === true ? 'tabular-nums' : undefined,
     // The slant (C# twin): the node's own, or the ROLE's when the theme cuts that role italic.
     'font-style':

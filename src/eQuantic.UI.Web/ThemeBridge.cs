@@ -71,7 +71,7 @@ public static class ThemeBridge
             {
                 sb.Append(',').Append(s.Mono ? "true" : "false")
                   .Append(',').Append(s.Italic ? "true" : "false");
-                if (s.Family is { Length: > 0 } face) sb.Append(",\"").Append(Escape(face)).Append('"');
+                if (FaceName.Usable(s.Family) is { } face) sb.Append(",\"").Append(Escape(face)).Append('"');
             }
             sb.Append(']');
         }
@@ -150,9 +150,12 @@ public static class ThemeBridge
 
     private static string Num(float value) => value.ToString("0.####", CultureInfo.InvariantCulture);
 
-    /// <summary>A JSON string body. The only free-form text on this wire is a font family, and a
-    /// family with a quote in it would end the payload early and take the rest of the theme with
-    /// it — the client parses this, so a malformed one is a page that does not boot.</summary>
+    /// <summary>A JSON string body. The only free-form text on this wire is a font family, and it
+    /// has already passed <see cref="FaceName.IsWellFormed"/> — which is what keeps this simple:
+    /// the payload is written verbatim into a <c>&lt;script&gt;</c> element, where a family
+    /// containing <c>&lt;/script&gt;</c> would end the element rather than the string, and no
+    /// amount of JSON quoting fixes that. This escapes what JSON requires; the predicate is what
+    /// makes the requirement sufficient.</summary>
     private static string Escape(string value) =>
         value.Replace("\\", "\\\\").Replace("\"", "\\\"");
 

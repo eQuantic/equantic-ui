@@ -59,8 +59,13 @@ public static class TokenCss
     /// unquoted one is a CSS parse error that takes the whole declaration with it.
     /// </para>
     /// </summary>
+    /// <remarks>
+    /// The family must already have passed <see cref="FaceName.IsWellFormed"/>: this QUOTES, it
+    /// does not sanitise, and a family that reached here unchecked could close the style element.
+    /// The quoting stays because quoting is what CSS needs, not because it is a defence.
+    /// </remarks>
     public static string Face(string family, bool mono) =>
-        $"\"{family.Replace("\\", "\\\\").Replace("\"", "\\\"")}\", " + (mono ? MonoStack : SansStack);
+        $"\"{family}\", " + (mono ? MonoStack : SansStack);
 
     public static string Px(float dp) => dp switch
     {
@@ -325,7 +330,7 @@ public static class PhotonCssGenerator
             // client's lowering cannot read the theme's type scale — its component context is
             // opaque there — so a role face emitted inline by SSR would vanish on the first
             // client re-render. In the sheet both sides get it by not emitting anything.
-            if (style.Family is { Length: > 0 } face)
+            if (FaceName.Usable(style.Family) is { } face)
                 css.AppendLine($"  font-family: {TokenCss.Face(face, style.Mono)};");
             css.AppendLine("}");
         }

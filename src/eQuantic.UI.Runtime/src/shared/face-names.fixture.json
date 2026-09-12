@@ -1,0 +1,131 @@
+{
+  "//": [
+    "The ONE rule for what may be spelled as a font family, pinned so the C# and TypeScript",
+    "sides cannot drift. SSR emits through FaceName.IsWellFormed and hydration through",
+    "isWellFormedFace: a family one side accepts and the other rejects is a hydration",
+    "mismatch, and the injection cases are the reason the rule exists at all.",
+    "Hand-authored. Add a case here and BOTH sides must agree about it."
+  ],
+  "cases": [
+    {
+      "family": "IBM Plex Sans",
+      "wellFormed": true,
+      "why": "the case the whole slice exists for"
+    },
+    {
+      "family": "JetBrainsMono Nerd Font",
+      "wellFormed": true,
+      "why": "a pack face under its canonical name"
+    },
+    {
+      "family": ".AppleSystemUIFont",
+      "wellFormed": true,
+      "why": "a platform face: a leading dot is legal"
+    },
+    {
+      "family": "Noto Sans CJK JP",
+      "wellFormed": true,
+      "why": "spaces and digits"
+    },
+    {
+      "family": "思源黑體",
+      "wellFormed": true,
+      "why": "Unicode LETTERS, so a CJK family is a family"
+    },
+    {
+      "family": "Робото",
+      "wellFormed": true,
+      "why": "and Cyrillic"
+    },
+    {
+      "family": "SF_Pro-Display.02",
+      "wellFormed": true,
+      "why": "the punctuation real families use"
+    },
+    {
+      "family": "Roboto+Mono",
+      "wellFormed": true,
+      "why": "plus appears in real family names"
+    },
+    {
+      "family": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "wellFormed": true,
+      "why": "the longest name allowed"
+    },
+    {
+      "family": "",
+      "wellFormed": false,
+      "why": "empty is not a name"
+    },
+    {
+      "family": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "wellFormed": false,
+      "why": "past the cap it is not a name"
+    },
+    {
+      "family": " Leading",
+      "wellFormed": false,
+      "why": "a leading space"
+    },
+    {
+      "family": "Trailing ",
+      "wellFormed": false,
+      "why": "a trailing space"
+    },
+    {
+      "family": "</style><script>alert(1)</script>",
+      "wellFormed": false,
+      "why": "THE CSS CASE: a CSS string does not neutralise </style> for the HTML parser"
+    },
+    {
+      "family": "</script>",
+      "wellFormed": false,
+      "why": "THE JSON CASE: the theme payload is written verbatim into a <script> element"
+    },
+    {
+      "family": "Bad\"Quote",
+      "wellFormed": false,
+      "why": "a quote would close the CSS string"
+    },
+    {
+      "family": "Back\\slash",
+      "wellFormed": false,
+      "why": "a backslash starts a CSS escape"
+    },
+    {
+      "family": "New\nline",
+      "wellFormed": false,
+      "why": "a raw newline cannot sit in a CSS string"
+    },
+    {
+      "family": "Tab\there",
+      "wellFormed": false,
+      "why": "nor a tab"
+    },
+    {
+      "family": "Null\u0000char",
+      "wellFormed": false,
+      "why": "a control character is invalid JSON unescaped"
+    },
+    {
+      "family": "Comma,Separated",
+      "wellFormed": false,
+      "why": "a comma would end this family and start the next"
+    },
+    {
+      "family": "Semi;colon",
+      "wellFormed": false,
+      "why": "a semicolon would end the declaration"
+    },
+    {
+      "family": "Ampersand&Co",
+      "wellFormed": false,
+      "why": "HTML-sensitive"
+    },
+    {
+      "family": "Paren(thesis)",
+      "wellFormed": false,
+      "why": "outside the set real families need"
+    }
+  ]
+}
