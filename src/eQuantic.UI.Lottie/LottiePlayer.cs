@@ -12,20 +12,24 @@ public class LottiePlayer : HtmlElement, IRequireAssets
     // Escape hatch (CLAUDE.md §Styling): this wraps a third-party JS library, so it emits raw
     // markup instead of the write-once vocabulary. It builds an HtmlElement DIRECTLY — the
     // Core component bases it used to derive from were the pre-write-once model and are gone.
+    // `new` on the members below: this wraps a CUSTOM ELEMENT whose own attributes happen to be
+    // named like HtmlElement's DOM mirrors. The hiding is intentional and safe because Render()
+    // is overridden and reads these, never the base — but the compiler cannot know that, and an
+    // undeclared hide is indistinguishable from an accidental one.
     /// <summary>
     /// URL to the .json or .dotlottie animation file.
     /// </summary>
-    public string Src { get; set; } = string.Empty;
+    public new string Src { get; set; } = string.Empty;
 
     /// <summary>
     /// If true, the animation will play automatically.
     /// </summary>
-    public bool Autoplay { get; set; } = true;
+    public new bool Autoplay { get; set; } = true;
 
     /// <summary>
     /// If true, the animation will loop.
     /// </summary>
-    public bool Loop { get; set; } = true;
+    public new bool Loop { get; set; } = true;
 
     /// <summary>
     /// Playback speed. Default is 1.
@@ -40,17 +44,17 @@ public class LottiePlayer : HtmlElement, IRequireAssets
     /// <summary>
     /// Width of the player (e.g., "300px", "100%").
     /// </summary>
-    public string? Width { get; set; }
+    public new string? Width { get; set; }
 
     /// <summary>
     /// Height of the player (e.g., "300px", "100%").
     /// </summary>
-    public string? Height { get; set; }
+    public new string? Height { get; set; }
 
     /// <summary>
     /// Controls if the player should show its own controls UI.
     /// </summary>
-    public bool Controls { get; set; }
+    public new bool Controls { get; set; }
 
     /// <summary>
     /// The player version to load. PINNED, like the chart wrappers pin theirs: a moving

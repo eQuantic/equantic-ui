@@ -62,8 +62,11 @@ public static class Eq
     /// twin has no generated <c>with</c>, and a spread would drop its prototype and its methods.</summary>
     public const string With = "$eq.withPatch";
 
-    /// <summary>Structural (value) equality for records/structs/tuples — backs ==, Contains, Distinct.</summary>
-    public const string Equals = "$eq.equals";
+    /// <summary>Structural (value) equality for records/structs/tuples — backs ==, Contains, Distinct.
+    /// <c>new</c> because this table names JS HELPERS, and one of them is called what
+    /// <c>object</c> calls a method — hiding it is the point, and saying so is what stops the
+    /// warning travelling to everyone who builds this assembly.</summary>
+    public new const string Equals = "$eq.equals";
 
     /// <summary>Dictionary enumeration (foreach / List copy): destructurable pairs with .key/.value.</summary>
     public const string Entries = "$eq.entries";

@@ -52,8 +52,17 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
     /// <summary>Frames actually presented — the self-test's exit evidence, as on every other shell.</summary>
     public int FramesPresented { get; private set; }
 
-    /// <summary>The app the runner built. Static because Android constructs the Activity itself.</summary>
-    internal static PhotonApplication? Application { get; set; }
+    /// <summary>
+    /// The app the runner built. Static because Android constructs the Activity itself.
+    /// <para>
+    /// <c>new</c>, and deliberately: <c>Activity.Application</c> is Android's own application object
+    /// and this is Photon's. The two can never be confused by the COMPILER — the types differ, so a
+    /// mix-up is a build error rather than a silent wrong value — but a reader of this file sees one
+    /// word meaning something other than what the platform means by it, which is why it says so here
+    /// rather than leaving a warning for everyone who builds the shell.
+    /// </para>
+    /// </summary>
+    internal static new PhotonApplication? Application { get; set; }
 
     /// <summary>
     /// The activity on screen. A capability needs one to start anything — a picker, a camera, a

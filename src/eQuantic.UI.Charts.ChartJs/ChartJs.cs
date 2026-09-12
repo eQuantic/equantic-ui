@@ -9,13 +9,17 @@ public class ChartJs<T> : HtmlElement, IChart
     // Escape hatch (CLAUDE.md §Styling): this wraps a third-party JS library, so it emits raw
     // markup instead of the write-once vocabulary. It builds an HtmlElement DIRECTLY — the
     // Core component bases it used to derive from were the pre-write-once model and are gone.
-    public string? Title { get; set; }
+    // `new` below: this wraps a third-party chart element whose own attributes happen to be named
+    // like HtmlElement's DOM mirrors. The hiding is intentional and safe because Render() is
+    // overridden and reads these, never the base — and an undeclared hide is indistinguishable
+    // from an accidental one, which is the whole reason the compiler warns.
+    public new string? Title { get; set; }
     public bool Responsive { get; set; } = true;
-    public string Type { get; set; } = "line";
-    public ChartData<T> Data { get; set; } = new();
+    public new string Type { get; set; } = "line";
+    public new ChartData<T> Data { get; set; } = new();
     public ChartJsOptions Options { get; set; } = new();
-    public string? Width { get; set; } = "100%";
-    public string? Height { get; set; } = "400px";
+    public new string? Width { get; set; } = "100%";
+    public new string? Height { get; set; } = "400px";
 
     public override HtmlNode Render() => BuildElement().Render();
 

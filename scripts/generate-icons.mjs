@@ -163,6 +163,13 @@ const pascal = (name) =>
         .join('')
         .replace(/^(\d)/, '_$1');
 
+// Every class inherits these, so an icon that happens to be named after one HIDES it and the build
+// warns (CS0108). `equals` is a real icon in several packs — the = sign — and the hiding is exactly
+// what we want, so the member says so. Without this the catalogue ships warnings its consumers see
+// and cannot fix, and the generator would re-introduce them on the next run.
+const OBJECT_MEMBERS = new Set(['Equals', 'GetHashCode', 'GetType', 'ToString', 'ReferenceEquals', 'MemberwiseClone', 'Finalize']);
+const hides = (member) => (OBJECT_MEMBERS.has(member) ? 'new ' : '');
+
 const esc = (s) => s.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 
 async function generate(prefix, projectName, className, outputDir) {
@@ -199,7 +206,8 @@ async function generate(prefix, projectName, className, outputDir) {
         // 35.2 MB to 20.9 MB when this changed, and the pack assembly left the output entirely).
         // Property bodies are separate methods the trimmer drops one by one. On the web nothing
         // changes: eqc inlines the construction at the use site either way.
-        lines.push(`    public static IconGlyph ${pascal(name)} => new(${args.join(', ')});`);
+        const member = pascal(name);
+        lines.push(`    public static ${hides(member)}IconGlyph ${member} => new(${args.join(', ')});`);
     }
 
     const srcDir = path.join(outputDir, projectName);
