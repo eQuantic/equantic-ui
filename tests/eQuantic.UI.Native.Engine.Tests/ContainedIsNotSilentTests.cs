@@ -79,7 +79,9 @@ public class ContainedIsNotSilentTests
     /// <para>
     /// Within one run a component that threw and then recovered still counts, and that is the
     /// point rather than a rough edge: it DID throw, and a summary that hides a failure because it
-    /// stopped is the silence this whole change exists to remove.
+    /// stopped is the silence this whole change exists to remove. The class contract's "no failure
+    /// is remembered" is about BEHAVIOUR — the recovered component builds and draws exactly like
+    /// one that never threw — and this is the diagnostic, which remembers until the run ends.
     /// </para>
     /// </summary>
     [Fact]

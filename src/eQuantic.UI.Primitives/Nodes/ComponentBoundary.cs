@@ -18,6 +18,14 @@ namespace eQuantic.UI.Primitives;
 /// remembered — a component that stops throwing (a retry, new props, a hot reload) simply builds
 /// again on the next pass.
 /// </para>
+///
+/// <para>
+/// BEHAVIOUR remembers nothing; the DIAGNOSTIC remembers for the run. Those are different
+/// statements and the distinction is the point: a recovered component is built and drawn exactly
+/// like one that never threw, while <see cref="Contained"/> still names it until the run ends.
+/// Anything else would let a failure disappear because the next frame happened to be clean, which
+/// is the silence the tally exists to remove.
+/// </para>
 /// </summary>
 public static class ComponentBoundary
 {
