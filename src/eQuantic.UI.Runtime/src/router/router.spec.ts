@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { matchRoute, matchPattern, type RouteEntry } from './route-table';
 import { Router, getCurrentRoute, type RouteMatch, type NavigationGuard } from '../index';
+import type { NavigateHandler, PrefetchHandler } from './router';
 
 describe('matchPattern / matchRoute', () => {
   const routes: RouteEntry[] = [
@@ -67,7 +68,7 @@ describe('matchPattern / matchRoute', () => {
 });
 
 describe('Router (happy-dom)', () => {
-  let onNavigate: ReturnType<typeof vi.fn>;
+  let onNavigate: Mock<NavigateHandler>;
   let router: Router;
   const routes: RouteEntry[] = [
     { pattern: '/', page: 'Home' },
@@ -81,7 +82,7 @@ describe('Router (happy-dom)', () => {
     if (hd?.setURL) hd.setURL('http://localhost:3000/');
     else window.history.replaceState(null, '', '/');
     document.body.innerHTML = '';
-    onNavigate = vi.fn();
+    onNavigate = vi.fn<NavigateHandler>();
     router = new Router({ routes, onNavigate, win: window });
     router.start();
   });
@@ -180,14 +181,14 @@ describe('Router (happy-dom)', () => {
     const e = click(anchor({ href: '/counter' }));
     expect(e.defaultPrevented).toBe(true);
     expect(onNavigate).toHaveBeenCalledTimes(1);
-    const [match] = onNavigate.mock.calls[0] as [RouteMatch, URL];
+    const [match] = onNavigate.mock.calls[0];
     expect(match.page).toBe('Counter');
     expect(window.location.pathname).toBe('/counter');
   });
 
   it('passes captured params to the navigation handler', () => {
     click(anchor({ href: '/users/7' }));
-    const [match] = onNavigate.mock.calls[0] as [RouteMatch, URL];
+    const [match] = onNavigate.mock.calls[0];
     expect(match.page).toBe('User');
     expect(match.params).toEqual({ id: '7' });
   });
@@ -243,7 +244,7 @@ describe('Router (happy-dom)', () => {
     // microtask: the handler awaits onNavigate
     await Promise.resolve();
     expect(onNavigate).toHaveBeenCalledTimes(1);
-    const [match] = onNavigate.mock.calls[0] as [RouteMatch, URL];
+    const [match] = onNavigate.mock.calls[0];
     expect(match.page).toBe('Counter');
   });
 
@@ -438,7 +439,7 @@ describe('Router (happy-dom)', () => {
 });
 
 describe('Router prefetch (happy-dom)', () => {
-  let onPrefetch: ReturnType<typeof vi.fn>;
+  let onPrefetch: Mock<PrefetchHandler>;
   let router: Router;
   const routes: RouteEntry[] = [
     { pattern: '/', page: 'Home' },
@@ -450,8 +451,8 @@ describe('Router prefetch (happy-dom)', () => {
     if (hd?.setURL) hd.setURL('http://localhost:3000/');
     else window.history.replaceState(null, '', '/');
     document.body.innerHTML = '';
-    onPrefetch = vi.fn();
-    router = new Router({ routes, onNavigate: vi.fn(), onPrefetch, win: window });
+    onPrefetch = vi.fn<PrefetchHandler>();
+    router = new Router({ routes, onNavigate: vi.fn<NavigateHandler>(), onPrefetch, win: window });
     router.start();
   });
 
@@ -474,7 +475,7 @@ describe('Router prefetch (happy-dom)', () => {
     hover(a);
     hover(a);
     expect(onPrefetch).toHaveBeenCalledTimes(1);
-    const [match] = onPrefetch.mock.calls[0] as [RouteMatch, URL];
+    const [match] = onPrefetch.mock.calls[0];
     expect(match.page).toBe('Counter');
   });
 
@@ -504,7 +505,7 @@ describe('Router prefetch (happy-dom)', () => {
 });
 
 describe('Router guards (happy-dom)', () => {
-  let onNavigate: ReturnType<typeof vi.fn>;
+  let onNavigate: Mock<NavigateHandler>;
   const routes: RouteEntry[] = [
     { pattern: '/', page: 'Home' },
     { pattern: '/admin', page: 'Admin' },
@@ -522,7 +523,7 @@ describe('Router guards (happy-dom)', () => {
     if (hd?.setURL) hd.setURL('http://localhost:3000/');
     else window.history.replaceState(null, '', '/');
     document.body.innerHTML = '';
-    onNavigate = vi.fn();
+    onNavigate = vi.fn<NavigateHandler>();
   });
 
   it('allows navigation when guards return true/undefined', async () => {
