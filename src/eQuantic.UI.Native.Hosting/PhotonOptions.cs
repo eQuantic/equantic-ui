@@ -86,6 +86,14 @@ public sealed class PhotonOptions
     /// not the place to tell a user about it. On for a self-test or a CI gate, where the opposite
     /// is true.
     /// <para>
+    /// DESKTOP ONLY, and named so rather than left to be discovered: macOS and Windows run as a
+    /// process with a status, and the mobile shells do not. An Android Activity's
+    /// <c>Environment.ExitCode</c> reaches no launcher and <c>Finish()</c> finishes a screen; the
+    /// iOS controller has no exit path at all. Both still PRINT what they contained, which is the
+    /// half that is true everywhere — an option that silently does nothing on two of four targets
+    /// is worse than one that says where it applies.
+    /// </para>
+    /// <para>
     /// The gap this closes: a boundary turns a loud failure into a quiet one ON PURPOSE, and every
     /// automated signal sides with the quiet version. An app whose entire title bar threw on every
     /// frame presented its frames, exited zero, and reported MORE accessibility elements than a

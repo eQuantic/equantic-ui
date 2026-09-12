@@ -322,7 +322,10 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
             Console.WriteLine(contained.Count == 0
                 ? $"[photon] frames presented: {FramesPresented}"
                 : $"[photon] frames presented: {FramesPresented} — CONTAINED: {string.Join(", ", contained)}");
-            if (contained.Count > 0 && Application?.Options.StrictRender == true) Environment.ExitCode = 1;
+            // No exit code here on purpose: an Activity is not a process with a status, and
+            // Finish() finishes a screen. StrictRender is scoped to the desktop shells, which have
+            // one — setting it here would have looked like a gate and been a no-op.
+
             Choreographer.Instance.RemoveFrameCallback(this);
             Finish();
         }

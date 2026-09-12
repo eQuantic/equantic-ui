@@ -127,6 +127,12 @@ public sealed class PhotonApplication
             else Console.Error.WriteLine($"{message}: {error}");
         };
 
+        // A RUN starts here, so what it contained starts empty here. The boundary itself remembers
+        // nothing across a rebuild — a component that stops throwing simply builds again — and that
+        // stays true; this is the run's own tally, and a tally nobody arms is one that survives
+        // whatever ran before it in the same process.
+        eQuantic.UI.Primitives.ComponentBoundary.ClearContained();
+
         FindRunner().Run(this);
     }
 

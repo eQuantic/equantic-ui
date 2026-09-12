@@ -72,14 +72,28 @@ public class ContainedIsNotSilentTests
         ComponentBoundary.Contained.Should().Equal("Breaks");
     }
 
+    /// <summary>
+    /// The tally belongs to a RUN, and a run has to say when it starts or the tally is whatever
+    /// survived whatever ran before it in the same process — which a long-lived host (the design
+    /// host runs many apps) reaches immediately. `PhotonApplication.Run` arms it.
+    /// <para>
+    /// Within one run a component that threw and then recovered still counts, and that is the
+    /// point rather than a rough edge: it DID throw, and a summary that hides a failure because it
+    /// stopped is the silence this whole change exists to remove.
+    /// </para>
+    /// </summary>
     [Fact]
-    public void ClearingIt_LetsAHostArmTheNextScope()
+    public void ARecoveredComponent_StillCountedForThatRun_ButNotTheNext()
     {
-        Render(new Breaks());
-        ComponentBoundary.Contained.Should().NotBeEmpty();
+        var flaky = new Breaks();
+        Render(flaky);
+        Render(new Fine());
+        ComponentBoundary.Contained.Should().Equal(["Breaks"], "it threw, and recovering does not unthrow it");
 
+        // A new run arms the tally, the way PhotonApplication.Run does.
         ComponentBoundary.ClearContained();
+        Render(new Fine());
 
-        ComponentBoundary.Contained.Should().BeEmpty();
+        ComponentBoundary.Contained.Should().BeEmpty("a healthy run is not accused of the last one's failure");
     }
 }
