@@ -30,6 +30,22 @@ public class IconRealizerTests
         act.Should().Throw<ArgumentOutOfRangeException>("arbitrary sizes are a spec error (§07 whitelist)");
     }
 
+    /// <summary>
+    /// The message names the way OUT, not only the rule. A consumer building window chrome from a
+    /// design handoff hit this at 11dp — a title bar's glyphs are the platform's numbers, not the
+    /// type scale's — and the message told them what was forbidden and nothing about what was
+    /// sanctioned. The obvious next move from there is to round 11 up to 16, which silently changes
+    /// the design rather than the code, and nothing would ever have said so.
+    /// </summary>
+    [Fact]
+    public void Icon_OffWhitelistSize_NamesTheSanctionedRoute()
+    {
+        var message = Assert.Throws<ArgumentOutOfRangeException>(() => new Icon(Icons.Close, 11)).Message;
+
+        message.Should().Contain("Vector", "the escape exists and the rule alone does not mention it");
+        message.Should().Contain("chrome", "because that is the case the whitelist does not cover");
+    }
+
     [Fact]
     public void DecorativeIcon_IsAriaHidden()
     {

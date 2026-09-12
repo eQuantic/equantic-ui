@@ -318,7 +318,11 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         if (forced == true && FramesPresented >= Application!.Options.MaxFrames)
         {
             ProbeAccessibility();
-            Console.WriteLine($"[photon] frames presented: {FramesPresented}");
+            var contained = eQuantic.UI.Primitives.ComponentBoundary.Contained;
+            Console.WriteLine(contained.Count == 0
+                ? $"[photon] frames presented: {FramesPresented}"
+                : $"[photon] frames presented: {FramesPresented} — CONTAINED: {string.Join(", ", contained)}");
+            if (contained.Count > 0 && Application?.Options.StrictRender == true) Environment.ExitCode = 1;
             Choreographer.Instance.RemoveFrameCallback(this);
             Finish();
         }

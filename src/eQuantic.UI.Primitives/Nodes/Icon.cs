@@ -130,7 +130,11 @@ public sealed class Icon : VisualNode
     {
         if (size is not (16 or 20 or 24 or 32))
             throw new ArgumentOutOfRangeException(nameof(size),
-                $"Icon size {size} is not on the §07 whitelist (16/20/24/32 — IconSize.Sm/Dense/Md/Lg).");
+                $"Icon size {size} is not on the §07 whitelist (16/20/24/32 — IconSize.Sm/Dense/Md/Lg). "
+                + "The scale is for CONTENT. Window chrome is sized by the platform, not by it — a title "
+                + "bar's glyphs at 11 or 13dp are the OS's numbers — and the sanctioned route there is "
+                + "`Vector`, which draws a glyph in a box the caller owns. Rounding 11 up to 16 changes "
+                + "the design instead of the code.");
         Glyph = glyph;
         Size = size;
         Color = color;

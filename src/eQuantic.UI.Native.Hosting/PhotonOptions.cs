@@ -81,6 +81,22 @@ public sealed class PhotonOptions
     public int MaxFrames { get; set; }
 
     /// <summary>
+    /// Refuse to exit zero if any component was CONTAINED — <c>--Photon:StrictRender true</c>. Off
+    /// by default, because containment is the right behaviour in a shipped app and an exit code is
+    /// not the place to tell a user about it. On for a self-test or a CI gate, where the opposite
+    /// is true.
+    /// <para>
+    /// The gap this closes: a boundary turns a loud failure into a quiet one ON PURPOSE, and every
+    /// automated signal sides with the quiet version. An app whose entire title bar threw on every
+    /// frame presented its frames, exited zero, and reported MORE accessibility elements than a
+    /// healthy one, because the containment surface has text of its own. A consumer had "frames
+    /// presented and exit 0" written down as the check that catches a black window, and it could
+    /// not. The contained names print either way; this decides whether the exit code says so.
+    /// </para>
+    /// </summary>
+    public bool StrictRender { get; set; }
+
+    /// <summary>
     /// Render ONE settled frame headlessly (reference backend) to this PNG path and exit — no
     /// window, no GPU. What a CI screenshot step or a fidelity pass against a design handoff
     /// calls: `--Photon:ScreenshotPath out.png` (+ `--Photon:Mode Dark` for the other palette).

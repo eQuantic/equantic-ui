@@ -66,7 +66,22 @@ public sealed class MacOSPhotonRunner : IPhotonRunner
         // mode opened every Photon app light.
         window.Run(app.Root(), options.Theme, options.Mode ?? SystemMode(), options.MaxFrames,
             themeController, cultureController);
-        Console.WriteLine($"[photon] frames presented: {window.FramesPresented}");
+        ReportFrames($"frames presented: {window.FramesPresented}", app);
+    }
+
+    /// <summary>
+    /// The frame summary, plus what the render CONTAINED. A boundary is meant to turn a crash into
+    /// a small red box, and every automated signal — frames presented, exit code, the accessibility
+    /// count — sides with the box. So the names go on the line everyone reads, and StrictRender
+    /// decides whether the exit code says so too.
+    /// </summary>
+    private static void ReportFrames(string summary, PhotonApplication app)
+    {
+        var contained = eQuantic.UI.Primitives.ComponentBoundary.Contained;
+        Console.WriteLine(contained.Count == 0
+            ? $"[photon] {summary}"
+            : $"[photon] {summary} — CONTAINED: {string.Join(", ", contained)}");
+        if (contained.Count > 0 && app.Options.StrictRender) Environment.ExitCode = 1;
     }
 
     /// <summary>What the machine is set to, falling back to light when it cannot be read — the
@@ -117,6 +132,8 @@ public sealed class MacOSPhotonRunner : IPhotonRunner
         var pixels = new byte[width * height * 4];
         surface.ReadPixelsSrgb(pixels);
         File.WriteAllBytes(path, Engine.PngCodec.Encode(width, height, pixels));
-        Console.WriteLine($"[photon] screenshot: {path}");
+        // The headless path needs this MORE than the windowed one, not less: a CI screenshot step
+        // is exactly where nobody is looking at the picture.
+        ReportFrames($"screenshot: {path}", app);
     }
 }
