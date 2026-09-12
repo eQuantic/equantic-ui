@@ -39,7 +39,7 @@ export class RadioGroup extends StatelessComponent {
         let group: VisualNode = options;
         if (!this.disabled && !(this.onChanged == null) && this.options.length > 0) {
             let count = this.options.length;
-            group = new Adjustable(options, (direction: number) => this.onChanged((this.selected + direction + count) % count), { role: 'radiogroup', label: this.label });
+            group = new Adjustable(options, (direction: number) => this.onChanged((this.selected + direction + count) % count), { role: 'radiogroup', label: this.label ?? '' });
         }
         let column = new Column(4, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         let groupLabel: any; 

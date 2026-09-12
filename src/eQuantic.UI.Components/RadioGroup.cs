@@ -90,7 +90,13 @@ public sealed class RadioGroup : StatelessComponent
                 direction => OnChanged((Selected + direction + count) % count))
             {
                 Role = AdjustableRole.Radiogroup,
-                Label = Label,
+                // An UNLABELLED group says so with the empty string the vocabulary declares, not
+                // with null. `Adjustable.Label` is `string` defaulting to "", and writing null over
+                // that default put a value in it that its own type forbids: the web realizer happens
+                // to survive it (`is { Length: > 0 }` tests null and empty alike) and the Photon one
+                // passes it straight into a semantic node. One realizer guarding what the other does
+                // not, on a value the type says cannot occur, is how the quiet ones start.
+                Label = Label ?? "",
             };
         }
 

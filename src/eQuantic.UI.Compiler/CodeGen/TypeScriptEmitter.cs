@@ -367,12 +367,17 @@ public class TypeScriptEmitter
                     }
 
                     // Apply defaults for properties not provided in props (only if still undefined)
-                    foreach (var prop in component.Properties.Where(p => p.IsPublic && p.DefaultValue != null))
+                    foreach (var prop in component.Properties.Where(p => p.IsPublic))
                     {
+                        // Read ONCE into a local. The filter used to carry `DefaultValue != null`,
+                        // which is true and unprovable: it is a mutable property, so nothing says it
+                        // is still non-null at the read a line later, and ConvertToTsValue derefs it
+                        // immediately.
+                        if (prop.DefaultValue is not { } declaredDefault) continue;
                         var camelName = prop.Name.ToCamelCase();
-                        var tsDefault = prop.DefaultValueNode != null 
+                        var tsDefault = prop.DefaultValueNode != null
                             ? _converter.ConvertExpression(prop.DefaultValueNode, prop.Type)
-                            : ConvertToTsValue(prop.DefaultValue, prop.Type);
+                            : ConvertToTsValue(declaredDefault, prop.Type);
                         // The default rides into the CONSTRUCTOR as text, past the converter's
                         // helper tracking — `$eq.num.long(0)` in a module that never imported $eq
                         // was "ReferenceError: $eq is not defined" at `new`, containing the

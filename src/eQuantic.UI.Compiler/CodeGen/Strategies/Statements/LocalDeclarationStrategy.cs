@@ -109,7 +109,7 @@ public class LocalDeclarationStrategy : IStatementStrategy
 
         if (decl.Declaration.Type.IsVar || variable.Initializer is null) return "";
 
-        return DeclaredTypeAnnotation(decl, variable, context);
+        return DeclaredTypeAnnotation(decl, variable.Initializer.Value, context);
     }
 
     /// <summary>The TS spelling of a SIMPLE item type, or null when TS has none to write.</summary>
@@ -125,12 +125,17 @@ public class LocalDeclarationStrategy : IStatementStrategy
         };
     }
 
+    /// <summary>
+    /// Takes the initializer's VALUE, not the declarator: `int x;` is legal C# and carries no
+    /// initializer, and the caller already refuses that case. Passing the declarator made the
+    /// guarantee live in the caller while the dereference lived here, which reads as a null
+    /// dereference to anyone — the compiler included — who looks at this method alone.
+    /// </summary>
     private static string DeclaredTypeAnnotation(LocalDeclarationStatementSyntax decl,
-        VariableDeclaratorSyntax variable, ConversionContext context)
+        ExpressionSyntax initializer, ConversionContext context)
     {
-
         var declared = context.SemanticHelper.GetType(decl.Declaration.Type);
-        var actual = context.SemanticHelper.GetType(variable.Initializer.Value);
+        var actual = context.SemanticHelper.GetType(initializer);
         if (declared is null || actual is null) return "";
         if (SymbolEqualityComparer.Default.Equals(declared, actual)) return "";
 
