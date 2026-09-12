@@ -246,9 +246,13 @@ public sealed class PhotonViewController : UIViewController
             // UIViewController has no process status to set — but silence was the worse half: this
             // shell printed nothing at all, so a run whose whole chrome threw looked like a clean one.
             var contained = eQuantic.UI.Primitives.ComponentBoundary.Contained;
-            Console.WriteLine(contained.Count == 0
-                ? $"[photon] frames presented: {FramesPresented}"
-                : $"[photon] frames presented: {FramesPresented} — CONTAINED: {string.Join(", ", contained)}");
+            var missing = eQuantic.UI.Primitives.FaceResolution.Unresolved;
+            var summary = $"frames presented: {FramesPresented}";
+            if (contained.Count > 0) summary += $" — CONTAINED: {string.Join(", ", contained)}";
+            // CoreTextService serves this shell too, so a family it could not find is RECORDED here
+            // whether or not anything says so. Recording without surfacing is the silence again.
+            if (missing.Count > 0) summary += $" — FACE NOT FOUND: {string.Join(", ", missing)}";
+            Console.WriteLine($"[photon] {summary}");
             Stop();
         }
     }
