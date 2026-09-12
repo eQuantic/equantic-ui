@@ -77,6 +77,17 @@ public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
         return new TextRaster(width, height, alpha);
     }
 
+    /// <summary>
+    /// The families the platform ALWAYS has, by name. Android answers these with the default
+    /// typeface, which is the right answer and indistinguishable from the wrong one — so they are
+    /// named rather than compared.
+    /// </summary>
+    private static bool IsSystemAlias(string family) =>
+        family.StartsWith("sans-serif", StringComparison.OrdinalIgnoreCase)
+        || family.Equals("serif", StringComparison.OrdinalIgnoreCase)
+        || family.Equals("monospace", StringComparison.OrdinalIgnoreCase)
+        || family.Equals("cursive", StringComparison.OrdinalIgnoreCase);
+
     private readonly record struct Line(string Text, float Width, bool Ellipsized);
 
     /// <summary>Where the lines break, and what each one ends up saying.</summary>
@@ -133,13 +144,19 @@ public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
         };
         // Android substitutes for an unknown family like every other engine: Typeface.Create hands
         // back the DEFAULT rather than null, so the answer is compared against that default instead
-        // of trusted. Equal means the family was not there — the one case where "I got a typeface"
-        // and "I got the one I asked for" come apart.
+        // of trusted.
+        //
+        // The system ALIASES are exempt from that comparison, and they have to be: "sans-serif"
+        // resolves to the default typeface, so comparing would report the platform's own family as
+        // missing — and an instrument that cries wolf on a correct value is one nobody reads by the
+        // end of the week. What is left is a brand face, which is the case this exists for.
         var baseFace = mono ? Typeface.Monospace : Typeface.Default;
         if (family is { Length: > 0 })
         {
             var named = Typeface.Create(family, style);
-            if (named is not null && !named.Equals(Typeface.Create(Typeface.Default, style)))
+            if (named is null)
+                eQuantic.UI.Primitives.FaceResolution.Missing(family);
+            else if (IsSystemAlias(family) || !named.Equals(Typeface.Create(Typeface.Default, style)))
                 baseFace = named;
             else
                 eQuantic.UI.Primitives.FaceResolution.Missing(family);
