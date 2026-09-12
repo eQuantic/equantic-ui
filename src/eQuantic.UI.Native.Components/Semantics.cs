@@ -45,6 +45,28 @@ public enum SemanticCheck : byte
 /// walks). Identified by PATH, like every press, focus and scroll target: the tree is rebuilt every
 /// frame, so a reference is stale by the time assistive tech acts on it, and the path is what stays.
 /// </summary>
+/// <param name="Current">
+/// This is the destination the user is ON — the web's <c>aria-current="page"</c>. Each bridge
+/// reports it with the nearest thing its platform has, which on both mobiles is the SELECTED trait;
+/// a bar whose active stop is only a tint colour is a bar a screen-reader user walks blind.
+/// </param>
+/// <param name="Selected">
+/// This one of a set is PICKED — a tab, a listbox option, a calendar day (the web's
+/// <c>aria-selected</c>). Distinct from <see cref="Checked"/>, which is a two-or-three-state
+/// answer to a question, and from <see cref="Current"/>, which says where you ARE; every
+/// bridge reports it with its platform's selected state. Null where the role has no notion of
+/// being picked, so a plain button never announces "not selected".
+/// <para>Design system §10 REQUEST, opened by C15: before this, a Tab and an Option reached
+/// the native tree as plain Buttons and their selection was paint only.</para>
+/// </param>
+/// <param name="HeadingLevel">
+/// Where this text sits in the document's OUTLINE — 1 to 6, 0 for anything that is not a
+/// heading (design system A9). Every platform has the same navigation built on it: VoiceOver's
+/// rotor and TalkBack's heading swipe jump between them, which is how a screen-reader user
+/// skims a long page instead of reading it end to end.
+/// <para>A TRAIT rather than a role, because a heading is still static text — the bridges add
+/// the platform's header trait on top of what they already report.</para>
+/// </param>
 public readonly record struct SemanticNode(
     SemanticRole Role,
     string Path,
@@ -54,29 +76,8 @@ public readonly record struct SemanticNode(
     bool Disabled,
     SemanticCheck? Checked = null,
     bool? Expanded = null,
-    /// <summary>This is the destination the user is ON — the web's <c>aria-current="page"</c>. Each
-    /// bridge reports it with the nearest thing its platform has, which on both mobiles is the
-    /// SELECTED trait; a bar whose active stop is only a tint colour is a bar a screen-reader user
-    /// walks blind.</summary>
     bool Current = false,
-    /// <summary>
-    /// This one of a set is PICKED — a tab, a listbox option, a calendar day (the web's
-    /// <c>aria-selected</c>). Distinct from <see cref="Checked"/>, which is a two-or-three-state
-    /// answer to a question, and from <see cref="Current"/>, which says where you ARE; every
-    /// bridge reports it with its platform's selected state. Null where the role has no notion of
-    /// being picked, so a plain button never announces "not selected".
-    /// <para>Design system §10 REQUEST, opened by C15: before this, a Tab and an Option reached
-    /// the native tree as plain Buttons and their selection was paint only.</para>
-    /// </summary>
     bool? Selected = null,
-    /// <summary>
-    /// Where this text sits in the document's OUTLINE — 1 to 6, 0 for anything that is not a
-    /// heading (design system A9). Every platform has the same navigation built on it: VoiceOver's
-    /// rotor and TalkBack's heading swipe jump between them, which is how a screen-reader user
-    /// skims a long page instead of reading it end to end.
-    /// <para>A TRAIT rather than a role, because a heading is still static text — the bridges add
-    /// the platform's header trait on top of what they already report.</para>
-    /// </summary>
     int HeadingLevel = 0);
 
 /// <summary>

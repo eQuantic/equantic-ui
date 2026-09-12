@@ -316,7 +316,7 @@ Emit(outDir, webDir, androidDir, macIcns, windowsIco, appName, name, (int)size, 
 Console.WriteLine($"eqicon: wrote {Where(outDir, webDir, androidDir, macIcns, windowsIco)} from {iconType.FullName}");
 return 0;
 
-/// <summary>Everything this invocation is responsible for producing.</summary>
+// Everything this invocation is responsible for producing.
 static IEnumerable<string> Outputs(string? outDir, string? webDir, string? androidDir, string? macIcns,
     string? windowsIco, string name)
 {
@@ -340,7 +340,7 @@ static bool UpToDate(string[] sources, IEnumerable<string> outputs)
     return outputs.All(output => File.Exists(output) && File.GetLastWriteTimeUtc(output) >= newest);
 }
 
-/// <summary>Writes whichever outputs this invocation asked for — a catalog, a web set, or both.</summary>
+// Writes whichever outputs this invocation asked for — a catalog, a web set, or both.
 static void Emit(string? outDir, string? webDir, string? androidDir, string? macIcns, string? windowsIco,
     string appName, string name, int size, byte[] rgba)
 {
@@ -363,7 +363,7 @@ static void Emit(string? outDir, string? webDir, string? androidDir, string? mac
 static string Where(string? outDir, string? webDir, string? androidDir, string? macIcns, string? windowsIco) =>
     string.Join(" and ", new[] { outDir, webDir, androidDir, macIcns, windowsIco }.Where(d => d is not null));
 
-/// <summary>The catalog around the artwork: the manifest key, the Contents.json, the file itself.</summary>
+// The catalog around the artwork: the manifest key, the Contents.json, the file itself.
 static void WriteCatalog(string outDir, string name, Action writeArtwork)
 {
     var set = Path.Combine(outDir, $"{name}.appiconset");
@@ -386,7 +386,7 @@ static void WriteCatalog(string outDir, string name, Action writeArtwork)
         plist.String("XSAppIconAssets", $"obj/eQuantic/Assets.xcassets/{name}.appiconset")));
 }
 
-/// <summary>Width and height straight out of the PNG header — no decoder needed to check a size.</summary>
+// Width and height straight out of the PNG header — no decoder needed to check a size.
 static (int Width, int Height) PngSize(string path)
 {
     var header = new byte[24];

@@ -2,8 +2,8 @@ using System.Runtime.InteropServices;
 
 namespace eQuantic.UI.Native.Shell.Apple;
 
-[StructLayout(LayoutKind.Sequential)]
 /// <summary>Foundation's NSRange — two machine words (location, length).</summary>
+[StructLayout(LayoutKind.Sequential)]
 public struct NSRange
 {
     public nuint Location;
