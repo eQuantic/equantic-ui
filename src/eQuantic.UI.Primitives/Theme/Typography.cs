@@ -73,6 +73,20 @@ public enum TypeRole : byte
 public readonly record struct TypeStyle(float Size, float LineHeight, FontWeight Weight, float Tracking, float MaxScale, bool Mono = false, bool Italic = false, string? Family = null)
 {
     /// <summary>
+    /// The shape this type had before it carried a face, kept so it still EXISTS in metadata.
+    /// C# optional parameters are not overloads: the default is baked into each call site, so an
+    /// assembly compiled against the seven-parameter constructor calls a signature that adding an
+    /// eighth deletes — and finds a <c>MissingMethodException</c> at load. That is not theoretical
+    /// here: a consumer compiling its own library against the released package and running it
+    /// against this tree is the arrangement the IDE pairing runs on every day.
+    /// </summary>
+    public TypeStyle(float Size, float LineHeight, FontWeight Weight, float Tracking, float MaxScale,
+        bool Mono, bool Italic)
+        : this(Size, LineHeight, Weight, Tracking, MaxScale, Mono, Italic, null)
+    {
+    }
+
+    /// <summary>
     /// The effective size under an OS Dynamic Type factor: <c>Size × min(factor, MaxScale)</c>, snapped
     /// to the atlas whitelist step (0.5dp) to bound glyph memory (spec §02 engine notes).
     /// </summary>
