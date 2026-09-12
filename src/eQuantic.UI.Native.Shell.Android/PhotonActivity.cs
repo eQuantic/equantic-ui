@@ -319,9 +319,13 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
         {
             ProbeAccessibility();
             var contained = eQuantic.UI.Primitives.ComponentBoundary.Contained;
-            Console.WriteLine(contained.Count == 0
-                ? $"[photon] frames presented: {FramesPresented}"
-                : $"[photon] frames presented: {FramesPresented} — CONTAINED: {string.Join(", ", contained)}");
+            var missing = eQuantic.UI.Primitives.FaceResolution.Unresolved;
+            var summary = $"frames presented: {FramesPresented}";
+            if (contained.Count > 0) summary += $" — CONTAINED: {string.Join(", ", contained)}";
+            // AndroidTextService RECORDS a family it could not supply. Recording without surfacing
+            // is the silence this exists to end, and this is the one line anyone reads.
+            if (missing.Count > 0) summary += $" — FACE NOT FOUND: {string.Join(", ", missing)}";
+            Console.WriteLine($"[photon] {summary}");
             // No exit code here on purpose: an Activity is not a process with a status, and
             // Finish() finishes a screen. StrictRender is scoped to the desktop shells, which have
             // one — setting it here would have looked like a gate and been a no-op.

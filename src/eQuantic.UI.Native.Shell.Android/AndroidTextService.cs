@@ -78,15 +78,27 @@ public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
     }
 
     /// <summary>
-    /// The families the platform ALWAYS has, by name. Android answers these with the default
-    /// typeface, which is the right answer and indistinguishable from the wrong one — so they are
-    /// named rather than compared.
+    /// The generic families AOSP's <c>fonts.xml</c> declares as ALIASES — the ones the platform
+    /// always answers, by name. Android hands them back as the default typeface, which is the right
+    /// answer and indistinguishable from the wrong one, so they are named rather than compared.
+    ///
+    /// <para>
+    /// Named EXACTLY, never by prefix. A prefix test on "sans-serif" exempts
+    /// <c>sans-serif-not-installed</c> too, and an exempted family is one whose absence is never
+    /// reported — the instrument turned off for precisely the values it exists to catch. (Second
+    /// time a <c>StartsWith</c> has done this here: the dev-source announce line silenced
+    /// <c>equantic-ui-web</c> the same way.)
+    /// </para>
     /// </summary>
+    private static readonly string[] SystemAliases =
+    [
+        "sans-serif", "sans-serif-condensed", "sans-serif-condensed-light", "sans-serif-thin",
+        "sans-serif-light", "sans-serif-medium", "sans-serif-black", "sans-serif-smallcaps",
+        "sans-serif-monospace", "serif", "serif-monospace", "monospace", "casual", "cursive",
+    ];
+
     private static bool IsSystemAlias(string family) =>
-        family.StartsWith("sans-serif", StringComparison.OrdinalIgnoreCase)
-        || family.Equals("serif", StringComparison.OrdinalIgnoreCase)
-        || family.Equals("monospace", StringComparison.OrdinalIgnoreCase)
-        || family.Equals("cursive", StringComparison.OrdinalIgnoreCase);
+        Array.Exists(SystemAliases, alias => alias.Equals(family, StringComparison.OrdinalIgnoreCase));
 
     private readonly record struct Line(string Text, float Width, bool Ellipsized);
 
