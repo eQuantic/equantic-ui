@@ -88,8 +88,18 @@ public sealed class WindowsPhotonRunner : IPhotonRunner
         using var textService = new DirectWriteTextService();
         using var iconRasterizer = new Direct2DIconRasterizer();
         using var imageLoader = new WicImageLoader();
+        var mode = options.Mode ?? WindowsTheme.SystemMode();
+        // The theme controller learns the mode here too, exactly as PhotonWindow.Run does when
+        // attaching it. Without this the app's OWN theme switch falls back to its default while the
+        // frame renders in the resolved mode — a screenshot whose controls misreport the state it
+        // is a picture of. It went unnoticed while the fallback happened to BE the rendered mode;
+        // the day the shells started following the system, the Studio's Light/Dark segmented
+        // control sat on "Light" over a dark frame. Nothing re-renders from a sink here, so the
+        // seeding is the whole of it.
+        (app.Services.GetService(typeof(IThemeController)) as PhotonThemeController)?.Attach(mode, _ => { });
+
         var host = new PhotonHost(app.Root(), options.Theme,
-            options.Mode ?? WindowsTheme.SystemMode(), options.Width, options.Height, textService)
+            mode, options.Width, options.Height, textService)
         {
             TextRasterizer = textService,
             ImageLoader = imageLoader,
