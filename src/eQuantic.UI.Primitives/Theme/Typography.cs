@@ -41,6 +41,24 @@ public enum TypeRole : byte
 /// here is honoured by all three for free — and a face that lives anywhere else is a layout that
 /// disagrees with its own pixels.
 /// </param>
+/// <param name="Family">
+/// The FACE by name, or null for the platform's own — which is the default and what an app that
+/// has no opinion should keep. A product with a brand has one: a design handoff draws every metric
+/// against a specific family, and rendering it in the system face is a different design that
+/// nothing reports.
+/// <para>
+/// It belongs HERE for the reason <see cref="Mono"/> does: the measurer, the rasterizer and the
+/// raster cache all key on the style, so a face named here is honoured by all three and cannot
+/// drift between what was measured and what was drawn.
+/// </para>
+/// <para>
+/// Naming a face the machine does not have is the failure worth knowing about, and it is silent by
+/// nature — every text engine falls back rather than refusing. The platform services report an
+/// unresolved family rather than quietly drawing something else. What this does NOT do is make a
+/// face available: registering one the system has never seen is a separate piece, and until it
+/// exists a family only resolves if it is installed.
+/// </para>
+/// </param>
 /// <param name="Italic">
 /// The SLANTED cut of the same family — emphasis inside prose, a term being defined, the citation
 /// under a figure. Here for the same reason <see cref="Mono"/> is: a slant is a different set of
@@ -52,7 +70,7 @@ public enum TypeRole : byte
 /// own rather than a value in the weight enum.
 /// </para>
 /// </param>
-public readonly record struct TypeStyle(float Size, float LineHeight, FontWeight Weight, float Tracking, float MaxScale, bool Mono = false, bool Italic = false)
+public readonly record struct TypeStyle(float Size, float LineHeight, FontWeight Weight, float Tracking, float MaxScale, bool Mono = false, bool Italic = false, string? Family = null)
 {
     /// <summary>
     /// The effective size under an OS Dynamic Type factor: <c>Size × min(factor, MaxScale)</c>, snapped

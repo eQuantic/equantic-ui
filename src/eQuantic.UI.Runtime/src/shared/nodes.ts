@@ -62,6 +62,8 @@ export interface TypeStyleValue {
   mono?: boolean;
   /** The SLANTED cut (C# `TypeStyle.Italic`) — an axis, so it composes with weight and mono. */
   italic?: boolean;
+  /** The FACE by name (C# `TypeStyle.Family`), or absent for the platform's own. */
+  family?: string;
 }
 
 export type { MainAlignValue } from './enums.generated';

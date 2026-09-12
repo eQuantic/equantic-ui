@@ -206,6 +206,8 @@ export class TypeStyle implements TypeStyleValue {
     readonly mono = false,
     /** The SLANTED cut — an AXIS, so it composes with weight and mono (C# `TypeStyle.Italic`). */
     readonly italic = false,
+    /** The FACE by name (C# `TypeStyle.Family`), or undefined for the platform's own. */
+    readonly family: string | undefined = undefined,
   ) {}
 
   /**

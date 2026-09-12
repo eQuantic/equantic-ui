@@ -1970,6 +1970,11 @@ public static class WebRealizer
         // The slant reads the same two places for the same reason: a role may BE italic (a
         // theme's caption), and a node may slant a paragraph of an upright role.
         var italic = text.Italic || (text.StyleOverride?.Italic ?? context.Theme.Type(text.Role).Italic);
+        // The named FACE reads the same two places a slant does — a role may carry one (a theme that
+        // brands its type) and a node may name one. A browser needs no registration to use it, so
+        // where Photon reports a family it cannot find, the web quotes it and lets the stack behind
+        // it decide; naming what to fall back TO is the one thing CSS does better here.
+        var face = text.StyleOverride?.Family ?? context.Theme.Type(text.Role).Family;
         // The OUTLINE, not the type scale: `h1`–`h6` when the author placed this text in the
         // document's structure, and a span when they did not. The heading's own UA margin and
         // size are cancelled in the token sheet (`.eq-type-*` owns the size), so choosing a level
@@ -1998,7 +2003,8 @@ public static class WebRealizer
                 // headline ran on in one line and nothing said why.
                 WhiteSpace = mono ? "pre-wrap"
                     : text.PlainContent.Contains('\n') ? "pre-line" : null,
-                FontFamily = mono ? TokenCss.MonoStack : null,
+                FontFamily = face is { Length: > 0 } named ? TokenCss.Face(named, mono)
+                    : mono ? TokenCss.MonoStack : null,
                 FontVariantNumeric = text.Tabular ? "tabular-nums" : null,
                 FontStyle = italic ? "italic" : null,
                 // Spec S6: recolors glide (the design's transition-colors on nav labels/links).

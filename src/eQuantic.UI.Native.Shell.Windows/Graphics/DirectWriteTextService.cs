@@ -40,7 +40,7 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
     private readonly Dictionary<FormatKey, Format> _formats = new();
     private bool _disposed;
 
-    private readonly record struct FormatKey(float Size, float LineHeight, FontWeight Weight, bool Mono, bool Italic);
+    private readonly record struct FormatKey(float Size, float LineHeight, FontWeight Weight, bool Mono, bool Italic, string? Family);
 
     /// <summary>A text format and the metrics of the face it resolved to, in dp at its size.</summary>
     private sealed unsafe class Format
@@ -87,12 +87,35 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
         return exists != 0 ? family : null;
     }
 
-    private Format FormatFor(float size, float lineHeight, FontWeight weight, bool mono, bool italic)
+    /// <summary>Whether the system collection has this family — the question DirectWrite answers
+    /// directly, so nothing has to compare a name it got back against the one it asked for.</summary>
+    private bool HasFamily(string family)
     {
-        var key = new FormatKey(size, lineHeight, weight, mono, italic);
+        uint index;
+        int exists;
+        fixed (char* name = family)
+        {
+            if (DWrite.FindFamilyName(_collection, name, &index, &exists) < 0) return false;
+        }
+        return exists != 0;
+    }
+
+    private Format FormatFor(float size, float lineHeight, FontWeight weight, bool mono, bool italic,
+        string? named = null)
+    {
+        var key = new FormatKey(size, lineHeight, weight, mono, italic, named);
         if (_formats.TryGetValue(key, out var cached)) return cached;
 
+        // The app's face when it named one, the system's otherwise. DirectWrite substitutes for an
+        // unknown family exactly as CoreText does, and the collection is already open here — so the
+        // family is checked BEFORE it is asked for, and an absent one falls back to the system face
+        // rather than to whatever DirectWrite chooses.
         var family = mono ? _monoFamily : _textFamily;
+        if (named is { Length: > 0 })
+        {
+            if (HasFamily(named)) family = named;
+            else Primitives.FaceResolution.Missing(named);
+        }
         var style = italic ? DWrite.StyleItalic : DWrite.StyleNormal;
         void* format;
         fixed (char* familyName = family)
@@ -207,7 +230,7 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
         if (content.Length == 0)
             return new TextMeasurement(0, lineHeight, lineHeight, [new MeasuredLine(0, false)]);
 
-        var format = FormatFor(size, lineHeight, style.Weight, style.Mono, style.Italic);
+        var format = FormatFor(size, lineHeight, style.Weight, style.Mono, style.Italic, style.Family);
         var layout = Layout(content, format, maxWidth, 1_000_000f);
         try
         {
@@ -235,7 +258,7 @@ public sealed unsafe class DirectWriteTextService : ITextMeasurer, ITextRasteriz
         if (content.Length == 0) return null;
         var size = style.ScaledSize(typeScale);
         var lineHeight = style.ScaledLineHeight(typeScale);
-        var format = FormatFor(size, lineHeight, style.Weight, style.Mono, style.Italic);
+        var format = FormatFor(size, lineHeight, style.Weight, style.Mono, style.Italic, style.Family);
 
         var layout = Layout(content, format, maxWidth, 1_000_000f);
         try

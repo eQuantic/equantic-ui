@@ -21,7 +21,7 @@ namespace eQuantic.UI.Native.Shell.Android;
 /// </summary>
 public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
 {
-    private readonly Dictionary<(float Size, FontWeight Weight, bool Mono, bool Italic), TextPaint> _paints = new();
+    private readonly Dictionary<(float Size, FontWeight Weight, bool Mono, bool Italic, string? Family), TextPaint> _paints = new();
 
     public TextMeasurement Measure(string content, TypeStyle style, float typeScale, float maxWidth, int maxLines)
     {
@@ -41,7 +41,7 @@ public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
         var lines = Break(content, style, typeScale, maxWidth, maxLines);
         if (lines.Count == 0) return null;
 
-        var paint = PaintFor(style.ScaledSize(typeScale) * scale, style.Weight, style.Mono, style.Italic);
+        var paint = PaintFor(style.ScaledSize(typeScale) * scale, style.Weight, style.Mono, style.Italic, style.Family);
         // Measured with the SCALED paint, because a glyph's advance is not exactly linear in its
         // size: a width taken at 1x and multiplied comes out a hair short, and the last character
         // of every line is what gets sliced off.
@@ -82,7 +82,7 @@ public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
     /// <summary>Where the lines break, and what each one ends up saying.</summary>
     private List<Line> Break(string content, TypeStyle style, float typeScale, float maxWidth, int maxLines)
     {
-        var paint = PaintFor(style.ScaledSize(typeScale), style.Weight, style.Mono, style.Italic);
+        var paint = PaintFor(style.ScaledSize(typeScale), style.Weight, style.Mono, style.Italic, style.Family);
         // An unconstrained paragraph still needs a number; the text's own width is the smallest one
         // that changes nothing.
         var wrapAt = float.IsPositiveInfinity(maxWidth)
@@ -111,9 +111,9 @@ public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
         return lines;
     }
 
-    private TextPaint PaintFor(float size, FontWeight weight, bool mono, bool italic)
+    private TextPaint PaintFor(float size, FontWeight weight, bool mono, bool italic, string? family = null)
     {
-        if (_paints.TryGetValue((size, weight, mono, italic), out var cached)) return cached;
+        if (_paints.TryGetValue((size, weight, mono, italic, family), out var cached)) return cached;
 
         var paint = new TextPaint(PaintFlags.AntiAlias | PaintFlags.SubpixelText)
         {
@@ -131,8 +131,21 @@ public sealed class AndroidTextService : ITextMeasurer, ITextRasterizer
             (false, true) => TypefaceStyle.Italic,
             _ => TypefaceStyle.Normal,
         };
-        paint.SetTypeface(Typeface.Create(mono ? Typeface.Monospace : Typeface.Default, style));
-        _paints[(size, weight, mono, italic)] = paint;
+        // Android substitutes for an unknown family like every other engine: Typeface.Create hands
+        // back the DEFAULT rather than null, so the answer is compared against that default instead
+        // of trusted. Equal means the family was not there — the one case where "I got a typeface"
+        // and "I got the one I asked for" come apart.
+        var baseFace = mono ? Typeface.Monospace : Typeface.Default;
+        if (family is { Length: > 0 })
+        {
+            var named = Typeface.Create(family, style);
+            if (named is not null && !named.Equals(Typeface.Create(Typeface.Default, style)))
+                baseFace = named;
+            else
+                eQuantic.UI.Primitives.FaceResolution.Missing(family);
+        }
+        paint.SetTypeface(Typeface.Create(baseFace, style));
+        _paints[(size, weight, mono, italic, family)] = paint;
         return paint;
     }
 }

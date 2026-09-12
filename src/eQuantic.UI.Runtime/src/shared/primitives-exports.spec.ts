@@ -28,6 +28,12 @@ const NO_TWIN_OWED = new Set([
   // Never in a page bundle: host and server plumbing, or an abstract base.
   'AbsentMotionSensor',
   'ComponentBoundary',
+  // A HOST's tally of families it asked for and did not get. There is nothing for the browser to
+  // report: the lowering emits the named face in front of a stack that names its own fallback, so
+  // an unavailable family is already handled by the declaration rather than discovered after it.
+  // The report exists because CoreText, DirectWrite and Android substitute in silence and have no
+  // equivalent of saying what to substitute WITH.
+  'FaceResolution',
   'ComponentInstanceStore',
   'FlexNode',
   'VisualNodeExtensions',

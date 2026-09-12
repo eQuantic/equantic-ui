@@ -132,6 +132,7 @@ public sealed class PhotonApplication
         // stays true; this is the run's own tally, and a tally nobody arms is one that survives
         // whatever ran before it in the same process.
         eQuantic.UI.Primitives.ComponentBoundary.ClearContained();
+        eQuantic.UI.Primitives.FaceResolution.Clear();
 
         FindRunner().Run(this);
     }

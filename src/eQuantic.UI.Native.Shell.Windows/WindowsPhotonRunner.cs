@@ -86,9 +86,12 @@ public sealed class WindowsPhotonRunner : IPhotonRunner
     private static void ReportFrames(string summary, PhotonApplication app)
     {
         var contained = eQuantic.UI.Primitives.ComponentBoundary.Contained;
-        Console.WriteLine(contained.Count == 0
-            ? $"[photon] {summary}"
-            : $"[photon] {summary} — CONTAINED: {string.Join(", ", contained)}");
+        var missing = eQuantic.UI.Primitives.FaceResolution.Unresolved;
+        if (contained.Count > 0) summary += $" — CONTAINED: {string.Join(", ", contained)}";
+        // A face the machine does not have is the other thing only the pixels used to say, and it
+        // says it quietly: every text engine substitutes rather than refusing.
+        if (missing.Count > 0) summary += $" — FACE NOT FOUND: {string.Join(", ", missing)}";
+        Console.WriteLine($"[photon] {summary}");
         // ASSIGNED, not merely set to 1: the exit code is process-global while the tally is per run,
         // so a host that runs a failing strict app and then a healthy one would have carried the
         // first verdict out of the process. Strict means THIS run's gate, so this run says both

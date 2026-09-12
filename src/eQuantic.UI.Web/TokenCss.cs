@@ -41,8 +41,26 @@ public static class TokenCss
     /// hydration.
     /// </para>
     /// </summary>
+    /// <summary>The PROPORTIONAL stack the base sheet sets on the document — the same custom
+    /// property (`equantic.css`), so a named face falls back to what the page would have used
+    /// rather than to a second opinion.</summary>
+    public const string SansStack = "var(--eq-font-family, system-ui, -apple-system, sans-serif)";
+
     public const string MonoStack =
         "var(--eq-font-mono, ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace)";
+
+    /// <summary>
+    /// A NAMED face in front of the stack that would have been used anyway. The fallback is the
+    /// point: a browser asked for a family it does not have silently draws the next one, exactly as
+    /// CoreText does — but here we get to say what the next one is, so an unavailable brand face
+    /// lands on the system stack rather than on whatever the browser felt like.
+    /// <para>
+    /// Quoted always. A family with a space in it is the common case ("IBM Plex Sans"), and an
+    /// unquoted one is a CSS parse error that takes the whole declaration with it.
+    /// </para>
+    /// </summary>
+    public static string Face(string family, bool mono) =>
+        $"\"{family.Replace("\\", "\\\\").Replace("\"", "\\\"")}\", " + (mono ? MonoStack : SansStack);
 
     public static string Px(float dp) => dp switch
     {

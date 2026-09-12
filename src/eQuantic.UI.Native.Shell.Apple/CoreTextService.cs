@@ -53,6 +53,20 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     [LibraryImport(CoreTextLib)]
     private static partial IntPtr CTFontCreateCopyWithSymbolicTraits(IntPtr font, double size, IntPtr matrix, uint traits, uint mask);
 
+    // A face by FAMILY, asked as a question rather than a command. CTFontCreateWithName substitutes
+    // silently when the name is unknown, and reading the family back does not settle it either:
+    // asking for "JetBrainsMono NF" hands back "JetBrainsMono Nerd Font", which is the same font
+    // under its canonical name. A descriptor MATCH answers null when nothing matches and a real
+    // descriptor when something does, with no string for anyone to compare.
+    [LibraryImport(CoreTextLib)]
+    private static partial IntPtr CTFontDescriptorCreateWithAttributes(IntPtr attributes);
+
+    [LibraryImport(CoreTextLib)]
+    private static partial IntPtr CTFontDescriptorCreateMatchingFontDescriptor(IntPtr descriptor, IntPtr mandatoryAttributes);
+
+    [LibraryImport(CoreTextLib)]
+    private static partial IntPtr CTFontCreateWithFontDescriptor(IntPtr descriptor, double size, IntPtr matrix);
+
     /// <summary>The INK box of a line — what the glyphs actually cover, which is not the font's
     /// declared ascent/descent: a deep 'g' tail, an accent or a swash all pass beyond it. A null
     /// context is legal and gives the default text matrix, which is what we draw with.</summary>
@@ -103,6 +117,7 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     private static partial IntPtr dlsym(IntPtr handle, string symbol);
 
     private static readonly IntPtr FontAttributeName = LoadGlobal(CoreTextLib, "kCTFontAttributeName");
+    private static readonly IntPtr FontFamilyNameAttribute = LoadGlobal(CoreTextLib, "kCTFontFamilyNameAttribute");
     private static readonly IntPtr KeyCallbacks = LoadGlobalAddress(CoreFoundation, "kCFTypeDictionaryKeyCallBacks");
     private static readonly IntPtr ValueCallbacks = LoadGlobalAddress(CoreFoundation, "kCFTypeDictionaryValueCallBacks");
 
@@ -115,17 +130,17 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     private static IntPtr LoadGlobalAddress(string library, string symbol) =>
         dlsym(dlopen(library, 2), symbol);
 
-    private readonly Dictionary<(float Size, bool Bold, bool Mono, bool Italic), IntPtr> _fonts = new();
+    private readonly Dictionary<(float Size, bool Bold, bool Mono, bool Italic, string? Family), IntPtr> _fonts = new();
 
-    private IntPtr FontFor(float size, FontWeight weight, bool mono, bool italic)
+    private IntPtr FontFor(float size, FontWeight weight, bool mono, bool italic, string? family = null)
     {
         var bold = weight >= FontWeight.SemiBold;
-        if (_fonts.TryGetValue((size, bold, mono, italic), out var cached)) return cached;
+        if (_fonts.TryGetValue((size, bold, mono, italic, family), out var cached)) return cached;
 
         // kCTFontUIFontUserFixedPitch is the system's own MONOSPACED face (SF Mono on a modern
         // Mac) — the one every native editor uses. Asking the OS for it beats naming a family
-        // that may not be installed.
-        var font = CTFontCreateUIFontForLanguage(
+        // that may not be installed, which is why it stays the default when none is named.
+        var font = Named(family, size) ?? CTFontCreateUIFontForLanguage(
             mono ? 1u /* kCTFontUIFontUserFixedPitch */ : 2u /* kCTFontUIFontSystem */,
             size, IntPtr.Zero);
         // Bold and italic are the same mechanism — symbolic TRAITS on the face the OS handed
@@ -146,17 +161,64 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
                 font = traited;
             }
         }
-        _fonts[(size, bold, mono, italic)] = font; // per-process cache (the documented lifetime fence)
+        _fonts[(size, bold, mono, italic, family)] = font; // per-process cache (the documented lifetime fence)
         return font;
+    }
+
+    /// <summary>
+    /// The face the app NAMED, or null to fall through to the platform's own. CoreText hands back a
+    /// substitute rather than nothing when the family is unknown, so the family is read back and
+    /// compared: a non-null return proves a font, not the right one.
+    /// </summary>
+    private static IntPtr? Named(string? family, float size)
+    {
+        if (string.IsNullOrEmpty(family)) return null;
+
+        var name = CFStringCreateWithCString(IntPtr.Zero, family, Utf8);
+        if (name == IntPtr.Zero) return null;
+        var attributes = CFDictionaryCreateMutable(IntPtr.Zero, 1, KeyCallbacks, ValueCallbacks);
+        try
+        {
+            CFDictionarySetValue(attributes, FontFamilyNameAttribute, name);
+            var wanted = CTFontDescriptorCreateWithAttributes(attributes);
+            if (wanted == IntPtr.Zero) { FaceResolution.Missing(family); return null; }
+            try
+            {
+                // No mandatory-attribute set, and that is measured rather than assumed: the matcher
+                // answers null for a family the machine does not have (IBM Plex Sans here) and a
+                // descriptor for one it does, including when the canonical name differs from the one
+                // asked for ("JetBrainsMono NF" matches "JetBrainsMono Nerd Font").
+                var matched = CTFontDescriptorCreateMatchingFontDescriptor(wanted, IntPtr.Zero);
+                if (matched == IntPtr.Zero) { FaceResolution.Missing(family); return null; }
+                try
+                {
+                    return CTFontCreateWithFontDescriptor(matched, size, IntPtr.Zero);
+                }
+                finally
+                {
+                    CFRelease(matched);
+                }
+            }
+            finally
+            {
+                CFRelease(wanted);
+            }
+        }
+        finally
+        {
+            CFRelease(attributes);
+            CFRelease(name);
+        }
     }
 
     /// <summary>The framesetter + laid-out frame for a block (caller releases all three handles).</summary>
     private (IntPtr Framesetter, IntPtr Frame, IntPtr Path, IntPtr Attributed, IntPtr CfText, IntPtr Dict)
-        Layout(string content, float fontSize, FontWeight weight, float maxWidth, bool mono, bool italic)
+        Layout(string content, float fontSize, FontWeight weight, float maxWidth, bool mono, bool italic,
+            string? family)
     {
         var cfText = CFStringCreateWithCString(IntPtr.Zero, content.Length == 0 ? " " : content, Utf8);
         var dict = CFDictionaryCreateMutable(IntPtr.Zero, 1, KeyCallbacks, ValueCallbacks);
-        CFDictionarySetValue(dict, FontAttributeName, FontFor(fontSize, weight, mono, italic));
+        CFDictionarySetValue(dict, FontAttributeName, FontFor(fontSize, weight, mono, italic, family));
         var attributed = CFAttributedStringCreate(IntPtr.Zero, cfText, dict);
         var framesetter = CTFramesetterCreateWithAttributedString(attributed);
         var width = float.IsFinite(maxWidth) && maxWidth > 0 ? maxWidth : 100_000f;
@@ -179,7 +241,7 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     {
         var size = style.ScaledSize(typeScale);
         var lineHeight = style.ScaledLineHeight(typeScale);
-        var layout = Layout(content, size, style.Weight, maxWidth, style.Mono, style.Italic);
+        var layout = Layout(content, size, style.Weight, maxWidth, style.Mono, style.Italic, style.Family);
         try
         {
             var ctLines = CTFrameGetLines(layout.Frame);
@@ -210,7 +272,7 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
         if (content.Length == 0) return null;
         var size = style.ScaledSize(typeScale);
         var lineHeight = style.ScaledLineHeight(typeScale);
-        var layout = Layout(content, size, style.Weight, maxWidth, style.Mono, style.Italic);
+        var layout = Layout(content, size, style.Weight, maxWidth, style.Mono, style.Italic, style.Family);
         try
         {
             var ctLines = CTFrameGetLines(layout.Frame);
