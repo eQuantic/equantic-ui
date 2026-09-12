@@ -87,6 +87,30 @@ public readonly record struct TypeStyle(float Size, float LineHeight, FontWeight
     }
 
     /// <summary>
+    /// The seven-output <c>Deconstruct</c>, kept for the SAME reason and by the same rule as the
+    /// constructor above — and it is the half that is easy to forget, because nothing in the source
+    /// mentions it. A positional record SYNTHESISES one output per parameter, so adding
+    /// <see cref="Family"/> replaced the seven-output method rather than adding to it, and an
+    /// already-compiled consumer that writes <c>var (size, line, weight, tracking, scale, mono,
+    /// italic) = style;</c> binds to a signature that is no longer there.
+    /// <para>
+    /// One fix without the other is the half-fix twice over: the constructor covers construction,
+    /// this covers reading, and a consumer does both.
+    /// </para>
+    /// </summary>
+    public void Deconstruct(out float Size, out float LineHeight, out FontWeight Weight,
+        out float Tracking, out float MaxScale, out bool Mono, out bool Italic)
+    {
+        Size = this.Size;
+        LineHeight = this.LineHeight;
+        Weight = this.Weight;
+        Tracking = this.Tracking;
+        MaxScale = this.MaxScale;
+        Mono = this.Mono;
+        Italic = this.Italic;
+    }
+
+    /// <summary>
     /// The effective size under an OS Dynamic Type factor: <c>Size × min(factor, MaxScale)</c>, snapped
     /// to the atlas whitelist step (0.5dp) to bound glyph memory (spec §02 engine notes).
     /// </summary>
