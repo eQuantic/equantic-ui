@@ -89,7 +89,12 @@ public sealed class WindowsPhotonRunner : IPhotonRunner
         Console.WriteLine(contained.Count == 0
             ? $"[photon] {summary}"
             : $"[photon] {summary} — CONTAINED: {string.Join(", ", contained)}");
-        if (contained.Count > 0 && app.Options.StrictRender) Environment.ExitCode = 1;
+        // ASSIGNED, not merely set to 1: the exit code is process-global while the tally is per run,
+        // so a host that runs a failing strict app and then a healthy one would have carried the
+        // first verdict out of the process. Strict means THIS run's gate, so this run says both
+        // answers — and when strict is off the code is never touched, which is what lets an app set
+        // its own.
+        if (app.Options.StrictRender) Environment.ExitCode = contained.Count > 0 ? 1 : 0;
     }
 
     /// <summary>
