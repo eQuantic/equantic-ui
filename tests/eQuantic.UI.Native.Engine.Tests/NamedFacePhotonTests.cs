@@ -21,6 +21,10 @@ public class NamedFacePhotonTests
 {
     private static readonly TypeStyle Body = new(17, 22, FontWeight.Regular, 0, 1.4f);
 
+    /// <summary>The alias a design would write, and the name the font actually carries.</summary>
+    private const string NerdFontAlias = "JetBrainsMono NF";
+    private const string NerdFontCanonical = "JetBrainsMono Nerd Font";
+
     public NamedFacePhotonTests() => FaceResolution.Clear();
 
     [MacFact]
@@ -41,28 +45,42 @@ public class NamedFacePhotonTests
     }
 
     /// <summary>
-    /// The false-positive case that killed the first instrument. This machine has the Nerd Font cut,
-    /// whose canonical family name is not the one a font list reports, and a name comparison called
-    /// a correct resolution a miss.
+    /// The false-positive case that killed the first instrument: a name comparison called a correct
+    /// resolution a miss, because the family a font list reports is not the one the design asked for.
+    /// <para>
+    /// This is the one case in the file that needs a font nobody can assume. Every family macOS
+    /// ships answers to its own canonical name and to nothing else — measured, including the
+    /// PostScript names (<c>Menlo-Regular</c>, <c>HelveticaNeue</c>, <c>TimesNewRomanPSMT</c>), which
+    /// all fail to match under <c>kCTFontFamilyNameAttribute</c>. So the alias property has to come
+    /// from an installed cut that registers a second family name, and the fact skips with a reason
+    /// rather than going red for the wrong one.
+    /// </para>
     /// </summary>
-    [MacFact]
+    [MacFontFact(NerdFontCanonical)]
     public void AFaceUnderADifferentCanonicalName_IsStillFound()
     {
-        var installed = new CoreTextService();
-        installed.Measure("Handgloves", Body with { Family = "JetBrainsMono NF" }, 1f, float.PositiveInfinity, 1);
+        new CoreTextService().Measure("Handgloves", Body with { Family = NerdFontAlias },
+            1f, float.PositiveInfinity, 1);
 
         FaceResolution.Unresolved.Should().BeEmpty(
-            "\"JetBrainsMono NF\" resolves to \"JetBrainsMono Nerd Font\", which is the same font");
+            $"\"{NerdFontAlias}\" resolves to \"{NerdFontCanonical}\", which is the same font");
     }
 
-    [MacFact]
+    /// <summary>
+    /// That the face reaches the MEASURER and not only the report — the half a tally cannot see.
+    /// Menlo rather than the Nerd Font: this needs any monospaced family that is not the system's
+    /// own, and Menlo ships with macOS, so the case that proves the plumbing does not rest on a
+    /// developer's font folder.
+    /// </summary>
+    [MacFontFact("Menlo")]
     public void ANamedFace_ActuallyMeasuresDifferently()
     {
         var service = new CoreTextService();
         var system = service.Measure("Handgloves 0123", Body, 1f, float.PositiveInfinity, 1);
-        var named = service.Measure("Handgloves 0123", Body with { Family = "JetBrainsMono NF" },
+        var named = service.Measure("Handgloves 0123", Body with { Family = "Menlo" },
             1f, float.PositiveInfinity, 1);
 
+        FaceResolution.Unresolved.Should().BeEmpty("Menlo ships with macOS");
         // A monospaced face advances every glyph equally, so the same string is a different width.
         named.Width.Should().NotBe(system.Width, "the face reached the measurer, not only the report");
     }
