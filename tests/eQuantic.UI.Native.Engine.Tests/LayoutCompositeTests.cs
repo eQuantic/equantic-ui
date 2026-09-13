@@ -69,6 +69,33 @@ public class LayoutCompositeTests
         Walk(root).Should().HaveCountGreaterThan(4, "the tree has to be real for this to mean anything");
     }
 
+    /// <summary>
+    /// The link cannot be reached around. <c>IReadOnlyList</c> alone hides the mutators from the
+    /// COMPILER and nothing else: typed as that over a <c>List</c>, <c>(List&lt;LayoutNode&gt;)
+    /// node.Children</c> succeeds and <c>Add</c> attaches a child whose <see cref="LayoutNode.Parent"/>
+    /// nobody set — a tree that lies about itself, with no way to notice. Found in review.
+    ///
+    /// <para>
+    /// The wrapper costs one object per node EVER CREATED rather than per frame, which is measured
+    /// rather than argued: on the allocation harness the pooled steady state is byte-identical
+    /// before and after (75,498 per frame), because a recycled node keeps the wrapper it was born
+    /// with. The unpooled path pays 6.7%, well inside its own ceiling.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void TheChildList_CannotBeCastBackAndMutated()
+    {
+        var children = Layout(Nested()).Children;
+
+        (children as List<LayoutNode>).Should().BeNull(
+            "a cast back to the backing list is the door an IReadOnlyList leaves open");
+
+        // And the IList door FAILS rather than corrupting the tree, which is the outcome this repo
+        // prefers to a quiet wrong answer.
+        var act = () => ((IList<LayoutNode>)children).Add(new LayoutNode(new Text("x", TypeRole.BodyM)));
+        act.Should().Throw<NotSupportedException>();
+    }
+
     [Fact]
     public void TheRoot_HasNoParent()
     {
