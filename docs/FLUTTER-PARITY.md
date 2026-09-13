@@ -17,7 +17,11 @@ A DIFFERENT row is not a smaller version of Flutter's answer. Several of them ex
 has a constraint Flutter does not: **a component is written once and realized on a DOM and on a GPU
 display list**, so anything that needs one target's machinery cannot enter the vocabulary at all.
 
-Measured against the tree at the time of writing; every claim below was grepped, not recalled.
+Measured against the tree at the time of writing; every claim below was grepped, not recalled — and
+kept true by `FlutterParityPinTests`, which reads this file and probes all 58 rows. A SAME,
+DIFFERENT or PARTIAL row must be findable in the public surface; a GAP row must still be missing;
+and a row added without a probe fails the build. So the audit cannot rot, cannot gain unchecked
+prose, and cannot go on claiming an absence that has ended.
 
 ---
 
