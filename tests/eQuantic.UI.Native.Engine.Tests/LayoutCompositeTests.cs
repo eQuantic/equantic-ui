@@ -15,7 +15,7 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// <para>
 /// This is the tree Flutter makes bidirectional too: its <c>RenderObject</c> carries a
 /// <c>parent</c> while its <c>Widget</c> carries none. The asymmetry is deliberate on both sides —
-/// a widget is rebuilt constantly, so a back-reference on it means nothing, while the laid-out tree
+/// Flutter's `Widget` is rebuilt constantly, so a back-reference on it means nothing, while the
 /// is walked top-down and the parent is already in hand. <see cref="VisualNode"/> therefore has no
 /// Parent and should not grow one.
 /// </para>

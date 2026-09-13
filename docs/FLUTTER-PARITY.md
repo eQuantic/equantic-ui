@@ -29,7 +29,7 @@ prose, and cannot go on claiming an absence that has ended.
 
 | Flutter | Here | Verdict |
 |---|---|---|
-| `Widget` — immutable configuration | `VisualNode` | **SAME**, including the part people find surprising: it has **no `Parent`**, deliberately. It is rebuilt constantly, so a back-reference on it would mean nothing. |
+| `Widget` — immutable configuration | `VisualNode` (a COMPONENT here; "widget" is Flutter's word and stays in this column) | **SAME**, including the part people find surprising: it has **no `Parent`**, deliberately. It is rebuilt constantly, so a back-reference on it would mean nothing. |
 | `StatelessWidget` | `StatelessComponent` | **SAME** |
 | `StatefulWidget` + `State` | `StatefulComponent` with `SetState` | **SAME** in shape. One class rather than two: Flutter splits them because a `Widget` must be immutable and `State` must persist, and our reconciler keeps the retained instance instead. |
 | `initState` | `OnMount` | **SAME**, with a narrower promise. It does **not** mean "the pixels exist" — Photon has no DOM to read geometry from, so a hook promising that could not be write-once. |
@@ -38,7 +38,7 @@ prose, and cannot go on claiming an absence that has ended.
 | `didChangeDependencies` | — | **GAP**, and it follows from the Element row below: with no dependency graph there is nothing to be notified about. |
 | `InheritedWidget` / `InheritedModel` | `GetService<T>()` over a `CapabilityScope` | **DIFFERENT.** Ours is AMBIENT, not positional: resolution walks a scope, not the tree. The trade is real and worth stating — no per-position override (two subtrees cannot see different values of the same thing) and no dependency-driven rebuild (changing a value does not invalidate the components that read it). What it buys is that a component never has to be handed a context to read the theme. |
 | `Element` tree, `BuildContext` | — | **GAP, and the structural one.** There is no persistent instance tree, which is why `ComponentContext` is a bag of values (`Theme`, `TypeScale`, `Route`, `Density`) rather than a position. `Theme.of(context)` works in Flutter because the context IS the element and the lookup walks UP. Ours is handed the theme because there is nothing to walk. Everything in the row above, and the two rows below it, traces here. |
-| `RenderObject` with `parent` | `LayoutNode` with `Parent` | **SAME.** Flutter makes this tree bidirectional and the widget tree not; so do we, for the same reason. |
+| `RenderObject` with `parent` | `LayoutNode` with `Parent` | **SAME.** Flutter makes this tree bidirectional and its configuration tree not; so do we, for the same reason. |
 | `parentData` | — | **DIFFERENT, and needs nothing.** It exists to carry what a parent assigned — an offset, a flex factor — and this engine resolves all of that into `Bounds` in the same pass. A second slot would hold a copy. |
 | `RenderSliver`, viewport virtualization | `ListView` (builds only the visible window plus overscan) | **PARTIAL.** The capability is there; the protocol is not. v1 fence, stated in the code: vertical only, fixed `ItemExtent`. There is no general sliver contract other nodes can implement. |
 
@@ -78,7 +78,7 @@ prose, and cannot go on claiming an absence that has ended.
 | `AnimationController` + `TickerProvider` | `IFrameTicker`, `LoopMotion`, `Presence`, `TransitionStore` | **DIFFERENT, and this is the deepest divergence.** Flutter's animation is IMPERATIVE — you hold a controller, drive it, dispose it. Ours is DECLARATIVE: a style diff plus a motion token, and the host interpolates. A component says what it looks like in each state, never how to get there. That is why there is no controller to leak and no `dispose` to forget. |
 | `Tween`, `ColorTween`, `Matrix4Tween` | — (the engine interpolates) | **DIFFERENT** — the consequence of the row above. Nothing holds a tween because nothing drives one. |
 | `Curves` | `Curve` enum + `Motion.Fast/Base/Slow` | **SAME**, on a fixed ladder: 100/200/300 and nothing between the rungs. |
-| `AnimatedContainer` and the implicit family | `TransitionSpec?` — a `Transition` on the style, on `Text` and on the pressed/hover diffs | **SAME idea, smaller surface.** A property on the things that change rather than a parallel widget per animatable property. |
+| `AnimatedContainer` and the implicit family | `TransitionSpec?` — a `Transition` on the style, on `Text` and on the pressed/hover diffs | **SAME idea, smaller surface.** A property on the things that change rather than a parallel type per animatable property. |
 | `AnimatedBuilder` / `AnimatedWidget` | — | **GAP** (imperative-only concepts) |
 | `Hero` / shared element | — | **GAP** |
 | `SpringSimulation`, `FrictionSimulation` | `SpringSpec` (stiffness, damping, mass) | **PARTIAL** — the spring is specified and used by gesture release; the other simulations are absent. |

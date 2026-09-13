@@ -204,7 +204,7 @@ public sealed class LayoutNode
     /// <para>
     /// This is the RENDER tree, which is the tree Flutter makes bidirectional too — its
     /// <c>RenderObject</c> carries a <c>parent</c> while its <c>Widget</c> carries none, and the
-    /// asymmetry is the point: a widget is rebuilt constantly and a back-reference on it means
+    /// asymmetry is the point: Flutter's `Widget` is rebuilt constantly and a back-reference on it means
     /// nothing, while the laid-out tree is walked top-down and the parent is literally in hand.
     /// <see cref="VisualNode"/> has no Parent for exactly that reason and should not grow one.
     /// </para>
