@@ -933,7 +933,6 @@ function lowerTextEntry(node: TextEntryNode, context: LoweringContext): HtmlNode
     background: 'none',
     border: 'none',
     color: tokenValue(context.textPrimary),
-    'font-family': 'inherit',
     ...(multiline ? { resize: 'vertical' } : {}),
   });
   prependClass(input, `eq-entry eq-type-${node.role.toLowerCase()}`);
@@ -2307,6 +2306,15 @@ const SANS_STACK = 'var(--eq-font-family, system-ui, -apple-system, sans-serif)'
  * Quoted always: the common case has a space in it ("IBM Plex Sans"), and an unquoted family is a
  * parse error that takes the whole declaration with it.
  */
+/**
+ * Mono as the NODE said it, which is the only half the client can know: a mono ROLE rides its
+ * `.eq-type-*` class, because the lowering's component context is opaque and cannot be asked for
+ * the theme's type scale. C# twin: `WebRealizer.LowerText`.
+ */
+function nodeMono(text: TextNode): boolean {
+  return text.mono === true || text.styleOverride?.mono === true;
+}
+
 function faceStack(family: string, mono: boolean): string {
   // QUOTES, does not sanitise — `isWellFormedFace` is what makes quoting sufficient, and the C#
   // twin carries the identical note.
@@ -2324,7 +2332,11 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
     // plainContent, not content: a paragraph built from RUNS has an empty content, so reading the
     // field instead of what the node says lost the break entirely (C# twin's PlainContent).
     'white-space':
-      text.mono === true ? 'pre-wrap' : plainContent(text).includes('\n') ? 'pre-line' : undefined,
+      text.mono === true || text.styleOverride?.mono === true
+        ? 'pre-wrap'
+        : plainContent(text).includes('\n')
+          ? 'pre-line'
+          : undefined,
     // The face the node or its ROLE named, in front of the stack. Without this the server rendered
     // the brand and the client re-rendered the system font on the first state change — and measured
     // it differently too, which the comment above MONO_STACK already calls a caret beside the
@@ -2333,8 +2345,8 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
     // already carries, so both sides agree by emitting nothing for it. Byte-identical to the C#
     // twin, because the atomic class name is a hash of this string.
     'font-family': isWellFormedFace(text.styleOverride?.family)
-      ? faceStack(text.styleOverride.family as string, text.mono === true)
-      : text.mono === true
+      ? faceStack(text.styleOverride.family as string, nodeMono(text))
+      : nodeMono(text)
         ? MONO_STACK
         : undefined,
     'font-variant-numeric': text.tabular === true ? 'tabular-nums' : undefined,

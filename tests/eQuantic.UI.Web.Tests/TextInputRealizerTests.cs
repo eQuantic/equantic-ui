@@ -55,7 +55,11 @@ public class TextInputRealizerTests
         input.Attributes["placeholder"].Should().Be("you@company.com");
         input.Attributes["style"].Should().Be(
             $"width: 100%; padding: 0; background: none; border: none; " +
-            $"color: {TokenCss.Value(Theme.TextPrimary)}; font-family: inherit; " +
+            // No `font-family`: the UA's own font for a form control is overridden by
+            // `.eq-entry.eq-type-*` in the sheet, so it never competes with the face a theme cut
+            // the ROLE in. It used to be inline, and inline won — a themed brand reached every
+            // Text and no field.
+            $"color: {TokenCss.Value(Theme.TextPrimary)}; " +
             // The field declares itself a hit target: `pointer-events: none` inherits from any
             // transparent row above it, and a field that cannot be clicked cannot be typed into.
             "pointer-events: auto");

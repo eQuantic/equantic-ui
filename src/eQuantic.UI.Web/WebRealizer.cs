@@ -1243,7 +1243,6 @@ public static class WebRealizer
                 Background = "none",
                 Border = "none",
                 Color = TokenCss.Value(context.Theme.TextPrimary),
-                FontFamily = "inherit",
                 Resize = multiline ? "vertical" : null,
             },
             RawAttributes = multiline
@@ -1966,7 +1965,10 @@ public static class WebRealizer
     {
         // The face can come from the NODE (this text is code) or from the STYLE (this ROLE is
         // code) — the native side merges the two into the style, and so does this.
-        var mono = text.Mono || (text.StyleOverride?.Mono ?? context.Theme.Type(text.Role).Mono);
+        // Only what the NODE said, like the face beside it: a mono ROLE rides its `.eq-type-*`
+        // class (TokenCss), because the client's lowering cannot read the theme's type scale and
+        // anything SSR emits inline from it is dropped on the first client re-render.
+        var mono = text.Mono || text.StyleOverride?.Mono == true;
         // The slant reads the same two places for the same reason: a role may BE italic (a
         // theme's caption), and a node may slant a paragraph of an upright role.
         var italic = text.Italic || (text.StyleOverride?.Italic ?? context.Theme.Type(text.Role).Italic);

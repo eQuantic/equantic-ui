@@ -330,9 +330,25 @@ public static class PhotonCssGenerator
             // client's lowering cannot read the theme's type scale — its component context is
             // opaque there — so a role face emitted inline by SSR would vanish on the first
             // client re-render. In the sheet both sides get it by not emitting anything.
-            if (FaceName.Usable(style.Family) is { } face)
-                css.AppendLine($"  font-family: {TokenCss.Face(face, style.Mono)};");
+            //
+            // A mono ROLE is the same question with no family to name: it still has to reach the
+            // element, and the stack is the answer. Its white-space belongs here too — a role that
+            // is CODE keeps its indentation wherever it is used, and a rule the client cannot see
+            // is a rule SSR must not emit inline either.
+            var roleFace = FaceName.Usable(style.Family);
+            if (roleFace is { } face) css.AppendLine($"  font-family: {TokenCss.Face(face, style.Mono)};");
+            else if (style.Mono) css.AppendLine($"  font-family: {TokenCss.MonoStack};");
+            if (style.Mono) css.AppendLine("  white-space: pre-wrap;");
             css.AppendLine("}");
+
+            // A form control does not inherit the document's face: the UA gives `input` and
+            // `textarea` a font of their own, so something must say otherwise. It used to be an
+            // inline `font-family: inherit` on every entry, which also beat the role's own family
+            // — a themed brand worked for Text and never for a field. Said HERE instead, and only
+            // for the roles whose class carries no family of its own, so the two never compete.
+            if (roleFace is null && !style.Mono)
+                css.AppendLine($".eq-entry.eq-type-{role.ToString().ToLowerInvariant()} "
+                    + "{ font-family: inherit; }");
         }
 
         // Elevation (§05) — one class per level.

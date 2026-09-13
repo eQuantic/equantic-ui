@@ -62,8 +62,11 @@ describe('text entry primitive (C# cross-pin)', () => {
     expect(input.attributes['value']).toBe('ana@equantic');
     expect(input.attributes['placeholder']).toBe('you@company.com');
     expect(effectiveStyle(input)).toBe(
+      // No `font-family` here on purpose: the UA's own font for a form control is overridden by
+      // `.eq-entry.eq-type-*` in the sheet, so it never competes with the face a theme cut the
+      // ROLE in. It used to be inline, and inline won.
       `background: none; border: none; color: ${tokenValue(photonTheme.textPrimary)}; ` +
-        `font-family: inherit; padding: 0; pointer-events: auto; width: 100%`,
+        `padding: 0; pointer-events: auto; width: 100%`,
     );
 
     // The twin is present (and empty) even without a description, so a later error swap

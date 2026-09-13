@@ -1973,7 +1973,7 @@
                       "tag": "input",
                       "attrs": {
                         "aria-label": "Search\u2026",
-                        "class": "eq-1esejbi eq-1etnzxl eq-1uykvw eq-7gvrt4 eq-akjizx eq-byqqyj eq-entry eq-g7fowl eq-type-bodym",
+                        "class": "eq-1etnzxl eq-1uykvw eq-7gvrt4 eq-akjizx eq-byqqyj eq-entry eq-g7fowl eq-type-bodym",
                         "placeholder": "Search\u2026",
                         "type": "text",
                         "value": "term"
@@ -2113,7 +2113,7 @@
                               "tag": "input",
                               "attrs": {
                                 "aria-label": "Label",
-                                "class": "eq-1esejbi eq-1etnzxl eq-1uykvw eq-7gvrt4 eq-akjizx eq-byqqyj eq-entry eq-g7fowl eq-type-bodyl",
+                                "class": "eq-1etnzxl eq-1uykvw eq-7gvrt4 eq-akjizx eq-byqqyj eq-entry eq-g7fowl eq-type-bodyl",
                                 "type": "text",
                                 "value": "value"
                               },

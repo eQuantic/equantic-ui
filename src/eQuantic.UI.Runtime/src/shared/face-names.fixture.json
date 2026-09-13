@@ -43,6 +43,21 @@
       "why": "the punctuation real families use"
     },
     {
+      "family": "𐐀sans",
+      "wellFormed": true,
+      "why": "a SUPPLEMENTARY-plane letter: char.IsLetterOrDigit reads one UTF-16 code unit and answers false for each half of the surrogate pair, while the twin's /u regex accepts it"
+    },
+    {
+      "family": "𠀀黑體",
+      "wellFormed": true,
+      "why": "and a CJK ideograph past the BMP"
+    },
+    {
+      "family": "😀 Sans",
+      "wellFormed": false,
+      "why": "an emoji is not a letter on either side"
+    },
+    {
       "family": "Roboto+Mono",
       "wellFormed": true,
       "why": "plus appears in real family names"

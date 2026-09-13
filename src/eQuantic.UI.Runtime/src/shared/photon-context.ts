@@ -105,8 +105,10 @@ export function photonMonoAdvance(style: TypeStyleValue, typeScale = 1): number 
  * list of its own, two entries longer than any of the three the CSS side actually declares.
  */
 const SANS_FALLBACK = 'system-ui, -apple-system, sans-serif';
-const MONO_FALLBACK =
-  'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace';
+// Character for character the fallback inside the CSS `var(...)`, quotes included. `--eq-font-mono`
+// is a hook an APP sets and the base stylesheet declares nothing, so this literal is what the page
+// normally paints with — a list of this measurer's own would be the common case, not the edge one.
+const MONO_FALLBACK = "ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace";
 
 /**
  * The faces as the page will actually DRAW them. The lowering emits `var(--eq-font-family, …)` and
