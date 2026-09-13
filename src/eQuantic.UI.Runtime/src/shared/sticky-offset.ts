@@ -86,6 +86,11 @@ function publishMeasured(measured: number): boolean {
 let coldLoadHandled = false;
 /** Whether the one deferred re-check is already booked, so a burst of passes books it once. */
 let recheckBooked = false;
+/**
+ * Which document the pending work belongs to. Bumped by the test seam, and read by every deferred
+ * callback, so work booked before a reset can never land after one.
+ */
+let generation = 0;
 
 /**
  * A COLD load with a fragment lands the target UNDER the chrome, and this is the one place that can
@@ -120,9 +125,17 @@ let recheckBooked = false;
  * </para>
  */
 function realignColdLoad(offset: number): void {
-  if (coldLoadHandled || offset <= 0) return;
-  if (typeof location === 'undefined') return;
-  const target = bookmarkTarget(location.hash, document);
+  if (coldLoadHandled) return;
+  // Only a URL that ASKS for an element has anything to correct, and this is what keeps every other
+  // page from booking a `load` listener it will never use.
+  if (typeof location === 'undefined' || location.hash.length <= 1) return;
+
+  // A zero offset is a reason to come BACK, not a reason to stop. Chrome that is not there yet
+  // measures zero — an image-backed header before its image, a bar whose webfont has not arrived —
+  // and it can grow without any further render pass to notice. Retiring here would leave exactly
+  // the page this correction exists for. Found in review; the first version returned on `offset
+  // <= 0` before it had even looked for a target.
+  const target = offset > 0 ? bookmarkTarget(location.hash, document) : null;
   if (!target) {
     bookRecheck();
     return;
@@ -144,7 +157,13 @@ function realignColdLoad(offset: number): void {
 function bookRecheck(): void {
   if (recheckBooked || typeof window === 'undefined') return;
   recheckBooked = true;
+  // The DOCUMENT this work belongs to. A deferred callback outlives the reset that a spec performs
+  // between cases, so without this a frame booked by one document runs against the next one's DOM
+  // and either suppresses its correction or performs one nobody asked for — a suite that lies about
+  // itself, which is worse than a suite that fails. Found in review.
+  const booked = generation;
   const recheck = (): void => {
+    if (booked !== generation) return;
     if (coldLoadHandled) return;
     // MEASURED AGAIN, never the number that booked this. The whole point of deferring is that the
     // layout was not final, and the chrome is part of that layout: a bar that wraps at a narrow
@@ -169,4 +188,5 @@ function bookRecheck(): void {
 export function resetColdLoadRealignmentForTests(): void {
   coldLoadHandled = false;
   recheckBooked = false;
+  generation += 1;
 }

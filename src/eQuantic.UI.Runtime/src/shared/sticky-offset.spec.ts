@@ -382,6 +382,88 @@ describe('the first measurement corrects a cold load that landed under the chrom
     bar.remove();
   });
 
+  /**
+   * Chrome that is not THERE yet measures zero, and zero is a reason to come back rather than a
+   * reason to stop.
+   *
+   * <para>
+   * An image-backed header before its image, or a bar whose webfont has not arrived, is zero-high at
+   * first paint and grows with no further render pass to notice. The first version of this fix
+   * returned on `offset <= 0` before it had even looked for a target, so the page this correction
+   * exists for was the one page it retired on. Found in review.
+   * </para>
+   */
+  it('comes back for chrome that was not there yet', () => {
+    stillLoading();
+    const bar = chrome(0);
+    const target = bookmark('rights', 0);
+    window.history.replaceState(null, '', '/probe#rights');
+
+    publishAnchorOffset();
+    expect(target.seen()).toBe(0);
+
+    bar.growTo(64); // the header's image finally decodes
+    window.dispatchEvent(new Event('load'));
+
+    expect(target.seen()).toBe(1);
+    bar.remove();
+  });
+
+  /** A page that never asks for an element books nothing — no listener, no frame, no work. */
+  it('books nothing for a URL with no fragment', () => {
+    stillLoading();
+    const bar = chrome(64);
+    const target = bookmark('rights', 0);
+    window.history.replaceState(null, '', '/probe');
+
+    publishAnchorOffset();
+    window.dispatchEvent(new Event('load'));
+
+    expect(target.seen()).toBe(0);
+    bar.remove();
+  });
+
+  /**
+   * Work booked by one document may never land on the next one.
+   *
+   * <para>
+   * A deferred callback outlives the reset a spec performs between cases, so without a generation
+   * the frame booked here would run against the following case's DOM and either suppress its
+   * correction or perform one nobody asked for. That is a suite that lies about itself, which is
+   * worse than one that fails — and this file's whole value is that it can be believed. Found in
+   * review, against these very tests.
+   * </para>
+   */
+  it('lets no deferred work cross into the next document', () => {
+    stillLoading();
+    const stale = chrome(64);
+    const staleTarget = bookmark('rights', 3992);
+    window.history.replaceState(null, '', '/probe#rights');
+    publishAnchorOffset(); // books a re-check that belongs to THIS document
+    stale.remove();
+    document.body.innerHTML = '';
+
+    // A new document begins, exactly as `beforeEach` does it.
+    resetColdLoadRealignmentForTests();
+    document.documentElement.style.removeProperty('--eq-anchor-offset');
+
+    // …and the PREVIOUS document's deferred work lands now, before this one has measured anything.
+    // Ungenerationed it retires the flag here, and the correction below then finds its one chance
+    // already spent — the suppression this guard exists for, and the reason the first version of
+    // this case proved nothing: with both documents sharing a hash, the stale callback happened to
+    // do the right thing by accident and the test passed either way.
+    window.dispatchEvent(new Event('load'));
+
+    const bar = chrome(64);
+    const target = bookmark('rights', 0); // squarely in the band: this one MUST be corrected
+    window.history.replaceState(null, '', '/probe#rights');
+    publishAnchorOffset();
+
+    expect(staleTarget.seen()).toBe(0);
+    expect(target.seen()).toBe(1);
+    bar.remove();
+  });
+
   it('corrects once, so a later pass never yanks the page back', () => {
     const bar = chrome(64);
     const target = bookmark('rights', 0);
