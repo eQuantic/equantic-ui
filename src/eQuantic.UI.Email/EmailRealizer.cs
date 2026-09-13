@@ -188,7 +188,7 @@ public static class EmailRealizer
             html.Append("font-style: italic; ");
         if (text.Tabular)
             html.Append("font-variant-numeric: tabular-nums; ");
-        html.Append($"font-family: {Family(text.Mono || style.Mono)}; ")
+        html.Append($"font-family: {Family(style.Family, text.Mono || style.Mono)}; ")
             .Append($"color: {ink}\">");
 
         if (text.Spans is { Count: > 0 } spans)
@@ -216,7 +216,9 @@ public static class EmailRealizer
         if (run.Color is { } color) overrides.Append($"color: {Literal(color, theme)}; ");
         if (run.Weight is { } weight) overrides.Append($"font-weight: {(int)weight}; ");
         if (run.Italic) overrides.Append("font-style: italic; ");
-        if (run.Mono) overrides.Append($"font-family: {Family(mono: true)}; ");
+        // No named family on a mono RUN, like both other realizers (WebRealizer, lowering.ts):
+        // the paragraph's face is the proportional one and a run that is CODE wants the code stack.
+        if (run.Mono) overrides.Append($"font-family: {Family(null, mono: true)}; ");
         // The run-level escape hatch — inline code at 13.5 inside a 16 paragraph — carries its own
         // size and line, exactly as Text.StyleOverride does at paragraph level.
         if (run.StyleOverride is { } runStyle)
@@ -398,9 +400,32 @@ public static class EmailRealizer
     internal static string Px(float value) =>
         value.ToString("0.##", CultureInfo.InvariantCulture) + "px";
 
-    private static string Family(bool mono) => mono
-        ? "ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', Menlo, Consolas, monospace"
-        : "-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+    /// <summary>
+    /// The face a theme named, quoted in front of the stack this target falls back to.
+    ///
+    /// <para>
+    /// Email has stacks of ITS OWN rather than the web's, and deliberately: there is no
+    /// <c>var()</c> to read here — custom properties are unsupported across most clients — so the
+    /// fallbacks are spelled out and chosen for what mail clients actually have. The NAMED face
+    /// goes in front for the same reason it does on the web: a recipient whose machine has the
+    /// brand renders the design, and everyone else lands on a stack that was chosen rather than
+    /// whatever the client felt like. No registration is possible here and none is implied.
+    /// </para>
+    ///
+    /// <para>
+    /// The effective style is already merged upstream (<c>text.StyleOverride ?? theme.Type(role)</c>),
+    /// so unlike the web there is no role-versus-node split to keep: email renders once and is never
+    /// hydrated, which is exactly why the role's face can be written inline here and must not be
+    /// there.
+    /// </para>
+    /// </summary>
+    private static string Family(string? family, bool mono)
+    {
+        var stack = mono
+            ? "ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', Menlo, Consolas, monospace"
+            : "-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+        return FaceName.Usable(family) is { } face ? $"\"{face}\", {stack}" : stack;
+    }
 
     /// <summary>Four corners in CSS order, one value when uniform.</summary>
     private static string Radius(CornerRadii radius) =>

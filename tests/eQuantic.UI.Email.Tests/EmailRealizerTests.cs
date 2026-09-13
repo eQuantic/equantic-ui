@@ -614,4 +614,55 @@ public class EmailRendererThirdWaveTests
         // The same name the HTML carries as aria-label — the two alternatives must not drift.
         message.PlainText.Should().Contain("Open the dashboard: https://example.com/dash");
     }
+
+    /// <summary>
+    /// Email is the FOURTH realizer, and it had its own font stacks — so a theme that brands its
+    /// type reached web and Photon and silently fell back to the system face here. A design handoff
+    /// draws every metric against a specific family, and an email is the one surface a customer
+    /// keeps.
+    /// </summary>
+    [Fact]
+    public void ANamedFace_ReachesTheMailToo()
+    {
+        var theme = new FacedTheme(PhotonTheme.Instance, "IBM Plex Sans");
+        var html = EmailRealizer.Lower(new Text("Order confirmed", TypeRole.BodyL), theme);
+
+        html.Should().Contain("font-family: \"IBM Plex Sans\", -apple-system",
+            "the brand goes in front of the stack this target falls back to");
+    }
+
+    /// <summary>Same rule as every other emitter: a name no emitter will accept is not embedded.
+    /// Email has no `var()` and no class to hide behind, so it would land straight in the markup.</summary>
+    [Fact]
+    public void AFamilyThatWouldCloseItsOwnTag_NeverReachesTheMail()
+    {
+        var theme = new FacedTheme(PhotonTheme.Instance, "</style><script>alert(1)</script>");
+        var html = EmailRealizer.Lower(new Text("Order confirmed", TypeRole.BodyL), theme);
+
+        html.Should().NotContain("<script>");
+        html.Should().Contain("font-family: -apple-system", "it falls back, it does not break");
+    }
+
+    /// <summary>The theme under test, with one face named — everything else is Photon's.</summary>
+    private sealed class FacedTheme(IAppTheme inner, string family) : IAppTheme
+    {
+        public ColorToken Background => inner.Background;
+        public ColorToken Surface => inner.Surface;
+        public ColorToken SurfaceSubtle => inner.SurfaceSubtle;
+        public ColorToken SurfaceHighlight => inner.SurfaceHighlight;
+        public ColorToken Border => inner.Border;
+        public ColorToken BorderStrong => inner.BorderStrong;
+        public ColorToken TextPrimary => inner.TextPrimary;
+        public ColorToken TextSecondary => inner.TextSecondary;
+        public ColorToken TextMuted => inner.TextMuted;
+        public ColorToken TextInverse => inner.TextInverse;
+        public ColorToken FocusRing => inner.FocusRing;
+        public ColorToken LinkColor => inner.LinkColor;
+        public ColorToken Scrim => inner.Scrim;
+        public float DisabledOpacity => inner.DisabledOpacity;
+        public VariantColors Colors(Variant variant) => inner.Colors(variant);
+        public TypeStyle Type(TypeRole role) => inner.Type(role) with { Family = family };
+        public ShadowSpec Elevation(int level) => inner.Elevation(level);
+        public float Shape(ShapeScale scale) => inner.Shape(scale);
+    }
 }
