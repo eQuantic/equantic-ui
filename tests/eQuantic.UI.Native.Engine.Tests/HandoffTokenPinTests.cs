@@ -80,32 +80,108 @@ public class HandoffTokenPinTests
         : e.GetSingle();
 
     private readonly List<string> _differed = [];
-    private int _compared;
+    private readonly HashSet<string> _consumed = [];
 
     private void Colour(string name, ColorToken token, JsonElement pair)
     {
         foreach (var (mode, colour) in new[] { ("light", token.Light), ("dark", token.Dark) })
         {
             if (!pair.TryGetProperty(mode, out var want)) continue;
-            _compared++;
+            _consumed.Add($"{name}.{mode}");
             if (!Same(colour, want.GetString()!))
                 _differed.Add($"{name}.{mode}: handoff {want.GetString()} · sdk "
                     + $"rgba({colour.R},{colour.G},{colour.B},{colour.A})");
         }
     }
 
+    /// <summary>
+    /// An opacity, in the unit each side holds it in: a BYTE here, a decimal there. Compared as
+    /// bytes with the same one-step tolerance colours use — an alpha of 26 IS 0.1, and asking for
+    /// four decimal places of agreement between the two would report a difference that is not one.
+    /// </summary>
+    private void Alpha(string name, byte sdk, JsonElement want)
+    {
+        _consumed.Add(name);
+        var expected = (int)Math.Round(Number(want) * 255);
+        if (Math.Abs(sdk - expected) > 1)
+            _differed.Add($"{name}: handoff {Number(want)} ({expected}/255) · sdk {sdk}/255");
+    }
+
     private void Value(string name, float sdk, JsonElement want)
     {
-        _compared++;
+        _consumed.Add(name);
         var expected = Number(want);
         if (Math.Abs(expected - sdk) > 0.0001f)
             _differed.Add($"{name}: handoff {expected} · sdk {sdk}");
     }
 
-    private void Settle(int atLeast)
+    /// <summary>
+    /// Keys that carry PROSE or a cross-reference rather than a value the SDK can be asked for —
+    /// the only way a handoff number is allowed to go uncompared, and it has to be spelled out.
+    /// </summary>
+    private static readonly HashSet<string> Prose =
+    [
+        "note", "api", "rules", "derivesFrom", "addedBy", "mechanism", "derivation", "sdkStatus",
+        "enum", "source", "status", "use", "curve", "type", "constant", "durationRung", "notes",
+        "compactValuesSource", "openQuestion", "unit", "atlasWhitelist", "bundled", "license",
+        "features", "alphaNote", "colorLight", "colorDark", "perCorner", "exitFor", "springRequest",
+        "verifiedBy", "name", "version", "layer", "namespace", "colorApi", "modeFree", "$schema",
+        "contrast", "contrastOnSurface", "contrastOnBackground", "level", "ios", "android",
+        "mobile", "web", "values", "gutter", "shapeScale",
+    ];
+
+    /// <summary>
+    /// Every leaf under <paramref name="element"/> that IS a value: a number, or a light/dark pair.
+    /// Walking the schema is what turns this suite from a sample into a comparison — a
+    /// <c>TryGetProperty</c> that finds nothing used to skip in silence, so removing a field from
+    /// the handoff, or forgetting a column, left the pin green.
+    /// </summary>
+    private static IEnumerable<string> Leaves(JsonElement element, string path)
     {
-        _compared.Should().BeGreaterThanOrEqualTo(atLeast,
-            "a pin that compared nothing passes for the wrong reason — this asserts it did the work");
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.Number:
+                yield return path;
+                break;
+
+            case JsonValueKind.Object when element.TryGetProperty("light", out var light)
+                && light.ValueKind == JsonValueKind.String:
+                yield return $"{path}.light";
+                if (element.TryGetProperty("dark", out _)) yield return $"{path}.dark";
+                break;
+
+            case JsonValueKind.Object:
+                foreach (var property in element.EnumerateObject())
+                {
+                    if (Prose.Contains(property.Name)) continue;
+                    foreach (var leaf in Leaves(property.Value, $"{path}.{property.Name}"))
+                        yield return leaf;
+                }
+                break;
+
+            case JsonValueKind.Array:
+                var index = 0;
+                foreach (var item in element.EnumerateArray())
+                    foreach (var leaf in Leaves(item, $"{path}[{index++}]"))
+                        yield return leaf;
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Two assertions, and the FIRST is the one that makes this a pin rather than a sample: every
+    /// value the handoff publishes under this section was actually compared. A lower bound would
+    /// pass a section that quietly stopped reading half its columns.
+    /// </summary>
+    private void Settle(JsonElement section, string path)
+    {
+        var uncompared = Leaves(section, path).Where(leaf => !_consumed.Contains(leaf)).ToArray();
+
+        uncompared.Should().BeEmpty(
+            "the handoff publishes these and nothing asked the SDK about them — compare them, or "
+            + $"name the key as prose:{Environment.NewLine}  "
+            + string.Join(Environment.NewLine + "  ", uncompared) + Environment.NewLine);
+
         // The whole list, not "at least one item". A pin that names one divergence at a time turns a
         // ten-minute reconciliation into ten runs, and the point of comparing a machine-readable
         // export is that it can say everything it knows in one go.
@@ -127,7 +203,7 @@ public class HandoffTokenPinTests
             ("border", Theme.Border), ("borderStrong", Theme.BorderStrong) })
             Colour($"surface.{name}", token, surface.GetProperty(name));
 
-        Settle(12);
+        Settle(surface, "surface");
     }
 
     [Fact]
@@ -139,7 +215,7 @@ public class HandoffTokenPinTests
             ("muted", Theme.TextMuted), ("inverse", Theme.TextInverse) })
             Colour($"text.{name}", token, text.GetProperty(name));
 
-        Settle(8);
+        Settle(text, "text");
     }
 
     [Fact]
@@ -150,7 +226,7 @@ public class HandoffTokenPinTests
             ("focusRing", Theme.FocusRing), ("linkColor", Theme.LinkColor), ("scrim", Theme.Scrim) })
             Colour($"utility.{name}", token, utility.GetProperty(name));
 
-        Settle(6);
+        Settle(utility, "utility");
     }
 
     /// <summary>
@@ -175,7 +251,7 @@ public class HandoffTokenPinTests
                     Colour($"variant.{name}.{slot}", token, pair);
         }
 
-        Settle(40);
+        Settle(variants, "variant");
     }
 
     // ---- scales ----------------------------------------------------------------------------------
@@ -192,7 +268,7 @@ public class HandoffTokenPinTests
             if (space.TryGetProperty(name, out var want) && want.ValueKind != JsonValueKind.String)
                 Value($"space.{name}", value, want);
 
-        Settle(8);
+        Settle(space, "space");
     }
 
     [Fact]
@@ -213,7 +289,7 @@ public class HandoffTokenPinTests
                 Value($"shapeScale.{name}", Theme.Shape(scale), want);
         }
 
-        Settle(10);
+        Settle(Handoff.GetProperty("radius"), "radius");
     }
 
     [Fact]
@@ -234,7 +310,7 @@ public class HandoffTokenPinTests
             Value($"role.{name}.maxScale", style.MaxScale, want.GetProperty("maxScale"));
         }
 
-        Settle(50);
+        Settle(roles, "role");
     }
 
     [Fact]
@@ -251,7 +327,7 @@ public class HandoffTokenPinTests
             Handoff.GetProperty("touch").GetProperty("pressCancelSlop"));
         Value("disabledOpacity", Theme.DisabledOpacity, Handoff.GetProperty("disabledOpacity"));
 
-        Settle(7);
+        Settle(icon, "icon");
     }
 
     [Fact]
@@ -265,20 +341,46 @@ public class HandoffTokenPinTests
             Value($"elevation[{level}].offsetY", spec.OffsetY, want.GetProperty("offsetY"));
             Value($"elevation[{level}].blur", spec.Blur, want.GetProperty("blur"));
             Value($"elevation[{level}].spread", spec.Spread, want.GetProperty("spread"));
+            // The ALPHAS, which the schema walk caught the moment it replaced a lower bound: the
+            // shadow colour is one token whose two legs carry the light and dark opacity, and a
+            // drift in either is a different shadow on one mode only.
+            Alpha($"elevation[{level}].alphaLight", spec.Color.Light.A, want.GetProperty("alphaLight"));
+            Alpha($"elevation[{level}].alphaDark", spec.Color.Dark.A, want.GetProperty("alphaDark"));
         }
 
-        Settle(18);
+        Settle(levels, "elevation");
     }
 
     [Fact]
     public void Motion()
     {
         var duration = Handoff.GetProperty("motion").GetProperty("duration");
-        Value("motion.fast", Primitives.Motion.FastMs, duration.GetProperty("fast"));
-        Value("motion.base", Primitives.Motion.BaseMs, duration.GetProperty("base"));
-        Value("motion.slow", Primitives.Motion.SlowMs, duration.GetProperty("slow"));
+        Value("motion.duration.fast", Primitives.Motion.FastMs, duration.GetProperty("fast"));
+        Value("motion.duration.base", Primitives.Motion.BaseMs, duration.GetProperty("base"));
+        Value("motion.duration.slow", Primitives.Motion.SlowMs, duration.GetProperty("slow"));
 
-        Settle(3);
+        // …and the rest of the section, which a three-constant test left unpinned. Reduced motion,
+        // the gesture release glide, every named role's duration and the shipped spring are all
+        // numbers the handoff publishes and the SDK answers for.
+        var motion = Handoff.GetProperty("motion");
+        Value("motion.reducedMotion.ms", Primitives.Motion.ReducedCrossfadeMs,
+            motion.GetProperty("reducedMotion").GetProperty("ms"));
+        Value("motion.releaseGlide.ms", Primitives.Motion.BaseMs,
+            motion.GetProperty("releaseGlide").GetProperty("ms"));
+
+        foreach (var (name, spec) in new (string, MotionSpec)[] {
+            ("press", Primitives.Motion.Press), ("state", Primitives.Motion.State),
+            ("enter", Primitives.Motion.Enter), ("exit", Primitives.Motion.Exit) })
+            if (motion.GetProperty("roles").TryGetProperty(name, out var role))
+                Value($"motion.roles.{name}.ms", spec.DurationMs, role.GetProperty("ms"));
+
+        var spring = motion.GetProperty("spring").GetProperty("default");
+        Value("motion.spring.default.stiffness", SpringSpec.Default.Stiffness,
+            spring.GetProperty("stiffness"));
+        Value("motion.spring.default.damping", SpringSpec.Default.Damping, spring.GetProperty("damping"));
+        Value("motion.spring.default.mass", SpringSpec.Default.Mass, spring.GetProperty("mass"));
+
+        Settle(motion, "motion");
     }
 
     /// <summary>
@@ -299,7 +401,7 @@ public class HandoffTokenPinTests
                 Read(compact, size, Density.Compact, $"{name}.compact");
         }
 
-        Settle(20);
+        Settle(metrics, "controlMetrics");
 
         void Read(JsonElement want, SizeVariant size, Density density, string label)
         {
@@ -336,12 +438,30 @@ public class HandoffTokenPinTests
         {
             Enum.TryParse<SizeVariant>(name.GetString(), out var size).Should().BeTrue(
                 $"the handoff names SizeVariant.{name.GetString()}");
-            _compared++;
+            _consumed.Add($"enum.sizeVariants[{index}]");
             if ((int)size != index)
                 _differed.Add($"SizeVariant.{name.GetString()}: handoff {index} · sdk {(int)size}");
             index++;
         }
 
-        Settle(14);
+        // Density and StyleChannels are published the same way and were not read. StyleChannels is
+        // a FLAGS enum on the wire — reordering it changes what a transition animates, silently.
+        foreach (var property in Handoff.GetProperty("controlMetrics")
+                     .GetProperty("density").GetProperty("values").EnumerateObject())
+        {
+            Enum.TryParse<Density>(property.Name, out var density).Should().BeTrue(
+                $"the handoff names Density.{property.Name}");
+            Value($"enum.density.{property.Name}", (int)density, property.Value);
+        }
+
+        foreach (var property in Handoff.GetProperty("motion")
+                     .GetProperty("styleChannels").GetProperty("values").EnumerateObject())
+        {
+            Enum.TryParse<StyleChannels>(property.Name, out var channel).Should().BeTrue(
+                $"the handoff names StyleChannels.{property.Name}");
+            Value($"enum.styleChannels.{property.Name}", (int)channel, property.Value);
+        }
+
+        Settle(Handoff.GetProperty("variants"), "enum");
     }
 }
