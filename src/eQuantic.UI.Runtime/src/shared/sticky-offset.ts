@@ -47,8 +47,12 @@ function overlappingChrome(): number {
  * exist yet and finds none: on a client-only render the variable would sit at 0px until some
  * later pass happened to run, and every bookmark in between would land under the header.
  *
- * The same shape, and the same reason, as `scheduleInViewCommit` — whose comment three lines from
- * the call site said exactly this, which is where I should have read it.
+ * The same DEFERRAL as `scheduleInViewCommit`, and for the same reason — but not the same shape, and
+ * the difference is what let this file carry a defect those two could not have. They commit an
+ * OBSERVER: an IntersectionObserver reports whenever visibility changes, a ResizeObserver redraws
+ * whenever a canvas box settles. Each is a window over time. This one publishes a measurement, which
+ * is a moment — so everything that arrives after it needs somewhere else to be caught, and twice now
+ * that somewhere was got wrong. An observer survives being scheduled too early; a sample does not.
  */
 export function scheduleAnchorOffset(): void {
   if (typeof queueMicrotask !== 'function') {
