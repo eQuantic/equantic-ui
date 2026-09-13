@@ -61,7 +61,7 @@ library is composition above it, in shared code.
 - **NORMATIVE — one design system, both targets (recorded 2026-07-03):** the web's **embedded
   first-party CSS** (web Phase 6 — no preference for Tailwind or any other engine) must follow
   **exactly the same design system as mobile**: the Photon Design System
-  (`docs/design/Photon-Design-System.dc.html`), whose single source of truth is the C# token layer in
+  (`docs/design/Photon DS - Foundations.dc.html`), whose single source of truth is the C# token layer in
   `eQuantic.UI.Primitives`. Concretely:
   - Every CSS artifact the embedded engine ships — custom properties per theme mode, utility classes,
     component classes — is **GENERATED at build time from the Primitives tokens**. Hand-maintained CSS

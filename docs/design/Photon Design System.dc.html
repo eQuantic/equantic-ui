@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0" rel="stylesheet">
+<style>
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx1);font-family:'Hanken Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+--bg:#F5F6F8;--sf:#FFFFFF;--sf2:#EFF1F4;--bd:#E2E5EA;--bd2:#C9CED6;
+--tx1:#171B21;--tx2:#4B5563;--tx3:#5F6B7A;--txi:#FFFFFF;
+--pri:#0050A0;--onpri:#FFFFFF;--prip:#00427F;--pris:#E8F1FA;--onpris:#003E7E;
+--sec:#E9EDF2;--onsec:#3A4350;--secp:#DCE2EA;
+--des:#B42318;--ondes:#FFFFFF;--desp:#8F1D1D;--dess:#FCEBEA;--ondess:#8F1D1D;
+--suc:#3B7A22;--onsuc:#FFFFFF;--sucp:#2C5E17;--sucs:#EDF6E6;--onsucs:#2C5E17;
+--war:#8A5A00;--onwar:#FFFFFF;--warp:#6E4700;--wars:#FBF3DF;--onwars:#7A5200;
+--inf:#0C6C86;--oninf:#FFFFFF;--infp:#0A5468;--infs:#E4F3F8;--oninfs:#0A5468;
+--lnk:#0050A0;--foc:#0050A0;--scrim:rgba(11,14,18,.40);--priinv:#5CA2E8;
+--e1:0 1px 3px 0 rgba(15,23,32,.10);--e2:0 2px 8px 0 rgba(15,23,32,.12);--e3:0 6px 16px -2px rgba(15,23,32,.16);--e4:0 12px 28px -4px rgba(15,23,32,.20);--e5:0 20px 44px -6px rgba(15,23,32,.26)}
+body[data-theme="dark"]{
+--bg:#0C0F13;--sf:#14181E;--sf2:#1C232B;--bd:#2A323D;--bd2:#3D4754;
+--tx1:#F2F4F7;--tx2:#AEB7C2;--tx3:#8B95A3;--txi:#171B21;
+--pri:#5CA2E8;--onpri:#06263F;--prip:#7CB5EE;--pris:#0F2740;--onpris:#A8CDF2;
+--sec:#242C36;--onsec:#D7DDE5;--secp:#2E3844;
+--des:#E5645C;--ondes:#3B0704;--desp:#F28B85;--dess:#3A1210;--ondess:#F4A9A4;
+--suc:#85C05E;--onsuc:#12290A;--sucp:#9ACD74;--sucs:#16290C;--onsucs:#B5DB97;
+--war:#E8B04B;--onwar:#2E1B02;--warp:#F0C06B;--wars:#2E2008;--onwars:#EECF8F;
+--inf:#4CC3DE;--oninf:#062B33;--infp:#6ED0E6;--infs:#0A2A32;--oninfs:#9FDCEB;
+--lnk:#7CB5EE;--foc:#7CB5EE;--scrim:rgba(0,0,0,.56);--priinv:#0050A0;
+--e1:0 1px 3px 0 rgba(0,0,0,.45);--e2:0 2px 8px 0 rgba(0,0,0,.48);--e3:0 6px 16px -2px rgba(0,0,0,.52);--e4:0 12px 28px -4px rgba(0,0,0,.56);--e5:0 20px 44px -6px rgba(0,0,0,.62)}
+@keyframes ph-blink{0%{opacity:1}100%{opacity:.15}}
+@keyframes ph-shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+@keyframes ph-move-std{0%{transform:translateX(0)}100%{transform:translateX(220px)}}
+@keyframes ph-pressdemo{0%,100%{opacity:0}30%,70%{opacity:1}}
+@keyframes ph-indet{0%{left:-35%}100%{left:105%}}
+@keyframes ph-toast-in{0%{transform:translateY(14px);opacity:0}100%{transform:translateY(0);opacity:1}}
+</style>
+</helmet>
+
+<div style="position:fixed;top:0;left:0;right:0;z-index:60;display:flex;align-items:center;gap:16px;height:56px;padding:0 20px;background:var(--sf);border-bottom:1px solid var(--bd)">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#0050A0,#003E7E);display:flex;align-items:center;justify-content:center">
+      <div style="width:10px;height:10px;border-radius:4px;background:#80B85C"></div>
+    </div>
+    <div style="font-size:15px;font-weight:800;letter-spacing:-.01em">Photon</div>
+    <div style="font-size:12px;color:var(--tx3);font-weight:500;margin-top:1px">eQuantic.UI Native · Mobile Design System</div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px;background:var(--pris);color:var(--onpris)">SPEC v1.1 · SDK-audited</div>
+  </div>
+  <div style="flex:1"></div>
+  <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--tx3);font-weight:600">
+    <span>Dynamic Type</span>
+    <div style="display:flex;background:var(--sf2);border-radius:8px;padding:2px;gap:2px">
+      <button onClick="{{ fs100 }}" style="border:none;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:4px 9px;border-radius:6px;background:{{ fsBg1 }};color:{{ fsC1 }};box-shadow:{{ fsSh1 }}">100%</button>
+      <button onClick="{{ fs115 }}" style="border:none;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:4px 9px;border-radius:6px;background:{{ fsBg2 }};color:{{ fsC2 }};box-shadow:{{ fsSh2 }}">115%</button>
+      <button onClick="{{ fs130 }}" style="border:none;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:4px 9px;border-radius:6px;background:{{ fsBg3 }};color:{{ fsC3 }};box-shadow:{{ fsSh3 }}">130%</button>
+    </div>
+  </div>
+  <button onClick="{{ toggleHit }}" style="display:flex;align-items:center;gap:6px;border:1px solid var(--bd);cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;background:{{ hitBg }};color:{{ hitC }}">
+    <span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">touch_app</span> Hit areas
+  </button>
+  <button onClick="{{ toggleTheme }}" style="display:flex;align-items:center;gap:6px;border:1px solid var(--bd);cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;background:var(--sf2);color:var(--tx1)">
+    <span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">{{ themeIcon }}</span> {{ themeLabel }}
+  </button>
+</div>
+
+<nav style="position:fixed;top:56px;left:0;bottom:0;width:248px;overflow-y:auto;padding:20px 14px 40px;background:var(--sf);border-right:1px solid var(--bd);box-sizing:border-box">
+  <div style="font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);padding:6px 10px">Overview</div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-arch" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--pri);width:20px;flex:none;padding-top:1px">◆</span>Architecture · 3 layers</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:7px;padding:16px 10px 6px"><span style="width:7px;height:7px;border-radius:2px;background:var(--suc);flex:none"></span><span style="font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Layer 1 · Shared tokens</span></div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-color" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">01</span>Color tokens</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-type" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">02</span>Typography</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-space" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">03</span>Spacing</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-radius" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">04</span>Radius</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-elev" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">05</span>Elevation</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-motion" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">06</span>Motion</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:7px;padding:16px 10px 6px"><span style="width:7px;height:7px;border-radius:2px;background:var(--war);flex:none"></span><span style="font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Layer 2 · Platform · Photon</span></div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-fence" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">00</span>Engine constraints</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-icon" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">07</span>Iconography</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-touch" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">08</span>Touch &amp; safe area</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-a11y" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">10</span>States · pointer · semantics</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:7px;padding:16px 10px 6px"><span style="width:7px;height:7px;border-radius:2px;background:var(--pri);flex:none"></span><span style="font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Binding</span></div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-csharp" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">09</span>C# token API</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:7px;padding:18px 10px 4px"><span style="width:7px;height:7px;border-radius:2px;background:var(--inf);flex:none"></span><span style="font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Layer 3 · Components</span></div>
+  <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:4px 10px 6px;opacity:.75">Phase A · Primitives</div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-box" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A1</span>Box</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-rowcol" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A2</span>Row · Column</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-stack" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A3</span>Stack (z)</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-spacer" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A4</span>Spacer</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-safearea" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A5</span>SafeArea</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-scroll" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A6</span>ScrollView</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-divider" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A7</span>Divider</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-text" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A8</span>Text</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-heading" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A9</span>Heading · Label</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-icon" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A10</span>Icon</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-image" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A11</span>Image</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-button" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A12</span>Button</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-iconbutton" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A13</span>IconButton</a>
+  </div>
+  <div style="font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);padding:18px 10px 6px">Phase B — Dashboard set</div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-card" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B1</span>Card</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-list" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B2</span>List · ListItem</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-appbar" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B3</span>AppBar</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-bottomnav" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B4</span>BottomNavigation</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-tabs" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B5</span>Tabs</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-avatar" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B6</span>Avatar</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-badge" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B7</span>Badge</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-chip" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B8</span>Chip / Tag</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-input" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B9</span>TextInput</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-search" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B10</span>SearchField</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-checkbox" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B11</span>Checkbox</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-switch" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B12</span>Switch</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-radio" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B13</span>RadioGroup</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-progress" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B14</span>ProgressBar</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-spinner" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B15</span>Spinner</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-skeleton" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B16</span>Skeleton</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-empty" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B17</span>EmptyState</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-banner" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B18</span>Banner / Alert</a>
+  </div>
+  <div style="font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);padding:18px 10px 6px">Phase C — Surfaces &amp; patterns</div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-sheet" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C1</span>BottomSheet</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-modal" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C2</span>Modal / Dialog</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-action" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C3</span>ActionSheet</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-toast" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C4</span>Toast / Snackbar</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-drawer" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C5</span>Drawer</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-seg" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C6</span>SegmentedControl</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-slider" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C7</span>Slider</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-stepper" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C8</span>Stepper</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-ptr" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C9</span>PullToRefresh</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-swipe" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C10</span>SwipeableRow</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-accordion" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C11</span>Accordion</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-dots" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C12</span>PageIndicator</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-tooltip" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C13</span>Tooltip</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-select" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C14</span>Select</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-date" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C15</span>DatePicker</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-navrail" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C16</span>NavigationRail</a>
+  </div>
+</nav>
+
+<main style="margin:56px 0 0 248px;padding:44px 56px 120px;max-width:1060px;box-sizing:border-box">
+
+  <header data-screen-label="Cover" style="margin-bottom:52px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:3px 9px;border-radius:6px;background:var(--sec);color:var(--onsec)">Track N · codename Photon</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:3px 9px;border-radius:6px;background:var(--sec);color:var(--onsec)">iOS · Metal</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:3px 9px;border-radius:6px;background:var(--sec);color:var(--onsec)">Android · Vulkan</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:3px 9px;border-radius:6px;background:var(--sec);color:var(--onsec)">100% C# · typed styles</span>
+    </div>
+    <h1 style="margin:0;font-size:44px;line-height:1.05;font-weight:800;letter-spacing:-.025em">Photon Mobile<br>Design System</h1>
+    <p style="margin:18px 0 0;max-width:640px;font-size:16px;line-height:1.6;color:var(--tx2)">
+      The component specification for <strong style="color:var(--tx1)">eQuantic.UI</strong> — <strong style="color:var(--tx1)">one write-once component library</strong>
+      (<span style="font-family:'JetBrains Mono',monospace;font-size:14px">eQuantic.UI.Components</span>, 44 components authored in C# against <span style="font-family:'JetBrains Mono',monospace;font-size:14px">eQuantic.UI.Primitives</span>),
+      realized per target: DOM/CSS on web, the Photon GPU renderer on native.
+      Every visual in this document is drawn <em>inside the v1 engine fence</em>: rounded rects, uniform borders,
+      2-stop linear gradients, rrect shadows, glyph-atlas icons and shaped text — nothing else.
+    </p>
+    <div style="margin-top:14px;display:flex;align-items:center;gap:11px;padding:11px 14px;border-radius:12px;background:var(--sf2);max-width:640px;box-sizing:border-box">
+      <span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--pri)">layers</span>
+      <span style="font-size:13px;line-height:1.5;color:var(--tx2)">Structured as <strong style="color:var(--tx1)">three layers</strong> — a shared token core, two realizers, one write-once component library — so both targets run the same classes and the same foundations instead of re-deriving them. <a href="Photon%20DS%20-%20Foundations.dc.html#f-arch" style="color:var(--lnk);font-weight:600;text-decoration:none">See the architecture ↓</a></span>
+    </div>
+    <div style="display:flex;gap:22px;margin-top:24px;flex-wrap:wrap">
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:26px;font-weight:800;letter-spacing:-.02em">64</span><span style="font-size:11.5px;font-weight:600;color:var(--tx3)">paired color tokens</span></div>
+      <div style="width:1px;background:var(--bd)"></div>
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:26px;font-weight:800;letter-spacing:-.02em">9 × 4</span><span style="font-size:11.5px;font-weight:600;color:var(--tx3)">variants × sizes</span></div>
+      <div style="width:1px;background:var(--bd)"></div>
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:26px;font-weight:800;letter-spacing:-.02em">47</span><span style="font-size:11.5px;font-weight:600;color:var(--tx3)">component specs · A + B + C · 44 in the SDK</span></div>
+      <div style="width:1px;background:var(--bd)"></div>
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:26px;font-weight:800;letter-spacing:-.02em">AA</span><span style="font-size:11.5px;font-weight:600;color:var(--tx3)">every token pair, both themes</span></div>
+    </div>
+  </header>
+
+
+  <section data-screen-label="Spec files" style="margin-bottom:64px">
+    <div style="display:flex;align-items:baseline;gap:12px;border-bottom:2px solid var(--tx1);padding-bottom:10px;margin-bottom:8px">
+      <h2 style="margin:0;font-size:27px;font-weight:800;letter-spacing:-.02em">The spec, in five files</h2>
+      <span style="font-size:12.5px;color:var(--tx3);font-weight:500">split at v1.1 — every file stays under the 256&nbsp;KB agent read cap · spec IDs are stable</span>
+    </div>
+    <p style="margin:0 0 18px;max-width:760px;font-size:13.5px;line-height:1.6;color:var(--tx2)">This page is the index: overview, roadmap, and the map below. Deep links keep working — <span style="font-family:'JetBrains Mono',monospace;font-size:12px">…Phase A.dc.html#a-button</span> is the same A12 spec, same anchor.</p>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+
+      <a href="Photon%20DS%20-%20Foundations.dc.html" style="display:flex;gap:14px;padding:17px 18px;border-radius:12px;background:var(--sf);border:1px solid var(--bd);text-decoration:none;box-shadow:var(--e1);align-items:flex-start">
+        <span style="width:38px;height:38px;border-radius:10px;background:var(--pris);color:var(--onpris);display:inline-flex;align-items:center;justify-content:center;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:20px">foundation</span></span>
+        <span style="flex:1;min-width:0">
+          <span style="display:flex;align-items:center;gap:8px"><span style="font-size:15px;font-weight:800;color:var(--tx1);letter-spacing:-.01em">Foundations</span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:6px;background:var(--sf2);color:var(--tx3)">§00–§10</span></span>
+          <span style="display:block;font-size:12.5px;line-height:1.6;color:var(--tx2);margin-top:4px">Architecture · engine fence · color · typography · spacing · radius · elevation · motion (Release glide §06) · iconography · touch &amp; safe area · C# token API · <strong style="color:var(--tx1)">§10 states, pointer &amp; semantics</strong> (new in v1.1).</span>
+        </span>
+        <span style="font-family:'Material Symbols Rounded';font-size:17px;color:var(--tx3);margin-top:2px">arrow_forward</span>
+      </a>
+
+      <a href="Photon%20DS%20-%20Phase%20A.dc.html" style="display:flex;gap:14px;padding:17px 18px;border-radius:12px;background:var(--sf);border:1px solid var(--bd);text-decoration:none;box-shadow:var(--e1);align-items:flex-start">
+        <span style="width:38px;height:38px;border-radius:10px;background:var(--pris);color:var(--onpris);display:inline-flex;align-items:center;justify-content:center;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:20px">grid_view</span></span>
+        <span style="flex:1;min-width:0">
+          <span style="display:flex;align-items:center;gap:8px"><span style="font-size:15px;font-weight:800;color:var(--tx1);letter-spacing:-.01em">Phase A — primitives</span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:6px;background:var(--sf2);color:var(--tx3)">A1–A13</span></span>
+          <span style="display:block;font-size:12.5px;line-height:1.6;color:var(--tx2);margin-top:4px">Box · Row/Column · Stack · Spacer · SafeArea · ScrollView · Divider · Text · Heading/Label · Icon · Image · Button · IconButton.</span>
+        </span>
+        <span style="font-family:'Material Symbols Rounded';font-size:17px;color:var(--tx3);margin-top:2px">arrow_forward</span>
+      </a>
+
+      <a href="Photon%20DS%20-%20Phase%20B.dc.html" style="display:flex;gap:14px;padding:17px 18px;border-radius:12px;background:var(--sf);border:1px solid var(--bd);text-decoration:none;box-shadow:var(--e1);align-items:flex-start">
+        <span style="width:38px;height:38px;border-radius:10px;background:var(--pris);color:var(--onpris);display:inline-flex;align-items:center;justify-content:center;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:20px">dashboard</span></span>
+        <span style="flex:1;min-width:0">
+          <span style="display:flex;align-items:center;gap:8px"><span style="font-size:15px;font-weight:800;color:var(--tx1);letter-spacing:-.01em">Phase B — structure &amp; forms</span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:6px;background:var(--sf2);color:var(--tx3)">B1–B18</span></span>
+          <span style="display:block;font-size:12.5px;line-height:1.6;color:var(--tx2);margin-top:4px">Card · List · AppBar · BottomNavigation · Tabs · Avatar · Badge · Chip · TextInput · SearchField · Checkbox · Switch · RadioGroup · ProgressBar · Spinner · Skeleton · EmptyState · Banner.</span>
+        </span>
+        <span style="font-family:'Material Symbols Rounded';font-size:17px;color:var(--tx3);margin-top:2px">arrow_forward</span>
+      </a>
+
+      <a href="Photon%20DS%20-%20Phase%20C.dc.html" style="display:flex;gap:14px;padding:17px 18px;border-radius:12px;background:var(--sf);border:1px solid var(--bd);text-decoration:none;box-shadow:var(--e1);align-items:flex-start">
+        <span style="width:38px;height:38px;border-radius:10px;background:var(--pris);color:var(--onpris);display:inline-flex;align-items:center;justify-content:center;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:20px">layers</span></span>
+        <span style="flex:1;min-width:0">
+          <span style="display:flex;align-items:center;gap:8px"><span style="font-size:15px;font-weight:800;color:var(--tx1);letter-spacing:-.01em">Phase C — surfaces &amp; gestures</span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:6px;background:var(--sf2);color:var(--tx3)">C1–C16</span></span>
+          <span style="display:block;font-size:12.5px;line-height:1.6;color:var(--tx2);margin-top:4px">BottomSheet · Modal · ActionSheet&dagger; · Toast · Drawer · SegmentedControl · Slider · Stepper · PullToRefresh · SwipeableRow · Accordion · PageIndicator · Tooltip · Select · DatePicker&dagger; · NavigationRail&dagger; — &dagger;&nbsp;specified ahead of the SDK (REQUEST).</span>
+        </span>
+        <span style="font-family:'Material Symbols Rounded';font-size:17px;color:var(--tx3);margin-top:2px">arrow_forward</span>
+      </a>
+    </div>
+    <div style="display:flex;gap:18px;margin-top:14px;flex-wrap:wrap;font-size:12.5px;font-weight:600">
+      <a href="tokens.json" style="display:inline-flex;align-items:center;gap:6px;color:var(--lnk);text-decoration:none"><span style="font-family:'Material Symbols Rounded';font-size:16px">data_object</span>tokens.json</a>
+      <a href="Tokens.cs" style="display:inline-flex;align-items:center;gap:6px;color:var(--lnk);text-decoration:none"><span style="font-family:'Material Symbols Rounded';font-size:16px">code</span>Tokens.cs</a>
+      <a href="Photon%20Handoff.dc.html" style="display:inline-flex;align-items:center;gap:6px;color:var(--lnk);text-decoration:none"><span style="font-family:'Material Symbols Rounded';font-size:16px">assignment_turned_in</span>Photon Handoff</a>
+    </div>
+  </section>
+
+  <section data-screen-label="Roadmap" style="margin-bottom:56px">
+    <div style="background:var(--sf2);border-radius:14px;padding:20px 24px">
+      <div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px">Catalog status — v1 scope closed</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span style="font-size:13px;color:var(--tx2);line-height:1.7;max-width:760px">All 47 catalog specs are written: Foundations 00–10 · Phase A <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-box" style="color:var(--lnk);font-weight:600;text-decoration:none">A1–A13</a> · Phase B <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-card" style="color:var(--lnk);font-weight:600;text-decoration:none">B1–B18</a> · Phase C <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-sheet" style="color:var(--lnk);font-weight:600;text-decoration:none">C1–C16</a>. The shipped write-once library is 44 components — <strong style="color:var(--tx1)">C3 ActionSheet, C15 DatePicker and C16 NavigationRail are specified ahead of the code (REQUEST)</strong>. Next for the SDK team: the §10 REQUEST set — SemanticNode Selected/Checked/Expanded state fields + custom actions, a VariantColors hover helper (Base→Pressed midpoint), the velocity-taking release spring — then golden-harness screenshots per section (light + dark × 100/130% type) and the M3 Dashboard demo composed exclusively from these parts.</span>
+        <span style="height:28px;padding:0 11px;border-radius:999px;background:var(--wars);color:var(--onwars);font-size:12px;font-weight:600;display:inline-flex;align-items:center">Out of v1 by design: charts · maps · rich-text editors · anything needing arbitrary vector paths</span>
+      </div>
+    </div>
+  </section>
+
+  <footer style="border-top:1px solid var(--bd);padding-top:24px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
+    <span style="font-size:13px;font-weight:700">Photon Mobile Design System</span>
+    <span style="font-size:12px;color:var(--tx3)">Spec v1.1 (SDK audit) · Foundations 00–10 + Phase A (A1–A13) + Phase B (B1–B18) + Phase C (C1–C16) — C3 · C15 · C16 ahead of the SDK (REQUEST). Charts, maps and rich text are outside the v1 fence by design.</span>
+  </footer>
+</main>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light' | 'dark'&quot;,&quot;section&quot;:&quot;Preview&quot;},&quot;fontScale&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:1,&quot;max&quot;:1.3,&quot;step&quot;:0.05,&quot;default&quot;:1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Preview&quot;},&quot;showHitAreas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Preview&quot;}}">
+class Component extends DCLogic {
+  state = { theme: 'light', fs: 1, hit: false, mk: 0, btnLoading: false, swOn: true, seg: 0, accOpen: true, toastOn: false };
+
+  componentDidMount() {
+    let t = 'light';
+    try { t = localStorage.getItem('photon-theme') || (this.props.theme ?? 'light'); } catch (e) { t = this.props.theme ?? 'light'; }
+    this.applyTheme(t, false);
+    const fs = this.props.fontScale ?? 1;
+    if (fs !== 1) this.applyFs(fs);
+    if (this.props.showHitAreas) this.applyHit(true);
+    setTimeout(() => this.setState(s => ({ mk: s.mk + 1 })), 400);
+  }
+
+  applyTheme(t, persist) {
+    if (t === 'dark') document.body.setAttribute('data-theme', 'dark');
+    else document.body.removeAttribute('data-theme');
+    if (persist) { try { localStorage.setItem('photon-theme', t); } catch (e) {} }
+    this.setState({ theme: t });
+  }
+  applyFs(v) { document.body.style.setProperty('--fs', String(v)); this.setState({ fs: v }); }
+  applyHit(on) { document.body.style.setProperty('--hit', on ? '1' : '0'); this.setState({ hit: on }); }
+
+  dot(anim) {
+    return React.createElement('span', {
+      key: 'k' + this.state.mk,
+      style: {
+        position: 'absolute', left: 8, top: 7, width: 18, height: 18, borderRadius: 6,
+        background: 'var(--pri)', animation: anim, animationFillMode: 'forwards'
+      }
+    });
+  }
+
+  renderVals() {
+    const { theme, fs, hit } = this.state;
+    const seg = (active) => ({
+      bg: active ? 'var(--sf)' : 'transparent',
+      c: active ? 'var(--tx1)' : 'var(--tx3)',
+      sh: active ? '0 1px 2px rgba(15,23,32,.18)' : 'none'
+    });
+    const s1 = seg(fs === 1), s2 = seg(fs === 1.15), s3 = seg(fs === 1.3);
+    return {
+      themeIcon: theme === 'dark' ? 'light_mode' : 'dark_mode',
+      themeLabel: theme === 'dark' ? 'Light' : 'Dark',
+      toggleTheme: () => this.applyTheme(this.state.theme === 'dark' ? 'light' : 'dark', true),
+      fs100: () => this.applyFs(1), fs115: () => this.applyFs(1.15), fs130: () => this.applyFs(1.3),
+      fsBg1: s1.bg, fsC1: s1.c, fsSh1: s1.sh,
+      fsBg2: s2.bg, fsC2: s2.c, fsSh2: s2.sh,
+      fsBg3: s3.bg, fsC3: s3.c, fsSh3: s3.sh,
+      toggleHit: () => this.applyHit(!this.state.hit),
+      hitBg: hit ? 'var(--pris)' : 'var(--sf2)',
+      hitC: hit ? 'var(--onpris)' : 'var(--tx1)',
+      noop: () => {},
+      swTrack: this.state.swOn ? 'var(--pri)' : 'var(--bd2)',
+      swLeft: this.state.swOn ? '23px' : '3px',
+      swLabel: this.state.swOn ? 'On' : 'Off',
+      toggleSw: () => this.setState(s => ({ swOn: !s.swOn })),
+      segLeft: 'calc(4px + ' + this.state.seg + ' * ((100% - 8px) / 3))',
+      seg0C: this.state.seg === 0 ? 'var(--tx1)' : 'var(--tx2)',
+      seg1C: this.state.seg === 1 ? 'var(--tx1)' : 'var(--tx2)',
+      seg2C: this.state.seg === 2 ? 'var(--tx1)' : 'var(--tx2)',
+      segPick0: () => this.setState({ seg: 0 }),
+      segPick1: () => this.setState({ seg: 1 }),
+      segPick2: () => this.setState({ seg: 2 }),
+      accMax: this.state.accOpen ? '220px' : '0px',
+      accRot: this.state.accOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+      accStateLabel: this.state.accOpen ? 'expanded' : 'collapsed',
+      toggleAcc: () => this.setState(s => ({ accOpen: !s.accOpen })),
+      toastOn: this.state.toastOn,
+      showToast: () => {
+        clearTimeout(this._toastT);
+        this.setState({ toastOn: true });
+        this._toastT = setTimeout(() => this.setState({ toastOn: false }), 3200);
+      },
+      btnLoading: this.state.btnLoading,
+      btnNotLoading: !this.state.btnLoading,
+      btnLoadingLabel: this.state.btnLoading ? 'Stop loading' : 'Simulate loading',
+      toggleBtnLoading: () => this.setState(s => ({ btnLoading: !s.btnLoading })),
+      replayMotion: () => this.setState(s => ({ mk: s.mk + 1 })),
+      dotStandard: this.dot('ph-move-std 200ms cubic-bezier(0.2,0,0,1) 120ms forwards'),
+      dotDecel: this.dot('ph-move-std 300ms cubic-bezier(0,0,0,1) 120ms forwards'),
+      dotGlide: this.dot('ph-move-std 200ms cubic-bezier(0.33,0,0.67,1) 120ms forwards')
+    };
+  }
+}
+</script>
+</body>
+</html>

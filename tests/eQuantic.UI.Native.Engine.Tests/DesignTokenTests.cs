@@ -5,7 +5,7 @@ using FluentAssertions;
 namespace eQuantic.UI.Native.Engine.Tests;
 
 /// <summary>
-/// Spec-fidelity tests for the Photon design tokens (docs/design/Photon-Design-System.dc.html).
+/// Spec-fidelity tests for the Photon design tokens (docs/design/Photon DS - Foundations.dc.html).
 /// Values are transcriptions — these tests pin them against the document AND recompute the WCAG
 /// claims ("ratios verified computationally", §01) so a palette edit that breaks accessibility
 /// fails the build, not a review.
@@ -106,8 +106,16 @@ public class DesignTokenTests
             colors.OnBase.Should().Be(Theme.TextPrimary);
             colors.Pressed.Should().Be(Theme.SurfaceSubtle, "§01: derived pressed = SurfaceSubtle");
         }
-        Theme.Colors(Variant.Link).OnBase.Should().Be(Theme.LinkColor);
-        Theme.Colors(Variant.Link).Pressed.Light.A.Should().Be(0, "Link never fills — pressed swaps the text");
+        // Link is NOT one of them, and asserting that it was is what hid a missing token. The
+        // handoff's colour rules call it "the audited exception": its Base is INK, used as text on
+        // Surface, and its Pressed is the darker ink the text swaps to. Reading "Link never fills"
+        // as "Link's slots are empty" left #00427F out of the theme entirely, so the pressed text
+        // swap had nothing to swap to — and nothing failed, because this test said so.
+        var link = Theme.Colors(Variant.Link);
+        link.Base.Should().Be(Theme.LinkColor, "the ink lives in Base — the audited exception");
+        link.OnBase.Should().Be(Theme.LinkColor);
+        link.Pressed.Should().NotBe(link.Base, "the pressed ink is a DARKER ink, not an absence");
+        link.Subtle.Light.A.Should().Be(0, "what Link never has is a FILL, which is the Subtle slot");
     }
 
     [Fact]

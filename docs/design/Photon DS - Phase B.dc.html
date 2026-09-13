@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0" rel="stylesheet">
+<style>
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx1);font-family:'Hanken Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+--bg:#F5F6F8;--sf:#FFFFFF;--sf2:#EFF1F4;--bd:#E2E5EA;--bd2:#C9CED6;
+--tx1:#171B21;--tx2:#4B5563;--tx3:#5F6B7A;--txi:#FFFFFF;
+--pri:#0050A0;--onpri:#FFFFFF;--prip:#00427F;--pris:#E8F1FA;--onpris:#003E7E;
+--sec:#E9EDF2;--onsec:#3A4350;--secp:#DCE2EA;
+--des:#B42318;--ondes:#FFFFFF;--desp:#8F1D1D;--dess:#FCEBEA;--ondess:#8F1D1D;
+--suc:#3B7A22;--onsuc:#FFFFFF;--sucp:#2C5E17;--sucs:#EDF6E6;--onsucs:#2C5E17;
+--war:#8A5A00;--onwar:#FFFFFF;--warp:#6E4700;--wars:#FBF3DF;--onwars:#7A5200;
+--inf:#0C6C86;--oninf:#FFFFFF;--infp:#0A5468;--infs:#E4F3F8;--oninfs:#0A5468;
+--lnk:#0050A0;--foc:#0050A0;--scrim:rgba(11,14,18,.40);--priinv:#5CA2E8;
+--e1:0 1px 3px 0 rgba(15,23,32,.10);--e2:0 2px 8px 0 rgba(15,23,32,.12);--e3:0 6px 16px -2px rgba(15,23,32,.16);--e4:0 12px 28px -4px rgba(15,23,32,.20);--e5:0 20px 44px -6px rgba(15,23,32,.26)}
+body[data-theme="dark"]{
+--bg:#0C0F13;--sf:#14181E;--sf2:#1C232B;--bd:#2A323D;--bd2:#3D4754;
+--tx1:#F2F4F7;--tx2:#AEB7C2;--tx3:#8B95A3;--txi:#171B21;
+--pri:#5CA2E8;--onpri:#06263F;--prip:#7CB5EE;--pris:#0F2740;--onpris:#A8CDF2;
+--sec:#242C36;--onsec:#D7DDE5;--secp:#2E3844;
+--des:#E5645C;--ondes:#3B0704;--desp:#F28B85;--dess:#3A1210;--ondess:#F4A9A4;
+--suc:#85C05E;--onsuc:#12290A;--sucp:#9ACD74;--sucs:#16290C;--onsucs:#B5DB97;
+--war:#E8B04B;--onwar:#2E1B02;--warp:#F0C06B;--wars:#2E2008;--onwars:#EECF8F;
+--inf:#4CC3DE;--oninf:#062B33;--infp:#6ED0E6;--infs:#0A2A32;--oninfs:#9FDCEB;
+--lnk:#7CB5EE;--foc:#7CB5EE;--scrim:rgba(0,0,0,.56);--priinv:#0050A0;
+--e1:0 1px 3px 0 rgba(0,0,0,.45);--e2:0 2px 8px 0 rgba(0,0,0,.48);--e3:0 6px 16px -2px rgba(0,0,0,.52);--e4:0 12px 28px -4px rgba(0,0,0,.56);--e5:0 20px 44px -6px rgba(0,0,0,.62)}
+@keyframes ph-blink{0%{opacity:1}100%{opacity:.15}}
+@keyframes ph-shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+@keyframes ph-move-std{0%{transform:translateX(0)}100%{transform:translateX(220px)}}
+@keyframes ph-pressdemo{0%,100%{opacity:0}30%,70%{opacity:1}}
+@keyframes ph-indet{0%{left:-35%}100%{left:105%}}
+@keyframes ph-toast-in{0%{transform:translateY(14px);opacity:0}100%{transform:translateY(0);opacity:1}}
+</style>
+</helmet>
+
+<div style="position:fixed;top:0;left:0;right:0;z-index:60;display:flex;align-items:center;gap:16px;height:56px;padding:0 20px;background:var(--sf);border-bottom:1px solid var(--bd)">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#0050A0,#003E7E);display:flex;align-items:center;justify-content:center">
+      <div style="width:10px;height:10px;border-radius:4px;background:#80B85C"></div>
+    </div>
+    <div style="font-size:15px;font-weight:800;letter-spacing:-.01em">Photon</div>
+    <div style="font-size:12px;color:var(--tx3);font-weight:500;margin-top:1px">eQuantic.UI Native · Mobile Design System</div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px;background:var(--pris);color:var(--onpris)">SPEC v1.1 · SDK-audited</div>
+  </div>
+  <div style="flex:1"></div>
+  <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--tx3);font-weight:600">
+    <span>Dynamic Type</span>
+    <div style="display:flex;background:var(--sf2);border-radius:8px;padding:2px;gap:2px">
+      <button onClick="{{ fs100 }}" style="border:none;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:4px 9px;border-radius:6px;background:{{ fsBg1 }};color:{{ fsC1 }};box-shadow:{{ fsSh1 }}">100%</button>
+      <button onClick="{{ fs115 }}" style="border:none;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:4px 9px;border-radius:6px;background:{{ fsBg2 }};color:{{ fsC2 }};box-shadow:{{ fsSh2 }}">115%</button>
+      <button onClick="{{ fs130 }}" style="border:none;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:4px 9px;border-radius:6px;background:{{ fsBg3 }};color:{{ fsC3 }};box-shadow:{{ fsSh3 }}">130%</button>
+    </div>
+  </div>
+  <button onClick="{{ toggleHit }}" style="display:flex;align-items:center;gap:6px;border:1px solid var(--bd);cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;background:{{ hitBg }};color:{{ hitC }}">
+    <span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">touch_app</span> Hit areas
+  </button>
+  <button onClick="{{ toggleTheme }}" style="display:flex;align-items:center;gap:6px;border:1px solid var(--bd);cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;background:var(--sf2);color:var(--tx1)">
+    <span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">{{ themeIcon }}</span> {{ themeLabel }}
+  </button>
+</div>
+
+<nav style="position:fixed;top:56px;left:0;bottom:0;width:248px;overflow-y:auto;padding:20px 14px 40px;background:var(--sf);border-right:1px solid var(--bd);box-sizing:border-box">
+  <div style="font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);padding:6px 10px">Overview</div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-arch" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--pri);width:20px;flex:none;padding-top:1px">◆</span>Architecture · 3 layers</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:7px;padding:16px 10px 6px"><span style="width:7px;height:7px;border-radius:2px;background:var(--suc);flex:none"></span><span style="font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Layer 1 · Shared tokens</span></div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-color" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">01</span>Color tokens</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-type" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">02</span>Typography</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-space" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">03</span>Spacing</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-radius" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">04</span>Radius</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-elev" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">05</span>Elevation</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-motion" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">06</span>Motion</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:7px;padding:16px 10px 6px"><span style="width:7px;height:7px;border-radius:2px;background:var(--war);flex:none"></span><span style="font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Layer 2 · Platform · Photon</span></div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-fence" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">00</span>Engine constraints</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-icon" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">07</span>Iconography</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-touch" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">08</span>Touch &amp; safe area</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-a11y" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">10</span>States · pointer · semantics</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:7px;padding:16px 10px 6px"><span style="width:7px;height:7px;border-radius:2px;background:var(--pri);flex:none"></span><span style="font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Binding</span></div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-csharp" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">09</span>C# token API</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:7px;padding:18px 10px 4px"><span style="width:7px;height:7px;border-radius:2px;background:var(--inf);flex:none"></span><span style="font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Layer 3 · Components</span></div>
+  <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:4px 10px 6px;opacity:.75">Phase A · Primitives</div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-box" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A1</span>Box</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-rowcol" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A2</span>Row · Column</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-stack" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A3</span>Stack (z)</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-spacer" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A4</span>Spacer</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-safearea" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A5</span>SafeArea</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-scroll" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A6</span>ScrollView</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-divider" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A7</span>Divider</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-text" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A8</span>Text</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-heading" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A9</span>Heading · Label</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-icon" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A10</span>Icon</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-image" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A11</span>Image</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-button" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A12</span>Button</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-iconbutton" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A13</span>IconButton</a>
+  </div>
+  <div style="font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);padding:18px 10px 6px">Phase B — Dashboard set</div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="#b-card" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B1</span>Card</a>
+    <a href="#b-list" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B2</span>List · ListItem</a>
+    <a href="#b-appbar" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B3</span>AppBar</a>
+    <a href="#b-bottomnav" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B4</span>BottomNavigation</a>
+    <a href="#b-tabs" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B5</span>Tabs</a>
+    <a href="#b-avatar" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B6</span>Avatar</a>
+    <a href="#b-badge" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B7</span>Badge</a>
+    <a href="#b-chip" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B8</span>Chip / Tag</a>
+    <a href="#b-input" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B9</span>TextInput</a>
+    <a href="#b-search" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B10</span>SearchField</a>
+    <a href="#b-checkbox" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B11</span>Checkbox</a>
+    <a href="#b-switch" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B12</span>Switch</a>
+    <a href="#b-radio" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B13</span>RadioGroup</a>
+    <a href="#b-progress" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B14</span>ProgressBar</a>
+    <a href="#b-spinner" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B15</span>Spinner</a>
+    <a href="#b-skeleton" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B16</span>Skeleton</a>
+    <a href="#b-empty" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B17</span>EmptyState</a>
+    <a href="#b-banner" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B18</span>Banner / Alert</a>
+  </div>
+  <div style="font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);padding:18px 10px 6px">Phase C — Surfaces &amp; patterns</div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-sheet" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C1</span>BottomSheet</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-modal" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C2</span>Modal / Dialog</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-action" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C3</span>ActionSheet</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-toast" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C4</span>Toast / Snackbar</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-drawer" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C5</span>Drawer</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-seg" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C6</span>SegmentedControl</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-slider" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C7</span>Slider</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-stepper" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C8</span>Stepper</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-ptr" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C9</span>PullToRefresh</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-swipe" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C10</span>SwipeableRow</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-accordion" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C11</span>Accordion</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-dots" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C12</span>PageIndicator</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-tooltip" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C13</span>Tooltip</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-select" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C14</span>Select</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-date" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C15</span>DatePicker</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-navrail" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C16</span>NavigationRail</a>
+  </div>
+</nav>
+
+<main style="margin:56px 0 0 248px;padding:44px 56px 120px;max-width:1060px;box-sizing:border-box">
+
+  
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:22px">
+    <a href="Photon%20Design%20System.dc.html" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--lnk);text-decoration:none"><span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">arrow_back</span>Spec index</a>
+    <span style="color:var(--bd2)">/</span>
+    <span style="font-size:12px;font-weight:600;color:var(--tx3)">Photon Design System · v1.1 · Phase B — structure &amp; forms</span>
+  </div>
+<div style="display:flex;align-items:center;gap:14px;margin:0 0 30px;padding:18px 22px;border-radius:14px;background:linear-gradient(135deg,#3B7A22,#2C5E17)">
+    <span style="font-family:'Material Symbols Rounded';font-size:26px;color:#C4E5A8">dashboard</span>
+    <div>
+      <div style="font-size:19px;font-weight:800;color:#FFFFFF;letter-spacing:-.01em">Phase B — The dashboard set</div>
+      <div style="font-size:12.5px;color:#C4E5A8;margin-top:2px">All 18 specified (B1–B18) — together with Phase A, the set that renders the M3-milestone Dashboard demo end to end.</div>
+    </div>
+  </div>
+
+  <section id="b-card" data-screen-label="B1 Card" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">B1</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Card</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new Card(kind: CardKind.Elevated, header: CardHeader?, body: ..., footer: CardFooter?, onPressed: fn?)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:22px;display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap">
+        <div style="width:280px;background:var(--sf);border-radius:14px;box-shadow:var(--e1);overflow:hidden">
+          <div style="display:flex;align-items:center;gap:12px;padding:16px 16px 0">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:calc(16px*var(--fs,1));font-weight:600;letter-spacing:-.01em">Monthly spend</div>
+              <div style="font-size:calc(13px*var(--fs,1));color:var(--tx3);margin-top:1px">April · 14 categories</div>
+            </div>
+            <span style="width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx2)"><span style="font-family:'Material Symbols Rounded';font-size:20px">more_horiz</span></span>
+          </div>
+          <div style="padding:14px 16px 16px">
+            <div style="font-size:calc(28px*var(--fs,1));font-weight:800;letter-spacing:-.02em">R$ 3.842</div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+              <span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">▲ 12%</span>
+              <span style="font-size:calc(12px*var(--fs,1));color:var(--tx3)">vs March</span>
+            </div>
+          </div>
+          <div style="border-top:1px solid var(--bd);padding:10px 16px;display:flex;justify-content:flex-end;gap:4px">
+            <span style="height:32px;padding:0 12px;border-radius:10px;color:var(--lnk);font-size:13px;font-weight:600;display:inline-flex;align-items:center">See report</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="width:200px;background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:14px 16px">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);margin-bottom:6px">Outlined · E0 + Border</div>
+            <div style="font-size:14px;font-weight:600">Quiet container</div>
+            <div style="font-size:12px;color:var(--tx3);margin-top:2px">for dense grids</div>
+          </div>
+          <div style="width:200px;background:var(--sf2);border-radius:14px;padding:14px 16px">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);margin-bottom:6px">Filled · SurfaceSubtle</div>
+            <div style="font-size:14px;font-weight:600">Inset grouping</div>
+            <div style="font-size:12px;color:var(--tx3);margin-top:2px">inside other surfaces</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Specs</div>
+          <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+            <li>Radius.Lg 14 · padding S4 16 (S5 20 for hero cards) · header/body gap S3 12.</li>
+            <li>Elevated = E1 (+1dp Border in dark, §05) · Outlined = E0 + Border · Filled = SurfaceSubtle, E0.</li>
+            <li>Header: Title 16/600 + Caption subtitle + one trailing action (32dp IconButton, hit-slopped).</li>
+            <li>Footer: right-aligned Small buttons over a Divider, 10dp vertical padding.</li>
+          </ul>
+        </div>
+        <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Behavior · a11y · usage</div>
+          <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+            <li>Pressable card: whole surface is the target; pressed = scale 0.985 + fill shift to SurfaceSubtle, Fast 100ms; trailing IconButton stays independently pressable.</li>
+            <li>A11y: plain card = container (children read individually). Pressable = one button node, name = header title; inner buttons announced as custom actions.</li>
+            <li>Don't nest Elevated in Elevated — inner containers go Outlined/Filled. Don't exceed one action row.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Static Card: no hover. Pressable Card: hover lifts elevation E1→E2 (Shadow channel, <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Motion.Press</span>); cursor pointer only when pressable.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">A pressable Card is one tab stop; Enter/Space activates. Inner controls remain their own stops — never nest two activation targets on one surface.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Pressable = button role named by its title; a static Card is a plain group.</div></div>
+    </div>
+  </section>
+
+  <section id="b-list" data-screen-label="B2 List ListItem" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">B2</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">List · ListItem</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new List(items: n, builder: i => new ListItem(...), recycle: true)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:22px">
+        <div style="max-width:360px;margin:0 auto;background:var(--sf);border-radius:14px;overflow:hidden;border:1px solid var(--bd)">
+          <div style="display:flex;align-items:center;gap:12px;padding:0 16px;height:52px">
+            <span style="font-family:'Material Symbols Rounded';font-size:24px;color:var(--tx2);flex:none">wifi</span>
+            <span style="flex:1;font-size:calc(15px*var(--fs,1));font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Wi-Fi</span>
+            <span style="font-size:calc(13px*var(--fs,1));color:var(--tx3)">Photon-5G</span>
+            <span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--tx3)">chevron_right</span>
+          </div>
+          <div style="height:1px;background:var(--bd);margin-left:52px"></div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--sf2)">
+            <div style="width:40px;height:40px;border-radius:999px;background:linear-gradient(135deg,#5CA2E8,#0050A0);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex:none">AB</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:calc(15px*var(--fs,1));font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Ana Beatriz — pressed state</div>
+              <div style="font-size:calc(13px*var(--fs,1));color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Transfer scheduled for tomorrow</div>
+            </div>
+            <span style="font-size:calc(12px*var(--fs,1));color:var(--tx3);flex:none">09:12</span>
+          </div>
+          <div style="height:1px;background:var(--bd);margin-left:68px"></div>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 16px">
+            <span style="font-family:'Material Symbols Rounded';font-size:24px;color:var(--tx2);flex:none">notifications</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:calc(15px*var(--fs,1));font-weight:500">Notifications</div>
+              <div style="font-size:calc(13px*var(--fs,1));color:var(--tx3);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">Three-line items exist for settings copy that needs a second sentence of context.</div>
+            </div>
+            <div style="width:44px;height:26px;border-radius:999px;background:var(--pri);position:relative;flex:none"><div style="position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:999px;background:#fff"></div></div>
+          </div>
+        </div>
+        <div style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);margin-top:12px">1-line 52 · 2-line 68 · 3-line 88 — divider inset = 16 + leading + gap</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Anatomy &amp; specs</div>
+          <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+            <li>Slots: leading (Icon Md 24 / Avatar 40 / none) · content (title 15/500 + subtitle 13, each 1 line; 2 lines for the 3-line item) · trailing (Caption meta / chevron / Switch / Checkbox).</li>
+            <li>Padding X = S4 16 · slot gap = S3 12 · min heights 52/68/88, grow with Dynamic Type.</li>
+            <li>Title truncates before trailing meta moves — the A2 truncation contract.</li>
+          </ul>
+        </div>
+        <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Recycling &amp; behavior</div>
+          <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+            <li><span style="font-family:'JetBrains Mono',monospace;font-size:12px">List</span> virtualizes: builder-driven, per-type recycle pools, keyed-LIS diffing, ~1.5 viewports realized. Fling at 120Hz = the M3 exit gate.</li>
+            <li>Whole row = one hit target (≥ 52 &gt; 48 ✓); an interactive trailing control splits: row activates on the row area, Switch on its own 48dp rect.</li>
+            <li>Pressed = SurfaceSubtle full-bleed fill, instant on/Fast off. Swipe actions arrive with SwipeableRow (Phase C).</li>
+            <li>A11y: one merged node per row — "Wi-Fi, Photon-5G, button"; trailing Switch is a second stop: "Notifications, switch, on".</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Interactive rows: hover = SurfaceSubtle wash (§10); cursor pointer. Right-click on a row opens the SAME actions its swipe/long-press exposes — never new ones.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Plain nav rows are individual tab stops (Enter activates). Selectable lists are ONE stop: ↑/↓ move, Space toggles, Home/End jump.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">list/listitem; selectable = <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">listbox / option</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-selected</span>. Native Selected field: <strong style="color:var(--onwars)">REQUEST</strong> (§10).</div></div>
+    </div>
+  </section>
+
+  <section id="b-appbar" data-screen-label="B3 AppBar" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">B3</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">AppBar</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new AppBar(title: "Portfolio", leading: BackButton?, actions: [IconButton ×≤3])</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:18px">
+        <div style="max-width:360px;width:100%;margin:0 auto">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);margin-bottom:6px">At rest — transparent on Background, E0</div>
+          <div style="border-radius:14px;overflow:hidden;border:1px solid var(--bd)">
+            <div style="height:24px;background:var(--bg);display:flex;align-items:center;justify-content:center"><span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx3)">status bar · safe-area top</span></div>
+            <div style="height:56px;background:var(--bg);display:flex;align-items:center;gap:4px;padding:0 4px">
+              <span style="width:48px;height:48px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:24px">arrow_back</span></span>
+              <span style="flex:1;font-size:calc(20px*var(--fs,1));font-weight:600;letter-spacing:-.01em">Portfolio</span>
+              <span style="width:48px;height:48px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:24px">search</span></span>
+              <span style="width:48px;height:48px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:24px">more_vert</span></span>
+            </div>
+          </div>
+        </div>
+        <div style="max-width:360px;width:100%;margin:0 auto">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);margin-bottom:6px">Scrolled — Surface fill + E2, content passes beneath</div>
+          <div style="border-radius:14px;overflow:hidden;border:1px solid var(--bd)">
+            <div style="height:56px;background:var(--sf);box-shadow:var(--e2);display:flex;align-items:center;gap:4px;padding:0 4px;position:relative;z-index:1">
+              <span style="width:48px;height:48px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:24px">arrow_back</span></span>
+              <span style="flex:1;font-size:calc(20px*var(--fs,1));font-weight:600;letter-spacing:-.01em">Portfolio</span>
+              <span style="width:48px;height:48px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:24px">search</span></span>
+            </div>
+            <div style="height:44px;background:var(--sf);opacity:.55;display:flex;align-items:center;padding:0 16px;font-size:13px;color:var(--tx3)">…content scrolls under…</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Specs</div>
+          <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+            <li>Bar 56dp + safe-area top painted in the bar's fill (§08). Horizontal padding 4dp; title gets 12dp when no leading.</li>
+            <li>Title: 20/600, 1 line ellipsis. Alignment: platform default (iOS center, Android leading) via <span style="font-family:'JetBrains Mono',monospace;font-size:12px">titleAlign: Platform</span>.</li>
+            <li>Leading back button 48×48; actions = Standard IconButtons, max 3 (overflow → ActionSheet C3 — not yet in SDK; interim: BottomSheet C1).</li>
+          </ul>
+        </div>
+        <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Behavior · a11y</div>
+          <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+            <li>Elevation reacts to scroll offset &gt; 0: Background → Surface fill + E2, animated Base 200ms standard. No blur required (fence budget).</li>
+            <li>Back = platform back semantics (iOS edge-swipe coexists; Android hardware back equivalent).</li>
+            <li>A11y: title is the screen's level-1 Heading and the focus anchor after navigation; back announces "Back, button".</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">The bar is inert; its IconButtons hover per A13. Actions never appear on hover only — overflow stays a visible IconButton (→ C3 when it ships).</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Contained controls are ordinary tab stops in visual order — leading, title actions, trailing.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Header landmark; the back button announces "back".</div></div>
+    </div>
+  </section>
+
+  <section id="b-bottomnav" data-screen-label="B4 BottomNavigation" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">B4</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">BottomNavigation</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new BottomNavigation(items: [NavItem ×3–5], selected: 0, onSelect: fn)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:22px">
+        <div style="max-width:380px;margin:0 auto;border-radius:14px;overflow:hidden;border:1px solid var(--bd)">
+          <div style="height:40px;background:var(--sf);opacity:.55;display:flex;align-items:center;padding:0 16px;font-size:13px;color:var(--tx3)">…content…</div>
+          <div style="background:var(--sf);box-shadow:var(--e2);position:relative;z-index:1">
+            <div style="height:56px;display:flex">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative">
+                <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:56px;border-radius:0;background:rgba(216,49,140,.13);border:1px solid rgba(216,49,140,.55);opacity:var(--hit,0);pointer-events:none"></div>
+                <div style="width:56px;height:26px;border-radius:999px;background:var(--pris);display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:22px;color:var(--onpris);font-variation-settings:'FILL' 1">home</span></div>
+                <span style="font-size:11px;font-weight:700;color:var(--onpris)">Home</span>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+                <div style="width:56px;height:26px;border-radius:999px;display:flex;align-items:center;justify-content:center;position:relative">
+                  <span style="font-family:'Material Symbols Rounded';font-size:22px;color:var(--tx3)">credit_card</span>
+                  <span style="position:absolute;top:-2px;right:8px;min-width:16px;height:16px;border-radius:999px;background:var(--des);color:var(--ondes);font-size:9.5px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid var(--sf)">2</span>
+                </div>
+                <span style="font-size:11px;font-weight:600;color:var(--tx3)">Cards</span>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+                <div style="width:56px;height:26px;border-radius:999px;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:22px;color:var(--tx3)">swap_horiz</span></div>
+                <span style="font-size:11px;font-weight:600;color:var(--tx3)">Transfer</span>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+                <div style="width:56px;height:26px;border-radius:999px;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:22px;color:var(--tx3)">person</span></div>
+                <span style="font-size:11px;font-weight:600;color:var(--tx3)">Profile</span>
+              </div>
+            </div>
+            <div style="height:18px;display:flex;align-items:center;justify-content:center"><div style="width:96px;height:4px;border-radius:2px;background:var(--bd2)"></div></div>
+          </div>
+        </div>
+        <div style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);margin-top:12px">bar 56 + home-indicator inset · item hit = full column ≥ 48 wide</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Specs</div>
+          <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+            <li>3–5 destinations (2 → use Tabs; 6+ → Drawer). Equal-width columns, whole column = hit target.</li>
+            <li>Item: icon 22–24 in a 56×26 pill slot + label 11/700. Active: Primary-subtle pill + filled glyph + OnSubtle label. Inactive: TextMuted, outline glyph.</li>
+            <li>Bar: Surface + E2 (top shadow), bottom safe-area painted in bar fill. Labels always visible — icon-only nav fails review.</li>
+            <li>Badge (B7) anchors to the icon's top-end corner.</li>
+          </ul>
+        </div>
+        <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Behavior · a11y</div>
+          <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+            <li>Select: pill scales-in from 0.6 + fades, Base 200ms standard; glyph crossfades outline→filled 100ms. Press-down shows the pill at 40% instantly.</li>
+            <li>Each tab preserves its own navigation stack + scroll offsets; re-selecting the active tab pops to root / scrolls to top.</li>
+            <li>Dynamic Type: labels scale to ×1.3, bar grows; icons fixed.</li>
+            <li>A11y: tab semantics — "Home, tab, 1 of 4, selected". Badge value appended: "Cards, tab, 2 of 4, 2 new items".</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Item hover = SurfaceSubtle pill (§10); cursor pointer. At medium window widths the adaptive tier swaps BottomNavigation for NavigationRail (C16) — same items, same order.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Each destination is a tab stop; Enter/Space navigates.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Navigation landmark; selected = <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-current="page"</span> on web. Native Selected field: <strong style="color:var(--onwars)">REQUEST</strong> (§10).</div></div>
+    </div>
+  </section>
+
+  <section id="b-tabs" data-screen-label="B5 Tabs" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">B5</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Tabs</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new Tabs(labels: [...], selected: 0, mode: TabMode.Fixed | Scrollable, onSelect: fn)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:22px">
+        <div style="max-width:380px;margin:0 auto;background:var(--sf);border-radius:14px;border:1px solid var(--bd);overflow:hidden">
+          <div style="display:flex;border-bottom:1px solid var(--bd)">
+            <div style="flex:1;height:48px;display:flex;align-items:center;justify-content:center;position:relative">
+              <span style="font-size:calc(14px*var(--fs,1));font-weight:700;color:var(--pri)">Overview</span>
+              <div style="position:absolute;bottom:0;left:16px;right:16px;height:3px;border-radius:2px 2px 0 0;background:var(--pri)"></div>
+            </div>
+            <div style="flex:1;height:48px;display:flex;align-items:center;justify-content:center"><span style="font-size:calc(14px*var(--fs,1));font-weight:600;color:var(--tx3)">Holdings</span></div>
+            <div style="flex:1;height:48px;display:flex;align-items:center;justify-content:center;gap:6px"><span style="font-size:calc(14px*var(--fs,1));font-weight:600;color:var(--tx3)">Activity</span><span style="min-width:18px;height:18px;border-radius:999px;background:var(--sf2);color:var(--tx2);font-size:10.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;padding:0 5px">12</span></div>
+          </div>
+          <div style="height:52px;display:flex;align-items:center;padding:0 16px;font-size:13px;color:var(--tx3)">…tab panel — swipes horizontally between panels…</div>
+        </div>
+        <div style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);margin-top:12px">row 48 · indicator 3dp rrect, inset 16 · label 14/600→700 active</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Specs</div>
+          <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+            <li>Fixed mode: 2–4 tabs, equal width. Scrollable: 5+, hug + padding X 16, leading-aligned, edge fade via 24dp gradient overlay.</li>
+            <li>Indicator = 3dp rrect bar (top corners rounded), Primary — drawn once, translated between tabs. No underline strokes.</li>
+            <li>Active: Primary + weight 700 · Inactive: TextMuted 600 · Pressed: SurfaceSubtle fill on the tab cell.</li>
+            <li>Optional count Badge inline after the label (B7 inline form).</li>
+          </ul>
+        </div>
+        <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Behavior · a11y</div>
+          <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+            <li>Indicator slides Base 200ms standard, stretching ~15% mid-flight; panel swipe drags the indicator proportionally (gesture-linked, not time-linked).</li>
+            <li>Panels are horizontally swipeable; tab tap and swipe stay in sync. Panel content lazy-builds on first visit.</li>
+            <li>Hit: full cell height 48. A11y: "Overview, tab, 1 of 3, selected"; panel change moves reader focus to the panel.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Tab hover = SurfaceSubtle wash behind the label (§10); cursor pointer; wheel/drag scrolls a scrollable strip.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">The tablist is ONE tab stop: ←/→ move focus and select (wraps) · Home/End · Tab leaves to the active panel. RadioGroup and SegmentedControl arrow identically (§10).</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">tablist / tab / tabpanel</span>; selected tab = <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-selected=true</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-controls</span> → its panel. Native Selected field: <strong style="color:var(--onwars)">REQUEST</strong> (§10).</div></div>
+    </div>
+  </section>
+
+  <section id="b-avatar" data-screen-label="B6 Avatar" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">B6</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Avatar</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new Avatar(image?, initials: "AB", size: SizeVariant.Medium, status: Status.Online?)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:22px;display:flex;gap:34px;align-items:center;justify-content:center;flex-wrap:wrap">
+        <div style="display:flex;align-items:flex-end;gap:16px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:24px;height:24px;border-radius:999px;background:linear-gradient(135deg,#5CA2E8,#0050A0);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center">A</div><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">S 24</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:32px;height:32px;border-radius:999px;background:linear-gradient(135deg,#5CA2E8,#0050A0);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center">AB</div><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">M 32</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+            <div style="position:relative;width:40px;height:40px">
+              <div style="width:40px;height:40px;border-radius:999px;background:linear-gradient(135deg,#5CA2E8,#0050A0);color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center">AB</div>
+              <div style="position:absolute;bottom:0;right:0;width:12px;height:12px;border-radius:999px;background:var(--suc);border:2px solid var(--sf)"></div>
+            </div>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">L 40 + status</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:56px;height:56px;border-radius:999px;background:var(--sf2);color:var(--tx3);display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:28px">person</span></div><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">XL 56 · fallback</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+          <div style="display:flex">
+            <div style="width:32px;height:32px;border-radius:999px;background:linear-gradient(135deg,#5CA2E8,#0050A0);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--sf)">AB</div>
+            <div style="width:32px;height:32px;border-radius:999px;background:linear-gradient(135deg,#85C05E,#3B7A22);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--sf);margin-left:-8px">TK</div>
+            <div style="width:32px;height:32px;border-radius:999px;background:var(--sf2);color:var(--tx2);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--sf);margin-left:-8px">+3</div>
+          </div>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">group · overlap −8 · 2dp ring</span>
+        </div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Rules</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Sizes 24/32/40/56 · Radius.Full. Fallback chain: image → initials (2 chars, tinted 2-stop gradient hashed from the name) → person glyph on SurfaceSubtle.</li>
+          <li>Status dot = size/3.3, Success/TextMuted fill, 2dp Surface ring; bottom-end anchor.</li>
+          <li>Group stack: overlap −25%, 2dp Surface ring, max 4 + "+n" counter chip.</li>
+          <li>Non-interactive by default (image role, name as label); tappable only when wrapped in a button context — then hit ≥ 48.</li>
+          <li>Never square avatars for people; square + Radius.Md is reserved for workspace/entity marks.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Inert by itself; pressable only when wrapped in Pressable (then per Button rules).</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Image role named by the person or entity; the initials fallback keeps the same name.</div></div>
+    </div>
+  </section>
+
+  <section id="b-badge" data-screen-label="B7 Badge" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">B7</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Badge</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new Badge(count: 12, max: 99)  ·  Badge.Dot()  ·  attach: Stack + Positioned(top: −4, end: −4)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:22px;display:flex;gap:40px;align-items:center;justify-content:center;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+          <div style="position:relative"><span style="font-family:'Material Symbols Rounded';font-size:26px;color:var(--tx2)">notifications</span><span style="position:absolute;top:-2px;right:-2px;width:8px;height:8px;border-radius:999px;background:var(--des);border:2px solid var(--sf)"></span></div>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">dot 8</span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+          <div style="position:relative"><span style="font-family:'Material Symbols Rounded';font-size:26px;color:var(--tx2)">mail</span><span style="position:absolute;top:-6px;right:-8px;min-width:16px;height:16px;border-radius:999px;background:var(--des);color:var(--ondes);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid var(--sf)">4</span></div>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">count 16</span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+          <div style="position:relative"><span style="font-family:'Material Symbols Rounded';font-size:26px;color:var(--tx2)">chat_bubble</span><span style="position:absolute;top:-6px;right:-14px;min-width:16px;height:16px;border-radius:999px;background:var(--des);color:var(--ondes);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid var(--sf)">99+</span></div>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">max → "99+"</span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+          <span style="display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--tx1)">Activity <span style="min-width:18px;height:18px;border-radius:999px;background:var(--sf2);color:var(--tx2);font-size:10.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;padding:0 5px">12</span></span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">inline · neutral</span>
+        </div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Rules</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Dot 8dp · count 16dp min, Radius.Full, label 10/700, padding X 4, "99+" past <span style="font-family:'JetBrains Mono',monospace;font-size:12px">max</span>. 2dp Surface ring when over content.</li>
+          <li>Destructive pair = attention (unread); neutral SurfaceSubtle pair = passive counts (inline in Tabs/ListItems). Success/Warning/Info pairs allowed for status semantics.</li>
+          <li>Not interactive, never focusable — it annotates its host: "Cards, tab, 2 new items".</li>
+          <li>Count changes: scale-pop 0.8→1 Fast 100ms; appearing badge fades+scales in Base 200ms.</li>
+          <li>Don't badge more than 2 items per bar — competing urgency is noise.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Inert, never hit-testable — the host control owns the pointer.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Decorative; the count folds into the host’s announcement ("Notifications, 3 new").</div></div>
+    </div>
+  </section>
+
+  <section id="b-chip" data-screen-label="B8 Chip" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">B8</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Chip / Tag</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new Chip("Label", kind: ChipKind.Filter, selected: bool, icon?, onRemove: fn?)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <span style="height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--bd2);color:var(--tx1);font-size:calc(13px*var(--fs,1));font-weight:600;display:inline-flex;align-items:center;gap:6px;box-sizing:border-box">All</span>
+          <span style="height:32px;padding:0 12px;border-radius:999px;background:var(--pris);border:1px solid var(--pri);color:var(--onpris);font-size:calc(13px*var(--fs,1));font-weight:600;display:inline-flex;align-items:center;gap:6px;box-sizing:border-box"><span style="font-family:'Material Symbols Rounded';font-size:16px">check</span>Income</span>
+          <span style="height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--bd2);color:var(--tx1);font-size:calc(13px*var(--fs,1));font-weight:600;display:inline-flex;align-items:center;box-sizing:border-box">Expenses</span>
+          <span style="height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--bd2);color:var(--tx1);font-size:calc(13px*var(--fs,1));font-weight:600;display:inline-flex;align-items:center;box-sizing:border-box;opacity:.38">Crypto</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">← filter · selected = Subtle fill + check</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <span style="position:relative;display:inline-flex">
+            <span style="height:32px;padding:0 6px 0 12px;border-radius:999px;background:var(--sf2);color:var(--tx1);font-size:calc(13px*var(--fs,1));font-weight:600;display:inline-flex;align-items:center;gap:4px">rio-trip.pdf
+              <span style="position:relative;width:20px;height:20px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx3)">
+                <span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:48px;height:48px;border-radius:999px;background:rgba(216,49,140,.13);border:1px solid rgba(216,49,140,.55);opacity:var(--hit,0);pointer-events:none"></span>
+                <span style="font-family:'Material Symbols Rounded';font-size:16px">close</span>
+              </span>
+            </span>
+          </span>
+          <span style="height:32px;padding:0 12px;border-radius:999px;background:var(--infs);color:var(--oninfs);font-size:calc(13px*var(--fs,1));font-weight:700;display:inline-flex;align-items:center">Beta</span>
+          <span style="height:32px;padding:0 12px;border-radius:999px;background:var(--wars);color:var(--onwars);font-size:calc(13px*var(--fs,1));font-weight:700;display:inline-flex;align-items:center">Pending</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">← input w/ remove (48dp hit) · status tags</span>
+        </div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Rules</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Height 32 · Radius.Full · padding X 12 · label 13/600 · icon Sm 16, gap 6. One size (chips don't scale with SizeVariant).</li>
+          <li>Kinds: <strong style="color:var(--tx1)">Filter</strong> (toggle; selected = Primary-subtle fill + Primary border + check), <strong style="color:var(--tx1)">Input</strong> (removable; close 20dp visual, 48dp hit), <strong style="color:var(--tx1)">Tag</strong> (non-interactive status, Subtle pairs).</li>
+          <li>Chip rows: Row(wrap) gap 8, or horizontal ScrollView with 16dp gutter for single-line filter bars.</li>
+          <li>Pressed: fill shift (SurfaceSubtle / Pressed-subtle) instant; selection change animates check-in Fast 100ms.</li>
+          <li>A11y: Filter = toggle button "Income, filter, selected"; Input remove = custom action "remove rio-trip.pdf"; Tags read as text.</li>
+          <li>Don't use chips as buttons (no verbs) and don't mix kinds in one row.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Hover: outlined/quiet chips = SurfaceSubtle; filled chips = fill→pressed midpoint (§10). The remove ✕ is its own hover target inside the chip. Cursor pointer.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">A chip is a tab stop; Space/Enter toggles or activates; <strong style="color:var(--tx1)">Delete/Backspace removes</strong> a removable chip — the ✕ is not a separate stop.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Filter/toggle chip = button + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-pressed</span> (or <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">option</span> inside a listbox group). Remove mirrors as a custom action on native — <strong style="color:var(--onwars)">REQUEST</strong> (§10).</div></div>
+    </div>
+  </section>
+
+  <section id="b-input" data-screen-label="B9 TextInput" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">B9</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">TextInput</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new TextInput(value, onChanged, label: "Email", placeholder?, helper?, error?, leading: Icons.Mail?, keyboard: Keyboard.Email, size: SizeVariant.Large ★)</span>
+    </div>
+    <p style="margin:6px 0 16px;font-size:13.5px;line-height:1.6;color:var(--tx2);max-width:720px">Single-line text entry. Caret, selection and IME land at M4 — the visual and semantic contract is fixed now so forms built at M3 don't re-layout later. Sizes: Medium 40 (dense) · <strong style="color:var(--tx1)">Large 48 ★</strong> · XLarge 56; Small asserts (text + padding can't fit 32).</p>
+    <div style="display:grid;grid-template-columns:360px 1fr;gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:16px">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--tx2);margin-bottom:6px">Email</div>
+          <div style="height:48px;border:1px solid var(--bd2);border-radius:10px;background:var(--sf);display:flex;align-items:center;gap:10px;padding:0 14px;box-sizing:border-box">
+            <span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--tx3)">mail</span>
+            <span style="font-size:calc(16px*var(--fs,1));color:var(--tx3)">you@company.com</span>
+          </div>
+          <div style="font-size:12px;color:var(--tx3);margin-top:5px">Default — placeholder is TextMuted, never the label.</div>
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--tx2);margin-bottom:6px">Email</div>
+          <div style="height:48px;border:2px solid var(--pri);border-radius:10px;background:var(--sf);display:flex;align-items:center;gap:10px;padding:0 13px;box-sizing:border-box">
+            <span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--tx3)">mail</span>
+            <span style="display:inline-flex;align-items:center;gap:1px"><span style="font-size:calc(16px*var(--fs,1));color:var(--tx1)">ana@equantic</span><span style="width:2px;height:20px;border-radius:1px;background:var(--pri);animation:ph-blink .9s ease-in-out infinite alternate"></span></span>
+          </div>
+          <div style="font-size:12px;color:var(--tx3);margin-top:5px">Focused — border 2dp Primary, padding compensates −1dp.</div>
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--tx2);margin-bottom:6px">Email</div>
+          <div style="height:48px;border:1px solid var(--des);border-radius:10px;background:var(--sf);display:flex;align-items:center;gap:10px;padding:0 14px;box-sizing:border-box">
+            <span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--tx3)">mail</span>
+            <span style="flex:1;font-size:calc(16px*var(--fs,1));color:var(--tx1)">ana@equantic</span>
+            <span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--des)">error</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:5px"><span style="font-size:12px;font-weight:600;color:var(--ondess)">Enter a valid email address.</span></div>
+        </div>
+        <div style="opacity:.38">
+          <div style="font-size:13px;font-weight:600;color:var(--tx2);margin-bottom:6px">Company</div>
+          <div style="height:48px;border:1px solid var(--bd2);border-radius:10px;background:var(--sf2);display:flex;align-items:center;gap:10px;padding:0 14px;box-sizing:border-box">
+            <span style="font-size:calc(16px*var(--fs,1));color:var(--tx1)">eQuantic</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Specs</div>
+          <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+            <li>Container: Radius.Md 10 · border 1dp BorderStrong on Surface · padding X 14 · slot gap 10 · text 16/400, leading Icon Dense 20 TextMuted.</li>
+            <li>Label above: 13/600 TextSecondary, 6dp gap (A9 Label, auto-bound). Helper/error below: 12/500, 5dp gap — <strong style="color:var(--tx1)">the line is always reserved</strong> so error swaps never shift layout.</li>
+            <li>States: focused = 2dp Primary border (padding −1 compensates) · error = Destructive border + error glyph + Destructive helper; error + focus keeps Destructive · disabled = 38% group + SurfaceSubtle fill.</li>
+            <li>Trailing slot: clear button (visible when focused + non-empty, 20dp glyph / 48dp hit) or password eye or counter "12/40" Caption.</li>
+          </ul>
+        </div>
+        <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Behavior · a11y · usage</div>
+          <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+            <li>Focus: tap anywhere in the container (whole box = hit target); keyboard type + return action from <span style="font-family:'JetBrains Mono',monospace;font-size:12px">keyboard:</span>; ScrollView keeps the focused field above the IME (A6).</li>
+            <li>Caret 2dp Primary, 500ms blink; selection fill Primary @ 25% (M4). Validation runs on blur or submit — never per keystroke on first entry.</li>
+            <li>A11y: text-field role; name = label; value + placeholder read; error announced assertively on appear and appended to the field's description.</li>
+            <li>Don't use placeholder as the only label; don't validate-as-you-type before first blur; multiline is TextArea (post-v1, needs caret nav).</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">I-beam over the field; hover swaps the border Border→BorderStrong (<span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Motion.Press</span>); drag selects; right-click = platform text menu.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Tab in/out — a TextInput never traps Tab · caret keys per platform · Enter commits single-line · Esc drops focus, never the value.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">TextField named by its Label (never the placeholder); error text joins via described-by and announces when it appears.</div></div>
+    </div>
+  </section>
+
+  <section id="b-search" data-screen-label="B10 SearchField" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">B10</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">SearchField</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new SearchField(query, onChanged, placeholder: "Search…", onSubmit: fn, debounce: 300)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:360px 1fr;gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:16px">
+        <div>
+          <div style="height:40px;border-radius:999px;background:var(--sf2);display:flex;align-items:center;gap:8px;padding:0 14px">
+            <span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--tx3)">search</span>
+            <span style="font-size:calc(15px*var(--fs,1));color:var(--tx3)">Search transactions</span>
+          </div>
+          <div style="font-size:12px;color:var(--tx3);margin-top:5px">At rest — filled pill, no border.</div>
+        </div>
+        <div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="flex:1;height:40px;border-radius:999px;background:var(--sf2);box-shadow:0 0 0 2px var(--sf),0 0 0 4px var(--foc);display:flex;align-items:center;gap:8px;padding:0 14px">
+              <span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--tx3)">search</span>
+              <span style="display:inline-flex;align-items:center;gap:1px;flex:1;min-width:0"><span style="font-size:calc(15px*var(--fs,1));color:var(--tx1)">rio</span><span style="width:2px;height:18px;border-radius:1px;background:var(--pri);animation:ph-blink .9s ease-in-out infinite alternate"></span></span>
+              <span style="width:20px;height:20px;border-radius:999px;background:var(--bd2);display:inline-flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--sf)">close</span></span>
+            </div>
+            <span style="font-size:calc(15px*var(--fs,1));font-weight:600;color:var(--lnk)">Cancel</span>
+          </div>
+          <div style="font-size:12px;color:var(--tx3);margin-top:5px">Focused — clear glyph + Cancel slides in (Base 200ms).</div>
+        </div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Rules</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Height 40 · Radius.Full · SurfaceSubtle fill, no border (E0). One size; lives under the AppBar or as an AppBar action expansion, full-width minus 16dp gutters.</li>
+          <li>Text 15/400 · leading search glyph Dense 20 TextMuted · clear button appears when non-empty (glyph 20 in Full circle, hit 48).</li>
+          <li>Cancel text button (Link style) slides in on focus, collapses the field back on tap — iOS pattern kept on both platforms for consistency.</li>
+          <li>Live results: <span style="font-family:'JetBrains Mono',monospace;font-size:12px">onChanged</span> debounced 300ms; keyboard "Search" action fires <span style="font-family:'JetBrains Mono',monospace;font-size:12px">onSubmit</span> immediately.</li>
+          <li>A11y: search-field role; announces result count politely after debounce ("14 results"). Clear = custom action "clear search".</li>
+          <li>Don't add labels/helpers — search context must be self-evident; don't use it as a generic TextInput.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">As TextInput (B9); the clear ✕ appears with content and takes its own hover.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)"><strong style="color:var(--tx1)">Esc clears the query first</strong>; a second Esc blurs · Enter submits · ↓ moves into the suggestion list where present.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">role=searchbox</span>; the result count announces politely on settle.</div></div>
+    </div>
+  </section>
+
+  <section id="b-checkbox" data-screen-label="B11 Checkbox" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">B11</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Checkbox</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new Checkbox(checked, onChanged, label: "…", tristate: false)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:20px">
+        <div style="display:flex;gap:36px;align-items:center;justify-content:center;flex-wrap:wrap">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:4px;border:2px solid var(--bd2);box-sizing:border-box;background:var(--sf)"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">unchecked</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:4px;background:var(--pri);display:inline-flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:16px;color:var(--onpri);font-variation-settings:'wght' 600">check</span></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">checked</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:4px;background:var(--pri);display:inline-flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:16px;color:var(--onpri);font-variation-settings:'wght' 600">remove</span></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">mixed</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:4px;border:2px solid var(--des);box-sizing:border-box;background:var(--sf)"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">error</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:4px;background:var(--pri);display:inline-flex;align-items:center;justify-content:center;opacity:.38"><span style="font-family:'Material Symbols Rounded';font-size:16px;color:var(--onpri);font-variation-settings:'wght' 600">check</span></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">disabled</span></div>
+        </div>
+        <div style="border-top:1px solid var(--bd);padding-top:16px;display:flex;justify-content:center">
+          <div style="position:relative;display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;background:var(--sf2)">
+            <div style="position:absolute;left:0;top:50%;transform:translateY(-50%);width:100%;height:48px;border-radius:10px;background:rgba(216,49,140,.13);border:1px solid rgba(216,49,140,.55);opacity:var(--hit,0);pointer-events:none"></div>
+            <span style="width:22px;height:22px;border-radius:4px;background:var(--pri);display:inline-flex;align-items:center;justify-content:center;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:16px;color:var(--onpri);font-variation-settings:'wght' 600">check</span></span>
+            <span style="font-size:calc(15px*var(--fs,1));color:var(--tx1)">I agree to the <span style="color:var(--lnk);font-weight:600">terms of service</span></span>
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Rules</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Box 22×22 · Radius.Xs 4 · unchecked: 2dp BorderStrong border · checked/mixed: Primary fill + 16dp check/dash glyph. Error: Destructive border (e.g. required terms).</li>
+          <li>Row form: box + label 15/400, gap 12; the whole row is the target (hit ≥ 48 tall); inline links inside the label keep their own hit rects.</li>
+          <li>Motion: fill + glyph scale-pop 0.6→1, Fast 100ms; press-down tints the box border Primary instantly.</li>
+          <li>Checkbox = independent option in a set; single on/off setting with immediate effect = Switch (B12); mutually exclusive pick = RadioGroup (B13).</li>
+          <li>A11y: checkbox role — "Terms of service, checkbox, checked / mixed / not checked"; error appended to description.</li>
+          <li><span style="font-family:'JetBrains Mono',monospace;font-size:12px">tristate</span> is for parent "select all" rows only — never as a third user choice.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Hover = SurfaceSubtle wash over the hit area (§10); cursor pointer; the paired label row is the same target.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Tab stop · <strong style="color:var(--tx1)">Space toggles</strong> (Enter does not) · mixed → checked → unchecked.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">role=checkbox</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-checked</span> (true/false/mixed) — <strong style="color:var(--tx1)">state is a STATE, never in the name</strong> (§10). Native Checked field: <strong style="color:var(--onwars)">REQUEST</strong>.</div></div>
+    </div>
+  </section>
+
+  <section id="b-switch" data-screen-label="B12 Switch" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">B12</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Switch</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new Switch(on, onChanged)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:22px;display:flex;gap:40px;align-items:center;justify-content:center;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+          <button onClick="{{ toggleSw }}" style="width:52px;height:32px;border-radius:999px;border:none;padding:0;background:{{ swTrack }};position:relative;cursor:pointer;transition:background 200ms cubic-bezier(0.2,0,0,1)" style-focus="outline:none;box-shadow:0 0 0 2px var(--sf),0 0 0 4px var(--foc)">
+            <span style="position:absolute;top:3px;left:{{ swLeft }};width:26px;height:26px;border-radius:999px;background:#FFFFFF;box-shadow:0 1px 3px rgba(15,23,32,.3);transition:left 200ms cubic-bezier(0.2,0,0,1)"></span>
+          </button>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">live — {{ swLabel }} · tap it</span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+          <span style="width:52px;height:32px;border-radius:999px;background:var(--bd2);position:relative;display:inline-block"><span style="position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:999px;background:#FFFFFF;box-shadow:0 1px 3px rgba(15,23,32,.3)"></span></span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">off</span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+          <span style="width:52px;height:32px;border-radius:999px;background:var(--pri);position:relative;display:inline-block"><span style="position:absolute;top:3px;left:23px;width:26px;height:26px;border-radius:999px;background:#FFFFFF;box-shadow:0 1px 3px rgba(15,23,32,.3)"></span></span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">on</span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+          <span style="width:52px;height:32px;border-radius:999px;background:var(--pri);position:relative;display:inline-block;opacity:.38"><span style="position:absolute;top:3px;left:23px;width:26px;height:26px;border-radius:999px;background:#FFFFFF"></span></span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">disabled</span>
+        </div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Rules</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Track 52×32 Radius.Full — off: BorderStrong fill · on: Primary. Thumb 26dp white, E1 shadow, 3dp inset. Hit rect 48, extends over the paired label row in ListItems.</li>
+          <li>Toggle: thumb slides Base 200ms standard + track crossfades. <strong style="color:var(--tx1)">Draggable</strong>: thumb follows the finger, release settles by position + velocity (<strong style="color:var(--tx1)">Release glide — 200ms smoothstep (§06); velocity spring still REQUEST</strong>); press-down stretches the thumb to 30dp wide (rrect, engine-honest).</li>
+          <li>Effect is immediate — a Switch never needs a Save button; async effects show their state elsewhere (never a spinner in the switch).</li>
+          <li>A11y: switch role — "Notifications, switch, on"; double-tap/Space toggles; value change announced.</li>
+          <li>Don't use for options requiring confirmation (use Checkbox + submit) or for mutually exclusive choices (RadioGroup/SegmentedControl).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Hover = SurfaceSubtle wash over the hit area (§10); cursor pointer; the thumb is mouse-draggable — release picks by position + velocity, then the Release glide (§06).</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Tab stop · Space toggles · ←/→ set off/on explicitly.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">role=switch</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-checked</span> — never "Notifications on" as a name (§10). Native Checked field: <strong style="color:var(--onwars)">REQUEST</strong>.</div></div>
+    </div>
+  </section>
+
+  <section id="b-radio" data-screen-label="B13 RadioGroup" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">B13</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">RadioGroup</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new RadioGroup(options: [...], selected: 1, onChanged, label: "Statement frequency")</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:22px;display:flex;justify-content:center">
+        <div style="display:flex;flex-direction:column;gap:4px;min-width:260px">
+          <div style="font-size:13px;font-weight:600;color:var(--tx2);margin-bottom:6px">Statement frequency</div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 4px">
+            <span style="width:22px;height:22px;border-radius:999px;border:2px solid var(--bd2);box-sizing:border-box;flex:none"></span>
+            <span style="font-size:calc(15px*var(--fs,1))">Weekly</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 4px">
+            <span style="width:22px;height:22px;border-radius:999px;border:2px solid var(--pri);box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;flex:none"><span style="width:10px;height:10px;border-radius:999px;background:var(--pri)"></span></span>
+            <span style="font-size:calc(15px*var(--fs,1));font-weight:600">Monthly</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 4px">
+            <span style="width:22px;height:22px;border-radius:999px;border:2px solid var(--bd2);box-sizing:border-box;flex:none"></span>
+            <span style="font-size:calc(15px*var(--fs,1))">Quarterly</span>
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Rules</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Radio 22dp circle: 2dp BorderStrong · selected: 2dp Primary ring + 10dp Primary dot (two rrect draws). Row = full-width target, min 44 tall, gap 12.</li>
+          <li>Selection moves, never clears — a group always has exactly one value (start with a sensible default; use Checkboxes if "none" is valid).</li>
+          <li>Motion: dot scales in 0.4→1 Fast 100ms; previous dot scales out simultaneously.</li>
+          <li>A11y: single focus stop for the group; arrows/swipe move selection — "Monthly, radio button, 2 of 3, selected". Group label from <span style="font-family:'JetBrains Mono',monospace;font-size:12px">label:</span>.</li>
+          <li>2–5 always-visible options; ≥ 6 → Select-in-BottomSheet (Phase C); 2–3 short exclusive views → SegmentedControl (Phase C).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Row hover = SurfaceSubtle wash (§10); cursor pointer; the label row toggles.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">The group is ONE tab stop with roving focus: <strong style="color:var(--tx1)">arrows move AND select</strong>, wrapping — exactly the SegmentedControl pattern (§10); Space selects when landing unselected.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">radiogroup / radio</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-checked</span>; the group is named by its label. Native Checked field: <strong style="color:var(--onwars)">REQUEST</strong> (§10).</div></div>
+    </div>
+  </section>
+
+  <section id="b-progress" data-screen-label="B14 ProgressBar" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">B14</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">ProgressBar</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new ProgressBar(value: 0.64?)  — null = indeterminate</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:24px 26px;display:flex;flex-direction:column;gap:22px">
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;font-weight:600;color:var(--tx2)">Uploading statement.pdf</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">64%</span></div>
+          <div style="height:4px;border-radius:999px;background:var(--sf2);overflow:hidden"><div style="width:64%;height:4px;border-radius:999px;background:var(--pri)"></div></div>
+          <div style="font-size:12px;color:var(--tx3);margin-top:6px">Determinate · 4dp default</div>
+        </div>
+        <div>
+          <div style="height:4px;border-radius:999px;background:var(--sf2);overflow:hidden;position:relative"><div style="position:absolute;top:0;width:30%;height:4px;border-radius:999px;background:var(--pri);animation:ph-indet 1.2s cubic-bezier(0.3,0,0.7,1) infinite"></div></div>
+          <div style="font-size:12px;color:var(--tx3);margin-top:6px">Indeterminate · 30% segment, 1.2s loop</div>
+        </div>
+        <div>
+          <div style="height:8px;border-radius:999px;background:var(--sf2);overflow:hidden"><div style="width:38%;height:8px;border-radius:999px;background:var(--suc)"></div></div>
+          <div style="font-size:12px;color:var(--tx3);margin-top:6px">Prominent 8dp · Success tint for goal/quota meters</div>
+        </div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Rules</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Track SurfaceSubtle, fill Primary (status tints allowed for meters), Radius.Full both. Heights 4 (default) / 8 (prominent). Fills the row width.</li>
+          <li>Value changes animate Base 200ms standard, <strong style="color:var(--tx1)">forward only</strong> — regressions snap (honesty over smoothness).</li>
+          <li>Two rrect draws; indeterminate = one translated segment, transform-only frame.</li>
+          <li>Percent/label live outside the bar (Caption) — never inside the 4dp track.</li>
+          <li>A11y: progressbar role; determinate announces at 25% steps + completion; indeterminate announces "in progress" once, not per frame.</li>
+          <li>Known duration or measurable progress → ProgressBar; unknown &amp; short (&lt; ~10s) → Spinner (B15).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Inert.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">role=progressbar</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-valuenow/valuemin/valuemax</span>; indeterminate omits valuenow. Announce milestones, not every frame.</div></div>
+    </div>
+  </section>
+
+  <section id="b-spinner" data-screen-label="B15 Spinner" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">B15</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Spinner</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new Spinner(size: IconSize.Dense, color: inherit)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:24px;display:flex;gap:44px;align-items:center;justify-content:center;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+          <span style="position:relative;width:16px;height:16px;display:inline-block;color:var(--tx3)"><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(0deg);animation:ph-blink .8s linear infinite;animation-delay:-.8s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(45deg);animation:ph-blink .8s linear infinite;animation-delay:-.7s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(90deg);animation:ph-blink .8s linear infinite;animation-delay:-.6s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(135deg);animation:ph-blink .8s linear infinite;animation-delay:-.5s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(180deg);animation:ph-blink .8s linear infinite;animation-delay:-.4s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(225deg);animation:ph-blink .8s linear infinite;animation-delay:-.3s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(270deg);animation:ph-blink .8s linear infinite;animation-delay:-.2s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(315deg);animation:ph-blink .8s linear infinite;animation-delay:-.1s"></span></span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">Sm 16</span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+          <span style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center"><span style="position:relative;width:16px;height:16px;display:inline-block;color:var(--tx3);transform:scale(1.25)"><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(0deg);animation:ph-blink .8s linear infinite;animation-delay:-.8s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(45deg);animation:ph-blink .8s linear infinite;animation-delay:-.7s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(90deg);animation:ph-blink .8s linear infinite;animation-delay:-.6s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(135deg);animation:ph-blink .8s linear infinite;animation-delay:-.5s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(180deg);animation:ph-blink .8s linear infinite;animation-delay:-.4s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(225deg);animation:ph-blink .8s linear infinite;animation-delay:-.3s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(270deg);animation:ph-blink .8s linear infinite;animation-delay:-.2s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(315deg);animation:ph-blink .8s linear infinite;animation-delay:-.1s"></span></span></span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">Dense 20</span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+          <span style="width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center"><span style="position:relative;width:16px;height:16px;display:inline-block;color:var(--pri);transform:scale(1.5)"><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(0deg);animation:ph-blink .8s linear infinite;animation-delay:-.8s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(45deg);animation:ph-blink .8s linear infinite;animation-delay:-.7s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(90deg);animation:ph-blink .8s linear infinite;animation-delay:-.6s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(135deg);animation:ph-blink .8s linear infinite;animation-delay:-.5s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(180deg);animation:ph-blink .8s linear infinite;animation-delay:-.4s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(225deg);animation:ph-blink .8s linear infinite;animation-delay:-.3s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(270deg);animation:ph-blink .8s linear infinite;animation-delay:-.2s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(315deg);animation:ph-blink .8s linear infinite;animation-delay:-.1s"></span></span></span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">Md 24 · Primary</span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:10px;background:var(--sf2)">
+            <span style="position:relative;width:16px;height:16px;display:inline-block;color:var(--tx2)"><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(0deg);animation:ph-blink .8s linear infinite;animation-delay:-.8s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(45deg);animation:ph-blink .8s linear infinite;animation-delay:-.7s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(90deg);animation:ph-blink .8s linear infinite;animation-delay:-.6s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(135deg);animation:ph-blink .8s linear infinite;animation-delay:-.5s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(180deg);animation:ph-blink .8s linear infinite;animation-delay:-.4s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(225deg);animation:ph-blink .8s linear infinite;animation-delay:-.3s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(270deg);animation:ph-blink .8s linear infinite;animation-delay:-.2s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(315deg);animation:ph-blink .8s linear infinite;animation-delay:-.1s"></span></span>
+            <span style="font-size:13px;font-weight:600;color:var(--tx2)">Syncing accounts…</span>
+          </div>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">with context label</span>
+        </div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Rules</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>8 rrect bars (2×5 at 16dp), opacity phase-staggered, 800ms/rev linear — <strong style="color:var(--tx1)">no arcs exist in the engine</strong>; this is the canonical activity indicator on both platforms.</li>
+          <li>Sizes = icon whitelist 16/20/24/32; color inherits the text token of its context (OnPrimary inside a loading Button).</li>
+          <li>Appears only after a 400ms delay (skip flash for fast ops); standalone spinners &gt; 2s require a context label.</li>
+          <li>A11y: "in progress" announced once; inside Button the host announces busy (A12). Reduce Motion: bars pulse in place, no rotation phase.</li>
+          <li>Full-screen spinner is an anti-pattern — use Skeleton (B16) for content loads.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Inert.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Hidden from the tree — the OWNING region announces busy, never the spinner itself, so nothing double-announces.</div></div>
+    </div>
+  </section>
+
+  <section id="b-skeleton" data-screen-label="B16 Skeleton" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">B16</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Skeleton</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new Skeleton(shape: SkeletonShape.Line | Circle | Block, width, height)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:22px;display:flex;justify-content:center">
+        <div style="width:300px;background:var(--sf);border-radius:14px;box-shadow:var(--e1);padding:16px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="width:40px;height:40px;border-radius:999px;background:var(--sf2);position:relative;overflow:hidden;flex:none"><span style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(160,175,190,0),rgba(160,175,190,.35));animation:ph-shimmer 1.4s ease-in-out infinite"></span></span>
+            <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+              <span style="height:12px;width:70%;border-radius:999px;background:var(--sf2);position:relative;overflow:hidden;display:block"><span style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(160,175,190,0),rgba(160,175,190,.35));animation:ph-shimmer 1.4s ease-in-out infinite"></span></span>
+              <span style="height:10px;width:45%;border-radius:999px;background:var(--sf2);position:relative;overflow:hidden;display:block"><span style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(160,175,190,0),rgba(160,175,190,.35));animation:ph-shimmer 1.4s ease-in-out infinite"></span></span>
+            </div>
+          </div>
+          <span style="height:84px;border-radius:10px;background:var(--sf2);position:relative;overflow:hidden;display:block"><span style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(160,175,190,0),rgba(160,175,190,.35));animation:ph-shimmer 1.4s ease-in-out infinite"></span></span>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span style="height:12px;width:100%;border-radius:999px;background:var(--sf2);position:relative;overflow:hidden;display:block"><span style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(160,175,190,0),rgba(160,175,190,.35));animation:ph-shimmer 1.4s ease-in-out infinite"></span></span>
+            <span style="height:12px;width:62%;border-radius:999px;background:var(--sf2);position:relative;overflow:hidden;display:block"><span style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(160,175,190,0),rgba(160,175,190,.35));animation:ph-shimmer 1.4s ease-in-out infinite"></span></span>
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Rules</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Shapes: Line (12dp, Radius.Full, widths 100/70/45%), Circle (avatar sizes), Block (Radius.Md) — SurfaceSubtle base + a translating 2-stop gradient tint (one clipped layer; engine-honest, no mask).</li>
+          <li><strong style="color:var(--tx1)">Mirror the real layout's dimensions</strong> — content must replace skeleton with zero shift. Skeleton the first ~1.5 viewports only.</li>
+          <li>All shapes share one 1.4s phase (single global clock — no sparkle chaos). Real content crossfades in 200ms as it arrives, per region.</li>
+          <li>Show only for loads expected &gt; 300ms; Reduce Motion → static SurfaceSubtle, no sweep.</li>
+          <li>A11y: shapes hidden; the region announces "loading content" once, then "loaded".</li>
+          <li>Skeleton = structural loads. Action feedback = Button loading / Spinner. Never skeleton a whole screen behind a Modal.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Inert; no hover interplay with the shimmer.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Hidden; the loading region announces busy once, then announces the content when it lands.</div></div>
+    </div>
+  </section>
+
+  <section id="b-empty" data-screen-label="B17 EmptyState" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">B17</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">EmptyState</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new EmptyState(icon, title, body?, action: Button?, secondary: Button?)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:22px;display:flex;justify-content:center">
+        <div style="width:320px;background:var(--sf);border-radius:14px;border:1px solid var(--bd);padding:48px 24px;display:flex;flex-direction:column;align-items:center;gap:0;text-align:center">
+          <div style="width:64px;height:64px;border-radius:999px;background:var(--sf2);display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:32px;color:var(--tx3)">search_off</span></div>
+          <div style="font-size:calc(20px*var(--fs,1));font-weight:600;letter-spacing:-.01em;margin-top:16px">No results for "rio"</div>
+          <div style="font-size:calc(15px*var(--fs,1));line-height:1.5;color:var(--tx2);margin-top:6px;max-width:240px">Check the spelling or try a broader term.</div>
+          <span style="height:40px;padding:0 16px;border-radius:10px;background:var(--pri);color:var(--onpri);font-size:calc(15px*var(--fs,1));font-weight:600;display:inline-flex;align-items:center;margin-top:20px">Clear filters</span>
+        </div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Rules</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Centered Column: icon Lg 32 in a 64dp Radius.Full SurfaceSubtle well → 16 → Title (20/600) → 6 → body (15, TextSecondary, ≤ 2 lines) → 20 → one Medium Button (+ optional Ghost secondary).</li>
+          <li>Vertical padding S12 48; centers in the space the missing content would occupy — never floats mid-scroll.</li>
+          <li>Three flavors, same anatomy: <strong style="color:var(--tx1)">first-use</strong> (invite: "Add your first card"), <strong style="color:var(--tx1)">no-results</strong> (recovery: clear/broaden), <strong style="color:var(--tx1)">error</strong> (Retry as action).</li>
+          <li>Title states the situation, body the way out — no apologies, no mascots-with-tears; illustration slot is an Image (bitmap atlas), optional.</li>
+          <li>A11y: reader focus moves to the title when a list becomes empty; action is next in order.</li>
+          <li>Don't stack multiple actions or explain the whole feature — one screen, one recovery path.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Static content; its CTA is a Button (A12) with the full pointer contract.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Illustration hidden; title and body read as text; the CTA is the only stop.</div></div>
+    </div>
+  </section>
+
+  <section id="b-banner" data-screen-label="B18 Banner" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">B18</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Banner / Alert</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new Banner(status: Variant.Warning, title, body?, actions: [...]?, dismissible: true)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:10px;padding:12px 14px;border-radius:14px;background:var(--infs)">
+          <span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--oninfs);flex:none">info</span>
+          <div style="font-size:calc(13px*var(--fs,1));line-height:1.5;color:var(--oninfs)"><strong>Scheduled maintenance</strong> — transfers may be slower on Sunday 02:00–04:00.</div>
+        </div>
+        <div style="display:flex;gap:10px;padding:12px 14px;border-radius:14px;background:var(--sucs)">
+          <span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--onsucs);flex:none">check_circle</span>
+          <div style="font-size:calc(13px*var(--fs,1));line-height:1.5;color:var(--onsucs)"><strong>Identity verified.</strong> All account limits are now unlocked.</div>
+        </div>
+        <div style="display:flex;gap:10px;padding:12px 14px;border-radius:14px;background:var(--wars)">
+          <span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--onwars);flex:none">warning</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:calc(13px*var(--fs,1));line-height:1.5;color:var(--onwars)"><strong>Your card expires this month.</strong> Renew it to keep automatic payments running.</div>
+            <div style="display:flex;gap:16px;margin-top:8px">
+              <span style="font-size:13px;font-weight:700;color:var(--onwars)">Renew card</span>
+              <span style="font-size:13px;font-weight:600;color:var(--onwars);opacity:.75">Remind me later</span>
+            </div>
+          </div>
+          <span style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;color:var(--onwars);flex:none"><span style="font-family:'Material Symbols Rounded';font-size:18px">close</span></span>
+        </div>
+        <div style="display:flex;gap:10px;padding:12px 14px;border-radius:14px;background:var(--dess)">
+          <span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--ondess);flex:none">error</span>
+          <div style="font-size:calc(13px*var(--fs,1));line-height:1.5;color:var(--ondess)"><strong>Payment failed.</strong> Your balance was not charged — try another method.</div>
+        </div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Rules</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Inline surface (scrolls with content, top of the region it describes): Radius.Lg 14 · Subtle pair fill per status · padding 12/14 · icon Dense 20 + gap 10 · text 13, bold lead-in instead of a separate title row.</li>
+          <li>Actions: ≤ 2 text buttons in OnSubtle (primary 700, secondary 600 @ 75%), hit 48. Dismiss X only for non-critical banners (glyph 18, hit 48).</li>
+          <li>Enter: fade + height Slow 300ms decelerate (layout animates once — allowed exception); exit ⅔ accelerate.</li>
+          <li>A11y: Warning/Destructive = assertive alert role; Info/Success = polite status. Dismiss = custom action.</li>
+          <li>Banner is <em>persistent context</em> — transient confirmations are Toast (Phase C); blocking decisions are Modal (Phase C). Max 1 banner per screen; never stack.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Static surface; its actions hover per Button. Never dismissed by hover or timer — a Banner is persistent state.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Actions are ordinary tab stops; a dismissible Banner’s ✕ is the last stop inside it.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">role=status</span> (polite) for info/success · <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">role=alert</span> for error severity. Content change re-announces.</div></div>
+    </div>
+  </section>
+
+  <footer style="border-top:1px solid var(--bd);padding-top:24px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
+    <span style="font-size:13px;font-weight:700">Photon Mobile Design System</span>
+    <span style="font-size:12px;color:var(--tx3)">Spec v1.1 (SDK audit) · Foundations 00–10 + Phase A (A1–A13) + Phase B (B1–B18) + Phase C (C1–C16) — C3 · C15 · C16 ahead of the SDK (REQUEST). Charts, maps and rich text are outside the v1 fence by design.</span>
+  </footer>
+</main>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light' | 'dark'&quot;,&quot;section&quot;:&quot;Preview&quot;},&quot;fontScale&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:1,&quot;max&quot;:1.3,&quot;step&quot;:0.05,&quot;default&quot;:1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Preview&quot;},&quot;showHitAreas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Preview&quot;}}">
+class Component extends DCLogic {
+  state = { theme: 'light', fs: 1, hit: false, mk: 0, btnLoading: false, swOn: true, seg: 0, accOpen: true, toastOn: false };
+
+  componentDidMount() {
+    let t = 'light';
+    try { t = localStorage.getItem('photon-theme') || (this.props.theme ?? 'light'); } catch (e) { t = this.props.theme ?? 'light'; }
+    this.applyTheme(t, false);
+    const fs = this.props.fontScale ?? 1;
+    if (fs !== 1) this.applyFs(fs);
+    if (this.props.showHitAreas) this.applyHit(true);
+    setTimeout(() => this.setState(s => ({ mk: s.mk + 1 })), 400);
+  }
+
+  applyTheme(t, persist) {
+    if (t === 'dark') document.body.setAttribute('data-theme', 'dark');
+    else document.body.removeAttribute('data-theme');
+    if (persist) { try { localStorage.setItem('photon-theme', t); } catch (e) {} }
+    this.setState({ theme: t });
+  }
+  applyFs(v) { document.body.style.setProperty('--fs', String(v)); this.setState({ fs: v }); }
+  applyHit(on) { document.body.style.setProperty('--hit', on ? '1' : '0'); this.setState({ hit: on }); }
+
+  dot(anim) {
+    return React.createElement('span', {
+      key: 'k' + this.state.mk,
+      style: {
+        position: 'absolute', left: 8, top: 7, width: 18, height: 18, borderRadius: 6,
+        background: 'var(--pri)', animation: anim, animationFillMode: 'forwards'
+      }
+    });
+  }
+
+  renderVals() {
+    const { theme, fs, hit } = this.state;
+    const seg = (active) => ({
+      bg: active ? 'var(--sf)' : 'transparent',
+      c: active ? 'var(--tx1)' : 'var(--tx3)',
+      sh: active ? '0 1px 2px rgba(15,23,32,.18)' : 'none'
+    });
+    const s1 = seg(fs === 1), s2 = seg(fs === 1.15), s3 = seg(fs === 1.3);
+    return {
+      themeIcon: theme === 'dark' ? 'light_mode' : 'dark_mode',
+      themeLabel: theme === 'dark' ? 'Light' : 'Dark',
+      toggleTheme: () => this.applyTheme(this.state.theme === 'dark' ? 'light' : 'dark', true),
+      fs100: () => this.applyFs(1), fs115: () => this.applyFs(1.15), fs130: () => this.applyFs(1.3),
+      fsBg1: s1.bg, fsC1: s1.c, fsSh1: s1.sh,
+      fsBg2: s2.bg, fsC2: s2.c, fsSh2: s2.sh,
+      fsBg3: s3.bg, fsC3: s3.c, fsSh3: s3.sh,
+      toggleHit: () => this.applyHit(!this.state.hit),
+      hitBg: hit ? 'var(--pris)' : 'var(--sf2)',
+      hitC: hit ? 'var(--onpris)' : 'var(--tx1)',
+      noop: () => {},
+      swTrack: this.state.swOn ? 'var(--pri)' : 'var(--bd2)',
+      swLeft: this.state.swOn ? '23px' : '3px',
+      swLabel: this.state.swOn ? 'On' : 'Off',
+      toggleSw: () => this.setState(s => ({ swOn: !s.swOn })),
+      segLeft: 'calc(4px + ' + this.state.seg + ' * ((100% - 8px) / 3))',
+      seg0C: this.state.seg === 0 ? 'var(--tx1)' : 'var(--tx2)',
+      seg1C: this.state.seg === 1 ? 'var(--tx1)' : 'var(--tx2)',
+      seg2C: this.state.seg === 2 ? 'var(--tx1)' : 'var(--tx2)',
+      segPick0: () => this.setState({ seg: 0 }),
+      segPick1: () => this.setState({ seg: 1 }),
+      segPick2: () => this.setState({ seg: 2 }),
+      accMax: this.state.accOpen ? '220px' : '0px',
+      accRot: this.state.accOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+      accStateLabel: this.state.accOpen ? 'expanded' : 'collapsed',
+      toggleAcc: () => this.setState(s => ({ accOpen: !s.accOpen })),
+      toastOn: this.state.toastOn,
+      showToast: () => {
+        clearTimeout(this._toastT);
+        this.setState({ toastOn: true });
+        this._toastT = setTimeout(() => this.setState({ toastOn: false }), 3200);
+      },
+      btnLoading: this.state.btnLoading,
+      btnNotLoading: !this.state.btnLoading,
+      btnLoadingLabel: this.state.btnLoading ? 'Stop loading' : 'Simulate loading',
+      toggleBtnLoading: () => this.setState(s => ({ btnLoading: !s.btnLoading })),
+      replayMotion: () => this.setState(s => ({ mk: s.mk + 1 })),
+      dotStandard: this.dot('ph-move-std 200ms cubic-bezier(0.2,0,0,1) 120ms forwards'),
+      dotDecel: this.dot('ph-move-std 300ms cubic-bezier(0,0,0,1) 120ms forwards'),
+      dotGlide: this.dot('ph-move-std 200ms cubic-bezier(0.33,0,0.67,1) 120ms forwards')
+    };
+  }
+}
+</script>
+</body>
+</html>

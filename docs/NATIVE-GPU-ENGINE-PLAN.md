@@ -349,7 +349,7 @@ Bun and the JS bundling chain, the TypeScript runtime.
   (objc-interop decision), Slang toolchain spike, then the same 14 goldens running on Metal.
 
 - **2026-07-03 — Design System + shared architecture landed.** The Photon Design System handoff
-  (Claude Design) is preserved at `docs/design/Photon-Design-System.dc.html` and implemented as the
+  (Claude Design) LIVES at `docs/design/` — corrected there rather than in the design tool — and is implemented as the
   SHARED token layer: `eQuantic.UI.Primitives` (new, zero-dep) holds `Color`, the full token set
   (§01–§08: paired light/dark `ColorToken`s, `VariantColors` with Pressed-as-token, type scale with
   Dynamic Type clamps, spacing/radius/icon/touch scales, analytic `ShadowSpec` elevation, motion), the

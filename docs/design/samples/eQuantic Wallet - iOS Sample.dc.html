@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0" rel="stylesheet">
+<style>
+body{margin:0;background:var(--desk);color:var(--tx1);font-family:'Hanken Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased;
+--desk:#DDE3EA;
+--bg:#F5F6F8;--sf:#FFFFFF;--sf2:#EFF1F4;--bd:#E2E5EA;--bd2:#C9CED6;
+--tx1:#171B21;--tx2:#4B5563;--tx3:#5F6B7A;--txi:#FFFFFF;
+--pri:#0050A0;--onpri:#FFFFFF;--prip:#00427F;--pris:#E8F1FA;--onpris:#003E7E;
+--sec:#E9EDF2;--onsec:#3A4350;
+--des:#B42318;--ondes:#FFFFFF;--dess:#FCEBEA;--ondess:#8F1D1D;
+--suc:#3B7A22;--onsuc:#FFFFFF;--sucs:#EDF6E6;--onsucs:#2C5E17;
+--war:#8A5A00;--onwar:#FFFFFF;--wars:#FBF3DF;--onwars:#7A5200;
+--inf:#0C6C86;--oninf:#FFFFFF;--infs:#E4F3F8;--oninfs:#0A5468;
+--lnk:#0050A0;--foc:#0050A0;--scrim:rgba(11,14,18,.40);
+--e1:0 1px 3px 0 rgba(15,23,32,.10);--e2:0 2px 8px 0 rgba(15,23,32,.12);--e3:0 6px 16px -2px rgba(15,23,32,.16);--e4:0 12px 28px -4px rgba(15,23,32,.20)}
+body[data-theme="dark"]{--desk:#0A0C0F;
+--bg:#0C0F13;--sf:#14181E;--sf2:#1C232B;--bd:#2A323D;--bd2:#3D4754;
+--tx1:#F2F4F7;--tx2:#AEB7C2;--tx3:#8B95A3;--txi:#171B21;
+--pri:#5CA2E8;--onpri:#06263F;--prip:#7CB5EE;--pris:#0F2740;--onpris:#A8CDF2;
+--sec:#242C36;--onsec:#D7DDE5;
+--des:#E5645C;--ondes:#3B0704;--dess:#3A1210;--ondess:#F4A9A4;
+--suc:#85C05E;--onsuc:#12290A;--sucs:#16290C;--onsucs:#B5DB97;
+--war:#E8B04B;--onwar:#2E1B02;--wars:#2E2008;--onwars:#EECF8F;
+--inf:#4CC3DE;--oninf:#062B33;--infs:#0A2A32;--oninfs:#9FDCEB;
+--lnk:#7CB5EE;--foc:#7CB5EE;--scrim:rgba(0,0,0,.56);
+--e1:0 1px 3px 0 rgba(0,0,0,.45);--e2:0 2px 8px 0 rgba(0,0,0,.48);--e3:0 6px 16px -2px rgba(0,0,0,.52);--e4:0 12px 28px -4px rgba(0,0,0,.56)}
+a{color:var(--lnk)}a:hover{color:var(--prip)}
+@keyframes eq-blink{0%{opacity:1}100%{opacity:.15}}
+@keyframes eq-shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+</style>
+</helmet>
+
+<div style="min-height:100vh;padding:26px;box-sizing:border-box">
+
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;max-width:1900px">
+    <div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#0050A0,#003E7E);display:flex;align-items:center;justify-content:center"><div style="width:10px;height:10px;border-radius:4px;background:#80B85C"></div></div>
+    <div style="font-size:14px;font-weight:800;letter-spacing:-.01em">eQuantic Wallet</div>
+    <div style="font-size:12px;color:var(--tx3);font-weight:500">iOS sample app · 6 screens exercising the Photon catalog end-to-end — the mobile build target for Claude Code</div>
+    <div style="flex:1"></div>
+    <button onClick="{{ toggleTheme }}" style="display:flex;align-items:center;gap:6px;border:1px solid var(--bd);cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:8px;background:var(--sf);color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">{{ themeIcon }}</span>{{ themeLabel }}</button>
+  </div>
+
+  <div style="display:flex;gap:34px;align-items:flex-start;flex-wrap:wrap">
+
+    <div data-screen-label="01 Home" style="display:flex;flex-direction:column;gap:10px;align-items:center">
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" width="380" height="822" dark="{{ isDark }}" hint-size="380px,822px">
+        <div style="height:100%;display:flex;flex-direction:column;background:var(--bg);font-family:'Hanken Grotesk',sans-serif;padding-top:54px;box-sizing:border-box">
+          <div style="flex:none;padding:6px 16px 10px;display:flex;align-items:center;gap:10px">
+            <div style="flex:1"><div style="font-size:13px;color:var(--tx3);font-weight:500">Good morning</div><div style="font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.15">Ana Beatriz</div></div>
+            <span style="position:relative;width:44px;height:44px;border-radius:12px;background:var(--sf);border:1px solid var(--bd);display:inline-flex;align-items:center;justify-content:center;color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:22px">notifications</span><span style="position:absolute;top:6px;right:7px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--des);color:var(--ondes);font-size:9.5px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--sf);box-sizing:border-box">3</span></span>
+          </div>
+          <div style="flex:1;min-height:0;overflow:hidden;padding:0 16px 8px;display:flex;flex-direction:column;gap:14px">
+            <div style="border-radius:18px;padding:18px;background:linear-gradient(135deg,#0050A0,#00325F);box-shadow:var(--e2)">
+              <div style="display:flex;align-items:center;gap:8px"><span style="font-size:12px;font-weight:600;color:#A8CDF2">Total balance</span><span style="font-family:'Material Symbols Rounded';font-size:16px;color:#A8CDF2">visibility_off</span></div>
+              <div style="font-size:34px;font-weight:800;color:#fff;letter-spacing:-.025em;margin-top:4px">R$ 12.480,00</div>
+              <div style="display:flex;gap:8px;margin-top:16px">
+                <span style="flex:1;height:40px;border-radius:12px;background:rgba(255,255,255,.16);color:#fff;font-size:13.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:6px"><span style="font-family:'Material Symbols Rounded';font-size:18px">north_east</span>Send</span>
+                <span style="flex:1;height:40px;border-radius:12px;background:rgba(255,255,255,.16);color:#fff;font-size:13.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:6px"><span style="font-family:'Material Symbols Rounded';font-size:18px">qr_code_scanner</span>Pay</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <span style="height:32px;padding:0 13px;border-radius:999px;background:var(--pri);color:var(--onpri);font-size:12.5px;font-weight:700;display:inline-flex;align-items:center">All</span>
+              <span style="height:32px;padding:0 13px;border-radius:999px;border:1px solid var(--bd2);font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;box-sizing:border-box">Income</span>
+              <span style="height:32px;padding:0 13px;border-radius:999px;border:1px solid var(--bd2);font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;box-sizing:border-box">Bills</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px"><span style="font-size:17px;font-weight:700;letter-spacing:-.01em">Recent</span><div style="flex:1"></div><span style="font-size:13px;font-weight:600;color:var(--lnk)">See all</span></div>
+            <div style="background:var(--sf);border-radius:16px;border:1px solid var(--bd);overflow:hidden">
+              <div style="display:flex;align-items:center;gap:12px;padding:11px 14px"><div style="width:40px;height:40px;border-radius:999px;background:var(--sucs);color:var(--onsucs);display:flex;align-items:center;justify-content:center;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:20px">south_west</span></div><div style="flex:1;min-width:0"><div style="font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Ana Beatriz N.</div><div style="font-size:12.5px;color:var(--tx3)">PIX received · 09:12</div></div><div style="font-size:14px;font-weight:700;color:var(--onsucs)">+ 1.200,00</div></div>
+              <div style="height:1px;background:var(--bd);margin-left:66px"></div>
+              <div style="display:flex;align-items:center;gap:12px;padding:11px 14px"><div style="width:40px;height:40px;border-radius:999px;background:var(--sf2);color:var(--tx2);display:flex;align-items:center;justify-content:center;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:20px">bolt</span></div><div style="flex:1;min-width:0"><div style="font-size:14.5px;font-weight:600">Enel energia</div><div style="font-size:12.5px;color:var(--tx3)">Bill · yesterday</div></div><div style="font-size:14px;font-weight:700">− 284,30</div></div>
+              <div style="height:1px;background:var(--bd);margin-left:66px"></div>
+              <div style="display:flex;align-items:center;gap:12px;padding:11px 14px"><div style="width:40px;height:40px;border-radius:999px;background:var(--sf2);color:var(--tx2);display:flex;align-items:center;justify-content:center;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:20px">shopping_bag</span></div><div style="flex:1;min-width:0"><div style="font-size:14.5px;font-weight:600">Livraria Cultura</div><div style="font-size:12.5px;color:var(--tx3)">Card ··· 4821</div></div><div style="font-size:14px;font-weight:700">− 96,90</div></div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:14px;background:var(--wars);color:var(--onwars)"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1.2">warning</span><div style="flex:1"><div style="font-size:13.5px;font-weight:700">Limit almost reached</div><div style="font-size:12.5px;line-height:1.4;opacity:.92">92% of April's transfer limit used.</div></div></div>
+          </div>
+          <div style="flex:none;background:var(--sf);border-top:1px solid var(--bd);padding-bottom:22px">
+            <div style="height:56px;display:flex">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><div style="width:52px;height:26px;border-radius:999px;background:var(--pris);display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:21px;color:var(--onpris);font-variation-settings:'FILL' 1">home</span></div><span style="font-size:10.5px;font-weight:700;color:var(--onpris)">Home</span></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><div style="width:52px;height:26px;display:flex;align-items:center;justify-content:center;position:relative"><span style="font-family:'Material Symbols Rounded';font-size:21px;color:var(--tx3)">credit_card</span><span style="position:absolute;top:-2px;right:8px;min-width:15px;height:15px;padding:0 4px;border-radius:999px;background:var(--des);color:var(--ondes);font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--sf);box-sizing:border-box">2</span></div><span style="font-size:10.5px;font-weight:600;color:var(--tx3)">Cards</span></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><div style="width:52px;height:26px;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:21px;color:var(--tx3)">swap_horiz</span></div><span style="font-size:10.5px;font-weight:600;color:var(--tx3)">Transfer</span></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><div style="width:52px;height:26px;display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:21px;color:var(--tx3)">person</span></div><span style="font-size:10.5px;font-weight:600;color:var(--tx3)">Profile</span></div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+      <div style="font-size:11.5px;font-weight:700;color:var(--tx2)">01 · Home</div>
+      <div style="font-size:10.5px;color:var(--tx3);text-align:center;max-width:340px;line-height:1.5">AppBar · Card (gradient) · Chip row · List · Banner · Badge · BottomNavigation · SafeArea</div>
+    </div>
+
+    <div data-screen-label="02 Transactions" style="display:flex;flex-direction:column;gap:10px;align-items:center">
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" width="380" height="822" dark="{{ isDark }}" hint-size="380px,822px">
+        <div style="height:100%;display:flex;flex-direction:column;background:var(--bg);font-family:'Hanken Grotesk',sans-serif;padding-top:54px;box-sizing:border-box">
+          <div style="flex:none;background:var(--sf);box-shadow:var(--e2);padding:0 4px 10px">
+            <div style="height:52px;display:flex;align-items:center;gap:2px">
+              <span style="width:48px;height:48px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:24px">arrow_back</span></span>
+              <span style="flex:1;font-size:19px;font-weight:600;letter-spacing:-.01em">Transactions</span>
+              <span style="width:48px;height:48px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:24px">tune</span></span>
+            </div>
+            <div style="padding:0 12px">
+              <div style="height:40px;border-radius:999px;background:var(--sf2);display:flex;align-items:center;gap:9px;padding:0 14px"><span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--tx3)">search</span><span style="flex:1;font-size:14px;color:var(--tx3)">Search transactions</span></div>
+            </div>
+            <div style="display:flex;gap:20px;padding:10px 16px 0">
+              <span style="padding:6px 0;font-size:13.5px;font-weight:700;color:var(--pri);box-shadow:inset 0 -2px 0 0 var(--pri)">All</span>
+              <span style="padding:6px 0;font-size:13.5px;font-weight:600;color:var(--tx3)">Income</span>
+              <span style="padding:6px 0;font-size:13.5px;font-weight:600;color:var(--tx3)">Expenses</span>
+              <span style="padding:6px 0;font-size:13.5px;font-weight:600;color:var(--tx3)">Bills</span>
+            </div>
+          </div>
+          <div style="flex:1;min-height:0;overflow:hidden;background:var(--sf)">
+            <div style="height:56px;display:flex;align-items:center;justify-content:center;background:var(--bg)">
+              <div style="width:38px;height:38px;border-radius:999px;background:var(--sf);box-shadow:var(--e2);display:flex;align-items:center;justify-content:center"><span style="position:relative;width:18px;height:18px;display:inline-block;color:var(--pri)"><span style="position:absolute;left:8px;top:0;width:2px;height:6px;border-radius:1px;background:currentColor;transform-origin:1px 9px;transform:rotate(0deg);animation:eq-blink .8s linear infinite;animation-delay:-.8s"></span><span style="position:absolute;left:8px;top:0;width:2px;height:6px;border-radius:1px;background:currentColor;transform-origin:1px 9px;transform:rotate(90deg);animation:eq-blink .8s linear infinite;animation-delay:-.6s"></span><span style="position:absolute;left:8px;top:0;width:2px;height:6px;border-radius:1px;background:currentColor;transform-origin:1px 9px;transform:rotate(180deg);animation:eq-blink .8s linear infinite;animation-delay:-.4s"></span><span style="position:absolute;left:8px;top:0;width:2px;height:6px;border-radius:1px;background:currentColor;transform-origin:1px 9px;transform:rotate(270deg);animation:eq-blink .8s linear infinite;animation-delay:-.2s"></span></span></div>
+            </div>
+            <div style="padding:6px 16px 4px;font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);background:var(--sf)">Today</div>
+            <div style="position:relative;overflow:hidden">
+              <div style="position:absolute;right:0;top:0;bottom:0;display:flex">
+                <div style="width:96px;background:var(--des);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px"><span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--ondes)">flag</span><span style="font-size:10.5px;font-weight:700;color:var(--ondes)">Dispute</span></div>
+              </div>
+              <div style="position:relative;transform:translateX(-96px);width:100%;background:var(--sf);display:flex;align-items:center;gap:12px;padding:11px 16px;box-sizing:border-box"><div style="flex:1;min-width:0"><div style="font-size:14.5px;font-weight:600">Marcos Ribeiro</div><div style="font-size:12.5px;color:var(--tx3)">PIX received · swiped</div></div><div style="font-size:14px;font-weight:700;color:var(--onsucs)">+ 640,00</div></div>
+            </div>
+            <div style="height:1px;background:var(--bd);margin-left:16px"></div>
+            <div style="display:flex;align-items:center;gap:12px;padding:11px 16px"><div style="width:40px;height:40px;border-radius:999px;background:var(--sf2);color:var(--tx2);display:flex;align-items:center;justify-content:center;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:20px">restaurant</span></div><div style="flex:1;min-width:0"><div style="font-size:14.5px;font-weight:600">Cantina do Porto</div><div style="font-size:12.5px;color:var(--tx3)">Card ··· 4821 · 12:40</div></div><div style="font-size:14px;font-weight:700">− 78,00</div></div>
+            <div style="height:1px;background:var(--bd);margin-left:68px"></div>
+            <div style="display:flex;align-items:center;gap:12px;padding:11px 16px"><div style="width:40px;height:40px;border-radius:999px;background:var(--wars);color:var(--onwars);display:flex;align-items:center;justify-content:center;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:20px">schedule</span></div><div style="flex:1;min-width:0"><div style="font-size:14.5px;font-weight:600">Aluguel · escritório</div><div style="font-size:12.5px;color:var(--tx3)">Scheduled for tomorrow</div></div><span style="height:20px;padding:0 7px;border-radius:6px;background:var(--wars);color:var(--onwars);font-size:10.5px;font-weight:700;display:inline-flex;align-items:center">Pending</span></div>
+            <div style="padding:12px 16px 4px;font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3)">Yesterday</div>
+            <div style="display:flex;align-items:center;gap:12px;padding:11px 16px"><div style="width:40px;height:40px;border-radius:999px;background:var(--sf2);color:var(--tx2);display:flex;align-items:center;justify-content:center;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:20px">bolt</span></div><div style="flex:1;min-width:0"><div style="font-size:14.5px;font-weight:600">Enel energia</div><div style="font-size:12.5px;color:var(--tx3)">Bill payment</div></div><div style="font-size:14px;font-weight:700">− 284,30</div></div>
+            <div style="height:1px;background:var(--bd);margin-left:68px"></div>
+            <div style="display:flex;align-items:center;gap:12px;padding:11px 16px"><div style="width:40px;height:40px;border-radius:999px;background:var(--sf2);position:relative;overflow:hidden;flex:none"><div style="position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);animation:eq-shimmer 1.4s linear infinite"></div></div><div style="flex:1"><div style="height:12px;width:62%;border-radius:999px;background:var(--sf2)"></div><div style="height:10px;width:40%;border-radius:999px;background:var(--sf2);margin-top:7px"></div></div></div>
+          </div>
+          <div style="flex:none;height:34px;background:var(--sf)"></div>
+        </div>
+      </x-import>
+      <div style="font-size:11.5px;font-weight:700;color:var(--tx2)">02 · Transactions</div>
+      <div style="font-size:10.5px;color:var(--tx3);text-align:center;max-width:340px;line-height:1.5">AppBar scrolled (E2) · SearchField · Tabs · PullToRefresh · SwipeableRow · List sections · Skeleton</div>
+    </div>
+
+    <div data-screen-label="03 Detail with sheet" style="display:flex;flex-direction:column;gap:10px;align-items:center">
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" width="380" height="822" dark="{{ isDark }}" hint-size="380px,822px">
+        <div style="height:100%;position:relative;background:var(--bg);font-family:'Hanken Grotesk',sans-serif;overflow:hidden">
+          <div style="height:100%;display:flex;flex-direction:column;padding-top:54px;box-sizing:border-box">
+            <div style="height:52px;flex:none;display:flex;align-items:center;gap:2px;padding:0 4px"><span style="width:48px;height:48px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:24px">arrow_back</span></span><span style="flex:1"></span><span style="width:48px;height:48px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:24px">ios_share</span></span></div>
+            <div style="flex:1;padding:0 16px;display:flex;flex-direction:column;gap:14px">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding-top:6px">
+                <div style="width:64px;height:64px;border-radius:999px;background:linear-gradient(135deg,#5CA2E8,#0050A0);color:#fff;font-size:22px;font-weight:700;display:flex;align-items:center;justify-content:center">MR</div>
+                <div style="font-size:20px;font-weight:700;letter-spacing:-.01em">Marcos Ribeiro</div>
+                <div style="font-size:30px;font-weight:800;letter-spacing:-.025em;color:var(--onsucs)">+ R$ 640,00</div>
+                <span style="height:22px;padding:0 9px;border-radius:6px;background:var(--sucs);color:var(--onsucs);font-size:11.5px;font-weight:700;display:inline-flex;align-items:center">Completed</span>
+              </div>
+              <div style="background:var(--sf);border:1px solid var(--bd);border-radius:16px;overflow:hidden">
+                <div style="display:flex;align-items:center;gap:12px;height:48px;padding:0 14px"><span style="flex:1;font-size:13.5px;color:var(--tx3)">Method</span><span style="font-size:13.5px;font-weight:600">PIX</span></div>
+                <div style="height:1px;background:var(--bd)"></div>
+                <div style="display:flex;align-items:center;gap:12px;height:48px;padding:0 14px"><span style="flex:1;font-size:13.5px;color:var(--tx3)">Date</span><span style="font-size:13.5px;font-weight:600">17 Jul 2026 · 09:12</span></div>
+                <div style="height:1px;background:var(--bd)"></div>
+                <div style="display:flex;align-items:center;gap:12px;height:48px;padding:0 14px"><span style="flex:1;font-size:13.5px;color:var(--tx3)">Account</span><span style="font-size:13.5px;font-weight:600">Checking ··· 4821</span></div>
+                <div style="height:1px;background:var(--bd)"></div>
+                <div style="display:flex;align-items:center;gap:12px;height:48px;padding:0 14px"><span style="flex:1;font-size:13.5px;color:var(--tx3)">Transaction ID</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600">E18236·0311</span></div>
+              </div>
+              <div style="background:var(--sf);border:1px solid var(--bd);border-radius:16px;overflow:hidden">
+                <div style="display:flex;align-items:center;gap:10px;height:48px;padding:0 14px"><span style="flex:1;font-size:14px;font-weight:600">Receipt</span><span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--tx3);transform:rotate(180deg)">expand_more</span></div>
+                <div style="padding:0 14px 14px;font-size:13px;line-height:1.5;color:var(--tx2)">Accordion open — the PDF receipt was issued on 17 Jul and is available for 5 years under Brazilian retention rules.</div>
+              </div>
+            </div>
+          </div>
+          <div style="position:absolute;inset:0;background:var(--scrim)"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;background:var(--sf);border-radius:20px 20px 0 0;box-shadow:var(--e4);padding-bottom:22px">
+            <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:36px;height:4px;border-radius:999px;background:var(--bd2)"></span></div>
+            <div style="padding:6px 20px 2px;font-size:16px;font-weight:600">Repeat this transfer</div>
+            <div style="padding:12px 20px 0">
+              <div style="font-size:12.5px;font-weight:600;color:var(--tx2);margin-bottom:6px">Amount</div>
+              <div style="height:48px;border:2px solid var(--foc);border-radius:10px;display:flex;align-items:center;padding:0 13px;font-size:17px;font-weight:600;box-sizing:border-box">R$ 640,00<span style="width:1.5px;height:20px;background:var(--pri);margin-left:2px;animation:eq-blink 1s steps(1) infinite"></span></div>
+              <div style="display:flex;gap:8px;margin-top:12px">
+                <span style="height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--bd2);font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;box-sizing:border-box">R$ 100</span>
+                <span style="height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--bd2);font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;box-sizing:border-box">R$ 500</span>
+                <span style="height:32px;padding:0 12px;border-radius:999px;background:var(--pri);color:var(--onpri);font-size:12.5px;font-weight:700;display:inline-flex;align-items:center">R$ 640</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:14px;padding:11px 12px;border-radius:12px;background:var(--infs);color:var(--oninfs)"><span style="font-family:'Material Symbols Rounded';font-size:19px">info</span><span style="font-size:12.5px;line-height:1.4;flex:1">Instant transfers settle in up to 10 seconds.</span></div>
+              <div style="height:56px;border-radius:14px;background:var(--pri);color:var(--onpri);font-size:17px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px"><span style="font-family:'Material Symbols Rounded';font-size:22px">lock</span>Confirm R$ 640,00</div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+      <div style="font-size:11.5px;font-weight:700;color:var(--tx2)">03 · Detail + BottomSheet</div>
+      <div style="font-size:10.5px;color:var(--tx3);text-align:center;max-width:340px;line-height:1.5">Avatar · Badge · List (key/value) · Accordion · Scrim · BottomSheet (Half) · TextInput focused · Chips · Banner · XLarge Button</div>
+    </div>
+
+    <div data-screen-label="04 Settings" style="display:flex;flex-direction:column;gap:10px;align-items:center">
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" width="380" height="822" dark="{{ isDark }}" hint-size="380px,822px">
+        <div style="height:100%;display:flex;flex-direction:column;background:var(--bg);font-family:'Hanken Grotesk',sans-serif;padding-top:54px;box-sizing:border-box">
+          <div style="flex:none;padding:6px 16px 12px"><div style="font-size:28px;font-weight:800;letter-spacing:-.02em">Settings</div></div>
+          <div style="flex:1;min-height:0;overflow:hidden;padding:0 16px;display:flex;flex-direction:column;gap:16px">
+            <div style="background:var(--sf);border:1px solid var(--bd);border-radius:16px;display:flex;align-items:center;gap:12px;padding:12px 14px">
+              <div style="width:48px;height:48px;border-radius:999px;background:linear-gradient(135deg,#5CA2E8,#0050A0);color:#fff;font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center">AB</div>
+              <div style="flex:1;min-width:0"><div style="font-size:15.5px;font-weight:600">Ana Beatriz Nogueira</div><div style="font-size:12.5px;color:var(--tx3)">Business account · verified</div></div>
+              <span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--tx3)">chevron_right</span>
+            </div>
+            <div>
+              <div style="font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:0 4px 6px">Security</div>
+              <div style="background:var(--sf);border:1px solid var(--bd);border-radius:16px;overflow:hidden">
+                <div style="display:flex;align-items:center;gap:12px;height:52px;padding:0 14px"><span style="font-family:'Material Symbols Rounded';font-size:22px;color:var(--tx2)">face</span><span style="flex:1;font-size:14.5px;font-weight:500">Face ID</span><span style="width:44px;height:26px;border-radius:999px;background:var(--pri);position:relative;flex:none"><span style="position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:999px;background:#fff"></span></span></div>
+                <div style="height:1px;background:var(--bd);margin-left:48px"></div>
+                <div style="display:flex;align-items:center;gap:12px;height:52px;padding:0 14px"><span style="font-family:'Material Symbols Rounded';font-size:22px;color:var(--tx2)">notifications</span><span style="flex:1;font-size:14.5px;font-weight:500">Push alerts</span><span style="width:44px;height:26px;border-radius:999px;background:var(--bd2);position:relative;flex:none"><span style="position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:999px;background:#fff"></span></span></div>
+                <div style="height:1px;background:var(--bd);margin-left:48px"></div>
+                <div style="display:flex;align-items:center;gap:12px;height:52px;padding:0 14px"><span style="font-family:'Material Symbols Rounded';font-size:22px;color:var(--tx2)">key</span><span style="flex:1;font-size:14.5px;font-weight:500">Change password</span><span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--tx3)">chevron_right</span></div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:0 4px 6px">Limits</div>
+              <div style="background:var(--sf);border:1px solid var(--bd);border-radius:16px;padding:14px">
+                <div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:14px;font-weight:600;flex:1">Daily transfer limit</span><span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700">R$ 4.000</span></div>
+                <div style="position:relative;height:28px;display:flex;align-items:center;margin-top:6px">
+                  <div style="position:absolute;left:0;right:0;height:4px;border-radius:999px;background:var(--sf2)"></div>
+                  <div style="position:absolute;left:0;width:40%;height:4px;border-radius:999px;background:var(--pri)"></div>
+                  <div style="position:absolute;left:40%;transform:translateX(-50%);width:28px;height:28px;border-radius:999px;background:#fff;box-shadow:var(--e2);border:1px solid var(--bd)"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--tx3)"><span>R$ 0</span><span>R$ 10.000</span></div>
+                <div style="height:1px;background:var(--bd);margin:12px 0"></div>
+                <div style="display:flex;align-items:center;gap:12px"><span style="flex:1;font-size:14px;font-weight:600">Cards per invoice</span>
+                  <div style="display:inline-flex;align-items:center;border:1px solid var(--bd2);border-radius:10px;overflow:hidden"><span style="width:38px;height:32px;display:inline-flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:18px">remove</span></span><span style="width:38px;height:32px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;border-left:1px solid var(--bd);border-right:1px solid var(--bd)">2</span><span style="width:38px;height:32px;display:inline-flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:18px">add</span></span></div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:0 4px 6px">Appearance</div>
+              <div style="background:var(--sf);border:1px solid var(--bd);border-radius:16px;padding:12px 14px;display:flex;align-items:center;gap:12px">
+                <span style="flex:1;font-size:14px;font-weight:600">Theme</span>
+                <div style="display:flex;gap:2px;padding:2px;border-radius:9px;background:var(--sf2)">
+                  <button onClick="{{ setLight }}" style="border:none;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:12px;font-weight:700;padding:5px 12px;border-radius:7px;background:{{ lightBg }};color:{{ lightC }};box-shadow:{{ lightSh }}">Light</button>
+                  <button onClick="{{ setDark }}" style="border:none;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:12px;font-weight:700;padding:5px 12px;border-radius:7px;background:{{ darkBg }};color:{{ darkC }};box-shadow:{{ darkSh }}">Dark</button>
+                </div>
+              </div>
+            </div>
+            <div style="height:48px;border-radius:12px;border:1px solid var(--des);color:var(--des);font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;box-sizing:border-box">Sign out</div>
+          </div>
+          <div style="flex:none;height:34px"></div>
+        </div>
+      </x-import>
+      <div style="font-size:11.5px;font-weight:700;color:var(--tx2)">04 · Settings</div>
+      <div style="font-size:10.5px;color:var(--tx3);text-align:center;max-width:340px;line-height:1.5">Heading · grouped List · Switch · Slider · Stepper · SegmentedControl (live theme) · Outline Destructive button</div>
+    </div>
+
+    <div data-screen-label="05 Empty and dialog" style="display:flex;flex-direction:column;gap:10px;align-items:center">
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" width="380" height="822" dark="{{ isDark }}" hint-size="380px,822px">
+        <div style="height:100%;position:relative;background:var(--bg);font-family:'Hanken Grotesk',sans-serif;overflow:hidden">
+          <div style="height:100%;display:flex;flex-direction:column;padding-top:54px;box-sizing:border-box">
+            <div style="height:52px;flex:none;display:flex;align-items:center;gap:2px;padding:0 4px"><span style="width:48px;height:48px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:24px">arrow_back</span></span><span style="flex:1;font-size:19px;font-weight:600">Cards</span><span style="width:48px;height:48px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:24px">add</span></span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:0 40px;text-align:center">
+              <div style="width:76px;height:76px;border-radius:999px;background:var(--sf2);display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:36px;color:var(--tx3)">credit_card_off</span></div>
+              <div style="font-size:19px;font-weight:700;letter-spacing:-.01em">No cards yet</div>
+              <div style="font-size:14px;line-height:1.5;color:var(--tx2)">Add a physical or virtual card to start paying with eQuantic Wallet.</div>
+              <div style="height:48px;padding:0 20px;border-radius:10px;background:var(--pri);color:var(--onpri);font-size:16px;font-weight:600;display:inline-flex;align-items:center;gap:8px;margin-top:4px"><span style="font-family:'Material Symbols Rounded';font-size:20px">add</span>Add card</div>
+              <div style="font-size:14px;font-weight:600;color:var(--lnk);margin-top:2px">Learn about virtual cards</div>
+            </div>
+            <div style="flex:none;padding:0 16px 16px"><div style="display:flex;align-items:center;gap:14px;background:var(--tx1);color:var(--txi);border-radius:14px;box-shadow:var(--e3);padding:12px 16px"><span style="flex:1;font-size:14px;font-weight:500">Card removed</span><span style="font-size:14px;font-weight:700;color:{{ toastAction }}">Undo</span></div></div>
+            <div style="flex:none;height:34px"></div>
+          </div>
+          <div style="position:absolute;inset:0;background:var(--scrim);display:flex;align-items:center;justify-content:center;padding:24px">
+            <div style="width:100%;background:var(--sf);border-radius:20px;box-shadow:var(--e4);padding:20px">
+              <div style="font-size:20px;font-weight:600;letter-spacing:-.01em">Delete card?</div>
+              <div style="font-size:15px;line-height:1.5;color:var(--tx2);margin-top:8px">"Work Visa ··· 4821" will be removed and its automatic payments will stop.</div>
+              <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px"><span style="height:40px;padding:0 16px;border-radius:10px;font-size:15px;font-weight:600;display:inline-flex;align-items:center">Keep card</span><span style="height:40px;padding:0 16px;border-radius:10px;background:var(--des);color:var(--ondes);font-size:15px;font-weight:600;display:inline-flex;align-items:center">Delete</span></div>
+            </div>
+          </div>
+        </div>
+      </x-import>
+      <div style="font-size:11.5px;font-weight:700;color:var(--tx2)">05 · EmptyState + Dialog + Toast</div>
+      <div style="font-size:10.5px;color:var(--tx3);text-align:center;max-width:340px;line-height:1.5">EmptyState · Link button · Toast (inverse) · Dialog with Destructive confirm over Scrim</div>
+    </div>
+
+    <div data-screen-label="06 Onboarding keyboard" style="display:flex;flex-direction:column;gap:10px;align-items:center">
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" width="380" height="822" dark="{{ isDark }}" keyboard="{{ yes }}" hint-size="380px,822px">
+        <div style="height:100%;display:flex;flex-direction:column;background:var(--bg);font-family:'Hanken Grotesk',sans-serif;padding-top:54px;box-sizing:border-box">
+          <div style="height:52px;flex:none;display:flex;align-items:center;gap:2px;padding:0 4px"><span style="width:48px;height:48px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:24px">close</span></span><span style="flex:1"></span><span style="font-size:13px;font-weight:600;color:var(--tx3);padding-right:14px">Step 2 of 4</span></div>
+          <div style="flex:1;padding:0 16px;display:flex;flex-direction:column;gap:14px">
+            <div style="height:4px;border-radius:999px;background:var(--sf2);overflow:hidden"><div style="width:50%;height:100%;border-radius:999px;background:var(--pri)"></div></div>
+            <div style="font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.2;margin-top:4px">Who are you<br>sending to?</div>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--tx2);margin-bottom:6px">PIX key</div>
+              <div style="height:48px;border:2px solid var(--foc);border-radius:10px;display:flex;align-items:center;padding:0 13px;font-size:15px;box-sizing:border-box">marcos@ribeiro.dev<span style="width:1.5px;height:19px;background:var(--pri);margin-left:2px;animation:eq-blink 1s steps(1) infinite"></span></div>
+              <div style="font-size:12px;color:var(--tx3);margin-top:6px">Email, phone, CPF/CNPJ or random key</div>
+            </div>
+            <div style="font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);margin-top:2px">Recent</div>
+            <div style="display:flex;gap:14px">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px;width:64px"><div style="width:48px;height:48px;border-radius:999px;background:linear-gradient(135deg,#5CA2E8,#0050A0);color:#fff;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center">MR</div><span style="font-size:11px;font-weight:600;text-align:center;line-height:1.25">Marcos</span></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px;width:64px"><div style="width:48px;height:48px;border-radius:999px;background:var(--sf2);color:var(--tx2);font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center">JL</div><span style="font-size:11px;font-weight:600;text-align:center;line-height:1.25">Julia</span></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px;width:64px"><div style="width:48px;height:48px;border-radius:999px;background:var(--sf2);color:var(--tx2);font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center">PC</div><span style="font-size:11px;font-weight:600;text-align:center;line-height:1.25">Paulo</span></div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px;width:64px"><div style="width:48px;height:48px;border-radius:999px;border:1px dashed var(--bd2);color:var(--tx3);display:flex;align-items:center;justify-content:center;box-sizing:border-box"><span style="font-family:'Material Symbols Rounded';font-size:22px">group_add</span></div><span style="font-size:11px;font-weight:600;text-align:center;line-height:1.25">New</span></div>
+            </div>
+            <div style="height:56px;border-radius:14px;background:var(--pri);color:var(--onpri);font-size:17px;font-weight:600;display:flex;align-items:center;justify-content:center;margin-top:auto;margin-bottom:8px">Continue</div>
+          </div>
+        </div>
+      </x-import>
+      <div style="font-size:11.5px;font-weight:700;color:var(--tx2)">06 · Flow step + keyboard</div>
+      <div style="font-size:10.5px;color:var(--tx3);text-align:center;max-width:340px;line-height:1.5">ProgressBar · Heading · TextInput focused with IME · Avatar row · sticky XLarge CTA above the keyboard</div>
+    </div>
+
+  </div>
+
+  <div style="margin-top:26px;display:flex;gap:12px;flex-wrap:wrap;max-width:1900px">
+    <div style="flex:1;min-width:300px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:14px 16px">
+      <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:7px">Build target for Claude Code</div>
+      <div style="font-size:12.5px;line-height:1.65;color:var(--tx2)">One iOS app, six screens, no custom components — everything is a catalog component. Wire the tab bar, the sheet detents, the swipe actions and the pull-to-refresh, and the mobile SDK is exercised in a real flow, not a gallery.</div>
+    </div>
+    <div style="flex:1;min-width:300px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:14px 16px">
+      <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:7px">Validation checklist</div>
+      <div style="font-size:12.5px;line-height:1.65;color:var(--tx2)">Safe areas on every edge component · 48dp hit rects (bar items, chevrons) · sheet gesture handoff with the inner scroll · 130% Dynamic Type without clipping · VoiceOver order per screen · light + dark parity (toggle above).</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light' | 'dark'&quot;,&quot;section&quot;:&quot;Preview&quot;}}">
+class Component extends DCLogic {
+  state = { theme: 'light' };
+  componentDidMount() {
+    let t = this.props.theme ?? 'light';
+    try { t = localStorage.getItem('eq-wallet-theme') || t; } catch (e) {}
+    this.applyTheme(t, false);
+  }
+  applyTheme(t, persist) {
+    if (t === 'dark') document.body.setAttribute('data-theme', 'dark');
+    else document.body.removeAttribute('data-theme');
+    if (persist) { try { localStorage.setItem('eq-wallet-theme', t); } catch (e) {} }
+    this.setState({ theme: t });
+  }
+  renderVals() {
+    const dark = this.state.theme === 'dark';
+    return {
+      isDark: dark,
+      yes: true,
+      themeIcon: dark ? 'light_mode' : 'dark_mode',
+      themeLabel: dark ? 'Light' : 'Dark',
+      toggleTheme: () => this.applyTheme(dark ? 'light' : 'dark', true),
+      setLight: () => this.applyTheme('light', true),
+      setDark: () => this.applyTheme('dark', true),
+      lightBg: !dark ? 'var(--sf)' : 'transparent',
+      lightC: !dark ? 'var(--tx1)' : 'var(--tx3)',
+      lightSh: !dark ? 'var(--e1)' : 'none',
+      darkBg: dark ? 'var(--sf)' : 'transparent',
+      darkC: dark ? 'var(--tx1)' : 'var(--tx3)',
+      darkSh: dark ? 'var(--e1)' : 'none',
+      toastAction: dark ? '#0050A0' : '#5CA2E8'
+    };
+  }
+}
+</script>
+</body>
+</html>

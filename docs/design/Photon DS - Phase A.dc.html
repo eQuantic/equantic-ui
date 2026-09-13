@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0" rel="stylesheet">
+<style>
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx1);font-family:'Hanken Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+--bg:#F5F6F8;--sf:#FFFFFF;--sf2:#EFF1F4;--bd:#E2E5EA;--bd2:#C9CED6;
+--tx1:#171B21;--tx2:#4B5563;--tx3:#5F6B7A;--txi:#FFFFFF;
+--pri:#0050A0;--onpri:#FFFFFF;--prip:#00427F;--pris:#E8F1FA;--onpris:#003E7E;
+--sec:#E9EDF2;--onsec:#3A4350;--secp:#DCE2EA;
+--des:#B42318;--ondes:#FFFFFF;--desp:#8F1D1D;--dess:#FCEBEA;--ondess:#8F1D1D;
+--suc:#3B7A22;--onsuc:#FFFFFF;--sucp:#2C5E17;--sucs:#EDF6E6;--onsucs:#2C5E17;
+--war:#8A5A00;--onwar:#FFFFFF;--warp:#6E4700;--wars:#FBF3DF;--onwars:#7A5200;
+--inf:#0C6C86;--oninf:#FFFFFF;--infp:#0A5468;--infs:#E4F3F8;--oninfs:#0A5468;
+--lnk:#0050A0;--foc:#0050A0;--scrim:rgba(11,14,18,.40);--priinv:#5CA2E8;
+--e1:0 1px 3px 0 rgba(15,23,32,.10);--e2:0 2px 8px 0 rgba(15,23,32,.12);--e3:0 6px 16px -2px rgba(15,23,32,.16);--e4:0 12px 28px -4px rgba(15,23,32,.20);--e5:0 20px 44px -6px rgba(15,23,32,.26)}
+body[data-theme="dark"]{
+--bg:#0C0F13;--sf:#14181E;--sf2:#1C232B;--bd:#2A323D;--bd2:#3D4754;
+--tx1:#F2F4F7;--tx2:#AEB7C2;--tx3:#8B95A3;--txi:#171B21;
+--pri:#5CA2E8;--onpri:#06263F;--prip:#7CB5EE;--pris:#0F2740;--onpris:#A8CDF2;
+--sec:#242C36;--onsec:#D7DDE5;--secp:#2E3844;
+--des:#E5645C;--ondes:#3B0704;--desp:#F28B85;--dess:#3A1210;--ondess:#F4A9A4;
+--suc:#85C05E;--onsuc:#12290A;--sucp:#9ACD74;--sucs:#16290C;--onsucs:#B5DB97;
+--war:#E8B04B;--onwar:#2E1B02;--warp:#F0C06B;--wars:#2E2008;--onwars:#EECF8F;
+--inf:#4CC3DE;--oninf:#062B33;--infp:#6ED0E6;--infs:#0A2A32;--oninfs:#9FDCEB;
+--lnk:#7CB5EE;--foc:#7CB5EE;--scrim:rgba(0,0,0,.56);--priinv:#0050A0;
+--e1:0 1px 3px 0 rgba(0,0,0,.45);--e2:0 2px 8px 0 rgba(0,0,0,.48);--e3:0 6px 16px -2px rgba(0,0,0,.52);--e4:0 12px 28px -4px rgba(0,0,0,.56);--e5:0 20px 44px -6px rgba(0,0,0,.62)}
+@keyframes ph-blink{0%{opacity:1}100%{opacity:.15}}
+@keyframes ph-shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+@keyframes ph-move-std{0%{transform:translateX(0)}100%{transform:translateX(220px)}}
+@keyframes ph-pressdemo{0%,100%{opacity:0}30%,70%{opacity:1}}
+@keyframes ph-indet{0%{left:-35%}100%{left:105%}}
+@keyframes ph-toast-in{0%{transform:translateY(14px);opacity:0}100%{transform:translateY(0);opacity:1}}
+</style>
+</helmet>
+
+<div style="position:fixed;top:0;left:0;right:0;z-index:60;display:flex;align-items:center;gap:16px;height:56px;padding:0 20px;background:var(--sf);border-bottom:1px solid var(--bd)">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#0050A0,#003E7E);display:flex;align-items:center;justify-content:center">
+      <div style="width:10px;height:10px;border-radius:4px;background:#80B85C"></div>
+    </div>
+    <div style="font-size:15px;font-weight:800;letter-spacing:-.01em">Photon</div>
+    <div style="font-size:12px;color:var(--tx3);font-weight:500;margin-top:1px">eQuantic.UI Native · Mobile Design System</div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px;background:var(--pris);color:var(--onpris)">SPEC v1.1 · SDK-audited</div>
+  </div>
+  <div style="flex:1"></div>
+  <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--tx3);font-weight:600">
+    <span>Dynamic Type</span>
+    <div style="display:flex;background:var(--sf2);border-radius:8px;padding:2px;gap:2px">
+      <button onClick="{{ fs100 }}" style="border:none;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:4px 9px;border-radius:6px;background:{{ fsBg1 }};color:{{ fsC1 }};box-shadow:{{ fsSh1 }}">100%</button>
+      <button onClick="{{ fs115 }}" style="border:none;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:4px 9px;border-radius:6px;background:{{ fsBg2 }};color:{{ fsC2 }};box-shadow:{{ fsSh2 }}">115%</button>
+      <button onClick="{{ fs130 }}" style="border:none;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:4px 9px;border-radius:6px;background:{{ fsBg3 }};color:{{ fsC3 }};box-shadow:{{ fsSh3 }}">130%</button>
+    </div>
+  </div>
+  <button onClick="{{ toggleHit }}" style="display:flex;align-items:center;gap:6px;border:1px solid var(--bd);cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;background:{{ hitBg }};color:{{ hitC }}">
+    <span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">touch_app</span> Hit areas
+  </button>
+  <button onClick="{{ toggleTheme }}" style="display:flex;align-items:center;gap:6px;border:1px solid var(--bd);cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;background:var(--sf2);color:var(--tx1)">
+    <span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">{{ themeIcon }}</span> {{ themeLabel }}
+  </button>
+</div>
+
+<nav style="position:fixed;top:56px;left:0;bottom:0;width:248px;overflow-y:auto;padding:20px 14px 40px;background:var(--sf);border-right:1px solid var(--bd);box-sizing:border-box">
+  <div style="font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);padding:6px 10px">Overview</div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-arch" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--pri);width:20px;flex:none;padding-top:1px">◆</span>Architecture · 3 layers</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:7px;padding:16px 10px 6px"><span style="width:7px;height:7px;border-radius:2px;background:var(--suc);flex:none"></span><span style="font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Layer 1 · Shared tokens</span></div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-color" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">01</span>Color tokens</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-type" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">02</span>Typography</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-space" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">03</span>Spacing</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-radius" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">04</span>Radius</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-elev" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">05</span>Elevation</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-motion" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">06</span>Motion</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:7px;padding:16px 10px 6px"><span style="width:7px;height:7px;border-radius:2px;background:var(--war);flex:none"></span><span style="font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Layer 2 · Platform · Photon</span></div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-fence" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">00</span>Engine constraints</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-icon" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">07</span>Iconography</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-touch" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">08</span>Touch &amp; safe area</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-a11y" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">10</span>States · pointer · semantics</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:7px;padding:16px 10px 6px"><span style="width:7px;height:7px;border-radius:2px;background:var(--pri);flex:none"></span><span style="font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Binding</span></div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-csharp" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">09</span>C# token API</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:7px;padding:18px 10px 4px"><span style="width:7px;height:7px;border-radius:2px;background:var(--inf);flex:none"></span><span style="font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Layer 3 · Components</span></div>
+  <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:4px 10px 6px;opacity:.75">Phase A · Primitives</div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="#a-box" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A1</span>Box</a>
+    <a href="#a-rowcol" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A2</span>Row · Column</a>
+    <a href="#a-stack" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A3</span>Stack (z)</a>
+    <a href="#a-spacer" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A4</span>Spacer</a>
+    <a href="#a-safearea" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A5</span>SafeArea</a>
+    <a href="#a-scroll" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A6</span>ScrollView</a>
+    <a href="#a-divider" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A7</span>Divider</a>
+    <a href="#a-text" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A8</span>Text</a>
+    <a href="#a-heading" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A9</span>Heading · Label</a>
+    <a href="#a-icon" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A10</span>Icon</a>
+    <a href="#a-image" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A11</span>Image</a>
+    <a href="#a-button" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A12</span>Button</a>
+    <a href="#a-iconbutton" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A13</span>IconButton</a>
+  </div>
+  <div style="font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);padding:18px 10px 6px">Phase B — Dashboard set</div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-card" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B1</span>Card</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-list" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B2</span>List · ListItem</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-appbar" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B3</span>AppBar</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-bottomnav" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B4</span>BottomNavigation</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-tabs" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B5</span>Tabs</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-avatar" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B6</span>Avatar</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-badge" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B7</span>Badge</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-chip" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B8</span>Chip / Tag</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-input" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B9</span>TextInput</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-search" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B10</span>SearchField</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-checkbox" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B11</span>Checkbox</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-switch" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B12</span>Switch</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-radio" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B13</span>RadioGroup</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-progress" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B14</span>ProgressBar</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-spinner" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B15</span>Spinner</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-skeleton" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B16</span>Skeleton</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-empty" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B17</span>EmptyState</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-banner" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B18</span>Banner / Alert</a>
+  </div>
+  <div style="font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);padding:18px 10px 6px">Phase C — Surfaces &amp; patterns</div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-sheet" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C1</span>BottomSheet</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-modal" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C2</span>Modal / Dialog</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-action" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C3</span>ActionSheet</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-toast" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C4</span>Toast / Snackbar</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-drawer" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C5</span>Drawer</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-seg" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C6</span>SegmentedControl</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-slider" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C7</span>Slider</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-stepper" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C8</span>Stepper</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-ptr" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C9</span>PullToRefresh</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-swipe" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C10</span>SwipeableRow</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-accordion" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C11</span>Accordion</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-dots" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C12</span>PageIndicator</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-tooltip" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C13</span>Tooltip</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-select" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C14</span>Select</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-date" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C15</span>DatePicker</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-navrail" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C16</span>NavigationRail</a>
+  </div>
+</nav>
+
+<main style="margin:56px 0 0 248px;padding:44px 56px 120px;max-width:1060px;box-sizing:border-box">
+
+  
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:22px">
+    <a href="Photon%20Design%20System.dc.html" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--lnk);text-decoration:none"><span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">arrow_back</span>Spec index</a>
+    <span style="color:var(--bd2)">/</span>
+    <span style="font-size:12px;font-weight:600;color:var(--tx3)">Photon Design System · v1.1 · Phase A — primitives</span>
+  </div>
+<div style="display:flex;align-items:center;gap:14px;margin:0 0 30px;padding:18px 22px;border-radius:14px;background:linear-gradient(135deg,#0050A0,#003E7E)">
+    <span style="font-family:'Material Symbols Rounded';font-size:26px;color:#8FC9FF">grid_view</span>
+    <div>
+      <div style="font-size:19px;font-weight:800;color:#FFFFFF;letter-spacing:-.01em">Phase A — Primitives</div>
+      <div style="font-size:12.5px;color:#A8CDF2;margin-top:2px">13 specs · everything any app needs to exist. Pattern per component: signature → anatomy → specs → states → behavior → a11y → usage.</div>
+    </div>
+  </div>
+
+  <section id="a-box" data-screen-label="A1 Box" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sec);color:var(--onsec)">A1</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Box</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new Box(style: BoxStyle, child: VisualNode?)</span>
+    </div>
+    <p style="margin:6px 0 16px;font-size:13.5px;line-height:1.6;color:var(--tx2);max-width:720px">The atom. A Box is the engine's rrect surfaced as a component: <strong style="color:var(--tx1)">1 fill draw + optional border draw + optional shadow draw</strong>. Every visible surface in the system decomposes into Boxes.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px">Anatomy</div>
+        <div style="border:1px dashed var(--bd2);border-radius:16px;padding:10px;position:relative">
+          <div style="position:absolute;top:-8px;left:14px;background:var(--sf);padding:0 6px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--tx3)">③ shadow bounds</div>
+          <div style="background:var(--pris);border:2px solid var(--pri);border-radius:12px;padding:12px;position:relative">
+            <div style="position:absolute;top:-9px;left:10px;background:var(--sf);padding:0 6px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--pri);font-weight:600">② border · uniform</div>
+            <div style="background:var(--sf);border-radius:6px;height:56px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx2)">① child + padding</div>
+          </div>
+        </div>
+        <div style="margin-top:12px;font-size:12px;line-height:1.7;color:var(--tx2)">Paint order: shadow → fill (solid or 2-stop linear gradient) → border (inside stroke) → child (clipped to rrect if <span style="font-family:'JetBrains Mono',monospace;font-size:11px">Clip</span>).</div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow-x:auto">
+        <div style="display:grid;grid-template-columns:150px minmax(0,1fr);background:var(--sf2)"><div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 14px">BoxStyle field</div><div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 14px">Spec</div></div>
+        <div style="display:grid;grid-template-columns:150px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">Width · Height</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">dp · <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Hug</span> (default) · <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Fill</span>. Resolution: explicit &gt; Fill &gt; Hug. Min/Max caps supported.</div></div>
+        <div style="display:grid;grid-template-columns:150px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">Padding</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">EdgeInsets</span> of Space tokens. No margin exists — outer space belongs to the parent's Gap/Padding.</div></div>
+        <div style="display:grid;grid-template-columns:150px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">Background</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">ColorToken, or <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">LinearGradient(from, to, angle)</span> — exactly 2 stops (fence).</div></div>
+        <div style="display:grid;grid-template-columns:150px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">CornerRadius</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">Per-corner: <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Corners(tl, tr, br, bl)</span> or a Radius token for all four. Overflowing radii normalize CSS-style.</div></div>
+        <div style="display:grid;grid-template-columns:150px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">Border</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Border(color, width)</span> — uniform width only; drawn inside. Per-side widths are outside the fence: compose thin Boxes instead.</div></div>
+        <div style="display:grid;grid-template-columns:150px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">Shadow</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Elevation(0–5)</span> token only — free-form ShadowSpec requires design review.</div></div>
+        <div style="display:grid;grid-template-columns:150px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">Clip · Opacity</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">Clip = own rrect. Opacity &lt; 1 forces a saveLayer — budgeted, use for disabled (0.38) and transitions, not decoration.</div></div>
+        <div style="display:grid;grid-template-columns:150px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">Transform</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">2D translate · scale · rotate about a pivot. Does not affect layout (paint-only).</div></div>
+        <div style="display:grid;grid-template-columns:150px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">A11y</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">None by default (invisible to readers). Attach <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Semantics(label, role)</span> to promote; interactive Boxes are a spec smell — use Button.</div></div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Inert — arrow cursor, no hover, right-click falls through. A Box gains pointer states only by composing Pressable.</div></div>
+    </div>
+  </section>
+
+  <section id="a-rowcol" data-screen-label="A2 Row Column" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sec);color:var(--onsec)">A2</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Row · Column</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new Row(gap: Space.S2, main: MainAlign.Start, cross: CrossAlign.Center, children: [...])</span>
+    </div>
+    <p style="margin:6px 0 16px;font-size:13.5px;line-height:1.6;color:var(--tx2);max-width:720px">The only flow layout. Own C# flex implementation — single main axis, <span style="font-family:'JetBrains Mono',monospace;font-size:12px">Gap</span> tokens between children, <span style="font-family:'JetBrains Mono',monospace;font-size:12px">Flex(n)</span> children share leftover space by weight.</p>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px">Gap + Flex — live geometry</div>
+        <div style="background:var(--sf2);border-radius:10px;padding:12px;display:flex;gap:8px;align-items:center">
+          <div style="width:56px;height:40px;border-radius:8px;background:var(--pri);display:flex;align-items:center;justify-content:center;color:var(--onpri);font-family:'JetBrains Mono',monospace;font-size:10px">hug</div>
+          <div style="flex:1;height:40px;border-radius:8px;background:var(--pris);border:1.5px solid var(--pri);display:flex;align-items:center;justify-content:center;color:var(--onpris);font-family:'JetBrains Mono',monospace;font-size:10px">Flex(1)</div>
+          <div style="flex:2;height:40px;border-radius:8px;background:var(--pris);border:1.5px solid var(--pri);display:flex;align-items:center;justify-content:center;color:var(--onpris);font-family:'JetBrains Mono',monospace;font-size:10px">Flex(2)</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;padding:0 12px">
+          <div style="width:56px"></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--tx3)">↑ gap = Space.S2 (8dp), uniform, never collapses</div>
+        </div>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--bd);font-size:12.5px;line-height:1.7;color:var(--tx2)"><strong style="color:var(--tx1)">Truncation contract:</strong> text children shrink to ellipsis before any sibling is pushed out; fixed children (icons, avatars) never shrink. This rule is what makes ListItem, AppBar and Chip safe at 130% Dynamic Type.</div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow-x:auto">
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);background:var(--sf2)"><div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 14px">Prop</div><div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 14px">Spec</div></div>
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">main</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">Start · Center · End · SpaceBetween. (Around/Evenly cut from v1 — use Spacers.)</div></div>
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">cross</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">Start · Center (Row default) · End · Stretch (Column default for full-width children).</div></div>
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">gap</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">Space token. The only legal spacing between siblings.</div></div>
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">wrap</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">Row only: children flow to new lines (chip groups). Line spacing = gap.</div></div>
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">RTL</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">Row mirrors automatically in RTL locales; reading/focus order stays = child order.</div></div>
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">A11y</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">Transparent container; announces nothing. Focus traversal = child order, depth-first.</div></div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Inert layout — no hover, arrow cursor. Pointer behavior belongs to the children.</div></div>
+    </div>
+  </section>
+
+  <section id="a-stack" data-screen-label="A3 Stack" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sec);color:var(--onsec)">A3</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Stack</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new Stack(align: Alignment.TopStart, children: [base, Positioned(top: 8, end: 8, child: badge)])</span>
+    </div>
+    <p style="margin:6px 0 16px;font-size:13.5px;line-height:1.6;color:var(--tx2);max-width:720px">Z-axis composition. Paint order = child order (last on top); hit-testing walks top-down. Sizes to its largest non-positioned child.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:18px;display:flex;gap:24px;align-items:center;justify-content:center">
+        <div style="position:relative;width:88px;height:88px">
+          <div style="width:88px;height:88px;border-radius:16px;background:linear-gradient(135deg,#0050A0,#003E7E);display:flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:34px;color:#8FC9FF">notifications</span></div>
+          <div style="position:absolute;top:-5px;right:-5px;min-width:20px;height:20px;border-radius:999px;background:var(--des);color:var(--ondes);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 5px;border:2px solid var(--sf)">3</div>
+        </div>
+        <div style="font-size:12px;line-height:1.7;color:var(--tx2)">badge = <span style="font-family:'JetBrains Mono',monospace;font-size:11px">Positioned(top:−5, end:−5)</span><br>negative insets allowed;<br>parent must not Clip</div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.85;color:var(--tx2)">
+          <li><span style="font-family:'JetBrains Mono',monospace;font-size:12px">Positioned(top/end/bottom/start, width?, height?)</span> — inset-anchored children; two opposite insets stretch the child.</li>
+          <li>Non-positioned children obey <span style="font-family:'JetBrains Mono',monospace;font-size:12px">align</span> (9 anchor points).</li>
+          <li>Canonical uses: badge-over-icon, media overlays (gradient scrim + caption), FAB over scroll content, skeleton shimmer layers.</li>
+          <li><strong style="color:var(--tx1)">Not</strong> a free-form canvas: absolute screens built from Positioned everywhere fail review — compose Rows/Columns.</li>
+          <li>A11y: order = child order (base first, overlays after). Decorative overlay layers marked hidden.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Inert — z-order does not change hit order: the topmost hit-testable child wins, exactly as on touch.</div></div>
+    </div>
+  </section>
+
+  <section id="a-spacer" data-screen-label="A4 Spacer" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sec);color:var(--onsec)">A4</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Spacer</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new Spacer()  ·  new Spacer(flex: 2)  ·  Spacer.Fixed(Space.S6)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:18px">
+        <div style="background:var(--sf2);border-radius:10px;padding:12px;display:flex;gap:8px;align-items:center">
+          <div style="height:36px;padding:0 14px;border-radius:8px;background:var(--pri);color:var(--onpri);display:flex;align-items:center;font-size:12.5px;font-weight:600">Back</div>
+          <div style="flex:1;height:36px;border-radius:8px;border:1.5px dashed var(--bd2);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">Spacer() — invisible, flex 1</div>
+          <div style="height:36px;padding:0 14px;border-radius:8px;background:var(--pri);color:var(--onpri);display:flex;align-items:center;font-size:12.5px;font-weight:600">Next</div>
+        </div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.85;color:var(--tx2)">
+          <li>Draws nothing, hits nothing, announces nothing — layout-only.</li>
+          <li>Flexible form collapses to 0 when siblings need the space (it loses to content).</li>
+          <li><span style="font-family:'JetBrains Mono',monospace;font-size:12px">Spacer.Fixed</span> is rigid — prefer parent <span style="font-family:'JetBrains Mono',monospace;font-size:12px">gap</span>; use Fixed only for one-off rhythm breaks.</li>
+          <li>Anti-pattern: chains of Fixed Spacers to fake padding — use Padding.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Never hit-testable — clicks pass through to whatever sits beneath.</div></div>
+    </div>
+  </section>
+
+  <section id="a-safearea" data-screen-label="A5 SafeArea" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sec);color:var(--onsec)">A5</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">SafeArea</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new SafeArea(edges: Edges.All, minimum: EdgeInsets.Zero, child: ...)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Behavior</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.85;color:var(--tx2)">
+          <li>Pads its child by the platform insets (notch, home indicator, status bar, display cutouts) on the selected edges.</li>
+          <li><span style="font-family:'JetBrains Mono',monospace;font-size:12px">minimum</span> merges via <span style="font-family:'JetBrains Mono',monospace;font-size:12px">max(inset, minimum)</span> — gutters never collapse to zero on rectangular screens.</li>
+          <li><strong style="color:var(--tx1)">Consumption:</strong> a SafeArea zeroes the inset for its subtree — nested SafeAreas never double-pad.</li>
+          <li>Insets update per-frame from the shell: rotation, in-call status bar, foldable posture.</li>
+        </ul>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Usage</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.85;color:var(--tx2)">
+          <li>Wrap <em>screen content</em>, not edge components — AppBar, BottomNavigation and BottomSheet handle their own insets (they paint under the inset and pad inside; §08).</li>
+          <li>Don't wrap ScrollView in a bottom SafeArea — pass the inset as content padding instead so content scrolls under the home indicator but rests clear of it.</li>
+          <li>A11y: transparent.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Desktop windows have no notches or home indicators — every inset resolves to 0 and the node is a pass-through. Never reserve fake inset space on pointer targets.</div></div>
+    </div>
+  </section>
+
+  <section id="a-scroll" data-screen-label="A6 ScrollView" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sec);color:var(--onsec)">A6</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">ScrollView</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new ScrollView(axis: Axis.Vertical, child: ...)  — bounded content only; virtualized lists are List (B2)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow-x:auto">
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);background:var(--sf2)"><div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 14px">Aspect</div><div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 14px">Spec</div></div>
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">Physics</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">Platform-native curves. iOS: exponential decay (normal rate 0.998) + rubber-band overscroll. Android: fling friction + <strong style="color:var(--tx1)">stretch overscroll</strong> (scale transform — inside the fence; no glow arc).</div></div>
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">Gesture</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">Drag slop 8dp before capture; captures from pressed children (press cancels into scroll). Release injects gesture velocity into fling. Tap during deceleration stops dead, second tap interacts.</div></div>
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">Scrollbar</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">3dp pill, Radius.Full, BorderStrong @ 60%, 2dp from edge. Appears on scroll, fades out 800ms after idle (Fast/Base motion). Non-interactive in v1.</div></div>
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">Insets</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">contentPadding merges safe-area bottom (§A5). Keyboard: bottom inset grows by IME height; focused input kept visible (M4).</div></div>
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">Nesting</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">Cross-axis nesting fine (horizontal carousel in vertical page). Same-axis nesting asserts in debug — restructure with List sections.</div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Engine path</div>
+          <div style="font-size:13px;line-height:1.8;color:var(--tx2)">Scroll = translated rrect clip. The compositor caches the content layer; a scroll frame re-encodes <strong style="color:var(--tx1)">zero</strong> components — it updates one transform. 120Hz fling is a translate-only frame well inside the 8.33ms budget.</div>
+        </div>
+        <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">A11y</div>
+          <div style="font-size:13px;line-height:1.8;color:var(--tx2)">Exposed as a scrollable region; VoiceOver 3-finger / TalkBack 2-finger swipes page by 80% viewport and announce "Page X of Y" when paging is enabled. Offscreen children stay in the semantics tree (readers scroll them in).</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Wheel / trackpad scrolls with platform inertia; the scrollbar is overlay-style, appears on scroll or container hover, and is draggable. Scrolling itself hovers nothing.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Focused region: ↑/↓ line · PgUp/PgDn viewport · Home/End extremes. Space stays with the focused control, not the scroll.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Scrolled-out content stays in the semantics and focus walks (§10) — clipping guards the pointer, not the reader.</div></div>
+    </div>
+  </section>
+
+  <section id="a-divider" data-screen-label="A7 Divider" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sec);color:var(--onsec)">A7</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Divider</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new Divider(inset: DividerInset.Leading)  ·  new Divider(axis: Axis.Vertical)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:0">
+        <div style="padding:10px 0;font-size:13px;color:var(--tx2)">Full-bleed — section boundaries</div>
+        <div style="height:1px;background:var(--bd)"></div>
+        <div style="padding:10px 0;font-size:13px;color:var(--tx2)">Inset leading 16 — inside lists, aligns with content after leading icon</div>
+        <div style="height:1px;background:var(--bd);margin-left:16px"></div>
+        <div style="padding:10px 0;font-size:13px;color:var(--tx2)">Middle 16 — grouped card interiors</div>
+        <div style="height:1px;background:var(--bd);margin:0 16px"></div>
+        <div style="padding-top:10px;font-size:13px;color:var(--tx2)">Vertical — toolbar separators, stat groups</div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.85;color:var(--tx2)">
+          <li>1dp logical thickness, <span style="font-family:'JetBrains Mono',monospace;font-size:12px">Border</span> token; engine snaps to the physical pixel grid so hairlines never double-render.</li>
+          <li>Consumes exactly its thickness — vertical rhythm comes from the parent's gap, never from Divider "spacing" props (it has none).</li>
+          <li>List/Card provide dividers via their own props (B1/B2) — hand-placed Dividers between ListItems fail review.</li>
+          <li>Don't fake card edges with Dividers — that's <span style="font-family:'JetBrains Mono',monospace;font-size:12px">Border</span>.</li>
+          <li>A11y: invisible to screen readers.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Inert, decorative.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Hidden from the semantics tree — a divider is paint, not content.</div></div>
+    </div>
+  </section>
+
+  <section id="a-text" data-screen-label="A8 Text" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sec);color:var(--onsec)">A8</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Text</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new Text("…", role: TypeRole.BodyL, color: theme.TextPrimary, maxLines: 2, overflow: Overflow.Ellipsis)</span>
+    </div>
+    <p style="margin:6px 0 16px;font-size:13.5px;line-height:1.6;color:var(--tx2);max-width:720px">A shaped paragraph on the glyph atlas. Role-driven — free-form font sizes don't exist in the component API; a <span style="font-family:'JetBrains Mono',monospace;font-size:12px">TypeRole</span> resolves size, weight, line-height, tracking and the Dynamic Type cap (§02).</p>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px">Truncation — live (resize-safe)</div>
+        <div style="background:var(--sf2);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:12px">
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--tx3);margin-bottom:4px">maxLines: 1 · Ellipsis</div>
+            <div style="font-size:calc(15px*var(--fs,1));line-height:1.4;color:var(--tx1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Transfer received from Ana Beatriz Nogueira — invoice #08122, quarterly settlement</div>
+          </div>
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--tx3);margin-bottom:4px">maxLines: 2 · Ellipsis</div>
+            <div style="font-size:calc(15px*var(--fs,1));line-height:1.4;color:var(--tx1);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">Wrapping happens at shaping time; the ellipsis glyph replaces the last cluster that fits, so bidi and emoji boundaries are respected instead of cutting mid-cluster.</div>
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow-x:auto">
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);background:var(--sf2)"><div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 14px">Aspect</div><div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 14px">Spec</div></div>
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">Layout</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">Width: fills available line box, hugs when unconstrained. Height: line count × line-height. Baseline exposed to parents for cross-align.</div></div>
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">Dynamic Type</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">Scales by OS factor to the role cap; re-shape + re-layout, atlas re-uses whitelist sizes. Never scales below ×1.</div></div>
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">Rich runs</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Span(text, weight?, color?)</span> children for inline emphasis. One role per paragraph — mixed roles are separate Texts.</div></div>
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">Selection</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">Not selectable in v1 (caret/selection metrics land with TextInput, M4).</div></div>
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">A11y</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">Role: static text; label = full untruncated string (readers speak past the ellipsis). Merges into parent semantics when inside labeled controls.</div></div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">I-beam over selectable text; drag selects; right-click = the platform text menu (Copy). Non-selectable text keeps the arrow cursor.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">StaticText — the run’s text is its accessible value.</div></div>
+    </div>
+  </section>
+
+  <section id="a-heading" data-screen-label="A9 Heading Label" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sec);color:var(--onsec)">A9</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Heading · Label</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new Heading("Portfolio", level: 1)  ·  new Label("Email", target: emailInput)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Heading — semantic Text</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.85;color:var(--tx2)">
+          <li>Level 1 → Heading role, 2 → Title, 3 → Label-strong. Visual role can be overridden; semantics can't.</li>
+          <li>Announced as "heading, level N" — VoiceOver rotor / TalkBack heading navigation jump between them.</li>
+          <li>Exactly one level-1 per screen (debug assert). Never pick Heading for its looks — that's <span style="font-family:'JetBrains Mono',monospace;font-size:12px">Text(role:)</span>.</li>
+        </ul>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Label — control caption</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.85;color:var(--tx2)">
+          <li>Label role type (13/16/600), TextSecondary by default; 6dp gap above its control.</li>
+          <li><span style="font-family:'JetBrains Mono',monospace;font-size:12px">target:</span> binds it as the control's accessible name — the reader speaks "Email, edit text" focusing the input, and the label itself is skipped.</li>
+          <li>Tapping a Label forwards the press to its target (extends the hit area upward).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">As Text (A8) — I-beam when selectable.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Web emits real heading levels; native marks the node as a header so readers can jump by heading.</div></div>
+    </div>
+  </section>
+
+  <section id="a-icon" data-screen-label="A10 Icon" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sec);color:var(--onsec)">A10</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Icon</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new Icon(Icons.Search, size: IconSize.Dense, color: theme.TextSecondary, label: "Search")</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px">Optical box</div>
+        <div style="display:flex;align-items:center;justify-content:center;padding:10px 0">
+          <div style="position:relative;width:96px;height:96px;border:1.5px dashed var(--bd2);border-radius:10px;display:flex;align-items:center;justify-content:center">
+            <span style="font-family:'Material Symbols Rounded';font-size:80px;line-height:1;color:var(--tx1)">search</span>
+            <div style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--sf);padding:0 6px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--tx3)">box 24</div>
+            <div style="position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);background:var(--sf);padding:0 6px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--tx3)">glyph ≈ 20 live area</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;font-size:12px;line-height:1.7;color:var(--tx2)">Glyphs are drawn in a square em-box; the built-in ~2dp bleed keeps optical weight even. Alignment nudges beyond ±1dp indicate a broken glyph, not a layout fix.</div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow-x:auto">
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);background:var(--sf2)"><div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 14px">Aspect</div><div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 14px">Spec</div></div>
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">Sizes</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Sm 16 · Dense 20 · Md 24 · Lg 32</span> — the atlas whitelist. Arbitrary dp sizes are a compile-time error.</div></div>
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">Color</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">Single tint from a ColorToken — alpha-mask glyphs tint like text. Two-color art is an Image, emoji ride the color atlas.</div></div>
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">Fill state</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">Outline ↔ filled = distinct glyphs (<span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Icons.Heart</span> / <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Icons.HeartFilled</span>). State change may crossfade 100ms; no path morphing exists.</div></div>
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">Scaling</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">Ignores Dynamic Type (§07). Pre-rasterized @1x/2x/3x per size — never bitmap-stretched at runtime.</div></div>
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">A11y</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">No <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">label</span> → decorative, hidden from readers. With label → image role. Inside labeled controls the icon is always hidden (the control speaks).</div></div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Inert — an icon never takes hover on its own; the owning control does.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Labelled Icon announces its label (image role); unlabelled is decoration and is hidden.</div></div>
+    </div>
+  </section>
+
+  <section id="a-image" data-screen-label="A11 Image" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sec);color:var(--onsec)">A11</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Image</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new Image(source, fit: ImageFit.Cover, radius: Radius.Md, alt: "…")</span>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px">Fit modes — 96×64 slot, 1:1 source</div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          <div style="display:flex;flex-direction:column;gap:6px;align-items:center">
+            <div style="width:96px;height:64px;border-radius:8px;background:var(--sf2);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;overflow:hidden"><div style="width:64px;height:64px;background:linear-gradient(135deg,#5CA2E8,#0050A0);border-radius:2px"></div></div>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">Contain</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;align-items:center">
+            <div style="width:96px;height:64px;border-radius:8px;border:1px solid var(--bd);overflow:hidden;position:relative"><div style="position:absolute;left:-16px;top:0;width:96px;height:96px;background:linear-gradient(135deg,#5CA2E8,#0050A0)"></div></div>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">Cover · center crop</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;align-items:center">
+            <div style="width:96px;height:64px;border-radius:8px;border:1px solid var(--bd);overflow:hidden"><div style="width:96px;height:64px;background:linear-gradient(135deg,#5CA2E8,#0050A0)"></div></div>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">Stretch (distorts)</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;align-items:center">
+            <div style="width:96px;height:64px;border-radius:10px;border:2px solid var(--pri);background:var(--pris);position:relative">
+              <div style="position:absolute;top:-1px;left:14px;right:14px;height:1px;background:var(--pri);opacity:.5"></div>
+              <div style="position:absolute;bottom:-1px;left:14px;right:14px;height:1px;background:var(--pri);opacity:.5"></div>
+              <div style="position:absolute;left:-1px;top:14px;bottom:14px;width:1px;background:var(--pri);opacity:.5"></div>
+              <div style="position:absolute;right:-1px;top:14px;bottom:14px;width:1px;background:var(--pri);opacity:.5"></div>
+              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--onpris)">corners fixed<br>center stretches</div>
+            </div>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">NineSlice(insets: 14)</span>
+          </div>
+        </div>
+        <div style="margin-top:12px;font-size:12px;line-height:1.7;color:var(--tx2)">9-slice serves stretchable art (speech bubbles, decorated panels) without vector paths — corners stay crisp at any size.</div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow-x:auto">
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);background:var(--sf2)"><div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 14px">Aspect</div><div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 14px">Spec</div></div>
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">States</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px"><strong style="color:var(--tx1)">Loading:</strong> SurfaceSubtle fill (or Skeleton shimmer when inside one). <strong style="color:var(--tx1)">Error:</strong> SurfaceSubtle + Md broken-image glyph in TextMuted. Decoded image crossfades in, 200ms.</div></div>
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">Radius</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">Radius token clips via rrect (per-corner ok). Border allowed over the clip (avatar ring).</div></div>
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">Memory</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">Decoded at target size (never full-res into a thumbnail); atlas pages evict LRU under memory pressure (M4 lifecycle).</div></div>
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">Layout</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px">Needs bounded size from parent or explicit dims; intrinsic aspect ratio used when one axis is known.</div></div>
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px">A11y</div><div style="font-size:12.5px;color:var(--tx2);padding:8px 14px"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">alt:</span> required or explicit <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">decorative: true</span> — omitting both is a debug warning. Alt read as image role.</div></div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Arrow cursor; right-click = platform default (web: the browser image menu). No hover states.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Labelled = image role + label; unlabelled = decorative, hidden.</div></div>
+    </div>
+  </section>
+
+  <section id="a-button" data-screen-label="A12 Button" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sec);color:var(--onsec)">A12</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Button</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new Button("Continue", variant: Variant.Primary, size: SizeVariant.Medium, icon: Icons.ArrowRight?, loading: false, onPressed: fn)</span>
+    </div>
+    <p style="margin:6px 0 16px;font-size:13.5px;line-height:1.6;color:var(--tx2);max-width:720px">The reference implementation of the variant × size × state system — every other control follows its conventions. Renders as one Box + one text run (+ optional icon glyph): 2–3 draws.</p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:14px">Anatomy — Medium</div>
+        <div style="display:flex;justify-content:center;padding:18px 0 6px">
+          <div style="position:relative">
+            <div style="height:40px;display:inline-flex;align-items:center;gap:8px;padding:0 16px;border-radius:10px;background:var(--pri);color:var(--onpri)">
+              <span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">add</span>
+              <span style="font-size:15px;font-weight:600">Continue</span>
+            </div>
+            <div style="position:absolute;left:-10px;top:-22px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--tx3)">① container · h40 · Radius.Md</div>
+            <div style="position:absolute;left:10px;bottom:-22px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--tx3)">② icon Dense 20</div>
+            <div style="position:absolute;left:10px;bottom:-36px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--tx3)">③ label 15/600</div>
+          </div>
+        </div>
+        <div style="margin-top:30px;padding-top:12px;border-top:1px solid var(--bd);font-size:12px;line-height:1.7;color:var(--tx2)">Parts: ① container (fill/border per variant) ② optional leading icon ③ label, single line, ellipsis ④ while loading the <strong style="color:var(--tx1)">leading slot</strong> swaps to the spinner — the label stays, so width never changes.</div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow-x:auto">
+        <div style="display:grid;grid-template-columns:96px repeat(4,minmax(0,1fr));background:var(--sf2)">
+          <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 14px">Size</div>
+          <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 10px">Small</div>
+          <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 10px">Medium ★</div>
+          <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 10px">Large</div>
+          <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 10px">XLarge</div>
+        </div>
+        <div style="display:grid;grid-template-columns:96px repeat(4,minmax(0,1fr));border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;padding:7px 14px">Height</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">32</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">40</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">48</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">56</div></div>
+        <div style="display:grid;grid-template-columns:96px repeat(4,minmax(0,1fr));border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;padding:7px 14px">Pad X</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">S3 · 12</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">S4 · 16</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">S5 · 20</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">S6 · 24</div></div>
+        <div style="display:grid;grid-template-columns:96px repeat(4,minmax(0,1fr));border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;padding:7px 14px">Gap</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">6</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">S2 · 8</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">S2 · 8</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">10</div></div>
+        <div style="display:grid;grid-template-columns:96px repeat(4,minmax(0,1fr));border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;padding:7px 14px">Label</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">13/600</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">15/600</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">16/600</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">17/600</div></div>
+        <div style="display:grid;grid-template-columns:96px repeat(4,minmax(0,1fr));border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;padding:7px 14px">Icon</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">Sm 16</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">Dense 20</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">Dense 20</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">Md 24</div></div>
+        <div style="display:grid;grid-template-columns:96px repeat(4,minmax(0,1fr));border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;padding:7px 14px">Radius</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">Md 10</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">Md 10</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">Md 10</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">Lg 14</div></div>
+        <div style="display:grid;grid-template-columns:96px repeat(4,minmax(0,1fr));border-top:1px solid var(--bd)"><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;padding:7px 14px">Hit rect</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">≥48 (slop)</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">≥48 (slop)</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">48 native</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--tx2);padding:7px 10px">56 native</div></div>
+        <div style="padding:10px 14px;border-top:1px solid var(--bd);font-size:12px;color:var(--tx3)">Min width 64dp · label scales with Dynamic Type, height grows with the line box, padding fixed. ★ default.</div>
+      </div>
+    </div>
+
+    <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:18px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Try it — press &amp; hold, tab for focus ring</div>
+        <span style="flex:1"></span>
+        <button onClick="{{ toggleBtnLoading }}" style="border:1px solid var(--bd);cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:8px;background:var(--sf2);color:var(--tx1)">{{ btnLoadingLabel }}</button>
+      </div>
+      <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+        <button onClick="{{ noop }}" style="height:48px;padding:0 20px;border:none;border-radius:10px;background:var(--pri);color:var(--onpri);font-family:'Hanken Grotesk',sans-serif;font-size:calc(16px*var(--fs,1));font-weight:600;display:inline-flex;align-items:center;gap:8px;cursor:pointer;min-width:150px;justify-content:center" style-active="background:var(--prip)" style-focus="outline:none;box-shadow:0 0 0 2px var(--sf),0 0 0 4px var(--foc)">
+          <sc-if value="{{ btnLoading }}" hint-placeholder-val="{{ false }}"><span style="position:relative;width:16px;height:16px;display:inline-block"><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(0deg);animation:ph-blink .8s linear infinite;animation-delay:-.8s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(45deg);animation:ph-blink .8s linear infinite;animation-delay:-.7s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(90deg);animation:ph-blink .8s linear infinite;animation-delay:-.6s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(135deg);animation:ph-blink .8s linear infinite;animation-delay:-.5s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(180deg);animation:ph-blink .8s linear infinite;animation-delay:-.4s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(225deg);animation:ph-blink .8s linear infinite;animation-delay:-.3s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(270deg);animation:ph-blink .8s linear infinite;animation-delay:-.2s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(315deg);animation:ph-blink .8s linear infinite;animation-delay:-.1s"></span></span></sc-if>
+          <sc-if value="{{ btnNotLoading }}" hint-placeholder-val="{{ true }}"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">lock</span></sc-if><span>Pay R$ 249,90</span>
+        </button>
+        <button onClick="{{ noop }}" style="height:48px;padding:0 20px;border:1px solid var(--bd2);border-radius:10px;background:transparent;color:var(--tx1);font-family:'Hanken Grotesk',sans-serif;font-size:calc(16px*var(--fs,1));font-weight:600;cursor:pointer" style-active="background:var(--sf2)" style-focus="outline:none;box-shadow:0 0 0 2px var(--sf),0 0 0 4px var(--foc)">Not now</button>
+        <button onClick="{{ noop }}" style="height:48px;padding:0 20px;border:none;border-radius:10px;background:var(--des);color:var(--ondes);font-family:'Hanken Grotesk',sans-serif;font-size:calc(16px*var(--fs,1));font-weight:600;cursor:pointer" style-active="background:var(--desp)" style-focus="outline:none;box-shadow:0 0 0 2px var(--sf),0 0 0 4px var(--foc)">Delete account</button>
+        <div style="font-size:12px;color:var(--tx3);line-height:1.6;max-width:250px">Pressed fill applies on touch-down in the same frame (≤ 50ms budget); release fades back over Fast 100ms.</div>
+      </div>
+    </div>
+
+    <div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3);margin:0 0 10px">Variant × state — Medium</div>
+    <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow-x:auto;margin-bottom:16px">
+      <div style="display:grid;grid-template-columns:118px repeat(5,minmax(0,1fr));background:var(--sf2)">
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 14px">Variant</div>
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 10px;text-align:center">Default</div>
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 10px;text-align:center">Pressed</div>
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 10px;text-align:center">Focused</div>
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 10px;text-align:center">Disabled · 38%</div>
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 10px;text-align:center">Loading</div>
+      </div>
+      <div style="display:grid;grid-template-columns:118px repeat(5,minmax(0,1fr));align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;padding:12px 14px">Primary</div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--pri);color:var(--onpri);font-size:14px;font-weight:600;display:inline-flex;align-items:center">Continue</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--prip);color:var(--onpri);font-size:14px;font-weight:600;display:inline-flex;align-items:center">Continue</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--pri);color:var(--onpri);font-size:14px;font-weight:600;display:inline-flex;align-items:center;box-shadow:0 0 0 2px var(--sf),0 0 0 4px var(--foc)">Continue</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--pri);color:var(--onpri);font-size:14px;font-weight:600;display:inline-flex;align-items:center;opacity:.38">Continue</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--pri);color:var(--onpri);font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:8px"><span style="position:relative;width:16px;height:16px;display:inline-block"><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(0deg);animation:ph-blink .8s linear infinite;animation-delay:-.8s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(45deg);animation:ph-blink .8s linear infinite;animation-delay:-.7s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(90deg);animation:ph-blink .8s linear infinite;animation-delay:-.6s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(135deg);animation:ph-blink .8s linear infinite;animation-delay:-.5s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(180deg);animation:ph-blink .8s linear infinite;animation-delay:-.4s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(225deg);animation:ph-blink .8s linear infinite;animation-delay:-.3s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(270deg);animation:ph-blink .8s linear infinite;animation-delay:-.2s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(315deg);animation:ph-blink .8s linear infinite;animation-delay:-.1s"></span>Continue</span></span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:118px repeat(5,minmax(0,1fr));align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;padding:12px 14px">Secondary</div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--sec);color:var(--onsec);font-size:14px;font-weight:600;display:inline-flex;align-items:center">Continue</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--secp);color:var(--onsec);font-size:14px;font-weight:600;display:inline-flex;align-items:center">Continue</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--sec);color:var(--onsec);font-size:14px;font-weight:600;display:inline-flex;align-items:center;box-shadow:0 0 0 2px var(--sf),0 0 0 4px var(--foc)">Continue</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--sec);color:var(--onsec);font-size:14px;font-weight:600;display:inline-flex;align-items:center;opacity:.38">Continue</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--sec);color:var(--onsec);font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:8px"><span style="position:relative;width:16px;height:16px;display:inline-block"><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(0deg);animation:ph-blink .8s linear infinite;animation-delay:-.8s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(45deg);animation:ph-blink .8s linear infinite;animation-delay:-.7s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(90deg);animation:ph-blink .8s linear infinite;animation-delay:-.6s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(135deg);animation:ph-blink .8s linear infinite;animation-delay:-.5s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(180deg);animation:ph-blink .8s linear infinite;animation-delay:-.4s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(225deg);animation:ph-blink .8s linear infinite;animation-delay:-.3s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(270deg);animation:ph-blink .8s linear infinite;animation-delay:-.2s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(315deg);animation:ph-blink .8s linear infinite;animation-delay:-.1s"></span>Continue</span></span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:118px repeat(5,minmax(0,1fr));align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;padding:12px 14px">Destructive</div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--des);color:var(--ondes);font-size:14px;font-weight:600;display:inline-flex;align-items:center">Delete</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--desp);color:var(--ondes);font-size:14px;font-weight:600;display:inline-flex;align-items:center">Delete</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--des);color:var(--ondes);font-size:14px;font-weight:600;display:inline-flex;align-items:center;box-shadow:0 0 0 2px var(--sf),0 0 0 4px var(--foc)">Delete</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--des);color:var(--ondes);font-size:14px;font-weight:600;display:inline-flex;align-items:center;opacity:.38">Delete</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--des);color:var(--ondes);font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:8px"><span style="position:relative;width:16px;height:16px;display:inline-block"><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(0deg);animation:ph-blink .8s linear infinite;animation-delay:-.8s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(45deg);animation:ph-blink .8s linear infinite;animation-delay:-.7s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(90deg);animation:ph-blink .8s linear infinite;animation-delay:-.6s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(135deg);animation:ph-blink .8s linear infinite;animation-delay:-.5s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(180deg);animation:ph-blink .8s linear infinite;animation-delay:-.4s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(225deg);animation:ph-blink .8s linear infinite;animation-delay:-.3s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(270deg);animation:ph-blink .8s linear infinite;animation-delay:-.2s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(315deg);animation:ph-blink .8s linear infinite;animation-delay:-.1s"></span>Delete</span></span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:118px repeat(5,minmax(0,1fr));align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;padding:12px 14px">Outline</div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--bd2);color:var(--tx1);font-size:14px;font-weight:600;display:inline-flex;align-items:center;box-sizing:border-box">Continue</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--bd2);background:var(--sf2);color:var(--tx1);font-size:14px;font-weight:600;display:inline-flex;align-items:center;box-sizing:border-box">Continue</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--bd2);color:var(--tx1);font-size:14px;font-weight:600;display:inline-flex;align-items:center;box-sizing:border-box;box-shadow:0 0 0 2px var(--sf),0 0 0 4px var(--foc)">Continue</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--bd2);color:var(--tx1);font-size:14px;font-weight:600;display:inline-flex;align-items:center;box-sizing:border-box;opacity:.38">Continue</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--bd2);color:var(--tx1);font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:8px;box-sizing:border-box"><span style="position:relative;width:16px;height:16px;display:inline-block"><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(0deg);animation:ph-blink .8s linear infinite;animation-delay:-.8s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(45deg);animation:ph-blink .8s linear infinite;animation-delay:-.7s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(90deg);animation:ph-blink .8s linear infinite;animation-delay:-.6s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(135deg);animation:ph-blink .8s linear infinite;animation-delay:-.5s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(180deg);animation:ph-blink .8s linear infinite;animation-delay:-.4s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(225deg);animation:ph-blink .8s linear infinite;animation-delay:-.3s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(270deg);animation:ph-blink .8s linear infinite;animation-delay:-.2s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(315deg);animation:ph-blink .8s linear infinite;animation-delay:-.1s"></span>Continue</span></span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:118px repeat(5,minmax(0,1fr));align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;padding:12px 14px">Ghost</div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;color:var(--tx1);font-size:14px;font-weight:600;display:inline-flex;align-items:center">Continue</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--sf2);color:var(--tx1);font-size:14px;font-weight:600;display:inline-flex;align-items:center">Continue</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;color:var(--tx1);font-size:14px;font-weight:600;display:inline-flex;align-items:center;box-shadow:0 0 0 2px var(--sf),0 0 0 4px var(--foc)">Continue</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;color:var(--tx1);font-size:14px;font-weight:600;display:inline-flex;align-items:center;opacity:.38">Continue</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">as Outline</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:118px repeat(5,minmax(0,1fr));align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;padding:12px 14px">Link</div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 6px;color:var(--lnk);font-size:14px;font-weight:600;display:inline-flex;align-items:center">Learn more</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 6px;color:var(--prip);font-size:14px;font-weight:600;display:inline-flex;align-items:center;text-decoration:underline">Learn more</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 6px;border-radius:8px;color:var(--lnk);font-size:14px;font-weight:600;display:inline-flex;align-items:center;box-shadow:0 0 0 2px var(--sf),0 0 0 4px var(--foc)">Learn more</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 6px;color:var(--lnk);font-size:14px;font-weight:600;display:inline-flex;align-items:center;opacity:.38">Learn more</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">n/a</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:118px repeat(5,minmax(0,1fr));align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;padding:12px 14px">Success</div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--suc);color:var(--onsuc);font-size:14px;font-weight:600;display:inline-flex;align-items:center">Approve</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--sucp);color:var(--onsuc);font-size:14px;font-weight:600;display:inline-flex;align-items:center">Approve</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--suc);color:var(--onsuc);font-size:14px;font-weight:600;display:inline-flex;align-items:center;box-shadow:0 0 0 2px var(--sf),0 0 0 4px var(--foc)">Approve</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--suc);color:var(--onsuc);font-size:14px;font-weight:600;display:inline-flex;align-items:center;opacity:.38">Approve</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">as Primary</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:118px repeat(5,minmax(0,1fr));align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;padding:12px 14px">Warning</div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--war);color:var(--onwar);font-size:14px;font-weight:600;display:inline-flex;align-items:center">Review</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--warp);color:var(--onwar);font-size:14px;font-weight:600;display:inline-flex;align-items:center">Review</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--war);color:var(--onwar);font-size:14px;font-weight:600;display:inline-flex;align-items:center;box-shadow:0 0 0 2px var(--sf),0 0 0 4px var(--foc)">Review</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--war);color:var(--onwar);font-size:14px;font-weight:600;display:inline-flex;align-items:center;opacity:.38">Review</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">as Primary</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:118px repeat(5,minmax(0,1fr));align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;padding:12px 14px">Info</div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--inf);color:var(--oninf);font-size:14px;font-weight:600;display:inline-flex;align-items:center">Details</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--infp);color:var(--oninf);font-size:14px;font-weight:600;display:inline-flex;align-items:center">Details</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--inf);color:var(--oninf);font-size:14px;font-weight:600;display:inline-flex;align-items:center;box-shadow:0 0 0 2px var(--sf),0 0 0 4px var(--foc)">Details</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="height:36px;padding:0 14px;border-radius:10px;background:var(--inf);color:var(--oninf);font-size:14px;font-weight:600;display:inline-flex;align-items:center;opacity:.38">Details</span></div>
+        <div style="padding:10px;display:flex;justify-content:center"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">as Primary</span></div>
+      </div>
+    </div>
+
+    <div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3);margin:0 0 10px">Sizes — toggle "Hit areas" in the top bar</div>
+    <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:26px 18px;display:flex;gap:34px;align-items:center;justify-content:center;flex-wrap:wrap;margin-bottom:16px">
+      <div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:10px">
+        <div style="position:relative">
+          <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:110px;height:48px;border-radius:10px;background:rgba(216,49,140,.13);border:1px solid rgba(216,49,140,.55);opacity:var(--hit,0);pointer-events:none"></div>
+          <span style="height:32px;padding:0 12px;border-radius:10px;background:var(--pri);color:var(--onpri);font-size:calc(13px*var(--fs,1));font-weight:600;display:inline-flex;align-items:center;position:relative">Small</span>
+        </div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">32 · hit 48</span>
+      </div>
+      <div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:10px">
+        <div style="position:relative">
+          <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:124px;height:48px;border-radius:10px;background:rgba(216,49,140,.13);border:1px solid rgba(216,49,140,.55);opacity:var(--hit,0);pointer-events:none"></div>
+          <span style="height:40px;padding:0 16px;border-radius:10px;background:var(--pri);color:var(--onpri);font-size:calc(15px*var(--fs,1));font-weight:600;display:inline-flex;align-items:center;position:relative">Medium</span>
+        </div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">40 · hit 48</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+        <span style="height:48px;padding:0 20px;border-radius:10px;background:var(--pri);color:var(--onpri);font-size:calc(16px*var(--fs,1));font-weight:600;display:inline-flex;align-items:center">Large</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">48 = hit</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+        <span style="height:56px;padding:0 24px;border-radius:14px;background:var(--pri);color:var(--onpri);font-size:calc(17px*var(--fs,1));font-weight:600;display:inline-flex;align-items:center">XLarge</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">56 = hit</span>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Behavior</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li><strong style="color:var(--tx1)">Press:</strong> fill swaps to Pressed on touch-down (same frame, ≤ 50ms); release fades back Fast 100ms. Activation fires on release-inside.</li>
+          <li><strong style="color:var(--tx1)">Cancel:</strong> drag beyond 12dp of the hit rect, or scroll capture, reverts without firing.</li>
+          <li><strong style="color:var(--tx1)">Loading (normative — matches the shipped SDK):</strong> the leading slot swaps to the spinner, the label STAYS — width is stable because the label never changes, no freeze needed. Presses swallowed, announced "busy". Never shrink or re-flow neighbors.</li>
+          <li><strong style="color:var(--tx1)">Layout:</strong> hugs label by default; <span style="font-family:'JetBrains Mono',monospace;font-size:12px">expand: true</span> fills the row (checkout CTAs). Single line, ellipsis — never two lines.</li>
+        </ul>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Accessibility</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Role <span style="font-family:'JetBrains Mono',monospace;font-size:12px">button</span>; name = label text (icon is hidden). Icon-only composition is IconButton (A13), which requires a label.</li>
+          <li>Announces: "Continue, button" · disabled: "…dimmed" · loading: "…busy".</li>
+          <li>Focusable via keyboard/switch; ring per §01; activation on Space/Enter/double-tap.</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <span style="font-size:10px;font-weight:800;letter-spacing:.1em;padding:2px 8px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">DO</span>
+        <ul style="margin:10px 0 0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>One Primary per screen region — it marks <em>the</em> action.</li>
+          <li>Pair Primary + Ghost/Outline for confirm/dismiss.</li>
+          <li>Use XLarge full-width for thumb-zone checkout CTAs.</li>
+          <li>Verb-first labels: "Save changes", not "OK".</li>
+        </ul>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <span style="font-size:10px;font-weight:800;letter-spacing:.1em;padding:2px 8px;border-radius:6px;background:var(--dess);color:var(--ondess)">DON'T</span>
+        <ul style="margin:10px 0 0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Two Primaries side by side; Destructive as the default focused action.</li>
+          <li>Small buttons for primary flows — Small is for dense toolbars and cards.</li>
+          <li>Link variant inside button rows (it's for inline text contexts).</li>
+          <li>Status variants (Success/Warning/Info) as decoration — they assert an outcome.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)"><strong style="color:var(--tx1)">Hover (pointer-only):</strong> filled variants = Base→Pressed midpoint fill · Outline/Ghost = SurfaceSubtle fill · Link = underline (§10 rule). In/out animates <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Motion.Press</span> 100ms; hover never fires on touch and clears when the pointer leaves the window. Cursor: pointer on web, arrow on native desktop. Right-click never presses.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Tab focuses (double ring §01) · <strong style="color:var(--tx1)">Space or Enter</strong> activates on key-up · disabled stays in the walk, announced dimmed, activation refused · loading swallows activation.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Web <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">role=button</span>, name = label; loading = <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-busy=true</span> — a state, not a name change. Native: Button role, "…busy" while loading.</div></div>
+    </div>
+  </section>
+
+  <section id="a-iconbutton" data-screen-label="A13 IconButton" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--sec);color:var(--onsec)">A13</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">IconButton</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new IconButton(Icons.Heart, label: "Favorite", kind: IconButtonKind.Standard, selected: bool?, onPressed: fn)</span>
+    </div>
+    <p style="margin:6px 0 16px;font-size:13.5px;line-height:1.6;color:var(--tx2);max-width:720px"><span style="font-family:'JetBrains Mono',monospace;font-size:12px">label</span> is a <strong style="color:var(--tx1)">required</strong> parameter — an unlabeled icon button does not compile. Optional toggle semantics via <span style="font-family:'JetBrains Mono',monospace;font-size:12px">selected</span> (glyph swaps outline → filled).</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow-x:auto">
+        <div style="display:grid;grid-template-columns:110px repeat(4,minmax(0,1fr));background:var(--sf2)">
+          <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 14px">Kind</div>
+          <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 10px;text-align:center">Default</div>
+          <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 10px;text-align:center">Pressed</div>
+          <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 10px;text-align:center">Selected</div>
+          <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 10px;text-align:center">Disabled</div>
+        </div>
+        <div style="display:grid;grid-template-columns:110px repeat(4,minmax(0,1fr));align-items:center;border-top:1px solid var(--bd)">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;padding:11px 14px">Standard</div>
+          <div style="padding:9px;display:flex;justify-content:center"><span style="width:40px;height:40px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx2)"><span style="font-family:'Material Symbols Rounded';font-size:20px">favorite</span></span></div>
+          <div style="padding:9px;display:flex;justify-content:center"><span style="width:40px;height:40px;border-radius:10px;background:var(--sf2);display:inline-flex;align-items:center;justify-content:center;color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:20px">favorite</span></span></div>
+          <div style="padding:9px;display:flex;justify-content:center"><span style="width:40px;height:40px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;color:var(--pri)"><span style="font-family:'Material Symbols Rounded';font-size:20px;font-variation-settings:'FILL' 1">favorite</span></span></div>
+          <div style="padding:9px;display:flex;justify-content:center"><span style="width:40px;height:40px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx2);opacity:.38"><span style="font-family:'Material Symbols Rounded';font-size:20px">favorite</span></span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:110px repeat(4,minmax(0,1fr));align-items:center;border-top:1px solid var(--bd)">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;padding:11px 14px">Tonal</div>
+          <div style="padding:9px;display:flex;justify-content:center"><span style="width:40px;height:40px;border-radius:10px;background:var(--pris);display:inline-flex;align-items:center;justify-content:center;color:var(--onpris)"><span style="font-family:'Material Symbols Rounded';font-size:20px">favorite</span></span></div>
+          <div style="padding:9px;display:flex;justify-content:center"><span style="width:40px;height:40px;border-radius:10px;background:var(--sec);display:inline-flex;align-items:center;justify-content:center;color:var(--onpris)"><span style="font-family:'Material Symbols Rounded';font-size:20px">favorite</span></span></div>
+          <div style="padding:9px;display:flex;justify-content:center"><span style="width:40px;height:40px;border-radius:10px;background:var(--pris);display:inline-flex;align-items:center;justify-content:center;color:var(--onpris)"><span style="font-family:'Material Symbols Rounded';font-size:20px;font-variation-settings:'FILL' 1">favorite</span></span></div>
+          <div style="padding:9px;display:flex;justify-content:center"><span style="width:40px;height:40px;border-radius:10px;background:var(--pris);display:inline-flex;align-items:center;justify-content:center;color:var(--onpris);opacity:.38"><span style="font-family:'Material Symbols Rounded';font-size:20px">favorite</span></span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:110px repeat(4,minmax(0,1fr));align-items:center;border-top:1px solid var(--bd)">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;padding:11px 14px">Filled</div>
+          <div style="padding:9px;display:flex;justify-content:center"><span style="width:40px;height:40px;border-radius:10px;background:var(--pri);display:inline-flex;align-items:center;justify-content:center;color:var(--onpri)"><span style="font-family:'Material Symbols Rounded';font-size:20px">favorite</span></span></div>
+          <div style="padding:9px;display:flex;justify-content:center"><span style="width:40px;height:40px;border-radius:10px;background:var(--prip);display:inline-flex;align-items:center;justify-content:center;color:var(--onpri)"><span style="font-family:'Material Symbols Rounded';font-size:20px">favorite</span></span></div>
+          <div style="padding:9px;display:flex;justify-content:center"><span style="width:40px;height:40px;border-radius:10px;background:var(--pri);display:inline-flex;align-items:center;justify-content:center;color:var(--onpri)"><span style="font-family:'Material Symbols Rounded';font-size:20px;font-variation-settings:'FILL' 1">favorite</span></span></div>
+          <div style="padding:9px;display:flex;justify-content:center"><span style="width:40px;height:40px;border-radius:10px;background:var(--pri);display:inline-flex;align-items:center;justify-content:center;color:var(--onpri);opacity:.38"><span style="font-family:'Material Symbols Rounded';font-size:20px">favorite</span></span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:110px repeat(4,minmax(0,1fr));align-items:center;border-top:1px solid var(--bd)">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;padding:11px 14px">Outline</div>
+          <div style="padding:9px;display:flex;justify-content:center"><span style="width:40px;height:40px;border-radius:10px;border:1px solid var(--bd2);display:inline-flex;align-items:center;justify-content:center;color:var(--tx1);box-sizing:border-box"><span style="font-family:'Material Symbols Rounded';font-size:20px">favorite</span></span></div>
+          <div style="padding:9px;display:flex;justify-content:center"><span style="width:40px;height:40px;border-radius:10px;border:1px solid var(--bd2);background:var(--sf2);display:inline-flex;align-items:center;justify-content:center;color:var(--tx1);box-sizing:border-box"><span style="font-family:'Material Symbols Rounded';font-size:20px">favorite</span></span></div>
+          <div style="padding:9px;display:flex;justify-content:center"><span style="width:40px;height:40px;border-radius:10px;border:1px solid var(--pri);background:var(--pris);display:inline-flex;align-items:center;justify-content:center;color:var(--onpris);box-sizing:border-box"><span style="font-family:'Material Symbols Rounded';font-size:20px;font-variation-settings:'FILL' 1">favorite</span></span></div>
+          <div style="padding:9px;display:flex;justify-content:center"><span style="width:40px;height:40px;border-radius:10px;border:1px solid var(--bd2);display:inline-flex;align-items:center;justify-content:center;color:var(--tx1);box-sizing:border-box;opacity:.38"><span style="font-family:'Material Symbols Rounded';font-size:20px">favorite</span></span></div>
+        </div>
+        <div style="padding:12px 14px;border-top:1px solid var(--bd);display:flex;gap:22px;align-items:center;flex-wrap:wrap">
+          <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3)">Sizes</span>
+          <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+            <div style="position:relative"><div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:48px;height:48px;border-radius:12px;background:rgba(216,49,140,.13);border:1px solid rgba(216,49,140,.55);opacity:var(--hit,0);pointer-events:none"></div><span style="width:32px;height:32px;border-radius:8px;background:var(--pris);display:inline-flex;align-items:center;justify-content:center;color:var(--onpris);position:relative"><span style="font-family:'Material Symbols Rounded';font-size:16px">edit</span></span></div>
+            <span style="width:40px;height:40px;border-radius:10px;background:var(--pris);display:inline-flex;align-items:center;justify-content:center;color:var(--onpris)"><span style="font-family:'Material Symbols Rounded';font-size:20px">edit</span></span>
+            <span style="width:48px;height:48px;border-radius:10px;background:var(--pris);display:inline-flex;align-items:center;justify-content:center;color:var(--onpris)"><span style="font-family:'Material Symbols Rounded';font-size:24px">edit</span></span>
+            <span style="width:56px;height:56px;border-radius:14px;background:var(--pris);display:inline-flex;align-items:center;justify-content:center;color:var(--onpris)"><span style="font-family:'Material Symbols Rounded';font-size:24px">edit</span></span>
+          </div>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">32/icon16 · 40/20 · 48/24 · 56/24 — hit ≥ 48 always</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Behavior &amp; a11y</div>
+          <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+            <li>Press/cancel physics identical to Button.</li>
+            <li>Toggle form: role <span style="font-family:'JetBrains Mono',monospace;font-size:12px">toggle button</span>, announces "selected"; glyph crossfades outline↔filled 100ms.</li>
+            <li>Long-press (500ms) shows a Tooltip with the label (Phase C) — standard for icon-only bars.</li>
+            <li>Badge overlay composes via Stack + Badge (B7).</li>
+          </ul>
+        </div>
+        <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Usage</div>
+          <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+            <li>Standard in AppBars and toolbars; Tonal for emphasized secondary actions; Filled only as a compact FAB stand-in.</li>
+            <li>Max 3 trailing icon actions in an AppBar — overflow goes to an ActionSheet (C3 — not yet in SDK; BottomSheet C1 is the interim).</li>
+            <li>Don't use for primary flow actions — ambiguous glyphs kill conversion; use a labeled Button.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Hover per kind: Standard = SurfaceSubtle fill; Tonal/Filled = fill→pressed midpoint (§10). The label surfaces as a Tooltip (C13) on ~500ms hover — the pointer twin of long-press. Cursor pointer on web.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Tab · Space/Enter activate · the toggle form announces its state change.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">role=button</span>, name = the required label. Toggle form: <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-pressed</span> — state stays out of the name. Native Selected field: <strong style="color:var(--onwars)">REQUEST</strong> (§10).</div></div>
+    </div>
+  </section>
+  <footer style="border-top:1px solid var(--bd);padding-top:24px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
+    <span style="font-size:13px;font-weight:700">Photon Mobile Design System</span>
+    <span style="font-size:12px;color:var(--tx3)">Spec v1.1 (SDK audit) · Foundations 00–10 + Phase A (A1–A13) + Phase B (B1–B18) + Phase C (C1–C16) — C3 · C15 · C16 ahead of the SDK (REQUEST). Charts, maps and rich text are outside the v1 fence by design.</span>
+  </footer>
+</main>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light' | 'dark'&quot;,&quot;section&quot;:&quot;Preview&quot;},&quot;fontScale&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:1,&quot;max&quot;:1.3,&quot;step&quot;:0.05,&quot;default&quot;:1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Preview&quot;},&quot;showHitAreas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Preview&quot;}}">
+class Component extends DCLogic {
+  state = { theme: 'light', fs: 1, hit: false, mk: 0, btnLoading: false, swOn: true, seg: 0, accOpen: true, toastOn: false };
+
+  componentDidMount() {
+    let t = 'light';
+    try { t = localStorage.getItem('photon-theme') || (this.props.theme ?? 'light'); } catch (e) { t = this.props.theme ?? 'light'; }
+    this.applyTheme(t, false);
+    const fs = this.props.fontScale ?? 1;
+    if (fs !== 1) this.applyFs(fs);
+    if (this.props.showHitAreas) this.applyHit(true);
+    setTimeout(() => this.setState(s => ({ mk: s.mk + 1 })), 400);
+  }
+
+  applyTheme(t, persist) {
+    if (t === 'dark') document.body.setAttribute('data-theme', 'dark');
+    else document.body.removeAttribute('data-theme');
+    if (persist) { try { localStorage.setItem('photon-theme', t); } catch (e) {} }
+    this.setState({ theme: t });
+  }
+  applyFs(v) { document.body.style.setProperty('--fs', String(v)); this.setState({ fs: v }); }
+  applyHit(on) { document.body.style.setProperty('--hit', on ? '1' : '0'); this.setState({ hit: on }); }
+
+  dot(anim) {
+    return React.createElement('span', {
+      key: 'k' + this.state.mk,
+      style: {
+        position: 'absolute', left: 8, top: 7, width: 18, height: 18, borderRadius: 6,
+        background: 'var(--pri)', animation: anim, animationFillMode: 'forwards'
+      }
+    });
+  }
+
+  renderVals() {
+    const { theme, fs, hit } = this.state;
+    const seg = (active) => ({
+      bg: active ? 'var(--sf)' : 'transparent',
+      c: active ? 'var(--tx1)' : 'var(--tx3)',
+      sh: active ? '0 1px 2px rgba(15,23,32,.18)' : 'none'
+    });
+    const s1 = seg(fs === 1), s2 = seg(fs === 1.15), s3 = seg(fs === 1.3);
+    return {
+      themeIcon: theme === 'dark' ? 'light_mode' : 'dark_mode',
+      themeLabel: theme === 'dark' ? 'Light' : 'Dark',
+      toggleTheme: () => this.applyTheme(this.state.theme === 'dark' ? 'light' : 'dark', true),
+      fs100: () => this.applyFs(1), fs115: () => this.applyFs(1.15), fs130: () => this.applyFs(1.3),
+      fsBg1: s1.bg, fsC1: s1.c, fsSh1: s1.sh,
+      fsBg2: s2.bg, fsC2: s2.c, fsSh2: s2.sh,
+      fsBg3: s3.bg, fsC3: s3.c, fsSh3: s3.sh,
+      toggleHit: () => this.applyHit(!this.state.hit),
+      hitBg: hit ? 'var(--pris)' : 'var(--sf2)',
+      hitC: hit ? 'var(--onpris)' : 'var(--tx1)',
+      noop: () => {},
+      swTrack: this.state.swOn ? 'var(--pri)' : 'var(--bd2)',
+      swLeft: this.state.swOn ? '23px' : '3px',
+      swLabel: this.state.swOn ? 'On' : 'Off',
+      toggleSw: () => this.setState(s => ({ swOn: !s.swOn })),
+      segLeft: 'calc(4px + ' + this.state.seg + ' * ((100% - 8px) / 3))',
+      seg0C: this.state.seg === 0 ? 'var(--tx1)' : 'var(--tx2)',
+      seg1C: this.state.seg === 1 ? 'var(--tx1)' : 'var(--tx2)',
+      seg2C: this.state.seg === 2 ? 'var(--tx1)' : 'var(--tx2)',
+      segPick0: () => this.setState({ seg: 0 }),
+      segPick1: () => this.setState({ seg: 1 }),
+      segPick2: () => this.setState({ seg: 2 }),
+      accMax: this.state.accOpen ? '220px' : '0px',
+      accRot: this.state.accOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+      accStateLabel: this.state.accOpen ? 'expanded' : 'collapsed',
+      toggleAcc: () => this.setState(s => ({ accOpen: !s.accOpen })),
+      toastOn: this.state.toastOn,
+      showToast: () => {
+        clearTimeout(this._toastT);
+        this.setState({ toastOn: true });
+        this._toastT = setTimeout(() => this.setState({ toastOn: false }), 3200);
+      },
+      btnLoading: this.state.btnLoading,
+      btnNotLoading: !this.state.btnLoading,
+      btnLoadingLabel: this.state.btnLoading ? 'Stop loading' : 'Simulate loading',
+      toggleBtnLoading: () => this.setState(s => ({ btnLoading: !s.btnLoading })),
+      replayMotion: () => this.setState(s => ({ mk: s.mk + 1 })),
+      dotStandard: this.dot('ph-move-std 200ms cubic-bezier(0.2,0,0,1) 120ms forwards'),
+      dotDecel: this.dot('ph-move-std 300ms cubic-bezier(0,0,0,1) 120ms forwards'),
+      dotGlide: this.dot('ph-move-std 200ms cubic-bezier(0.33,0,0.67,1) 120ms forwards')
+    };
+  }
+}
+</script>
+</body>
+</html>

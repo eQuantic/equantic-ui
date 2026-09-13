@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0" rel="stylesheet">
+<style>
+body{margin:0;background:var(--desk);color:var(--tx1);font-family:'Hanken Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased;
+--desk:#DDE3EA;
+--bg:#F5F6F8;--sf:#FFFFFF;--sf2:#EFF1F4;--bd:#E2E5EA;--bd2:#C9CED6;
+--tx1:#171B21;--tx2:#4B5563;--tx3:#5F6B7A;--txi:#FFFFFF;
+--pri:#0050A0;--onpri:#FFFFFF;--prip:#00427F;--pris:#E8F1FA;--onpris:#003E7E;
+--sec:#E9EDF2;--onsec:#3A4350;--secp:#DCE2EA;
+--des:#B42318;--ondes:#FFFFFF;--desp:#8F1D1D;--dess:#FCEBEA;--ondess:#8F1D1D;
+--suc:#3B7A22;--onsuc:#FFFFFF;--sucs:#EDF6E6;--onsucs:#2C5E17;
+--war:#8A5A00;--onwar:#FFFFFF;--wars:#FBF3DF;--onwars:#7A5200;
+--inf:#0C6C86;--oninf:#FFFFFF;--infs:#E4F3F8;--oninfs:#0A5468;
+--lnk:#0050A0;--foc:#0050A0;
+--e1:0 1px 3px 0 rgba(15,23,32,.10);--e2:0 2px 8px 0 rgba(15,23,32,.12);--e3:0 6px 16px -2px rgba(15,23,32,.16);--e4:0 12px 28px -4px rgba(15,23,32,.20)}
+body[data-theme="dark"]{--desk:#0A0C0F;
+--bg:#0C0F13;--sf:#14181E;--sf2:#1C232B;--bd:#2A323D;--bd2:#3D4754;
+--tx1:#F2F4F7;--tx2:#AEB7C2;--tx3:#8B95A3;--txi:#171B21;
+--pri:#5CA2E8;--onpri:#06263F;--prip:#7CB5EE;--pris:#0F2740;--onpris:#A8CDF2;
+--sec:#242C36;--onsec:#D7DDE5;--secp:#2E3844;
+--des:#E5645C;--ondes:#3B0704;--desp:#F28B85;--dess:#3A1210;--ondess:#F4A9A4;
+--suc:#85C05E;--onsuc:#12290A;--sucs:#16290C;--onsucs:#B5DB97;
+--war:#E8B04B;--onwar:#2E1B02;--wars:#2E2008;--onwars:#EECF8F;
+--inf:#4CC3DE;--oninf:#062B33;--infs:#0A2A32;--oninfs:#9FDCEB;
+--lnk:#7CB5EE;--foc:#7CB5EE;
+--e1:0 1px 3px 0 rgba(0,0,0,.45);--e2:0 2px 8px 0 rgba(0,0,0,.48);--e3:0 6px 16px -2px rgba(0,0,0,.52);--e4:0 12px 28px -4px rgba(0,0,0,.56)}
+a{color:var(--lnk)}a:hover{color:var(--prip)}
+@keyframes eq-blink{0%{opacity:1}100%{opacity:.15}}
+@keyframes eq-shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+@keyframes eq-indet{0%{left:-35%}100%{left:105%}}
+</style>
+</helmet>
+
+<div style="min-height:100vh;padding:26px 26px 40px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:18px">
+
+  <div style="width:100%;max-width:1280px;display:flex;align-items:center;gap:12px">
+    <div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#0050A0,#003E7E);display:flex;align-items:center;justify-content:center"><div style="width:10px;height:10px;border-radius:4px;background:#80B85C"></div></div>
+    <div style="font-size:14px;font-weight:800;letter-spacing:-.01em;color:var(--tx1)">eQuantic Studio</div>
+    <div style="font-size:12px;color:var(--tx3);font-weight:500">macOS sample app · every component of the SDK, live — hand this to Claude Code as the build target</div>
+    <div style="flex:1"></div>
+    <button onClick="{{ toggleTheme }}" style="display:flex;align-items:center;gap:6px;border:1px solid var(--bd);cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:8px;background:var(--sf);color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">{{ themeIcon }}</span>{{ themeLabel }}</button>
+  </div>
+
+  <div data-screen-label="macOS window" style="width:1280px;max-width:100%;height:824px;border-radius:14px;background:var(--bg);box-shadow:0 32px 70px -12px rgba(6,12,20,.45),0 0 0 1px rgba(0,0,0,.10);overflow:hidden;display:flex;flex-direction:column">
+
+    <div style="height:44px;flex:none;display:flex;align-items:center;gap:14px;padding:0 14px;background:var(--sf);border-bottom:1px solid var(--bd)">
+      <x-import component-from-global-scope="MacTrafficLights" from="./macos-window.jsx" hint-size="60px,14px"></x-import>
+      <div style="display:flex;align-items:center;gap:8px;margin-left:4px">
+        <span style="font-family:'Material Symbols Rounded';font-size:17px;color:var(--tx3)">chevron_left</span>
+        <span style="font-family:'Material Symbols Rounded';font-size:17px;color:var(--bd2)">chevron_right</span>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center">
+        <div style="font-size:12.5px;font-weight:700;color:var(--tx1);letter-spacing:-.005em">Component Gallery</div>
+        <div style="font-size:10.5px;color:var(--tx3);margin-top:-1px">eQuantic.UI 1.0.0 · Photon tokens</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="width:28px;height:26px;border-radius:7px;background:var(--sf2);display:inline-flex;align-items:center;justify-content:center;color:var(--tx2)"><span style="font-family:'Material Symbols Rounded';font-size:17px">sync</span></span>
+        <span style="height:26px;padding:0 10px;border-radius:7px;background:var(--pri);color:var(--onpri);font-size:11.5px;font-weight:700;display:inline-flex;align-items:center;gap:5px"><span style="font-family:'Material Symbols Rounded';font-size:15px">play_arrow</span>Run sample</span>
+      </div>
+    </div>
+
+    <div style="flex:1;min-height:0;display:flex">
+
+      <div style="width:214px;flex:none;background:var(--sf2);border-right:1px solid var(--bd);display:flex;flex-direction:column;padding:12px 10px;box-sizing:border-box;overflow-y:auto">
+        <div style="display:flex;align-items:center;gap:7px;height:30px;padding:0 9px;border-radius:8px;background:var(--sf);border:1px solid var(--bd);margin-bottom:12px">
+          <span style="font-family:'Material Symbols Rounded';font-size:16px;color:var(--tx3)">search</span>
+          <span style="font-size:12px;color:var(--tx3)">Search components</span>
+          <span style="flex:1"></span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">⌘K</span>
+        </div>
+        <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);padding:4px 9px 5px">Primitives</div>
+        <a href="#s-buttons" style="display:flex;align-items:center;gap:8px;height:28px;padding:0 9px;border-radius:7px;text-decoration:none;background:var(--pris);color:var(--onpris);font-size:12.5px;font-weight:700"><span style="font-family:'Material Symbols Rounded';font-size:16px">smart_button</span>Buttons</a>
+        <a href="#s-inputs" style="display:flex;align-items:center;gap:8px;height:28px;padding:0 9px;border-radius:7px;text-decoration:none;color:var(--tx2);font-size:12.5px;font-weight:500" style-hover="background:var(--sf);color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:16px">edit_square</span>Inputs</a>
+        <a href="#s-selection" style="display:flex;align-items:center;gap:8px;height:28px;padding:0 9px;border-radius:7px;text-decoration:none;color:var(--tx2);font-size:12.5px;font-weight:500" style-hover="background:var(--sf);color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:16px">check_box</span>Selection</a>
+        <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);padding:12px 9px 5px">Data display</div>
+        <a href="#s-data" style="display:flex;align-items:center;gap:8px;height:28px;padding:0 9px;border-radius:7px;text-decoration:none;color:var(--tx2);font-size:12.5px;font-weight:500" style-hover="background:var(--sf);color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:16px">badge</span>Identity &amp; status</a>
+        <a href="#s-containers" style="display:flex;align-items:center;gap:8px;height:28px;padding:0 9px;border-radius:7px;text-decoration:none;color:var(--tx2);font-size:12.5px;font-weight:500" style-hover="background:var(--sf);color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:16px">dashboard</span>Cards &amp; lists</a>
+        <a href="#s-progress" style="display:flex;align-items:center;gap:8px;height:28px;padding:0 9px;border-radius:7px;text-decoration:none;color:var(--tx2);font-size:12.5px;font-weight:500" style-hover="background:var(--sf);color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:16px">progress_activity</span>Progress</a>
+        <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);padding:12px 9px 5px">Navigation</div>
+        <a href="#s-nav" style="display:flex;align-items:center;gap:8px;height:28px;padding:0 9px;border-radius:7px;text-decoration:none;color:var(--tx2);font-size:12.5px;font-weight:500" style-hover="background:var(--sf);color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:16px">tab</span>Tabs &amp; bars</a>
+        <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);padding:12px 9px 5px">Feedback</div>
+        <a href="#s-feedback" style="display:flex;align-items:center;gap:8px;height:28px;padding:0 9px;border-radius:7px;text-decoration:none;color:var(--tx2);font-size:12.5px;font-weight:500" style-hover="background:var(--sf);color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:16px">campaign</span>Banners &amp; toasts</a>
+        <a href="#s-overlays" style="display:flex;align-items:center;gap:8px;height:28px;padding:0 9px;border-radius:7px;text-decoration:none;color:var(--tx2);font-size:12.5px;font-weight:500" style-hover="background:var(--sf);color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:16px">layers</span>Overlays</a>
+        <div style="flex:1;min-height:14px"></div>
+        <div style="border-top:1px solid var(--bd);padding-top:10px;display:flex;align-items:center;gap:8px">
+          <div style="width:26px;height:26px;border-radius:999px;background:linear-gradient(135deg,#5CA2E8,#0050A0);display:flex;align-items:center;justify-content:center;color:#fff;font-size:10.5px;font-weight:700">AB</div>
+          <div style="min-width:0"><div style="font-size:11.5px;font-weight:600;color:var(--tx1)">Ana Beatriz</div><div style="font-size:10px;color:var(--tx3)">SDK maintainer</div></div>
+        </div>
+      </div>
+
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+
+        <div style="height:42px;flex:none;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--bd);background:var(--bg)">
+          <span style="font-size:12px;color:var(--tx3)">Components</span>
+          <span style="font-family:'Material Symbols Rounded';font-size:15px;color:var(--bd2)">chevron_right</span>
+          <span style="font-size:12px;font-weight:700;color:var(--tx1)">Buttons</span>
+          <div style="flex:1"></div>
+          <div style="display:flex;align-items:center;gap:2px;padding:2px;border-radius:8px;background:var(--sf2)">
+            <button onClick="{{ setLight }}" style="border:none;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;background:{{ lightBg }};color:{{ lightC }};box-shadow:{{ lightSh }}">Light</button>
+            <button onClick="{{ setDark }}" style="border:none;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;background:{{ darkBg }};color:{{ darkC }};box-shadow:{{ darkSh }}">Dark</button>
+          </div>
+          <span style="height:26px;padding:0 10px;border-radius:7px;border:1px solid var(--bd2);color:var(--tx1);font-size:11.5px;font-weight:600;display:inline-flex;align-items:center;gap:5px"><span style="font-family:'Material Symbols Rounded';font-size:15px">content_copy</span>Copy C#</span>
+        </div>
+
+        <div style="flex:1;min-height:0;display:flex">
+
+          <div style="flex:1;min-width:0;overflow-y:auto;padding:18px 20px 40px;background:var(--bg)">
+
+            <div id="s-buttons" style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:20px;box-shadow:var(--e1)">
+              <div style="display:flex;align-items:center;gap:9px;margin-bottom:16px">
+                <span style="font-size:15px;font-weight:700;letter-spacing:-.01em">Live preview</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px;background:var(--sec);color:var(--onsec)">Button</span>
+                <div style="flex:1"></div>
+                <span style="font-size:11px;color:var(--tx3)">driven by the inspector →</span>
+              </div>
+              <div style="border-radius:12px;background:var(--sf2);min-height:120px;display:flex;align-items:center;justify-content:center;padding:22px">
+                <button onClick="{{ noop }}" style="border:{{ pvBorder }};border-radius:{{ pvRadius }};background:{{ pvBg }};color:{{ pvColor }};height:{{ pvHeight }};padding:{{ pvPad }};font-family:'Hanken Grotesk',sans-serif;font-size:{{ pvFont }};font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;opacity:{{ pvOpacity }};min-width:96px;box-sizing:border-box" style-active="filter:brightness(.92)" style-focus="outline:none;box-shadow:0 0 0 2px var(--sf2),0 0 0 4px var(--foc)">
+                  <sc-if value="{{ pvSpinner }}" hint-placeholder-val="{{ false }}"><span style="position:relative;width:16px;height:16px;display:inline-block"><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(0deg);animation:eq-blink .8s linear infinite;animation-delay:-.8s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(90deg);animation:eq-blink .8s linear infinite;animation-delay:-.6s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(180deg);animation:eq-blink .8s linear infinite;animation-delay:-.4s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(270deg);animation:eq-blink .8s linear infinite;animation-delay:-.2s"></span></span></sc-if>
+                  <sc-if value="{{ pvIcon }}" hint-placeholder-val="{{ false }}"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">bolt</span></sc-if>
+                  <sc-if value="{{ pvLabelShown }}" hint-placeholder-val="{{ true }}"><span>Continue</span></sc-if>
+                </button>
+              </div>
+              <div style="margin-top:12px;background:#101418;border-radius:10px;padding:12px 14px;overflow-x:auto"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#C9D4DE;white-space:pre">{{ csharp }}</span></div>
+            </div>
+
+            <div style="margin:22px 0 10px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3)">Variant matrix · Medium</div>
+            <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:16px 18px;display:flex;flex-wrap:wrap;gap:10px">
+              <span style="height:36px;padding:0 14px;border-radius:10px;background:var(--pri);color:var(--onpri);font-size:14px;font-weight:600;display:inline-flex;align-items:center">Primary</span>
+              <span style="height:36px;padding:0 14px;border-radius:10px;background:var(--sec);color:var(--onsec);font-size:14px;font-weight:600;display:inline-flex;align-items:center">Secondary</span>
+              <span style="height:36px;padding:0 14px;border-radius:10px;background:var(--des);color:var(--ondes);font-size:14px;font-weight:600;display:inline-flex;align-items:center">Destructive</span>
+              <span style="height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--bd2);color:var(--tx1);font-size:14px;font-weight:600;display:inline-flex;align-items:center;box-sizing:border-box">Outline</span>
+              <span style="height:36px;padding:0 14px;border-radius:10px;color:var(--tx1);font-size:14px;font-weight:600;display:inline-flex;align-items:center">Ghost</span>
+              <span style="height:36px;padding:0 6px;color:var(--lnk);font-size:14px;font-weight:600;display:inline-flex;align-items:center">Link</span>
+              <span style="height:36px;padding:0 14px;border-radius:10px;background:var(--suc);color:var(--onsuc);font-size:14px;font-weight:600;display:inline-flex;align-items:center">Success</span>
+              <span style="height:36px;padding:0 14px;border-radius:10px;background:var(--war);color:var(--onwar);font-size:14px;font-weight:600;display:inline-flex;align-items:center">Warning</span>
+              <span style="height:36px;padding:0 14px;border-radius:10px;background:var(--inf);color:var(--oninf);font-size:14px;font-weight:600;display:inline-flex;align-items:center">Info</span>
+              <div style="width:100%;height:1px;background:var(--bd);margin:4px 0"></div>
+              <span style="height:32px;padding:0 12px;border-radius:10px;background:var(--pri);color:var(--onpri);font-size:13px;font-weight:600;display:inline-flex;align-items:center">Small 32</span>
+              <span style="height:40px;padding:0 16px;border-radius:10px;background:var(--pri);color:var(--onpri);font-size:15px;font-weight:600;display:inline-flex;align-items:center">Medium 40</span>
+              <span style="height:48px;padding:0 20px;border-radius:10px;background:var(--pri);color:var(--onpri);font-size:16px;font-weight:600;display:inline-flex;align-items:center">Large 48</span>
+              <span style="height:56px;padding:0 24px;border-radius:14px;background:var(--pri);color:var(--onpri);font-size:17px;font-weight:600;display:inline-flex;align-items:center">XLarge 56</span>
+              <div style="width:100%;height:1px;background:var(--bd);margin:4px 0"></div>
+              <span style="width:36px;height:36px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx2)"><span style="font-family:'Material Symbols Rounded';font-size:20px">favorite</span></span>
+              <span style="width:36px;height:36px;border-radius:10px;background:var(--pris);color:var(--onpris);display:inline-flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:20px">favorite</span></span>
+              <span style="width:36px;height:36px;border-radius:10px;background:var(--pri);color:var(--onpri);display:inline-flex;align-items:center;justify-content:center"><span style="font-family:'Material Symbols Rounded';font-size:20px">favorite</span></span>
+              <span style="width:36px;height:36px;border-radius:10px;border:1px solid var(--bd2);color:var(--tx1);display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box"><span style="font-family:'Material Symbols Rounded';font-size:20px">favorite</span></span>
+              <span style="font-size:11px;color:var(--tx3);align-self:center;margin-left:4px">IconButton · Standard · Tonal · Filled · Outline</span>
+            </div>
+
+            <div id="s-inputs" style="margin:22px 0 10px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3)">Inputs</div>
+            <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:16px">
+              <div>
+                <div style="font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:5px">Full name</div>
+                <div style="height:40px;border:1px solid var(--bd2);border-radius:10px;display:flex;align-items:center;padding:0 12px;font-size:14px;box-sizing:border-box">Ana Beatriz Nogueira</div>
+                <div style="font-size:11.5px;color:var(--tx3);margin-top:5px">Default · Radius.Md · 1dp BorderStrong</div>
+              </div>
+              <div>
+                <div style="font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:5px">Email</div>
+                <div style="height:40px;border:2px solid var(--foc);border-radius:10px;display:flex;align-items:center;padding:0 11px;font-size:14px;box-sizing:border-box">ana@equantic.tech<span style="width:1.5px;height:18px;background:var(--pri);margin-left:1px;animation:eq-blink 1s steps(1) infinite"></span></div>
+                <div style="font-size:11.5px;color:var(--tx3);margin-top:5px">Focused · 2dp Focus ring</div>
+              </div>
+              <div>
+                <div style="font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:5px">Tax ID</div>
+                <div style="height:40px;border:2px solid var(--des);border-radius:10px;display:flex;align-items:center;padding:0 11px;font-size:14px;box-sizing:border-box;color:var(--tx1)">123.456.789-0</div>
+                <div style="font-size:11.5px;color:var(--ondess);margin-top:5px;display:flex;align-items:center;gap:4px"><span style="font-family:'Material Symbols Rounded';font-size:14px">error</span>Enter all 11 digits</div>
+              </div>
+              <div>
+                <div style="font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:5px">Account</div>
+                <div style="height:40px;border:1px solid var(--bd2);border-radius:10px;display:flex;align-items:center;gap:8px;padding:0 12px;font-size:14px;box-sizing:border-box"><span style="flex:1">Checking ··· 4821</span><span style="font-family:'Material Symbols Rounded';font-size:19px;color:var(--tx3)">expand_more</span></div>
+                <div style="font-size:11.5px;color:var(--tx3);margin-top:5px">Select · opens picker</div>
+              </div>
+              <div>
+                <div style="height:40px;border:1px solid var(--bd2);border-radius:999px;display:flex;align-items:center;gap:8px;padding:0 14px;font-size:14px;box-sizing:border-box;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:19px;color:var(--tx3)">search</span><span style="flex:1;color:var(--tx3)">Search transactions</span><span style="font-family:'Material Symbols Rounded';font-size:18px;color:var(--tx3)">cancel</span></div>
+                <div style="font-size:11.5px;color:var(--tx3);margin-top:5px">SearchField · Radius.Full</div>
+              </div>
+              <div style="display:flex;gap:18px;align-items:flex-end">
+                <div>
+                  <div style="display:inline-flex;align-items:center;border:1px solid var(--bd2);border-radius:10px;overflow:hidden">
+                    <span style="width:36px;height:32px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:18px">remove</span></span>
+                    <span style="width:38px;height:32px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;border-left:1px solid var(--bd);border-right:1px solid var(--bd)">2</span>
+                    <span style="width:36px;height:32px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:18px">add</span></span>
+                  </div>
+                  <div style="font-size:11.5px;color:var(--tx3);margin-top:5px">Stepper</div>
+                </div>
+                <div style="flex:1">
+                  <div style="position:relative;height:24px;display:flex;align-items:center">
+                    <div style="position:absolute;left:0;right:0;height:4px;border-radius:999px;background:var(--sf2)"></div>
+                    <div style="position:absolute;left:0;width:62%;height:4px;border-radius:999px;background:var(--pri)"></div>
+                    <div style="position:absolute;left:62%;transform:translateX(-50%);width:22px;height:22px;border-radius:999px;background:#fff;box-shadow:var(--e2);border:1px solid var(--bd)"></div>
+                  </div>
+                  <div style="font-size:11.5px;color:var(--tx3);margin-top:5px">Slider</div>
+                </div>
+              </div>
+            </div>
+
+            <div id="s-selection" style="margin:22px 0 10px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3)">Selection controls</div>
+            <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:18px;display:flex;gap:34px;flex-wrap:wrap">
+              <div style="display:flex;flex-direction:column;gap:11px">
+                <div style="display:flex;align-items:center;gap:9px"><span style="width:20px;height:20px;border-radius:4px;background:var(--pri);display:inline-flex;align-items:center;justify-content:center;color:var(--onpri)"><span style="font-family:'Material Symbols Rounded';font-size:16px">check</span></span><span style="font-size:13.5px">Checked</span></div>
+                <div style="display:flex;align-items:center;gap:9px"><span style="width:20px;height:20px;border-radius:4px;border:2px solid var(--bd2);box-sizing:border-box"></span><span style="font-size:13.5px">Unchecked</span></div>
+                <div style="display:flex;align-items:center;gap:9px"><span style="width:20px;height:20px;border-radius:4px;background:var(--pri);display:inline-flex;align-items:center;justify-content:center;color:var(--onpri)"><span style="font-family:'Material Symbols Rounded';font-size:16px">remove</span></span><span style="font-size:13.5px">Indeterminate</span></div>
+                <div style="display:flex;align-items:center;gap:9px;opacity:.38"><span style="width:20px;height:20px;border-radius:4px;border:2px solid var(--bd2);box-sizing:border-box"></span><span style="font-size:13.5px">Disabled</span></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:11px">
+                <div style="display:flex;align-items:center;gap:9px"><span style="width:20px;height:20px;border-radius:999px;border:2px solid var(--pri);box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center"><span style="width:9px;height:9px;border-radius:999px;background:var(--pri)"></span></span><span style="font-size:13.5px">Selected</span></div>
+                <div style="display:flex;align-items:center;gap:9px"><span style="width:20px;height:20px;border-radius:999px;border:2px solid var(--bd2);box-sizing:border-box"></span><span style="font-size:13.5px">Option B</span></div>
+                <div style="display:flex;align-items:center;gap:9px"><span style="width:20px;height:20px;border-radius:999px;border:2px solid var(--bd2);box-sizing:border-box"></span><span style="font-size:13.5px">Option C</span></div>
+                <div style="font-size:11.5px;color:var(--tx3)">RadioGroup · roving focus</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:11px">
+                <button onClick="{{ toggleSw }}" style="display:flex;align-items:center;gap:9px;border:none;background:transparent;cursor:pointer;padding:0;font-family:'Hanken Grotesk',sans-serif" style-focus="outline:none">
+                  <span style="width:44px;height:26px;border-radius:999px;background:{{ swTrack }};position:relative;display:inline-block;transition:background 150ms"><span style="position:absolute;top:3px;left:{{ swX }};width:20px;height:20px;border-radius:999px;background:#fff;box-shadow:var(--e1);transition:left 150ms cubic-bezier(0.2,0,0,1)"></span></span>
+                  <span style="font-size:13.5px;color:var(--tx1)">Face ID · {{ swLabel }}</span>
+                </button>
+                <div style="display:flex;align-items:center;gap:9px;opacity:.38"><span style="width:44px;height:26px;border-radius:999px;background:var(--bd2);position:relative;display:inline-block"><span style="position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:999px;background:#fff"></span></span><span style="font-size:13.5px">Disabled</span></div>
+                <div style="display:flex;align-items:center;gap:2px;padding:2px;border-radius:9px;background:var(--sf2);width:fit-content">
+                  <span style="padding:5px 13px;border-radius:7px;background:var(--sf);box-shadow:var(--e1);font-size:12.5px;font-weight:600">1M</span>
+                  <span style="padding:5px 13px;border-radius:7px;font-size:12.5px;font-weight:600;color:var(--tx2)">6M</span>
+                  <span style="padding:5px 13px;border-radius:7px;font-size:12.5px;font-weight:600;color:var(--tx2)">1Y</span>
+                </div>
+              </div>
+            </div>
+
+            <div id="s-data" style="margin:22px 0 10px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3)">Identity &amp; status</div>
+            <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:18px;display:flex;gap:26px;flex-wrap:wrap;align-items:center">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="width:24px;height:24px;border-radius:999px;background:linear-gradient(135deg,#5CA2E8,#0050A0);color:#fff;font-size:9.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center">AB</span>
+                <span style="width:32px;height:32px;border-radius:999px;background:linear-gradient(135deg,#5CA2E8,#0050A0);color:#fff;font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center">AB</span>
+                <span style="position:relative;display:inline-block"><span style="width:40px;height:40px;border-radius:999px;background:linear-gradient(135deg,#5CA2E8,#0050A0);color:#fff;font-size:14px;font-weight:700;display:inline-flex;align-items:center;justify-content:center">AB</span><span style="position:absolute;right:0;bottom:0;width:11px;height:11px;border-radius:999px;background:var(--suc);border:2px solid var(--sf)"></span></span>
+                <span style="width:56px;height:56px;border-radius:999px;background:linear-gradient(135deg,#5CA2E8,#0050A0);color:#fff;font-size:19px;font-weight:700;display:inline-flex;align-items:center;justify-content:center">AB</span>
+                <span style="font-size:11.5px;color:var(--tx3);margin-left:2px">Avatar 24/32/40/56</span>
+              </div>
+              <div style="width:1px;align-self:stretch;background:var(--bd)"></div>
+              <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+                <span style="height:20px;padding:0 7px;border-radius:6px;background:var(--pris);color:var(--onpris);font-size:11px;font-weight:700;display:inline-flex;align-items:center">Beta</span>
+                <span style="height:20px;padding:0 7px;border-radius:6px;background:var(--sucs);color:var(--onsucs);font-size:11px;font-weight:700;display:inline-flex;align-items:center">Paid</span>
+                <span style="height:20px;padding:0 7px;border-radius:6px;background:var(--wars);color:var(--onwars);font-size:11px;font-weight:700;display:inline-flex;align-items:center">Pending</span>
+                <span style="height:20px;padding:0 7px;border-radius:6px;background:var(--dess);color:var(--ondess);font-size:11px;font-weight:700;display:inline-flex;align-items:center">Failed</span>
+                <span style="min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--des);color:var(--ondes);font-size:10.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center">12</span>
+                <span style="width:8px;height:8px;border-radius:999px;background:var(--des);display:inline-block"></span>
+                <span style="font-size:11.5px;color:var(--tx3)">Badge · tonal, count, dot</span>
+              </div>
+              <div style="width:1px;align-self:stretch;background:var(--bd)"></div>
+              <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+                <span style="height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--bd2);font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;box-sizing:border-box">All</span>
+                <span style="height:30px;padding:0 10px 0 12px;border-radius:999px;background:var(--pri);color:var(--onpri);font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:5px">Income<span style="font-family:'Material Symbols Rounded';font-size:15px">close</span></span>
+                <span style="height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--bd2);font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:5px;box-sizing:border-box"><span style="font-family:'Material Symbols Rounded';font-size:15px;color:var(--tx2)">calendar_today</span>April</span>
+                <span style="font-size:11.5px;color:var(--tx3)">Chip · filter, removable</span>
+              </div>
+            </div>
+
+            <div id="s-containers" style="margin:22px 0 10px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3)">Cards &amp; lists</div>
+            <div style="display:grid;grid-template-columns:1fr 1.15fr;gap:14px">
+              <div style="background:var(--sf);border-radius:14px;box-shadow:var(--e1);border:1px solid var(--bd);overflow:hidden">
+                <div style="display:flex;align-items:center;gap:10px;padding:14px 16px 0">
+                  <div style="flex:1"><div style="font-size:15px;font-weight:600">Monthly spend</div><div style="font-size:12px;color:var(--tx3)">April · 14 categories</div></div>
+                  <span style="width:28px;height:28px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx2)"><span style="font-family:'Material Symbols Rounded';font-size:18px">more_horiz</span></span>
+                </div>
+                <div style="padding:12px 16px 14px">
+                  <div style="font-size:26px;font-weight:800;letter-spacing:-.02em">R$ 3.842</div>
+                  <div style="display:flex;align-items:center;gap:6px;margin-top:3px"><span style="font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">▲ 12%</span><span style="font-size:11.5px;color:var(--tx3)">vs March</span></div>
+                </div>
+                <div style="border-top:1px solid var(--bd);padding:9px 16px;display:flex;justify-content:flex-end"><span style="font-size:12.5px;font-weight:600;color:var(--lnk)">See report</span></div>
+              </div>
+              <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;overflow:hidden">
+                <div style="display:flex;align-items:center;gap:11px;padding:0 14px;height:50px"><span style="font-family:'Material Symbols Rounded';font-size:22px;color:var(--tx2)">wifi</span><span style="flex:1;font-size:14px;font-weight:500">Wi-Fi</span><span style="font-size:12.5px;color:var(--tx3)">Photon-5G</span><span style="font-family:'Material Symbols Rounded';font-size:19px;color:var(--tx3)">chevron_right</span></div>
+                <div style="height:1px;background:var(--bd);margin-left:47px"></div>
+                <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;background:var(--sf2)"><div style="width:36px;height:36px;border-radius:999px;background:linear-gradient(135deg,#5CA2E8,#0050A0);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none">MR</div><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500">Marcos Ribeiro</div><div style="font-size:12.5px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Invoice #0311 — paid · pressed state</div></div><span style="font-size:11.5px;color:var(--tx3)">09:12</span></div>
+                <div style="height:1px;background:var(--bd);margin-left:61px"></div>
+                <div style="display:flex;align-items:center;gap:11px;padding:10px 14px"><span style="font-family:'Material Symbols Rounded';font-size:22px;color:var(--tx2)">notifications</span><div style="flex:1"><div style="font-size:14px;font-weight:500">Notifications</div><div style="font-size:12.5px;color:var(--tx3)">Push, email and in-app alerts</div></div><span style="width:40px;height:24px;border-radius:999px;background:var(--pri);position:relative;flex:none"><span style="position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:999px;background:#fff"></span></span></div>
+              </div>
+            </div>
+
+            <div id="s-progress" style="margin:22px 0 10px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3)">Progress &amp; loading</div>
+            <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:18px;display:flex;gap:28px;align-items:center;flex-wrap:wrap">
+              <div style="width:200px">
+                <div style="height:6px;border-radius:999px;background:var(--sf2);overflow:hidden"><div style="width:64%;height:100%;border-radius:999px;background:var(--pri)"></div></div>
+                <div style="font-size:11.5px;color:var(--tx3);margin-top:6px">Determinate · 64%</div>
+              </div>
+              <div style="width:200px">
+                <div style="height:6px;border-radius:999px;background:var(--sf2);overflow:hidden;position:relative"><div style="position:absolute;top:0;width:35%;height:100%;border-radius:999px;background:var(--pri);animation:eq-indet 1.4s cubic-bezier(0.2,0,0,1) infinite"></div></div>
+                <div style="font-size:11.5px;color:var(--tx3);margin-top:6px">Indeterminate</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px">
+                <span style="position:relative;width:24px;height:24px;display:inline-block;color:var(--pri)"><span style="position:absolute;left:11px;top:0;width:2px;height:7px;border-radius:1px;background:currentColor;transform-origin:1px 12px;transform:rotate(0deg);animation:eq-blink .8s linear infinite;animation-delay:-.8s"></span><span style="position:absolute;left:11px;top:0;width:2px;height:7px;border-radius:1px;background:currentColor;transform-origin:1px 12px;transform:rotate(45deg);animation:eq-blink .8s linear infinite;animation-delay:-.7s"></span><span style="position:absolute;left:11px;top:0;width:2px;height:7px;border-radius:1px;background:currentColor;transform-origin:1px 12px;transform:rotate(90deg);animation:eq-blink .8s linear infinite;animation-delay:-.6s"></span><span style="position:absolute;left:11px;top:0;width:2px;height:7px;border-radius:1px;background:currentColor;transform-origin:1px 12px;transform:rotate(135deg);animation:eq-blink .8s linear infinite;animation-delay:-.5s"></span><span style="position:absolute;left:11px;top:0;width:2px;height:7px;border-radius:1px;background:currentColor;transform-origin:1px 12px;transform:rotate(180deg);animation:eq-blink .8s linear infinite;animation-delay:-.4s"></span><span style="position:absolute;left:11px;top:0;width:2px;height:7px;border-radius:1px;background:currentColor;transform-origin:1px 12px;transform:rotate(225deg);animation:eq-blink .8s linear infinite;animation-delay:-.3s"></span><span style="position:absolute;left:11px;top:0;width:2px;height:7px;border-radius:1px;background:currentColor;transform-origin:1px 12px;transform:rotate(270deg);animation:eq-blink .8s linear infinite;animation-delay:-.2s"></span><span style="position:absolute;left:11px;top:0;width:2px;height:7px;border-radius:1px;background:currentColor;transform-origin:1px 12px;transform:rotate(315deg);animation:eq-blink .8s linear infinite;animation-delay:-.1s"></span></span>
+                <span style="font-size:11.5px;color:var(--tx3)">Spinner</span>
+              </div>
+              <div style="flex:1;min-width:220px;display:flex;gap:10px;align-items:center">
+                <div style="width:36px;height:36px;border-radius:999px;background:var(--sf2);position:relative;overflow:hidden"><div style="position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:eq-shimmer 1.4s linear infinite"></div></div>
+                <div style="flex:1">
+                  <div style="height:11px;width:70%;border-radius:999px;background:var(--sf2);position:relative;overflow:hidden"><div style="position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:eq-shimmer 1.4s linear infinite"></div></div>
+                  <div style="height:9px;width:45%;border-radius:999px;background:var(--sf2);margin-top:7px;position:relative;overflow:hidden"><div style="position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:eq-shimmer 1.4s linear infinite"></div></div>
+                </div>
+                <span style="font-size:11.5px;color:var(--tx3)">Skeleton</span>
+              </div>
+            </div>
+
+            <div id="s-nav" style="margin:22px 0 10px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3)">Navigation</div>
+            <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:18px;display:flex;gap:26px;flex-wrap:wrap;align-items:center">
+              <div>
+                <div style="display:flex;gap:20px;border-bottom:1px solid var(--bd);padding:0 2px">
+                  <span style="padding:8px 0;font-size:13.5px;font-weight:700;color:var(--pri);box-shadow:inset 0 -2px 0 0 var(--pri)">Overview</span>
+                  <span style="padding:8px 0;font-size:13.5px;font-weight:600;color:var(--tx3)">Activity</span>
+                  <span style="padding:8px 0;font-size:13.5px;font-weight:600;color:var(--tx3)">Reports</span>
+                </div>
+                <div style="font-size:11.5px;color:var(--tx3);margin-top:6px">Tabs · underline indicator</div>
+              </div>
+              <div style="width:1px;align-self:stretch;background:var(--bd)"></div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="width:8px;height:8px;border-radius:999px;background:var(--bd2)"></span>
+                <span style="width:20px;height:8px;border-radius:999px;background:var(--pri)"></span>
+                <span style="width:8px;height:8px;border-radius:999px;background:var(--bd2)"></span>
+                <span style="font-size:11.5px;color:var(--tx3);margin-left:4px">PageIndicator</span>
+              </div>
+              <div style="width:1px;align-self:stretch;background:var(--bd)"></div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="height:28px;padding:0 11px;border-radius:8px;background:var(--tx1);color:var(--txi);font-size:11.5px;font-weight:500;display:inline-flex;align-items:center">Scan invoice</span>
+                <span style="font-size:11.5px;color:var(--tx3)">Tooltip</span>
+              </div>
+            </div>
+
+            <div id="s-feedback" style="margin:22px 0 10px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3)">Feedback</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:flex-start;gap:11px;padding:12px 14px;border-radius:14px;background:var(--infs);color:var(--oninfs)"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1.2">info</span><div style="flex:1"><div style="font-size:13.5px;font-weight:700">Statement ready</div><div style="font-size:12.5px;line-height:1.45;opacity:.92">Your April statement is available for download.</div></div><span style="font-family:'Material Symbols Rounded';font-size:18px;opacity:.7">close</span></div>
+              <div style="display:flex;align-items:flex-start;gap:11px;padding:12px 14px;border-radius:14px;background:var(--sucs);color:var(--onsucs)"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1.2">check_circle</span><div style="flex:1"><div style="font-size:13.5px;font-weight:700">Transfer completed</div><div style="font-size:12.5px;line-height:1.45;opacity:.92">R$ 1.200,00 sent to Marcos Ribeiro.</div></div></div>
+              <div style="display:flex;align-items:flex-start;gap:11px;padding:12px 14px;border-radius:14px;background:var(--wars);color:var(--onwars)"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1.2">warning</span><div style="flex:1"><div style="font-size:13.5px;font-weight:700">Limit almost reached</div><div style="font-size:12.5px;line-height:1.45;opacity:.92">You have used 92% of this month's transfer limit.</div></div><span style="font-size:12.5px;font-weight:700;text-decoration:underline">Raise limit</span></div>
+              <div style="display:flex;align-items:flex-start;gap:11px;padding:12px 14px;border-radius:14px;background:var(--dess);color:var(--ondess)"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1.2">error</span><div style="flex:1"><div style="font-size:13.5px;font-weight:700">Payment failed</div><div style="font-size:12.5px;line-height:1.45;opacity:.92">The card issuer declined this charge. Try another card.</div></div></div>
+              <div style="display:flex;gap:12px;align-items:center;margin-top:2px">
+                <div style="display:flex;align-items:center;gap:14px;background:var(--tx1);color:var(--txi);border-radius:14px;box-shadow:var(--e3);padding:11px 15px"><span style="font-size:13.5px;font-weight:500">Card removed</span><span style="font-size:13.5px;font-weight:700;color:{{ toastAction }}">Undo</span></div>
+                <span style="font-size:11.5px;color:var(--tx3)">Toast · inverse surface</span>
+                <div style="flex:1"></div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 26px;border:1px dashed var(--bd2);border-radius:14px">
+                  <span style="font-family:'Material Symbols Rounded';font-size:30px;color:var(--tx3)">inbox</span>
+                  <span style="font-size:13.5px;font-weight:700">No transactions yet</span>
+                  <span style="font-size:12px;color:var(--tx3)">They will appear here once you transfer.</span>
+                  <span style="height:32px;padding:0 12px;border-radius:10px;background:var(--pri);color:var(--onpri);font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;margin-top:2px">New transfer</span>
+                </div>
+              </div>
+            </div>
+
+            <div id="s-overlays" style="margin:22px 0 10px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3)">Overlays</div>
+            <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:18px;display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start">
+              <div style="width:280px;background:var(--sf);border:1px solid var(--bd);border-radius:16px;box-shadow:var(--e4);padding:16px">
+                <div style="font-size:16px;font-weight:600">Delete card?</div>
+                <div style="font-size:13.5px;line-height:1.5;color:var(--tx2);margin-top:6px">"Work Visa ··· 4821" will be removed and its automatic payments will stop.</div>
+                <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><span style="height:34px;padding:0 13px;border-radius:10px;font-size:13.5px;font-weight:600;display:inline-flex;align-items:center">Keep card</span><span style="height:34px;padding:0 13px;border-radius:10px;background:var(--des);color:var(--ondes);font-size:13.5px;font-weight:600;display:inline-flex;align-items:center">Delete</span></div>
+              </div>
+              <div style="width:230px;background:var(--sf);border:1px solid var(--bd);border-radius:16px;box-shadow:var(--e4);overflow:hidden">
+                <div style="display:flex;justify-content:center;padding:7px 0 3px"><span style="width:34px;height:4px;border-radius:999px;background:var(--bd2)"></span></div>
+                <div style="padding:4px 14px 6px;font-size:14px;font-weight:600">Transfer options</div>
+                <div style="display:flex;align-items:center;gap:10px;height:44px;padding:0 14px"><span style="font-family:'Material Symbols Rounded';font-size:19px;color:var(--tx2)">bolt</span><span style="font-size:13.5px">Instant (PIX)</span></div>
+                <div style="height:1px;background:var(--bd);margin-left:43px"></div>
+                <div style="display:flex;align-items:center;gap:10px;height:44px;padding:0 14px"><span style="font-family:'Material Symbols Rounded';font-size:19px;color:var(--tx2)">schedule</span><span style="font-size:13.5px">Schedule</span></div>
+                <div style="height:1px;background:var(--bd);margin-left:43px"></div>
+                <div style="display:flex;align-items:center;gap:10px;height:44px;padding:0 14px"><span style="font-family:'Material Symbols Rounded';font-size:19px;color:var(--des)">delete</span><span style="font-size:13.5px;color:var(--des)">Remove recipient</span></div>
+              </div>
+              <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:9px">
+                <div style="font-size:12.5px;font-weight:700">Desktop mapping</div>
+                <div style="font-size:12.5px;line-height:1.6;color:var(--tx2)">On macOS the mobile BottomSheet becomes a <strong style="color:var(--tx1)">popover anchored to its trigger</strong>; ActionSheet becomes a context menu; Toast docks bottom-trailing. Modal keeps the same anatomy, centered on the window with E4.</div>
+                <div style="font-size:12.5px;line-height:1.6;color:var(--tx2)">Hover states exist here (Layer 2 desktop adapter): every pressable surface gets a SurfaceSubtle hover fill 100ms before its pressed state.</div>
+              </div>
+            </div>
+
+          </div>
+
+          <div style="width:252px;flex:none;border-left:1px solid var(--bd);background:var(--sf);display:flex;flex-direction:column;overflow-y:auto">
+            <div style="padding:14px 14px 10px;border-bottom:1px solid var(--bd)">
+              <div style="font-size:12.5px;font-weight:800;letter-spacing:-.005em">Inspector</div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3);margin-top:2px">eQuantic.UI.Button</div>
+            </div>
+            <div style="padding:12px 14px;border-bottom:1px solid var(--bd)">
+              <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:7px">Variant</div>
+              <div style="display:flex;flex-wrap:wrap;gap:5px">
+                <button onClick="{{ vPrimary }}" style="border:1px solid {{ vbPrimary }};background:{{ vfPrimary }};color:{{ vcPrimary }};cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:4px 8px;border-radius:7px">Primary</button>
+                <button onClick="{{ vSecondary }}" style="border:1px solid {{ vbSecondary }};background:{{ vfSecondary }};color:{{ vcSecondary }};cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:4px 8px;border-radius:7px">Secondary</button>
+                <button onClick="{{ vDestructive }}" style="border:1px solid {{ vbDestructive }};background:{{ vfDestructive }};color:{{ vcDestructive }};cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:4px 8px;border-radius:7px">Destructive</button>
+                <button onClick="{{ vOutline }}" style="border:1px solid {{ vbOutline }};background:{{ vfOutline }};color:{{ vcOutline }};cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:4px 8px;border-radius:7px">Outline</button>
+                <button onClick="{{ vGhost }}" style="border:1px solid {{ vbGhost }};background:{{ vfGhost }};color:{{ vcGhost }};cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:4px 8px;border-radius:7px">Ghost</button>
+                <button onClick="{{ vSuccess }}" style="border:1px solid {{ vbSuccess }};background:{{ vfSuccess }};color:{{ vcSuccess }};cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:4px 8px;border-radius:7px">Success</button>
+                <button onClick="{{ vWarning }}" style="border:1px solid {{ vbWarning }};background:{{ vfWarning }};color:{{ vcWarning }};cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:4px 8px;border-radius:7px">Warning</button>
+                <button onClick="{{ vInfo }}" style="border:1px solid {{ vbInfo }};background:{{ vfInfo }};color:{{ vcInfo }};cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:4px 8px;border-radius:7px">Info</button>
+              </div>
+            </div>
+            <div style="padding:12px 14px;border-bottom:1px solid var(--bd)">
+              <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:7px">Size</div>
+              <div style="display:flex;gap:2px;padding:2px;border-radius:8px;background:var(--sf2)">
+                <button onClick="{{ sSmall }}" style="flex:1;border:none;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:10.5px;font-weight:700;padding:5px 0;border-radius:6px;background:{{ sbSmall }};color:{{ scSmall }}">S</button>
+                <button onClick="{{ sMedium }}" style="flex:1;border:none;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:10.5px;font-weight:700;padding:5px 0;border-radius:6px;background:{{ sbMedium }};color:{{ scMedium }}">M</button>
+                <button onClick="{{ sLarge }}" style="flex:1;border:none;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:10.5px;font-weight:700;padding:5px 0;border-radius:6px;background:{{ sbLarge }};color:{{ scLarge }}">L</button>
+                <button onClick="{{ sXLarge }}" style="flex:1;border:none;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:10.5px;font-weight:700;padding:5px 0;border-radius:6px;background:{{ sbXLarge }};color:{{ scXLarge }}">XL</button>
+              </div>
+            </div>
+            <div style="padding:12px 14px;border-bottom:1px solid var(--bd);display:flex;flex-direction:column;gap:9px">
+              <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">State</div>
+              <button onClick="{{ toggleIcon }}" style="display:flex;align-items:center;gap:8px;border:none;background:transparent;padding:0;cursor:pointer;font-family:'Hanken Grotesk',sans-serif"><span style="width:34px;height:20px;border-radius:999px;background:{{ tIconTrack }};position:relative;display:inline-block;flex:none"><span style="position:absolute;top:2.5px;left:{{ tIconX }};width:15px;height:15px;border-radius:999px;background:#fff;box-shadow:var(--e1);transition:left 120ms"></span></span><span style="font-size:12px;color:var(--tx1)">Leading icon</span></button>
+              <button onClick="{{ toggleLoading }}" style="display:flex;align-items:center;gap:8px;border:none;background:transparent;padding:0;cursor:pointer;font-family:'Hanken Grotesk',sans-serif"><span style="width:34px;height:20px;border-radius:999px;background:{{ tLoadTrack }};position:relative;display:inline-block;flex:none"><span style="position:absolute;top:2.5px;left:{{ tLoadX }};width:15px;height:15px;border-radius:999px;background:#fff;box-shadow:var(--e1);transition:left 120ms"></span></span><span style="font-size:12px;color:var(--tx1)">Loading</span></button>
+              <button onClick="{{ toggleDisabled }}" style="display:flex;align-items:center;gap:8px;border:none;background:transparent;padding:0;cursor:pointer;font-family:'Hanken Grotesk',sans-serif"><span style="width:34px;height:20px;border-radius:999px;background:{{ tDisTrack }};position:relative;display:inline-block;flex:none"><span style="position:absolute;top:2.5px;left:{{ tDisX }};width:15px;height:15px;border-radius:999px;background:#fff;box-shadow:var(--e1);transition:left 120ms"></span></span><span style="font-size:12px;color:var(--tx1)">Disabled</span></button>
+            </div>
+            <div style="padding:12px 14px;border-bottom:1px solid var(--bd)">
+              <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:3px">Resolved via Sizing</div>
+              <div style="font-size:10px;color:var(--tx3);line-height:1.45;margin-bottom:7px">Sizing.*(SizeVariant) — no inlined numbers</div>
+              <div style="display:flex;flex-direction:column;gap:5px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx2)">
+                <div style="display:flex;justify-content:space-between;gap:8px"><span>Height</span><span style="color:var(--tx1)">{{ pvHeight }}</span></div>
+                <div style="display:flex;justify-content:space-between;gap:8px"><span>PaddingX</span><span style="color:var(--tx1)">{{ pvPadX }}</span></div>
+                <div style="display:flex;justify-content:space-between;gap:8px"><span>Gap</span><span style="color:var(--tx1)">{{ pvGap }}</span></div>
+                <div style="display:flex;justify-content:space-between;gap:8px"><span>LabelSize</span><span style="color:var(--tx1)">{{ pvFont }} / 600</span></div>
+                <div style="display:flex;justify-content:space-between;gap:8px"><span>Icon</span><span style="color:var(--tx1)">{{ pvIconTok }}</span></div>
+                <div style="display:flex;justify-content:space-between;gap:8px"><span>Radius</span><span style="color:var(--tx1)">{{ pvRadius }}</span></div>
+                <div style="display:flex;justify-content:space-between;gap:8px"><span>HitTarget</span><span style="color:var(--tx1)">{{ pvHit }}</span></div>
+              </div>
+              <div style="margin-top:9px;padding-top:8px;border-top:1px solid var(--bd);font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);line-height:1.5">press → Motion.Press<br>state → Motion.State</div>
+            </div>
+            <div style="padding:12px 14px">
+              <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:7px">Accessibility</div>
+              <div style="font-size:11.5px;line-height:1.6;color:var(--tx2)">Role <span style="font-family:'JetBrains Mono',monospace;font-size:11px">button</span> · name "Continue" · {{ a11yNote }}</div>
+            </div>
+          </div>
+
+        </div>
+
+        <div style="height:28px;flex:none;border-top:1px solid var(--bd);background:var(--sf);display:flex;align-items:center;gap:14px;padding:0 14px">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">46 components</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">Photon tokens v1.0</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">light + dark verified</span>
+          <div style="flex:1"></div>
+          <span style="display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--onsucs)"><span style="width:7px;height:7px;border-radius:999px;background:var(--suc)"></span>renderer 120 fps</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="width:100%;max-width:1280px;display:flex;gap:12px;flex-wrap:wrap">
+    <div style="flex:1;min-width:280px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:14px 16px">
+      <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:7px">Build target for Claude Code</div>
+      <div style="font-size:12.5px;line-height:1.65;color:var(--tx2)">A macOS shell (titlebar + sidebar + toolbar + inspector + status bar) whose entire content area is rendered by eQuantic.UI. Every specimen above is one SDK component — if the gallery renders, the desktop adapter is validated.</div>
+    </div>
+    <div style="flex:1;min-width:280px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:14px 16px">
+      <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:7px">Coverage in this screen</div>
+      <div style="font-size:12.5px;line-height:1.65;color:var(--tx2)">Button · IconButton · TextInput · SearchField · Select · Stepper · Slider · Checkbox · Radio · Switch · SegmentedControl · Avatar · Badge · Chip · Card · List · ProgressBar · Spinner · Skeleton · Tabs · PageIndicator · Tooltip · Banner · Toast · EmptyState · Dialog · Sheet-as-popover</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light' | 'dark'&quot;,&quot;section&quot;:&quot;Preview&quot;}}">
+class Component extends DCLogic {
+  state = { theme: 'light', variant: 'Primary', size: 'Medium', icon: true, loading: false, disabled: false, sw: true };
+
+  componentDidMount() {
+    let t = this.props.theme ?? 'light';
+    try { t = localStorage.getItem('eq-studio-theme') || t; } catch (e) {}
+    this.applyTheme(t, false);
+  }
+  applyTheme(t, persist) {
+    if (t === 'dark') document.body.setAttribute('data-theme', 'dark');
+    else document.body.removeAttribute('data-theme');
+    if (persist) { try { localStorage.setItem('eq-studio-theme', t); } catch (e) {} }
+    this.setState({ theme: t });
+  }
+
+  variantStyle(v) {
+    const map = {
+      Primary: { bg: 'var(--pri)', c: 'var(--onpri)', b: 'none' },
+      Secondary: { bg: 'var(--sec)', c: 'var(--onsec)', b: 'none' },
+      Destructive: { bg: 'var(--des)', c: 'var(--ondes)', b: 'none' },
+      Outline: { bg: 'transparent', c: 'var(--tx1)', b: '1px solid var(--bd2)' },
+      Ghost: { bg: 'transparent', c: 'var(--tx1)', b: 'none' },
+      Success: { bg: 'var(--suc)', c: 'var(--onsuc)', b: 'none' },
+      Warning: { bg: 'var(--war)', c: 'var(--onwar)', b: 'none' },
+      Info: { bg: 'var(--inf)', c: 'var(--oninf)', b: 'none' }
+    };
+    return map[v] || map.Primary;
+  }
+  // Mirrors Sizing.*(SizeVariant) from eQuantic.UI.Primitives — the SDK ladder, not local numbers.
+  sizeStyle(s) {
+    const map = {
+      Small:  { h: 32, px: 12, gap: 6,  f: 13, r: 10, icon: 'Sm',    iconPx: 16, hit: 48 },
+      Medium: { h: 40, px: 16, gap: 8,  f: 15, r: 10, icon: 'Dense', iconPx: 20, hit: 48 },
+      Large:  { h: 48, px: 20, gap: 8,  f: 16, r: 10, icon: 'Dense', iconPx: 20, hit: 48 },
+      XLarge: { h: 56, px: 24, gap: 10, f: 17, r: 14, icon: 'Md',    iconPx: 24, hit: 56 }
+    };
+    return map[s] || map.Medium;
+  }
+
+  renderVals() {
+    const st = this.state;
+    const v = this.variantStyle(st.variant), sz = this.sizeStyle(st.size);
+    const out = {
+      themeIcon: st.theme === 'dark' ? 'light_mode' : 'dark_mode',
+      themeLabel: st.theme === 'dark' ? 'Light' : 'Dark',
+      toggleTheme: () => this.applyTheme(st.theme === 'dark' ? 'light' : 'dark', true),
+      setLight: () => this.applyTheme('light', true),
+      setDark: () => this.applyTheme('dark', true),
+      lightBg: st.theme === 'light' ? 'var(--sf)' : 'transparent',
+      lightC: st.theme === 'light' ? 'var(--tx1)' : 'var(--tx3)',
+      lightSh: st.theme === 'light' ? 'var(--e1)' : 'none',
+      darkBg: st.theme === 'dark' ? 'var(--sf)' : 'transparent',
+      darkC: st.theme === 'dark' ? 'var(--tx1)' : 'var(--tx3)',
+      darkSh: st.theme === 'dark' ? 'var(--e1)' : 'none',
+      noop: () => {},
+      pvBg: v.bg, pvColor: v.c, pvBorder: v.b,
+      pvHeight: sz.h + 'px', pvPad: '0 ' + sz.px + 'px', pvPadX: sz.px + 'dp',
+      pvGap: sz.gap + 'dp', pvIconTok: 'IconSize.' + sz.icon + ' ' + sz.iconPx, pvHit: sz.hit + 'dp',
+      pvFont: sz.f + 'px', pvRadius: sz.r + 'px',
+      pvOpacity: st.disabled ? 0.38 : 1,
+      pvSpinner: st.loading,
+      pvIcon: st.icon && !st.loading,
+      pvLabelShown: !st.loading,
+      csharp: 'new Button("Continue",\n    variant: Variant.' + st.variant + ',\n    size: SizeVariant.' + st.size + (st.icon ? ',\n    icon: Icons.Bolt' : '') + (st.loading ? ',\n    loading: true' : '') + (st.disabled ? ',\n    enabled: false' : '') + ',\n    onPressed: Submit)\n\n// resolved through Sizing — never inlined:\n// Sizing.Height(' + st.size + ') = ' + sz.h + '   Sizing.PaddingX = ' + sz.px + '\n// Sizing.Icon = IconSize.' + sz.icon + '   Sizing.HitTarget = ' + sz.hit,
+      a11yNote: st.loading ? 'announces "busy" while loading' : (st.disabled ? 'announced dimmed, not focusable' : 'activation on Space / Enter / double-tap'),
+      toastAction: st.theme === 'dark' ? '#0050A0' : '#5CA2E8',
+      toggleSw: () => this.setState(s => ({ sw: !s.sw })),
+      swTrack: st.sw ? 'var(--pri)' : 'var(--bd2)',
+      swX: st.sw ? '21px' : '3px',
+      swLabel: st.sw ? 'on' : 'off',
+      toggleIcon: () => this.setState(s => ({ icon: !s.icon })),
+      toggleLoading: () => this.setState(s => ({ loading: !s.loading })),
+      toggleDisabled: () => this.setState(s => ({ disabled: !s.disabled })),
+      tIconTrack: st.icon ? 'var(--pri)' : 'var(--bd2)', tIconX: st.icon ? '16px' : '2.5px',
+      tLoadTrack: st.loading ? 'var(--pri)' : 'var(--bd2)', tLoadX: st.loading ? '16px' : '2.5px',
+      tDisTrack: st.disabled ? 'var(--pri)' : 'var(--bd2)', tDisX: st.disabled ? '16px' : '2.5px'
+    };
+    ['Primary', 'Secondary', 'Destructive', 'Outline', 'Ghost', 'Success', 'Warning', 'Info'].forEach(name => {
+      const on = st.variant === name;
+      out['v' + name] = () => this.setState({ variant: name });
+      out['vf' + name] = on ? 'var(--pris)' : 'var(--sf)';
+      out['vb' + name] = on ? 'var(--pri)' : 'var(--bd)';
+      out['vc' + name] = on ? 'var(--onpris)' : 'var(--tx2)';
+    });
+    ['Small', 'Medium', 'Large', 'XLarge'].forEach(name => {
+      const on = st.size === name;
+      out['s' + name] = () => this.setState({ size: name });
+      out['sb' + name] = on ? 'var(--sf)' : 'transparent';
+      out['sc' + name] = on ? 'var(--tx1)' : 'var(--tx3)';
+    });
+    return out;
+  }
+}
+</script>
+</body>
+</html>
