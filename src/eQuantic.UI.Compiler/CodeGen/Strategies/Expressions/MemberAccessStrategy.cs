@@ -44,6 +44,12 @@ public class MemberAccessStrategy : IExpressionIrStrategy
             return symbol.IsStatic ? JsExpr.Call(home) : JsExpr.Call(home, receiver);
         }
 
+        // The HOST-ONLY fence. `FaceResolution.Unresolved` is a read, not a call, and a fence that
+        // guards calls and not reads reads as protection while being none — the emitted
+        // `FaceResolution.unresolved` names an export the runtime does not have, and the page dies
+        // at hydration with SSR still answering 200.
+        if (symbol is not null) symbol.ReportIfHostOnly(node, context);
+
         if (symbol != null)
         {
             var containingType = symbol.ContainingType.ToDisplayString();

@@ -39,7 +39,7 @@ nothing does it. These are the codes that shrink as the compiler grows.
 | `EQ1005` | Two types share a twin filename — either the same name twice, or two names that differ only in case (one file on Windows and macOS). Their twins would be ONE file and the second would overwrite the first. | Rename one of the types. |
 | `EQ1006` | *(warning)* One type is declared in more than one place and eqc emits one module per declaration, so the twin holds only the first declaration's members. | Combine them into a single declaration, or keep the members a component uses together in one. Harmless when the other halves are server-only, which is why it does not stop the build. |
 
-## EQ2001–EQ2009 — the construct cannot cross
+## EQ2001–EQ2010 — the construct cannot cross
 
 Not a gap: there is no browser equivalent, or a translation would have to be a guess. These do
 not shrink with compiler work — they are the shape of the target.
@@ -55,6 +55,7 @@ not shrink with compiler work — they are the shape of the target.
 | `EQ2007` | A collection expression `with(…)` argument beyond a capacity hint — a JS array or `Set` takes no constructor comparer. | Drop the argument, or build the collection explicitly. |
 | `EQ2008` | Query syntax using `join`, `let`, a second `from`, or `into` — its C# translation runs through compiler-generated transparent identifiers. Also the fenced initializer forms. | Rewrite in method syntax, where every operator is supported. |
 | `EQ2009` | A component is declared more than once in one file (partial declarations). eqc emits one module per declaration and cannot merge them. | Combine the members into a single declaration. |
+| `EQ2010` | A symbol the framework keeps on the HOST — a type or a single member marked `[ServerOnly]` — named from client code. The runtime ships no twin, so the reference would compile, emit, and fail at hydration on "does not provide an export named" while SSR kept answering 200. | Call it from server code: a `[ServerAction]`, a `[ServerOnly]` class, or a realizer. Never from a component's `Build`. Unlike `EQ2004` this is a DECISION, not a gap — adding a strategy is not the answer. |
 
 ## EQ2100–EQ2101 — resx templates
 

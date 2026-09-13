@@ -349,22 +349,18 @@ public class InvocationStrategy : IExpressionIrStrategy
 
         var declaring = symbol.ContainingType;
         if (declaring is null) return;
+        // The fence comes FIRST and asks about the SYMBOL: a framework type that crosses can carry
+        // a member that does not, and asking only the type waves that member through.
+        if (symbol.ReportIfHostOnly(node, context)) return;
         // Declared in this compilation → it becomes a module of its own.
         if (declaring.Locations.Any(location => location.IsInSource)) return;
         if (IsFrameworkProvided(declaring)) return;
 
-        // Same fact either way — no translation exists — but the REMEDY differs, and a diagnostic
-        // that offers "add a strategy" for a type the framework deliberately keeps on the host
-        // sends the reader to write code nobody wants.
-        context.Report(node, ConversionSeverity.Error, "EQ2004", IsHostOnly(declaring)
-            ? $"'{declaring.ToDisplayString()}.{symbol.Name}' is HOST ONLY ([ServerOnly]) and the "
-                + "runtime ships no twin for it, so a client component naming it would fail at "
-                + "hydration rather than here. Call it from server code — a [ServerAction], a "
-                + "[ServerOnly] class, or the realizer — never from a component's Build."
-            : $"'{declaring.ToDisplayString()}.{symbol.Name}' has no JavaScript translation. "
-                + "The transpiler only knows the constructs it maps explicitly; add a strategy for it, "
-                + "move the call behind a [ServerAction], or — if the class this call sits in only ever "
-                + "runs on the server — mark THAT class [ServerOnly] so no module is emitted for it.");
+        context.Report(node, ConversionSeverity.Error, "EQ2004",
+            $"'{declaring.ToDisplayString()}.{symbol.Name}' has no JavaScript translation. "
+            + "The transpiler only knows the constructs it maps explicitly; add a strategy for it, "
+            + "move the call behind a [ServerAction], or — if the class this call sits in only ever "
+            + "runs on the server — mark THAT class [ServerOnly] so no module is emitted for it.");
     }
 
     /// <summary>Does the file import the declarative factory surface with `using static`? Matched on
@@ -392,26 +388,15 @@ public class InvocationStrategy : IExpressionIrStrategy
     }
 
     /// <summary>
-    /// Namespaces whose twins the runtime ships — the framework itself, and its icon packs.
-    /// <para>
-    /// A framework type marked <c>[ServerOnly]</c> is the exception, and it has to be: the runtime
-    /// ships NO twin for it, so treating it as provided lets a client component name it, compile,
-    /// emit, and die at hydration on "does not provide an export named". That is how
-    /// <c>RouteValues</c> took a page down. The attribute used to be inert on a framework type —
-    /// it said host-only and nothing enforced it — which is a false safety net, and worse than
-    /// silence because it is the kind of promise a reader stops checking.
-    /// </para>
+    /// Namespaces whose twins the runtime ships — the framework itself, and its icon packs. The
+    /// host-only fence is asked separately, per SYMBOL, because a type that crosses can carry a
+    /// member that does not (<c>FaceName.IsWellFormed</c> beside <c>FaceName.Usable</c>).
     /// </summary>
     private static bool IsFrameworkProvided(ITypeSymbol type)
     {
         var ns = type.ContainingNamespace?.ToDisplayString() ?? string.Empty;
-        if (ns != "eQuantic" && !ns.StartsWith("eQuantic.")) return false;
-        return !IsHostOnly(type);
+        return ns == "eQuantic" || ns.StartsWith("eQuantic.");
     }
-
-    /// <summary>Carries <c>[ServerOnly]</c>: it never crosses, whoever declares it.</summary>
-    private static bool IsHostOnly(ITypeSymbol type) =>
-        type.GetAttributes().Any(attribute => attribute.AttributeClass?.Name == "ServerOnlyAttribute");
 
     /// <summary>
     /// Types the RUNTIME provides a hand-written twin for — the shared vocabulary. Same rule the

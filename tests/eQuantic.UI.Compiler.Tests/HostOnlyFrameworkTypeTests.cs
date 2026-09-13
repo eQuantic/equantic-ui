@@ -51,11 +51,18 @@ public class HostOnlyFrameworkTypeTests
             }
             """);
 
-        var compilation = CSharpCompilation.Create("HostOnlyProbe", [tree],
-            ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
-                .Split(Path.PathSeparator)
-                .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-                .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path)),
+        // TPA carries this test host's project references, Primitives included (measured), so the
+        // repo's other harnesses get away with TPA alone. Named EXPLICITLY here anyway: the whole
+        // point of this suite is that it must not quietly go back to measuring snippet mode, and
+        // that should not rest on how a host happens to compose its trusted list.
+        var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+            .Split(Path.PathSeparator)
+            .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
+            .Append(MetadataReference.CreateFromFile(
+                typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location));
+
+        var compilation = CSharpCompilation.Create("HostOnlyProbe", [tree], references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
         // The reference has to actually be there, or this measures snippet mode again.
@@ -78,7 +85,7 @@ public class HostOnlyFrameworkTypeTests
         var reported = Diagnostics("FaceResolution.Missing(\"Ghost Sans\");")
             .Should().ContainSingle().Subject;
 
-        reported.Code.Should().Be("EQ2004");
+        reported.Code.Should().Be("EQ2010");
         reported.Message.Should().Contain("HOST ONLY", "the reader is told WHY, not just no");
         reported.Message.Should().Contain("hydration",
             "and where it would otherwise have failed, which is the part that costs an afternoon");
@@ -90,7 +97,42 @@ public class HostOnlyFrameworkTypeTests
     public void TheBoundaryTally_IsFencedTheSameWay()
     {
         Diagnostics("ComponentBoundary.ClearContained();")
-            .Should().Contain(d => d.Code == "EQ2004");
+            .Should().Contain(d => d.Code == "EQ2010");
+    }
+
+    /// <summary>
+    /// A READ, not a call — and the case this suite originally had and then lost. The first version
+    /// of this test named <c>ComponentBoundary.Contained</c>, went red, and was changed to a method
+    /// so it would pass: the test was fitted to the implementation instead of the implementation to
+    /// the contract, and the property path stayed open. A fence that guards calls and not reads
+    /// reads as protection while being none.
+    /// </summary>
+    [Theory]
+    [InlineData("var seen = FaceResolution.Unresolved;")]
+    [InlineData("var contained = ComponentBoundary.Contained;")]
+    public void AStaticPropertyRead_IsNamingItJustAsMuch(string statement)
+    {
+        Diagnostics(statement).Should().Contain(d => d.Code == "EQ2010");
+    }
+
+    /// <summary>
+    /// The MEMBER-level fence. <c>FaceName</c> itself crosses — the runtime exports it, and
+    /// <c>IsWellFormed</c> is the rule both sides hold — while <c>Usable</c> writes the host's tally
+    /// and does not. A type-only check accepts the containing type as provided and waves the member
+    /// through, emitting a `faceName.usable` the runtime has never heard of.
+    /// </summary>
+    [Fact]
+    public void AHostOnlyMEMBER_OnATypeThatCrosses_IsFencedByItself()
+    {
+        Diagnostics("var face = FaceName.Usable(\"IBM Plex Sans\");")
+            .Should().Contain(d => d.Code == "EQ2010" && d.Message.Contains("HOST ONLY"));
+    }
+
+    [Fact]
+    public void AndTheMemberBesideIt_StillCrosses()
+    {
+        Diagnostics("var ok = FaceName.IsWellFormed(\"IBM Plex Sans\");")
+            .Should().BeEmpty("the rule is exactly what both sides are supposed to share");
     }
 
     /// <summary>
