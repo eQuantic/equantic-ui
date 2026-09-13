@@ -353,11 +353,18 @@ public class InvocationStrategy : IExpressionIrStrategy
         if (declaring.Locations.Any(location => location.IsInSource)) return;
         if (IsFrameworkProvided(declaring)) return;
 
-        context.Report(node, ConversionSeverity.Error, "EQ2004",
-            $"'{declaring.ToDisplayString()}.{symbol.Name}' has no JavaScript translation. "
-            + "The transpiler only knows the constructs it maps explicitly; add a strategy for it, "
-            + "move the call behind a [ServerAction], or — if the class this call sits in only ever "
-            + "runs on the server — mark THAT class [ServerOnly] so no module is emitted for it.");
+        // Same fact either way — no translation exists — but the REMEDY differs, and a diagnostic
+        // that offers "add a strategy" for a type the framework deliberately keeps on the host
+        // sends the reader to write code nobody wants.
+        context.Report(node, ConversionSeverity.Error, "EQ2004", IsHostOnly(declaring)
+            ? $"'{declaring.ToDisplayString()}.{symbol.Name}' is HOST ONLY ([ServerOnly]) and the "
+                + "runtime ships no twin for it, so a client component naming it would fail at "
+                + "hydration rather than here. Call it from server code — a [ServerAction], a "
+                + "[ServerOnly] class, or the realizer — never from a component's Build."
+            : $"'{declaring.ToDisplayString()}.{symbol.Name}' has no JavaScript translation. "
+                + "The transpiler only knows the constructs it maps explicitly; add a strategy for it, "
+                + "move the call behind a [ServerAction], or — if the class this call sits in only ever "
+                + "runs on the server — mark THAT class [ServerOnly] so no module is emitted for it.");
     }
 
     /// <summary>Does the file import the declarative factory surface with `using static`? Matched on
@@ -384,12 +391,27 @@ public class InvocationStrategy : IExpressionIrStrategy
         return false;
     }
 
-    /// <summary>Namespaces whose twins the runtime ships — the framework itself, and its icon packs.</summary>
+    /// <summary>
+    /// Namespaces whose twins the runtime ships — the framework itself, and its icon packs.
+    /// <para>
+    /// A framework type marked <c>[ServerOnly]</c> is the exception, and it has to be: the runtime
+    /// ships NO twin for it, so treating it as provided lets a client component name it, compile,
+    /// emit, and die at hydration on "does not provide an export named". That is how
+    /// <c>RouteValues</c> took a page down. The attribute used to be inert on a framework type —
+    /// it said host-only and nothing enforced it — which is a false safety net, and worse than
+    /// silence because it is the kind of promise a reader stops checking.
+    /// </para>
+    /// </summary>
     private static bool IsFrameworkProvided(ITypeSymbol type)
     {
         var ns = type.ContainingNamespace?.ToDisplayString() ?? string.Empty;
-        return ns == "eQuantic" || ns.StartsWith("eQuantic.");
+        if (ns != "eQuantic" && !ns.StartsWith("eQuantic.")) return false;
+        return !IsHostOnly(type);
     }
+
+    /// <summary>Carries <c>[ServerOnly]</c>: it never crosses, whoever declares it.</summary>
+    private static bool IsHostOnly(ITypeSymbol type) =>
+        type.GetAttributes().Any(attribute => attribute.AttributeClass?.Name == "ServerOnlyAttribute");
 
     /// <summary>
     /// Types the RUNTIME provides a hand-written twin for — the shared vocabulary. Same rule the

@@ -17,7 +17,18 @@ namespace eQuantic.UI.Primitives;
 /// missing on every glyph of every frame, so a count reports the workload and buries the one fact
 /// worth having, which is WHICH family.
 /// </para>
+///
+/// <para>
+/// HOST ONLY, and fenced rather than merely documented. This type owes no browser twin for a stated
+/// reason — a browser names its own fallback in the declaration, so there is nothing for it to
+/// report — and the runtime therefore exports no <c>FaceResolution</c>. Without the fence a client
+/// component could still NAME it: eqc routes the whole <c>eQuantic.UI.Primitives</c> namespace to
+/// <c>@equantic/runtime</c>, so the reference would compile, emit, and die at hydration on "does not
+/// provide an export named". That is the failure <c>RouteValues</c> once took a page down with, and
+/// an exception list in a test is a record of a decision, not an enforcement of it.
+/// </para>
 /// </summary>
+[ServerOnly]
 public static class FaceResolution
 {
     private static readonly AsyncLocal<List<string>?> _unresolved = new();

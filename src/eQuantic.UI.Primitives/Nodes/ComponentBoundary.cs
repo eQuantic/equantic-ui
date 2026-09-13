@@ -26,7 +26,16 @@ namespace eQuantic.UI.Primitives;
 /// Anything else would let a failure disappear because the next frame happened to be clean, which
 /// is the silence the tally exists to remove.
 /// </para>
+///
+/// <para>
+/// HOST ONLY, for the same reason and with the same fence as <see cref="FaceResolution"/>: the
+/// runtime exports no <c>ComponentBoundary</c>, and an exception list in a test records that
+/// decision without enforcing it. eqc routes this whole namespace to <c>@equantic/runtime</c>, so a
+/// client component naming this type would compile, emit, and die at hydration on "does not provide
+/// an export named".
+/// </para>
 /// </summary>
+[ServerOnly]
 public static class ComponentBoundary
 {
     private static readonly AsyncLocal<bool> _diagnostics = new();
