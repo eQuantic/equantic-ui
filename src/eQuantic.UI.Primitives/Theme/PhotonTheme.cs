@@ -3,7 +3,8 @@ namespace eQuantic.UI.Primitives;
 
 /// <summary>
 /// The default Photon theme — every value transcribed from the design system
-/// (docs/design/Photon-Design-System.dc.html §01–§06; WCAG ratios verified by
+/// (docs/design/Photon DS - Foundations.dc.html §01–§06, and docs/design/tokens.json,
+/// which HandoffTokenPinTests compares against every value below; WCAG ratios verified by
 /// <c>DesignTokenTests</c>). Brand anchors: eQuantic blue #0050A0 (Primary), eQuantic green #80B85C
 /// (Success, darkened to clear AA in light mode).
 /// </summary>

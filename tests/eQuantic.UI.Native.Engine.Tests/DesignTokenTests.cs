@@ -5,7 +5,7 @@ using FluentAssertions;
 namespace eQuantic.UI.Native.Engine.Tests;
 
 /// <summary>
-/// Spec-fidelity tests for the Photon design tokens (docs/design/Photon-Design-System.dc.html).
+/// Spec-fidelity tests for the Photon design tokens (docs/design/Photon DS - Foundations.dc.html).
 /// Values are transcriptions — these tests pin them against the document AND recompute the WCAG
 /// claims ("ratios verified computationally", §01) so a palette edit that breaks accessibility
 /// fails the build, not a review.
