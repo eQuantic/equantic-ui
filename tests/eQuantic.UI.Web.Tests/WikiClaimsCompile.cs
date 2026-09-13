@@ -86,5 +86,42 @@ public class WikiClaimsCompile
         _ = new DocPage();
         _ = new LiveRates(null!);
         _ = new ProfilePage(null!);
+
+        // DesignSystem, "Naming a typeface" (preview.51). Both halves, because the page shows both:
+        // a theme naming its faces, and a node naming one for itself.
+        IAppTheme brand = new BrandTheme(PhotonTheme.Instance);
+        _ = brand.MonoFamily;
+        _ = brand.Type(TypeRole.Heading).Family;
+        _ = new Text("git log", TypeRole.Caption) { Mono = true };
+        _ = new Text("git log", TypeRole.Caption)
+        {
+            StyleOverride = brand.Type(TypeRole.Caption) with { Family = "Fira Code", Mono = true },
+        };
+    }
+
+    /// <summary>The theme the DesignSystem page shows, whose body is elided there as "the rest
+    /// delegates to inner" — written out here so the two lines that are NOT elided compile.</summary>
+    private sealed class BrandTheme(IAppTheme inner) : IAppTheme
+    {
+        public TypeStyle Type(TypeRole role) => inner.Type(role) with { Family = "IBM Plex Sans" };
+        public string? MonoFamily => "JetBrains Mono";
+
+        public ColorToken Background => inner.Background;
+        public ColorToken Surface => inner.Surface;
+        public ColorToken SurfaceSubtle => inner.SurfaceSubtle;
+        public ColorToken SurfaceHighlight => inner.SurfaceHighlight;
+        public ColorToken Border => inner.Border;
+        public ColorToken BorderStrong => inner.BorderStrong;
+        public ColorToken TextPrimary => inner.TextPrimary;
+        public ColorToken TextSecondary => inner.TextSecondary;
+        public ColorToken TextMuted => inner.TextMuted;
+        public ColorToken TextInverse => inner.TextInverse;
+        public ColorToken FocusRing => inner.FocusRing;
+        public ColorToken LinkColor => inner.LinkColor;
+        public ColorToken Scrim => inner.Scrim;
+        public float DisabledOpacity => inner.DisabledOpacity;
+        public VariantColors Colors(Variant variant) => inner.Colors(variant);
+        public ShadowSpec Elevation(int level) => inner.Elevation(level);
+        public float Shape(ShapeScale scale) => inner.Shape(scale);
     }
 }
