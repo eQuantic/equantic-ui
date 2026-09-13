@@ -21,11 +21,6 @@ export class IconButton extends StatelessComponent {
         if (this.size === undefined) this.size = 'small';
         if (this.disabled === undefined) this.disabled = false;
         if (this.selected === undefined) this.selected = false;
-        this.glyph = glyph;
-        this.label = label;
-        this.kind = kind;
-        this.size = size;
-        this.onPressed = onPressed;
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 

@@ -411,8 +411,18 @@ public static class UI
     public static CultureSwitcher CultureSwitcher(IReadOnlyList<CultureOption> options) =>
         new CultureSwitcher(options);
 
-    /// <summary>Icon-only button; the label is what assistive tech announces.</summary>
-    public static IconButton IconButton(Icon glyph, string label,
+    /// <summary>
+    /// Icon-only button with a CURATED glyph; the label is what assistive tech announces and is
+    /// never optional — an icon-only button is the one control with no text to fall back on.
+    /// </summary>
+    public static IconButton IconButton(Icons glyph, string label,
+        IconButtonKind kind = IconButtonKind.Standard, SizeVariant size = SizeVariant.Medium,
+        Action? onPressed = null) =>
+        new IconButton(glyph, label, kind, size, onPressed);
+
+    /// <summary>The same with a PACK glyph — the twin of <c>Glyph</c> beside <c>Icon</c>, because a
+    /// factory takes no overloads and the two forms therefore take two names.</summary>
+    public static IconButton GlyphButton(IconGlyph glyph, string label,
         IconButtonKind kind = IconButtonKind.Standard, SizeVariant size = SizeVariant.Medium,
         Action? onPressed = null) =>
         new IconButton(glyph, label, kind, size, onPressed);

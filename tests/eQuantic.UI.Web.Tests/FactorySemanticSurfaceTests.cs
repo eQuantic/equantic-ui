@@ -182,7 +182,10 @@ public class IconSourceTests
     [Fact]
     public void IconButton_TakesAPackGlyph_Too()
     {
-        var rendered = Rendered(IconButton(Glyph(PackGlyph), "Disable at login"));
+        // Directly, not wrapped. `IconButton(Glyph(PackGlyph), …)` is what this line used to read,
+        // and a test that proves a component "takes a pack glyph" by building a node around one is
+        // proving the opposite.
+        var rendered = Rendered(GlyphButton(PackGlyph, "Disable at login"));
 
         rendered.Any(n => n.Attributes.TryGetValue("d", out var d) && d == PackGlyph.Path)
             .Should().BeTrue();

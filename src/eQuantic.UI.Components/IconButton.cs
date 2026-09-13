@@ -24,6 +24,34 @@ public enum IconButtonKind : byte
 /// </summary>
 public sealed class IconButton : StatelessComponent
 {
+    /// <summary>
+    /// A CURATED glyph (spec A10) — the shape a reader reaches for, and the one that did not exist.
+    /// <para>
+    /// This type took an <see cref="Icon"/> NODE, so the obvious call did not compile and every
+    /// caller wrapped a glyph to hand it over: all EIGHT sites in this repo wrote
+    /// <c>new IconButton(new Icon(Icons.X), …)</c>, the template a <c>dotnet new</c> user reads
+    /// first included. A component whose own library fights its signature is one a first-time
+    /// consumer concludes is missing — which is exactly what happened.
+    /// </para>
+    /// </summary>
+    public IconButton(Icons glyph, string label, IconButtonKind kind = IconButtonKind.Standard,
+        SizeVariant size = SizeVariant.Medium, Action? onPressed = null)
+        : this(new Icon(glyph), label, kind, size, onPressed)
+    {
+    }
+
+    /// <summary>Any pack glyph — icon packs are catalogs of <see cref="IconGlyph"/>, so
+    /// <c>IconButton(LucideIcons.Search, "Search")</c> is what a consumer types.</summary>
+    public IconButton(IconGlyph glyph, string label, IconButtonKind kind = IconButtonKind.Standard,
+        SizeVariant size = SizeVariant.Medium, Action? onPressed = null)
+        : this(new Icon(glyph), label, kind, size, onPressed)
+    {
+    }
+
+    /// <summary>
+    /// The glyph as a NODE. The released shape, kept: adding a constructor is free and removing one
+    /// is a <c>MissingMethodException</c> at load for anything already compiled against it.
+    /// </summary>
     public IconButton(Icon glyph, string label, IconButtonKind kind = IconButtonKind.Standard,
         SizeVariant size = SizeVariant.Medium, Action? onPressed = null)
     {
