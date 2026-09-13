@@ -81,6 +81,22 @@ public class HandoffTokenPinTests
 
     private readonly List<string> _differed = [];
     private readonly HashSet<string> _consumed = [];
+    private readonly List<string> _unpublished = [];
+
+    /// <summary>
+    /// The handoff's value for a key the SDK HAS, or a recorded miss. The pin was one-way without
+    /// this: it asserted every handoff leaf got compared, so deleting `space.s1` from `tokens.json`
+    /// made the read skip and every remaining leaf settle cleanly. A token removed from the design
+    /// system is a divergence in the other direction, and it has to fail too.
+    /// </summary>
+    private bool Published(JsonElement parent, string key, string path, out JsonElement want)
+    {
+        if (parent.TryGetProperty(key, out want) && want.ValueKind is JsonValueKind.Number
+            or JsonValueKind.Object or JsonValueKind.Array)
+            return true;
+        _unpublished.Add(path);
+        return false;
+    }
 
     private void Colour(string name, ColorToken token, JsonElement pair)
     {
@@ -182,6 +198,13 @@ public class HandoffTokenPinTests
             + $"name the key as prose:{Environment.NewLine}  "
             + string.Join(Environment.NewLine + "  ", uncompared) + Environment.NewLine);
 
+        // …and the other direction. A one-way pin misses a token DELETED from the design system,
+        // because a read that finds nothing looks exactly like a section that ended.
+        _unpublished.Should().BeEmpty(
+            "the SDK has these and the handoff no longer publishes them — a token removed from the "
+            + $"design system is a divergence too:{Environment.NewLine}  "
+            + string.Join(Environment.NewLine + "  ", _unpublished) + Environment.NewLine);
+
         // The whole list, not "at least one item". A pin that names one divergence at a time turns a
         // ten-minute reconciliation into ten runs, and the point of comparing a machine-readable
         // export is that it can say everything it knows in one go.
@@ -241,7 +264,7 @@ public class HandoffTokenPinTests
         foreach (var variant in Enum.GetValues<Variant>())
         {
             var name = char.ToLowerInvariant(variant.ToString()[0]) + variant.ToString()[1..];
-            if (!variants.TryGetProperty(name, out var want)) continue;
+            if (!Published(variants, name, $"variant.{name}", out var want)) continue;
 
             var colors = Theme.Colors(variant);
             foreach (var (slot, token) in new (string, ColorToken)[] {
@@ -265,7 +288,7 @@ public class HandoffTokenPinTests
             ("s4", Primitives.Space.S4), ("s5", Primitives.Space.S5), ("s6", Primitives.Space.S6),
             ("s8", Primitives.Space.S8), ("s10", Primitives.Space.S10),
             ("s12", Primitives.Space.S12), ("s16", Primitives.Space.S16) })
-            if (space.TryGetProperty(name, out var want) && want.ValueKind != JsonValueKind.String)
+            if (Published(space, name, $"space.{name}", out var want))
                 Value($"space.{name}", value, want);
 
         Settle(space, "space");
@@ -278,14 +301,14 @@ public class HandoffTokenPinTests
         foreach (var (name, value) in new (string, float)[] {
             ("xs", Primitives.Radius.Xs), ("sm", Primitives.Radius.Sm), ("md", Primitives.Radius.Md),
             ("lg", Primitives.Radius.Lg), ("xl", Primitives.Radius.Xl), ("full", Primitives.Radius.Full) })
-            if (radius.TryGetProperty(name, out var want) && want.ValueKind == JsonValueKind.Number)
+            if (Published(radius, name, $"radius.{name}", out var want))
                 Value($"radius.{name}", value, want);
 
         var shape = Handoff.GetProperty("shapeScale");
         foreach (var scale in Enum.GetValues<ShapeScale>())
         {
             var name = char.ToLowerInvariant(scale.ToString()[0]) + scale.ToString()[1..];
-            if (shape.TryGetProperty(name, out var want) && want.ValueKind == JsonValueKind.Number)
+            if (Published(shape, name, $"shapeScale.{name}", out var want))
                 Value($"shapeScale.{name}", Theme.Shape(scale), want);
         }
 
@@ -319,7 +342,7 @@ public class HandoffTokenPinTests
         var icon = Handoff.GetProperty("icon");
         foreach (var (name, value) in new (string, float)[] {
             ("sm", IconSize.Sm), ("dense", IconSize.Dense), ("md", IconSize.Md), ("lg", IconSize.Lg) })
-            if (icon.TryGetProperty(name, out var want) && want.ValueKind == JsonValueKind.Number)
+            if (Published(icon, name, $"icon.{name}", out var want))
                 Value($"icon.{name}", value, want);
 
         Value("touch.minTarget", Touch.MinTarget, Handoff.GetProperty("touch").GetProperty("minTarget"));
@@ -371,7 +394,7 @@ public class HandoffTokenPinTests
         foreach (var (name, spec) in new (string, MotionSpec)[] {
             ("press", Primitives.Motion.Press), ("state", Primitives.Motion.State),
             ("enter", Primitives.Motion.Enter), ("exit", Primitives.Motion.Exit) })
-            if (motion.GetProperty("roles").TryGetProperty(name, out var role))
+            if (Published(motion.GetProperty("roles"), name, $"motion.roles.{name}", out var role))
                 Value($"motion.roles.{name}.ms", spec.DurationMs, role.GetProperty("ms"));
 
         var spring = motion.GetProperty("spring").GetProperty("default");
@@ -387,6 +410,12 @@ public class HandoffTokenPinTests
     /// Both densities. Compact is where the handoff and the implementation most easily part company,
     /// because it is the column a transcription skips.
     /// </summary>
+    /// <summary>What a size publishes, and the subset density changes.</summary>
+    private static readonly string[] All =
+        ["height", "padX", "gap", "labelSize", "iconSize", "radius", "hit"];
+
+    private static readonly string[] DensityVaries = ["height", "padX", "labelSize", "hit"];
+
     [Fact]
     public void ControlMetrics()
     {
@@ -394,24 +423,30 @@ public class HandoffTokenPinTests
         foreach (var size in Enum.GetValues<SizeVariant>())
         {
             var name = size.ToString().ToLowerInvariant();
-            if (!metrics.TryGetProperty(name, out var want)) continue;
+            if (!Published(metrics, name, $"controlMetrics.{name}", out var want)) continue;
 
-            Read(want, size, Density.Comfortable, name);
-            if (want.TryGetProperty("compact", out var compact))
-                Read(compact, size, Density.Compact, $"{name}.compact");
+            Read(want, size, Density.Comfortable, name, All);
+            // The compact column publishes only what DENSITY changes. The handoff says so itself —
+            // "Gap, Icon and Radius take no density" — so asking for those here would report the
+            // design system as missing values it deliberately does not repeat.
+            if (Published(want, "compact", $"controlMetrics.{name}.compact", out var compact))
+                Read(compact, size, Density.Compact, $"{name}.compact", DensityVaries);
         }
 
         Settle(metrics, "controlMetrics");
 
-        void Read(JsonElement want, SizeVariant size, Density density, string label)
+        void Read(JsonElement want, SizeVariant size, Density density, string label, string[] keys)
         {
             foreach (var (key, value) in new (string, float)[] {
                 ("height", Sizing.Height(size, density)), ("padX", Sizing.PaddingX(size, density)),
                 ("gap", Sizing.Gap(size)), ("labelSize", Sizing.LabelSize(size, density)),
                 ("iconSize", Sizing.Icon(size)), ("radius", Sizing.Radius(size)),
                 ("hit", Sizing.HitTarget(size, density)) })
-                if (want.TryGetProperty(key, out var expected) && expected.ValueKind == JsonValueKind.Number)
+            {
+                if (!keys.Contains(key)) continue;
+                if (Published(want, key, $"controlMetrics.{label}.{key}", out var expected))
                     Value($"controlMetrics.{label}.{key}", value, expected);
+            }
         }
     }
 
