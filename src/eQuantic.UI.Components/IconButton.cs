@@ -37,8 +37,10 @@ public sealed class IconButton : StatelessComponent
     /// </para>
     ///
     /// <para>
-    /// So the convenience lives in the FACTORIES, which is the authoring path anyway — `IconButton`
-    /// takes a curated glyph and `GlyphButton` takes a pack's, and each wraps it here.
+    /// So the convenience lives one level down, in the GLYPH factories, which is the authoring path
+    /// anyway: `Icon(Icons.Close)` for a curated glyph and `Glyph(LucideIcons.Power)` for a pack's,
+    /// each producing the node this takes — `IconButton(Icon(Icons.Close), "Close")`. There is no
+    /// per-pack button factory, and an earlier draft of this comment named one that never existed.
     /// </para>
     /// </summary>
     public IconButton(Icon glyph, string label, IconButtonKind kind = IconButtonKind.Standard,
