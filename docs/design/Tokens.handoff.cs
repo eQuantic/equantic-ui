@@ -45,7 +45,10 @@ public readonly record struct VariantColors(
 //   · quiet variants (Outline/Ghost): hover fill = SurfaceSubtle (the fill Pressed already uses).
 //   · Link: underline on hover, color unchanged.
 //   Hover never fires on touch; it clears when the pointer leaves the window; in/out = Motion.Press.
-//   REQUEST: no Color.Lerp / VariantColors.Hover helper exists — do not invent one; this rule is the contract.
+//   LANDED: VariantColors.Hover derives Base→Pressed at the token level (ColorToken.MidpointWith),
+//   so both realizers paint the identical value and neither computes it at the call site. Read the
+//   helper rather than re-deriving the midpoint; the five-tuple is unchanged — Hover is derived,
+//   never a sixth slot.
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
@@ -343,7 +346,12 @@ public sealed class PhotonTheme : IAppTheme
         // Derived variants: transparent fill, text/border tokens, SurfaceSubtle pressed.
         Variant.Outline => new(Clear, TextPrimary, SurfaceSubtle, Clear, TextPrimary),
         Variant.Ghost   => new(Clear, TextPrimary, SurfaceSubtle, Clear, TextPrimary),
-        Variant.Link    => new(Clear, LinkColor, Clear, Clear, Pair(0x00427F, 0xA8CDF2)),
+        // Link is the audited exception this file's own colour rules name: its Base is INK, used as
+        // text on Surface, and Pressed is the darker ink the text swaps to. This line used to put
+        // the ink in OnSubtle with Base and Pressed transparent — disagreeing with tokens.json in
+        // the same folder, which publishes link.base and link.pressed with contrast figures measured
+        // against the BACKGROUND. Nothing fills a Link, so the slots carry ink without painting a box.
+        Variant.Link    => new(LinkColor, LinkColor, Pair(0x00427F, 0xA8CDF2), Clear, LinkColor),
 
         _ => Colors(Variant.Primary)
     };

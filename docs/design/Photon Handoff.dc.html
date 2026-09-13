@@ -56,7 +56,7 @@ a{color:var(--lnk)}a:hover{color:var(--onpris)}
   </p>
   <div style="margin-top:16px;display:flex;align-items:flex-start;gap:11px;padding:13px 15px;border-radius:12px;background:var(--infs);color:var(--oninfs);max-width:660px">
     <span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1.2">info</span>
-    <span style="font-size:12.5px;line-height:1.6;flex:1">The token core already ships. <a href="tokens.json" style="color:inherit;font-weight:700">tokens.json</a> and <a href="Tokens.cs" style="color:inherit;font-weight:700">Tokens.cs</a> mirror <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">eQuantic.UI.Primitives</span> value-for-value and are verified by <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">DesignTokenTests</span> — the component delta is nearly closed; work starts at the <a href="#status" style="color:inherit;font-weight:700">§01 status board</a>&rsquo;s open items. Before writing any call site, read <a href="#api" style="color:inherit;font-weight:700">§3b, the API contract</a>.</span>
+    <span style="font-size:12.5px;line-height:1.6;flex:1">The token core already ships. <a href="tokens.json" style="color:inherit;font-weight:700">tokens.json</a> and <a href="Tokens.handoff.cs" style="color:inherit;font-weight:700">Tokens.handoff.cs</a> mirror <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">eQuantic.UI.Primitives</span> value-for-value and are verified by <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">DesignTokenTests</span> — the component delta is nearly closed; work starts at the <a href="#status" style="color:inherit;font-weight:700">§01 status board</a>&rsquo;s open items. Before writing any call site, read <a href="#api" style="color:inherit;font-weight:700">§3b, the API contract</a>.</span>
   </div>
 
   <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:26px">
@@ -64,9 +64,9 @@ a{color:var(--lnk)}a:hover{color:var(--onpris)}
       <span style="font-family:'Material Symbols Rounded';font-size:24px;color:var(--pri)">data_object</span>
       <span style="flex:1"><span style="display:block;font-size:14px;font-weight:700;color:var(--tx1)">tokens.json</span><span style="display:block;font-size:12px;color:var(--tx3);margin-top:1px">Layer 1 source of truth · light + dark pairs with measured contrast</span></span>
     </a>
-    <a href="Tokens.cs" style="display:flex;align-items:center;gap:12px;padding:15px 17px;border-radius:12px;background:var(--sf);border:1px solid var(--bd);text-decoration:none;box-shadow:var(--e1)">
+    <a href="Tokens.handoff.cs" style="display:flex;align-items:center;gap:12px;padding:15px 17px;border-radius:12px;background:var(--sf);border:1px solid var(--bd);text-decoration:none;box-shadow:var(--e1)">
       <span style="font-family:'Material Symbols Rounded';font-size:24px;color:var(--pri)">code</span>
-      <span style="flex:1"><span style="display:block;font-size:14px;font-weight:700;color:var(--tx1)">Tokens.cs</span><span style="display:block;font-size:12px;color:var(--tx3);margin-top:1px">Mirror of <span style="font-family:'JetBrains Mono',monospace;font-size:11px">eQuantic.UI.Primitives</span> — theme contract, scales, PhotonTheme</span></span>
+      <span style="flex:1"><span style="display:block;font-size:14px;font-weight:700;color:var(--tx1)">Tokens.handoff.cs</span><span style="display:block;font-size:12px;color:var(--tx3);margin-top:1px">Mirror of <span style="font-family:'JetBrains Mono',monospace;font-size:11px">eQuantic.UI.Primitives</span> — theme contract, scales, PhotonTheme</span></span>
     </a>
     <a href="Photon%20Design%20System.dc.html" style="display:flex;align-items:center;gap:12px;padding:15px 17px;border-radius:12px;background:var(--sf);border:1px solid var(--bd);text-decoration:none;box-shadow:var(--e1)">
       <span style="font-family:'Material Symbols Rounded';font-size:24px;color:var(--pri)">menu_book</span>
@@ -176,7 +176,7 @@ a{color:var(--lnk)}a:hover{color:var(--onpris)}
           <li>Every gesture action also exists as an a11y custom action.</li>
           <li>Hover is pointer-only — never on touch — and clears when the pointer leaves the window (spec §10).</li>
           <li>State is a STATE (aria-checked / SemanticNode field), never smuggled into the accessible name (spec §10).</li>
-          <li>No raw hex in widget code — tokens only.</li>
+          <li>No raw hex in component code — tokens only.</li>
           <li>Light and dark ship together; no "dark later".</li>
         </ul>
       </div>
@@ -215,7 +215,7 @@ a{color:var(--lnk)}a:hover{color:var(--onpris)}
       <span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1.2">gpp_maybe</span>
       <span style="font-size:12.5px;line-height:1.6;flex:1"><strong>The rule behind every row above: never reconstruct an API from its description.</strong> If you cannot quote the real signature, write the need in prose and mark it a request. An invented member that looks plausible costs more than an honest gap, because it reads as verified.</span>
     </div>
-    <div style="margin-top:10px;font-size:12px;color:var(--tx3);line-height:1.6">Everything else in <a href="tokens.json">tokens.json</a> and <a href="Tokens.cs">Tokens.cs</a> — colors, spacing, radii, type roles, elevation, motion, the size ladder — matches the SDK exactly. Do not "improve" those values.</div>
+    <div style="margin-top:10px;font-size:12px;color:var(--tx3);line-height:1.6">Everything else in <a href="tokens.json">tokens.json</a> and <a href="Tokens.handoff.cs">Tokens.handoff.cs</a> — colors, spacing, radii, type roles, elevation, motion, the size ladder — matches the SDK exactly. Do not "improve" those values.</div>
   </section>
 
   <section data-screen-label="Acceptance" style="margin-top:44px">
@@ -303,7 +303,7 @@ Hard rules (Handoff §03):
   · Every gesture action mirrored as an accessibility custom action.
   · Light and dark in the same commit.
 
-For each delta item deliver: the widget tree, a golden screenshot in both
+For each delta item deliver: the component tree, a golden screenshot in both
 themes (the StudioWalkTests harness already does headless goldens), and
 the §04 checklist filled in.</pre>
     </div>
