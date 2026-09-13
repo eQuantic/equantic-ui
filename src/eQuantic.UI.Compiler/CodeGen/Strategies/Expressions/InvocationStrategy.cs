@@ -252,6 +252,9 @@ public class InvocationStrategy : IExpressionIrStrategy
             // the bucket its NAMESPACE decides. The declarative factory surface lives in the
             // shared library, so `UI.column(…)` must import UI from the runtime.
             var declaring = symbol.ContainingType;
+            // `using static …FaceName;` then a bare `Usable(...)` names the same symbol a qualified
+            // call does, and this branch returns before the fence below ever runs.
+            symbol.ReportIfHostOnly(invocation, context);
             var declaringNamespace = declaring.ContainingNamespace?.ToDisplayString() ?? string.Empty;
             if (RuntimeProvidedTypeScanner.IsRuntimeProvidedNamespace(declaringNamespace))
                 context.UsedRuntimeTypes.Add(declaring.Name);

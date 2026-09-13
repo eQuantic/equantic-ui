@@ -40,7 +40,9 @@ public class HostOnlyFrameworkTypeTests
     private static IReadOnlyList<ConversionDiagnostic> Diagnostics(string statement)
     {
         var tree = CSharpSyntaxTree.ParseText($$"""
+            using System;
             using eQuantic.UI.Primitives;
+            using static eQuantic.UI.Primitives.FaceName;
 
             public class Probe
             {
@@ -133,6 +135,29 @@ public class HostOnlyFrameworkTypeTests
     {
         Diagnostics("var ok = FaceName.IsWellFormed(\"IBM Plex Sans\");")
             .Should().BeEmpty("the rule is exactly what both sides are supposed to share");
+    }
+
+    /// <summary>
+    /// The two branches that RETURN a name without going through the qualified path. Counting the
+    /// ways a symbol can be named is the whole difficulty of this fence: each branch returns early
+    /// on its own, so each has to be told, and a fence that guards three of four reads as protection
+    /// for all four.
+    /// </summary>
+    [Theory]
+    // `using static …FaceName;` — the call is unqualified and the declaring type never appears.
+    [InlineData("var face = Usable(\"IBM Plex Sans\");")]
+    // A method GROUP: named, not called, and emitted exactly the same way.
+    [InlineData("Func<string, string> f = Usable;")]
+    public void EveryWayOfNamingIt_IsTheSameNaming(string statement)
+    {
+        Diagnostics(statement).Should().Contain(d => d.Code == "EQ2010");
+    }
+
+    [Fact]
+    public void AnUnqualifiedCallToTheMemberThatCrosses_IsStillFine()
+    {
+        Diagnostics("var ok = IsWellFormed(\"IBM Plex Sans\");")
+            .Should().BeEmpty("the fence is per symbol, not per import");
     }
 
     /// <summary>

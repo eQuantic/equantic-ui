@@ -1,4 +1,5 @@
 using System.Linq;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -74,6 +75,9 @@ public class IdentifierStrategy : IExpressionIrStrategy
                 // group `Widget.helper`; no `.bind`, statics have no receiver).
                 if (symbol.IsStatic && symbol.ContainingType != null)
                 {
+                    // A method GROUP names the symbol without calling it — `Func<…> f = Usable` emits
+                    // `FaceName.usable` just as a call would, and fails at hydration just as hard.
+                    symbol.ReportIfHostOnly(identifier, context);
                     return isMemberName
                         ? JsExpr.Identifier(name.ToCamelCase())
                         : JsExpr.Member(JsExpr.Identifier(symbol.ContainingType.Name), name.ToCamelCase());

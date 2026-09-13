@@ -23,10 +23,13 @@ namespace eQuantic.UI.Compiler.CodeGen.Extensions;
 /// </para>
 ///
 /// <para>
-/// One function with two callers, deliberately: the invocation path and the member-access path are
-/// two ways to name the same symbol, and a fence that guards calls but not property reads is exactly
-/// the kind of half-fence that reads as protection. It was one — <c>ComponentBoundary.Contained</c>
-/// compiled while <c>ComponentBoundary.ClearContained()</c> did not.
+/// One function, asked from EVERY branch that can return a name — and counting them is the whole
+/// difficulty. There are four: a qualified call, a static member READ, an unqualified call through
+/// <c>using static</c>, and a method GROUP passed as a delegate. Each returns early on its own path,
+/// so each had to be told, and the first two versions of this fence guarded one branch apiece while
+/// reading like protection for all of them. <c>ComponentBoundary.Contained</c> compiled while
+/// <c>ComponentBoundary.ClearContained()</c> did not; <c>using static</c> compiled while a qualified
+/// call did not. A new branch that returns a name owes this call.
 /// </para>
 /// </summary>
 internal static class HostOnlySymbolExtensions
