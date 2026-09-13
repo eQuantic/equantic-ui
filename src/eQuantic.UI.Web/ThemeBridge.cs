@@ -77,6 +77,13 @@ public static class ThemeBridge
         }
         sb.Append('}');
 
+        // The theme's CODE FACE. Emitted only when it names one, for the reason the type tail gives:
+        // a theme with no opinion sends the payload it always sent. It rides beside the roles rather
+        // than inside one because Mono is a per-NODE property and no shipped role sets it, so the
+        // two never meet — the same argument `IAppTheme.MonoFamily` makes for existing at all.
+        if (FaceName.Usable(theme.MonoFamily) is { } mono)
+            sb.Append(",\"monoFamily\":\"").Append(Escape(mono)).Append('"');
+
         sb.Append(",\"elevations\":[");
         for (var level = 0; level <= 5; level++)
         {

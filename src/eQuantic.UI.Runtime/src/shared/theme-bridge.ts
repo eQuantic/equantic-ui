@@ -25,6 +25,8 @@ export interface ThemeData {
     string,
     readonly [number, number, string, number, number, boolean?, boolean?, string?]
   >;
+  /** The theme's code face, present only when it names one — same rule as the type tail. */
+  monoFamily?: string;
   elevations: ReadonlyArray<readonly [number, number, number, TokenTuple]>;
   shape: Record<string, number>;
   /** The data palette: series and sequential as token lists, diverging as [negative, midpoint,
@@ -108,6 +110,7 @@ export function materializeTheme(data: ThemeData): AppTheme {
     ...(surfaces as unknown as Pick<AppTheme, never>),
     data: palette,
     disabledOpacity: data.disabledOpacity,
+    monoFamily: data.monoFamily,
     colors(variant: string): VariantColors {
       return variants[variant] ?? variants.primary;
     },

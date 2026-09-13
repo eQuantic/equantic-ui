@@ -288,6 +288,13 @@ export interface AppTheme {
   /** The colours a chart draws DATA with (C# `IAppTheme.Data`): series, sequential, diverging, other, status. */
   data: DataPalette;
   disabledOpacity: number;
+  /**
+   * The face this theme sets CODE in (C# `IAppTheme.MonoFamily`), or undefined for the platform's
+   * own fixed-pitch face. Here because a component may read it: `IAppTheme` is vocabulary, so a
+   * property the server answers and the client does not is the hydration hole `[ServerOnly]` and
+   * EQ2010 exist to close — and a theme property is better carried than fenced.
+   */
+  monoFamily?: string;
   colors(variant: string): VariantColors;
   type(role: string): TypeStyle;
   elevation(level: number): ShadowSpec;

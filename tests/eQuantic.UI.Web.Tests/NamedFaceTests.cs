@@ -1,4 +1,5 @@
 using eQuantic.UI.Primitives;
+using eQuantic.UI.Web.Build;
 using eQuantic.UI.Web;
 using FluentAssertions;
 
@@ -240,6 +241,59 @@ public class NamedFaceTests
         style.Mono.Should().BeTrue();
         style.Family.Should().Be("JetBrains Mono");
         style.Size.Should().Be(Theme.Type(TypeRole.Caption).Size, "the role still sets the scale");
+    }
+
+    /// <summary>
+    /// The code face CROSSES. <c>IAppTheme</c> is vocabulary, so <c>context.Theme.MonoFamily</c> is
+    /// legal inside a component's Build — and a theme property the server answers and the client does
+    /// not is the hydration hole <c>[ServerOnly]</c> and EQ2010 exist to close. Carried rather than
+    /// fenced, because a theme property nobody can read is a hole in write-once.
+    ///
+    /// <para>
+    /// The three writers are checked together on purpose: the SSR bridge, the generated default
+    /// theme, and the client's rehydration (<c>theme-bridge.spec.ts</c>). The <c>family</c> half of
+    /// this same slice shipped with the C# side done and the wire not, and nothing said so.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void TheCodeFace_ReachesTheClient()
+    {
+        var json = ThemeBridge.SerializeJson(new CodeFacedTheme(Theme, "JetBrains Mono"));
+
+        json.Should().Contain("\"monoFamily\":\"JetBrains Mono\"");
+    }
+
+    /// <summary>A theme with no opinion sends the payload it always sent — the type tail's rule, for
+    /// the same reason: the common case must stay byte-identical.</summary>
+    [Fact]
+    public void NoCodeFace_AddsNothingToTheWire()
+    {
+        ThemeBridge.SerializeJson(Theme).Should().NotContain("monoFamily");
+    }
+
+    /// <summary>
+    /// A family no emitter will accept does not reach the wire here either. It lands inside JSON in
+    /// a <c>&lt;script&gt;</c> element, where quoting is not the defence it looks like: a JSON string
+    /// does not neutralise <c>&lt;/script&gt;</c> for the HTML parser.
+    /// </summary>
+    [Fact]
+    public void AMonoFaceThatWouldCloseTheScriptElement_NeverReachesTheWire()
+    {
+        var json = ThemeBridge.SerializeJson(
+            new CodeFacedTheme(Theme, "</script><script>alert(1)</script>"));
+
+        json.Should().NotContain("monoFamily");
+        json.Should().NotContain("<script");
+    }
+
+    /// <summary>The generated default theme is the client's OTHER producer, and it mirrors the
+    /// bridge — two mirrors that disagree is what makes one of them stale.</summary>
+    [Fact]
+    public void TheGeneratedTheme_CarriesTheCodeFaceToo()
+    {
+        DesignSystemTsGenerator.Generate(new CodeFacedTheme(Theme, "JetBrains Mono"))
+            .Should().Contain("monoFamily: 'JetBrains Mono'");
+        DesignSystemTsGenerator.Generate(Theme).Should().NotContain("monoFamily");
     }
 
     private sealed class CodeFacedTheme(IAppTheme inner, string mono) : IAppTheme

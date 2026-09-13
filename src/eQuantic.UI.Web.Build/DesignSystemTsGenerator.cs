@@ -275,6 +275,12 @@ public static class DesignSystemTsGenerator
         }
         ts.AppendLine("  data: defaultData,");
         ts.AppendLine($"  disabledOpacity: {Num(theme.DisabledOpacity)},");
+        // The code face, when the theme names one. `IsWellFormed` rather than `Usable` on purpose:
+        // this runs at CODEGEN time, where there is no frame and no run tally to record a miss into.
+        // The predicate is also what makes the single quotes below safe — it admits letters, digits,
+        // space and `-_.+` and nothing that means anything to a TypeScript string.
+        if (theme.MonoFamily is { Length: > 0 } mono && FaceName.IsWellFormed(mono))
+            ts.AppendLine($"  monoFamily: '{mono}',");
         ts.AppendLine("  colors(variant: string): VariantColors {");
         ts.AppendLine($"    return variantColors[variant] ?? variantColors.{Camel(nameof(Variant.Primary))};");
         ts.AppendLine("  },");

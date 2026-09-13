@@ -76,6 +76,19 @@ describe('theme bridge: a distinct theme materializes to distinct values', () =>
     );
   });
 
+  // The theme's CODE FACE, which a component may read as `context.Theme.MonoFamily`. It is the half
+  // the C# side shipped first: `family` on a role crossed in the same slice, and the wire tuple
+  // stopped one field short, so the client re-rendered the system font over the server's brand.
+  it("carries the theme's code face, and omits it when there is none", () => {
+    const base = photonData as unknown as ThemeData;
+    const branded = materializeTheme({ ...base, monoFamily: 'JetBrains Mono' } as ThemeData);
+    expect(branded.monoFamily).toBe('JetBrains Mono');
+
+    // Photon names none, so the payload has no such key and the client must answer undefined
+    // rather than an empty string — the shape `WithCodeFace` tests for on the other side.
+    expect(materializeTheme(base).monoFamily).toBeUndefined();
+  });
+
   it('materializeTheme returns a structurally valid AppTheme', () => {
     const t: AppTheme = materializeTheme(photonData as unknown as ThemeData);
     expect(typeof t.colors).toBe('function');
