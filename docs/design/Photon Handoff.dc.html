@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0" rel="stylesheet">
+<style>
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx1);font-family:'Hanken Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased;
+--bg:#F5F6F8;--sf:#FFFFFF;--sf2:#EFF1F4;--bd:#E2E5EA;--bd2:#C9CED6;
+--tx1:#171B21;--tx2:#4B5563;--tx3:#5F6B7A;
+--pri:#0050A0;--onpri:#FFFFFF;--pris:#E8F1FA;--onpris:#003E7E;
+--sec:#E9EDF2;--onsec:#3A4350;
+--des:#B42318;--dess:#FCEBEA;--ondess:#8F1D1D;
+--suc:#3B7A22;--sucs:#EDF6E6;--onsucs:#2C5E17;
+--war:#8A5A00;--wars:#FBF3DF;--onwars:#7A5200;
+--inf:#0C6C86;--infs:#E4F3F8;--oninfs:#0A5468;
+--lnk:#0050A0;--e1:0 1px 3px 0 rgba(15,23,32,.10)}
+body[data-theme="dark"]{
+--bg:#0C0F13;--sf:#14181E;--sf2:#1C232B;--bd:#2A323D;--bd2:#3D4754;
+--tx1:#F2F4F7;--tx2:#AEB7C2;--tx3:#8B95A3;
+--pri:#5CA2E8;--onpri:#06263F;--pris:#0F2740;--onpris:#A8CDF2;
+--sec:#242C36;--onsec:#D7DDE5;
+--des:#E5645C;--dess:#3A1210;--ondess:#F4A9A4;
+--suc:#85C05E;--sucs:#16290C;--onsucs:#B5DB97;
+--war:#E8B04B;--wars:#2E2008;--onwars:#EECF8F;
+--inf:#4CC3DE;--infs:#0A2A32;--oninfs:#9FDCEB;
+--lnk:#7CB5EE;--e1:0 1px 3px 0 rgba(0,0,0,.45)}
+a{color:var(--lnk)}a:hover{color:var(--onpris)}
+</style>
+</helmet>
+
+<div style="max-width:1080px;margin:0 auto;padding:44px 40px 100px">
+
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:26px">
+    <div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#0050A0,#003E7E);display:flex;align-items:center;justify-content:center"><div style="width:10px;height:10px;border-radius:4px;background:#80B85C"></div></div>
+    <span style="font-size:13.5px;font-weight:800;letter-spacing:-.01em">eQuantic.UI</span>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px;background:var(--pris);color:var(--onpris)">HANDOFF v1.1</span>
+    <div style="flex:1"></div>
+    <button onClick="{{ toggleTheme }}" style="display:flex;align-items:center;gap:6px;border:1px solid var(--bd);cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:8px;background:var(--sf);color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">{{ themeIcon }}</span>{{ themeLabel }}</button>
+  </div>
+
+  <h1 style="margin:0;font-size:40px;line-height:1.08;font-weight:800;letter-spacing:-.025em">Developer handoff<br>Photon SDK validation</h1>
+  <p style="margin:16px 0 0;max-width:660px;font-size:15.5px;line-height:1.6;color:var(--tx2)">
+    Everything an agent or engineer needs to close the SDK&rsquo;s remaining delta and prove it against the three sample apps — now built in the repo.
+    Read this file first, then the spec (index → phase files), then the sample it points at. <strong style="color:var(--tx1)">Token values come from the files below — never re-type a hex from a screenshot.</strong>
+  </p>
+  <div style="margin-top:16px;display:flex;align-items:flex-start;gap:11px;padding:13px 15px;border-radius:12px;background:var(--infs);color:var(--oninfs);max-width:660px">
+    <span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1.2">info</span>
+    <span style="font-size:12.5px;line-height:1.6;flex:1">The token core already ships. <a href="tokens.json" style="color:inherit;font-weight:700">tokens.json</a> and <a href="Tokens.cs" style="color:inherit;font-weight:700">Tokens.cs</a> mirror <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">eQuantic.UI.Primitives</span> value-for-value and are verified by <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">DesignTokenTests</span> — the component delta is nearly closed; work starts at the <a href="#status" style="color:inherit;font-weight:700">§01 status board</a>&rsquo;s open items. Before writing any call site, read <a href="#api" style="color:inherit;font-weight:700">§3b, the API contract</a>.</span>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:26px">
+    <a href="tokens.json" style="display:flex;align-items:center;gap:12px;padding:15px 17px;border-radius:12px;background:var(--sf);border:1px solid var(--bd);text-decoration:none;box-shadow:var(--e1)">
+      <span style="font-family:'Material Symbols Rounded';font-size:24px;color:var(--pri)">data_object</span>
+      <span style="flex:1"><span style="display:block;font-size:14px;font-weight:700;color:var(--tx1)">tokens.json</span><span style="display:block;font-size:12px;color:var(--tx3);margin-top:1px">Layer 1 source of truth · light + dark pairs with measured contrast</span></span>
+    </a>
+    <a href="Tokens.cs" style="display:flex;align-items:center;gap:12px;padding:15px 17px;border-radius:12px;background:var(--sf);border:1px solid var(--bd);text-decoration:none;box-shadow:var(--e1)">
+      <span style="font-family:'Material Symbols Rounded';font-size:24px;color:var(--pri)">code</span>
+      <span style="flex:1"><span style="display:block;font-size:14px;font-weight:700;color:var(--tx1)">Tokens.cs</span><span style="display:block;font-size:12px;color:var(--tx3);margin-top:1px">Mirror of <span style="font-family:'JetBrains Mono',monospace;font-size:11px">eQuantic.UI.Primitives</span> — theme contract, scales, PhotonTheme</span></span>
+    </a>
+    <a href="Photon%20Design%20System.dc.html" style="display:flex;align-items:center;gap:12px;padding:15px 17px;border-radius:12px;background:var(--sf);border:1px solid var(--bd);text-decoration:none;box-shadow:var(--e1)">
+      <span style="font-family:'Material Symbols Rounded';font-size:24px;color:var(--pri)">menu_book</span>
+      <span style="flex:1"><span style="display:block;font-size:14px;font-weight:700;color:var(--tx1)">Photon Design System</span><span style="display:block;font-size:12px;color:var(--tx3);margin-top:1px">47 specs · v1.1 SDK-audited · index + Foundations / Phase A / B / C files, each under the 256 KB read cap</span></span>
+    </a>
+    <div style="display:flex;align-items:center;gap:12px;padding:15px 17px;border-radius:12px;background:var(--sf);border:1px solid var(--bd);box-shadow:var(--e1)">
+      <span style="font-family:'Material Symbols Rounded';font-size:24px;color:var(--pri)">devices</span>
+      <span style="flex:1"><span style="display:block;font-size:14px;font-weight:700;color:var(--tx1)">3 sample apps — built</span><span style="display:block;font-size:12px;color:var(--tx3);margin-top:1px"><a href="eQuantic%20Studio%20-%20macOS%20Sample.dc.html">macOS</a> · <a href="eQuantic%20Wallet%20-%20iOS%20Sample.dc.html">iOS</a> · <a href="eQuantic%20Console%20-%20Web%20Admin%20Sample.dc.html">Web</a> · in repo: WalletMobile / Studio / DefaultUIDashboard</span></span>
+    </div>
+  </div>
+
+  <section id="status" data-screen-label="Status board" style="margin-top:44px">
+    <div style="display:flex;align-items:baseline;gap:12px;border-bottom:2px solid var(--tx1);padding-bottom:9px;margin-bottom:18px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;color:var(--tx3)">01</span>
+      <h2 style="margin:0;font-size:24px;font-weight:800;letter-spacing:-.02em">Status board</h2>
+      <span style="font-size:12px;color:var(--tx3);font-weight:500">per phase: shipped · open items · gate — SDK audited 2026-08-12</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;gap:14px;padding:15px 17px;border-radius:12px;background:var(--sf);border:1px solid var(--bd)">
+        <span style="width:26px;height:26px;border-radius:8px;background:var(--suc);color:#fff;display:flex;align-items:center;justify-content:center;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:17px">check</span></span>
+        <div style="flex:1;opacity:.82">
+          <div style="display:flex;align-items:center;gap:8px"><span style="font-size:14.5px;font-weight:700">Token core &amp; theming</span><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">Shipped · gated</span></div>
+          <div style="font-size:13px;line-height:1.6;color:var(--tx2);margin-top:3px">Every color, space value, radius, type role, elevation level and motion curve in <span style="font-family:'JetBrains Mono',monospace;font-size:12px">tokens.json</span> matches <span style="font-family:'JetBrains Mono',monospace;font-size:12px">eQuantic.UI.Primitives</span> value-for-value — treat both files as a mirror of the shipped source, not as work to do.</div>
+          <div style="font-size:12px;color:var(--onsucs);background:var(--sucs);display:inline-block;padding:3px 9px;border-radius:7px;margin-top:8px;font-weight:600">Gate passed — <span style="font-family:'JetBrains Mono',monospace;font-size:12px">DesignTokenTests</span>: ≥ 4.5:1 on every OnBase/Base and OnSubtle/Subtle pair in both modes, ≥ 7.0 (AAA) for primary and secondary text</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:14px;padding:15px 17px;border-radius:12px;background:var(--sf);border:1px solid var(--bd)">
+        <span style="width:26px;height:26px;border-radius:8px;background:var(--suc);color:#fff;display:flex;align-items:center;justify-content:center;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:17px">check</span></span>
+        <div style="flex:1;opacity:.82">
+          <div style="display:flex;align-items:center;gap:8px"><span style="font-size:14.5px;font-weight:700">Phase A · primitives</span><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">Shipped 15/15</span></div>
+          <div style="font-size:13px;line-height:1.6;color:var(--tx2);margin-top:3px">All fifteen exist in <span style="font-family:'JetBrains Mono',monospace;font-size:12px">eQuantic.UI.Components</span>: Box, Row, Column, Stack, Spacer, SafeArea, ScrollView, Divider, Text, Heading, Label, Icon, Image, Button, IconButton. Nothing to build.</div>
+          <div style="font-size:12px;color:var(--onwars);background:var(--wars);display:inline-block;padding:3px 9px;border-radius:7px;margin-top:8px;font-weight:600">Gate OPEN — not re-run since ship: pixel-close light + dark, safe areas, hit rects ≥ 48dp unverified</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:14px;padding:15px 17px;border-radius:12px;background:var(--sf);border:1px solid var(--bd)">
+        <span style="width:26px;height:26px;border-radius:8px;background:var(--suc);color:#fff;display:flex;align-items:center;justify-content:center;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:17px">check</span></span>
+        <div style="flex:1;opacity:.82">
+          <div style="display:flex;align-items:center;gap:8px"><span style="font-size:14.5px;font-weight:700">Phase B · structure &amp; forms</span><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">Shipped 18/18</span></div>
+          <div style="font-size:13px;line-height:1.6;color:var(--tx2);margin-top:3px">Card, List (recycling), AppBar, BottomNavigation, Tabs, Avatar, Badge, Chip, TextInput, SearchField, Checkbox, Switch, RadioGroup, ProgressBar, Spinner, Skeleton, EmptyState, Banner — all in code.</div>
+          <div style="font-size:12px;color:var(--onwars);background:var(--wars);display:inline-block;padding:3px 9px;border-radius:7px;margin-top:8px;font-weight:600">Gate OPEN — &ldquo;AppBar elevates on scroll&rdquo; passes on web only: <span style="font-family:'JetBrains Mono',monospace;font-size:12px">ScrolledStyle</span> has no native realization (native only pins) · 10k-row fling at 120fps unverified</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:14px;padding:15px 17px;border-radius:12px;background:var(--sf);border:1px solid var(--bd)">
+        <span style="width:26px;height:26px;border-radius:8px;background:var(--war);color:#fff;display:flex;align-items:center;justify-content:center;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:17px">priority_high</span></span>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px"><span style="font-size:14.5px;font-weight:700">Phase C · surfaces &amp; gestures</span><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:6px;background:var(--wars);color:var(--onwars)">Partial 13/16</span></div>
+          <div style="font-size:13px;line-height:1.6;color:var(--tx2);margin-top:3px">Shipped except: <strong style="color:var(--tx1)">ActionSheet</strong> (C3 — AppBar overflow and Dialog &gt;2 actions reference it; never built), <strong style="color:var(--tx1)">DatePicker</strong> (C15), and <strong style="color:var(--tx1)">BottomSheet detents + scroll handoff</strong> (C1 ships without them). NavigationRail (C16) is also spec-ahead for the desktop tier.</div>
+          <div style="font-size:12px;color:var(--ondess);background:var(--dess);display:inline-block;padding:3px 9px;border-radius:7px;margin-top:8px;font-weight:600">Gate NOT MET — sheet drag does not hand off to inner scroll; swipe actions cannot mirror as a11y custom actions (native semantics tree has none — spec §10 REQUEST)</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:14px;padding:15px 17px;border-radius:12px;background:var(--sf);border:1px solid var(--bd)">
+        <span style="width:26px;height:26px;border-radius:8px;background:var(--sec);color:var(--onsec);display:flex;align-items:center;justify-content:center;flex:none"><span style="font-family:'Material Symbols Rounded';font-size:17px">arrow_forward</span></span>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px"><span style="font-size:14.5px;font-weight:700">Desktop &amp; web adapters</span><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:6px;background:var(--sec);color:var(--onsec)">Open</span></div>
+          <div style="font-size:13px;line-height:1.6;color:var(--tx2);margin-top:3px">macOS: hover per the spec §10 derivation (filled = Base→Pressed midpoint · quiet = SurfaceSubtle), cursor ladder, sheet→popover, ActionSheet→context menu, NavigationRail (C16) — and thread <span style="font-family:'JetBrains Mono',monospace;font-size:12px">Density</span> through every control (§3b): the enum ships; the adapters must pass it. Web: the same write-once components through the DOM realizer — build the Console dashboard.</div>
+          <div style="font-size:12px;color:var(--onwars);background:var(--wars);display:inline-block;padding:3px 9px;border-radius:7px;margin-top:8px;font-weight:600">Gate OPEN — the same token JSON drives all three apps; zero forked color values</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Screen map" style="margin-top:44px">
+    <div style="display:flex;align-items:baseline;gap:12px;border-bottom:2px solid var(--tx1);padding-bottom:9px;margin-bottom:18px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;color:var(--tx3)">02</span>
+      <h2 style="margin:0;font-size:24px;font-weight:800;letter-spacing:-.02em">Screen map</h2>
+      <span style="font-size:12px;color:var(--tx3);font-weight:500">sample screen → components → where the spec lives</span>
+    </div>
+    <p style="margin:0 0 14px;font-size:12.5px;line-height:1.6;color:var(--tx2)">All three sample apps are <strong style="color:var(--tx1)">built in the repo</strong> — <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">WalletMobile</span> (iOS) · <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">PhotonDesktop/Studio</span> (macOS) · <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">DefaultUIDashboard</span> (web console). The rows below are <strong style="color:var(--tx1)">validation targets</strong>, not work to do.</p>
+    <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:grid;grid-template-columns:200px 1fr 118px;background:var(--sf2)">
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:9px 14px">Screen</div>
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:9px 12px">Components exercised</div>
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:9px 12px">Spec</div>
+      </div>
+      <div style="display:grid;grid-template-columns:200px 1fr 118px;border-top:1px solid var(--bd)"><div style="padding:9px 14px;font-size:12.5px;font-weight:600">iOS 01 · Home</div><div style="padding:9px 12px;font-size:12.5px;color:var(--tx2)">AppBar · Card (gradient) · Chip row · List · Banner · Badge · BottomNavigation · SafeArea</div><div style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">A1–A13, B1–B8</div></div>
+      <div style="display:grid;grid-template-columns:200px 1fr 118px;border-top:1px solid var(--bd)"><div style="padding:9px 14px;font-size:12.5px;font-weight:600">iOS 02 · Transactions</div><div style="padding:9px 12px;font-size:12.5px;color:var(--tx2)">AppBar scrolled · SearchField · Tabs · PullToRefresh · SwipeableRow · List sections · Skeleton</div><div style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">B2–B5, B16, C9, C10</div></div>
+      <div style="display:grid;grid-template-columns:200px 1fr 118px;border-top:1px solid var(--bd)"><div style="padding:9px 14px;font-size:12.5px;font-weight:600">iOS 03 · Detail + sheet</div><div style="padding:9px 12px;font-size:12.5px;color:var(--tx2)">Avatar · Badge · key/value List · Accordion · Scrim · BottomSheet · TextInput focused · Chips · XLarge CTA</div><div style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">C1, C11, B9</div></div>
+      <div style="display:grid;grid-template-columns:200px 1fr 118px;border-top:1px solid var(--bd)"><div style="padding:9px 14px;font-size:12.5px;font-weight:600">iOS 04 · Settings</div><div style="padding:9px 12px;font-size:12.5px;color:var(--tx2)">grouped List · Switch · Slider · Stepper · SegmentedControl · Destructive outline button</div><div style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">B2, B12, C6–C8</div></div>
+      <div style="display:grid;grid-template-columns:200px 1fr 118px;border-top:1px solid var(--bd)"><div style="padding:9px 14px;font-size:12.5px;font-weight:600">iOS 05 · Empty + dialog</div><div style="padding:9px 12px;font-size:12.5px;color:var(--tx2)">EmptyState · Link button · Toast (inverse surface) · Dialog with destructive confirm</div><div style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">B17, C2, C4</div></div>
+      <div style="display:grid;grid-template-columns:200px 1fr 118px;border-top:1px solid var(--bd)"><div style="padding:9px 14px;font-size:12.5px;font-weight:600">iOS 06 · Flow step</div><div style="padding:9px 12px;font-size:12.5px;color:var(--tx2)">ProgressBar · Heading · TextInput with IME · Avatar row · sticky CTA above keyboard</div><div style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">B9, B14, A9</div></div>
+      <div style="display:grid;grid-template-columns:200px 1fr 118px;border-top:1px solid var(--bd)"><div style="padding:9px 14px;font-size:12.5px;font-weight:600">macOS · Gallery</div><div style="padding:9px 12px;font-size:12.5px;color:var(--tx2)">30 of 44 catalog specimens (14 missing — open item) + the variant × size × state → C# inspector (partial)</div><div style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">30 / 44 · open</div></div>
+      <div style="display:grid;grid-template-columns:200px 1fr 118px;border-top:1px solid var(--bd)"><div style="padding:9px 14px;font-size:12.5px;font-weight:600">Web · Console</div><div style="padding:9px 12px;font-size:12.5px;color:var(--tx2)">Sidebar · Breadcrumb · KPI cards · bar chart (rrects) · DataTable (sort/select/hover/skeleton) · Pagination · form</div><div style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">same catalog · spec §10</div></div>
+    </div>
+  </section>
+
+  <section data-screen-label="Rules" style="margin-top:44px">
+    <div style="display:flex;align-items:baseline;gap:12px;border-bottom:2px solid var(--tx1);padding-bottom:9px;margin-bottom:18px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;color:var(--tx3)">03</span>
+      <h2 style="margin:0;font-size:24px;font-weight:800;letter-spacing:-.02em">Rules the build must not break</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:15px 17px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Engine fence (mobile)</div>
+        <ul style="margin:0;padding-left:17px;font-size:12.5px;line-height:1.75;color:var(--tx2)">
+          <li>Rounded rects, uniform borders, 2-stop gradients, rrect shadows, 2D transforms, shaped text, scroll — nothing else.</li>
+          <li>Icons are font glyphs or bitmap atlases. <strong style="color:var(--tx1)">The engine never receives a path.</strong></li>
+          <li><strong style="color:var(--tx1)">The <span style="font-family:'JetBrains Mono',monospace;font-size:12px">Vector</span> node conforms</strong> — arbitrary path data is rasterized once into a cached A8 texture by the same glyph rasterizer icons use, so what reaches the engine is a texture, i.e. the permitted bitmap-atlas case. Settled; do not re-litigate. What stays out is per-frame path drawing.</li>
+          <li>Blur only on overlays/sheets, and never required for legibility.</li>
+          <li>One shadow per node; disabled = 38% opacity group.</li>
+        </ul>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:15px 17px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Non-negotiables (all platforms)</div>
+        <ul style="margin:0;padding-left:17px;font-size:12.5px;line-height:1.75;color:var(--tx2)">
+          <li>Touch targets ≥ 48dp even when the visual is smaller. <strong style="color:var(--tx1)">OPEN QUESTION (v1.1):</strong> <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Density.Compact</span> collapses the hit expansion to hit = visual height (§3b) — this rule either gains an explicit pointer-density exception or the SDK is in violation; unresolved in code.</li>
+          <li>Pressed feedback within 50ms of touch-down.</li>
+          <li>Every gesture action also exists as an a11y custom action.</li>
+          <li>Hover is pointer-only — never on touch — and clears when the pointer leaves the window (spec §10).</li>
+          <li>State is a STATE (aria-checked / SemanticNode field), never smuggled into the accessible name (spec §10).</li>
+          <li>No raw hex in widget code — tokens only.</li>
+          <li>Light and dark ship together; no "dark later".</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="api" data-screen-label="API contract" style="margin-top:44px">
+    <div style="display:flex;align-items:baseline;gap:12px;border-bottom:2px solid var(--tx1);padding-bottom:9px;margin-bottom:18px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;color:var(--tx3)">3b</span>
+      <h2 style="margin:0;font-size:24px;font-weight:800;letter-spacing:-.02em">API contract — read before you type</h2>
+      <span style="font-size:12px;color:var(--tx3);font-weight:500">the names that look interchangeable and are not</span>
+    </div>
+    <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:grid;grid-template-columns:150px 1fr;background:var(--sf2)">
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:9px 14px">Use</div>
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:9px 12px">Why the plausible alternative is wrong</div>
+      </div>
+      <div style="display:grid;grid-template-columns:150px 1fr;border-top:1px solid var(--bd)"><div style="padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600">eQuantic.UI<br>.Primitives</div><div style="padding:10px 12px;font-size:12.5px;line-height:1.6;color:var(--tx2)">The token core is Layer 1, shared by web and native. Filing it under <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">.Native.Theming</span> contradicts the rule it exists to enforce — never fork Layer 1 per platform.</div></div>
+      <div style="display:grid;grid-template-columns:150px 1fr;border-top:1px solid var(--bd)"><div style="padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600">no IsDark</div><div style="padding:10px 12px;font-size:12.5px;line-height:1.6;color:var(--tx2)">The theme is <strong style="color:var(--tx1)">mode-free</strong>. Web emits <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">light-dark(light, dark)</span> so a page renders once for both modes; native resolves when it paints. A theme that knows the mode forces SSR to know the user's preference. Resolve with <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">token.Resolve(ThemeMode)</span> at realize time.</div></div>
+      <div style="display:grid;grid-template-columns:150px 1fr;border-top:1px solid var(--bd)"><div style="padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600">IconSize.Sm 16<br>Dense 20<br>Md 24 · Lg 32</div><div style="padding:10px 12px;font-size:12.5px;line-height:1.6;color:var(--tx2)">Same four-step ladder, SDK names. Relabelling it Sm/Md/Lg/Xl silently redefines <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">IconSize.Md</span> from 24 to 20 in existing code — visual drift with no compile error.</div></div>
+      <div style="display:grid;grid-template-columns:150px 1fr;border-top:1px solid var(--bd)"><div style="padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600">SizeVariant</div><div style="padding:10px 12px;font-size:12.5px;line-height:1.6;color:var(--tx2)">A bare <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Size</span> collides with <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">SizeValue</span> (the layout sizing type) at every call site.</div></div>
+      <div style="display:grid;grid-template-columns:150px 1fr;border-top:1px solid var(--bd)"><div style="padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600">full IAppTheme</div><div style="padding:10px 12px;font-size:12.5px;line-height:1.6;color:var(--tx2)">Members specs may reference: <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">SurfaceHighlight</span> · <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">FocusRing</span> (not <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Focus</span>) · <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">LinkColor</span> · <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">DisabledOpacity</span> · <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Shape(ShapeScale)</span> alongside the Radius constants. <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Variant : byte</span> has ten members with <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Tertiary</span> last (= 9) — and <strong style="color:var(--tx1)">Tertiary is not its own palette: it returns the Info five-tuple verbatim.</strong></div></div>
+      <div style="display:grid;grid-template-columns:150px 1fr;border-top:1px solid var(--bd)"><div style="padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600">Sizing.*<br>(SizeVariant)</div><div style="padding:10px 12px;font-size:12.5px;line-height:1.6;color:var(--tx2)"><strong style="color:var(--tx1)">Never inline the control ladder.</strong> <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Sizing.Height · PaddingX · Gap · LabelSize · Icon · Radius · HitTarget</span> — every control (button, field, select, menu row, chip, segmented, stepper) reads these instead of carrying its own numbers. <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">ButtonStyles.Metrics(size, density)</span> is a tuple view over the same seven. Touch floor is <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Touch.MinTarget = 48</span>; XLarge is the only rung whose hit target is 56 (Comfortable — see the Density row).</div></div>
+      <div style="display:grid;grid-template-columns:150px 1fr;border-top:1px solid var(--bd)"><div style="padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600">Density<br>: byte</div><div style="padding:10px 12px;font-size:12.5px;line-height:1.6;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">enum Density : byte { Comfortable = 0, Compact = 1 }</span> is real and threads the control ladder: <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Sizing.Height / PaddingX / LabelSize / HitTarget(SizeVariant, Density density = Density.Comfortable)</span> and <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">ButtonStyles.Metrics(SizeVariant, Density = Comfortable)</span>; components read <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">context.Density</span>. The plausible-wrong: calling <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Sizing.*(size)</span> alone and silently getting Comfortable (touch) sizing everywhere on desktop. Compact ladder, read from the SDK: heights 26/32/40/48 · padX 8/12/16/20 · labels 11.5/13/14.5/15.5. <strong style="color:var(--tx1)">OPEN QUESTION — do not silently resolve:</strong> under Compact the SDK collapses the 48dp hit expansion to hit = visual height, contradicting §03; either §03 gains an explicit pointer-density exception or the SDK is in violation. Unresolved in code.</div></div>
+      <div style="display:grid;grid-template-columns:150px 1fr;border-top:1px solid var(--bd)"><div style="padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600">TypeRole<br>10 members</div><div style="padding:10px 12px;font-size:12.5px;line-height:1.6;color:var(--tx2)">The scale no longer stops at Caption: <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">TitleSmall = 7</span> (15/20 · Bold · −0.1 · ×1.3) · <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">LabelSmall = 8</span> (11/15 · Medium · 0.1 · ×1.3) · <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Overline = 9</span> (10/14 · ExtraBold · 1.0 · ×1.2) — the dense desktop rungs (Theme/Typography.cs). <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">TypeStyle</span> also carries a trailing <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">bool Mono = false</span> — the monospaced face, on the STYLE so the measurer, rasterizer and raster cache all key on it. Plausible-wrong: assuming the scale stops at Caption and hand-shrinking Labels for sidebars.</div></div>
+      <div style="display:grid;grid-template-columns:150px 1fr;border-top:1px solid var(--bd)"><div style="padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600">SurfaceHighlight<br>is translucent</div><div style="padding:10px 12px;font-size:12.5px;line-height:1.6;color:var(--tx2)">White at 55% (light) / 7% (dark) — the <strong style="color:var(--tx1)">top-edge highlight over a surface</strong>, so it must composite over whatever sits beneath it (raised edges, the Skeleton shimmer). Decorative, no contrast requirement. An opaque value turns it into a solid bar.</div></div>
+      <div style="display:grid;grid-template-columns:150px 1fr;border-top:1px solid var(--bd)"><div style="padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600">Motion.Press<br>State · Enter<br>Exit</div><div style="padding:10px 12px;font-size:12.5px;line-height:1.6;color:var(--tx2)"><strong style="color:var(--tx1)">Motion is named, not numeric</strong> — spec an animation as <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Motion.Enter</span>, never "300ms". Each role carries both halves: Press 100/standard · State 200/standard · Enter 300/decelerate · Exit 200/accelerate (= <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">ExitFor(300)</span>). Animate style changes with <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">TransitionSpec.Of(StyleChannels.X, Motion.Y)</span>, which carries the curve; <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">TransitionSpec.Colors()</span> defaults to 100ms. The scale is 100 / 200 / 300 only — 150ms sits on no rung.</div></div>
+      <div style="display:grid;grid-template-columns:150px 1fr;border-top:1px solid var(--bd)"><div style="padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600">shadow alpha<br>pairs</div><div style="padding:10px 12px;font-size:12.5px;line-height:1.6;color:var(--tx2)">Explicit per level: <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">0.10/0.45 · 0.12/0.48 · 0.16/0.52 · 0.20/0.56 · 0.26/0.62</span>. Do not derive dark from light — it is +0.35 on level 1 and +0.36 on 2–5.</div></div>
+      <div style="display:grid;grid-template-columns:150px 1fr;border-top:1px solid var(--bd)"><div style="padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600">Color<br>byte alpha</div><div style="padding:10px 12px;font-size:12.5px;line-height:1.6;color:var(--tx2)">The colour primitive is <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Color(byte R, byte G, byte B, byte A)</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">FromRgb · FromRgba · WithOpacity(float) · Transparent/Black/White</span>. <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">ColorToken(Color Light, Color Dark)</span> has a one-arg ctor for same-in-both-modes. <strong style="color:var(--tx1)">There is no <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Rgba</span> type and no <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">ColorToken.Of(uint,uint)</span>.</strong></div></div>
+      <div style="display:grid;grid-template-columns:150px 1fr;border-top:1px solid var(--bd)"><div style="padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600">TypeStyle<br>arg order</div><div style="padding:10px 12px;font-size:12.5px;line-height:1.6;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">TypeStyle(Size, LineHeight, Weight, Tracking, MaxScale)</span> — LineHeight is second and Weight is the <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">FontWeight</span> enum (Regular 400 … ExtraBold 800), not an int. Display = <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">new(34, 40, FontWeight.ExtraBold, −0.4f, 1.15f)</span>.</div></div>
+      <div style="display:grid;grid-template-columns:150px 1fr;border-top:1px solid var(--bd)"><div style="padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600">StyleChannels<br>TransitionSpec</div><div style="padding:10px 12px;font-size:12.5px;line-height:1.6;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">: byte { None 0, Colors 1, Opacity 2, Transform 4, Shadow 8, Filters 16, Size 32, All 63 }</span> — Opacity is 2 and Transform is 4, not the reverse; Filters (element + backdrop blur) and Size (width/height/max-bounds morph) are real channels. <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">TransitionSpec(Channels, DurationMs = Motion.BaseMs, DelayMs = 0)</span> with <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Easing</span> init — it does not wrap a MotionSpec. Factories: <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Of · Colors · All</span>.</div></div>
+      <div style="display:grid;grid-template-columns:150px 1fr;border-top:1px solid var(--bd)"><div style="padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600">springs: type<br>≠ behavior</div><div style="padding:10px 12px;font-size:12.5px;line-height:1.6;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Curve</span> is exactly <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">(X1,Y1,X2,Y2)</span> with three beziers. <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Curve.Spring(…)</span> and <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Motion.Settle</span> still do not exist — but <strong style="color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">SpringSpec(float Stiffness, float Damping, float Mass)</span> DOES exist now</strong> (Theme/Tokens.cs, <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">SpringSpec.Default = (380, 34, 1)</span>) and is consumed by NOTHING: no realizer reads it. Guidance unchanged — <strong style="color:var(--tx1)">do not spec springs yet</strong>; the plausible-wrong is treating the type&rsquo;s existence as shipped behavior. Gesture release (v1.1): the sanctioned interim is the <strong style="color:var(--tx1)">Release glide</strong> — 200ms (Motion.BaseMs) smoothstep to the target picked at release; it lives in the gesture system, still not a Curve token. Spring BEHAVIOR stays REQUEST. Also: <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">ExitFor(int) = enterMs * 2 / 3</span> (integer — 300 gives exactly 200) and the constant is <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">ReducedCrossfadeMs</span>.</div></div>
+      <div style="display:grid;grid-template-columns:150px 1fr;border-top:1px solid var(--bd)"><div style="padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600">members that<br>do / don't exist</div><div style="padding:10px 12px;font-size:12.5px;line-height:1.6;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">DisabledOpacity</span> is on <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">IAppTheme</span> (0.38f), never on Sizing. <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Space.Base</span> does not exist — the scale is S1…S16 + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Gutter</span>. <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Touch.PressCancelSlop = 12</span> does exist. <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">ButtonStyles.Metrics</span> returns a named tuple — there is no <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">ControlMetrics</span> record.</div></div>
+    </div>
+    <div style="margin-top:12px;display:flex;align-items:flex-start;gap:11px;padding:13px 15px;border-radius:12px;background:var(--wars);color:var(--onwars)">
+      <span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1.2">gpp_maybe</span>
+      <span style="font-size:12.5px;line-height:1.6;flex:1"><strong>The rule behind every row above: never reconstruct an API from its description.</strong> If you cannot quote the real signature, write the need in prose and mark it a request. An invented member that looks plausible costs more than an honest gap, because it reads as verified.</span>
+    </div>
+    <div style="margin-top:10px;font-size:12px;color:var(--tx3);line-height:1.6">Everything else in <a href="tokens.json">tokens.json</a> and <a href="Tokens.cs">Tokens.cs</a> — colors, spacing, radii, type roles, elevation, motion, the size ladder — matches the SDK exactly. Do not "improve" those values.</div>
+  </section>
+
+  <section data-screen-label="Acceptance" style="margin-top:44px">
+    <div style="display:flex;align-items:baseline;gap:12px;border-bottom:2px solid var(--tx1);padding-bottom:9px;margin-bottom:18px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;color:var(--tx3)">04</span>
+      <h2 style="margin:0;font-size:24px;font-weight:800;letter-spacing:-.02em">Acceptance checklist</h2>
+      <span style="font-size:12px;color:var(--tx3);font-weight:500">run per screen, both themes</span>
+    </div>
+    <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px;display:grid;grid-template-columns:1fr 1fr;gap:10px 24px">
+      <div style="display:flex;gap:9px;align-items:flex-start"><span style="width:15px;height:15px;border-radius:4px;border:2px solid var(--bd2);box-sizing:border-box;flex:none;margin-top:2px"></span><span style="font-size:12.5px;line-height:1.5;color:var(--tx2)">Safe areas respected on every edge component</span></div>
+      <div style="display:flex;gap:9px;align-items:flex-start"><span style="width:15px;height:15px;border-radius:4px;border:2px solid var(--bd2);box-sizing:border-box;flex:none;margin-top:2px"></span><span style="font-size:12.5px;line-height:1.5;color:var(--tx2)">130% Dynamic Type: no clipping, no overlap</span></div>
+      <div style="display:flex;gap:9px;align-items:flex-start"><span style="width:15px;height:15px;border-radius:4px;border:2px solid var(--bd2);box-sizing:border-box;flex:none;margin-top:2px"></span><span style="font-size:12.5px;line-height:1.5;color:var(--tx2)">Every interactive node has role + label</span></div>
+      <div style="display:flex;gap:9px;align-items:flex-start"><span style="width:15px;height:15px;border-radius:4px;border:2px solid var(--bd2);box-sizing:border-box;flex:none;margin-top:2px"></span><span style="font-size:12.5px;line-height:1.5;color:var(--tx2)">VoiceOver / TalkBack order matches visual order</span></div>
+      <div style="display:flex;gap:9px;align-items:flex-start"><span style="width:15px;height:15px;border-radius:4px;border:2px solid var(--bd2);box-sizing:border-box;flex:none;margin-top:2px"></span><span style="font-size:12.5px;line-height:1.5;color:var(--tx2)">Keyboard / switch focus ring visible on all controls</span></div>
+      <div style="display:flex;gap:9px;align-items:flex-start"><span style="width:15px;height:15px;border-radius:4px;border:2px solid var(--bd2);box-sizing:border-box;flex:none;margin-top:2px"></span><span style="font-size:12.5px;line-height:1.5;color:var(--tx2)">Reduce Motion replaces movement with crossfade</span></div>
+      <div style="display:flex;gap:9px;align-items:flex-start"><span style="width:15px;height:15px;border-radius:4px;border:2px solid var(--bd2);box-sizing:border-box;flex:none;margin-top:2px"></span><span style="font-size:12.5px;line-height:1.5;color:var(--tx2)">Loading / empty / error state exists for every data view</span></div>
+      <div style="display:flex;gap:9px;align-items:flex-start"><span style="width:15px;height:15px;border-radius:4px;border:2px solid var(--bd2);box-sizing:border-box;flex:none;margin-top:2px"></span><span style="font-size:12.5px;line-height:1.5;color:var(--tx2)">No layout jump when a button enters loading</span></div>
+      <div style="display:flex;gap:9px;align-items:flex-start"><span style="width:15px;height:15px;border-radius:4px;border:2px solid var(--bd2);box-sizing:border-box;flex:none;margin-top:2px"></span><span style="font-size:12.5px;line-height:1.5;color:var(--tx2)">Scroll/fling matches platform physics</span></div>
+      <div style="display:flex;gap:9px;align-items:flex-start"><span style="width:15px;height:15px;border-radius:4px;border:2px solid var(--bd2);box-sizing:border-box;flex:none;margin-top:2px"></span><span style="font-size:12.5px;line-height:1.5;color:var(--tx2)">Golden screenshots captured for light + dark</span></div>
+    </div>
+  </section>
+
+  <section data-screen-label="Prompt" style="margin-top:44px">
+    <div style="display:flex;align-items:baseline;gap:12px;border-bottom:2px solid var(--tx1);padding-bottom:9px;margin-bottom:18px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;color:var(--tx3)">05</span>
+      <h2 style="margin:0;font-size:24px;font-weight:800;letter-spacing:-.02em">Starter prompt</h2>
+      <span style="font-size:12px;color:var(--tx3);font-weight:500">paste into Claude Code with the four files attached</span>
+    </div>
+    <div style="background:#101418;border:1px solid #232B34;border-radius:12px;padding:18px 20px;overflow-x:auto">
+<pre style="margin:0;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.7;color:#C9D4DE;white-space:pre-wrap">Close the eQuantic.UI delta (SDK audited 2026-08-12). Phases A and B are
+fully shipped; Phase C ships except the items below. Do NOT rebuild what
+exists — verify against the status board (Handoff §01).
+
+Inputs:
+  · tokens.json + Tokens.cs — a mirror of the SHIPPED eQuantic.UI.Primitives
+    token core. Already implemented and gated by DesignTokenTests. Use the
+    values verbatim; never invent or re-type a color, size, radius or curve.
+  · Photon Design System.dc.html — the spec INDEX. The specs live in
+    "Photon DS - Foundations / Phase A / Phase B / Phase C .dc.html"
+    (47 specs; C3, C15 and C16 are specified ahead of the SDK).
+  · The three sample apps are BUILT in the repo — WalletMobile,
+    PhotonDesktop/Studio, DefaultUIDashboard: validation targets, not work.
+
+The delta, in order:
+  1 ActionSheet (C3) — AppBar overflow and Dialog >2 actions reference it;
+    it does not exist in code. Anchored context menu on pointer targets.
+  2 DatePicker (C15) — calendar + the required text-entry fallback row.
+  3 BottomSheet detents + scroll handoff (the C1 gate).
+  4 A11y custom actions on the native semantics tree (spec §10 REQUEST) —
+    unblocks the SwipeableRow / PullToRefresh mirror rule.
+  5 Desktop/pointer adapters — thread Density through every control (§3b),
+    hover per spec §10, sheet→popover, NavigationRail (C16).
+
+Read Handoff §3b (API contract) before writing any call site:
+  eQuantic.UI.Primitives · no IsDark (mode-free; token.Resolve(ThemeMode))
+  IconSize Sm 16 / Dense 20 / Md 24 / Lg 32
+  SizeVariant is the control size enum (never a bare Size)
+  Every control dimension from Sizing.*(SizeVariant, Density) — Density
+  defaults to Comfortable; calling Sizing.*(size) alone on desktop
+  silently ships touch sizing. Never inline the ladder.
+  TypeRole has TEN members — TitleSmall 7 · LabelSmall 8 · Overline 9 are
+  the dense desktop rungs; TypeStyle carries a Mono flag on the style.
+  Motion is named: Motion.Press / State / Enter / Exit and
+  TransitionSpec.Of(...), never a raw millisecond value.
+  SpringSpec(Stiffness, Damping, Mass) EXISTS (Default = 380/34/1) but
+  NOTHING consumes it — do not spec springs yet. Gesture release stays
+  the 200ms smoothstep glide; Curve.Spring / Motion.Settle do not exist.
+  Hover is DERIVED (spec §10): filled = Base→Pressed midpoint, quiet =
+  SurfaceSubtle; pointer-only; clears on window-leave. No hover token.
+  State is a STATE (aria-checked / SemanticNode field), never the
+  accessible name.
+
+Never reconstruct an API from its description. If you cannot quote the
+real signature, write the need in prose and mark it a REQUEST — an
+invented member that looks plausible costs more than an honest gap.
+
+OPEN QUESTION you must not silently resolve: under Density.Compact the
+SDK collapses the 48dp hit expansion to hit = visual height, which
+contradicts §03. Flag it where it bites; do not pick a side in code.
+
+Hard rules (Handoff §03):
+  · The engine never receives a path. Icons are glyphs; the Vector node is
+    allowed because it rasterizes once into a cached A8 texture.
+  · Touch targets ≥ 48dp (Comfortable — see the OPEN QUESTION for Compact).
+  · Every gesture action mirrored as an accessibility custom action.
+  · Light and dark in the same commit.
+
+For each delta item deliver: the widget tree, a golden screenshot in both
+themes (the StudioWalkTests harness already does headless goldens), and
+the §04 checklist filled in.</pre>
+    </div>
+  </section>
+
+  <div style="margin-top:40px;padding-top:20px;border-top:1px solid var(--bd);display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
+    <span style="font-size:13px;font-weight:700">Photon handoff v1.1</span>
+    <span style="font-size:12px;color:var(--tx3)">Next artifacts worth adding: the a11y state-table appendix (per-component role/state matrix as a checkable table) and the desktop/pointer adaptation specs (Density threading, popover presentations, NavigationRail tier). Already covered elsewhere: the Android shell shipped, and StudioWalkTests does headless golden screenshots. The spec-§10 REQUEST set still stands (SemanticNode state fields + custom actions · VariantColors hover helper · spring consumption).</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light' | 'dark'&quot;,&quot;section&quot;:&quot;Preview&quot;}}">
+class Component extends DCLogic {
+  state = { theme: 'light' };
+  componentDidMount() {
+    let t = this.props.theme ?? 'light';
+    try { t = localStorage.getItem('eq-handoff-theme') || t; } catch (e) {}
+    this.applyTheme(t, false);
+  }
+  applyTheme(t, persist) {
+    if (t === 'dark') document.body.setAttribute('data-theme', 'dark');
+    else document.body.removeAttribute('data-theme');
+    if (persist) { try { localStorage.setItem('eq-handoff-theme', t); } catch (e) {} }
+    this.setState({ theme: t });
+  }
+  renderVals() {
+    const dark = this.state.theme === 'dark';
+    return {
+      themeIcon: dark ? 'light_mode' : 'dark_mode',
+      themeLabel: dark ? 'Light' : 'Dark',
+      toggleTheme: () => this.applyTheme(dark ? 'light' : 'dark', true)
+    };
+  }
+}
+</script>
+</body>
+</html>

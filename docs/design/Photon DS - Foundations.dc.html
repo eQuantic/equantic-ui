@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0" rel="stylesheet">
+<style>
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx1);font-family:'Hanken Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+--bg:#F5F6F8;--sf:#FFFFFF;--sf2:#EFF1F4;--bd:#E2E5EA;--bd2:#C9CED6;
+--tx1:#171B21;--tx2:#4B5563;--tx3:#5F6B7A;--txi:#FFFFFF;
+--pri:#0050A0;--onpri:#FFFFFF;--prip:#00427F;--pris:#E8F1FA;--onpris:#003E7E;
+--sec:#E9EDF2;--onsec:#3A4350;--secp:#DCE2EA;
+--des:#B42318;--ondes:#FFFFFF;--desp:#8F1D1D;--dess:#FCEBEA;--ondess:#8F1D1D;
+--suc:#3B7A22;--onsuc:#FFFFFF;--sucp:#2C5E17;--sucs:#EDF6E6;--onsucs:#2C5E17;
+--war:#8A5A00;--onwar:#FFFFFF;--warp:#6E4700;--wars:#FBF3DF;--onwars:#7A5200;
+--inf:#0C6C86;--oninf:#FFFFFF;--infp:#0A5468;--infs:#E4F3F8;--oninfs:#0A5468;
+--lnk:#0050A0;--foc:#0050A0;--scrim:rgba(11,14,18,.40);--priinv:#5CA2E8;
+--e1:0 1px 3px 0 rgba(15,23,32,.10);--e2:0 2px 8px 0 rgba(15,23,32,.12);--e3:0 6px 16px -2px rgba(15,23,32,.16);--e4:0 12px 28px -4px rgba(15,23,32,.20);--e5:0 20px 44px -6px rgba(15,23,32,.26)}
+body[data-theme="dark"]{
+--bg:#0C0F13;--sf:#14181E;--sf2:#1C232B;--bd:#2A323D;--bd2:#3D4754;
+--tx1:#F2F4F7;--tx2:#AEB7C2;--tx3:#8B95A3;--txi:#171B21;
+--pri:#5CA2E8;--onpri:#06263F;--prip:#7CB5EE;--pris:#0F2740;--onpris:#A8CDF2;
+--sec:#242C36;--onsec:#D7DDE5;--secp:#2E3844;
+--des:#E5645C;--ondes:#3B0704;--desp:#F28B85;--dess:#3A1210;--ondess:#F4A9A4;
+--suc:#85C05E;--onsuc:#12290A;--sucp:#9ACD74;--sucs:#16290C;--onsucs:#B5DB97;
+--war:#E8B04B;--onwar:#2E1B02;--warp:#F0C06B;--wars:#2E2008;--onwars:#EECF8F;
+--inf:#4CC3DE;--oninf:#062B33;--infp:#6ED0E6;--infs:#0A2A32;--oninfs:#9FDCEB;
+--lnk:#7CB5EE;--foc:#7CB5EE;--scrim:rgba(0,0,0,.56);--priinv:#0050A0;
+--e1:0 1px 3px 0 rgba(0,0,0,.45);--e2:0 2px 8px 0 rgba(0,0,0,.48);--e3:0 6px 16px -2px rgba(0,0,0,.52);--e4:0 12px 28px -4px rgba(0,0,0,.56);--e5:0 20px 44px -6px rgba(0,0,0,.62)}
+@keyframes ph-blink{0%{opacity:1}100%{opacity:.15}}
+@keyframes ph-shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+@keyframes ph-move-std{0%{transform:translateX(0)}100%{transform:translateX(220px)}}
+@keyframes ph-pressdemo{0%,100%{opacity:0}30%,70%{opacity:1}}
+@keyframes ph-indet{0%{left:-35%}100%{left:105%}}
+@keyframes ph-toast-in{0%{transform:translateY(14px);opacity:0}100%{transform:translateY(0);opacity:1}}
+</style>
+</helmet>
+
+<div style="position:fixed;top:0;left:0;right:0;z-index:60;display:flex;align-items:center;gap:16px;height:56px;padding:0 20px;background:var(--sf);border-bottom:1px solid var(--bd)">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#0050A0,#003E7E);display:flex;align-items:center;justify-content:center">
+      <div style="width:10px;height:10px;border-radius:4px;background:#80B85C"></div>
+    </div>
+    <div style="font-size:15px;font-weight:800;letter-spacing:-.01em">Photon</div>
+    <div style="font-size:12px;color:var(--tx3);font-weight:500;margin-top:1px">eQuantic.UI Native · Mobile Design System</div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px;background:var(--pris);color:var(--onpris)">SPEC v1.1 · SDK-audited</div>
+  </div>
+  <div style="flex:1"></div>
+  <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--tx3);font-weight:600">
+    <span>Dynamic Type</span>
+    <div style="display:flex;background:var(--sf2);border-radius:8px;padding:2px;gap:2px">
+      <button onClick="{{ fs100 }}" style="border:none;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:4px 9px;border-radius:6px;background:{{ fsBg1 }};color:{{ fsC1 }};box-shadow:{{ fsSh1 }}">100%</button>
+      <button onClick="{{ fs115 }}" style="border:none;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:4px 9px;border-radius:6px;background:{{ fsBg2 }};color:{{ fsC2 }};box-shadow:{{ fsSh2 }}">115%</button>
+      <button onClick="{{ fs130 }}" style="border:none;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:4px 9px;border-radius:6px;background:{{ fsBg3 }};color:{{ fsC3 }};box-shadow:{{ fsSh3 }}">130%</button>
+    </div>
+  </div>
+  <button onClick="{{ toggleHit }}" style="display:flex;align-items:center;gap:6px;border:1px solid var(--bd);cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;background:{{ hitBg }};color:{{ hitC }}">
+    <span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">touch_app</span> Hit areas
+  </button>
+  <button onClick="{{ toggleTheme }}" style="display:flex;align-items:center;gap:6px;border:1px solid var(--bd);cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;background:var(--sf2);color:var(--tx1)">
+    <span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">{{ themeIcon }}</span> {{ themeLabel }}
+  </button>
+</div>
+
+<nav style="position:fixed;top:56px;left:0;bottom:0;width:248px;overflow-y:auto;padding:20px 14px 40px;background:var(--sf);border-right:1px solid var(--bd);box-sizing:border-box">
+  <div style="font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);padding:6px 10px">Overview</div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="#f-arch" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--pri);width:20px;flex:none;padding-top:1px">◆</span>Architecture · 3 layers</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:7px;padding:16px 10px 6px"><span style="width:7px;height:7px;border-radius:2px;background:var(--suc);flex:none"></span><span style="font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Layer 1 · Shared tokens</span></div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="#f-color" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">01</span>Color tokens</a>
+    <a href="#f-type" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">02</span>Typography</a>
+    <a href="#f-space" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">03</span>Spacing</a>
+    <a href="#f-radius" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">04</span>Radius</a>
+    <a href="#f-elev" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">05</span>Elevation</a>
+    <a href="#f-motion" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">06</span>Motion</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:7px;padding:16px 10px 6px"><span style="width:7px;height:7px;border-radius:2px;background:var(--war);flex:none"></span><span style="font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Layer 2 · Platform · Photon</span></div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="#f-fence" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">00</span>Engine constraints</a>
+    <a href="#f-icon" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">07</span>Iconography</a>
+    <a href="#f-touch" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">08</span>Touch &amp; safe area</a>
+    <a href="#f-a11y" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">10</span>States · pointer · semantics</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:7px;padding:16px 10px 6px"><span style="width:7px;height:7px;border-radius:2px;background:var(--pri);flex:none"></span><span style="font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Binding</span></div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="#f-csharp" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">09</span>C# token API</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:7px;padding:18px 10px 4px"><span style="width:7px;height:7px;border-radius:2px;background:var(--inf);flex:none"></span><span style="font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Layer 3 · Components</span></div>
+  <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:4px 10px 6px;opacity:.75">Phase A · Primitives</div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-box" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A1</span>Box</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-rowcol" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A2</span>Row · Column</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-stack" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A3</span>Stack (z)</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-spacer" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A4</span>Spacer</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-safearea" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A5</span>SafeArea</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-scroll" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A6</span>ScrollView</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-divider" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A7</span>Divider</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-text" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A8</span>Text</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-heading" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A9</span>Heading · Label</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-icon" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A10</span>Icon</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-image" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A11</span>Image</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-button" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A12</span>Button</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-iconbutton" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A13</span>IconButton</a>
+  </div>
+  <div style="font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);padding:18px 10px 6px">Phase B — Dashboard set</div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-card" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B1</span>Card</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-list" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B2</span>List · ListItem</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-appbar" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B3</span>AppBar</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-bottomnav" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B4</span>BottomNavigation</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-tabs" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B5</span>Tabs</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-avatar" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B6</span>Avatar</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-badge" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B7</span>Badge</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-chip" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B8</span>Chip / Tag</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-input" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B9</span>TextInput</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-search" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B10</span>SearchField</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-checkbox" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B11</span>Checkbox</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-switch" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B12</span>Switch</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-radio" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B13</span>RadioGroup</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-progress" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B14</span>ProgressBar</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-spinner" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B15</span>Spinner</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-skeleton" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B16</span>Skeleton</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-empty" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B17</span>EmptyState</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-banner" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B18</span>Banner / Alert</a>
+  </div>
+  <div style="font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);padding:18px 10px 6px">Phase C — Surfaces &amp; patterns</div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-sheet" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C1</span>BottomSheet</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-modal" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C2</span>Modal / Dialog</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-action" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C3</span>ActionSheet</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-toast" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C4</span>Toast / Snackbar</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-drawer" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C5</span>Drawer</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-seg" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C6</span>SegmentedControl</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-slider" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C7</span>Slider</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-stepper" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C8</span>Stepper</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-ptr" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C9</span>PullToRefresh</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-swipe" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C10</span>SwipeableRow</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-accordion" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C11</span>Accordion</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-dots" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C12</span>PageIndicator</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-tooltip" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C13</span>Tooltip</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-select" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C14</span>Select</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-date" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C15</span>DatePicker</a>
+    <a href="Photon%20DS%20-%20Phase%20C.dc.html#c-navrail" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C16</span>NavigationRail</a>
+  </div>
+</nav>
+
+<main style="margin:56px 0 0 248px;padding:44px 56px 120px;max-width:1060px;box-sizing:border-box">
+
+  
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:22px">
+    <a href="Photon%20Design%20System.dc.html" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--lnk);text-decoration:none"><span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">arrow_back</span>Spec index</a>
+    <span style="color:var(--bd2)">/</span>
+    <span style="font-size:12px;font-weight:600;color:var(--tx3)">Photon Design System · v1.1 · Foundations</span>
+  </div>
+
+  <header data-screen-label="Foundations cover" style="margin-bottom:44px">
+    <h1 style="margin:0;font-size:36px;line-height:1.08;font-weight:800;letter-spacing:-.025em">Foundations · §00–§10</h1>
+    <p style="margin:14px 0 0;max-width:680px;font-size:15px;line-height:1.6;color:var(--tx2)">Architecture, the engine fence, tokens (color · type · spacing · radius · elevation · motion · iconography · touch), the C# token API, and the <a href="#f-a11y" style="color:var(--lnk);font-weight:600;text-decoration:none">§10 interaction contract</a> — states, pointer behavior and semantics — that every component spec inherits.</p>
+  </header>
+
+
+  <section id="f-arch" data-screen-label="Architecture" style="margin-bottom:64px">
+    <div style="display:flex;align-items:baseline;gap:12px;border-bottom:2px solid var(--tx1);padding-bottom:10px;margin-bottom:20px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--tx3)">◆</span>
+      <h2 style="margin:0;font-size:27px;font-weight:800;letter-spacing:-.02em">Architecture — three layers</h2>
+      <span style="font-size:12.5px;color:var(--tx3);font-weight:500">one token core · one write-once library · two realizers</span>
+    </div>
+    <p style="margin:0 0 20px;max-width:740px;font-size:14.5px;line-height:1.6;color:var(--tx2)">
+      Photon is not a standalone system — it is the <strong style="color:var(--tx1)">native realizer</strong> of eQuantic.UI. There is <strong style="color:var(--tx1)">one component library, written once</strong>; the layers split what is authored once from what each realizer owns.
+      Read the stack bottom-up: the library is authored against the shared core; each realizer turns the same built tree into its runtime — DOM or GPU display list.
+    </p>
+
+    <div style="display:flex;flex-direction:column;gap:0">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:16px 18px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span style="width:8px;height:8px;border-radius:3px;background:var(--inf)"></span>
+          <span style="font-size:13px;font-weight:800;letter-spacing:-.01em">Layer 3 · Components — one write-once library</span>
+          <span style="flex:1"></span>
+          <span style="font-size:11.5px;color:var(--tx3)">authored once in C# · literally the same class on every target</span>
+        </div>
+        <div style="font-size:12.5px;line-height:1.65;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;color:var(--tx1)">eQuantic.UI.Components</span> — <strong style="color:var(--tx1)">44 shipped components</strong>, authored once against the abstract vocabulary in <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">eQuantic.UI.Primitives</span> (Box · Row/Column · Grid · Stack · ScrollView · Overlay · Anchored · Pressable · Text · TextEntry · Icon · Image …). Not two similar APIs — the same C# class reaches both targets. This doc's Phase A/B/C specs are its contract; anatomy adapts per target from the same class (Select &amp; DatePicker: BottomSheet on touch, anchored popover on pointer).</div>
+        <div style="margin-top:9px;padding-top:9px;border-top:1px solid var(--bd);font-size:12px;line-height:1.6;color:var(--tx2)"><strong style="color:var(--tx1)">Web-specific behavior — hover, focus-visible, cursor, right-click — is a realizer concern (§10), not a separate component library.</strong> The old two-library world (a ~77-component shadcn-like web lib with CVA class variants) is retired; nothing composes over Layer 2 except this one catalog.</div>
+      </div>
+      <div style="display:flex;justify-content:center;padding:5px 0"><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">▼ &nbsp;composes over&nbsp; ▼</span></div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:16px 18px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span style="width:8px;height:8px;border-radius:3px;background:var(--war)"></span>
+          <span style="font-size:13px;font-weight:800;letter-spacing:-.01em">Layer 2 · Realizers</span>
+          <span style="flex:1"></span>
+          <span style="font-size:11.5px;color:var(--tx3)">each realizer turns the same abstract tree into its runtime</span>
+        </div>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0">
+          <div style="padding-right:16px">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;color:var(--tx3);margin-bottom:6px">PHOTON · NATIVE — eQuantic.UI.Native.Components</div>
+            <div style="font-size:12.5px;line-height:1.6;color:var(--tx2)">Abstract tree → GPU display list · engine fence (§00) · glyph-atlas icons (§07) · touch ≥ 44/48 + safe areas (§08) · gesture physics + Release glide (§06) · semantics-tree bridge (§10)</div>
+          </div>
+          <div style="padding-left:16px;border-left:1px solid var(--bd)">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;color:var(--tx3);margin-bottom:6px">DOM/CSS · WEB — eQuantic.UI.Web + @equantic/runtime</div>
+            <div style="font-size:12.5px;line-height:1.6;color:var(--tx2)">Abstract tree → HtmlElement + atomic CSS (SSR emits light-dark()) · hover / focus-visible / cursor / right-click (§10) · pointer density · hydration byte-pinned to the C# realizer rule-for-rule</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:center;padding:5px 0"><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">▼ &nbsp;resolves from&nbsp; ▼</span></div>
+      <div style="background:linear-gradient(180deg,var(--sucs),var(--sf));border:1px solid var(--suc);border-radius:14px;padding:16px 18px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span style="width:8px;height:8px;border-radius:3px;background:var(--suc)"></span>
+          <span style="font-size:13px;font-weight:800;letter-spacing:-.01em;color:var(--onsucs)">Layer 1 · Shared token core</span>
+          <span style="flex:1"></span>
+          <span style="font-size:11.5px;color:var(--onsucs);opacity:.85">one source of truth · both platforms resolve from these</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <span style="padding:5px 11px;border-radius:8px;background:var(--sf);border:1px solid var(--suc);font-size:12px;font-weight:700;color:var(--onsucs)">Semantic color + WCAG pairs</span>
+          <span style="padding:5px 11px;border-radius:8px;background:var(--sf);border:1px solid var(--suc);font-size:12px;font-weight:700;color:var(--onsucs)">Type scale &amp; roles</span>
+          <span style="padding:5px 11px;border-radius:8px;background:var(--sf);border:1px solid var(--suc);font-size:12px;font-weight:700;color:var(--onsucs)">Spacing · 4 base</span>
+          <span style="padding:5px 11px;border-radius:8px;background:var(--sf);border:1px solid var(--suc);font-size:12px;font-weight:700;color:var(--onsucs)">Radius</span>
+          <span style="padding:5px 11px;border-radius:8px;background:var(--sf);border:1px solid var(--suc);font-size:12px;font-weight:700;color:var(--onsucs)">Elevation intent</span>
+          <span style="padding:5px 11px;border-radius:8px;background:var(--sf);border:1px solid var(--suc);font-size:12px;font-weight:700;color:var(--onsucs)">Motion timings &amp; curves</span>
+          <span style="padding:5px 11px;border-radius:8px;background:var(--sf);border:1px solid var(--suc);font-size:12px;font-weight:700;color:var(--onsucs)">Variant &amp; size vocabulary</span>
+        </div>
+        <div style="margin-top:11px;font-size:12px;line-height:1.55;color:var(--onsucs);opacity:.9">Platform-neutral values (1 unit = 1dp on mobile, 1px/0.0625rem on web). The WCAG-verified pairs and the 4-base scale hold in the browser unchanged.</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px">This document, mapped</div>
+        <div style="display:flex;flex-direction:column;gap:9px;font-size:12.5px;line-height:1.5;color:var(--tx2)">
+          <div style="display:flex;gap:9px;align-items:flex-start"><span style="width:8px;height:8px;border-radius:3px;background:var(--suc);margin-top:4px;flex:none"></span><span><strong style="color:var(--tx1)">Layer 1 · Shared</strong> — §01 Color · §02 Typography · §03 Spacing · §04 Radius · §05 Elevation · §06 Motion</span></div>
+          <div style="display:flex;gap:9px;align-items:flex-start"><span style="width:8px;height:8px;border-radius:3px;background:var(--war);margin-top:4px;flex:none"></span><span><strong style="color:var(--tx1)">Layer 2 · Realizers</strong> — §00 Engine fence · §07 Iconography · §08 Touch &amp; safe area · §10 States, pointer &amp; semantics</span></div>
+          <div style="display:flex;gap:9px;align-items:flex-start"><span style="width:8px;height:8px;border-radius:3px;background:var(--pri);margin-top:4px;flex:none"></span><span><strong style="color:var(--tx1)">Binding</strong> — §09 C# token API (client artifacts are generated from the C# source and byte-pinned — never hand-written)</span></div>
+          <div style="display:flex;gap:9px;align-items:flex-start"><span style="width:8px;height:8px;border-radius:3px;background:var(--inf);margin-top:4px;flex:none"></span><span><strong style="color:var(--tx1)">Layer 3 · Components</strong> — Phase A · B · C, one write-once catalog</span></div>
+        </div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px">Shared by construction · Realizer-owned</div>
+        <div style="font-size:12.5px;line-height:1.6;color:var(--tx2)"><span style="display:inline-block;font-size:10px;font-weight:800;padding:1px 6px;border-radius:5px;background:var(--sucs);color:var(--onsucs);margin-right:6px">SHARED</span>colors + WCAG pairs · type scale · spacing/radius · motion roles &amp; curves · variant &amp; size names · elevation intent · <strong style="color:var(--tx1)">the component classes themselves</strong>.</div>
+        <div style="font-size:12.5px;line-height:1.6;color:var(--tx2);margin-top:8px"><span style="display:inline-block;font-size:10px;font-weight:800;padding:1px 6px;border-radius:5px;background:var(--wars);color:var(--onwars);margin-right:6px">REALIZER</span>web relaxes the fence (SVG icons, per-side borders, backdrop-filter) · hover / focus-visible / cursor / right-click (§10) · pointer density · presentation swaps (Select/DatePicker sheet → anchored popover) · native owns gesture physics + the semantics-tree bridge.</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+      <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Governing rules</div>
+      <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+        <li>One token PR moves both platforms — <strong style="color:var(--tx1)">never fork the Layer 1 core</strong> per platform; deltas (elevation richness, touch sizing) are declared as platform overrides, not copies.</li>
+        <li>Presentation divergence is <em>expected and documented per realizer</em>, not smoothed into a lowest-common-denominator widget. Same class, same role — target-shaped anatomy.</li>
+        <li>A shared value that stops working on web (a contrast pair, a curve) is a <strong style="color:var(--tx1)">token bug fixed in Layer 1</strong>, not a component patch on one side.</li>
+        <li>Hover, cursor, right-click and every other pointer behavior are specified <strong style="color:var(--tx1)">here</strong> — §10 plus each spec’s Desktop &amp; pointer note — and implemented by the realizers. There is no separate web component library to document.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="f-fence" data-screen-label="00 Engine constraints" style="margin-bottom:64px">
+    <div style="display:flex;align-items:baseline;gap:12px;border-bottom:2px solid var(--tx1);padding-bottom:10px;margin-bottom:20px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--tx3)">00</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.03em;padding:2px 8px;border-radius:6px;background:var(--wars);color:var(--onwars);align-self:center">L2 · Platform · Photon</span>
+      <h2 style="margin:0;font-size:27px;font-weight:800;letter-spacing:-.02em">Engine constraints — the v1 fence</h2>
+    </div>
+    <p style="margin:0 0 18px;max-width:720px;font-size:14.5px;line-height:1.6;color:var(--tx2)">Normative. A component spec that needs anything from the right column is a spec bug. The renderer draws exactly this:</p>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:20px 22px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span style="font-family:'Material Symbols Rounded';font-size:18px;color:var(--suc)">check_circle</span>
+          <span style="font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--onsucs)">Renderer v1 draws</span>
+        </div>
+        <ul style="margin:0;padding-left:18px;font-size:13.5px;line-height:1.85;color:var(--tx2)">
+          <li>Rounded rects — <strong style="color:var(--tx1)">per-corner radii</strong>, SDF anti-aliased</li>
+          <li>Borders of <strong style="color:var(--tx1)">uniform width</strong> (inside stroke)</li>
+          <li>Linear gradients, <strong style="color:var(--tx1)">2 stops</strong></li>
+          <li>Images: contain / cover / stretch / <strong style="color:var(--tx1)">9-slice</strong></li>
+          <li>Box shadows of rrects (offset, blur, spread, color)</li>
+          <li>Clips: rect / rrect · opacity groups</li>
+          <li>Gaussian blur — <strong style="color:var(--tx1)">expensive; overlays &amp; sheets only</strong></li>
+          <li>2D transforms: translate · scale · rotate</li>
+          <li>Shaped text (HarfBuzz) + color emoji, glyph atlas</li>
+          <li>Scroll containers with native fling physics</li>
+        </ul>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:20px 22px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span style="font-family:'Material Symbols Rounded';font-size:18px;color:var(--des)">cancel</span>
+          <span style="font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ondess)">Not in v1 — design around it</span>
+        </div>
+        <ul style="margin:0;padding-left:18px;font-size:13.5px;line-height:1.85;color:var(--tx2)">
+          <li>Arbitrary vector paths / inline SVG</li>
+          <li>Dashed or dotted strokes</li>
+          <li>Complex masks, exotic blend modes</li>
+          <li>Generalized backdrop-filter</li>
+          <li>Per-side border widths</li>
+          <li>Conic / multi-stop gradients</li>
+          <li>Charts, maps, rich-text editors (out of catalog)</li>
+        </ul>
+        <div style="margin-top:14px;padding:10px 12px;border-radius:8px;background:var(--wars);color:var(--onwars);font-size:12.5px;line-height:1.5;font-weight:500">
+          Icons are never SVG paths at runtime — they are glyphs from a font atlas or pre-rasterized bitmap atlas (§07).
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="f-color" data-screen-label="01 Color tokens" style="margin-bottom:64px">
+    <div style="display:flex;align-items:baseline;gap:12px;border-bottom:2px solid var(--tx1);padding-bottom:10px;margin-bottom:20px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--tx3)">01</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.03em;padding:2px 8px;border-radius:6px;background:var(--sucs);color:var(--onsucs);align-self:center">L1 · Shared token</span>
+      <h2 style="margin:0;font-size:27px;font-weight:800;letter-spacing:-.02em">Color tokens</h2>
+      <span style="font-size:12.5px;color:var(--tx3);font-weight:500">paired light / dark · WCAG ratios verified computationally</span>
+    </div>
+    <p style="margin:0 0 20px;max-width:740px;font-size:14.5px;line-height:1.6;color:var(--tx2)">
+      Semantic tokens only — components never reference raw hex. Every token is a <span style="font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--sf2);padding:1px 6px;border-radius:5px">ColorToken(Light, Dark)</span> pair resolved by the active theme.
+      Brand anchors: eQuantic blue <span style="display:inline-block;width:12px;height:12px;border-radius:4px;background:#0050A0;vertical-align:-1px"></span> <span style="font-family:'JetBrains Mono',monospace;font-size:12.5px">#0050A0</span> drives Primary;
+      eQuantic green <span style="display:inline-block;width:12px;height:12px;border-radius:4px;background:#80B85C;vertical-align:-1px"></span> <span style="font-family:'JetBrains Mono',monospace;font-size:12.5px">#80B85C</span> anchors Success (darkened to #3B7A22 in light mode to clear AA; near-brand #85C05E in dark).
+      The page you are reading uses these tokens — flip the theme toggle to audit both modes.
+    </p>
+
+    <div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3);margin:26px 0 10px">Surfaces &amp; text</div>
+    <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow-x:auto">
+      <div style="display:grid;min-width:800px;grid-template-columns:210px 110px 110px minmax(0,1fr) 150px;background:var(--sf2)">
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:9px 14px">Token</div>
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:9px 14px">Light</div>
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:9px 14px">Dark</div>
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:9px 14px">Role</div>
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:9px 14px">Contrast · on Surface</div>
+      </div>
+      <div style="display:grid;min-width:800px;grid-template-columns:210px 110px 110px minmax(0,1fr) 150px;align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;padding:9px 14px">Background</div>
+        <div style="padding:9px 14px;display:flex;align-items:center;gap:7px"><span style="width:22px;height:18px;border-radius:5px;background:#F5F6F8;border:1px solid rgba(0,0,0,.12);flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">F5F6F8</span></div>
+        <div style="padding:9px 14px;display:flex;align-items:center;gap:7px"><span style="width:22px;height:18px;border-radius:5px;background:#0C0F13;border:1px solid rgba(255,255,255,.18);flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">0C0F13</span></div>
+        <div style="font-size:13px;color:var(--tx2);padding:9px 14px">App canvas behind all surfaces</div>
+        <div style="padding:9px 14px;font-size:11px;color:var(--tx3)">—</div>
+      </div>
+      <div style="display:grid;min-width:800px;grid-template-columns:210px 110px 110px minmax(0,1fr) 150px;align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;padding:9px 14px">Surface</div>
+        <div style="padding:9px 14px;display:flex;align-items:center;gap:7px"><span style="width:22px;height:18px;border-radius:5px;background:#FFFFFF;border:1px solid rgba(0,0,0,.12);flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">FFFFFF</span></div>
+        <div style="padding:9px 14px;display:flex;align-items:center;gap:7px"><span style="width:22px;height:18px;border-radius:5px;background:#14181E;border:1px solid rgba(255,255,255,.18);flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">14181E</span></div>
+        <div style="font-size:13px;color:var(--tx2);padding:9px 14px">Cards, sheets, bars, inputs</div>
+        <div style="padding:9px 14px;font-size:11px;color:var(--tx3)">—</div>
+      </div>
+      <div style="display:grid;min-width:800px;grid-template-columns:210px 110px 110px minmax(0,1fr) 150px;align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;padding:9px 14px">SurfaceSubtle</div>
+        <div style="padding:9px 14px;display:flex;align-items:center;gap:7px"><span style="width:22px;height:18px;border-radius:5px;background:#EFF1F4;border:1px solid rgba(0,0,0,.12);flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">EFF1F4</span></div>
+        <div style="padding:9px 14px;display:flex;align-items:center;gap:7px"><span style="width:22px;height:18px;border-radius:5px;background:#1C232B;border:1px solid rgba(255,255,255,.18);flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">1C232B</span></div>
+        <div style="font-size:13px;color:var(--tx2);padding:9px 14px">Inset wells, pressed-on-surface, segmented track</div>
+        <div style="padding:9px 14px;font-size:11px;color:var(--tx3)">—</div>
+      </div>
+      <div style="display:grid;min-width:800px;grid-template-columns:210px 110px 110px minmax(0,1fr) 150px;align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;padding:9px 14px">Border</div>
+        <div style="padding:9px 14px;display:flex;align-items:center;gap:7px"><span style="width:22px;height:18px;border-radius:5px;background:#E2E5EA;border:1px solid rgba(0,0,0,.12);flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">E2E5EA</span></div>
+        <div style="padding:9px 14px;display:flex;align-items:center;gap:7px"><span style="width:22px;height:18px;border-radius:5px;background:#2A323D;border:1px solid rgba(255,255,255,.18);flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">2A323D</span></div>
+        <div style="font-size:13px;color:var(--tx2);padding:9px 14px">Hairlines, card outlines, dividers</div>
+        <div style="padding:9px 14px;font-size:11px;color:var(--tx3)">decorative</div>
+      </div>
+      <div style="display:grid;min-width:800px;grid-template-columns:210px 110px 110px minmax(0,1fr) 150px;align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;padding:9px 14px">BorderStrong</div>
+        <div style="padding:9px 14px;display:flex;align-items:center;gap:7px"><span style="width:22px;height:18px;border-radius:5px;background:#C9CED6;border:1px solid rgba(0,0,0,.12);flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">C9CED6</span></div>
+        <div style="padding:9px 14px;display:flex;align-items:center;gap:7px"><span style="width:22px;height:18px;border-radius:5px;background:#3D4754;border:1px solid rgba(255,255,255,.18);flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">3D4754</span></div>
+        <div style="font-size:13px;color:var(--tx2);padding:9px 14px">Outline-variant controls, unchecked boxes</div>
+        <div style="padding:9px 14px;font-size:11px;color:var(--tx3)">interactive edge</div>
+      </div>
+      <div style="display:grid;min-width:800px;grid-template-columns:210px 110px 110px minmax(0,1fr) 150px;align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;padding:9px 14px">TextPrimary</div>
+        <div style="padding:9px 14px;display:flex;align-items:center;gap:7px"><span style="width:22px;height:18px;border-radius:5px;background:#171B21;border:1px solid rgba(0,0,0,.12);flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">171B21</span></div>
+        <div style="padding:9px 14px;display:flex;align-items:center;gap:7px"><span style="width:22px;height:18px;border-radius:5px;background:#F2F4F7;border:1px solid rgba(255,255,255,.18);flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">F2F4F7</span></div>
+        <div style="font-size:13px;color:var(--tx2);padding:9px 14px">Headlines, body, values</div>
+        <div style="padding:9px 14px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600">17.3 / 16.2</span> <span style="font-size:9.5px;font-weight:800;padding:1px 5px;border-radius:5px;background:var(--sucs);color:var(--onsucs);margin-left:4px">AAA</span></div>
+      </div>
+      <div style="display:grid;min-width:800px;grid-template-columns:210px 110px 110px minmax(0,1fr) 150px;align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;padding:9px 14px">TextSecondary</div>
+        <div style="padding:9px 14px;display:flex;align-items:center;gap:7px"><span style="width:22px;height:18px;border-radius:5px;background:#4B5563;border:1px solid rgba(0,0,0,.12);flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">4B5563</span></div>
+        <div style="padding:9px 14px;display:flex;align-items:center;gap:7px"><span style="width:22px;height:18px;border-radius:5px;background:#AEB7C2;border:1px solid rgba(255,255,255,.18);flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">AEB7C2</span></div>
+        <div style="font-size:13px;color:var(--tx2);padding:9px 14px">Supporting copy, list subtitles</div>
+        <div style="padding:9px 14px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600">7.6 / 8.8</span> <span style="font-size:9.5px;font-weight:800;padding:1px 5px;border-radius:5px;background:var(--sucs);color:var(--onsucs);margin-left:4px">AAA</span></div>
+      </div>
+      <div style="display:grid;min-width:800px;grid-template-columns:210px 110px 110px minmax(0,1fr) 150px;align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;padding:9px 14px">TextMuted</div>
+        <div style="padding:9px 14px;display:flex;align-items:center;gap:7px"><span style="width:22px;height:18px;border-radius:5px;background:#5F6B7A;border:1px solid rgba(0,0,0,.12);flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">5F6B7A</span></div>
+        <div style="padding:9px 14px;display:flex;align-items:center;gap:7px"><span style="width:22px;height:18px;border-radius:5px;background:#8B95A3;border:1px solid rgba(255,255,255,.18);flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">8B95A3</span></div>
+        <div style="font-size:13px;color:var(--tx2);padding:9px 14px">Captions, placeholders, timestamps</div>
+        <div style="padding:9px 14px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600">5.4 / 5.9</span> <span style="font-size:9.5px;font-weight:800;padding:1px 5px;border-radius:5px;background:var(--sucs);color:var(--onsucs);margin-left:4px">AA</span></div>
+      </div>
+      <div style="display:grid;min-width:800px;grid-template-columns:210px 110px 110px minmax(0,1fr) 150px;align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;padding:9px 14px">TextInverse</div>
+        <div style="padding:9px 14px;display:flex;align-items:center;gap:7px"><span style="width:22px;height:18px;border-radius:5px;background:#FFFFFF;border:1px solid rgba(0,0,0,.12);flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">FFFFFF</span></div>
+        <div style="padding:9px 14px;display:flex;align-items:center;gap:7px"><span style="width:22px;height:18px;border-radius:5px;background:#171B21;border:1px solid rgba(255,255,255,.18);flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">171B21</span></div>
+        <div style="font-size:13px;color:var(--tx2);padding:9px 14px">Text on inverted surfaces (tooltips, toasts)</div>
+        <div style="padding:9px 14px;font-size:11px;color:var(--tx3)">pairs w/ inverse sf</div>
+      </div>
+      <div style="display:grid;min-width:800px;grid-template-columns:210px 110px 110px minmax(0,1fr) 150px;align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;padding:9px 14px">Focus</div>
+        <div style="padding:9px 14px;display:flex;align-items:center;gap:7px"><span style="width:22px;height:18px;border-radius:5px;background:#0050A0;border:1px solid rgba(0,0,0,.12);flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">0050A0</span></div>
+        <div style="padding:9px 14px;display:flex;align-items:center;gap:7px"><span style="width:22px;height:18px;border-radius:5px;background:#7CB5EE;border:1px solid rgba(255,255,255,.18);flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">7CB5EE</span></div>
+        <div style="font-size:13px;color:var(--tx2);padding:9px 14px">2dp focus ring, offset 2dp (keyboard / switch access)</div>
+        <div style="padding:9px 14px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600">≥ 3.0 vs adj.</span> <span style="font-size:9.5px;font-weight:800;padding:1px 5px;border-radius:5px;background:var(--sucs);color:var(--onsucs);margin-left:4px">AA</span></div>
+      </div>
+      <div style="display:grid;min-width:800px;grid-template-columns:210px 110px 110px minmax(0,1fr) 150px;align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;padding:9px 14px">Scrim</div>
+        <div style="padding:9px 14px;display:flex;align-items:center;gap:7px"><span style="width:22px;height:18px;border-radius:5px;background:rgba(11,14,18,.4);border:1px solid rgba(0,0,0,.12);flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">0B0E12·40%</span></div>
+        <div style="padding:9px 14px;display:flex;align-items:center;gap:7px"><span style="width:22px;height:18px;border-radius:5px;background:rgba(0,0,0,.56);border:1px solid rgba(255,255,255,.18);flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">000000·56%</span></div>
+        <div style="font-size:13px;color:var(--tx2);padding:9px 14px">Behind sheets / dialogs — solid alpha rect, no blur required</div>
+        <div style="padding:9px 14px;font-size:11px;color:var(--tx3)">—</div>
+      </div>
+    </div>
+
+    <div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3);margin:30px 0 10px">Interactive variants — 5 sub-tokens each</div>
+    <p style="margin:0 0 12px;font-size:13.5px;line-height:1.6;color:var(--tx2);max-width:740px">Each variant resolves <span style="font-family:'JetBrains Mono',monospace;font-size:12px">Base · OnBase · Pressed · Subtle · OnSubtle</span>. <strong style="color:var(--tx1)">Pressed is a real token, not an overlay</strong> — the engine swaps the fill color (1 rrect draw, no extra layer). Outline / Ghost / Link are <em>derived</em>: transparent fill + Text/Border tokens, pressed = SurfaceSubtle.</p>
+    <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow-x:auto">
+      <div style="display:grid;min-width:800px;grid-template-columns:130px repeat(5,minmax(0,1fr));background:var(--sf2)">
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:9px 14px">Variant</div>
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:9px 10px">Base L / D</div>
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:9px 10px">OnBase · ratio</div>
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:9px 10px">Pressed L / D</div>
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:9px 10px">Subtle L / D</div>
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:9px 10px">OnSubtle · ratio</div>
+      </div>
+      <div style="display:grid;min-width:800px;grid-template-columns:130px repeat(5,minmax(0,1fr));align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;padding:10px 14px">Primary</div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#0050A0;flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#5CA2E8;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">0050A0 · 5CA2E8</span></div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#FFFFFF;border:1px solid rgba(0,0,0,.12);flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#06263F;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">7.9 / 5.7</span></div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#00427F;flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#7CB5EE;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">00427F · 7CB5EE</span></div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#E8F1FA;flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#0F2740;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">E8F1FA · 0F2740</span></div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#003E7E;flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#A8CDF2;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">9.2 / 9.2</span></div>
+      </div>
+      <div style="display:grid;min-width:800px;grid-template-columns:130px repeat(5,minmax(0,1fr));align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;padding:10px 14px">Secondary</div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#E9EDF2;flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#242C36;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">E9EDF2 · 242C36</span></div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#3A4350;flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#D7DDE5;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">8.5 / 10.3</span></div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#DCE2EA;flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#2E3844;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">DCE2EA · 2E3844</span></div>
+        <div style="padding:10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">= Base (already subtle)</div>
+        <div style="padding:10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">= OnBase</div>
+      </div>
+      <div style="display:grid;min-width:800px;grid-template-columns:130px repeat(5,minmax(0,1fr));align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;padding:10px 14px">Destructive</div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#B42318;flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#E5645C;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">B42318 · E5645C</span></div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#FFFFFF;border:1px solid rgba(0,0,0,.12);flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#3B0704;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">6.6 / 5.2</span></div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#8F1D1D;flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#F28B85;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">8F1D1D · F28B85</span></div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#FCEBEA;flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#3A1210;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">FCEBEA · 3A1210</span></div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#8F1D1D;flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#F4A9A4;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">7.7 / 8.7</span></div>
+      </div>
+      <div style="display:grid;min-width:800px;grid-template-columns:130px repeat(5,minmax(0,1fr));align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;padding:10px 14px">Success</div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#3B7A22;flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#85C05E;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">3B7A22 · 85C05E</span></div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#FFFFFF;border:1px solid rgba(0,0,0,.12);flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#12290A;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">5.3 / 7.2</span></div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#2C5E17;flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#9ACD74;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">2C5E17 · 9ACD74</span></div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#EDF6E6;flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#16290C;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">EDF6E6 · 16290C</span></div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#2C5E17;flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#B5DB97;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">7.0 / 10.0</span></div>
+      </div>
+      <div style="display:grid;min-width:800px;grid-template-columns:130px repeat(5,minmax(0,1fr));align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;padding:10px 14px">Warning</div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#8A5A00;flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#E8B04B;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">8A5A00 · E8B04B</span></div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#FFFFFF;border:1px solid rgba(0,0,0,.12);flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#2E1B02;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">5.9 / 8.4</span></div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#6E4700;flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#F0C06B;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">6E4700 · F0C06B</span></div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#FBF3DF;flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#2E2008;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">FBF3DF · 2E2008</span></div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#7A5200;flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#EECF8F;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">6.3 / 10.5</span></div>
+      </div>
+      <div style="display:grid;min-width:800px;grid-template-columns:130px repeat(5,minmax(0,1fr));align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;padding:10px 14px">Info</div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#0C6C86;flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#4CC3DE;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">0C6C86 · 4CC3DE</span></div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#FFFFFF;border:1px solid rgba(0,0,0,.12);flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#062B33;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">6.0 / 7.3</span></div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#0A5468;flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#6ED0E6;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">0A5468 · 6ED0E6</span></div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#E4F3F8;flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#0A2A32;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">E4F3F8 · 0A2A32</span></div>
+        <div style="padding:10px;display:flex;gap:5px;align-items:center"><span style="width:20px;height:17px;border-radius:5px;background:#0A5468;flex:none"></span><span style="width:20px;height:17px;border-radius:5px;background:#9FDCEB;flex:none"></span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">7.5 / 10.0</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:130px minmax(0,1fr);align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;padding:10px 14px">Link</div>
+        <div style="padding:10px 14px;font-size:12.5px;color:var(--tx2)"><span style="display:inline-block;width:20px;height:17px;border-radius:5px;background:#0050A0;vertical-align:-3px"></span> <span style="display:inline-block;width:20px;height:17px;border-radius:5px;background:#7CB5EE;vertical-align:-3px"></span> <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">0050A0 · 7CB5EE</span> — text-only variant on Background: 7.3 / 8.9. Pressed = Primary.Pressed text; no underline at rest, underline while pressed (drawn as 1dp rect under the run).</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Rules</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Components consume tokens only; raw hex in widget code fails review.</li>
+          <li>Base colors are <strong style="color:var(--tx1)">fills for OnBase text</strong> — never use Base as text on Surface (except Link, audited above).</li>
+          <li>Subtle pairs are for tinted containers: banners, badges, chips, icon-button tonal.</li>
+          <li>Disabled is not a color pair: it is a 38% opacity group on the resolved style (§05 · one saveLayer, uniform across variants).</li>
+        </ul>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Engine mapping</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Colors stored sRGB, blended in linear premultiplied (engine color model).</li>
+          <li>Pressed = fill swap on the same rrect — no state-layer compositing cost.</li>
+          <li>Scrim = full-screen alpha rect; blur behind sheets is optional garnish (D4 budget), never required for legibility.</li>
+          <li>Focus ring = second rrect border (outer radius = control radius + 4dp), not a shadow.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="f-type" data-screen-label="02 Typography" style="margin-bottom:64px">
+    <div style="display:flex;align-items:baseline;gap:12px;border-bottom:2px solid var(--tx1);padding-bottom:10px;margin-bottom:20px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--tx3)">02</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.03em;padding:2px 8px;border-radius:6px;background:var(--sucs);color:var(--onsucs);align-self:center">L1 · Shared token</span>
+      <h2 style="margin:0;font-size:27px;font-weight:800;letter-spacing:-.02em">Typography</h2>
+      <span style="font-size:12.5px;color:var(--tx3);font-weight:500">Hanken Grotesk, bundled · shaped by HarfBuzz, rasterized by FreeType</span>
+    </div>
+    <p style="margin:0 0 18px;max-width:740px;font-size:14.5px;line-height:1.6;color:var(--tx2)">
+      One bundled family: <strong style="color:var(--tx1)">Hanken Grotesk</strong> (OFL — embeddable in the SDK; tall x-height for small mobile sizes; weights 400–800; <span style="font-family:'JetBrains Mono',monospace;font-size:12.5px">tnum</span> for data).
+      Bundling one family (D6: FreeType everywhere) means identical pixels on iOS and Android — a golden-harness requirement. System fonts remain available for user content via font discovery, but components default to the bundled family.
+      Glyphs are atlas-rasterized at discrete sizes; the scale below is the whitelist that keeps atlas pressure bounded.
+    </p>
+    <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow-x:auto">
+      <div style="display:grid;min-width:880px;grid-template-columns:150px minmax(260px,1fr) 220px 130px 110px;background:var(--sf2)">
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:9px 14px">Role</div>
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:9px 14px">Sample (live — scales with Dynamic Type control)</div>
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:9px 14px">Size / Line / Weight / Track</div>
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:9px 14px">@130% (clamped)</div>
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:9px 14px">Use</div>
+      </div>
+      <div style="display:grid;min-width:880px;grid-template-columns:150px minmax(260px,1fr) 220px 130px 110px;align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:12px 14px">Display</div>
+        <div style="padding:12px 14px;font-size:calc(34px*var(--fs,1));line-height:1.18;font-weight:800;letter-spacing:-.02em;white-space:nowrap;overflow:hidden">R$ 12.480,00</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx2);padding:12px 14px">34 / 40 · 800 · −0.4</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);padding:12px 14px">39 (×1.15 cap)</div>
+        <div style="font-size:11.5px;color:var(--tx2);padding:12px 14px">Hero numbers</div>
+      </div>
+      <div style="display:grid;min-width:880px;grid-template-columns:150px minmax(260px,1fr) 220px 130px 110px;align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:12px 14px">Heading</div>
+        <div style="padding:12px 14px;font-size:calc(28px*var(--fs,1));line-height:1.2;font-weight:700;letter-spacing:-.015em;white-space:nowrap;overflow:hidden">Portfolio overview</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx2);padding:12px 14px">28 / 34 · 700 · −0.3</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);padding:12px 14px">32 (×1.15 cap)</div>
+        <div style="font-size:11.5px;color:var(--tx2);padding:12px 14px">Screen titles</div>
+      </div>
+      <div style="display:grid;min-width:880px;grid-template-columns:150px minmax(260px,1fr) 220px 130px 110px;align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:12px 14px">Title</div>
+        <div style="padding:12px 14px;font-size:calc(20px*var(--fs,1));line-height:1.3;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden">Recent transactions</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx2);padding:12px 14px">20 / 26 · 600 · −0.2</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);padding:12px 14px">25 (×1.25 cap)</div>
+        <div style="font-size:11.5px;color:var(--tx2);padding:12px 14px">Card &amp; section titles</div>
+      </div>
+      <div style="display:grid;min-width:880px;grid-template-columns:150px minmax(260px,1fr) 220px 130px 110px;align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:12px 14px">Body / L</div>
+        <div style="padding:12px 14px;font-size:calc(17px*var(--fs,1));line-height:1.45;font-weight:400">The quick brown fox jumps over the lazy dog.</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx2);padding:12px 14px">17 / 24 · 400 · 0</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);padding:12px 14px">22 (×1.3 full)</div>
+        <div style="font-size:11.5px;color:var(--tx2);padding:12px 14px">Default reading</div>
+      </div>
+      <div style="display:grid;min-width:880px;grid-template-columns:150px minmax(260px,1fr) 220px 130px 110px;align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:12px 14px">Body / M</div>
+        <div style="padding:12px 14px;font-size:calc(15px*var(--fs,1));line-height:1.4;font-weight:400">Supporting copy and list subtitles use Body/M.</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx2);padding:12px 14px">15 / 20 · 400 · 0</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);padding:12px 14px">19.5 (×1.3 full)</div>
+        <div style="font-size:11.5px;color:var(--tx2);padding:12px 14px">Dense UI copy</div>
+      </div>
+      <div style="display:grid;min-width:880px;grid-template-columns:150px minmax(260px,1fr) 220px 130px 110px;align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:12px 14px">Label</div>
+        <div style="padding:12px 14px;font-size:calc(13px*var(--fs,1));font-weight:600;letter-spacing:.01em">CONTINUE · Save changes · Tab label</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx2);padding:12px 14px">13 / 16 · 600 · +0.1</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);padding:12px 14px">16.9 (×1.3 full)</div>
+        <div style="font-size:11.5px;color:var(--tx2);padding:12px 14px">Controls, nav, chips</div>
+      </div>
+      <div style="display:grid;min-width:880px;grid-template-columns:150px minmax(260px,1fr) 220px 130px 110px;align-items:center;border-top:1px solid var(--bd)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:12px 14px">Caption</div>
+        <div style="padding:12px 14px;font-size:calc(12px*var(--fs,1));font-weight:500;letter-spacing:.02em;color:var(--tx3)">Updated 2 min ago · 3 of 12 · helper text</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx2);padding:12px 14px">12 / 16 · 500 · +0.2</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);padding:12px 14px">15.6 (×1.3 full)</div>
+        <div style="font-size:11.5px;color:var(--tx2);padding:12px 14px">Meta, timestamps</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Dynamic Type policy</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Reading roles (Body, Label, Caption) scale <strong style="color:var(--tx1)">fully</strong> with the OS factor, up to ×1.3 tested tier.</li>
+          <li>Display/Heading clamp at ×1.15, Title at ×1.25 — layout titles must not explode.</li>
+          <li>Containers grow with text: control heights are <em>minimums</em>, padding is fixed, text wraps before it truncates (per-component rules state exceptions).</li>
+          <li>Scaled sizes snap to the atlas whitelist (nearest 0.5px step) to bound glyph memory.</li>
+        </ul>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Engine notes</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Runs shaped once, cached by (text, style, width) — reshape only on change.</li>
+          <li>Alpha-mask glyphs at discrete sizes (8–40dp whitelist); no subpixel AA in v1.</li>
+          <li>Color emoji via COLR strikes → color atlas page.</li>
+          <li>Ellipsis is a shaping-time truncation (…), not a shader trick; max-lines supported on all text.</li>
+          <li>Data/code contexts use <span style="font-family:'JetBrains Mono',monospace;font-size:12px">tnum</span> feature — no separate mono family bundled in v1.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="f-space" data-screen-label="03 Spacing" style="margin-bottom:64px">
+    <div style="display:flex;align-items:baseline;gap:12px;border-bottom:2px solid var(--tx1);padding-bottom:10px;margin-bottom:20px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--tx3)">03</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.03em;padding:2px 8px;border-radius:6px;background:var(--sucs);color:var(--onsucs);align-self:center">L1 · Shared token</span>
+      <h2 style="margin:0;font-size:27px;font-weight:800;letter-spacing:-.02em">Spacing</h2>
+      <span style="font-size:12.5px;color:var(--tx3);font-weight:500">4dp base · gap-owned, margin-free layout</span>
+    </div>
+    <p style="margin:0 0 18px;max-width:740px;font-size:14.5px;line-height:1.6;color:var(--tx2)">
+      Photon has <strong style="color:var(--tx1)">no margin property</strong>. Spacing is owned by parents — <span style="font-family:'JetBrains Mono',monospace;font-size:12.5px">Gap</span> between children, <span style="font-family:'JetBrains Mono',monospace;font-size:12.5px">Padding</span> inside containers. This keeps the layout pass simple (no margin collapsing) and specs unambiguous.
+    </p>
+    <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:20px 22px">
+      <div style="display:flex;flex-direction:column;gap:9px">
+        <div style="display:flex;align-items:center;gap:14px"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;width:82px;color:var(--tx2)">Space.S1</span><span style="width:4px;height:16px;border-radius:2px;background:var(--pri)"></span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">4</span><span style="font-size:12px;color:var(--tx3)">icon↔text micro-gap, badge padding</span></div>
+        <div style="display:flex;align-items:center;gap:14px"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;width:82px;color:var(--tx2)">Space.S2</span><span style="width:8px;height:16px;border-radius:2px;background:var(--pri)"></span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">8</span><span style="font-size:12px;color:var(--tx3)">gap inside controls, chip gaps</span></div>
+        <div style="display:flex;align-items:center;gap:14px"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;width:82px;color:var(--tx2)">Space.S3</span><span style="width:12px;height:16px;border-radius:2px;background:var(--pri)"></span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">12</span><span style="font-size:12px;color:var(--tx3)">compact control padding, list gaps</span></div>
+        <div style="display:flex;align-items:center;gap:14px"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;width:82px;color:var(--tx2)">Space.S4</span><span style="width:16px;height:16px;border-radius:2px;background:var(--pri)"></span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">16</span><span style="font-size:12px;color:var(--tx3)"><strong style="color:var(--tx2)">screen gutter</strong>, card padding, list inset</span></div>
+        <div style="display:flex;align-items:center;gap:14px"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;width:82px;color:var(--tx2)">Space.S5</span><span style="width:20px;height:16px;border-radius:2px;background:var(--pri)"></span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">20</span><span style="font-size:12px;color:var(--tx3)">roomy card padding, sheet gutter</span></div>
+        <div style="display:flex;align-items:center;gap:14px"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;width:82px;color:var(--tx2)">Space.S6</span><span style="width:24px;height:16px;border-radius:2px;background:var(--pri)"></span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">24</span><span style="font-size:12px;color:var(--tx3)">between content groups</span></div>
+        <div style="display:flex;align-items:center;gap:14px"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;width:82px;color:var(--tx2)">Space.S8</span><span style="width:32px;height:16px;border-radius:2px;background:var(--pri)"></span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">32</span><span style="font-size:12px;color:var(--tx3)">section breaks</span></div>
+        <div style="display:flex;align-items:center;gap:14px"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;width:82px;color:var(--tx2)">Space.S10</span><span style="width:40px;height:16px;border-radius:2px;background:var(--pri)"></span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">40</span><span style="font-size:12px;color:var(--tx3)">hero padding</span></div>
+        <div style="display:flex;align-items:center;gap:14px"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;width:82px;color:var(--tx2)">Space.S12</span><span style="width:48px;height:16px;border-radius:2px;background:var(--pri)"></span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">48</span><span style="font-size:12px;color:var(--tx3)">empty-state breathing room</span></div>
+        <div style="display:flex;align-items:center;gap:14px"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;width:82px;color:var(--tx2)">Space.S16</span><span style="width:64px;height:16px;border-radius:2px;background:var(--pri)"></span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3)">64</span><span style="font-size:12px;color:var(--tx3)">large vertical rhythm</span></div>
+      </div>
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--bd);font-size:12.5px;color:var(--tx3)">Off-scale values require a token PR — components may not hardcode dp. Odd optical corrections (e.g. icon nudge 1–2dp) are allowed only inside a component's own spec, documented per part.</div>
+    </div>
+  </section>
+
+  <section id="f-radius" data-screen-label="04 Radius" style="margin-bottom:64px">
+    <div style="display:flex;align-items:baseline;gap:12px;border-bottom:2px solid var(--tx1);padding-bottom:10px;margin-bottom:20px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--tx3)">04</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.03em;padding:2px 8px;border-radius:6px;background:var(--sucs);color:var(--onsucs);align-self:center">L1 · Shared token</span>
+      <h2 style="margin:0;font-size:27px;font-weight:800;letter-spacing:-.02em">Radius</h2>
+      <span style="font-size:12.5px;color:var(--tx3);font-weight:500">per-corner capable — tokens set all four unless stated</span>
+    </div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:10px;width:128px">
+        <div style="width:72px;height:56px;background:var(--pris);border:1.5px solid var(--pri);border-radius:4px"></div>
+        <div style="text-align:center"><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600">Radius.Xs · 4</div><div style="font-size:11px;color:var(--tx3)">badges, checkbox</div></div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:10px;width:128px">
+        <div style="width:72px;height:56px;background:var(--pris);border:1.5px solid var(--pri);border-radius:6px"></div>
+        <div style="text-align:center"><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600">Radius.Sm · 6</div><div style="font-size:11px;color:var(--tx3)">chips, small ctrl</div></div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:10px;width:128px">
+        <div style="width:72px;height:56px;background:var(--pris);border:1.5px solid var(--pri);border-radius:10px"></div>
+        <div style="text-align:center"><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600">Radius.Md · 10</div><div style="font-size:11px;color:var(--tx3)">buttons, inputs</div></div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:10px;width:128px">
+        <div style="width:72px;height:56px;background:var(--pris);border:1.5px solid var(--pri);border-radius:14px"></div>
+        <div style="text-align:center"><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600">Radius.Lg · 14</div><div style="font-size:11px;color:var(--tx3)">cards, banners</div></div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:10px;width:128px">
+        <div style="width:72px;height:56px;background:var(--pris);border:1.5px solid var(--pri);border-radius:20px"></div>
+        <div style="text-align:center"><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600">Radius.Xl · 20</div><div style="font-size:11px;color:var(--tx3)">sheets, dialogs</div></div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:10px;width:128px">
+        <div style="width:72px;height:56px;background:var(--pris);border:1.5px solid var(--pri);border-radius:999px"></div>
+        <div style="text-align:center"><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600">Radius.Full</div><div style="font-size:11px;color:var(--tx3)">pills, avatars, FAB</div></div>
+      </div>
+    </div>
+    <div style="margin-top:14px;font-size:12.5px;color:var(--tx3);max-width:740px;line-height:1.6">Per-corner use is normative for: BottomSheet (top corners Xl, bottom 0), grouped List (first/last item), attached popovers. Radii clamp to min(w,h)/2 in the engine (CSS-rule normalization) — Full is safe everywhere.</div>
+  </section>
+
+  <section id="f-elev" data-screen-label="05 Elevation" style="margin-bottom:64px">
+    <div style="display:flex;align-items:baseline;gap:12px;border-bottom:2px solid var(--tx1);padding-bottom:10px;margin-bottom:20px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--tx3)">05</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.03em;padding:2px 8px;border-radius:6px;background:var(--sucs);color:var(--onsucs);align-self:center">L1 · Shared · web delta</span>
+      <h2 style="margin:0;font-size:27px;font-weight:800;letter-spacing:-.02em">Elevation</h2>
+      <span style="font-size:12.5px;color:var(--tx3);font-weight:500">one analytic rrect shadow per level — closed-form Gaussian, no blur pass</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px">
+      <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+        <div style="width:100%;height:84px;background:var(--sf);border:1px solid var(--bd);border-radius:14px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--tx3)">E0</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);text-align:center;line-height:1.5">none + border<br>flat lists, inputs</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+        <div style="width:100%;height:84px;background:var(--sf);border-radius:14px;box-shadow:var(--e1);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--tx3)">E1</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);text-align:center;line-height:1.5">0 · 1 · 3 · 0 / 10%<br>cards at rest</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+        <div style="width:100%;height:84px;background:var(--sf);border-radius:14px;box-shadow:var(--e2);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--tx3)">E2</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);text-align:center;line-height:1.5">0 · 2 · 8 · 0 / 12%<br>raised bars, chips drag</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+        <div style="width:100%;height:84px;background:var(--sf);border-radius:14px;box-shadow:var(--e3);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--tx3)">E3</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);text-align:center;line-height:1.5">0 · 6 · 16 · −2 / 16%<br>FAB, toasts, popover</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+        <div style="width:100%;height:84px;background:var(--sf);border-radius:14px;box-shadow:var(--e4);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--tx3)">E4</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);text-align:center;line-height:1.5">0 · 12 · 28 · −4 / 20%<br>bottom sheets, drawers</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+        <div style="width:100%;height:84px;background:var(--sf);border-radius:14px;box-shadow:var(--e5);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--tx3)">E5</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);text-align:center;line-height:1.5">0 · 20 · 44 · −6 / 26%<br>dialogs</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Spec format</div>
+        <div style="font-size:13px;line-height:1.8;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:12px">ShadowSpec(OffsetY, Blur, Spread, Color)</span> — shadow color is <span style="font-family:'JetBrains Mono',monospace;font-size:12px">#0F1720</span> in light and pure black in dark, at <strong style="color:var(--tx1)">explicit alpha pairs per level</strong> — 0.10/0.45 · 0.12/0.48 · 0.16/0.52 · 0.20/0.56 · 0.26/0.62. Dark is not a flat offset from light; never derive it. Exactly one shadow per node — stacked shadow tricks are a spec violation.</div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Dark-mode rule</div>
+        <div style="font-size:13px;line-height:1.8;color:var(--tx2)">Shadows alone don't separate dark surfaces. Levels E1–E2 additionally require a 1dp <span style="font-family:'JetBrains Mono',monospace;font-size:12px">Border</span> in dark mode (the doc cards you're reading do this). E3+ keep shadow only — their offset reads clearly.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="f-motion" data-screen-label="06 Motion" style="margin-bottom:64px">
+    <div style="display:flex;align-items:baseline;gap:12px;border-bottom:2px solid var(--tx1);padding-bottom:10px;margin-bottom:20px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--tx3)">06</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.03em;padding:2px 8px;border-radius:6px;background:var(--sucs);color:var(--onsucs);align-self:center">L1 · Shared token</span>
+      <h2 style="margin:0;font-size:27px;font-weight:800;letter-spacing:-.02em">Motion</h2>
+      <span style="font-size:12.5px;color:var(--tx3);font-weight:500">animate transform &amp; opacity only — both are free on the GPU</span>
+      <span style="flex:1"></span>
+      <button onClick="{{ replayMotion }}" style="display:flex;align-items:center;gap:6px;border:1px solid var(--bd);cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:8px;background:var(--sf2);color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">replay</span> Replay</button>
+    </div>
+    <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+        <div style="width:190px;min-width:0;flex:0 1 auto"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600">Standard</div><div style="font-size:11px;color:var(--tx3)">cubic(0.2, 0, 0, 1) · Base 200ms</div></div>
+        <div style="flex:1 1 260px;min-width:260px;height:32px;border-radius:8px;background:var(--sf2);position:relative;overflow:hidden">{{ dotStandard }}</div>
+        <div style="width:210px;min-width:0;flex:1 1 210px;font-size:11.5px;color:var(--tx2)">On-screen moves: tab indicator, segmented thumb, reorder</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+        <div style="width:190px;min-width:0;flex:0 1 auto"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600">Decelerate</div><div style="font-size:11px;color:var(--tx3)">cubic(0, 0, 0, 1) · Slow 300ms</div></div>
+        <div style="flex:1 1 260px;min-width:260px;height:32px;border-radius:8px;background:var(--sf2);position:relative;overflow:hidden">{{ dotDecel }}</div>
+        <div style="width:210px;min-width:0;flex:1 1 210px;font-size:11.5px;color:var(--tx2)">Entrances: sheets up, toasts in, page push</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+        <div style="width:190px;min-width:0;flex:0 1 auto"><div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600">Release glide · interim</div><div style="font-size:11px;color:var(--tx3)">smoothstep · Base 200ms — sanctioned (§06)</div></div>
+        <div style="flex:1 1 260px;min-width:260px;height:32px;border-radius:8px;background:var(--sf2);position:relative;overflow:hidden">{{ dotGlide }}</div>
+        <div style="width:210px;min-width:0;flex:1 1 210px;font-size:11.5px;color:var(--tx2)">Gesture releases (sheet snap, swipe settle, drawer, pull-to-refresh) pick their target by position + velocity, then <strong style="color:var(--tx1)">glide there over 200ms smoothstep</strong> — the shipped behavior. The velocity-taking spring stays the target (REQUEST).</div>
+      </div>
+      <div style="border-top:1px solid var(--bd);padding-top:14px;display:flex;gap:26px;flex-wrap:wrap;font-size:12.5px;color:var(--tx2)">
+        <span><strong style="color:var(--tx1)">Fast 100ms</strong> — pressed feedback, hover-like states</span>
+        <span><strong style="color:var(--tx1)">Base 200ms</strong> — most state changes</span>
+        <span><strong style="color:var(--tx1)">Slow 300ms</strong> — surface enter/exit</span>
+        <span><strong style="color:var(--tx1)">Exit = ⅔ of enter</strong>, accelerate cubic(0.3, 0, 1, 1)</span>
+        <span><strong style="color:var(--tx1)">Release glide</strong> — Base 200ms · smoothstep · gesture releases only</span>
+        <span><strong style="color:var(--tx1)">Reduce Motion</strong> → crossfade 120ms replaces all movement</span>
+      </div>
+    </div>
+    <div style="margin-top:12px;font-size:12.5px;color:var(--tx3);max-width:760px;line-height:1.6"><strong style="color:var(--tx1)">The Release glide is the sanctioned interim; the spring is still a request.</strong> Gesture releases (drag glide-back, dismiss, detent snap) glide to the target picked at release over <strong style="color:var(--tx1)">200ms = Motion.BaseMs</strong> with smoothstep interpolation — the engine’s shipped release behavior. It lives in the gesture system, deliberately not as a Curve constant: <span style="font-family:'JetBrains Mono',monospace;font-size:12px">Curve</span> is exactly (X1,Y1,X2,Y2) with three beziers — <span style="font-family:'JetBrains Mono',monospace;font-size:12px">SpringSpec</span>, <span style="font-family:'JetBrains Mono',monospace;font-size:12px">Curve.Spring(…)</span> and <span style="font-family:'JetBrains Mono',monospace;font-size:12px">Motion.Settle</span> do not exist; the velocity-taking spring remains the TARGET and would have to be added to the SDK first. Layout-affecting properties (size, padding) animate only where a component spec explicitly allows it; the default is instant re-layout + animated transform/opacity garnish.</div>
+  </section>
+
+  <section id="f-icon" data-screen-label="07 Iconography" style="margin-bottom:64px">
+    <div style="display:flex;align-items:baseline;gap:12px;border-bottom:2px solid var(--tx1);padding-bottom:10px;margin-bottom:20px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--tx3)">07</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.03em;padding:2px 8px;border-radius:6px;background:var(--wars);color:var(--onwars);align-self:center">L2 · Platform · Photon</span>
+      <h2 style="margin:0;font-size:27px;font-weight:800;letter-spacing:-.02em">Iconography</h2>
+      <span style="font-size:12.5px;color:var(--tx3);font-weight:500">glyphs through the text pipeline — never SVG paths</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:20px 22px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px">Strategy</div>
+        <ul style="margin:0;padding-left:18px;font-size:13.5px;line-height:1.85;color:var(--tx2)">
+          <li><strong style="color:var(--tx1)">Ship an icon font</strong> built from the Lucide set (outline, 2dp stroke, 24 grid) — glyphs ride the existing FreeType → alpha-atlas path. Zero new pipelines.</li>
+          <li>Rasterized per density bucket (@1x @2x @3x) at the four canonical sizes — no runtime scaling of glyph bitmaps beyond the whitelist.</li>
+          <li>Two-tone / filled states (e.g. active tab) = the font's filled variant glyph, <em>not</em> a layered path.</li>
+          <li>Product-specific art (logos, illustrations) = bitmap atlas via <span style="font-family:'JetBrains Mono',monospace;font-size:12px">Image</span> (9-slice capable), pre-rasterized per density at build time by the SDK.</li>
+          <li>This document previews icons with a stand-in ligature font (Material Symbols Rounded); metrics and usage rules are identical.</li>
+        </ul>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:20px 22px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:14px">Canonical sizes</div>
+        <div style="display:flex;align-items:flex-end;gap:26px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><span style="font-family:'Material Symbols Rounded';font-size:16px;line-height:1;color:var(--tx1)">favorite</span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">16<br>inline</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;color:var(--tx1)">favorite</span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">20<br>dense UI</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><span style="font-family:'Material Symbols Rounded';font-size:24px;line-height:1;color:var(--tx1)">favorite</span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">24<br>default</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><span style="font-family:'Material Symbols Rounded';font-size:32px;line-height:1;color:var(--tx1)">favorite</span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--tx3)">32<br>feature</span></div>
+        </div>
+        <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--bd);font-size:12.5px;line-height:1.7;color:var(--tx2)">Icons inherit the current text color token. They do <strong style="color:var(--tx1)">not</strong> scale with Dynamic Type (containers and text do). Decorative icons are hidden from screen readers; informative icons require a label (§ per component).</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="f-touch" data-screen-label="08 Touch and safe area" style="margin-bottom:64px">
+    <div style="display:flex;align-items:baseline;gap:12px;border-bottom:2px solid var(--tx1);padding-bottom:10px;margin-bottom:20px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--tx3)">08</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.03em;padding:2px 8px;border-radius:6px;background:var(--wars);color:var(--onwars);align-self:center">L2 · Platform · Photon</span>
+      <h2 style="margin:0;font-size:27px;font-weight:800;letter-spacing:-.02em">Touch targets &amp; safe areas</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:20px 22px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px">Hit-slop model</div>
+        <div style="display:flex;align-items:center;gap:24px;margin:8px 0 14px">
+          <div style="position:relative;width:120px;height:64px;display:flex;align-items:center;justify-content:center">
+            <div style="position:absolute;inset:0;border-radius:12px;background:rgba(216,49,140,.14);border:1px solid rgba(216,49,140,.5)"></div>
+            <div style="background:var(--pri);color:var(--onpri);font-size:13px;font-weight:600;padding:7px 16px;border-radius:10px;position:relative">Small · 32</div>
+            <div style="position:absolute;right:6px;top:4px;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;color:#D8318C">48×48 hit</div>
+          </div>
+          <div style="flex:1;font-size:13px;line-height:1.7;color:var(--tx2)">Every interactive node exposes a hit rect ≥ <strong style="color:var(--tx1)">44pt iOS / 48dp Android</strong> (engine uses 48dp both — the stricter). Visual bounds may be smaller; the framework auto-expands hit-slop symmetrically and <strong style="color:var(--tx1)">asserts in debug</strong> when overlapping hit rects fight.</div>
+        </div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Adjacent small controls (icon rows): hit rects split the gap midpoint, never overlap.</li>
+          <li>Row-level targets (ListItem) absorb their children unless a child is independently interactive (trailing Switch).</li>
+        </ul>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:20px 22px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px">Safe-area insets</div>
+        <div style="display:flex;gap:20px;align-items:center">
+          <div style="width:120px;height:236px;border-radius:22px;background:var(--sf2);border:2px solid var(--bd2);position:relative;flex:none;overflow:hidden">
+            <div style="position:absolute;top:0;left:0;right:0;height:26px;background:var(--pris)"></div>
+            <div style="position:absolute;top:6px;left:50%;transform:translateX(-50%);width:38px;height:11px;border-radius:6px;background:var(--tx1)"></div>
+            <div style="position:absolute;bottom:0;left:0;right:0;height:20px;background:var(--pris)"></div>
+            <div style="position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:44px;height:4px;border-radius:2px;background:var(--tx1)"></div>
+            <div style="position:absolute;top:26px;bottom:20px;left:0;right:0;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--tx3);text-align:center;line-height:1.6">content<br>area</div>
+          </div>
+          <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+            <li>Insets come from the platform shell each frame (rotation-safe).</li>
+            <li><span style="font-family:'JetBrains Mono',monospace;font-size:12px">SafeArea</span> pads; edge components (AppBar, BottomNav, Sheet) <strong style="color:var(--tx1)">extend their background under the inset</strong> and pad content — no letterboxing.</li>
+            <li>Scroll content: bottom inset added to content padding, so the last row clears the home indicator.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="f-csharp" data-screen-label="09 C# token API" style="margin-bottom:72px">
+    <div style="display:flex;align-items:baseline;gap:12px;border-bottom:2px solid var(--tx1);padding-bottom:10px;margin-bottom:20px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--tx3)">09</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.03em;padding:2px 8px;border-radius:6px;background:var(--pris);color:var(--onpris);align-self:center">Binding · both platforms</span>
+      <h2 style="margin:0;font-size:27px;font-weight:800;letter-spacing:-.02em">C# token API</h2>
+      <span style="font-size:12.5px;color:var(--tx3);font-weight:500">typed structs — allocation-free, AOT-safe, no CSS anywhere</span>
+    </div>
+    <div style="background:#101418;border:1px solid #232B34;border-radius:12px;padding:20px 24px;overflow-x:auto">
+<pre style="margin:0;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.75;color:#C9D4DE"><span style="color:#7FD1A7">// eQuantic.UI.Primitives — Layer 1 token core, shared by native AND web.
+</span><span style="color:#7FD1A7">// Mode-free: the theme never knows the active mode. Web emits light-dark(light, dark);
+</span><span style="color:#7FD1A7">// native resolves at paint via token.Resolve(ThemeMode). Full source: Tokens.cs
+</span><span style="color:#6CB2F0">public readonly record struct </span><span style="color:#F0C674">Color</span>(<span style="color:#6CB2F0">byte</span> R, <span style="color:#6CB2F0">byte</span> G, <span style="color:#6CB2F0">byte</span> B, <span style="color:#6CB2F0">byte</span> A);   <span style="color:#5C6873">// byte alpha; FromRgb/FromRgba/WithOpacity
+</span><span style="color:#6CB2F0">public readonly record struct </span><span style="color:#F0C674">ColorToken</span>(<span style="color:#F0C674">Color</span> Light, <span style="color:#F0C674">Color</span> Dark);   <span style="color:#5C6873">// + one-arg ctor · Resolve(ThemeMode) · WithOpacity
+</span><span style="color:#6CB2F0">public readonly record struct </span><span style="color:#F0C674">VariantColors</span>(<span style="color:#F0C674">ColorToken</span> Base, <span style="color:#F0C674">ColorToken</span> OnBase, <span style="color:#F0C674">ColorToken</span> Pressed, <span style="color:#F0C674">ColorToken</span> Subtle, <span style="color:#F0C674">ColorToken</span> OnSubtle);
+<span style="color:#6CB2F0">public readonly record struct </span><span style="color:#F0C674">TypeStyle</span>(<span style="color:#6CB2F0">float</span> Size, <span style="color:#6CB2F0">float</span> LineHeight, <span style="color:#F0C674">FontWeight</span> Weight, <span style="color:#6CB2F0">float</span> Tracking, <span style="color:#6CB2F0">float</span> MaxScale);
+<span style="color:#6CB2F0">public readonly record struct </span><span style="color:#F0C674">ShadowSpec</span>(<span style="color:#6CB2F0">float</span> OffsetY, <span style="color:#6CB2F0">float</span> Blur, <span style="color:#6CB2F0">float</span> Spread, <span style="color:#F0C674">ColorToken</span> Color);
+<span style="color:#6CB2F0">public readonly record struct </span><span style="color:#F0C674">MotionSpec</span>(<span style="color:#6CB2F0">int</span> DurationMs, <span style="color:#F0C674">Curve</span> Curve);
+<span style="color:#6CB2F0">public readonly record struct </span><span style="color:#F0C674">Curve</span>(<span style="color:#6CB2F0">float</span> X1, <span style="color:#6CB2F0">float</span> Y1, <span style="color:#6CB2F0">float</span> X2, <span style="color:#6CB2F0">float</span> Y2);   <span style="color:#5C6873">// Standard · Decelerate · Accelerate — no springs
+</span><span style="color:#6CB2F0">public readonly record struct </span><span style="color:#F0C674">TransitionSpec</span>(<span style="color:#F0C674">StyleChannels</span> Channels, <span style="color:#6CB2F0">float</span> DurationMs = Motion.BaseMs, <span style="color:#6CB2F0">float</span> DelayMs = <span style="color:#E8A65C">0</span>);
+
+</span><span style="color:#6CB2F0">public enum </span><span style="color:#F0C674">Variant </span><span style="color:#6CB2F0">: byte</span> { Primary=<span style="color:#E8A65C">0</span>, Secondary=<span style="color:#E8A65C">1</span>, Destructive=<span style="color:#E8A65C">2</span>, Outline=<span style="color:#E8A65C">3</span>, Ghost=<span style="color:#E8A65C">4</span>,
+                            Link=<span style="color:#E8A65C">5</span>, Success=<span style="color:#E8A65C">6</span>, Warning=<span style="color:#E8A65C">7</span>, Info=<span style="color:#E8A65C">8</span>, Tertiary=<span style="color:#E8A65C">9</span> }   <span style="color:#5C6873">// Tertiary aliases Info
+</span><span style="color:#6CB2F0">public enum </span><span style="color:#F0C674">SizeVariant</span> { Small, Medium, Large, XLarge }             <span style="color:#5C6873">// not "Size" — collides with SizeValue
+</span><span style="color:#6CB2F0">public enum </span><span style="color:#F0C674">ShapeScale</span>  { None, ExtraSmall, Small, Medium, Large, ExtraLarge, Full }
+<span style="color:#6CB2F0">public enum </span><span style="color:#F0C674">FontWeight</span>  { Regular=<span style="color:#E8A65C">400</span>, Medium=<span style="color:#E8A65C">500</span>, SemiBold=<span style="color:#E8A65C">600</span>, Bold=<span style="color:#E8A65C">700</span>, ExtraBold=<span style="color:#E8A65C">800</span> }
+<span style="color:#6CB2F0">public enum </span><span style="color:#F0C674">StyleChannels</span> : <span style="color:#6CB2F0">byte</span> { None=<span style="color:#E8A65C">0</span>, Colors=<span style="color:#E8A65C">1</span>, Opacity=<span style="color:#E8A65C">2</span>, Transform=<span style="color:#E8A65C">4</span>, Shadow=<span style="color:#E8A65C">8</span>, Filters=<span style="color:#E8A65C">16</span>, Size=<span style="color:#E8A65C">32</span>, All=<span style="color:#E8A65C">63</span> }
+
+<span style="color:#6CB2F0">public static class </span><span style="color:#F0C674">Space</span>  { <span style="color:#6CB2F0">const float</span> S1=<span style="color:#E8A65C">4</span>, S2=<span style="color:#E8A65C">8</span>, S3=<span style="color:#E8A65C">12</span>, S4=<span style="color:#E8A65C">16</span>, S5=<span style="color:#E8A65C">20</span>, S6=<span style="color:#E8A65C">24</span>, S8=<span style="color:#E8A65C">32</span>, S10=<span style="color:#E8A65C">40</span>, S12=<span style="color:#E8A65C">48</span>, S16=<span style="color:#E8A65C">64</span>, Gutter=S4; }
+<span style="color:#6CB2F0">public static class </span><span style="color:#F0C674">Radius</span> { <span style="color:#6CB2F0">const float</span> Xs=<span style="color:#E8A65C">4</span>, Sm=<span style="color:#E8A65C">6</span>, Md=<span style="color:#E8A65C">10</span>, Lg=<span style="color:#E8A65C">14</span>, Xl=<span style="color:#E8A65C">20</span>, Full=<span style="color:#E8A65C">999</span>; }
+<span style="color:#6CB2F0">public static class </span><span style="color:#F0C674">IconSize</span> { <span style="color:#6CB2F0">const float</span> Sm=<span style="color:#E8A65C">16</span>, Dense=<span style="color:#E8A65C">20</span>, Md=<span style="color:#E8A65C">24</span>, Lg=<span style="color:#E8A65C">32</span>; }  <span style="color:#5C6873">// Md is 24 — do not rename
+</span><span style="color:#6CB2F0">public static class </span><span style="color:#F0C674">Touch</span>    { <span style="color:#6CB2F0">const float</span> MinTarget=<span style="color:#E8A65C">48</span>, PressCancelSlop=<span style="color:#E8A65C">12</span>; }
+</span><span style="color:#6CB2F0">public static class </span><span style="color:#F0C674">Sizing</span>   { <span style="color:#6CB2F0">float</span> Height/PaddingX/Gap/LabelSize/Icon/Radius/HitTarget(<span style="color:#F0C674">SizeVariant</span>); }
+<span style="color:#5C6873">//   every control reads Sizing — never inline the ladder. ButtonStyles.Metrics(size) returns the
+//   named tuple (Height, PadX, Gap, LabelSize, IconSize, Radius, Hit) — there is no ControlMetrics.
+</span></span><span style="color:#6CB2F0">public static class </span><span style="color:#F0C674">Motion</span>   { <span style="color:#F0C674">MotionSpec</span> Press, State, Enter, Exit; <span style="color:#F0C674">MotionSpec</span> ExitFor(<span style="color:#6CB2F0">int</span>); }
+<span style="color:#5C6873">//   100/standard · 200/standard · 300/decelerate · 200/accelerate — spec roles, never raw ms.
+//   ExitFor(int) = enterMs * 2 / 3 · ReducedCrossfadeMs = 120 · no Settle, no springs.
+
+</span></span><span style="color:#6CB2F0">public interface </span><span style="color:#F0C674">IAppTheme</span>
+{
+    <span style="color:#F0C674">ColorToken</span> Background { <span style="color:#6CB2F0">get</span>; }  <span style="color:#F0C674">ColorToken</span> Surface { <span style="color:#6CB2F0">get</span>; }  <span style="color:#F0C674">ColorToken</span> SurfaceSubtle { <span style="color:#6CB2F0">get</span>; }
+    <span style="color:#F0C674">ColorToken</span> SurfaceHighlight { <span style="color:#6CB2F0">get</span>; }  <span style="color:#5C6873">// translucent white — the Skeleton shimmer glint
+    </span><span style="color:#F0C674">ColorToken</span> Border { <span style="color:#6CB2F0">get</span>; }  <span style="color:#F0C674">ColorToken</span> BorderStrong { <span style="color:#6CB2F0">get</span>; }
+    <span style="color:#F0C674">ColorToken</span> TextPrimary { <span style="color:#6CB2F0">get</span>; }  <span style="color:#F0C674">ColorToken</span> TextSecondary { <span style="color:#6CB2F0">get</span>; }  <span style="color:#F0C674">ColorToken</span> TextMuted { <span style="color:#6CB2F0">get</span>; }  <span style="color:#F0C674">ColorToken</span> TextInverse { <span style="color:#6CB2F0">get</span>; }
+    <span style="color:#F0C674">ColorToken</span> FocusRing { <span style="color:#6CB2F0">get</span>; }  <span style="color:#F0C674">ColorToken</span> LinkColor { <span style="color:#6CB2F0">get</span>; }  <span style="color:#F0C674">ColorToken</span> Scrim { <span style="color:#6CB2F0">get</span>; }  <span style="color:#6CB2F0">float</span> DisabledOpacity { <span style="color:#6CB2F0">get</span>; }
+    <span style="color:#F0C674">VariantColors</span> Colors(<span style="color:#F0C674">Variant</span> v);                 <span style="color:#5C6873">// Outline/Ghost/Link derive from Text + Border + SurfaceSubtle
+    </span><span style="color:#F0C674">TypeStyle</span> Type(<span style="color:#F0C674">TypeRole</span> role);                    <span style="color:#5C6873">// Display, Heading, Title, BodyL, BodyM, Label, Caption
+    </span><span style="color:#F0C674">ShadowSpec</span> Elevation(<span style="color:#6CB2F0">int</span> level);                  <span style="color:#5C6873">// 0–5, explicit light/dark alpha pairs
+    </span><span style="color:#6CB2F0">float</span> Shape(<span style="color:#F0C674">ShapeScale</span> scale);                    <span style="color:#5C6873">// same ladder as the Radius constants</span>
+}
+
+<span style="color:#7FD1A7">// Usage — styles are structs; the reconciler diffs them by value:
+</span><span style="color:#6CB2F0">new </span><span style="color:#F0C674">Button</span>(<span style="color:#A8C7E8">"Continue"</span>, variant: <span style="color:#F0C674">Variant</span>.Primary, size: <span style="color:#F0C674">SizeVariant</span>.Large, onPressed: Submit)</pre>
+    </div>
+    <div style="margin-top:12px;font-size:12.5px;color:var(--tx3);max-width:760px;line-height:1.6">Theme resolution happens once per build pass; resolved styles are plain structs on the primitive tree — zero allocation in steady state (plan D9). <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">StyleBuilder</span>/CVA class-strings remain web-only (plan D11).</div>
+  </section>
+
+
+  <section id="f-a11y" data-screen-label="10 States pointer semantics" style="margin-bottom:72px">
+    <div style="display:flex;align-items:baseline;gap:12px;border-bottom:2px solid var(--tx1);padding-bottom:10px;margin-bottom:20px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--tx3)">10</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.03em;padding:2px 8px;border-radius:6px;background:var(--pris);color:var(--onpris);align-self:center">L2 · Both realizers</span>
+      <h2 style="margin:0;font-size:27px;font-weight:800;letter-spacing:-.02em">States, pointer &amp; semantics</h2>
+      <span style="font-size:12.5px;color:var(--tx3);font-weight:500">the interaction contract every component spec inherits — added by the v1.1 SDK audit</span>
+    </div>
+    <p style="margin:0 0 18px;max-width:760px;font-size:14.5px;line-height:1.6;color:var(--tx2)">Normative for both realizers. The web realizer implements this section as <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">:hover</span> / <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">:focus-visible</span> atomic rules, ARIA attributes and focus management; Photon implements it through the pointer pipeline, the focus walk and the semantics tree. Each component spec carries a compact <strong style="color:var(--tx1)">Desktop &amp; pointer</strong> note that applies these rules; conflicts resolve in favor of this section.</p>
+
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-bottom:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px">The state system — now nine</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+          <span style="padding:4px 10px;border-radius:999px;background:var(--sf2);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--tx2)">default</span>
+          <span style="padding:4px 10px;border-radius:999px;background:var(--pris);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--onpris)">hover · pointer-only</span>
+          <span style="padding:4px 10px;border-radius:999px;background:var(--sf2);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--tx2)">pressed</span>
+          <span style="padding:4px 10px;border-radius:999px;background:var(--sf2);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--tx2)">focused</span>
+          <span style="padding:4px 10px;border-radius:999px;background:var(--sf2);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--tx2)">disabled 38%</span>
+          <span style="padding:4px 10px;border-radius:999px;background:var(--sf2);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--tx2)">loading</span>
+          <span style="padding:4px 10px;border-radius:999px;background:var(--sf2);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--tx2)">error</span>
+          <span style="padding:4px 10px;border-radius:999px;background:var(--sf2);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--tx2)">selected</span>
+        </div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li><strong style="color:var(--tx1)">Hover never fires on touch.</strong> A tap goes default → pressed with no hover in between; hover exists only for <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">pointer: fine</span> input.</li>
+          <li><strong style="color:var(--tx1)">Hover must clear when the pointer leaves the window</strong> — window-leave counts as pointer-out; no stuck hovers after alt-tab.</li>
+          <li>Hover in/out animates <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Motion.Press</span> (100ms) — the same rung as pressed feedback.</li>
+          <li>Precedence: disabled mutes everything · pressed beats hover · the focus ring coexists with any fill.</li>
+          <li>Hover is garnish, never information — nothing may exist <em>only</em> behind a hover.</li>
+        </ul>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px">Hover is derived — one rule, no sixth token</div>
+        <div style="font-size:13px;line-height:1.7;color:var(--tx2);margin-bottom:12px">The variant five-tuples stay <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Base / OnBase / Pressed / Subtle / OnSubtle</span> — no Hover slot exists. Hover resolves by derivation:</div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.6;color:var(--tx2)">
+          <div style="display:flex;gap:10px;align-items:center"><span style="height:32px;padding:0 14px;border-radius:10px;background:var(--pri);color:var(--onpri);font-size:13px;font-weight:600;display:inline-flex;align-items:center;flex:none;cursor:pointer" style-hover="background:color-mix(in srgb, var(--pri) 50%, var(--prip))">Filled — hover me</span><span><strong style="color:var(--tx1)">Filled variants:</strong> hover fill = midpoint of Base → Pressed. Text stays OnBase.</span></div>
+          <div style="display:flex;gap:10px;align-items:center"><span style="height:32px;padding:0 14px;border-radius:10px;border:1px solid var(--bd2);color:var(--tx1);font-size:13px;font-weight:600;display:inline-flex;align-items:center;flex:none;box-sizing:border-box;cursor:pointer" style-hover="background:var(--sf2)">Quiet — hover me</span><span><strong style="color:var(--tx1)">Quiet variants (Outline · Ghost):</strong> hover fill = SurfaceSubtle — the fill Pressed already uses.</span></div>
+          <div style="display:flex;gap:10px;align-items:center"><span style="height:32px;padding:0 6px;color:var(--lnk);font-size:13px;font-weight:600;display:inline-flex;align-items:center;flex:none;cursor:pointer" style-hover="text-decoration:underline">Link — hover me</span><span><strong style="color:var(--tx1)">Link:</strong> hover = underline, color unchanged; pressed keeps the Pressed token.</span></div>
+        </div>
+        <div style="margin-top:12px;padding:10px 12px;border-radius:8px;background:var(--wars);color:var(--onwars);font-size:12.5px;line-height:1.55"><strong>REQUEST:</strong> no <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Color.Lerp</span> or precomputed <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">VariantColors.Hover</span> exists in the SDK. The derivation rule above is the contract; until the helper lands, web emits <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">color-mix(in srgb, Base 50%, Pressed)</span> and native desktop computes the same midpoint at paint.</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-bottom:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Cursor &amp; right-click</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li><strong style="color:var(--tx1)">Cursor is vocabulary</strong> (<span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">BoxStyle.Cursor</span>, shipped): web emits the CSS declaration; Photon registers a <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">CursorRegion</span> the host answers topmost-first (macOS → NSCursor).</li>
+          <li>Ladder: arrow (default) · <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">pointer</span> — links and web pressables · <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">text</span> — editable/selectable text · <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">grab/grabbing</span> — draggables (sheet grabber, thumbs) · <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">col-resize/row-resize</span> — grips · <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">crosshair</span> — fill handle.</li>
+          <li>Right-click <strong style="color:var(--tx1)">never triggers a press</strong> and is never the only path. Where a component maps it (SwipeableRow actions, text menus), the same actions exist as visible controls.</li>
+        </ul>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Keyboard conventions</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Tab reaches every interactive control; <strong style="color:var(--tx1)">composite widgets are ONE tab stop</strong> with roving arrow focus — RadioGroup arrows <strong style="color:var(--tx1)">exactly like SegmentedControl</strong> (move + select, wrapping); Tabs likewise.</li>
+          <li>Home/End go first/last in composites; min/max on sliders.</li>
+          <li>Activation: Space <em>or</em> Enter on buttons; Space alone on selection controls; Enter commits in fields.</li>
+          <li>Escape ladder: cancel the drag in progress → close the nearest dismissible surface → exit an edit trap.</li>
+          <li><strong style="color:var(--tx1)">Editing surfaces (Esc-to-exit, both targets):</strong> CodeEditor traps Tab for indentation — Esc releases the trap so the next Tab moves focus. Spreadsheet: Esc discards the cell draft; a second Esc leaves the grid.</li>
+          <li>Focus ring on <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">focus-visible</span> only (keyboard/switch), double ring per §01.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3);margin:0 0 10px">Semantics — role + required STATE per component (normative)</div>
+    <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden;margin-bottom:16px">
+      <div style="display:grid;grid-template-columns:190px minmax(0,1.3fr) minmax(0,1fr);background:var(--sf2)">
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 14px">Component</div>
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 12px">Web — role + required states</div>
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:8px 12px">Native — SemanticNode</div>
+      </div>
+      <div style="display:grid;grid-template-columns:190px minmax(0,1.3fr) minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 14px;font-size:12px;font-weight:600">Button · A12</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">button</span> · <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-busy</span> while loading · name = label</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)">Button role ships · announces busy</div></div>
+      <div style="display:grid;grid-template-columns:190px minmax(0,1.3fr) minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 14px;font-size:12px;font-weight:600">IconButton · A13 (toggle)</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">button</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-pressed</span></div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)">Selected field — <strong style="color:var(--onwars)">REQUEST</strong></div></div>
+      <div style="display:grid;grid-template-columns:190px minmax(0,1.3fr) minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 14px;font-size:12px;font-weight:600">Checkbox · B11</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">checkbox</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-checked</span> (true/false/mixed)</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)">Checked field — <strong style="color:var(--onwars)">REQUEST</strong></div></div>
+      <div style="display:grid;grid-template-columns:190px minmax(0,1.3fr) minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 14px;font-size:12px;font-weight:600">Switch · B12</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">switch</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-checked</span></div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)">Checked field — <strong style="color:var(--onwars)">REQUEST</strong></div></div>
+      <div style="display:grid;grid-template-columns:190px minmax(0,1.3fr) minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 14px;font-size:12px;font-weight:600">RadioGroup · B13</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">radiogroup / radio</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-checked</span> · roving tabindex</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)">Checked field — <strong style="color:var(--onwars)">REQUEST</strong></div></div>
+      <div style="display:grid;grid-template-columns:190px minmax(0,1.3fr) minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 14px;font-size:12px;font-weight:600">Tabs · B5</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">tablist / tab</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-selected</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-controls</span></div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)">Selected field — <strong style="color:var(--onwars)">REQUEST</strong></div></div>
+      <div style="display:grid;grid-template-columns:190px minmax(0,1.3fr) minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 14px;font-size:12px;font-weight:600">SegmentedControl · C6</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">radiogroup / radio</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-checked</span></div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)">Selected field — <strong style="color:var(--onwars)">REQUEST</strong></div></div>
+      <div style="display:grid;grid-template-columns:190px minmax(0,1.3fr) minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 14px;font-size:12px;font-weight:600">Chip · B8 (filter)</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">button</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-pressed</span></div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)">Selected field — <strong style="color:var(--onwars)">REQUEST</strong></div></div>
+      <div style="display:grid;grid-template-columns:190px minmax(0,1.3fr) minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 14px;font-size:12px;font-weight:600">List · B2 (selectable)</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">listbox / option</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-selected</span></div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)">Selected field — <strong style="color:var(--onwars)">REQUEST</strong></div></div>
+      <div style="display:grid;grid-template-columns:190px minmax(0,1.3fr) minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 14px;font-size:12px;font-weight:600">Accordion · C11</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)">header <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">button</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-expanded</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-controls</span></div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)">Expanded field — <strong style="color:var(--onwars)">REQUEST</strong></div></div>
+      <div style="display:grid;grid-template-columns:190px minmax(0,1.3fr) minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 14px;font-size:12px;font-weight:600">Select · C14 / Menu</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">combobox</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-expanded</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-haspopup</span>; options <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">option</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-selected</span></div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)">Expanded + Selected — <strong style="color:var(--onwars)">REQUEST</strong></div></div>
+      <div style="display:grid;grid-template-columns:190px minmax(0,1.3fr) minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 14px;font-size:12px;font-weight:600">Slider · C7</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">slider</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-valuenow/min/max</span> (+ <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">valuetext</span>)</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)">Adjustable ships — increment/decrement answer</div></div>
+      <div style="display:grid;grid-template-columns:190px minmax(0,1.3fr) minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 14px;font-size:12px;font-weight:600">Stepper · C8</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)">group + labelled −/+ buttons; value announced</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)">Adjustable ships</div></div>
+      <div style="display:grid;grid-template-columns:190px minmax(0,1.3fr) minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 14px;font-size:12px;font-weight:600">ProgressBar · B14</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">progressbar</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-valuenow/min/max</span>; indeterminate omits valuenow</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)">value announced as text</div></div>
+      <div style="display:grid;grid-template-columns:190px minmax(0,1.3fr) minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 14px;font-size:12px;font-weight:600">Toast · C4 / Banner · B18</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">role=status</span> polite · <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">role=alert</span> for errors</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)">live announcement ships (dialog-layer visibility)</div></div>
+      <div style="display:grid;grid-template-columns:190px minmax(0,1.3fr) minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 14px;font-size:12px;font-weight:600">Tooltip · C13</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">tooltip</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-describedby</span> — a description, never the name</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)">description on the trigger node</div></div>
+      <div style="display:grid;grid-template-columns:190px minmax(0,1.3fr) minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 14px;font-size:12px;font-weight:600">BottomNav · B4 / Rail · C16</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)">navigation landmark + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-current="page"</span></div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)">Selected field — <strong style="color:var(--onwars)">REQUEST</strong></div></div>
+      <div style="display:grid;grid-template-columns:190px minmax(0,1.3fr) minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 14px;font-size:12px;font-weight:600">SwipeableRow · C10 / PullToRefresh · C9</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)">actions exist as real controls (menu / buttons)</div><div style="padding:8px 12px;font-size:12px;line-height:1.55;color:var(--tx2)">custom actions — <strong style="color:var(--onwars)">REQUEST</strong></div></div>
+      <div style="padding:10px 14px;border-top:1px solid var(--bd);font-size:12px;line-height:1.6;color:var(--onwars);background:var(--wars)"><strong>State must be a STATE, never smuggled into the accessible name.</strong> "Notifications, switch, on" — the name is "Notifications", the state field carries <em>on</em>. A name that mutates ("Notifications on") breaks state-change announcements and name-based automation on both targets.</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Overlay semantics — Dialog C2 · Drawer C5 · BottomSheet C1 · ActionSheet C3</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">role=dialog</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-modal=true</span>, named by the title (<span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-labelledby</span>); background inert while open.</li>
+          <li><strong style="color:var(--tx1)">Focus trap:</strong> Tab cycles inside; nothing behind is reachable.</li>
+          <li><strong style="color:var(--tx1)">Initial focus:</strong> Dialog → the safe (Ghost) action · BottomSheet → the sheet container · Drawer → the selected item.</li>
+          <li><strong style="color:var(--tx1)">Focus restoration:</strong> closing returns focus to the invoker — always, on every close path.</li>
+          <li>Esc closes when <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">dismissible</span>; the platform back gesture/button maps identically.</li>
+          <li>Overlay layers stay visible to the semantics tree — a dialog is <em>seen</em> (shipped: page AND overlay layers are collected).</li>
+        </ul>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">The native mirror — what ships · what's a request</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li><strong style="color:var(--tx1)">Ships:</strong> <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">SemanticsTree.Collect(frame)</span> — reading order from the realized layout, page + overlay layers; roles StaticText · Button · Link · TextField · CodeField · Adjustable · Image; name = inner text / label; identity = layout path; <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">ActivatePath</span>; increment/decrement on adjustables; scrolled-out content included; macOS bridge (iOS/Android bridges consume the same tree — roadmap).</li>
+          <li><strong style="color:var(--onwars)">REQUEST</strong>: <strong style="color:var(--tx1)">Selected / Checked / Expanded state fields</strong> on SemanticNode — every table row above marked REQUEST waits on them.</li>
+          <li><strong style="color:var(--onwars)">REQUEST</strong>: <strong style="color:var(--tx1)">custom actions</strong> for gesture components — SwipeableRow row actions, PullToRefresh refresh — so gestures mirror as actions, not just as visible fallbacks.</li>
+          <li>Until those land, native announces state ONLY where a shipped role carries it (Adjustable) — do not fake state through the name.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer style="border-top:1px solid var(--bd);padding-top:24px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
+    <span style="font-size:13px;font-weight:700">Photon Mobile Design System</span>
+    <span style="font-size:12px;color:var(--tx3)">Spec v1.1 (SDK audit) · Foundations 00–10 + Phase A (A1–A13) + Phase B (B1–B18) + Phase C (C1–C16) — C3 · C15 · C16 ahead of the SDK (REQUEST). Charts, maps and rich text are outside the v1 fence by design.</span>
+  </footer>
+</main>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light' | 'dark'&quot;,&quot;section&quot;:&quot;Preview&quot;},&quot;fontScale&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:1,&quot;max&quot;:1.3,&quot;step&quot;:0.05,&quot;default&quot;:1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Preview&quot;},&quot;showHitAreas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Preview&quot;}}">
+class Component extends DCLogic {
+  state = { theme: 'light', fs: 1, hit: false, mk: 0, btnLoading: false, swOn: true, seg: 0, accOpen: true, toastOn: false };
+
+  componentDidMount() {
+    let t = 'light';
+    try { t = localStorage.getItem('photon-theme') || (this.props.theme ?? 'light'); } catch (e) { t = this.props.theme ?? 'light'; }
+    this.applyTheme(t, false);
+    const fs = this.props.fontScale ?? 1;
+    if (fs !== 1) this.applyFs(fs);
+    if (this.props.showHitAreas) this.applyHit(true);
+    setTimeout(() => this.setState(s => ({ mk: s.mk + 1 })), 400);
+  }
+
+  applyTheme(t, persist) {
+    if (t === 'dark') document.body.setAttribute('data-theme', 'dark');
+    else document.body.removeAttribute('data-theme');
+    if (persist) { try { localStorage.setItem('photon-theme', t); } catch (e) {} }
+    this.setState({ theme: t });
+  }
+  applyFs(v) { document.body.style.setProperty('--fs', String(v)); this.setState({ fs: v }); }
+  applyHit(on) { document.body.style.setProperty('--hit', on ? '1' : '0'); this.setState({ hit: on }); }
+
+  dot(anim) {
+    return React.createElement('span', {
+      key: 'k' + this.state.mk,
+      style: {
+        position: 'absolute', left: 8, top: 7, width: 18, height: 18, borderRadius: 6,
+        background: 'var(--pri)', animation: anim, animationFillMode: 'forwards'
+      }
+    });
+  }
+
+  renderVals() {
+    const { theme, fs, hit } = this.state;
+    const seg = (active) => ({
+      bg: active ? 'var(--sf)' : 'transparent',
+      c: active ? 'var(--tx1)' : 'var(--tx3)',
+      sh: active ? '0 1px 2px rgba(15,23,32,.18)' : 'none'
+    });
+    const s1 = seg(fs === 1), s2 = seg(fs === 1.15), s3 = seg(fs === 1.3);
+    return {
+      themeIcon: theme === 'dark' ? 'light_mode' : 'dark_mode',
+      themeLabel: theme === 'dark' ? 'Light' : 'Dark',
+      toggleTheme: () => this.applyTheme(this.state.theme === 'dark' ? 'light' : 'dark', true),
+      fs100: () => this.applyFs(1), fs115: () => this.applyFs(1.15), fs130: () => this.applyFs(1.3),
+      fsBg1: s1.bg, fsC1: s1.c, fsSh1: s1.sh,
+      fsBg2: s2.bg, fsC2: s2.c, fsSh2: s2.sh,
+      fsBg3: s3.bg, fsC3: s3.c, fsSh3: s3.sh,
+      toggleHit: () => this.applyHit(!this.state.hit),
+      hitBg: hit ? 'var(--pris)' : 'var(--sf2)',
+      hitC: hit ? 'var(--onpris)' : 'var(--tx1)',
+      noop: () => {},
+      swTrack: this.state.swOn ? 'var(--pri)' : 'var(--bd2)',
+      swLeft: this.state.swOn ? '23px' : '3px',
+      swLabel: this.state.swOn ? 'On' : 'Off',
+      toggleSw: () => this.setState(s => ({ swOn: !s.swOn })),
+      segLeft: 'calc(4px + ' + this.state.seg + ' * ((100% - 8px) / 3))',
+      seg0C: this.state.seg === 0 ? 'var(--tx1)' : 'var(--tx2)',
+      seg1C: this.state.seg === 1 ? 'var(--tx1)' : 'var(--tx2)',
+      seg2C: this.state.seg === 2 ? 'var(--tx1)' : 'var(--tx2)',
+      segPick0: () => this.setState({ seg: 0 }),
+      segPick1: () => this.setState({ seg: 1 }),
+      segPick2: () => this.setState({ seg: 2 }),
+      accMax: this.state.accOpen ? '220px' : '0px',
+      accRot: this.state.accOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+      accStateLabel: this.state.accOpen ? 'expanded' : 'collapsed',
+      toggleAcc: () => this.setState(s => ({ accOpen: !s.accOpen })),
+      toastOn: this.state.toastOn,
+      showToast: () => {
+        clearTimeout(this._toastT);
+        this.setState({ toastOn: true });
+        this._toastT = setTimeout(() => this.setState({ toastOn: false }), 3200);
+      },
+      btnLoading: this.state.btnLoading,
+      btnNotLoading: !this.state.btnLoading,
+      btnLoadingLabel: this.state.btnLoading ? 'Stop loading' : 'Simulate loading',
+      toggleBtnLoading: () => this.setState(s => ({ btnLoading: !s.btnLoading })),
+      replayMotion: () => this.setState(s => ({ mk: s.mk + 1 })),
+      dotStandard: this.dot('ph-move-std 200ms cubic-bezier(0.2,0,0,1) 120ms forwards'),
+      dotDecel: this.dot('ph-move-std 300ms cubic-bezier(0,0,0,1) 120ms forwards'),
+      dotGlide: this.dot('ph-move-std 200ms cubic-bezier(0.33,0,0.67,1) 120ms forwards')
+    };
+  }
+}
+</script>
+</body>
+</html>

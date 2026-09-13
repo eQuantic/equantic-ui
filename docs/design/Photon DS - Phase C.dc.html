@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0" rel="stylesheet">
+<style>
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx1);font-family:'Hanken Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+--bg:#F5F6F8;--sf:#FFFFFF;--sf2:#EFF1F4;--bd:#E2E5EA;--bd2:#C9CED6;
+--tx1:#171B21;--tx2:#4B5563;--tx3:#5F6B7A;--txi:#FFFFFF;
+--pri:#0050A0;--onpri:#FFFFFF;--prip:#00427F;--pris:#E8F1FA;--onpris:#003E7E;
+--sec:#E9EDF2;--onsec:#3A4350;--secp:#DCE2EA;
+--des:#B42318;--ondes:#FFFFFF;--desp:#8F1D1D;--dess:#FCEBEA;--ondess:#8F1D1D;
+--suc:#3B7A22;--onsuc:#FFFFFF;--sucp:#2C5E17;--sucs:#EDF6E6;--onsucs:#2C5E17;
+--war:#8A5A00;--onwar:#FFFFFF;--warp:#6E4700;--wars:#FBF3DF;--onwars:#7A5200;
+--inf:#0C6C86;--oninf:#FFFFFF;--infp:#0A5468;--infs:#E4F3F8;--oninfs:#0A5468;
+--lnk:#0050A0;--foc:#0050A0;--scrim:rgba(11,14,18,.40);--priinv:#5CA2E8;
+--e1:0 1px 3px 0 rgba(15,23,32,.10);--e2:0 2px 8px 0 rgba(15,23,32,.12);--e3:0 6px 16px -2px rgba(15,23,32,.16);--e4:0 12px 28px -4px rgba(15,23,32,.20);--e5:0 20px 44px -6px rgba(15,23,32,.26)}
+body[data-theme="dark"]{
+--bg:#0C0F13;--sf:#14181E;--sf2:#1C232B;--bd:#2A323D;--bd2:#3D4754;
+--tx1:#F2F4F7;--tx2:#AEB7C2;--tx3:#8B95A3;--txi:#171B21;
+--pri:#5CA2E8;--onpri:#06263F;--prip:#7CB5EE;--pris:#0F2740;--onpris:#A8CDF2;
+--sec:#242C36;--onsec:#D7DDE5;--secp:#2E3844;
+--des:#E5645C;--ondes:#3B0704;--desp:#F28B85;--dess:#3A1210;--ondess:#F4A9A4;
+--suc:#85C05E;--onsuc:#12290A;--sucp:#9ACD74;--sucs:#16290C;--onsucs:#B5DB97;
+--war:#E8B04B;--onwar:#2E1B02;--warp:#F0C06B;--wars:#2E2008;--onwars:#EECF8F;
+--inf:#4CC3DE;--oninf:#062B33;--infp:#6ED0E6;--infs:#0A2A32;--oninfs:#9FDCEB;
+--lnk:#7CB5EE;--foc:#7CB5EE;--scrim:rgba(0,0,0,.56);--priinv:#0050A0;
+--e1:0 1px 3px 0 rgba(0,0,0,.45);--e2:0 2px 8px 0 rgba(0,0,0,.48);--e3:0 6px 16px -2px rgba(0,0,0,.52);--e4:0 12px 28px -4px rgba(0,0,0,.56);--e5:0 20px 44px -6px rgba(0,0,0,.62)}
+@keyframes ph-blink{0%{opacity:1}100%{opacity:.15}}
+@keyframes ph-shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+@keyframes ph-move-std{0%{transform:translateX(0)}100%{transform:translateX(220px)}}
+@keyframes ph-pressdemo{0%,100%{opacity:0}30%,70%{opacity:1}}
+@keyframes ph-indet{0%{left:-35%}100%{left:105%}}
+@keyframes ph-toast-in{0%{transform:translateY(14px);opacity:0}100%{transform:translateY(0);opacity:1}}
+</style>
+</helmet>
+
+<div style="position:fixed;top:0;left:0;right:0;z-index:60;display:flex;align-items:center;gap:16px;height:56px;padding:0 20px;background:var(--sf);border-bottom:1px solid var(--bd)">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#0050A0,#003E7E);display:flex;align-items:center;justify-content:center">
+      <div style="width:10px;height:10px;border-radius:4px;background:#80B85C"></div>
+    </div>
+    <div style="font-size:15px;font-weight:800;letter-spacing:-.01em">Photon</div>
+    <div style="font-size:12px;color:var(--tx3);font-weight:500;margin-top:1px">eQuantic.UI Native · Mobile Design System</div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px;background:var(--pris);color:var(--onpris)">SPEC v1.1 · SDK-audited</div>
+  </div>
+  <div style="flex:1"></div>
+  <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--tx3);font-weight:600">
+    <span>Dynamic Type</span>
+    <div style="display:flex;background:var(--sf2);border-radius:8px;padding:2px;gap:2px">
+      <button onClick="{{ fs100 }}" style="border:none;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:4px 9px;border-radius:6px;background:{{ fsBg1 }};color:{{ fsC1 }};box-shadow:{{ fsSh1 }}">100%</button>
+      <button onClick="{{ fs115 }}" style="border:none;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:4px 9px;border-radius:6px;background:{{ fsBg2 }};color:{{ fsC2 }};box-shadow:{{ fsSh2 }}">115%</button>
+      <button onClick="{{ fs130 }}" style="border:none;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:4px 9px;border-radius:6px;background:{{ fsBg3 }};color:{{ fsC3 }};box-shadow:{{ fsSh3 }}">130%</button>
+    </div>
+  </div>
+  <button onClick="{{ toggleHit }}" style="display:flex;align-items:center;gap:6px;border:1px solid var(--bd);cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;background:{{ hitBg }};color:{{ hitC }}">
+    <span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">touch_app</span> Hit areas
+  </button>
+  <button onClick="{{ toggleTheme }}" style="display:flex;align-items:center;gap:6px;border:1px solid var(--bd);cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;background:var(--sf2);color:var(--tx1)">
+    <span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">{{ themeIcon }}</span> {{ themeLabel }}
+  </button>
+</div>
+
+<nav style="position:fixed;top:56px;left:0;bottom:0;width:248px;overflow-y:auto;padding:20px 14px 40px;background:var(--sf);border-right:1px solid var(--bd);box-sizing:border-box">
+  <div style="font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);padding:6px 10px">Overview</div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-arch" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--pri);width:20px;flex:none;padding-top:1px">◆</span>Architecture · 3 layers</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:7px;padding:16px 10px 6px"><span style="width:7px;height:7px;border-radius:2px;background:var(--suc);flex:none"></span><span style="font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Layer 1 · Shared tokens</span></div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-color" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">01</span>Color tokens</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-type" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">02</span>Typography</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-space" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">03</span>Spacing</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-radius" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">04</span>Radius</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-elev" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">05</span>Elevation</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-motion" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">06</span>Motion</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:7px;padding:16px 10px 6px"><span style="width:7px;height:7px;border-radius:2px;background:var(--war);flex:none"></span><span style="font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Layer 2 · Platform · Photon</span></div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-fence" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">00</span>Engine constraints</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-icon" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">07</span>Iconography</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-touch" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">08</span>Touch &amp; safe area</a>
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-a11y" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">10</span>States · pointer · semantics</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:7px;padding:16px 10px 6px"><span style="width:7px;height:7px;border-radius:2px;background:var(--pri);flex:none"></span><span style="font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Binding</span></div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Foundations.dc.html#f-csharp" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">09</span>C# token API</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:7px;padding:18px 10px 4px"><span style="width:7px;height:7px;border-radius:2px;background:var(--inf);flex:none"></span><span style="font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Layer 3 · Components</span></div>
+  <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);padding:4px 10px 6px;opacity:.75">Phase A · Primitives</div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-box" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A1</span>Box</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-rowcol" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A2</span>Row · Column</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-stack" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A3</span>Stack (z)</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-spacer" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A4</span>Spacer</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-safearea" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A5</span>SafeArea</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-scroll" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A6</span>ScrollView</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-divider" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A7</span>Divider</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-text" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A8</span>Text</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-heading" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A9</span>Heading · Label</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-icon" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A10</span>Icon</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-image" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A11</span>Image</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-button" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A12</span>Button</a>
+    <a href="Photon%20DS%20-%20Phase%20A.dc.html#a-iconbutton" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">A13</span>IconButton</a>
+  </div>
+  <div style="font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);padding:18px 10px 6px">Phase B — Dashboard set</div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-card" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B1</span>Card</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-list" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B2</span>List · ListItem</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-appbar" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B3</span>AppBar</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-bottomnav" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B4</span>BottomNavigation</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-tabs" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B5</span>Tabs</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-avatar" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B6</span>Avatar</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-badge" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B7</span>Badge</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-chip" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B8</span>Chip / Tag</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-input" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B9</span>TextInput</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-search" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B10</span>SearchField</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-checkbox" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B11</span>Checkbox</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-switch" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B12</span>Switch</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-radio" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B13</span>RadioGroup</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-progress" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B14</span>ProgressBar</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-spinner" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B15</span>Spinner</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-skeleton" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B16</span>Skeleton</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-empty" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B17</span>EmptyState</a>
+    <a href="Photon%20DS%20-%20Phase%20B.dc.html#b-banner" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">B18</span>Banner / Alert</a>
+  </div>
+  <div style="font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);padding:18px 10px 6px">Phase C — Surfaces &amp; patterns</div>
+  <div style="display:flex;flex-direction:column;gap:1px">
+    <a href="#c-sheet" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C1</span>BottomSheet</a>
+    <a href="#c-modal" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C2</span>Modal / Dialog</a>
+    <a href="#c-action" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C3</span>ActionSheet</a>
+    <a href="#c-toast" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C4</span>Toast / Snackbar</a>
+    <a href="#c-drawer" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C5</span>Drawer</a>
+    <a href="#c-seg" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C6</span>SegmentedControl</a>
+    <a href="#c-slider" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C7</span>Slider</a>
+    <a href="#c-stepper" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C8</span>Stepper</a>
+    <a href="#c-ptr" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C9</span>PullToRefresh</a>
+    <a href="#c-swipe" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C10</span>SwipeableRow</a>
+    <a href="#c-accordion" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C11</span>Accordion</a>
+    <a href="#c-dots" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C12</span>PageIndicator</a>
+    <a href="#c-tooltip" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C13</span>Tooltip</a>
+    <a href="#c-select" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C14</span>Select</a>
+    <a href="#c-date" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C15</span>DatePicker</a>
+    <a href="#c-navrail" style="display:flex;gap:8px;padding:5px 10px;border-radius:7px;color:var(--tx2);text-decoration:none;font-size:12.5px;font-weight:500" style-hover="background:var(--sf2);color:var(--tx1)"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);width:20px;flex:none;padding-top:2px">C16</span>NavigationRail</a>
+  </div>
+</nav>
+
+<main style="margin:56px 0 0 248px;padding:44px 56px 120px;max-width:1060px;box-sizing:border-box">
+
+  
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:22px">
+    <a href="Photon%20Design%20System.dc.html" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--lnk);text-decoration:none"><span style="font-family:'Material Symbols Rounded';font-size:15px;line-height:1">arrow_back</span>Spec index</a>
+    <span style="color:var(--bd2)">/</span>
+    <span style="font-size:12px;font-weight:600;color:var(--tx3)">Photon Design System · v1.1 · Phase C — surfaces &amp; gestures</span>
+  </div>
+<div style="display:flex;align-items:center;gap:14px;margin:0 0 30px;padding:18px 22px;border-radius:14px;background:linear-gradient(135deg,#0C6C86,#0A5468)">
+    <span style="font-family:'Material Symbols Rounded';font-size:26px;color:#9FDCEB">layers</span>
+    <div>
+      <div style="font-size:19px;font-weight:800;color:#FFFFFF;letter-spacing:-.01em">Phase C — Surfaces &amp; mobile patterns</div>
+      <div style="font-size:12.5px;color:#9FDCEB;margin-top:2px">All 16 specified (C1–C16) — C3 · C15 · C16 are specified ahead of the SDK (REQUEST). Overlays spend the scrim + optional blur budget; gesture releases run the sanctioned Release glide — 200ms smoothstep (§06) — toward a target picked by position + velocity; the velocity-taking spring stays a REQUEST.</div>
+    </div>
+  </div>
+  <section id="c-sheet" data-screen-label="C1 BottomSheet" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--infs);color:var(--oninfs)">C1</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">BottomSheet</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new BottomSheet(detents: [Detent.Peek, Detent.Half, Detent.Full], initial: Detent.Half, dismissible: true, child: ...)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:22px;display:flex;justify-content:center;gap:20px">
+        <div style="width:250px;height:340px;border-radius:18px;border:2px solid var(--bd2);position:relative;overflow:hidden;background:var(--bg)">
+          <div style="padding:18px 16px;opacity:.5">
+            <div style="height:14px;width:60%;border-radius:999px;background:var(--bd2)"></div>
+            <div style="height:10px;width:85%;border-radius:999px;background:var(--bd);margin-top:10px"></div>
+            <div style="height:10px;width:70%;border-radius:999px;background:var(--bd);margin-top:8px"></div>
+          </div>
+          <div style="position:absolute;inset:0;background:var(--scrim)"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;height:55%;background:var(--sf);border-radius:20px 20px 0 0;box-shadow:var(--e4);display:flex;flex-direction:column">
+            <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:36px;height:4px;border-radius:999px;background:var(--bd2)"></span></div>
+            <div style="padding:6px 20px 0;font-size:16px;font-weight:600;letter-spacing:-.01em">Transfer options</div>
+            <div style="padding:10px 20px;display:flex;flex-direction:column">
+              <div style="display:flex;align-items:center;gap:12px;padding:11px 0"><span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--tx2)">bolt</span><span style="font-size:14px">Instant (PIX)</span></div>
+              <div style="height:1px;background:var(--bd)"></div>
+              <div style="display:flex;align-items:center;gap:12px;padding:11px 0"><span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--tx2)">schedule</span><span style="font-size:14px">Schedule</span></div>
+            </div>
+            <div style="margin-top:auto;display:flex;justify-content:center;padding-bottom:6px"><span style="width:70px;height:4px;border-radius:2px;background:var(--bd2)"></span></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;justify-content:flex-end;gap:0;height:340px;padding:8px 0">
+          <div style="flex:none;height:8%;display:flex;align-items:center"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">Full — top inset + 8</span></div>
+          <div style="border-top:1px dashed var(--bd2);flex:none;height:37%;display:flex;align-items:center"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">Half — 50% ← shown</span></div>
+          <div style="border-top:1px dashed var(--bd2);flex:none;height:30%;display:flex;align-items:center"><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">Peek — content ≤ 40%</span></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Specs &amp; gestures</div>
+          <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+            <li>Surface fill · top corners Radius.Xl 20, bottom 0 (per-corner, §04) · E4 · grabber 36×4 BorderStrong Full, 8dp from top · content gutter S5 20 · bottom safe-area painted in sheet fill.</li>
+            <li>Detents: Peek (content height, ≤ 40%) · Half 50% · Full (top inset + 8). Drag follows 1:1; release snaps to nearest detent by position + velocity (<strong style="color:var(--tx1)">Release glide — 200ms smoothstep (§06); velocity spring still REQUEST</strong>). Fling down &gt; 700dp/s dismisses.</li>
+            <li>Scrim from Half up; tap dismisses when <span style="font-family:'JetBrains Mono',monospace;font-size:12px">dismissible</span>. Blur behind sheet = optional garnish, D4 budget (fence §00).</li>
+            <li>Gesture handoff: inner ScrollView scrolls only at Full; at scrollTop 0 a downward drag moves the sheet instead.</li>
+          </ul>
+        </div>
+        <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">A11y · usage</div>
+          <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+            <li>Dialog role; focus trapped; first focus = title; Escape / Android back / scrim tap dismiss; grabber exposes "expand / collapse / close" custom actions. Reduce Motion: crossfade, no slide.</li>
+            <li>Use for contextual tasks that keep parent context: pickers (C14/C15), filters, detail peek. Non-modal Peek variant (no scrim) allowed for map-style companions.</li>
+            <li>Don't: full multi-step forms in a sheet; nested sheets; more than one open.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">The grabber drags with the mouse (cursor grab/grabbing); wheel scrolls inner content; scrim click dismisses when dismissible. <strong style="color:var(--tx1)">The pointer/expanded tier presents a Dialog (C2) or anchored popover instead</strong> — the sheet is the touch presentation.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">§10 overlay contract: focus trapped · Esc dismisses (unless <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">dismissible: false</span>) · Tab cycles inside · closing returns focus to the invoker.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">role=dialog</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-modal=true</span>; the grabber is hidden; detent changes announce ("half expanded", "full").</div></div>
+    </div>
+  </section>
+
+  <section id="c-modal" data-screen-label="C2 Modal" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--infs);color:var(--oninfs)">C2</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Modal / Dialog</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new Dialog(title, body, actions: [DialogAction ×≤2], dismissible: false)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="border:1px solid var(--bd);border-radius:12px;padding:36px;display:flex;justify-content:center;background:var(--scrim)">
+        <div style="width:300px;background:var(--sf);border-radius:20px;box-shadow:var(--e5);padding:20px">
+          <div style="font-size:calc(20px*var(--fs,1));font-weight:600;letter-spacing:-.01em">Delete card?</div>
+          <div style="font-size:calc(15px*var(--fs,1));line-height:1.5;color:var(--tx2);margin-top:8px">"Work Visa ··· 4821" will be removed and its automatic payments will stop.</div>
+          <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px">
+            <span style="height:40px;padding:0 16px;border-radius:10px;color:var(--tx1);font-size:15px;font-weight:600;display:inline-flex;align-items:center">Keep card</span>
+            <span style="height:40px;padding:0 16px;border-radius:10px;background:var(--des);color:var(--ondes);font-size:15px;font-weight:600;display:inline-flex;align-items:center">Delete</span>
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Rules</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Width min(480, screen − 48), centered · Radius.Xl 20 · E5 · padding S5 20 · title Title 20/600 · body 15 TextSecondary, gap 8 · actions right-aligned Medium buttons, gap 8, top gap 20.</li>
+          <li>Confirm pattern: safe action = Ghost (first in focus order), committing action = Primary or Destructive. Max 2 actions — a third means you need an ActionSheet (C3 — not yet in SDK) or a screen.</li>
+          <li>Enter: scale 0.96→1 + fade, Base 200ms decelerate; scrim fades in parallel; exit ⅔ accelerate. Reduce Motion: fade only.</li>
+          <li><span style="font-family:'JetBrains Mono',monospace;font-size:12px">dismissible: false</span> (default for destructive confirms): scrim tap and back are ignored — a button must resolve it.</li>
+          <li>A11y: alertdialog role — name = title, description = body; focus trapped, returns to invoker on close; Destructive announced "…, destructive".</li>
+          <li>Interrupting decisions only. Don't: multi-step flows, forms with &gt; 1 field, stacked modals, information that a Banner or Toast covers.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Scrim click dismisses only when <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">dismissible</span>; the dialog surface takes no hover — its buttons do.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">§10 overlay contract verbatim: focus trap · <strong style="color:var(--tx1)">initial focus = the safe (Ghost) action</strong> · Esc dismisses when dismissible, ignored when a button must resolve · close restores focus to the invoker.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">role=dialog</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-modal=true</span>, named by the title; background inert. Overlay layers stay visible to the semantics tree (§10).</div></div>
+    </div>
+  </section>
+
+  <section id="c-action" data-screen-label="C3 ActionSheet" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--infs);color:var(--oninfs)">C3</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">ActionSheet</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new ActionSheet(title: "Statement PDF"?, actions: [SheetAction ×≤6], cancelLabel: "Cancel")</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.03em;padding:2px 8px;border-radius:6px;background:var(--wars);color:var(--onwars)">NOT YET IN SDK · REQUEST</span>
+    </div>
+    <div style="margin:6px 0 14px;display:flex;align-items:flex-start;gap:9px;padding:10px 13px;border-radius:10px;background:var(--wars);color:var(--onwars);max-width:780px;box-sizing:border-box"><span style="font-family:'Material Symbols Rounded';font-size:17px;line-height:1.3">pending</span><span style="font-size:12.5px;line-height:1.55">Specified ahead of the SDK — <strong>eQuantic.UI.Components does not ship ActionSheet yet.</strong> B3 AppBar (overflow) and C2 Dialog (&gt;2 actions) reference it as the target; the interim in code is a BottomSheet (C1) carrying the action list. On pointer targets it presents as an anchored context menu (Desktop &amp; pointer below).</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:22px;display:flex;justify-content:center">
+        <div style="width:280px;display:flex;flex-direction:column;gap:8px">
+          <div style="background:var(--sf);border-radius:16px;overflow:hidden;box-shadow:var(--e4)">
+            <div style="padding:10px 16px;font-size:12px;font-weight:600;color:var(--tx3);text-align:center;border-bottom:1px solid var(--bd)">Statement PDF · April</div>
+            <div style="display:flex;align-items:center;gap:12px;height:52px;padding:0 16px"><span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--tx2)">ios_share</span><span style="font-size:15px;font-weight:500">Share</span></div>
+            <div style="height:1px;background:var(--bd)"></div>
+            <div style="display:flex;align-items:center;gap:12px;height:52px;padding:0 16px"><span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--tx2)">download</span><span style="font-size:15px;font-weight:500">Save to device</span></div>
+            <div style="height:1px;background:var(--bd)"></div>
+            <div style="display:flex;align-items:center;gap:12px;height:52px;padding:0 16px"><span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--des)">delete</span><span style="font-size:15px;font-weight:500;color:var(--des)">Delete statement</span></div>
+          </div>
+          <div style="background:var(--sf);border-radius:16px;box-shadow:var(--e4);height:52px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700">Cancel</div>
+        </div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Rules</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>A BottomSheet preset at Peek: group container Radius.Xl 16, rows 52dp (icon Dense 20 + label 15/500, hairline dividers), optional Caption title row. Cancel = separate Full-radius surface, 8dp gap, weight 700 — visually unmissable.</li>
+          <li>Destructive actions use Destructive Base as text + icon color, always <strong style="color:var(--tx1)">last in the group</strong>. Max 6 actions; icons all-or-none.</li>
+          <li>Physics, scrim and dismissal inherit C1; selecting a row commits and dismisses in one motion (row flashes SurfaceSubtle 100ms first).</li>
+          <li>A11y: menu role; rows are menu items — "Share, 1 of 3"; destructive appended "…, destructive"; Cancel also reachable via Escape/back/scrim.</li>
+          <li>Use for: AppBar overflow (B3), contextual object actions (B2 long-press). Don't: navigation menus, toggles/forms inside rows, more than one destructive action.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">On pointer targets the SAME component presents as an <strong style="color:var(--tx1)">anchored context menu</strong> at the invoker — this is also the right-click surface for rows and canvases. Row hover = SurfaceSubtle (§10).</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Menu pattern: ↑/↓ move · Enter activates · Esc closes and returns focus to the invoker · Home/End.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Web <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">role=menu / menuitem</span>; destructive rows append "destructive". Native per-row custom actions: <strong style="color:var(--onwars)">REQUEST</strong> (§10).</div></div>
+    </div>
+  </section>
+
+  <section id="c-toast" data-screen-label="C4 Toast" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--infs);color:var(--oninfs)">C4</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Toast / Snackbar</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">Toast.Show("Card removed", action: ("Undo", fn)?, duration: Duration.Default)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:20px;position:relative;min-height:190px;display:flex;flex-direction:column">
+        <div style="display:flex;justify-content:center;padding-top:10px">
+          <button onClick="{{ showToast }}" style="height:40px;padding:0 16px;border:none;border-radius:10px;background:var(--pri);color:var(--onpri);font-family:'Hanken Grotesk',sans-serif;font-size:15px;font-weight:600;cursor:pointer" style-active="background:var(--prip)" style-focus="outline:none;box-shadow:0 0 0 2px var(--sf),0 0 0 4px var(--foc)">Remove card — shows toast</button>
+        </div>
+        <sc-if value="{{ toastOn }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:16px;right:16px;bottom:16px;display:flex;justify-content:center;animation:ph-toast-in 300ms cubic-bezier(0,0,0,1)">
+            <div style="display:flex;align-items:center;gap:14px;max-width:400px;flex:1;background:var(--tx1);color:var(--txi);border-radius:14px;box-shadow:var(--e3);padding:12px 16px">
+              <span style="flex:1;font-size:14px;font-weight:500">Card removed</span>
+              <span style="font-size:14px;font-weight:700;color:var(--priinv)">Undo</span>
+            </div>
+          </div>
+        </sc-if>
+        <div style="margin-top:auto;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);padding-top:44px">auto-dismisses after ~3s · enter = rise + fade, Slow decelerate</div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Rules</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Inverse surface: TextPrimary as fill + TextInverse text (tokens §01) · Radius.Lg 14 · E3 · padding 12/16 · text 14/500, ≤ 2 lines · one action max, 14/700 in <span style="font-family:'JetBrains Mono',monospace;font-size:12px">InverseAction</span> (opposite-theme Primary — audited both modes).</li>
+          <li>Position: bottom-centered, 16dp gutters, max-width 560; floats above BottomNav / keyboard / home inset (moves with IME).</li>
+          <li>Timing: 4s default, 6s with action; enter rise+fade Slow 300ms decelerate, exit fade ⅔; swipe down/sideways dismisses (velocity-driven — <strong style="color:var(--tx1)">Release glide — 200ms smoothstep (§06); velocity spring still REQUEST</strong>). Queue: one visible, FIFO.</li>
+          <li>A11y: polite live announcement; action exposed as custom action; timer pauses while a reader focuses the toast. Never make a toast the only path to an action — except Undo, which must also exist in history where feasible.</li>
+          <li>Toast = past-tense confirmation ("Card removed · Undo"). Persistent state = Banner (B18); decisions = Modal (C2).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)"><strong style="color:var(--tx1)">Hover pauses the auto-dismiss timer</strong> — the pointer twin of the reader-focus pause; the action underlines on hover (Link rule §10).</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">A toast <strong style="color:var(--tx1)">never steals focus</strong>; Esc dismisses the visible toast. The action must also exist in-app (the Undo rule) — keyboard users are not raced by a timer.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Polite live region (<span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">role=status</span>); the action is exposed; the timer pauses during reader focus and pointer hover.</div></div>
+    </div>
+  </section>
+  <section id="c-drawer" data-screen-label="C5 Drawer" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--infs);color:var(--oninfs)">C5</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Drawer</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new Drawer(header: Widget?, items: [DrawerItem], footer: Widget?, edge: Edge.Start)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:22px;display:flex;justify-content:center">
+        <div style="width:320px;height:250px;border-radius:14px;overflow:hidden;border:1px solid var(--bd);display:flex;position:relative">
+          <div style="width:210px;background:var(--sf);box-shadow:var(--e4);z-index:1;display:flex;flex-direction:column;padding:14px 10px">
+            <div style="display:flex;align-items:center;gap:10px;padding:4px 10px 12px">
+              <div style="width:36px;height:36px;border-radius:999px;background:linear-gradient(135deg,#5CA2E8,#0050A0);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700">AB</div>
+              <div style="min-width:0"><div style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Ana Beatriz</div><div style="font-size:11px;color:var(--tx3)">Business account</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 12px;border-radius:999px;background:var(--pris);color:var(--onpris)"><span style="font-family:'Material Symbols Rounded';font-size:20px;font-variation-settings:'FILL' 1">home</span><span style="font-size:13.5px;font-weight:700">Overview</span></div>
+            <div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 12px;border-radius:999px;color:var(--tx2)"><span style="font-family:'Material Symbols Rounded';font-size:20px">receipt_long</span><span style="font-size:13.5px;font-weight:500">Statements</span></div>
+            <div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 12px;border-radius:999px;color:var(--tx2)"><span style="font-family:'Material Symbols Rounded';font-size:20px">settings</span><span style="font-size:13.5px;font-weight:500">Settings</span></div>
+          </div>
+          <div style="flex:1;background:var(--scrim)"></div>
+        </div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Rules</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Panel: min(320, 85% width) · Surface · E4 · start edge (mirrors in RTL) · both vertical safe-areas painted in panel fill · header slot + items + footer slot.</li>
+          <li>Item: 40dp pill row (icon Dense 20 + label 13.5/500, gap 10, padding X 12) — selected = Primary-subtle pill + filled glyph + 700 weight, same vocabulary as B4.</li>
+          <li>Gestures: 20dp edge-swipe capture opens, follows finger 1:1; scrim fades proportionally; release settles open/closed by position + velocity (<strong style="color:var(--tx1)">Release glide — 200ms smoothstep (§06); velocity spring still REQUEST</strong>). Button toggle from AppBar leading slot.</li>
+          <li>A11y: navigation-dialog semantics; focus trapped while open; Escape/back closes and returns focus to the menu button; announce "navigation drawer, open".</li>
+          <li>Use when destinations ≥ 6 or with account/workspace switching. Don't pair with BottomNavigation for the same destinations — pick one primary nav model.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Edge-swipe is touch-only — pointer opens via the menu button. Item hover = SurfaceSubtle pill (§10); cursor pointer. Expanded widths prefer the pinned drawer (or NavigationRail C16) over the modal one.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">§10 overlay contract for the modal form: trap · Esc closes · focus returns to the menu button. ↑/↓ move items, Enter navigates.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Modal = <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">role=dialog</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-modal</span>; pinned = navigation landmark. Selected item <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-current="page"</span>.</div></div>
+    </div>
+  </section>
+
+  <section id="c-seg" data-screen-label="C6 SegmentedControl" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--infs);color:var(--oninfs)">C6</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">SegmentedControl</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new SegmentedControl(segments: ["1M","6M","1Y"], selected: 0, onChanged)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:26px;display:flex;flex-direction:column;align-items:center;gap:14px">
+        <div style="position:relative;width:280px;height:36px;border-radius:10px;background:var(--sf2)">
+          <span style="position:absolute;top:4px;left:{{ segLeft }};width:calc((100% - 8px)/3);height:28px;border-radius:7px;background:var(--sf);box-shadow:var(--e1);transition:left 200ms cubic-bezier(0.2,0,0,1)"></span>
+          <div style="position:absolute;inset:0;display:flex">
+            <button onClick="{{ segPick0 }}" style="flex:1;border:none;background:transparent;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:13px;font-weight:600;color:{{ seg0C }};position:relative" style-focus="outline:none;box-shadow:inset 0 0 0 2px var(--foc);border-radius:10px">1M</button>
+            <button onClick="{{ segPick1 }}" style="flex:1;border:none;background:transparent;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:13px;font-weight:600;color:{{ seg1C }};position:relative" style-focus="outline:none;box-shadow:inset 0 0 0 2px var(--foc);border-radius:10px">6M</button>
+            <button onClick="{{ segPick2 }}" style="flex:1;border:none;background:transparent;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-size:13px;font-weight:600;color:{{ seg2C }};position:relative" style-focus="outline:none;box-shadow:inset 0 0 0 2px var(--foc);border-radius:10px">1Y</button>
+          </div>
+        </div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">live — thumb slides Base 200ms standard</span>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Rules</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Track: SurfaceSubtle, Radius.Md 10, 4dp inset padding · heights 36 (Medium ★) / 44 (Large) · equal-width segments · label 13/600 — active TextPrimary, inactive TextSecondary.</li>
+          <li>Thumb: Surface + E1, radius = track − inset (7). Slides Base 200ms standard; press-down pre-tints the target label instantly; dragging the thumb scrubs across segments with a haptic per boundary.</li>
+          <li>2–4 segments, short text only — labels must fit untruncated at ×1.3 Dynamic Type or the component asserts; icons-only segments allowed with labels for readers.</li>
+          <li>Whole control = one hit strip (≥ 48 with slop); exactly one segment always selected; switch takes effect immediately (view filter).</li>
+          <li>A11y: "1M, 1 of 3, selected" — arrows/swipe move selection; single focus stop.</li>
+          <li>Segmented filters the current view in place. Page-level content switching with swipeable pages = Tabs (B5); binary setting = Switch (B12).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Hover on a non-selected segment = SurfaceSubtle wash (§10); cursor pointer; the thumb itself never hovers.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">ONE tab stop, roving: ←/→ move AND select (wraps) · Home/End. RadioGroup (B13) arrows identically — same pattern, same wrap (§10).</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">radiogroup / radio</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-checked</span> — segments switch a value, not panels (that’s Tabs). Native Selected field: <strong style="color:var(--onwars)">REQUEST</strong> (§10).</div></div>
+    </div>
+  </section>
+
+  <section id="c-slider" data-screen-label="C7 Slider" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--infs);color:var(--oninfs)">C7</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Slider</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new Slider(value, onChanged, min: 0, max: 100, step: null, haptics: true)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:26px 30px;display:flex;flex-direction:column;gap:26px">
+        <div>
+          <div style="position:relative;height:24px;display:flex;align-items:center">
+            <div style="position:absolute;left:0;right:0;height:4px;border-radius:999px;background:var(--sf2)"></div>
+            <div style="position:absolute;left:0;width:60%;height:4px;border-radius:999px;background:var(--pri)"></div>
+            <div style="position:absolute;left:60%;transform:translateX(-50%);width:24px;height:24px;border-radius:999px;background:#FFFFFF;box-shadow:var(--e2);border:1px solid var(--bd)"></div>
+          </div>
+          <div style="font-size:12px;color:var(--tx3);margin-top:8px">Continuous · value 60</div>
+        </div>
+        <div>
+          <div style="position:relative;height:28px;display:flex;align-items:center">
+            <div style="position:absolute;left:0;right:0;height:4px;border-radius:999px;background:var(--sf2)"></div>
+            <div style="position:absolute;left:0;width:40%;height:4px;border-radius:999px;background:var(--pri)"></div>
+            <div style="position:absolute;left:40%;transform:translateX(-50%);width:28px;height:28px;border-radius:999px;background:#FFFFFF;box-shadow:var(--e2);border:1px solid var(--bd)"></div>
+            <div style="position:absolute;left:40%;transform:translate(-50%,-34px);background:var(--tx1);color:var(--txi);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;box-shadow:var(--e3)">R$ 400</div>
+          </div>
+          <div style="font-size:12px;color:var(--tx3);margin-top:8px">Dragging — thumb grows 24→28, value bubble on inverse surface follows</div>
+        </div>
+        <div>
+          <div style="position:relative;height:24px;display:flex;align-items:center">
+            <div style="position:absolute;left:0;right:0;height:4px;border-radius:999px;background:var(--sf2)"></div>
+            <div style="position:absolute;left:0;width:50%;height:4px;border-radius:999px;background:var(--pri)"></div>
+            <div style="position:absolute;left:0%;transform:translateX(-2px);width:4px;height:4px;border-radius:999px;background:var(--onpri)"></div>
+            <div style="position:absolute;left:25%;transform:translateX(-2px);width:4px;height:4px;border-radius:999px;background:var(--onpri)"></div>
+            <div style="position:absolute;left:50%;transform:translateX(-2px);width:4px;height:4px;border-radius:999px;background:var(--onpri)"></div>
+            <div style="position:absolute;left:75%;transform:translateX(-2px);width:4px;height:4px;border-radius:999px;background:var(--bd2)"></div>
+            <div style="position:absolute;right:0;transform:translateX(-2px);width:4px;height:4px;border-radius:999px;background:var(--bd2)"></div>
+            <div style="position:absolute;left:50%;transform:translateX(-50%);width:24px;height:24px;border-radius:999px;background:#FFFFFF;box-shadow:var(--e2);border:1px solid var(--bd)"></div>
+          </div>
+          <div style="font-size:12px;color:var(--tx3);margin-top:8px">Stepped · 5 detents (4dp dots), snaps on release + haptic</div>
+        </div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Rules</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Track 4dp Radius.Full: active Primary, rest SurfaceSubtle (two rrects). Thumb 24dp white + E2 + 1dp Border (all themes — white thumb is the cross-platform constant).</li>
+          <li>Drag: no slop on the thumb (immediate capture); track-tap jumps with Base animation; thumb grows to 28 while held; bubble = inverse surface + Radius.Sm, Caption tnum, 10dp above.</li>
+          <li>Steps: 4dp dots — OnPrimary over active track, BorderStrong over rest; snap on release (<strong style="color:var(--tx1)">Release glide — 200ms smoothstep (§06); velocity spring still REQUEST</strong>) + haptic per detent; min/max edges get a firmer haptic.</li>
+          <li>Hit: full-width 48dp strip; value label/min-max icons live outside the strip.</li>
+          <li>A11y: adjustable role — vertical swipe ±10% (or 1 step); announces "Limit, R$ 400"; live value announced with 200ms debounce while dragging.</li>
+          <li>Use for approximate continuous ranges (volume, limits). Precise numbers → Stepper (C8) or numeric TextInput; never as a page scrubber.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Thumb hover grows it 24→26 and shows the value bubble (<span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Motion.Press</span>); cursor pointer; track click jumps (spec’d); thumb drag has no slop.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">←/↓ −1 step · →/↑ +1 · PgUp/PgDn ±10% · Home/End min/max. Value announces debounced 200ms, as while dragging.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">role=slider</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-valuenow/min/max</span> (+ <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">valuetext</span> for units). Native Adjustable ships — increment/decrement already answer.</div></div>
+    </div>
+  </section>
+
+  <section id="c-stepper" data-screen-label="C8 Stepper" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--infs);color:var(--oninfs)">C8</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Stepper</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new Stepper(value, onChanged, min: 1, max: 9)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:26px;display:flex;gap:40px;align-items:center;justify-content:center;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+          <div style="display:inline-flex;align-items:center;border:1px solid var(--bd2);border-radius:10px;overflow:hidden">
+            <span style="width:40px;height:32px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:18px">remove</span></span>
+            <span style="width:40px;height:32px;display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;border-left:1px solid var(--bd);border-right:1px solid var(--bd)">2</span>
+            <span style="width:40px;height:32px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:18px">add</span></span>
+          </div>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">joined · 120×32, hit 48 per half</span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+          <div style="display:inline-flex;align-items:center;border:1px solid var(--bd2);border-radius:10px;overflow:hidden">
+            <span style="width:40px;height:32px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx1);opacity:.38"><span style="font-family:'Material Symbols Rounded';font-size:18px">remove</span></span>
+            <span style="width:40px;height:32px;display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;border-left:1px solid var(--bd);border-right:1px solid var(--bd)">1</span>
+            <span style="width:40px;height:32px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx1)"><span style="font-family:'Material Symbols Rounded';font-size:18px">add</span></span>
+          </div>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">at min — decrement disabled, never wraps</span>
+        </div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Rules</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Joined form: 3 cells 40×32 in an Outline container (Radius.Md, hairline separators — three Boxes, not per-side borders); glyphs 18; value 15/600 tnum, min-width 40. Hit: 48dp per half, split at cell boundary.</li>
+          <li>Press: cell fills SurfaceSubtle instantly; value crossfades 100ms. <strong style="color:var(--tx1)">Long-press auto-repeat</strong>: starts at 500ms, 8 steps/s, ×4 after 2s; haptic per tick.</li>
+          <li>At bounds the button disables (38%) — value never wraps around.</li>
+          <li>A11y: adjustable role — "Quantity, 2"; increment/decrement actions; each change announced.</li>
+          <li>Use for small bounded integers (quantity, guests, ≤ ~30 steps). Large or unbounded ranges → numeric TextInput; approximate ranges → Slider (C7).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">−/+ hover per the quiet rule (§10); press-and-hold repeats with the mouse exactly as with touch; cursor pointer.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">The value group is one stop: ↑/→ increment, ↓/← decrement, Home/End clamp; the −/+ buttons are also plain stops.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Group named by its label; buttons announce "decrease/increase"; value changes announce. Native: Adjustable increment/decrement.</div></div>
+    </div>
+  </section>
+  <section id="c-ptr" data-screen-label="C9 PullToRefresh" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--infs);color:var(--oninfs)">C9</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">PullToRefresh</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new PullToRefresh(onRefresh: async fn, child: List | ScrollView)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:22px;display:flex;justify-content:center">
+        <div style="width:280px;border-radius:14px;border:1px solid var(--bd);overflow:hidden;background:var(--sf)">
+          <div style="height:64px;display:flex;align-items:center;justify-content:center;background:var(--bg)">
+            <div style="width:40px;height:40px;border-radius:999px;background:var(--sf);box-shadow:var(--e2);display:flex;align-items:center;justify-content:center">
+              <span style="position:relative;width:16px;height:16px;display:inline-block;color:var(--pri);transform:scale(1.25)"><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(0deg);animation:ph-blink .8s linear infinite;animation-delay:-.8s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(45deg);animation:ph-blink .8s linear infinite;animation-delay:-.7s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(90deg);animation:ph-blink .8s linear infinite;animation-delay:-.6s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(135deg);animation:ph-blink .8s linear infinite;animation-delay:-.5s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(180deg);animation:ph-blink .8s linear infinite;animation-delay:-.4s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(225deg);animation:ph-blink .8s linear infinite;animation-delay:-.3s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(270deg);animation:ph-blink .8s linear infinite;animation-delay:-.2s"></span><span style="position:absolute;left:7px;top:0;width:2px;height:5px;border-radius:1px;background:currentColor;transform-origin:1px 8px;transform:rotate(315deg);animation:ph-blink .8s linear infinite;animation-delay:-.1s"></span></span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid var(--bd)"><div style="width:36px;height:36px;border-radius:999px;background:var(--sf2)"></div><div style="flex:1"><div style="height:11px;width:70%;border-radius:999px;background:var(--sf2)"></div><div style="height:9px;width:45%;border-radius:999px;background:var(--sf2);margin-top:7px"></div></div></div>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid var(--bd)"><div style="width:36px;height:36px;border-radius:999px;background:var(--sf2)"></div><div style="flex:1"><div style="height:11px;width:60%;border-radius:999px;background:var(--sf2)"></div><div style="height:9px;width:50%;border-radius:999px;background:var(--sf2);margin-top:7px"></div></div></div>
+        </div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Rules</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Top-overscroll gesture on root lists. Pull maps with 0.5 asymptotic resistance; commit threshold 72dp.</li>
+          <li>Indicator: Spinner Md 24 (Primary) in a 40dp Surface circle + E2. While pulling, spinner bars fill clockwise with pull fraction (deterministic — the user can feel the threshold); past threshold it starts spinning.</li>
+          <li>Release ≥ 72dp: settles at 72dp (<strong style="color:var(--tx1)">Release glide — 200ms smoothstep (§06); velocity spring still REQUEST</strong>), <span style="font-family:'JetBrains Mono',monospace;font-size:12px">onRefresh</span> runs, min visible 500ms, collapses Slow decelerate. Below threshold: springs back, nothing fires.</li>
+          <li>Platform flag: iOS translates content with the pull; Android floats the circle over static content.</li>
+          <li>A11y: refresh exposed as a custom action on the scroll region (readers can't pull); announces "refreshing" → "refreshed"; Reduce Motion: static indicator, fade transitions.</li>
+          <li>Root content lists only — never inside carousels or sheets; don't co-opt the gesture for anything but refresh.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)"><strong style="color:var(--tx1)">No pull on wheel/trackpad</strong> — overscroll is not a pointer gesture. Desktop surfaces an explicit refresh control (toolbar IconButton or menu item) + ⌘R/F5.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">The refresh action must be reachable as a real control — the gesture is never the only path (§10).</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Refresh exposed as a custom action on the scroll region (spec’d): native custom actions <strong style="color:var(--onwars)">REQUEST</strong> (§10); announces "refreshing" → "refreshed".</div></div>
+    </div>
+  </section>
+
+  <section id="c-swipe" data-screen-label="C10 SwipeableRow" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--infs);color:var(--oninfs)">C10</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">SwipeableRow</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new SwipeableRow(child: ListItem, trailing: [RowAction ×≤2], leading: [RowAction ×≤2]?)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:22px;display:flex;justify-content:center">
+        <div style="width:320px;border-radius:14px;border:1px solid var(--bd);overflow:hidden;position:relative;background:var(--sf)">
+          <div style="position:absolute;right:0;top:0;bottom:0;display:flex">
+            <div style="width:72px;background:var(--inf);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px"><span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--oninf)">archive</span><span style="font-size:10.5px;font-weight:700;color:var(--oninf)">Archive</span></div>
+            <div style="width:72px;background:var(--des);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px"><span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--ondes)">delete</span><span style="font-size:10.5px;font-weight:700;color:var(--ondes)">Delete</span></div>
+          </div>
+          <div style="position:relative;transform:translateX(-144px);background:var(--sf);display:flex;align-items:center;gap:12px;padding:12px 16px">
+            <div style="width:40px;height:40px;border-radius:999px;background:linear-gradient(135deg,#5CA2E8,#0050A0);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex:none">MR</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:14.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Marcos Ribeiro</div>
+              <div style="font-size:12.5px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Invoice #0311 — paid</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Rules</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Horizontal slop 12dp wins over vertical scroll; row translates 1:1; actions revealed behind: 72dp panes, status Base fill + OnBase icon Dense + Caption 10.5/700.</li>
+          <li>≤ 2 actions per side; destructive always at the outer edge. Release snaps to n×72 or closed (<strong style="color:var(--tx1)">Release glide — 200ms smoothstep (§06); velocity spring still REQUEST</strong>, by position + velocity). <strong style="color:var(--tx1)">Full swipe &gt; 60%</strong> width commits the outer action — pane stretches to full width first (Fast).</li>
+          <li>One row open at a time; outside tap / scroll / another swipe closes it. Destructive commit: row height collapses Base + haptic; Undo offered via Toast (C4).</li>
+          <li>A11y: <strong style="color:var(--tx1)">every swipe action must mirror as a custom accessibility action</strong> on the row — gesture-only actions are a spec violation; announce "actions available".</li>
+          <li>Swipe = shortcut, never the only path — the same actions must exist in the row's detail or long-press ActionSheet (C3 — not yet in SDK). Don't mix swipeable rows with horizontal carousels in the same region.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Mouse drags don’t swipe — on pointer the row’s actions surface via <strong style="color:var(--tx1)">right-click context menu</strong> (the C3 presentation) plus the row’s own visible affordances.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Focused row: menu key / Shift+F10 opens the actions; destructive commit stays two-step. The same actions live in the row’s detail (spec’d rule).</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Every swipe action mirrors as a custom accessibility action (normative) — <strong style="color:var(--onwars)">REQUEST</strong> on native until SemanticNode carries custom actions (§10).</div></div>
+    </div>
+  </section>
+
+  <section id="c-accordion" data-screen-label="C11 Accordion" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--infs);color:var(--oninfs)">C11</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Accordion</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new Accordion(items: [(header, content)], singleOpen: false)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:22px;display:flex;justify-content:center">
+        <div style="width:320px;background:var(--sf);border:1px solid var(--bd);border-radius:14px;overflow:hidden">
+          <button onClick="{{ toggleAcc }}" style="width:100%;display:flex;align-items:center;gap:10px;height:52px;padding:0 16px;border:none;background:transparent;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;box-sizing:border-box" style-active="background:var(--sf2)" style-focus="outline:none;box-shadow:inset 0 0 0 2px var(--foc)">
+            <span style="flex:1;text-align:left;font-size:calc(15px*var(--fs,1));font-weight:600;color:var(--tx1)">What fees apply to transfers?</span>
+            <span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--tx3);transform:{{ accRot }};transition:transform 200ms cubic-bezier(0.2,0,0,1)">expand_more</span>
+          </button>
+          <div style="max-height:{{ accMax }};overflow:hidden;transition:max-height 200ms cubic-bezier(0.2,0,0,1)">
+            <div style="padding:0 16px 16px;font-size:calc(14px*var(--fs,1));line-height:1.55;color:var(--tx2)">PIX transfers are free for personal accounts. TED transfers cost R$ 3,50 outside business hours. International transfers follow the partner's schedule shown before confirmation.</div>
+          </div>
+          <div style="height:1px;background:var(--bd)"></div>
+          <div style="width:100%;display:flex;align-items:center;gap:10px;height:52px;padding:0 16px;box-sizing:border-box">
+            <span style="flex:1;font-size:calc(15px*var(--fs,1));font-weight:600;color:var(--tx1)">How do I raise my limits?</span>
+            <span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--tx3)">expand_more</span>
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Rules — live demo, tap the first item</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Header 52dp: title 15/600 + chevron Dense 20 TextMuted rotating 180°, Base 200ms standard; content padding 0/16/16, Body/M TextSecondary; hairline between items; container = Outlined card or plain list region.</li>
+          <li>Height animates Base standard (an explicit layout-animation exception, like Banner); content fades in over the last 100ms. Pressed header = SurfaceSubtle instant.</li>
+          <li><span style="font-family:'JetBrains Mono',monospace;font-size:12px">singleOpen</span>: opening one closes the other — both animate simultaneously.</li>
+          <li>A11y: header = button with expanded state — "Fees, button, {{ accStateLabel }}"; content follows its header in focus order; state changes announced.</li>
+          <li>Progressive disclosure of secondary content (FAQs, breakdowns). Don't nest accordions, hide primary actions inside, or use for navigation.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Header hover = SurfaceSubtle wash (§10); cursor pointer; the chevron is decoration — the whole header is the target.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Headers are tab stops · Enter/Space toggles · ↑/↓ move between headers · Home/End first/last.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Header = button + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-expanded</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-controls</span> → its region. Native Expanded field: <strong style="color:var(--onwars)">REQUEST</strong> (§10).</div></div>
+    </div>
+  </section>
+
+  <section id="c-dots" data-screen-label="C12 PageIndicator" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--infs);color:var(--oninfs)">C12</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">PageIndicator</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new PageIndicator(count: 5, current: 1)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:26px;display:flex;flex-direction:column;gap:22px;align-items:center">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="width:8px;height:8px;border-radius:999px;background:var(--bd2)"></span>
+          <span style="width:20px;height:8px;border-radius:999px;background:var(--pri)"></span>
+          <span style="width:8px;height:8px;border-radius:999px;background:var(--bd2)"></span>
+          <span style="width:8px;height:8px;border-radius:999px;background:var(--bd2)"></span>
+          <span style="width:8px;height:8px;border-radius:999px;background:var(--bd2)"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;background:var(--scrim);padding:5px 10px;border-radius:999px">
+          <span style="width:8px;height:8px;border-radius:999px;background:rgba(255,255,255,.55)"></span>
+          <span style="width:20px;height:8px;border-radius:999px;background:#FFFFFF"></span>
+          <span style="width:8px;height:8px;border-radius:999px;background:rgba(255,255,255,.55)"></span>
+        </div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">7 / 12</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3)">standard · over media (scrim pill) · counter fallback</span>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Rules</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Dot 8dp Radius.Full BorderStrong; active = 20×8 Primary pill; gap S2 8. Active pill grows / previous shrinks Base standard, interpolating with carousel drag fraction (worm effect — two rrects, engine-honest).</li>
+          <li>Over media: dots sit in a Scrim-fill pill (padding 4/10) with white dots — never bare on photos.</li>
+          <li>≤ 8 pages; beyond, swap to a Caption tnum counter "7 / 12".</li>
+          <li>Display-only in v1 (no tap-to-jump — 8dp dots can't honor 48dp hits honestly); pair within thumb reach of its carousel.</li>
+          <li>A11y: dots decorative (hidden); the carousel announces "page 2 of 5" on settle.</li>
+          <li>For carousels/onboarding pagers. Not for wizard steps (use step text + ProgressBar) or long feeds.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Display-only stands on desktop too — 8dp dots can’t honor pointer targets honestly. The carousel grows hover-revealed prev/next arrows at the pointer tier instead.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Dots stay decorative; the carousel announces "page 2 of 5" on settle (spec’d).</div></div>
+    </div>
+  </section>
+  <section id="c-tooltip" data-screen-label="C13 Tooltip" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--infs);color:var(--oninfs)">C13</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Tooltip</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">provided by IconButton(label:) — Tooltip.For(control, text) for custom anchors</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:30px;display:flex;justify-content:center">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+          <span style="background:var(--tx1);color:var(--txi);font-size:12px;font-weight:500;padding:6px 10px;border-radius:6px;box-shadow:var(--e3)">Scan invoice</span>
+          <span style="width:48px;height:48px;border-radius:10px;background:var(--sf2);display:inline-flex;align-items:center;justify-content:center;color:var(--tx1);box-shadow:inset 0 0 0 2px var(--foc)"><span style="font-family:'Material Symbols Rounded';font-size:24px">qr_code_scanner</span></span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);margin-top:6px">long-press 500ms — bubble 8dp above, no caret (fence: no paths)</span>
+        </div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Rules</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>Inverse surface (TextPrimary fill + TextInverse text) · Caption 12/500 · padding 6/10 · Radius.Sm 6 · E3 · max-width 200, ≤ 2 lines. No caret arrow in v1 — proximity + shadow anchor it (flips below near the top edge).</li>
+          <li>Trigger: long-press 500ms on icon-only controls (IconButton provides it automatically from <span style="font-family:'JetBrains Mono',monospace;font-size:12px">label:</span>). Enter: fade + 2dp rise, Fast 100ms; dismiss on release + 1.5s, scroll, or tap elsewhere.</li>
+          <li>Content = the control's label, verbatim. Never actions, never essential info that exists nowhere else.</li>
+          <li>A11y: hidden from readers — the accessible label already speaks; tooltip serves sighted users who don't recognize a glyph.</li>
+          <li>Don't attach to controls with visible text; don't chain tooltips into an onboarding tour.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Opens after ~500ms hover <strong style="color:var(--tx1)">and on focus-visible</strong>; closes on pointer-leave, press, or Esc. The pointer may travel into the tip without closing it. Never put controls inside.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Focus shows it, blur or Esc hides it — hover is garnish, focus is the contract (§10).</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">role=tooltip</span> joined to the trigger via <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-describedby</span> — a description, never the name.</div></div>
+    </div>
+  </section>
+
+  <section id="c-select" data-screen-label="C14 Select" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--infs);color:var(--oninfs)">C14</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">Select</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new Select(options, selected, onChanged, label: "Account", searchable: auto)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:22px;display:flex;gap:24px;justify-content:center;flex-wrap:wrap">
+        <div style="width:250px">
+          <div style="font-size:13px;font-weight:600;color:var(--tx2);margin-bottom:6px">Account</div>
+          <div style="height:48px;border:1px solid var(--bd2);border-radius:10px;background:var(--sf);display:flex;align-items:center;gap:10px;padding:0 14px;box-sizing:border-box">
+            <span style="flex:1;font-size:15px">Checking ··· 4821</span>
+            <span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--tx3)">expand_more</span>
+          </div>
+          <div style="font-size:12px;color:var(--tx3);margin-top:6px">Trigger — TextInput anatomy + chevron</div>
+        </div>
+        <div style="width:250px;background:var(--sf);border-radius:16px;box-shadow:var(--e4);overflow:hidden">
+          <div style="display:flex;justify-content:center;padding:8px 0 2px"><span style="width:36px;height:4px;border-radius:999px;background:var(--bd2)"></span></div>
+          <div style="padding:6px 16px 8px;font-size:15px;font-weight:600">Account</div>
+          <div style="display:flex;align-items:center;gap:12px;height:52px;padding:0 16px">
+            <span style="width:22px;height:22px;border-radius:999px;border:2px solid var(--pri);box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;flex:none"><span style="width:10px;height:10px;border-radius:999px;background:var(--pri)"></span></span>
+            <span style="font-size:14.5px;font-weight:600">Checking ··· 4821</span>
+          </div>
+          <div style="height:1px;background:var(--bd);margin-left:50px"></div>
+          <div style="display:flex;align-items:center;gap:12px;height:52px;padding:0 16px">
+            <span style="width:22px;height:22px;border-radius:999px;border:2px solid var(--bd2);box-sizing:border-box;flex:none"></span>
+            <span style="font-size:14.5px">Savings ··· 1177</span>
+          </div>
+          <div style="display:flex;justify-content:center;padding:4px 0 8px"><span style="width:70px;height:4px;border-radius:2px;background:var(--bd2)"></span></div>
+        </div>
+      </div>
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Rules</div>
+        <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+          <li>No floating dropdown menus in v1 — <strong style="color:var(--tx1)">every Select opens a BottomSheet picker</strong> (C1): one pattern, thumb-reachable, keyboard-safe.</li>
+          <li>Trigger inherits TextInput (B9) anatomy/states, trailing chevron-down; value 15, placeholder TextMuted.</li>
+          <li>Sheet: title = label; rows 52 with RadioGroup semantics (B13); &gt; 8 options auto-pins a SearchField (B10) under the title; selection commits + dismisses. Multi-select: Checkbox rows + full-width "Apply" XLarge footer.</li>
+          <li>A11y: trigger = button "Account, Checking 4821, collapsed" → "expanded"; on close focus returns to trigger; selection announced.</li>
+          <li>Use for ≥ 6 or dynamic options. 2–5 fixed → RadioGroup (B13) or SegmentedControl (C6) inline; dates → DatePicker (C15).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">The pointer tier presents an <strong style="color:var(--tx1)">anchored popover listbox</strong> (match-anchor width) instead of the BottomSheet; option hover = SurfaceSubtle (§10); wheel scrolls; cursor pointer.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Combobox pattern: Space/Enter/↓ open · ↑/↓ move · type-ahead jumps · Enter commits · <strong style="color:var(--tx1)">Esc closes without changing</strong> · Home/End.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Trigger = <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">combobox</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-expanded</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-haspopup=listbox</span>; options <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">option</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-selected</span>. Native Expanded/Selected fields: <strong style="color:var(--onwars)">REQUEST</strong> (§10).</div></div>
+    </div>
+  </section>
+
+  <section id="c-date" data-screen-label="C15 DatePicker" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--infs);color:var(--oninfs)">C15</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">DatePicker</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new DatePicker(selected, onChanged, min?, max?, mode: DateMode.Single | Range)</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.03em;padding:2px 8px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">IN SDK</span>
+    </div>
+    <div style="margin:6px 0 14px;display:flex;align-items:flex-start;gap:9px;padding:10px 13px;border-radius:10px;background:var(--sucs);color:var(--onsucs);max-width:780px;box-sizing:border-box"><span style="font-family:'Material Symbols Rounded';font-size:17px;line-height:1.3">check_circle</span><span style="font-size:12.5px;line-height:1.55">Shipped in eQuantic.UI.Components, with <strong>TimePicker and DateTimePicker</strong> alongside it. The month grid is always six weeks so a popover never resizes while paging. The text-entry fallback row (DD/MM/YYYY TextInput) remains required for keyboard and switch users.</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:22px;display:flex;justify-content:center">
+        <div style="background:var(--sf);border-radius:16px;box-shadow:var(--e4);padding:14px 16px 16px">
+          <div style="display:flex;align-items:center;gap:6px;padding-bottom:10px">
+            <span style="flex:1;font-size:15px;font-weight:600;padding-left:6px">July 2026</span>
+            <span style="width:36px;height:36px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx2)"><span style="font-family:'Material Symbols Rounded';font-size:20px">chevron_left</span></span>
+            <span style="width:36px;height:36px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx2)"><span style="font-family:'Material Symbols Rounded';font-size:20px">chevron_right</span></span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(7,36px);gap:4px;justify-items:center">
+            <span style="font-size:11px;font-weight:700;color:var(--tx3);height:20px;display:flex;align-items:center">S</span>
+            <span style="font-size:11px;font-weight:700;color:var(--tx3);height:20px;display:flex;align-items:center">M</span>
+            <span style="font-size:11px;font-weight:700;color:var(--tx3);height:20px;display:flex;align-items:center">T</span>
+            <span style="font-size:11px;font-weight:700;color:var(--tx3);height:20px;display:flex;align-items:center">W</span>
+            <span style="font-size:11px;font-weight:700;color:var(--tx3);height:20px;display:flex;align-items:center">T</span>
+            <span style="font-size:11px;font-weight:700;color:var(--tx3);height:20px;display:flex;align-items:center">F</span>
+            <span style="font-size:11px;font-weight:700;color:var(--tx3);height:20px;display:flex;align-items:center">S</span>
+            <span></span><span></span><span></span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px">1</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px">2</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:inset 0 0 0 1.5px var(--pri);color:var(--pri);font-weight:700">3</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px">4</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px">5</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px">6</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px">7</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px">8</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px">9</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px">10</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px">11</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px">12</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px">13</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px">14</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px">15</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px">16</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px;background:var(--pri);color:var(--onpri);font-weight:700">17</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px">18</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px">19</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px">20</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px">21</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px">22</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px">23</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px">24</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px">25</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px">26</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px">27</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px">28</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px;opacity:.38">29</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px;opacity:.38">30</span>
+            <span style="width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px;opacity:.38">31</span>
+          </div>
+          <div style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);padding-top:10px">today = ring · selected = Primary circle · past max = 38%</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Specs &amp; behavior</div>
+          <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+            <li>Presented in a BottomSheet (C1) at content height. Header: month/year Title 15/600 + chevron IconButtons (36dp, hit 48); dow row Caption 11/700 TextMuted; day cells 44×44 native on device (36 in this doc's compact render), numerals 13 tnum.</li>
+            <li>States: selected = Primary Full circle + OnPrimary 700 · today = 1.5dp Primary inner ring + Primary text · outside min/max = 38% non-interactive · other-month days hidden.</li>
+            <li>Range mode: endpoints Primary circles; between-days get a PrimarySubtle full-width band (row-segment rrects); taps set start → end → reset.</li>
+            <li>Month nav: chevrons or horizontal swipe (page settle); tapping the title opens a year grid (12/screen). Day numerals clamp Dynamic Type at ×1.15 inside fixed cells.</li>
+          </ul>
+        </div>
+        <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">A11y · usage</div>
+          <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+            <li>Grid semantics: "Friday, July 17, selected" · chevrons "previous / next month" · range announces "start of range" / "end of range". A text-entry fallback row (DD/MM/YYYY TextInput) is required for keyboard/switch users.</li>
+            <li>Use for scheduling within ± a few years. Far-past dates (birthdays) must lead with the year grid; time-of-day picking is out of v1 scope.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">The pointer tier presents an anchored popover calendar; day hover = SurfaceSubtle circle (§10); cursor pointer; wheel pages months.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Grid pattern: arrows move a day · PgUp/PgDn month (+Shift = year) · Home/End week bounds · Enter selects · Esc closes. The text-entry fallback row is the universal keyboard path.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">grid / gridcell</span> + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-selected</span>; day names are column headers. Native Selected field: <strong style="color:var(--onwars)">REQUEST</strong> (§10).</div></div>
+    </div>
+  </section>
+
+
+  <section id="c-navrail" data-screen-label="C16 NavigationRail" style="margin-bottom:56px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--infs);color:var(--oninfs)">C16</span>
+      <h3 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-.015em">NavigationRail</h3>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--tx3)">new NavigationRail(items: [NavItem ×3–7], selectedIndex: int, header: Widget?, onSelected: fn)</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.03em;padding:2px 8px;border-radius:6px;background:var(--wars);color:var(--onwars)">NOT YET IN SDK · REQUEST</span>
+    </div>
+    <p style="margin:6px 0 14px;font-size:13.5px;line-height:1.6;color:var(--tx2);max-width:760px">The desktop adaptive tier between BottomNavigation and a pinned Drawer — added by the v1.1 audit so the pointer tier has a specified target. <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">AdaptiveNode</span> swaps <strong style="color:var(--tx1)">BottomNavigation (compact) ↔ NavigationRail (medium) ↔ pinned Drawer (expanded)</strong> with the same items in the same order; the destination model never changes shape.</p>
+    <div style="display:grid;grid-template-columns:220px minmax(0,1fr);gap:16px">
+      <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:18px;display:flex;justify-content:center">
+        <div style="width:80px;border:1px solid var(--bd);border-radius:14px;background:var(--sf);padding:12px 0;display:flex;flex-direction:column;align-items:center;gap:10px">
+          <span style="width:40px;height:40px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx2)" style-hover="background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:20px">menu</span></span>
+          <div style="height:6px"></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px"><span style="width:52px;height:30px;border-radius:999px;background:var(--pris);display:inline-flex;align-items:center;justify-content:center;color:var(--onpris)"><span style="font-family:'Material Symbols Rounded';font-size:20px;font-variation-settings:'FILL' 1">home</span></span><span style="font-size:11px;font-weight:700;color:var(--tx1)">Home</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px"><span style="width:52px;height:30px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx2)" style-hover="background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:20px">receipt_long</span></span><span style="font-size:11px;font-weight:500;color:var(--tx3)">Activity</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px"><span style="width:52px;height:30px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx2)" style-hover="background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:20px">pie_chart</span></span><span style="font-size:11px;font-weight:500;color:var(--tx3)">Budget</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px"><span style="width:52px;height:30px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;color:var(--tx2)" style-hover="background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:20px">settings</span></span><span style="font-size:11px;font-weight:500;color:var(--tx3)">Settings</span></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Specs &amp; behavior</div>
+          <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+            <li>Rail 80dp wide, full height, Surface fill + 1dp Border on the trailing edge; optional header slot (menu IconButton / FAB) on top; items top-aligned, gap S2 8.</li>
+            <li>Item cell 80×56, hit = the full cell: 52×30 pill + Caption 12 label beneath, icon Dense 20 centered — <strong style="color:var(--tx1)">same selection vocabulary as B4</strong>: selected = PrimarySubtle pill + filled glyph + label 700; others TextSecondary.</li>
+            <li>Selection: pill crossfade + glyph fill swap, <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">Motion.State</span> 200ms; exactly one selected, always. 3–7 destinations (B4's rule); labels always visible — no icon-only rail in v1.</li>
+            <li>The rail never scrolls; it owns the window's leading edge and paints the vertical safe areas in its own fill.</li>
+          </ul>
+        </div>
+        <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px 18px">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">A11y · usage</div>
+          <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:var(--tx2)">
+            <li>Navigation landmark "primary"; items announce label + "current" when selected. Never show Rail and BottomNavigation together.</li>
+            <li>Use at the medium window class (tablet portrait, half-screen desktop); expanded widths graduate to the pinned Drawer (C5) with the same items.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;background:var(--sf2)"><span style="font-family:'Material Symbols Rounded';font-size:14px;color:var(--tx3)">mouse</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)">Desktop &amp; pointer — contract per §10</span></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Pointer</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Item hover = SurfaceSubtle pill (§10); cursor pointer; right-click maps nothing — navigation is not contextual.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Keys</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Each destination is a tab stop (as B4); Enter/Space navigates.</div></div>
+      <div style="display:grid;grid-template-columns:92px minmax(0,1fr);border-top:1px solid var(--bd)"><div style="padding:8px 0 8px 14px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Semantics</div><div style="padding:8px 14px 8px 0;font-size:12.5px;line-height:1.65;color:var(--tx2)">Navigation landmark + <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">aria-current="page"</span>. Native Selected field: <strong style="color:var(--onwars)">REQUEST</strong> (§10).</div></div>
+    </div>
+  </section>
+
+  <footer style="border-top:1px solid var(--bd);padding-top:24px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
+    <span style="font-size:13px;font-weight:700">Photon Mobile Design System</span>
+    <span style="font-size:12px;color:var(--tx3)">Spec v1.1 (SDK audit) · Foundations 00–10 + Phase A (A1–A13) + Phase B (B1–B18) + Phase C (C1–C16) — C3 · C15 · C16 ahead of the SDK (REQUEST). Charts, maps and rich text are outside the v1 fence by design.</span>
+  </footer>
+</main>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light' | 'dark'&quot;,&quot;section&quot;:&quot;Preview&quot;},&quot;fontScale&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:1,&quot;max&quot;:1.3,&quot;step&quot;:0.05,&quot;default&quot;:1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Preview&quot;},&quot;showHitAreas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Preview&quot;}}">
+class Component extends DCLogic {
+  state = { theme: 'light', fs: 1, hit: false, mk: 0, btnLoading: false, swOn: true, seg: 0, accOpen: true, toastOn: false };
+
+  componentDidMount() {
+    let t = 'light';
+    try { t = localStorage.getItem('photon-theme') || (this.props.theme ?? 'light'); } catch (e) { t = this.props.theme ?? 'light'; }
+    this.applyTheme(t, false);
+    const fs = this.props.fontScale ?? 1;
+    if (fs !== 1) this.applyFs(fs);
+    if (this.props.showHitAreas) this.applyHit(true);
+    setTimeout(() => this.setState(s => ({ mk: s.mk + 1 })), 400);
+  }
+
+  applyTheme(t, persist) {
+    if (t === 'dark') document.body.setAttribute('data-theme', 'dark');
+    else document.body.removeAttribute('data-theme');
+    if (persist) { try { localStorage.setItem('photon-theme', t); } catch (e) {} }
+    this.setState({ theme: t });
+  }
+  applyFs(v) { document.body.style.setProperty('--fs', String(v)); this.setState({ fs: v }); }
+  applyHit(on) { document.body.style.setProperty('--hit', on ? '1' : '0'); this.setState({ hit: on }); }
+
+  dot(anim) {
+    return React.createElement('span', {
+      key: 'k' + this.state.mk,
+      style: {
+        position: 'absolute', left: 8, top: 7, width: 18, height: 18, borderRadius: 6,
+        background: 'var(--pri)', animation: anim, animationFillMode: 'forwards'
+      }
+    });
+  }
+
+  renderVals() {
+    const { theme, fs, hit } = this.state;
+    const seg = (active) => ({
+      bg: active ? 'var(--sf)' : 'transparent',
+      c: active ? 'var(--tx1)' : 'var(--tx3)',
+      sh: active ? '0 1px 2px rgba(15,23,32,.18)' : 'none'
+    });
+    const s1 = seg(fs === 1), s2 = seg(fs === 1.15), s3 = seg(fs === 1.3);
+    return {
+      themeIcon: theme === 'dark' ? 'light_mode' : 'dark_mode',
+      themeLabel: theme === 'dark' ? 'Light' : 'Dark',
+      toggleTheme: () => this.applyTheme(this.state.theme === 'dark' ? 'light' : 'dark', true),
+      fs100: () => this.applyFs(1), fs115: () => this.applyFs(1.15), fs130: () => this.applyFs(1.3),
+      fsBg1: s1.bg, fsC1: s1.c, fsSh1: s1.sh,
+      fsBg2: s2.bg, fsC2: s2.c, fsSh2: s2.sh,
+      fsBg3: s3.bg, fsC3: s3.c, fsSh3: s3.sh,
+      toggleHit: () => this.applyHit(!this.state.hit),
+      hitBg: hit ? 'var(--pris)' : 'var(--sf2)',
+      hitC: hit ? 'var(--onpris)' : 'var(--tx1)',
+      noop: () => {},
+      swTrack: this.state.swOn ? 'var(--pri)' : 'var(--bd2)',
+      swLeft: this.state.swOn ? '23px' : '3px',
+      swLabel: this.state.swOn ? 'On' : 'Off',
+      toggleSw: () => this.setState(s => ({ swOn: !s.swOn })),
+      segLeft: 'calc(4px + ' + this.state.seg + ' * ((100% - 8px) / 3))',
+      seg0C: this.state.seg === 0 ? 'var(--tx1)' : 'var(--tx2)',
+      seg1C: this.state.seg === 1 ? 'var(--tx1)' : 'var(--tx2)',
+      seg2C: this.state.seg === 2 ? 'var(--tx1)' : 'var(--tx2)',
+      segPick0: () => this.setState({ seg: 0 }),
+      segPick1: () => this.setState({ seg: 1 }),
+      segPick2: () => this.setState({ seg: 2 }),
+      accMax: this.state.accOpen ? '220px' : '0px',
+      accRot: this.state.accOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+      accStateLabel: this.state.accOpen ? 'expanded' : 'collapsed',
+      toggleAcc: () => this.setState(s => ({ accOpen: !s.accOpen })),
+      toastOn: this.state.toastOn,
+      showToast: () => {
+        clearTimeout(this._toastT);
+        this.setState({ toastOn: true });
+        this._toastT = setTimeout(() => this.setState({ toastOn: false }), 3200);
+      },
+      btnLoading: this.state.btnLoading,
+      btnNotLoading: !this.state.btnLoading,
+      btnLoadingLabel: this.state.btnLoading ? 'Stop loading' : 'Simulate loading',
+      toggleBtnLoading: () => this.setState(s => ({ btnLoading: !s.btnLoading })),
+      replayMotion: () => this.setState(s => ({ mk: s.mk + 1 })),
+      dotStandard: this.dot('ph-move-std 200ms cubic-bezier(0.2,0,0,1) 120ms forwards'),
+      dotDecel: this.dot('ph-move-std 300ms cubic-bezier(0,0,0,1) 120ms forwards'),
+      dotGlide: this.dot('ph-move-std 200ms cubic-bezier(0.33,0,0.67,1) 120ms forwards')
+    };
+  }
+}
+</script>
+</body>
+</html>
