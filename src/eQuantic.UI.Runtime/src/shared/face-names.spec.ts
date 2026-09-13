@@ -30,6 +30,14 @@ describe('font family rule (C# ⇄ TS cross-pin)', () => {
     }
   });
 
+  // A C# `string?` crosses the wire AS null, not as undefined, and an unnamed face is the
+  // documented default rather than an error — so this must answer, not throw, in the middle of
+  // hydration.
+  it('an absent face is an answer, not a crash', () => {
+    expect(isWellFormedFace(null)).toBe(false);
+    expect(isWellFormedFace(undefined)).toBe(false);
+  });
+
   // The fixture is hand-authored, so it is worth asserting it still contains the cases it exists
   // for. A table that quietly loses its injection rows keeps passing and stops proving anything.
   it('still carries the two cases the rule was written for', () => {

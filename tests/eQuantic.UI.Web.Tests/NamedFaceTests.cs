@@ -120,6 +120,63 @@ public class NamedFaceTests
         FaceResolution.Unresolved.Should().BeEmpty();
     }
 
+    /// <summary>
+    /// A C# <c>string?</c> reaches the client AS null, not as undefined, so the twin guards both.
+    /// Here the answer is simply the documented default — an unnamed face is the platform's own.
+    /// </summary>
+    [Fact]
+    public void NoFamilyAtAll_IsTheDefault_NotAnError()
+    {
+        FaceName.IsWellFormed(null).Should().BeFalse();
+        FaceName.Usable(null).Should().BeNull();
+        FaceResolution.Unresolved.Should().BeEmpty("absence is the default, never a missing face");
+    }
+
+    // ---- What the ROLE styles, and what the NODE styles ------------------------------------------
+
+    /// <summary>
+    /// Everything a theme cuts into a ROLE has to reach the element through the CLASS. The client's
+    /// lowering cannot read the type scale — its component context is opaque there — so anything SSR
+    /// renders inline from the role is dropped on the first client re-render, and the page changes
+    /// under the reader. Family, the mono stack, code white-space and the slant, all four.
+    /// </summary>
+    [Fact]
+    public void EverythingARoleCuts_RidesItsClass()
+    {
+        var css = PhotonCssGenerator.Generate(new RoleTheme(Theme, TypeRole.Caption,
+            Theme.Type(TypeRole.Caption) with { Family = "IBM Plex Mono", Mono = true, Italic = true }));
+
+        var block = Block(css, ".eq-type-caption");
+        block.Should().Contain("font-family: \"IBM Plex Mono\"");
+        block.Should().Contain("white-space: pre-wrap", "a code role keeps its indentation anywhere");
+        block.Should().Contain("font-style: italic");
+    }
+
+    /// <summary>
+    /// A form control does not inherit the document's face, so something must say so — but only
+    /// where it cannot collide with the role's own family. It used to be inline on every entry,
+    /// which beat the class and meant a themed brand reached every Text and no field.
+    /// </summary>
+    [Fact]
+    public void TheEntryResetYieldsToARoleThatNamesAFace()
+    {
+        var css = PhotonCssGenerator.Generate(new RoleTheme(Theme, TypeRole.BodyL,
+            Theme.Type(TypeRole.BodyL) with { Family = "IBM Plex Sans" }));
+
+        css.Should().NotContain(".eq-entry.eq-type-bodyl {",
+            "the role names a face, so the reset must not override it");
+        css.Should().Contain(".eq-entry.eq-type-bodym {",
+            "a role with no face of its own still needs the UA font defeated");
+    }
+
+    private static string Block(string css, string selector)
+    {
+        var start = css.IndexOf(selector + " {", StringComparison.Ordinal);
+        start.Should().BeGreaterThanOrEqualTo(0, $"the sheet declares {selector}");
+        var end = css.IndexOf('}', start);
+        return css[start..end];
+    }
+
     // ---- The released surface -------------------------------------------------------------------
 
     /// <summary>
@@ -185,6 +242,29 @@ public class NamedFaceTests
     /// invisible exactly where it matters.</summary>
     private static string Printable(string value) =>
         string.Concat(value.Select(c => char.IsControl(c) ? $"\\u{(int)c:x4}" : c.ToString()));
+
+    /// <summary>The theme under test, with ONE role recut — everything else is Photon's.</summary>
+    private sealed class RoleTheme(IAppTheme inner, TypeRole role, TypeStyle style) : IAppTheme
+    {
+        public ColorToken Background => inner.Background;
+        public ColorToken Surface => inner.Surface;
+        public ColorToken SurfaceSubtle => inner.SurfaceSubtle;
+        public ColorToken SurfaceHighlight => inner.SurfaceHighlight;
+        public ColorToken Border => inner.Border;
+        public ColorToken BorderStrong => inner.BorderStrong;
+        public ColorToken TextPrimary => inner.TextPrimary;
+        public ColorToken TextSecondary => inner.TextSecondary;
+        public ColorToken TextMuted => inner.TextMuted;
+        public ColorToken TextInverse => inner.TextInverse;
+        public ColorToken FocusRing => inner.FocusRing;
+        public ColorToken LinkColor => inner.LinkColor;
+        public ColorToken Scrim => inner.Scrim;
+        public float DisabledOpacity => inner.DisabledOpacity;
+        public VariantColors Colors(Variant variant) => inner.Colors(variant);
+        public TypeStyle Type(TypeRole asked) => asked == role ? style : inner.Type(asked);
+        public ShadowSpec Elevation(int level) => inner.Elevation(level);
+        public float Shape(ShapeScale scale) => inner.Shape(scale);
+    }
 
     /// <summary>The theme under test, with one face named — everything else is Photon's.</summary>
     private sealed class FacedTheme(IAppTheme inner, string family) : IAppTheme

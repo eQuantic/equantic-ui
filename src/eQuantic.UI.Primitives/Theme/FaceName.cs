@@ -61,7 +61,15 @@ public static class FaceName
     /// as unresolved on its way out. A name no emitter will accept is a face this run asked for and
     /// did not get, which is the fact <see cref="FaceResolution"/> already exists to carry: it
     /// reaches the run line beside the families the machine simply lacks, rather than vanishing.
+    /// <para>
+    /// HOST ONLY, and that is why: it writes <see cref="FaceResolution"/>, which owes no browser
+    /// twin — the report exists because CoreText, DirectWrite and Android substitute in silence,
+    /// and a browser names its own fallback in the declaration instead. A transpiled component
+    /// calling this would resolve to nothing at runtime, so it says so here rather than there.
+    /// <see cref="IsWellFormed"/> is the half that crosses, and it crosses.
+    /// </para>
     /// </summary>
+    [ServerOnly]
     public static string? Usable(string? family)
     {
         if (IsWellFormed(family)) return family;

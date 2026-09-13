@@ -367,8 +367,13 @@ export function cssFontWeight(weight: string | number | undefined): number {
  * The rule must match the C# character for character: SSR emits from there and hydration from here,
  * so a family one side accepts and the other rejects is a hydration mismatch.
  */
-export function isWellFormedFace(family: string | undefined): family is string {
-  if (family === undefined || family.length === 0 || family.length > 128) return false;
+export function isWellFormedFace(family: string | null | undefined): family is string {
+  // `null` as well as `undefined`: C# `Family` is nullable and an explicitly supplied default
+  // crosses the wire AS null, so a predicate that only guarded `undefined` would throw on
+  // `family.length` in the middle of hydration — an unnamed face is the documented default, not an
+  // error.
+  if (family === null || family === undefined) return false;
+  if (family.length === 0 || family.length > 128) return false;
   if (family[0] === ' ' || family[family.length - 1] === ' ') return false;
   // Unicode letters and digits, so a CJK or Cyrillic family passes; the punctuation is what real
   // families use, and nothing that means anything to CSS, JSON or HTML.

@@ -2370,7 +2370,7 @@ function lowerText(text: TextNode, context: LoweringContext): HtmlNode {
   if (text.maxLines === 1) {
     // MONO keeps `pre` (C# twin): nowrap collapses runs of spaces, and in code the spaces ARE
     // the content. `pre` refuses to wrap just the same, so the ellipsis contract holds.
-    style['white-space'] = text.mono === true ? 'pre' : 'nowrap';
+    style['white-space'] = nodeMono(text) ? 'pre' : 'nowrap';
     style.overflow = 'hidden';
     style['text-overflow'] = 'ellipsis';
     // BLOCK, or the other two do nothing (C# twin): a Text lowers to a `span`, and `overflow` and

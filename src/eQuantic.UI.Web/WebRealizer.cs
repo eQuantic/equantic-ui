@@ -1971,7 +1971,7 @@ public static class WebRealizer
         var mono = text.Mono || text.StyleOverride?.Mono == true;
         // The slant reads the same two places for the same reason: a role may BE italic (a
         // theme's caption), and a node may slant a paragraph of an upright role.
-        var italic = text.Italic || (text.StyleOverride?.Italic ?? context.Theme.Type(text.Role).Italic);
+        var italic = text.Italic || text.StyleOverride?.Italic == true;
         // Only what the NODE named. A ROLE's face rides its `.eq-type-*` class instead (TokenCss),
         // because the client's lowering cannot read the theme's type scale and an inline role face
         // would be dropped on the first client re-render — SSR showing the brand and hydration

@@ -339,6 +339,10 @@ public static class PhotonCssGenerator
             if (roleFace is { } face) css.AppendLine($"  font-family: {TokenCss.Face(face, style.Mono)};");
             else if (style.Mono) css.AppendLine($"  font-family: {TokenCss.MonoStack};");
             if (style.Mono) css.AppendLine("  white-space: pre-wrap;");
+            // And the slant, for the same reason as the face and the stack beside it: a theme may
+            // cut a ROLE italic, the client's lowering cannot read the type scale to know, and a
+            // slant SSR applies inline is a slant hydration drops.
+            if (style.Italic) css.AppendLine("  font-style: italic;");
             css.AppendLine("}");
 
             // A form control does not inherit the document's face: the UA gives `input` and
