@@ -70,6 +70,31 @@ public class LabelledNodesReachSemanticsTests
     };
 
     /// <summary>
+    /// The containers that do not speak yet, named ONCE and read by both the theory below and the
+    /// baseline at the bottom. Two copies of this list is how one of them keeps a node excluded
+    /// after the other has declared it fixed.
+    /// </summary>
+    private static readonly string[] StillOwedAContainerRole = ["Navigable", "Overlay"];
+
+    /// <summary>
+    /// The nodes this suite asserts about, taken from the ASSEMBLY rather than written down. The
+    /// theories below were <c>[InlineData]</c> lists, which meant a node could be added to
+    /// <see cref="Samples"/>, pass <see cref="EveryLabelledNode_IsAccountedFor"/>, and never be
+    /// asked to speak — a reflection guard in name only. Found in review, and it is the same defect
+    /// this file was written about: the instrument was never exercised on the case it exists for.
+    /// </summary>
+    public static TheoryData<string> Speaking
+    {
+        get
+        {
+            var data = new TheoryData<string>();
+            foreach (var type in LabelledNodes())
+                if (!StillOwedAContainerRole.Contains(type.Name)) data.Add(type.Name);
+            return data;
+        }
+    }
+
+    /// <summary>
     /// The guard that matters: a node grows a <c>Label</c> and nothing here knows about it. Without
     /// this the switch stays silent and so does the screen reader.
     /// </summary>
@@ -84,18 +109,7 @@ public class LabelledNodesReachSemanticsTests
     }
 
     [Theory]
-    [InlineData("Icon")]
-    [InlineData("Image")]
-    [InlineData("Canvas")]
-    [InlineData("Vector")]
-    [InlineData("Drawing")]
-    [InlineData("CameraPreview")]
-    [InlineData("Adjustable")]
-    [InlineData("TextEntry")]
-    [InlineData("Pressable")]
-    [InlineData("Link")]
-    [InlineData("CodeSurface")]
-    [InlineData("SheetSurface")]
+    [MemberData(nameof(Speaking))]
     public void ALabelledNode_SaysWhatItIs(string node)
     {
         const string label = "what this node is";
@@ -127,11 +141,11 @@ public class LabelledNodesReachSemanticsTests
     [Fact]
     public void TheContainersStillOwedARole_AreExactlyTheseTwo()
     {
-        var stillSilent = new[] { "Navigable", "Overlay" }
+        var stillSilent = StillOwedAContainerRole
             .Where(node => !Describe(Samples[node]("a labelled group")).Any(s => s.Label == "a labelled group"))
             .ToArray();
 
-        stillSilent.Should().Equal(["Navigable", "Overlay"],
+        stillSilent.Should().Equal(StillOwedAContainerRole,
             "when a container role lands and one of these starts speaking, remove it from this list "
             + "— a baseline that only shrinks is the only kind that stays true");
     }
@@ -139,16 +153,7 @@ public class LabelledNodesReachSemanticsTests
     /// <summary>An unlabelled node stays decorative — the honest answer for pure ornament, and the
     /// reason this cannot simply emit a node for everything.</summary>
     [Theory]
-    [InlineData("Icon")]
-    [InlineData("Image")]
-    [InlineData("Canvas")]
-    [InlineData("Vector")]
-    [InlineData("Drawing")]
-    [InlineData("CameraPreview")]
-    [InlineData("Adjustable")]
-    [InlineData("TextEntry")]
-    [InlineData("Pressable")]
-    [InlineData("Link")]
+    [MemberData(nameof(Speaking))]
     public void AnUnlabelledNode_StaysSilent(string node)
     {
         Describe(Samples[node]("")).Should().NotContain(s => s.Role == SemanticRole.Image);
