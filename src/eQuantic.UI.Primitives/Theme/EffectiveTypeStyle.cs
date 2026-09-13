@@ -39,6 +39,34 @@ public static class EffectiveTypeStyle
     }
 
     /// <summary>
+    /// The style a RUN inside a paragraph is set in: the paragraph's, plus what the run said, plus
+    /// the theme's code face. The run-level twin of <see cref="Resolve(Text, IAppTheme)"/>, and here
+    /// for the reason that function exists at all — this merge was written out by hand in the layout
+    /// engine and got the family wrong, which is what a second voice does.
+    ///
+    /// <para>
+    /// The one asymmetry with the paragraph: a MONO run drops the inherited family. A run cannot
+    /// NAME a face — <see cref="TextRun.StyleOverride"/> carries a size and nothing else — so a
+    /// family arriving here came from the ROLE and was never chosen for this span, while a family on
+    /// a paragraph was chosen and is kept. It matters because every shell resolves a face as
+    /// <c>family ?? the OS fixed-pitch face</c>: an inherited proportional family wins over the mono
+    /// flag, so a theme that gave its body role a face had inline code measured and drawn in that
+    /// face on Photon while the web and email both set it monospaced.
+    /// </para>
+    /// </summary>
+    public static TypeStyle Resolve(this TextRun run, TypeStyle paragraph, IAppTheme theme)
+    {
+        var style = paragraph;
+        // Only the SIZE travels from a run's override — the run keeps the paragraph's line box,
+        // which is what makes it a run rather than a line of its own.
+        if (run.StyleOverride is { } over) style = style.WithSize(over.Size);
+        if (run.Mono) style = style with { Mono = true, Family = null };
+        if (run.Italic) style = style with { Italic = true };
+        if (run.Weight is { } weight) style = style with { Weight = weight };
+        return style.WithCodeFace(theme);
+    }
+
+    /// <summary>
     /// The theme's code face, when this style is monospaced and named no face of its own. A style
     /// that NAMES a family keeps it: the call site was specific, and specificity wins over a theme
     /// default the way it does everywhere else here.

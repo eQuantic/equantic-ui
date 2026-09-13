@@ -920,14 +920,7 @@ public static class LayoutEngine
 
         foreach (var run in spans)
         {
-            var runStyle = paragraph;
-            if (run.StyleOverride is { } over) runStyle = runStyle.WithSize(over.Size);
-            if (run.Mono) runStyle = runStyle with { Mono = true };
-            if (run.Italic) runStyle = runStyle with { Italic = true };
-            // A mono RUN takes the theme's code face too, or an inline code span is measured in one
-            // face and drawn in another — the same disagreement one level down from the paragraph.
-            runStyle = runStyle.WithCodeFace(ctx.Theme);
-            if (run.Weight is { } weight) runStyle = runStyle with { Weight = weight };
+            var runStyle = run.Resolve(paragraph, ctx.Theme);
 
             foreach (var word in Words(run.Content))
             {
