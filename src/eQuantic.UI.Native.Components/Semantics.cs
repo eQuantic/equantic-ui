@@ -192,6 +192,38 @@ public static class SemanticsTree
                 nodes.Add(new(SemanticRole.Image, node.Path ?? "", node.Bounds,
                     image.Label, null, false));
                 return;
+
+            // …and the SAME rule one node further on. `Canvas.Label` says "what assistive technology
+            // is told this canvas IS, because a drawing says nothing on its own", and only the web
+            // read it — a labelled chart or diagram emitted nothing at all on Photon.
+            //
+            // Third time this family has been found by hand (Icon, then Image, now Canvas), which is
+            // why LabelledNodesReachSemanticsTests now enumerates the labelled vocabulary by
+            // REFLECTION: the next node to grow a Label fails a test instead of waiting for someone
+            // to notice a screen reader saying nothing.
+            case Canvas { Label: { Length: > 0 } canvasLabel }:
+                nodes.Add(new(SemanticRole.Image, node.Path ?? "", node.Bounds,
+                    canvasLabel, null, false));
+                return;
+
+            // The rest of the artwork, found in one run once the question was asked of the ASSEMBLY
+            // instead of a reader's memory. Each is a leaf that draws and says what it is; the web
+            // has carried all three (LowerGlyph passes a vector's label, the drawing's lands on the
+            // svg, the camera's on its element) and Photon carried none.
+            case Vector { Label: { Length: > 0 } vectorLabel }:
+                nodes.Add(new(SemanticRole.Image, node.Path ?? "", node.Bounds,
+                    vectorLabel, null, false));
+                return;
+
+            case Drawing { Label: { Length: > 0 } drawingLabel }:
+                nodes.Add(new(SemanticRole.Image, node.Path ?? "", node.Bounds,
+                    drawingLabel, null, false));
+                return;
+
+            case CameraPreview { Label: { Length: > 0 } cameraLabel }:
+                nodes.Add(new(SemanticRole.Image, node.Path ?? "", node.Bounds,
+                    cameraLabel, null, false));
+                return;
         }
 
         foreach (var child in node.Children)
