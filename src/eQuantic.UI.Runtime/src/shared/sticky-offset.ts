@@ -72,8 +72,10 @@ export function publishAnchorOffset(): void {
   realignColdLoad(measured);
 }
 
-/** Whether the first measurement has had its chance to correct a cold load's fragment jump. */
+/** Whether a cold load's fragment jump has been corrected, or has run out of chances. */
 let coldLoadHandled = false;
+/** Whether the one deferred re-check is already booked, so a burst of passes books it once. */
+let recheckBooked = false;
 
 /**
  * A COLD load with a fragment lands the target UNDER the chrome, and this is the one place that can
@@ -87,20 +89,68 @@ let coldLoadHandled = false;
  *
  * Corrected ONCE, and only when the target really is behind the chrome — its top inside `[0, offset)`
  * is exactly the broken state and nothing else. A reader who has already scrolled somewhere else
- * leaves the band, and a later pass that republishes the same number never reaches here at all.
+ * leaves the band.
+ *
+ * <para>
+ * The chance is spent on the CORRECTION, never on the measurement, and that distinction is the
+ * whole defect this shape replaces. The browser re-runs its fragment jump as late content settles
+ * the layout, so a measurement can easily land while the target is still far down the page — out of
+ * the band, nothing to do. Retiring there spent the only chance on a moment when there was nothing
+ * to correct, and the jump that followed had no one left to undo it. Reported from a live site:
+ * `/privacy#rights` cold, `scrollY 3992`, `targetTop 0` on every sample over four seconds, with the
+ * variable and `scroll-margin-top` both reading 65px — and the same site's WARM navigation to the
+ * same fragment landing correctly, which is what said the mechanism was right and the ORDER was not.
+ * </para>
+ *
+ * <para>
+ * A second chance is booked rather than assumed, because there may be no second measurement at all:
+ * this publishes after a render PASS, and a settled page has none. So the re-check rides the
+ * document's own `load`, which is the event that says the layout the browser jumped against is
+ * final.
+ * </para>
  */
 function realignColdLoad(offset: number): void {
   if (coldLoadHandled || offset <= 0) return;
-  coldLoadHandled = true;
   if (typeof location === 'undefined') return;
   const target = bookmarkTarget(location.hash, document);
-  if (!target) return;
+  if (!target) {
+    bookRecheck(offset);
+    return;
+  }
   const top = target.getBoundingClientRect().top;
-  if (top < 0 || top >= offset) return;
+  if (top < 0 || top >= offset) {
+    bookRecheck(offset);
+    return;
+  }
+  coldLoadHandled = true;
   target.scrollIntoView();
+}
+
+/**
+ * One deferred chance, after the browser's own jump has settled. `load` is the signal because it is
+ * the one that means the layout is final; a document already complete gets the next frame instead,
+ * which is still after any jump the browser has queued.
+ */
+function bookRecheck(offset: number): void {
+  if (recheckBooked || typeof window === 'undefined') return;
+  recheckBooked = true;
+  const recheck = (): void => {
+    if (coldLoadHandled) return;
+    // Retire here whatever the answer: this WAS the second chance, and a page that is still wrong
+    // after its own load event is not something a later scroll should be yanked for.
+    realignColdLoad(offset);
+    coldLoadHandled = true;
+  };
+  if (document.readyState === 'complete') {
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(recheck);
+    else recheck();
+    return;
+  }
+  window.addEventListener('load', () => recheck(), { once: true });
 }
 
 /** Test seam: the correction is once per document, and a spec renders many. */
 export function resetColdLoadRealignmentForTests(): void {
   coldLoadHandled = false;
+  recheckBooked = false;
 }
