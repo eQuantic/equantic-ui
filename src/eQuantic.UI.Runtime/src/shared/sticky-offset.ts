@@ -64,12 +64,22 @@ export function scheduleAnchorOffset(): void {
  */
 export function publishAnchorOffset(): void {
   if (typeof document === 'undefined') return;
-  const root = document.documentElement;
   const measured = overlappingChrome();
+  if (publishMeasured(measured)) realignColdLoad(measured);
+}
+
+/**
+ * Writes the variable, and answers whether it CHANGED. Separate from measuring because the deferred
+ * re-check needs the number without the early return: the common case at `load` is chrome that has
+ * not moved, and a correction that is skipped because the variable already says 65px is the same
+ * class of miss this whole function exists to undo.
+ */
+function publishMeasured(measured: number): boolean {
+  const root = document.documentElement;
   const next = `${measured}px`;
-  if (root.style.getPropertyValue(VARIABLE) === next) return;
+  if (root.style.getPropertyValue(VARIABLE) === next) return false;
   root.style.setProperty(VARIABLE, next);
-  realignColdLoad(measured);
+  return true;
 }
 
 /** Whether a cold load's fragment jump has been corrected, or has run out of chances. */
@@ -114,12 +124,12 @@ function realignColdLoad(offset: number): void {
   if (typeof location === 'undefined') return;
   const target = bookmarkTarget(location.hash, document);
   if (!target) {
-    bookRecheck(offset);
+    bookRecheck();
     return;
   }
   const top = target.getBoundingClientRect().top;
   if (top < 0 || top >= offset) {
-    bookRecheck(offset);
+    bookRecheck();
     return;
   }
   coldLoadHandled = true;
@@ -131,14 +141,20 @@ function realignColdLoad(offset: number): void {
  * the one that means the layout is final; a document already complete gets the next frame instead,
  * which is still after any jump the browser has queued.
  */
-function bookRecheck(offset: number): void {
+function bookRecheck(): void {
   if (recheckBooked || typeof window === 'undefined') return;
   recheckBooked = true;
   const recheck = (): void => {
     if (coldLoadHandled) return;
+    // MEASURED AGAIN, never the number that booked this. The whole point of deferring is that the
+    // layout was not final, and the chrome is part of that layout: a bar that wraps at a narrow
+    // width, or grows when a webfont finally arrives, is taller at `load` than at first paint.
+    // Correcting against the stale number would leave the target under the header it actually has.
+    const measured = overlappingChrome();
+    publishMeasured(measured);
     // Retire here whatever the answer: this WAS the second chance, and a page that is still wrong
     // after its own load event is not something a later scroll should be yanked for.
-    realignColdLoad(offset);
+    realignColdLoad(measured);
     coldLoadHandled = true;
   };
   if (document.readyState === 'complete') {

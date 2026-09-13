@@ -187,13 +187,17 @@ describe('the room a bookmark keeps is an atomic class', () => {
  * live `/privacy#rights`: it scrolled, and it scrolled to the wrong place.
  */
 describe('the first measurement corrects a cold load that landed under the chrome', () => {
-  function chrome(height: number): HTMLElement {
+  function chrome(height: number): {
+    remove: () => void;
+    growTo: (next: number) => void;
+  } {
     const bar = document.createElement('div');
     bar.setAttribute(PINNED_MARKER, '');
+    let tall = height;
     bar.getBoundingClientRect = () =>
-      ({ top: 0, bottom: height, height, left: 0, right: 0, width: 0, x: 0, y: 0 }) as DOMRect;
+      ({ top: 0, bottom: tall, height: tall, left: 0, right: 0, width: 0, x: 0, y: 0 }) as DOMRect;
     document.body.appendChild(bar);
-    return bar;
+    return { remove: () => bar.remove(), growTo: (next) => (tall = next) };
   }
 
   function bookmark(
@@ -344,6 +348,37 @@ describe('the first measurement corrects a cold load that landed under the chrom
     publishAnchorOffset();
 
     expect(target.seen()).toBe(0);
+    bar.remove();
+  });
+
+  /**
+   * The deferred chance measures the chrome AGAIN, never the number that booked it.
+   *
+   * <para>
+   * Found in review, and it is the same mistake one level down: the whole point of deferring is
+   * that the layout was not final, and the chrome is part of that layout — a bar wraps at a narrow
+   * width, or grows when a webfont finally arrives. Correcting against the height measured at first
+   * paint leaves the target under the header the page actually ended up with, which is the bug this
+   * file exists to prevent, reintroduced by its own fix.
+   * </para>
+   */
+  it('corrects against the chrome the page ENDED with, not the one that booked the re-check', () => {
+    stillLoading();
+    const bar = chrome(64);
+    const target = bookmark('rights', 3992);
+    window.history.replaceState(null, '', '/probe#rights');
+
+    publishAnchorOffset();
+    expect(target.seen()).toBe(0);
+
+    // The webfont lands: the bar grows, and the browser's jump leaves the target at 70 — clear of
+    // the 64 that booked this, still buried under the 80 the header now is.
+    bar.growTo(80);
+    target.moveTo(70);
+    window.dispatchEvent(new Event('load'));
+
+    expect(target.seen()).toBe(1);
+    expect(document.documentElement.style.getPropertyValue('--eq-anchor-offset')).toBe('80px');
     bar.remove();
   });
 
