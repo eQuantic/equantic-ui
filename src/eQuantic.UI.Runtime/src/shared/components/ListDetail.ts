@@ -31,7 +31,7 @@ export class ListDetail extends StatelessComponent {
             return column;
         };
         const back = () => {
-            return this.onBack == null ? null : new IconButton('chevronLeft', SdkStrings.back, 'standard', 'medium', this.onBack);
+            return this.onBack == null ? null : new IconButton(new Icon('chevronLeft'), SdkStrings.back, 'standard', 'medium', this.onBack);
         };
         let chosen: any; 
         let compact = (chosen = this.detail) != null ? pane(this.title, chosen, back()) : pane(this.listTitle, this.list);

@@ -90,9 +90,9 @@ public sealed class Calendar : StatefulComponent
         var header = new Row(gap: Space.S1) { Cross = CrossAlign.Center, Width = SizeValue.Fill };
         header.Add(new Text(Label ?? monthTitle, TypeRole.TitleSmall, theme.TextPrimary, maxLines: 1));
         header.Add(new Flexible(new Spacer()));
-        header.Add(new IconButton(Icons.ChevronLeft, SdkStrings.PreviousMonth, IconButtonKind.Standard,
+        header.Add(new IconButton(new Icon(Icons.ChevronLeft), SdkStrings.PreviousMonth, IconButtonKind.Standard,
             SizeVariant.Small, () => Page(-1)));
-        header.Add(new IconButton(Icons.ChevronRight, SdkStrings.NextMonth, IconButtonKind.Standard,
+        header.Add(new IconButton(new Icon(Icons.ChevronRight), SdkStrings.NextMonth, IconButtonKind.Standard,
             SizeVariant.Small, () => Page(1)));
 
         // The day-name row, rotated by where the week starts. CalendarNames answers Sunday-first

@@ -95,7 +95,7 @@ public sealed class ListDetail : StatelessComponent
 
         IconButton? Back() => OnBack is null
             ? null
-            : new IconButton(Icons.ChevronLeft, SdkStrings.Back, onPressed: OnBack);
+            : new IconButton(new Icon(Icons.ChevronLeft), SdkStrings.Back, onPressed: OnBack);
 
         var compact = Detail is { } chosen
             ? Pane(Title, chosen, Back())

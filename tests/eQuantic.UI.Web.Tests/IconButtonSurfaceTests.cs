@@ -18,35 +18,23 @@ namespace eQuantic.UI.Web.Tests;
 /// </summary>
 public class IconButtonSurfaceTests
 {
-    [Fact]
-    public void ACuratedGlyph_IsTheCallAReaderWrites()
-    {
-        var button = new IconButton(Icons.Close, "Close");
-
-        button.Glyph.Should().NotBeNull("the node is built for the caller, not by them");
-        button.Label.Should().Be("Close");
-    }
-
-    [Fact]
-    public void APackGlyph_IsTheSameCall()
-    {
-        // Any pack: the catalogs are IconGlyph, which is what a consumer already holds.
-        var glyph = CuratedIcons.Resolve(Icons.Search);
-        var button = new IconButton(glyph, "Search");
-
-        button.Glyph.Glyph.Should().Be(glyph);
-    }
-
     /// <summary>
-    /// The NODE form stays. Adding a constructor is free; removing one is a MissingMethodException
-    /// at load for anything already compiled against it — the lesson the type scale paid for.
+    /// ONE constructor, and this is the assertion that keeps it that way. A transpiled component
+    /// gets one JS constructor, so C# overloads do not survive the crossing: adding
+    /// `IconButton(Icons …)` produced a twin that assigned whatever it was handed straight to
+    /// `glyph` — the delegation to `new Icon(...)` simply vanished — and every caller passing a
+    /// glyph died on `undefined.viewBox` in the browser while the .NET suite stayed green.
+    /// <para>
+    /// `Icon` has two constructors and gets away with it because its twin is HAND-WRITTEN and takes
+    /// a `string | IconGlyph` union. That is why its precedent does not transfer, and the reason
+    /// belongs in a test rather than in someone's memory.
+    /// </para>
     /// </summary>
     [Fact]
-    public void TheNodeForm_StillExists()
+    public void ATranspiledComponent_HasExactlyOneConstructor()
     {
-        typeof(IconButton).GetConstructors()
-            .Where(c => c.GetParameters() is [{ ParameterType.Name: nameof(Icon) }, ..])
-            .Should().ContainSingle("a released signature is not removed");
+        typeof(IconButton).GetConstructors().Should().ContainSingle(
+            "the twin is JavaScript — a second constructor is a delegation that disappears");
     }
 
     /// <summary>

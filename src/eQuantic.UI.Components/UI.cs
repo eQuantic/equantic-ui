@@ -418,14 +418,14 @@ public static class UI
     public static IconButton IconButton(Icons glyph, string label,
         IconButtonKind kind = IconButtonKind.Standard, SizeVariant size = SizeVariant.Medium,
         Action? onPressed = null) =>
-        new IconButton(glyph, label, kind, size, onPressed);
+        new IconButton(new Icon(glyph), label, kind, size, onPressed);
 
     /// <summary>The same with a PACK glyph — the twin of <c>Glyph</c> beside <c>Icon</c>, because a
     /// factory takes no overloads and the two forms therefore take two names.</summary>
     public static IconButton GlyphButton(IconGlyph glyph, string label,
         IconButtonKind kind = IconButtonKind.Standard, SizeVariant size = SizeVariant.Medium,
         Action? onPressed = null) =>
-        new IconButton(glyph, label, kind, size, onPressed);
+        new IconButton(new Icon(glyph), label, kind, size, onPressed);
 
     /// <summary>The nothing-here state (spec B12).</summary>
     public static EmptyState EmptyState(Icon icon, string title, string? body = null) =>
