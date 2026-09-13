@@ -81,10 +81,24 @@ public class FlutterParityPinTests
 
     private static bool Has(string type) => Find(type) is not null;
 
+    /// <summary>
+    /// A member a CONSUMER can reach: public, or protected and therefore reachable by the subclass
+    /// they write. Private is excluded deliberately — this file claims capabilities, and a probe
+    /// satisfied by an implementation detail is a claim that passes for the wrong reason.
+    /// </summary>
     private static bool HasMember(string type, string member) =>
-        Find(type) is { } t && (t.GetMember(member,
+        Find(type) is { } t && t.GetMember(member,
             BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
-            .Length > 0);
+            .Any(Reachable);
+
+    private static bool Reachable(MemberInfo member) => member switch
+    {
+        MethodBase method => method.IsPublic || method.IsFamily || method.IsFamilyOrAssembly,
+        PropertyInfo property => property.GetMethod is { } getter
+            && (getter.IsPublic || getter.IsFamily || getter.IsFamilyOrAssembly),
+        FieldInfo field => field.IsPublic || field.IsFamily || field.IsFamilyOrAssembly,
+        _ => true,
+    };
 
     /// <summary>NOTHING in the public surface answers to this name — the shape a GAP takes.</summary>
     private static bool Nothing(params string[] names) => names.All(n => !Has(n));
