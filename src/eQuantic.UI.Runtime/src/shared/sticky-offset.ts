@@ -150,9 +150,39 @@ function realignColdLoad(offset: number): void {
 }
 
 /**
- * One deferred chance, after the browser's own jump has settled. `load` is the signal because it is
- * the one that means the layout is final; a document already complete gets the next frame instead,
- * which is still after any jump the browser has queued.
+ * How many frames the correction keeps WATCHING after the document has loaded. The browser performs
+ * its fragment jump when layout allows, which is not a moment any event names.
+ */
+const FramesAfterLoad = 20;
+
+/**
+ * A WINDOW, not a moment.
+ *
+ * <para>
+ * The first version of this waited for `load`, on the reasoning that `load` means the layout the
+ * browser jumped against is final. Measured on a live site, that is false in the direction that
+ * matters: `load` can fire BEFORE the jump, and the faster the page the more reliably it does.
+ * Same URL, same bytes, one variable — the cache:
+ * </para>
+ *
+ * <para>
+ * <c>cold, loadEventEnd 1310ms → target at 65, correct.</c>
+ * <c>warm, loadEventEnd 36ms → target at 0, wrong.</c>
+ * </para>
+ *
+ * <para>
+ * The arithmetic of the failing case is what names the cause: it lands at the anchor's exact
+ * document offset, which is where a jump with NO scroll-margin puts it. Nothing scrolled over the
+ * correction — the correction never ran, because the single chance was spent at a `load` that beat
+ * the jump. So a returning visitor, which is almost everyone, was always in the broken column, and
+ * so is any test that loads instantly.
+ * </para>
+ *
+ * <para>
+ * Watching frames instead: the jump lands in some frame, and the frame it lands in is the one that
+ * sees the target inside the band. Bounded, because a correction that watches forever would yank a
+ * reader who scrolls into the band an hour later.
+ * </para>
  */
 function bookRecheck(): void {
   if (recheckBooked || typeof window === 'undefined') return;
@@ -162,26 +192,34 @@ function bookRecheck(): void {
   // and either suppresses its correction or performs one nobody asked for — a suite that lies about
   // itself, which is worse than a suite that fails. Found in review.
   const booked = generation;
-  const recheck = (): void => {
-    if (booked !== generation) return;
-    if (coldLoadHandled) return;
-    // MEASURED AGAIN, never the number that booked this. The whole point of deferring is that the
-    // layout was not final, and the chrome is part of that layout: a bar that wraps at a narrow
-    // width, or grows when a webfont finally arrives, is taller at `load` than at first paint.
-    // Correcting against the stale number would leave the target under the header it actually has.
+  let framesLeft = FramesAfterLoad;
+
+  const tick = (): void => {
+    if (booked !== generation || coldLoadHandled) return;
+    // MEASURED AGAIN, never the number that booked this. The layout was not final — that is why we
+    // are here — and the chrome is part of that layout: a bar that wraps at a narrow width, or grows
+    // when a webfont finally arrives, is taller later than at first paint.
     const measured = overlappingChrome();
     publishMeasured(measured);
-    // Retire here whatever the answer: this WAS the second chance, and a page that is still wrong
-    // after its own load event is not something a later scroll should be yanked for.
     realignColdLoad(measured);
-    coldLoadHandled = true;
+    if (coldLoadHandled) return;
+
+    // The budget only starts running once the document has LOADED. Before that the browser may
+    // still have a jump to perform, and counting frames against it would be the same bet on a
+    // moment that this window exists to stop making.
+    if (document.readyState === 'complete' && --framesLeft <= 0) {
+      coldLoadHandled = true;
+      return;
+    }
+    schedule(tick);
   };
-  if (document.readyState === 'complete') {
-    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(recheck);
-    else recheck();
-    return;
-  }
-  window.addEventListener('load', () => recheck(), { once: true });
+
+  schedule(tick);
+}
+
+function schedule(callback: () => void): void {
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(callback);
+  else callback();
 }
 
 /** Test seam: the correction is once per document, and a spec renders many. */

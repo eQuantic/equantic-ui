@@ -226,13 +226,41 @@ describe('the first measurement corrects a cold load that landed under the chrom
     Object.defineProperty(document, 'readyState', { value: 'loading', configurable: true });
   }
 
+  function loaded(): void {
+    Object.defineProperty(document, 'readyState', { value: 'complete', configurable: true });
+  }
+
+  /**
+   * Frames, driven by hand. The correction watches a WINDOW of them rather than one event, because
+   * the browser's fragment jump lands in some frame and no event names which — so a spec that
+   * cannot step frames cannot express the ordering this file is about.
+   */
+  let pending: Array<() => void> = [];
+
+  function frame(times = 1): void {
+    for (let i = 0; i < times; i++) {
+      const due = pending;
+      pending = [];
+      for (const callback of due) callback();
+    }
+  }
+
+  const realRaf = window.requestAnimationFrame;
+
   beforeEach(() => {
     resetColdLoadRealignmentForTests();
+    pending = [];
+    window.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+      pending.push(() => cb(0));
+      return pending.length;
+    }) as typeof window.requestAnimationFrame;
     document.documentElement.style.removeProperty('--eq-anchor-offset');
     window.history.replaceState(null, '', '/probe');
   });
 
   afterEach(() => {
+    window.requestAnimationFrame = realRaf;
+    pending = [];
     Object.defineProperty(document, 'readyState', { value: 'complete', configurable: true });
     document.body.innerHTML = '';
     window.history.replaceState(null, '', '/probe');
@@ -321,7 +349,7 @@ describe('the first measurement corrects a cold load that landed under the chrom
 
     // The browser finishes its jump as the last of the layout settles, and then the document loads.
     target.moveTo(0);
-    window.dispatchEvent(new Event('load'));
+    frame();
 
     expect(target.seen()).toBe(1);
     bar.remove();
@@ -340,7 +368,8 @@ describe('the first measurement corrects a cold load that landed under the chrom
     window.history.replaceState(null, '', '/probe#rights');
 
     publishAnchorOffset();
-    window.dispatchEvent(new Event('load')); // still out of the band: nothing to do, chance spent
+    loaded();
+    frame(40); // the window closes: still out of the band throughout, chance spent
 
     // The reader now scrolls the target into the band by hand. Nothing may move.
     target.moveTo(10);
@@ -375,7 +404,7 @@ describe('the first measurement corrects a cold load that landed under the chrom
     // the 64 that booked this, still buried under the 80 the header now is.
     bar.growTo(80);
     target.moveTo(70);
-    window.dispatchEvent(new Event('load'));
+    frame();
 
     expect(target.seen()).toBe(1);
     expect(document.documentElement.style.getPropertyValue('--eq-anchor-offset')).toBe('80px');
@@ -403,7 +432,7 @@ describe('the first measurement corrects a cold load that landed under the chrom
     expect(target.seen()).toBe(0);
 
     bar.growTo(64); // the header's image finally decodes
-    window.dispatchEvent(new Event('load'));
+    frame();
 
     expect(target.seen()).toBe(1);
     bar.remove();
@@ -417,7 +446,8 @@ describe('the first measurement corrects a cold load that landed under the chrom
     window.history.replaceState(null, '', '/probe');
 
     publishAnchorOffset();
-    window.dispatchEvent(new Event('load'));
+    loaded();
+    frame(40);
 
     expect(target.seen()).toBe(0);
     bar.remove();
@@ -448,11 +478,11 @@ describe('the first measurement corrects a cold load that landed under the chrom
     document.documentElement.style.removeProperty('--eq-anchor-offset');
 
     // …and the PREVIOUS document's deferred work lands now, before this one has measured anything.
+    frame();
     // Ungenerationed it retires the flag here, and the correction below then finds its one chance
     // already spent — the suppression this guard exists for, and the reason the first version of
     // this case proved nothing: with both documents sharing a hash, the stale callback happened to
     // do the right thing by accident and the test passed either way.
-    window.dispatchEvent(new Event('load'));
 
     const bar = chrome(64);
     const target = bookmark('rights', 0); // squarely in the band: this one MUST be corrected
@@ -460,6 +490,61 @@ describe('the first measurement corrects a cold load that landed under the chrom
     publishAnchorOffset();
 
     expect(staleTarget.seen()).toBe(0);
+    expect(target.seen()).toBe(1);
+    bar.remove();
+  });
+
+  /**
+   * THE COLUMN THE FIRST FIX WAS BLIND TO: a WARM load, where the document is complete before the
+   * browser has performed its fragment jump.
+   *
+   * <para>
+   * Measured on a live site, same URL and same bytes, with the cache as the only variable:
+   * </para>
+   *
+   * <para>
+   * <c>cold, loadEventEnd 1310ms → target at 65, correct.</c><br/>
+   * <c>warm, loadEventEnd 36ms → target at 0, wrong.</c>
+   * </para>
+   *
+   * <para>
+   * The failing case lands at the anchor's exact document offset, which is where a jump with no
+   * scroll-margin puts it — so nothing scrolled OVER the correction, the correction never ran. A
+   * single chance taken at `load` is a bet that `load` comes after the jump, and the faster the
+   * page the more reliably it does not. A returning visitor is almost everyone, and a test that
+   * loads instantly is always in this column, which is why 1,036 of them never saw it.
+   * </para>
+   */
+  it('corrects a WARM load, where the document completed before the browser jumped', () => {
+    loaded(); // 36ms: complete already, and the jump has not happened
+    const bar = chrome(65);
+    const target = bookmark('rights', 3992); // still where the document put it
+    window.history.replaceState(null, '', '/probe#rights');
+
+    publishAnchorOffset();
+    expect(target.seen()).toBe(0);
+
+    // The browser performs its jump a frame or two later, with scroll-margin-top still 0px.
+    frame(2);
+    target.moveTo(0);
+    frame();
+
+    expect(target.seen()).toBe(1);
+    bar.remove();
+  });
+
+  /** And the window is long enough to be worth having: a jump several frames out is still caught. */
+  it('is still watching several frames after the document completed', () => {
+    loaded();
+    const bar = chrome(65);
+    const target = bookmark('rights', 3992);
+    window.history.replaceState(null, '', '/probe#rights');
+
+    publishAnchorOffset();
+    frame(10);
+    target.moveTo(0);
+    frame();
+
     expect(target.seen()).toBe(1);
     bar.remove();
   });
