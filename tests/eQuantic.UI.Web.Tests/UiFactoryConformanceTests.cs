@@ -41,14 +41,7 @@ public class UiFactoryConformanceTests
     /// icon package feeds) had no way in at all until this.</item>
     /// </list>
     /// </summary>
-    /// <summary>
-    /// The factories that do NOT mirror their type's name, each because one type has two entry
-    /// shapes and a factory takes no overloads. <c>Glyph</c> is <c>Icon</c> from a pack, and
-    /// <c>GlyphButton</c> is <c>IconButton</c> from a pack — the same split, for the same reason,
-    /// so the second reads as a rule rather than a second exception.
-    /// </summary>
-    private static readonly HashSet<string> NamedFactories =
-        new() { "Gap", "DotBadge", "Glyph", "GlyphButton" };
+    private static readonly HashSet<string> NamedFactories = new() { "Gap", "DotBadge", "Glyph" };
 
     private static readonly MethodInfo[] Factories =
         AllFactories.Where(m => !NamedFactories.Contains(m.Name)).ToArray();

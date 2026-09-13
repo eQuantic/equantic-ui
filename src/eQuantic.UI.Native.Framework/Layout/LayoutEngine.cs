@@ -583,9 +583,7 @@ public static class LayoutEngine
     /// <summary>The widest single word — text wraps between words and never inside one.</summary>
     private static float LongestWordWidth(Text text, LayoutContext ctx)
     {
-        var style = text.StyleOverride ?? ctx.Theme.Type(text.Role);
-        if (text.Mono) style = style with { Mono = true };
-        if (text.Italic) style = style with { Italic = true };
+        var style = text.Resolve(ctx.Theme);
         var widest = 0f;
         foreach (var word in text.PlainContent.Split(' ', StringSplitOptions.RemoveEmptyEntries))
             widest = MathF.Max(widest,
@@ -883,9 +881,10 @@ public static class LayoutEngine
     private static LayoutNode MeasureText(Text text, float maxW, LayoutContext ctx)
     {
         var result = ctx.Node(text);
-        var style = text.StyleOverride ?? ctx.Theme.Type(text.Role);
-        if (text.Mono) style = style with { Mono = true };
-        if (text.Italic) style = style with { Italic = true };
+        // The SAME resolver the realizers use. This built the merge by hand and therefore measured
+        // without the theme's code face while PhotonRealizer rasterized with it — wrapping, widths
+        // and a caret column computed against one face and drawn in another.
+        var style = text.Resolve(ctx.Theme);
         if (text.Spans is { Count: > 0 } spans) return MeasureRuns(result, text, spans, style, maxW, ctx);
         var measurement = ctx.Measurer.Measure(text.PlainContent, style, ctx.TypeScale, maxW, text.MaxLines);
         result.Text = measurement;
@@ -925,6 +924,9 @@ public static class LayoutEngine
             if (run.StyleOverride is { } over) runStyle = runStyle.WithSize(over.Size);
             if (run.Mono) runStyle = runStyle with { Mono = true };
             if (run.Italic) runStyle = runStyle with { Italic = true };
+            // A mono RUN takes the theme's code face too, or an inline code span is measured in one
+            // face and drawn in another — the same disagreement one level down from the paragraph.
+            runStyle = runStyle.WithCodeFace(ctx.Theme);
             if (run.Weight is { } weight) runStyle = runStyle with { Weight = weight };
 
             foreach (var word in Words(run.Content))
@@ -1298,9 +1300,10 @@ public static class LayoutEngine
                 {
                     if (children[i] is not Text text) continue;
                     var reduced = MathF.Max(0, mains[i] - deficit * (mains[i] / textTotal));
-                    var style = text.StyleOverride ?? ctx.Theme.Type(text.Role);
-                    if (text.Mono) style = style with { Mono = true };
-                    if (text.Italic) style = style with { Italic = true };
+                    // Truncation RE-measures, so it has to re-measure in the same face: this was the
+                    // last hand-built merge, and a text that shrinks to an ellipsis against one face
+                    // and draws in another ellipsizes at the wrong word.
+                    var style = text.Resolve(ctx.Theme);
                     var remeasured = ctx.Measurer.Measure(text.PlainContent, style, ctx.TypeScale, reduced,
                         Math.Max(1, text.MaxLines));
                     var node = ctx.Node(text);

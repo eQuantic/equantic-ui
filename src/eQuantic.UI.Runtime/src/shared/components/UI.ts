@@ -245,12 +245,8 @@ export class UI {
         return new CultureSwitcher(options);
     }
 
-    static iconButton(glyph: IconsValue, label: string, kind: string = 'standard', size: SizeVariantValue = 'medium', onPressed: (() => void) | null = null) {
-        return new IconButton(new Icon(glyph), label, kind, size, onPressed);
-    }
-
-    static glyphButton(glyph: IconGlyph, label: string, kind: string = 'standard', size: SizeVariantValue = 'medium', onPressed: (() => void) | null = null) {
-        return new IconButton(new Icon(glyph), label, kind, size, onPressed);
+    static iconButton(glyph: Icon, label: string, kind: string = 'standard', size: SizeVariantValue = 'medium', onPressed: (() => void) | null = null) {
+        return new IconButton(glyph, label, kind, size, onPressed);
     }
 
     static emptyState(icon: Icon, title: string, body: string | null = null) {

@@ -412,20 +412,20 @@ public static class UI
         new CultureSwitcher(options);
 
     /// <summary>
-    /// Icon-only button with a CURATED glyph; the label is what assistive tech announces and is
-    /// never optional — an icon-only button is the one control with no text to fall back on.
+    /// Icon-only button; the label is what assistive tech announces and is never optional — an
+    /// icon-only button is the one control with no text of its own to fall back on.
+    /// <para>
+    /// Takes the glyph as a NODE, and mirrors the constructor exactly, because both rules that
+    /// govern this surface point the same way: a transpiled component gets ONE JS constructor, and
+    /// a factory mirrors its constructor parameter-for-parameter so named arguments carry between
+    /// the two forms. `Icon(Icons.Close)` and `Glyph(LucideIcons.Search)` are how a glyph becomes
+    /// one, which is the same shape every other node uses.
+    /// </para>
     /// </summary>
-    public static IconButton IconButton(Icons glyph, string label,
+    public static IconButton IconButton(Icon glyph, string label,
         IconButtonKind kind = IconButtonKind.Standard, SizeVariant size = SizeVariant.Medium,
         Action? onPressed = null) =>
-        new IconButton(new Icon(glyph), label, kind, size, onPressed);
-
-    /// <summary>The same with a PACK glyph — the twin of <c>Glyph</c> beside <c>Icon</c>, because a
-    /// factory takes no overloads and the two forms therefore take two names.</summary>
-    public static IconButton GlyphButton(IconGlyph glyph, string label,
-        IconButtonKind kind = IconButtonKind.Standard, SizeVariant size = SizeVariant.Medium,
-        Action? onPressed = null) =>
-        new IconButton(new Icon(glyph), label, kind, size, onPressed);
+        new IconButton(glyph, label, kind, size, onPressed);
 
     /// <summary>The nothing-here state (spec B12).</summary>
     public static EmptyState EmptyState(Icon icon, string title, string? body = null) =>

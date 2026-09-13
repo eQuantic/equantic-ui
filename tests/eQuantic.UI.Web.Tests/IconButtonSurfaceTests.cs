@@ -5,30 +5,42 @@ using FluentAssertions;
 namespace eQuantic.UI.Web.Tests;
 
 /// <summary>
-/// The call a reader reaches for has to compile. This one did not, and the evidence was in this
-/// repo the whole time: every one of the EIGHT in-tree call sites wrapped a glyph in an
-/// <see cref="Icon"/> node to hand it over — <c>new IconButton(new Icon(Icons.X), …)</c> — the
-/// `dotnet new` template included.
+/// Why <see cref="IconButton"/> has exactly ONE constructor taking a NODE, written down because I
+/// changed it and two separate rules said no.
+///
 /// <para>
-/// A component whose own library fights its signature is one a first-time consumer concludes is
-/// missing. That is not a guess: the IDE building on this SDK reported "there is no IconButton" and
-/// went and wrote its own, and four reasons were found for why it could not be found. This is the
-/// first of them, and the cheapest.
+/// It began as a real report: the first external consumer of this SDK concluded there was no
+/// IconButton and rebuilt it. So I gave the type `Icons` and `IconGlyph` constructors and pointed
+/// the factories at them. Both halves were wrong, and neither showed up in 4,300 .NET tests.
+/// </para>
+///
+/// <para>
+/// The CONSTRUCTOR half: this component is transpiled, so its twin is generated from its source and
+/// JS constructors do not overload. The extra constructors collapsed into one that assigned whatever
+/// it was handed straight to `glyph` — the delegation to `new Icon(...)` simply vanished — and every
+/// caller passing a glyph died in the browser on `undefined.viewBox`. `Icon` has two constructors
+/// and gets away with it only because its twin is HAND-WRITTEN and takes a `string | IconGlyph`
+/// union.
+/// </para>
+///
+/// <para>
+/// The FACTORY half: a factory mirrors its constructor parameter-for-parameter so named arguments
+/// carry between `IconButton(...)` and `new IconButton(...)`. A factory that takes a glyph and wraps
+/// it does not mirror anything, which `UiFactoryConformanceTests` says out loud.
+/// </para>
+///
+/// <para>
+/// Together those two rules FORCE the factory's parameter type to be the constructor's. So the
+/// declarative call is `IconButton(Icon(Icons.Close), "Close")` — one nested factory, the same shape
+/// every other node uses — and the discoverability problem the consumer hit is real but is not an
+/// API shape problem.
 /// </para>
 /// </summary>
 public class IconButtonSurfaceTests
 {
     /// <summary>
-    /// ONE constructor, and this is the assertion that keeps it that way. A transpiled component
-    /// gets one JS constructor, so C# overloads do not survive the crossing: adding
-    /// `IconButton(Icons …)` produced a twin that assigned whatever it was handed straight to
-    /// `glyph` — the delegation to `new Icon(...)` simply vanished — and every caller passing a
-    /// glyph died on `undefined.viewBox` in the browser while the .NET suite stayed green.
-    /// <para>
-    /// `Icon` has two constructors and gets away with it because its twin is HAND-WRITTEN and takes
-    /// a `string | IconGlyph` union. That is why its precedent does not transfer, and the reason
-    /// belongs in a test rather than in someone's memory.
-    /// </para>
+    /// The rule, pinned. A transpiled component gets one JS constructor; a second is a delegation
+    /// that disappears on the way across and fails in a browser while every .NET test stays green.
     /// </summary>
     [Fact]
     public void ATranspiledComponent_HasExactlyOneConstructor()
@@ -37,26 +49,30 @@ public class IconButtonSurfaceTests
             "the twin is JavaScript — a second constructor is a delegation that disappears");
     }
 
-    /// <summary>
-    /// Both factory names resolve, and they are two names because a factory takes no overloads —
-    /// the same split <c>Icon</c> and <c>Glyph</c> already use for one type.
-    /// </summary>
     [Fact]
-    public void BothFactories_MirrorTheirConstructors()
+    public void ItTakesTheGlyphAsANode()
     {
-        Components.UI.IconButton(Icons.Menu, "Open navigation").Label.Should().Be("Open navigation");
-        Components.UI.GlyphButton(CuratedIcons.Resolve(Icons.Menu), "Open navigation").Label
-            .Should().Be("Open navigation");
+        typeof(IconButton).GetConstructors().Single()
+            .GetParameters()[0].ParameterType.Should().Be<Icon>();
     }
 
     /// <summary>The label is positional and required — an icon-only button is the one control with
-    /// no text of its own to fall back on, and the only moment to catch that is the call site.</summary>
+    /// no text of its own to fall back on, and the call site is the only moment to catch that.</summary>
     [Fact]
     public void TheAccessibleName_IsNotOptional()
     {
-        typeof(IconButton).GetConstructors()
-            .Should().OnlyContain(c => c.GetParameters().Length >= 2
-                && c.GetParameters()[1].ParameterType == typeof(string)
-                && !c.GetParameters()[1].IsOptional);
+        var label = typeof(IconButton).GetConstructors().Single().GetParameters()[1];
+
+        label.ParameterType.Should().Be<string>();
+        label.IsOptional.Should().BeFalse();
+    }
+
+    [Fact]
+    public void TheDeclarativeCall_IsOneNestedFactory()
+    {
+        var button = Components.UI.IconButton(Components.UI.Icon(Icons.Close), "Close");
+
+        button.Label.Should().Be("Close");
+        button.Glyph.Should().NotBeNull();
     }
 }

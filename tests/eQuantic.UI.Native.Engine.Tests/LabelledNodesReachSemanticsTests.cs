@@ -56,8 +56,14 @@ public class LabelledNodesReachSemanticsTests
         ["Navigable"] = label => new Navigable([new Text("row", TypeRole.BodyM)], _ => { }) { Label = label },
         ["Overlay"] = label => new Overlay(new Text("over", TypeRole.BodyM)) { Label = label },
         ["Adjustable"] = label => new Adjustable(new Text("x", TypeRole.BodyM), _ => { }) { Label = label },
-        ["CodeSurface"] = label => new Text($"code {label}", TypeRole.BodyM),
-        ["SheetSurface"] = label => new Text($"sheet {label}", TypeRole.BodyM),
+        // Real surfaces with minimal controllers. These two were a `Text` standing in for them —
+        // a sample that builds the WRONG TYPE proves nothing and, worse, let
+        // `EveryLabelledNode_IsAccountedFor` report complete coverage over a hole. Both are cheap to
+        // build; there was no reason for the stand-in beyond my not looking.
+        ["CodeSurface"] = label => new CodeSurface(new Text("code", TypeRole.BodyM),
+            new CodeEditorController("x")) { Label = label },
+        ["SheetSurface"] = label => new SheetSurface(new Text("sheet", TypeRole.BodyM),
+            new SheetController(rows: 2, cols: 2)) { Label = label },
         ["TextEntry"] = label => new TextEntry("value") { Label = label },
         ["Pressable"] = label => new Pressable(new Text("press", TypeRole.BodyM), () => { }) { Label = label },
         ["Link"] = label => new Link("https://example.test", new Text("link", TypeRole.BodyM)) { Label = label },
@@ -88,6 +94,8 @@ public class LabelledNodesReachSemanticsTests
     [InlineData("TextEntry")]
     [InlineData("Pressable")]
     [InlineData("Link")]
+    [InlineData("CodeSurface")]
+    [InlineData("SheetSurface")]
     public void ALabelledNode_SaysWhatItIs(string node)
     {
         const string label = "what this node is";

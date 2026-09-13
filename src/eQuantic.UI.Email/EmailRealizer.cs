@@ -216,9 +216,12 @@ public static class EmailRealizer
         if (run.Color is { } color) overrides.Append($"color: {Literal(color, theme)}; ");
         if (run.Weight is { } weight) overrides.Append($"font-weight: {(int)weight}; ");
         if (run.Italic) overrides.Append("font-style: italic; ");
-        // No named family on a mono RUN, like both other realizers (WebRealizer, lowering.ts):
-        // the paragraph's face is the proportional one and a run that is CODE wants the code stack.
-        if (run.Mono) overrides.Append($"font-family: {Family(null, mono: true)}; ");
+        // A mono RUN takes the THEME's code face, not the paragraph's. Those are two different
+        // things and the first version conflated them: not inheriting the paragraph's proportional
+        // family is right, and it does not follow that the run gets no family at all. The web picks
+        // this up for free because its mono stack is `var(--eq-font-mono, …)` and the sheet declares
+        // that from the theme; email has no variable to read, so it asks.
+        if (run.Mono) overrides.Append($"font-family: {Family(theme.MonoFamily, mono: true)}; ");
         // The run-level escape hatch — inline code at 13.5 inside a 16 paragraph — carries its own
         // size and line, exactly as Text.StyleOverride does at paragraph level.
         if (run.StyleOverride is { } runStyle)
