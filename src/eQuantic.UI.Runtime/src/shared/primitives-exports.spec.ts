@@ -27,13 +27,10 @@ import { ImageData, NetworkState, SpringSpec, WindowSizeClasses } from './primit
 const NO_TWIN_OWED = new Set([
   // Never in a page bundle: host and server plumbing, or an abstract base.
   'AbsentMotionSensor',
-  'ComponentBoundary',
-  // A HOST's tally of families it asked for and did not get. There is nothing for the browser to
-  // report: the lowering emits the named face in front of a stack that names its own fallback, so
-  // an unavailable family is already handled by the declaration rather than discovered after it.
-  // The report exists because CoreText, DirectWrite and Android substitute in silence and have no
-  // equivalent of saying what to substitute WITH.
-  'FaceResolution',
+  // `ComponentBoundary`, `FaceResolution` and `EffectiveTypeStyle` used to be named here. They are
+  // `[ServerOnly]` now, the compiler REFUSES a client reference to them (EQ2010), and the C# side
+  // drops them from the pinned list by that rule — so they are gone from here rather than excused
+  // here. A list kept by hand in two files had already drifted between them.
   'ComponentInstanceStore',
   'FlexNode',
   'VisualNodeExtensions',

@@ -165,7 +165,7 @@ public static class EmailRealizer
                 "MaxLines cannot be realized in an email — no client clamps lines, so the whole "
                 + "text would show. Shorten the content for this medium instead.");
 
-        var style = text.StyleOverride ?? theme.Type(text.Role);
+        var style = text.Resolve(theme);
         var ink = Literal(text.Color ?? theme.TextPrimary, theme);
 
         // text-align applies to blocks, so an aligned paragraph gets a block wrapper; a start-
@@ -184,11 +184,11 @@ public static class EmailRealizer
             .Append($"font-weight: {(int)style.Weight}; ");
         if (style.Tracking != 0)
             html.Append($"letter-spacing: {Px(style.Tracking)}; ");
-        if (style.Italic || text.Italic)
+        if (style.Italic)
             html.Append("font-style: italic; ");
         if (text.Tabular)
             html.Append("font-variant-numeric: tabular-nums; ");
-        html.Append($"font-family: {Family(style.Family, text.Mono || style.Mono)}; ")
+        html.Append($"font-family: {Family(style.Family, style.Mono)}; ")
             .Append($"color: {ink}\">");
 
         if (text.Spans is { Count: > 0 } spans)
