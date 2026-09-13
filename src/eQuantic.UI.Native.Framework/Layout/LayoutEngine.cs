@@ -197,7 +197,74 @@ public sealed class LayoutNode
 
     public VisualNode Source { get; private set; }
     public Rect Bounds { get; internal set; }
-    public List<LayoutNode> Children { get; } = new();
+
+    /// <summary>
+    /// The node that placed this one, or null at the root. The composite read the other way.
+    ///
+    /// <para>
+    /// This is the RENDER tree, which is the tree Flutter makes bidirectional too — its
+    /// <c>RenderObject</c> carries a <c>parent</c> while its <c>Widget</c> carries none, and the
+    /// asymmetry is the point: a widget is rebuilt constantly and a back-reference on it means
+    /// nothing, while the laid-out tree is walked top-down and the parent is literally in hand.
+    /// <see cref="VisualNode"/> has no Parent for exactly that reason and should not grow one.
+    /// </para>
+    ///
+    /// <para>
+    /// Flutter's other half, <c>parentData</c>, has no equivalent here and needs none: it exists to
+    /// carry what a parent assigned — an offset, a flex factor — and this engine resolves all of
+    /// that into <see cref="Bounds"/> during the same pass. A second slot would hold a copy.
+    /// </para>
+    /// </summary>
+    public LayoutNode? Parent { get; private set; }
+
+    /// <summary>The children, placed. Read-only by design — see <see cref="Adopt"/>.</summary>
+    public IReadOnlyList<LayoutNode> Children => _children;
+
+    /// <summary>
+    /// Iterate the node ITSELF — <c>foreach (var child in node)</c> — on any path that runs per
+    /// frame. It hands back the list's own struct enumerator, so nothing is allocated.
+    ///
+    /// <para>
+    /// Both doors exist because they answer different needs and the first attempt tried to make one
+    /// do both. Typed only as <c>IReadOnlyList</c>, every <c>foreach</c> in the layout and emit
+    /// passes boxed an enumerator and the frame allocated 18% more — the perf harness caught it.
+    /// Typed only as a <c>ReadOnlySpan</c> the allocation went away and so did LINQ, assertions and
+    /// any use inside an iterator, because a ref struct cannot cross a <c>yield</c>: a public tree
+    /// consumers cannot query is not a public tree.
+    /// </para>
+    /// </summary>
+    public List<LayoutNode>.Enumerator GetEnumerator() => _children.GetEnumerator();
+
+    private readonly List<LayoutNode> _children = new();
+
+    /// <summary>
+    /// Attaches a child AND links it back. One door, because the link is an invariant and an
+    /// invariant maintained by remembering is one that breaks at the fourteenth call site — the
+    /// defect this repo has already paid for in a semantics switch nobody rechecked.
+    /// </summary>
+    internal void Adopt(LayoutNode child)
+    {
+        child.Parent = this;
+        _children.Add(child);
+    }
+
+    /// <summary>The same for a placed batch — reordering a row's children, most often.</summary>
+    internal void AdoptAll(IEnumerable<LayoutNode> children)
+    {
+        foreach (var child in children) Adopt(child);
+    }
+
+    /// <summary>Forgets the node that placed this one — the other end of
+    /// <see cref="ReleaseChildren"/>, for a node being let go by a parent that is itself going.</summary>
+    internal void Orphan() => Parent = null;
+
+    /// <summary>Detaches every child, clearing the back-links with them: a node left pointing at a
+    /// parent that no longer holds it is the stale half of a two-way link.</summary>
+    internal void ReleaseChildren()
+    {
+        foreach (var child in _children) child.Parent = null;
+        _children.Clear();
+    }
     public TextMeasurement? Text { get; internal set; }
 
     /// <summary>
@@ -238,7 +305,8 @@ public sealed class LayoutNode
     {
         Source = source;
         Bounds = default;
-        Children.Clear();
+        Parent = null;
+        ReleaseChildren();
         Text = null;
         TextRuns = null;
         Presence = 1f;
@@ -271,10 +339,20 @@ public sealed class LayoutNodePool
         return node;
     }
 
-    /// <summary>Returns a whole laid-out tree. The caller asserts nobody else holds it.</summary>
+    /// <summary>
+    /// Returns a whole laid-out tree. The caller asserts nobody else holds it.
+    /// <para>
+    /// The BACK-LINKS are cut here rather than left to the next <see cref="Rent"/>. A node waiting
+    /// in the pool still pointing at the parent that let it go is a tree that lies about itself —
+    /// and, worse, holds that parent alive through the pool for as long as the node is free. Whoever
+    /// takes a two-way link apart owns both ends of it.
+    /// </para>
+    /// </summary>
     public void RecycleTree(LayoutNode root)
     {
-        for (var i = 0; i < root.Children.Count; i++) RecycleTree(root.Children[i]);
+        for (var i = root.Children.Count - 1; i >= 0; i--) RecycleTree(root.Children[i]);
+        root.ReleaseChildren();
+        root.Orphan();
         _free.Push(root);
     }
 }
@@ -440,7 +518,7 @@ public static class LayoutEngine
 
         var node = ctx.Node(safeArea,
             new Rect(0, 0, child.Bounds.Width + start + end, child.Bounds.Height + top + bottom));
-        node.Children.Add(child);
+        node.Adopt(child);
         return node;
     }
 
@@ -489,7 +567,7 @@ public static class LayoutEngine
     {
         if (row.Width.Kind == SizeKind.Fixed) return row.Width.Value;
         var total = row.Padding.Horizontal + row.Gap * MathF.Max(0, row.Children.Count - 1);
-        foreach (var child in row.Children) total += MinContentWidth(child, ctx);
+        foreach (var child in row) total += MinContentWidth(child, ctx);
         return total;
     }
 
@@ -497,7 +575,7 @@ public static class LayoutEngine
     {
         if (column.Width.Kind == SizeKind.Fixed) return column.Width.Value;
         var widest = 0f;
-        foreach (var child in column.Children)
+        foreach (var child in column)
             widest = MathF.Max(widest, MinContentWidth(child, ctx));
         return widest + column.Padding.Horizontal;
     }
@@ -572,7 +650,7 @@ public static class LayoutEngine
         ctx.StretchWidth = stretchW;
         ctx.StretchHeight = stretchH;
         var inner = Measure(child, maxW, maxH, ctx, ctx.ChildPath(path, 0));
-        result.Children.Add(inner);
+        result.Adopt(inner);
         result.Bounds = new Rect(0, 0, inner.Bounds.Width, inner.Bounds.Height);
         return result;
     }
@@ -651,7 +729,7 @@ public static class LayoutEngine
         {
             var child = stack.Children[stackIndex];
             var measured = Measure(child, childMaxW, childMaxH, ctx, ctx.ChildPath(path, stackIndex, child));
-            result.Children.Add(measured);
+            result.Adopt(measured);
             if (PositionedOf(child, measured) is not null) continue;
             contentW = MathF.Max(contentW, measured.Bounds.Width);
             contentH = MathF.Max(contentH, measured.Bounds.Height);
@@ -686,19 +764,31 @@ public static class LayoutEngine
 
         // Spec S7 z-order: children paint (and hit-test, topmost-last) in Layer order — a stable
         // sort keeps declaration order for equal values (flow order = the painter's default).
-        if (result.Children.Where((node, i) => PositionedOf(stack.Children[i], node) is { Layer: not 0 }).Any())
+        if (AnyLayered(result, stack))
         {
-            var ordered = result.Children
-                .Select((node, i) => (Node: node,
-                    Z: PositionedOf(stack.Children[i], node) is { } p ? p.Layer : 0, I: i))
-                .OrderBy(e => e.Z).ThenBy(e => e.I)
-                .Select(e => e.Node)
-                .ToList();
-            result.Children.Clear();
-            result.Children.AddRange(ordered);
+            var ordered = new List<(LayoutNode Node, int Z, int I)>(result.Children.Count);
+            for (var i = 0; i < result.Children.Count; i++)
+                ordered.Add((result.Children[i],
+                    PositionedOf(stack.Children[i], result.Children[i]) is { } p ? p.Layer : 0, i));
+            ordered.Sort((a, b) => a.Z != b.Z ? a.Z.CompareTo(b.Z) : a.I.CompareTo(b.I));
+
+            var sorted = new LayoutNode[ordered.Count];
+            for (var i = 0; i < ordered.Count; i++) sorted[i] = ordered[i].Node;
+            result.ReleaseChildren();
+            result.AdoptAll(sorted);
         }
 
         return result;
+    }
+
+    /// <summary>Whether any child asked for a layer — the cheap question, asked before the sort that
+    /// answering it would otherwise pay for on every Stack in the tree.</summary>
+    private static bool AnyLayered(LayoutNode result, Stack stack)
+    {
+        for (var i = 0; i < result.Children.Count; i++)
+            if (PositionedOf(stack.Children[i], result.Children[i]) is { Layer: not 0 })
+                return true;
+        return false;
     }
 
     /// <summary>Spec A6: the child lays out UNBOUNDED on the scroll axis (bounded content measures its
@@ -740,7 +830,7 @@ public static class LayoutEngine
         var child = Measure(scroll.Child,
             horizontal ? float.PositiveInfinity : maxW,
             horizontal ? maxH : float.PositiveInfinity, ctx, ctx.ChildPath(path, 0));
-        result.Children.Add(child);
+        result.Adopt(child);
 
         var width = ResolveSelf(scroll.Width, maxW, MathF.Min(child.Bounds.Width, maxW));
         var height = ResolveSelf(scroll.Height, maxH, MathF.Min(child.Bounds.Height, maxH));
@@ -770,7 +860,7 @@ public static class LayoutEngine
     /// ScrollViews own their own pinning pass.</summary>
     private static void PinSticky(LayoutNode node, float accumulatedY)
     {
-        foreach (var child in node.Children)
+        foreach (var child in node)
         {
             if (child.Source is ScrollView) continue;
             var viewportY = accumulatedY + child.Bounds.Y;
@@ -994,7 +1084,7 @@ public static class LayoutEngine
             ctx.IndeterminateWidth = outerW;
             ctx.IndeterminateHeight = outerH;
             child.Bounds = child.Bounds with { X = style.Padding.Start, Y = style.Padding.Top };
-            result.Children.Add(child);
+            result.Adopt(child);
         }
 
         var width = ResolveSelf(style.Width, selfMaxW, (child?.Bounds.Width ?? 0) + style.Padding.Horizontal, ctx.WindowWidth,
@@ -1024,13 +1114,13 @@ public static class LayoutEngine
             // The clamped width is a DECIDED size — block semantics again: the child stretches
             // across it, which is what centres a Stepper's reading inside its MinWidth cell.
             ctx.StretchWidth = StretchKind.Block;
-            result.Children.Clear();
+            result.ReleaseChildren();
             child = Measure(box.Child!, MathF.Max(0, width - style.Padding.Horizontal),
                 MathF.Max(0, height - style.Padding.Vertical), ctx, ctx.ChildPath(path, 0));
             ctx.IndeterminateWidth = outerW2;
             ctx.IndeterminateHeight = outerH2;
             child.Bounds = child.Bounds with { X = style.Padding.Start, Y = style.Padding.Top };
-            result.Children.Add(child);
+            result.Adopt(child);
         }
 
         // Spec S1 aspect-ratio (CSS twin): when exactly one axis is author-determined, the other
@@ -1083,7 +1173,7 @@ public static class LayoutEngine
         // collapse to 0 only in genuinely unbounded space (e.g. inside scroll content), and Spacers
         // additionally "lose to content" when space is tight (leftover floors at 0).
         var hasFlexibles = false;
-        foreach (var c in flex.Children)
+        foreach (var c in flex)
             if (c is Flexible or Spacer { Flex: > 0 }) { hasFlexibles = true; break; }
         // On an INDETERMINATE main axis the available maximum is not a size anyone granted — it is
         // the measuring parent's upper bound. Distributing leftover against it made a Flexible
@@ -1294,7 +1384,7 @@ public static class LayoutEngine
                 mains[i] = horizontal ? intrinsic.Bounds.Width : intrinsic.Bounds.Height;
                 rigidSum += mains[i];
                 var grown = ctx.Node(unbounded, intrinsic.Bounds);
-                grown.Children.Add(intrinsic);
+                grown.Adopt(intrinsic);
                 laid[i] = grown;
                 continue;
             }
@@ -1322,7 +1412,7 @@ public static class LayoutEngine
                     ? child.Bounds with { Width = share }
                     : child.Bounds with { Height = share };
                 var wrapper = ctx.Node(flexible, child.Bounds);
-                wrapper.Children.Add(child);
+                wrapper.Adopt(child);
                 laid[i] = wrapper;
             }
             else
@@ -1409,7 +1499,7 @@ public static class LayoutEngine
             child.Bounds = horizontal
                 ? child.Bounds with { X = cursor, Y = crossPos }
                 : child.Bounds with { X = crossPos, Y = cursor };
-            result.Children.Add(child);
+            result.Adopt(child);
             cursor += mains[i] + flex.Gap + betweenExtra;
         }
 
@@ -1610,7 +1700,7 @@ public static class LayoutEngine
                 child.Bounds = horizontal
                     ? child.Bounds with { X = mainCursor, Y = crossCursor + within }
                     : child.Bounds with { X = crossCursor + within, Y = mainCursor };
-                result.Children.Add(child);
+                result.Adopt(child);
                 mainCursor += childMain + flex.Gap + betweenExtra;
             }
 
@@ -1705,7 +1795,7 @@ public static class LayoutEngine
             {
                 if (placements[i].Row != r) continue;
                 laid[i].Bounds = laid[i].Bounds with { X = xStarts[placements[i].Column], Y = y };
-                result.Children.Add(laid[i]);
+                result.Adopt(laid[i]);
             }
             y += rowHeights[r] + rowGap;
         }
@@ -1833,7 +1923,7 @@ public static class LayoutEngine
     private static void Absolutize(LayoutNode node, float originX, float originY)
     {
         node.Bounds = node.Bounds with { X = node.Bounds.X + originX, Y = node.Bounds.Y + originY };
-        foreach (var child in node.Children)
+        foreach (var child in node)
             Absolutize(child, node.Bounds.X, node.Bounds.Y);
     }
 }

@@ -931,7 +931,7 @@ public static class PhotonRealizer
                 press.Simulated = previous | simulated.State;
                 try
                 {
-                    foreach (var child in node.Children)
+                    foreach (var child in node)
                         Emit(child, theme, mode, builder, input, scrollMeta, press, motion, overlays);
                 }
                 finally
@@ -958,7 +958,7 @@ public static class PhotonRealizer
                 var onScreen = inView.Threshold <= 0 ? shown > 0 : shown >= inView.Threshold;
                 if (press.InView?.Changed(node.Path ?? "", onScreen) == true)
                     inView.OnChanged(onScreen);
-                foreach (var child in node.Children)
+                foreach (var child in node)
                     Emit(child, theme, mode, builder, input, scrollMeta, press, motion, overlays);
                 return;
             }
@@ -974,7 +974,7 @@ public static class PhotonRealizer
             // and neither of them answers to the arrows.
             case Adjustable adjustable:
                 input.AddAdjustable(new FocusStop(node.Path ?? "", null, null, node.Bounds, adjustable));
-                foreach (var child in node.Children)
+                foreach (var child in node)
                     Emit(child, theme, mode, builder, input.WithoutFocusStops(), scrollMeta, press, motion, overlays);
                 return;
 
@@ -1010,7 +1010,7 @@ public static class PhotonRealizer
             // in a third channel, after paint and input.
             var outerSurface = press.Surface;
             press.Surface = Intersect(outerSurface, node.Bounds);
-            foreach (var child in node.Children)
+            foreach (var child in node)
                 Emit(child, theme, mode, builder, scrolled, scrollMeta, press, motion, overlays);
             press.Surface = outerSurface;
             builder.PopClip();
@@ -1026,7 +1026,7 @@ public static class PhotonRealizer
             // Clipped out is not on screen either — the same three channels as a ScrollView.
             var outer = press.Surface;
             press.Surface = Intersect(outer, node.Bounds);
-            foreach (var child in node.Children)
+            foreach (var child in node)
                 Emit(child, theme, mode, builder, confined, scrollMeta, press, motion, overlays);
             press.Surface = outer;
             builder.PopClip();
@@ -1039,7 +1039,7 @@ public static class PhotonRealizer
             // write-once in the shared component, so web and native cannot drift. This node only
             // registers the input region.
             input.Add(new SheetRegion(node.Bounds, sheetSurface, node.Path ?? ""));
-            foreach (var child in node.Children)
+            foreach (var child in node)
                 Emit(child, theme, mode, builder, input, scrollMeta, press, motion, overlays);
             return;
         }
@@ -1057,7 +1057,7 @@ public static class PhotonRealizer
         // so panel pressables, hit routing and painter's order all come for free.
         if (node.Source is Anchored anchored)
         {
-            foreach (var child in node.Children)
+            foreach (var child in node)
                 Emit(child, theme, mode, builder, input, scrollMeta, press, motion, overlays);
 
             // Wave 3b hover reveal (the Tooltip mechanism): the anchor registers for the host's
@@ -1123,7 +1123,7 @@ public static class PhotonRealizer
             if (motion.Reduced && loop.HideAtRest) return;
             var offset = ResolveLoopOffset(loop, node.Bounds.Width, motion);
             if (offset != 0) builder.PushTransform(Matrix2D.Translation(offset, 0));
-            foreach (var child in node.Children)
+            foreach (var child in node)
                 Emit(child, theme, mode, builder, input, scrollMeta, press, motion, overlays);
             if (offset != 0) builder.Pop();
             return;
@@ -1134,7 +1134,7 @@ public static class PhotonRealizer
             // Navigation surface: pure semantics — the child paints; a tap that no pressable claims
             // resolves to this region through the host's navigation seam.
             input.Add(new LinkRegion(node.Bounds, link.Destination));
-            foreach (var child in node.Children)
+            foreach (var child in node)
                 Emit(child, theme, mode, builder, input, scrollMeta, press, motion, overlays);
             return;
         }
@@ -1155,7 +1155,7 @@ public static class PhotonRealizer
                     ? Matrix2D.Translation(dragOffset, 0)
                     : Matrix2D.Translation(0, dragOffset));
             }
-            foreach (var child in node.Children)
+            foreach (var child in node)
                 Emit(child, theme, mode, builder, input, scrollMeta, press, motion, overlays);
             if (dragOffset != 0) builder.Pop();
             return;
@@ -1177,7 +1177,7 @@ public static class PhotonRealizer
                 : 0f;
             if (rise != 0) builder.PushTransform(Matrix2D.Translation(0, rise));
             if (entering) builder.PushLayer(node.Presence);
-            foreach (var child in node.Children)
+            foreach (var child in node)
                 Emit(child, theme, mode, builder, input, scrollMeta, press, motion, overlays);
             if (entering) builder.PopLayer();
             if (rise != 0) builder.Pop();
@@ -1186,7 +1186,7 @@ public static class PhotonRealizer
             return;
         }
 
-        foreach (var child in node.Children)
+        foreach (var child in node)
             Emit(child, theme, mode, builder, input, scrollMeta, press, motion, overlays);
     }
 

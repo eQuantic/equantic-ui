@@ -226,7 +226,7 @@ public static class SemanticsTree
                 return;
         }
 
-        foreach (var child in node.Children)
+        foreach (var child in node)
             Walk(child, nodes);
     }
 
@@ -245,7 +245,7 @@ public static class SemanticsTree
             // whose label happens to emphasise one word derived NO name at all, and a nameless
             // button is announced as "button" and nothing else.
             if (node.Source is Text { PlainContent.Length: > 0 } text) parts.Add(text.PlainContent);
-            foreach (var child in node.Children) Gather(child, parts);
+            foreach (var child in node) Gather(child, parts);
         }
     }
 }
