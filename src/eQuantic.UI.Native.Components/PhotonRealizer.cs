@@ -1422,8 +1422,7 @@ public static class PhotonRealizer
 
         if (motion.TextRasterizer is { } rasterizer && node.Text is { } measured)
         {
-            var style = text.StyleOverride ?? theme.Type(text.Role);
-            if (text.Mono) style = style with { Mono = true };
+            var style = text.Resolve(theme);
         if (text.Italic) style = style with { Italic = true };
             var raster = (motion.TextCache ?? TextRasterCache.Shared).Get(
                 rasterizer, text.PlainContent, style, motion.TypeScale, node.Bounds.Width, text.MaxLines,

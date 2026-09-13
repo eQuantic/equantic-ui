@@ -29,22 +29,23 @@ public class PrimitivesRuntimeExportTests
     /// <item>INTERFACES — a capability is resolved by name through the service container, and a
     /// type annotation is erased.</item>
     /// <item>ATTRIBUTES — build-time only; nothing survives into the emitted module.</item>
+    /// <item><c>[ServerOnly]</c> TYPES — the host keeps them and the compiler now REFUSES a client
+    /// reference (EQ2010), so the attribute is the rule and there is nothing left to list. This
+    /// used to be a name in the exception list below, maintained by hand, in two files whose
+    /// contents had already drifted apart.</item>
     /// </list>
     /// </summary>
     private static bool NeedsExport(Type type) =>
         type is { IsPublic: true, IsEnum: false, IsInterface: false }
         && !typeof(Attribute).IsAssignableFrom(type)
+        && !type.IsDefined(typeof(ServerOnlyAttribute), inherit: false)
         && !type.IsGenericTypeDefinition;
 
     /// <summary>
     /// The types that legitimately have no twin, each for a stated reason — kept as names so a
     /// fourth cannot slip in unnoticed.
     /// </summary>
-    private static readonly HashSet<string> NoTwinRequired =
-    [
-        // SERVER-SIDE ONLY: reached from [ServerOnly] code, which is never transpiled.
-        "ComponentBoundary",
-    ];
+    private static readonly HashSet<string> NoTwinRequired = [];
 
     /// <summary>The names inside a serialized list, so a failure says WHICH type appeared rather
     /// than that two JSON documents differ.</summary>

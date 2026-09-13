@@ -46,8 +46,12 @@ public static class TokenCss
     /// rather than to a second opinion.</summary>
     public const string SansStack = "var(--eq-font-family, system-ui, -apple-system, sans-serif)";
 
-    public const string MonoStack =
-        "var(--eq-font-mono, ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace)";
+    /// <summary>The stack behind <c>--eq-font-mono</c> — named once so the variable's declaration
+    /// and its fallback cannot drift apart.</summary>
+    public const string MonoFallback =
+        "ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace";
+
+    public const string MonoStack = "var(--eq-font-mono, " + MonoFallback + ")";
 
     /// <summary>
     /// A NAMED face in front of the stack that would have been used anyway. The fallback is the
@@ -301,6 +305,14 @@ public static class PhotonCssGenerator
         {
             css.AppendLine($"  --eq-space-{name}: {TokenCss.Px(value)};");
         }
+
+        // The theme's CODE FACE, as the variable both sides already read. `MonoStack` is
+        // `var(--eq-font-mono, …)`, so declaring it here reaches the role class, every node that
+        // says mono, the client's own lowering and the canvas measurer at once — without the
+        // lowering having to learn about a theme it cannot see. The app keeps the last word: this
+        // is a declaration on `:root`, and an app's own `:root` rule still wins.
+        if (FaceName.Usable(theme.MonoFamily) is { } code)
+            css.AppendLine($"  --eq-font-mono: \"{code}\", {TokenCss.MonoFallback};");
 
         // Motion (§06).
         css.AppendLine($"  --eq-motion-fast: {Motion.FastMs}ms;");

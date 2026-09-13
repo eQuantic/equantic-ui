@@ -85,6 +85,26 @@ public interface IAppTheme
     /// <summary>The type scale row for a role (spec §02).</summary>
     TypeStyle Type(TypeRole role);
 
+    /// <summary>
+    /// The face this theme sets CODE in, or null for the platform's own fixed-pitch face.
+    ///
+    /// <para>
+    /// A second family, and it has to be second rather than a role: <c>TypeStyle.Family</c> is
+    /// themeable per ROLE, and <c>Mono</c> is a per-NODE property — a branch name is monospaced and
+    /// the word beside it is not, both <c>TypeRole.Caption</c> — so the two never meet. No role in
+    /// any shipped scale sets <c>Mono</c>, which makes a <c>style.Mono ? code : text</c> branch
+    /// inside <see cref="Type"/> dead code rather than the answer. Reported by the eQuantic Code
+    /// IDE, whose handoff names one proportional face and one code face, and whose theme could
+    /// carry exactly one of them.
+    /// </para>
+    ///
+    /// <para>
+    /// Without this a brand code face has to be named at every call site, which is the work a theme
+    /// exists to remove.
+    /// </para>
+    /// </summary>
+    string? MonoFamily => null;
+
     /// <summary>Elevation level 0–5 (spec §05). Level 0 is none (+1dp Border); dark E1–E2 ALSO require a 1dp border.</summary>
     ShadowSpec Elevation(int level);
 
