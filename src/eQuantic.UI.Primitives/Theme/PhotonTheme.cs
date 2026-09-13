@@ -97,11 +97,20 @@ public sealed class PhotonTheme : IAppTheme
                 Pressed: SurfaceSubtle,
                 Subtle: transparent,
                 OnSubtle: TextPrimary),
-            // Link: text-only — fill stays transparent even pressed (the TEXT swaps to Primary.Pressed).
+            // Link is the audited exception the handoff's own colour rules name: "Base colors are
+            // fills for onBase text; never use Base as text on Surface (Link is the audited
+            // exception)". So its INK lives in Base and its pressed ink in Pressed — the contrast
+            // figures beside them in the token file are measured against the background, as text.
+            //
+            // Nothing fills a Link (Button.cs excludes it from the fill and from the pressed fill),
+            // so the slots carry the ink without painting a blue rectangle. Base used to be
+            // transparent with the ink only in OnBase, which read as defensive and cost the pressed
+            // ink entirely: #00427F simply did not exist in the theme, and the pressed text swap
+            // had nothing to swap TO.
             Variant.Link => new VariantColors(
-                Base: transparent,
+                Base: LinkColor,
                 OnBase: LinkColor,
-                Pressed: transparent,
+                Pressed: Token(0x00427F, 0xA8CDF2),
                 Subtle: transparent,
                 OnSubtle: LinkColor),
             _ => PrimaryColors,
