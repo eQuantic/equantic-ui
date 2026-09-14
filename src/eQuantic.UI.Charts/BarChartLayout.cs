@@ -6,12 +6,21 @@ namespace eQuantic.UI.Charts;
 /// <param name="Negative">Whether it grows away from the baseline toward the axis's low end.</param>
 /// <param name="DataEnd">Whether it carries the rounded DATA END — every grouped bar does, and only
 /// the outermost segment of a stack; the segments under it end square, separated by the gap.</param>
+/// <param name="X">Its left edge, dp from the plot's left.</param>
+/// <param name="Y">Its top edge, dp from the plot's top.</param>
+/// <param name="Width">How wide it is drawn, dp.</param>
+/// <param name="Height">How tall it is drawn, dp.</param>
 public sealed record BarRect(int Category, int Series, float X, float Y, float Width, float Height,
     bool Negative, bool DataEnd);
 
 /// <summary>Everything the marks of a bar chart are drawn from, solved once per size.</summary>
 /// <param name="Baseline">Where zero (or the axis floor) sits: a Y for vertical bars, an X for
 /// horizontal ones.</param>
+/// <param name="Width">The plot's width in dp, the box this was solved for.</param>
+/// <param name="Height">The plot's height in dp, the box this was solved for.</param>
+/// <param name="Orientation">Which way the bars grow, which decides what every other field means.</param>
+/// <param name="Ticks">The value domain as clean ticks, shared by the axis and the grid.</param>
+/// <param name="Bars">Every mark to draw, in the order they were solved.</param>
 public sealed record BarChartGeometry(float Width, float Height, ChartOrientation Orientation,
     ValueTicks Ticks, float Baseline, IReadOnlyList<BarRect> Bars)
 {
