@@ -18,7 +18,7 @@ namespace eQuantic.UI.Design;
 /// This is the whole reason the design host is a process and not a build. <c>eqc</c> reads files and
 /// the hot-reload service watches the filesystem, so neither can show you the text you are currently
 /// looking at — only the last text you saved. <see cref="ComponentCompiler.CompileSource"/> takes a
-/// string, and <see cref="SemanticModelProvider"/> swaps the buffer's tree in for the file's own by
+/// string, and <see cref="Compiler.Services.SemanticModelProvider"/> swaps the buffer's tree in for the file's own by
 /// path, so an unsaved edit compiles against the real project: its other types, its global usings,
 /// its generated sources, its exact MSBuild reference set.
 /// </para>
