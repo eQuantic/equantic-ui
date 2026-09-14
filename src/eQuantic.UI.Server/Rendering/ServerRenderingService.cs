@@ -129,7 +129,6 @@ public class ServerRenderingService : IServerRenderingService
             // BEFORE anything the page runs. The prefetch is the first thing that needs the route:
             // a page on /docs/{slug} loads BY the slug, so a route arriving after it would be a
             // route arriving after the only question it was there to answer.
-            RenderContext.SetScopedServiceProvider(context.RequestServices);
             // ONE route, in the shape with no target in it — a write-once page reads
             // context.Route.Param("slug") instead of reaching for ASP.NET (and losing Photon), and
             // the web's `context.Route` is this same value rather than a copy of it.
@@ -246,7 +245,6 @@ public class ServerRenderingService : IServerRenderingService
             }
             finally
             {
-                RenderContext.SetScopedServiceProvider(null);
                 RenderContext.SetLinkPolicy(null);
                 Primitives.RouteValues.ClearCurrent();
                 Primitives.CapabilityScope.Current = null;

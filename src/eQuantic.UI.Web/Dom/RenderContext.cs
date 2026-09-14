@@ -1,29 +1,31 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Web;
 
 /// <summary>
-/// Context available during component rendering
+/// What a component can ask about the render it is in, on the web.
+///
+/// <para>
+/// It used to be a second copy of most of that. A `RouteData` behind its own `AsyncLocal`, a
+/// service provider behind another plus a process-wide fallback, and a per-instance service
+/// dictionary — all answering questions `RouteValues` and `CapabilityScope` answer for every
+/// target, with `ServerRenderingService` arming both sets on every request. The Core dissolution
+/// (#83) moved the write-once half down and left this half where it was.
+/// </para>
+///
+/// <para>
+/// What is left is the one thing that is genuinely the web's: the LINK POLICY. Everything else
+/// here reads the vocabulary's ambient rather than a copy of it.
+/// </para>
 /// </summary>
 public class RenderContext
 {
-    private readonly Dictionary<Type, object> _services = new();
-
-    private static readonly AsyncLocal<IServiceProvider?> _asyncLocalProvider = new();
-    private static IServiceProvider? _globalProvider;
-
     /// <summary>
     /// What the ROUTE said — matched parameters and the query string
     /// (<c>context.Route.Param("id")</c>), transpiled to the runtime's <c>context.route</c>.
-    /// <para>
-    /// It is <see cref="RouteValues.Current"/> and nothing else. This used to be a second type with
-    /// a second `AsyncLocal` behind it, filled per request from the first — a `RouteData` whose
-    /// `Param` and `Query` were `RouteValues`' `Param` and `Query`, for the web only. The Core
-    /// dissolution (#83) moved the write-once half down and left this half where it was.
-    /// </para>
+    /// It is <see cref="RouteValues.Current"/> itself, never a copy.
     /// </summary>
     public RouteValues Route => RouteValues.Current;
 
@@ -38,8 +40,14 @@ public class RenderContext
     /// link works, it just leaves the language behind.
     /// </para>
     /// <para>
-    /// AsyncLocal, like the route and the provider beside it: two requests rendering concurrently
-    /// in different languages must not see each other's prefix.
+    /// It stays on the WEB rather than moving down with the route and the resolver, because it is
+    /// not neutral: the policy is installed by the server's culture routes, and Photon's realizer
+    /// reads <c>Link.Destination</c> raw. That is a fence rather than a gap today — nothing arms a
+    /// policy on that target — but the day one becomes neutral, the native realizer owes it too.
+    /// </para>
+    /// <para>
+    /// AsyncLocal, like the ambients it sits beside: two requests rendering concurrently in
+    /// different languages must not see each other's prefix.
     /// </para>
     /// </summary>
     public static Func<string, string>? LinkPolicy => _linkPolicy.Value;
@@ -60,90 +68,16 @@ public class RenderContext
             : destination;
 
     /// <summary>
-    /// Service provider for the current async context.
-    /// Uses AsyncLocal for thread-safe per-request isolation during SSR.
-    /// Falls back to the global provider set at startup.
+    /// A capability, for code that has a context — <c>context.GetService&lt;ITextClipboard&gt;()</c>.
+    /// Null when this target does not have it.
+    /// <para>
+    /// It is <see cref="CapabilityScope"/> and nothing else. The `AsyncLocal` provider, the global
+    /// fallback and the per-instance dictionary that used to live here answered the same question:
+    /// nothing in the tree ever registered into the dictionary, and nothing ever set the global.
+    /// </para>
     /// </summary>
-    public static IServiceProvider? ServiceProvider
-    {
-        get => _asyncLocalProvider.Value ?? _globalProvider;
-        set
-        {
-            // If called from an async context (SSR), use AsyncLocal
-            // Otherwise, set the global fallback
-            if (SynchronizationContext.Current != null || _globalProvider != null)
-            {
-                _asyncLocalProvider.Value = value;
-            }
-            else
-            {
-                _globalProvider = value;
-            }
-        }
-    }
+    public T? TryGetService<T>() where T : class => CapabilityScope.Resolve<T>();
 
-    /// <summary>
-    /// Sets the global (application-wide) service provider.
-    /// Use this at startup (e.g., Program.cs). Thread-safe for reads.
-    /// </summary>
-    public static void SetGlobalServiceProvider(IServiceProvider? provider)
-    {
-        _globalProvider = provider;
-    }
-
-    /// <summary>
-    /// Sets the service provider for the current async context only.
-    /// Thread-safe: uses AsyncLocal so concurrent requests don't interfere.
-    /// </summary>
-    public static void SetScopedServiceProvider(IServiceProvider? provider)
-    {
-        _asyncLocalProvider.Value = provider;
-    }
-
-    /// <summary>
-    /// Register a service for dependency injection
-    /// </summary>
-    public void RegisterService<T>(T service) where T : notnull
-    {
-        _services[typeof(T)] = service;
-    }
-    
-    /// <summary>
-    /// Get a registered service
-    /// </summary>
-    public T GetService<T>() where T : class
-    {
-        if (_services.TryGetValue(typeof(T), out var service))
-        {
-            return (T)service;
-        }
-
-        // Fallback to global provider
-        if (ServiceProvider != null)
-        {
-            var fallback = ServiceProvider.GetService(typeof(T)) as T;
-            if (fallback != null) return fallback;
-        }
-
-        throw new InvalidOperationException($"Service {typeof(T).Name} not registered");
-    }
-    
-    /// <summary>
-    /// Try to get a registered service
-    /// </summary>
-    public T? TryGetService<T>() where T : class
-    {
-        if (_services.TryGetValue(typeof(T), out var service))
-        {
-            return (T)service;
-        }
-        
-        // Fallback to global provider
-        if (ServiceProvider != null)
-        {
-            return ServiceProvider.GetService(typeof(T)) as T;
-        }
-
-        return null;
-    }
+    /// <summary>The same capability, where its absence is a mistake rather than an answer.</summary>
+    public T GetService<T>() where T : class => CapabilityScope.Require<T>(nameof(RenderContext));
 }

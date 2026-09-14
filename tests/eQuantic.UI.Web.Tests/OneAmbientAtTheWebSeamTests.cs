@@ -5,7 +5,7 @@ using FluentAssertions;
 namespace eQuantic.UI.Web.Tests;
 
 /// <summary>
-/// The web's `context.Route` and the vocabulary's `RouteValues.Current` are ONE value.
+/// The web's ambients ARE the vocabulary's ambients — one route, one capability resolver.
 ///
 /// <para>
 /// They used to be two. `Web/Dom/RouteData` and `Primitives/RouteValues` answered `Param` and
@@ -21,7 +21,7 @@ namespace eQuantic.UI.Web.Tests;
 /// the arrangement that was removed.
 /// </para>
 /// </summary>
-public class OneRouteAtTheWebSeamTests
+public class OneAmbientAtTheWebSeamTests
 {
     [Fact]
     public void TheWebsRoute_IsTheVocabularysRoute()
@@ -53,5 +53,41 @@ public class OneRouteAtTheWebSeamTests
 
         new RenderContext().Route.Should().BeSameAs(RouteValues.Empty);
         new RenderContext().Route.Param("slug").Should().BeNull();
+    }
+
+    private interface IClipboardish { string Read(); }
+
+    private sealed class Clipboardish : IClipboardish
+    {
+        public string Read() => "armed";
+    }
+
+    /// <summary>
+    /// The capability half. `RenderContext` carried its own `AsyncLocal` provider, a process-wide
+    /// fallback and a per-instance dictionary; `ServerRenderingService` armed that AND
+    /// `CapabilityScope` from the same container, every request. This asks the web context a
+    /// question only the vocabulary's resolver was armed to answer.
+    /// </summary>
+    [Fact]
+    public void TheWebsCapability_ComesFromTheVocabularysResolver()
+    {
+        using var _ = CapabilityScope.With<IClipboardish>(new Clipboardish());
+
+        new RenderContext().TryGetService<IClipboardish>()?.Read().Should().Be("armed");
+        new RenderContext().GetService<IClipboardish>().Read().Should().Be("armed");
+    }
+
+    /// <summary>…and an absence is still an absence, in the two shapes a caller asked for it.</summary>
+    [Fact]
+    public void WithNothingArmed_TheCapabilityIsNullOrSaysWhoNeededIt()
+    {
+        CapabilityScope.Current = null;
+
+        new RenderContext().TryGetService<IClipboardish>().Should().BeNull();
+        var thrown = Assert.Throws<InvalidOperationException>(
+            () => new RenderContext().GetService<IClipboardish>());
+        thrown.Message.Should().Contain("IClipboardish",
+            "the message names the capability, because the reader is usually on the target that "
+            + "does not have it");
     }
 }
