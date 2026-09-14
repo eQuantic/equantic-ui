@@ -297,10 +297,76 @@ jobs:
           path: nupkgs/*.nupkg
 
 
+  # THE SUITE RUNS WHERE THE CODE RUNS.
+  #
+  # `build-packages` above is the only job that ever ran `dotnet test`, and it is macOS-only for a
+  # real reason — the iOS and Android shells need workloads that install on a Mac. The cost was
+  # invisible: a contract test over the DirectWrite measurer failed on every Windows checkout from
+  # the day it was written (#123) until somebody read the code (#136), because nothing here ever
+  # executed it. A pin nobody runs is a comment with a test's authority.
+  #
+  # So the same suite runs on Linux and Windows too. No filter and no hand-picked subset: the point
+  # is to LEARN which projects are OS-specific rather than to assume. What fails is a defect or a
+  # fence, and a fence is a Skip whose text names the OS and the reason — never a filter here,
+  # which would hide the fact in a file nobody reads while running the tests.
+  test:
+    needs: build-runtime
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # Both legs always report. Cancelling one because the other failed is how a two-OS gap gets
+      # read as a one-OS gap.
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # The runtime bundle the Server embeds, and what several suites read back.
+      - name: Download Runtime Build
+        uses: actions/download-artifact@v4
+        with:
+          name: runtime-build
+          path: src/eQuantic.UI.Runtime/dist/
+
+      # The version-mark guard asks `git tag --contains`, and a shallow checkout has no tags: it
+      # would answer "unreleased" for everything and pass having checked nothing.
+      - name: Fetch tags (for the version-mark guard)
+        shell: bash
+        run: git fetch --tags --force --depth=1 origin
+
+      - name: Check out the wiki (for the docs guards)
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/eQuantic/equantic-ui.wiki.git ../equantic-ui.wiki
+
+      - name: Test
+        shell: bash
+        env:
+          # Conformance must FAIL (not skip) if no JS engine works on the runner.
+          EQ_REQUIRE_JS: "1"
+        run: |
+          set -euo pipefail
+          # find, not globstar: the same reason the macOS leg avoids it, and the Windows leg runs
+          # this through Git Bash, whose bash is not the one on the PATH of the other two.
+          find tests -name "*.csproj" | while read -r test_project; do
+            echo "::group::$test_project"
+            dotnet test "$test_project" --configuration Release --verbosity normal
+            echo "::endgroup::"
+          done
+
+
   # GitHub Packages is a convenience feed for every main push — a light ubuntu job so the heavy
   # macOS build job never dies on the upload (exit 137).
   publish-github:
-    needs: [build-packages, gate-templates]
+    needs: [build-packages, gate-templates, test]
     # On a TAG this waits for the gate, as nuget.org already does. It did not, so a release whose
     # templates failed to scaffold still landed here: preview.31 sat on this feed carrying a broken
     # template while the public feed correctly never got it, and the two had to be reconciled by
@@ -315,6 +381,10 @@ jobs:
       always()
       && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
       && needs.build-packages.result == 'success'
+      # The cross-OS suite is a GATE, not a report. Without this a red Linux or Windows leg sat
+      # beside a green macOS build and the packages published anyway — coverage that cannot stop
+      # anything is a comment with a check's authority, which is the defect this job was added for.
+      && needs.test.result == 'success'
       && (needs.gate-templates.result == 'success' || needs.gate-templates.result == 'skipped')
     runs-on: ubuntu-latest
     permissions:
@@ -348,7 +418,7 @@ jobs:
   # scaffold and BUILD (and on the web template, PUBLISH) against the exact packages being
   # released. The native template gates on macOS only (its icon pipeline needs CoreGraphics).
   gate-templates:
-    needs: build-packages
+    needs: [build-packages, test]
     # `refs/tags/v` matches by PREFIX, so any tag beginning with v enters here — the extension's
     # releases are tagged `ext-v*` for exactly that reason.
     if: startsWith(github.ref, 'refs/tags/v')

@@ -55,7 +55,7 @@ prose, and cannot go on claiming an absence that has ended.
 |---|---|---|
 | "Constraints go down, sizes go up, parents set positions" | The same discipline, single pass | **SAME** in behaviour. |
 | `BoxConstraints` as a VALUE (`tight`, `loose`, `bounded`, `unbounded`) | `LayoutConstraints` / `AxisConstraint` — a value with the behaviour on it (`ForChild`, `Released`, `Inline`, `Stretched`) | **DIFFERENT, and no longer weaker.** This row said the constraint "is not a type a caller can hold"; it is one now, and `LayoutContext` carries no layout state at all. It stays DIFFERENT because the shape is not Flutter's: `BoxConstraints` needs no flags, since unbounded IS an infinite max and stretched IS min-equals-max. That was tried first and it loses `StretchKind`, whose two kinds differ only in whether the stretch survives an INLINE boundary — a `Pressable`, an `Adjustable`, a `Link`. Flutter has no inline boundary to survive; we do, because one of two targets answers to CSS's inline/block model for the same component. What an AUTHOR still cannot do is receive one, which is the next row. |
-| `Rect`, `Offset`, `Size` in `dart:ui` — geometry UNDER everything | `Rect`, `Point`, `Size` in `Native.Engine` — geometry ABOVE the vocabulary | **PARTIAL, and the wrong way up.** The types exist and are good; they live where only Photon can reach them. Measured consequences: `ICanvasPainter` spells every box as four floats, `SemanticNode` cannot move down to Primitives because it carries a `Rect`, and the constraint value the row above describes (`LayoutConstraints`, #119) had to be born in `Native.Framework`, above the vocabulary, where no `LayoutBuilder` can hand it to an author. |
+| `Rect`, `Offset`, `Size` in `dart:ui` — geometry UNDER everything | `Rect`, `Point`, `Size` in `Primitives` — geometry under the vocabulary | **SAME, after the move.** They were in `Native.Engine`, above the vocabulary, where only Photon could reach them, and the cost was paid three times over: `ICanvasPainter` spelling every box as four floats, `SemanticNode` unable to move down because it carries a `Rect`, and `LayoutConstraints` (#119) born in `Native.Framework` where no `LayoutBuilder` can hand it to an author. The move itself cost three edits — two `using` lines and one qualified name — which is the measurement that says the placement was an accident of where the type was first needed rather than a dependency. The name stays `Point`: Flutter's `Offset` doubles as a vector and so does ours (`Dot`, `Length`), and `Point` is the word the rest of this SDK already uses. |
 | `LayoutBuilder` | `AdaptiveNode` (three window size classes) | **GAP.** We have the window-class special case of it, not the general node. The first external consumer of this SDK needed a child built against its own box, found no way to ask, and used a `Canvas` whose paint callback does nothing as a ruler — `ICanvasPainter` exposes `Width`/`Height`, so a handler-less canvas is a measuring tape. It works and re-measures across a resize. It is also an idiom nobody would guess, costing a node per use and a no-op draw callback per frame. |
 | `CustomMultiChildLayout`, `MultiChildLayoutDelegate` | — | **GAP** |
 | `CustomSingleChildLayout` | — | **GAP** |
@@ -172,10 +172,10 @@ one decision to take, not four.
 **Two gaps have a consumer already blocked behind them**, which is the only evidence that counts here:
 `LayoutBuilder` (a child built against its own box) and an authorable constraint type to go with it.
 
-**Two PARTIAL rows are about WHERE a thing lives, not whether it exists** — `Rect` above the vocabulary
-instead of under it, `SemanticsNode` inside one target instead of beneath all of them. Each blocks a
-row near it, and each is a move rather than a feature. [ARCHITECTURE-AUDIT.md](ARCHITECTURE-AUDIT.md)
-carries the measurements behind them.
+**One PARTIAL row is about WHERE a thing lives, not whether it exists** — `SemanticsNode` inside one
+target instead of beneath all of them. It blocks a row near it, and it is a move rather than a
+feature. `Rect` was the other one and is now under the vocabulary.
+[ARCHITECTURE-AUDIT.md](ARCHITECTURE-AUDIT.md) carries the measurements behind them.
 
 **Three DIFFERENT rows are the ones to keep and defend**, because they are where this SDK is not a
 smaller Flutter: declarative animation with no controller to leak; typed capabilities instead of

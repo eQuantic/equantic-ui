@@ -746,7 +746,7 @@ public class ComponentParser
         definition.ResolvedSemantically =
             model.Compilation.GetTypeByMetadataName("eQuantic.UI.Primitives.VisualNode") is not null;
         RuntimeProvidedTypeScanner.Collect(classDecl, model, definition.RuntimeProvidedTypes,
-            definition.EnumTypes, definition.AppTypes);
+            definition.EnumTypes, definition.AppTypes, definition.HostOnlyTypes);
     }
 
     /// <summary>

@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
@@ -37,11 +38,22 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         // objects concatenated their toString()s — wrong output, nothing to see, no error.
         if (context.SemanticHelper.GetSymbol(binary) is IMethodSymbol
             { MethodKind: MethodKind.UserDefinedOperator, IsImplicitlyDeclared: false,
-              ContainingType: { } declaring }
-            && RecordTypeEmitter.OperatorMethodName(op) is { } operatorMethod
-            && declaring.Locations.Any(location => location.IsInSource))
+              ContainingType: { } declaring } operatorSymbol)
         {
-            return JsExpr.Callish($"{declaring.Name}.{operatorMethod}({left}, {right})");
+            // …and a FRAMEWORK operator the runtime ships no twin for falls out of that branch into
+            // JavaScript's own `+`, which is the silent half of the same defect: two objects
+            // concatenate, an object times a number is NaN, and the page compiled. A framework
+            // value whose twin IS a primitive (SizeValue, Index) passes through correctly and is
+            // not fenced; one whose twin is an object says so with [ServerOnly], and this is where
+            // that gets read. The fence's own doc counts the branches that owe it this call — an
+            // operator was the fifth, and it was not asking.
+            if (operatorSymbol.ReportIfHostOnly(binary, context)) return JsExpr.Callish("undefined");
+
+            if (RecordTypeEmitter.OperatorMethodName(op) is { } operatorMethod
+                && declaring.Locations.Any(location => location.IsInSource))
+            {
+                return JsExpr.Callish($"{declaring.Name}.{operatorMethod}({left}, {right})");
+            }
         }
 
         // CHAR ARITHMETIC moved to ValueFlow: a char promoting to a number is an implicit

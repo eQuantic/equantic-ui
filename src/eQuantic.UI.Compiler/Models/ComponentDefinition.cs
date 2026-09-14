@@ -135,6 +135,18 @@ public class ComponentDefinition
     public HashSet<string> RuntimeProvidedTypes { get; set; } = new();
 
     /// <summary>
+    /// HOST-ONLY vocabulary types this component NAMED, and where — kept out of
+    /// <see cref="RuntimeProvidedTypes"/> because the runtime ships no export for them.
+    /// <para>
+    /// The parser finds them (a type POSITION is only visible to a semantic sweep) and the emitter
+    /// reports them, because the parser has no diagnostics channel and the emitter does. Before
+    /// this, `public Matrix2D Placement { get; init; }` on a component compiled, emitted
+    /// `import { Matrix2D } from "@equantic/runtime"`, and took the page down at hydration.
+    /// </para>
+    /// </summary>
+    public Dictionary<string, Microsoft.CodeAnalysis.SyntaxNode> HostOnlyTypes { get; } = new();
+
+    /// <summary>
     /// Simple names of referenced ENUM types (semantic-model discovered). Enum members lower to
     /// camelCase string literals, so these names never appear as identifiers in emitted code — the
     /// emitter must not import them.

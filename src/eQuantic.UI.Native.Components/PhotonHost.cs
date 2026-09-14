@@ -206,7 +206,7 @@ public sealed class PhotonHost
         }
 
         builder.Clear(_theme.Background.Resolve(Mode));
-        if (RenderScale != 1f) builder.PushTransform(Engine.Matrix2D.Scale(RenderScale, RenderScale));
+        if (RenderScale != 1f) builder.PushTransform(Matrix2D.Scale(RenderScale, RenderScale));
         _lastTimeMs = timeMs;
         // A gliding scroll advances BEFORE the frame is realized, so this frame paints where it
         // moved to; while anything is still gliding the host keeps asking for frames.

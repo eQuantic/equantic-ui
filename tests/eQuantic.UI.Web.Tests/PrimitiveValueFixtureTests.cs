@@ -15,6 +15,10 @@ namespace eQuantic.UI.Web.Tests;
 /// </summary>
 public class PrimitiveValueFixtureTests
 {
+    /// <summary>A box as its four numbers, so a mismatch says WHICH edge moved.</summary>
+    private static object Corners(Rect rect) =>
+        new { x = rect.X, y = rect.Y, width = rect.Width, height = rect.Height };
+
     private static string FixturePath()
     {
         var here = new DirectoryInfo(AppContext.BaseDirectory);
@@ -42,6 +46,28 @@ public class PrimitiveValueFixtureTests
                 online = NetworkState.Offline.Online,
                 // The enum crosses as its wire string, so that is what the twin has to hold.
                 kind = NetworkState.Offline.Kind.ToString().ToLowerInvariant(),
+            },
+            // GEOMETRY, which is the twin that can drift while still loading. `Point`, `Size` and
+            // `Rect` went into the vocabulary when geometry moved down, so they owe an export — and
+            // an exported class with arithmetic in it is a second implementation. These are the
+            // answers a page would get here, so the answers the browser gives have to match.
+            //
+            // Chosen for the branches an obvious twin gets wrong: an intersection that MISSES
+            // returns an empty box pinned at the would-be corner rather than at the origin, and
+            // containment is HALF-OPEN — the left and top edges are inside, the right and bottom
+            // are not, which is what keeps two adjacent boxes from both claiming the same pixel.
+            rect = new
+            {
+                overlap = Corners(new Rect(0, 0, 10, 10).Intersect(new Rect(4, 6, 20, 20))),
+                disjoint = Corners(new Rect(0, 0, 10, 10).Intersect(new Rect(40, 60, 5, 5))),
+                inset = Corners(new Rect(0, 0, 10, 10).Inflate(-2)),
+                grown = Corners(new Rect(3, 4, 10, 10).Inflate(2.5f)),
+                fromEdges = Corners(Rect.FromLTRB(2, 3, 9, 11)),
+                center = new { x = new Rect(3, 4, 10, 20).Center.X, y = new Rect(3, 4, 10, 20).Center.Y },
+                containsTopLeft = new Rect(0, 0, 10, 10).Contains(new Point(0, 0)),
+                containsBottomRight = new Rect(0, 0, 10, 10).Contains(new Point(10, 10)),
+                containsInside = new Rect(0, 0, 10, 10).Contains(new Point(9.99f, 9.99f)),
+                emptyOnZeroWidth = new Rect(0, 0, 0, 10).IsEmpty,
             },
             windowSizeClasses = new
             {

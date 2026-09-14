@@ -264,15 +264,22 @@ down. What cannot stand is the current answer, which is neither. Edgar's call.
   the source generator's output would resolve. `Native.Hosting` is referenced by every native app and
   is where they resolve just as well.
 
-**And one thing missing from the bottom.** `Primitives` has `EdgeInsets`, `SizeValue`, `CornerRadii`
-and no `Rect`, `Point` or `Size`: geometry lives in `Native.Engine/Geometry.cs`, ABOVE the vocabulary.
-Flutter puts `Rect`, `Offset` and `Size` in `dart:ui`, under everything. The consequences are
-measurable: `ICanvasPainter` spells every box as four floats; `Charts` carries its own `BarRect`
-with x, y, width and height spelled out, since no `Rect` is visible to it; `SemanticNode` carries a `Rect` and therefore cannot move down to
-`Primitives` — which is what keeps `SemanticRole` inside one target's assembly (section 6) and
-`Navigable`/`Overlay` mute on Photon; and `LayoutConstraints` — the constraint value #119 introduced, the one an author-facing
-`LayoutBuilder` would hand out, the gap in FLUTTER-PARITY with a consumer already blocked behind it —
-had to be born in `Native.Framework`, above the vocabulary, for want of a lower home. Moving three record structs down breaks nothing above them.
+**And one thing was missing from the bottom — it is there now.** `Primitives` had `EdgeInsets`,
+`SizeValue` and `CornerRadii` and no `Rect`, `Point` or `Size`: geometry lived in
+`Native.Engine/Geometry.cs`, ABOVE the vocabulary, where Flutter puts `Rect`, `Offset` and `Size` in
+`dart:ui`, under everything. The consequences were measurable: `ICanvasPainter` spells every box as
+four floats; `Charts` carries its own `BarRect` with x, y, width and height spelled out, since no
+`Rect` was visible to it; `SemanticNode` carries a `Rect` and therefore could not move down — which
+is what keeps `SemanticRole` inside one target's assembly (section 6) and `Navigable`/`Overlay` mute
+on Photon; and `LayoutConstraints`, the constraint value #119 introduced and the one an author-facing
+`LayoutBuilder` would hand out, had to be born in `Native.Framework` for want of a lower home.
+
+The move is done and `Geometry.cs` is a `Primitives` file. **What it cost is the finding.** Three
+edits: two `using` lines and one qualified name. Nothing above the vocabulary depended on geometry
+being up there — the placement was an accident of where the type was first needed, which is the
+shape most misplaced artifacts in this tree turn out to have. The pin is
+`FlutterParityPinTests`' `Rect` row, and it asserts by ASSEMBLY, not by name, because a name probe
+passes on a second copy and a second copy is the defect.
 
 **Folder hygiene, for the reader.** `Nodes/` holds nine files that are not nodes — `CapabilityScope`,
 `ComponentBoundary`, `ComponentInstanceStore`, `RouteValues`, `Navigator`, `IServerPrefetch`,
@@ -437,6 +444,35 @@ stays as the analogue of `didExceedMaxLines`, read by no realizer. Same family a
 — the property one realizer honours and another drops in silence — found by the IDE consumer's session,
 measured here, and half of it found again by the same consumer reading a header.
 
+### What a misplaced type had already copied
+
+Geometry sat in `Native.Engine` (section 4), so `Primitives` could not name it, so `Primitives` grew
+its own. Four copies, found by moving the types down and watching what stopped being needed:
+
+| the copy | the original | how they differed |
+|---|---|---|
+| `VectorPoint` | `Point` | nothing; two floats named X and Y |
+| `VectorTransform` | `Matrix2D` | the six floats renamed A..F; `Compose(inner)` is `inner * outer`, `Apply` is `Transform` |
+| `SvgDocument.Scale` | `Matrix2D.AverageScale` | `sqrt(abs(det))`, written out |
+| `PathVerb` / `PathSegment` / `SvgPath.Parse` | `VectorVerb` / `VectorSegment` / `VectorPath.Parse` | a mapping layer whose own doc comment called itself "the map across" |
+
+The transform pair is the one worth measuring rather than eyeballing, because "looks like the same
+algebra" is how a wrong collapse gets committed. 200,000 random compositions and 100,000 factory
+comparisons, field by field: **worst delta 0** — bit-identical, not within an epsilon. So the
+collapse is a rename, and the only thing `Matrix2D` gained is the two shears, which SVG is the only
+source of.
+
+Degrees did NOT come with them. `skewX(30)` is the attribute's unit, so the conversion lives in
+`SvgDocument` where the format is read and the neutral type keeps speaking radians — the same rule
+as section 2's names.
+
+**The instrument.** `ValueShapeCollisionTests` now holds every shape carried by more than one public
+value type across the native graph, with a sentence per group. Both of the real duplicates would have
+appeared in it the day they were written — one joining `(float, float)`, one forming a new six-float
+group — and it fails in both directions, so a type cannot join an excused group on somebody else's
+reason. It measures shape and not meaning, and says so: `CornerRadii`, `Curve`, `EdgeInsets`,
+`LinearColor` and `Rect` are all four floats and all different.
+
 ---
 
 ## 8. The handoff and the code, in step
@@ -570,9 +606,13 @@ makes the rest safe.
    (Flutter: abstract `performLayout`/`paint`). One file per node family per realizer, as
    `Strategies/` is per construct. Retire the regex pin when the last switch is gone. — L.
    Planned, slice by slice, in [VOCABULARY-DISPATCH-PLAN.md](VOCABULARY-DISPATCH-PLAN.md).
-3. **Geometry down**: `Rect`, `Point`, `Size` to `Primitives` (Flutter: `dart:ui`); then `SemanticRole`
-   and `SemanticNode` to `Primitives`, then the group role that unmutes `Navigable` and `Overlay` on
-   Photon; `Charts` drops `BarRect`'s own geometry; `ICanvasPainter` takes a `Rect`. — M
+3. **Geometry down**. ~~`Rect`, `Point`, `Size` to `Primitives`~~ done (Flutter: `dart:ui`), and it
+   cost three edits, which is the finding: nothing above depended on the placement. Four copies it
+   had been causing went with it (section 7), and `ValueShapeCollisionTests` now asks about the
+   next one. Remaining: `SemanticRole` and `SemanticNode` to `Primitives`, then the group role that
+   unmutes `Navigable` and `Overlay` on Photon; `Charts` drops `BarRect`'s own geometry;
+   `ICanvasPainter` takes a `Rect` — which needs its TypeScript twin in the same change, because the
+   draw callback transpiles. — M, half done
 4. **Node shapes**: a `SingleChildNode` base (Flutter: `SingleChildRenderObjectWidget`), the wrapper
    set and the node-intrinsic questions hoisted onto the vocabulary, `VisualNode.cs` split along the
    four shapes. — M

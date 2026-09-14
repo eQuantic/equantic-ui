@@ -24,12 +24,23 @@ namespace eQuantic.UI.Compiler.CodeGen.Extensions;
 ///
 /// <para>
 /// One function, asked from EVERY branch that can return a name — and counting them is the whole
-/// difficulty. There are four: a qualified call, a static member READ, an unqualified call through
-/// <c>using static</c>, and a method GROUP passed as a delegate. Each returns early on its own path,
-/// so each had to be told, and the first two versions of this fence guarded one branch apiece while
-/// reading like protection for all of them. <c>ComponentBoundary.Contained</c> compiled while
-/// <c>ComponentBoundary.ClearContained()</c> did not; <c>using static</c> compiled while a qualified
-/// call did not. A new branch that returns a name owes this call.
+/// difficulty. There are SIX: a qualified call, a static member READ, an unqualified call through
+/// <c>using static</c>, a method GROUP passed as a delegate, a CONSTRUCTION, and an OPERATOR. Each
+/// returns early on its own path, so each had to be told, and every version of this fence has
+/// guarded some of them while reading like protection for all.
+/// <c>ComponentBoundary.Contained</c> compiled while <c>ComponentBoundary.ClearContained()</c> did
+/// not; <c>using static</c> compiled while a qualified call did not; <c>Matrix2D.Identity</c> was
+/// stopped while <c>new Matrix2D(…)</c> two lines above it was not.
+/// </para>
+/// <para>
+/// The OPERATOR branch is the one whose absence failed SILENTLY rather than loudly, and it is worth
+/// stating separately for that reason. JavaScript cannot overload an operator, so an unfenced
+/// framework <c>+</c> emits JavaScript's own: two objects concatenate into
+/// <c>"[object Object][object Object]"</c> and <c>a * 2</c> is <c>NaN</c>, in a page that compiled,
+/// rendered on the server and looked right. Every other branch at least took the page down.
+/// </para>
+/// <para>
+/// A new branch that returns a name owes this call.
 /// </para>
 /// </summary>
 internal static class HostOnlySymbolExtensions
@@ -49,17 +60,50 @@ internal static class HostOnlySymbolExtensions
         if (declaring is null) return false;
         if (declaring.Locations.Any(location => location.IsInSource)) return false;
         if (!symbol.IsHostOnly() && !declaring.IsHostOnly()) return false;
+        return Report(declaring, symbol.Name, node, context);
+    }
+
+    /// <summary>
+    /// The TYPE named on its own — a construction, where there is no member to ask about. Same
+    /// rule, same message, through the same function: the branch that reported it inline for one
+    /// release is how two pieces come to answer the same question each in its own words.
+    /// </summary>
+    internal static bool ReportIfHostOnlyType(this ITypeSymbol? type, SyntaxNode node, ConversionContext context)
+    {
+        if (type is not INamedTypeSymbol named) return false;
+        if (named.Locations.Any(location => location.IsInSource)) return false;
+        if (!named.IsHostOnly()) return false;
+        return Report(named, node, context);
+    }
+
+    private static bool Report(INamedTypeSymbol declaring, SyntaxNode node, ConversionContext context) =>
+        Report(declaring, member: null, node, context);
+
+    private static bool Report(
+        INamedTypeSymbol declaring, string? member, SyntaxNode node, ConversionContext context)
+    {
+        var named = member is null
+            ? declaring.ToDisplayString()
+            : $"{declaring.ToDisplayString()}.{member}";
 
         // Its OWN code, not EQ2004. The two look alike — neither symbol has a translation — and
         // they are not the same error: EQ2004 is an OMISSION, fixed by adding a strategy, while
         // this is a DECISION, and a reader who follows EQ2004's remedy here writes code nobody
         // wants. One code meaning two unrelated things is how EQ2101 went wrong, and the
         // diagnostics baseline asked the question directly when this gained a reporting site.
-        context.Report(node, ConversionSeverity.Error, "EQ2010",
-            $"'{declaring.ToDisplayString()}.{symbol.Name}' is HOST ONLY ([ServerOnly]) and the "
-            + "runtime ships no twin for it, so a client component naming it would fail at hydration "
-            + "rather than here. Call it from server code — a [ServerAction], a [ServerOnly] class, "
-            + "or the realizer — never from a component's Build.");
+        context.Report(node, ConversionSeverity.Error, "EQ2010", Message(named));
         return true;
     }
+
+    /// <summary>
+    /// The one wording. A THIRD caller reports this — the emitter, for a host-only type named in a
+    /// SIGNATURE rather than in an expression — and it has no ConversionContext to go through, so
+    /// the message is what the three share rather than the function. The alternative was a second
+    /// text, which is how two pieces come to answer one question each in its own words.
+    /// </summary>
+    internal static string Message(string named) =>
+        $"'{named}' is HOST ONLY ([ServerOnly]) and the "
+        + "runtime ships no twin for it, so a client component naming it would fail at hydration "
+        + "rather than here. Call it from server code — a [ServerAction], a [ServerOnly] class, "
+        + "or the realizer — never from a component's Build.";
 }

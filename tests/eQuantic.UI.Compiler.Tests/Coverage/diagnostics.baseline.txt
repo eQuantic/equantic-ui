@@ -16,7 +16,7 @@ EQ2006 eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ConditionalAccessStra
 EQ2007 eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/CollectionExpressionStrategy.cs
 EQ2008 eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/InitializerExpressionStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Linq/GroupByStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Linq/QueryExpressionStrategy.cs eQuantic.UI.Compiler/CodeGen/TypeScriptEmitter.cs eQuantic.UI.Compiler/ComponentCompiler.cs
 EQ2009 eQuantic.UI.Compiler/ComponentCompiler.cs
-EQ2010 eQuantic.UI.Compiler/CodeGen/Extensions/HostOnlySymbolExtensions.cs
+EQ2010 eQuantic.UI.Compiler/CodeGen/Extensions/HostOnlySymbolExtensions.cs eQuantic.UI.Compiler/CodeGen/TypeScriptEmitter.cs
 EQ2100 eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/StringStaticStrategy.cs
 EQ2101 eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/StringStaticStrategy.cs
 EQ2102 eQuantic.UI.Compiler/Services/SemanticValidator.cs

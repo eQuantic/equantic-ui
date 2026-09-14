@@ -1,0 +1,94 @@
+using System.Linq;
+using eQuantic.UI.Compiler;
+using FluentAssertions;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Xunit;
+
+namespace eQuantic.UI.Compiler.Tests;
+
+/// <summary>
+/// A host-only type named in a SIGNATURE, which is the seventh way to name a symbol and the only
+/// one no expression strategy can reach.
+///
+/// <para>
+/// `HostOnlyFrameworkTypeTests` covers the six that are expressions — a qualified call, a static
+/// read, an unqualified call, a method group, a construction, an operator. A type POSITION is none
+/// of those: `public Matrix2D Placement { get; init; }` names the type in the component's own
+/// shape, where the only thing that sees it is the parser's semantic sweep. Measured before the
+/// fix: it compiled, emitted `import { Matrix2D } from "@equantic/runtime"`, and would have taken
+/// the page down at hydration on a name the runtime deliberately does not export. Found in review.
+/// </para>
+///
+/// <para>
+/// A whole compilation rather than a statement, because that is the condition: the defect lives in
+/// the class's IMPORTS, and a statement probe has no class to import for.
+/// </para>
+/// </summary>
+public class HostOnlyInASignatureTests
+{
+    private static CompilationResult Compile(string body)
+    {
+        var source = $$"""
+            using eQuantic.UI.Primitives;
+            using static eQuantic.UI.Components.UI;
+
+            namespace Demo;
+
+            public sealed class Probe : StatelessComponent
+            {
+                {{body}}
+
+                public override VisualNode Build(ComponentContext context) => Text("x", TypeRole.BodyM);
+            }
+            """;
+        var tree = CSharpSyntaxTree.ParseText(source, path: "Probe.cs");
+        var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+            .Split(Path.PathSeparator)
+            .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
+            .Append(MetadataReference.CreateFromFile(typeof(Primitives.VisualNode).Assembly.Location))
+            .Append(MetadataReference.CreateFromFile(typeof(Components.Button).Assembly.Location));
+        var compilation = CSharpCompilation.Create("SignatureProbe", [tree], references,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
+                nullableContextOptions: NullableContextOptions.Enable));
+
+        compilation.GetTypeByMetadataName("eQuantic.UI.Primitives.Matrix2D")
+            .Should().NotBeNull("the probe has to compile against the real Primitives assembly");
+
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(compilation);
+        return compiler.CompileSource(source, "Probe.cs").Single();
+    }
+
+    [Theory]
+    [InlineData("public Matrix2D Placement { get; init; }")]
+    [InlineData("public RRect Corner { get; init; }")]
+    [InlineData("private Matrix2D _placement;")]
+    public void AHostOnlyTypeInAComponentsShape_IsStoppedAtCompileTime(string member)
+    {
+        var result = Compile(member);
+
+        result.Success.Should().BeFalse("the runtime ships no export for it, so this would die at hydration");
+        result.Errors.Should().Contain(error => error.Code == "EQ2010");
+        result.TypeScript.Should().NotContain("Matrix2D",
+            "and the name must not reach the import list either — an emitted import of a missing "
+            + "export is the failure, whatever the build says about it");
+    }
+
+    /// <summary>
+    /// The complement, and the reason the OPERATORS carry the attribute rather than `Point` itself:
+    /// geometry a page can hold has twins and must keep crossing.
+    /// </summary>
+    [Theory]
+    [InlineData("public Rect Box { get; init; }")]
+    [InlineData("public Point Origin { get; init; }")]
+    [InlineData("public Size Extent { get; init; }")]
+    public void TheGeometryAPageCanHold_StillReachesTheRuntime(string member)
+    {
+        var result = Compile(member);
+
+        result.Success.Should().BeTrue(string.Join("; ", result.Errors.Select(e => e.Message)));
+        result.TypeScript.Should().Contain("@equantic/runtime");
+    }
+}

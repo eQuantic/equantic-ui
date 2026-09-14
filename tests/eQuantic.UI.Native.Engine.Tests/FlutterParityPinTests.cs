@@ -126,12 +126,12 @@ public class FlutterParityPinTests
         // 2 — layout
         ["Constraints go down,"] = () => Has("LayoutContext"),
         ["BoxConstraints"] = () => Nothing("BoxConstraints", "Constraints"),
-        // Geometry is real and lives in the engine — above the vocabulary. The Surface below has no
-        // Rect, and the engine's is the one every native assembly uses. When Rect moves down, this
-        // row must move off PARTIAL, and this probe is what makes someone do it.
-        ["Rect"] = () => Nothing("Rect", "Point", "Size")
-            && new[] { typeof(eQuantic.UI.Native.Engine.Rect), typeof(eQuantic.UI.Native.Engine.Point), typeof(eQuantic.UI.Native.Engine.Size) }
-                .All(t => t.Assembly == typeof(eQuantic.UI.Native.Engine.DisplayList).Assembly),
+        // Geometry is the vocabulary's own, which is the whole claim: the three types ship in the
+        // SAME assembly as VisualNode, so a realizer that has never heard of Photon can spell a box.
+        // Asserted by ASSEMBLY rather than by name — `Has` would pass on a second copy declared
+        // anywhere in the surface, and a second copy is the defect this row exists to have ended.
+        ["Rect"] = () => new[] { typeof(Rect), typeof(Point), typeof(Size) }
+            .All(t => t.Assembly == typeof(VisualNode).Assembly),
         ["LayoutBuilder"] = () => Nothing("LayoutBuilder", "SizeBuilder") && Has("AdaptiveNode"),
         ["CustomMultiChildLayout"] = () => Nothing("MultiChildLayoutDelegate", "LayoutDelegate"),
         ["CustomSingleChildLayout"] = () => Nothing("SingleChildLayoutDelegate"),
