@@ -6,7 +6,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// <summary>
 /// Converts <c>enumValue.HasFlag(flag)</c>. A <c>[Flags]</c> enum is represented numerically (see
 /// <see cref="EnumStrategy"/>), so <c>HasFlag</c> becomes the bitwise test <c>(value &amp; flag) === flag</c>
-/// (true when every bit of <paramref name="flag"/> is set). For a non-flags enum (string repr) a single
+/// (true when every bit of <c>flag</c> is set). For a non-flags enum (string repr) a single
 /// value "has" only itself, so it degrades to equality.
 /// </summary>
 public class EnumHasFlagStrategy : IConversionStrategy

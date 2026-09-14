@@ -5,7 +5,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
 /// <summary>
 /// The <c>ILookup&lt;TKey, TElement&gt;</c> indexer <c>lookup[key]</c>. A lookup (from
-/// <see cref="ToLookupStrategy"/> / GroupBy) is represented as an array of groupings, each an items
+/// <see cref="LinqTableStrategy"/>'s <c>ToLookup</c> / GroupBy) is represented as an array of groupings, each an items
 /// array carrying a <c>key</c> property, so the indexer finds the matching group — and, matching .NET
 /// `ILookup`, returns an <b>empty sequence</b> (never throws) for an absent key. Equality is by
 /// <c>===</c>, consistent with how the groups were built (primitive keys). Priority above the generic

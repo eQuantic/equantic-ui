@@ -7,7 +7,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// <summary>
 /// Inlines a reference to an external <c>static readonly</c>/<c>const</c> constant whose value is a
 /// pure literal or constructor — the write-once ICON PACK contract: <c>LucideIcons.Camera</c> (a
-/// <see cref="global::eQuantic.UI.Primitives.IconGlyph"/> field in a pack assembly) transpiles to
+/// <c>IconGlyph</c> field in a pack assembly) transpiles to
 /// <c>new IconGlyph('camera', 'M…', 'stroke')</c> AT THE USE SITE. That tree-shakes each pack to the
 /// glyphs actually referenced (no giant per-pack JS module) and needs no runtime pack registry —
 /// the only import is IconGlyph itself, which the runtime already provides.

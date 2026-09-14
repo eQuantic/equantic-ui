@@ -38,6 +38,10 @@ public sealed class EmittedTwins
     /// <param name="identity">
     /// The namespace-qualified name: what makes two claims the same TYPE rather than two types.
     /// </param>
+    /// <param name="source">The path of the C# the twin was emitted from, for the source map.</param>
+    /// <param name="typeScript">The emitted module itself.</param>
+    /// <param name="describeSource">Reads a source path back for the message, so a clash names both sides.</param>
+    /// <param name="message">Why the claim was refused, when it was.</param>
     /// <remarks>
     /// A repeat is compared by CONTENT as well: a type that reaches the writer twice with the same
     /// bytes is skipped rather than rewritten, because the SOURCE MAP is not identical even when

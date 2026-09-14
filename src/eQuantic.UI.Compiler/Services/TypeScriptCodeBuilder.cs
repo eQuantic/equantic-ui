@@ -100,6 +100,7 @@ public class TypeScriptCodeBuilder
         }
     }
 
+    /// <param name="node">The C# node this line of output came from.</param>
     /// <param name="lineOffset">Lines BELOW the current one the mapping points at — a member
     /// body's first statement, written as part of the member's own text.</param>
     /// <param name="indentOffset">Levels deeper than the current indentation that line sits at.</param>
@@ -128,6 +129,11 @@ public class TypeScriptCodeBuilder
 
         public IReadOnlyList<JsClassMember> Members => _members;
 
+        /// <param name="name">The field's name.</param>
+        /// <param name="type">Its TypeScript type, or null for no annotation.</param>
+        /// <param name="defaultValue">The initializer, or null for a bare declaration.</param>
+        /// <param name="sourceNode">The C# this field came from, for the source map.</param>
+        /// <param name="isStatic">Emit it on the CLASS rather than on instances.</param>
         /// <param name="isDeclare">Emit a TYPE-ONLY field (<c>declare x: T;</c>) — no runtime code at all.
         /// Required for properties populated from outside the class body (the base
         /// <c>Object.assign(props)</c>): under <c>useDefineForClassFields</c> a plain declaration would

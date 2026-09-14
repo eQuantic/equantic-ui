@@ -40,5 +40,4 @@ public static class UserDefinedOperators
         return JsExpr.Callish($"{method.ContainingType.Name}.{name}({left}, {right})");
     }
 
-    /// <summary>The keyword form a symbol displays (`int`, not Int32), the text the emitter read.</summary>
 }

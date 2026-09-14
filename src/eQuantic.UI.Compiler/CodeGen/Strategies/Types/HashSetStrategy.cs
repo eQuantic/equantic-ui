@@ -7,7 +7,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// <summary>
 /// Strategy for HashSet.
 /// Handles: 
-/// - new HashSet<T>() -> new Set()
+/// - <c>new HashSet&lt;T&gt;()</c> -> new Set()
 /// - set.Add(x) -> set.add(x)
 /// - set.Contains(x) -> set.has(x)
 /// </summary>
