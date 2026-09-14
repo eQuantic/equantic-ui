@@ -117,6 +117,8 @@ public static class ConformanceRunner
     /// the kind this suite exists to catch, where "the adjacent double" cannot.
     /// </para>
     /// </summary>
+    /// <param name="csharpStatements">The C# to run on both sides, as statements.</param>
+    /// <param name="prelude">Declarations the statements need, transpiled alongside them.</param>
     /// <param name="why">The measured difference, named. It goes into the failure message, because
     /// the next person here needs to know whether they are looking at a new platform gap or at the
     /// one already known.</param>
