@@ -1,0 +1,210 @@
+# One door per node
+
+> The plan for step 2 of [ARCHITECTURE-AUDIT.md](ARCHITECTURE-AUDIT.md): the dispatches over the
+> vocabulary become one visitor per realizer, so that a node added to the vocabulary is a COMPILE
+> ERROR in every realizer until it is handled or declined, in code, with the reason beside it.
+> Measured on 2026-09-14 against `main` after #120; the numbers are dated by that line.
+
+## The problem, in numbers
+
+The SDK has one visual vocabulary — 39 concrete `VisualNode` types plus the `UiComponent` seam — and
+six places that decide what each word means. Each is a `switch` over the node type, written by hand,
+and five of the six answer an unknown node with silence.
+
+| Dispatch | Method | Arms | On an unknown node |
+|---|---|---|---|
+| `LayoutEngine` | `MeasureCore(node, constraints, ctx, path)` | 37 of 39 | a zero-sized box |
+| `WebRealizer` | `LowerNodeKind(node, context, horizontalAxis)` | 37 of 39 (39 once #121 lands) | `null` |
+| `lowering.ts` | `lowerNodeKind(node, context, horizontalAxis, path)` | 39 of 39 | `render()` or `null` |
+| `PhotonRealizer` | `EmitNode(laidOut, theme, mode, builder, …)` over `laidOut.Source` | 28 of 39 | nothing |
+| `Semantics` | `Walk(laidOut, nodes)` | 13 of 39 | the children are walked |
+| `EmailRealizer` | `Write(node, context, html)` | 6 of 39 | **throws**, naming the node |
+
+Seven defects came through the silent five; the audit's ledger lists them. What holds the line today
+is `VocabularyCoverageTests`: a regex over each method's source, an exemption list per dispatch with
+a reason per entry, three assertions in both directions. It is an instrument, and it has the limits
+of one — it reads the six methods it is told about and no seventh, it credits text shapes rather than
+semantics, and it moved twice under review before it stopped crediting an arm in one method for a
+claim about another. The structural fix makes the compiler do that job, and retires the regex.
+
+## How Flutter solves it, and why the copy is not verbatim
+
+Flutter does not dispatch. Every `RenderObject` carries its own `performLayout`, `paint` and
+`hitTest` as abstract members, so a node without them does not compile; the framework never asks
+"which node is this". That works because Flutter's rendering layer is the only realizer and sits
+BELOW the widgets.
+
+Ours is the other way up, deliberately: the vocabulary is written once and realized three times, so
+it sits below the realizers and must not see them. A node cannot carry `Lower()` without
+`Primitives` referencing `Web`. The .NET shape of the same guarantee — one method per node, missing
+one is a compile error, the logic lives outside the hierarchy — is double dispatch: the **Visitor**.
+
+Two patterns for two shapes of problem, and the shape decides. The transpiler's constructs are an
+OPEN set (C# syntax, extended by every language version), so it uses Strategy with a registry and a
+coverage suite. The vocabulary is a CLOSED set of 39 types we own, so it gets a visitor and the
+compiler. One pattern applied to both would be wrong for one of them.
+
+## The design
+
+### The contract, in `Primitives`
+
+```csharp
+/// One method per concrete node, and one for the expansion seam. Nothing here has a default body:
+/// a realizer that does not know a node does not compile, which is the entire point.
+public interface IVisualNodeVisitor<TState, TResult>
+{
+    TResult Visit(Box node, TState state);
+    TResult Visit(Row node, TState state);
+    TResult Visit(Column node, TState state);
+    // … 36 more, one per sealed node …
+    TResult Visit(UiComponent node, TState state);
+}
+
+public abstract class VisualNode
+{
+    public abstract TResult Accept<TState, TResult>(IVisualNodeVisitor<TState, TResult> visitor, TState state);
+}
+
+public sealed class Box : VisualNode
+{
+    public override TResult Accept<TState, TResult>(IVisualNodeVisitor<TState, TResult> visitor, TState state)
+        => visitor.Visit(this, state);
+}
+
+public abstract class UiComponent : VisualNode
+{
+    // Sealed: every component the SDK or an app writes is visited as the seam it is, and expanded
+    // by the realizer through BuildContained. No app ever writes an Accept.
+    public sealed override TResult Accept<TState, TResult>(IVisualNodeVisitor<TState, TResult> visitor, TState state)
+        => visitor.Visit(this, state);
+}
+```
+
+**Overloads, not `VisitBox`.** Inside `Box.Accept`, `this` is statically a `Box`, so `visitor.Visit(this, state)`
+binds to `Visit(Box, TState)` at compile time — no reflection, no runtime type test. It reads as the
+switch arm it replaces. The rule against overloads elsewhere in this repo is about the TRANSPILED
+surface, which JavaScript cannot overload; nothing here is transpiled — eqc never sees `Accept`, and
+the TypeScript twins dispatch by wire kind (below).
+
+**A state parameter, because every dispatch carries one.** The six methods do not take a node alone;
+each carries per-call state a visitor instance cannot hold, because it changes as the recursion
+descends. What lives on the visitor instance is what is fixed for the pass.
+
+| Realizer | Per-call state → `TState` | Fixed for the pass → visitor fields | `TResult` |
+|---|---|---|---|
+| `LayoutEngine` | `readonly record struct MeasureState(LayoutConstraints Constraints, string Path)` | `LayoutContext` | `LayoutNode` |
+| `WebRealizer` | `bool? HorizontalAxis` | `ComponentContext` | `HtmlElement?` |
+| `PhotonRealizer` | the `LayoutNode` being painted (the visitor visits `laidOut.Source`) | theme, mode, builder, input sink, scroll meta, press and motion scopes, overlay queue | `Nothing` |
+| `Semantics` | the `LayoutNode` | the node list | `bool` — whether to descend into the children |
+| `EmailRealizer` | `Nothing` | `ComponentContext`, the `StringBuilder` | `Nothing` |
+
+`Nothing` is a one-member `readonly struct` in `Primitives` for the visitors that produce no value;
+`void` is not a type argument in C#.
+
+**No default bodies — and what a decline looks like.** The audit's finding was that a deliberate
+omission and a forgotten one looked identical. With abstract methods the forgotten one does not
+compile, and the deliberate one is a method whose body says why:
+
+```csharp
+// PhotonRealizer — the realizer paints LAID-OUT nodes; a container arrived as geometry with children.
+public Nothing Visit(Stack node, LayoutNode laidOut) => PaintedByChildren(node);
+public Nothing Visit(Grid node, LayoutNode laidOut) => PaintedByChildren(node);
+
+// EmailRealizer — the medium; the one dispatch whose decline was always loud, and stays loud.
+public Nothing Visit(ScrollView node, Nothing _) => Refuse(node, "the medium has no scrolling");
+```
+
+`PaintedByChildren`, `Refuse` and their siblings are private helpers on each visitor, named for the
+REASON, so that the exemption lists of `VocabularyCoverageTests` — which today carry the reasons in
+comments — move into code, one line per node, where the compiler sees the node and the reviewer sees
+the reason. Eleven such lines in Photon, twenty-six in Semantics, thirty-three in Email. That is the
+honest cost of exhaustiveness, and it is paid once.
+
+### One file per family, in every realizer
+
+The audit measures `WebRealizer.cs` at 2,629 lines with 42 `Lower*` methods, `LayoutEngine.cs` at
+1,948 with 18 `Measure*`, `PhotonRealizer.cs` at 1,805 with 13 `Emit*`. A visitor is a `partial class`,
+and the transpiler already shows the folder shape (`Strategies/Expressions/`, `Strategies/Statements/`,
+one file per construct). The vocabulary's four families are the split:
+
+| Family | Nodes | File |
+|---|---|---|
+| Containers and layout | `Box`, `Row`, `Column`, `Grid`, `Stack`, `Positioned`, `Flexible`, `Spacer`, `SafeArea`, `Pinned`, `ScrollView`, `AdaptiveNode`, `Anchored`, `Overlay` | `…Visitor.Containers.cs` |
+| Text and surfaces | `Text`, `TextEntry`, `CodeSurface`, `SheetSurface` | `…Visitor.Text.cs` |
+| Graphics | `Icon`, `Vector`, `Drawing`, `Image`, `Canvas`, `Spinner`, `CameraPreview`, `WebFrame` | `…Visitor.Graphics.cs` |
+| Interaction and motion | `Pressable`, `Link`, `Hoverable`, `Adjustable`, `Navigable`, `Shortcut`, `Draggable`, `DragDismiss`, `Presence`, `LoopMotion`, `InView`, `InFlow`, `Simulated` | `…Visitor.Interaction.cs` |
+| The seam | `UiComponent` | `…Visitor.cs` (the class itself, with the pass state and the helpers) |
+
+Fourteen, four, eight, thirteen and one: forty. The helper methods each arm calls today
+(`LowerBox`, `MeasureFlex`, `EmitText`, …) move with their arm and lose the prefix that named the
+switch they were called from.
+
+### The TypeScript side: a generated union and an exhaustive switch
+
+`lowering.ts` dispatches on the wire kind (`case 'box':`), and TypeScript can make that exhaustive at
+compile time if the kind is a union type rather than `string`. The union is GENERATED, by the tool that
+already writes `enums.generated.ts` and `design-system.generated.ts` from the assembly:
+
+- `NodeKindTsGenerator` in `eQuantic.UI.Web.Build` reads every concrete `VisualNode` type, takes its
+  `NodeKind` off an uninitialized instance (the way `VocabularyCoverageTests.WireKind` does), fails
+  on a duplicate, and writes `node-kinds.generated.ts`:
+  `export type NodeKind = 'adaptive' | 'adjustable' | … | 'webFrame' | 'component';`
+- A byte-pin test beside `EnumUnionsTsGeneratorTests`, regenerated behind the same environment
+  variable, so the file cannot drift from the assembly.
+- `nodes.ts` declares `nodeKind: NodeKind` on `VisualNodeValue`.
+- `lowerNodeKind` moves its mixing seam — a web component with no `nodeKind` that renders itself —
+  AHEAD of the switch, and ends the switch with `default: return assertNever(node.nodeKind);`, so a
+  kind added to the union with no case is a type error in the runtime's build.
+
+### Cost, and what does not change
+
+- **Performance.** `Accept` is a generic virtual method with five instantiations in the tree, each
+  monomorphic at its call site; the JIT and Native AOT (Primitives is `IsAotCompatible`) specialize
+  it. State is a `readonly record struct` or an object the pass already owns; the visitor is one
+  instance per pass. `PerfHarnessTests` pins managed bytes per steady-state frame under a ceiling and
+  is the net for this — a visitor that allocates per node fails it.
+- **Nobody outside `Primitives` derives `VisualNode` directly.** Measured: zero classes in `src/` and
+  `samples/`; the only hits are two fakes in a transpiler test's source snippet. Every app component
+  derives `UiComponent`, whose `Accept` is sealed, so no consumer writes one and eqc never meets one.
+- **Output is byte-identical, by slice.** Each realizer already has the pin that says so: the web has
+  `ComponentParityFixtureTests`, `SurfaceSsrTests`, `PrimitiveValueFixtureTests` and `MarkerParityTests`;
+  Photon has 91 goldens under `AbstractNodeGoldenTests` and `GoldenSceneTests`, `TreeGpuParityTests`
+  and `PerfHarnessTests`; layout has `FlexLayoutTests` and `LayoutCompositeTests`; the browser has 79
+  spec files in `shared/` and the transpiled fixtures; email has its 48 facts. A slice that changes a
+  pixel or a byte has done something this plan did not ask for.
+- **The inner switches are not visitors.** `MinContentWidth`, `Shrinkable`, `WidthKind`,
+  `CrossSizeKind`, `PositionedOf` in the layout engine and `TextContentOf`, `CapsAt`, `Fills`,
+  `ResolveForPositioning` in the web realizer ask questions ABOUT a node — does it shrink, what is its
+  width kind, is it transparent to layout. Step 4 of the audit hoists those onto the vocabulary as
+  properties; they are answered by the node, not visited.
+
+## Slices
+
+Each slice is one PR, sized for review, and lands with its realizer's output pins untouched. The
+executor takes them in this order; the auditor rewrites the audit's section 2 and shrinks
+`VocabularyCoverageTests` as each lands.
+
+| # | Slice | Nets | Size |
+|---|---|---|---|
+| S1 | `IVisualNodeVisitor<,>`, `Nothing`, `Accept` on `VisualNode`, forty one-line overrides. No consumer yet. | the solution compiles; `UiFactoryConformanceTests` (factories are unaffected) | S |
+| S2 | `Semantics.Walk` → `SemanticsVisitor`: 13 visits, 26 declines named for their reason; `Navigable` and `Overlay` decline until the group role of audit step 3 lands, then become visits. The `Semantics` dispatch leaves the coverage pin. | `SemanticsTests`, `CheckSemanticsTests`, `HeadingSemanticsTests`, `GraphicSemanticsTests`, `LabelledNodesReachSemanticsTests`, `UnlabelledGroupSemanticsTests`, the three bridges' tests | S |
+| S3 | `EmailRealizer.Write` → `EmailVisitor`: 6 visits, 33 `Refuse`s that throw what the default arm throws today. The dispatch leaves the pin. | `eQuantic.UI.Email.Tests` | S |
+| S7 | `NodeKindTsGenerator`, `node-kinds.generated.ts`, `nodeKind: NodeKind`, `assertNever`. The TypeScript dispatch leaves the pin; `EveryNode_DeclaresItsOwnWireKind` becomes the generator's duplicate check. | `EnumUnionsTsGeneratorTests`' sibling, `npm run test`, the transpiled fixtures byte-pinned | S |
+| S4 | `WebRealizer.LowerNodeKind` → `WebLoweringVisitor`, four partial files. The dispatch leaves the pin. | `ComponentParityFixtureTests`, `SurfaceSsrTests`, `PrimitiveValueFixtureTests`, `MarkerParityTests`, the SSR suites | M |
+| — | Audit step 4 first: hoist the five layout questions onto the vocabulary, so S5's arms shrink. | `FlexLayoutTests`, `LayoutCompositeTests`, the goldens | M |
+| S5 | `LayoutEngine.MeasureCore` → `MeasureVisitor` with `MeasureState`. The dispatch leaves the pin. | `FlexLayoutTests`, `LayoutCompositeTests`, `FlexBasisWrapLayoutTests`, 91 goldens, `PerfHarnessTests` | M |
+| S6 | `PhotonRealizer.EmitNode` → `EmitVisitor` over `laidOut.Source`; the nine `is` branches after the switch become visits; the two pre-switch guards stay as pre-visit logic on the class. The last dispatch leaves the pin. | `AbstractNodeGoldenTests`, `GoldenSceneTests`, `TreeGpuParityTests`, `BarChartPhotonTests`, `PerfHarnessTests` | M |
+| S8 | `VocabularyCoverageTests` is deleted; the audit's section 2 says what holds the line now: the compiler. | — | S |
+
+S7 is placed early on purpose: it is independent of the C# slices, and it is where the browser's
+door gets the guarantee first.
+
+## Open questions
+
+1. **Overloads or `VisitBox`?** The plan says overloads; the alternative is spelled out above and costs
+   a name per node. Recommend overloads.
+2. **Public or internal?** Public. `Email` is a third realizer outside the native track, and the IDE
+   consumer has a design host that realizes the vocabulary for its own canvas; both are visitors in
+   waiting.
+3. **Keep the regex pin as a second opinion after S8?** No. Once the compiler enforces the property,
+   a regex that enforces it again is a second copy of a fact, which is what the audit exists to remove.

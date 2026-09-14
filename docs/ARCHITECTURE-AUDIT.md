@@ -510,7 +510,8 @@ makes the rest safe.
    `lowering.ts` produces, cross-pinned; remove the two exemptions. A chip is open for it. — S
 2. **Visitor over the vocabulary, generated `NodeKind` union with `assertNever` in TypeScript**
    (Flutter: abstract `performLayout`/`paint`). One file per node family per realizer, as
-   `Strategies/` is per construct. Retire the regex pin when the last switch is gone. — L
+   `Strategies/` is per construct. Retire the regex pin when the last switch is gone. — L.
+   Planned, slice by slice, in [VOCABULARY-DISPATCH-PLAN.md](VOCABULARY-DISPATCH-PLAN.md).
 3. **Geometry down**: `Rect`, `Point`, `Size` to `Primitives` (Flutter: `dart:ui`); then `SemanticRole`
    and `SemanticNode` to `Primitives`, then the group role that unmutes `Navigable` and `Overlay` on
    Photon; `Charts` drops `BarRect`'s own geometry; `ICanvasPainter` takes a `Rect`. — M
