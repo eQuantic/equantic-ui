@@ -16,6 +16,7 @@ namespace eQuantic.UI.Primitives;
 /// build and without it in another; two JS engines disagreed with each other in the same probe.
 /// A Linux server therefore sends its spelling and every one of its clients shows that spelling,
 /// with no flicker between the SSR markup and the hydrated tree.
+/// </para>
 /// <para>
 /// <c>Intl</c> is the twin's FALLBACK, for a render with no server behind it — a client-only
 /// mount, or a culture switched in the browser before any request carried the new catalog. There
