@@ -366,7 +366,7 @@ jobs:
   # GitHub Packages is a convenience feed for every main push — a light ubuntu job so the heavy
   # macOS build job never dies on the upload (exit 137).
   publish-github:
-    needs: [build-packages, gate-templates]
+    needs: [build-packages, gate-templates, test]
     # On a TAG this waits for the gate, as nuget.org already does. It did not, so a release whose
     # templates failed to scaffold still landed here: preview.31 sat on this feed carrying a broken
     # template while the public feed correctly never got it, and the two had to be reconciled by
@@ -381,6 +381,10 @@ jobs:
       always()
       && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
       && needs.build-packages.result == 'success'
+      # The cross-OS suite is a GATE, not a report. Without this a red Linux or Windows leg sat
+      # beside a green macOS build and the packages published anyway — coverage that cannot stop
+      # anything is a comment with a check's authority, which is the defect this job was added for.
+      && needs.test.result == 'success'
       && (needs.gate-templates.result == 'success' || needs.gate-templates.result == 'skipped')
     runs-on: ubuntu-latest
     permissions:
@@ -414,7 +418,7 @@ jobs:
   # scaffold and BUILD (and on the web template, PUBLISH) against the exact packages being
   # released. The native template gates on macOS only (its icon pipeline needs CoreGraphics).
   gate-templates:
-    needs: build-packages
+    needs: [build-packages, test]
     # `refs/tags/v` matches by PREFIX, so any tag beginning with v enters here — the extension's
     # releases are tagged `ext-v*` for exactly that reason.
     if: startsWith(github.ref, 'refs/tags/v')

@@ -110,7 +110,16 @@ public static class ConformanceRunner
         if (double.IsNaN(a) || double.IsNaN(b)) return a.Equals(b) ? 0 : long.MaxValue;
         var left = Ordered(a);
         var right = Ordered(b);
-        return Math.Abs(left - right);
+        // UNSIGNED, then saturated. The obvious `Math.Abs(left - right)` reads fine and is wrong at
+        // both ends of the domain: it THREW on (-2.0, 2.0), where the difference is exactly
+        // long.MinValue and has no positive counterpart, and it wrapped (-double.MaxValue,
+        // double.MaxValue) to about nine quadrillion — a small number for the widest pair there is,
+        // which is the failure that would have quietly passed a tolerance. Measured both. Found in
+        // review.
+        var distance = left > right
+            ? (ulong)left - (ulong)right
+            : (ulong)right - (ulong)left;
+        return distance > long.MaxValue ? long.MaxValue : (long)distance;
 
         static long Ordered(double value)
         {
