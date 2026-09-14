@@ -62,6 +62,7 @@ public class HostOnlyInASignatureTests
         return compiler.CompileSource(source, "Probe.cs").Single();
     }
 
+    /// <param name="member">The declaration to plant in the probe component's shape.</param>
     /// <param name="fenced">The type the member names. Passed rather than inferred, because the
     /// second assertion is about THIS name: it used to be the literal `Matrix2D` for every row, so
     /// the `Nothing` and `SemanticNode` cases proved the error and said nothing about the import
