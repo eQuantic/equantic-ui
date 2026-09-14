@@ -143,7 +143,7 @@ prose, and cannot go on claiming an absence that has ended.
 | Flutter | Here | Verdict |
 |---|---|---|
 | `Semantics` tree for screen readers | Our own semantics walk + the macOS/iOS/Android bridges | **SAME.** Worth recording how thin the ice was: six of the fourteen labelled nodes reached no bridge at all until the walk was enumerated by reflection rather than maintained by hand. |
-| `SemanticsNode`, `SemanticsConfiguration` — in `package:flutter/semantics`, beneath every target | `SemanticRole`, `SemanticNode` — declared in `Native.Components`, one target's assembly; the web decides the same things inline, 35 times in `WebRealizer` and 86 in `lowering.ts`, and cannot name the enum | **PARTIAL, and the location is the fault.** Three answers to "what is this node to a screen reader", and the one with a type is the one the other two cannot reference. |
+| `SemanticsNode`, `SemanticsConfiguration` — in `package:flutter/semantics`, beneath every target | `SemanticRole`, `SemanticNode` — in `Primitives`, beneath every target; only the native realizer produces them, and the web decides the same things inline | **PARTIAL, and the fault has moved.** It used to be the LOCATION: the one answer with a type sat in one target's assembly, where the other two could not reference it. That half is done — the move cost three `using` lines, the same measurement the geometry move gave. What remains is that only ONE realizer speaks the type: the web writes ARIA inline, and could now stop. The probe asserts both halves, so the row comes off PARTIAL when the second one lands rather than when someone remembers. |
 | `MergeSemantics`, `ExcludeSemantics` | — | **GAP** |
 | `Localizations`, `LocalizationsDelegate`, `Intl` | `.resx`, `CultureInfo`, `ICultureController`, culture routes | **DIFFERENT, and deliberately .NET's.** Localization is done the way .NET does it, not the way Flutter does it — a .NET developer already knows this API. |
 | `TextDirection.ltr/rtl` | — | **GAP** |
@@ -172,10 +172,11 @@ one decision to take, not four.
 **Two gaps have a consumer already blocked behind them**, which is the only evidence that counts here:
 `LayoutBuilder` (a child built against its own box) and an authorable constraint type to go with it.
 
-**One PARTIAL row is about WHERE a thing lives, not whether it exists** — `SemanticsNode` inside one
-target instead of beneath all of them. It blocks a row near it, and it is a move rather than a
-feature. `Rect` was the other one and is now under the vocabulary.
-[ARCHITECTURE-AUDIT.md](ARCHITECTURE-AUDIT.md) carries the measurements behind them.
+**No PARTIAL row is about WHERE a thing lives any more.** Both were: `Rect` above the vocabulary,
+and `SemanticsNode` inside one target instead of beneath all of them. Both are moves rather than
+features, both cost about three `using` lines, and both are done.
+[ARCHITECTURE-AUDIT.md](ARCHITECTURE-AUDIT.md) carries the measurements behind them —
+including what the first of them turned out to have been causing.
 
 **Three DIFFERENT rows are the ones to keep and defend**, because they are where this SDK is not a
 smaller Flutter: declarative animation with no controller to leak; typed capabilities instead of

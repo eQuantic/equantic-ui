@@ -2,6 +2,7 @@ using Android.OS;
 using Android.Views;
 using Android.Views.Accessibility;
 using eQuantic.UI.Native.Components;
+using eQuantic.UI.Primitives;
 using AndroidRect = Android.Graphics.Rect;
 
 namespace eQuantic.UI.Native.Shell.Android;

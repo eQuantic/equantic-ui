@@ -1,5 +1,6 @@
 using CoreGraphics;
 using eQuantic.UI.Native.Components;
+using eQuantic.UI.Primitives;
 using Foundation;
 using UIKit;
 

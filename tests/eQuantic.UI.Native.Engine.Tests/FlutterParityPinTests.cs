@@ -75,6 +75,30 @@ public class FlutterParityPinTests
         typeof(PhotonHost).Assembly,                    // Native.Components — realizer, semantics
     ];
 
+    /// <summary>
+    /// The web realizer's own CODE, comments stripped, for the half of a row that is about what a
+    /// file does rather than what a type is.
+    /// <para>
+    /// The comments have to go, and the first version of this probe proved why by failing on one:
+    /// `WebRealizer` mentions `SemanticRole.Image` in a note about the a11y pass, and a mention is
+    /// not a use — which is the same distinction the coverage pin learned when its matcher read a
+    /// whole file instead of a method body.
+    /// </para>
+    /// </summary>
+    private static string WebRealizerCode() =>
+        Regex.Replace(Regex.Replace(WebRealizerSource(), @"/\*.*?\*/", "", RegexOptions.Singleline),
+            @"//[^\n]*", "");
+
+    private static string WebRealizerSource()
+    {
+        var here = new DirectoryInfo(AppContext.BaseDirectory);
+        while (here is not null
+               && !File.Exists(Path.Combine(here.FullName, "src", "eQuantic.UI.Web", "WebRealizer.cs")))
+            here = here.Parent;
+        here.Should().NotBeNull("the probe reads the realizer's source, so it has to find the tree");
+        return File.ReadAllText(Path.Combine(here!.FullName, "src", "eQuantic.UI.Web", "WebRealizer.cs"));
+    }
+
     private static Type? Find(string name) => Surface
         .SelectMany(a => a.GetExportedTypes())
         .FirstOrDefault(t => t.Name == name || t.Name == name + "Attribute");
@@ -188,10 +212,14 @@ public class FlutterParityPinTests
 
         // 9 — a11y, i18n, platform
         ["Semantics"] = () => Has("SemanticsTree") && Has("SemanticNode"),
-        // A LOCATION probe: the row's claim is that the role enum sits in one target's assembly.
-        // Moving it to Primitives turns this false and fails the PARTIAL row until it is rewritten.
-        ["SemanticsNode"] = () => typeof(SemanticRole).Assembly == typeof(PhotonHost).Assembly
-            && typeof(SemanticNode).Assembly == typeof(PhotonHost).Assembly,
+        // TWO halves, because the row is half fixed. The types are under the vocabulary now, so
+        // every realizer can name them — asserted by ASSEMBLY, like `Rect`. What has not changed is
+        // that only ONE realizer produces them: the web still decides the same things inline, and
+        // `WebRealizer` does not mention `SemanticRole` anywhere. The day it does, this fails and
+        // the row moves off PARTIAL — which is what the location half did when the move landed.
+        ["SemanticsNode"] = () => typeof(SemanticRole).Assembly == typeof(VisualNode).Assembly
+            && typeof(SemanticNode).Assembly == typeof(VisualNode).Assembly
+            && !WebRealizerCode().Contains("SemanticRole", StringComparison.Ordinal),
         ["MergeSemantics"] = () => Nothing("MergeSemantics", "ExcludeSemantics"),
         ["Localizations"] = () => Has("ICultureController") && Nothing("LocalizationsDelegate"),
         ["TextDirection.ltr/rtl"] = () => Nothing("TextDirection"),

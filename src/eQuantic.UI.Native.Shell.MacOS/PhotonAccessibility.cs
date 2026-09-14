@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using eQuantic.UI.Native.Components;
+using eQuantic.UI.Primitives;
 using eQuantic.UI.Native.Shell.Apple;
 using static eQuantic.UI.Native.Shell.Apple.ObjC;
 

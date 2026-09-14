@@ -105,6 +105,12 @@ export type PressableRoleValue =
 
 export type ScrollAxisValue = 'vertical' | 'horizontal' | 'both';
 
+export type SemanticCheckValue = 'off' | 'on' | 'mixed';
+
+export type SemanticRoleValue =
+  'staticText' | 'button' | 'link' | 'textField' | 'codeField' | 'slider' | 'image' | 'checkbox'
+  | 'switch' | 'gridCell';
+
 export type ShapeScaleValue =
   'none' | 'extraSmall' | 'small' | 'medium' | 'large' | 'extraLarge' | 'full';
 

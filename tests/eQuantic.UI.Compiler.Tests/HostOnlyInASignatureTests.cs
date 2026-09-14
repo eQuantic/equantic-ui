@@ -68,6 +68,9 @@ public class HostOnlyInASignatureTests
     [InlineData("private Matrix2D _placement;")]
     // The visitor's unit type: a component builds a tree, it does not visit one.
     [InlineData("public Nothing Marker { get; init; }")]
+    // What a semantics WALK produces. No page constructs one — on the web the realizer writes ARIA
+    // inline — and the day it stops, this row comes out together with the attribute.
+    [InlineData("public SemanticNode Announced { get; init; }")]
     public void AHostOnlyTypeInAComponentsShape_IsStoppedAtCompileTime(string member)
     {
         var result = Compile(member);
@@ -130,6 +133,10 @@ public class HostOnlyInASignatureTests
     [InlineData("public Rect Box { get; init; }")]
     [InlineData("public Point Origin { get; init; }")]
     [InlineData("public Size Extent { get; init; }")]
+    // The ENUMS beside that fenced record: they cross as string literals, so a component naming one
+    // costs nothing — and fencing the record must not take them with it.
+    [InlineData("public SemanticRole Role { get; init; }")]
+    [InlineData("public SemanticCheck Checked { get; init; }")]
     public void TheGeometryAPageCanHold_StillReachesTheRuntime(string member)
     {
         var result = Compile(member);
