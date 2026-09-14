@@ -203,6 +203,18 @@ public class ClockTests
     /// The REAL native realization, which is .NET's own timer and not a frame-loop invention: it
     /// fires on its own thread, and disposing stops it. Generous windows — this asserts that the
     /// wiring is real, never how punctual a thread pool is.
+    /// <para>
+    /// The reading is taken AFTER a settling sleep, not at the instant <c>Dispose</c> returns, and
+    /// that is the difference between what the subject promises and what this used to assert.
+    /// <c>Timer.Dispose()</c> stops NEW callbacks; it does not wait for one already running —
+    /// waiting is <c>Dispose(WaitHandle)</c>, which this realization deliberately does not use,
+    /// because the callback arrives on a thread-pool thread by contract. So a tick already in flight
+    /// when the main thread disposed could still increment afterwards, and the old shape read the
+    /// counter into `afterDispose` before that increment landed: expected 1, found 2. It passed by
+    /// luck and failed by luck, and it failed for the first time on a loaded CI runner.
+    /// </para>
+    /// The claim that survives is the one that matters — after disposing, it STOPS FIRING — and it
+    /// is proved by two readings a whole set of periods apart rather than by one instant.
     /// </summary>
     [Fact]
     public void ThePhotonClock_Fires_AndDisposingStopsIt()
@@ -220,8 +232,14 @@ public class ClockTests
         fired.Wait(TimeSpan.FromSeconds(5)).Should().BeTrue("the timer fires without anyone pumping it");
 
         subscription.Dispose();
-        var afterDispose = Volatile.Read(ref ticks);
-        Thread.Sleep(120);
-        Volatile.Read(ref ticks).Should().Be(afterDispose, "disposing stops it for good");
+
+        // Let any callback that was already running finish. Anything it adds is still the timer
+        // OBEYING Dispose — it was scheduled before it.
+        Thread.Sleep(200);
+        var settled = Volatile.Read(ref ticks);
+
+        // Ten more periods. If the timer were still live this would be ten ticks, not zero.
+        Thread.Sleep(200);
+        Volatile.Read(ref ticks).Should().Be(settled, "disposing stops it for good");
     }
 }
