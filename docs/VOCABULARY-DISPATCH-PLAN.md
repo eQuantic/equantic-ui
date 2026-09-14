@@ -1,7 +1,8 @@
 # One door per node
 
 > The plan for step 2 of [ARCHITECTURE-AUDIT.md](ARCHITECTURE-AUDIT.md): the dispatches over the
-> vocabulary become one visitor per realizer, so that a node added to the vocabulary is a COMPILE
+> vocabulary become one visitor per DISPATCH — one for each realizer, and two for email, whose HTML
+> and plain-text halves are two dispatches today — so that a node added to the vocabulary is a COMPILE
 > ERROR in every realizer until it is handled or declined, in code, with the reason beside it.
 > Measured on 2026-09-14 against `main` after #120; the numbers are dated by that line.
 
@@ -123,7 +124,7 @@ comments — move into code, one line per node, where the compiler sees the node
 the reason. Eleven such lines in Photon, twenty-six in Semantics, thirty-three in Email. That is the
 honest cost of exhaustiveness, and it is paid once.
 
-### One file per family, in every realizer
+### One file per family, in every visitor
 
 The audit measures `WebRealizer.cs` at 2,629 lines with 42 `Lower*` methods, `LayoutEngine.cs` at
 1,948 with 18 `Measure*`, `PhotonRealizer.cs` at 1,805 with 13 `Emit*`. A visitor is a `partial class`,
@@ -200,7 +201,7 @@ already writes `enums.generated.ts` and `design-system.generated.ts` from the as
 
 ## Slices
 
-Each slice is one PR, sized for review, and lands with its realizer's output pins untouched. The
+Each slice is one PR, sized for review, and lands with its dispatch's output pins untouched. The
 executor takes them in this order; the auditor rewrites the audit's section 2 and shrinks
 `VocabularyCoverageTests` as each lands.
 
