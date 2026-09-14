@@ -219,8 +219,9 @@ describe('the first measurement corrects a cold load that landed under the chrom
 
   /**
    * jsdom reports `complete` from the first line of the file, so a spec that does not say otherwise
-   * exercises the already-loaded branch and NEVER the `load` listener — which is the branch a real
-   * cold load takes, and the only one that matters. Stated rather than inherited.
+   * runs every case as though the page had already settled — which is the one column a real cold
+   * load is NOT in, and the column the first version of this fix was blind to. `readyState` decides
+   * when the frame budget starts counting, so it is stated here rather than inherited.
    */
   function stillLoading(): void {
     Object.defineProperty(document, 'readyState', { value: 'loading', configurable: true });
@@ -352,7 +353,8 @@ describe('the first measurement corrects a cold load that landed under the chrom
     publishAnchorOffset();
     expect(target.seen()).toBe(0);
 
-    // The browser finishes its jump as the last of the layout settles, and then the document loads.
+    // The browser's jump settles before the next watched frame runs — which is the ordering this
+    // case is about, and the one no event announces.
     target.moveTo(0);
     frame();
 
@@ -515,9 +517,10 @@ describe('the first measurement corrects a cold load that landed under the chrom
    * <para>
    * The failing case lands at the anchor's exact document offset, which is where a jump with no
    * scroll-margin puts it — so nothing scrolled OVER the correction, the correction never ran. A
-   * single chance taken at `load` is a bet that `load` comes after the jump, and the faster the
+   * single chance taken at `load` was a bet that `load` comes after the jump, and the faster the
    * page the more reliably it does not. A returning visitor is almost everyone, and a test that
-   * loads instantly is always in this column, which is why 1,036 of them never saw it.
+   * loads instantly is always in this column, which is why 1,036 of them never saw it. The watch
+   * replaced that bet with frames; `load` survives here only as the thing that was measured.
    * </para>
    */
   it('corrects a WARM load, where the document completed before the browser jumped', () => {
