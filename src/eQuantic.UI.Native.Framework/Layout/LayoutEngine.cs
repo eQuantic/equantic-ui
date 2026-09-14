@@ -411,7 +411,7 @@ public static class LayoutEngine
         Grid grid => MeasureGrid(grid, constraints, ctx, path),
         // Spec S6: an AdaptiveNode IS its resolved variant on native — the other variants never
         // measure, never paint (the web keeps them, CSS-gated).
-        AdaptiveNode adaptive => MeasureRearmed(adaptive.Resolve(ctx.SizeClass), constraints, ctx, ctx.ChildPath(path, 0)),
+        AdaptiveNode adaptive => Measure(adaptive.Resolve(ctx.SizeClass), constraints, ctx, ctx.ChildPath(path, 0)),
         // Spec S7: Pinned renders IN FLOW on native until engine scrolling lands (correct at scroll
         // offset 0); the pinning joins the scroll compositor (fence on the node's doc).
         Pinned pinned => MeasureWrapper(pinned, pinned.Child, constraints, ctx, path),
@@ -606,16 +606,6 @@ public static class LayoutEngine
         FlexNode flex => flex.Width.Kind != SizeKind.Fixed,
         _ => true,
     };
-
-    /// <summary>The inline-block boundary: BLOCK stretch stops here; FLEX stretch passes through.</summary>
-    private static StretchKind Inline(StretchKind kind) => kind == StretchKind.Block ? StretchKind.None : kind;
-
-    /// <summary>Re-arms the one-shot stretch flags and measures — for nodes that RESOLVE to a
-    /// substitute (Adaptive) rather than wrapping a child.</summary>
-    private static LayoutNode MeasureRearmed(VisualNode node, LayoutConstraints constraints, LayoutContext ctx, string path)
-    {
-        return Measure(node, constraints, ctx, path);
-    }
 
     /// <summary>
     /// Measures an <see cref="InFlow"/> with the intent armed, so the overlay inside it builds its
