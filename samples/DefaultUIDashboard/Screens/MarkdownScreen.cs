@@ -6,7 +6,7 @@ using eQuantic.Console;
 namespace DefaultUIDashboard.Screens;
 
 /// <summary>
-/// The <see cref="Markdown"/> component, live: one source string, rendered entirely by the design
+/// The <see cref="eQuantic.UI.Components.Markdown"/> component, live: one source string, rendered entirely by the design
 /// system — headings on the type scale, fenced code through CodeBlock's own highlighter, tables as
 /// grids, all in the app's theme. The segmented control swaps the SOURCE in client state, which
 /// makes the browser re-parse and re-render through the transpiled twin — the same parser that

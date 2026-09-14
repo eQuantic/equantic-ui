@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace eQuantic.UI.Generators;
 
 /// <summary>
-/// Turns a model's <c>DataAnnotations</c> into a <see cref="FormController"/> — at BUILD time,
+/// Turns a model's <c>DataAnnotations</c> into a <c>FormController</c> — at BUILD time,
 /// because the alternative does not exist: DataAnnotations validates by REFLECTION, and reflection
 /// is the one thing the transpiler cannot carry into a browser.
 /// <para>

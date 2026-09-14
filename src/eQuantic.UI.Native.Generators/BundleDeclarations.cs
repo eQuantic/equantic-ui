@@ -33,8 +33,8 @@ internal static class BundleDeclarations
 
     /// <summary>
     /// One declared fact: Apple's key, the value as text, and how to write it. A null
-    /// <paramref name="Key"/> means the call was ours but its value could not be read at build
-    /// time — reported at <paramref name="Location"/> rather than silently dropped.
+    /// <paramref name="key"/> means the call was ours but its value could not be read at build
+    /// time — reported at <paramref name="location"/> rather than silently dropped.
     /// </summary>
     internal readonly struct Declaration(
         string? key, string value, string kind, string method, Location location)

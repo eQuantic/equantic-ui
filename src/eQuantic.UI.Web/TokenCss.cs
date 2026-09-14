@@ -247,6 +247,7 @@ public static class PhotonCssGenerator
     /// at hydration — a server cannot know a preference it was never sent.
     /// </para>
     /// </param>
+    /// <param name="theme">The theme whose tokens become the custom properties.</param>
     public static string Generate(IAppTheme theme, ThemeMode? mode = null)
     {
         var css = new StringBuilder();

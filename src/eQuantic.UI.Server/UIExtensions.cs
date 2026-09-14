@@ -217,6 +217,7 @@ public static class UIExtensions
     /// first client-side link to it reloads the whole document for no visible reason.
     /// </para>
     /// </summary>
+    /// <param name="endpoints">The endpoint builder this page is registered on.</param>
     /// <param name="route">The pattern, ASP.NET style: <c>/docs/{slug}</c>.</param>
     /// <param name="title">The document title, as <c>[Page(Title = …)]</c> would give it.</param>
     public static IEndpointRouteBuilder MapPage<TPage>(

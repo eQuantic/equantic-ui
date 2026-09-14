@@ -4,7 +4,7 @@ using eQuantic.UI.Primitives;
 namespace eQuantic.Console;
 
 /// <summary>
-/// Ten thousand rows through the write-once <see cref="ListView"/> — the browser proof that the
+/// Ten thousand rows through the write-once <see cref="eQuantic.UI.Components.ListView"/> — the browser proof that the
 /// window materializes a screenful and follows the scroll. The DOM under the scroll view holds
 /// ~a screenful of rows between two spacers however far you are; watch it in devtools.
 /// </summary>

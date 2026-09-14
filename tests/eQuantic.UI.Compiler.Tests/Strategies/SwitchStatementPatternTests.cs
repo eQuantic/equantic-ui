@@ -8,7 +8,7 @@ namespace eQuantic.UI.Compiler.Tests.Strategies;
 
 /// <summary>
 /// A `switch` STATEMENT that uses pattern labels (`case Type t:`, `case { … }:`, `case … when …:`) has no
-/// JS equivalent, so it is rewritten to an if/else chain (shared <see cref="PatternConverter"/> — same
+/// JS equivalent, so it is rewritten to an if/else chain (shared <see cref="CodeGen.PatternConverter"/> — same
 /// condition/binding logic the conformance-validated switch EXPRESSION uses): value bound once to `_s`,
 /// pattern bindings hoisted and assigned inside the arm condition (so a `when` can see them and a failing
 /// `when` falls through), `default` → trailing `else`. A constant-only switch keeps the native `switch`.
