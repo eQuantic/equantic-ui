@@ -17,6 +17,10 @@ A DIFFERENT row is not a smaller version of Flutter's answer. Several of them ex
 has a constraint Flutter does not: **a component is written once and realized on a DOM and on a GPU
 display list**, so anything that needs one target's machinery cannot enter the vocabulary at all.
 
+Its companion is [ARCHITECTURE-AUDIT.md](ARCHITECTURE-AUDIT.md), which asks the other half of the
+same question: this file asks *how does Flutter solve this?*, that one asks *where is our own
+structure weak?*. Both are measured rather than recalled, and both are pinned.
+
 Measured against the tree at the time of writing; every claim below was grepped, not recalled — and
 kept true by `FlutterParityPinTests`, which reads this file and probes all 58 rows. A SAME,
 DIFFERENT or PARTIAL row must be findable in the public surface; a GAP row must still be missing;
