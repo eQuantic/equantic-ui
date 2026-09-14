@@ -19,6 +19,10 @@ public class PrimitiveValueFixtureTests
     private static object Corners(Rect rect) =>
         new { x = rect.X, y = rect.Y, width = rect.Width, height = rect.Height };
 
+    /// <summary>The same, widened to double — see the fractional block below for why.</summary>
+    private static object WideCorners(Rect rect) =>
+        new { x = (double)rect.X, y = (double)rect.Y, width = (double)rect.Width, height = (double)rect.Height };
+
     private static string FixturePath()
     {
         var here = new DirectoryInfo(AppContext.BaseDirectory);
@@ -68,6 +72,26 @@ public class PrimitiveValueFixtureTests
                 containsBottomRight = new Rect(0, 0, 10, 10).Contains(new Point(10, 10)),
                 containsInside = new Rect(0, 0, 10, 10).Contains(new Point(9.99f, 9.99f)),
                 emptyOnZeroWidth = new Rect(0, 0, 0, 10).IsEmpty,
+                // FRACTIONAL, because the twin does this arithmetic in doubles unless it is told
+                // not to. Every component here is a C# `float`, so `Right` is a float ADD and the
+                // last bit differs from the double the browser would compute — which is enough to
+                // classify a pointer on an edge differently. 0.1f and 0.2f are the classic pair
+                // whose sum is not what it looks like in either precision.
+                //
+                // WIDENED TO DOUBLE on the way out, and that is the half that took a failing test
+                // to see: .NET serializes a float as the shortest string that round-trips AS A
+                // FLOAT, so `0.1f + 0.3f` prints "0.4" while the number is 0.4000000059604645 — and
+                // JavaScript, which has only doubles, prints the second. Comparing the two would
+                // fail on a twin that is exactly right. The fixture carries the VALUE.
+                fractionalRight = (double)new Rect(0.1f, 0.2f, 0.3f, 0.4f).Right,
+                fractionalBottom = (double)new Rect(0.1f, 0.2f, 0.3f, 0.4f).Bottom,
+                fractionalCenter = new
+                {
+                    x = (double)new Rect(0.1f, 0.2f, 0.3f, 0.4f).Center.X,
+                    y = (double)new Rect(0.1f, 0.2f, 0.3f, 0.4f).Center.Y,
+                },
+                fractionalInflated = WideCorners(new Rect(0.1f, 0.2f, 0.3f, 0.4f).Inflate(0.05f)),
+                fractionalInflatedRight = (double)new Rect(0.1f, 0.2f, 0.3f, 0.4f).Inflate(0.05f).Right,
             },
             windowSizeClasses = new
             {

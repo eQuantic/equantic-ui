@@ -187,4 +187,24 @@ describe('Primitives value twins carry the C# values', () => {
     expect(new Rect(0, 0, 10, 10).contains(new Point(9.99, 9.99))).toBe(r.containsInside);
     expect(new Rect(0, 0, 0, 10).isEmpty).toBe(r.emptyOnZeroWidth);
   });
+
+  // SINGLE precision, which whole numbers cannot show. Every component of this geometry is a C#
+  // `float`, so every derived value is a float add — and a twin doing it in doubles answers a
+  // different last bit, which is enough to put a pointer on the wrong side of an edge. Found in
+  // review: the transpiled hit test this geometry replaced was `Math.fround(b.x + b.width + slack)`,
+  // and reaching for `Rect.inflate().right` quietly dropped the rounding.
+  it('Rect does its arithmetic in the precision its subject has', () => {
+    const r = pinnedValues.rect;
+    const box = new Rect(0.1, 0.2, 0.3, 0.4);
+
+    expect(box.right).toBe(r.fractionalRight);
+    expect(box.bottom).toBe(r.fractionalBottom);
+    expect({ x: box.center.x, y: box.center.y }).toEqual(r.fractionalCenter);
+
+    const grown = box.inflate(0.05);
+    expect({ x: grown.x, y: grown.y, width: grown.width, height: grown.height })
+      .toEqual(r.fractionalInflated);
+    // THE one that separates single from double: 0.45000002 in floats, 0.45 in doubles.
+    expect(grown.right).toBe(r.fractionalInflatedRight);
+  });
 });

@@ -139,31 +139,49 @@ export class EdgeInsets {
 }
 
 /**
+ * SINGLE precision, because the subject is. Every component of this geometry is a C# `float`, so
+ * every derived value is a float ADD or a float divide — and eqc emits `Math.fround` for exactly
+ * that reason wherever it transpiles one. A twin doing the arithmetic in doubles answers a
+ * different last bit, and a hit test comparing a pointer against an edge classifies it differently.
+ * Found in review: the transpiled hit test this replaced was `Math.fround(b.x + b.width + slack)`,
+ * and reaching for `Rect.inflate().right` quietly dropped the rounding.
+ */
+const f = Math.fround;
+
+/**
  * Mirror of the C# `Point` — a point, and a vector, in the vocabulary's own geometry. Y grows DOWN,
  * the screen convention every target shares.
  */
 export class Point {
-  constructor(
-    readonly x = 0,
-    readonly y = 0,
-  ) {}
+  readonly x: number;
+  readonly y: number;
+
+  constructor(x = 0, y = 0) {
+    // At STORAGE, which is where this SDK rounds: a C# `float` field holds the nearest float, so a
+    // twin holding the double a caller passed already disagrees before any arithmetic runs.
+    this.x = f(x);
+    this.y = f(y);
+  }
 
   static readonly zero = new Point(0, 0);
 
   dot(other: Point): number {
-    return this.x * other.x + this.y * other.y;
+    return f(f(this.x * other.x) + f(this.y * other.y));
   }
   length(): number {
-    return Math.sqrt(this.x * this.x + this.y * this.y);
+    return f(Math.sqrt(f(f(this.x * this.x) + f(this.y * this.y))));
   }
 }
 
 /** Mirror of the C# `Size`. */
 export class Size {
-  constructor(
-    readonly width = 0,
-    readonly height = 0,
-  ) {}
+  readonly width: number;
+  readonly height: number;
+
+  constructor(width = 0, height = 0) {
+    this.width = f(width);
+    this.height = f(height);
+  }
 
   static readonly zero = new Size(0, 0);
 }
@@ -177,15 +195,20 @@ export class Size {
  * `primitives-exports.spec.ts` asserts these against that fixture.
  */
 export class Rect {
-  constructor(
-    readonly x = 0,
-    readonly y = 0,
-    readonly width = 0,
-    readonly height = 0,
-  ) {}
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+
+  constructor(x = 0, y = 0, width = 0, height = 0) {
+    this.x = f(x);
+    this.y = f(y);
+    this.width = f(width);
+    this.height = f(height);
+  }
 
   static fromLTRB(left: number, top: number, right: number, bottom: number): Rect {
-    return new Rect(left, top, right - left, bottom - top);
+    return new Rect(left, top, f(right - left), f(bottom - top));
   }
 
   get left(): number {
@@ -195,13 +218,13 @@ export class Rect {
     return this.y;
   }
   get right(): number {
-    return this.x + this.width;
+    return f(this.x + this.width);
   }
   get bottom(): number {
-    return this.y + this.height;
+    return f(this.y + this.height);
   }
   get center(): Point {
-    return new Point(this.x + this.width / 2, this.y + this.height / 2);
+    return new Point(f(this.x + f(this.width / 2)), f(this.y + f(this.height / 2)));
   }
   get size(): Size {
     return new Size(this.width, this.height);
@@ -226,10 +249,10 @@ export class Rect {
   /** Grows the box by `amount` on every side; a negative amount insets it. */
   inflate(amount: number): Rect {
     return new Rect(
-      this.x - amount,
-      this.y - amount,
-      this.width + amount * 2,
-      this.height + amount * 2,
+      f(this.x - amount),
+      f(this.y - amount),
+      f(this.width + f(amount * 2)),
+      f(this.height + f(amount * 2)),
     );
   }
 }
