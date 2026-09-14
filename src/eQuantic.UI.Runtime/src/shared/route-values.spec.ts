@@ -36,7 +36,8 @@ describe('RouteValues query policy', () => {
     const route = RouteValues.from({}, new URLSearchParams('__proto__=x&tag=a'));
 
     expect(route.query('__proto__')).toBe('x');
-    expect(route.query('tag')).toBe('a', 'and the ordinary key beside it still works');
+    // …and the ordinary key beside it still works, which is the half a guard can break.
+    expect(route.query('tag')).toBe('a');
   });
 
   it('…and so is a route parameter named __proto__', () => {
