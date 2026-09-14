@@ -4,6 +4,13 @@ This folder is the handoff, not a copy of it. Corrections are made in this repo 
 Claude Design, rather than the other way round — which is what lets the alignment between the design
 system and the implementation be a TEST instead of a periodic audit that rots between runs.
 
+Two tests hold it: `HandoffTokenPinTests` compares every NUMBER in `tokens.json` with the value the
+SDK returns, and `HandoffVocabularyTests` checks that every page here speaks the vocabulary's CURRENT
+names — the spellings the vocabulary retired are listed in the test itself, with the decision that
+retired each. The first correction the second one produced: the A11 Image block still named the
+image's accessible text by the property the vocabulary had retired ten days earlier; it is `Label`
+now, and the page says so.
+
 | File | What it is |
 |---|---|
 | `tokens.json` | The NORMATIVE token export — colors, space, radius, shape, type roles, elevation, motion, icon, touch, control metrics, variants. Machine-readable on purpose: it is what the implementation is pinned against. |

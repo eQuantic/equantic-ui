@@ -120,10 +120,17 @@ public class FlutterParityPinTests
         ["RenderObject"] = () => HasMember("LayoutNode", "Parent"),
         ["parentData"] = () => !HasMember("LayoutNode", "ParentData") && HasMember("LayoutNode", "Bounds"),
         ["RenderSliver"] = () => Has("ListView") && Nothing("Sliver", "SliverList"),
+        // The shapes: FlexNode is the one base the vocabulary names; nothing names the single-child one.
+        ["SingleChildRenderObjectWidget"] = () => Has("FlexNode") && Nothing("SingleChildNode", "WrapperNode", "ProxyNode"),
 
         // 2 — layout
         ["Constraints go down,"] = () => Has("LayoutContext"),
         ["BoxConstraints"] = () => Nothing("BoxConstraints", "Constraints"),
+        // Geometry is real and lives in the engine — above the vocabulary. The Surface below has no
+        // Rect, and the engine's is the one every native assembly uses. When Rect moves down, this
+        // row must move off PARTIAL, and this probe is what makes someone do it.
+        ["Rect"] = () => Nothing("Rect", "Point")
+            && typeof(eQuantic.UI.Native.Engine.Rect).Assembly == typeof(eQuantic.UI.Native.Engine.DisplayList).Assembly,
         ["LayoutBuilder"] = () => Nothing("LayoutBuilder", "SizeBuilder") && Has("AdaptiveNode"),
         ["CustomMultiChildLayout"] = () => Nothing("MultiChildLayoutDelegate", "LayoutDelegate"),
         ["CustomSingleChildLayout"] = () => Nothing("SingleChildLayoutDelegate"),
@@ -156,6 +163,9 @@ public class FlutterParityPinTests
         ["RawGestureDetector"] = () => Nothing("RawGestureDetector"),
         ["FocusNode"] = () => HasMember("Pressable", "InitialFocus") && Nothing("FocusNode", "FocusScope"),
         ["Shortcuts"] = () => Has("Shortcut") && Has("KeyChord"),
+        // The controllers are shared; the protocol that drives them is a HOST method.
+        ["TextEditingController"] = () => Has("CodeEditorController") && Has("SheetController")
+            && HasMember("PhotonHost", "TextInput"),
 
         // 6 — routing
         ["Navigator.push/pop"] = () => Has("Navigator"),
@@ -175,6 +185,9 @@ public class FlutterParityPinTests
 
         // 9 — a11y, i18n, platform
         ["Semantics"] = () => Has("SemanticsTree") && Has("SemanticNode"),
+        // A LOCATION probe: the row's claim is that the role enum sits in one target's assembly.
+        // Moving it to Primitives turns this false and fails the PARTIAL row until it is rewritten.
+        ["SemanticsNode"] = () => typeof(SemanticRole).Assembly == typeof(PhotonHost).Assembly,
         ["MergeSemantics"] = () => Nothing("MergeSemantics", "ExcludeSemantics"),
         ["Localizations"] = () => Has("ICultureController") && Nothing("LocalizationsDelegate"),
         ["TextDirection.ltr/rtl"] = () => Nothing("TextDirection"),
@@ -183,6 +196,8 @@ public class FlutterParityPinTests
 
         // 10 — lifecycle and windows
         ["WidgetsBindingObserver"] = () => Nothing("WidgetsBindingObserver", "AppLifecycleState"),
+        // One host, no contract between it and the shells, none of Flutter's per-concern bindings.
+        ["WidgetsFlutterBinding"] = () => Has("PhotonHost") && Nothing("IPhotonHost", "GestureBinding", "FocusManager"),
         ["View"] = () => Has("WindowChrome"),
         ["devicePixelRatio"] = () => Nothing("DevicePixelRatio"),
     };
