@@ -28,6 +28,8 @@ public sealed class Drawing : VisualNode
     /// is what an icon is, and a logo defaults to ITS shape, because a squashed logo is a wrong
     /// logo. Give both to letterbox or stretch deliberately.
     /// </param>
+    /// <param name="tint">One token over the whole artwork (alpha-mask semantics), or null to keep its own colours.</param>
+    /// <param name="label">What assistive tech announces, or null for artwork that carries no meaning of its own.</param>
     public Drawing(VectorDrawing artwork, float width, float height = 0, ColorToken? tint = null,
         string? label = null)
     {

@@ -34,6 +34,11 @@ public enum TypeRole : byte
 /// One row of the type scale: dp size, line height, weight, letter tracking, and the Dynamic Type
 /// clamp (spec §02: reading roles scale fully to ×1.3; Display/Heading clamp ×1.15, Title ×1.25).
 /// </summary>
+/// <param name="Size">The face's size in dp.</param>
+/// <param name="LineHeight">The distance between baselines in dp, which is what a column of text measures by.</param>
+/// <param name="Weight">The face's weight.</param>
+/// <param name="Tracking">Letter spacing in dp — negative tightens, which is what the display sizes want.</param>
+/// <param name="MaxScale">How far Dynamic Type may grow this role before it stops (spec §02).</param>
 /// <param name="Mono">
 /// The MONOSPACED face instead of the proportional one — code, keys, versions, anything read
 /// column by column. It lives on the STYLE rather than on the node because it changes the glyphs:

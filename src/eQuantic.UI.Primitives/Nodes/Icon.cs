@@ -59,7 +59,7 @@ public enum Icons : byte
 /// <para>
 /// Web lowers it to the same <c>&lt;svg&gt;&lt;path&gt;</c> an icon uses; native runs the SAME
 /// glyph rasterizer at the requested box, so a figure drawn once appears on both targets. The box
-/// is square unless <paramref name="height"/> says otherwise: an icon is square, a figure is
+/// is square unless <c>height</c> says otherwise: an icon is square, a figure is
 /// whatever its viewBox is.
 /// </para>
 /// </summary>
@@ -67,7 +67,10 @@ public sealed class Vector : VisualNode
 {
     public sealed override string NodeKind => "vector";
 
+    /// <param name="glyph">The target-neutral path data to draw.</param>
     /// <param name="size">The box's WIDTH in dp (and its height too, unless one is given).</param>
+    /// <param name="color">The single token that tints the whole shape, or null for the inherited ink.</param>
+    /// <param name="label">What assistive tech announces, or null for a shape that carries no meaning of its own.</param>
     /// <param name="height">
     /// A box of another aspect — the connector between two nodes of a diagram, a banner rule, a
     /// sparkline: shapes whose viewBox is not square and which a square box would squash.

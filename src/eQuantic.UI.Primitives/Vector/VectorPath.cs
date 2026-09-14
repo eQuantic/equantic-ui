@@ -170,11 +170,6 @@ public static class VectorPath
     }
 
     /// <summary>
-    /// The same shape under <paramref name="transform"/>, as path data again. An identity transform
-    /// returns the ORIGINAL string untouched — the common case by far, and re-serializing it would
-    /// trade exact author data for rounded numbers to say the same thing.
-    /// </summary>
-    /// <summary>
     /// The box a path occupies on the drawing's own grid — every point it names, control points
     /// included. Conservative on purpose: a curve stays inside the hull of its control points, and
     /// the alternative (subdividing every cubic to find the tight box) buys a fraction of a percent
