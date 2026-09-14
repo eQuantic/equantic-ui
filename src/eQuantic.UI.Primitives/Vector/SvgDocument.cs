@@ -24,7 +24,7 @@ namespace eQuantic.UI.Primitives;
 /// </para>
 /// <para>
 /// A group's <c>transform</c> is BAKED into the path data it wraps rather than carried, because the
-/// two targets do not agree about transforms — see <see cref="VectorTransform"/>.
+/// two targets do not agree about transforms — see <see cref="VectorPath.Transform(string, Matrix2D)"/>.
 /// </para>
 /// </summary>
 public static class SvgDocument
@@ -145,11 +145,8 @@ public static class SvgDocument
     /// an unscaled outline. Non-uniform scale has no single answer — the geometric mean is the one
     /// that keeps the total ink right.
     /// </summary>
-    private static float Scale(VectorTransform transform)
-    {
-        var determinant = MathF.Abs(transform.A * transform.D - transform.B * transform.C);
-        return determinant <= 0 ? 1 : MathF.Sqrt(determinant);
-    }
+    private static float Scale(Matrix2D transform) =>
+        transform.Determinant == 0 ? 1 : transform.AverageScale();
 
     /// <summary>The drawing's own grid: the viewBox if there is one, else the width/height the
     /// document was authored at — a file with neither cannot be placed and becomes empty.</summary>
@@ -236,18 +233,19 @@ public static class SvgDocument
     /// <summary>The painting state an element inherits and may override — SVG's own model, which is
     /// why a <c>&lt;g fill="…"&gt;</c> around ten paths is the usual way artwork is exported.</summary>
     private readonly record struct PaintState(
-        VectorTransform Transform, VectorPaint Fill, VectorPaint Stroke,
+        Matrix2D Transform, VectorPaint Fill, VectorPaint Stroke,
         float StrokeWidth, bool EvenOdd, float Opacity)
     {
         /// <summary>SVG's initial values: filled black, unstroked, a pen one unit wide.</summary>
         public static readonly PaintState Root = new(
-            VectorTransform.Identity, VectorPaint.Solid(Color.Black), VectorPaint.None, 1, false, 1);
+            Matrix2D.Identity, VectorPaint.Solid(Color.Black), VectorPaint.None, 1, false, 1);
 
         public PaintState Inherit(Dictionary<string, string> attributes, GradientTable gradients)
         {
             var next = this;
+            // The child's own transform applies FIRST, then everything its ancestors already carry.
             if (attributes.TryGetValue("transform", out var transform))
-                next = next with { Transform = next.Transform.Compose(ParseTransform(transform)) };
+                next = next with { Transform = ParseTransform(transform) * next.Transform };
 
             // `style` wins over the presentation attributes, which is the cascade's answer and what
             // every exporter relies on when it writes both.
@@ -305,11 +303,15 @@ public static class SvgDocument
         return properties;
     }
 
+    /// <summary>Degrees, which is the unit the attribute is written in — the neutral transform
+    /// speaks radians, so the conversion belongs where the format is read.</summary>
+    private static float Radians(float degrees) => degrees * MathF.PI / 180f;
+
     /// <summary>The transform LIST, applied left to right — `translate(4 2) scale(2)` scales first
     /// and then translates, which is the order the attribute reads in.</summary>
-    private static VectorTransform ParseTransform(string text)
+    private static Matrix2D ParseTransform(string text)
     {
-        var result = VectorTransform.Identity;
+        var result = Matrix2D.Identity;
         var i = 0;
         while (i < text.Length)
         {
@@ -327,22 +329,24 @@ public static class SvgDocument
             var step = name switch
             {
                 "translate" when numbers.Count >= 1 =>
-                    VectorTransform.Translate(numbers[0], numbers.Count > 1 ? numbers[1] : 0),
+                    Matrix2D.Translation(numbers[0], numbers.Count > 1 ? numbers[1] : 0),
                 "scale" when numbers.Count >= 1 =>
-                    VectorTransform.Scale(numbers[0], numbers.Count > 1 ? numbers[1] : numbers[0]),
+                    Matrix2D.Scale(numbers[0], numbers.Count > 1 ? numbers[1] : numbers[0]),
                 "rotate" when numbers.Count >= 3 =>
-                    // Rotation about a point: move it to the origin, turn, move it back.
-                    VectorTransform.Translate(numbers[1], numbers[2])
-                        .Compose(VectorTransform.Rotate(numbers[0]))
-                        .Compose(VectorTransform.Translate(-numbers[1], -numbers[2])),
-                "rotate" when numbers.Count >= 1 => VectorTransform.Rotate(numbers[0]),
-                "skewX" when numbers.Count >= 1 => VectorTransform.SkewX(numbers[0]),
-                "skewY" when numbers.Count >= 1 => VectorTransform.SkewY(numbers[0]),
+                    // Rotation about a point: move it to the origin, turn, move it back — and `*`
+                    // applies its left side first, so that is the order they are written in.
+                    Matrix2D.Translation(-numbers[1], -numbers[2])
+                        * Matrix2D.Rotation(Radians(numbers[0]))
+                        * Matrix2D.Translation(numbers[1], numbers[2]),
+                "rotate" when numbers.Count >= 1 => Matrix2D.Rotation(Radians(numbers[0])),
+                "skewX" when numbers.Count >= 1 => Matrix2D.SkewX(Radians(numbers[0])),
+                "skewY" when numbers.Count >= 1 => Matrix2D.SkewY(Radians(numbers[0])),
                 "matrix" when numbers.Count >= 6 =>
-                    new VectorTransform(numbers[0], numbers[1], numbers[2], numbers[3], numbers[4], numbers[5]),
-                _ => VectorTransform.Identity,
+                    new Matrix2D(numbers[0], numbers[1], numbers[2], numbers[3], numbers[4], numbers[5]),
+                _ => Matrix2D.Identity,
             };
-            result = result.Compose(step);
+            // The list reads outside-in, so each new step applies BEFORE everything read so far.
+            result = step * result;
         }
         return result;
     }

@@ -19,6 +19,7 @@ import * as runtimeExports from './runtime-exports';
 import primitivesTypes from './primitives-types.fixture.json';
 import pinnedValues from './primitive-values.fixture.json';
 import { ImageData, NetworkState, SpringSpec, WindowSizeClasses } from './primitive-values';
+import { Point, Rect } from './value-types';
 
 /**
  * Types that owe no export, each for a stated reason — a list of names, so the next one cannot slip
@@ -39,9 +40,17 @@ const NO_TWIN_OWED = new Set([
   // shapes are exported; the reader, the normalizer and its geometry are not.
   'SvgDocument',
   'VectorPath',
-  'VectorPoint',
   'VectorSegment',
-  'VectorTransform',
+  // DISPLAY LIST SHAPES. `Point`, `Size` and `Rect` are exported — a component can hold a box — but
+  // these two are what a rasterizer consumes, and this target has no rasterizer: a rounded box here
+  // is `border-radius` on a div, and a transform is the authoring `Transform2D` lowering to CSS.
+  // Nothing in a page bundle constructs either.
+  //
+  // What would change the answer: a SHARED component doing its own arithmetic — composing a matrix
+  // to place something, normalizing radii before measuring. Then the twin is owed, because the
+  // failure lands at module load and takes the page down rather than reporting itself.
+  'RRect',
+  'Matrix2D',
   // The seam a HOST arms so `context.GetService<T>()` can answer. A page names the capability, not
   // the scope; the client's twin of it is the ComponentContext.getService method.
   'CapabilityScope',
@@ -157,5 +166,29 @@ describe('Primitives value twins carry the C# values', () => {
 
   it('ImageData reports its own size', () => {
     expect(new ImageData(new Uint8Array([1, 2, 3]), 'image/png').byteCount).toBe(3);
+  });
+
+  // The twin with ARITHMETIC in it, which is the one that can load and still be wrong. Every number
+  // here was computed by C# (`PrimitiveValueFixtureTests`), so this is the mirror answering the
+  // subject's own questions rather than its own.
+  it('Rect answers what the C# Rect answers', () => {
+    const r = pinnedValues.rect;
+    const corners = (box: Rect) => ({ x: box.x, y: box.y, width: box.width, height: box.height });
+
+    expect(corners(new Rect(0, 0, 10, 10).intersect(new Rect(4, 6, 20, 20)))).toEqual(r.overlap);
+    // The branch an obvious twin gets wrong: a miss is empty AT THE CORNER, not at the origin.
+    expect(corners(new Rect(0, 0, 10, 10).intersect(new Rect(40, 60, 5, 5)))).toEqual(r.disjoint);
+    expect(corners(new Rect(0, 0, 10, 10).inflate(-2))).toEqual(r.inset);
+    expect(corners(new Rect(3, 4, 10, 10).inflate(2.5))).toEqual(r.grown);
+    expect(corners(Rect.fromLTRB(2, 3, 9, 11))).toEqual(r.fromEdges);
+
+    const center = new Rect(3, 4, 10, 20).center;
+    expect({ x: center.x, y: center.y }).toEqual(r.center);
+
+    // HALF-OPEN, so two boxes that share an edge do not both claim it.
+    expect(new Rect(0, 0, 10, 10).contains(new Point(0, 0))).toBe(r.containsTopLeft);
+    expect(new Rect(0, 0, 10, 10).contains(new Point(10, 10))).toBe(r.containsBottomRight);
+    expect(new Rect(0, 0, 10, 10).contains(new Point(9.99, 9.99))).toBe(r.containsInside);
+    expect(new Rect(0, 0, 0, 10).isEmpty).toBe(r.emptyOnZeroWidth);
   });
 });

@@ -112,6 +112,13 @@ public readonly record struct Matrix2D(float M11, float M12, float M21, float M2
         return new Matrix2D(c, s, -s, c, 0, 0);
     }
 
+    /// <summary>A shear along X, in radians — <c>x' = x + tan(angle)·y</c>. SVG's <c>skewX</c>, and
+    /// the reason this type carries a shear at all: nothing in the display list produces one.</summary>
+    public static Matrix2D SkewX(float radians) => new(1, 0, MathF.Tan(radians), 1, 0, 0);
+
+    /// <summary>A shear along Y, in radians. SVG's <c>skewY</c>.</summary>
+    public static Matrix2D SkewY(float radians) => new(1, MathF.Tan(radians), 0, 1, 0, 0);
+
     public bool IsIdentity => this == Identity;
 
     /// <summary>Applies <paramref name="a"/> first, then <paramref name="b"/>.</summary>

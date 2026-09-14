@@ -138,6 +138,102 @@ export class EdgeInsets {
   }
 }
 
+/**
+ * Mirror of the C# `Point` — a point, and a vector, in the vocabulary's own geometry. Y grows DOWN,
+ * the screen convention every target shares.
+ */
+export class Point {
+  constructor(
+    readonly x = 0,
+    readonly y = 0,
+  ) {}
+
+  static readonly zero = new Point(0, 0);
+
+  dot(other: Point): number {
+    return this.x * other.x + this.y * other.y;
+  }
+  length(): number {
+    return Math.sqrt(this.x * this.x + this.y * this.y);
+  }
+}
+
+/** Mirror of the C# `Size`. */
+export class Size {
+  constructor(
+    readonly width = 0,
+    readonly height = 0,
+  ) {}
+
+  static readonly zero = new Size(0, 0);
+}
+
+/**
+ * Mirror of the C# `Rect` — an axis-aligned box, x/y at its top-left.
+ *
+ * The four derived edges and the three operations are arithmetic, which means this twin can DRIFT
+ * from its subject in a way a missing export cannot: it would load, and answer differently. So the
+ * answers are cross-pinned — `PrimitiveValueFixtureTests` computes them in C# and
+ * `primitives-exports.spec.ts` asserts these against that fixture.
+ */
+export class Rect {
+  constructor(
+    readonly x = 0,
+    readonly y = 0,
+    readonly width = 0,
+    readonly height = 0,
+  ) {}
+
+  static fromLTRB(left: number, top: number, right: number, bottom: number): Rect {
+    return new Rect(left, top, right - left, bottom - top);
+  }
+
+  get left(): number {
+    return this.x;
+  }
+  get top(): number {
+    return this.y;
+  }
+  get right(): number {
+    return this.x + this.width;
+  }
+  get bottom(): number {
+    return this.y + this.height;
+  }
+  get center(): Point {
+    return new Point(this.x + this.width / 2, this.y + this.height / 2);
+  }
+  get size(): Size {
+    return new Size(this.width, this.height);
+  }
+  get isEmpty(): boolean {
+    return this.width <= 0 || this.height <= 0;
+  }
+
+  contains(p: Point): boolean {
+    return p.x >= this.left && p.x < this.right && p.y >= this.top && p.y < this.bottom;
+  }
+
+  /** The overlap with `other`, or an empty rect pinned at the overlap's corner when disjoint. */
+  intersect(other: Rect): Rect {
+    const l = Math.max(this.left, other.left);
+    const t = Math.max(this.top, other.top);
+    const r = Math.min(this.right, other.right);
+    const b = Math.min(this.bottom, other.bottom);
+    return r <= l || b <= t ? new Rect(l, t, 0, 0) : Rect.fromLTRB(l, t, r, b);
+  }
+
+  /** Grows the box by `amount` on every side; a negative amount insets it. */
+  inflate(amount: number): Rect {
+    return new Rect(
+      this.x - amount,
+      this.y - amount,
+      this.width + amount * 2,
+      this.height + amount * 2,
+    );
+  }
+}
+
 /** Mirror of the C# `Transform2D` — components applied translate → rotate → scale, center-anchored. */
 export class Transform2D {
   constructor(

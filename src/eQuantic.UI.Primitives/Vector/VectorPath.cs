@@ -1,8 +1,5 @@
 namespace eQuantic.UI.Primitives;
 
-/// <summary>A point on a drawing's own grid. Y grows DOWN, the SVG and screen convention.</summary>
-public readonly record struct VectorPoint(float X, float Y);
-
 /// <summary>A normalized path step: everything lowers to moves, lines, cubics and closes.</summary>
 public enum VectorVerb : byte
 {
@@ -14,57 +11,7 @@ public enum VectorVerb : byte
 }
 
 public readonly record struct VectorSegment(
-    VectorVerb Verb, VectorPoint C1 = default, VectorPoint C2 = default, VectorPoint End = default);
-
-/// <summary>
-/// A 2D affine transform in SVG's own spelling — <c>matrix(a b c d e f)</c>, applied as
-/// <c>x' = a·x + c·y + e</c>, <c>y' = b·x + d·y + f</c>.
-/// <para>
-/// It exists so that a <c>&lt;g transform&gt;</c> can be FLATTENED into the path data it wraps. The
-/// alternative is carrying the matrix to the targets, and the targets do not agree about it: the
-/// web has a transform attribute, and the native rasterizer takes a glyph and a box. Baking it here
-/// keeps both realizers drawing the same numbers.
-/// </para>
-/// </summary>
-public readonly record struct VectorTransform(float A, float B, float C, float D, float E, float F)
-{
-    public static readonly VectorTransform Identity = new(1, 0, 0, 1, 0, 0);
-
-    public static VectorTransform Translate(float x, float y) => new(1, 0, 0, 1, x, y);
-
-    public static VectorTransform Scale(float x, float y) => new(x, 0, 0, y, 0, 0);
-
-    /// <summary>Rotation in DEGREES, which is what the attribute is written in.</summary>
-    public static VectorTransform Rotate(float degrees)
-    {
-        var radians = degrees * MathF.PI / 180f;
-        var (cos, sin) = (MathF.Cos(radians), MathF.Sin(radians));
-        return new VectorTransform(cos, sin, -sin, cos, 0, 0);
-    }
-
-    /// <summary>Skew along X, in degrees.</summary>
-    public static VectorTransform SkewX(float degrees) =>
-        new(1, 0, MathF.Tan(degrees * MathF.PI / 180f), 1, 0, 0);
-
-    /// <summary>Skew along Y, in degrees.</summary>
-    public static VectorTransform SkewY(float degrees) =>
-        new(1, MathF.Tan(degrees * MathF.PI / 180f), 0, 1, 0, 0);
-
-    public bool IsIdentity => this == Identity;
-
-    /// <summary>This transform applied AFTER <paramref name="inner"/> — the order nesting reads in:
-    /// an outer group's transform composes over the one on the child it contains.</summary>
-    public VectorTransform Compose(VectorTransform inner) => new(
-        A * inner.A + C * inner.B,
-        B * inner.A + D * inner.B,
-        A * inner.C + C * inner.D,
-        B * inner.C + D * inner.D,
-        A * inner.E + C * inner.F + E,
-        B * inner.E + D * inner.F + F);
-
-    public VectorPoint Apply(VectorPoint point) =>
-        new(A * point.X + C * point.Y + E, B * point.X + D * point.Y + F);
-}
+    VectorVerb Verb, Point C1 = default, Point C2 = default, Point End = default);
 
 /// <summary>
 /// SVG path data: the ONE normalizer both targets consume. The full command set
@@ -95,10 +42,10 @@ public static class VectorPath
         var segments = new List<VectorSegment>();
         var i = 0;
         var command = '\0';
-        var current = new VectorPoint(0, 0);
-        var subpathStart = new VectorPoint(0, 0);
-        var lastCubicControl = (VectorPoint?)null;
-        var lastQuadControl = (VectorPoint?)null;
+        var current = new Point(0, 0);
+        var subpathStart = new Point(0, 0);
+        var lastCubicControl = (Point?)null;
+        var lastQuadControl = (Point?)null;
 
         while (i < data.Length)
         {
@@ -132,7 +79,7 @@ public static class VectorPath
                 case 'M':
                 {
                     if (!TryNumber(data, ref i, out var x) || !TryNumber(data, ref i, out var y)) return segments;
-                    current = relative ? new VectorPoint(current.X + x, current.Y + y) : new VectorPoint(x, y);
+                    current = relative ? new Point(current.X + x, current.Y + y) : new Point(x, y);
                     subpathStart = current;
                     segments.Add(new VectorSegment(VectorVerb.Move, End: current));
                     lastCubicControl = lastQuadControl = null;
@@ -141,7 +88,7 @@ public static class VectorPath
                 case 'L':
                 {
                     if (!TryNumber(data, ref i, out var x) || !TryNumber(data, ref i, out var y)) return segments;
-                    current = relative ? new VectorPoint(current.X + x, current.Y + y) : new VectorPoint(x, y);
+                    current = relative ? new Point(current.X + x, current.Y + y) : new Point(x, y);
                     segments.Add(new VectorSegment(VectorVerb.Line, End: current));
                     lastCubicControl = lastQuadControl = null;
                     break;
@@ -149,7 +96,7 @@ public static class VectorPath
                 case 'H':
                 {
                     if (!TryNumber(data, ref i, out var x)) return segments;
-                    current = new VectorPoint(relative ? current.X + x : x, current.Y);
+                    current = new Point(relative ? current.X + x : x, current.Y);
                     segments.Add(new VectorSegment(VectorVerb.Line, End: current));
                     lastCubicControl = lastQuadControl = null;
                     break;
@@ -157,7 +104,7 @@ public static class VectorPath
                 case 'V':
                 {
                     if (!TryNumber(data, ref i, out var y)) return segments;
-                    current = new VectorPoint(current.X, relative ? current.Y + y : y);
+                    current = new Point(current.X, relative ? current.Y + y : y);
                     segments.Add(new VectorSegment(VectorVerb.Line, End: current));
                     lastCubicControl = lastQuadControl = null;
                     break;
@@ -243,7 +190,7 @@ public static class VectorPath
         var (minX, minY, maxX, maxY) = (float.MaxValue, float.MaxValue, float.MinValue, float.MinValue);
         var seen = false;
 
-        void Include(VectorPoint point)
+        void Include(Point point)
         {
             seen = true;
             minX = MathF.Min(minX, point.X);
@@ -265,15 +212,23 @@ public static class VectorPath
         return seen ? (minX, minY, maxX, maxY) : (0, 0, 0, 0);
     }
 
-    public static string Transform(string data, VectorTransform transform) =>
+    /// <summary>
+    /// A <c>&lt;g transform&gt;</c> FLATTENED into the path data it wraps.
+    /// <para>
+    /// The alternative is carrying the matrix to the targets, and the targets do not agree about
+    /// it: the web has a transform attribute, and the native rasterizer takes a glyph and a box.
+    /// Baking it here keeps both realizers drawing the same numbers.
+    /// </para>
+    /// </summary>
+    public static string Transform(string data, Matrix2D transform) =>
         transform.IsIdentity ? data : Serialize(Parse(data), transform);
 
     /// <summary>Normalized, ABSOLUTE path data: moves, lines, cubics and closes, nothing else.
     /// What a transform flattening emits, and what a test can compare against.</summary>
     public static string Serialize(IReadOnlyList<VectorSegment> segments) =>
-        Serialize(segments, VectorTransform.Identity);
+        Serialize(segments, Matrix2D.Identity);
 
-    private static string Serialize(IReadOnlyList<VectorSegment> segments, VectorTransform transform)
+    private static string Serialize(IReadOnlyList<VectorSegment> segments, Matrix2D transform)
     {
         var text = new System.Text.StringBuilder();
         foreach (var segment in segments)
@@ -282,15 +237,15 @@ public static class VectorPath
             switch (segment.Verb)
             {
                 case VectorVerb.Move:
-                    text.Append('M').Append(Pair(transform.Apply(segment.End)));
+                    text.Append('M').Append(Pair(transform.Transform(segment.End)));
                     break;
                 case VectorVerb.Line:
-                    text.Append('L').Append(Pair(transform.Apply(segment.End)));
+                    text.Append('L').Append(Pair(transform.Transform(segment.End)));
                     break;
                 case VectorVerb.Cubic:
-                    text.Append('C').Append(Pair(transform.Apply(segment.C1)))
-                        .Append(' ').Append(Pair(transform.Apply(segment.C2)))
-                        .Append(' ').Append(Pair(transform.Apply(segment.End)));
+                    text.Append('C').Append(Pair(transform.Transform(segment.C1)))
+                        .Append(' ').Append(Pair(transform.Transform(segment.C2)))
+                        .Append(' ').Append(Pair(transform.Transform(segment.End)));
                     break;
                 case VectorVerb.Close:
                     text.Append('Z');
@@ -305,7 +260,7 @@ public static class VectorPath
     /// is its viewBox, so three decimals is ~a thousandth of a unit — finer than any device pixel a
     /// 24-unit icon or a 1024-unit logo lands on, and it keeps the emitted data readable.
     /// </summary>
-    private static string Pair(VectorPoint point) => $"{Number(point.X)} {Number(point.Y)}";
+    private static string Pair(Point point) => $"{Number(point.X)} {Number(point.Y)}";
 
     private static string Number(float value)
     {
@@ -314,20 +269,20 @@ public static class VectorPath
         return rounded.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
     }
 
-    private static VectorPoint Reflect(VectorPoint current, VectorPoint? control) =>
-        control is { } c ? new VectorPoint(2 * current.X - c.X, 2 * current.Y - c.Y) : current;
+    private static Point Reflect(Point current, Point? control) =>
+        control is { } c ? new Point(2 * current.X - c.X, 2 * current.Y - c.Y) : current;
 
     /// <summary>Exact quadratic→cubic elevation: c1 = p0 + ⅔(q − p0), c2 = end + ⅔(q − end).</summary>
-    private static void AddQuadratic(List<VectorSegment> segments, VectorPoint from, VectorPoint q, VectorPoint end)
+    private static void AddQuadratic(List<VectorSegment> segments, Point from, Point q, Point end)
     {
-        var c1 = new VectorPoint(from.X + 2f / 3 * (q.X - from.X), from.Y + 2f / 3 * (q.Y - from.Y));
-        var c2 = new VectorPoint(end.X + 2f / 3 * (q.X - end.X), end.Y + 2f / 3 * (q.Y - end.Y));
+        var c1 = new Point(from.X + 2f / 3 * (q.X - from.X), from.Y + 2f / 3 * (q.Y - from.Y));
+        var c2 = new Point(end.X + 2f / 3 * (q.X - end.X), end.Y + 2f / 3 * (q.Y - end.Y));
         segments.Add(new VectorSegment(VectorVerb.Cubic, c1, c2, end));
     }
 
     /// <summary>SVG F.6.5 endpoint→center parameterization, split into ≤90° cubic segments.</summary>
-    private static void AddArc(List<VectorSegment> segments, VectorPoint from, float rx, float ry,
-        float rotationDegrees, bool largeArc, bool sweep, VectorPoint end)
+    private static void AddArc(List<VectorSegment> segments, Point from, float rx, float ry,
+        float rotationDegrees, bool largeArc, bool sweep, Point end)
     {
         rx = MathF.Abs(rx);
         ry = MathF.Abs(ry);
@@ -385,10 +340,10 @@ public static class VectorPath
             var (cosA, sinA) = (MathF.Cos(angle), MathF.Sin(angle));
             var (cosB, sinB) = (MathF.Cos(next), MathF.Sin(next));
 
-            VectorPoint OnArc(float ca, float sa) => new(
+            Point OnArc(float ca, float sa) => new(
                 cx + rx * cos * ca - ry * sin * sa,
                 cy + rx * sin * ca + ry * cos * sa);
-            VectorPoint Derivative(float ca, float sa) => new(
+            Point Derivative(float ca, float sa) => new(
                 -rx * cos * sa - ry * sin * ca,
                 -rx * sin * sa + ry * cos * ca);
 
@@ -396,8 +351,8 @@ public static class VectorPath
             var d0 = Derivative(cosA, sinA);
             var d3 = Derivative(cosB, sinB);
             segments.Add(new VectorSegment(VectorVerb.Cubic,
-                new VectorPoint(p0.X + k * d0.X, p0.Y + k * d0.Y),
-                new VectorPoint(p3.X - k * d3.X, p3.Y - k * d3.Y),
+                new Point(p0.X + k * d0.X, p0.Y + k * d0.Y),
+                new Point(p3.X - k * d3.X, p3.Y - k * d3.Y),
                 p3));
             p0 = p3;
             angle = next;
@@ -412,11 +367,11 @@ public static class VectorPath
         return (ux * vy - uy * vx) < 0 ? -angle : angle;
     }
 
-    private static bool TryPoint(string data, ref int i, bool relative, VectorPoint current, out VectorPoint point)
+    private static bool TryPoint(string data, ref int i, bool relative, Point current, out Point point)
     {
         point = default;
         if (!TryNumber(data, ref i, out var x) || !TryNumber(data, ref i, out var y)) return false;
-        point = relative ? new VectorPoint(current.X + x, current.Y + y) : new VectorPoint(x, y);
+        point = relative ? new Point(current.X + x, current.Y + y) : new Point(x, y);
         return true;
     }
 
