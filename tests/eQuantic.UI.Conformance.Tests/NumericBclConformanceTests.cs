@@ -96,7 +96,6 @@ public class NumericBclConformanceTests
     [InlineData("return double.MultiplyAddEstimate(2.0, 3.0, 4.0);")]            // 10
     [InlineData("return double.ScaleB(3.0, 4);")]                                // 48
     [InlineData("return double.ScaleB(1.0, -3);")]                               // 0.125
-    [InlineData("return double.RootN(27.0, 3);")]                                // 3
     [InlineData("return double.RootN(-8.0, 3);")]                                // -2 — odd root of a negative
     [InlineData("return double.RootN(16.0, 2);")]                                // 4
     [InlineData("return double.RootN(16.0, 4);")]                                // 2
@@ -164,5 +163,37 @@ public class NumericBclConformanceTests
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>
+    /// The cases where .NET itself is not one answer.
+    ///
+    /// <para>
+    /// `double.RootN(27.0, 3)` is exactly `3` on macOS and `3.0000000000000004` on Linux — measured
+    /// on both, once this suite started running anywhere but a Mac. It sat in the exact theory
+    /// above and passed for as long as nothing ran it on Linux, which is what a pin that only ever
+    /// executes on one platform buys you: the runner's libm, pinned as if it were the language.
+    /// </para>
+    ///
+    /// <para>
+    /// The twin is the side that is RIGHT here. 27's cube root is 3, 3 is representable, and the JS
+    /// answer is exact — so this is not a translation defect to fix but a platform difference to
+    /// name. One ULP, because a decimal epsilon would quietly admit the real defects this suite
+    /// exists to catch.
+    /// </para>
+    ///
+    /// <para>
+    /// The other three `RootN` cases stay in the exact theory: they passed on all three runners, and
+    /// moving them here on suspicion would widen the fence past what was measured.
+    /// </para>
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("return double.RootN(27.0, 3);",
+        "double.RootN(27.0, 3) is 3 on macOS and 3.0000000000000004 on Linux — .NET delegates to "
+        + "the platform's libm, and the two disagree in the last bit")]
+    public void NumericBcl_WhereDotNetItselfDiffersByAPlatform(string statements, string why)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsWithinAnUlpOfDotNet(statements, why);
     }
 }

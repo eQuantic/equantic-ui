@@ -45,6 +45,81 @@ public static class ConformanceRunner
     }
 
     /// <summary>
+    /// For the handful of values .NET itself does not compute identically on every platform.
+    ///
+    /// <para>
+    /// The contract of this suite is "the twin behaves identically to .NET", and that sentence has
+    /// a hidden assumption: that ".NET" is one answer. For most of the surface it is. For a few
+    /// numeric functions it is the platform's libm wearing a .NET name, and the answers differ in
+    /// the last bit — <c>double.RootN(27.0, 3)</c> is exactly <c>3</c> on macOS and
+    /// <c>3.0000000000000004</c> on Linux, measured on both.
+    /// </para>
+    ///
+    /// <para>
+    /// The twin is not the thing that is wrong there. 27's cube root IS 3, and 3 is representable,
+    /// so the JS answer is exact and one platform's .NET is a bit off it. Rewriting the twin to
+    /// reproduce a libm's error on one OS and be wrong on the other is not a contract worth having.
+    /// </para>
+    ///
+    /// <para>
+    /// So these compare within ONE ULP and each says which platform difference it is fencing.
+    /// A ULP, not an epsilon: a tolerance in decimals would quietly admit a real translation bug of
+    /// the kind this suite exists to catch, where "the adjacent double" cannot.
+    /// </para>
+    /// </summary>
+    /// <param name="why">The measured difference, named. It goes into the failure message, because
+    /// the next person here needs to know whether they are looking at a new platform gap or at the
+    /// one already known.</param>
+    public static void AssertStatementsWithinAnUlpOfDotNet(
+        string csharpStatements, string why, string prelude = "")
+    {
+        var jsBlock = Transpiler.TranspileStatements(csharpStatements, prelude);
+        var types = Transpiler.EmitDeclaredRecordTypes(prelude);
+        var program = $"{BuildHelperImport(jsBlock + types)}{types}{Log(jsBlock)}";
+
+        var actual = JsExecutor.Run(program);
+        var expected = DotNetEvaluator.EvaluateToJson(csharpStatements, prelude);
+        if (actual == expected) return;
+
+        double.TryParse(actual, System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture, out var actualValue)
+            .Should().BeTrue($"`{csharpStatements}` answered `{actual}`, which is not a number — "
+                + "this overload is for a numeric difference of one bit, and that is not one");
+        double.TryParse(expected, System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture, out var expectedValue)
+            .Should().BeTrue($"`{csharpStatements}` answered `{expected}` on .NET, which is not a number");
+
+        UlpsBetween(actualValue, expectedValue).Should().BeLessThanOrEqualTo(1,
+            $"C# block `{csharpStatements}` (transpiled to JS `{jsBlock}`) answered {actual} where "
+            + $".NET answered {expected}. One bit is the known platform difference: {why}. More than "
+            + "one is a translation defect, and this overload is not the place to make it pass");
+    }
+
+    /// <summary>
+    /// How many representable doubles lie between two values — 0 is identical, 1 is adjacent.
+    /// Sign-magnitude bits ordered so that the comparison means what it says across zero.
+    /// <para>
+    /// PUBLIC so it can be tested directly, and it has to be: the caller above returns early when
+    /// the two sides agree, which they do on macOS for the one case that uses it. On this machine
+    /// the tolerance path never runs, so a suite that only ran the conformance case would be
+    /// claiming a comparison it had never exercised.
+    /// </para>
+    /// </summary>
+    public static long UlpsBetween(double a, double b)
+    {
+        if (double.IsNaN(a) || double.IsNaN(b)) return a.Equals(b) ? 0 : long.MaxValue;
+        var left = Ordered(a);
+        var right = Ordered(b);
+        return Math.Abs(left - right);
+
+        static long Ordered(double value)
+        {
+            var bits = BitConverter.DoubleToInt64Bits(value);
+            return bits < 0 ? long.MinValue - bits : bits;
+        }
+    }
+
+    /// <summary>
     /// As above, but with a C# <paramref name="prelude"/> of type declarations (e.g. an enum) made
     /// available to both the transpiler's semantic model and the .NET evaluator.
     /// </summary>
