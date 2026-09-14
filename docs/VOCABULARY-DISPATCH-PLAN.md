@@ -196,10 +196,19 @@ already writes `enums.generated.ts` and `design-system.generated.ts` from the as
   derive `VisualNode` today (measured in `src/` and `samples/`; the only hits are two fakes in a
   transpiler test's source snippet) — and that is a measurement, not a guarantee. A public abstract
   class can be derived from anywhere, and an app's own `Accept` could route to any overload and walk
-  around the compiler. So S1 gives `VisualNode` a `private protected` constructor: only the
-  vocabulary's assembly can add a node, which is the closed set the visitor depends on. `UiComponent`,
-  whose constructor stays `protected`, remains the one door open to apps, and its `Accept` is sealed,
-  so no consumer writes one and eqc never meets one.
+  around the compiler. So S1 gives `VisualNode` a `private protected` constructor, and gives
+  `FlexNode` one too: it is the one public abstract class between `VisualNode` and the leaves, it
+  declares no constructor of its own today, and the accessible one it inherits is a second door that
+  closing the first would leave open. The 39 concrete nodes are already `sealed`, and nothing in
+  `src/`, `samples/` or `tests/` derives from one. Only the vocabulary's assembly can add a node,
+  which is the closed set the visitor depends on. `UiComponent`, whose constructor stays `protected`,
+  remains the one door open to apps, and its `Accept` is sealed, so no consumer writes one and eqc
+  never meets one. A pin holds the closure — `ClosedHierarchyTests` — over every assembly of both
+  graphs, not over `Primitives` alone (one assembly reports nothing about an intermediate born
+  elsewhere; #135's `ValueShapeCollisionTests` found `VectorTransform`'s twin in the engine that way):
+  every type assignable to `VisualNode` outside `Primitives` is a `UiComponent`, every abstract node
+  inside it that is not the component seam has only `private protected` constructors, and every
+  concrete node is `sealed`.
 - **Output is byte-identical, by slice.** Each realizer already has the pin that says so: the web has
   `ComponentParityFixtureTests`, `PrimitiveValueFixtureTests` and `MarkerParityTests` (and
   `SurfaceSsrTests` once #121 lands — it is that PR's, not `main`'s yet);
@@ -226,10 +235,10 @@ executor takes them in this order; the auditor rewrites the audit's section 2 an
 
 | # | Slice | Nets | Size |
 |---|---|---|---|
-| S1 | `IVisualNodeVisitor<,>`, `Nothing`, `Accept` on `VisualNode`, forty one-line overrides, and the `private protected` constructor that closes the hierarchy. No consumer yet. | the solution compiles; `UiFactoryConformanceTests` (factories are unaffected) | S |
+| S1 | `IVisualNodeVisitor<,>`, `Nothing`, `Accept` on `VisualNode`, forty one-line overrides, and the `private protected` constructors on `VisualNode` and `FlexNode` that close the hierarchy. No consumer yet. | the solution compiles; `ClosedHierarchyTests` (the closure, over both graphs); `UiFactoryConformanceTests` (factories are unaffected) | S |
 | S2 | `Semantics.Walk` → `SemanticsVisitor`: 13 visits, 26 declines named for their reason; `Navigable` and `Overlay` decline until the group role of audit step 3 lands, then become visits. The `Semantics` dispatch leaves the coverage pin. | `SemanticsTests`, `CheckSemanticsTests`, `HeadingSemanticsTests`, `GraphicSemanticsTests`, `LabelledNodesReachSemanticsTests`, `UnlabelledGroupSemanticsTests`, the three bridges' tests | S |
-| S3 | `EmailRealizer.Write` → `EmailVisitor` and `EmailRenderer.WalkText` → `EmailTextVisitor`: 6 visits each, one shared refusal set of 33 that throws what the default arm throws today. Both dispatches leave the pin (the second was never in it). | `eQuantic.UI.Email.Tests` | S |
-| S7 | `NodeKindTsGenerator`, `node-kinds.generated.ts`, `nodeKind: NodeKind`, `assertNever`. The TypeScript dispatch leaves the pin; `EveryNode_DeclaresItsOwnWireKind` becomes the generator's duplicate check. | `EnumUnionsTsGeneratorTests`' sibling, `npm run test`, the transpiled fixtures byte-pinned | S |
+| S3 | `EmailRealizer.Write` → `EmailVisitor` and `EmailRenderer.WalkText` → `EmailTextVisitor`: 6 visits each, one shared refusal set of 33 behind one `Refuse`, which throws the `NotSupportedException` the HTML default arm throws today. `WalkText` has no default arm — a node it does not know falls out of its switch in silence — so the text visitor gains a refusal it never had, and that is the point: what one alternative refuses, the other refuses too. Both dispatches leave the pin (the second was never in it). | `eQuantic.UI.Email.Tests`, plus one fact that sends each of the 33 through both alternatives and expects the same refusal from each | S |
+| S7 | `NodeKindTsGenerator`, `node-kinds.generated.ts`, `nodeKind: NodeKind`, `assertNever`. The TypeScript dispatch leaves the pin; `EveryNode_DeclaresItsOwnWireKind` becomes the generator's duplicate check. | `EnumUnionsTsGeneratorTests`' sibling; `tsc` over the runtime, which is what makes `assertNever` bite — `dotnet build src/eQuantic.UI.Runtime -t:TestRuntime` runs it and then `vitest run`, and vitest alone type-checks nothing; the transpiled fixtures byte-pinned | S |
 | S4 | `WebRealizer.LowerNodeKind` → `WebLoweringVisitor`, four partial files. The dispatch leaves the pin. | `ComponentParityFixtureTests`, `PrimitiveValueFixtureTests`, `MarkerParityTests`, the SSR suites, and #121's `SurfaceSsrTests` | M |
 | — | Audit step 4 first: hoist the five layout questions onto the vocabulary, so S5's arms shrink. | `FlexLayoutTests`, `LayoutCompositeTests`, the goldens | M |
 | S5 | `LayoutEngine.MeasureCore` → `MeasureVisitor` with `MeasureState`. The dispatch leaves the pin. | `FlexLayoutTests`, `LayoutCompositeTests`, `FlexBasisWrapLayoutTests`, 91 goldens, `PerfHarnessTests` | M |
