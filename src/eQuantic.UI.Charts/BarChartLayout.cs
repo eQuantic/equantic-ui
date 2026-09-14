@@ -208,8 +208,16 @@ public static class BarChartLayout
             // of question — it exists to forgive a pointer, so the edge it was inflated to is part
             // of the target. Written out rather than reaching for the neighbouring word. Found in
             // review of the refactor that had reached for it.
-            var hit = bars[i].Box.Inflate(HitSlack);
-            if (x >= hit.Left && x <= hit.Right && y >= hit.Top && y <= hit.Bottom)
+            //
+            // And the slack goes on the COMPARISON rather than into an inflated box, because this
+            // loop runs on every pointer move. Here a `Rect` is a struct and `Inflate` costs
+            // nothing; in the twin it is a class, so the same line allocates one object per bar per
+            // move. The box still reads through its own edges — what a hot loop must not do is
+            // BUILD a vocabulary value per iteration, where the subject pays stack and the twin
+            // pays heap.
+            var box = bars[i].Box;
+            if (x >= box.Left - HitSlack && x <= box.Right + HitSlack &&
+                y >= box.Top - HitSlack && y <= box.Bottom + HitSlack)
                 return i;
         }
 

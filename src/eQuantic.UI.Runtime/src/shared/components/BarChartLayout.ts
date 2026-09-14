@@ -109,8 +109,8 @@ export class BarChartLayout {
     static hitTest(geometry: BarChartGeometry, x: number, y: number) {
         let bars = geometry.bars;
         for (let i = 0; i < bars.length; i++) {
-            let hit = bars[i].box.inflate(BarChartLayout.hitSlack);
-            if (x >= hit.left && x <= hit.right && y >= hit.top && y <= hit.bottom) return i;
+            let box = bars[i].box;
+            if (x >= Math.fround(box.left - BarChartLayout.hitSlack) && x <= Math.fround(box.right + BarChartLayout.hitSlack) && y >= Math.fround(box.top - BarChartLayout.hitSlack) && y <= Math.fround(box.bottom + BarChartLayout.hitSlack)) return i;
         }
         return -1;
     }
