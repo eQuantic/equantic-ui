@@ -380,6 +380,20 @@ one question, and the one with a type is the one the other two cannot reference.
 `SemanticRole` and `SemanticNode` to `Primitives`, per-target bridges staying where they are — blocked
 only by the `Rect` of section 4.
 
+**And a truncated line ends four different ways.** `ITextMeasurer.Measure` promises text "truncated
+to `maxLines` with a trailing ellipsis". The web draws one (`text-overflow: ellipsis`, and the
+multi-line clamp). Android's measurer appends `…` itself. CoreText and DirectWrite cut the line and
+draw nothing, and CoreText's class doc calls that a v1 fence — a decision about every target's text,
+written in one target's file, where the neutral side never reads it. The one bit that would let the
+realizer draw the mark uniformly for all three, `MeasuredLine.Ellipsized`, is written by every
+measurer and read by no product code: its only readers are three tests, one of which asserts "the
+shrunk text ellipsizes" against a measurer that does not. *How does Flutter solve it?* `TextPainter`
+owns `ellipsis` and `maxLines` in the neutral `painting` layer; the platform shaper only measures.
+Ours is the same move: the realizer appends the mark when `Ellipsized` says a line was cut, the three
+measurers stop deciding, and the contract stops promising what one of them does. Same family as
+`Text.Align` (#103) — the property one realizer honours and another drops in silence — found by the
+IDE consumer's session and measured here.
+
 ---
 
 ## 8. The handoff and the code, in step
@@ -509,16 +523,19 @@ makes the rest safe.
    decision
 6. **Two of everything at the web seam**: `RouteData` → `RouteValues`, `RenderContext`'s provider →
    `CapabilityScope`, one link policy. — S
-7. **The adapter's shadow**: the compile-time evaluator, `CssEmitter`, `StyleClass`, the four
+7. **The truncation mark**: the realizer draws `…` when `MeasuredLine.Ellipsized` says a line was cut
+   (Flutter: `TextPainter.ellipsis`), the three measurers stop appending or fencing it, the contract
+   says what happens, and the test that asserts an ellipsis asserts a real one. — S
+8. **The adapter's shadow**: the compile-time evaluator, `CssEmitter`, `StyleClass`, the four
    documents; `Tokens.handoff.cs`; the two finished June plans; `IComponent.cs` prose. — S, after
    Edgar confirms `ClassBuilder` stays the escape hatch
-8. **One transpiled set** in the runtime. — S
-9. **Generate the vocabulary twins with eqc**: measure what stops it, close that, then `vocabulary.ts`,
+9. **One transpiled set** in the runtime. — S
+10. **Generate the vocabulary twins with eqc**: measure what stops it, close that, then `vocabulary.ts`,
    `value-types.ts`, `instance-store.ts` and `component-boundary.ts` become emitted. — L
-10. **`PhotonHost` split** (Flutter: seven bindings): `FocusManager`, a `TextEditingSession` per
+11. **`PhotonHost` split** (Flutter: seven bindings): `FocusManager`, a `TextEditingSession` per
     surface kind, a `GestureRouter`, and `IPhotonHost` as the shell contract; the server's shell moves
     to a writer. — L
-11. **The Element decision** — the one move that closes `InheritedWidget`, `didChangeDependencies`,
+12. **The Element decision** — the one move that closes `InheritedWidget`, `didChangeDependencies`,
     dependency-driven rebuild and string identity together. A design document of its own, with
     section 5 as its inventory. — L, and a decision first
 

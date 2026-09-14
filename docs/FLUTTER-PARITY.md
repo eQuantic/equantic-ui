@@ -22,7 +22,7 @@ same question: this file asks *how does Flutter solve this?*, that one asks *whe
 structure weak?*. Both are measured rather than recalled, and both are pinned.
 
 Measured against the tree at the time of writing; every claim below was grepped, not recalled — and
-kept true by `FlutterParityPinTests`, which reads this file and probes all 63 rows. A SAME,
+kept true by `FlutterParityPinTests`, which reads this file and probes all 64 rows. A SAME,
 DIFFERENT or PARTIAL row must be findable in the public surface; a GAP row must still be missing;
 and a row added without a probe fails the build. So the audit cannot rot, cannot gain unchecked
 prose, and cannot go on claiming an absence that has ended.
@@ -62,6 +62,7 @@ prose, and cannot go on claiming an absence that has ended.
 | Subclassing `RenderBox` | — | **DIFFERENT by design.** The layout engine is closed; the vocabulary is the extension point. A consumer composes nodes rather than implementing `performLayout`, which is what keeps one component correct on both realizers. |
 | `CustomPaint` / `CustomPainter` | `Canvas` + `ICanvasPainter` | **SAME**, and the painter already carries the box it was given. |
 | `Canvas`, `Paint`, `Path`, shaders | The Photon engine's SDF shaders (Slang → Metal/SPIR-V) | **DIFFERENT.** Shaders are the ENGINE's, not an API. A consumer gets `Canvas` primitives; there is no `FragmentProgram`. Deliberate: a consumer shader would have to exist twice and match. |
+| `TextOverflow.ellipsis` on `Text`, drawn by `TextPainter` in the neutral `painting` layer | `Text.MaxLines`; the mark is drawn by CSS on the web, appended by Android's measurer, and not drawn at all by CoreText or DirectWrite | **PARTIAL, and inconsistent by target.** The measurer contract promises an ellipsis, `MeasuredLine.Ellipsized` reports every cut, and no product code reads it — three tests do, one asserting a mark the platform never draws. |
 
 ---
 
