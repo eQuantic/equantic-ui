@@ -123,15 +123,18 @@ let generation = 0;
  *
  * <para>
  * A second chance is booked rather than assumed, because there may be no second measurement at all:
- * this publishes after a render PASS, and a settled page has none. So the re-check rides the
- * document's own `load`, which is the event that says the layout the browser jumped against is
- * final.
+ * this publishes after a render PASS, and a settled page has none. That second chance is a WINDOW
+ * of frames, not an event — an earlier version of this file waited for `load`, on the reasoning
+ * that `load` means the layout is final, and the measurement two paragraphs up is what disproved
+ * it. Nothing names the moment of the jump, so the watch looks every frame until the target lands
+ * in the band, bounded by a frame budget once the document completes and by a wall clock whatever
+ * it does.
  * </para>
  */
 function realignColdLoad(offset: number): void {
   if (coldLoadHandled) return;
   // Only a URL that ASKS for an element has anything to correct, and this is what keeps every other
-  // page from booking a `load` listener it will never use.
+  // page from booking a watch it will never use.
   if (typeof location === 'undefined' || location.hash.length <= 1) return;
 
   // A zero offset is a reason to come BACK, not a reason to stop. Chrome that is not there yet
@@ -154,8 +157,9 @@ function realignColdLoad(offset: number): void {
 }
 
 /**
- * How many frames the correction keeps WATCHING after the document has loaded. The browser performs
- * its fragment jump when layout allows, which is not a moment any event names.
+ * How many frames the correction keeps watching ONCE THE DOCUMENT HAS LOADED. The browser performs
+ * its fragment jump when layout allows, which is not a moment any event names — so this counts
+ * frames after the page has settled rather than waiting for a signal that does not exist.
  */
 const FramesAfterLoad = 20;
 
@@ -214,6 +218,17 @@ function bookRecheck(): void {
 
   const tick = (): void => {
     if (booked !== generation || coldLoadHandled) return;
+
+    // THE DEADLINE IS CHECKED BEFORE THE CORRECTION, not after. A tick can arrive late — rAF
+    // resuming when a background tab returns, a backstop timer the event loop got to slowly — and
+    // correcting on that tick is the yank this whole bound exists to prevent, performed by the
+    // instrument meant to stop it. Found in review, and it is the order I had said out loud in an
+    // earlier round of this same PR and then did not write.
+    if (now() >= deadline) {
+      coldLoadHandled = true;
+      return;
+    }
+
     // MEASURED AGAIN, never the number that booked this. The layout was not final — that is why we
     // are here — and the chrome is part of that layout: a bar that wraps at a narrow width, or grows
     // when a webfont finally arrives, is taller later than at first paint.
@@ -222,15 +237,9 @@ function bookRecheck(): void {
     realignColdLoad(measured);
     if (coldLoadHandled) return;
 
-    // The budget only starts running once the document has LOADED. Before that the browser may
-    // still have a jump to perform, and counting frames against it would be the same bet on a
-    // moment that this window exists to stop making.
+    // The frame budget can stay AFTER the correction: it only decides when to stop watching a page
+    // that is behaving, and a tick inside the deadline is one this watch is entitled to act on.
     if (document.readyState === 'complete' && --framesLeft <= 0) {
-      coldLoadHandled = true;
-      return;
-    }
-    // …and the wall clock stops it regardless, for the page that never completes at all.
-    if (now() >= deadline) {
       coldLoadHandled = true;
       return;
     }

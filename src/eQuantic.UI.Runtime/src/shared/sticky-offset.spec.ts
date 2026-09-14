@@ -666,6 +666,37 @@ describe('the first measurement corrects a cold load that landed under the chrom
     }
   });
 
+  /**
+   * A tick that arrives AFTER the deadline corrects nothing.
+   *
+   * <para>
+   * Ticks can be late: rAF resumes when a background tab returns, a backstop timer runs when the
+   * event loop gets to it. Correcting on one of those is the yank the bound exists to prevent,
+   * performed by the instrument meant to stop it — so the deadline is checked BEFORE the
+   * correction, not after. Found in review, and it is the order I had already described in an
+   * earlier round of this PR and then not written.
+   * </para>
+   */
+  it('a tick arriving past the deadline corrects nothing', () => {
+    stillLoading();
+    const bar = chrome(65);
+    const target = bookmark('rights', 3992); // out of the band while the watch is legitimate
+    window.history.replaceState(null, '', '/probe#rights');
+
+    publishAnchorOffset();
+    frame(3);
+    expect(target.seen()).toBe(0);
+
+    // The tab was hidden for a while. The reader comes back having scrolled the target into the
+    // band by hand, and the frame that was queued finally runs.
+    clock += 10_001;
+    target.moveTo(10);
+    frame();
+
+    expect(target.seen()).toBe(0);
+    bar.remove();
+  });
+
   it('corrects once, so a later pass never yanks the page back', () => {
     const bar = chrome(64);
     const target = bookmark('rights', 0);
