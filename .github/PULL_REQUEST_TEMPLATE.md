@@ -21,6 +21,7 @@ Title: `emoji type: description`, in English — ✨ feat · 🐛 fix · 📝 do
 ## Checklist
 
 - [ ] `dotnet test` on the affected test projects, and `dotnet build src/eQuantic.UI.Runtime -t:TestRuntime` if TypeScript changed (the embedded Bun runs `tsc`, then `vitest run`)
+- [ ] This PR's checks include a run named **CI** with jobs in it (`build-packages`, `test (ubuntu-latest)`, `test (windows-latest)`). A workflow whose expression does not parse creates zero jobs and the PR still reads mergeable; GitHub then lists the workflow by its file path instead of `CI`
 - [ ] `dotnet build samples/DefaultUIDashboard` (and `PhotonDesktop` / `WalletMobile` if the native track changed) — CI does not build the samples
 - [ ] A broken contract has a line in the migration notes (we are in preview: break freely, hide nothing)
 - [ ] Wiki pages touched in English AND Portuguese, in the same commit of the [wiki repository](https://github.com/eQuantic/equantic-ui/wiki) (the twin lives at `locale/pt-BR/<Page>-pt-BR.md` there)
