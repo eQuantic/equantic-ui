@@ -45,4 +45,7 @@ public sealed class InView : VisualNode
     /// it; a table of contents usually wants a heading to count only once it is properly on screen.
     /// </summary>
     public float Threshold { get; init; }
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }

@@ -104,6 +104,15 @@ public abstract class UiComponent : VisualNode
     /// <summary>All components share one wire kind — realizers expand them via <see cref="Build"/>.</summary>
     public sealed override string NodeKind => "component";
 
+    /// <summary>
+    /// SEALED, and the one method in the vocabulary that is. An app's own components are unbounded,
+    /// so the visitor answers "a component" once — a subclass that could override this would be
+    /// asking to be dispatched as itself, which is the thing that cannot be enumerated. It is also
+    /// why eqc never meets an `Accept` in an app's source.
+    /// </summary>
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
+
     /// <summary>Produces this component's subtree. Must be PURE over component state + context —
     /// it may run more than once per frame (measurement) and on every invalidation.</summary>
     public abstract VisualNode Build(ComponentContext context);

@@ -43,4 +43,7 @@ public sealed class InFlow : VisualNode
         get => Scoped.Value;
         set => Scoped.Value = value;
     }
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }

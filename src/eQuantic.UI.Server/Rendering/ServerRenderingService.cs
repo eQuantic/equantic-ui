@@ -129,12 +129,10 @@ public class ServerRenderingService : IServerRenderingService
             // BEFORE anything the page runs. The prefetch is the first thing that needs the route:
             // a page on /docs/{slug} loads BY the slug, so a route arriving after it would be a
             // route arriving after the only question it was there to answer.
-            RenderContext.SetScopedServiceProvider(context.RequestServices);
-            var routeData = BuildRouteData(context);
-            RenderContext.SetScopedRoute(routeData);
-            // The same route in a shape with no target in it — a write-once page reads
-            // context.Route.Param("slug") instead of reaching for ASP.NET (and losing Photon).
-            Primitives.RouteValues.Current = new Primitives.RouteValues(routeData.Params, routeData.QueryValues);
+            // ONE route, in the shape with no target in it — a write-once page reads
+            // context.Route.Param("slug") instead of reaching for ASP.NET (and losing Photon), and
+            // the web's `context.Route` is this same value rather than a copy of it.
+            Primitives.RouteValues.Current = BuildRouteValues(context);
             // Where a component in the MIDDLE of the tree finds a capability — the REQUEST's
             // container, so a scoped one resolves and a page's own registrations win.
             Primitives.CapabilityScope.Current = context.RequestServices.GetService;
@@ -247,8 +245,6 @@ public class ServerRenderingService : IServerRenderingService
             }
             finally
             {
-                RenderContext.SetScopedServiceProvider(null);
-                RenderContext.SetScopedRoute(null);
                 RenderContext.SetLinkPolicy(null);
                 Primitives.RouteValues.ClearCurrent();
                 Primitives.CapabilityScope.Current = null;
@@ -363,10 +359,11 @@ public class ServerRenderingService : IServerRenderingService
     }
 
     /// <summary>
-    /// Builds the per-request <see cref="RouteData"/> from the HTTP route values and query string, so
-    /// SSR sees the same parameters the client router will (e.g. <c>id</c> in <c>/users/{id}</c>).
+    /// Builds the per-request <see cref="Primitives.RouteValues"/> from the HTTP route values and
+    /// query string, so SSR sees the same parameters the client router will (e.g. <c>id</c> in
+    /// <c>/users/{id}</c>).
     /// </summary>
-    private static RouteData BuildRouteData(HttpContext context)
+    private static Primitives.RouteValues BuildRouteValues(HttpContext context)
     {
         var routeParams = new Dictionary<string, string>();
         foreach (var rv in context.Request.RouteValues)
@@ -375,13 +372,18 @@ public class ServerRenderingService : IServerRenderingService
                 routeParams[rv.Key] = rv.Value.ToString() ?? string.Empty;
         }
 
+        // A REPEATED key means its FIRST value — `?tag=a&tag=b` is `a`. `StringValues.ToString()`
+        // comma-JOINS ("a,b"), which is ASP.NET's own spelling and not a thing a page asking for
+        // `Query("tag")` can use; the client answered the first value, from `URLSearchParams.get`.
+        // Two sides, two answers, neither written down. This is the one both keep now, and
+        // `RouteValuesQueryPolicyTests` holds them to it. Found in review.
         var query = new Dictionary<string, string>();
         foreach (var q in context.Request.Query)
         {
-            query[q.Key] = q.Value.ToString();
+            query[q.Key] = q.Value.Count > 0 ? q.Value[0] ?? string.Empty : string.Empty;
         }
 
-        return new RouteData(routeParams, query);
+        return new Primitives.RouteValues(routeParams, query);
     }
 
     /// <summary>

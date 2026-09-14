@@ -42,8 +42,8 @@ export interface RenderContext {
    * `context.InFlow`). Only the overlays answer it.
    */
   inFlow?: boolean;
-  /** Active route data — parameters + query string (C# `context.Route`). */
-  route?: import('../router/current-route').RouteData;
+  /** What the route said — parameters + query string (C# `context.Route`). */
+  route?: import('../shared/route-values').RouteValues;
   /** The active Photon theme (C# `context.Theme`) — what transpiled SHARED components read. The import
    * is TYPE-ONLY (erased at compile time), so core/types carries the vocabulary's types without taking
    * any runtime dependency on it — the constraint the previous `unknown` was protecting. */

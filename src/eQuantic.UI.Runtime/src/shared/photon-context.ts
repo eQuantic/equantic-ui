@@ -6,7 +6,7 @@
 
 import type { LoweringContext } from './lowering';
 import { resolveService } from '../utils/services';
-import { getCurrentRoute, type RouteData } from '../router/current-route';
+import { RouteValues } from './route-values';
 import { cssFontWeight, isWellFormedFace, type AppTheme } from './value-types';
 import type { TypeStyleValue } from './nodes';
 import type { DensityValue } from './enums.generated';
@@ -36,8 +36,8 @@ export class ComponentContext {
    * Reads the ambient current route, which the router updates before mounting a page and boot seeds
    * from the initial URL: the same values the server built with, so a param page hydrates matching.
    */
-  get route(): RouteData {
-    return getCurrentRoute();
+  get route(): RouteValues {
+    return RouteValues.current;
   }
 
   /**

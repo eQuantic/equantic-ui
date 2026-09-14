@@ -1,39 +1,33 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
+using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Web;
 
 /// <summary>
-/// Context available during component rendering
+/// What a component can ask about the render it is in, on the web.
+///
+/// <para>
+/// It used to be a second copy of most of that. A `RouteData` behind its own `AsyncLocal`, a
+/// service provider behind another plus a process-wide fallback, and a per-instance service
+/// dictionary — all answering questions `RouteValues` and `CapabilityScope` answer for every
+/// target, with `ServerRenderingService` arming both sets on every request. The Core dissolution
+/// (#83) moved the write-once half down and left this half where it was.
+/// </para>
+///
+/// <para>
+/// What is left is the one thing that is genuinely the web's: the LINK POLICY. Everything else
+/// here reads the vocabulary's ambient rather than a copy of it.
+/// </para>
 /// </summary>
 public class RenderContext
 {
-    private readonly Dictionary<Type, object> _services = new();
-
-    private static readonly AsyncLocal<IServiceProvider?> _asyncLocalProvider = new();
-    private static IServiceProvider? _globalProvider;
-
-    private static readonly AsyncLocal<RouteData?> _scopedRoute = new();
-    private static readonly RouteData _emptyRoute = new();
-    private RouteData? _route;
-
     /// <summary>
-    /// Active route data — matched parameters + query string (e.g. <c>context.Route.Param("id")</c>).
-    /// On the server it comes from the per-request scoped route (<see cref="SetScopedRoute"/>); never
-    /// null. The compiler transpiles this to the runtime's <c>context.route</c>.
+    /// What the ROUTE said — matched parameters and the query string
+    /// (<c>context.Route.Param("id")</c>), transpiled to the runtime's <c>context.route</c>.
+    /// It is <see cref="RouteValues.Current"/> itself, never a copy.
     /// </summary>
-    public RouteData Route
-    {
-        get => _route ?? _scopedRoute.Value ?? _emptyRoute;
-        set => _route = value;
-    }
-
-    /// <summary>
-    /// Sets the route data for the current async context (SSR), thread-safe via AsyncLocal so concurrent
-    /// requests don't interfere — mirroring <see cref="SetScopedServiceProvider"/>.
-    /// </summary>
-    public static void SetScopedRoute(RouteData? route) => _scopedRoute.Value = route;
+    public RouteValues Route => RouteValues.Current;
 
     private static readonly AsyncLocal<Func<string, string>?> _linkPolicy = new();
 
@@ -46,8 +40,14 @@ public class RenderContext
     /// link works, it just leaves the language behind.
     /// </para>
     /// <para>
-    /// AsyncLocal, like the route and the provider beside it: two requests rendering concurrently
-    /// in different languages must not see each other's prefix.
+    /// It stays on the WEB rather than moving down with the route and the resolver, because it is
+    /// not neutral: the policy is installed by the server's culture routes, and Photon's realizer
+    /// reads <c>Link.Destination</c> raw. That is a fence rather than a gap today — nothing arms a
+    /// policy on that target — but the day one becomes neutral, the native realizer owes it too.
+    /// </para>
+    /// <para>
+    /// AsyncLocal, like the ambients it sits beside: two requests rendering concurrently in
+    /// different languages must not see each other's prefix.
     /// </para>
     /// </summary>
     public static Func<string, string>? LinkPolicy => _linkPolicy.Value;
@@ -68,90 +68,23 @@ public class RenderContext
             : destination;
 
     /// <summary>
-    /// Service provider for the current async context.
-    /// Uses AsyncLocal for thread-safe per-request isolation during SSR.
-    /// Falls back to the global provider set at startup.
+    /// A capability, for code that has a context — <c>context.GetService&lt;ITextClipboard&gt;()</c>.
+    /// Null when this target does not have it.
+    /// <para>
+    /// It is <see cref="CapabilityScope"/> and nothing else. The `AsyncLocal` provider, the global
+    /// fallback and the per-instance dictionary that used to live here answered the same question:
+    /// nothing in the tree ever registered into the dictionary, and nothing ever set the global.
+    /// </para>
+    /// <para>
+    /// ONE accessor, with the SAME signature as <see cref="ComponentContext.GetService{T}"/> — and
+    /// that is a contract with the transpiler, not a tidiness choice. `ServiceProviderStrategy`
+    /// recognizes `GetService` and `GetRequiredService`; a `TryGetService` beside it fell through to
+    /// an ordinary invocation and emitted `context.tryGetService(...)`, which the runtime's
+    /// `RenderContext` has never had. And a nullable return is what the twin answers
+    /// (`getService(key): T | undefined`), so a version here that THREW would have made the two
+    /// sides disagree about an absent capability: SSR fails the request, the client renders on.
+    /// Found in review.
+    /// </para>
     /// </summary>
-    public static IServiceProvider? ServiceProvider
-    {
-        get => _asyncLocalProvider.Value ?? _globalProvider;
-        set
-        {
-            // If called from an async context (SSR), use AsyncLocal
-            // Otherwise, set the global fallback
-            if (SynchronizationContext.Current != null || _globalProvider != null)
-            {
-                _asyncLocalProvider.Value = value;
-            }
-            else
-            {
-                _globalProvider = value;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Sets the global (application-wide) service provider.
-    /// Use this at startup (e.g., Program.cs). Thread-safe for reads.
-    /// </summary>
-    public static void SetGlobalServiceProvider(IServiceProvider? provider)
-    {
-        _globalProvider = provider;
-    }
-
-    /// <summary>
-    /// Sets the service provider for the current async context only.
-    /// Thread-safe: uses AsyncLocal so concurrent requests don't interfere.
-    /// </summary>
-    public static void SetScopedServiceProvider(IServiceProvider? provider)
-    {
-        _asyncLocalProvider.Value = provider;
-    }
-
-    /// <summary>
-    /// Register a service for dependency injection
-    /// </summary>
-    public void RegisterService<T>(T service) where T : notnull
-    {
-        _services[typeof(T)] = service;
-    }
-    
-    /// <summary>
-    /// Get a registered service
-    /// </summary>
-    public T GetService<T>() where T : class
-    {
-        if (_services.TryGetValue(typeof(T), out var service))
-        {
-            return (T)service;
-        }
-
-        // Fallback to global provider
-        if (ServiceProvider != null)
-        {
-            var fallback = ServiceProvider.GetService(typeof(T)) as T;
-            if (fallback != null) return fallback;
-        }
-
-        throw new InvalidOperationException($"Service {typeof(T).Name} not registered");
-    }
-    
-    /// <summary>
-    /// Try to get a registered service
-    /// </summary>
-    public T? TryGetService<T>() where T : class
-    {
-        if (_services.TryGetValue(typeof(T), out var service))
-        {
-            return (T)service;
-        }
-        
-        // Fallback to global provider
-        if (ServiceProvider != null)
-        {
-            return ServiceProvider.GetService(typeof(T)) as T;
-        }
-
-        return null;
-    }
+    public T? GetService<T>() where T : class => CapabilityScope.Resolve<T>();
 }

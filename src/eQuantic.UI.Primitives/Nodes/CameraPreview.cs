@@ -35,4 +35,7 @@ public sealed class CameraPreview : VisualNode
 
     /// <summary>What assistive tech reads for a surface it cannot describe. Empty = decorative.</summary>
     public string Label { get; init; } = "";
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }

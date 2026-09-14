@@ -45,9 +45,35 @@ namespace eQuantic.UI.Compiler.CodeGen.Extensions;
 /// </summary>
 internal static class HostOnlySymbolExtensions
 {
-    /// <summary>Carries <c>[ServerOnly]</c> itself — a type or a single member.</summary>
-    internal static bool IsHostOnly(this ISymbol symbol) =>
-        symbol.GetAttributes().Any(attribute => attribute.AttributeClass?.Name == "ServerOnlyAttribute");
+    /// <summary>
+    /// Carries <c>[ServerOnly]</c> itself — a type, a single member, or something it OVERRIDES.
+    /// <para>
+    /// The override walk is not a convenience. A call resolves to the symbol on the RECEIVER's
+    /// type, so `node.Accept(…)` on a `Text` binds to `Text.Accept` and never sees the attribute on
+    /// `VisualNode.Accept` — the fence would have to be repeated on all 39 implementations, and the
+    /// fortieth would forget. One declaration, and the overrides inherit it.
+    /// </para>
+    /// </summary>
+    internal static bool IsHostOnly(this ISymbol symbol)
+    {
+        for (var current = symbol; current is not null; current = Overridden(current))
+            if (current.GetAttributes().Any(a => a.AttributeClass?.Name == "ServerOnlyAttribute"))
+                return true;
+        return false;
+
+        // ORIGINAL DEFINITION first. At a call site a generic method is the CONSTRUCTED symbol
+        // (`Accept<int, int>`), and a constructed method overrides nothing — `OverriddenMethod` is
+        // null there, so the walk stopped at the first step and the fence passed. Measured: with a
+        // `VisualNode` receiver it reported, with a `Text` receiver it did not, and the only
+        // difference is which symbol the call binds to.
+        static ISymbol? Overridden(ISymbol symbol) => symbol.OriginalDefinition switch
+        {
+            IMethodSymbol method => method.OverriddenMethod,
+            IPropertySymbol property => property.OverriddenProperty,
+            IEventSymbol @event => @event.OverriddenEvent,
+            _ => null,
+        };
+    }
 
     /// <summary>
     /// Reports and returns true when <paramref name="symbol"/> may not be named from client code.

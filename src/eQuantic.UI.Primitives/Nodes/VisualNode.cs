@@ -11,6 +11,38 @@ namespace eQuantic.UI.Primitives;
 /// </summary>
 public abstract class VisualNode
 {
+    /// <summary>
+    /// CLOSED BY CONSTRUCTION. The vocabulary is a fixed set, and <see cref="IVisualNodeVisitor{TState,TResult}"/>
+    /// is only exhaustive while nothing outside this assembly can add to it — a public constructor
+    /// here is an open door that no test can shut afterwards, because the subtype would live in
+    /// somebody else's tree.
+    /// <para>
+    /// The ONE seam apps use is <see cref="UiComponent"/>, whose constructor stays <c>protected</c>
+    /// on purpose: an app's components are unbounded, which is exactly why the visitor answers
+    /// "a component" once and asks it to build.
+    /// </para>
+    /// </summary>
+    private protected VisualNode() { }
+
+    /// <summary>
+    /// Hands this node to a visitor's method for its own type — the vocabulary's dispatch, and the
+    /// only one the COMPILER checks. <typeparamref name="TState"/> travels down, <typeparamref name="TResult"/>
+    /// comes back up, and a pass that wants neither says <see cref="Nothing"/>.
+    /// </summary>
+    /// <remarks>
+    /// HOST ONLY. A component BUILDS a tree; walking one is what a realizer, a layout pass or a
+    /// semantics walk does, and the runtime ships no `accept` on its own `VisualNode`. Without the
+    /// fence a page calling this compiled and emitted `node.accept(...)` — measured — which throws
+    /// in the browser on a method that is not there.
+    /// <para>
+    /// Declared once, on the abstract: the fence follows an OVERRIDE to what it overrides, so the
+    /// 39 one-line implementations carry it without saying so and a fortieth cannot forget.
+    /// </para>
+    /// </remarks>
+    [ServerOnly]
+    public abstract TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state);
+
     /// <summary>Reconciler identity across rebuilds (keyed diffing) — same contract as the web SDK.</summary>
     public string? Key { get; init; }
 
@@ -150,6 +182,9 @@ public sealed class Box : VisualNode
 
     public BoxStyle Style { get; init; }
     public VisualNode? Child { get; init; }
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>
@@ -556,6 +591,9 @@ public sealed class LoopMotion : VisualNode
     /// overlays like the Skeleton shimmer — spec B16's Reduce Motion IS the plain placeholder);
     /// <c>false</c> renders it at its natural position (an indeterminate bar keeps a still segment).</summary>
     public bool HideAtRest { get; init; }
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>
@@ -611,6 +649,9 @@ public sealed class Overlay : VisualNode
     // filter) traps it — the layer then stacks inside that ancestor instead of over the page. Keep
     // Overlays out of such subtrees (a Column is layout-neutral and safe) until they portal to the
     // document root. Native has no such rule: overlay layers queue against the viewport.
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>Where an <see cref="Anchored"/> panel attaches relative to its anchor (wave 3 v1: the
@@ -760,6 +801,9 @@ public sealed class Anchored : VisualNode
     /// the LAST panel content while closed — an emptied panel would collapse mid-fade.
     /// </summary>
     public TransitionSpec? Motion { get; init; }
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>
@@ -785,6 +829,9 @@ public sealed class Hoverable : VisualNode
 
     /// <summary><c>true</c> = pointer entered, <c>false</c> = pointer left.</summary>
     public Action<bool> OnChanged { get; init; }
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>How a <see cref="Presence"/> subtree ENTERS when it first appears (spec §06).</summary>
@@ -821,6 +868,9 @@ public sealed class Presence : VisualNode
 
     public VisualNode Child { get; init; }
     public PresenceMotion Enter { get; init; }
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>The axis a <see cref="Draggable"/> follows. One at a time: a gesture that tracks both
@@ -888,6 +938,9 @@ public sealed class Draggable : VisualNode
     /// would move it twice.
     /// </summary>
     public bool Follows { get; init; } = true;
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>
@@ -915,6 +968,9 @@ public sealed class DragDismiss : VisualNode
 
     public VisualNode Child { get; init; }
     public Action? OnDismiss { get; init; }
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>
@@ -968,6 +1024,9 @@ public sealed class Link : VisualNode
     /// </para>
     /// </summary>
     public bool Current { get; init; }
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>
@@ -1041,6 +1100,9 @@ public sealed class TextEntry : VisualNode
     /// so a form's geometry matches before the caret/IME stack lands.
     /// </summary>
     public int Lines { get; init; } = 1;
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>Modifier keys of a <see cref="KeyChord"/>. <see cref="Command"/> is the PLATFORM's
@@ -1118,6 +1180,9 @@ public sealed class Adjustable : VisualNode
     /// <summary>The ARIA identity of the web twin. The native side treats every role the same —
     /// one stop, arrows adjust.</summary>
     public AdjustableRole Role { get; init; } = AdjustableRole.Slider;
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>Which WAY a <see cref="Navigable"/> was asked to move. The abstract layer names the
@@ -1209,6 +1274,9 @@ public sealed class Navigable : VisualNode
     /// <c>aria-activedescendant</c> at it, so a screen reader announces the cell the arrows moved
     /// to WITHOUT the focus ever leaving the composite's one stop.</summary>
     public (int Row, int Item)? ActiveCell { get; init; }
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>
@@ -1240,6 +1308,9 @@ public sealed class Shortcut : VisualNode
     public VisualNode Child { get; init; }
     public KeyChord Chord { get; init; }
     public Action OnPressed { get; init; }
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>
@@ -1315,6 +1386,9 @@ public sealed class Pressable : VisualNode
     /// the semantics tree carries no checked bit yet; the role joins its expansion.
     /// </summary>
     public PressableRole Role { get; init; }
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>The composite-item roles a <see cref="Pressable"/> can take. Grows alongside the
@@ -1604,6 +1678,9 @@ public sealed class Text : VisualNode
     /// <c>transition-colors</c> on nav labels and links — a state swap recolors the text and the
     /// change should glide, not flip). <c>null</c> = snap.</summary>
     public TransitionSpec? Transition { get; init; }
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>
@@ -1614,6 +1691,11 @@ public sealed class Text : VisualNode
 /// </summary>
 public abstract class FlexNode : VisualNode, IEnumerable<VisualNode>
 {
+    /// <summary>A public abstract intermediate INHERITS an accessible constructor, so closing
+    /// <see cref="VisualNode"/> alone left this door open — a second `FlexNode` could be declared
+    /// anywhere. Found in review of the closure, not by reading the base class.</summary>
+    private protected FlexNode() { }
+
     private readonly List<VisualNode> _children = new();
 
     public float Gap { get; init; }
@@ -1675,6 +1757,9 @@ public sealed class Row : FlexNode
     }
 
     public override CrossAlign Cross { get; init; } = CrossAlign.Center;
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>Vertical flex (spec A2). Cross defaults to Stretch (full-width children).</summary>
@@ -1697,6 +1782,9 @@ public sealed class Column : FlexNode
     }
 
     public override CrossAlign Cross { get; init; } = CrossAlign.Stretch;
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>Marks a flex child that shares LEFTOVER main-axis space by weight (spec A2 <c>Flex(n)</c>).</summary>
@@ -1740,6 +1828,9 @@ public sealed class Flexible : VisualNode
     /// regression so the change SNAPS (honesty over smoothness). Web = a flex-grow transition;
     /// native joins with the transition animator (until then weights snap, the documented fence).</summary>
     public bool AnimateChanges { get; init; }
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>
@@ -1767,6 +1858,9 @@ public sealed class Spacer : VisualNode
     public bool AnimateChanges { get; init; }
 
     public static Spacer Fixed(float length) => new(length);
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>Nine-position alignment for <see cref="Stack"/> children (spec A3).</summary>
@@ -1825,6 +1919,9 @@ public sealed class Grid : VisualNode, IEnumerable<VisualNode>
     public void Add(VisualNode child) => _children.Add(child);
     public IEnumerator<VisualNode> GetEnumerator() => _children.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => _children.GetEnumerator();
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>Spec S6 — the Material window size classes: the ONLY responsive vocabulary app code
@@ -1911,6 +2008,9 @@ public sealed class AdaptiveNode : VisualNode
         WindowSizeClass.Medium => Medium ?? Compact,
         _ => Compact,
     };
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>
@@ -1931,6 +2031,9 @@ public sealed class Stack : VisualNode
     public List<VisualNode> Children { get; } = new();
 
     public void Add(VisualNode child) => Children.Add(child);
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>
@@ -1960,6 +2063,9 @@ public sealed class Positioned : VisualNode
     /// <summary>Spec S7: explicit stacking inside the Stack — higher paints (and hit-tests) on top.
     /// Equal values keep declaration order (stable). 0 = flow order.</summary>
     public int Layer { get; init; }
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>Scroll axis (spec A6).</summary>
@@ -2020,6 +2126,9 @@ public sealed class SafeArea : VisualNode
 
     /// <summary>Added to whatever the host reports — a bar's own padding on top of the inset.</summary>
     public EdgeInsets Extra { get; init; }
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>
@@ -2063,6 +2172,9 @@ public sealed class Pinned : VisualNode
     /// <summary>Spec S6: animates the swap INTO and out of <see cref="ScrolledStyle"/> — without it
     /// the bar flips from transparent to veiled in one frame. <c>null</c> = snap.</summary>
     public TransitionSpec? Transition { get; init; }
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>
@@ -2102,6 +2214,9 @@ public sealed class ScrollView : VisualNode
     /// <summary>How tall the viewport turned out to be, reported once it is known. A window over a
     /// long document is (offset, height) and neither is knowable before layout.</summary>
     public Action<float>? OnViewportChanged { get; init; }
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>
@@ -2167,6 +2282,9 @@ public sealed class CodeSurface : VisualNode
     /// </summary>
     public ColorToken? CaretColor { get; init; }
     public ColorToken? SelectionColor { get; init; }
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>
@@ -2209,5 +2327,8 @@ public sealed class SheetSurface : VisualNode
 
     /// <summary>Accessible name (role: grid).</summary>
     public string? Label { get; init; }
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 

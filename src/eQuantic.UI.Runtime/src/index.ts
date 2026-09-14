@@ -234,13 +234,7 @@ export type {
 } from './router/router';
 export { matchRoute, matchPattern } from './router/route-table';
 export type { RouteEntry, RouteMatch } from './router/route-table';
-export {
-  routeData,
-  getCurrentRoute,
-  setCurrentRoute,
-  setCurrentRouteFrom,
-} from './router/current-route';
-export type { RouteData } from './router/current-route';
+export { getCurrentRoute, setCurrentRoute, setCurrentRouteFrom } from './router/current-route';
 export { Reconciler, getReconciler, resetReconciler } from './dom/reconciler';
 export type { HydrationResult } from './dom/reconciler';
 export { RenderManager } from './dom/renderer';

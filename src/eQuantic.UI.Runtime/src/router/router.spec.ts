@@ -277,7 +277,10 @@ describe('Router (happy-dom)', () => {
     await router.navigate('/users/9?tab=info');
     expect(getCurrentRoute().param('id')).toBe('9');
     expect(getCurrentRoute().query('tab')).toBe('info');
-    expect(getCurrentRoute().param('missing')).toBeUndefined();
+    // NULL, not undefined: the route is `RouteValues` on both sides of the seam now, and the C#
+    // `Param` answers `null`. A twin that says `undefined` where its subject says `null` is a twin
+    // a page can tell apart with `=== null`.
+    expect(getCurrentRoute().param('missing')).toBeNull();
   });
 
   it('resets scroll to top on a forward navigation', async () => {
