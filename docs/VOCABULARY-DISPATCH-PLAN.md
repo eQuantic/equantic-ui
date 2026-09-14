@@ -263,8 +263,12 @@ already writes `enums.generated.ts` and `design-system.generated.ts` from the as
   in floats and `0.45` in doubles, and no whole number can show it; and a fixture carries a float
   WIDENED to double, because .NET prints a float as the shortest string that round-trips as a float
   (`0.1f + 0.3f` prints `0.4`, the number is `0.4000000059604645`) while JavaScript prints the number,
-  so a fixture in .NET's spelling fails a correct twin. The same encoding decision precedes the first
-  public-surface baseline (brief G), not follows it.
+  so a fixture in .NET's spelling fails a correct twin. Two instruments, two encodings, decided before
+  the first file is written: a cross-pin FIXTURE carries a number, so it widens a float to double and
+  the twin's side reads the number; a public-surface BASELINE (brief G) carries a signature, so it
+  records a constant or a default exactly as Roslyn displays it and the test compares the text —
+  there, `0.4f` is a spelling to hold, not a value to compute, and regeneration can never turn it into
+  an argument.
 - **Output is byte-identical, by slice.** Each realizer already has the pin that says so: the web has
   `ComponentParityFixtureTests`, `PrimitiveValueFixtureTests` and `MarkerParityTests` (and
   `SurfaceSsrTests` once #121 lands — it is that PR's, not `main`'s yet);
