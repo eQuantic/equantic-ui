@@ -15,13 +15,33 @@
  * `core/*` and `shared/*` out of a cycle.
  */
 
+/**
+ * A record with NO prototype, for keys that come from a URL.
+ *
+ * `pairs['__proto__'] = value` on a plain `{}` calls `Object.prototype`'s setter instead of
+ * creating an own property, so the key silently disappears — and a query key is whatever a visitor
+ * typed. Measured before the fix: `?__proto__=x` answered `null` here while the server answered
+ * `x`. Found in review.
+ *
+ * Reading was already safe (`hasOwnProperty.call`); it is the WRITE that loses the key, which is
+ * why a lookup guard was not enough.
+ */
+export function ownProperties(source?: Record<string, string> | null): Record<string, string> {
+  const safe: Record<string, string> = Object.create(null);
+  if (source) for (const key of Object.keys(source)) safe[key] = source[key];
+  return safe;
+}
+
 export class RouteValues {
   private readonly parameters: Readonly<Record<string, string>>;
   private readonly queries: Readonly<Record<string, string>>;
 
   constructor(parameters?: Record<string, string> | null, query?: Record<string, string> | null) {
-    this.parameters = parameters ?? {};
-    this.queries = query ?? {};
+    // COPIED into prototype-less records rather than held: what a caller hands over may itself have
+    // lost a key to the trap above, and holding it would also let a later mutation of the caller's
+    // object change a route already handed to a page.
+    this.parameters = ownProperties(parameters);
+    this.queries = ownProperties(query);
   }
 
   /**
@@ -36,13 +56,13 @@ export class RouteValues {
     parameters: Record<string, string>,
     query: URLSearchParams | Record<string, string>,
   ): RouteValues {
-    const pairs: Record<string, string> = {};
+    const pairs: Record<string, string> = Object.create(null);
     if (query instanceof URLSearchParams) {
       for (const [key, value] of query.entries()) {
         if (!Object.prototype.hasOwnProperty.call(pairs, key)) pairs[key] = value;
       }
     } else {
-      Object.assign(pairs, query ?? {});
+      for (const key of Object.keys(query ?? {})) pairs[key] = (query as Record<string, string>)[key];
     }
     return new RouteValues(parameters, pairs);
   }

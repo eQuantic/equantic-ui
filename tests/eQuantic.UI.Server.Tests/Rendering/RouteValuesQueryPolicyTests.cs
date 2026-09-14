@@ -67,6 +67,18 @@ public class RouteValuesQueryPolicyTests
         RouteFor("?tag=&tag=b").Query("tag").Should().Be("");
     }
 
+    /// <summary>
+    /// The half the twin needed a guard for. A C# dictionary has no prototype, so this side was
+    /// always right — but "always right by construction" is exactly the claim that stops being
+    /// checked, and the client answered null here until it was fixed. The pair is the point.
+    /// </summary>
+    [Fact]
+    public void AKeyNamedProto_IsAKeyLikeAnyOther()
+    {
+        RouteFor("?__proto__=x&tag=a").Query("__proto__").Should().Be("x");
+        RouteFor("?__proto__=x&tag=a").Query("tag").Should().Be("a");
+    }
+
     [Fact]
     public void AKeyThatIsNotThere_IsNull()
     {

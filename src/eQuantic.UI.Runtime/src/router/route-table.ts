@@ -81,7 +81,9 @@ export function matchPattern(pattern: string, path: string): Record<string, stri
   const seg = segments(path);
   if (pat.length !== seg.length) return null;
 
-  const params: Record<string, string> = {};
+  // No prototype: a captured segment named `__proto__` would be swallowed by the setter on a
+  // plain `{}` rather than stored. The same trap RouteValues carries a guard for.
+  const params: Record<string, string> = Object.create(null);
   for (let i = 0; i < pat.length; i++) {
     const param = paramSegment(pat[i]);
     if (param === null) {
