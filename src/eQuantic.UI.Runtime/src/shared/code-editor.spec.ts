@@ -377,9 +377,12 @@ describe('the marks are painted, not merely placed', () => {
 
 describe('the code surface goes through the atomizer, like every other node', () => {
   // It carried a literal `style` string, under a comment reasoning that "there is no C# twin to
-  // agree with — the web realizer has no CodeSurface arm". The arm exists now and SSR atomises,
-  // so a client string beside a server class is the hydration mismatch the atomizer exists to
-  // prevent. The premise died with the fix; the decision it justified went with it.
+  // agree with — the web realizer has no CodeSurface arm". That is STILL TRUE: the arm was tried
+  // and taken back out, because the client appends a caret and a server tree without one is a
+  // failed adoption. The string went anyway, because the reasoning was never worth leaving
+  // standing — the day an arm arrives, a client string beside a server class is the hydration
+  // mismatch the atomizer exists to prevent, and that day should not also be the day somebody has
+  // to remember this. Going through the shared atomizer costs nothing and removes the trap.
   it('emits classes and no inline style', () => {
     const { lowered } = surfaceFor('let x = 1;');
 
