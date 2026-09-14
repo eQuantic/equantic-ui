@@ -367,6 +367,16 @@ jobs:
   # macOS build job never dies on the upload (exit 137).
   publish-github:
     needs: [build-packages, gate-templates, test]
+    # The cross-OS suite is a GATE, not a report: `needs.test` below. Without it a red Linux or
+    # Windows leg sat beside a green macOS build and the packages published anyway — coverage that
+    # cannot stop anything is a comment with a check's authority.
+    #
+    # These lines live HERE and not inside the `if:` below, and that is not style. `if: |` is a
+    # LITERAL block scalar, so a `#` inside it is part of the expression, not a comment — GitHub
+    # then fails to parse the condition and the whole workflow fails at STARTUP, with zero jobs and
+    # no log. Every push in this repository ran no CI at all for an hour because of three lines of
+    # prose written one indent too far down.
+    #
     # On a TAG this waits for the gate, as nuget.org already does. It did not, so a release whose
     # templates failed to scaffold still landed here: preview.31 sat on this feed carrying a broken
     # template while the public feed correctly never got it, and the two had to be reconciled by
@@ -381,9 +391,6 @@ jobs:
       always()
       && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
       && needs.build-packages.result == 'success'
-      # The cross-OS suite is a GATE, not a report. Without this a red Linux or Windows leg sat
-      # beside a green macOS build and the packages published anyway — coverage that cannot stop
-      # anything is a comment with a check's authority, which is the defect this job was added for.
       && needs.test.result == 'success'
       && (needs.gate-templates.result == 'success' || needs.gate-templates.result == 'skipped')
     runs-on: ubuntu-latest
