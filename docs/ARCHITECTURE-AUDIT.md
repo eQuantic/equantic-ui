@@ -512,8 +512,17 @@ state payload holds `\r\n` where the same code in the browser produces `\n`. *Ho
 principle answer it?* Not with a compiler fence on the two no-argument forms: that teaches an author
 a host's line ending, which is exactly the platform artifact the SDK exists to absorb. The SDK owns
 it — the payload writer (and, for symmetry, the web realizer's text) normalises line endings to the
-runtime's `\n`, the same way it already owns the culture catalog and the route's `null`. Sized S,
-decision Edgar's; nothing in `.54` changes because of it.
+runtime's `\n`, the same way it already owns the culture catalog and the route's `null`. The third
+find of the same Windows run is the first in product code and sharpens the rule rather than
+changing it: `EmailRenderer` builds the plain-text half with `AppendLine`, so an email's text carries
+`\r\n` from a Windows host and `\n` elsewhere. RFC 5322 wants CRLF on the wire — but the SDK never
+writes the wire: `eQuantic.UI.Email` depends on `Primitives` alone, `Render` returns
+`EmailMessage(Html, PlainText)`, two strings, and its own doc says sending is the app's job (MailKit,
+SES, whatever it already uses), which is where a MIME writer canonicalises line endings. So the
+constant the SDK owes is not the format's, it is its own: every string the SDK builds ends its lines
+with `\n` on every host, and the transport owns the transport's format. One decision covers the
+payload, the email and the two tests. Sized S, decision Edgar's; nothing in `.54` changes because
+of it.
 
 ### What a misplaced type had already copied
 
