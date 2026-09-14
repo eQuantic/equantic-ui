@@ -287,11 +287,23 @@ in `Web`) plus two process-wide statics, `IUiDispatcher.Current` and `Navigator.
 the wrong shape for two windows in one process, which `Navigator.Handler` — "one surface owns it" —
 already admits.
 
-**And at the web seam, two of everything.** `Web/Dom/RouteData` and `Primitives/RouteValues` answer
-`Param` and `Query` identically; `RenderContext` carries its own `AsyncLocal` service provider,
-route and link policy beside `CapabilityScope` and `RouteValues.Current`, and `ServerRenderingService`
-arms both sets on every request. The Core dissolution (#83) moved the write-once half down and left
-the web half in place.
+**And at the web seam, two of everything — now one.** `Web/Dom/RouteData` and
+`Primitives/RouteValues` answered `Param` and `Query` identically; `RenderContext` carried its own
+`AsyncLocal` service provider, a process-wide fallback, a per-instance service dictionary and its own
+route, beside `CapabilityScope` and `RouteValues.Current` — and `ServerRenderingService` armed both
+sets on every request, building the second route FROM the first in a line whose comment said so. The
+Core dissolution (#83) moved the write-once half down and left the web half in place.
+
+`RenderContext.Route` IS `RouteValues.Current` now, and its two capability accessors — the ones
+`ServiceProviderStrategy` names as a call site — resolve through `CapabilityScope`. Nothing in the
+tree had ever registered into the dictionary or set the global. The TypeScript side carried the same
+pair mirrored (a router `RouteData` that `RouteValues` wrapped) and is one type too, with the ambient
+moved to the LEAF: the router sets `RouteValues` and nothing in `shared/` imports the router.
+
+What stays on the web is the LINK POLICY, and it stays for a stated reason rather than by omission:
+the policy is installed by the server's culture routes, and `PhotonRealizer` reads `Link.Destination`
+raw. A fence today — nothing arms a policy on that target — and a debt the moment one becomes
+neutral.
 
 This is ONE decision, as the parity audit already concludes: an instance tree gives per-position state
 without string keys, positional lookup (`InheritedWidget`), dependency-driven rebuild and
@@ -568,8 +580,9 @@ makes the rest safe.
    `Photon*` attributes → `Native.Hosting`; `Navigator.Go(href)` → `destination`; `Nodes/` holds
    nodes. And Edgar's decision on the editor models (Flutter: controllers in `widgets`). — S, plus a
    decision
-6. **Two of everything at the web seam**: `RouteData` → `RouteValues`, `RenderContext`'s provider →
-   `CapabilityScope`, one link policy. — S
+6. ~~**Two of everything at the web seam**~~ done: `RouteData` → `RouteValues` (C# and TypeScript),
+   `RenderContext`'s provider, global fallback and instance dictionary → `CapabilityScope`, and the
+   link policy left on the web with the reason written where it is felt. — S
 7. **The truncation mark**: the realizer draws `…` when `MeasuredLine.Ellipsized` says a line was cut
    (Flutter: `TextPainter.ellipsis`), the three measurers stop appending or fencing it, the contract
    says what happens, and the test that asserts an ellipsis asserts a real one. — S
