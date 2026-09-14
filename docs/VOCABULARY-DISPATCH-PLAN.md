@@ -233,7 +233,11 @@ already writes `enums.generated.ts` and `design-system.generated.ts` from the as
   receiver it failed — the same measurement, two receivers, opposite answers, and only the concrete one
   in the condition the fence exists for. So each slice's net includes one A/B written where the defect
   would live: a node with no `Visit` in the realizer's own assembly, not in a test's; a call through the
-  concrete node, not the abstract.
+  concrete node, not the abstract. And the same rule from the other end (#145): a fix for a
+  host-dependent line break cannot be exercised on the host where `Environment.NewLine` is already
+  `\n`, so its guard asserts the property directly — no CR in any committed file, the writer breaks
+  lines with LF, no source names a construct that asks the host — rather than the fix's effect. An
+  instrument that can only pass where it runs is not an instrument.
 - **An assertion names every row it claims.** #141's import check was `NotContain("Matrix2D")` as a
   literal, so the rows added for `Nothing` and `SemanticNode` proved the diagnostic — the loud half —
   and said nothing about the import they were added for, the quiet half. It is a theory parameter
