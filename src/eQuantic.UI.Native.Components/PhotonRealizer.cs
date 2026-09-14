@@ -5,6 +5,8 @@ using eQuantic.UI.Primitives;
 namespace eQuantic.UI.Native.Components;
 
 /// <summary>A pressable region registered by the realizer — hit rect expanded to the §08 contract.</summary>
+/// <param name="Bounds">The hit rect, already expanded to the §08 minimum target.</param>
+/// <param name="Node">The pressable this region belongs to.</param>
 /// <param name="Path">Where the pressable sits in the tree. A press outlives the frame it began in
 /// — the pressed state repaints, and the next Build makes fresh nodes — so the target is remembered
 /// by PATH. Remembering the object meant every press that spanned a frame quietly did nothing, and

@@ -15,8 +15,12 @@ public struct NSRange
         Length = length;
     }
 
-    /// <summary>NSNotFound in a 64-bit process is NSIntegerMax.</summary>
-    public static NSRange NotFound => new((nuint)long.MaxValue, 0);
+    /// <summary>
+    /// NSNotFound in a 64-bit process is NSIntegerMax. `unchecked` because `nuint` is 32 bits in a
+    /// 32-bit process, where this constant does not fit — and every Apple target this shell builds
+    /// for has been 64-bit only since iOS 11, so the narrowing is unreachable rather than ignored.
+    /// </summary>
+    public static NSRange NotFound => new(unchecked((nuint)long.MaxValue), 0);
 }
 
 public struct CGPoint
