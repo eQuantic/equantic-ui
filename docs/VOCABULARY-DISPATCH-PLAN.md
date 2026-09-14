@@ -253,6 +253,18 @@ already writes `enums.generated.ts` and `design-system.generated.ts` from the as
   failing two cases when review looked. This repository already runs a packaging step twice because
   the second run reads the first one's output; a regenerated fixture is the same thing. So a slice's
   proof is the run whose inputs are the commit being reviewed, and a PR body names that run's head.
+- **A twin of a `float` rounds where its subject rounds.** #143's transpiled hit test was
+  `Math.fround(b.x + b.width + slack)`, because eqc emits `fround` for arithmetic on `float`; reaching
+  for the geometry twin's `Rect.inflate().right` dropped it in silence, because the twin did DOUBLE
+  arithmetic where its subject has floats, and a pointer exactly on a fractional edge could land on
+  different sides on the two targets. The twin rounds at storage and at every step now, cross-pinned
+  on fractional values. Two rules for every value-type twin S7 generates or the fixtures pin: the
+  discriminating case is FRACTIONAL — `Rect(0.1, 0.2, 0.3, 0.4).Inflate(0.05).Right` is `0.45000002`
+  in floats and `0.45` in doubles, and no whole number can show it; and a fixture carries a float
+  WIDENED to double, because .NET prints a float as the shortest string that round-trips as a float
+  (`0.1f + 0.3f` prints `0.4`, the number is `0.4000000059604645`) while JavaScript prints the number,
+  so a fixture in .NET's spelling fails a correct twin. The same encoding decision precedes the first
+  public-surface baseline (brief G), not follows it.
 - **Output is byte-identical, by slice.** Each realizer already has the pin that says so: the web has
   `ComponentParityFixtureTests`, `PrimitiveValueFixtureTests` and `MarkerParityTests` (and
   `SurfaceSsrTests` once #121 lands — it is that PR's, not `main`'s yet);
