@@ -30,11 +30,30 @@ public static class EffectiveTypeStyle
     /// </summary>
     public static TypeStyle Resolve(this Text text, IAppTheme theme)
     {
+        // WHERE the style came from, kept before it is flattened. `WithCodeFace` steps aside for a
+        // style that NAMES a family, on the rule that the call site was specific — and after this
+        // line nothing can tell a family the CALL SITE chose from one the ROLE supplied as a
+        // default. Reported by the eQuantic Code IDE, whose theme is
+        // `Base.Type(role) with { Family = brandSans }`: every role named a face, so `MonoFamily`
+        // was inert for exactly the themes that brand their type, which is backwards. Naming a face
+        // per role is the normal way to use `Type`.
+        var chosen = text.StyleOverride is not null;
         var style = text.StyleOverride ?? theme.Type(text.Role);
+        // Whether the role itself is CODE. A theme that sets `Mono` and a `Family` on the same role
+        // chose that pairing deliberately and is more specific than the theme-wide code face, so it
+        // is left alone — this is not "mono means drop the family".
+        var roleIsCode = style.Mono;
+
         // The node ADDS to what the role said; it never takes away. `Text(…, mono: true)` on an
         // upright role is code inside prose, and an unset flag is "the role decides", not "no".
         if (text.Mono) style = style with { Mono = true };
         if (text.Italic) style = style with { Italic = true };
+
+        // A PROPORTIONAL role face has no business surviving a node that asked for code. The three
+        // conditions are the whole rule: the family came from the role rather than the call site,
+        // the role was not code itself, and the node is what made this monospaced.
+        if (!chosen && !roleIsCode && text.Mono) style = style with { Family = null };
+
         return style.WithCodeFace(theme);
     }
 
