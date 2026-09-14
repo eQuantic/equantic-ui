@@ -50,6 +50,11 @@ public static class RuntimeProvidedTypeScanner
     /// "&lt;Type&gt; is not defined" in the browser — with NO build error. Instantiated types
     /// (<c>new View()</c>) were already covered; static access was the hole.
     /// </summary>
+    /// <param name="root">The tree to scan.</param>
+    /// <param name="model">The semantic model that binds the names in it.</param>
+    /// <param name="runtimeProvided">Collects the types the runtime exports, which the module imports.</param>
+    /// <param name="enumTypes">Collects the enums seen, whose members lower differently.</param>
+    /// <param name="appTypes">Collects the app's OWN types, which get a sibling module each.</param>
     /// <param name="hostOnly">
     /// Where a HOST-ONLY runtime-provided type was named, when the caller can report it. Those
     /// types are kept OUT of <paramref name="runtimeProvided"/>: the runtime ships no export for
