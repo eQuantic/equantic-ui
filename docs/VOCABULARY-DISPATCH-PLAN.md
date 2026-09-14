@@ -146,8 +146,10 @@ compile time if the kind is a union type rather than `string`. The union is GENE
 already writes `enums.generated.ts` and `design-system.generated.ts` from the assembly:
 
 - `NodeKindTsGenerator` in `eQuantic.UI.Web.Build` reads every concrete `VisualNode` type, takes its
-  `NodeKind` off an uninitialized instance (the way `VocabularyCoverageTests.WireKind` does), fails
-  on a duplicate, and writes `node-kinds.generated.ts`:
+  `NodeKind` off an uninitialized instance (the way `VocabularyCoverageTests.WireKind` does), adds the
+  expansion seam EXPLICITLY — `UiComponent` is abstract, so no scan of concrete types reaches its
+  sealed `"component"`, and the generator names it and asserts that no concrete node claims the same
+  word — fails on any duplicate, and writes `node-kinds.generated.ts`:
   `export type NodeKind = 'adaptive' | 'adjustable' | … | 'webFrame' | 'component';`
 - A byte-pin test beside `EnumUnionsTsGeneratorTests`, regenerated behind the same environment
   variable, so the file cannot drift from the assembly.
@@ -158,16 +160,22 @@ already writes `enums.generated.ts` and `design-system.generated.ts` from the as
 
 ### Cost, and what does not change
 
-- **Performance.** `Accept` is a generic virtual method with five instantiations in the tree, each
-  monomorphic at its call site; the JIT and Native AOT (Primitives is `IsAotCompatible`) specialize
-  it. State is a `readonly record struct` or an object the pass already owns; the visitor is one
-  instance per pass. `PerfHarnessTests` pins managed bytes per steady-state frame under a ceiling and
-  is the net for this — a visitor that allocates per node fails it.
+- **Performance, as a measured risk rather than a premise.** `Accept` is called through `VisualNode`
+  at every entry point, so the dispatch is polymorphic by construction — one virtual call to reach the
+  node's `Accept`, one interface call back into the visitor — where a `switch` over type patterns is
+  a chain of type tests. Five `(TState, TResult)` instantiations exist in the tree, and Native AOT
+  (Primitives is `IsAotCompatible`) compiles generic virtual methods, but nothing here promises the
+  JIT devirtualizes anything. What the design does guarantee is zero allocation on the path: state is
+  a `readonly record struct` or an object the pass already owns, and the visitor is one instance per
+  pass. `PerfHarnessTests` pins managed bytes per steady-state frame under a ceiling and is the net —
+  and the first slice on a hot path (S5, the layout engine) is where the frame time is measured
+  before and after, and written into this document.
 - **Nobody outside `Primitives` derives `VisualNode` directly.** Measured: zero classes in `src/` and
   `samples/`; the only hits are two fakes in a transpiler test's source snippet. Every app component
   derives `UiComponent`, whose `Accept` is sealed, so no consumer writes one and eqc never meets one.
 - **Output is byte-identical, by slice.** Each realizer already has the pin that says so: the web has
-  `ComponentParityFixtureTests`, `SurfaceSsrTests`, `PrimitiveValueFixtureTests` and `MarkerParityTests`;
+  `ComponentParityFixtureTests`, `PrimitiveValueFixtureTests` and `MarkerParityTests` (and
+  `SurfaceSsrTests` once #121 lands — it is that PR's, not `main`'s yet);
   Photon has 91 goldens under `AbstractNodeGoldenTests` and `GoldenSceneTests`, `TreeGpuParityTests`
   and `PerfHarnessTests`; layout has `FlexLayoutTests` and `LayoutCompositeTests`; the browser has 79
   spec files in `shared/` and the transpiled fixtures; email has its 48 facts. A slice that changes a
@@ -190,7 +198,7 @@ executor takes them in this order; the auditor rewrites the audit's section 2 an
 | S2 | `Semantics.Walk` → `SemanticsVisitor`: 13 visits, 26 declines named for their reason; `Navigable` and `Overlay` decline until the group role of audit step 3 lands, then become visits. The `Semantics` dispatch leaves the coverage pin. | `SemanticsTests`, `CheckSemanticsTests`, `HeadingSemanticsTests`, `GraphicSemanticsTests`, `LabelledNodesReachSemanticsTests`, `UnlabelledGroupSemanticsTests`, the three bridges' tests | S |
 | S3 | `EmailRealizer.Write` → `EmailVisitor`: 6 visits, 33 `Refuse`s that throw what the default arm throws today. The dispatch leaves the pin. | `eQuantic.UI.Email.Tests` | S |
 | S7 | `NodeKindTsGenerator`, `node-kinds.generated.ts`, `nodeKind: NodeKind`, `assertNever`. The TypeScript dispatch leaves the pin; `EveryNode_DeclaresItsOwnWireKind` becomes the generator's duplicate check. | `EnumUnionsTsGeneratorTests`' sibling, `npm run test`, the transpiled fixtures byte-pinned | S |
-| S4 | `WebRealizer.LowerNodeKind` → `WebLoweringVisitor`, four partial files. The dispatch leaves the pin. | `ComponentParityFixtureTests`, `SurfaceSsrTests`, `PrimitiveValueFixtureTests`, `MarkerParityTests`, the SSR suites | M |
+| S4 | `WebRealizer.LowerNodeKind` → `WebLoweringVisitor`, four partial files. The dispatch leaves the pin. | `ComponentParityFixtureTests`, `PrimitiveValueFixtureTests`, `MarkerParityTests`, the SSR suites, and #121's `SurfaceSsrTests` | M |
 | — | Audit step 4 first: hoist the five layout questions onto the vocabulary, so S5's arms shrink. | `FlexLayoutTests`, `LayoutCompositeTests`, the goldens | M |
 | S5 | `LayoutEngine.MeasureCore` → `MeasureVisitor` with `MeasureState`. The dispatch leaves the pin. | `FlexLayoutTests`, `LayoutCompositeTests`, `FlexBasisWrapLayoutTests`, 91 goldens, `PerfHarnessTests` | M |
 | S6 | `PhotonRealizer.EmitNode` → `EmitVisitor` over `laidOut.Source`; the nine `is` branches after the switch become visits; the two pre-switch guards stay as pre-visit logic on the class. The last dispatch leaves the pin. | `AbstractNodeGoldenTests`, `GoldenSceneTests`, `TreeGpuParityTests`, `BarChartPhotonTests`, `PerfHarnessTests` | M |
