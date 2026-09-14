@@ -225,6 +225,16 @@ public class BarChartTests
         BarChartLayout.HitTest(g, first.Box.X + (first.Box.Width / 2), first.Box.Y + (first.Box.Height / 2)).Should().Be(0);
         BarChartLayout.HitTest(g, first.Box.X - BarChartLayout.HitSlack, first.Box.Y + 1).Should().Be(0);
         BarChartLayout.HitTest(g, -20, -20).Should().Be(-1);
+
+        // THE EDGE ITSELF, on all four sides. The hit area is inflated to forgive a pointer, so the
+        // line it was inflated TO is part of the target — inclusive, unlike `Rect.Contains`, which
+        // is half-open because two adjacent boxes must not both claim a pixel. A refactor reached
+        // for that neighbouring word and moved this boundary by one point; nothing asked until
+        // review did.
+        var hit = first.Box.Inflate(BarChartLayout.HitSlack);
+        BarChartLayout.HitTest(g, hit.Right, hit.Top + 1).Should().Be(0, "the right edge is inside");
+        BarChartLayout.HitTest(g, hit.Left + 1, hit.Bottom).Should().Be(0, "and so is the bottom");
+        BarChartLayout.HitTest(g, hit.Left, hit.Top).Should().Be(0, "and the corner it starts at");
     }
 
     // ---- The shared dumper (mirrored in bar-chart-layout.spec.ts) -------------------------------

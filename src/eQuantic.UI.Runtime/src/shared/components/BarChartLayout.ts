@@ -1,4 +1,4 @@
-import { BarChartGeometry, BarRect, ChartSeries, Point, Rect, ValueAxis, ValueScale, ValueTicks } from "../runtime-exports";
+import { BarChartGeometry, BarRect, ChartSeries, Rect, ValueAxis, ValueScale, ValueTicks } from "../runtime-exports";
 
 export class BarChartLayout {
     static maxThickness: number = 24;
@@ -109,8 +109,8 @@ export class BarChartLayout {
     static hitTest(geometry: BarChartGeometry, x: number, y: number) {
         let bars = geometry.bars;
         for (let i = 0; i < bars.length; i++) {
-            let b = bars[i];
-            if (b.box.inflate(BarChartLayout.hitSlack).contains(new Point(x, y))) return i;
+            let hit = bars[i].box.inflate(BarChartLayout.hitSlack);
+            if (x >= hit.left && x <= hit.right && y >= hit.top && y <= hit.bottom) return i;
         }
         return -1;
     }

@@ -202,8 +202,14 @@ public static class BarChartLayout
         var bars = geometry.Bars;
         for (var i = 0; i < bars.Count; i++)
         {
-            var b = bars[i];
-            if (b.Box.Inflate(HitSlack).Contains(new Point(x, y)))
+            // INCLUSIVE on all four edges, which is why this is not `Rect.Contains`. That one is
+            // half-open (`< Right`, `< Bottom`) and right for what it is for: two adjacent boxes
+            // must not both claim the same pixel. A hit area with SLACK on it is the opposite kind
+            // of question — it exists to forgive a pointer, so the edge it was inflated to is part
+            // of the target. Written out rather than reaching for the neighbouring word. Found in
+            // review of the refactor that had reached for it.
+            var hit = bars[i].Box.Inflate(HitSlack);
+            if (x >= hit.Left && x <= hit.Right && y >= hit.Top && y <= hit.Bottom)
                 return i;
         }
 

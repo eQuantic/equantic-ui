@@ -130,5 +130,13 @@ describe('bar chart layout parity (C# BarChartTests cross-pin)', () => {
     // The hit area reaches past the paint by the slack, and no further.
     expect(BarChartLayout.hitTest(g, first.x - BarChartLayout.hitSlack, first.y + 1)).toBe(0);
     expect(BarChartLayout.hitTest(g, -20, -20)).toBe(-1);
+
+    // THE EDGE ITSELF. The hit area is inflated to forgive a pointer, so the line it was inflated
+    // TO belongs to the target — inclusive, unlike a half-open containment, which is right for
+    // tiling and wrong here. Measured on the C# side when a refactor reached for the neighbouring
+    // word: at the shared edge the half-open version handed the pointer to the NEXT bar.
+    const slack = BarChartLayout.hitSlack;
+    expect(BarChartLayout.hitTest(g, first.x + first.width + slack, first.y + 1)).toBe(0);
+    expect(BarChartLayout.hitTest(g, first.x - slack, first.y - slack)).toBe(0);
   });
 });
