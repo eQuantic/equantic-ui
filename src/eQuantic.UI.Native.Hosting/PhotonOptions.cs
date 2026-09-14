@@ -12,7 +12,11 @@ public sealed class PhotonOptions
     /// <summary>The configuration section these are bound from.</summary>
     public const string SectionName = "Photon";
 
-    /// <summary>The design system the whole tree resolves against.</summary>
+    /// <summary>
+    /// The design system the whole tree resolves against. The one member here that configuration
+    /// does NOT reach: a theme is a C# object chosen with <c>UseTheme(...)</c>, not a name in a
+    /// settings file, so the binder skips it and leaves this default in place.
+    /// </summary>
     public IAppTheme Theme { get; set; } = PhotonTheme.Instance;
 
     /// <summary>

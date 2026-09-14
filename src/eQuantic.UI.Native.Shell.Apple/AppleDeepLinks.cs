@@ -11,7 +11,7 @@ namespace eQuantic.UI.Native.Shell.Apple;
 /// The handler is installed EARLY and once, before the app finishes launching, because a cold
 /// launch delivers its URL within milliseconds of the process starting: an app that installs the
 /// handler when its first screen mounts has already missed it. So the URL is BUFFERED here and
-/// answered by <see cref="Launch"/> on demand, rather than delivered to whoever happens to be
+/// answered by <see cref="eQuantic.UI.Primitives.IDeepLinks.Launch"/> on demand, rather than delivered to whoever happens to be
 /// listening at the time.
 /// </para>
 /// <para>
