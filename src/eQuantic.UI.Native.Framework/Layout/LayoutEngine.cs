@@ -365,6 +365,11 @@ public sealed class LayoutNodePool
 /// </summary>
 public static class LayoutEngine
 {
+    /// <param name="root">The tree to lay out.</param>
+    /// <param name="viewportWidth">The available width in dp — the window, or the layer's box.</param>
+    /// <param name="viewportHeight">The available height in dp.</param>
+    /// <param name="context">The pass's shared state: theme, text service, retention.</param>
+    /// <param name="rootPath">The path the root is addressed by, which every child extends.</param>
     /// <param name="rootStretch">
     /// What the caller has already decided about the ROOT's own size. The base layer is the page's
     /// body — an auto-sized root stretches to the window in WIDTH the way a CSS block does — while
