@@ -27,9 +27,7 @@ namespace eQuantic.UI.Compiler.Tests;
 /// </summary>
 public class HostOnlyInASignatureTests
 {
-    private static CompilationResult Compile(string body)
-    {
-        var source = $$"""
+    private static CompilationResult Compile(string body) => CompileSource($$"""
             using eQuantic.UI.Primitives;
             using static eQuantic.UI.Components.UI;
 
@@ -41,7 +39,10 @@ public class HostOnlyInASignatureTests
 
                 public override VisualNode Build(ComponentContext context) => Text("x", TypeRole.BodyM);
             }
-            """;
+            """);
+
+    private static CompilationResult CompileSource(string source)
+    {
         var tree = CSharpSyntaxTree.ParseText(source, path: "Probe.cs");
         var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
             .Split(Path.PathSeparator)
@@ -76,6 +77,49 @@ public class HostOnlyInASignatureTests
         result.TypeScript.Should().NotContain("Matrix2D",
             "and the name must not reach the import list either — an emitted import of a missing "
             + "export is the failure, whatever the build says about it");
+    }
+
+    /// <summary>
+    /// `Accept` is HOST ONLY, and the fence follows an OVERRIDE to what it overrides.
+    ///
+    /// <para>
+    /// A component BUILDS a tree; walking one is what a realizer or a layout pass does, and the
+    /// runtime's own `VisualNode` has no `accept`. Measured before the fence: a page calling it
+    /// compiled and emitted `node.accept(new Counter(), 0)`, which throws in the browser on a
+    /// method that is not there — the quiet half of this family again, since the page renders on
+    /// the server first.
+    /// </para>
+    ///
+    /// <para>
+    /// The receiver here is a `Text`, deliberately. A call binds to the symbol on the RECEIVER's
+    /// type, so this resolves to `Text.Accept` and never sees the attribute on `VisualNode.Accept`
+    /// — which is why the fence walks the override chain instead of the attribute being repeated on
+    /// all 39 implementations, where the fortieth would forget.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void WalkingATree_IsNotSomethingAPageDoes()
+    {
+        var result = CompileSource("""
+            using eQuantic.UI.Primitives;
+            using static eQuantic.UI.Components.UI;
+
+            namespace Demo;
+
+            public sealed class Page : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context)
+                {
+                    Text node = Text("x", TypeRole.BodyM);
+                    IVisualNodeVisitor<int, int> visitor = null!;
+                    var n = node.Accept(visitor, 0);
+                    return Text($"{n}", TypeRole.BodyM);
+                }
+            }
+            """);
+
+        result.Success.Should().BeFalse("the runtime's VisualNode has no `accept`");
+        result.Errors.Should().Contain(error => error.Code == "EQ2010");
     }
 
     /// <summary>

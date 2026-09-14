@@ -29,6 +29,17 @@ public abstract class VisualNode
     /// only one the COMPILER checks. <typeparamref name="TState"/> travels down, <typeparamref name="TResult"/>
     /// comes back up, and a pass that wants neither says <see cref="Nothing"/>.
     /// </summary>
+    /// <remarks>
+    /// HOST ONLY. A component BUILDS a tree; walking one is what a realizer, a layout pass or a
+    /// semantics walk does, and the runtime ships no `accept` on its own `VisualNode`. Without the
+    /// fence a page calling this compiled and emitted `node.accept(...)` — measured — which throws
+    /// in the browser on a method that is not there.
+    /// <para>
+    /// Declared once, on the abstract: the fence follows an OVERRIDE to what it overrides, so the
+    /// 39 one-line implementations carry it without saying so and a fortieth cannot forget.
+    /// </para>
+    /// </remarks>
+    [ServerOnly]
     public abstract TResult Accept<TState, TResult>(
         IVisualNodeVisitor<TState, TResult> visitor, TState state);
 
