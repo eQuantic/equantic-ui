@@ -114,7 +114,7 @@ internal sealed class AndroidPhotoLibrary : IPhotoLibrary
     {
         using var cursor = activity.ContentResolver?.Query(uri, null, null, null, null);
         if (cursor?.MoveToFirst() != true) return null;
-        var column = cursor.GetColumnIndex(OpenableColumns.DisplayName);
+        var column = cursor.GetColumnIndex(IOpenableColumns.DisplayName);
         return column >= 0 ? cursor.GetString(column) : null;
     }
 }
