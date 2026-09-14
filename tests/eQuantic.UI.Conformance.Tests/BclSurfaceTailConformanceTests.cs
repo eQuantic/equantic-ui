@@ -68,6 +68,21 @@ public class BclSurfaceTailConformanceTests
         ConformanceRunner.AssertSameAsDotNetExceptTheHostsNewline(expression, why);
     }
 
+    /// <summary>
+    /// The no-argument <c>ReplaceLineEndings()</c> replaces with <c>Environment.NewLine</c>, which
+    /// is the HOST's — so .NET answers "\r\n" on Windows while the twin answers "\n" everywhere.
+    /// The twin is the one that must not vary: it runs in a browser, where there is no host
+    /// newline to read. The one-argument overload takes its replacement from the caller and stays
+    /// in the table above, because nothing about it depends on the machine.
+    /// </summary>
+    [SkippableFact]
+    public void ReplaceLineEndings_NormalizesToTheTwinsNewline()
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertSameAsDotNetIgnoringHostNewline(
+            "\"ab\\r\\ncd\\ref\".ReplaceLineEndings()");
+    }
+
     [SkippableTheory]
     // Enumerable tail — the zero-count traps first.
     [InlineData("var l = new List<int> { 1, 2, 3 }; return l.SkipLast(0).Sum();")]        // 6

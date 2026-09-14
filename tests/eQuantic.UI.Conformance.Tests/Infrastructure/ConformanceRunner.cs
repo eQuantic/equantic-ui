@@ -181,6 +181,37 @@ public static class ConformanceRunner
     }
 
     /// <summary>
+    /// As <see cref="AssertSameAsDotNet(string)"/>, for the expressions whose .NET value contains
+    /// <c>Environment.NewLine</c> — <c>StringBuilder.AppendLine</c> and the no-argument
+    /// <c>ReplaceLineEndings</c>.
+    /// <para>
+    /// The twin's newline is <c>\n</c> on EVERY host, and deliberately: a browser has no host
+    /// newline, and an app whose output changed with the machine that transpiled it would be a
+    /// different app per build box. .NET's is the host's, so the .NET side is normalized before
+    /// comparing — the twin's side is left exactly as it came, because a stray <c>\r</c> THERE
+    /// would be a real translation bug and must still fail.
+    /// </para>
+    /// <para>
+    /// On Unix this normalization changes nothing, which is why the two sides agreed by accident
+    /// for as long as the suite only ever ran on macOS. The first Windows leg failed both cases.
+    /// </para>
+    /// </summary>
+    public static void AssertSameAsDotNetIgnoringHostNewline(string csharpExpression)
+    {
+        var js = Transpiler.TranspileExpression(csharpExpression, prelude: "");
+        var program = $"{BuildHelperImport(js)}console.log(JSON.stringify(((v) => v === undefined ? null : v)({js})))";
+
+        var actual = JsExecutor.Run(program);
+        var expected = DotNetEvaluator.EvaluateToJson(csharpExpression, prelude: "")
+            .Replace("\\r\\n", "\\n");
+
+        actual.Should().Be(
+            expected,
+            $"C# `{csharpExpression}` (transpiled to JS `{js}`) must behave identically to .NET, "
+            + "up to the host's newline — the twin always writes \\n");
+    }
+
+    /// <summary>
     /// As above, but with a C# <paramref name="prelude"/> of type declarations (e.g. an enum) made
     /// available to both the transpiler's semantic model and the .NET evaluator.
     /// </summary>
