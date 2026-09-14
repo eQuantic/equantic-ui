@@ -1,0 +1,34 @@
+name: Feature request
+description: Something the framework should let you write, or do for you.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Two questions decide most designs here, and it helps to answer them up front: *how does
+        Flutter solve this?* (see `docs/FLUTTER-PARITY.md` for what we already compared), and *can it
+        be written once and realized on both the DOM and a GPU display list?* A feature that needs
+        one target's machinery cannot enter the shared vocabulary; it may still fit as a capability.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What you are trying to do
+      description: The screen, the behaviour, the constraint — in your app's terms, not in the framework's.
+    validations:
+      required: true
+  - type: textarea
+    id: today
+    attributes:
+      label: What you do today instead
+      description: The workaround, if there is one, and what it costs you.
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like to write
+      description: The C# you wish compiled. Names are cheap; the shape matters.
+      render: csharp
+  - type: textarea
+    id: flutter
+    attributes:
+      label: How Flutter (or another framework) solves it
+      description: Optional, but it shortens the discussion.

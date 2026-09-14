@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Questions and ideas
+    url: https://github.com/eQuantic/equantic-ui/discussions
+    about: Ask how to do something, or float an idea before it is an issue.
+  - name: Documentation
+    url: https://ui.equantic.tech
+    about: The docs site, and the playground where a component compiles with the same eqc your build uses.
+  - name: Security
+    url: https://github.com/eQuantic/equantic-ui/security/advisories/new
+    about: Report a vulnerability privately.

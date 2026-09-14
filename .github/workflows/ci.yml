@@ -537,3 +537,42 @@ jobs:
               --api-key "$NUGET_API_KEY" \
               --skip-duplicate
           done
+
+  # The GitHub Release for a framework tag, written AFTER nuget.org has the packages: a release page
+  # announcing what the public feed does not carry is the arrangement preview.31 already taught, and
+  # `needs: publish-nuget` is what makes it impossible here. The notes are the tag's own annotation —
+  # the migration notes live in the `git tag -a` message — read from the tag object rather than kept
+  # as a second copy that could disagree with it.
+  release-github:
+    needs: publish-nuget
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create the release from the tag's annotation
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          # The checkout may hold the tag as a lightweight ref; the annotation lives on the tag OBJECT.
+          git fetch --force origin "+refs/tags/${TAG}:refs/tags/${TAG}"
+          git tag -l --format='%(contents:body)' "$TAG" > notes.md
+          if [ ! -s notes.md ]; then
+            echo "::warning::${TAG} carries no release notes in its annotation; the release page says so."
+            echo "_This tag was annotated without release notes._" > notes.md
+          fi
+          version="${TAG#v}"
+          prerelease=""
+          case "$version" in *-*) prerelease="--prerelease" ;; esac
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "eQuantic.UI $version" --notes-file notes.md $prerelease
+          else
+            gh release create "$TAG" --verify-tag --title "eQuantic.UI $version" --notes-file notes.md $prerelease
+          fi

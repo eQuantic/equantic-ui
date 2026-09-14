@@ -11,7 +11,10 @@
 
 <p align="center">
   <a href="https://img.shields.io/github/actions/workflow/status/equantic/equantic-ui/ci.yml?branch=main"><img src="https://img.shields.io/github/actions/workflow/status/equantic/equantic-ui/ci.yml?branch=main" alt="Build Status" /></a>
+  <a href="https://www.nuget.org/packages/eQuantic.UI.Sdk"><img src="https://img.shields.io/nuget/vpre/eQuantic.UI.Sdk?label=nuget%20preview" alt="NuGet (preview)" /></a>
+  <a href="https://www.nuget.org/packages/eQuantic.UI.Sdk"><img src="https://img.shields.io/nuget/dt/eQuantic.UI.Sdk?label=downloads" alt="NuGet downloads" /></a>
   <a href="https://github.com/equantic/equantic-ui/blob/main/LICENSE"><img src="https://img.shields.io/github/license/equantic/equantic-ui" alt="License" /></a>
+  <a href="https://github.com/equantic/equantic-ui/stargazers"><img src="https://img.shields.io/github/stars/equantic/equantic-ui?style=flat" alt="GitHub stars" /></a>
 </p>
 
 <p align="center">

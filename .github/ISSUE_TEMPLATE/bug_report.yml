@@ -1,0 +1,52 @@
+name: Bug report
+description: Something the framework does that it should not, or does not do that it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. A small reproduction is worth more than a long description — a
+        page or a component that shows the problem, and what you expected instead.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The `eQuantic.UI.Sdk` version in your `global.json` (for example `0.2.0-preview.53`).
+      placeholder: 0.2.0-preview.53
+    validations:
+      required: true
+  - type: dropdown
+    id: target
+    attributes:
+      label: Target
+      description: Where does it happen?
+      multiple: true
+      options:
+        - Web — server rendering (SSR)
+        - Web — in the browser (after hydration)
+        - Photon — macOS
+        - Photon — iOS
+        - Photon — Android
+        - Photon — Windows
+        - The build (eqc, MSBuild, the SDK)
+        - Email
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happens
+      description: What you see, and what you expected. Paste error text as text, not as a screenshot.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: The smallest component or page that shows it. If it reproduces in the playground at ui.equantic.tech/playground, a link is perfect.
+      render: csharp
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: OS and version, .NET SDK version (`dotnet --version`), browser if the web is involved.

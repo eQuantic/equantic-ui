@@ -1,45 +1,107 @@
 # Contributing to eQuantic.UI
 
-Thank you for your interest in contributing to eQuantic.UI! We welcome contributions from the community to help improve the framework.
+Thank you for wanting to work on this. The project is in preview, moves fast, and is measured rather
+than remembered: most of what a contributor needs to know is written down where a test can check it.
+This page says where.
 
-## Getting Started
+## What to work on
 
-1.  **Fork the repository** on GitHub.
-2.  **Clone your fork** locally.
-3.  **Install prerequisites**:
-    - .NET 8.0 SDK
-    - Node.js (optional, for some tooling)
-4.  **Build the project**:
-    ```bash
-    dotnet build
-    ```
+- **Issues labelled [`good first issue`](https://github.com/eQuantic/equantic-ui/labels/good%20first%20issue)**
+  are small, self-contained, and come with the file paths, the measurement and the acceptance
+  criteria already written. **[`help wanted`](https://github.com/eQuantic/equantic-ui/labels/help%20wanted)**
+  is the same, larger.
+- **[docs/ARCHITECTURE-AUDIT.md](docs/ARCHITECTURE-AUDIT.md)** ends with an *order of attack*: every
+  open structural item, measured and sized, with the Flutter answer it follows. If you want to take
+  one, say so on its issue or open one, so two people do not take the same step.
+- Correctness of the transpiler, layout parity between the web and Photon realizers, the Photon
+  engine and its shells, accessibility bridges, and the write-once contract on more host and target
+  combinations are the areas where help matters most.
 
-## Development Workflow
+## Building
 
-1.  Create a new branch for your feature or bug fix:
-    ```bash
-    git checkout -b feature/my-new-feature
-    ```
-2.  Make your changes.
-3.  Run tests to ensure no regressions:
-    ```bash
-    dotnet test
-    ```
-4.  Commit your changes using meaningful commit messages.
-5.  Push your branch to your fork.
-6.  Submit a **Pull Request** to the `main` branch of the original repository.
+You need the [.NET 10 SDK](https://dotnet.microsoft.com/download) and nothing else — no Node.js, no
+npm. The TypeScript runtime is built by an embedded Bun the build extracts itself, and the Photon
+shaders are committed (only framework developers changing a shader run `scripts/generate-shaders.sh`).
 
-## Coding Standards
+```bash
+git clone https://github.com/eQuantic/equantic-ui.git
+cd equantic-ui
+dotnet build                               # the whole solution
+dotnet test                                # every test project
+dotnet build samples/DefaultUIDashboard    # a web app against the source tree
+dotnet build samples/PhotonDesktop         # a Photon app (macOS)
+```
 
-- Follow standard C# coding conventions.
-- Keep code clean and readable.
-- Add comments where necessary to explain complex logic.
-- Write unit tests for new features or bug fixes.
+The samples build against the framework's **projects**, never against packages — see the wiki's
+[Build Flow](https://github.com/eQuantic/equantic-ui/wiki/BuildFlow). CI does not build them, so a
+change that touches the SDK, the compiler or a realizer is proved by building them locally.
 
-## Reporting Issues
+The TypeScript runtime has its own suite:
 
-If you encounter a bug or have a feature request, please open an issue on the [GitHub repository](https://github.com/equantic/equantic-ui/issues). Provide as much detail as possible, including reproduction steps for bugs.
+```bash
+cd src/eQuantic.UI.Runtime
+npm run test        # vitest — using the embedded Bun's node, no install needed
+```
+
+## The bar
+
+Three rules decide most reviews here; they are in [CLAUDE.md](CLAUDE.md) at length.
+
+1. **A developer using the SDK never writes a platform artifact.** No Swift, no plist, no manifest, no
+   CSS. If a feature works but makes someone learn one, it is not done.
+2. **The vocabulary speaks no target's language.** A node or a property in `eQuantic.UI.Primitives`
+   is named as Flutter would name it, never as HTML or Apple would — `Label`, not `Alt`; `Layer`, not
+   `ZIndex`. The DOM escape hatch (`HtmlElement`) is the one place where the web's words are right.
+3. **Prefer the instrument that fails to the one that warns.** A pin that compares and fails,
+   regenerated behind an environment variable, beats a warning; a structural fix beats a patch; a
+   mechanism .NET already has beats a home-grown one.
+
+We are in preview: **break contracts freely and leave nothing behind.** Finish the refactor, delete
+what stopped being used, and write the migration note — every breaking change goes into the release
+notes (the annotated tag's message) and the wiki's
+[Upgrading](https://github.com/eQuantic/equantic-ui/wiki/Upgrading) page.
+
+## Commits and pull requests
+
+`main` is protected: every change arrives through a pull request, reviewed by GitHub Copilot
+automatically and merged when the review threads are resolved and CI is green.
+
+- **Branch first**, from `main`. Never commit onto `main` locally either.
+- **Commit messages** are `emoji type: description`, in English, emoji first:
+
+  | Type | Emoji | Use |
+  |---|---|---|
+  | feat | ✨ | a new feature |
+  | fix | 🐛 | a bug fix |
+  | docs | 📝 | documentation |
+  | refactor | ♻️ | restructuring without behaviour change |
+  | test | ✅ | tests |
+  | chore | 🔧 | maintenance |
+  | ci | 👷 | the pipeline |
+  | perf | ⚡ | performance |
+  | style | 💄 | formatting |
+
+  A breaking change is `✨ feat!: …` with a `BREAKING CHANGE:` paragraph in the body.
+- **The PR title follows the same format** — a squash merge takes it as the commit subject. The body
+  says what changed, why, and what you ran; the template asks for exactly that.
+- **Read the Copilot review** and address it: fix, or reply saying why not. A PR is not done when it
+  is opened.
+- **Do not open thin PRs.** Group a coherent body of work — a slice, a family of fixes, a refactor and
+  the test that proves it — so it can be reviewed as a unit.
+
+## Documentation
+
+The wiki is bilingual. Every page has an English canonical file and a Portuguese twin under
+`locale/pt-BR/<Page>-pt-BR.md`, edited in the **same commit**; the documentation site fails its build
+when a translation is older than its canonical page. Version marks (`*Since **0.2.0-preview.N***`)
+are derived from git, never from memory. The project's word is *component* — never "widget".
+
+## Reporting
+
+Bugs and feature requests: the [issue templates](https://github.com/eQuantic/equantic-ui/issues/new/choose)
+ask for what a fix needs. Questions and ideas: [Discussions](https://github.com/eQuantic/equantic-ui/discussions).
+Security problems: privately, through [SECURITY.md](SECURITY.md).
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the MIT License.
+By contributing you agree that your contributions are licensed under the [MIT License](LICENSE).

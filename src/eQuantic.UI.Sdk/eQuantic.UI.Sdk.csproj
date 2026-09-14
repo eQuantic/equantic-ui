@@ -5,7 +5,7 @@
         <IncludeBuildOutput>false</IncludeBuildOutput>
         <IsPackable>true</IsPackable>
         <PackageId>eQuantic.UI.Sdk</PackageId>
-        <Description>MSBuild SDK for eQuantic UI components.</Description>
+        <Description>The MSBuild SDK for eQuantic.UI web apps. `&lt;Project Sdk="eQuantic.UI.Sdk"&gt;` and nothing else: it brings the vocabulary, the write-once component library, the web realizer, the ASP.NET Core server, the browser runtime, and the embedded compiler and bundler for the building machine — no PackageReference, no Node.js.</Description>
         <PackageType>MSBuildSdk</PackageType>
         <!--
             Two tool folders staged into one: eqc and eqicon carry the same Roslyn assemblies, and

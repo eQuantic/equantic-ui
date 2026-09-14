@@ -10,6 +10,12 @@
         <RepositoryType>git</RepositoryType>
         <PackageIcon>Icon.png</PackageIcon>
         <PackageReadmeFile>README.md</PackageReadmeFile>
+        <!-- What nuget.org indexes and shows beside every package: the site, the search tags, and a
+             description for the packages that have none of their own (a project's own <Description>
+             wins, because the project file is evaluated after this one). -->
+        <PackageProjectUrl>https://ui.equantic.tech</PackageProjectUrl>
+        <PackageTags>dotnet;csharp;ui;components;cross-platform;write-once;aspnetcore;ssr;gpu;metal;vulkan;flutter-inspired;transpiler;design-system;ios;android;macos;windows</PackageTags>
+        <Description>eQuantic.UI — write components once in C#; realized as DOM and CSS on the web or as GPU pixels on macOS, iOS, Android and Windows. No JavaScript, no Swift, no platform files, one .NET SDK.</Description>
 
         <!-- The doc comments are the only description of a component's parameters that exists, and
              the visual editor's inspector reads them off the SYMBOL. An app's own components arrive
