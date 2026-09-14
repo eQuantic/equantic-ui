@@ -50,7 +50,10 @@ public class WikiVocabularyTests
             "UIOptions has no such property"),
         new("widget", new Regex(@"\bwidgets?\b", RegexOptions.IgnoreCase), "component",
             "the project's word is component; Flutter's word stays in Flutter's column, and Android's class names are Android's"),
-        new("Alt", new Regex(@"\b(Image|CameraPreview)\.Alt\b|\balt:"), "Label / label:",
+        // Member access, the factory's named argument, and the object initializer (`new Image(…) { Alt = … }`)
+        // — Alt was an init property before #81. A line that names neither node is the escape hatch's
+        // `HtmlElement.Alt`, which mirrors <img alt> on purpose and stays.
+        new("Alt", new Regex(@"\b(Image|CameraPreview)\.Alt\b|\balt:|\b(Image|CameraPreview)\b[^\n]*\bAlt\s*="), "Label / label:",
             "#81 — alt is <img alt>'s word; Label is the agnostic name, on Image and CameraPreview alike"),
         // The three below are narrowed to the VOCABULARY's retired members on purpose: the DOM escape
         // hatch keeps `HtmlStyle.ZIndex` and `Position.Sticky` because it mirrors CSS, and a page that
