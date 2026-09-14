@@ -497,6 +497,24 @@ stays as the analogue of `didExceedMaxLines`, read by no realizer. Same family a
 — the property one realizer honours and another drops in silence — found by the IDE consumer's session,
 measured here, and half of it found again by the same consumer reading a header.
 
+**And one newline that depends on the host — found by running the suite on Windows (#145).**
+`StringBuilder.AppendLine()` and `ReplaceLineEndings()` with no argument use `Environment.NewLine`:
+`\r\n` on Windows, `\n` everywhere else. Their eqc translations say `\n`, and both sides wrote the
+decision down — "the eqc world's NewLine" in the strategy, "Unix `Environment.NewLine`, matching the
+server/runtime" in the `StringBuilder` twin — which was true until a Windows runner ran the suite. The
+two tests fold `\r\n` to `\n` on both sides and assert the difference is ONLY that, the RootN shape.
+The product exposure is narrower than "SSR from a Windows host mismatches at hydration", and it was
+measured rather than assumed: a real Chrome parsing `a\r\nb` in a text node, a `<pre>`, a `<textarea>`
+and an attribute yields `a\nb` in all four — the HTML tokenizer folds CR LF before the DOM exists — and
+only a JSON payload keeps the `\r`. So a Windows-hosted server's markup hydrates clean; what differs
+is DATA: a string built with either call on the server and carried to the client in the prefetch or
+state payload holds `\r\n` where the same code in the browser produces `\n`. *How does the product
+principle answer it?* Not with a compiler fence on the two no-argument forms: that teaches an author
+a host's line ending, which is exactly the platform artifact the SDK exists to absorb. The SDK owns
+it — the payload writer (and, for symmetry, the web realizer's text) normalises line endings to the
+runtime's `\n`, the same way it already owns the culture catalog and the route's `null`. Sized S,
+decision Edgar's; nothing in `.54` changes because of it.
+
 ### What a misplaced type had already copied
 
 Geometry sat in `Native.Engine` (section 4), so `Primitives` could not name it, so `Primitives` grew
