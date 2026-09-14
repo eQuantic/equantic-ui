@@ -6,7 +6,7 @@ namespace eQuantic.UI.Native.Shell.Apple;
 
 /// <summary>
 /// The W4 icon rasterizer on macOS — CoreGraphics only (the zero third-party rule): the shared
-/// <see cref="SvgPath"/> parser lowers the glyph's path data to moves/lines/cubics, CG fills
+/// <see cref="VectorPath"/> parser lowers the glyph's path data to moves/lines/cubics, CG fills
 /// (nonzero) or strokes (round caps/joins, the icon-pack convention) into an A8 coverage bitmap at
 /// device scale. The CTM flips CG's bottom-up frame and scales viewBox units → pixels, so stroke
 /// widths stay in glyph units. v1 fences: single fill rule (nonzero — IconGlyph carries none),
@@ -65,7 +65,7 @@ public sealed partial class CoreGraphicsIconRasterizer : IIconRasterizer
 
     public TextRaster? Rasterize(IconGlyph glyph, float widthDp, float heightDp, float scale)
     {
-        var segments = SvgPath.Parse(glyph.Path);
+        var segments = VectorPath.Parse(glyph.Path);
         if (segments.Count == 0) return null;
 
         // viewBox "minX minY w h" → normalize to origin, scale units → pixels.
@@ -96,18 +96,18 @@ public sealed partial class CoreGraphicsIconRasterizer : IIconRasterizer
             {
                 switch (segment.Verb)
                 {
-                    case PathVerb.Move:
+                    case VectorVerb.Move:
                         CGContextMoveToPoint(context, segment.End.X, segment.End.Y);
                         break;
-                    case PathVerb.Line:
+                    case VectorVerb.Line:
                         CGContextAddLineToPoint(context, segment.End.X, segment.End.Y);
                         break;
-                    case PathVerb.Cubic:
+                    case VectorVerb.Cubic:
                         CGContextAddCurveToPoint(context,
                             segment.C1.X, segment.C1.Y, segment.C2.X, segment.C2.Y,
                             segment.End.X, segment.End.Y);
                         break;
-                    case PathVerb.Close:
+                    case VectorVerb.Close:
                         CGContextClosePath(context);
                         break;
                 }

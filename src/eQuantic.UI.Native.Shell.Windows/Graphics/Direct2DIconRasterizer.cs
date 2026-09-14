@@ -5,7 +5,7 @@ namespace eQuantic.UI.Native.Shell.Windows.Graphics;
 
 /// <summary>
 /// The W4 icon rasterizer on Windows — Direct2D only (the zero third-party rule, the twin of the
-/// Mac's CoreGraphics one): the shared <see cref="SvgPath"/> parser lowers the glyph's path data to
+/// Mac's CoreGraphics one): the shared <see cref="VectorPath"/> parser lowers the glyph's path data to
 /// moves/lines/cubics, a path geometry fills (nonzero) or strokes (round caps/joins, the icon-pack
 /// convention) into an A8 coverage bitmap at device scale. The transform scales viewBox units to
 /// pixels and Direct2D scales stroke widths with it, so strokes stay in glyph units — exactly the
@@ -41,7 +41,7 @@ public sealed unsafe class Direct2DIconRasterizer : IIconRasterizer, IDisposable
 
     public TextRaster? Rasterize(IconGlyph glyph, float widthDp, float heightDp, float scale)
     {
-        var segments = SvgPath.Parse(glyph.Path);
+        var segments = VectorPath.Parse(glyph.Path);
         if (segments.Count == 0) return null;
 
         // viewBox "minX minY w h" → normalize to origin, scale units → pixels.
@@ -83,7 +83,7 @@ public sealed unsafe class Direct2DIconRasterizer : IIconRasterizer, IDisposable
 
     /// <summary>The path as a Direct2D geometry — figures opened on every Move, closed on Close,
     /// left open (a stroke's open contour) otherwise.</summary>
-    private void* Geometry(IReadOnlyList<PathSegment> segments)
+    private void* Geometry(IReadOnlyList<VectorSegment> segments)
     {
         void* geometry;
         Com.Check(D2D.CreatePathGeometry(_d2d, &geometry), "path geometry");
@@ -97,16 +97,16 @@ public sealed unsafe class Direct2DIconRasterizer : IIconRasterizer, IDisposable
             {
                 switch (segment.Verb)
                 {
-                    case PathVerb.Move:
+                    case VectorVerb.Move:
                         if (open) D2D.EndFigure(sink, D2D.FigureEndOpen);
                         D2D.BeginFigure(sink, new D2D.Point2F(segment.End.X, segment.End.Y), D2D.FigureBeginFilled);
                         open = true;
                         break;
-                    case PathVerb.Line:
+                    case VectorVerb.Line:
                         if (!open) { D2D.BeginFigure(sink, new D2D.Point2F(segment.End.X, segment.End.Y), D2D.FigureBeginFilled); open = true; break; }
                         D2D.AddLine(sink, new D2D.Point2F(segment.End.X, segment.End.Y));
                         break;
-                    case PathVerb.Cubic:
+                    case VectorVerb.Cubic:
                         if (!open) { D2D.BeginFigure(sink, new D2D.Point2F(segment.End.X, segment.End.Y), D2D.FigureBeginFilled); open = true; break; }
                         var bezier = new D2D.BezierSegment
                         {
@@ -116,7 +116,7 @@ public sealed unsafe class Direct2DIconRasterizer : IIconRasterizer, IDisposable
                         };
                         D2D.AddBezier(sink, &bezier);
                         break;
-                    case PathVerb.Close:
+                    case VectorVerb.Close:
                         if (open) D2D.EndFigure(sink, D2D.FigureEndClosed);
                         open = false;
                         break;
