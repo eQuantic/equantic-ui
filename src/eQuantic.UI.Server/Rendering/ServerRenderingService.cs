@@ -372,10 +372,15 @@ public class ServerRenderingService : IServerRenderingService
                 routeParams[rv.Key] = rv.Value.ToString() ?? string.Empty;
         }
 
+        // A REPEATED key means its FIRST value — `?tag=a&tag=b` is `a`. `StringValues.ToString()`
+        // comma-JOINS ("a,b"), which is ASP.NET's own spelling and not a thing a page asking for
+        // `Query("tag")` can use; the client answered the first value, from `URLSearchParams.get`.
+        // Two sides, two answers, neither written down. This is the one both keep now, and
+        // `RouteValuesQueryPolicyTests` holds them to it. Found in review.
         var query = new Dictionary<string, string>();
         foreach (var q in context.Request.Query)
         {
-            query[q.Key] = q.Value.ToString();
+            query[q.Key] = q.Value.Count > 0 ? q.Value[0] ?? string.Empty : string.Empty;
         }
 
         return new Primitives.RouteValues(routeParams, query);

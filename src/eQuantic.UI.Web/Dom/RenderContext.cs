@@ -75,9 +75,16 @@ public class RenderContext
     /// fallback and the per-instance dictionary that used to live here answered the same question:
     /// nothing in the tree ever registered into the dictionary, and nothing ever set the global.
     /// </para>
+    /// <para>
+    /// ONE accessor, with the SAME signature as <see cref="ComponentContext.GetService{T}"/> — and
+    /// that is a contract with the transpiler, not a tidiness choice. `ServiceProviderStrategy`
+    /// recognizes `GetService` and `GetRequiredService`; a `TryGetService` beside it fell through to
+    /// an ordinary invocation and emitted `context.tryGetService(...)`, which the runtime's
+    /// `RenderContext` has never had. And a nullable return is what the twin answers
+    /// (`getService(key): T | undefined`), so a version here that THREW would have made the two
+    /// sides disagree about an absent capability: SSR fails the request, the client renders on.
+    /// Found in review.
+    /// </para>
     /// </summary>
-    public T? TryGetService<T>() where T : class => CapabilityScope.Resolve<T>();
-
-    /// <summary>The same capability, where its absence is a mistake rather than an answer.</summary>
-    public T GetService<T>() where T : class => CapabilityScope.Require<T>(nameof(RenderContext));
+    public T? GetService<T>() where T : class => CapabilityScope.Resolve<T>();
 }

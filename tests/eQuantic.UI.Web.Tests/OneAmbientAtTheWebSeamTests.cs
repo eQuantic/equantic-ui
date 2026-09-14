@@ -1,3 +1,4 @@
+using System.Reflection;
 using eQuantic.UI.Primitives;
 using eQuantic.UI.Web;
 using FluentAssertions;
@@ -73,21 +74,52 @@ public class OneAmbientAtTheWebSeamTests
     {
         using var _ = CapabilityScope.With<IClipboardish>(new Clipboardish());
 
-        new RenderContext().TryGetService<IClipboardish>()?.Read().Should().Be("armed");
-        new RenderContext().GetService<IClipboardish>().Read().Should().Be("armed");
+        new RenderContext().GetService<IClipboardish>()?.Read().Should().Be("armed");
     }
 
-    /// <summary>…and an absence is still an absence, in the two shapes a caller asked for it.</summary>
+    /// <summary>…and an absence is an absence rather than a throw, because that is what the TWIN
+    /// answers: `getService(key): T | undefined`. A version here that threw would make the two sides
+    /// disagree about a missing capability — SSR fails the request, the client renders on.</summary>
     [Fact]
-    public void WithNothingArmed_TheCapabilityIsNullOrSaysWhoNeededIt()
+    public void WithNothingArmed_TheCapabilityIsNull()
     {
         CapabilityScope.Current = null;
 
-        new RenderContext().TryGetService<IClipboardish>().Should().BeNull();
-        var thrown = Assert.Throws<InvalidOperationException>(
-            () => new RenderContext().GetService<IClipboardish>());
-        thrown.Message.Should().Contain("IClipboardish",
-            "the message names the capability, because the reader is usually on the target that "
-            + "does not have it");
+        new RenderContext().GetService<IClipboardish>().Should().BeNull();
+    }
+
+    /// <summary>
+    /// ONE accessor, and the same shape as the vocabulary's — asserted by REFLECTION because the
+    /// contract is with the transpiler rather than with a caller. `ServiceProviderStrategy`
+    /// recognizes `GetService` and `GetRequiredService`; a `TryGetService` beside them fell through
+    /// to an ordinary invocation and emitted `context.tryGetService(...)`, a method the runtime's
+    /// `RenderContext` has never had. Found in review.
+    /// </summary>
+    [Fact]
+    public void TheWebContextOffersTheSameCapabilityApiAsTheVocabulary()
+    {
+        var web = typeof(RenderContext).GetMethods()
+            .Where(m => m.Name.Contains("Service", StringComparison.Ordinal))
+            .Select(m => m.Name).OrderBy(n => n, StringComparer.Ordinal).ToList();
+
+        web.Should().Equal(["GetService"],
+            "the transpiler knows GetService and GetRequiredService by name; anything else here is "
+            + "emitted as an ordinary call to a method the runtime does not have");
+
+        // NULLABILITY, not the type: both return the method's own `T`, so comparing `ReturnType`
+        // compares two open type parameters and passes for any signature at all. What separates a
+        // `T?` from a `T` is the annotation, and that is the difference the twin cares about — it
+        // answers `T | undefined`.
+        var nullability = new NullabilityInfoContext();
+        var webReturn = nullability.Create(
+            typeof(RenderContext).GetMethod("GetService")!.ReturnParameter);
+        var vocabularyReturn = nullability.Create(
+            typeof(ComponentContext).GetMethod("GetService")!.ReturnParameter);
+
+        webReturn.ReadState.Should().Be(NullabilityState.Nullable,
+            "an absent capability is an answer here, because the runtime twin returns undefined "
+            + "rather than throwing — a throw would make SSR fail a request the client renders");
+        webReturn.ReadState.Should().Be(vocabularyReturn.ReadState,
+            "the two contexts answer the same question, so they answer it in the same shape");
     }
 }

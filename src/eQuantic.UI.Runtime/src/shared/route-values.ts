@@ -24,15 +24,26 @@ export class RouteValues {
     this.queries = query ?? {};
   }
 
-  /** From a router match's params and a URL's search string — what the router has to hand. */
+  /**
+   * From a router match's params and a URL's search string — what the router has to hand.
+   *
+   * A REPEATED key keeps its FIRST value (`?tag=a&tag=b` is `a`). That is a policy rather than an
+   * accident: `Object.fromEntries` would keep the last, `URLSearchParams.get` answers the first,
+   * and the server used to hand over ASP.NET's comma-join — three answers to one question, none of
+   * them written down. `RouteValuesQueryPolicyTests` holds both sides to this one.
+   */
   static from(
     parameters: Record<string, string>,
     query: URLSearchParams | Record<string, string>,
   ): RouteValues {
-    const pairs =
-      query instanceof URLSearchParams
-        ? Object.fromEntries(query.entries())
-        : { ...(query ?? {}) };
+    const pairs: Record<string, string> = {};
+    if (query instanceof URLSearchParams) {
+      for (const [key, value] of query.entries()) {
+        if (!Object.prototype.hasOwnProperty.call(pairs, key)) pairs[key] = value;
+      }
+    } else {
+      Object.assign(pairs, query ?? {});
+    }
     return new RouteValues(parameters, pairs);
   }
 
@@ -43,7 +54,8 @@ export class RouteValues {
       : null;
   }
 
-  /** A query-string value — the `page` of `?page=2`. */
+  /** A query-string value — the `page` of `?page=2`. A key repeated in the URL answers its FIRST
+   * value, which is the policy `from` applies and the server applies too. */
   query(name: string): string | null {
     return Object.prototype.hasOwnProperty.call(this.queries, name) ? this.queries[name] : null;
   }
