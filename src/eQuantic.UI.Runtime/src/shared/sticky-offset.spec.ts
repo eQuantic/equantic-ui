@@ -572,7 +572,8 @@ describe('the first measurement corrects a cold load that landed under the chrom
 
     publishAnchorOffset();
     frame(40);
-    expect(pending.length).toBeGreaterThan(0, 'still watching inside the wall clock');
+    // Still watching, because the wall clock has not run out.
+    expect(pending.length).toBeGreaterThan(0);
 
     clock += 10_001; // the watch's own bound, with readyState still 'loading'
     frame();
