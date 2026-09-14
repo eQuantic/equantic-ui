@@ -116,8 +116,15 @@ public class BarChartTests
             table.Columns.Skip(1).Select(c => c.Header).Should().Equal("Alpha", "Beta", "Gamma");
             table.Rows.Should().HaveCount(4);
             table.Rows[0].Key.Should().Be("Q1");
-            // The same format the axis and the tooltip use, in the request's culture.
-            Texts(Render(table)).Should().Contain(["$12", "$15", "-$3", "$0"]);
+            // The same format the axis and the tooltip use, in the request's culture — DERIVED
+            // from that formatter rather than spelled out, because how a culture writes a negative
+            // currency is ICU's answer and not ours: en-US is "-$3" where the .NET on macOS and
+            // Linux reads its tables and "($3)" on the Windows runner. Spelling one of them made
+            // this test assert the host, and it failed the first time the suite ran anywhere else.
+            var expected = new[] { 12, 15, -3, 0 }
+                .Select(value => value.ToString("C0", CultureInfo.CurrentCulture))
+                .ToArray();
+            Texts(Render(table)).Should().Contain(expected);
         }
         finally
         {
