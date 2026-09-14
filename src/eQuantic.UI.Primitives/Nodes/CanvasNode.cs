@@ -125,6 +125,9 @@ public sealed class Canvas : VisualNode
     /// <summary>What assistive technology is told this canvas IS, because a drawing says nothing on
     /// its own. Null leaves it decorative, which is the honest answer for pure ornament.</summary>
     public string? Label { get; init; }
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }
 
 /// <summary>A pointer event in a canvas's own coordinates.</summary>

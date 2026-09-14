@@ -50,4 +50,7 @@ public sealed class Image : VisualNode
 
     /// <summary>Radius token clips via rrect — per-corner allowed (spec A11).</summary>
     public CornerRadii CornerRadius { get; init; }
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }

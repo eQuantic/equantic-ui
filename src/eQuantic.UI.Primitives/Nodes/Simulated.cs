@@ -59,4 +59,7 @@ public sealed class Simulated : VisualNode
     public SimulatedState State { get; init; }
 
     public VisualNode Child { get; init; }
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }

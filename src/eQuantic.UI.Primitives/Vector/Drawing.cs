@@ -59,4 +59,7 @@ public sealed class Drawing : VisualNode
 
     /// <summary>Accessibility label; null = decorative (aria-hidden on web).</summary>
     public string? Label { get; init; }
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }

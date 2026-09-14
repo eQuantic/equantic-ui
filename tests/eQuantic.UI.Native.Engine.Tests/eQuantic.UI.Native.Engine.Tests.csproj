@@ -50,6 +50,12 @@
     <ProjectReference Include="..\..\src\eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Charts\eQuantic.UI.Charts.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Material\eQuantic.UI.Material.csproj" />
+    <!-- The OTHER graph, for ClosedHierarchyTests: the vocabulary's closure has to be asked about
+         every assembly that could declare a node, and a scan of the native side alone would report
+         nothing about one born in a web realizer. A test project is a leaf, so this is not a
+         layering edge — AssemblyLayeringTests deliberately does not name test projects. -->
+    <ProjectReference Include="..\..\src\eQuantic.UI.Web\eQuantic.UI.Web.csproj" />
+    <ProjectReference Include="..\..\src\eQuantic.UI.Email\eQuantic.UI.Email.csproj" />
   </ItemGroup>
 
 </Project>

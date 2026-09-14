@@ -37,4 +37,7 @@ public sealed class Spinner : VisualNode
 
     /// <summary>Tint token; null inherits the context text color (like Icon/Text).</summary>
     public ColorToken? Color { get; init; }
+
+    public sealed override TResult Accept<TState, TResult>(
+        IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }

@@ -34,6 +34,15 @@ import { Point, Rect } from './value-types';
 const NO_TWIN_OWED = new Set([
   // Never in a page bundle: host and server plumbing, or an abstract base.
   'AbsentMotionSensor',
+  // The unit type of `IVisualNodeVisitor` — the type argument a pass uses when it carries nothing
+  // down or hands nothing back. A component BUILDS a tree; visiting one is what a realizer, a
+  // layout pass or a semantics walk does, and all of those live above the page. Nothing a page can
+  // write names it.
+  //
+  // It belongs behind the [ServerOnly] fence rather than on this list, for the reason #135 gave:
+  // an entry here is a note saying "no page does this" where the attribute is the BUILD saying no.
+  // The attribute only learned to sit on a struct in #135; this moves when that lands.
+  'Nothing',
   // `ComponentBoundary`, `FaceResolution` and `EffectiveTypeStyle` used to be named here. They are
   // `[ServerOnly]` now, the compiler REFUSES a client reference to them (EQ2010), and the C# side
   // drops them from the pinned list by that rule — so they are gone from here rather than excused
