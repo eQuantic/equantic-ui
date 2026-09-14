@@ -88,7 +88,16 @@ public sealed class PhotonApplication
     }
 
     /// <summary>Sets the screen and hands control to the platform — the usual last line.</summary>
-    public void Run<TRoot>() where TRoot : VisualNode => UseRoot<TRoot>().Run();
+    /// <remarks>
+    /// The annotation is FORWARDED, not decorative: this hands <c>TRoot</c> to
+    /// <see cref="UseRoot{TRoot}()"/>, which resolves it through <c>ActivatorUtilities</c>. Without
+    /// the same requirement here the trimmer may remove the very constructor that lookup needs, and
+    /// the app fails at startup in a trimmed publish only.
+    /// </remarks>
+    public void Run<
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(
+            System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
+        TRoot>() where TRoot : VisualNode => UseRoot<TRoot>().Run();
 
     public void Run(Func<VisualNode> root) => UseRoot(root).Run();
 

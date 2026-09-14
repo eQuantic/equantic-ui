@@ -7,6 +7,18 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Description>The iOS platform shell for the Photon engine: a UIViewController whose view IS a CAMetalLayer, driven by a CADisplayLink, with touches routed into the same PhotonHost pipeline the macOS window uses. UIKit only owns the app lifecycle, the view and the touches; the drawable is driven by the very same messages the macOS shell sends.</Description>
+
+    <!-- CA1422 is the one debt this bar is lifted for, deliberately and visibly: eleven APIs that
+         still work but are deprecated on a newer OS than this shell's floor — the
+         LocationManager/Criteria stack, AccessibilityNodeInfo.Obtain, UIWindow(CGRect),
+         TraitCollectionDidChange. Each replacement is a behavioural migration (scene-based
+         lifecycle, provider strings instead of Criteria), and NO test project references either
+         shell: they are verifiable only on a device or emulator. Migrating them blind to clear a
+         warning is the opposite of the bar Directory.Build.props just set.
+
+         NotAsErrors, never NoWarn: they keep printing, so the debt stays visible and counted
+         rather than deleted. -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);CA1422</WarningsNotAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
