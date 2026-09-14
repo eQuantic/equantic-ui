@@ -84,7 +84,7 @@ reader and to the build.
 | Dispatch | Assembly | Method | Covers | On an unknown node | Decides |
 |---|---|---|---|---|---|
 | `LayoutEngine` | Native.Framework | `MeasureCore` | 37 / 39 | a zero-sized box, silently | how big it is, and where |
-| `WebRealizer` | Web | `LowerNodeKind` | 37 / 39 | `null`, silently | what DOM the server writes |
+| `WebRealizer` | Web | `LowerNodeKind` | 38 / 39 | `null`, silently | what DOM the server writes |
 | `lowering.ts` | TypeScript runtime | `lowerNodeKind` | 39 / 39 | `render()` or `null`, silently | what DOM the browser writes |
 | `PhotonRealizer` | Native.Components | `EmitNode` | 28 / 39 | nothing, silently | what the GPU draws |
 | `Semantics` | Native.Components | `Walk` | 13 / 39 | walks the children | what a screen reader says |
@@ -116,7 +116,8 @@ seventh by the pin the day it grew to read the web realizer.
 | `Text.Align` | Honoured by the web, dropped by all three native text services | a cross-pin (#103) |
 | `VisualNode.Key` | Documented as reconciler identity, read by neither realizer | an audit (#95) |
 | `Navigable` · `Overlay` | Open: honoured by the web, silent on Photon | still open |
-| `CodeSurface` · `SheetSurface` | **Closed.** The server rendered an EMPTY `<span>` where the browser draws a code editor or a spreadsheet — no case in `LowerNodeKind`, `_ => null`, from the day each shipped (05ef6f1b, d8be2bd6) until this pass. Both have arms now, and `SurfaceSsrTests` keeps them: its A/B is the empty span itself | this pass — found by this pin, fixed in the same week |
+| `SheetSurface` | **Closed.** The server rendered an EMPTY `<span>` where the browser draws a spreadsheet — no case in `LowerNodeKind`, `_ => null`, from the day it shipped (d8be2bd6). `SurfaceSsrTests` keeps it; its A/B is the empty span itself | this pass — found by this pin, fixed in the same week |
+| `CodeSurface` | **Open, for a different reason than it was found for.** The empty span is understood; what blocks the arm is that the client appends a CARET to every code surface, so a server tree with only the child is one element short and the reconciler records a failed adoption. The shape has to be settled — does the server render the controller's caret, or does the client stop appending during hydration? — and settling it needs a running page | this pass |
 
 ### The asymmetry it exposes, and how Flutter avoids it
 
@@ -506,10 +507,13 @@ makes the rest safe.
 
 0. **Done in this pass.** The six-door coverage pin, the layering pin, the handoff vocabulary pin, six
    parity rows with probes, the dead `Web → Components` edge, the alias comment, the A11 word.
-1. ~~**The SSR surfaces defect** (`CodeSurface`, `SheetSurface` → empty span).~~ **Done.** The server
-   writes each surface and its child; the caret, the selection and the path stay client-side and are
-   pinned as deliberate. The two exemptions are gone from the coverage pin, which is the first time
-   that list has shrunk. — S
+1. **The SSR surfaces defect** (`CodeSurface`, `SheetSurface` → empty span). ~~`SheetSurface`~~ done:
+   the server writes the grid and its child, and its exemption is gone from the coverage pin — the
+   first time that list has shrunk. `CodeSurface` remains, and the question is now a SHAPE one: the
+   client appends a caret to every surface, so an arm that writes only the child hands hydration a
+   tree one element short. Either the server renders the controller's caret (it has the state) or
+   the client stops appending during hydration; the choice needs a running page to settle. — S done,
+   S remaining
 2. **Visitor over the vocabulary, generated `NodeKind` union with `assertNever` in TypeScript**
    (Flutter: abstract `performLayout`/`paint`). One file per node family per realizer, as
    `Strategies/` is per construct. Retire the regex pin when the last switch is gone. — L

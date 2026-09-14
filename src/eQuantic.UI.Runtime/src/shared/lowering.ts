@@ -515,35 +515,28 @@ function lowerPresence(
  */
 function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path: string): HtmlNode {
   const editor = node.editor;
-  const surface: HtmlNode = {
-    tag: 'div',
-    attributes: {
-      class: 'eq-code-surface',
-      tabindex: '0',
-      role: 'textbox',
-      'aria-multiline': 'true',
+  // ATOMISED, like every other node. It used to carry a literal style string, on the reasoning that
+  // "there is no C# twin to agree with — the web realizer has no CodeSurface arm", which made the
+  // dedup worth one element and parity worth nothing. The arm is still absent (the server has no
+  // business rendering the caret this appends, and a tree one element short is a failed adoption),
+  // but the reasoning was never a good one to leave standing: the day it gains an arm, a client
+  // string beside a server class is the hydration mismatch the atomizer exists to prevent, and
+  // that day should not also be the day someone has to remember this.
+  const surface = element(
+    'div',
+    {
+      'pointer-events': 'auto',
+      position: 'relative',
+      outline: 'none',
       // pre: token runs carry REAL spaces between words — HTML would collapse them.
-      //
-      // It does NOT scroll. It used to, and that put the code in one coordinate space and the two
-      // marks below in another: the marks are absolute children of this box, so anything that
-      // scrolled INSIDE it moved the text out from under them — scroll a long line sideways and the
-      // caret stays behind, and a click is read at the column it would have hit unscrolled. The
-      // scroll views live outside the surface now (CodeEditor), so this box travels WITH the code
-      // and the arithmetic below is true wherever the file has been scrolled to.
-      // An editing surface takes the pointer and the caret, so it declares itself a target:
-      // `none` inherits from a transparent row above.
-      //
-      // A STRING here on purpose, unlike every node beside it. There is no C# twin to agree with —
-      // the web realizer has no CodeSurface arm and falls to `_ => null`, so SSR emits nothing for
-      // an editor and the client builds the whole thing on hydration. Atomising would therefore buy
-      // no parity, and the dedup it buys is one element per editor. Checked when the spinner beside
-      // it was atomised for the opposite reason: that one HAS a twin, and carried a class from the
-      // server and an inline style from the browser.
-      style: 'pointer-events:auto;position:relative;outline:none;white-space:pre;',
+      'white-space': 'pre',
     },
-    events: {},
-    children: [],
-  };
+    [],
+  );
+  prependClass(surface, 'eq-code-surface');
+  surface.attributes['tabindex'] = '0';
+  surface.attributes['role'] = 'textbox';
+  surface.attributes['aria-multiline'] = 'true';
   if (node.label) surface.attributes['aria-label'] = node.label;
   if (node.autofocus) surface.attributes['autofocus'] = '';
   // The surface's identity across rebuilds — every keystroke hands over a new element, so anything

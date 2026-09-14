@@ -151,13 +151,15 @@ public class VocabularyCoverageTests
             "src/eQuantic.UI.Web/WebRealizer.cs",
             "LowerNodeKind",
             "what DOM does the server write",
-            Language.CSharp),
-            // NOTHING IS EXEMPT HERE, and this list was two entries long for one day. `CodeSurface`
-            // and `SheetSurface` fell through `_ => null` from the day each shipped (05ef6f1b,
-            // d8be2bd6, August 2026), so the server wrote an EMPTY SPAN where the browser draws a
-            // code editor or a spreadsheet — the seventh defect of this family, and the one this
-            // dispatch's arrival in the pin found. Both have arms now; `SurfaceSsrTests` holds
-            // them, and its A/B is the empty span itself.
+            Language.CSharp,
+            // `SheetSurface` left this list when the server learned to write it. `CodeSurface` is
+            // still here, and the reason CHANGED rather than survived: it is no longer "nobody
+            // noticed", it is that the client appends a caret to every code surface and the server
+            // has no business rendering a caret. Emitting only the child would give hydration a tree
+            // one element short, which the reconciler records as a failed adoption — so the shape
+            // has to be settled before the arm is worth having, and settling it needs a running
+            // page rather than a guess. `SurfaceSsrTests` holds the half that is done.
+            "CodeSurface"),
 
         new("EmailRealizer",
             "src/eQuantic.UI.Email/EmailRealizer.cs",

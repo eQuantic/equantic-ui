@@ -184,8 +184,7 @@ public static class WebRealizer
         Primitives.Image image => LowerImage(image),
         CameraPreview camera => LowerCameraPreview(camera),
         WebFrame frame => LowerWebFrame(frame),
-        CodeSurface code => LowerCodeSurface(code, context),
-        SheetSurface sheet => LowerSheetSurface(sheet, context),
+        SheetSurface sheet => LowerSheetSurface(sheet, context, horizontalAxis),
         Pressable pressable => LowerPressable(pressable, context),
         Hoverable hoverable => LowerHoverable(hoverable, context),
         Simulated simulated => LowerSimulated(simulated, context, horizontalAxis),
@@ -1462,85 +1461,6 @@ public static class WebRealizer
     /// <see cref="WebFrame.Document"/> wins over <see cref="WebFrame.Source"/>; the border is the
     /// frame's own 1990s default, so it goes.
     /// </summary>
-    /// <summary>
-    /// The editor's SKELETON, server-side. Shipped in August 2026 and lowered to nothing until now:
-    /// there was no arm here, so <c>_ =&gt; null</c> caught it and SSR wrote an empty span where the
-    /// browser draws a whole editor. A reader without JavaScript, and every crawler, saw a document
-    /// with a hole in it.
-    ///
-    /// <para>
-    /// What the server writes is the surface and the CODE: the box, its role as a multiline textbox,
-    /// and the child the author put inside. What it does not write is live state — the caret and the
-    /// selection band are where the reader is, not what the document says, and a caret rendered into
-    /// markup is a caret in the wrong place the moment anyone types.
-    /// </para>
-    ///
-    /// <para>
-    /// One more difference, stated because it is real: the client stamps <c>data-eq-code</c> with the
-    /// node's PATH so anything running after a render can find the surface again, and the web
-    /// realizer has no path — it lowers a tree, not a laid-out one. Hydration adds the attribute.
-    /// </para>
-    /// </summary>
-    private static HtmlElement LowerCodeSurface(CodeSurface code, ComponentContext context)
-    {
-        var attributes = new Dictionary<string, string>
-        {
-            ["tabindex"] = "0",
-            ["role"] = "textbox",
-            ["aria-multiline"] = "true",
-        };
-        if (code.Label is { Length: > 0 } label) attributes["aria-label"] = label;
-        if (code.Autofocus) attributes["autofocus"] = string.Empty;
-
-        var element = new RealizedElement("div")
-        {
-            ClassName = "eq-code-surface",
-            Style = new HtmlStyle
-            {
-                PointerEvents = "auto",
-                Position = Position.Relative,
-                Outline = "none",
-                // The token runs carry REAL spaces between words, and HTML would collapse them.
-                WhiteSpace = "pre",
-            },
-            RawAttributes = attributes,
-        };
-        if (LowerNode(code.Child, context, horizontalAxis: null) is { } child) element.Children.Add(child);
-        return element;
-    }
-
-    /// <summary>
-    /// The sheet's SKELETON, server-side, and the same defect as its sibling above — a grid that
-    /// rendered as an empty span to anything that does not run scripts.
-    ///
-    /// <para>
-    /// <c>user-select: none</c> because a drag on a grid extends the SHEET's selection, and the
-    /// browser's native text sweep would paint over the band the component draws.
-    /// </para>
-    /// </summary>
-    private static HtmlElement LowerSheetSurface(SheetSurface sheet, ComponentContext context)
-    {
-        var attributes = new Dictionary<string, string>
-        {
-            ["tabindex"] = "0",
-            ["role"] = "grid",
-        };
-        if (sheet.Label is { Length: > 0 } label) attributes["aria-label"] = label;
-
-        var element = new RealizedElement("div")
-        {
-            Style = new HtmlStyle
-            {
-                PointerEvents = "auto",
-                Outline = "none",
-                UserSelect = "none",
-            },
-            RawAttributes = attributes,
-        };
-        if (LowerNode(sheet.Child, context, horizontalAxis: null) is { } child) element.Children.Add(child);
-        return element;
-    }
-
     private static HtmlElement LowerWebFrame(WebFrame frame)
     {
         var tokens = new List<string>(4);
@@ -1576,6 +1496,42 @@ public static class WebRealizer
             SizeKind.Fill => "100%",
             _ => null, // hug = the element's own default
         };
+    }
+
+    /// <summary>
+    /// The sheet's SKELETON, server-side. It rendered as an empty span to anything that does not run
+    /// scripts — no arm here, so `_ => null` caught it, from the day it shipped (d8be2bd6).
+    ///
+    /// <para>
+    /// <c>user-select: none</c> because a drag on a grid extends the SHEET's selection, and the
+    /// browser's native text sweep would paint over the band the component draws.
+    /// </para>
+    /// </summary>
+    private static HtmlElement LowerSheetSurface(
+        SheetSurface sheet, ComponentContext context, bool? horizontalAxis)
+    {
+        var attributes = new Dictionary<string, string>
+        {
+            ["tabindex"] = "0",
+            ["role"] = "grid",
+        };
+        if (sheet.Label is { Length: > 0 } label) attributes["aria-label"] = label;
+
+        var element = new RealizedElement("div")
+        {
+            Style = new HtmlStyle
+            {
+                PointerEvents = "auto",
+                Outline = "none",
+                UserSelect = "none",
+            },
+            RawAttributes = attributes,
+        };
+        // The inherited axis travels THROUGH, as it does in the client twin: a Spacer inside a
+        // sheet inside a Row needs to know which way the row runs, and `null` makes it lower to
+        // nothing on the server while the browser renders it. Found in review.
+        if (LowerNode(sheet.Child, context, horizontalAxis) is { } child) element.Children.Add(child);
+        return element;
     }
 
     private static HtmlElement LowerImage(Primitives.Image image)
