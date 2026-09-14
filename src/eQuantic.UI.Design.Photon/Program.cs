@@ -253,8 +253,8 @@ static object? Construct(Type type, Assembly userAssembly, int depth)
     return constructor.Invoke(arguments);
 }
 
-/// <summary>An implementation of nothing: every member answers default. It exists so a page whose
-/// constructor merely READS a service can still be framed.</summary>
+// An implementation of nothing: every member answers default. It exists so a page whose
+// constructor merely READS a service can still be framed.
 static object? Stub(Type contract)
 {
     try

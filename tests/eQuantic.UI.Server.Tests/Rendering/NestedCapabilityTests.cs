@@ -7,6 +7,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using StatelessComponent = eQuantic.UI.Primitives.StatelessComponent;
 
+namespace eQuantic.UI.Server.Tests.Rendering;
+
 /// <summary>
 /// A component in the MIDDLE of a tree finds a capability on its own.
 /// <para>
@@ -16,8 +18,6 @@ using StatelessComponent = eQuantic.UI.Primitives.StatelessComponent;
 /// need forced an edit in every ancestor between it and the page.
 /// </para>
 /// </summary>
-namespace eQuantic.UI.Server.Tests.Rendering;
-
 public class NestedCapabilityTests
 {
     private interface IClipboardish

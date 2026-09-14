@@ -649,11 +649,9 @@ static void EmitStringCatalogs(eQuantic.UI.Compiler.ComponentCompiler compiler, 
         (cultures.Count > 0 ? " + " + string.Join(", ", cultures.Keys) : ""));
 }
 
-/// <summary>
-/// The reserved `$`-prefixed keys a catalog carries besides its strings (Track L D7): the ISO
-/// currency code and the culture's own date/time patterns. `$` cannot collide with a resource id,
-/// which is always a C# identifier followed by `/`.
-/// </summary>
+// The reserved `$`-prefixed keys a catalog carries besides its strings (Track L D7): the ISO
+// currency code and the culture's own date/time patterns. `$` cannot collide with a resource id,
+// which is always a C# identifier followed by `/`.
 static void AddFormatFacts(SortedDictionary<string, string> catalog,
     System.Globalization.CultureInfo culture)
 {
