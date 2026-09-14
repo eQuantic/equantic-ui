@@ -209,6 +209,21 @@ already writes `enums.generated.ts` and `design-system.generated.ts` from the as
   every type assignable to `VisualNode` outside `Primitives` is a `UiComponent`, every abstract node
   inside it that is not the component seam has only `private protected` constructors, and every
   concrete node is `sealed`.
+- **A closure-shaped pin derives its scan; it never lists it.** S1 was specified with a list of eight
+  assemblies. A guard comparing the list with what was loaded found two more at once, then five when
+  the whole suite ran instead of one filtered test — what the AppDomain holds depends on which tests
+  executed first, and a pin whose answer changes with the run order is worse than the list it checks.
+  `ClosedHierarchyTests` reads its set from the test's own output directory instead: every
+  `eQuantic.*.dll` there that references the vocabulary. Deterministic, and it grows with the tree on
+  its own. Every later pin of this shape — S8's replacement for the coverage pin included — states the
+  CRITERION for what it scans, and asserts that both graphs are in the result.
+- **A pin is A/B'd inside the graph it guards.** The proof that `ClosedHierarchyTests` discriminates
+  was first written by declaring a stranger node in the test project, and the pin stayed green — test
+  assemblies are excluded on purpose, so the A/B was never in the condition it claimed to test. Redone
+  inside `eQuantic.UI.Web`, it failed and named the type. Same shape as the CoreText assertion of #136,
+  where every other test passed against a middle cut because none asked which side survived. So each
+  slice's net includes one A/B written where the defect would live: a node with no `Visit` in the
+  realizer's own assembly, not in a test's.
 - **Output is byte-identical, by slice.** Each realizer already has the pin that says so: the web has
   `ComponentParityFixtureTests`, `PrimitiveValueFixtureTests` and `MarkerParityTests` (and
   `SurfaceSsrTests` once #121 lands — it is that PR's, not `main`'s yet);
@@ -235,7 +250,7 @@ executor takes them in this order; the auditor rewrites the audit's section 2 an
 
 | # | Slice | Nets | Size |
 |---|---|---|---|
-| S1 | `IVisualNodeVisitor<,>`, `Nothing`, `Accept` on `VisualNode`, forty one-line overrides, and the `private protected` constructors on `VisualNode` and `FlexNode` that close the hierarchy. No consumer yet. | the solution compiles; `ClosedHierarchyTests` (the closure, over both graphs); `UiFactoryConformanceTests` (factories are unaffected) | S |
+| S1 | **Landed (#138).** `IVisualNodeVisitor<,>`, `Nothing`, `Accept` on `VisualNode`, forty one-line overrides, and the `private protected` constructors on `VisualNode` and `FlexNode` that close the hierarchy. No consumer yet. `Nothing` is a public struct, so the runtime's export pin asked about it: it sits on `NO_TWIN_OWED` with its reason and moves behind `[ServerOnly]` once #135 lets the attribute sit on a struct. | the solution compiles; `ClosedHierarchyTests` (the closure, over both graphs); `UiFactoryConformanceTests` (factories are unaffected); the transpiled fixtures byte-identical without `EQ_UPDATE_TRANSPILED`; both samples build | S |
 | S2 | `Semantics.Walk` → `SemanticsVisitor`: 13 visits, 26 declines named for their reason; `Navigable` and `Overlay` decline until the group role of audit step 3 lands, then become visits. The `Semantics` dispatch leaves the coverage pin. | `SemanticsTests`, `CheckSemanticsTests`, `HeadingSemanticsTests`, `GraphicSemanticsTests`, `LabelledNodesReachSemanticsTests`, `UnlabelledGroupSemanticsTests`, the three bridges' tests | S |
 | S3 | `EmailRealizer.Write` → `EmailVisitor` and `EmailRenderer.WalkText` → `EmailTextVisitor`: 6 visits each, one shared refusal set of 33 behind one `Refuse`, which throws the `NotSupportedException` the HTML default arm throws today. `WalkText` has no default arm — a node it does not know falls out of its switch in silence — so the text visitor gains a refusal it never had, and that is the point: what one alternative refuses, the other refuses too. Both dispatches leave the pin (the second was never in it). | `eQuantic.UI.Email.Tests`, plus one fact that sends each of the 33 through both alternatives and expects the same refusal from each | S |
 | S7 | `NodeKindTsGenerator`, `node-kinds.generated.ts`, `nodeKind: NodeKind`, `assertNever`. The TypeScript dispatch leaves the pin; `EveryNode_DeclaresItsOwnWireKind` becomes the generator's duplicate check. | `EnumUnionsTsGeneratorTests`' sibling; `tsc` over the runtime, which is what makes `assertNever` bite — `dotnet build src/eQuantic.UI.Runtime -t:TestRuntime` runs it and then `vitest run`, and vitest alone type-checks nothing; the transpiled fixtures byte-pinned | S |
