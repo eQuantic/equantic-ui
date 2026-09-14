@@ -12,19 +12,6 @@
 
         <ApplicationId>tech.equantic.wallet</ApplicationId>
         <ApplicationTitle>Wallet</ApplicationTitle>
-
-        <!-- IL2045 on the trimmed iOS publish, kept as a WARNING rather than an error because it
-             reports a real defect whose fix is not a build switch:
-             `PhotonApplication.ForThisOperatingSystem` picks the right shell by READING
-             `SupportedOSPlatformAttribute` off the assembly with reflection, and the trimmer is
-             configured to remove every instance of that attribute. On a trimmed build the list
-             therefore comes back empty and the method answers "yes, this shell is for this OS" for
-             ALL of them — the guard that exists because "the Mac found two runners and refused to
-             start" is inert in exactly the configuration a shipped app uses. It is harmless today
-             only because a phone app carries one shell. The fix is a trimmer descriptor keeping the
-             attribute, or not asking reflection in the first place, and it wants a device to prove.
-             Left visible and counted rather than silenced. -->
-        <WarningsNotAsErrors>$(WarningsNotAsErrors);IL2045</WarningsNotAsErrors>
     </PropertyGroup>
 
     <Import Project="../../src/eQuantic.UI.Sdk.Native/Sdk/Sdk.targets" />

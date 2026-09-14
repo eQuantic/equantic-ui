@@ -5,7 +5,8 @@ namespace eQuantic.UI.Native.Hosting;
 /// <summary>
 /// What the app is, as opposed to what it does: its theme, the name on the window, and the surface
 /// a desktop stands in with. Bound from configuration under <c>Photon</c>, so appsettings.json,
-/// environment variables and command-line arguments all reach it the way a .NET developer expects.
+/// environment variables and command-line arguments all reach it the way a .NET developer expects
+/// — with one exception the binder cannot take, <see cref="Theme"/>, which says so itself.
 /// </summary>
 public sealed class PhotonOptions
 {

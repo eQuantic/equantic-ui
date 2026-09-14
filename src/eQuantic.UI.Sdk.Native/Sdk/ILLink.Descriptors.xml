@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  PhotonApplication.ForThisOperatingSystem picks the shell to run by READING
+  [assembly: SupportedOSPlatform(...)] off each candidate. The mobile workloads instruct the
+  trimmer to remove every instance of that attribute, so on a trimmed publish the list comes
+  back empty and every shell is treated as a candidate for every OS — the guard that exists
+  because a folder with two shells found two runners and refused to start.
+
+  The SDK keeps the attribute for the same reason it roots the shell assemblies in Sdk.props:
+  it is the only party that knows the attribute is read, and asking the app author to know it
+  would be asking them to know the thing this design exists to hide.
+-->
+<linker>
+  <assembly fullname="System.Runtime">
+    <type fullname="System.Runtime.Versioning.SupportedOSPlatformAttribute" preserve="all" />
+  </assembly>
+  <assembly fullname="System.Private.CoreLib">
+    <type fullname="System.Runtime.Versioning.SupportedOSPlatformAttribute" preserve="all" />
+  </assembly>
+</linker>

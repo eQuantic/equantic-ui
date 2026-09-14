@@ -267,6 +267,12 @@
         <TrimmerRootAssembly Include="eQuantic.UI.Native.Engine.Reference" RootMode="library" />
         <TrimmerRootAssembly Include="eQuantic.UI.Native.Engine.Vulkan" RootMode="library" />
     </ItemGroup>
+    <!-- And the ATTRIBUTE the shell is chosen by: see ILLink.Descriptors.xml beside this file.
+         Rooting the shell assembly is not enough — the attribute instances are removed from it. -->
+    <ItemGroup>
+        <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+    </ItemGroup>
+
     <ItemGroup Condition="'$(_EqPlatform)' == 'ios'">
         <TrimmerRootAssembly Include="eQuantic.UI.Native.Shell.iOS" RootMode="library" />
         <TrimmerRootAssembly Include="eQuantic.UI.Native.Engine.Metal" RootMode="library" />
