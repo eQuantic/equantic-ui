@@ -91,6 +91,18 @@ public class DesignOriginTests
 
     private static string RootedProbePath => Path.GetFullPath(ProbePath);
 
+    /// <summary>
+    /// An origin read back out of the emitted JAVASCRIPT, so the string literal's escaping is undone
+    /// before anything is compared to a path.
+    /// <para>
+    /// The stamp is written into a JS string, where a backslash is doubled. A POSIX path has none,
+    /// so reading the literal raw worked by accident for as long as this only ran on a Mac; on
+    /// Windows it produced a path with doubled separators against an expected one with single —
+    /// the right path, compared in the wrong alphabet. Found by running the suite on Windows.
+    /// </para>
+    /// </summary>
+    private static string Unescaped(string originFromJs) => Regex.Unescape(originFromJs);
+
     private static string Emit(bool designMode)
     {
         var compiler = new ComponentCompiler { TypeAnnotations = false, DesignMode = designMode };
@@ -131,7 +143,7 @@ public class DesignOriginTests
     {
         var lines = Source.Replace("\r\n", "\n").Split('\n');
         var origins = Regex.Matches(Emit(designMode: true), @"\$eq\.origin\([^""]*""([^""|]+\|[^""]+)""")
-            .Select(m => m.Groups[1].Value)
+            .Select(m => Unescaped(m.Groups[1].Value))
             .ToArray();
 
         Assert.NotEmpty(origins);
@@ -156,7 +168,7 @@ public class DesignOriginTests
 
     private static string[] Labels(string js) =>
         Regex.Matches(js, @"\$eq\.origin\([^""]*""[^""]+"", ""([^""]+)""\)")
-            .Select(m => m.Groups[1].Value)
+            .Select(m => Unescaped(m.Groups[1].Value))
             .ToArray();
 
     /// <summary>
@@ -213,12 +225,26 @@ public class DesignOriginTests
     {
         var js = Emit(designMode: true);
         var loopTextOrigin = Regex.Matches(js, @"\$eq\.origin\(new Text\(row[^""]*""([^""|]+\|[^""]+)""")
-            .Select(m => m.Groups[1].Value)
+            .Select(m => Unescaped(m.Groups[1].Value))
             .SingleOrDefault();
 
         Assert.NotNull(loopTextOrigin);
         // Line 15 zero-based is the `column.Add(new Text(row, …));` inside the foreach.
         Assert.StartsWith($"{RootedProbePath}|15:", loopTextOrigin);
+    }
+
+    /// <summary>
+    /// The unescaping, exercised where it can be. On POSIX a path has no backslash, so the call is
+    /// a no-op here and the suite would be claiming a step it never ran — the same shape as the
+    /// platform difference that made it necessary.
+    /// </summary>
+    [Fact]
+    public void AnOriginReadFromJavaScript_IsUnescapedBeforeItIsComparedToAPath()
+    {
+        // What the emitted module actually contains for a Windows path, and what it means.
+        Assert.Equal(@"D:\tmp\Probe.cs", Unescaped(@"D:\\tmp\\Probe.cs"));
+        // …and a POSIX one passes through untouched, which is why this went unseen.
+        Assert.Equal("/tmp/Probe.cs", Unescaped("/tmp/Probe.cs"));
     }
 
     /// <summary>
@@ -242,7 +268,7 @@ public class DesignOriginTests
             .Select(r => r.TypeScript));
 
         var paths = Regex.Matches(js, @"\$eq\.origin\([^""]*""([^|]+)\|")
-            .Select(m => m.Groups[1].Value)
+            .Select(m => Unescaped(m.Groups[1].Value))
             .Distinct()
             .ToArray();
 
