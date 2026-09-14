@@ -90,6 +90,15 @@ switch arm it replaces. The rule against overloads elsewhere in this repo is abo
 surface, which JavaScript cannot overload; nothing here is transpiled — eqc never sees `Accept`, and
 the TypeScript twins dispatch by wire kind (below).
 
+**Static façades stay; the visitor is the instance behind them.** The five C# entry points are
+static classes today — `WebRealizer.Lower(node, theme)`, `LayoutEngine.Layout(root, …)`,
+`PhotonRealizer.Realize(…)`, `SemanticsTree.Collect(frame)`, `EmailRealizer.Lower(node, theme)` — and
+they remain the public API. A static class cannot implement an interface or hold pass state, so each
+façade constructs the visitor for the pass — `sealed partial class WebLowering :
+IVisualNodeVisitor<bool?, HtmlElement?>` and its siblings — hands it the pass-fixed inputs, and calls
+`root.Accept(visitor, state)`. The switch's helper methods become the visitor's members; the façade
+keeps its signature, so no caller changes and the output pins do not know anything happened.
+
 **A state parameter, because every dispatch carries one.** The six methods do not take a node alone;
 each carries per-call state a visitor instance cannot hold, because it changes as the recursion
 descends. What lives on the visitor instance is what is fixed for the pass.
@@ -101,6 +110,7 @@ descends. What lives on the visitor instance is what is fixed for the pass.
 | `PhotonRealizer` | the `LayoutNode` being painted (the visitor visits `laidOut.Source`) | theme, mode, builder, input sink, scroll meta, press and motion scopes, overlay queue | `Nothing` |
 | `Semantics` | the `LayoutNode` | the node list | `bool` — whether to descend into the children |
 | `EmailRealizer` | `Nothing` | `ComponentContext`, the `StringBuilder` | `Nothing` |
+| `EmailRenderer.WalkText` → `EmailTextVisitor` | `Nothing` | the plain-text `StringBuilder`, the theme | `Nothing` — the same contract as the HTML visitor, one instance per message, and one refusal set shared by both |
 
 `Nothing` is a one-member `readonly struct` in `Primitives` for the visitors that produce no value;
 `void` is not a type argument in C#.
@@ -152,12 +162,16 @@ already writes `enums.generated.ts` and `design-system.generated.ts` from the as
 - `NodeKindTsGenerator` in `eQuantic.UI.Web.Build` reads every concrete `VisualNode` type, takes its
   `NodeKind` off an uninitialized instance (the way `VocabularyCoverageTests.WireKind` does), adds the
   expansion seam EXPLICITLY — `UiComponent` is abstract, so no scan of concrete types reaches its
-  sealed `"component"`, and the generator names it and asserts that no concrete node claims the same
-  word — fails on any duplicate, and writes `node-kinds.generated.ts`:
+  sealed `"component"` — and FAILS on the three things `EveryNode_DeclaresItsOwnWireKind` fails on
+  today: a duplicate kind, an EMPTY kind (which would generate `''` into the union), and a concrete
+  node claiming the seam's word. Those three assertions move from the pin into the generator, so S8
+  deletes a file and loses no check. Then it writes `node-kinds.generated.ts`:
   `export type NodeKind = 'adaptive' | 'adjustable' | … | 'webFrame' | 'component';`
 - A byte-pin test beside `EnumUnionsTsGeneratorTests`, regenerated behind the same environment
   variable, so the file cannot drift from the assembly.
-- `nodes.ts` declares `nodeKind: NodeKind` on `VisualNodeValue`.
+- `nodes.ts` declares `nodeKind: NodeKind` on `VisualNodeValue`, and `vocabulary.ts` declares it on the
+  runtime `VisualNode` base class, which types it as `string` today (lines 42–44) — the classes the
+  transpiled components construct. Both, or a `VisualNode`-typed value is a way around the union.
 - `lowerNodeKind` moves its mixing seam — a web component with no `nodeKind` that renders itself —
   AHEAD of the switch, and ends the switch with `default: return assertNever(node.nodeKind);`, so a
   kind added to the union with no case is a type error in the runtime's build.
@@ -178,9 +192,14 @@ already writes `enums.generated.ts` and `design-system.generated.ts` from the as
   net for all of this — visitor construction included — and the first slice on a hot path (S5, the
   layout engine) is where the frame time is measured before and after, and written into this
   document.
-- **Nobody outside `Primitives` derives `VisualNode` directly.** Measured: zero classes in `src/` and
-  `samples/`; the only hits are two fakes in a transpiler test's source snippet. Every app component
-  derives `UiComponent`, whose `Accept` is sealed, so no consumer writes one and eqc never meets one.
+- **The hierarchy is closed by construction, not by counting.** Zero classes outside `Primitives`
+  derive `VisualNode` today (measured in `src/` and `samples/`; the only hits are two fakes in a
+  transpiler test's source snippet) — and that is a measurement, not a guarantee. A public abstract
+  class can be derived from anywhere, and an app's own `Accept` could route to any overload and walk
+  around the compiler. So S1 gives `VisualNode` a `private protected` constructor: only the
+  vocabulary's assembly can add a node, which is the closed set the visitor depends on. `UiComponent`,
+  whose constructor stays `protected`, remains the one door open to apps, and its `Accept` is sealed,
+  so no consumer writes one and eqc never meets one.
 - **Output is byte-identical, by slice.** Each realizer already has the pin that says so: the web has
   `ComponentParityFixtureTests`, `PrimitiveValueFixtureTests` and `MarkerParityTests` (and
   `SurfaceSsrTests` once #121 lands — it is that PR's, not `main`'s yet);
@@ -207,7 +226,7 @@ executor takes them in this order; the auditor rewrites the audit's section 2 an
 
 | # | Slice | Nets | Size |
 |---|---|---|---|
-| S1 | `IVisualNodeVisitor<,>`, `Nothing`, `Accept` on `VisualNode`, forty one-line overrides. No consumer yet. | the solution compiles; `UiFactoryConformanceTests` (factories are unaffected) | S |
+| S1 | `IVisualNodeVisitor<,>`, `Nothing`, `Accept` on `VisualNode`, forty one-line overrides, and the `private protected` constructor that closes the hierarchy. No consumer yet. | the solution compiles; `UiFactoryConformanceTests` (factories are unaffected) | S |
 | S2 | `Semantics.Walk` → `SemanticsVisitor`: 13 visits, 26 declines named for their reason; `Navigable` and `Overlay` decline until the group role of audit step 3 lands, then become visits. The `Semantics` dispatch leaves the coverage pin. | `SemanticsTests`, `CheckSemanticsTests`, `HeadingSemanticsTests`, `GraphicSemanticsTests`, `LabelledNodesReachSemanticsTests`, `UnlabelledGroupSemanticsTests`, the three bridges' tests | S |
 | S3 | `EmailRealizer.Write` → `EmailVisitor` and `EmailRenderer.WalkText` → `EmailTextVisitor`: 6 visits each, one shared refusal set of 33 that throws what the default arm throws today. Both dispatches leave the pin (the second was never in it). | `eQuantic.UI.Email.Tests` | S |
 | S7 | `NodeKindTsGenerator`, `node-kinds.generated.ts`, `nodeKind: NodeKind`, `assertNever`. The TypeScript dispatch leaves the pin; `EveryNode_DeclaresItsOwnWireKind` becomes the generator's duplicate check. | `EnumUnionsTsGeneratorTests`' sibling, `npm run test`, the transpiled fixtures byte-pinned | S |
