@@ -18,18 +18,22 @@ rot. What holds each claim here:
 | the vocabulary is closed: outside `Primitives` a node is a `UiComponent` or nothing | `ClosedHierarchyTests` — both graphs, the scan derived from the output directory (#138) |
 | a measurer that claims the trailing mark draws it, and one that withholds it still does not | `TruncationContractTests` — every measurer the machine hosts, the count asserted (#123, #136) |
 | the wiki speaks the tree's current names | `WikiVocabularyTests` — both languages, allowances checked both ways |
+| the suite runs where the code runs | `ci.yml` — `build-packages` on macOS and the `test` job on Ubuntu and Windows, every project under `tests/` (#139) |
 
-**What no instrument holds yet: the suite runs on one operating system.** `ci.yml` has exactly one
-`dotnet test`, in `build-packages`, on `macos-latest`; the three-runner matrix only packs the bun
-packages. So every pin above that has a Windows or Linux arm is asserted nowhere but on a
-developer's machine, and the measured case is #136: `ACutLine_FillsTheBoxFurtherThanAWrappedOne`
+**Until 2026-09-14 the suite ran on one operating system**, and the record stays because the cost
+was measured. `ci.yml` had exactly one `dotnet test`, in `build-packages`, on `macos-latest`; the
+three-runner matrix only packed the bun packages. Every pin above with a Windows or Linux arm was
+asserted nowhere but on a developer's machine, and #136 is the case: `ACutLine_FillsTheBoxFurtherThanAWrappedOne`
 failed on Windows from the day #123 wrote it, because DirectWrite cuts without a mark and the only
-suite that would have said so never ran there. And the two instruments that do run
-disagree by accident: `tests/eQuantic.UI.Heroicons.Tests` and `tests/eQuantic.UI.Lucide.Tests` are not
-in `eQuantic.UI.sln`, so a developer's `dotnet test` at the root runs eight projects while CI's `find`
-over `tests/` runs ten. Brief F asks for a `test` job on the other two runners over every test project
-— the first red is the measurement — with both projects added to the solution, and this paragraph
-retires when it lands.
+suite that would have said so never ran there. #139 runs every project under `tests/` on the three
+runners, and its first red is the measurement that paragraph asked for: `double.RootN(27.0, 3)` is
+`3` on macOS and `3.0000000000000004` on Linux — .NET delegates to the platform's libm, so "identical
+to .NET" carried a hidden assumption, now fenced at one ULP with the difference named; two Windows
+defects in the design-origin tests, a POSIX path literal and the same test comparing a JavaScript
+string literal's escaping to a raw path; and `tests/eQuantic.UI.Heroicons.Tests` and
+`tests/eQuantic.UI.Lucide.Tests`, which were not in `eQuantic.UI.sln`, so a developer's `dotnet test` at
+the root ran eight projects while CI's `find` over `tests/` ran ten — the two instruments agreed by
+accident. Both are in the solution now.
 
 The counts that carry no pin — lines, fields, how many times a word appears — are dated by the line
 above and will drift. They are here to SIZE a decision, not to be believed a year on.
@@ -554,11 +558,18 @@ Worth recording, because an audit that only lists faults misleads about the whol
   and one registry, an IR with one writer per level, and four baselines that may only shrink
   (`ir-migration`, `bcl-surface`, `diagnostics`, `conversion-gaps`). And its fence is enumerated, not
   guessed: `HostOnlySymbolExtensions` counts the ways a symbol can be named in a component, and its
-  doc owes the count. Moving geometry into the vocabulary (#135) found two ways missing — a
-  CONSTRUCTION (`new Matrix2D(...)` passed where `Matrix2D.Identity` was stopped) and an OPERATOR
-  (`Point`'s `+`, `-`, `*` emitted as JavaScript's own, `a * 2` evaluating to `NaN` in silence) — so
-  the count is six, `[ServerOnly]` may sit on a struct, and the `diagnostics` baseline caught the
-  fix's own first draft reporting a code from a second site before a reviewer had to.
+  doc owes the count. Moving geometry into the vocabulary (#135) found the count short by three — it
+  said four and is seven: an explicit CONSTRUCTION (`new Matrix2D(...)` passed where
+  `Matrix2D.Identity` was stopped), a target-typed `new`, a TYPE POSITION (`public Matrix2D Placement
+  { get; init; }` on a component is not an expression, so no strategy ever sees it; only the parser's
+  semantic sweep does, which is where a name becomes an import — measured: it compiled and emitted
+  `import { Matrix2D } from "@equantic/runtime"`), and an OPERATOR. The operator is the one to quote,
+  because it is the only branch that failed in SILENCE: every other way of naming a host-only symbol
+  took the page down, while `a + b` on two `Point`s emitted JavaScript's own `+` and concatenated two
+  objects into a string, in a page that compiled and rendered on the server. `[ServerOnly]` may sit on
+  a struct now, and the `diagnostics` baseline stopped the fix itself twice — a branch writing its
+  message inline instead of through the shared reporter, and the emitter legitimately becoming a
+  second reporting site — before a reviewer had to.
 - **The engine is a real RHI**: `IRenderBackend` / `IRhiDevice` / `IRhiCommandList` / `IRhiTexture`
   with three backends — Metal, Vulkan, Reference — behind them, and parity suites between them.
 - **Platform interop is typed**: sixteen capability interfaces, resolved by `GetService<T>()`, absent
@@ -582,7 +593,7 @@ Worth recording, because an audit that only lists faults misleads about the whol
   `LabelledNodesReachSemanticsTests`, the transpiled fixtures byte-pinned against the live compiler,
   the design-system TypeScript byte-pinned against its generator. 4,435 xUnit cases (20 skipped, none
   failing) across ten test projects, 1,045 vitest cases across 127 specs — both counted by running
-  them on 2026-09-14, the runtime's through `dotnet build src/eQuantic.UI.Runtime -t:TestRuntime`.
+  them at 741eb488 on 2026-09-14, the runtime's through `dotnet build src/eQuantic.UI.Runtime -t:TestRuntime`.
 - **The handoff is clean of the retired words**, as of this pass, and will fail the build the day it
   is not.
 
