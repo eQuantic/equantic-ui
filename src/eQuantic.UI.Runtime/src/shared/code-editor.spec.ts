@@ -374,3 +374,16 @@ describe('the marks are painted, not merely placed', () => {
     );
   });
 });
+
+describe('the code surface goes through the atomizer, like every other node', () => {
+  // It carried a literal `style` string, under a comment reasoning that "there is no C# twin to
+  // agree with — the web realizer has no CodeSurface arm". The arm exists now and SSR atomises,
+  // so a client string beside a server class is the hydration mismatch the atomizer exists to
+  // prevent. The premise died with the fix; the decision it justified went with it.
+  it('emits classes and no inline style', () => {
+    const { lowered } = surfaceFor('let x = 1;');
+
+    expect(lowered.attributes['style']).toBeUndefined();
+    expect(lowered.attributes['class'] ?? '').toContain('eq-code-surface');
+  });
+});

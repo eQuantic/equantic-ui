@@ -106,6 +106,37 @@ public class SurfaceSsrTests
     }
 
     /// <summary>
+    /// The surface goes through the ATOMIZER, on both sides.
+    ///
+    /// <para>
+    /// SSR runs `AtomizeTree` whenever its ambient sink is active, so the moment this node gained a
+    /// server arm its style became atomic classes. The client was still emitting a literal `style`
+    /// string, under a comment whose reasoning was "there is no C# twin to agree with" — true when
+    /// it was written and killed by the arm above it. A server class beside a client string is
+    /// exactly the hydration mismatch the atomizer exists to prevent. Found in review.
+    /// </para>
+    ///
+    /// <para>
+    /// Both sides now take the same door, so the class NAMES agree by construction: the atomizer
+    /// hashes (property, value) and its C#↔TS agreement is already cross-pinned. What this asserts
+    /// is the door, which is the part that can silently change.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void TheSurfaceCarriesClassesRatherThanAnInlineStyle()
+    {
+        // WITH A SINK, because that is the SSR path: a bare `Lower` has no ambient sink and leaves
+        // the style inline, which is what the first version of this test measured and why it asked
+        // the wrong question.
+        var html = HtmlRenderer.RenderNode(
+            WebRealizer.Lower(Code("let x = 1"), Theme, 1f, new StyleSink())!.Render());
+
+        html.Should().Contain("eq-code-surface");
+        html.Should().NotContain("style=\"",
+            "an inline style on a node the client atomises is a class beside a string at hydration");
+    }
+
+    /// <summary>
     /// The other deliberate difference: the client stamps `data-eq-code` with the node's PATH so
     /// anything running after a render can find the surface again. The web realizer lowers a tree,
     /// not a laid-out one, and has no path to stamp — hydration adds the attribute.
