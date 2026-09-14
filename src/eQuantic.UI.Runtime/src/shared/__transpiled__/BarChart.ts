@@ -1,4 +1,4 @@
-import { BarChartLayout, Box, BoxStyle, BuildContext, Button, Canvas, CanvasPointer, CategoryAxis, ChartSeries, Column, CornerRadii, DataColumn, DataRow, DataTable, EdgeInsets, Flexible, GridTrack, Positioned, Pressable, Row, SdkStrings, SizeValue, Stack, StatefulComponent, Text, UiComponent, ValueAxis, ValueTicks, VisualNode } from "@equantic/runtime";
+import { BarChartLayout, Box, BoxStyle, BuildContext, Button, Canvas, CanvasPointer, CategoryAxis, ChartSeries, Column, CornerRadii, DataColumn, DataRow, DataTable, EdgeInsets, Flexible, GridTrack, Point, Positioned, Pressable, Rect, Row, SdkStrings, SizeValue, Stack, StatefulComponent, Text, UiComponent, ValueAxis, ValueTicks, VisualNode } from "@equantic/runtime";
 
 export class BarChart extends StatefulComponent {
     static minValueAxisWidth: number = 48;
@@ -214,30 +214,30 @@ export class BarChart extends StatefulComponent {
         let theme = this._theme;
         if (theme == null) return;
         let vertical = this._orientation === 'vertical';
-        let geometry = BarChartLayout.solve(this._series, this.visible(), this._categories.categories.length, this._layout, this._orientation, this._values, p.width, p.height);
+        let geometry = BarChartLayout.solve(this._series, this.visible(), this._categories.categories.length, this._layout, this._orientation, this._values, p.size.width, p.size.height);
         this._geometry = geometry;
         for (let i = 0; i < geometry.ticks.count; i++) {
             let at = geometry.tickPosition(i);
-            if (vertical) p.line(0, at, p.width, at, theme.border, 1); else p.line(at, 0, at, p.height, theme.border, 1);
+            if (vertical) p.line(new Point(0, at), new Point(p.size.width, at), theme.border, 1); else p.line(new Point(at, 0), new Point(at, p.size.height), theme.border, 1);
         }
-        if (vertical) p.line(0, geometry.baseline, p.width, geometry.baseline, theme.borderStrong, 1); else p.line(geometry.baseline, 0, geometry.baseline, p.height, theme.borderStrong, 1);
+        if (vertical) p.line(new Point(0, geometry.baseline), new Point(p.size.width, geometry.baseline), theme.borderStrong, 1); else p.line(new Point(geometry.baseline, 0), new Point(geometry.baseline, p.size.height), theme.borderStrong, 1);
         for (let i = 0; i < geometry.bars.length; i++) {
             let b = geometry.bars[i];
-            if (b.width <= 0 || b.height <= 0) continue;
+            if (b.box.isEmpty) continue;
             let color = this.seriesColor(theme, b.series);
             if (i === this._hover) color = color.withOpacity(Math.fround(0.8));
             if (!b.dataEnd) {
-                p.fillRect(b.x, b.y, b.width, b.height, color);
+                p.fillRect(b.box, color);
                 continue;
             }
-            let radius = Math.min(4, Math.min(b.width, b.height) / 2);
-            p.fillRect(b.x, b.y, b.width, b.height, color, radius);
+            let radius = Math.min(4, Math.min(b.box.width, b.box.height) / 2);
+            p.fillRect(b.box, color, radius);
             if (vertical) {
-                let half = Math.fround(b.height / 2);
-                if (b.negative) p.fillRect(b.x, b.y, b.width, half, color); else p.fillRect(b.x, b.y + half, b.width, half, color);
+                let half = Math.fround(b.box.height / 2);
+                if (b.negative) p.fillRect(new Rect(b.box.x, b.box.y, b.box.width, half), color); else p.fillRect(new Rect(b.box.x, b.box.y + half, b.box.width, half), color);
             } else {
-                let half = Math.fround(b.width / 2);
-                if (b.negative) p.fillRect(b.x + half, b.y, half, b.height, color); else p.fillRect(b.x, b.y, half, b.height, color);
+                let half = Math.fround(b.box.width / 2);
+                if (b.negative) p.fillRect(new Rect(b.box.x + half, b.box.y, half, b.box.height), color); else p.fillRect(new Rect(b.box.x, b.box.y, half, b.box.height), color);
             }
         }
     }

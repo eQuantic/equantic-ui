@@ -1,4 +1,4 @@
-import { BarChartGeometry, BarRect, ChartSeries, ValueAxis, ValueScale, ValueTicks } from "../runtime-exports";
+import { BarChartGeometry, BarRect, ChartSeries, Point, Rect, ValueAxis, ValueScale, ValueTicks } from "../runtime-exports";
 
 export class BarChartLayout {
     static maxThickness: number = 24;
@@ -110,7 +110,7 @@ export class BarChartLayout {
         let bars = geometry.bars;
         for (let i = 0; i < bars.length; i++) {
             let b = bars[i];
-            if (x >= Math.fround(b.x - BarChartLayout.hitSlack) && x <= Math.fround(b.x + b.width + BarChartLayout.hitSlack) && y >= Math.fround(b.y - BarChartLayout.hitSlack) && y <= Math.fround(b.y + b.height + BarChartLayout.hitSlack)) return i;
+            if (b.box.inflate(BarChartLayout.hitSlack).contains(new Point(x, y))) return i;
         }
         return -1;
     }
@@ -121,7 +121,7 @@ export class BarChartLayout {
 
     static rect(vertical: boolean, across: number, category: number, series: number, position: number, thickness: number, low: number, high: number, negative: boolean, dataEnd: boolean) {
         let length = Math.fround(high - low);
-        return vertical ? new BarRect(category, series, position, across - high, thickness, length, negative, dataEnd) : new BarRect(category, series, low, position, length, thickness, negative, dataEnd);
+        return vertical ? new BarRect(category, series, new Rect(position, across - high, thickness, length), negative, dataEnd) : new BarRect(category, series, new Rect(low, position, length, thickness), negative, dataEnd);
     }
 }
 

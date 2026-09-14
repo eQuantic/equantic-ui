@@ -21,8 +21,7 @@ internal sealed class SvgCanvasPainter(float width, float height) : ICanvasPaint
 {
     private readonly List<IComponent> _shapes = [];
 
-    public float Width => width;
-    public float Height => height;
+    public Size Size => new(width, height);
 
     /// <summary>What was drawn, in call order — paint order, exactly as on Photon.</summary>
     public IReadOnlyList<IComponent> Shapes => _shapes;
@@ -42,8 +41,9 @@ internal sealed class SvgCanvasPainter(float width, float height) : ICanvasPaint
     private static IComponent Shape(string tag, Dictionary<string, string> attributes) =>
         new RealizedElement(tag) { RawAttributes = attributes };
 
-    public void FillRect(float x, float y, float width, float height, ColorToken color, float cornerRadius = 0)
+    public void FillRect(Rect box, ColorToken color, float cornerRadius = 0)
     {
+        var (x, y, width, height) = box;
         var attributes = new Dictionary<string, string>
         {
             ["x"] = N(x), ["y"] = N(y), ["width"] = N(width), ["height"] = N(height),
@@ -53,9 +53,9 @@ internal sealed class SvgCanvasPainter(float width, float height) : ICanvasPaint
         _shapes.Add(Shape("rect", attributes));
     }
 
-    public void StrokeRect(float x, float y, float width, float height, ColorToken color,
-        float strokeWidth, float cornerRadius = 0)
+    public void StrokeRect(Rect box, ColorToken color, float strokeWidth, float cornerRadius = 0)
     {
+        var (x, y, width, height) = box;
         // Inset by half the stroke: SVG centres a stroke on the path, and every border in this
         // framework is drawn INSIDE its bounds. Without this a canvas's outline would sit half a
         // pixel further out than the same rectangle drawn by a Box.
@@ -71,15 +71,16 @@ internal sealed class SvgCanvasPainter(float width, float height) : ICanvasPaint
         _shapes.Add(Shape("rect", attributes));
     }
 
-    public void FillCircle(float centerX, float centerY, float radius, ColorToken color) =>
+    public void FillCircle(Point center, float radius, ColorToken color) =>
         _shapes.Add(Shape("circle", new Dictionary<string, string>
         {
-            ["cx"] = N(centerX), ["cy"] = N(centerY), ["r"] = N(radius), ["fill"] = Ink(color),
+            ["cx"] = N(center.X), ["cy"] = N(center.Y), ["r"] = N(radius), ["fill"] = Ink(color),
         }));
 
-    public void FillAnnularSector(float centerX, float centerY, float innerRadius, float outerRadius,
+    public void FillAnnularSector(Point center, float innerRadius, float outerRadius,
         float startAngle, float endAngle, ColorToken color, float cornerSmoothing = 0)
     {
+        var (centerX, centerY) = center;
         // The one shape SVG has no primitive for. Two arcs and two radial lines, which is what the
         // engine's SDF describes analytically — same result, different spelling.
         //
@@ -98,8 +99,8 @@ internal sealed class SvgCanvasPainter(float width, float height) : ICanvasPaint
         // the halves would draw a seam that exists on one target only.
         if (sweep >= MathF.Tau - 1e-4f)
         {
-            FillAnnularSector(centerX, centerY, innerRadius, outerRadius, startAngle, startAngle + MathF.PI, color);
-            FillAnnularSector(centerX, centerY, innerRadius, outerRadius, startAngle + MathF.PI, startAngle + MathF.Tau, color);
+            FillAnnularSector(center, innerRadius, outerRadius, startAngle, startAngle + MathF.PI, color);
+            FillAnnularSector(center, innerRadius, outerRadius, startAngle + MathF.PI, startAngle + MathF.Tau, color);
             return;
         }
 
@@ -134,10 +135,10 @@ internal sealed class SvgCanvasPainter(float width, float height) : ICanvasPaint
         _shapes.Add(Shape("path", attributes));
     }
 
-    public void Line(float x1, float y1, float x2, float y2, ColorToken color, float strokeWidth) =>
+    public void Line(Point from, Point to, ColorToken color, float strokeWidth) =>
         _shapes.Add(Shape("line", new Dictionary<string, string>
         {
-            ["x1"] = N(x1), ["y1"] = N(y1), ["x2"] = N(x2), ["y2"] = N(y2),
+            ["x1"] = N(from.X), ["y1"] = N(from.Y), ["x2"] = N(to.X), ["y2"] = N(to.Y),
             ["stroke"] = Ink(color), ["stroke-width"] = N(strokeWidth),
         }));
 }
