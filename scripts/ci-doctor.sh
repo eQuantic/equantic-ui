@@ -15,11 +15,14 @@
 # is repository-wide and follows the DEFAULT BRANCH, so a fix on a branch does not clear it until
 # that branch merges. The job count is per-ref and is what says whether this particular push ran.
 #
-# Usage: scripts/ci-doctor.sh [ref]     (default: the current branch)
+# Usage: scripts/ci-doctor.sh [commit-ish]   (default: HEAD)
 set -euo pipefail
 
 REPO="${EQ_REPO:-eQuantic/equantic-ui}"
-REF="${1:-$(git rev-parse --abbrev-ref HEAD)}"
+# The COMMIT, not the branch. `gh run list --branch X | .[0]` is the newest run ON that branch, so a
+# push that produced no run at all reports the PREVIOUS push's run and this script answers ok —
+# which is precisely the failure it exists to catch, committed inside it. Found in review.
+SHA="$(git rev-parse "${1:-HEAD}")"
 
 name=$(gh api "repos/$REPO/actions/workflows" \
   --jq '.workflows[] | select(.path == ".github/workflows/ci.yml") | .name')
@@ -32,18 +35,23 @@ if [ "$name" != "CI" ]; then
   exit 1
 fi
 
-jobs=$(gh run list --branch "$REF" --workflow=ci.yml --limit 1 --json databaseId --jq '.[0].databaseId // empty')
-if [ -z "$jobs" ]; then
-  echo "NO RUN: the CI workflow has never run for '$REF'. Push, or check the trigger."
+# Asked through the API rather than `gh run list`, which resolves the repository from the checkout
+# and takes no --repo here: EQ_REPO would otherwise check one repository's workflow name against
+# another repository's run. Found in review.
+run=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA" \
+  --jq '[.workflow_runs[] | select(.path == ".github/workflows/ci.yml")] | sort_by(.run_number) | last | .id // empty')
+
+if [ -z "$run" ]; then
+  echo "NO RUN: the CI workflow has never run for $SHA. Push it, or check the trigger."
   exit 1
 fi
 
-count=$(gh api "repos/$REPO/actions/runs/$jobs/jobs" --jq '.jobs | length')
+count=$(gh api "repos/$REPO/actions/runs/$run/jobs" --jq '.jobs | length')
 if [ "$count" -eq 0 ]; then
-  echo "CI DID NOT RUN: run $jobs exists for '$REF' and created ZERO jobs."
-  echo "  That is a startup failure. A PR on this ref can still read CLEAN — the ruleset requires a"
-  echo "  review, not a status check — so nothing else will tell you."
+  echo "CI DID NOT RUN: run $run exists for $SHA and created ZERO jobs."
+  echo "  That is a startup failure. A PR on this commit can still read CLEAN — the ruleset requires"
+  echo "  a review, not a status check — so nothing else will tell you."
   exit 1
 fi
 
-echo "ok: workflow is 'CI'; run $jobs on '$REF' created $count jobs."
+echo "ok: workflow is 'CI'; run $run on $SHA created $count jobs."
