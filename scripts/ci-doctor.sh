@@ -27,12 +27,19 @@ SHA="$(git rev-parse "${1:-HEAD}")"
 name=$(gh api "repos/$REPO/actions/workflows" \
   --jq '.workflows[] | select(.path == ".github/workflows/ci.yml") | .name')
 
+# BOTH questions are asked, always. An earlier version exited here, which made the script answer
+# the per-commit question WITHOUT asking it — and got it wrong in exactly the case it exists for:
+# while the fix lives on a branch, the registered name still comes from the default branch, so this
+# said "no run will ever create a job" about a commit whose run was creating them as it spoke.
+# The prose above had the scopes right and the control flow did not. Found by running it.
+broken_name=0
 if [ "$name" != "CI" ]; then
-  echo "BROKEN: GitHub calls the workflow '$name', not 'CI'."
-  echo "  It could not read .github/workflows/ci.yml, so no run will ever create a job."
-  echo "  Look for an expression that does not parse — a '#' inside an 'if: |' block is text,"
+  broken_name=1
+  echo "BROKEN NAME: GitHub calls the workflow '$name', not 'CI'."
+  echo "  It could not read .github/workflows/ci.yml on the DEFAULT BRANCH, where this name comes"
+  echo "  from. Look for an expression that does not parse — a '#' inside an 'if: |' block is text,"
   echo "  not a comment, and that is what did it the first time."
-  exit 1
+  echo "  This says nothing about $SHA on its own; the job count below is what does."
 fi
 
 # Asked through the API rather than `gh run list`, which resolves the repository from the checkout
@@ -51,6 +58,13 @@ if [ "$count" -eq 0 ]; then
   echo "CI DID NOT RUN: run $run exists for $SHA and created ZERO jobs."
   echo "  That is a startup failure. A PR on this commit can still read CLEAN — the ruleset requires"
   echo "  a review, not a status check — so nothing else will tell you."
+  exit 1
+fi
+
+if [ "$broken_name" -eq 1 ]; then
+  echo "ok HERE, BROKEN THERE: run $run on $SHA created $count jobs, so the workflow on this commit"
+  echo "  is fine — and the repository still registers the default branch's broken copy. That is"
+  echo "  what a fix looks like before it merges. Merge it, then run this again on main."
   exit 1
 fi
 
