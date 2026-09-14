@@ -241,19 +241,36 @@ function bookRecheck(): void {
 }
 
 /**
- * A frame, or the nearest thing to one. The fallback is a TIMER and never a direct call: invoking
- * the callback synchronously turns this watch into unbounded recursion on a document that is still
- * loading, and burns the whole budget in one stack frame on a document that is not — either way
- * before the browser has had a chance to perform the jump being waited for. Found in review; the
- * runtime's own render scheduler already falls back this way.
+ * A frame, or the nearest thing to one — RACED with a timer, whichever arrives first, exactly once.
+ *
+ * <para>
+ * Guarding on <c>typeof requestAnimationFrame</c> is not enough, and the reason is the case this
+ * watch is most likely to meet: a browser keeps the function defined in a BACKGROUND TAB and simply
+ * stops calling it back. There the rAF branch is taken and nothing ever runs, so neither the frame
+ * budget nor the wall clock is enforced and the watch stays armed until the tab returns — at which
+ * point it could yank a reader long past its own deadline. Found in review.
+ * </para>
+ *
+ * <para>
+ * The timer is therefore a BACKSTOP rather than a fallback, which is the shape
+ * <c>core/render-scheduler.ts</c> already uses for the same reason. It also keeps the property the
+ * previous round was about: the callback never runs synchronously, so a loading document cannot
+ * recurse and a complete one cannot spend its whole budget inside one stack frame.
+ * </para>
  */
 function schedule(callback: () => void): void {
-  if (typeof requestAnimationFrame === 'function') {
-    requestAnimationFrame(callback);
-    return;
-  }
-  setTimeout(callback, 16);
+  let ran = false;
+  const once = (): void => {
+    if (ran) return;
+    ran = true;
+    callback();
+  };
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(once);
+  setTimeout(once, BackstopMs);
 }
+
+/** Long enough not to fight rAF on a visible tab, short enough to bound a hidden one. */
+const BackstopMs = 120;
 
 /** Monotonic where it exists; the wall clock is only used to bound a watch, so Date is enough. */
 function now(): number {

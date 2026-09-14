@@ -625,6 +625,47 @@ describe('the first measurement corrects a cold load that landed under the chrom
     }
   });
 
+  /**
+   * A BACKGROUND TAB keeps `requestAnimationFrame` defined and stops calling it back. Guarding on
+   * `typeof` is therefore not enough: the rAF branch is taken, nothing runs, and neither the frame
+   * budget nor the wall clock is enforced — the watch stays armed until the tab returns and could
+   * yank a reader long past its own deadline. Found in review, and the timer beside rAF is what
+   * makes the bound hold rather than the correction happen.
+   */
+  it('is still bounded when frames are suspended and only timers run', () => {
+    stillLoading();
+    const timers: Array<() => void> = [];
+    const realTimeout = window.setTimeout;
+    window.setTimeout = ((cb: () => void) => {
+      timers.push(cb);
+      return timers.length;
+    }) as typeof window.setTimeout;
+
+    try {
+      const bar = chrome(65);
+      const target = bookmark('rights', 3992); // never enters the band
+      window.history.replaceState(null, '', '/probe#rights');
+
+      publishAnchorOffset();
+      // rAF was called and will never call back, the way a hidden tab behaves. `pending` holds the
+      // frame nobody will run; the timer beside it is the only thing that moves.
+      expect(pending.length).toBeGreaterThan(0);
+      expect(timers.length).toBeGreaterThan(0);
+
+      clock += 10_001;
+      while (timers.length > 0) timers.pop()!();
+
+      // Retired by the clock, through the timer alone — no frame ever ran.
+      target.moveTo(10);
+      document.documentElement.style.removeProperty('--eq-anchor-offset');
+      publishAnchorOffset();
+      expect(target.seen()).toBe(0);
+      bar.remove();
+    } finally {
+      window.setTimeout = realTimeout;
+    }
+  });
+
   it('corrects once, so a later pass never yanks the page back', () => {
     const bar = chrome(64);
     const target = bookmark('rights', 0);
