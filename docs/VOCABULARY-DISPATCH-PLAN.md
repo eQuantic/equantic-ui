@@ -269,6 +269,14 @@ already writes `enums.generated.ts` and `design-system.generated.ts` from the as
   records a constant or a default exactly as Roslyn displays it and the test compares the text —
   there, `0.4f` is a spelling to hold, not a value to compute, and regeneration can never turn it into
   an argument.
+- **A pin that formats in order to agree, agrees; pin the bound, not a point beside it.** The
+  layout cross-pin printed both sides to three decimals so they would share one text — exactly one
+  rounding coarser than the bit in question, which is how a one-ULP divergence (#146, a `float`
+  unrounded at the RETURN seam) lived under a green pin. And the first probe written for it could not
+  fail at all: it derived its coordinate from the same edge the comparison used, so the two moved
+  together and a twin entirely in doubles still answered zero. A cross-pin compares the numbers the
+  subject produces, at the subject's own precision, and it pins the BOUND itself — the edge, the
+  width, the returned value — never a quantity computed from that bound on both sides.
 - **Output is byte-identical, by slice.** Each realizer already has the pin that says so: the web has
   `ComponentParityFixtureTests`, `PrimitiveValueFixtureTests` and `MarkerParityTests` (and
   `SurfaceSsrTests` once #121 lands — it is that PR's, not `main`'s yet);
