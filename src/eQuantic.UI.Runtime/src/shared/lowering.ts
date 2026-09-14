@@ -515,11 +515,13 @@ function lowerPresence(
  */
 function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path: string): HtmlNode {
   const editor = node.editor;
-  // ATOMISED, like every other node. It used to carry a literal style string, on the reasoning
-  // written here that "there is no C# twin to agree with — the web realizer has no CodeSurface arm".
-  // That arm exists now, SSR runs `AtomizeTree`, and a server class beside a client string is the
-  // hydration mismatch the atomizer exists to prevent. The premise died with the fix; the decision
-  // it justified had to go with it.
+  // ATOMISED, like every other node. It used to carry a literal style string, on the reasoning that
+  // "there is no C# twin to agree with — the web realizer has no CodeSurface arm", which made the
+  // dedup worth one element and parity worth nothing. The arm is still absent (the server has no
+  // business rendering the caret this appends, and a tree one element short is a failed adoption),
+  // but the reasoning was never a good one to leave standing: the day it gains an arm, a client
+  // string beside a server class is the hydration mismatch the atomizer exists to prevent, and
+  // that day should not also be the day someone has to remember this.
   const surface = element(
     'div',
     {

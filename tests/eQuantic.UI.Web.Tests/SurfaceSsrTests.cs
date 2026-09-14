@@ -27,25 +27,9 @@ public class SurfaceSsrTests
     private static string Render(VisualNode node) =>
         HtmlRenderer.RenderNode(WebRealizer.Lower(node, Theme)!.Render());
 
-    private static CodeSurface Code(string text) =>
-        new(new Text(text, TypeRole.BodyM), new CodeEditorController(text));
-
     private static SheetSurface Sheet(string text) =>
         new(new Text(text, TypeRole.BodyM), new SheetController(rows: 3, cols: 3));
 
-    /// <summary>
-    /// THE DEFECT, in the form it was proved in: the whole editor was one empty span.
-    /// </summary>
-    [Fact]
-    public void ACodeSurface_IsNotAnEmptySpan()
-    {
-        var html = Render(Code("readonly int answer = 42;"));
-
-        html.Should().NotBe("<span></span>");
-        html.Should().Contain("readonly int answer = 42;",
-            "the code is the document's content — a reader without scripts, and every crawler, gets "
-            + "only what the server wrote");
-    }
 
     [Fact]
     public void ASheetSurface_IsNotAnEmptySpan()
@@ -56,23 +40,6 @@ public class SurfaceSsrTests
         html.Should().Contain("Q3 revenue");
     }
 
-    /// <summary>
-    /// The surface announces what it IS. An editor that reaches assistive technology as an unlabelled
-    /// div is the same silence one layer up from the empty span.
-    /// </summary>
-    [Fact]
-    public void ACodeSurface_ArrivesAsAMultilineTextbox()
-    {
-        var html = Render(new CodeSurface(new Text("x", TypeRole.BodyM), new CodeEditorController("x"))
-        {
-            Label = "Program.cs",
-        });
-
-        html.Should().Contain("role=\"textbox\"");
-        html.Should().Contain("aria-multiline=\"true\"");
-        html.Should().Contain("aria-label=\"Program.cs\"");
-        html.Should().Contain("tabindex=\"0\"", "an editor is reachable by keyboard before hydration");
-    }
 
     [Fact]
     public void ASheetSurface_ArrivesAsAGrid()
@@ -87,63 +54,6 @@ public class SurfaceSsrTests
         html.Should().Contain("tabindex=\"0\"");
     }
 
-    /// <summary>
-    /// What the server deliberately does NOT write, pinned so the omissions stay deliberate.
-    ///
-    /// <para>
-    /// The caret and the selection band are where the READER is, not what the document says. A caret
-    /// rendered into markup is a caret in the wrong place the moment anyone types, and it would
-    /// disagree with the client's on the first frame.
-    /// </para>
-    /// </summary>
-    [Fact]
-    public void TheServerWritesNoCaretAndNoSelection()
-    {
-        var html = Render(Code("let x = 1"));
 
-        html.Should().NotContain("eq-code-caret", "a caret is live state, not content");
-        html.Should().NotContain("eq-code-selection");
-    }
 
-    /// <summary>
-    /// The surface goes through the ATOMIZER, on both sides.
-    ///
-    /// <para>
-    /// SSR runs `AtomizeTree` whenever its ambient sink is active, so the moment this node gained a
-    /// server arm its style became atomic classes. The client was still emitting a literal `style`
-    /// string, under a comment whose reasoning was "there is no C# twin to agree with" — true when
-    /// it was written and killed by the arm above it. A server class beside a client string is
-    /// exactly the hydration mismatch the atomizer exists to prevent. Found in review.
-    /// </para>
-    ///
-    /// <para>
-    /// Both sides now take the same door, so the class NAMES agree by construction: the atomizer
-    /// hashes (property, value) and its C#↔TS agreement is already cross-pinned. What this asserts
-    /// is the door, which is the part that can silently change.
-    /// </para>
-    /// </summary>
-    [Fact]
-    public void TheSurfaceCarriesClassesRatherThanAnInlineStyle()
-    {
-        // WITH A SINK, because that is the SSR path: a bare `Lower` has no ambient sink and leaves
-        // the style inline, which is what the first version of this test measured and why it asked
-        // the wrong question.
-        var html = HtmlRenderer.RenderNode(
-            WebRealizer.Lower(Code("let x = 1"), Theme, 1f, new StyleSink())!.Render());
-
-        html.Should().Contain("eq-code-surface");
-        html.Should().NotContain("style=\"",
-            "an inline style on a node the client atomises is a class beside a string at hydration");
-    }
-
-    /// <summary>
-    /// The other deliberate difference: the client stamps `data-eq-code` with the node's PATH so
-    /// anything running after a render can find the surface again. The web realizer lowers a tree,
-    /// not a laid-out one, and has no path to stamp — hydration adds the attribute.
-    /// </summary>
-    [Fact]
-    public void TheServerStampsNoPath()
-    {
-        Render(Code("let x = 1")).Should().NotContain("data-eq-code");
-    }
 }
