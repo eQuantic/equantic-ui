@@ -165,11 +165,15 @@ already writes `enums.generated.ts` and `design-system.generated.ts` from the as
   node's `Accept`, one interface call back into the visitor — where a `switch` over type patterns is
   a chain of type tests. Five `(TState, TResult)` instantiations exist in the tree, and Native AOT
   (Primitives is `IsAotCompatible`) compiles generic virtual methods, but nothing here promises the
-  JIT devirtualizes anything. What the design does guarantee is zero allocation on the path: state is
-  a `readonly record struct` or an object the pass already owns, and the visitor is one instance per
-  pass. `PerfHarnessTests` pins managed bytes per steady-state frame under a ceiling and is the net —
-  and the first slice on a hot path (S5, the layout engine) is where the frame time is measured
-  before and after, and written into this document.
+  JIT devirtualizes anything. What the design does guarantee is no PER-NODE allocation: state is a
+  `readonly record struct` or an object the pass already owns, and the visitor is a class held for
+  the life of the pass — constructed once per pass at most, and in the frame-driven realizers kept
+  as a field on the host and rebuilt only when a pass-fixed input changes, so a steady frame allocates
+  none. A `struct` visitor would not help: passing it through `IVisualNodeVisitor<,>` boxes it once
+  per call. `PerfHarnessTests` pins managed bytes per steady-state frame under a ceiling and is the
+  net for all of this — visitor construction included — and the first slice on a hot path (S5, the
+  layout engine) is where the frame time is measured before and after, and written into this
+  document.
 - **Nobody outside `Primitives` derives `VisualNode` directly.** Measured: zero classes in `src/` and
   `samples/`; the only hits are two fakes in a transpiler test's source snippet. Every app component
   derives `UiComponent`, whose `Accept` is sealed, so no consumer writes one and eqc never meets one.
@@ -180,11 +184,16 @@ already writes `enums.generated.ts` and `design-system.generated.ts` from the as
   and `PerfHarnessTests`; layout has `FlexLayoutTests` and `LayoutCompositeTests`; the browser has 79
   spec files in `shared/` and the transpiled fixtures; email has its 48 facts. A slice that changes a
   pixel or a byte has done something this plan did not ask for.
-- **The inner switches are not visitors.** `MinContentWidth`, `Shrinkable`, `WidthKind`,
-  `CrossSizeKind`, `PositionedOf` in the layout engine and `TextContentOf`, `CapsAt`, `Fills`,
-  `ResolveForPositioning` in the web realizer ask questions ABOUT a node — does it shrink, what is its
-  width kind, is it transparent to layout. Step 4 of the audit hoists those onto the vocabulary as
-  properties; they are answered by the node, not visited.
+- **The inner switches are not visitors — with one exception.** `MinContentWidth`, `Shrinkable`,
+  `WidthKind`, `CrossSizeKind`, `PositionedOf` in the layout engine and `TextContentOf`, `CapsAt`,
+  `Fills`, `ResolveForPositioning` in the web realizer ask questions ABOUT a node — does it shrink,
+  what is its width kind, is it transparent to layout. Step 4 of the audit hoists those onto the
+  vocabulary as properties; they are answered by the node, not visited. `EmailRenderer.WalkText` is
+  the exception: it is a second node-type DISPATCH in the email realizer, the one that writes the
+  `text/plain` alternative, and a node the HTML visitor learns to write while this walker does not
+  would ship a message whose plain half silently drops it. It becomes a visitor in S3, beside the
+  HTML one, and the two share their refusal set so they cannot disagree about what the medium
+  carries.
 
 ## Slices
 
@@ -196,7 +205,7 @@ executor takes them in this order; the auditor rewrites the audit's section 2 an
 |---|---|---|---|
 | S1 | `IVisualNodeVisitor<,>`, `Nothing`, `Accept` on `VisualNode`, forty one-line overrides. No consumer yet. | the solution compiles; `UiFactoryConformanceTests` (factories are unaffected) | S |
 | S2 | `Semantics.Walk` → `SemanticsVisitor`: 13 visits, 26 declines named for their reason; `Navigable` and `Overlay` decline until the group role of audit step 3 lands, then become visits. The `Semantics` dispatch leaves the coverage pin. | `SemanticsTests`, `CheckSemanticsTests`, `HeadingSemanticsTests`, `GraphicSemanticsTests`, `LabelledNodesReachSemanticsTests`, `UnlabelledGroupSemanticsTests`, the three bridges' tests | S |
-| S3 | `EmailRealizer.Write` → `EmailVisitor`: 6 visits, 33 `Refuse`s that throw what the default arm throws today. The dispatch leaves the pin. | `eQuantic.UI.Email.Tests` | S |
+| S3 | `EmailRealizer.Write` → `EmailVisitor` and `EmailRenderer.WalkText` → `EmailTextVisitor`: 6 visits each, one shared refusal set of 33 that throws what the default arm throws today. Both dispatches leave the pin (the second was never in it). | `eQuantic.UI.Email.Tests` | S |
 | S7 | `NodeKindTsGenerator`, `node-kinds.generated.ts`, `nodeKind: NodeKind`, `assertNever`. The TypeScript dispatch leaves the pin; `EveryNode_DeclaresItsOwnWireKind` becomes the generator's duplicate check. | `EnumUnionsTsGeneratorTests`' sibling, `npm run test`, the transpiled fixtures byte-pinned | S |
 | S4 | `WebRealizer.LowerNodeKind` → `WebLoweringVisitor`, four partial files. The dispatch leaves the pin. | `ComponentParityFixtureTests`, `PrimitiveValueFixtureTests`, `MarkerParityTests`, the SSR suites, and #121's `SurfaceSsrTests` | M |
 | — | Audit step 4 first: hoist the five layout questions onto the vocabulary, so S5's arms shrink. | `FlexLayoutTests`, `LayoutCompositeTests`, the goldens | M |
