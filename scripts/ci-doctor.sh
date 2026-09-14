@@ -45,6 +45,13 @@ fi
 # Asked through the API rather than `gh run list`, which resolves the repository from the checkout
 # and takes no --repo here: EQ_REPO would otherwise check one repository's workflow name against
 # another repository's run. Found in review.
+# `last` here is jq's last/0 — `.[-1]` on the array piped in — and NOT last/1, the stream form.
+# jq defines both, `builtins` lists them side by side, and a reader cannot tell them apart at a
+# glance; raised in review as a bug and settled by running it:
+#   echo '{"workflow_runs":[{"path":".github/workflows/ci.yml","run_number":3,"id":333},
+#                           {"path":".github/workflows/ci.yml","run_number":1,"id":111}]}' \
+#     | jq '[.workflow_runs[]|select(.path==".github/workflows/ci.yml")]|sort_by(.run_number)|last|.id'
+#   333
 run=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA" \
   --jq '[.workflow_runs[] | select(.path == ".github/workflows/ci.yml")] | sort_by(.run_number) | last | .id // empty')
 
