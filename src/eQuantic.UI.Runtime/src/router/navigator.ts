@@ -8,7 +8,7 @@
  * falls back to a full document load, which is the honest behavior for a plain multi-page site.
  */
 
-type NavigationHandler = (href: string) => void;
+type NavigationHandler = (destination: string) => void;
 
 let handler: NavigationHandler | null = null;
 
@@ -18,13 +18,15 @@ export function setNavigationHandler(next: NavigationHandler | null): void {
 }
 
 export const Navigator = {
-  /** Navigates to `href` — through the active router, else a full document load. */
-  go(href: string): void {
-    if (!href) return;
+  /** Navigates to `destination` — through the active router, else a full document load. The
+   * parameter is named the way the vocabulary names it; `location.assign` takes an href because
+   * that is what a browser's own API calls it, which is the one place the word belongs. */
+  go(destination: string): void {
+    if (!destination) return;
     if (handler) {
-      handler(href);
+      handler(destination);
       return;
     }
-    if (typeof window !== 'undefined') window.location.assign(href);
+    if (typeof window !== 'undefined') window.location.assign(destination);
   },
 };

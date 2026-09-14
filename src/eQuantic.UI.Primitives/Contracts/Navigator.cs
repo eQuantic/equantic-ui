@@ -18,10 +18,18 @@ public static class Navigator
     /// document); hosts install it as they start.</summary>
     public static Action<string>? Handler { get; set; }
 
-    /// <summary>Navigates to <paramref name="href"/> through the active seam.</summary>
-    public static void Go(string href)
+    /// <summary>
+    /// Navigates to <paramref name="destination"/> through the active seam.
+    /// <para>
+    /// The parameter was called <c>href</c>, which is the DOM's word in the assembly whose rule is
+    /// that no name here would exist if the web did not. <c>destination</c> is what
+    /// <see cref="Link"/> calls the same thing, and this is its imperative twin — a route is a
+    /// route on a target with no anchors at all.
+    /// </para>
+    /// </summary>
+    public static void Go(string destination)
     {
-        if (string.IsNullOrEmpty(href)) return;
-        Handler?.Invoke(href);
+        if (string.IsNullOrEmpty(destination)) return;
+        Handler?.Invoke(destination);
     }
 }
