@@ -26,8 +26,19 @@ namespace eQuantic.UI.Native.Engine.Tests;
 ///
 /// <para>
 /// This suite runs against whatever is available where it executes: the reference measurer always,
-/// CoreText on a Mac. A platform this machine cannot host is not silently skipped — the count of
-/// implementations exercised is asserted, so a suite that quietly tested nothing fails instead.
+/// CoreText on a Mac, DirectWrite on Windows. A platform this machine cannot host is not silently
+/// skipped — the implementations exercised are asserted, so a suite that quietly tested nothing
+/// fails instead.
+/// </para>
+///
+/// <para>
+/// And one of them does not meet the contract yet. DirectWrite cuts and draws nothing, which is a
+/// v1 fence stated in its own doc, so it is not in the contract theories: leaving it there is a
+/// KNOWN-FAILING test, met as noise by anyone on Windows and invisible to this repository's CI,
+/// whose only <c>dotnet test</c> runs on macOS. It is not simply left out either — an omission
+/// says nothing and lets a gap age. It has its own assertion that it STILL does not draw the mark,
+/// so the exemption cannot go stale: the day DirectWrite trims, that test fails and names what to
+/// change. Raised by Copilot on #136.
 /// </para>
 /// </summary>
 public class TruncationContractTests
@@ -41,30 +52,52 @@ public class TruncationContractTests
 
     private static readonly TypeStyle Style = PhotonTheme.Instance.Type(TypeRole.BodyM);
 
-    /// <summary>Every measurer this machine can actually host.</summary>
+    /// <summary>
+    /// A measurer this machine can host, and whether it CLAIMS the trailing mark.
+    /// <para>
+    /// The flag exists because one implementation does not meet the contract yet, and there are two
+    /// wrong ways to say so. Running the contract theories over it leaves a known-failing test in
+    /// the suite, which a Windows developer meets as noise on a clean checkout — and which THIS
+    /// repository's CI cannot even see, since the only `dotnet test` runs on macOS
+    /// (<c>ci.yml</c>, the `build-packages` job). Leaving it out entirely says nothing and lets the
+    /// gap age quietly. So it is out of the contract theories and INTO its own, which asserts that
+    /// it still fails — the exemption cannot go stale, because the day DirectWrite trims, that test
+    /// fails and someone comes here to flip the flag.
+    /// </para>
+    /// </summary>
+    private sealed record Measurer(string Name, Func<ITextMeasurer> Create, bool ClaimsTheMark);
+
+    private static readonly IReadOnlyList<Measurer> Hosted = Build();
+
+    private static List<Measurer> Build()
+    {
+        var all = new List<Measurer>
+        {
+            new("reference", () => ApproximateTextMeasurer.Instance, ClaimsTheMark: true),
+        };
+        if (OperatingSystem.IsMacOS())
+            all.Add(new("CoreText", () => new eQuantic.UI.Native.Shell.Apple.CoreTextService(), true));
+        if (OperatingSystem.IsWindows())
+            all.Add(new("DirectWrite",
+                () => new eQuantic.UI.Native.Shell.Windows.Graphics.DirectWriteTextService(),
+                // v1 fence, stated in DirectWriteTextService's own doc: it cuts and draws nothing.
+                // Needs a Windows machine to fix on, and `Withholding` below keeps asking.
+                ClaimsTheMark: false));
+        return all;
+    }
+
+    private static ITextMeasurer Named(string name) =>
+        Hosted.First(m => m.Name == name).Create();
+
+    /// <summary>The measurers that claim the contract — what the theories below are about.</summary>
     public static TheoryData<string> Available
     {
         get
         {
             var data = new TheoryData<string>();
-            foreach (var name in Measurers.Keys) data.Add(name);
+            foreach (var m in Hosted.Where(m => m.ClaimsTheMark)) data.Add(m.Name);
             return data;
         }
-    }
-
-    private static readonly Dictionary<string, Func<ITextMeasurer>> Measurers = Build();
-
-    private static Dictionary<string, Func<ITextMeasurer>> Build()
-    {
-        var map = new Dictionary<string, Func<ITextMeasurer>>
-        {
-            ["reference"] = () => ApproximateTextMeasurer.Instance,
-        };
-        if (OperatingSystem.IsMacOS())
-            map["CoreText"] = () => new eQuantic.UI.Native.Shell.Apple.CoreTextService();
-        if (OperatingSystem.IsWindows())
-            map["DirectWrite"] = () => new eQuantic.UI.Native.Shell.Windows.Graphics.DirectWriteTextService();
-        return map;
     }
 
     /// <summary>
@@ -74,13 +107,52 @@ public class TruncationContractTests
     [Fact]
     public void TheSuiteExercisesEveryMeasurerThisMachineCanHost()
     {
-        Measurers.Should().ContainKey("reference");
+        var names = Hosted.Select(m => m.Name).ToList();
+        names.Should().Contain("reference");
         if (OperatingSystem.IsMacOS())
-            Measurers.Should().ContainKey("CoreText", "a Mac hosts CoreText and the contract is per implementation");
+            names.Should().Contain("CoreText", "a Mac hosts CoreText and the contract is per implementation");
         if (OperatingSystem.IsWindows())
-            Measurers.Should().ContainKey("DirectWrite", "and a Windows box hosts DirectWrite");
-        Measurers.Should().HaveCountGreaterThan(
+            names.Should().Contain("DirectWrite", "and a Windows box hosts DirectWrite");
+        names.Should().HaveCountGreaterThan(
             OperatingSystem.IsMacOS() || OperatingSystem.IsWindows() ? 1 : 0);
+        Available.Count.Should().BeGreaterThan(0,
+            "the contract theories run over the claimants, and a machine where nothing claims it "
+            + "would pass them all by having nothing to say");
+    }
+
+    /// <summary>
+    /// THE GAP, asserted rather than skipped. `ITextMeasurer.Measure` promises a trailing ellipsis
+    /// and DirectWrite reports the wrapped line's width with no mark on it, so a cut line there
+    /// measures EXACTLY as wide as the wrap — which is the arithmetic proof that nothing was cut.
+    ///
+    /// <para>
+    /// This is the shape an exemption has to take here: it fails the day the gap closes, and the
+    /// failure says what to do. An exemption that only skipped would let a fixed implementation go
+    /// on being described as broken, which is the stale half the coverage pins in this repository
+    /// already guard both directions of.
+    /// </para>
+    /// </summary>
+    /// <para>
+    /// A FACT rather than a theory over the withholders, because on a Mac there are none and an
+    /// empty theory is an xUnit error rather than a pass. Nothing is skipped silently by that:
+    /// which implementations this machine hosts is asserted above, so a Windows run that somehow
+    /// stopped seeing DirectWrite fails there instead of quietly finding nothing here.
+    /// </para>
+    [Fact]
+    public void AMeasurerThatDoesNotClaimTheMark_StillDoesNotDrawIt()
+    {
+        foreach (var withholding in Hosted.Where(m => !m.ClaimsTheMark))
+        {
+            var measurer = withholding.Create();
+
+            var cut = measurer.Measure(Paragraph, Style, 1f, maxWidth: 160, maxLines: 1);
+            var wrapped = measurer.Measure(Paragraph, Style, 1f, maxWidth: 160, maxLines: 0);
+
+            cut.Lines[0].Width.Should().Be(wrapped.Lines[0].Width,
+                $"{withholding.Name} does not truncate: it reports the line the wrap produced, mark "
+                + "and all missing. If this FAILS, the implementation started meeting the contract "
+                + "— move it to ClaimsTheMark: true and delete this case rather than loosening it.");
+        }
     }
 
     /// <summary>A line that was cut says so. The neutral fact, which is all a caller should need.</summary>
@@ -88,7 +160,7 @@ public class TruncationContractTests
     [MemberData(nameof(Available))]
     public void ACutLine_ReportsTheCut(string name)
     {
-        var measured = Measurers[name]().Measure(Paragraph, Style, 1f, maxWidth: 160, maxLines: 2);
+        var measured = Named(name).Measure(Paragraph, Style, 1f, maxWidth: 160, maxLines: 2);
 
         measured.Lines.Should().HaveCount(2, "the paragraph does not fit in two lines by accident");
         measured.Lines[^1].Ellipsized.Should().BeTrue();
@@ -100,7 +172,7 @@ public class TruncationContractTests
     [MemberData(nameof(Available))]
     public void AWholeLine_ReportsNothing(string name)
     {
-        var measured = Measurers[name]().Measure("short", Style, 1f, maxWidth: 400, maxLines: 0);
+        var measured = Named(name).Measure("short", Style, 1f, maxWidth: 400, maxLines: 0);
 
         measured.Lines.Should().OnlyContain(line => !line.Ellipsized);
     }
@@ -169,7 +241,7 @@ public class TruncationContractTests
     [MemberData(nameof(Available))]
     public void ACutLine_KeepsTheBeginning(string name)
     {
-        var measurer = Measurers[name]();
+        var measurer = Named(name);
         const string Head = "the quick brown fox jumps over the lazy dog and keeps going";
 
         var narrow = measurer.Measure(Head + " iiiiiiiiiiii", Style, 1f, maxWidth: 160, maxLines: 1);
@@ -207,7 +279,7 @@ public class TruncationContractTests
     [MemberData(nameof(Available))]
     public void ACutLine_FillsTheBoxFurtherThanAWrappedOne(string name)
     {
-        var measurer = Measurers[name]();
+        var measurer = Named(name);
 
         var cut = measurer.Measure(Paragraph, Style, 1f, maxWidth: 160, maxLines: 1);
         cut.Lines.Should().ContainSingle();
