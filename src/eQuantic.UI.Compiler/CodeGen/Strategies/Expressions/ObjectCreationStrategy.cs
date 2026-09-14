@@ -617,6 +617,13 @@ public class ObjectCreationStrategy : IConversionStrategy
         var ms = context.SemanticHelper.GetSymbol(creation) as IMethodSymbol;
         var typeDisplay = ms?.ContainingType.ToDisplayString() ?? context.ExpectedType ?? "";
 
+        // TARGET-TYPED construction is the same naming, spelled shorter: `Matrix2D m = new(…)`.
+        // The explicit path was fenced and this one was not, so the type came back by inference and
+        // went straight to an emit — which is the third time the host-only fence has been found
+        // guarding some of the ways a symbol can be named and reading like protection for all.
+        // Found in review of that fix.
+        if (ms?.ContainingType.ReportIfHostOnlyType(creation, context) == true) return "undefined";
+
         if (creation.Initializer != null)
         {
             var target = ms?.ContainingType;

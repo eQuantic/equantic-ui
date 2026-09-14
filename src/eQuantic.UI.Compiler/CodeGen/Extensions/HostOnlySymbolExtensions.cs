@@ -31,6 +31,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Extensions;
 /// <c>ComponentBoundary.Contained</c> compiled while <c>ComponentBoundary.ClearContained()</c> did
 /// not; <c>using static</c> compiled while a qualified call did not; <c>Matrix2D.Identity</c> was
 /// stopped while <c>new Matrix2D(…)</c> two lines above it was not.
+/// </para>
 /// <para>
 /// The OPERATOR branch is the one whose absence failed SILENTLY rather than loudly, and it is worth
 /// stating separately for that reason. JavaScript cannot overload an operator, so an unfenced

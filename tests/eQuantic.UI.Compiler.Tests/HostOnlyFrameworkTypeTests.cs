@@ -169,6 +169,10 @@ public class HostOnlyFrameworkTypeTests
     [Theory]
     [InlineData("var m = new Matrix2D(1, 0, 0, 1, 0, 0);")]
     [InlineData("var r = new RRect(new Rect(0, 0, 4, 4));")]
+    // TARGET-TYPED, which is the same naming spelled shorter — and the shape the first version of
+    // this fence missed, having guarded only the explicit one. Found in review.
+    [InlineData("Matrix2D m = new(1, 0, 0, 1, 0, 0);")]
+    [InlineData("RRect r = new(new Rect(0, 0, 4, 4));")]
     public void ConstructingAHostOnlyType_IsNamingItToo(string statement)
     {
         Diagnostics(statement).Should().Contain(d => d.Code == "EQ2010" && d.Message.Contains("HOST ONLY"));
@@ -205,6 +209,8 @@ public class HostOnlyFrameworkTypeTests
     [InlineData("var box = new Rect(0, 0, 10, 10);")]
     [InlineData("var edge = new Rect(0, 0, 10, 10).Right;")]
     [InlineData("var hit = new Rect(0, 0, 10, 10).Contains(new Point(1, 1));")]
+    [InlineData("Rect box = new(0, 0, 10, 10);")]
+    [InlineData("Point p = new(1, 2);")]
     public void TheGeometryAPageCanHold_StillCrosses(string statement)
     {
         Diagnostics(statement).Should().BeEmpty(
