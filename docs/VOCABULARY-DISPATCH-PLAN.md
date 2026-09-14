@@ -8,8 +8,10 @@
 ## The problem, in numbers
 
 The SDK has one visual vocabulary — 39 concrete `VisualNode` types plus the `UiComponent` seam — and
-six places that decide what each word means. Each is a `switch` over the node type, written by hand,
-and five of the six answer an unknown node with silence.
+seven places that decide what each word means: the six the coverage pin reads, below, and a seventh
+it does not — `EmailRenderer.WalkText`, the walker that writes an email's `text/plain` half. Each is a
+`switch` over the node type, written by hand, and five of the six pinned ones answer an unknown node
+with silence.
 
 | Dispatch | Method | Arms | On an unknown node |
 |---|---|---|---|
@@ -23,9 +25,10 @@ and five of the six answer an unknown node with silence.
 Seven defects came through the silent five; the audit's ledger lists them. What holds the line today
 is `VocabularyCoverageTests`: a regex over each method's source, an exemption list per dispatch with
 a reason per entry, three assertions in both directions. It is an instrument, and it has the limits
-of one — it reads the six methods it is told about and no seventh, it credits text shapes rather than
-semantics, and it moved twice under review before it stopped crediting an arm in one method for a
-claim about another. The structural fix makes the compiler do that job, and retires the regex.
+of one — it reads the six methods it is told about and not the seventh, it credits text shapes rather
+than semantics, and it moved twice under review before it stopped crediting an arm in one method for
+a claim about another. The structural fix makes the compiler do that job for all seven, and retires
+the regex.
 
 ## How Flutter solves it, and why the copy is not verbatim
 
