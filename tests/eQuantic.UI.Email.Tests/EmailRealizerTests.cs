@@ -405,7 +405,22 @@ public class EmailRendererReviewTests
 
         // The gap that separates sections in the HTML separates them here too — the documented
         // contract the walker was ignoring.
-        message.PlainText.Should().Contain("First section\n\nSecond section");
+        //
+        // Asserted on the LINES rather than on a literal with `\n` in it, and that is not a
+        // tidy-up: `EmailRenderer` builds this with `StringBuilder.AppendLine`, which appends
+        // `Environment.NewLine` — so the same tree yields `\r\n` from a Windows host and `\n`
+        // everywhere else. This test baked one host's answer in and failed the first time the suite
+        // ran on Windows. What it MEANS is a blank line between the sections, and that is what it
+        // says now.
+        //
+        // The renderer's own line ending is a separate, open question, and a sharper one than it
+        // looks: RFC 5322 says a message uses CRLF, so "whatever the host happens to be" is wrong
+        // in both directions — on Linux it emits `\n` into a format that specifies `\r\n`.
+        var lines = message.PlainText.ReplaceLineEndings("\n").Split('\n');
+        var first = Array.IndexOf(lines, "First section");
+        first.Should().BeGreaterThanOrEqualTo(0, "the heading is in the plain text at all");
+        lines[first + 1].Should().BeEmpty("a blank line separates the sections");
+        lines[first + 2].Should().Be("Second section");
     }
 }
 
