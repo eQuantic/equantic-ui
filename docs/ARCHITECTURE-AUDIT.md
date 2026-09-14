@@ -35,6 +35,24 @@ string literal's escaping to a raw path; and `tests/eQuantic.UI.Heroicons.Tests`
 the root ran eight projects while CI's `find` over `tests/` ran ten — the two instruments agreed by
 accident. Both are in the solution now.
 
+**Then, for three hours on the same day, the suite ran nowhere — and nothing said so.** #139 put
+three lines of prose inside `publish-github`'s `if: |` condition; a literal block scalar has no
+comments, so the expression GitHub was asked to evaluate had a paragraph in the middle of it, did not
+parse, and a workflow whose expression does not parse fails before a single job exists. Valid YAML,
+ten jobs present, `needs` resolving, `yaml.safe_load` content — and on GitHub's side the one tell:
+the workflow's registered name reverted from `CI` to its own path, `.github/workflows/ci.yml`. Every
+push from 35fa67ed to a3f1efc2 has a run under that name with zero jobs and the conclusion "failure",
+and seven pull requests merged in that window on their authors' local runs alone: #135, #137, #138,
+#140, #141, and this document's own #142 and #144. Their claims are not wrong; they are narrower
+than they read. #145 moved the prose above the key, and the proof is the run being called `CI` again.
+Two instruments failed in a row, and they are the same family as the one-OS gap, one turn further: a
+check that could not STOP anything — the ruleset requires a review and Copilot's, not a status
+check, so a pull request with zero CI jobs was `CLEAN` — and then a check that never ran. The
+structural fix is a repository setting, put to Edgar: required status checks on `main` for
+`build-packages` and the two `test` legs, so that an absent run blocks a merge instead of passing it
+by omission. The tell becomes a one-line doctor in the pull-request checklist and in the watchers
+that read a PR's state: ask GitHub what it calls the workflow.
+
 The counts that carry no pin — lines, fields, how many times a word appears — are dated by the line
 above and will drift. They are here to SIZE a decision, not to be believed a year on.
 
