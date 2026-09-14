@@ -273,9 +273,9 @@ down. What cannot stand is the current answer, which is neither. Edgar's call.
 `Native.Engine/Geometry.cs`, ABOVE the vocabulary, where Flutter puts `Rect`, `Offset` and `Size` in
 `dart:ui`, under everything. The consequences were measurable: `ICanvasPainter` spells every box as
 four floats; `Charts` carries its own `BarRect` with x, y, width and height spelled out, since no
-`Rect` was visible to it; `SemanticNode` carries a `Rect` and therefore could not move down — which
-is what keeps `SemanticRole` inside one target's assembly (section 6) and `Navigable`/`Overlay` mute
-on Photon; and `LayoutConstraints`, the constraint value #119 introduced and the one an author-facing
+`Rect` was visible to it; `SemanticNode` carries a `Rect` and therefore could not move down, which
+kept `SemanticRole` inside one target's assembly (section 6) — that one is unblocked and done, and
+what it did NOT unblock is recorded there; and `LayoutConstraints`, the constraint value #119 introduced and the one an author-facing
 `LayoutBuilder` would hand out, had to be born in `Native.Framework` for want of a lower home.
 
 The move is done and `Geometry.cs` is a `Primitives` file. **What it cost is the finding.** Three
@@ -425,13 +425,24 @@ together by `SharedComponentTranspilationTests`. The vitest config already alias
 `@equantic/runtime` to `src/index.ts`, and the embedded copy's import is a one-line `Replace` in the
 test. One committed set and a rewrite at test time retires 8,000 generated lines from the repo.
 
-**And the semantics exist three times too.** `SemanticRole` — what a node IS to assistive technology
-— is declared in `Native.Components`, a target's assembly. The web decides the same things inline: 35
-`aria-`/`role` decisions in `WebRealizer`, 86 in `lowering.ts`, and neither can name the enum;
-`WebRealizer` cites it in a comment (line 1123) in a file its assembly cannot see. Three answers to
-one question, and the one with a type is the one the other two cannot reference. The move is
-`SemanticRole` and `SemanticNode` to `Primitives`, per-target bridges staying where they are — blocked
-only by the `Rect` of section 4.
+**And the semantics existed three times too — the type has moved, the three answers remain.**
+`SemanticRole` — what a node IS to assistive technology — was declared in `Native.Components`, a
+target's assembly, while the web decided the same things inline and could not name the enum. It is in
+`Primitives` now, with `SemanticCheck` and `SemanticNode`; `SemanticsTree`, the WALK, stays where the
+`LayoutNode` it walks is. Three `using` lines, the same price the geometry move paid.
+
+That was the move the `Rect` of section 4 was blocking, and it is worth being exact about what it
+did and did not buy. The TYPE is reachable by every realizer now. The web still decides inline — the
+`aria-`/`role` calls in `WebRealizer` and `lowering.ts` — so there are still three answers to one
+question, and the FLUTTER-PARITY row stays PARTIAL for that reason rather than for the location. Its
+probe asserts both halves, so it comes off PARTIAL when the web starts producing them.
+
+**And it did NOT unmute `Navigable` and `Overlay` on Photon**, which is the exemption it was
+supposed to unblock. The walk gives one stop per control — "one stop for the whole control" — and
+doing that to a navigable grid would hide every row inside it. What they need is a role meaning "a
+labelled group, keep walking", and `SemanticRole` has none: it is ten leaf roles. That is a
+vocabulary decision with a bridge behind it on three platforms, and it is Edgar's. The move was the
+precondition, not the fix.
 
 **And a truncated line ended four different ways.** `ITextMeasurer.Measure` promised text "truncated
 to `maxLines` with a trailing ellipsis". The web drew one (`text-overflow: ellipsis`, and the
@@ -633,10 +644,11 @@ makes the rest safe.
 3. **Geometry down**. ~~`Rect`, `Point`, `Size` to `Primitives`~~ done (Flutter: `dart:ui`), and it
    cost three edits, which is the finding: nothing above depended on the placement. Four copies it
    had been causing went with it (section 7), and `ValueShapeCollisionTests` now asks about the
-   next one. Remaining: `SemanticRole` and `SemanticNode` to `Primitives`, then the group role that
-   unmutes `Navigable` and `Overlay` on Photon; `Charts` drops `BarRect`'s own geometry;
-   `ICanvasPainter` takes a `Rect` — which needs its TypeScript twin in the same change, because the
-   draw callback transpiles. — M, half done
+   next one. ~~`SemanticRole` and `SemanticNode` to `Primitives`~~ done too, for the same three
+   `using` lines — and it did NOT unmute `Navigable` and `Overlay`, which needs the group role
+   (section 7). Remaining: that group role, which is Edgar's decision; `Charts` drops `BarRect`'s
+   own geometry; and `ICanvasPainter` takes a `Rect`, which needs its TypeScript twin in the same
+   change because the draw callback transpiles. — M, mostly done
 4. **Node shapes**: a `SingleChildNode` base (Flutter: `SingleChildRenderObjectWidget`), the wrapper
    set and the node-intrinsic questions hoisted onto the vocabulary, `VisualNode.cs` split along the
    four shapes. — M
