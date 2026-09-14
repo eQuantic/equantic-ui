@@ -217,8 +217,13 @@ public class FlutterParityPinTests
         // that only ONE realizer produces them: the web still decides the same things inline, and
         // `WebRealizer` does not mention `SemanticRole` anywhere. The day it does, this fails and
         // the row moves off PARTIAL — which is what the location half did when the move landed.
-        ["SemanticsNode"] = () => typeof(SemanticRole).Assembly == typeof(VisualNode).Assembly
-            && typeof(SemanticNode).Assembly == typeof(VisualNode).Assembly
+        // All THREE that moved, including `SemanticCheck` — a location assertion that names two of
+        // three leaves the third free to be stale or misplaced with the row still green. Found in
+        // review.
+        ["SemanticsNode"] = () => new[]
+            {
+                typeof(SemanticRole), typeof(SemanticCheck), typeof(SemanticNode),
+            }.All(t => t.Assembly == typeof(VisualNode).Assembly)
             && !WebRealizerCode().Contains("SemanticRole", StringComparison.Ordinal),
         ["MergeSemantics"] = () => Nothing("MergeSemantics", "ExcludeSemantics"),
         ["Localizations"] = () => Has("ICultureController") && Nothing("LocalizationsDelegate"),

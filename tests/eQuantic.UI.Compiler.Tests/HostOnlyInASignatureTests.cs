@@ -62,22 +62,27 @@ public class HostOnlyInASignatureTests
         return compiler.CompileSource(source, "Probe.cs").Single();
     }
 
+    /// <param name="fenced">The type the member names. Passed rather than inferred, because the
+    /// second assertion is about THIS name: it used to be the literal `Matrix2D` for every row, so
+    /// the `Nothing` and `SemanticNode` cases proved the error and said nothing about the import
+    /// they were added for — a case that verifies the loud half and not the quiet one. Found in
+    /// review.</param>
     [Theory]
-    [InlineData("public Matrix2D Placement { get; init; }")]
-    [InlineData("public RRect Corner { get; init; }")]
-    [InlineData("private Matrix2D _placement;")]
+    [InlineData("public Matrix2D Placement { get; init; }", "Matrix2D")]
+    [InlineData("public RRect Corner { get; init; }", "RRect")]
+    [InlineData("private Matrix2D _placement;", "Matrix2D")]
     // The visitor's unit type: a component builds a tree, it does not visit one.
-    [InlineData("public Nothing Marker { get; init; }")]
+    [InlineData("public Nothing Marker { get; init; }", "Nothing")]
     // What a semantics WALK produces. No page constructs one — on the web the realizer writes ARIA
     // inline — and the day it stops, this row comes out together with the attribute.
-    [InlineData("public SemanticNode Announced { get; init; }")]
-    public void AHostOnlyTypeInAComponentsShape_IsStoppedAtCompileTime(string member)
+    [InlineData("public SemanticNode Announced { get; init; }", "SemanticNode")]
+    public void AHostOnlyTypeInAComponentsShape_IsStoppedAtCompileTime(string member, string fenced)
     {
         var result = Compile(member);
 
         result.Success.Should().BeFalse("the runtime ships no export for it, so this would die at hydration");
         result.Errors.Should().Contain(error => error.Code == "EQ2010");
-        result.TypeScript.Should().NotContain("Matrix2D",
+        result.TypeScript.Should().NotContain(fenced,
             "and the name must not reach the import list either — an emitted import of a missing "
             + "export is the failure, whatever the build says about it");
     }

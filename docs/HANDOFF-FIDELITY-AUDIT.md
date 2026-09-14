@@ -1105,7 +1105,7 @@ the pill's 40 down.
 
 - **Component**: `MISSING`
 - **Handoff**: A11y — None by default (invisible to readers). Attach Semantics(label, role) to promote; interactive Boxes are a spec smell — use Button.
-- **Code**: There is no Semantics node in the abstract vocabulary: the node list in src/eQuantic.UI.Primitives/Nodes/ has no such class, and nothing in eQuantic.UI.Components or the web realizer references one. The only promotion routes are Pressable (button/checkbox/switch roles), Link, TextEntry and Adjustable — each of which carries its own Label. A Box therefore cannot be given a label or a role; `SemanticRole` exists only on the native side, derived from those node types (src/eQuantic.UI.Native.Components/Semantics.cs:88-137).
+- **Code**: There is no Semantics node in the abstract vocabulary: the node list in src/eQuantic.UI.Primitives/Nodes/ has no such class, and nothing in eQuantic.UI.Components or the web realizer references one. The only promotion routes are Pressable (button/checkbox/switch roles), Link, TextEntry and Adjustable — each of which carries its own Label. A Box therefore cannot be given a label or a role. `SemanticRole` itself has since moved DOWN to the vocabulary (src/eQuantic.UI.Primitives/Contracts/SemanticNode.cs, #141) and is reachable by every realizer — the finding above is unchanged by that, because what is missing is a NODE an author can attach, not a type: the roles are still derived from the node types by the native walk (src/eQuantic.UI.Native.Components/Semantics.cs), and the web still decides the same things inline.
 - **Evidence**:
 
   ```
