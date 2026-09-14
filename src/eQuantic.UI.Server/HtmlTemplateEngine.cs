@@ -235,8 +235,6 @@ public class HtmlTemplateEngine
             // Move past this {{#if}} and look for the next one
             searchStart = ifStart + 1;
         }
-
-        return null;
     }
 
     /// <summary>
