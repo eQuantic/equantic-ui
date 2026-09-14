@@ -150,7 +150,10 @@ public class WikiVocabularyTests
     {
         if (NoWikiHere()) return;
 
-        var byName = Pages().ToDictionary(Path.GetFileName, StringComparer.Ordinal);
+        // A LAMBDA, not the method group: `GetFileName` is annotated [NotNullIfNotNull(path)] and
+        // a method group converts to Func<string, string?>, which drops it — so TKey infers as
+        // `string?` and fails the notnull constraint. Same shape as the refs table in the design host.
+        var byName = Pages().ToDictionary(path => Path.GetFileName(path), StringComparer.Ordinal);
         var stale = Allowed
             .Where(a => byName.TryGetValue(a.Page, out var path)
                 && !RetiredSpellings.Single(r => r.Name == a.Name).Pattern.IsMatch(File.ReadAllText(path)))
