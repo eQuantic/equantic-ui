@@ -21,7 +21,13 @@ public class WriteOncePageSsrTests
     [Page("/write-once-test", Title = "Write-once test page")]
     private sealed class WriteOnceTestPage : StatefulComponent
     {
+        // Deliberately UNASSIGNED, and suppressed rather than initialized: the assertion is
+        // `Contain("Count: 0", "field defaults are the v1 initial state")`, so writing `= 0` here
+        // would silence the warning by testing a different thing — an explicit initializer
+        // instead of the C# default the SSR path is supposed to render.
+#pragma warning disable CS0649
         private int _count;
+#pragma warning restore CS0649
 
         public override VisualNode Build(ComponentContext context)
         {

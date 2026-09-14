@@ -141,7 +141,7 @@ public class GradientShimmerRealizerTests
             Pattern = new GridPattern(56, Theme.Border),
         }));
 
-        var style = node.Attributes["style"];
+        var style = node.Attributes["style"] ?? "";
         var linear = style.IndexOf("linear-gradient(to right", StringComparison.Ordinal);
         var radial = style.IndexOf("radial-gradient(", StringComparison.Ordinal);
         var grid = style.IndexOf("transparent 1px", StringComparison.Ordinal);

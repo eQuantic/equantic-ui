@@ -30,7 +30,7 @@ public class NavigationHandoffFidelityTests
 
     private static IReadOnlyList<string> Styles(VisualNode node) =>
         Walk(WebRealizer.Lower(node, Theme).Render())
-            .Select(candidate => candidate.Attributes.GetValueOrDefault("style", ""))
+            .Select(candidate => candidate.Attributes.GetValueOrDefault("style", "") ?? "")
             .ToList();
 
     private static readonly NavItem[] Items =

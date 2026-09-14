@@ -73,7 +73,7 @@ public class StudioWalkTests(ITestOutputHelper output)
     {
         var frame = Open(section).RenderFrame(new DisplayListBuilder());
 
-        var seen = new Dictionary<string, string>();
+        var seen = new Dictionary<string, string?>();
         foreach (var region in frame.HitRegions)
         {
             seen.ContainsKey(region.Path).Should().BeFalse(

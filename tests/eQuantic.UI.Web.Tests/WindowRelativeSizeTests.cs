@@ -23,7 +23,7 @@ public class WindowRelativeSizeTests
     private static readonly IAppTheme Theme = PhotonTheme.Instance;
 
     private static string StyleOf(VisualNode node) =>
-        WebRealizer.Lower(node, Theme).Render().Attributes.GetValueOrDefault("style", "");
+        WebRealizer.Lower(node, Theme).Render().Attributes.GetValueOrDefault("style", "") ?? "";
 
     [Fact]
     public void ACapIsTheWindowLessTheInset()

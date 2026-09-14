@@ -28,7 +28,7 @@ public class ListHandoffFidelityTests
 
     private static HtmlNode Render(VisualNode node) => WebRealizer.Lower(node, Theme).Render();
 
-    private static string StyleOf(HtmlNode node) => node.Attributes.GetValueOrDefault("style", "");
+    private static string StyleOf(HtmlNode node) => node.Attributes.GetValueOrDefault("style", "") ?? "";
 
     [Theory]
     [InlineData(null, 1, "52px")]

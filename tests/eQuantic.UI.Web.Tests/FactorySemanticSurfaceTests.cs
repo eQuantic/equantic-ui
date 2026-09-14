@@ -66,7 +66,7 @@ public class FactorySemanticSurfaceTests
 
         var button = Walk(WebRealizer.Lower(node, Theme).Render())
             .First(candidate => candidate.Attributes.TryGetValue("style", out var style) &&
-                                style.Contains("--eq-pressed-bg"));
+                                style?.Contains("--eq-pressed-bg") == true);
         button.Attributes["class"].Should().Contain("eq-pressable");
     }
 
@@ -199,7 +199,7 @@ public class IconSourceTests
 
         // The size rides the inline style on the <svg>, which is where the realizer puts it.
         rendered.Any(n => n.Tag == "svg" && n.Attributes.TryGetValue("style", out var style)
-                && style.Contains("width: 32px"))
+                && style?.Contains("width: 32px") == true)
             .Should().BeTrue("the well is 32dp whatever size the caller's Icon was built at");
     }
 }

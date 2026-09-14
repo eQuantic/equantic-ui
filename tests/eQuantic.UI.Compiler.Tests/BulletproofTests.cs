@@ -16,7 +16,9 @@ public class BulletproofTests
         var root = CSharpSyntaxTree.ParseText(classCode).GetRoot();
         var method = root.DescendantNodes().OfType<MethodDeclarationSyntax>().First();
         // We trim the result to make assertions easier, and remove outer braces if present
-        var result = _converter.Convert(method.Body).Trim();
+        var body = method.Body
+            ?? throw new InvalidOperationException("the harness wraps the snippet in a block-bodied method");
+        var result = _converter.Convert(body).Trim();
         if (result.StartsWith("{") && result.EndsWith("}"))
         {
              // return result.Substring(1, result.Length - 2).Trim();
