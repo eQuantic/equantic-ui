@@ -67,28 +67,90 @@ public class CalendarNamesFixtureTests
         }
     }
 
-    [CultureDataFact]
-    public void WhatTheCalendarSays_IsPinnedForTheTwin()
+    /// <summary>
+    /// The half that is OURS: which table of the culture each member reads. Derived from the
+    /// host's own <see cref="DateTimeFormatInfo"/>, so it asserts the same thing on every runner.
+    /// <para>
+    /// It used to compare a committed snapshot of ten cultures byte for byte, which pinned the
+    /// MACHINE's ICU rather than this repository's code: macOS abbreviates <c>ar-EG</c> Sunday as
+    /// "الأحد" and the Linux and Windows runners as "أحد", all correct Arabic, and whichever host
+    /// wrote the file the other two disagreed with it. Nothing about that is ours to fix — a
+    /// calendar's spelling belongs to the platform's globalization, the way <c>ToString("d")</c>
+    /// does — and a pin that fails on two of three hosts is measuring the host.
+    /// </para>
+    /// <para>
+    /// What IS ours is the mapping, and it has already been wrong once: <c>DayNamesShort</c> must
+    /// read <c>AbbreviatedDayNames</c> and never <c>ShortestDayNames</c>, which is the finding
+    /// that shaped <see cref="CalendarNames"/>. That swap is what this catches, on any ICU.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void TheCalendarReadsTheCulturesOwnTables()
     {
-        var pinned = Cultures.ToDictionary(culture => culture, Snapshot);
-        // The names are the point, so the readable encoder — and LF on every host, because this
-        // file is committed and compared. See FixtureJson.
-        var json = FixtureJson.Write(pinned, FixtureJson.Readable);
+        foreach (var name in Cultures)
+        {
+            var culture = new CultureInfo(name);
+            var format = culture.DateTimeFormat;
+            var previous = CultureInfo.CurrentCulture;
+            try
+            {
+                CultureInfo.CurrentCulture = culture;
 
+                CalendarNames.DayNamesShort.Should().Equal(format.AbbreviatedDayNames,
+                    "{0}'s abbreviations are AbbreviatedDayNames — ShortestDayNames is different "
+                    + "data the twin's Intl has no equivalent for", name);
+                CalendarNames.DayNamesLong.Should().Equal(format.DayNames, "{0}", name);
+                CalendarNames.FirstDayOfWeek.Should().Be((int)format.FirstDayOfWeek, "{0}", name);
+                CalendarNames.ShortDatePattern.Should().Be(format.ShortDatePattern, "{0}", name);
+
+                // The thirteenth month is .NET's lunisolar slot, empty under every Gregorian
+                // culture — and a nameless month in a year grid if it were handed out.
+                CalendarNames.MonthNames.Should().Equal(format.MonthNames.Take(12), "{0}", name);
+                CalendarNames.MonthNamesShort.Should()
+                    .Equal(format.AbbreviatedMonthNames.Take(12), "{0}", name);
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = previous;
+            }
+        }
+    }
+
+    /// <summary>
+    /// The committed fixture is a SAMPLE for <c>calendar-names.spec.ts</c>, not a pin: the twin
+    /// installs it as a server catalog and asserts that it reads it back verbatim, which is a
+    /// proof about plumbing that any fixed data serves. It is generated once, reviewed in the
+    /// diff, and never compared to the host again — see
+    /// <see cref="TheCalendarReadsTheCulturesOwnTables"/> for what the host IS asked.
+    /// <para>Regenerate with <c>EQ_UPDATE_CALENDAR_FIXTURE=1</c>.</para>
+    /// </summary>
+    [Fact]
+    public void TheTwinsSample_ExistsAndCoversTheProbedCultures()
+    {
         var path = FixturePath();
-        // A pin that rewrites itself is not a pin: it would pass in CI while the twin quietly read
-        // the freshly-written file from the same workspace. Regeneration is deliberate and named,
-        // the way every other fixture in this repository does it.
         if (Environment.GetEnvironmentVariable("EQ_UPDATE_CALENDAR_FIXTURE") == "1")
         {
-            File.WriteAllText(path, json);
+            var pinned = Cultures.ToDictionary(culture => culture, Snapshot);
+            File.WriteAllText(path, JsonSerializer.Serialize(pinned, new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                // The names are the point: escaping every accent and every CJK glyph would make
+                // the fixture unreadable and its diffs meaningless.
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+            }) + "\n");
             return;
         }
 
         File.Exists(path).Should().BeTrue(
-            "the twin asserts against this fixture — generate it once with EQ_UPDATE_CALENDAR_FIXTURE=1");
-        File.ReadAllText(path).Should().Be(json,
-            "the calendar names changed; regenerate with EQ_UPDATE_CALENDAR_FIXTURE=1 and review the diff");
+            "the twin reads this sample — generate it once with EQ_UPDATE_CALENDAR_FIXTURE=1");
+
+        // The SHAPE is still ours: a culture added to the probe list and not to the sample would
+        // leave the twin asserting against a file that never learned about it.
+        using var sample = JsonDocument.Parse(File.ReadAllText(path));
+        foreach (var culture in Cultures)
+            sample.RootElement.TryGetProperty(culture, out _).Should().BeTrue(
+                "{0} is probed here but missing from the twin's sample — regenerate with "
+                + "EQ_UPDATE_CALENDAR_FIXTURE=1", culture);
     }
 
     [Fact]

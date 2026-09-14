@@ -69,8 +69,9 @@ public class FormatSubsetTests
     internal static string Normalize(string value) =>
         value.Replace(' ', ' ').Replace(' ', ' ');
 
-    [CultureDataFact]
-    public void TheFormatSubset_IsWhatBothRuntimesProduce()
+    /// <summary>The subset as this host's .NET spells it — the sample's generator, and the
+    /// subject of the invariant check below.</summary>
+    private static string Dump()
     {
         var builder = new StringBuilder();
         foreach (var name in Cultures)
@@ -128,19 +129,79 @@ public class FormatSubsetTests
                         ? value.ToString(CultureInfo.InvariantCulture)
                         : value.ToString(spec, CultureInfo.InvariantCulture))).Append('\n');
 
-        var actual = builder.ToString();
+        return builder.ToString();
+    }
+
+    /// <summary>
+    /// The committed fixture is a SAMPLE for <c>format-subset.spec.ts</c>, not a pin on this
+    /// host's globalization. It is generated once, reviewed in the diff, and never compared to
+    /// the host again.
+    /// <para>
+    /// It used to be compared byte for byte, and that measured the MACHINE: <c>en-US</c>'s long
+    /// time pattern is <c>h:mm:ss tt</c> on macOS and <c>h:mm tt</c> on the Windows runner, both
+    /// correct for the ICU they carry. Whichever host wrote the file, the other two disagreed —
+    /// and none of that is this repository's code. What is still ours is the SUBSET: a culture or
+    /// a specifier added here and not regenerated would leave the twin asserting against a file
+    /// that never learned about it.
+    /// </para>
+    /// <para>Regenerate with <c>EQ_UPDATE_FORMAT_FIXTURE=1</c>.</para>
+    /// </summary>
+    [Fact]
+    public void TheTwinsSample_ExistsAndCoversTheDeclaredSubset()
+    {
         if (Environment.GetEnvironmentVariable("EQ_UPDATE_FORMAT_FIXTURE") == "1")
         {
             Directory.CreateDirectory(Path.GetDirectoryName(FixturePath)!);
-            File.WriteAllText(FixturePath, actual);
+            File.WriteAllText(FixturePath, Dump());
             return;
         }
 
         File.Exists(FixturePath).Should().BeTrue(
-            "generate once with EQ_UPDATE_FORMAT_FIXTURE=1");
-        File.ReadAllText(FixturePath).Should().Be(actual,
-            "the .NET formatting the fixture pins changed — regenerate with "
-            + "EQ_UPDATE_FORMAT_FIXTURE=1 and make the vitest half pass again, or drop the case "
-            + "from the subset (and have EQ2100 refuse it) rather than let the two sides drift");
+            "the twin reads this sample — generate it once with EQ_UPDATE_FORMAT_FIXTURE=1");
+
+        // Key, never value: the keys are the subset we declared and the values are the host's ICU.
+        static IEnumerable<string> Keys(string dump) => dump
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => string.Join('|', line.Split('|').SkipLast(1)));
+
+        Keys(File.ReadAllText(FixturePath)).Should().BeEquivalentTo(Keys(Dump()),
+            "the subset changed — regenerate with EQ_UPDATE_FORMAT_FIXTURE=1, or drop the case "
+            + "(and have EQ2100 refuse it) rather than let the two sides drift");
+    }
+
+    /// <summary>
+    /// The one promise in the subset that is OURS rather than the platform's: an invariant
+    /// conversion must not follow the active culture. The client replays those rows with pt-BR
+    /// installed and has to produce the same strings, so the server must too — a number a machine
+    /// reads keeps its shape whoever is reading the page.
+    /// </summary>
+    [Fact]
+    public void TheInvariantSection_DoesNotFollowTheActiveCulture()
+    {
+        static string[] InvariantRows()
+        {
+            var rows = new List<string>();
+            foreach (var value in Numbers)
+                foreach (var spec in InvariantSpecs)
+                    rows.Add(Normalize(spec.Length == 0
+                        ? value.ToString(CultureInfo.InvariantCulture)
+                        : value.ToString(spec, CultureInfo.InvariantCulture)));
+            return [.. rows];
+        }
+
+        var previous = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = new CultureInfo("en-US");
+            var underEnglish = InvariantRows();
+            CultureInfo.CurrentCulture = new CultureInfo("pt-BR");
+            InvariantRows().Should().Equal(underEnglish,
+                "an invariant conversion that moved with the active culture would put a comma "
+                + "decimal on the wire for a Brazilian reader and a dot for an American one");
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previous;
+        }
     }
 }

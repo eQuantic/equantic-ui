@@ -51,6 +51,21 @@ public enum SemanticCheck : byte
 /// cross as string literals, and a component naming one costs nothing.
 /// </para>
 /// </summary>
+/// <param name="Role">What KIND of thing this is, which decides how a bridge announces it.</param>
+/// <param name="Path">Where it sits in the tree — the identity a focus or an action names.</param>
+/// <param name="Bounds">Where it landed, for the bridge's own hit map.</param>
+/// <param name="Label">What assistive tech announces, already resolved to the app's culture.</param>
+/// <param name="Value">Its current value, for roles that carry one.</param>
+/// <param name="Disabled">Whether it refuses interaction, announced as such rather than hidden.</param>
+/// <param name="Checked">
+/// The two-or-three-state answer to a question the control asks — a checkbox, a switch, a radio.
+/// Null where the role has no such question, so a plain button never announces a state it does
+/// not have.
+/// </param>
+/// <param name="Expanded">
+/// Whether a disclosure is open, for the roles that can be. Null where nothing expands — which is
+/// what tells a bridge to offer no expand/collapse action at all.
+/// </param>
 /// <param name="Current">
 /// This is the destination the user is ON — the web's <c>aria-current="page"</c>. Each bridge
 /// reports it with the nearest thing its platform has, which on both mobiles is the SELECTED trait;
