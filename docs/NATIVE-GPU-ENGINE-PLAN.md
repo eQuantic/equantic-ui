@@ -802,7 +802,7 @@ Bun and the JS bundling chain, the TypeScript runtime.
   carry traits, screen-space frames and the path as identifier, with `accessibilityActivate` /
   `accessibilityIncrement` / `accessibilityDecrement` exported by selector onto `ActivatePath` /
   `AdjustPath`; a check's state is the VALUE `"1"`/`"0"` (UIKit's own toggle contract, so the word
-  comes from the system in the user's language), disclosure rides iOS 17's
+  comes from the system in the user's language), disclosure rides iOS 18's
   `accessibilityExpandedStatus`, and `LayoutChanged` is posted only when a presented frame changed
   the semantics and only while VoiceOver runs. Android: `PhotonSurfaceView` answers an
   `AccessibilityNodeProvider` with a VIRTUAL child per node (class name as role, screen-pixel

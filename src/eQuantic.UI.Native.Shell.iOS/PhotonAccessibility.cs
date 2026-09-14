@@ -186,7 +186,7 @@ internal sealed class PhotonAccessibilityElement : UIAccessibilityElement
     }
 
     /// <summary>
-    /// Whether this element OPENS something, and whether it currently is open — iOS 17's own
+    /// Whether this element OPENS something, and whether it currently is open — iOS 18's own
     /// vocabulary, the twin of the web's aria-expanded and of AppKit's accessibilityExpanded. A
     /// control that discloses nothing answers Unsupported, which is a different answer from
     /// "closed" and the reason the node carries a nullable.
