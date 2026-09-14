@@ -11,10 +11,10 @@ rot. What holds each claim here:
 | Claim | Instrument |
 |---|---|
 | every node reaches every dispatch, or is named there as an absence | `VocabularyCoverageTests` — six dispatches, C# and TypeScript |
-| the layering — which core assembly may reference which, exactly | `AssemblyLayeringTests` — fourteen assemblies |
+| the layering — which core assembly may reference which, exactly | `AssemblyLayeringTests` — thirteen assemblies |
 | the handoff speaks the vocabulary's current names | `HandoffVocabularyTests` |
 | the handoff's numbers are the SDK's numbers | `HandoffTokenPinTests` |
-| every Flutter row is findable, and every gap still a gap | `FlutterParityPinTests` — 63 rows |
+| every Flutter row is findable, and every gap still a gap | `FlutterParityPinTests` — 64 rows |
 
 The counts that carry no pin — lines, fields, how many times a word appears — are dated by the line
 above and will drift. They are here to SIZE a decision, not to be believed a year on.
@@ -86,7 +86,7 @@ reader and to the build.
 | `LayoutEngine` | Native.Framework | `MeasureCore` | 37 / 39 | a zero-sized box, silently | how big it is, and where |
 | `WebRealizer` | Web | `LowerNodeKind` | 37 / 39 | `null`, silently | what DOM the server writes |
 | `lowering.ts` | TypeScript runtime | `lowerNodeKind` | 39 / 39 | `render()` or `null`, silently | what DOM the browser writes |
-| `PhotonRealizer` | Native.Components | `EmitNode` | 26 / 39 | nothing, silently | what the GPU draws |
+| `PhotonRealizer` | Native.Components | `EmitNode` | 28 / 39 | nothing, silently | what the GPU draws |
 | `Semantics` | Native.Components | `Walk` | 13 / 39 | walks the children | what a screen reader says |
 | `EmailRealizer` | Email | `Write` | 6 / 39 | **throws**, naming the node | what an email client may see |
 
@@ -489,7 +489,7 @@ Worth recording, because an audit that only lists faults misleads about the whol
 - **The declarative surface is held to its contract**: `UiFactoryConformanceTests` checks that each of
   the 75 factories in `UI.cs` is named like its type and mirrors a constructor parameter for
   parameter, with three named exceptions listed by name.
-- **The pins exist, and they are the pattern**: `FlutterParityPinTests` (63 rows, a probe each),
+- **The pins exist, and they are the pattern**: `FlutterParityPinTests` (64 rows, a probe each),
   `HandoffTokenPinTests`, `VocabularyCoverageTests` (six doors), `AssemblyLayeringTests`,
   `HandoffVocabularyTests`, `MarkerParityTests`, `LabelledNodesReachSemanticsTests`, the transpiled
   fixtures byte-pinned against the live compiler, the design-system TypeScript byte-pinned against its
@@ -504,7 +504,7 @@ Worth recording, because an audit that only lists faults misleads about the whol
 Each step names the Flutter answer it follows and its size. The pins come first because they are what
 makes the rest safe.
 
-0. **Done in this pass.** The six-door coverage pin, the layering pin, the handoff vocabulary pin, five
+0. **Done in this pass.** The six-door coverage pin, the layering pin, the handoff vocabulary pin, six
    parity rows with probes, the dead `Web → Components` edge, the alias comment, the A11 word.
 1. **The SSR surfaces defect** (`CodeSurface`, `SheetSurface` → empty span). Mirror the static skeleton
    `lowering.ts` produces, cross-pinned; remove the two exemptions. A chip is open for it. — S

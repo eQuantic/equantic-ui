@@ -5,7 +5,8 @@ using Xunit;
 namespace eQuantic.UI.Native.Engine.Tests;
 
 /// <summary>
-/// The layering, held to the tree: which project each core assembly may reference, exactly.
+/// The layering, held to the tree: which eQuantic assembly each core assembly may reference, exactly —
+/// by project, and by package, because a <c>PackageReference</c> to a sibling is the same edge by another door.
 ///
 /// <para>
 /// The architecture is a handful of sentences — Primitives depends on nothing; the component
@@ -106,12 +107,22 @@ public class AssemblyLayeringTests
     private static string ProjectFile(string assembly) =>
         Path.Combine(Root, "src", assembly, assembly + ".csproj");
 
+    /// <summary>
+    /// Every eQuantic assembly the project declares an edge to — <c>ProjectReference</c> by file name,
+    /// <c>PackageReference</c> by package id. Third-party packages are not layering and are left to
+    /// each project, except for Primitives, whose zero is asserted separately.
+    /// </summary>
     private static string[] ProjectReferences(string assembly)
     {
         var path = ProjectFile(assembly);
         File.Exists(path).Should().BeTrue($"the layering table names {assembly}, so its project has to exist");
-        return Regex.Matches(File.ReadAllText(path), @"<ProjectReference\s+Include=""([^""]+)""")
-            .Select(m => Path.GetFileNameWithoutExtension(m.Groups[1].Value.Replace('\\', '/')))
+        var csproj = File.ReadAllText(path);
+        var projects = Regex.Matches(csproj, @"<ProjectReference\s+Include=""([^""]+)""")
+            .Select(m => Path.GetFileNameWithoutExtension(m.Groups[1].Value.Replace('\\', '/')));
+        var packages = Regex.Matches(csproj, @"<PackageReference\s+Include=""(eQuantic\.[^""]+)""")
+            .Select(m => m.Groups[1].Value);
+        return projects.Concat(packages)
+            .Distinct()
             .OrderBy(n => n, StringComparer.Ordinal)
             .ToArray();
     }

@@ -129,8 +129,9 @@ public class FlutterParityPinTests
         // Geometry is real and lives in the engine — above the vocabulary. The Surface below has no
         // Rect, and the engine's is the one every native assembly uses. When Rect moves down, this
         // row must move off PARTIAL, and this probe is what makes someone do it.
-        ["Rect"] = () => Nothing("Rect", "Point")
-            && typeof(eQuantic.UI.Native.Engine.Rect).Assembly == typeof(eQuantic.UI.Native.Engine.DisplayList).Assembly,
+        ["Rect"] = () => Nothing("Rect", "Point", "Size")
+            && new[] { typeof(eQuantic.UI.Native.Engine.Rect), typeof(eQuantic.UI.Native.Engine.Point), typeof(eQuantic.UI.Native.Engine.Size) }
+                .All(t => t.Assembly == typeof(eQuantic.UI.Native.Engine.DisplayList).Assembly),
         ["LayoutBuilder"] = () => Nothing("LayoutBuilder", "SizeBuilder") && Has("AdaptiveNode"),
         ["CustomMultiChildLayout"] = () => Nothing("MultiChildLayoutDelegate", "LayoutDelegate"),
         ["CustomSingleChildLayout"] = () => Nothing("SingleChildLayoutDelegate"),
@@ -189,7 +190,8 @@ public class FlutterParityPinTests
         ["Semantics"] = () => Has("SemanticsTree") && Has("SemanticNode"),
         // A LOCATION probe: the row's claim is that the role enum sits in one target's assembly.
         // Moving it to Primitives turns this false and fails the PARTIAL row until it is rewritten.
-        ["SemanticsNode"] = () => typeof(SemanticRole).Assembly == typeof(PhotonHost).Assembly,
+        ["SemanticsNode"] = () => typeof(SemanticRole).Assembly == typeof(PhotonHost).Assembly
+            && typeof(SemanticNode).Assembly == typeof(PhotonHost).Assembly,
         ["MergeSemantics"] = () => Nothing("MergeSemantics", "ExcludeSemantics"),
         ["Localizations"] = () => Has("ICultureController") && Nothing("LocalizationsDelegate"),
         ["TextDirection.ltr/rtl"] = () => Nothing("TextDirection"),
@@ -199,7 +201,9 @@ public class FlutterParityPinTests
         // 10 — lifecycle and windows
         ["WidgetsBindingObserver"] = () => Nothing("WidgetsBindingObserver", "AppLifecycleState"),
         // One host, no contract between it and the shells, none of Flutter's per-concern bindings.
-        ["WidgetsFlutterBinding"] = () => Has("PhotonHost") && Nothing("IPhotonHost", "GestureBinding", "FocusManager"),
+        ["WidgetsFlutterBinding"] = () => Has("PhotonHost") && Nothing("IPhotonHost", "FocusManager",
+            "GestureBinding", "SchedulerBinding", "ServicesBinding", "PaintingBinding", "SemanticsBinding",
+            "RendererBinding", "WidgetsBinding"),
         ["View"] = () => Has("WindowChrome"),
         ["devicePixelRatio"] = () => Nothing("DevicePixelRatio"),
     };

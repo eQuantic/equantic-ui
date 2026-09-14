@@ -44,7 +44,8 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// So each dispatch names the ONE method that answers its question, that method's body is cut out
 /// of the file (braces matched, comments and strings removed), and the node has to appear inside it
 /// in a shape C# uses to dispatch on a type — <c>case Text t:</c>, <c>Text t =&gt;</c>, the discard
-/// <c>Spacer =&gt;</c>, or <c>is ScrollView s</c> — or, for the TypeScript twin, as <c>case 'text':</c>
+/// <c>Spacer =&gt;</c>, or an <c>if</c> whose head is <c>node.Source is ScrollView s</c> — or, for the
+/// TypeScript twin, as <c>case 'text':</c>
 /// over the WIRE KIND the C# node declares. Never a bare name, and never an arm in some OTHER method
 /// of the same file: the first version of this matcher read the whole file, so a node answered in
 /// <c>MinContentWidth</c> counted as measured by <c>MeasureCore</c>, and an <c>Overlay</c> the engine
@@ -369,11 +370,18 @@ public class VocabularyCoverageTests
         // this matcher missed that and reported a node as unhandled three lines above its own case —
         // the instrument was wrong before the code was, which is the usual order.
         var name = $@"(?:\w+\.)*{Regex.Escape(node)}";
-        return Regex.IsMatch(body, $@"\bcase {name}\b")            // case Text t:  case Text:  case Text { … }:
-            || Regex.IsMatch(body, $@"\b{name}(?: [a-z]\w*)? =>")  // Text t =>   and the discard  Spacer =>
-            || Regex.IsMatch(body, $@"\bis \(?{name}\b")            // is ScrollView s   is (DragDismiss or …)
-            || Regex.IsMatch(body, $@"\bor {name}\b");              // … or Draggable)
+        return Regex.IsMatch(body, $@"\bcase {name}\b")                        // case Text t:  case Text:  case Text { … }:
+            || Regex.IsMatch(body, $@"\b{name}(?: [a-z]\w*)? =>")              // Text t =>   and the discard  Spacer =>
+            || Regex.IsMatch(body, $@"\bif \(\w+(?:\.\w+)* is \(?{name}\b")  // if (node.Source is ScrollView s)   if (x is (DragDismiss or …)
+            || Regex.IsMatch(body, $@"\bis \([^)]* or {name}\)");             // … is (DragDismiss or Draggable)
     }
+
+    // The `is` shape is deliberately the HEAD of an `if` and nothing else. EmitNode answers for nine
+    // nodes that way after its switch, which is handling — but it also reads `node.Source is Box ob`
+    // in a ternary and `node.Source is Pressable { … }` in a guard BEFORE the switch, which is not:
+    // those read one property of a node whose arm is elsewhere, and counting them would let the arm
+    // for Pressable disappear while the guard kept it "handled". Review caught that on the version
+    // that accepted any `is`.
 
     /// <summary>The node's own name, then every base strictly below <see cref="VisualNode"/>.</summary>
     private static IEnumerable<string> SelfAndBases(Type node)
