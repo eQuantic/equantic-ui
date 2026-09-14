@@ -247,6 +247,12 @@ already writes `enums.generated.ts` and `design-system.generated.ts` from the as
   assembly, watched the row fail, and wrote that down: it proves the probe reads real assemblies
   rather than a tautology, which is less than "it discriminates" and more than nothing. A net that
   states its own ceiling can be raised later; one that claims the full proof it did not do cannot.
+- **Re-measure after the LAST edit, not after the last edit you remember.** #143's body said the
+  TypeScript suite was green; it had been, on a tree that no longer existed — the suite ran, THEN the
+  transpiled twins were regenerated, and the cross-pin spec still reading `b.x/y/width/height` was
+  failing two cases when review looked. This repository already runs a packaging step twice because
+  the second run reads the first one's output; a regenerated fixture is the same thing. So a slice's
+  proof is the run whose inputs are the commit being reviewed, and a PR body names that run's head.
 - **Output is byte-identical, by slice.** Each realizer already has the pin that says so: the web has
   `ComponentParityFixtureTests`, `PrimitiveValueFixtureTests` and `MarkerParityTests` (and
   `SurfaceSsrTests` once #121 lands — it is that PR's, not `main`'s yet);
