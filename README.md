@@ -275,18 +275,29 @@ genuinely impossible.
 
 ```
 src/
-├── eQuantic.UI.Web/           # Web realizer + the DOM escape hatch (IComponent, HtmlElement)
-├── eQuantic.UI.Primitives/     # The abstract visual vocabulary + design tokens (zero deps)
-├── eQuantic.UI.Components/     # WRITE-ONCE component library (one source, both targets)
-├── eQuantic.UI.Compiler/       # Roslyn-based C# → TypeScript transpiler (eqc)
-├── eQuantic.UI.Sdk/            # MSBuild SDK for web projects
-├── eQuantic.UI.Sdk.Native/     # MSBuild SDK for Photon projects
-├── eQuantic.UI.Server/         # ASP.NET Core SSR + Server Actions
-├── eQuantic.UI.Runtime/        # TypeScript browser runtime (reconciler, state, atomizer)
-├── eQuantic.UI.Runtime.*/      # Platform Bun bundles (Osx64, Win64, Linux64)
-├── eQuantic.UI.Native.*        # Photon: engine (RHI, Metal, Vulkan), framework, shells
+├── eQuantic.UI.Primitives/     # The abstract visual vocabulary, tokens, contracts (zero deps)
+├── eQuantic.UI.Components/     # WRITE-ONCE component library (one source, every target)
+├── eQuantic.UI.Charts/         # WRITE-ONCE charts (BarChart, …)
+├── eQuantic.UI.Web/            # Web realizer (SSR lowering) + the DOM escape hatch (HtmlElement)
+├── eQuantic.UI.Server/         # ASP.NET Core host: SSR, Server Actions, routing, assets
+├── eQuantic.UI.Email/          # Email realizer (tables and inline styles)
+├── eQuantic.UI.Runtime/        # TypeScript browser runtime → runtime.js (reconciler, state, router)
+├── eQuantic.UI.Runtime.*/      # Embedded Bun, one package per OS+arch (Osx64, OsxArm64, Win64, WinArm64, Linux64, LinuxArm64)
+├── eQuantic.UI.Compiler/       # Roslyn-based C# → TypeScript transpiler (the library)
+├── eQuantic.Build/             # eqc — the transpiler CLI the SDK runs
+├── eQuantic.UI.Codegen/        # Writers for generated files (one CodeWriter, one writer per file type)
+├── eQuantic.UI.Web.Build/      # Generators of the runtime's TypeScript twins (design system, enum unions, icons, strings)
+├── eQuantic.UI.Generators/     # Source generator: the declarative factory surface for an app's own components
+├── eQuantic.UI.Sdk/            # MSBuild SDK for web apps
+├── eQuantic.UI.Sdk.Native/     # MSBuild SDK for Photon apps
+├── eQuantic.UI.Native.*        # Photon: Engine (+ Metal, Vulkan, Reference), Framework (layout), Components (realizer, host),
+│                               # Hosting (application builder), Build (eqicon), Generators, and the shells
+│                               # (Shell.Apple, Shell.MacOS, Shell.iOS, Shell.Android, Shell.Windows)
+├── eQuantic.UI.Design*/        # The visual editor's design host
 ├── eQuantic.UI.Templates/      # dotnet new equantic-app / equantic-native
-└── eQuantic.Build/             # MSBuild build tasks
+├── eQuantic.UI.Material/       # Material 3 theme (dynamic color)
+├── eQuantic.UI.<Pack>/         # Icon catalogs (Lucide, Heroicons, Tabler, …), Gtm, Images, Lottie, Charts.ChartJs/.ApexCharts
+docs/                           # The measured audits and the plans — docs/README.md is the index
 ```
 
 ---
@@ -302,6 +313,7 @@ src/
 - [⚙️ Compiler](https://github.com/equantic/equantic-ui/wiki/Compiler) — C# → JavaScript
 - [🔨 Build Flow](https://github.com/equantic/equantic-ui/wiki/BuildFlow) • [⚡ Runtime](https://github.com/equantic/equantic-ui/wiki/Runtime) • [🐛 Debugging](https://github.com/equantic/equantic-ui/wiki/Debug)
 - [🗺️ Roadmap](https://github.com/equantic/equantic-ui/wiki/Roadmap) — what's ahead
+- [📐 docs/](docs/README.md) — the architecture, measured: the [architecture audit](docs/ARCHITECTURE-AUDIT.md), [how Flutter solves each of these](docs/FLUTTER-PARITY.md), and the plans in flight
 - [CLAUDE.md](CLAUDE.md) — technical reference for contributors
 
 ---
