@@ -286,15 +286,26 @@ jobs:
           # find, not globstar: macOS ships bash 3.2, which has no globstar. Process substitution
           # rather than a pipe, so the loop body is not a subshell and `status` survives it.
           status=0
+          ran=0
           failed=""
           while IFS= read -r test_project; do
             echo "::group::$test_project"
+            ran=$((ran + 1))
             dotnet test "$test_project" --configuration Release --verbosity normal || {
               status=1
               failed="$failed$test_project"$'\n'
             }
             echo "::endgroup::"
           done < <(find tests -name "*.csproj" | sort)
+
+          # An empty list is not a pass. Without this the step is green when `find` matches nothing —
+          # a renamed folder, a wrong working directory — having tested exactly nothing, which is the
+          # same silence this whole job exists to break.
+          if [ "$ran" -eq 0 ]; then
+            echo "::error::Found no test projects under tests/. That is not a green suite."
+            exit 1
+          fi
+          echo "Ran $ran test projects on ${{ matrix.os }}."
 
           if [ "$status" -ne 0 ]; then
             echo "::error::These test projects failed on ${{ matrix.os }}:"
