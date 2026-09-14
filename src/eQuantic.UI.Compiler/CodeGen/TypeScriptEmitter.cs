@@ -798,6 +798,13 @@ public class TypeScriptEmitter
             componentTypes.Add(runtimeType);
         }
 
+        // …and the ones the parser kept OUT of that set. A type POSITION is the seventh way to name
+        // a host-only symbol and the only one no expression strategy can reach — the parser's
+        // semantic sweep is what sees it, and this is the first place with a diagnostics channel.
+        foreach (var (named, at) in component.HostOnlyTypes)
+            _converter.Report(at, ConversionSeverity.Error, "EQ2010",
+                CodeGen.Extensions.HostOnlySymbolExtensions.Message(named));
+
         // APP-LEVEL types are a SOURCE for the same reason (the site dogfood found the hole): a
         // static helper reached only through a member access (`Brand.Violet`, `Copy.Title`) never
         // appears where the syntactic collectors look, so the module referenced it without importing
@@ -2003,8 +2010,18 @@ public class TypeScriptEmitter
         var core = new HashSet<string>(_converter.UsedHelpers);
         var runtimeProvided = new HashSet<string>();
         var referencedEnums = new HashSet<string>();
+        var hostOnlyInSignatures = new Dictionary<string, SyntaxNode>();
         if (semanticModel != null)
-            Services.RuntimeProvidedTypeScanner.Collect(cls, semanticModel, runtimeProvided, referencedEnums);
+            Services.RuntimeProvidedTypeScanner.Collect(cls, semanticModel, runtimeProvided,
+                referencedEnums, appTypes: null, hostOnly: hostOnlyInSignatures);
+        // A TYPE POSITION is the seventh way to name a host-only symbol and the one no expression
+        // strategy can reach: `public Matrix2D Placement { get; init; }` on a component compiled,
+        // emitted `import { Matrix2D } from "@equantic/runtime"`, and took the page down at
+        // hydration. Measured. The scanner keeps the name out of the import list; this is where it
+        // gets said, in the same words the other six use.
+        foreach (var (named, at) in hostOnlyInSignatures)
+            _converter.Report(at, ConversionSeverity.Error, "EQ2010",
+                CodeGen.Extensions.HostOnlySymbolExtensions.Message(named));
         runtimeProvided.Remove(name);
         // The BASE class never comes through the aggregator. `extends` dereferences while the module
         // is EVALUATING, and the library's modules import each other through one barrel — so the

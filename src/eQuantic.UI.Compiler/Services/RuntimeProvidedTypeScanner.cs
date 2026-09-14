@@ -50,9 +50,33 @@ public static class RuntimeProvidedTypeScanner
     /// "&lt;Type&gt; is not defined" in the browser — with NO build error. Instantiated types
     /// (<c>new View()</c>) were already covered; static access was the hole.
     /// </summary>
+    /// <param name="hostOnly">
+    /// Where a HOST-ONLY runtime-provided type was named, when the caller can report it. Those
+    /// types are kept OUT of <paramref name="runtimeProvided"/>: the runtime ships no export for
+    /// them, so importing the name is the hydration failure the fence exists to prevent.
+    /// <para>
+    /// A type POSITION is the seventh way to name a symbol, and the one no expression strategy can
+    /// see — `public Matrix2D Placement { get; init; }` on a component compiled, emitted
+    /// `import { Matrix2D } from "@equantic/runtime"`, and took the page down. Measured. The other
+    /// six are counted in <c>HostOnlySymbolExtensions</c>.
+    /// </para>
+    /// </param>
     public static void Collect(SyntaxNode root, SemanticModel model,
-        ISet<string> runtimeProvided, ISet<string> enumTypes, ISet<string>? appTypes = null)
+        ISet<string> runtimeProvided, ISet<string> enumTypes, ISet<string>? appTypes = null,
+        IDictionary<string, SyntaxNode>? hostOnly = null)
     {
+        // A type the vocabulary declares [ServerOnly] ships no runtime export, so its NAME must not
+        // reach the import list — and where it was written is what the caller needs to report it.
+        static bool IsFenced(INamedTypeSymbol type) =>
+            type.GetAttributes().Any(a => a.AttributeClass?.Name == "ServerOnlyAttribute")
+            && !type.Locations.Any(location => location.IsInSource);
+
+        void Fence(INamedTypeSymbol type, SyntaxNode at)
+        {
+            if (hostOnly is not null && !hostOnly.ContainsKey(type.ToDisplayString()))
+                hostOnly[type.ToDisplayString()] = at;
+        }
+
 
         // A `with` on a vocabulary record REBUILDS through the constructor —
         // `theme.Type(role) with { Size = 15 }` emits `new TypeStyle({ … })` — and the name it
@@ -68,7 +92,10 @@ public static class RuntimeProvidedTypeScanner
 
             var rebuiltNamespace = named.ContainingNamespace?.ToDisplayString() ?? string.Empty;
             if (IsRuntimeProvidedNamespace(rebuiltNamespace))
-                runtimeProvided.Add(named.Name);
+            {
+                if (IsFenced(named)) Fence(named, with);
+                else runtimeProvided.Add(named.Name);
+            }
             else if (appTypes is not null && named.Locations.Any(l => l.IsInSource))
                 appTypes.Add(named.Name);
         }
@@ -126,7 +153,8 @@ public static class RuntimeProvidedTypeScanner
                 || type.GetAttributes().Any(a => a.AttributeClass?.Name == "RuntimeProvidedAttribute");
             if (isRuntimeProvided)
             {
-                runtimeProvided.Add(type.Name);
+                if (IsFenced(type)) Fence(type, identifier);
+                else runtimeProvided.Add(type.Name);
                 continue;
             }
 

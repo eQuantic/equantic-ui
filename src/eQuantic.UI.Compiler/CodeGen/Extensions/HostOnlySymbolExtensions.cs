@@ -91,11 +91,19 @@ internal static class HostOnlySymbolExtensions
         // this is a DECISION, and a reader who follows EQ2004's remedy here writes code nobody
         // wants. One code meaning two unrelated things is how EQ2101 went wrong, and the
         // diagnostics baseline asked the question directly when this gained a reporting site.
-        context.Report(node, ConversionSeverity.Error, "EQ2010",
-            $"'{named}' is HOST ONLY ([ServerOnly]) and the "
-            + "runtime ships no twin for it, so a client component naming it would fail at hydration "
-            + "rather than here. Call it from server code — a [ServerAction], a [ServerOnly] class, "
-            + "or the realizer — never from a component's Build.");
+        context.Report(node, ConversionSeverity.Error, "EQ2010", Message(named));
         return true;
     }
+
+    /// <summary>
+    /// The one wording. A THIRD caller reports this — the emitter, for a host-only type named in a
+    /// SIGNATURE rather than in an expression — and it has no ConversionContext to go through, so
+    /// the message is what the three share rather than the function. The alternative was a second
+    /// text, which is how two pieces come to answer one question each in its own words.
+    /// </summary>
+    internal static string Message(string named) =>
+        $"'{named}' is HOST ONLY ([ServerOnly]) and the "
+        + "runtime ships no twin for it, so a client component naming it would fail at hydration "
+        + "rather than here. Call it from server code — a [ServerAction], a [ServerOnly] class, "
+        + "or the realizer — never from a component's Build.";
 }
