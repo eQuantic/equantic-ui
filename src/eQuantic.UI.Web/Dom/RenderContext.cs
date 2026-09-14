@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Web;
 
@@ -14,26 +15,17 @@ public class RenderContext
     private static readonly AsyncLocal<IServiceProvider?> _asyncLocalProvider = new();
     private static IServiceProvider? _globalProvider;
 
-    private static readonly AsyncLocal<RouteData?> _scopedRoute = new();
-    private static readonly RouteData _emptyRoute = new();
-    private RouteData? _route;
-
     /// <summary>
-    /// Active route data — matched parameters + query string (e.g. <c>context.Route.Param("id")</c>).
-    /// On the server it comes from the per-request scoped route (<see cref="SetScopedRoute"/>); never
-    /// null. The compiler transpiles this to the runtime's <c>context.route</c>.
+    /// What the ROUTE said — matched parameters and the query string
+    /// (<c>context.Route.Param("id")</c>), transpiled to the runtime's <c>context.route</c>.
+    /// <para>
+    /// It is <see cref="RouteValues.Current"/> and nothing else. This used to be a second type with
+    /// a second `AsyncLocal` behind it, filled per request from the first — a `RouteData` whose
+    /// `Param` and `Query` were `RouteValues`' `Param` and `Query`, for the web only. The Core
+    /// dissolution (#83) moved the write-once half down and left this half where it was.
+    /// </para>
     /// </summary>
-    public RouteData Route
-    {
-        get => _route ?? _scopedRoute.Value ?? _emptyRoute;
-        set => _route = value;
-    }
-
-    /// <summary>
-    /// Sets the route data for the current async context (SSR), thread-safe via AsyncLocal so concurrent
-    /// requests don't interfere — mirroring <see cref="SetScopedServiceProvider"/>.
-    /// </summary>
-    public static void SetScopedRoute(RouteData? route) => _scopedRoute.Value = route;
+    public RouteValues Route => RouteValues.Current;
 
     private static readonly AsyncLocal<Func<string, string>?> _linkPolicy = new();
 
