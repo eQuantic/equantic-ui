@@ -116,7 +116,7 @@ seventh by the pin the day it grew to read the web realizer.
 | `Text.Align` | Honoured by the web, dropped by all three native text services | a cross-pin (#103) |
 | `VisualNode.Key` | Documented as reconciler identity, read by neither realizer | an audit (#95) |
 | `Navigable` · `Overlay` | Open: honoured by the web, silent on Photon | still open |
-| `CodeSurface` · `SheetSurface` | **Open:** the server renders an EMPTY `<span>` where the browser draws a code editor or a spreadsheet — no case in `LowerNodeKind`, `_ => null`, since the day each shipped (05ef6f1b, d8be2bd6). A crawler never sees the code; hydration mounts what the server never sent | this pass — `WebRealizer.Lower(new CodeSurface(new Text("hello"), …))` renders no "hello" |
+| `CodeSurface` · `SheetSurface` | **Closed.** The server rendered an EMPTY `<span>` where the browser draws a code editor or a spreadsheet — no case in `LowerNodeKind`, `_ => null`, from the day each shipped (05ef6f1b, d8be2bd6) until this pass. Both have arms now, and `SurfaceSsrTests` keeps them: its A/B is the empty span itself | this pass — found by this pin, fixed in the same week |
 
 ### The asymmetry it exposes, and how Flutter avoids it
 
@@ -506,8 +506,10 @@ makes the rest safe.
 
 0. **Done in this pass.** The six-door coverage pin, the layering pin, the handoff vocabulary pin, six
    parity rows with probes, the dead `Web → Components` edge, the alias comment, the A11 word.
-1. **The SSR surfaces defect** (`CodeSurface`, `SheetSurface` → empty span). Mirror the static skeleton
-   `lowering.ts` produces, cross-pinned; remove the two exemptions. A chip is open for it. — S
+1. ~~**The SSR surfaces defect** (`CodeSurface`, `SheetSurface` → empty span).~~ **Done.** The server
+   writes each surface and its child; the caret, the selection and the path stay client-side and are
+   pinned as deliberate. The two exemptions are gone from the coverage pin, which is the first time
+   that list has shrunk. — S
 2. **Visitor over the vocabulary, generated `NodeKind` union with `assertNever` in TypeScript**
    (Flutter: abstract `performLayout`/`paint`). One file per node family per realizer, as
    `Strategies/` is per construct. Retire the regex pin when the last switch is gone. — L

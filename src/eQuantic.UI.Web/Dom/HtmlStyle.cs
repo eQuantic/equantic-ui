@@ -147,6 +147,18 @@ public class HtmlStyle
     public string? Visibility { get; set; }
     public string? PointerEvents { get; set; }
 
+    /// <summary>The focus ring the element draws for itself — <c>none</c> on a surface that draws
+    /// its own, which is what an editor and a grid do.</summary>
+    public string? Outline { get; set; }
+
+    /// <summary>
+    /// Whether a drag over this element selects TEXT. A surface with a selection of its own says
+    /// <c>none</c>, or the browser's native sweep paints over the one the component is drawing —
+    /// measured on the sheet, where a drag extends the cell band and the blue fought it.
+    /// <para>Emitted with the <c>-webkit-</c> prefix beside it, which Safari still requires.</para>
+    /// </summary>
+    public string? UserSelect { get; set; }
+
     /// <summary>
     /// How much room an in-page link's target keeps above itself when the browser scrolls to it.
     /// Without it a target under a sticky header arrives hidden behind the header — the link works
@@ -269,6 +281,9 @@ public class HtmlStyle
         AddProperty(properties, "opacity", Opacity);
         AddProperty(properties, "visibility", Visibility);
         AddProperty(properties, "pointer-events", PointerEvents);
+        AddProperty(properties, "outline", Outline);
+        AddProperty(properties, "user-select", UserSelect);
+        AddProperty(properties, "-webkit-user-select", UserSelect);
         AddProperty(properties, "scroll-margin-top", ScrollMarginTop);
         AddProperty(properties, "resize", Resize);
         AddProperty(properties, "backdrop-filter", BackdropFilter);
