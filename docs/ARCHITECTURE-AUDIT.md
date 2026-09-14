@@ -736,3 +736,18 @@ makes the rest safe.
 The compiler's internals beyond file sizes — the assembly already holding the bar; the shells' own
 platform code beyond what they drive on the host; the design host's `DesignSession`; the Server's
 endpoint surface; and the TypeScript runtime's `core/` and `dom/` beyond the twins named above.
+
+One compiler finding did arrive before that audit, from the outside, and it is recorded here because
+of what justified the code it found (#146). eqc rounds a `float` at a STORE and not at the RETURN
+seam, so a float-returning method whose body computes hands its twin an unrounded double:
+`BarChartLayout.Offset`, `(float)((value - ticks.Min) / ticks.Span) * across`, keeps the cast's
+`Math.fround` and loses the multiply's and the return's, and a chart at 317×199 puts its first bar's
+edge at 169.8333282470703 on the server and 169.83334350585938 in the browser — one ULP, predicted
+from the two arithmetics before it was believed. `FloatStore`'s own doc argues from ECMA-335 I.12.1.3:
+the CLR MAY carry a float intermediate at higher precision and guarantees the rounding only at a
+store. True as a reading of the norm, and no prediction at all: RyuJIT emits `mulss` and rounds every
+operation on every platform this SDK ships. What a specification permits and what the subject does
+are two numbers, and a cross-pin promises the second — a translation rule justified by a permission
+owes a measurement against the real runtime. The pin that will hold it is parked with the fix, and
+the fix is two: an arrow body reaches the emitter as a string while `ReturnStatementStrategy` has the
+node, so the repro is written in both shapes first, the lesson of #98.
