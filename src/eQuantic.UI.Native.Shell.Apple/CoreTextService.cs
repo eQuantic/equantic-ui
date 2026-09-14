@@ -10,7 +10,7 @@ namespace eQuantic.UI.Native.Shell.Apple;
 /// <see cref="ITextRasterizer"/> (A8 coverage rasters), so breaks agree by construction. Lines sit
 /// on the STYLE's line-height grid (the layout contract), not the font's; the raster draws through
 /// a scaled CTM, so wrapping happens in dp (identical to measuring) while pixels come out at
-/// device scale. v1 fences: no trailing ellipsis on truncation (measure reports the cut), weight
+/// device scale. v1 fences: weight
 /// maps to the bold trait at ≥600 only, per-process CTFont cache.
 /// </summary>
 public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
@@ -87,6 +87,22 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
 
     [LibraryImport(CoreTextLib)]
     private static partial void CTLineDraw(IntPtr line, IntPtr context);
+
+    [LibraryImport(CoreTextLib)]
+    private static partial IntPtr CTLineCreateWithAttributedString(IntPtr attributed);
+
+    /// <summary>Where in the source string a laid-out line begins — the only way to know what the
+    /// frame put on the lines BELOW the last one shown.</summary>
+    [LibraryImport(CoreTextLib)]
+    private static partial CFRange CTLineGetStringRange(IntPtr line);
+
+    /// <summary>
+    /// CoreText's own truncation. <paramref name="type"/> 2 is <c>kCTLineTruncationEnd</c>; the token
+    /// is the line drawn in place of what was dropped, and answering NULL means the width could not
+    /// hold even the token.
+    /// </summary>
+    [LibraryImport(CoreTextLib)]
+    private static partial IntPtr CTLineCreateTruncatedLine(IntPtr line, double width, uint type, IntPtr token);
 
     [LibraryImport(CoreGraphics)]
     private static partial IntPtr CGPathCreateWithRect(CGRect rect, IntPtr transform);
@@ -237,6 +253,94 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
         CFRelease(l.CfText);
     }
 
+    /// <summary>
+    /// The line at <paramref name="index"/>, truncated by CORETEXT when it is the last one shown and
+    /// more were laid out.
+    ///
+    /// <para>
+    /// One helper because `Measure` and `Rasterize` both call it, which is what makes the width the
+    /// measurer reports and the glyphs the rasterizer draws the same line rather than two opinions
+    /// about one. It is the arrangement Flutter gets by handing `ellipsis` to the paragraph style:
+    /// the shaper applies it during layout, so the reported width already includes it.
+    /// </para>
+    ///
+    /// <para>
+    /// Before this, neither asked. Both took the first N lines of a frame laid out without any
+    /// truncation, so a cut line reported the width of the CUT — and the contract has promised "with
+    /// a trailing ellipsis" since it was written. The mark was Android's alone, and only because its
+    /// rasterizer rebuilds strings and had to put back what the platform would have drawn.
+    /// </para>
+    ///
+    /// <para>
+    /// The caller owns the returned line only when <c>Owned</c> is true: a frame's own lines belong
+    /// to the frame, a truncated one is created +1.
+    /// </para>
+    /// </summary>
+    private (IntPtr Line, bool Owned) LineAt(
+        string content, IntPtr ctLines, int index, int shown, int count, float maxWidth,
+        IntPtr fontAttributes)
+    {
+        var line = CFArrayGetValueAtIndex(ctLines, index);
+        // Only the LAST shown line is cut, and only when the frame had more to give.
+        if (index != shown - 1 || shown >= count || !float.IsFinite(maxWidth) || maxWidth <= 0)
+            return (line, false);
+
+        // THE LINE THE FRAME GAVE ALREADY FITS, so truncating IT does nothing. Measured before this
+        // comment existed: a cut line reported 138.27 in a 160 box where the mark is 11.84 wide,
+        // which is the natural wrap point untouched. CoreText can only put a mark on a line that
+        // OVERFLOWS, so the last shown line is rebuilt from where it starts to the END of the
+        // content and THAT is truncated. The rebuild is the feature; the truncation call on its own
+        // was a no-op wearing the shape of a fix, and the first version of this method shipped it.
+        var start = (int)CTLineGetStringRange(line).Location;
+        if (start < 0 || start >= content.Length) return (line, false);
+
+        var rest = BuildLine(content[start..], fontAttributes);
+        if (rest == IntPtr.Zero) return (line, false);
+        var token = BuildLine(ELLIPSIS, fontAttributes);
+        try
+        {
+            if (token == IntPtr.Zero) return (line, false);
+            var truncated = CTLineCreateTruncatedLine(rest, maxWidth, 2 /* kCTLineTruncationEnd */, token);
+            // NULL means the width could not hold even the token — keep the frame's line rather than
+            // drawing nothing, which is what a reader would rather have.
+            return truncated == IntPtr.Zero ? (line, false) : (truncated, true);
+        }
+        finally
+        {
+            if (token != IntPtr.Zero) CFRelease(token);
+            CFRelease(rest);
+        }
+    }
+
+    private const string ELLIPSIS = "\u2026";
+
+    /// <summary>One line from a string, in the attributes the paragraph is already using. The
+    /// ellipsis token uses it too: a mark in another face would be the one glyph on screen that did
+    /// not belong to the text it stands for.</summary>
+    private static IntPtr BuildLine(string text, IntPtr fontAttributes)
+    {
+        var cf = CFStringCreateWithCString(IntPtr.Zero, text.Length == 0 ? " " : text, Utf8);
+        if (cf == IntPtr.Zero) return IntPtr.Zero;
+        try
+        {
+            var attributed = CFAttributedStringCreate(IntPtr.Zero, cf, fontAttributes);
+            if (attributed == IntPtr.Zero) return IntPtr.Zero;
+            try
+            {
+                return CTLineCreateWithAttributedString(attributed);
+            }
+            finally
+            {
+                CFRelease(attributed);
+            }
+        }
+        finally
+        {
+            CFRelease(cf);
+        }
+    }
+
+
     public TextMeasurement Measure(string content, TypeStyle style, float typeScale, float maxWidth, int maxLines)
     {
         var size = style.ScaledSize(typeScale);
@@ -251,11 +355,20 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
             var maxLineWidth = 0f;
             for (var i = 0; i < shown; i++)
             {
-                var width = (float)CTLineGetTypographicBounds(
-                    CFArrayGetValueAtIndex(ctLines, i), out _, out _, out _);
-                if (content.Length == 0) width = 0;
-                lines.Add(new MeasuredLine(width, Ellipsized: i == shown - 1 && shown < count));
-                maxLineWidth = MathF.Max(maxLineWidth, width);
+                var (line, owned) = LineAt(content, ctLines, i, shown, count, maxWidth, layout.Dict);
+                try
+                {
+                    var width = (float)CTLineGetTypographicBounds(line, out _, out _, out _);
+                    if (content.Length == 0) width = 0;
+                    // The width now INCLUDES the mark when there is one, because the line was
+                    // truncated before it was measured. That is the contract.
+                    lines.Add(new MeasuredLine(width, Ellipsized: i == shown - 1 && shown < count));
+                    maxLineWidth = MathF.Max(maxLineWidth, width);
+                }
+                finally
+                {
+                    if (owned) CFRelease(line);
+                }
             }
             if (lines.Count == 0) lines.Add(new MeasuredLine(0, false));
             return new TextMeasurement(maxLineWidth, lines.Count * lineHeight, lineHeight, lines);
@@ -273,6 +386,9 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
         var size = style.ScaledSize(typeScale);
         var lineHeight = style.ScaledLineHeight(typeScale);
         var layout = Layout(content, size, style.Weight, maxWidth, style.Mono, style.Italic, style.Family);
+        // A truncated line is created +1 and must outlive the drawing, so it is released with the
+        // layout rather than at the end of the loop that made it.
+        var truncated = new List<IntPtr>(1);
         try
         {
             var ctLines = CTFrameGetLines(layout.Frame);
@@ -284,7 +400,8 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
             var metrics = new (IntPtr Line, float Ascent, float Descent, float Width)[shown];
             for (var i = 0; i < shown; i++)
             {
-                var line = CFArrayGetValueAtIndex(ctLines, i);
+                var (line, owned) = LineAt(content, ctLines, i, shown, count, maxWidth, layout.Dict);
+                if (owned) truncated.Add(line);
                 var w = (float)CTLineGetTypographicBounds(line, out var ascent, out var descent, out _);
                 metrics[i] = (line, (float)ascent, (float)descent, w);
                 widthDp = MathF.Max(widthDp, w);
@@ -364,6 +481,7 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
         }
         finally
         {
+            foreach (var line in truncated) CFRelease(line);
             ReleaseLayout(layout);
         }
     }

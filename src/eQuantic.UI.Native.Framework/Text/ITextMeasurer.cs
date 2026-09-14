@@ -62,6 +62,22 @@ public interface ITextMeasurer
     /// the caller via <paramref name="typeScale"/>), wrapped at <paramref name="maxWidth"/>
     /// (<see cref="float.PositiveInfinity"/> = unconstrained) and truncated to
     /// <paramref name="maxLines"/> (0 = unlimited) with a trailing ellipsis.
+    ///
+    /// <para>
+    /// THE MARK IS INSIDE THE MEASUREMENT. An implementation truncates in its own LAYOUT, so the
+    /// width reported for a cut line already includes the ellipsis and the glyphs a rasterizer draws
+    /// are that same line. Nothing downstream adds a mark: a realizer that drew one on top would be
+    /// drawing outside the width this method promised.
+    /// </para>
+    ///
+    /// <para>
+    /// It was not always so, and the contract is the reason it is now. This sentence promised an
+    /// ellipsis from the day it was written while a cut line ended four different ways — the web drew
+    /// it with CSS, Android put the character in the string, CoreText and DirectWrite cut and drew
+    /// nothing, with the exemption in one platform class's doc comment where nobody reading this
+    /// interface would find it. Nothing asked the implementations whether they met the promise.
+    /// `TruncationContractTests` asks them now.
+    /// </para>
     /// </summary>
     TextMeasurement Measure(string content, TypeStyle style, float typeScale, float maxWidth, int maxLines);
 }

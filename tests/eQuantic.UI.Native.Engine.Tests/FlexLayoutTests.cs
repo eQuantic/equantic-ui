@@ -197,7 +197,8 @@ public class FlexLayoutTests
         box.Bounds.Width.Should().Be(60, "fixed children never shrink");
         text.Bounds.Width.Should().BeLessThanOrEqualTo(150 - 60 - 8 + 0.01f);
         (text.Bounds.X + text.Bounds.Width).Should().BeLessThanOrEqualTo(150.01f, "nothing is pushed out");
-        text.Text!.Lines[^1].Ellipsized.Should().BeTrue("the shrunk text ellipsizes");
+        text.Text!.Lines[^1].Ellipsized.Should().BeTrue(
+            "the shrunk text was CUT — and since TruncationContractTests, the measurer that\n            cut it also put the mark in, so this flag and the glyphs agree");
     }
 
     [Fact]
