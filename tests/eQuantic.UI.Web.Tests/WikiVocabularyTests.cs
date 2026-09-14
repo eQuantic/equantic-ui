@@ -52,9 +52,15 @@ public class WikiVocabularyTests
             "the project's word is component; Flutter's word stays in Flutter's column, and Android's class names are Android's"),
         new("Alt", new Regex(@"\b(Image|CameraPreview)\.Alt\b|\balt:"), "Label / label:",
             "#81 — alt is <img alt>'s word; Label is the agnostic name, on Image and CameraPreview alike"),
-        new("ZIndex", new Regex(@"\bZIndex\b"), "Layer", "#81 — z-index is CSS"),
-        new("Sticky", new Regex(@"\bSticky\b"), "Pinned", "#81 — position: sticky is CSS"),
-        new("Href", new Regex(@"\bHref\b"), "Destination", "119dd0c8 — href is HTML's attribute"),
+        // The three below are narrowed to the VOCABULARY's retired members on purpose: the DOM escape
+        // hatch keeps `HtmlStyle.ZIndex` and `Position.Sticky` because it mirrors CSS, and a page that
+        // documents the escape hatch is documenting the web in the web's words, which #81 kept.
+        new("ZIndex", new Regex(@"\bPositioned\.ZIndex\b|\bPositioned\b[^\n]*\bzIndex\b"), "Layer",
+            "#81 — z-index is CSS; Positioned.Layer is the vocabulary's depth (HtmlStyle.ZIndex stays: it IS CSS)"),
+        new("Sticky", new Regex(@"\bnew Sticky\b|\bSticky\("), "Pinned",
+            "#81 — position: sticky is CSS; the node is Pinned (Position.Sticky on the escape hatch stays)"),
+        new("Href", new Regex(@"\b(Link|TextRun|Crumb)\.Href\b|\bLink\([^\n)]*\bhref:"), "Destination",
+            "119dd0c8 — href is HTML's attribute; the vocabulary's link names a Destination"),
         new("eqx", new Regex(@"\.eqx\b"), ".cs — there is one authoring format",
             "the .eqx markup format was excised in 2026-08 with the rest of the pre-write-once authoring"),
     ];
@@ -75,10 +81,6 @@ public class WikiVocabularyTests
     [
         ("Upgrading.md", "Core", "the migration notes tell what moved where"),
         ("Upgrading-pt-BR.md", "Core", "the same notes in Portuguese"),
-        ("Upgrading.md", "ZIndex", "the rename is a migration note"),
-        ("Upgrading-pt-BR.md", "ZIndex", "the same note"),
-        ("Upgrading.md", "Sticky", "the rename is a migration note"),
-        ("Upgrading-pt-BR.md", "Sticky", "the same note"),
         ("PackageArchitecture.md", "Core", "explains the dissolution and where each part went"),
         ("PackageArchitecture-pt-BR.md", "Core", "the same explanation"),
         ("Icons.md", "Core", "history: the provider interface that lived there once"),
@@ -87,10 +89,6 @@ public class WikiVocabularyTests
         ("CodeEditor-pt-BR.md", "Core", "the same explanation"),
         ("Photon.md", "widget", "android.widget.Button is Android's class name"),
         ("Photon-pt-BR.md", "widget", "the same class name"),
-        ("WriteOnceComponents.md", "Href", "the rename from Href is the page's own version note"),
-        ("WriteOnceComponents-pt-BR.md", "Href", "the same note"),
-        ("Assets.md", "Href", "a table that documents the HTML <link href> attribute as HTML"),
-        ("Assets-pt-BR.md", "Href", "the same table"),
     ];
 
     private static readonly string? Wiki = LocateWiki();
