@@ -160,6 +160,19 @@ function realignColdLoad(offset: number): void {
 const FramesAfterLoad = 20;
 
 /**
+ * The wall clock the watch stops against, whatever the document says about itself.
+ *
+ * <para>
+ * The frame budget only starts counting once `readyState` is complete, which is right — before that
+ * the browser may still have a jump to perform. But a page with a stalled subresource can stay
+ * non-complete for as long as it likes, and a budget that never starts is a rAF loop reading layout
+ * every frame for the life of the tab. Found in review. The grace window keeps its job; this is the
+ * bound that does not depend on the page cooperating.
+ * </para>
+ */
+const MaxWatchMs = 10_000;
+
+/**
  * A WINDOW, not a moment.
  *
  * <para>
@@ -197,6 +210,7 @@ function bookRecheck(): void {
   // itself, which is worse than a suite that fails. Found in review.
   const booked = generation;
   let framesLeft = FramesAfterLoad;
+  const deadline = now() + MaxWatchMs;
 
   const tick = (): void => {
     if (booked !== generation || coldLoadHandled) return;
@@ -215,15 +229,37 @@ function bookRecheck(): void {
       coldLoadHandled = true;
       return;
     }
+    // …and the wall clock stops it regardless, for the page that never completes at all.
+    if (now() >= deadline) {
+      coldLoadHandled = true;
+      return;
+    }
     schedule(tick);
   };
 
   schedule(tick);
 }
 
+/**
+ * A frame, or the nearest thing to one. The fallback is a TIMER and never a direct call: invoking
+ * the callback synchronously turns this watch into unbounded recursion on a document that is still
+ * loading, and burns the whole budget in one stack frame on a document that is not — either way
+ * before the browser has had a chance to perform the jump being waited for. Found in review; the
+ * runtime's own render scheduler already falls back this way.
+ */
 function schedule(callback: () => void): void {
-  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(callback);
-  else callback();
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(callback);
+    return;
+  }
+  setTimeout(callback, 16);
+}
+
+/** Monotonic where it exists; the wall clock is only used to bound a watch, so Date is enough. */
+function now(): number {
+  return typeof performance !== 'undefined' && typeof performance.now === 'function'
+    ? performance.now()
+    : Date.now();
 }
 
 /** Test seam: the correction is once per document, and a spec renders many. */

@@ -246,10 +246,14 @@ describe('the first measurement corrects a cold load that landed under the chrom
   }
 
   const realRaf = window.requestAnimationFrame;
+  const realNow = performance.now;
+  let clock = 0;
 
   beforeEach(() => {
     resetColdLoadRealignmentForTests();
     pending = [];
+    clock = 0;
+    performance.now = () => clock;
     window.requestAnimationFrame = ((cb: FrameRequestCallback) => {
       pending.push(() => cb(0));
       return pending.length;
@@ -260,6 +264,7 @@ describe('the first measurement corrects a cold load that landed under the chrom
 
   afterEach(() => {
     window.requestAnimationFrame = realRaf;
+    performance.now = realNow;
     pending = [];
     Object.defineProperty(document, 'readyState', { value: 'complete', configurable: true });
     document.body.innerHTML = '';
@@ -547,6 +552,76 @@ describe('the first measurement corrects a cold load that landed under the chrom
 
     expect(target.seen()).toBe(1);
     bar.remove();
+  });
+
+  /**
+   * A page that NEVER completes must not be watched forever.
+   *
+   * <para>
+   * The frame budget only starts counting once `readyState` is complete, which is right — before
+   * that the browser may still have a jump to perform. But a stalled subresource can hold a page
+   * non-complete for the life of the tab, and a budget that never starts is a rAF loop reading
+   * layout every frame for all of it. Found in review.
+   * </para>
+   */
+  it('stops watching a page that never completes', () => {
+    stillLoading();
+    const bar = chrome(65);
+    const target = bookmark('rights', 3992); // never enters the band
+    window.history.replaceState(null, '', '/probe#rights');
+
+    publishAnchorOffset();
+    frame(40);
+    expect(pending.length).toBeGreaterThan(0, 'still watching inside the wall clock');
+
+    clock += 10_001; // the watch's own bound, with readyState still 'loading'
+    frame();
+
+    expect(pending).toHaveLength(0);
+
+    // …and it is retired, not merely idle: the reader scrolling into the band later moves nothing.
+    target.moveTo(10);
+    document.documentElement.style.removeProperty('--eq-anchor-offset');
+    publishAnchorOffset();
+    expect(target.seen()).toBe(0);
+    bar.remove();
+  });
+
+  /**
+   * Without `requestAnimationFrame` the watch uses a TIMER, never a direct call. Invoking the
+   * callback synchronously is unbounded recursion on a loading document, and burns the whole budget
+   * in one stack frame on a complete one — both before the browser could perform the jump being
+   * waited for. Found in review.
+   */
+  it('falls back to a timer, not to calling itself', () => {
+    stillLoading();
+    const raf = window.requestAnimationFrame;
+    // @ts-expect-error — the environment this guards against is one with no rAF at all.
+    delete window.requestAnimationFrame;
+    const timers: Array<() => void> = [];
+    const realTimeout = window.setTimeout;
+    window.setTimeout = ((cb: () => void) => {
+      timers.push(cb);
+      return timers.length;
+    }) as typeof window.setTimeout;
+
+    try {
+      const bar = chrome(65);
+      const target = bookmark('rights', 3992);
+      window.history.replaceState(null, '', '/probe#rights');
+
+      // Returns rather than recursing: one timer is booked and nothing has run yet.
+      publishAnchorOffset();
+      expect(timers).toHaveLength(1);
+
+      target.moveTo(0);
+      timers.pop()!();
+      expect(target.seen()).toBe(1);
+      bar.remove();
+    } finally {
+      window.setTimeout = realTimeout;
+      window.requestAnimationFrame = raf;
+    }
   });
 
   it('corrects once, so a later pass never yanks the page back', () => {
