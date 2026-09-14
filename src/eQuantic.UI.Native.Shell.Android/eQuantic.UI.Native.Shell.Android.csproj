@@ -8,18 +8,18 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <IsBindingProject>false</IsBindingProject>
         <Description>The Android platform shell for the Photon engine: an Activity whose SurfaceView the engine presents into, driven by the Choreographer, with touches routed into the same PhotonHost pipeline every other shell uses.</Description>
-            <!-- CA1422 is the one debt this bar is lifted for, deliberately and visibly: eleven APIs
-             that still work but are deprecated on a newer OS than this shell's floor — the
+        <!-- CA1422 is the one debt this bar is lifted for, deliberately and visibly: eleven APIs that
+             still work but are deprecated on a newer OS than this shell's floor — the
              LocationManager/Criteria stack, AccessibilityNodeInfo.Obtain, UIWindow(CGRect),
              TraitCollectionDidChange. Each replacement is a behavioural migration (scene-based
-             lifecycle, provider strings instead of Criteria), and NO test project references
-             either shell: they are verifiable only on a device or emulator. Migrating them blind
-             to clear a warning is the opposite of the bar this file just set.
+             lifecycle, provider strings instead of Criteria), and NO test project references either
+             shell: they are verifiable only on a device or emulator. Migrating them blind to clear a
+             warning is the opposite of the bar Directory.Build.props just set.
 
              NotAsErrors, never NoWarn: they keep printing, so the debt stays visible and counted
              rather than deleted. -->
         <WarningsNotAsErrors>$(WarningsNotAsErrors);CA1422</WarningsNotAsErrors>
-</PropertyGroup>
+    </PropertyGroup>
 
     <ItemGroup>
         <ProjectReference Include="../eQuantic.UI.Primitives/eQuantic.UI.Primitives.csproj" />
