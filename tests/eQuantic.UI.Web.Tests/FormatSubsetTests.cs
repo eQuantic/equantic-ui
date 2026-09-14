@@ -159,10 +159,16 @@ public class FormatSubsetTests
         File.Exists(FixturePath).Should().BeTrue(
             "the twin reads this sample — generate it once with EQ_UPDATE_FORMAT_FIXTURE=1");
 
-        // Key, never value: the keys are the subset we declared and the values are the host's ICU.
+        // Key, never value — and the CULTURE row is all value: its fields are the culture's own
+        // patterns, which is the very data that differs per host (`en-US`'s long time pattern is
+        // `h:mm:ss tt` on macOS and `h:mm tt` on the Windows runner). What is ours there is that
+        // the row exists for the culture at all. Every other row ends in the formatted value, so
+        // dropping the last field leaves the culture, the input and the specifier — the subset.
         static IEnumerable<string> Keys(string dump) => dump
             .Split('\n', StringSplitOptions.RemoveEmptyEntries)
-            .Select(line => string.Join('|', line.Split('|').SkipLast(1)));
+            .Select(line => line.StartsWith("culture ", StringComparison.Ordinal)
+                ? string.Concat("culture ", line.AsSpan("culture ".Length).ToString().Split(' ')[0])
+                : string.Join('|', line.Split('|').SkipLast(1)));
 
         Keys(File.ReadAllText(FixturePath)).Should().BeEquivalentTo(Keys(Dump()),
             "the subset changed — regenerate with EQ_UPDATE_FORMAT_FIXTURE=1, or drop the case "
