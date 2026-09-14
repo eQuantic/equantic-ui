@@ -161,6 +161,57 @@ public class HostOnlyFrameworkTypeTests
     }
 
     /// <summary>
+    /// CONSTRUCTION, which the fence did not count. `Matrix2D.Identity` — a static read — was
+    /// stopped, and `new Matrix2D(...)` two lines above it was not: it compiled, emitted an import
+    /// of a name the runtime ships no export for, and took the page down at hydration. Measured on
+    /// a real page before this branch existed.
+    /// </summary>
+    [Theory]
+    [InlineData("var m = new Matrix2D(1, 0, 0, 1, 0, 0);")]
+    [InlineData("var r = new RRect(new Rect(0, 0, 4, 4));")]
+    public void ConstructingAHostOnlyType_IsNamingItToo(string statement)
+    {
+        Diagnostics(statement).Should().Contain(d => d.Code == "EQ2010" && d.Message.Contains("HOST ONLY"));
+    }
+
+    /// <summary>
+    /// An OPERATOR, which the fence did not count either — and this one fails SILENTLY rather than
+    /// loudly, which makes it the worse half. JavaScript cannot overload an operator, so `a + b` on
+    /// two framework values emits JavaScript's own `+`: two `Point` objects concatenate into
+    /// `"[object Object][object Object]"` and `a * 2` is `NaN`, in a page that compiled, rendered
+    /// on the server and looked fine.
+    ///
+    /// <para>
+    /// Measured, not reasoned: a page doing exactly this emitted `let sum = a + b;` and
+    /// `let scaled = a * 2;`. Raised by Copilot on #135.
+    /// </para>
+    /// </summary>
+    [Theory]
+    [InlineData("var sum = new Point(1, 2) + new Point(3, 4);")]
+    [InlineData("var diff = new Point(1, 2) - new Point(3, 4);")]
+    [InlineData("var scaled = new Point(1, 2) * 2f;")]
+    public void AFrameworkOperatorWithNoTwin_IsStoppedRatherThanEmitted(string statement)
+    {
+        Diagnostics(statement).Should().Contain(d => d.Code == "EQ2010" && d.Message.Contains("HOST ONLY"));
+    }
+
+    /// <summary>
+    /// …and the type itself still crosses, which is the whole point of fencing the OPERATORS rather
+    /// than the type. A page can hold a box and read its edges; it just cannot do arithmetic
+    /// JavaScript would answer wrongly.
+    /// </summary>
+    [Theory]
+    [InlineData("var p = new Point(1, 2);")]
+    [InlineData("var box = new Rect(0, 0, 10, 10);")]
+    [InlineData("var edge = new Rect(0, 0, 10, 10).Right;")]
+    [InlineData("var hit = new Rect(0, 0, 10, 10).Contains(new Point(1, 1));")]
+    public void TheGeometryAPageCanHold_StillCrosses(string statement)
+    {
+        Diagnostics(statement).Should().BeEmpty(
+            "Point, Size and Rect have twins — fencing the type would have taken those with it");
+    }
+
+    /// <summary>
     /// The control, and the one that matters more than the two above: the namespace is still routed.
     /// A fence that also blocked the ordinary vocabulary would be caught by every other test in the
     /// suite, but as a hundred confusing failures rather than as one clear one.

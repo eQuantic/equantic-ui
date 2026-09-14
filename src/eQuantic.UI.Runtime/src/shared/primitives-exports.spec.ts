@@ -24,6 +24,12 @@ import { Point, Rect } from './value-types';
 /**
  * Types that owe no export, each for a stated reason — a list of names, so the next one cannot slip
  * in unnoticed and so this reads as a decision rather than a backlog.
+ *
+ * `RRect` and `Matrix2D` were briefly listed here and are not any more: they carry `[ServerOnly]`,
+ * so the C# side drops them from the pinned list by that rule and the COMPILER refuses a client
+ * reference (EQ2010). An exception here would have been a note saying "no page does this"; the
+ * attribute is the build saying no. Measured before the change: a page naming `Matrix2D` emitted
+ * `import { Matrix2D } from "@equantic/runtime"` and would have died at hydration.
  */
 const NO_TWIN_OWED = new Set([
   // Never in a page bundle: host and server plumbing, or an abstract base.
@@ -41,16 +47,6 @@ const NO_TWIN_OWED = new Set([
   'SvgDocument',
   'VectorPath',
   'VectorSegment',
-  // DISPLAY LIST SHAPES. `Point`, `Size` and `Rect` are exported — a component can hold a box — but
-  // these two are what a rasterizer consumes, and this target has no rasterizer: a rounded box here
-  // is `border-radius` on a div, and a transform is the authoring `Transform2D` lowering to CSS.
-  // Nothing in a page bundle constructs either.
-  //
-  // What would change the answer: a SHARED component doing its own arithmetic — composing a matrix
-  // to place something, normalizing radii before measuring. Then the twin is owed, because the
-  // failure lands at module load and takes the page down rather than reporting itself.
-  'RRect',
-  'Matrix2D',
   // The seam a HOST arms so `context.GetService<T>()` can answer. A page names the capability, not
   // the scope; the client's twin of it is the ComponentContext.getService method.
   'CapabilityScope',

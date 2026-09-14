@@ -62,6 +62,13 @@ public class ObjectCreationStrategy : IConversionStrategy
             typeName = aliasQualified.Name.ToString();
         var createdType = context.SemanticHelper.GetType(creation);
 
+        // A HOST-ONLY type constructed from client code. `new Matrix2D(...)` compiled, emitted an
+        // import of a name the runtime deliberately ships no export for, and took the page down at
+        // hydration — while the static-member read beside it (`Matrix2D.Identity`) was already
+        // fenced, through MemberAccessStrategy. The fence's doc counts the branches that owe it
+        // this call; construction was one it did not name.
+        if (createdType.ReportIfHostOnlyType(creation, context)) return "undefined";
+
         // An in-tree creation whose TYPE an authoritative model cannot bind is the same story as
         // an unbound call (EQ2006): missing references or code that doesn't compile — emitting
         // `new Whatever()` and inventing an import for it is how a typo shipped as a browser

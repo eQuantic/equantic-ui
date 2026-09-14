@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Ir;
@@ -23,12 +24,16 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
         {
             if (prefix.OperatorToken.Text is "++" or "--" && Step(prefix.Operand, prefix.OperatorToken.Text, node, context) is { } stepped)
                 return stepped;
-            // A USER-DEFINED unary operator on an in-source type calls the twin's static method.
+            // A USER-DEFINED unary operator on an in-source type calls the twin's static method —
+            // and a host-only one stops here rather than emitting JavaScript's own operator.
             if (context.SemanticHelper.GetOperation(prefix) is Microsoft.CodeAnalysis.Operations.IUnaryOperation
-                { OperatorMethod: { } unaryMethod }
-                && UserDefinedOperators.Unary(unaryMethod, prefix.OperatorToken.Text,
-                    context.Converter.ConvertExpression(prefix.Operand)) is { } unaryCall)
-                return unaryCall;
+                { OperatorMethod: { } unaryMethod })
+            {
+                if (unaryMethod.ReportIfHostOnly(prefix, context)) return JsExpr.Callish("undefined");
+                if (UserDefinedOperators.Unary(unaryMethod, prefix.OperatorToken.Text,
+                        context.Converter.ConvertExpression(prefix.Operand)) is { } unaryCall)
+                    return unaryCall;
+            }
 
             // A DECIMAL is a runtime Decimal object: JavaScript's `-` coerces it through its text
             // into a plain NUMBER, silently shedding the type (`-3.99m` computed on as a double).

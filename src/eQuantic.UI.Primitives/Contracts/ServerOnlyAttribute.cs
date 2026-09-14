@@ -23,8 +23,22 @@ namespace eQuantic.UI.Primitives;
 /// calls must not carry it, for the same reason as the method: the reference would resolve to
 /// nothing at runtime.
 /// </para>
+/// <para>
+/// On a STRUCT it says the same, and the compiler calls the whole rule the HOST-ONLY fence — which
+/// is wider than this attribute's name. A value type in the vocabulary that only a RASTERIZER
+/// consumes (<c>Matrix2D</c>, <c>RRect</c>) is host-only in exactly this sense: eqc routes the
+/// namespace to the runtime by NAMESPACE, so naming one from a page compiles, emits an import, and
+/// dies at hydration. Marking it moves that to the build.
+/// </para>
+/// <para>
+/// On an OPERATOR it fences the operator alone, which is a shape worth stating because the failure
+/// is silent rather than loud: JavaScript cannot overload one, so <c>a + b</c> on two framework
+/// values emits JavaScript's own <c>+</c>. A twin that IS a primitive (<c>SizeValue</c>,
+/// <c>Index</c>) passes the value through and the answer is right; a twin that is an OBJECT
+/// concatenates it into a string, or answers NaN, in a page that compiled and shipped.
+/// </para>
 /// </summary>
-[AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
+[AttributeUsage(AttributeTargets.Method | AttributeTargets.Class | AttributeTargets.Struct)]
 public sealed class ServerOnlyAttribute : Attribute
 {
 }

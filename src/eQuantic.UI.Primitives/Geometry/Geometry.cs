@@ -7,9 +7,13 @@ public readonly record struct Point(float X, float Y)
 {
     public static readonly Point Zero = new(0, 0);
 
-    public static Point operator +(Point a, Point b) => new(a.X + b.X, a.Y + b.Y);
-    public static Point operator -(Point a, Point b) => new(a.X - b.X, a.Y - b.Y);
-    public static Point operator *(Point a, float s) => new(a.X * s, a.Y * s);
+    // HOST ONLY, and the reason is JavaScript rather than taste: it cannot overload an operator,
+    // so `a + b` on two of these emits JavaScript's own `+` and concatenates two objects into a
+    // string. A framework value whose twin IS a primitive gets away with that; a Point does not.
+    // Fenced rather than commented, so a page trying it stops at the build.
+    [ServerOnly] public static Point operator +(Point a, Point b) => new(a.X + b.X, a.Y + b.Y);
+    [ServerOnly] public static Point operator -(Point a, Point b) => new(a.X - b.X, a.Y - b.Y);
+    [ServerOnly] public static Point operator *(Point a, float s) => new(a.X * s, a.Y * s);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public float Dot(Point other) => X * other.X + Y * other.Y;
@@ -55,7 +59,14 @@ public readonly record struct Rect(float X, float Y, float Width, float Height)
     public bool IsEmpty => Width <= 0 || Height <= 0;
 }
 
-/// <summary>A rounded rectangle — the workhorse UI shape (radius 0 = rect, radius = half-size = circle/pill).</summary>
+/// <summary>A rounded rectangle — the workhorse UI shape (radius 0 = rect, radius = half-size = circle/pill).
+/// <para>
+/// HOST ONLY: this is what a RASTERIZER consumes. On the web a rounded box is `border-radius` on a
+/// div, so nothing in a page bundle constructs one and the runtime ships no twin — and without the
+/// fence, naming it from a page compiles and dies at hydration instead.
+/// </para>
+/// </summary>
+[ServerOnly]
 public readonly record struct RRect(Rect Rect, CornerRadii Radii)
 {
     public RRect(Rect rect) : this(rect, CornerRadii.Zero) { }
@@ -97,7 +108,14 @@ public readonly record struct RRect(Rect Rect, CornerRadii Radii)
 /// | M31 M32 1 |
 /// </code>
 /// M31/M32 carry translation. Composition <c>A * B</c> applies A first, then B.
+/// <para>
+/// HOST ONLY, for the same reason as <see cref="RRect"/>: the composed matrix is what a rasterizer
+/// and a path flattener consume, where a page's own transform is the authoring `Transform2D`
+/// lowering to CSS. No twin ships, so the fence is what turns naming it into a build error rather
+/// than a blank screen.
+/// </para>
 /// </summary>
+[ServerOnly]
 public readonly record struct Matrix2D(float M11, float M12, float M21, float M22, float M31, float M32)
 {
     public static readonly Matrix2D Identity = new(1, 0, 0, 1, 0, 0);
