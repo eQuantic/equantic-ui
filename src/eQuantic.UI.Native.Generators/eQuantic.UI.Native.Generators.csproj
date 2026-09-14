@@ -7,6 +7,14 @@
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+        <!-- The SDK's diagnostics are catalogued in docs/DIAGNOSTICS.md, and
+             DiagnosticsDocumentedTests FAILS the build when a code is reported without a row
+             there, when a row names a code that no longer exists, or when a code gains a
+             reporting site the baseline does not know. Analyzer release tracking would be a
+             SECOND hand-maintained table of the same EQ codes, free to drift from the first —
+             and the weaker of the two, since it checks only that an id is listed. One
+             catalogue, with the guard on it. -->
+        <EnableAnalyzerReleaseTracking>false</EnableAnalyzerReleaseTracking>
         <IsRoslynComponent>true</IsRoslynComponent>
         <Description>Writes the other half of an app's Program: the entry point on platforms that have one, and the registration that lets every shell reach the app's CreateApp without reflection.</Description>
         <!-- A source generator ships as an ANALYZER, never a lib: in lib/ the consumer's compiler
