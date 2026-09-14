@@ -258,9 +258,8 @@ public static class PhotonRealizer
         // (pages grow downward; a full-height page asks for Height = Fill). Overlay layers below
         // keep shrink-to-fit on both axes (position:fixed semantics), which is what lets a
         // dropdown panel hug its options while the page behind it still fills the viewport.
-        // One-shot flag: the root consumes it.
-        context.StretchWidth = StretchKind.Block;
-        var layout = LayoutEngine.Layout(root, viewportWidth, viewportHeight, context);
+        var layout = LayoutEngine.Layout(root, viewportWidth, viewportHeight, context,
+            rootStretch: StretchKind.Block);
 
         var hits = new List<HitRegion>();
         var hovers = new List<HoverRegion>();

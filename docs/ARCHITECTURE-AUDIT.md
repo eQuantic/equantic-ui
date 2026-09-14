@@ -240,9 +240,9 @@ Flutter puts `Rect`, `Offset` and `Size` in `dart:ui`, under everything. The con
 measurable: `ICanvasPainter` spells every box as four floats; `Charts` carries its own `BarRect`
 with x, y, width and height spelled out, since no `Rect` is visible to it; `SemanticNode` carries a `Rect` and therefore cannot move down to
 `Primitives` — which is what keeps `SemanticRole` inside one target's assembly (section 6) and
-`Navigable`/`Overlay` mute on Photon; and a constraint VALUE a `LayoutBuilder` could hand an author —
-the one gap in FLUTTER-PARITY with a consumer already blocked behind it — has no assembly to be born
-in. Moving three record structs down breaks nothing above them.
+`Navigable`/`Overlay` mute on Photon; and `LayoutConstraints` — the constraint value #119 introduced, the one an author-facing
+`LayoutBuilder` would hand out, the gap in FLUTTER-PARITY with a consumer already blocked behind it —
+had to be born in `Native.Framework`, above the vocabulary, for want of a lower home. Moving three record structs down breaks nothing above them.
 
 **Folder hygiene, for the reader.** `Nodes/` holds nine files that are not nodes — `CapabilityScope`,
 `ComponentBoundary`, `ComponentInstanceStore`, `RouteValues`, `Navigator`, `IServerPrefetch`,
