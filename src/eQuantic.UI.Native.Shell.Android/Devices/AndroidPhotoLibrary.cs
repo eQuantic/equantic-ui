@@ -52,7 +52,7 @@ internal sealed class AndroidPhotoLibrary : IPhotoLibrary
     /// <summary>The best picker this device has.</summary>
     private static Intent PickerIntent(bool multiple, int limit)
     {
-        if (Build.VERSION.SdkInt >= BuildVersionCodes.Tiramisu)
+        if (OperatingSystem.IsAndroidVersionAtLeast(33))
         {
             var picker = new Intent(MediaStore.ActionPickImages);
             picker.SetType("image/*");

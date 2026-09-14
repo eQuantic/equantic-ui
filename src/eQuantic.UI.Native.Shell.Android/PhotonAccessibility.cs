@@ -119,7 +119,8 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
         // What TalkBack's heading swipe walks. Like UIKit, the platform records THAT an element is
         // a heading and not how deep — the level is the document's shape, and the gesture only
         // needs the stops.
-        info.Heading = node.HeadingLevel > 0;
+        if (OperatingSystem.IsAndroidVersionAtLeast(28))
+            info.Heading = node.HeadingLevel > 0;
 
         info.Focusable = true;
         info.AccessibilityFocused = _focused == virtualViewId;

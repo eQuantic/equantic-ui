@@ -1,3 +1,4 @@
+using System.Runtime.Versioning;
 using CoreGraphics;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Primitives;
@@ -195,6 +196,7 @@ internal sealed class PhotonAccessibilityElement : UIAccessibilityElement
     /// </para>
     /// </summary>
     [Export("accessibilityExpandedStatus")]
+    [SupportedOSPlatform("ios18.0")]
     public UIAccessibilityExpandedStatus ExpandedStatus() => _expanded switch
     {
         true => UIAccessibilityExpandedStatus.Expanded,
