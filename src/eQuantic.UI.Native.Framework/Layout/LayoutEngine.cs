@@ -111,31 +111,6 @@ public sealed class LayoutContext
     /// <summary>How tight this target's controls are (see <see cref="Primitives.Density"/>).</summary>
     public Density Density { get; }
 
-    /// <summary>
-    /// Whether the parent's own size on this axis is being decided BY the content — a Hug. Fill has
-    /// nothing to fill against there: a child that takes the maximum available would decide the
-    /// size of the very thing that was supposed to measure it, which is how a 16dp badge came out
-    /// as wide as the window. On an indeterminate axis, Fill resolves to the intrinsic size, the
-    /// same rule CSS shrink-to-fit and Flutter's min-size rows follow.
-    /// </summary>
-    public bool IndeterminateWidth { get; set; }
-
-    public bool IndeterminateHeight { get; set; }
-
-    /// <summary>
-    /// The MIRROR of the indeterminate flags: an axis the parent has already decided FOR this child,
-    /// because it aligns stretch. There, a Hug is not a hug — a stretched flex item with an auto
-    /// cross size IS the line's size, which is what CSS does and what makes `Main = Center` inside
-    /// it have any room to centre in. Without this the box was stretched after its contents had
-    /// already been laid out inside the smaller one, so a centred tab label sat against the left
-    /// edge of its cell while the indicator underneath spanned the whole cell.
-    /// <para>One-shot: consumed by the child it was set for, never inherited by that child's own
-    /// children — the same save/restore discipline the indeterminate flags use.</para>
-    /// </summary>
-    public StretchKind StretchWidth { get; set; }
-
-    public StretchKind StretchHeight { get; set; }
-
     public IAppTheme Theme { get; }
 
     /// <summary>Spec S6: the window size class layout resolves AdaptiveNodes against — derived from
@@ -390,14 +365,26 @@ public sealed class LayoutNodePool
 /// </summary>
 public static class LayoutEngine
 {
+    /// <param name="rootStretch">
+    /// What the caller has already decided about the ROOT's own size. The base layer is the page's
+    /// body — an auto-sized root stretches to the window in WIDTH the way a CSS block does — while
+    /// an overlay layer keeps shrink-to-fit on both axes, which is what lets a dropdown hug its
+    /// options over a page that fills the viewport. It is a PARAMETER because a root has no parent
+    /// to have told it: it used to be a one-shot field set on the context by the realizer and read
+    /// on the way past, which is the last of the mutable layout state this engine carried.
+    /// </param>
     public static LayoutNode Layout(VisualNode root, float viewportWidth, float viewportHeight, LayoutContext context,
-        string rootPath = "r")
+        string rootPath = "r", StretchKind rootStretch = StretchKind.None)
     {
         // NOTE: the reconciler pass is ENDED BY THE CALLER (PhotonRealizer) — one frame may run
         // several Layout calls (the page plus each Overlay subtree) sharing one retention pass.
         context.WindowWidth = viewportWidth;
         context.WindowHeight = viewportHeight;
-        var node = Measure(root, LayoutConstraints.Of(viewportWidth, viewportHeight), context, rootPath);
+        var node = Measure(
+            root,
+            LayoutConstraints.Of(viewportWidth, viewportHeight).Stretched(rootStretch, StretchKind.None),
+            context,
+            rootPath);
         Absolutize(node, 0, 0);
         return node;
     }
@@ -409,17 +396,6 @@ public static class LayoutEngine
     /// Build will not share.</summary>
     private static LayoutNode Measure(VisualNode node, LayoutConstraints constraints, LayoutContext ctx, string path)
     {
-        // The stretch belongs to THIS node and to nothing under it, so it is folded into the value
-        // here and cleared on the context. It used to be read-and-cleared into two locals and then
-        // passed on as two more parameters; carrying it IN the constraint is what lets every
-        // `Measure*` take one argument, and what makes "released for the children" a method rather
-        // than a discipline.
-        constraints = new LayoutConstraints(
-            constraints.Width.Stretched(ctx.StretchWidth),
-            constraints.Height.Stretched(ctx.StretchHeight));
-        ctx.StretchWidth = StretchKind.None;
-        ctx.StretchHeight = StretchKind.None;
-
         var measured = MeasureCore(node, constraints, ctx, path);
         measured.Path ??= path;
         return measured;
@@ -470,8 +446,8 @@ public static class LayoutEngine
         // wants the room it is offered. It has no content to hug: what it draws is arithmetic over
         // whatever box it ends up with, which is the whole point of it.
         Canvas canvas => ctx.Node(canvas, new Rect(0, 0,
-            ResolveSelf(canvas.Width, constraints.MaxWidth, 0, ctx.WindowWidth, ctx.IndeterminateWidth),
-            ResolveSelf(canvas.Height, constraints.MaxHeight, 0, ctx.WindowHeight, ctx.IndeterminateHeight))),
+            ResolveSelf(canvas.Width, constraints.MaxWidth, 0, ctx.WindowWidth, constraints.Width.Indeterminate),
+            ResolveSelf(canvas.Height, constraints.MaxHeight, 0, ctx.WindowHeight, constraints.Height.Indeterminate))),
         // The INLINE-BLOCK barrier (CSS twin): a button, a link and an input are not block-level —
         // a BLOCK container does not stretch them (they hug), while a FLEX stretch reaches
         // through (align-items: stretch stretches any item, buttons included).
@@ -538,8 +514,6 @@ public static class LayoutEngine
 
         // Transparent to stretch, like every wrapper: the system's margins shrink the box, they
         // do not change who decides the size.
-        ctx.StretchWidth = stretchW;
-        ctx.StretchHeight = stretchH;
         var child = Measure(safeArea.Child, constraints.WithMax(
             MathF.Max(0, maxW - start - end), MathF.Max(0, maxH - top - bottom)), ctx, ctx.ChildPath(path, 0));
         child.Bounds = child.Bounds with { X = start, Y = top };
@@ -640,10 +614,6 @@ public static class LayoutEngine
     /// substitute (Adaptive) rather than wrapping a child.</summary>
     private static LayoutNode MeasureRearmed(VisualNode node, LayoutConstraints constraints, LayoutContext ctx, string path)
     {
-        var (maxW, maxH) = (constraints.MaxWidth, constraints.MaxHeight);
-        var (stretchW, stretchH) = (constraints.Width.Stretch, constraints.Height.Stretch);
-        ctx.StretchWidth = stretchW;
-        ctx.StretchHeight = stretchH;
         return Measure(node, constraints, ctx, path);
     }
 
@@ -677,8 +647,6 @@ public static class LayoutEngine
         // Layout-transparent means transparent to STRETCH too: whatever the parent would stretch,
         // it stretches through the wrapper — a Pressable around a tab cell (or the component node
         // around a page) must not eat the size the parent granted.
-        ctx.StretchWidth = stretchW;
-        ctx.StretchHeight = stretchH;
         var inner = Measure(child, constraints, ctx, ctx.ChildPath(path, 0));
         result.Adopt(inner);
         result.Bounds = new Rect(0, 0, inner.Bounds.Width, inner.Bounds.Height);
@@ -750,25 +718,28 @@ public static class LayoutEngine
         // whatever the parent said; the other axes pass the question through unchanged.
         var childMaxW = stack.Width.Kind == SizeKind.Fixed ? stack.Width.Value : maxW;
         var childMaxH = stack.Height.Kind == SizeKind.Fixed ? stack.Height.Value : maxH;
-        var outerIndeterminateW = ctx.IndeterminateWidth;
-        var outerIndeterminateH = ctx.IndeterminateHeight;
-        if (stack.Width.Kind == SizeKind.Fixed) ctx.IndeterminateWidth = false;
-        if (stack.Height.Kind == SizeKind.Fixed) ctx.IndeterminateHeight = false;
+        var outerIndeterminateW = constraints.Width.Indeterminate;
+        var outerIndeterminateH = constraints.Height.Indeterminate;
+        // An explicit axis DECIDES for the children and is determinate for them whatever the parent
+        // said; the other axes pass the question through unchanged. Computed for the child's own
+        // constraint rather than written onto the context and undone afterwards.
+        var stackIndetW = stack.Width.Kind != SizeKind.Fixed && outerIndeterminateW;
+        var stackIndetH = stack.Height.Kind != SizeKind.Fixed && outerIndeterminateH;
         var contentW = 0f;
         var contentH = 0f;
 
         for (var stackIndex = 0; stackIndex < stack.Children.Count; stackIndex++)
         {
             var child = stack.Children[stackIndex];
-            var measured = Measure(child, constraints.WithMax(childMaxW, childMaxH), ctx, ctx.ChildPath(path, stackIndex, child));
+            var measured = Measure(
+                child,
+                constraints.ForChild(childMaxW, childMaxH).DecidedByContent(stackIndetW, stackIndetH),
+                ctx, ctx.ChildPath(path, stackIndex, child));
             result.Adopt(measured);
             if (PositionedOf(child, measured) is not null) continue;
             contentW = MathF.Max(contentW, measured.Bounds.Width);
             contentH = MathF.Max(contentH, measured.Bounds.Height);
         }
-
-        ctx.IndeterminateWidth = outerIndeterminateW;
-        ctx.IndeterminateHeight = outerIndeterminateH;
 
         var width = ResolveSelf(stack.Width, maxW, contentW);
         var height = ResolveSelf(stack.Height, maxH, contentH);
@@ -860,7 +831,7 @@ public static class LayoutEngine
         var result = ctx.Node(scroll);
         var horizontal = scroll.Axis == ScrollAxis.Horizontal;
 
-        var child = Measure(scroll.Child, constraints.WithMax(
+        var child = Measure(scroll.Child, constraints.ForChild(
             horizontal ? float.PositiveInfinity : maxW,
             horizontal ? maxH : float.PositiveInfinity), ctx, ctx.ChildPath(path, 0));
         result.Adopt(child);
@@ -1050,8 +1021,8 @@ public static class LayoutEngine
         // content has nothing to fill; the flex container has honoured that from the start, but a
         // BOX child read its available maximum anyway — which is how every option row of a hugging
         // Select panel came out the full width of the window.
-        var inheritedIndeterminateW = ctx.IndeterminateWidth;
-        var inheritedIndeterminateH = ctx.IndeterminateHeight;
+        var inheritedIndeterminateW = constraints.Width.Indeterminate;
+        var inheritedIndeterminateH = constraints.Height.Indeterminate;
 
         var maxWidthDp = CapDp(style.MaxWidth, ctx.WindowWidth);
         var maxHeightDp = CapDp(style.MaxHeight, ctx.WindowHeight);
@@ -1071,8 +1042,7 @@ public static class LayoutEngine
         {
             // The available space still bounds the child (text has to wrap somewhere), but on an
             // axis this box HUGS there is nothing to fill: say so, and a Fill child measures itself.
-            var outerW = ctx.IndeterminateWidth;
-            var outerH = ctx.IndeterminateHeight;
+
             // What the CHILD may fill against: Fixed decides the axis, Hug decides nothing — and
             // FILL passes the question through, because a Fill in a context that hands out no
             // width hands out none either. Treating Fill as determinate was the leak: an option
@@ -1083,13 +1053,13 @@ public static class LayoutEngine
             // this box will take (ResolveSelf below returns the available maximum), so the child
             // may fill it — this is what lets a page whose root box hugs still hand the window's
             // width to a Fill child, the way a CSS body does.
-            ctx.IndeterminateWidth = style.Width.Kind switch
+            var boxIndetW = style.Width.Kind switch
             {
                 SizeKind.Fixed => false,
                 SizeKind.Hug => !(stretchW != StretchKind.None && !inheritedIndeterminateW && !float.IsPositiveInfinity(selfMaxW)),
                 _ => inheritedIndeterminateW,
             };
-            ctx.IndeterminateHeight = style.Height.Kind switch
+            var boxIndetH = style.Height.Kind switch
             {
                 SizeKind.Fixed => false,
                 SizeKind.Hug => !(stretchH != StretchKind.None && !inheritedIndeterminateH && !float.IsPositiveInfinity(selfMaxH)),
@@ -1099,7 +1069,7 @@ public static class LayoutEngine
             // auto-sized child across it — a div's child div is full-width without asking. This is
             // what keeps a hugging Column inside a Fill card at the card's width on native, the way
             // the SAME tree already behaves on the web, where a Column realizes as width:auto.
-            if (!ctx.IndeterminateWidth) ctx.StretchWidth = StretchKind.Block;
+            var boxStretchW = boxIndetW ? StretchKind.None : StretchKind.Block;
             // And on the HEIGHT, where CSS gives nothing and the author paid for it: a box with a
             // decided height hands that height to its child. A 56dp bar holding a Row got a Row as
             // tall as its tallest label, so `Cross = Center` centred inside THAT — and the toolbar
@@ -1110,10 +1080,13 @@ public static class LayoutEngine
             // images and icons never took these flags (they size themselves), and a button, a link
             // or an input hugs, because a Block stretch stops at an inline-block — the same fence
             // the width has always respected.
-            if (!ctx.IndeterminateHeight) ctx.StretchHeight = StretchKind.Block;
-            child = Measure(box.Child, constraints.WithMax(MathF.Max(0, childMaxW), MathF.Max(0, childMaxH)), ctx, ctx.ChildPath(path, 0));
-            ctx.IndeterminateWidth = outerW;
-            ctx.IndeterminateHeight = outerH;
+            var boxStretchH = boxIndetH ? StretchKind.None : StretchKind.Block;
+            child = Measure(
+                box.Child,
+                constraints.ForChild(MathF.Max(0, childMaxW), MathF.Max(0, childMaxH))
+                    .DecidedByContent(boxIndetW, boxIndetH)
+                    .Stretched(boxStretchW, boxStretchH),
+                ctx, ctx.ChildPath(path, 0));
             child.Bounds = child.Bounds with { X = style.Padding.Start, Y = style.Padding.Top };
             result.Adopt(child);
         }
@@ -1137,19 +1110,19 @@ public static class LayoutEngine
                 || (style.MinHeight > 0 || maxHeightDp >= 0)
                 && MathF.Abs(height - style.Padding.Vertical - child.Bounds.Height) > 0.5f))
         {
-            var outerW2 = ctx.IndeterminateWidth;
-            var outerH2 = ctx.IndeterminateHeight;
-            ctx.IndeterminateWidth = false;
-            ctx.IndeterminateHeight = style.Height.Kind == SizeKind.Hug
+            var outerH2 = constraints.Height.Indeterminate;
+            var clampedIndetH = style.Height.Kind == SizeKind.Hug
                 && style.MinHeight <= 0 && maxHeightDp < 0 && outerH2;
             // The clamped width is a DECIDED size — block semantics again: the child stretches
             // across it, which is what centres a Stepper's reading inside its MinWidth cell.
-            ctx.StretchWidth = StretchKind.Block;
             result.ReleaseChildren();
-            child = Measure(box.Child!, constraints.WithMax(MathF.Max(0, width - style.Padding.Horizontal),
-                MathF.Max(0, height - style.Padding.Vertical)), ctx, ctx.ChildPath(path, 0));
-            ctx.IndeterminateWidth = outerW2;
-            ctx.IndeterminateHeight = outerH2;
+            child = Measure(
+                box.Child!,
+                constraints.ForChild(MathF.Max(0, width - style.Padding.Horizontal),
+                        MathF.Max(0, height - style.Padding.Vertical))
+                    .DecidedByContent(false, clampedIndetH)
+                    .Stretched(StretchKind.Block, StretchKind.None),
+                ctx, ctx.ChildPath(path, 0));
             child.Bounds = child.Bounds with { X = style.Padding.Start, Y = style.Padding.Top };
             result.Adopt(child);
         }
@@ -1211,7 +1184,7 @@ public static class LayoutEngine
         // spacer swallow the viewport: an option row's Fill (inherited-indeterminate) inside a
         // hugging Select panel measured its spacer against 1180dp of "available" and dragged every
         // hugging ancestor to the width of the window.
-        var mainIndeterminateNow = horizontal ? ctx.IndeterminateWidth : ctx.IndeterminateHeight;
+        var mainIndeterminateNow = horizontal ? constraints.Width.Indeterminate : constraints.Height.Indeterminate;
         var mainBounded = mainSize.Kind == SizeKind.Fixed
                           || (!float.IsPositiveInfinity(mainAvail)
                               && !mainIndeterminateNow
@@ -1226,7 +1199,7 @@ public static class LayoutEngine
         // container, which makes the auto size a real one), and Fill passes the question through.
         // Without this a row with a FIXED width told its children nothing (they inherited whatever
         // the context said), and a hugging row told them the viewport was theirs to fill.
-        var crossIndeterminateNow = horizontal ? ctx.IndeterminateHeight : ctx.IndeterminateWidth;
+        var crossIndeterminateNow = horizontal ? constraints.Height.Indeterminate : constraints.Width.Indeterminate;
         var mainStretchedIn = horizontal ? stretchW : stretchH;
         var crossStretchedIn = horizontal ? stretchH : stretchW;
         var childIndetMain = mainSize.Kind switch
@@ -1254,26 +1227,28 @@ public static class LayoutEngine
             return !childIndetCross;
         }
 
-        void MarkStretch(VisualNode child)
-        {
-            if (!StretchesCross(child)) return;
-            if (horizontal) ctx.StretchHeight = StretchKind.Flex;
-            else ctx.StretchWidth = StretchKind.Flex;
-        }
+        // The CROSS stretch this container grants a child, answered rather than written onto a
+        // context for `Measure` to pick up on the way past.
+        (StretchKind W, StretchKind H) CrossStretch(VisualNode child) =>
+            !StretchesCross(child) ? (StretchKind.None, StretchKind.None)
+            : horizontal ? (StretchKind.None, StretchKind.Flex)
+            : (StretchKind.Flex, StretchKind.None);
 
         // Every child measures under the flags THIS container restated. A flexible's share is a
         // size the container genuinely granted, so the main axis is determinate inside the slot
         // regardless of how the container itself is sized.
-        LayoutNode MeasureChild(VisualNode child, float w, float h, string childPath, bool mainGranted = false)
+        LayoutNode MeasureChild(VisualNode child, float w, float h, string childPath,
+            bool mainGranted = false, StretchKind stretchW = StretchKind.None,
+            StretchKind stretchH = StretchKind.None)
         {
-            var outerW = ctx.IndeterminateWidth;
-            var outerH = ctx.IndeterminateHeight;
-            ctx.IndeterminateWidth = childIndetW && !(mainGranted && horizontal);
-            ctx.IndeterminateHeight = childIndetH && !(mainGranted && !horizontal);
-            var node = Measure(child, constraints.WithMax(w, h), ctx, childPath);
-            ctx.IndeterminateWidth = outerW;
-            ctx.IndeterminateHeight = outerH;
-            return node;
+            return Measure(
+                child,
+                constraints.ForChild(w, h)
+                    .DecidedByContent(
+                        childIndetW && !(mainGranted && horizontal),
+                        childIndetH && !(mainGranted && !horizontal))
+                    .Stretched(stretchW, stretchH),
+                ctx, childPath);
         }
 
         var children = flex.Children;
@@ -1306,8 +1281,9 @@ public static class LayoutEngine
 
             var childMaxW = horizontal ? mainAvail : crossAvail;
             var childMaxH = horizontal ? crossAvail : mainAvail;
-            MarkStretch(children[i]);
-            var child = MeasureChild(children[i], childMaxW, childMaxH, ctx.ChildPath(path, i, children[i]));
+            var (csW, csH) = CrossStretch(children[i]);
+            var child = MeasureChild(children[i], childMaxW, childMaxH, ctx.ChildPath(path, i, children[i]),
+                stretchW: csW, stretchH: csH);
             laid[i] = child;
             mains[i] = horizontal ? child.Bounds.Width : child.Bounds.Height;
             rigidSum += mains[i];
@@ -1382,8 +1358,9 @@ public static class LayoutEngine
                             var bound = MathF.Max(floors[i], mains[i] - taking * (room / yielding));
                             var childMaxW2 = horizontal ? bound : crossAvail;
                             var childMaxH2 = horizontal ? crossAvail : bound;
-                            MarkStretch(children[i]);
-                            var reflowed = MeasureChild(children[i], childMaxW2, childMaxH2, ctx.ChildPath(path, i, children[i]));
+                            var (rsW, rsH) = CrossStretch(children[i]);
+                            var reflowed = MeasureChild(children[i], childMaxW2, childMaxH2,
+                                ctx.ChildPath(path, i, children[i]), stretchW: rsW, stretchH: rsH);
                             laid[i] = reflowed;
                             var shrunk = horizontal ? reflowed.Bounds.Width : reflowed.Bounds.Height;
                             rigidSum -= mains[i] - shrunk;
@@ -1410,9 +1387,10 @@ public static class LayoutEngine
             // 0x0 because their row was hugging. (A flexible SPACER stays 0 — pure space.)
             if (!mainBounded && children[i] is Flexible unbounded)
             {
-                MarkStretch(unbounded);
+                var (usW, usH) = CrossStretch(unbounded);
                 var intrinsic = MeasureChild(unbounded.Child, horizontal ? mainAvail : crossAvail,
-                    horizontal ? crossAvail : mainAvail, ctx.ChildPath(ctx.ChildPath(path, i, unbounded), 0));
+                    horizontal ? crossAvail : mainAvail, ctx.ChildPath(ctx.ChildPath(path, i, unbounded), 0),
+                    stretchW: usW, stretchH: usH);
                 mains[i] = horizontal ? intrinsic.Bounds.Width : intrinsic.Bounds.Height;
                 rigidSum += mains[i];
                 var grown = ctx.Node(unbounded, intrinsic.Bounds);
@@ -1431,14 +1409,16 @@ public static class LayoutEngine
                 // A Flexible is layout-transparent: whatever the container would stretch, it
                 // stretches THROUGH it. Without this the wrapper grew to the cell and the content
                 // inside it stayed at its own width, which is exactly what the tab labels did.
-                MarkStretch(flexible);
+                var (fsW, fsH) = CrossStretch(flexible);
                 // The share IS the slot's main size (the bounds are pinned to it below), so the
                 // child is stretched on the main axis too: an auto-sized cell takes the share and
                 // lays out inside it — a flex-grow item's autos fill the cell, per CSS.
-                if (horizontal) ctx.StretchWidth = StretchKind.Flex;
-                else ctx.StretchHeight = StretchKind.Flex;
-                var child = MeasureChild(flexible.Child, childMaxW, childMaxH, ctx.ChildPath(ctx.ChildPath(path, i, flexible), 0),
-                    mainGranted: true);
+                // The share IS the slot's main size, so the child is stretched on the main axis
+                // too, on top of whatever the cross axis granted.
+                var child = MeasureChild(flexible.Child, childMaxW, childMaxH,
+                    ctx.ChildPath(ctx.ChildPath(path, i, flexible), 0), mainGranted: true,
+                    stretchW: horizontal ? StretchKind.Flex : fsW,
+                    stretchH: horizontal ? fsH : StretchKind.Flex);
                 // The flexible slot IS the share on the main axis (the child fills it).
                 child.Bounds = horizontal
                     ? child.Bounds with { Width = share }
@@ -1454,11 +1434,11 @@ public static class LayoutEngine
         }
 
         // Container size. Fill on an axis the PARENT is sizing from its content has nothing to fill
-        // — see LayoutContext.IndeterminateWidth. Without this a `Centered()` wrapper (Fill on both
+        // — see AxisConstraint.Indeterminate. Without this a `Centered()` wrapper (Fill on both
         // axes, which is what makes centring possible at all) dragged its hugging parent to the
         // full width of the window: a 16dp badge came out 600dp wide, shoving its neighbours off.
-        var mainIndeterminate = horizontal ? ctx.IndeterminateWidth : ctx.IndeterminateHeight;
-        var crossIndeterminate = horizontal ? ctx.IndeterminateHeight : ctx.IndeterminateWidth;
+        var mainIndeterminate = horizontal ? constraints.Width.Indeterminate : constraints.Height.Indeterminate;
+        var crossIndeterminate = horizontal ? constraints.Height.Indeterminate : constraints.Width.Indeterminate;
 
         var mainStretched = horizontal ? stretchW : stretchH;
         var crossStretched = horizontal ? stretchH : stretchW;
@@ -1583,7 +1563,7 @@ public static class LayoutEngine
             // is going to get rather than at the whole line's.
             var basis = flexible is { Basis: > 0 } ? flexible.Basis : 0f;
             var constraint = basis > 0 ? MathF.Min(basis, mainAvail) : mainAvail;
-            var node = Measure(child, constraints.WithMax(constraint, crossMax - padCross), ctx, ctx.ChildPath(path, i, source));
+            var node = Measure(child, constraints.ForChild(constraint, crossMax - padCross), ctx, ctx.ChildPath(path, i, source));
 
             measured.Add(node);
             sources.Add(source);
@@ -1657,7 +1637,7 @@ public static class LayoutEngine
                     if (MathF.Abs(size - hypothetical[i]) > 0.01f)
                     {
                         var child = sources[i] is Flexible f ? f.Child : sources[i];
-                        var remeasured = Measure(child, constraints.WithMax(horizontal ? size : crossMax - padCross,
+                        var remeasured = Measure(child, constraints.ForChild(horizontal ? size : crossMax - padCross,
                             horizontal ? crossMax - padCross : size), ctx, ctx.ChildPath(path, i, sources[i]));
                         // A flex item OCCUPIES the size it resolved to, even when its content is
                         // shorter — otherwise the ones after it slide left and the line no longer
@@ -1791,7 +1771,7 @@ public static class LayoutEngine
             var widest = 0f;
             foreach (var pl in placements)
                 if (pl.Column == c && pl.Span == 1)
-                    widest = MathF.Max(widest, Measure(pl.Node, constraints.WithMax(float.PositiveInfinity, maxH), ctx, path + "/probe").Bounds.Width);
+                    widest = MathF.Max(widest, Measure(pl.Node, constraints.ForChild(float.PositiveInfinity, maxH), ctx, path + "/probe").Bounds.Width);
             widths[c] = widest;
             used += widest;
         }
@@ -1809,7 +1789,7 @@ public static class LayoutEngine
             var (node, c, span, r) = placements[i];
             var cellW = grid.Gap * (span - 1);
             for (var k = c; k < c + span; k++) cellW += widths[k];
-            var child = Measure(node, constraints.WithMax(cellW, maxH), ctx, ctx.ChildPath(path, i, node));
+            var child = Measure(node, constraints.ForChild(cellW, maxH), ctx, ctx.ChildPath(path, i, node));
             // A Fill-width child pins to the cell (the realizer paints the full extent).
             if (CrossSizeKind(node, horizontal: false) == SizeKind.Fill || WidthKind(node) == SizeKind.Fill)
                 child.Bounds = child.Bounds with { Width = cellW };

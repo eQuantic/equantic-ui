@@ -105,11 +105,26 @@ public readonly record struct LayoutConstraints(AxisConstraint Width, AxisConstr
 
     public LayoutConstraints WithMaxHeight(float maxHeight) => this with { Height = Height.WithMax(maxHeight) };
 
+    /// <summary>
+    /// What a CHILD is measured under: this room, and none of the stretch. A parent that means to
+    /// stretch a child says so with <see cref="AxisConstraint.Stretched"/> on top; the default is
+    /// that it does not, because stretch belongs to the node it was set for and to nothing under
+    /// it. One door, so "released for the children" cannot be forgotten at the fourteenth call
+    /// site — which is what it WAS, when the release happened by clearing two fields on a shared
+    /// context and trusting every reader to have already looked.
+    /// </summary>
+    public LayoutConstraints ForChild(float maxWidth, float maxHeight) =>
+        new(Width.WithMax(maxWidth).Released(), Height.WithMax(maxHeight).Released());
+
     /// <inheritdoc cref="AxisConstraint.Released"/>
     public LayoutConstraints Released() => new(Width.Released(), Height.Released());
 
     /// <inheritdoc cref="AxisConstraint.Inline"/>
     public LayoutConstraints Inline() => new(Width.Inline(), Height.Inline());
+
+    /// <inheritdoc cref="AxisConstraint.Stretched"/>
+    public LayoutConstraints Stretched(StretchKind width, StretchKind height) =>
+        new(Width.Stretched(width), Height.Stretched(height));
 
     /// <inheritdoc cref="AxisConstraint.DecidedByContent"/>
     public LayoutConstraints DecidedByContent(bool width, bool height) =>
