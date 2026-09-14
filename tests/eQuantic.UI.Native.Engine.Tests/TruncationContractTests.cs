@@ -139,6 +139,53 @@ public class TruncationContractTests
     }
 
     /// <summary>
+    /// WHICH SIDE survives — the half the rest of this file never asked about, and the half that
+    /// was wrong for a whole release.
+    ///
+    /// <para>
+    /// `0.2.0-preview.53` shipped `CTLineCreateTruncatedLine(..., 2, ...)` with a comment calling 2
+    /// `kCTLineTruncationEnd`. `CTLine.h` says 2 is `kCTLineTruncationMiddle`. So macOS cut the
+    /// MIDDLE out of every truncated label — "Replace hardco…with IAppTheme" — while the web
+    /// realizer, emitting `text-overflow: ellipsis`, cut the end. The same tree, two different cuts,
+    /// and each one looks deliberate on its own. Reported by the IDE consumer, who read the header,
+    /// read the line and magnified the render rather than inferring from any one of them.
+    /// </para>
+    ///
+    /// <para>
+    /// Every other assertion here passed throughout: a mark appeared, the cut line was wider than a
+    /// wrap, the raster matched the measurement. All of that is true of a middle cut. Nothing asked
+    /// the one question that separates them, which is this file's own review question turned on
+    /// itself — the instrument was never exercised in the condition it exists for.
+    /// </para>
+    ///
+    /// <para>
+    /// Asked without reading any text back, because a `MeasuredLine` carries a width and a flag and
+    /// no characters: two strings that share a HEAD and differ in their TAIL must cut to the same
+    /// width, since only the head survives. A middle cut keeps the tails and reports two widths; a
+    /// start cut keeps them and reports two widths. Verified by putting each wrong constant back.
+    /// </para>
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(Available))]
+    public void ACutLine_KeepsTheBeginning(string name)
+    {
+        var measurer = Measurers[name]();
+        const string Head = "the quick brown fox jumps over the lazy dog and keeps going";
+
+        var narrow = measurer.Measure(Head + " iiiiiiiiiiii", Style, 1f, maxWidth: 160, maxLines: 1);
+        var wide = measurer.Measure(Head + " WWWWWWWWWWWW", Style, 1f, maxWidth: 160, maxLines: 1);
+
+        narrow.Lines[0].Ellipsized.Should().BeTrue("both fixtures have to truncate for this to mean anything");
+        wide.Lines[0].Ellipsized.Should().BeTrue();
+
+        wide.Lines[0].Width.Should().BeApproximately(narrow.Lines[0].Width, 0.01f,
+            "two strings with the same head cut to the same line, because the head is what a "
+            + "trailing ellipsis keeps. A measurer that reports two widths kept the TAILS — it is "
+            + "cutting the middle or the start, and the contract, the handoff and the other "
+            + "realizer all say the end");
+    }
+
+    /// <summary>
     /// THE CONTRACT, and the assertion that took three attempts to make honest.
     ///
     /// <para>

@@ -97,12 +97,12 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
     private static partial CFRange CTLineGetStringRange(IntPtr line);
 
     /// <summary>
-    /// CoreText's own truncation. <paramref name="type"/> 2 is <c>kCTLineTruncationEnd</c>; the token
-    /// is the line drawn in place of what was dropped, and answering NULL means the width could not
-    /// hold even the token.
+    /// CoreText's own truncation. The token is the line drawn in place of what was dropped, and
+    /// answering NULL means the width could not hold even the token.
     /// </summary>
     [LibraryImport(CoreTextLib)]
-    private static partial IntPtr CTLineCreateTruncatedLine(IntPtr line, double width, uint type, IntPtr token);
+    private static partial IntPtr CTLineCreateTruncatedLine(
+        IntPtr line, double width, CTLineTruncationType type, IntPtr token);
 
     [LibraryImport(CoreGraphics)]
     private static partial IntPtr CGPathCreateWithRect(CGRect rect, IntPtr transform);
@@ -300,7 +300,7 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
         try
         {
             if (token == IntPtr.Zero) return (line, false);
-            var truncated = CTLineCreateTruncatedLine(rest, maxWidth, 2 /* kCTLineTruncationEnd */, token);
+            var truncated = CTLineCreateTruncatedLine(rest, maxWidth, CTLineTruncationType.End, token);
             // NULL means the width could not hold even the token — keep the frame's line rather than
             // drawing nothing, which is what a reader would rather have.
             return truncated == IntPtr.Zero ? (line, false) : (truncated, true);
@@ -310,6 +310,25 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
             if (token != IntPtr.Zero) CFRelease(token);
             CFRelease(rest);
         }
+    }
+
+    /// <summary>
+    /// <c>CTLineTruncationType</c>, transcribed from <c>CTLine.h</c> — which is the point of writing
+    /// it out. This shipped as a bare <c>2</c> with a comment calling it <c>kCTLineTruncationEnd</c>,
+    /// and 2 is <c>Middle</c>: macOS cut the middle out of every truncated label while the web cut
+    /// the end, for one release. A literal with a comment beside it is indistinguishable from a
+    /// literal with the WRONG comment beside it, and nothing in the signature could tell them apart.
+    /// </summary>
+    private enum CTLineTruncationType : uint
+    {
+        /// <summary>Drop the beginning, keep the end.</summary>
+        Start = 0,
+        /// <summary>Drop the end, keep the beginning — a trailing ellipsis, which is what
+        /// <c>ITextMeasurer.Measure</c> promises and what the web realizer draws.</summary>
+        End = 1,
+        /// <summary>Drop the middle, keep both ends. Defensible for a file path; not what is asked
+        /// for here, and not what the other realizer does.</summary>
+        Middle = 2,
     }
 
     private const string ELLIPSIS = "\u2026";
