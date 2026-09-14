@@ -360,9 +360,13 @@ public sealed partial class CoreTextService : ITextMeasurer, ITextRasterizer
                 {
                     var width = (float)CTLineGetTypographicBounds(line, out _, out _, out _);
                     if (content.Length == 0) width = 0;
-                    // The width now INCLUDES the mark when there is one, because the line was
-                    // truncated before it was measured. That is the contract.
-                    lines.Add(new MeasuredLine(width, Ellipsized: i == shown - 1 && shown < count));
+                    // The flag follows what HAPPENED, not what was asked for. `owned` is true only
+                    // when CoreText actually produced a truncated line; when the width could not
+                    // hold even the ellipsis it hands back nothing and the frame's own line is
+                    // drawn, with no mark on it. Reporting `Ellipsized` there would have the flag
+                    // and the glyphs contradict each other at exactly the widths where a reader is
+                    // most likely to notice. Found in review.
+                    lines.Add(new MeasuredLine(width, Ellipsized: owned));
                     maxLineWidth = MathF.Max(maxLineWidth, width);
                 }
                 finally

@@ -62,6 +62,8 @@ public class TruncationContractTests
         };
         if (OperatingSystem.IsMacOS())
             map["CoreText"] = () => new eQuantic.UI.Native.Shell.Apple.CoreTextService();
+        if (OperatingSystem.IsWindows())
+            map["DirectWrite"] = () => new eQuantic.UI.Native.Shell.Windows.Graphics.DirectWriteTextService();
         return map;
     }
 
@@ -75,7 +77,10 @@ public class TruncationContractTests
         Measurers.Should().ContainKey("reference");
         if (OperatingSystem.IsMacOS())
             Measurers.Should().ContainKey("CoreText", "a Mac hosts CoreText and the contract is per implementation");
-        Measurers.Should().HaveCountGreaterThan(OperatingSystem.IsMacOS() ? 1 : 0);
+        if (OperatingSystem.IsWindows())
+            Measurers.Should().ContainKey("DirectWrite", "and a Windows box hosts DirectWrite");
+        Measurers.Should().HaveCountGreaterThan(
+            OperatingSystem.IsMacOS() || OperatingSystem.IsWindows() ? 1 : 0);
     }
 
     /// <summary>A line that was cut says so. The neutral fact, which is all a caller should need.</summary>
@@ -98,6 +103,39 @@ public class TruncationContractTests
         var measured = Measurers[name]().Measure("short", Style, 1f, maxWidth: 400, maxLines: 0);
 
         measured.Lines.Should().OnlyContain(line => !line.Ellipsized);
+    }
+
+    /// <summary>
+    /// THE PIXELS, not only the number. `Measure` and `Rasterize` go through one helper so they
+    /// cannot disagree — but that is a claim about the code, and this is the assertion that would
+    /// fail if the helper stopped being shared. Found in review: every existing CoreText raster test
+    /// uses an unconstrained width, so none of them exercises truncation at all, and a regression
+    /// could leave measured widths carrying the mark while the glyphs drew the untruncated line.
+    ///
+    /// <para>
+    /// A truncated raster is WIDER than the same paragraph's natural first line, for the reason the
+    /// measurement is: the cut runs to the character and pays for the mark. The bitmap is compared
+    /// against the measurement rather than against a golden, because a golden would pin this
+    /// machine's font and this suite is about the contract.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void TheRasterDrawsTheLineThatWasMeasured()
+    {
+        if (!OperatingSystem.IsMacOS()) return;
+        var service = new eQuantic.UI.Native.Shell.Apple.CoreTextService();
+
+        var cut = service.Measure(Paragraph, Style, 1f, maxWidth: 160, maxLines: 1);
+        cut.Lines[0].Ellipsized.Should().BeTrue("the fixture has to truncate for this to mean anything");
+
+        var raster = service.Rasterize(Paragraph, Style, 1f, maxWidth: 160, maxLines: 1,
+            scale: 1f, TextAlignment.Start);
+
+        raster.Should().NotBeNull();
+        // Within a pixel: the raster is cut to the ink it drew, and the measurement is typographic.
+        raster!.Width.Should().BeInRange((int)cut.Lines[0].Width - 2, (int)cut.Lines[0].Width + 2,
+            "the rasterizer draws the line the measurer measured — the same truncated line, not the "
+            + "frame's untruncated one");
     }
 
     /// <summary>
