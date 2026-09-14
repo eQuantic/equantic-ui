@@ -20,7 +20,6 @@ public class BclSurfaceTailConformanceTests
     [InlineData("true.Equals((object)1)")]                                   // false
     [InlineData("3L.Equals(3L)")]                                            // true
     // string tail
-    [InlineData("\"ab\\r\\ncd\\ref\".ReplaceLineEndings()")]                 // \n everywhere
     [InlineData("\"a\\nb\".ReplaceLineEndings(\"; \")")]
     [InlineData("\"banana\".IndexOfAny(new[] { 'n', 'x' })")]                // 2
     [InlineData("\"banana\".IndexOfAny(new[] { 'n' }, 3)")]                  // 4
@@ -41,6 +40,32 @@ public class BclSurfaceTailConformanceTests
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertSameAsDotNet(expression);
+    }
+    /// <summary>
+    /// The expressions whose .NET answer is the HOST's newline.
+    ///
+    /// <para>
+    /// `Environment.NewLine` is `\r\n` on Windows and `\n` elsewhere, and a browser has no
+    /// environment — so the SDK decided its newline is `\n`, and said so in both places that
+    /// implement it. The decision was written down twice and held until the suite ran on a Windows
+    /// runner for the first time.
+    /// </para>
+    ///
+    /// <para>
+    /// Folded on both sides, so a translation defect still fails. What this does NOT do is make the
+    /// divergence go away: a page using these produces `\n` in the browser and `\r\n` from a
+    /// Windows-hosted server's SSR pass, which the reconciler sees as a text mismatch at hydration.
+    /// The fix is a product decision — fence the no-argument forms, or make the server honour the
+    /// SDK's newline — and it is open.
+    /// </para>
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("\"ab\\r\\ncd\\ref\".ReplaceLineEndings()",
+        "ReplaceLineEndings() with no argument replaces with Environment.NewLine")]
+    public void SurfaceTail_WhereDotNetAnswersTheHostsNewline(string expression, string why)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertSameAsDotNetExceptTheHostsNewline(expression, why);
     }
 
     [SkippableTheory]
