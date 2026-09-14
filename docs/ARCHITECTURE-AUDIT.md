@@ -654,9 +654,11 @@ makes the rest safe.
    had been causing went with it (section 7), and `ValueShapeCollisionTests` now asks about the
    next one. ~~`SemanticRole` and `SemanticNode` to `Primitives`~~ done too, for the same three
    `using` lines — and it did NOT unmute `Navigable` and `Overlay`, which needs the group role
-   (section 7). Remaining: that group role, which is Edgar's decision; `Charts` drops `BarRect`'s
-   own geometry; and `ICanvasPainter` takes a `Rect`, which needs its TypeScript twin in the same
-   change because the draw callback transpiles. — M, mostly done
+   (section 7). ~~`ICanvasPainter` takes a `Rect` and a `Point`, `BarRect` carries a `Rect`~~ done
+   (#143), with the TypeScript twin in the same commit because the draw callback transpiles — and
+   the sweep that rewrote the call sites also rewrote three of the engine's own calls in the golden
+   scenes, which already took a `Point`; only reading the diff caught the double wrap. Remaining:
+   the group role, which is Edgar's decision. — M, done but for that
 4. **Node shapes**: a `SingleChildNode` base (Flutter: `SingleChildRenderObjectWidget`), the wrapper
    set and the node-intrinsic questions hoisted onto the vocabulary, `VisualNode.cs` split along the
    four shapes. — M
