@@ -296,6 +296,93 @@ public class NamedFaceTests
         DesignSystemTsGenerator.Generate(Theme).Should().NotContain("monoFamily");
     }
 
+    /// <summary>
+    /// The case that made <c>MonoFamily</c> inert for exactly the themes it was built for.
+    ///
+    /// <para>
+    /// Reported by the eQuantic Code IDE after adopting it. Their theme is the normal way to brand
+    /// type — <c>Base.Type(role) with { Family = brandSans }</c> — so every role named a face, and
+    /// <c>WithCodeFace</c> read that as a specific call site and stepped aside. The rule it was
+    /// applying is right; what it could not see is that the family came from the ROLE and was never
+    /// chosen for this text. They worked around it by naming the family at every node, which is the
+    /// work a theme exists to remove.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void ANodeAskingForCode_LeavesTheRolesProportionalFaceBehind()
+    {
+        var theme = new BrandedTheme(Theme, sans: "IBM Plex Sans", mono: "JetBrains Mono");
+
+        new Text("git log", TypeRole.Caption) { Mono = true }.Resolve(theme).Family
+            .Should().Be("JetBrains Mono",
+                "the role's face is a DEFAULT, and a proportional default must not outlive a node "
+                + "that asked for code");
+    }
+
+    /// <summary>The other half, and the A/B against "mono means drop the family": prose on the same
+    /// theme still gets the brand face.</summary>
+    [Fact]
+    public void OrdinaryProse_KeepsTheRolesFace()
+    {
+        var theme = new BrandedTheme(Theme, sans: "IBM Plex Sans", mono: "JetBrains Mono");
+
+        new Text("hello", TypeRole.BodyM).Resolve(theme).Family.Should().Be("IBM Plex Sans");
+    }
+
+    /// <summary>
+    /// And the A/B against the OTHER wrong fix. A theme that sets <c>Mono</c> and a family on the
+    /// SAME role chose that pairing, and it is more specific than the theme-wide code face.
+    /// </summary>
+    [Fact]
+    public void ARoleThatIsCodeItself_KeepsTheFaceTheThemeGaveIt()
+    {
+        var theme = new RoleTheme(new BrandedTheme(Theme, sans: "IBM Plex Sans", mono: "JetBrains Mono"),
+            TypeRole.Caption, Theme.Type(TypeRole.Caption) with { Mono = true, Family = "Fira Code" });
+
+        new Text("git log", TypeRole.Caption).Resolve(theme).Family.Should().Be("Fira Code");
+        new Text("git log", TypeRole.Caption) { Mono = true }.Resolve(theme).Family
+            .Should().Be("Fira Code", "the node repeating what the role already said changes nothing");
+    }
+
+    /// <summary>A family the CALL SITE named is still specific, which is the rule this preserves.</summary>
+    [Fact]
+    public void AFaceNamedAtTheNode_StillWins()
+    {
+        var theme = new BrandedTheme(Theme, sans: "IBM Plex Sans", mono: "JetBrains Mono");
+        var text = new Text("cargo run", TypeRole.BodyM)
+        {
+            StyleOverride = theme.Type(TypeRole.BodyM) with { Family = "Fira Code", Mono = true },
+        };
+
+        text.Resolve(theme).Family.Should().Be("Fira Code");
+    }
+
+    /// <summary>A theme that brands its type: a face per role, and a code face beside it — the shape
+    /// the reporting consumer uses and the one every brand theme ends up with.</summary>
+    private sealed class BrandedTheme(IAppTheme inner, string sans, string mono) : IAppTheme
+    {
+        public string? MonoFamily => mono;
+        public TypeStyle Type(TypeRole role) => inner.Type(role) with { Family = sans };
+
+        public ColorToken Background => inner.Background;
+        public ColorToken Surface => inner.Surface;
+        public ColorToken SurfaceSubtle => inner.SurfaceSubtle;
+        public ColorToken SurfaceHighlight => inner.SurfaceHighlight;
+        public ColorToken Border => inner.Border;
+        public ColorToken BorderStrong => inner.BorderStrong;
+        public ColorToken TextPrimary => inner.TextPrimary;
+        public ColorToken TextSecondary => inner.TextSecondary;
+        public ColorToken TextMuted => inner.TextMuted;
+        public ColorToken TextInverse => inner.TextInverse;
+        public ColorToken FocusRing => inner.FocusRing;
+        public ColorToken LinkColor => inner.LinkColor;
+        public ColorToken Scrim => inner.Scrim;
+        public float DisabledOpacity => inner.DisabledOpacity;
+        public VariantColors Colors(Variant variant) => inner.Colors(variant);
+        public ShadowSpec Elevation(int level) => inner.Elevation(level);
+        public float Shape(ShapeScale scale) => inner.Shape(scale);
+    }
+
     private sealed class CodeFacedTheme(IAppTheme inner, string mono) : IAppTheme
     {
         public string? MonoFamily => mono;
