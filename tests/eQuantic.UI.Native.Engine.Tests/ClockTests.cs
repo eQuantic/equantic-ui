@@ -204,17 +204,23 @@ public class ClockTests
     /// fires on its own thread, and disposing stops it. Generous windows — this asserts that the
     /// wiring is real, never how punctual a thread pool is.
     /// <para>
-    /// The reading is taken AFTER a settling sleep, not at the instant <c>Dispose</c> returns, and
-    /// that is the difference between what the subject promises and what this used to assert.
-    /// <c>Timer.Dispose()</c> stops NEW callbacks; it does not wait for one already running —
-    /// waiting is <c>Dispose(WaitHandle)</c>, which this realization deliberately does not use,
-    /// because the callback arrives on a thread-pool thread by contract. So a tick already in flight
-    /// when the main thread disposed could still increment afterwards, and the old shape read the
-    /// counter into `afterDispose` before that increment landed: expected 1, found 2. It passed by
-    /// luck and failed by luck, and it failed for the first time on a loaded CI runner.
+    /// It does NOT compare counts before and after, and that is the whole design. <c>Dispose</c>
+    /// stops NEW callbacks; it does not wait for one already running — waiting is
+    /// <c>Dispose(WaitHandle)</c>, which this realization deliberately avoids, because the callback
+    /// arrives on a thread-pool thread by contract. So a tick already in flight may land at any
+    /// later moment, and every count-based shape is a bet on how long that takes: the first version
+    /// read the counter at the instant Dispose returned (expected 1, found 2, on a loaded runner),
+    /// and sleeping first only widens the bet — a thread-pool stall outlasts any constant you pick.
+    /// Found in review, after the sleep had already been widened once.
     /// </para>
-    /// The claim that survives is the one that matters — after disposing, it STOPS FIRING — and it
-    /// is proved by two readings a whole set of periods apart rather than by one instant.
+    /// <para>
+    /// So the callback answers the question itself, at ENTRY: did I start after <c>Dispose</c>
+    /// returned? A callback that entered before the flag was written is the in-flight case and is
+    /// legal whenever it finishes; one that reads the flag STARTED after disposal, which is exactly
+    /// what <c>Dispose</c> forbids. No stall can make that a false failure. The sleeps stay, but
+    /// only to give the timer a CHANCE to misbehave, so a short one costs a missed violation rather
+    /// than a red build — and the A/B below is what proves the window is long enough.
+    /// </para>
     /// </summary>
     [Fact]
     public void ThePhotonClock_Fires_AndDisposingStopsIt()
@@ -222,24 +228,29 @@ public class ClockTests
         var clock = new PhotonClock();
         using var fired = new ManualResetEventSlim();
         var ticks = 0;
+        var disposed = 0;
+        var startedAfterDisposal = 0;
 
         var subscription = clock.Every(TimeSpan.FromMilliseconds(20), () =>
         {
+            // At ENTRY, before any work: this is the moment that separates "already running" from
+            // "started after we were told to stop".
+            if (Volatile.Read(ref disposed) == 1) Interlocked.Increment(ref startedAfterDisposal);
             Interlocked.Increment(ref ticks);
             fired.Set();
         });
 
         fired.Wait(TimeSpan.FromSeconds(5)).Should().BeTrue("the timer fires without anyone pumping it");
+        Volatile.Read(ref ticks).Should().BeGreaterThan(0, "the subscription delivered before we stopped it");
 
         subscription.Dispose();
+        Volatile.Write(ref disposed, 1);
 
-        // Let any callback that was already running finish. Anything it adds is still the timer
-        // OBEYING Dispose — it was scheduled before it.
-        Thread.Sleep(200);
-        var settled = Volatile.Read(ref ticks);
+        // Twenty periods. A live timer would enter the callback about twenty times in here; a
+        // disposed one enters it zero times, however long the machine stalls.
+        Thread.Sleep(400);
 
-        // Ten more periods. If the timer were still live this would be ten ticks, not zero.
-        Thread.Sleep(200);
-        Volatile.Read(ref ticks).Should().Be(settled, "disposing stops it for good");
+        Volatile.Read(ref startedAfterDisposal).Should().Be(0,
+            "disposing stops it for good — a callback already running may finish, but none may START");
     }
 }
