@@ -82,6 +82,18 @@
         <Exec Command="&quot;$(_BunPath)&quot; build &quot;$(_BootEntry)&quot; --outfile &quot;$(_RuntimeDist)&quot; --minify-syntax --minify-whitespace" />
     </Target>
 
+    <!-- The runtime's own proof, through the same embedded bun — one command on every OS, no Node:
+             dotnet build src/eQuantic.UI.Runtime -t:TestRuntime
+         Dependencies come from bun.lock as pinned (a drift fails, it is not repaired in passing); tsc
+         is the type-check that makes an exhaustive switch fail to compile when a case is missing —
+         the bundle above is produced WITHOUT it — and vitest runs once and exits. -->
+    <Target Name="TestRuntime" DependsOnTargets="ResolveBunForRuntime">
+        <Message Text="eQuantic.UI.Runtime: bun install, tsc, vitest run (embedded bun)..." Importance="high" />
+        <Exec Command="&quot;$(_BunPath)&quot; install --frozen-lockfile" WorkingDirectory="$(MSBuildThisFileDirectory)" />
+        <Exec Command="&quot;$(_BunPath)&quot; x tsc" WorkingDirectory="$(MSBuildThisFileDirectory)" />
+        <Exec Command="&quot;$(_BunPath)&quot; x vitest run" WorkingDirectory="$(MSBuildThisFileDirectory)" />
+    </Target>
+
     <!-- Pack-time collection: include the freshly-bundled runtime.js (+ base CSS) under tools/runtime. -->
     <Target Name="CollectRuntimeBundle" DependsOnTargets="GenerateRuntimeBundle">
         <ItemGroup>

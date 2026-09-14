@@ -20,8 +20,8 @@ Title: `emoji type: description`, in English — ✨ feat · 🐛 fix · 📝 do
 
 ## Checklist
 
-- [ ] `dotnet test` on the affected test projects, and `npm run test` in `src/eQuantic.UI.Runtime` if TypeScript changed
+- [ ] `dotnet test` on the affected test projects, and `dotnet build src/eQuantic.UI.Runtime -t:TestRuntime` if TypeScript changed (the embedded Bun runs `tsc`, then `vitest run`)
 - [ ] `dotnet build samples/DefaultUIDashboard` (and `PhotonDesktop` / `WalletMobile` if the native track changed) — CI does not build the samples
 - [ ] A broken contract has a line in the migration notes (we are in preview: break freely, hide nothing)
-- [ ] Wiki pages touched in English AND Portuguese (`locale/pt-BR/<Page>-pt-BR.md`), same commit
+- [ ] Wiki pages touched in English AND Portuguese, in the same commit of the [wiki repository](https://github.com/eQuantic/equantic-ui/wiki) (the twin lives at `locale/pt-BR/<Page>-pt-BR.md` there)
 - [ ] No "widget" in prose; the project's word is *component*

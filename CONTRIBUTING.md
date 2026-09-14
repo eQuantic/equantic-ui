@@ -36,11 +36,14 @@ The samples build against the framework's **projects**, never against packages �
 [Build Flow](https://github.com/eQuantic/equantic-ui/wiki/BuildFlow). CI does not build them, so a
 change that touches the SDK, the compiler or a realizer is proved by building them locally.
 
-The TypeScript runtime has its own suite:
+The TypeScript runtime has its own suite, and the same rule holds — no Node, no npm. One MSBuild
+target runs it through the embedded Bun the build extracts, on every OS: it installs the pinned
+dependencies from `bun.lock`, type-checks with `tsc` (the check that makes an exhaustive `switch`
+fail to compile when a case is missing — the bundle is produced without it), then runs `vitest run`
+once and exits:
 
 ```bash
-cd src/eQuantic.UI.Runtime
-npm run test        # vitest — using the embedded Bun's node, no install needed
+dotnet build src/eQuantic.UI.Runtime -t:TestRuntime
 ```
 
 ## The bar
@@ -91,8 +94,10 @@ automatically and merged when the review threads are resolved and CI is green.
 
 ## Documentation
 
-The wiki is bilingual. Every page has an English canonical file and a Portuguese twin under
-`locale/pt-BR/<Page>-pt-BR.md`, edited in the **same commit**; the documentation site fails its build
+The wiki is bilingual, and it is its own repository
+([equantic-ui.wiki](https://github.com/eQuantic/equantic-ui/wiki), not a folder of this one). Every
+page has an English canonical file and a Portuguese twin under `locale/pt-BR/<Page>-pt-BR.md` there,
+edited in the **same wiki commit**; the documentation site fails its build
 when a translation is older than its canonical page. Version marks (`*Since **0.2.0-preview.N***`)
 are derived from git, never from memory. The project's word is *component* — never "widget".
 

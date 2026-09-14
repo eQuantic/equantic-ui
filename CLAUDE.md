@@ -166,19 +166,14 @@ dotnet pack --configuration Release --output nupkgs
 The TypeScript runtime is built using **embedded Bun** (bundled in platform-specific runtime packages). Bun binaries are stored as `.zip` files and auto-extracted during build.
 
 ```bash
-cd src/eQuantic.UI.Runtime
+# Type-check (tsc) and test (vitest run) the runtime through the embedded Bun — no Node, any OS.
+# The build extracts the bun itself from the sibling package for this OS and architecture
+# (src/eQuantic.UI.Runtime.<Os><Arch>/tools/bun/), and the target installs from bun.lock first.
+dotnet build src/eQuantic.UI.Runtime -t:TestRuntime
 
-# Build TypeScript runtime (using embedded Bun - auto-extracted if needed)
-# macOS:   src/eQuantic.UI.Runtime.OsxArm64 (Apple Silicon) or .Osx64 — tools/bun/bun-darwin
-# Linux:   src/eQuantic.UI.Runtime.LinuxArm64 or .Linux64 — tools/bun/bun-linux
-# Windows: src/eQuantic.UI.Runtime.WinArm64 or .Win64 — tools/bun/bun.exe
-
-# Run TypeScript tests
-npm run test           # vitest
-
-# Lint and format
-npm run lint           # eslint
-npm run format         # prettier
+# Lint and format go through the same binary, from src/eQuantic.UI.Runtime:
+#   <that bun> x eslint src --ext .ts
+#   <that bun> x prettier --write "src/**/*.{ts,json}"
 ```
 
 ### Shader Toolchain (Photon / native track)
@@ -523,7 +518,7 @@ public class BlogPostPage : StatelessComponent, IHandleMetadata
 ## Testing
 
 - **.NET Tests**: xUnit with FluentAssertions (`tests/eQuantic.UI.Compiler.Tests`, `tests/eQuantic.UI.Server.Tests`)
-- **TypeScript Tests**: Vitest (`src/eQuantic.UI.Runtime/src/**/*.spec.ts`)
+- **TypeScript Tests**: Vitest (`src/eQuantic.UI.Runtime/src/**/*.spec.ts`), run with `dotnet build src/eQuantic.UI.Runtime -t:TestRuntime`
 
 ## Version Management
 
