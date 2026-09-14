@@ -235,15 +235,22 @@ down. What cannot stand is the current answer, which is neither. Edgar's call.
   the source generator's output would resolve. `Native.Hosting` is referenced by every native app and
   is where they resolve just as well.
 
-**And one thing missing from the bottom.** `Primitives` has `EdgeInsets`, `SizeValue`, `CornerRadii`
-and no `Rect`, `Point` or `Size`: geometry lives in `Native.Engine/Geometry.cs`, ABOVE the vocabulary.
-Flutter puts `Rect`, `Offset` and `Size` in `dart:ui`, under everything. The consequences are
-measurable: `ICanvasPainter` spells every box as four floats; `Charts` carries its own `BarRect`
-with x, y, width and height spelled out, since no `Rect` is visible to it; `SemanticNode` carries a `Rect` and therefore cannot move down to
-`Primitives` — which is what keeps `SemanticRole` inside one target's assembly (section 6) and
-`Navigable`/`Overlay` mute on Photon; and `LayoutConstraints` — the constraint value #119 introduced, the one an author-facing
-`LayoutBuilder` would hand out, the gap in FLUTTER-PARITY with a consumer already blocked behind it —
-had to be born in `Native.Framework`, above the vocabulary, for want of a lower home. Moving three record structs down breaks nothing above them.
+**And one thing was missing from the bottom — it is there now.** `Primitives` had `EdgeInsets`,
+`SizeValue` and `CornerRadii` and no `Rect`, `Point` or `Size`: geometry lived in
+`Native.Engine/Geometry.cs`, ABOVE the vocabulary, where Flutter puts `Rect`, `Offset` and `Size` in
+`dart:ui`, under everything. The consequences were measurable: `ICanvasPainter` spells every box as
+four floats; `Charts` carries its own `BarRect` with x, y, width and height spelled out, since no
+`Rect` was visible to it; `SemanticNode` carries a `Rect` and therefore could not move down — which
+is what keeps `SemanticRole` inside one target's assembly (section 6) and `Navigable`/`Overlay` mute
+on Photon; and `LayoutConstraints`, the constraint value #119 introduced and the one an author-facing
+`LayoutBuilder` would hand out, had to be born in `Native.Framework` for want of a lower home.
+
+The move is done and `Geometry.cs` is a `Primitives` file. **What it cost is the finding.** Three
+edits: two `using` lines and one qualified name. Nothing above the vocabulary depended on geometry
+being up there — the placement was an accident of where the type was first needed, which is the
+shape most misplaced artifacts in this tree turn out to have. The pin is
+`FlutterParityPinTests`' `Rect` row, and it asserts by ASSEMBLY, not by name, because a name probe
+passes on a second copy and a second copy is the defect.
 
 **Folder hygiene, for the reader.** `Nodes/` holds nine files that are not nodes — `CapabilityScope`,
 `ComponentBoundary`, `ComponentInstanceStore`, `RouteValues`, `Navigator`, `IServerPrefetch`,

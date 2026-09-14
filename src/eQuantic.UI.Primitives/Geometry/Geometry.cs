@@ -1,7 +1,6 @@
 using System.Runtime.CompilerServices;
-using eQuantic.UI.Primitives;
 
-namespace eQuantic.UI.Native.Engine;
+namespace eQuantic.UI.Primitives;
 
 /// <summary>A point (or vector) in 2D space. Y grows DOWN — screen convention, used everywhere in Photon.</summary>
 public readonly record struct Point(float X, float Y)
