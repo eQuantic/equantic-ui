@@ -67,17 +67,13 @@ public class CalendarNamesFixtureTests
         }
     }
 
-    [Fact]
+    [CultureDataFact]
     public void WhatTheCalendarSays_IsPinnedForTheTwin()
     {
         var pinned = Cultures.ToDictionary(culture => culture, Snapshot);
-        var json = JsonSerializer.Serialize(pinned, new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            // The names are the point: escaping every accent and every CJK glyph would make the
-            // fixture unreadable and its diffs meaningless.
-            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-        }) + "\n";
+        // The names are the point, so the readable encoder — and LF on every host, because this
+        // file is committed and compared. See FixtureJson.
+        var json = FixtureJson.Write(pinned, FixtureJson.Readable);
 
         var path = FixturePath();
         // A pin that rewrites itself is not a pin: it would pass in CI while the twin quietly read

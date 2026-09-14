@@ -81,15 +81,27 @@ public class PrimitiveValueFixtureTests
             },
         };
 
-        var json = JsonSerializer.Serialize(pinned, new JsonSerializerOptions { WriteIndented = true });
+        var json = FixtureJson.Write(pinned);
         var path = FixturePath();
         var current = File.Exists(path) ? File.ReadAllText(path) : null;
-        if (current?.TrimEnd() == json.TrimEnd()) return;
+        if (current == json) return;
 
-        File.WriteAllText(path, json + Environment.NewLine);
+        // REGENERATE ONLY WHEN ASKED. This used to rewrite the file and pass, reasoning that the
+        // values are DERIVED from C# so a stale copy is the only way it can be wrong. True, and it
+        // misses what the fixture is FOR: it is the QUESTION vitest asks. Rewriting it silently
+        // means the new question is never asked until somebody notices a dirty working tree and
+        // commits it, and nothing makes them — the sibling pin beside this one (the exported type
+        // list) cost two types their runtime export exactly that way in 0.2.0-preview.47.
+        if (Environment.GetEnvironmentVariable("EQ_UPDATE_PRIMITIVE_VALUES") == "1")
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, json);
+            return;
+        }
+
         current.Should().NotBeNull(
-            "the fixture did not exist and has now been written — commit it and re-run");
-        // Regenerated rather than failed: the values are DERIVED from C#, which is the source. What
-        // must not drift is the TWIN's answer to them, and vitest asks that.
+            "the twin asserts against this fixture — write it once with EQ_UPDATE_PRIMITIVE_VALUES=1");
+        current.Should().Be(json,
+            "the pinned values changed; regenerate with EQ_UPDATE_PRIMITIVE_VALUES=1 and review the diff");
     }
 }

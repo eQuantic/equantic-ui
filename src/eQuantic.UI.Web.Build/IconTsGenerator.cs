@@ -1,5 +1,5 @@
-using System.Text;
 using eQuantic.UI.Primitives;
+using eQuantic.UI.Codegen;
 
 namespace eQuantic.UI.Web.Build;
 
@@ -9,7 +9,7 @@ public static class IconTsGenerator
 {
     public static string Generate()
     {
-        var ts = new StringBuilder();
+        var ts = new CodeWriter();
         ts.AppendLine("/**");
         ts.AppendLine(" * GENERATED — do not edit. Glyph path data comes from the C# IconRegistry single source.");
         ts.AppendLine(" * Regenerate: EQ_UPDATE_ICONS_TS=1 dotnet test eQuantic.UI.Web.Tests (IconTsGeneratorTests).");
