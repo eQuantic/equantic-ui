@@ -97,6 +97,33 @@ let recheckBooked = false;
 let generation = 0;
 
 /**
+ * When this watch expires, and the VIEW it was booked for — module-level because both are contracts
+ * of the correction itself, not of one code path to it.
+ *
+ * <para>
+ * The deadline lived in the deferred tick's closure, which left the other door open:
+ * `publishAnchorOffset` calls `realignColdLoad` directly on any later render pass whose measurement
+ * changed, so a background render an hour in could still correct. Expiry belongs to the shared path.
+ * </para>
+ *
+ * <para>
+ * And the VIEW matters because this runtime is a SPA. The router pushes state on the same document
+ * and applies each new fragment scroll itself; a cold-load watch still alive across a navigation
+ * would read the NEW `location.hash` and scroll to somebody else's target. The watch is for the view
+ * it was booked in and no other. Both found in review.
+ * </para>
+ */
+let deadline = 0;
+let watchedView = '';
+
+/** The part of the address that decides whether this is still the same view. */
+function currentView(): string {
+  return typeof location === 'undefined'
+    ? ''
+    : location.pathname + location.search + location.hash;
+}
+
+/**
  * A COLD load with a fragment lands the target UNDER the chrome, and this is the one place that can
  * undo it.
  *
@@ -133,6 +160,18 @@ let generation = 0;
  */
 function realignColdLoad(offset: number): void {
   if (coldLoadHandled) return;
+  // The FIRST call arms the watch: it is the moment the correction became possible, and both bounds
+  // are measured from it.
+  if (deadline === 0) {
+    deadline = now() + MaxWatchMs;
+    watchedView = currentView();
+  }
+  // Expired, or the reader has navigated somewhere else. Either way this watch is over, and
+  // retiring here covers the direct path as well as the deferred one.
+  if (now() >= deadline || currentView() !== watchedView) {
+    coldLoadHandled = true;
+    return;
+  }
   // Only a URL that ASKS for an element has anything to correct, and this is what keeps every other
   // page from booking a watch it will never use.
   if (typeof location === 'undefined' || location.hash.length <= 1) return;
@@ -214,20 +253,9 @@ function bookRecheck(): void {
   // itself, which is worse than a suite that fails. Found in review.
   const booked = generation;
   let framesLeft = FramesAfterLoad;
-  const deadline = now() + MaxWatchMs;
 
   const tick = (): void => {
     if (booked !== generation || coldLoadHandled) return;
-
-    // THE DEADLINE IS CHECKED BEFORE THE CORRECTION, not after. A tick can arrive late — rAF
-    // resuming when a background tab returns, a backstop timer the event loop got to slowly — and
-    // correcting on that tick is the yank this whole bound exists to prevent, performed by the
-    // instrument meant to stop it. Found in review, and it is the order I had said out loud in an
-    // earlier round of this same PR and then did not write.
-    if (now() >= deadline) {
-      coldLoadHandled = true;
-      return;
-    }
 
     // MEASURED AGAIN, never the number that booked this. The layout was not final — that is why we
     // are here — and the chrome is part of that layout: a bar that wraps at a narrow width, or grows
@@ -292,5 +320,7 @@ function now(): number {
 export function resetColdLoadRealignmentForTests(): void {
   coldLoadHandled = false;
   recheckBooked = false;
+  deadline = 0;
+  watchedView = '';
   generation += 1;
 }

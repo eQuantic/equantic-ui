@@ -337,13 +337,13 @@ describe('the first measurement corrects a cold load that landed under the chrom
    *
    * <para>
    * `publishAnchorOffset` runs after a pass, and a settled page has none — so on a live site the
-   * correction's second chance cannot come from another measurement. It has to ride the document's
-   * own `load`, which is the event that says the layout the browser jumped against is final. Without
-   * that, moving the one-shot flag onto the correction fixes nothing here: the page simply stays
-   * behind the header with the flag still armed and nobody left to read it.
+   * correction's second chance cannot come from another measurement. It comes from WATCHING: the
+   * jump lands in some frame and no event names which, so the window looks every frame until the
+   * target is in the band. Without that, moving the one-shot flag onto the correction fixes nothing
+   * here — the page stays behind the header with the flag still armed and nobody left to read it.
    * </para>
    */
-  it('takes its second chance from `load` when no further pass ever comes', () => {
+  it('takes its second chance from the frame window when no further pass ever comes', () => {
     stillLoading();
     const bar = chrome(64);
     const target = bookmark('rights', 3992);
@@ -361,12 +361,12 @@ describe('the first measurement corrects a cold load that landed under the chrom
   });
 
   /**
-   * And the chance is spent for good once `load` has passed, so a reader who scrolls the target
+   * And the chance is spent for good once the window closes, so a reader who scrolls the target
    * into the band later is never yanked. This is what the A/B against the plausible wrong fix
    * — "spend the flag on the correction instead of the measurement" — lands on: on its own that
    * leaves the page armed forever.
    */
-  it('is retired by `load` even when it had nothing to correct', () => {
+  it('is retired by the window even when it had nothing to correct', () => {
     stillLoading();
     const bar = chrome(64);
     const target = bookmark('rights', 3992);
@@ -692,6 +692,55 @@ describe('the first measurement corrects a cold load that landed under the chrom
     clock += 10_001;
     target.moveTo(10);
     frame();
+
+    expect(target.seen()).toBe(0);
+    bar.remove();
+  });
+
+  /**
+   * The watch belongs to the VIEW it was booked in. This runtime is a SPA: the router pushes state
+   * on the same document and applies each new fragment scroll itself, so a cold-load watch still
+   * alive across a navigation would read the NEW `location.hash` and scroll to somebody else's
+   * target. Found in review.
+   */
+  it('does not follow the reader into another view', () => {
+    stillLoading();
+    const bar = chrome(65);
+    const first = bookmark('rights', 3992);
+    window.history.replaceState(null, '', '/probe#rights');
+    publishAnchorOffset();
+    frame(2);
+    expect(first.seen()).toBe(0);
+
+    // The router navigates. A different page, a different anchor, squarely in the band.
+    const second = bookmark('liability', 0);
+    window.history.replaceState(null, '', '/terms#liability');
+    frame();
+
+    expect(second.seen()).toBe(0);
+    expect(first.seen()).toBe(0);
+    bar.remove();
+  });
+
+  /**
+   * Expiry belongs to the SHARED path, not to the deferred tick's closure. `publishAnchorOffset`
+   * calls the correction directly on any later render pass whose measurement changed, so a bound
+   * that lived only in the tick left that door open — a background render an hour in could still
+   * yank a reader. Found in review.
+   */
+  it('a later render pass cannot correct past the deadline either', () => {
+    stillLoading();
+    const bar = chrome(65);
+    const target = bookmark('rights', 3992);
+    window.history.replaceState(null, '', '/probe#rights');
+    publishAnchorOffset();
+
+    // Frames and timers are suspended for longer than the watch is allowed to live, and then a
+    // render pass changes the header height — the direct path, with no tick involved.
+    clock += 10_001;
+    target.moveTo(10);
+    bar.growTo(80);
+    publishAnchorOffset();
 
     expect(target.seen()).toBe(0);
     bar.remove();
