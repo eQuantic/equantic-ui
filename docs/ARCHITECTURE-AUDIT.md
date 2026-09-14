@@ -604,8 +604,9 @@ Worth recording, because an audit that only lists faults misleads about the whol
   and withholders alike), `HandoffVocabularyTests`, `WikiVocabularyTests`, `MarkerParityTests`,
   `LabelledNodesReachSemanticsTests`, the transpiled fixtures byte-pinned against the live compiler,
   the design-system TypeScript byte-pinned against its generator. 4,435 xUnit cases (20 skipped, none
-  failing) across ten test projects, 1,045 vitest cases across 127 specs — both counted by running
-  them at 741eb488 on 2026-09-14, the runtime's through `dotnet build src/eQuantic.UI.Runtime -t:TestRuntime`.
+  failing) across ten test projects, and 1,045 vitest cases across 127 specs. Both were counted by
+  running them at 741eb488 on 2026-09-14: `dotnet test` for the xUnit suites, and
+  `dotnet build src/eQuantic.UI.Runtime -t:TestRuntime` for the runtime's.
 - **The handoff is clean of the retired words**, as of this pass, and will fail the build the day it
   is not.
 

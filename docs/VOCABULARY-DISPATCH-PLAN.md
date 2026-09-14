@@ -4,7 +4,8 @@
 > vocabulary become one visitor per DISPATCH — one for each realizer, and two for email, whose HTML
 > and plain-text halves are two dispatches today — so that a node added to the vocabulary is a COMPILE
 > ERROR in every realizer until it is handled or declined, in code, with the reason beside it.
-> Measured on 2026-09-14 against `main` after #120; the numbers are dated by that line.
+> Measured on 2026-09-14 against `main` after #120, and re-measured the same day at 0bd46d0b (#138)
+> for the slice table and the two pin rules that S1 taught; the numbers are dated by those lines.
 
 ## The problem, in numbers
 
@@ -214,9 +215,14 @@ already writes `enums.generated.ts` and `design-system.generated.ts` from the as
   the whole suite ran instead of one filtered test — what the AppDomain holds depends on which tests
   executed first, and a pin whose answer changes with the run order is worse than the list it checks.
   `ClosedHierarchyTests` reads its set from the test's own output directory instead: every
-  `eQuantic.*.dll` there that references the vocabulary. Deterministic, and it grows with the tree on
-  its own. Every later pin of this shape — S8's replacement for the coverage pin included — states the
-  CRITERION for what it scans, and asserts that both graphs are in the result.
+  `eQuantic.*.dll` there that references the vocabulary. Independent of run order, and it grows with
+  the tree on its own — with one caveat a directory listing cannot escape: an incremental build leaves
+  behind the assembly of a project or reference that was removed, and the pin would load history. A
+  clean output has no such file; the stale-proof criterion is the test's own dependency manifest
+  (`*.deps.json`, `DependencyContext.Default`), which names exactly the assemblies of THIS build, and
+  that is the follow-up for the pin. Every later pin of this shape — S8's replacement for the coverage
+  pin included — states the CRITERION for what it scans, reads it from the build's manifest rather than
+  from a folder, and asserts that both graphs are in the result.
 - **A pin is A/B'd inside the graph it guards.** The proof that `ClosedHierarchyTests` discriminates
   was first written by declaring a stranger node in the test project, and the pin stayed green — test
   assemblies are excluded on purpose, so the A/B was never in the condition it claimed to test. Redone
