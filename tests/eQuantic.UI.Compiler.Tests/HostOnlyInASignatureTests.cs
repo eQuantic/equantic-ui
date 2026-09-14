@@ -65,6 +65,8 @@ public class HostOnlyInASignatureTests
     [InlineData("public Matrix2D Placement { get; init; }")]
     [InlineData("public RRect Corner { get; init; }")]
     [InlineData("private Matrix2D _placement;")]
+    // The visitor's unit type: a component builds a tree, it does not visit one.
+    [InlineData("public Nothing Marker { get; init; }")]
     public void AHostOnlyTypeInAComponentsShape_IsStoppedAtCompileTime(string member)
     {
         var result = Compile(member);

@@ -12,7 +12,16 @@ namespace eQuantic.UI.Primitives;
 /// </para>
 ///
 /// <para>A struct with no fields, so it costs nothing to pass and nothing to return.</para>
+///
+/// <para>
+/// HOST ONLY. A component BUILDS a tree; VISITING one is what a realizer, a layout pass or a
+/// semantics walk does, and all of those live above the page — so nothing a page can write names
+/// this. It carries the fence rather than an entry on the runtime's exception list, for the reason
+/// #135 gave: a list entry is a note saying "no page does this" where the attribute is the BUILD
+/// saying no, and the list cannot enforce the absence it describes.
+/// </para>
 /// </summary>
+[ServerOnly]
 public readonly struct Nothing
 {
     /// <summary>The one value there is.</summary>
