@@ -69,6 +69,19 @@ notes (the annotated tag's message) and the wiki's
 `main` is protected: every change arrives through a pull request, reviewed by GitHub Copilot
 automatically and merged when the review threads are resolved and CI is green.
 
+**Check that CI actually RAN before you read it as green.** The ruleset requires a review, not a
+status check, so a pull request whose workflow never started still reads mergeable — and a workflow
+whose `if:` expression does not parse fails before it creates a single job, with no log to notice.
+That happened here for an hour and seven pull requests merged on local runs alone.
+
+```bash
+scripts/ci-doctor.sh
+```
+
+It answers the two questions the pull-request page cannot: does GitHub still call the workflow `CI`
+(it falls back to the file's path when it cannot read it), and did the run for this branch create
+any jobs at all.
+
 - **Branch first**, from `main`. Never commit onto `main` locally either.
 - **Commit messages** are `emoji type: description`, in English, emoji first:
 
