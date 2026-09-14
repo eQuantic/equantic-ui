@@ -1,0 +1,32 @@
+<!doctype html>
+<!--
+  The source of assets/social-preview.png (GitHub's social preview, 1280×640). Regenerate with
+  headless Chrome from this folder — the page is static, the logo is the sibling SVG:
+
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --disable-gpu \
+      --hide-scrollbars --force-device-scale-factor=1 --window-size=1280,640 \
+      --screenshot=social-preview.png "file://$PWD/social-preview.html"
+
+  Colours are the wordmark's own: its white cut carries #ACF27F for the green, so the tagline does.
+-->
+<html><head><meta charset="utf-8"><style>
+  html, body { margin: 0; width: 1280px; height: 640px; overflow: hidden; }
+  body { background: #0b1220; color: #ffffff; position: relative;
+         font-family: -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  .bar { position: absolute; left: 0; top: 0; width: 18px; height: 640px; background: #0050a0; }
+  .logo { position: absolute; left: 84px; top: 64px; width: 690px; }
+  .tag { position: absolute; left: 88px; top: 250px; font-size: 42px; font-weight: 700; color: #acf27f; letter-spacing: -0.5px; }
+  .body { position: absolute; left: 88px; top: 318px; width: 1110px; font-size: 27px; line-height: 44px; color: #e6edf6; }
+  .rule { position: absolute; left: 88px; right: 88px; top: 478px; height: 1px; background: #1e3a5f; }
+  .foot { position: absolute; left: 88px; top: 498px; font-size: 24px; line-height: 40px; color: #94a3b8; }
+  .foot span { margin: 0 14px; }
+</style></head><body>
+  <div class="bar"></div>
+  <img class="logo" src="logo-equantic-ui-white.svg" alt="eQuantic.UI">
+  <div class="tag">One C# codebase. Real web. Real native.</div>
+  <div class="body">Write components once in C#. On the web they compile to JavaScript at build time,<br>
+    and natively they paint through Photon, a GPU engine on Metal and Vulkan.<br>
+    No JavaScript, no Swift, no platform files — one .NET SDK.</div>
+  <div class="rule"></div>
+  <div class="foot">macOS · iOS · Android · Windows · Web<br>ui.equantic.tech<span>·</span>github.com/eQuantic/equantic-ui<span>·</span>MIT</div>
+</body></html>
