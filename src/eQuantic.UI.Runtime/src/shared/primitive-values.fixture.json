@@ -8,6 +8,11 @@
     "online": false,
     "kind": "none"
   },
+  "point": {
+    "dot": 0.11000000685453415,
+    "length": 0.5,
+    "lengthFractional": 0.22360680997371674
+  },
   "rect": {
     "overlap": {
       "x": 4,

@@ -207,4 +207,17 @@ describe('Primitives value twins carry the C# values', () => {
     // THE one that separates single from double: 0.45000002 in floats, 0.45 in doubles.
     expect(grown.right).toBe(r.fractionalInflatedRight);
   });
+
+  // The two members of `Point` that carry arithmetic, which the Rect case above cannot reach — it
+  // exercises `center`, and nothing on that path multiplies or takes a root. Without these, a
+  // regression that dropped either `fround` inside `dot` or `length` stays green. Found in review.
+  it('Point does its arithmetic in the precision its subject has', () => {
+    const p = pinnedValues.point;
+
+    expect(new Point(0.1, 0.2).dot(new Point(0.3, 0.4))).toBe(p.dot);
+    // THE readable one: a 3-4-5 triangle scaled by a tenth is EXACTLY 0.5 in floats, and
+    // 0.500000011920929 in doubles.
+    expect(new Point(0.3, 0.4).length()).toBe(p.length);
+    expect(new Point(0.1, 0.2).length()).toBe(p.lengthFractional);
+  });
 });

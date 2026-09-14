@@ -51,6 +51,22 @@ public class PrimitiveValueFixtureTests
                 // The enum crosses as its wire string, so that is what the twin has to hold.
                 kind = NetworkState.Offline.Kind.ToString().ToLowerInvariant(),
             },
+            // POINT's two arithmetic members, which are the ones a `Rect` case cannot reach: a
+            // Rect pin exercises `Center`, and `Dot`/`Length` are never on that path. Both round
+            // at every step in the subject — `Dot` is two float multiplies and a float add,
+            // `Length` a float sqrt over them — so a twin that drops one `fround` answers a
+            // different number here and nowhere else.
+            //
+            // `Length` is the discriminating one to read: a 3-4-5 triangle scaled by a tenth is
+            // EXACTLY 0.5 in floats and 0.500000011920929 in doubles. Widened to double on the way
+            // out for the same reason the fractional Rect values are — .NET prints a float as its
+            // shortest round-tripping spelling, and the browser has only doubles to print.
+            point = new
+            {
+                dot = (double)new Point(0.1f, 0.2f).Dot(new Point(0.3f, 0.4f)),
+                length = (double)new Point(0.3f, 0.4f).Length(),
+                lengthFractional = (double)new Point(0.1f, 0.2f).Length(),
+            },
             // GEOMETRY, which is the twin that can drift while still loading. `Point`, `Size` and
             // `Rect` went into the vocabulary when geometry moved down, so they owe an export — and
             // an exported class with arithmetic in it is a second implementation. These are the
