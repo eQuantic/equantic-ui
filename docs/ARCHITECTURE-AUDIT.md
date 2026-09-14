@@ -38,6 +38,14 @@ accident. Both are in the solution now.
 The counts that carry no pin — lines, fields, how many times a word appears — are dated by the line
 above and will drift. They are here to SIZE a decision, not to be believed a year on.
 
+**A move makes every document that CITED the old location wrong, and the citation is what makes it
+findable.** Twice in two PRs a third document had gone stale behind a type that moved down: this one's
+own step 3 after #135, and `HANDOFF-FIDELITY-AUDIT.md` after #141, which still said `SemanticRole`
+"exists only on the native side" (corrected in place, because the finding it supported — that what a
+`Box` lacks is a NODE an author can attach, not a type — was unchanged). The sweep that catches it is
+`grep` for the old PATH or assembly name across `docs/`, not for the type: a type's name survives its
+move, its address does not.
+
 ---
 
 ## 1. The layering, as it is

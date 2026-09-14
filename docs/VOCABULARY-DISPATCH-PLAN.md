@@ -234,6 +234,19 @@ already writes `enums.generated.ts` and `design-system.generated.ts` from the as
   in the condition the fence exists for. So each slice's net includes one A/B written where the defect
   would live: a node with no `Visit` in the realizer's own assembly, not in a test's; a call through the
   concrete node, not the abstract.
+- **An assertion names every row it claims.** #141's import check was `NotContain("Matrix2D")` as a
+  literal, so the rows added for `Nothing` and `SemanticNode` proved the diagnostic — the loud half —
+  and said nothing about the import they were added for, the quiet half. It is a theory parameter
+  now, and the A/B says why that matters: removing `[ServerOnly]` from `SemanticNode` fails exactly
+  one case; before, zero. The same shape sat in the location probe, which named two of the three types
+  that moved and would have left `SemanticCheck` behind with the row green. A pin over a SET of things
+  is parameterised over the set; one literal standing for the set is the exemption list this plan
+  exists to retire, written in a different syntax.
+- **When a pin cannot be A/B'd cleanly, say which weaker thing was checked.** The location probe
+  could not be made to fail without moving a type to another assembly, so #141 pointed it at the OLD
+  assembly, watched the row fail, and wrote that down: it proves the probe reads real assemblies
+  rather than a tautology, which is less than "it discriminates" and more than nothing. A net that
+  states its own ceiling can be raised later; one that claims the full proof it did not do cannot.
 - **Output is byte-identical, by slice.** Each realizer already has the pin that says so: the web has
   `ComponentParityFixtureTests`, `PrimitiveValueFixtureTests` and `MarkerParityTests` (and
   `SurfaceSsrTests` once #121 lands — it is that PR's, not `main`'s yet);
