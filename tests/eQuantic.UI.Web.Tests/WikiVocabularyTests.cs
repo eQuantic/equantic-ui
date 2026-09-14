@@ -28,9 +28,11 @@ namespace eQuantic.UI.Web.Tests;
 /// </para>
 ///
 /// <para>
-/// The wiki is a separate repository, cloned beside this one by CI (see <c>ci.yml</c>). Where it is
-/// absent — a checkout with no wiki beside it — the test passes having checked nothing, as the two
-/// existing wiki guards do, and says so in its output.
+/// The wiki is a separate repository, cloned beside this one by CI (see <c>ci.yml</c>, where the
+/// clone is <c>continue-on-error</c>). On a developer's machine with no wiki beside the checkout the
+/// guards skip, as the two existing wiki guards do. In CI they do NOT: a missing wiki there means the
+/// clone failed, and three guards passing over nothing is exactly the silence they exist to remove —
+/// so under <c>GITHUB_ACTIONS</c> the absence is a failure that names the step.
 /// </para>
 /// </summary>
 public class WikiVocabularyTests
@@ -48,8 +50,8 @@ public class WikiVocabularyTests
             "UIOptions has no such property"),
         new("widget", new Regex(@"\bwidgets?\b", RegexOptions.IgnoreCase), "component",
             "the project's word is component; Flutter's word stays in Flutter's column, and Android's class names are Android's"),
-        new("Alt", new Regex(@"\bImage\.Alt\b|\balt:"), "Label / label:",
-            "#81 — alt is <img alt>'s word; Label is the agnostic name"),
+        new("Alt", new Regex(@"\b(Image|CameraPreview)\.Alt\b|\balt:"), "Label / label:",
+            "#81 — alt is <img alt>'s word; Label is the agnostic name, on Image and CameraPreview alike"),
         new("ZIndex", new Regex(@"\bZIndex\b"), "Layer", "#81 — z-index is CSS"),
         new("Sticky", new Regex(@"\bSticky\b"), "Pinned", "#81 — position: sticky is CSS"),
         new("Href", new Regex(@"\bHref\b"), "Destination", "119dd0c8 — href is HTML's attribute"),
@@ -93,6 +95,19 @@ public class WikiVocabularyTests
 
     private static readonly string? Wiki = LocateWiki();
 
+    /// <summary>CI clones the wiki beside the repo; a checkout without it there is a failed clone, not a choice.</summary>
+    private static readonly bool WikiExpected = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true";
+
+    /// <summary>True when the guard may skip: no wiki, and nobody promised one.</summary>
+    private static bool NoWikiHere()
+    {
+        if (Wiki is not null) return false;
+        WikiExpected.Should().BeFalse(
+            "CI clones equantic-ui.wiki beside this repository (ci.yml, 'Check out the wiki'), and it is not "
+            + "there — the clone failed, and these guards would pass having read no page");
+        return true;
+    }
+
     private static IEnumerable<string> Pages() =>
         Wiki is null
             ? []
@@ -104,7 +119,7 @@ public class WikiVocabularyTests
     [Fact]
     public void TheWikiSpeaksTheTreesCurrentNames()
     {
-        if (Wiki is null) return; // no wiki beside this checkout — see the class summary
+        if (NoWikiHere()) return;
 
         var offences = new List<string>();
         foreach (var page in Pages())
@@ -132,7 +147,7 @@ public class WikiVocabularyTests
     [Fact]
     public void NoAllowanceOutlivesTheMentionItExcuses()
     {
-        if (Wiki is null) return;
+        if (NoWikiHere()) return;
 
         var byName = Pages().ToDictionary(Path.GetFileName, StringComparer.Ordinal);
         var stale = Allowed
@@ -148,7 +163,7 @@ public class WikiVocabularyTests
     [Fact]
     public void EveryAllowance_NamesARealPageAndARealSpelling()
     {
-        if (Wiki is null) return;
+        if (NoWikiHere()) return;
 
         var pages = Pages().Select(Path.GetFileName).ToHashSet(StringComparer.Ordinal);
         Allowed.Where(a => !pages.Contains(a.Page)).Should().BeEmpty("an allowance for a page that is not in the wiki is dead prose");

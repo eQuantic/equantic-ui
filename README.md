@@ -320,7 +320,15 @@ docs/                           # The measured audits and the plans — docs/REA
 
 ## Contributing
 
-We welcome contributions! See our [Contributing Guide](CONTRIBUTING.md) for details.
+Contributions are welcome. I am especially interested in collaborating with developers who want to
+work on transpiler correctness (C# that must behave identically in .NET and in the browser), layout
+parity between the web and Photon realizers, the Photon engine itself — text shaping across CoreText,
+DirectWrite and Android's layout, the Metal and Vulkan backends, and the macOS, iOS, Android and
+Windows shells — accessibility bridges, and making the write-once contract hold on more host and
+target combinations. The [architecture audit](docs/ARCHITECTURE-AUDIT.md) ends with an order of
+attack that is also a list of open work, each item measured and sized.
+
+See the [Contributing Guide](CONTRIBUTING.md) for the mechanics.
 
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Technical Reference](CLAUDE.md)
