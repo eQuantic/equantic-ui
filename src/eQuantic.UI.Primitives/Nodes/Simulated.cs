@@ -7,9 +7,10 @@ namespace eQuantic.UI.Primitives;
 /// user pressing Enter is focused and pressed at once.
 /// </para>
 /// <para>
-/// Distinct from the (currently unused) <c>InteractionState</c> in ButtonStyles, which is exclusive
-/// and includes Disabled and Loading — those are DECLARED on the component, not observed by the
-/// host, and simulating them would be saying twice what the component already says once.
+/// Distinct from the states a component DECLARES — disabled, loading. Those are said by the
+/// component rather than observed on the host, and simulating them would be saying twice what it
+/// already says once. (This paragraph used to name an <c>InteractionState</c> enum in a
+/// <c>ButtonStyles</c> class; neither exists, and the distinction it draws does.)
 /// </para>
 /// </summary>
 [Flags]

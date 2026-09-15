@@ -37,14 +37,27 @@ public class DesignSystemTsGeneratorTests
     }
 
     [Fact]
-    public void Generator_EmitsTheSpecA12SizeTable_AsArrays()
+    public void Generator_EmitsTheSpecA12SizeTable_AsRungs()
     {
         var ts = DesignSystemTsGenerator.Generate(PhotonTheme.Instance);
 
-        // Medium row from the spec table: 40 · S4(16) · S2(8) · 15 · Dense(20) · Md(10) · 48.
-        ts.Should().Contain("case 'medium': return [40, 16, 8, 15, 20, 10, 48];");
+        // The A12 table still reaches the browser; it is no longer a seven-slot array. It was one
+        // while `ButtonStyles.metrics` existed to hand the Button's twin a tuple, and every number
+        // in it was already a `Sizing` rung — so the table is the rungs, read one at a time the way
+        // every other component reads them.
+        //
+        // The medium row from the spec, rung by rung: 40 · S4(16) · S2(8) · 15 · Dense(20) · Md(10) · 48.
+        foreach (var rung in new[] { "height", "paddingX", "gap", "labelSize", "icon", "radius", "hitTarget" })
+            ts.Should().Contain($"{rung}(", $"the A12 table reaches the browser as `Sizing.{rung}`");
+
+        ts.Should().Contain("case 'medium': return 40;");
+        ts.Should().Contain("case 'medium': return 15;");
         // XLarge is the C# switch's default arm — unknown sizes resolve the same way on both sides.
-        ts.Should().Contain("default: return [56, 24, 10, 17, 24, 14, 56];");
+        ts.Should().Contain("default: return 56;");
+
+        // The two that belong to one control rather than to the ladder, and cross with it.
+        ts.Should().Contain("buttonMinWidth: 64,");
+        ts.Should().Contain("avatarInitials(size: string): number {");
     }
 
     [Fact]

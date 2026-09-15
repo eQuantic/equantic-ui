@@ -11,7 +11,7 @@ namespace eQuantic.UI.Web.Build;
 /// (<c>src/shared/design-system.generated.ts</c>): spacing/radius/icon/touch/motion scales, the
 /// Button size table, and the full <c>PhotonTheme</c> — every value read from the C# single source
 /// (reflection over the token classes, real calls into <see cref="PhotonTheme.Instance"/> and
-/// <see cref="ButtonStyles.Metrics"/>). Hand-writing these values client-side is forbidden by the
+/// <see cref="Sizing"/>). Hand-writing these values client-side is forbidden by the
 /// same rule that governs the generated CSS; a parity test regenerates and byte-compares the
 /// committed file (<c>EQ_UPDATE_DESIGN_TS=1</c> to refresh it).
 /// </summary>
@@ -42,7 +42,6 @@ public static class DesignSystemTsGenerator
         AppendConstScale(ts, typeof(Motion), "Motion");
 
         AppendSizing(ts);
-        AppendButtonStyles(ts);
         AppendVariantColors(ts, theme);
         AppendTypeScale(ts, theme);
         AppendElevations(ts, theme);
@@ -155,22 +154,6 @@ public static class DesignSystemTsGenerator
         ts.AppendLine("};");
     }
 
-    /// <summary>The metrics tuple for every rung, at a given density.</summary>
-    private static void AppendMetricsSwitch(CodeWriter ts, Density density, string indent)
-    {
-        ts.AppendLine($"{indent}switch (size) {{");
-        foreach (var size in Enum.GetValues<SizeVariant>())
-        {
-            var (height, padX, gap, label, icon, radius, hit) = ButtonStyles.Metrics(size, density);
-            var row = $"[{Num(height)}, {Num(padX)}, {Num(gap)}, {Num(label)}, {Num(icon)}, "
-                + $"{Num(radius)}, {Num(hit)}]";
-            ts.AppendLine(size == SizeVariant.XLarge
-                ? $"{indent}  default: return {row};"
-                : $"{indent}  case '{Camel(size.ToString())}': return {row};");
-        }
-        ts.AppendLine($"{indent}}}");
-    }
-
     /// <summary>One switch over the size rungs, at a given density.</summary>
     private static void AppendSizeSwitch(CodeWriter ts, MethodInfo method, Density density, string indent)
     {
@@ -184,26 +167,6 @@ public static class DesignSystemTsGenerator
                 : $"{indent}  case '{Camel(size.ToString())}': return {value};");
         }
         ts.AppendLine($"{indent}}}");
-    }
-
-    /// <summary>The spec A12 size table, one entry per <see cref="SizeVariant"/> — emitted as the ARRAY the
-    /// transpiled tuple deconstruction (`let [height, padX, …] = ButtonStyles.metrics(size)`) expects.
-    /// The C# switch's `_` arm (XLarge) becomes the `default` case, preserving unknown-value behavior.</summary>
-    private static void AppendButtonStyles(CodeWriter ts)
-    {
-        ts.AppendLine();
-        ts.AppendLine("/** Height · PadX · Gap · Label · Icon · Radius · HitTarget — the spec A12 size table. */");
-        ts.AppendLine("export const ButtonStyles = {");
-        ts.AppendLine($"  minWidth: {Num(ButtonStyles.MinWidth)},");
-        ts.AppendLine("  metrics(size: string, density = 'comfortable'): "
-            + "[number, number, number, number, number, number, number] {");
-        // The dense branch FIRST — the comfortable switch returns, so anything after it is dead.
-        ts.AppendLine("    if (density === 'compact') {");
-        AppendMetricsSwitch(ts, Density.Compact, "      ");
-        ts.AppendLine("    }");
-        AppendMetricsSwitch(ts, Density.Comfortable, "    ");
-        ts.AppendLine("  },");
-        ts.AppendLine("};");
     }
 
     private static void AppendVariantColors(CodeWriter ts, IAppTheme theme)

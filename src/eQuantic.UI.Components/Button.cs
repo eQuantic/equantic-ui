@@ -56,7 +56,14 @@ public sealed class Button : StatelessComponent
     {
         var theme = context.Theme;
         var colors = theme.Colors(Variant);
-        var (height, padX, gap, labelSize, iconSize, _, _) = ButtonStyles.Metrics(Size, context.Density);
+        // Straight off the ladder, the way Avatar and IconButton already read it. This used to go
+        // through `ButtonStyles.Metrics`, a tuple view of these same seven calls that existed only
+        // because the Button once had two browser twins and neither could copy numbers by hand.
+        var height = Sizing.Height(Size, context.Density);
+        var padX = Sizing.PaddingX(Size, context.Density);
+        var gap = Sizing.Gap(Size);
+        var labelSize = Sizing.LabelSize(Size, context.Density);
+        var iconSize = Sizing.Icon(Size);
         // Shape is theme-driven (Material overrides the ladder): XLarge rides Large, the rest Medium.
         var radius = theme.Shape(Size == SizeVariant.XLarge ? ShapeScale.Large : ShapeScale.Medium);
 
@@ -117,7 +124,7 @@ public sealed class Button : StatelessComponent
         {
             Height = height,
             Width = Expand ? SizeValue.Fill : SizeValue.Hug,
-            MinWidth = ButtonStyles.MinWidth,
+            MinWidth = Sizing.ButtonMinWidth,
             Padding = EdgeInsets.Symmetric(padX, 0),
             Background = fill,
             CornerRadius = new CornerRadii(radius),

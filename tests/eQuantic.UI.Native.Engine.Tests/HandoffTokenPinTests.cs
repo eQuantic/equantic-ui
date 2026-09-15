@@ -412,7 +412,7 @@ public class HandoffTokenPinTests
     /// </summary>
     /// <summary>What a size publishes, and the subset density changes.</summary>
     private static readonly string[] All =
-        ["height", "padX", "gap", "labelSize", "iconSize", "radius", "hit"];
+        ["height", "padX", "gap", "labelSize", "iconSize", "radius", "hit", "avatarInitials"];
 
     private static readonly string[] DensityVaries = ["height", "padX", "labelSize", "hit"];
 
@@ -433,6 +433,11 @@ public class HandoffTokenPinTests
                 Read(compact, size, Density.Compact, $"{name}.compact", DensityVaries);
         }
 
+        // The one control number that moves with NEITHER size nor density, so it has no rung and
+        // sits beside the table instead of inside it.
+        if (Published(metrics, "buttonMinWidth", "controlMetrics.buttonMinWidth", out var minWidth))
+            Value("controlMetrics.buttonMinWidth", Sizing.ButtonMinWidth, minWidth);
+
         Settle(metrics, "controlMetrics");
 
         void Read(JsonElement want, SizeVariant size, Density density, string label, string[] keys)
@@ -441,7 +446,11 @@ public class HandoffTokenPinTests
                 ("height", Sizing.Height(size, density)), ("padX", Sizing.PaddingX(size, density)),
                 ("gap", Sizing.Gap(size)), ("labelSize", Sizing.LabelSize(size, density)),
                 ("iconSize", Sizing.Icon(size)), ("radius", Sizing.Radius(size)),
-                ("hit", Sizing.HitTarget(size, density)) })
+                ("hit", Sizing.HitTarget(size, density)),
+                // Belongs to ONE control rather than to the ladder, and published per size for the
+                // same reason the ladder is: it moves with SizeVariant, so the handoff holds it and
+                // the component does not get to invent it.
+                ("avatarInitials", Sizing.AvatarInitials(size)) })
             {
                 if (!keys.Contains(key)) continue;
                 if (Published(want, key, $"controlMetrics.{label}.{key}", out var expected))

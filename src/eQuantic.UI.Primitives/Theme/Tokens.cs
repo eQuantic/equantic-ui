@@ -100,6 +100,24 @@ public static class Sizing
         _ => 56,
     };
 
+    /// <summary>The point size of an avatar's INITIALS at each tier — the label inside the circle
+    /// <see cref="Avatar"/> sizes. Here rather than in the component for the rule the rest of this
+    /// class exists for: a number that moves with <see cref="SizeVariant"/> belongs to the ladder,
+    /// so one place answers it and the handoff pin can hold it.</summary>
+    public static float AvatarInitials(SizeVariant size) => size switch
+    {
+        SizeVariant.Small => 10,
+        SizeVariant.Medium => 13,
+        SizeVariant.Large => 16,
+        _ => 22,
+    };
+
+    /// <summary>A button hugs its label and never shrinks below this (spec A12). The one control
+    /// number that does NOT move with size or density, which is why it is a constant here instead
+    /// of a rung — it used to be the only field of a `ButtonStyles` class whose other member was a
+    /// tuple view of this ladder.</summary>
+    public const float ButtonMinWidth = 64;
+
     // ---- the SELECTION ladder (spec B10/B11) -------------------------------------------------
     // A switch, a checkbox and a radio have no size rung of their own: there is one of each, and
     // the only thing that moves it is the DENSITY of the target. These numbers used to live in

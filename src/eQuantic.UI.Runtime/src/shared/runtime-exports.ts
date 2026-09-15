@@ -113,7 +113,6 @@ export {
   Touch,
   Motion,
   Curve,
-  ButtonStyles,
   Sizing,
   photonTheme,
   PhotonTheme,

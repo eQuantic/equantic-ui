@@ -75,6 +75,14 @@ export const Sizing = {
       default: return 56;
     }
   },
+  avatarInitials(size: string): number {
+    switch (size) {
+      case 'small': return 10;
+      case 'medium': return 13;
+      case 'large': return 16;
+      default: return 22;
+    }
+  },
   gap(size: string): number {
     switch (size) {
       case 'small': return 6;
@@ -181,28 +189,8 @@ export const Sizing = {
   switchWidth(density = 'comfortable'): number {
     return density === 'compact' ? 44 : 52;
   },
+  buttonMinWidth: 64,
   switchInset: 3,
-};
-
-/** Height · PadX · Gap · Label · Icon · Radius · HitTarget — the spec A12 size table. */
-export const ButtonStyles = {
-  minWidth: 64,
-  metrics(size: string, density = 'comfortable'): [number, number, number, number, number, number, number] {
-    if (density === 'compact') {
-      switch (size) {
-        case 'small': return [26, 8, 6, 11.5, 16, 10, 26];
-        case 'medium': return [32, 12, 8, 13, 20, 10, 32];
-        case 'large': return [40, 16, 8, 14.5, 20, 10, 40];
-        default: return [48, 20, 10, 15.5, 24, 14, 48];
-      }
-    }
-    switch (size) {
-      case 'small': return [32, 12, 6, 13, 16, 10, 48];
-      case 'medium': return [40, 16, 8, 15, 20, 10, 48];
-      case 'large': return [48, 20, 8, 16, 20, 10, 48];
-      default: return [56, 24, 10, 17, 24, 14, 56];
-    }
-  },
 };
 
 const variantColors: Record<string, VariantColors> = {

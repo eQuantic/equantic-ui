@@ -29,17 +29,11 @@ public class SizingLadderTests
         Sizing.HitTarget(size).Should().Be(hit);
     }
 
-    [Theory]
-    [InlineData(SizeVariant.Small)]
-    [InlineData(SizeVariant.Medium)]
-    [InlineData(SizeVariant.Large)]
-    [InlineData(SizeVariant.XLarge)]
-    public void ButtonMetrics_ReadTheSharedLadder(SizeVariant size)
-    {
-        ButtonStyles.Metrics(size).Should().Be((Sizing.Height(size), Sizing.PaddingX(size),
-            Sizing.Gap(size), Sizing.LabelSize(size), Sizing.Icon(size), Sizing.Radius(size),
-            Sizing.HitTarget(size)));
-    }
+    // `ButtonMetrics_ReadTheSharedLadder` stood here and is deliberately not replaced. It asserted
+    // that `ButtonStyles.Metrics` returned the seven `Sizing` rungs — that the tuple view and the
+    // ladder agreed. The Button reads the rungs itself now, so there is no second place to disagree
+    // and the assertion has no way to fail. Rewriting it as `Sizing.Height(size) == Sizing.Height(size)`
+    // would keep a green test that asks nothing, which is worse than the gap it appears to leave.
 
     [Fact]
     public void Ladder_IsMonotonic()

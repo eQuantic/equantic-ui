@@ -202,23 +202,46 @@ public class SharedComponentTranspilationTests
     /// surface and must not be embedded in the runtime a consumer ships.</summary>
     private static readonly string[] Fixtures = ["SharedCounter", "NestedChild", "NestedHost"];
 
+    /// <summary>The source this asks about, kept HERE rather than pointed at a production class.
+    /// <para>
+    /// It used to read `ButtonStyles.cs`, and that class is gone — its `Metrics` was a tuple view of
+    /// seven `Sizing` rungs and its one number moved to the ladder. The rule it was proving is not
+    /// about that class and outlived it, so the subject is a source of this test's own: no
+    /// production file has to keep carrying an attribute for the compiler's behaviour to stay
+    /// asserted, and today no shared component carries it at all.
+    /// </para></summary>
+    private const string RuntimeProvidedHelperSource = """
+        using eQuantic.UI.Primitives;
+
+        namespace eQuantic.UI.Components;
+
+        [RuntimeProvided]
+        public static class PretendHelper
+        {
+            public const float Answer = 42;
+
+            public static float Twice(float value) => value * 2;
+        }
+        """;
+
     [Fact]
     public void RuntimeProvidedStaticHelper_IsNotEmittedAsSharedModule()
     {
-        var modules = TranspileSharedComponents();
-        modules.Should().NotContainKey("ButtonStyles",
+        var path = Path.Combine(RepoRoot(), "src", "eQuantic.UI.Components", "PretendHelper.cs");
+
+        var fenced = new ComponentCompiler { SymbolsAreAuthoritative = false }
+            .CompileSource(RuntimeProvidedHelperSource, path)
+            .ToList();
+        fenced.Should().NotContain(result => result.ComponentName == "PretendHelper",
             "[RuntimeProvided] static helpers are supplied by @equantic/runtime, not emitted per app");
 
-        var buttonStylesPath = Path.Combine(RepoRoot(), "src", "eQuantic.UI.Components", "ButtonStyles.cs");
-        var source = File.ReadAllText(buttonStylesPath);
-        source.Should().Contain("[RuntimeProvided]");
-
-        var withoutAttribute = source.Replace("[RuntimeProvided]", "", StringComparison.Ordinal);
+        // The A/B, and it is what makes the line above mean anything: the SAME source without the
+        // attribute IS emitted. Shape kept from the contributor's original (#148).
         var emitted = new ComponentCompiler { SymbolsAreAuthoritative = false }
-            .CompileSource(withoutAttribute, buttonStylesPath)
+            .CompileSource(RuntimeProvidedHelperSource.Replace("[RuntimeProvided]", "", StringComparison.Ordinal), path)
             .ToList();
 
-        emitted.Should().ContainSingle(result => result.ComponentName == "ButtonStyles");
+        emitted.Should().ContainSingle(result => result.ComponentName == "PretendHelper");
         emitted.Single().Success.Should().BeTrue(
             string.Join("; ", emitted.Single().Errors.Select(error => error.Message)));
     }
@@ -306,8 +329,13 @@ public class SharedComponentTranspilationTests
         // lets a component default to a constant from an assembly the bundle never ships.
         button.Should().Contain("minWidth: 64");
 
-        // The size-table tuple deconstructs as an array — the generated ButtonStyles.metrics shape.
-        button.Should().Contain("let [height, padX, gap, labelSize, iconSize, , ] = ButtonStyles.metrics(this.size, context.density)");
+        // Each rung read on its own, the way every other component reads the ladder. This asserted a
+        // seven-slot array deconstruction while `ButtonStyles.metrics` existed to hand the twin a
+        // tuple; the numbers were always these calls, and now the twin makes them.
+        button.Should().Contain("let height = Sizing.height(this.size, context.density)");
+        button.Should().Contain("let labelSize = Sizing.labelSize(this.size, context.density)");
+        button.Should().Contain("let gap = Sizing.gap(this.size)");
+        button.Should().NotContain("ButtonStyles", "the tuple view is gone, and the ladder is the surface");
         // Shape is theme-driven (Material overrides the ladder) — resolved from the enum member string.
         button.Should().Contain("theme.shape(this.size === 'xLarge' ? 'large' : 'medium')");
     }

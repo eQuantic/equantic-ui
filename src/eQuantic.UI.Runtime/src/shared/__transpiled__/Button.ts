@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, ButtonStyles, CornerRadii, EdgeInsets, Icon, Pressable, Row, SizeValue, SizeVariantValue, Spinner, StatelessComponent, StyleDiff, Text, TypeStyle, VariantValue } from "@equantic/runtime";
+import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Icon, Pressable, Row, SizeValue, SizeVariantValue, Sizing, Spinner, StatelessComponent, StyleDiff, Text, TypeStyle, VariantValue } from "@equantic/runtime";
 
 export class Button extends StatelessComponent {
     declare label: string;
@@ -33,7 +33,11 @@ export class Button extends StatelessComponent {
     build(context: BuildContext) {
         let theme = context.theme;
         let colors = theme.colors(this.variant);
-        let [height, padX, gap, labelSize, iconSize, , ] = ButtonStyles.metrics(this.size, context.density);
+        let height = Sizing.height(this.size, context.density);
+        let padX = Sizing.paddingX(this.size, context.density);
+        let gap = Sizing.gap(this.size);
+        let labelSize = Sizing.labelSize(this.size, context.density);
+        let iconSize = Sizing.icon(this.size);
         let radius = theme.shape(this.size === 'xLarge' ? 'large' : 'medium');
         if (this.variant === 'link') padX = 6;
         let fill = ((this.variant === 'outline' || this.variant === 'ghost') || this.variant === 'link') ? null : colors.base;

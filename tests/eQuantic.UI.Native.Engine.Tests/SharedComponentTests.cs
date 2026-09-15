@@ -48,7 +48,7 @@ public class SharedComponentTests
         var node = LayoutEngine.Layout(button, 400, 300, Layout);
         var laidBox = node.Children[0].Children[0]; // component → pressable → box
         laidBox.Bounds.Height.Should().Be(height);
-        laidBox.Bounds.Width.Should().BeGreaterThanOrEqualTo(ButtonStyles.MinWidth);
+        laidBox.Bounds.Width.Should().BeGreaterThanOrEqualTo(Sizing.ButtonMinWidth);
     }
 
     [Fact]

@@ -49,14 +49,9 @@ public sealed class Avatar : StatelessComponent
     {
         var theme = context.Theme;
         var side = Sizing.Avatar(Size);
-        // Initials scale with the tier: 10/13/16/22 at 600 (derived — the spec pins only the sides).
-        var labelSize = Size switch
-        {
-            SizeVariant.Small => 10f,
-            SizeVariant.Medium => 13f,
-            SizeVariant.Large => 16f,
-            _ => 22f,
-        };
+        // Off the ladder, like the side above it: a number that moves with SizeVariant does not
+        // live in a component, or the handoff cannot hold it and two components can disagree.
+        var labelSize = Sizing.AvatarInitials(Size);
 
         if (ImageSource is { } source)
         {

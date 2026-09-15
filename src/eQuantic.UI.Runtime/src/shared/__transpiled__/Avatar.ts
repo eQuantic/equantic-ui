@@ -24,7 +24,7 @@ export class Avatar extends StatelessComponent {
     build(context: BuildContext) {
         let theme = context.theme;
         let side = Sizing.avatar(this.size);
-        let labelSize = (() => { const _s = this.size; if (_s === 'small') return 10; if (_s === 'medium') return 13; if (_s === 'large') return 16; return 22; })();
+        let labelSize = Sizing.avatarInitials(this.size);
         let source: any; 
         if ((source = this.imageSource) != null) {
             let photo = new Image(source, side, side, 'cover', this.name ?? this.initials, { cornerRadius: new CornerRadii(theme.shape('full')) });
