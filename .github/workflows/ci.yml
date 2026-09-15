@@ -424,10 +424,107 @@ jobs:
           exit $status
 
 
+  # NOTHING HERE HAD EVER BUILT A MOBILE APP.
+  #
+  # `build-packages` builds the iOS and Android SHELLS, which are libraries. `gate-templates`
+  # scaffolds and builds the native template, which is `net10.0` — desktop. So no job, on any
+  # branch and on any tag, ever produced an .app or an .apk, and every build check that only fires
+  # for an app bundle went unexercised: the Xcode version comparison this commit turns off is one
+  # of them, and it was found by a developer on their own machine rather than here.
+  #
+  # The samples are the consumers that exist — web, desktop, and the mobile one with all three
+  # target frameworks — so they are what the pipe can build to make "it works on my machine" say
+  # something about anyone else's. Debug, because that is the configuration a developer runs and
+  # the one `IsEQuanticDevMode` wires to project references.
+  samples:
+    needs: build-runtime
+    # macOS is the only runner that can build every target framework the samples declare: ios and
+    # android need workloads that install on a Mac, and the desktop head needs CoreGraphics.
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # Beside a source tree `runtime.js` is the Runtime project's own dist/, which the graph
+      # regenerates with the embedded bun. Taking the artifact means that work happens once.
+      - name: Download Runtime Build
+        uses: actions/download-artifact@v4
+        with:
+          name: runtime-build
+          path: src/eQuantic.UI.Runtime/dist/
+
+      - name: Install mobile workloads (the samples' ios and android heads)
+        run: dotnet workload install ios android
+
+      - name: Build every sample
+        shell: bash
+        run: |
+          set -uo pipefail
+          # EVERY sample reports and the step fails at the END, for the reason the Test steps give:
+          # stopping at the first red one turns an unknown number of failures into a report of one.
+          # Sorted, because `find` returns filesystem order. Process substitution rather than a
+          # pipe, so the loop body is not a subshell and `status` survives it.
+          status=0
+          built=0
+          failed=""
+          while IFS= read -r sample; do
+            echo "::group::$sample"
+            built=$((built + 1))
+            dotnet build "$sample" || {
+              status=1
+              failed="$failed$sample"$'\n'
+            }
+            echo "::endgroup::"
+          done < <(find samples -name "*.csproj" | sort)
+
+          # An empty list is not a pass: a renamed folder and this step is green having built
+          # nothing, which is the silence it exists to break.
+          if [ "$built" -eq 0 ]; then
+            echo "::error::Found no sample projects under samples/. That is not a green build."
+            exit 1
+          fi
+          echo "Built $built samples on ${{ runner.os }}."
+
+          if [ "$status" -ne 0 ]; then
+            echo "::error::These samples failed to build:"
+            printf '%s' "$failed"
+          fi
+          exit $status
+
+      # Exit 0 is not the proof. A mobile target framework exists to produce a BUNDLE, and the
+      # build checks worth exercising here are precisely the ones that only run when one is
+      # produced. So read the artifact back: derived from what the build wrote, never a list of
+      # paths kept in this file, and counted — a tree with no mobile sample left would otherwise
+      # pass this having proved nothing at all.
+      - name: The mobile heads produced bundles
+        shell: bash
+        run: |
+          set -uo pipefail
+          # obj/ is pruned, not filtered: the iOS codesign step stages a second copy of the whole
+          # bin/ tree under it, and counting that one would mean the count survives deleting the
+          # real output.
+          bundles=$(find samples -name obj -prune \
+                              -o -path "*/bin/*-ios/*" -name "*.app" -print \
+                              -o -path "*/bin/*-android/*" -name "*.apk" -print | sort)
+          printf '%s\n' "$bundles"
+          app=$(printf '%s\n' "$bundles" | grep -c '\.app$' || true)
+          apk=$(printf '%s\n' "$bundles" | grep -c '\.apk$' || true)
+          if [ "$app" -lt 1 ] || [ "$apk" -lt 1 ]; then
+            echo "::error::the samples left $app iOS bundle(s) and $apk Android package(s) behind; expected at least one of each"
+            exit 1
+          fi
+          echo "iOS bundles: $app, Android packages: $apk."
+
+
   # GitHub Packages is a convenience feed for every main push — a light ubuntu job so the heavy
   # macOS build job never dies on the upload (exit 137).
   publish-github:
-    needs: [build-packages, gate-templates, test]
+    needs: [build-packages, gate-templates, test, samples]
     # The cross-OS suite is a GATE, not a report: `needs.test` below. Without it a red Linux or
     # Windows leg sat beside a green macOS build and the packages published anyway — coverage that
     # cannot stop anything is a comment with a check's authority.
@@ -455,11 +552,16 @@ jobs:
     # the defect that job was added for. The note lives ABOVE the expression because `#` inside a
     # GitHub expression is not a comment: it is a parse error that fails the whole workflow before
     # any job starts, which is how main's CI broke for every branch at once.
+    #
+    # `needs.samples` is in it for the same reason and no other: the samples are the only place an
+    # app bundle is ever built, so a feed that publishes past a red one is publishing an SDK nobody
+    # has watched compile an app.
     if: |
       always()
       && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
       && needs.build-packages.result == 'success'
       && needs.test.result == 'success'
+      && needs.samples.result == 'success'
       && (needs.gate-templates.result == 'success' || needs.gate-templates.result == 'skipped')
     runs-on: ubuntu-latest
     permissions:
@@ -493,7 +595,7 @@ jobs:
   # scaffold and BUILD (and on the web template, PUBLISH) against the exact packages being
   # released. The native template gates on macOS only (its icon pipeline needs CoreGraphics).
   gate-templates:
-    needs: [build-packages, test]
+    needs: [build-packages, test, samples]
     # `refs/tags/v` matches by PREFIX, so any tag beginning with v enters here — the extension's
     # releases are tagged `ext-v*` for exactly that reason.
     if: startsWith(github.ref, 'refs/tags/v')
