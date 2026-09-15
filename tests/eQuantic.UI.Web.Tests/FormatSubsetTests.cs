@@ -159,16 +159,28 @@ public class FormatSubsetTests
         File.Exists(FixturePath).Should().BeTrue(
             "the twin reads this sample — generate it once with EQ_UPDATE_FORMAT_FIXTURE=1");
 
-        // Key, never value — and the CULTURE row is all value: its fields are the culture's own
-        // patterns, which is the very data that differs per host (`en-US`'s long time pattern is
-        // `h:mm:ss tt` on macOS and `h:mm tt` on the Windows runner). What is ours there is that
-        // the row exists for the culture at all. Every other row ends in the formatted value, so
-        // dropping the last field leaves the culture, the input and the specifier — the subset.
+        // Drop the host's data and NOTHING else.
+        //
+        // The `culture` row's `|`-separated fields are the culture's own PATTERNS, which is the
+        // data that differs per host — `en-US`'s long time pattern is `h:mm:ss tt` on macOS and
+        // `h:mm tt` on the Windows runner. Its HEAD is not: the culture's name, and the ISO
+        // currency code the client is sent, which every ICU spells the same. So the head stays and
+        // only the patterns go.
+        //
+        // The `inv` rows stay WHOLE. They are formatted against the invariant culture, which is
+        // .NET's own and not the machine's, and they are the half of the subset this pin can still
+        // compare by value — dropping them would have left the invariant contract to the vitest
+        // side alone. Every other row ends in a culture-formatted value, so its last field goes.
         static IEnumerable<string> Keys(string dump) => dump
             .Split('\n', StringSplitOptions.RemoveEmptyEntries)
-            .Select(line => line.StartsWith("culture ", StringComparison.Ordinal)
-                ? string.Concat("culture ", line.AsSpan("culture ".Length).ToString().Split(' ')[0])
-                : string.Join('|', line.Split('|').SkipLast(1)));
+            .Select(line => line switch
+            {
+                _ when line.StartsWith("culture ", StringComparison.Ordinal) =>
+                    line.Split('|')[0],
+                _ when line.StartsWith("inv|", StringComparison.Ordinal) =>
+                    line,
+                _ => string.Join('|', line.Split('|').SkipLast(1)),
+            });
 
         Keys(File.ReadAllText(FixturePath)).Should().BeEquivalentTo(Keys(Dump()),
             "the subset changed — regenerate with EQ_UPDATE_FORMAT_FIXTURE=1, or drop the case "

@@ -81,18 +81,27 @@ public class PrimitiveValueFixtureTests
             },
         };
 
-        var json = FixtureJson.Write(pinned).TrimEnd('\n');
+        var json = FixtureJson.Write(pinned);
         var path = FixturePath();
-        var current = File.Exists(path) ? File.ReadAllText(path) : null;
-        if (current?.TrimEnd() == json.TrimEnd()) return;
 
-        // LF, not the host's: this file is COMMITTED and compared byte for byte, so a
-            // Windows regeneration would rewrite every line ending and fail the pin
-            // on the next host that read it.
-            File.WriteAllText(path, json + "\n");
-        current.Should().NotBeNull(
-            "the fixture did not exist and has now been written — commit it and re-run");
-        // Regenerated rather than failed: the values are DERIVED from C#, which is the source. What
-        // must not drift is the TWIN's answer to them, and vitest asks that.
+        // Behind the env var, like every other fixture here — and unlike what this test used to
+        // do, which was to REWRITE the file on any ordinary run and pass. The values are derived
+        // from C#, so regenerating them is cheap and that made it look harmless; it is not. Vitest
+        // reads this same file in another process, so a changed primitive updated the QUESTION
+        // before the twin was ever asked the old one, and the diff nobody had to look at is the
+        // one that would have said so. `PrimitivesRuntimeExportTests` beside it already asked for
+        // the variable.
+        if (Environment.GetEnvironmentVariable("EQ_UPDATE_PRIMITIVE_VALUES") == "1")
+        {
+            File.WriteAllText(path, json);
+            return;
+        }
+
+        File.Exists(path).Should().BeTrue(
+            "the twin asserts against this fixture — write it with EQ_UPDATE_PRIMITIVE_VALUES=1 "
+            + "and commit it");
+        File.ReadAllText(path).Should().Be(json,
+            "a primitive's value changed — regenerate with EQ_UPDATE_PRIMITIVE_VALUES=1 and commit "
+            + "the fixture WITH the change that caused it, so the twin is asked the new question");
     }
 }
