@@ -71,8 +71,85 @@
         console when there is one, so `dotnet run` still prints. Opt out (a tool that wants a real
         console beside its window) with <EQuanticConsole>true</EQuanticConsole>.
     -->
+    <!--
+        WHICH DEVICE THIS IS, asked where the answer exists.
+
+        Sdk.props asks the same question at line 51, and for the ordinary shape of a mobile app it
+        cannot know: `.props` is imported ABOVE the project body, so `<TargetFramework>net10.0-ios
+        </TargetFramework>` has not been set yet and the platform reads as EMPTY. It is only a global
+        property — known that early — for `-f` and for the inner build of a multi-target project,
+        which is why this repository never saw it: WalletMobile is multi-target and the native
+        template is desktop-only.
+
+        Measured on a single-target `net10.0-ios` app before this line existed: platform empty, so
+        `_EqMacHead` below turned TRUE and an iPhone app was packaged as a macOS head.
+
+        So the question is asked again here, after the body, and only when props could not answer.
+        A shape that props DID answer keeps that answer, so nothing that builds today changes.
+    -->
+    <PropertyGroup Condition="'$(_EqPlatform)' == '' AND '$(TargetFramework)' != ''">
+        <_EqPlatform>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</_EqPlatform>
+    </PropertyGroup>
+
+    <!--
+        The platform MINIMUMS, here rather than in Sdk.props for a reason worth knowing once: MSBuild
+        evaluates every property before it evaluates any item, so the ITEMS up there conditioned on
+        the platform read the answer this file just wrote — but a PROPERTY only ever sees what was
+        assigned above its own line. Left in Sdk.props these two read an empty platform for a
+        single-target app and never fired, and the app silently took the iOS SDK's own default:
+        measured at 26.5, an app that refuses to install on anything older than the SDK it was built
+        with. An app that names its own minimum still wins.
+    -->
+    <!-- 15.0 is where CAMetalLayer, safe-area insets and MTLBinaryArchive are all present. -->
+    <PropertyGroup Condition="'$(_EqPlatform)' == 'ios' AND '$(SupportedOSPlatformVersion)' == ''">
+        <SupportedOSPlatformVersion>15.0</SupportedOSPlatformVersion>
+    </PropertyGroup>
+
+    <!-- 26 is where adaptive icons, the Choreographer's frame callback and Vulkan all arrived. -->
+    <PropertyGroup Condition="'$(_EqPlatform)' == 'android' AND '$(SupportedOSPlatformVersion)' == ''">
+        <SupportedOSPlatformVersion>26</SupportedOSPlatformVersion>
+    </PropertyGroup>
+
+    <!-- And WHICH desktop, for the head with no target platform at all — the same reason and the
+         same place. The references that read it live in Sdk.props, which is safe: every property is
+         evaluated before any item, so the ItemGroups there see what this writes. -->
+    <PropertyGroup Condition="'$(_EqPlatform)' == ''">
+        <_EqDesktopShell Condition="'$(_EqDesktopShell)' == '' AND $([MSBuild]::IsOSPlatform('Windows'))">Windows</_EqDesktopShell>
+        <_EqDesktopShell Condition="'$(_EqDesktopShell)' == ''">MacOS</_EqDesktopShell>
+    </PropertyGroup>
+
     <PropertyGroup Condition="'$(_EqPlatform)' == '' AND '$(OutputType)' == 'Exe' AND '$(EQuanticConsole)' != 'true' AND $([MSBuild]::IsOSPlatform('Windows'))">
         <OutputType>WinExe</OutputType>
+    </PropertyGroup>
+
+    <!--
+        The SDK does not dictate which Xcode the developer has.
+
+        .NET for iOS fails the build (E0191) unless the installed Xcode's MAJOR.MINOR equals the
+        one its SDK pack recommends: pack 26.5 demands Xcode 26.6 exactly, so Xcode 27.0 is an
+        error and so would 26.5 be. That is a version comparison, not a capability check — nothing
+        was asked of the toolchain and nothing failed.
+
+        Measured: this repository's own two environments already disagree. A developer machine on
+        macOS 26.6.2 carries Xcode 27.0, and the macos-26 runner carries the Xcode its image ships;
+        both have the 26.5 and 27.0 packs installed. With the check on, an app builds on one and
+        refuses on the other, for no reason either of them can act on.
+
+        Telling the app author to install a second Xcode is the shape this product rules out: a
+        platform artifact they never asked for, to satisfy a check about a platform detail the SDK
+        already resolved. It stays a decision they can take back — setting the property in their own
+        csproj wins, because this only fills it in when it is empty.
+
+        What this does NOT do is silence a real failure: a toolchain that genuinely cannot build
+        still fails, with the error from the thing that failed rather than from a comparison.
+
+        HERE and not in Sdk.props, and that is the whole reason this reaches every app: asked up
+        there, the platform is empty for a single-target iOS app and the check stayed ON for the
+        ordinary shape of the very thing this turns off. See the note above this file's own platform
+        question, which is what this condition reads.
+    -->
+    <PropertyGroup Condition="'$(_EqPlatform)' == 'ios' AND '$(ValidateXcodeVersion)' == ''">
+        <ValidateXcodeVersion>false</ValidateXcodeVersion>
     </PropertyGroup>
 
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />

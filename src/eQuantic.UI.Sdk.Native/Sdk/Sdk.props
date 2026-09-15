@@ -67,40 +67,9 @@
         <EQuanticUIVersion>*-*</EQuanticUIVersion>
     </PropertyGroup>
 
-    <!-- 15.0 is where CAMetalLayer, safe-area insets and MTLBinaryArchive are all present. -->
-    <PropertyGroup Condition="'$(_EqPlatform)' == 'ios' AND '$(SupportedOSPlatformVersion)' == ''">
-        <SupportedOSPlatformVersion>15.0</SupportedOSPlatformVersion>
-    </PropertyGroup>
-
-    <!--
-        The SDK does not dictate which Xcode the developer has.
-
-        .NET for iOS fails the build (E0191) unless the installed Xcode's MAJOR.MINOR equals the
-        one its SDK pack recommends: pack 26.5 demands Xcode 26.6 exactly, so Xcode 27.0 is an
-        error and so would 26.5 be. That is a version comparison, not a capability check — nothing
-        was asked of the toolchain and nothing failed.
-
-        Measured: this repository's own two environments already disagree. A developer machine on
-        macOS 26.6.2 carries Xcode 27.0, and the macos-26 runner carries the Xcode its image ships;
-        both have the 26.5 and 27.0 packs installed. With the check on, an app builds on one and
-        refuses on the other, for no reason either of them can act on.
-
-        Telling the app author to install a second Xcode is the shape this product rules out: a
-        platform artifact they never asked for, to satisfy a check about a platform detail the SDK
-        already resolved. It stays a decision they can take back — setting the property in their own
-        csproj wins, because this only fills it in when it is empty.
-
-        What this does NOT do is silence a real failure: a toolchain that genuinely cannot build
-        still fails, with the error from the thing that failed rather than from a comparison.
-    -->
-    <PropertyGroup Condition="'$(_EqPlatform)' == 'ios' AND '$(ValidateXcodeVersion)' == ''">
-        <ValidateXcodeVersion>false</ValidateXcodeVersion>
-    </PropertyGroup>
-
-    <!-- 26 is where adaptive icons, the Choreographer's frame callback and Vulkan all arrived. -->
-    <PropertyGroup Condition="'$(_EqPlatform)' == 'android' AND '$(SupportedOSPlatformVersion)' == ''">
-        <SupportedOSPlatformVersion>26</SupportedOSPlatformVersion>
-    </PropertyGroup>
+    <!-- The platform MINIMUMS live in Sdk.targets, beside the question they depend on: which device
+         this is cannot be answered up here for a single-target app, and a PROPERTY reads the answer
+         that exists when its own line is evaluated, unlike the items below. -->
 
     <!--
         The generator that writes the other half of the app's Program: the entry point where the
@@ -249,10 +218,9 @@
          written down here is the trimmer roots further on, which is a list of what must SURVIVE and
          reads nothing like a list of what is included. A consumer session had to settle this by
          listing a bin directory; that is one round-trip this comment costs nothing to save. -->
-    <PropertyGroup Condition="'$(_EqPlatform)' == ''">
-        <_EqDesktopShell Condition="'$(_EqDesktopShell)' == '' AND $([MSBuild]::IsOSPlatform('Windows'))">Windows</_EqDesktopShell>
-        <_EqDesktopShell Condition="'$(_EqDesktopShell)' == ''">MacOS</_EqDesktopShell>
-    </PropertyGroup>
+    <!-- WHICH desktop is chosen in Sdk.targets, beside the platform question: asked here it would
+         also answer for an iPhone, because up here a single-target mobile app still looks like a
+         desktop one. The items below read it safely — every property is evaluated before any item. -->
     <ItemGroup Condition="'$(_EqPlatform)' == '' AND '$(IsEQuanticDevMode)' == 'true'">
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Native.Shell.$(_EqDesktopShell)\eQuantic.UI.Native.Shell.$(_EqDesktopShell).csproj" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Native.Engine.Reference\eQuantic.UI.Native.Engine.Reference.csproj" />
