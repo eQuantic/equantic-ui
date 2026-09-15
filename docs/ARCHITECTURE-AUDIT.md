@@ -271,9 +271,9 @@ down. What cannot stand is the current answer, which is neither. Edgar's call.
 **And one thing was missing from the bottom — it is there now.** `Primitives` had `EdgeInsets`,
 `SizeValue` and `CornerRadii` and no `Rect`, `Point` or `Size`: geometry lived in
 `Native.Engine/Geometry.cs`, ABOVE the vocabulary, where Flutter puts `Rect`, `Offset` and `Size` in
-`dart:ui`, under everything. The consequences were measurable: `ICanvasPainter` spells every box as
-four floats; `Charts` carries its own `BarRect` with x, y, width and height spelled out, since no
-`Rect` was visible to it; `SemanticNode` carries a `Rect` and therefore could not move down, which
+`dart:ui`, under everything. The consequences were measurable: `ICanvasPainter` spelled every box as
+four floats; `Charts` carried its own `BarRect` with x, y, width and height spelled out, since no
+`Rect` was visible to it — both fixed once the move made a `Rect` reachable; `SemanticNode` carries a `Rect` and therefore could not move down, which
 kept `SemanticRole` inside one target's assembly (section 6) — that one is unblocked and done, and
 what it did NOT unblock is recorded there; and `LayoutConstraints`, the constraint value #119 introduced and the one an author-facing
 `LayoutBuilder` would hand out, had to be born in `Native.Framework` for want of a lower home.

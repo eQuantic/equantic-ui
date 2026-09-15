@@ -1673,7 +1673,7 @@ function lowerCanvas(node: CanvasNodeValue, path: string): HtmlNode {
   // A FIXED canvas knows its box here, so it draws once and SSR carries the final picture. A
   // FILLING one does not — CSS decides its box after this markup exists — so it is DECLARED and
   // drawn again the moment the element has been measured (see canvas-surface). Drawing it now at
-  // zero would put every `p.Size.Width / 2` in the top-left corner and leave it there.
+  // zero would put every `p.size.width / 2` in the top-left corner and leave it there.
   const painter = new DomCanvasPainter(width, height);
   if (measured) node.draw(painter);
   else declareCanvas(path, { draw: node.draw });
