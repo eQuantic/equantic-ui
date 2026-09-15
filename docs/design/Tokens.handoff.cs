@@ -62,8 +62,8 @@ public enum Variant : byte
 public enum SizeVariant { Small, Medium, Large, XLarge }
 
 /// <summary>How tight controls are — a property of the TARGET, never of the call site (v1.1 audit).
-/// Touch keeps the §08 hit contract; pointer tightens chrome. Threads through Sizing.* and
-/// ButtonStyles.Metrics; components read context.Density.</summary>
+/// Touch keeps the §08 hit contract; pointer tightens chrome. Threads through Sizing.*;
+/// components read context.Density.</summary>
 public enum Density : byte { Comfortable = 0, Compact = 1 }
 
 public enum TypeRole : byte
@@ -226,14 +226,6 @@ public static class Sizing
             : s == SizeVariant.XLarge ? 56 : Touch.MinTarget;
 }
 
-/// <summary>A named-tuple view over Sizing — the same seven values in one call.</summary>
-public static class ButtonStyles
-{
-    public static (float Height, float PadX, float Gap, float LabelSize, float IconSize, float Radius, float Hit)
-        Metrics(SizeVariant s, Density density = Density.Comfortable) => (
-            Sizing.Height(s, density), Sizing.PaddingX(s, density), Sizing.Gap(s), Sizing.LabelSize(s, density),
-            Sizing.Icon(s), Sizing.Radius(s), Sizing.HitTarget(s, density));
-}
 
 // ─── Theme ───────────────────────────────────────────────────────────────────
 

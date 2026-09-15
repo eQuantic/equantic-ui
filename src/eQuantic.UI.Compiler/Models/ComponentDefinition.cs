@@ -128,8 +128,8 @@ public class ComponentDefinition
 
     /// <summary>
     /// Simple names of referenced types the RUNTIME provides (today: the shared vocabulary in
-    /// <c>eQuantic.UI.Primitives</c> — Box/Row/Text/…, tokens — and the shared component libraries,
-    /// including ButtonStyles). Discovered per file via the semantic model (namespace-based, no fixed
+    /// <c>eQuantic.UI.Primitives</c> — Box/Row/Text/…, tokens — and the shared component libraries).
+    /// Discovered per file via the semantic model (namespace-based, no fixed
     /// list), excluding enums (they lower to string literals).
     /// The emitter imports these from <c>@equantic/runtime</c> instead of <c>./&lt;Type&gt;</c> modules.
     /// </summary>

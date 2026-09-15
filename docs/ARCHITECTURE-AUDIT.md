@@ -301,7 +301,7 @@ that are hard to check by eye, and the four shapes above are the lines to split 
 | `Vector/` | 1,365 | 13 | SVG parsing and vector drawings |
 | `Sheet/` | 1,050 | 12 | a spreadsheet's document, controller, history, TSV codec |
 | `Forms/` | 438 | 5 | form model and controller |
-| `Contracts/`, `Text/`, `Layout/`, `Styles/`, root | 566 | 19 | attributes, culture seams, `EdgeInsets`/`SizeValue`, `ButtonStyles`, `Color` |
+| `Contracts/`, `Text/`, `Layout/`, `Styles/`, root | 566 | 19 | attributes, culture seams, `EdgeInsets`/`SizeValue`, `Color` |
 
 **Twenty-seven percent of the vocabulary assembly is two editors' models.** `Code/` and `Sheet/`
 together are 3,350 lines and 48 public types, in the assembly whose stated contents are "abstract
@@ -317,8 +317,8 @@ down. What cannot stand is the current answer, which is neither. Edgar's call.
 
 **Three more that belong a layer up or out**, each small:
 
-- `Styles/ButtonStyles.cs` — a component's style resolver, used by `Button` and the TypeScript
-  design-system generator. Flutter keeps `ButtonStyle` in `material`. → `Components`.
+- ~~`Styles/ButtonStyles.cs`~~ — gone. It was a tuple view of seven `Sizing` rungs plus
+  `MinWidth`; the Button reads the rungs directly and the number is `Sizing.ButtonMinWidth`.
 - `Theme/PaletteAudit.cs` — 346 lines of WCAG arithmetic that validates a `DataPalette`. Used by
   `DataPalette.Default` and by tests; shipped in every browser bundle and every AOT image. → tests,
   or an analyzer.
@@ -743,7 +743,7 @@ makes the rest safe.
 4. **Node shapes**: a `SingleChildNode` base (Flutter: `SingleChildRenderObjectWidget`), the wrapper
    set and the node-intrinsic questions hoisted onto the vocabulary, `VisualNode.cs` split along the
    four shapes. — M
-5. **The Primitives diet**: `ButtonStyles` → `Components`; `PaletteAudit` → tests or an analyzer;
+5. **The Primitives diet**: ~~`ButtonStyles` → `Components`~~ (it is gone instead); `PaletteAudit` → tests or an analyzer;
    `Photon*` attributes → `Native.Hosting`; `Navigator.Go(href)` → `destination`; `Nodes/` holds
    nodes. And Edgar's decision on the editor models (Flutter: controllers in `widgets`). — S, plus a
    decision
@@ -806,3 +806,5 @@ other prevents nothing: the compiler skips a `[RuntimeProvided]` static helper w
 which travels with the file and so belongs in the contributor's PR. The lesson is this document's: an
 item of the order of attack that moves a type across the transpiler's boundary is measured against
 the TRANSPILED set too, not against its C# callers alone.
+
+**Closed, and the class with it.** #148 landed both halves — the move with the attribute, and the parser skip. The change after it removed the class entirely: `Metrics` was a tuple view of seven `Sizing` rungs and `MinWidth` was its one number, so the Button reads the rungs like every other component and the number is `Sizing.ButtonMinWidth`. Read the present tense above as the state when it was written — nothing named `ButtonStyles` is in the tree. The parser skip stays: it is right in general, and it is the half the next `[RuntimeProvided]` helper will need.
