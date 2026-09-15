@@ -60,6 +60,16 @@ if [ -z "$run" ]; then
   exit 1
 fi
 
+# The run's STATE, read with the job count and not after it. A run creates its jobs as they are
+# scheduled, so one that has just started reports two — the entry jobs, before anything `needs` them
+# — and a count-only reading calls that "ok". Measured on main right after the fix merged: `ok …
+# created 2 jobs` about a run whose eleven were still queued. The count answers "did this workflow
+# start", which is the question here; it does not answer "did it finish", and the script must not
+# sound like it did.
+read -r state result <<EOF
+$(gh api "repos/$REPO/actions/runs/$run" --jq '"\(.status) \(.conclusion // "-")"')
+EOF
+
 count=$(gh api "repos/$REPO/actions/runs/$run/jobs" --jq '.jobs | length')
 if [ "$count" -eq 0 ]; then
   echo "CI DID NOT RUN: run $run exists for $SHA and created ZERO jobs."
@@ -68,11 +78,18 @@ if [ "$count" -eq 0 ]; then
   exit 1
 fi
 
+# What the run is DOING is part of every answer below, because "created N jobs" alone reads as a
+# verdict on a run that may still be deciding.
+case "$state" in
+  completed) doing="$result" ;;
+  *)         doing="$state, not finished — this says the workflow STARTED, nothing about the result" ;;
+esac
+
 if [ "$broken_name" -eq 1 ]; then
-  echo "ok HERE, BROKEN THERE: run $run on $SHA created $count jobs, so the workflow on this commit"
-  echo "  is fine — and the repository still registers the default branch's broken copy. That is"
-  echo "  what a fix looks like before it merges. Merge it, then run this again on main."
+  echo "ok HERE, BROKEN THERE: run $run on $SHA created $count jobs ($doing), so the workflow on this"
+  echo "  commit is fine — and the repository still registers the default branch's broken copy. That"
+  echo "  is what a fix looks like before it merges. Merge it, then run this again on main."
   exit 1
 fi
 
-echo "ok: workflow is 'CI'; run $run on $SHA created $count jobs."
+echo "ok: workflow is 'CI'; run $run on $SHA created $count jobs ($doing)."
