@@ -39,6 +39,8 @@ public class EnumStrategy : IConversionStrategy
         // and the member-access fallback reports it instead.
         if (!context.CanGuess(node)) return false;
         var expr = memberAccess.Expression.ToString();
+        if (context.IsFallbackTypeReceiver(expr)) return false;
+
         bool isPascalCase = !expr.Contains('.') &&
                            !expr.StartsWith("this.") &&
                            expr.Length > 0 &&

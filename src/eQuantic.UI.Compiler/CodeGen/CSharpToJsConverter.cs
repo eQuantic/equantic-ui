@@ -67,6 +67,12 @@ public class CSharpToJsConverter
         _context.CurrentClassName = className;
     }
 
+    public void SetFallbackTypeReceivers(IReadOnlySet<string> staticTypes, IReadOnlySet<string> runtimeTypes)
+    {
+        _context.FallbackStaticTypes = staticTypes;
+        _context.FallbackRuntimeTypes = runtimeTypes;
+    }
+
     /// <summary>Names the array an ITERATOR method is filling — null outside one.</summary>
     public void SetIteratorBuffer(string? buffer)
     {
