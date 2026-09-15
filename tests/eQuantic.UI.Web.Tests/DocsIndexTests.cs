@@ -24,11 +24,20 @@ public class DocsIndexTests
 {
     /// <summary>
     /// An inline Markdown link's destination: <c>[text](path)</c>, <c>[text](path "title")</c> or
-    /// <c>[text](&lt;path with spaces&gt;)</c>; not a URL, a fragment or a mailbox.
+    /// <c>[text](&lt;path with spaces&gt;)</c>; not a URL, a fragment or a mailbox. Reference-style
+    /// links resolve through their definition, which <see cref="ReferenceDefinition"/> reads.
     /// </summary>
     private static readonly Regex LinkDestination = new(
         @"\]\(\s*(?:<(?<angle>[^>]*)>|(?<bare>(?!https?://|#|mailto:)[^)\s]+))(?:\s+""[^""]*""|\s+'[^']*')?\s*\)",
         RegexOptions.Compiled);
+
+    /// <summary>
+    /// A reference-style link's definition, <c>[id]: path</c> or <c>[id]: &lt;path&gt;</c>, at the start of a
+    /// line; every <c>[text][id]</c> in the file points here, so the definition is the link to check.
+    /// </summary>
+    private static readonly Regex ReferenceDefinition = new(
+        @"^ {0,3}\[[^\]]+\]:\s*(?:<(?<angle>[^>]*)>|(?<bare>\S+))",
+        RegexOptions.Compiled | RegexOptions.Multiline);
 
     /// <summary>A path to a Markdown file cited in backticks — it has a separator, so it locates rather than names.</summary>
     private static readonly Regex BacktickPath = new(
@@ -52,8 +61,9 @@ public class DocsIndexTests
             .OrderBy(f => f, StringComparer.Ordinal);
 
     private static IEnumerable<string> LinkTargets(string markdown) =>
-        LinkDestination.Matches(markdown)
+        LinkDestination.Matches(markdown).Concat(ReferenceDefinition.Matches(markdown))
             .Select(m => m.Groups["angle"].Success ? m.Groups["angle"].Value : m.Groups["bare"].Value)
+            .Where(t => !Regex.IsMatch(t, @"^(https?://|mailto:|#)"))
             .Select(t => t.Split('#')[0])
             .Where(t => t.Length > 0);
 
