@@ -44,9 +44,11 @@ public class AFenceNobodyAppliesTests
     [Fact]
     public void EveryCustomFactInTheTree_IsAppliedSomewhere()
     {
-        // `class FooFactAttribute : FactAttribute` / `: TheoryAttribute`, however it is spaced.
+        // The declaration, qualified or not: `class FooFactAttribute : FactAttribute`,
+        // `: TheoryAttribute`, `: Xunit.FactAttribute`.
         var declaration = new Regex(
-            @"class\s+(?<name>\w+?)Attribute\s*:\s*(Fact|Theory)Attribute", RegexOptions.Compiled);
+            @"class\s+(?<name>\w+?)Attribute\s*:\s*(\w+\.)*(Fact|Theory)Attribute",
+            RegexOptions.Compiled);
 
         var declared = new Dictionary<string, string>(StringComparer.Ordinal);
         var text = new List<string>();
@@ -62,9 +64,18 @@ public class AFenceNobodyAppliesTests
             "the tree has custom Facts (MacFact, WindowsFact, MacFontFact) — finding none means this "
             + "guard stopped matching the declaration and is now passing over an empty set");
 
+        // An APPLICATION, matched as a token in an attribute list rather than as two spellings.
+        // C# lets the same attribute be written `[MacFact]`, `[MacFactAttribute]`, either with
+        // arguments, with whitespace inside the brackets, and beside others in one list —
+        // `[Trait("os", "mac"), MacFact]`. The first version of this guard looked for `[Name]` and
+        // `[Name(` and would have called every other form unused, which is the failure it was
+        // written to catch, in the guard itself. Found in review.
+        //
+        // So: opened by `[` or `,`, the name, the optional `Attribute` suffix C# allows, and closed
+        // by `]`, `(` or the comma before the next one.
         var unapplied = declared
-            .Where(entry => !text.Any(source => source.Contains($"[{entry.Key}]", StringComparison.Ordinal)
-                || source.Contains($"[{entry.Key}(", StringComparison.Ordinal)))
+            .Where(entry => !text.Any(source => Regex.IsMatch(
+                source, $@"[\[,]\s*{Regex.Escape(entry.Key)}(Attribute)?\s*[\]\(,]")))
             .Select(entry => $"{entry.Key} ({entry.Value})")
             .OrderBy(name => name, StringComparer.Ordinal)
             .ToList();
