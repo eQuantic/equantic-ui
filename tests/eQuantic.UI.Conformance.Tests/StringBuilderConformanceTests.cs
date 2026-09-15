@@ -39,10 +39,11 @@ public class StringBuilderConformanceTests
     ///
     /// <para>
     /// Folded on both sides, so a translation defect still fails. What this does NOT do is make the
-    /// divergence go away: a page using these produces `\n` in the browser and `\r\n` from a
-    /// Windows-hosted server's SSR pass, which the reconciler sees as a text mismatch at hydration.
-    /// The fix is a product decision — fence the no-argument forms, or make the server honour the
-    /// SDK's newline — and it is open.
+    /// divergence go away. WHERE it shows was measured, not assumed — see
+    /// <see cref="ConformanceRunner.AssertSameAsDotNetExceptTheHostsNewline"/>: a browser folds CR LF in
+    /// markup before the DOM exists, so a Windows-hosted server's SSR hydrates clean, and what differs
+    /// is DATA carried to the client in a payload. The product answer under discussion is the SDK
+    /// normalising its own strings to `\n`; it is open.
     /// </para>
     /// </summary>
     [SkippableTheory]
