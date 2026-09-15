@@ -208,6 +208,20 @@ describe('Primitives value twins carry the C# values', () => {
     expect(grown.right).toBe(r.fractionalInflatedRight);
   });
 
+  // PARAMETERS, the third place the rule lands. A `float` parameter is rounded at the CALL on the
+  // C# side, so `right - left` there subtracts two singles; the twin is handed doubles and has to
+  // round them before subtracting, not just round the result. Found in review — the fields and the
+  // arithmetic steps had already been fixed, and the argument had not.
+  it('Rect rounds its arguments the way a float parameter is rounded at the call', () => {
+    const r = pinnedValues.rect;
+    const corners = (box: Rect) => ({ x: box.x, y: box.y, width: box.width, height: box.height });
+
+    expect(corners(Rect.fromLTRB(0.1, 0.2, 0.3, 0.7))).toEqual(r.fractionalFromLTRB);
+    // The readable one: inflating by exactly the x it sits at lands on ZERO, and on 1.49e-09 if
+    // the amount was never rounded.
+    expect(corners(new Rect(0.1, 0.2, 0.3, 0.4).inflate(0.1))).toEqual(r.fractionalInflatedByItsOwnX);
+  });
+
   // The two members of `Point` that carry arithmetic, which the Rect case above cannot reach — it
   // exercises `center`, and nothing on that path multiplies or takes a root. Without these, a
   // regression that dropped either `fround` inside `dot` or `length` stays green. Found in review.

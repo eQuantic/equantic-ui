@@ -208,7 +208,14 @@ export class Rect {
   }
 
   static fromLTRB(left: number, top: number, right: number, bottom: number): Rect {
-    return new Rect(left, top, f(right - left), f(bottom - top));
+    // A `float` PARAMETER is storage too, and that is the half this twin was missing: on the C#
+    // side the four arguments are already single precision before `right - left` runs, because the
+    // conversion happens at the call. Here they arrive as doubles, so the subtraction has to see
+    // the rounded values — rounding only the result gives a different width for fractional input.
+    // Found in review, after the same rule had already been applied to fields and to each step.
+    const l = f(left);
+    const t = f(top);
+    return new Rect(l, t, f(f(right) - l), f(f(bottom) - t));
   }
 
   get left(): number {
@@ -248,11 +255,14 @@ export class Rect {
 
   /** Grows the box by `amount` on every side; a negative amount insets it. */
   inflate(amount: number): Rect {
+    // `amount` is a `float` parameter in the subject, so it is rounded before any of this runs —
+    // see `fromLTRB`. The fields are already single precision; only the argument was not.
+    const by = f(amount);
     return new Rect(
-      f(this.x - amount),
-      f(this.y - amount),
-      f(this.width + f(amount * 2)),
-      f(this.height + f(amount * 2)),
+      f(this.x - by),
+      f(this.y - by),
+      f(this.width + f(by * 2)),
+      f(this.height + f(by * 2)),
     );
   }
 }

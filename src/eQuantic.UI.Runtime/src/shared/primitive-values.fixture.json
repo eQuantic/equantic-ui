@@ -64,7 +64,19 @@
       "width": 0.4000000059604645,
       "height": 0.5
     },
-    "fractionalInflatedRight": 0.45000001788139343
+    "fractionalInflatedRight": 0.45000001788139343,
+    "fractionalFromLTRB": {
+      "x": 0.10000000149011612,
+      "y": 0.20000000298023224,
+      "width": 0.20000001788139343,
+      "height": 0.5
+    },
+    "fractionalInflatedByItsOwnX": {
+      "x": 0,
+      "y": 0.10000000149011612,
+      "width": 0.5,
+      "height": 0.6000000238418579
+    }
   },
   "windowSizeClasses": {
     "mediumMinDp": 600,

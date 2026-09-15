@@ -108,6 +108,15 @@ public class PrimitiveValueFixtureTests
                 },
                 fractionalInflated = WideCorners(new Rect(0.1f, 0.2f, 0.3f, 0.4f).Inflate(0.05f)),
                 fractionalInflatedRight = (double)new Rect(0.1f, 0.2f, 0.3f, 0.4f).Inflate(0.05f).Right,
+                // PARAMETERS, which is the third place this rule lands and the one a twin forgets:
+                // these arguments are single precision BEFORE `right - left` runs, because C# does
+                // the conversion at the call. A twin that takes doubles and rounds only the result
+                // answers a different width. Discriminating on purpose — with 0.1 and 0.3 the two
+                // orders differ in the last bit.
+                fractionalFromLTRB = WideCorners(Rect.FromLTRB(0.1f, 0.2f, 0.3f, 0.7f)),
+                // The readable one: inflating by exactly the x it sits at lands on ZERO in floats,
+                // and on 1.49e-09 if the amount was never rounded.
+                fractionalInflatedByItsOwnX = WideCorners(new Rect(0.1f, 0.2f, 0.3f, 0.4f).Inflate(0.1f)),
             },
             windowSizeClasses = new
             {
