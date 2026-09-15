@@ -124,11 +124,11 @@ The raw-HTML/CSS escape hatch (`HtmlElement`, `ClassBuilder`) stays for web-only
 - **Phase 1 — Transpiler correctness & conformance** *(linchpin)* — **✅ essentially complete**:
   supported-subset spec, fail-on-unsupported diagnostics, conformance harness (emitted JS via
   Bun vs .NET) all in place; remaining polish is the in-browser source-map smoke test.
-  → see `docs/IMPLEMENTATION-PLAN.md`.
+  → the plan is retired into `docs/LEDGER.md` (2026-06 entries).
 - **Phase 2 — Client router** — **✅ complete**: navigation without reload, typed route params, persistent
   layout (reconcile-on-navigate), route guards, `<Link>` with hover/focus prefetch, route-based
   code-splitting, scroll restoration. Demonstrated end-to-end by `samples/DefaultUIDashboard`.
-  → see `docs/PHASE-2-CLIENT-ROUTER-PLAN.md`.
+  → the plan is retired into `docs/LEDGER.md` (2026-06 entries).
 - **Phase 3 — Hot reload with state preservation** — **✅ complete on both targets**: the web
   replays page state over a mounted tree (`HotReloadService`, an SSE channel with ping and
   reconnect) and the native side applies in-process under `dotnet watch` (`PhotonHotReload`, with
@@ -277,8 +277,8 @@ on save) · **E2** inspection (click-to-select, highlight, component tree view, 
 · **E3** property panel with two-way C# editing · **E4** full visual editing (insert/move/delete
 from the component palette).
 
-**Started 2026-08-14** → full plan, with the measurements and the corrected premises:
-`docs/VSCODE-VISUAL-EDITOR-PLAN.md`. E1 goes further than "auto-reload on save": the design host
+**Started 2026-08-14** → the plan, with the measurements and the corrected premises, is retired into
+`docs/LEDGER.md` (phases 0–18 done; the click-to-select tiers are #215). E1 goes further than "auto-reload on save": the design host
 (`src/eQuantic.UI.Design`, `eqdesign`) compiles the **unsaved editor buffer** in-process, measured at
 **p50 293 ms** on the 662-line `PaymentsPage` with the full 316-assembly reference set, so nothing in
 the loop touches MSBuild or the filesystem. Landed with it: the `equantic.refs.txt` truncation that

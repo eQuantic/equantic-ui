@@ -1,6 +1,6 @@
 # eQuantic.UI Native — Proprietary GPU Engine Plan (codename: "Photon")
 
-> Track N of the wiki's roadmap (a parallel track, independent of web Phases 3–7). Same shape as the
+> Track N of `ROADMAP.md` (a parallel track, independent of web Phases 3–7). Same shape as the
 > retired client-router plan (`docs/LEDGER.md`): why → decisions → architecture → workstreams →
 > milestones → risks → exit criteria.
 >

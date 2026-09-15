@@ -660,8 +660,9 @@ removed, and what it found for the next one:
   [#214](https://github.com/eQuantic/equantic-ui/issues/214).
 - **Two plans referenced a roadmap that is not in `docs/`.** `IMPLEMENTATION-PLAN.md` and
   `PHASE-2-CLIENT-ROUTER-PLAN.md` (untouched since 2026-06-10, both marked complete in their own
-  status lines) pointed at `ROADMAP.md`; the roadmap lives in the wiki. Finished plans are history,
-  and history is git's — both were retired into `LEDGER.md` on 2026-09-15 with the three other
+  status lines) pointed at `ROADMAP.md`, which is at the repository root (with a twin page in the
+  wiki), not in `docs/` — this bullet said "lives in the wiki" until it was measured. Finished plans
+  are history, and history is git's — both were retired into `LEDGER.md` on 2026-09-15 with the three other
   finished plans (Track D, the pickers, the visual editor), and what each still owed became an
   issue.
 - **`docs/design/Tokens.handoff.cs` is a third voice.** The README keeps it "for comparison"; no test

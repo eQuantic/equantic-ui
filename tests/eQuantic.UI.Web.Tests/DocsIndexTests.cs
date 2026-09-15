@@ -5,38 +5,73 @@ namespace eQuantic.UI.Web.Tests;
 
 /// <summary>
 /// <c>docs/README.md</c> is the index of <c>docs/</c>: every document at the top of the folder has a
-/// row in it, and every local link in every document there resolves to something that exists.
+/// row in it. And every citation of a Markdown file by PATH — a link, or a path in backticks — in
+/// the repository's own Markdown (the root, <c>.github/</c>, <c>docs/</c>) resolves to something
+/// that exists.
 /// <para>
-/// Both failures were real on 2026-09-15. Nine finished plans were retired into <c>LEDGER.md</c>,
-/// and three other documents cited them by path — a citation that still reads well and points at
-/// nothing. And a document can be added without a row, where a reader never finds it. A move stales
-/// every citation of the old path; this is the instrument that says so, instead of a grep someone
-/// remembers to run.
+/// Both failures were real on 2026-09-15. Nine finished plans were retired into <c>LEDGER.md</c>;
+/// the index kept nine rows pointing at them, three documents in <c>docs/</c> cited them, and the
+/// root <c>ROADMAP.md</c> cited three of them in backticks — a citation that still reads well and
+/// points at nothing, which a grep run by hand had missed. A move stales every citation of the old
+/// path; this is the instrument that says so.
+/// </para>
+/// <para>
+/// A path locates; a bare file name mentions. <c>`docs/LEDGER.md`</c> is checked, <c>`LEDGER.md`</c>
+/// in prose is not — the ledger's own table of retired documents names them, and must be allowed to.
 /// </para>
 /// </summary>
 public class DocsIndexTests
 {
-    /// <summary>A Markdown link whose target is a path, not a URL, a fragment or a mailbox.</summary>
-    private static readonly Regex LocalLink =
-        new(@"\]\(((?!https?://|#|mailto:)[^)\s]+)\)", RegexOptions.Compiled);
+    /// <summary>
+    /// An inline Markdown link's destination: <c>[text](path)</c>, <c>[text](path "title")</c> or
+    /// <c>[text](&lt;path with spaces&gt;)</c>; not a URL, a fragment or a mailbox.
+    /// </summary>
+    private static readonly Regex LinkDestination = new(
+        @"\]\(\s*(?:<(?<angle>[^>]*)>|(?<bare>(?!https?://|#|mailto:)[^)\s]+))(?:\s+""[^""]*""|\s+'[^']*')?\s*\)",
+        RegexOptions.Compiled);
 
-    private static string Docs()
+    /// <summary>A path to a Markdown file cited in backticks — it has a separator, so it locates rather than names.</summary>
+    private static readonly Regex BacktickPath = new(
+        @"`(?<path>[^`\s<>]*/[^`\s<>]*\.md)(?:[:#][^`]*)?`",
+        RegexOptions.Compiled);
+
+    private static string Root()
     {
         var here = new DirectoryInfo(AppContext.BaseDirectory);
         while (here is not null && !Directory.Exists(Path.Combine(here.FullName, "src", "eQuantic.UI.Runtime")))
             here = here.Parent;
         here.Should().NotBeNull("the suite runs inside the repository, whose root holds src/eQuantic.UI.Runtime");
-        return Path.Combine(here!.FullName, "docs");
+        return here!.FullName;
     }
 
-    private static IEnumerable<string> Targets(string markdown) =>
-        LocalLink.Matches(markdown).Select(m => m.Groups[1].Value.Split('#')[0]).Where(t => t.Length > 0);
+    /// <summary>The repository's own Markdown: the root, <c>.github/</c> and <c>docs/</c>, recursively.</summary>
+    private static IEnumerable<string> RepositoryMarkdown(string root) =>
+        Directory.GetFiles(root, "*.md")
+            .Concat(Directory.GetFiles(Path.Combine(root, ".github"), "*.md", SearchOption.AllDirectories))
+            .Concat(Directory.GetFiles(Path.Combine(root, "docs"), "*.md", SearchOption.AllDirectories))
+            .OrderBy(f => f, StringComparer.Ordinal);
+
+    private static IEnumerable<string> LinkTargets(string markdown) =>
+        LinkDestination.Matches(markdown)
+            .Select(m => m.Groups["angle"].Success ? m.Groups["angle"].Value : m.Groups["bare"].Value)
+            .Select(t => t.Split('#')[0])
+            .Where(t => t.Length > 0);
+
+    private static IEnumerable<string> Citations(string markdown) =>
+        LinkTargets(markdown)
+            .Concat(BacktickPath.Matches(markdown).Select(m => m.Groups["path"].Value))
+            .Distinct(StringComparer.Ordinal);
+
+    /// <summary>Relative to the citing file, or to the repository root — `docs/X.md` is written from inside docs/ too.</summary>
+    private static bool Resolves(string citation, string fileDirectory, string root) =>
+        new[] { Path.Combine(fileDirectory, citation), Path.Combine(root, citation) }
+            .Any(p => File.Exists(p) || Directory.Exists(p));
 
     [Fact]
     public void Every_document_at_the_top_of_docs_has_a_row_in_the_index()
     {
-        var docs = Docs();
-        var indexed = Targets(File.ReadAllText(Path.Combine(docs, "README.md"))).ToHashSet(StringComparer.Ordinal);
+        var docs = Path.Combine(Root(), "docs");
+        var indexed = LinkTargets(File.ReadAllText(Path.Combine(docs, "README.md"))).ToHashSet(StringComparer.Ordinal);
 
         var unindexed = Directory.GetFiles(docs, "*.md")
             .Select(Path.GetFileName)
@@ -44,26 +79,27 @@ public class DocsIndexTests
             .OrderBy(name => name, StringComparer.Ordinal)
             .ToList();
 
-        unindexed.Should().BeEmpty(
+        // Joined, so the failure names every one of them rather than the first.
+        string.Join(Environment.NewLine, unindexed).Should().BeEmpty(
             "every document at the top of docs/ is a row of docs/README.md — add the row, or retire the document into LEDGER.md");
     }
 
     [Fact]
-    public void Every_local_link_in_docs_resolves()
+    public void Every_path_citation_of_a_markdown_file_resolves()
     {
-        var docs = Docs();
+        var root = Root();
         var dangling = new List<string>();
-        foreach (var file in Directory.GetFiles(docs, "*.md").OrderBy(f => f, StringComparer.Ordinal))
+        foreach (var file in RepositoryMarkdown(root))
         {
-            foreach (var target in Targets(File.ReadAllText(file)).Distinct())
+            var directory = Path.GetDirectoryName(file)!;
+            foreach (var citation in Citations(File.ReadAllText(file)))
             {
-                var path = Path.Combine(docs, target);
-                if (!File.Exists(path) && !Directory.Exists(path))
-                    dangling.Add($"{Path.GetFileName(file)} → {target}");
+                if (!Resolves(citation, directory, root))
+                    dangling.Add($"{Path.GetRelativePath(root, file)} → {citation}");
             }
         }
 
-        dangling.Should().BeEmpty(
-            "a link in docs/ names a path that is not there; a retired or moved document takes its citations with it");
+        string.Join(Environment.NewLine, dangling).Should().BeEmpty(
+            "a link or a backtick path in the repository's Markdown names a file that is not there; a retired or moved document takes its citations with it");
     }
 }
