@@ -26,6 +26,18 @@
              comments that exist are the point, not blanket coverage. -->
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <NoWarn>$(NoWarn);CS1591</NoWarn>
+
+        <!-- The tree built with ~170 warnings nobody had ever read, because every build command in
+             this repo and its CI greps for `error`. They were not cosmetic: an Android API-30 call
+             under an API-29 guard, two unguarded calls that would throw on any device below 28, an
+             iOS override promising non-null where UIKit passes null, a doc comment left on a method
+             that had moved, and a test that set a flag it never asserted. Each of those printed on
+             every build for months.
+
+             A warning nobody reads is not a warning, so the build fails on one. That is also what
+             a consumer building the SDK from source inherits — equantic-code took on 71 of these
+             and lost the zero-warning bar it was holding, which is how they were noticed at all. -->
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     </PropertyGroup>
 
     <ItemGroup>

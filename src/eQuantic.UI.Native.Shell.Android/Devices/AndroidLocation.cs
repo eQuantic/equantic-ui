@@ -25,7 +25,7 @@ internal sealed class AndroidLocation : ILocation
         get
         {
             if (Manager is not { } manager) return false;
-            return Build.VERSION.SdkInt >= BuildVersionCodes.P
+            return OperatingSystem.IsAndroidVersionAtLeast(28)
                 ? manager.IsLocationEnabled
                 : manager.IsProviderEnabled(LocationManager.GpsProvider)
                     || manager.IsProviderEnabled(LocationManager.NetworkProvider);

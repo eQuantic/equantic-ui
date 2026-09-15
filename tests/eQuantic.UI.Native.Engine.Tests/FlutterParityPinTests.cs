@@ -160,7 +160,9 @@ public class FlutterParityPinTests
         ["CustomMultiChildLayout"] = () => Nothing("MultiChildLayoutDelegate", "LayoutDelegate"),
         ["CustomSingleChildLayout"] = () => Nothing("SingleChildLayoutDelegate"),
         ["RenderBox"] = () => Nothing("RenderBox"),
-        ["CustomPaint"] = () => Has("Canvas") && HasMember("ICanvasPainter", "Width"),
+        // The painter's own extent is a `Size` now, not two floats — the shape Flutter hands a
+        // CustomPainter. The probe named `Width`, so it had to be revisited when that went.
+        ["CustomPaint"] = () => Has("Canvas") && HasMember("ICanvasPainter", "Size"),
         ["Canvas"] = () => Nothing("FragmentProgram", "FragmentShader"),
         // The cut is reported (MaxLines exists, MeasuredLine.Ellipsized is written); no neutral type owns the mark.
         ["TextOverflow.ellipsis"] = () => HasMember("Text", "MaxLines") && Nothing("TextOverflow", "TextPainter"),

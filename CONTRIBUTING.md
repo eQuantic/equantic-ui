@@ -36,6 +36,20 @@ The samples build against the framework's **projects**, never against packages �
 [Build Flow](https://github.com/eQuantic/equantic-ui/wiki/BuildFlow). CI does not build them, so a
 change that touches the SDK, the compiler or a realizer is proved by building them locally.
 
+**The build has no warnings, and fails on one.** `TreatWarningsAsErrors` is set in
+`Directory.Build.props`, so a warning is a broken build rather than a line nobody reads — which is
+what it had been: the tree shipped ~170 of them, and the only person who ever read one was a
+consumer building the SDK from source. Where a rule genuinely does not apply, silence it at the
+narrowest scope that works (`NoWarn`, or `WarningsNotAsErrors` to demote it while it keeps
+printing), always beside a comment naming the rule and the reason. Two are repo-wide and say why
+where they are declared: `CS1591` in `Directory.Build.props`, and `NU5128` in
+`Directory.Build.targets`, conditioned to the packages that ship no assembly by design. This lists
+every one of them:
+
+```bash
+grep -rn "NoWarn\|WarningsNotAsErrors" --include="*.csproj" --include="*.props" --include="*.targets" .
+```
+
 The TypeScript runtime has its own suite, and the same rule holds — no Node, no npm. One MSBuild
 target runs it through the embedded Bun the build extracts, on every OS: it installs the pinned
 dependencies from `bun.lock`, type-checks with `tsc` (the check that makes an exhaustive `switch`

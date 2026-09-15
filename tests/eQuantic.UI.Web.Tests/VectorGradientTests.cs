@@ -84,7 +84,7 @@ public class VectorGradientTests
 
         container.Attributes["id"].Should().Be("eq-vectors");
         container.Attributes["aria-hidden"].Should().Be("true");
-        var style = container.Attributes.TryGetValue("style", out var value) ? value : string.Empty;
+        var style = container.Attributes.GetValueOrDefault("style") ?? string.Empty;
         style.Replace(" ", string.Empty).Should().Contain("position:absolute")
             .And.NotContain("display:none",
             "a paint server that is not rendered paints nothing — that is the bug, not the fix");

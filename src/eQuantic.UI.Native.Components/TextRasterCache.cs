@@ -17,10 +17,18 @@ public sealed class TextRasterCache
 
     private readonly Dictionary<(string Content, TypeStyle Style, float TypeScale, float MaxWidth, int MaxLines, float Scale, TextAlignment Align), Entry?> _entries = new();
 
+    /// <param name="Texture">The A8 coverage the draw command samples.</param>
     /// <param name="PadTop">Device pixels of ink ABOVE the line box (see <see cref="TextRaster"/>)
     /// — the draw rect rises by this much so the line box lands where layout put it.</param>
     public sealed record Entry(TextureData Texture, int PadTop = 0);
 
+    /// <param name="rasterizer">The platform text service that produces the raster on a miss.</param>
+    /// <param name="content">The text to raster, which is part of the key.</param>
+    /// <param name="style">The face it is drawn in — part of the key, since it changes the pixels.</param>
+    /// <param name="typeScale">The Dynamic Type multiplier in force, part of the key.</param>
+    /// <param name="maxWidth">The wrapping width in dp, rounded into the key.</param>
+    /// <param name="maxLines">The line cap before ellipsis, part of the key.</param>
+    /// <param name="scale">Device pixels per dp, part of the key.</param>
     /// <param name="align">Part of the KEY, not a detail of the draw: alignment changes the pixels
     /// (a centred block is as wide as its box and the short lines sit further in), so two
     /// alignments of one string are two rasters. Left out of the key, the first one drawn would be

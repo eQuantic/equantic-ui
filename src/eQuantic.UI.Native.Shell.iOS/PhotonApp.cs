@@ -19,6 +19,8 @@ public static class PhotonApp
     private static int _maxFrames;
     private static bool _smoothScroll = true;
 
+    /// <param name="args">The process arguments, as the platform handed them over.</param>
+    /// <param name="theme">The app's theme, which every measurement and every paint reads.</param>
     /// <param name="root">
     /// Built AFTER UIKit is up, not before: a tree constructed at process start would measure text
     /// through a font stack that is not loaded yet.
@@ -42,7 +44,7 @@ public static class PhotonApp
     {
         public override UIWindow? Window { get; set; }
 
-        public override bool FinishedLaunching(UIApplication application, NSDictionary launchOptions)
+        public override bool FinishedLaunching(UIApplication application, NSDictionary? launchOptions)
         {
             Window = new UIWindow(UIScreen.MainScreen.Bounds)
             {

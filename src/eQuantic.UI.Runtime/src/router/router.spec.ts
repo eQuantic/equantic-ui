@@ -43,6 +43,18 @@ describe('matchPattern / matchRoute', () => {
     expect(matchPattern('/users/{id}', '/users/a%20b')).toEqual({ id: 'a b' });
   });
 
+  // A captured segment named `__proto__` is swallowed by the setter on a plain `{}` rather than
+  // stored, which is why this record is built with no prototype. The RouteValues specs cover their
+  // own copy of that guard and would stay green if this one regressed — two fixes, and this is the
+  // one nothing was asking about. Follow-up from #137's review.
+  it('a captured parameter named __proto__ is captured like any other', () => {
+    const captured = matchPattern('/docs/{__proto__}', '/docs/x');
+
+    expect(captured).not.toBeNull();
+    expect(Object.prototype.hasOwnProperty.call(captured!, '__proto__')).toBe(true);
+    expect(captured!['__proto__']).toBe('x');
+  });
+
   it('returns null for unknown / wrong-arity paths', () => {
     expect(matchRoute(routes, '/missing')).toBeNull();
     expect(matchRoute(routes, '/users/1/extra')).toBeNull();

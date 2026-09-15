@@ -17,21 +17,26 @@ namespace eQuantic.UI.Primitives;
 /// </summary>
 public interface ICanvasPainter
 {
-    /// <summary>The box this canvas was given — width and height in device-independent points.</summary>
-    float Width { get; }
+    // A BOX is a `Rect` and a POINT is a `Point`, because the vocabulary has words for both and an
+    // API that spells them as four floats makes those words decorative. It also lets a caller hand
+    // over a box it already HAS — a layout result, a hit region — instead of unpacking it into
+    // arguments and hoping the order survives. Flutter's canvas reads the same way
+    // (`drawRect(Rect, Paint)`, `drawCircle(Offset, …)`, `drawLine(Offset, Offset, …)`), which is
+    // the question this repository asks first.
 
-    /// <summary>The box's height.</summary>
-    float Height { get; }
+    /// <summary>The box this canvas was given, in device-independent points. Its origin is always
+    /// (0, 0) — a canvas draws in its OWN coordinates — so it is a <see cref="Size"/> and not a
+    /// <see cref="Rect"/>, which is also the shape Flutter hands a <c>CustomPainter</c>.</summary>
+    Size Size { get; }
 
     /// <summary>A filled rectangle, optionally rounded.</summary>
-    void FillRect(float x, float y, float width, float height, ColorToken color, float cornerRadius = 0);
+    void FillRect(Rect box, ColorToken color, float cornerRadius = 0);
 
     /// <summary>A rectangle's outline, drawn inside its bounds like every border in the framework.</summary>
-    void StrokeRect(float x, float y, float width, float height, ColorToken color, float strokeWidth,
-        float cornerRadius = 0);
+    void StrokeRect(Rect box, ColorToken color, float strokeWidth, float cornerRadius = 0);
 
     /// <summary>A filled circle.</summary>
-    void FillCircle(float centerX, float centerY, float radius, ColorToken color);
+    void FillCircle(Point center, float radius, ColorToken color);
 
     /// <summary>
     /// A filled ring segment — the shape a sunburst, a donut gauge or a ring selection is made of.
@@ -46,12 +51,12 @@ public interface ICanvasPainter
     /// shape inverts.
     /// </para>
     /// </summary>
-    void FillAnnularSector(float centerX, float centerY, float innerRadius, float outerRadius,
+    void FillAnnularSector(Point center, float innerRadius, float outerRadius,
         float startAngle, float endAngle, ColorToken color, float cornerSmoothing = 0);
 
     /// <summary>A straight line, as a stroked rectangle — the honest spelling of what the engine
     /// draws, and the reason there is no <c>MoveTo</c>/<c>LineTo</c> pair here.</summary>
-    void Line(float x1, float y1, float x2, float y2, ColorToken color, float strokeWidth);
+    void Line(Point from, Point to, ColorToken color, float strokeWidth);
 }
 
 /// <summary>

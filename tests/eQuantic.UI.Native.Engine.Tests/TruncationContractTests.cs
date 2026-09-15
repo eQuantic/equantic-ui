@@ -79,7 +79,12 @@ public class TruncationContractTests
             all.Add(new("CoreText", () => new eQuantic.UI.Native.Shell.Apple.CoreTextService(), true));
         if (OperatingSystem.IsWindows())
             all.Add(new("DirectWrite",
-                () => new eQuantic.UI.Native.Shell.Windows.Graphics.DirectWriteTextService(),
+                // The guard is repeated INSIDE the factory on purpose: the analyzer reasons about
+                // where a lambda's body may run, not about the `if` that stored it — a Func is
+                // callable from anywhere once it is in the list.
+                static () => OperatingSystem.IsWindows()
+                    ? new eQuantic.UI.Native.Shell.Windows.Graphics.DirectWriteTextService()
+                    : throw new PlatformNotSupportedException("DirectWrite is Windows-only."),
                 // v1 fence, stated in DirectWriteTextService's own doc: it cuts and draws nothing.
                 // Needs a Windows machine to fix on, and `Withholding` below keeps asking.
                 ClaimsTheMark: false));

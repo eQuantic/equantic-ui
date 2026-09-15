@@ -172,17 +172,17 @@ public class BarChartTests
 
         g.Bars.Should().HaveCount(12);
         // slot 80; (80 - 4 gaps) / 3 = 24 = the cap; group 76 wide, centred: starts at 2.
-        g.Bars[0].X.Should().Be(2);
-        g.Bars[0].Width.Should().Be(24);
-        g.Bars[1].X.Should().Be(2 + 24 + BarChartLayout.Gap);
-        g.Bars[3].X.Should().Be(80 + 2, "the second category starts a slot later");
+        g.Bars[0].Box.X.Should().Be(2);
+        g.Bars[0].Box.Width.Should().Be(24);
+        g.Bars[1].Box.X.Should().Be(2 + 24 + BarChartLayout.Gap);
+        g.Bars[3].Box.X.Should().Be(80 + 2, "the second category starts a slot later");
         // Ticks -5..25 over 200dp: zero sits 5/30 of the way up, i.e. 200 - 33.333 from the top.
         g.Baseline.Should().BeApproximately(200 - (200f / 6), 0.01f);
         // A negative value grows DOWN from the baseline; a zero has no height but a place.
         var gamma1 = g.Bars.Single(b => b.Series == 2 && b.Category == 0);
         gamma1.Negative.Should().BeTrue();
-        gamma1.Y.Should().BeApproximately(g.Baseline, 0.01f);
-        g.Bars.Single(b => b.Series == 2 && b.Category == 2).Height.Should().Be(0);
+        gamma1.Box.Y.Should().BeApproximately(g.Baseline, 0.01f);
+        g.Bars.Single(b => b.Series == 2 && b.Category == 2).Box.Height.Should().Be(0);
         g.Bars.Should().OnlyContain(b => b.DataEnd, "every grouped bar carries the rounded data end");
     }
 
@@ -198,7 +198,7 @@ public class BarChartTests
         // The inner segments end 2dp short so the surface shows between fills.
         var alpha = q2.Single(b => b.Series == 0);
         var beta = q2.Single(b => b.Series == 1);
-        (alpha.Y - (beta.Y + beta.Height)).Should().BeApproximately(BarChartLayout.Gap, 0.01f);
+        (alpha.Box.Y - beta.Box.Bottom).Should().BeApproximately(BarChartLayout.Gap, 0.01f);
         // Q1 stacks a negative under the baseline: it is the only negative, so it is a data end too.
         g.Bars.Where(b => b.Category == 0 && b.Negative).Should().ContainSingle().Which.DataEnd.Should().BeTrue();
     }
@@ -222,9 +222,19 @@ public class BarChartTests
         var g = BarChartLayout.Solve(Series, All, 4, BarLayout.Grouped, ChartOrientation.Vertical, new ValueAxis(), 320, 200);
         var first = g.Bars[0];
 
-        BarChartLayout.HitTest(g, first.X + (first.Width / 2), first.Y + (first.Height / 2)).Should().Be(0);
-        BarChartLayout.HitTest(g, first.X - BarChartLayout.HitSlack, first.Y + 1).Should().Be(0);
+        BarChartLayout.HitTest(g, first.Box.X + (first.Box.Width / 2), first.Box.Y + (first.Box.Height / 2)).Should().Be(0);
+        BarChartLayout.HitTest(g, first.Box.X - BarChartLayout.HitSlack, first.Box.Y + 1).Should().Be(0);
         BarChartLayout.HitTest(g, -20, -20).Should().Be(-1);
+
+        // THE EDGE ITSELF, on all four sides. The hit area is inflated to forgive a pointer, so the
+        // line it was inflated TO is part of the target — inclusive, unlike `Rect.Contains`, which
+        // is half-open because two adjacent boxes must not both claim a pixel. A refactor reached
+        // for that neighbouring word and moved this boundary by one point; nothing asked until
+        // review did.
+        var hit = first.Box.Inflate(BarChartLayout.HitSlack);
+        BarChartLayout.HitTest(g, hit.Right, hit.Top + 1).Should().Be(0, "the right edge is inside");
+        BarChartLayout.HitTest(g, hit.Left + 1, hit.Bottom).Should().Be(0, "and so is the bottom");
+        BarChartLayout.HitTest(g, hit.Left, hit.Top).Should().Be(0, "and the corner it starts at");
     }
 
     // ---- The shared dumper (mirrored in bar-chart-layout.spec.ts) -------------------------------
@@ -250,7 +260,7 @@ public class BarChartTests
         };
         foreach (var b in g.Bars)
         {
-            lines.Add($"bar c{b.Category} s{b.Series} {F(b.X)},{F(b.Y)} {F(b.Width)}x{F(b.Height)}"
+            lines.Add($"bar c{b.Category} s{b.Series} {F(b.Box.X)},{F(b.Box.Y)} {F(b.Box.Width)}x{F(b.Box.Height)}"
                 + (b.Negative ? " neg" : "") + (b.DataEnd ? " end" : ""));
         }
 

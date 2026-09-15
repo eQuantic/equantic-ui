@@ -187,4 +187,51 @@ describe('Primitives value twins carry the C# values', () => {
     expect(new Rect(0, 0, 10, 10).contains(new Point(9.99, 9.99))).toBe(r.containsInside);
     expect(new Rect(0, 0, 0, 10).isEmpty).toBe(r.emptyOnZeroWidth);
   });
+
+  // SINGLE precision, which whole numbers cannot show. Every component of this geometry is a C#
+  // `float`, so every derived value is a float add — and a twin doing it in doubles answers a
+  // different last bit, which is enough to put a pointer on the wrong side of an edge. Found in
+  // review: the transpiled hit test this geometry replaced was `Math.fround(b.x + b.width + slack)`,
+  // and reaching for `Rect.inflate().right` quietly dropped the rounding.
+  it('Rect does its arithmetic in the precision its subject has', () => {
+    const r = pinnedValues.rect;
+    const box = new Rect(0.1, 0.2, 0.3, 0.4);
+
+    expect(box.right).toBe(r.fractionalRight);
+    expect(box.bottom).toBe(r.fractionalBottom);
+    expect({ x: box.center.x, y: box.center.y }).toEqual(r.fractionalCenter);
+
+    const grown = box.inflate(0.05);
+    expect({ x: grown.x, y: grown.y, width: grown.width, height: grown.height })
+      .toEqual(r.fractionalInflated);
+    // THE one that separates single from double: 0.45000002 in floats, 0.45 in doubles.
+    expect(grown.right).toBe(r.fractionalInflatedRight);
+  });
+
+  // PARAMETERS, the third place the rule lands. A `float` parameter is rounded at the CALL on the
+  // C# side, so `right - left` there subtracts two singles; the twin is handed doubles and has to
+  // round them before subtracting, not just round the result. Found in review — the fields and the
+  // arithmetic steps had already been fixed, and the argument had not.
+  it('Rect rounds its arguments the way a float parameter is rounded at the call', () => {
+    const r = pinnedValues.rect;
+    const corners = (box: Rect) => ({ x: box.x, y: box.y, width: box.width, height: box.height });
+
+    expect(corners(Rect.fromLTRB(0.1, 0.2, 0.3, 0.7))).toEqual(r.fractionalFromLTRB);
+    // The readable one: inflating by exactly the x it sits at lands on ZERO, and on 1.49e-09 if
+    // the amount was never rounded.
+    expect(corners(new Rect(0.1, 0.2, 0.3, 0.4).inflate(0.1))).toEqual(r.fractionalInflatedByItsOwnX);
+  });
+
+  // The two members of `Point` that carry arithmetic, which the Rect case above cannot reach — it
+  // exercises `center`, and nothing on that path multiplies or takes a root. Without these, a
+  // regression that dropped either `fround` inside `dot` or `length` stays green. Found in review.
+  it('Point does its arithmetic in the precision its subject has', () => {
+    const p = pinnedValues.point;
+
+    expect(new Point(0.1, 0.2).dot(new Point(0.3, 0.4))).toBe(p.dot);
+    // THE readable one: a 3-4-5 triangle scaled by a tenth is EXACTLY 0.5 in floats, and
+    // 0.500000011920929 in doubles.
+    expect(new Point(0.3, 0.4).length()).toBe(p.length);
+    expect(new Point(0.1, 0.2).length()).toBe(p.lengthFractional);
+  });
 });

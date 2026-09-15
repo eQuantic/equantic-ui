@@ -21,7 +21,7 @@ public class CanvasUnderALayerTests
         var moves = new List<CanvasPointer>();
         var presses = new List<CanvasPointer>();
         var stack = new Stack { Width = SizeValue.Fixed(200), Height = SizeValue.Fixed(200) };
-        stack.Add(new Canvas(p => p.FillCircle(p.Width / 2, p.Height / 2, 80, Theme.BorderStrong),
+        stack.Add(new Canvas(p => p.FillCircle(new Point(p.Size.Width / 2, p.Size.Height / 2), 80, Theme.BorderStrong),
             SizeValue.Fill, SizeValue.Fill)
         {
             Label = "Sunburst",

@@ -253,9 +253,18 @@ public class PhotonActivity : Activity, ISurfaceHolderCallback, Choreographer.IF
     private void ApplyInsets(float scale)
     {
         if (_host is null || _view?.RootWindowInsets is not { } insets) return;
-        var bars = insets.GetInsets(WindowInsets.Type.SystemBars() | WindowInsets.Type.DisplayCutout());
+        if (OperatingSystem.IsAndroidVersionAtLeast(30))
+        {
+            var bars = insets.GetInsets(WindowInsets.Type.SystemBars() | WindowInsets.Type.DisplayCutout());
+            _host.SafeAreaInsets = new EdgeInsets(
+                bars.Left / scale, bars.Top / scale, bars.Right / scale, bars.Bottom / scale);
+            return;
+        }
+
+        // API 26-29: the typed accessor does not exist yet and these carry the same numbers.
         _host.SafeAreaInsets = new EdgeInsets(
-            bars.Left / scale, bars.Top / scale, bars.Right / scale, bars.Bottom / scale);
+            insets.SystemWindowInsetLeft / scale, insets.SystemWindowInsetTop / scale,
+            insets.SystemWindowInsetRight / scale, insets.SystemWindowInsetBottom / scale);
     }
 
     // ---- The clock ------------------------------------------------------------------------------

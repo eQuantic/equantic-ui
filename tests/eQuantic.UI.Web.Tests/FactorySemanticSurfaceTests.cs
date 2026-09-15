@@ -66,7 +66,7 @@ public class FactorySemanticSurfaceTests
 
         var button = Walk(WebRealizer.Lower(node, Theme).Render())
             .First(candidate => candidate.Attributes.TryGetValue("style", out var style) &&
-                                style.Contains("--eq-pressed-bg"));
+                                style?.Contains("--eq-pressed-bg") == true);
         button.Attributes["class"].Should().Contain("eq-pressable");
     }
 
@@ -199,7 +199,7 @@ public class IconSourceTests
 
         // The size rides the inline style on the <svg>, which is where the realizer puts it.
         rendered.Any(n => n.Tag == "svg" && n.Attributes.TryGetValue("style", out var style)
-                && style.Contains("width: 32px"))
+                && style?.Contains("width: 32px") == true)
             .Should().BeTrue("the well is 32dp whatever size the caller's Icon was built at");
     }
 }
@@ -261,8 +261,8 @@ public class CanvasWebLoweringTests
     {
         var rendered = Render(new Canvas(p =>
         {
-            p.FillCircle(20, 20, 10, Ink);
-            p.FillRect(0, 0, 5, 5, Ink);
+            p.FillCircle(new Point(20, 20), 10, Ink);
+            p.FillRect(new Rect(0, 0, 5, 5), Ink);
         }, width: SizeValue.Fixed(40), height: SizeValue.Fixed(40)));
 
         var svg = rendered.First(n => n.Tag == "svg");
@@ -277,7 +277,7 @@ public class CanvasWebLoweringTests
         // The web has a cascade to defer to, so a token crosses as light-dark(...) — the same
         // reason every other colour on this target is not resolved by the realizer.
         var twoTone = new ColorToken(new Color(1, 2, 3, 255), new Color(4, 5, 6, 255));
-        var circle = Render(new Canvas(p => p.FillCircle(5, 5, 5, twoTone),
+        var circle = Render(new Canvas(p => p.FillCircle(new Point(5, 5), 5, twoTone),
             SizeValue.Fixed(20), SizeValue.Fixed(20))).First(n => n.Tag == "circle");
 
         circle.Attributes["fill"].Should().StartWith("light-dark(");
@@ -287,7 +287,7 @@ public class CanvasWebLoweringTests
     public void AnAnnularSector_BecomesAnArcPath()
     {
         // The one engine shape SVG has no primitive for: two arcs and two radial lines.
-        var path = Render(new Canvas(p => p.FillAnnularSector(50, 50, 20, 40, 0, MathF.PI / 2, Ink),
+        var path = Render(new Canvas(p => p.FillAnnularSector(new Point(50, 50), 20, 40, 0, MathF.PI / 2, Ink),
             SizeValue.Fixed(100), SizeValue.Fixed(100))).First(n => n.Tag == "path");
 
         path.Attributes["d"].Should().Contain("A 40 40").And.Contain("A 20 20");
@@ -297,7 +297,7 @@ public class CanvasWebLoweringTests
     public void AFullRingIsDrawnAsTwoHalves()
     {
         // An arc whose start and end coincide draws nothing in SVG — a full ring must be split.
-        var paths = Render(new Canvas(p => p.FillAnnularSector(50, 50, 20, 40, 0, MathF.Tau, Ink),
+        var paths = Render(new Canvas(p => p.FillAnnularSector(new Point(50, 50), 20, 40, 0, MathF.Tau, Ink),
             SizeValue.Fixed(100), SizeValue.Fixed(100))).Where(n => n.Tag == "path").ToList();
 
         paths.Should().HaveCount(2, "a full ring cannot be one arc");
@@ -354,7 +354,7 @@ public class CanvasCrossTargetTests
     [InlineData(30f, 20f, 0f, 1f)]           // inner past outer
     public void DegenerateSectorsDrawNothing_AsOnPhoton(float inner, float outer, float start, float end)
     {
-        Shapes(p => p.FillAnnularSector(50, 50, inner, outer, start, end, Ink)).Should().Be(0);
+        Shapes(p => p.FillAnnularSector(new Point(50, 50), inner, outer, start, end, Ink)).Should().Be(0);
     }
 
     [Fact]
@@ -362,7 +362,7 @@ public class CanvasCrossTargetTests
     {
         // The neighbour of the degenerate rows above, kept beside them on purpose: inner 0 is the
         // sector reaching the centre, which both targets draw.
-        Shapes(p => p.FillAnnularSector(50, 50, 0, 20, 0, 1, Ink)).Should().Be(1);
+        Shapes(p => p.FillAnnularSector(new Point(50, 50), 0, 20, 0, 1, Ink)).Should().Be(1);
     }
 
     [Fact]
@@ -370,7 +370,7 @@ public class CanvasCrossTargetTests
     {
         // Clamped rather than refused, exactly as the engine clamps it — and a full ring is two
         // halves here because an arc whose ends coincide draws nothing in SVG.
-        Shapes(p => p.FillAnnularSector(50, 50, 10, 20, 0, MathF.Tau * 3, Ink)).Should().Be(2);
+        Shapes(p => p.FillAnnularSector(new Point(50, 50), 10, 20, 0, MathF.Tau * 3, Ink)).Should().Be(2);
     }
 
     [Fact]
@@ -379,7 +379,7 @@ public class CanvasCrossTargetTests
         // Photon draws a full ring as ONE sector whose angular edges coincide, so its rounding has
         // nothing to round. Forwarding the smoothing to the two SVG halves would stroke four
         // corners and draw a seam at 0 and π that exists on this target only.
-        var halves = Render(new Canvas(p => p.FillAnnularSector(50, 50, 10, 20, 0, MathF.Tau, Ink, 4),
+        var halves = Render(new Canvas(p => p.FillAnnularSector(new Point(50, 50), 10, 20, 0, MathF.Tau, Ink, 4),
                 SizeValue.Fixed(100), SizeValue.Fixed(100)))
             .Where(n => n.Tag == "path").ToList();
 
@@ -394,7 +394,7 @@ public class CanvasCrossTargetTests
         // shell and the runtime draws once it has measured (canvas-surface.ts). Drawing here would
         // put every `Width / 2` in the top-left corner and leave it there — the divergence from
         // Photon, which lays out and paints every frame and always knows the real box.
-        var svg = Render(new Canvas(p => p.FillCircle(p.Width / 2, p.Height / 2, 10, Ink)))
+        var svg = Render(new Canvas(p => p.FillCircle(new Point(p.Size.Width / 2, p.Size.Height / 2), 10, Ink)))
             .First(n => n.Tag == "svg");
 
         svg.Children.Should().BeEmpty("nothing is drawn until the box is known");
@@ -409,7 +409,7 @@ public class CanvasCrossTargetTests
     [Fact]
     public void AFixedSizeCanvasIsDrawnByTheServer()
     {
-        var svg = Render(new Canvas(p => p.FillCircle(p.Width / 2, p.Height / 2, 10, Ink),
+        var svg = Render(new Canvas(p => p.FillCircle(new Point(p.Size.Width / 2, p.Size.Height / 2), 10, Ink),
                 SizeValue.Fixed(80), SizeValue.Fixed(40)))
             .First(n => n.Tag == "svg");
 

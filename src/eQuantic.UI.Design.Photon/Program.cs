@@ -55,8 +55,12 @@ if (assemblyPath is null || typeName is null || outPath is null)
 var references = refsPath is not null && File.Exists(refsPath)
     ? File.ReadAllLines(refsPath)
         .Where(line => line.Length > 0)
-        .ToDictionary(Path.GetFileNameWithoutExtension, line => line, StringComparer.OrdinalIgnoreCase)
-    : new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        // A LAMBDA, not the method group: `GetFileNameWithoutExtension` is annotated
+        // [NotNullIfNotNull(path)], and a method group converts to Func<string, string?> which
+        // drops that — so the key type came out `string?` and the two arms of the ternary
+        // disagreed about both halves of the dictionary.
+        .ToDictionary(line => Path.GetFileNameWithoutExtension(line), line => line, StringComparer.OrdinalIgnoreCase)
+    : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
 AssemblyLoadContext.Default.Resolving += (context, name) =>
 {
@@ -253,8 +257,8 @@ static object? Construct(Type type, Assembly userAssembly, int depth)
     return constructor.Invoke(arguments);
 }
 
-/// <summary>An implementation of nothing: every member answers default. It exists so a page whose
-/// constructor merely READS a service can still be framed.</summary>
+// An implementation of nothing: every member answers default. It exists so a page whose
+// constructor merely READS a service can still be framed.
 static object? Stub(Type contract)
 {
     try

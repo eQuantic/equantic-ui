@@ -15,7 +15,9 @@ public class ComplexScenarioTests
         var classCode = $"class Wrapper {{ async Task Method() {{ {bodyCode} }} }}";
         var root = CSharpSyntaxTree.ParseText(classCode).GetRoot();
         var method = root.DescendantNodes().OfType<MethodDeclarationSyntax>().First();
-        return _converter.Convert(method.Body).Trim();
+        var body = method.Body
+            ?? throw new InvalidOperationException("the harness wraps the snippet in a block-bodied method");
+        return _converter.Convert(body).Trim();
     }
 
     [Fact]

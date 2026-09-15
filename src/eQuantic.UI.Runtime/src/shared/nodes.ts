@@ -1,3 +1,4 @@
+import type { Point, Rect, Size } from './value-types';
 /**
  * The SHARED abstract vocabulary on the client (docs/SHARED-COMPONENTS-PLAN.md) — the JS shapes of
  * `eQuantic.UI.Primitives` nodes as the transpiler emits them (camelCase properties, enums as
@@ -768,15 +769,20 @@ export interface CanvasNodeValue extends VisualNodeValue {
   label?: string | null;
 }
 
-/** The C# `ICanvasPainter` twin — the shapes a canvas can draw, in its own coordinates. */
+/**
+ * The C# `ICanvasPainter` twin — the shapes a canvas can draw, in its own coordinates.
+ *
+ * A BOX is a `Rect` and a POINT is a `Point`, exactly as on the C# side: a page's draw callback is
+ * TRANSPILED into calls against this, so the two shapes have to be the same one. The four-float
+ * spelling this replaces was the version that made the vocabulary's own words decorative.
+ */
 export interface ICanvasPainter {
-  readonly width: number;
-  readonly height: number;
-  fillRect(x: number, y: number, width: number, height: number, color: ColorTokenValue, cornerRadius?: number): void;
-  strokeRect(x: number, y: number, width: number, height: number, color: ColorTokenValue, strokeWidth: number, cornerRadius?: number): void;
-  fillCircle(centerX: number, centerY: number, radius: number, color: ColorTokenValue): void;
-  fillAnnularSector(centerX: number, centerY: number, innerRadius: number, outerRadius: number, startAngle: number, endAngle: number, color: ColorTokenValue, cornerSmoothing?: number): void;
-  line(x1: number, y1: number, x2: number, y2: number, color: ColorTokenValue, strokeWidth: number): void;
+  readonly size: Size;
+  fillRect(box: Rect, color: ColorTokenValue, cornerRadius?: number): void;
+  strokeRect(box: Rect, color: ColorTokenValue, strokeWidth: number, cornerRadius?: number): void;
+  fillCircle(center: Point, radius: number, color: ColorTokenValue): void;
+  fillAnnularSector(center: Point, innerRadius: number, outerRadius: number, startAngle: number, endAngle: number, color: ColorTokenValue, cornerSmoothing?: number): void;
+  line(from: Point, to: Point, color: ColorTokenValue, strokeWidth: number): void;
 }
 
 /** A pointer event in a canvas's own coordinates (the C# `CanvasPointer` twin). */

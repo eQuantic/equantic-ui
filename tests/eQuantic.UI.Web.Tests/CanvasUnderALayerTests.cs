@@ -32,7 +32,7 @@ public class CanvasUnderALayerTests
     /// <summary>A screen: an unpainted Column holding a Stack of canvas + chrome.</summary>
     private static VisualNode Screen(bool interactive)
     {
-        var canvas = new Canvas(p => p.FillCircle(p.Width / 2, p.Height / 2, 80, Theme.BorderStrong),
+        var canvas = new Canvas(p => p.FillCircle(new Point(p.Size.Width / 2, p.Size.Height / 2), 80, Theme.BorderStrong),
             SizeValue.Fill, SizeValue.Fill)
         {
             Label = "Sunburst",

@@ -240,5 +240,7 @@ public class Wave2ComponentTests
         var dismiss = banner.Children[0].Children[2];
         dismiss.Tag.Should().Be("button");
         dismiss.Attributes["aria-label"].Should().Be("Dismiss");
+        ((Action)dismiss.Events["click"])();
+        dismissed.Should().BeTrue("the dismiss button's click reaches the banner's OnDismiss");
     }
 }

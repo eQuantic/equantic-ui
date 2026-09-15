@@ -19,6 +19,10 @@ public class PrimitiveValueFixtureTests
     private static object Corners(Rect rect) =>
         new { x = rect.X, y = rect.Y, width = rect.Width, height = rect.Height };
 
+    /// <summary>The same, widened to double — see the fractional block below for why.</summary>
+    private static object WideCorners(Rect rect) =>
+        new { x = (double)rect.X, y = (double)rect.Y, width = (double)rect.Width, height = (double)rect.Height };
+
     private static string FixturePath()
     {
         var here = new DirectoryInfo(AppContext.BaseDirectory);
@@ -47,6 +51,22 @@ public class PrimitiveValueFixtureTests
                 // The enum crosses as its wire string, so that is what the twin has to hold.
                 kind = NetworkState.Offline.Kind.ToString().ToLowerInvariant(),
             },
+            // POINT's two arithmetic members, which are the ones a `Rect` case cannot reach: a
+            // Rect pin exercises `Center`, and `Dot`/`Length` are never on that path. Both round
+            // at every step in the subject — `Dot` is two float multiplies and a float add,
+            // `Length` a float sqrt over them — so a twin that drops one `fround` answers a
+            // different number here and nowhere else.
+            //
+            // `Length` is the discriminating one to read: a 3-4-5 triangle scaled by a tenth is
+            // EXACTLY 0.5 in floats and 0.500000011920929 in doubles. Widened to double on the way
+            // out for the same reason the fractional Rect values are — .NET prints a float as its
+            // shortest round-tripping spelling, and the browser has only doubles to print.
+            point = new
+            {
+                dot = (double)new Point(0.1f, 0.2f).Dot(new Point(0.3f, 0.4f)),
+                length = (double)new Point(0.3f, 0.4f).Length(),
+                lengthFractional = (double)new Point(0.1f, 0.2f).Length(),
+            },
             // GEOMETRY, which is the twin that can drift while still loading. `Point`, `Size` and
             // `Rect` went into the vocabulary when geometry moved down, so they owe an export — and
             // an exported class with arithmetic in it is a second implementation. These are the
@@ -68,6 +88,35 @@ public class PrimitiveValueFixtureTests
                 containsBottomRight = new Rect(0, 0, 10, 10).Contains(new Point(10, 10)),
                 containsInside = new Rect(0, 0, 10, 10).Contains(new Point(9.99f, 9.99f)),
                 emptyOnZeroWidth = new Rect(0, 0, 0, 10).IsEmpty,
+                // FRACTIONAL, because the twin does this arithmetic in doubles unless it is told
+                // not to. Every component here is a C# `float`, so `Right` is a float ADD and the
+                // last bit differs from the double the browser would compute — which is enough to
+                // classify a pointer on an edge differently. 0.1f and 0.2f are the classic pair
+                // whose sum is not what it looks like in either precision.
+                //
+                // WIDENED TO DOUBLE on the way out, and that is the half that took a failing test
+                // to see: .NET serializes a float as the shortest string that round-trips AS A
+                // FLOAT, so `0.1f + 0.3f` prints "0.4" while the number is 0.4000000059604645 — and
+                // JavaScript, which has only doubles, prints the second. Comparing the two would
+                // fail on a twin that is exactly right. The fixture carries the VALUE.
+                fractionalRight = (double)new Rect(0.1f, 0.2f, 0.3f, 0.4f).Right,
+                fractionalBottom = (double)new Rect(0.1f, 0.2f, 0.3f, 0.4f).Bottom,
+                fractionalCenter = new
+                {
+                    x = (double)new Rect(0.1f, 0.2f, 0.3f, 0.4f).Center.X,
+                    y = (double)new Rect(0.1f, 0.2f, 0.3f, 0.4f).Center.Y,
+                },
+                fractionalInflated = WideCorners(new Rect(0.1f, 0.2f, 0.3f, 0.4f).Inflate(0.05f)),
+                fractionalInflatedRight = (double)new Rect(0.1f, 0.2f, 0.3f, 0.4f).Inflate(0.05f).Right,
+                // PARAMETERS, which is the third place this rule lands and the one a twin forgets:
+                // these arguments are single precision BEFORE `right - left` runs, because C# does
+                // the conversion at the call. A twin that takes doubles and rounds only the result
+                // answers a different width. Discriminating on purpose — with 0.1 and 0.3 the two
+                // orders differ in the last bit.
+                fractionalFromLTRB = WideCorners(Rect.FromLTRB(0.1f, 0.2f, 0.3f, 0.7f)),
+                // The readable one: inflating by exactly the x it sits at lands on ZERO in floats,
+                // and on 1.49e-09 if the amount was never rounded.
+                fractionalInflatedByItsOwnX = WideCorners(new Rect(0.1f, 0.2f, 0.3f, 0.4f).Inflate(0.1f)),
             },
             windowSizeClasses = new
             {
@@ -83,25 +132,25 @@ public class PrimitiveValueFixtureTests
 
         var json = FixtureJson.Write(pinned);
         var path = FixturePath();
-        var current = File.Exists(path) ? File.ReadAllText(path) : null;
-        if (current == json) return;
 
-        // REGENERATE ONLY WHEN ASKED. This used to rewrite the file and pass, reasoning that the
-        // values are DERIVED from C# so a stale copy is the only way it can be wrong. True, and it
-        // misses what the fixture is FOR: it is the QUESTION vitest asks. Rewriting it silently
-        // means the new question is never asked until somebody notices a dirty working tree and
-        // commits it, and nothing makes them — the sibling pin beside this one (the exported type
-        // list) cost two types their runtime export exactly that way in 0.2.0-preview.47.
+        // Behind the env var, like every other fixture here — and unlike what this test used to
+        // do, which was to REWRITE the file on any ordinary run and pass. The values are derived
+        // from C#, so regenerating them is cheap and that made it look harmless; it is not. Vitest
+        // reads this same file in another process, so a changed primitive updated the QUESTION
+        // before the twin was ever asked the old one, and the diff nobody had to look at is the
+        // one that would have said so. `PrimitivesRuntimeExportTests` beside it already asked for
+        // the variable.
         if (Environment.GetEnvironmentVariable("EQ_UPDATE_PRIMITIVE_VALUES") == "1")
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             File.WriteAllText(path, json);
             return;
         }
 
-        current.Should().NotBeNull(
-            "the twin asserts against this fixture — write it once with EQ_UPDATE_PRIMITIVE_VALUES=1");
-        current.Should().Be(json,
-            "the pinned values changed; regenerate with EQ_UPDATE_PRIMITIVE_VALUES=1 and review the diff");
+        File.Exists(path).Should().BeTrue(
+            "the twin asserts against this fixture — write it with EQ_UPDATE_PRIMITIVE_VALUES=1 "
+            + "and commit it");
+        File.ReadAllText(path).Should().Be(json,
+            "a primitive's value changed — regenerate with EQ_UPDATE_PRIMITIVE_VALUES=1 and commit "
+            + "the fixture WITH the change that caused it, so the twin is asked the new question");
     }
 }

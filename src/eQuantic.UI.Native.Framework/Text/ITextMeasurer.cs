@@ -10,6 +10,12 @@ public readonly record struct MeasuredLine(float Width, bool Ellipsized);
 /// where it sits inside the paragraph's box. A run that wraps produces several of these — a
 /// fragment is a run ON A LINE, which is the only unit that has a rectangle.
 /// </summary>
+/// <param name="Content">The run's text as it is drawn on this line.</param>
+/// <param name="Style">The face it is drawn in, which is what the measurement was made against.</param>
+/// <param name="X">Its left edge inside the paragraph's box, dp.</param>
+/// <param name="Y">Its top edge inside the paragraph's box, dp.</param>
+/// <param name="Width">How wide the piece measured, dp.</param>
+/// <param name="Color">Its ink, or null to take the block's own.</param>
 /// <param name="Line">
 /// Which line of the paragraph this piece landed on. <see cref="Y"/> already implies it, but only
 /// by dividing back through the line height — and the caller that needs it is aligning the line,

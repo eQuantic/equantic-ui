@@ -222,7 +222,7 @@ public sealed class RhiRenderer : IDisposable
     /// <summary>
     /// The pass clear for <paramref name="displayList"/>: its leading Clear command's color
     /// (engine lists always start with one), or transparent. Callers pass this to
-    /// <see cref="IRhiDevice.Begin"/>; <see cref="Encode"/> then skips Clear commands.
+    /// <see cref="IRhiDevice.Begin"/>; <see cref="Encode(DisplayList, IRhiCommandList)"/> then skips Clear commands.
     /// </summary>
     public static Color ClearColorOf(DisplayList displayList)
     {
@@ -421,7 +421,7 @@ public sealed class RhiRenderer : IDisposable
 
     /// <summary>
     /// Encodes <paramref name="displayList"/> into an open pass, compositing any layer scopes from
-    /// the offscreen targets phase one produced. A null <paramref name="layers"/> means the caller
+    /// the offscreen targets phase one produced. A null <paramref name="layersHandle"/> means the caller
     /// never ran phase one — layers then fall back to the historical per-command alpha
     /// approximation, which is what the WINDOW path used before offscreen layers existed.
     /// </summary>

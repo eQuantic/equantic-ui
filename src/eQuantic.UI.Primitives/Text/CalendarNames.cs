@@ -8,10 +8,26 @@ namespace eQuantic.UI.Primitives;
 /// same rule <c>ToString("d")</c> follows, and the reason a culture switch redraws a month grid
 /// without anything re-fetching anything.
 /// <para>
-/// The client twin (<c>shared/calendar-names.ts</c>) answers from <c>Intl</c> where this answers
-/// from <see cref="CultureInfo"/>. That they agree is not an assumption: it was PROBED across ten
-/// cultures (en-US, pt-BR, es-ES, fr-FR, de-DE, ja-JP, ar-EG, en-GB, ru-RU, zh-CN) before this
-/// surface was fixed, and it is pinned by a generated fixture the TypeScript specs assert against.
+/// The client twin (<c>shared/calendar-names.ts</c>) does NOT re-derive these: on a page with a
+/// server behind it the twin reads the catalog the server sent, verbatim. That is the only way
+/// the two sides are equal by construction rather than by coincidence — this side reads
+/// <see cref="CultureInfo"/> and <c>Intl</c> reads the browser's own tables, and they are
+/// different data by design. <c>ar-EG</c> abbreviates Sunday with the definite article in one ICU
+/// build and without it in another; two JS engines disagreed with each other in the same probe.
+/// A Linux server therefore sends its spelling and every one of its clients shows that spelling,
+/// with no flicker between the SSR markup and the hydrated tree.
+/// </para>
+/// <para>
+/// <c>Intl</c> is the twin's FALLBACK, for a render with no server behind it — a client-only
+/// mount, or a culture switched in the browser before any request carried the new catalog. There
+/// is nothing to disagree with there.
+/// </para>
+/// <para>
+/// The committed fixture is a SAMPLE for the TypeScript specs, not a promise that three ICUs
+/// agree: it proves the twin reads a catalog back verbatim and that the fallback has the right
+/// shape. What the .NET side is asked for is the MAPPING — that these members read the culture's
+/// own tables, <c>AbbreviatedDayNames</c> and not <c>ShortestDayNames</c> — which is the same on
+/// every host.
 /// </para>
 /// <para>
 /// NARROW day names are deliberately ABSENT, and their absence is the finding that shaped this

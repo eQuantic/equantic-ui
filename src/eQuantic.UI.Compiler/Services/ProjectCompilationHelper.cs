@@ -169,6 +169,7 @@ public static class ProjectCompilationHelper
     public static IEnumerable<string> GetCompilerGeneratedFiles(string projectDirectory) =>
         GetCompilerGeneratedFiles(projectDirectory, generatedDirectory: null);
 
+    /// <param name="projectDirectory">The project's own directory, which its <c>obj</c> sits under.</param>
     /// <param name="generatedDirectory">
     /// The generated-sources directory for the configuration BEING BUILT, which the SDK knows and
     /// this does not. Without it the fallback sweeps all of <c>obj</c> — and a project built in

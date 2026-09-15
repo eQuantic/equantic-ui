@@ -448,6 +448,13 @@ jobs:
     # are named one by one instead. `always()` reaches this condition even when a need was skipped;
     # build-packages is then required explicitly, because always() would otherwise publish the
     # packages a failed build never produced.
+    #
+    # `needs.test` is in the condition because the cross-OS suite is a GATE, not a report: without
+    # it a red Linux or Windows leg sat beside a green macOS build and the packages published
+    # anyway — coverage that cannot stop anything is a comment with a check's authority, which is
+    # the defect that job was added for. The note lives ABOVE the expression because `#` inside a
+    # GitHub expression is not a comment: it is a parse error that fails the whole workflow before
+    # any job starts, which is how main's CI broke for every branch at once.
     if: |
       always()
       && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')

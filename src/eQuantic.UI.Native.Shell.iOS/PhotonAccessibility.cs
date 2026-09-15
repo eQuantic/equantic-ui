@@ -1,3 +1,4 @@
+using System.Runtime.Versioning;
 using CoreGraphics;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Primitives;
@@ -185,7 +186,7 @@ internal sealed class PhotonAccessibilityElement : UIAccessibilityElement
     }
 
     /// <summary>
-    /// Whether this element OPENS something, and whether it currently is open — iOS 17's own
+    /// Whether this element OPENS something, and whether it currently is open — iOS 18's own
     /// vocabulary, the twin of the web's aria-expanded and of AppKit's accessibilityExpanded. A
     /// control that discloses nothing answers Unsupported, which is a different answer from
     /// "closed" and the reason the node carries a nullable.
@@ -195,6 +196,7 @@ internal sealed class PhotonAccessibilityElement : UIAccessibilityElement
     /// </para>
     /// </summary>
     [Export("accessibilityExpandedStatus")]
+    [SupportedOSPlatform("ios18.0")]
     public UIAccessibilityExpandedStatus ExpandedStatus() => _expanded switch
     {
         true => UIAccessibilityExpandedStatus.Expanded,

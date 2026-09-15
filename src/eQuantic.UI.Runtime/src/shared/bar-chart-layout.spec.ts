@@ -44,7 +44,8 @@ function dump(g: BarChartGeometry): string {
   ];
   for (const b of g.bars) {
     lines.push(
-      `bar c${b.category} s${b.series} ${fmt(b.x)},${fmt(b.y)} ${fmt(b.width)}x${fmt(b.height)}` +
+      `bar c${b.category} s${b.series} ${fmt(b.box.x)},${fmt(b.box.y)} ` +
+        `${fmt(b.box.width)}x${fmt(b.box.height)}` +
         `${b.negative ? ' neg' : ''}${b.dataEnd ? ' end' : ''}`,
     );
   }
@@ -122,12 +123,20 @@ describe('bar chart layout parity (C# BarChartTests cross-pin)', () => {
       320,
       200,
     );
-    const first = g.bars[0];
-    expect(BarChartLayout.hitTest(g, first.x + first.width / 2, first.y + first.height / 2)).toBe(
-      0,
-    );
+    const first = g.bars[0].box;
+    expect(
+      BarChartLayout.hitTest(g, first.x + first.width / 2, first.y + first.height / 2),
+    ).toBe(0);
     // The hit area reaches past the paint by the slack, and no further.
     expect(BarChartLayout.hitTest(g, first.x - BarChartLayout.hitSlack, first.y + 1)).toBe(0);
     expect(BarChartLayout.hitTest(g, -20, -20)).toBe(-1);
+
+    // THE EDGE ITSELF. The hit area is inflated to forgive a pointer, so the line it was inflated
+    // TO belongs to the target — inclusive, unlike a half-open containment, which is right for
+    // tiling and wrong here. Measured on the C# side when a refactor reached for the neighbouring
+    // word: at the shared edge the half-open version handed the pointer to the NEXT bar.
+    const slack = BarChartLayout.hitSlack;
+    expect(BarChartLayout.hitTest(g, first.x + first.width + slack, first.y + 1)).toBe(0);
+    expect(BarChartLayout.hitTest(g, first.x - slack, first.y - slack)).toBe(0);
   });
 });

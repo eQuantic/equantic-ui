@@ -7,9 +7,9 @@ public class DictionaryStrategyTests
 {
     // ============ Existing Methods (Already Implemented) ============
 
-    [Fact]
     /// <summary>Its OWN key. `in` walks the prototype chain, so an empty dictionary answered true
     /// for "constructor" and every other Object.prototype member.</summary>
+    [Fact]
     public void ContainsKey_AsksForTheObjectsOwnKey()
     {
         var result = TestHelper.ConvertExpression("dict.ContainsKey(\"key\")");

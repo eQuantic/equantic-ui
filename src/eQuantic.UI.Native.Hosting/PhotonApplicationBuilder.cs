@@ -24,6 +24,8 @@ public sealed class PhotonApplicationBuilder
         // The real host builder does the work: appsettings.json, appsettings.{Environment}.json,
         // user secrets in Development, environment variables and the command line, in that order.
         _host = Host.CreateApplicationBuilder(args);
+        // Binds every PhotonOptions member EXCEPT Theme — see the NoWarn for SYSLIB1100/1101 in
+        // this project's csproj, and the note on the property itself.
         _host.Services.AddOptions<PhotonOptions>()
             .Bind(_host.Configuration.GetSection(PhotonOptions.SectionName));
     }

@@ -324,9 +324,9 @@ down. What cannot stand is the current answer, which is neither. Edgar's call.
 **And one thing was missing from the bottom — it is there now.** `Primitives` had `EdgeInsets`,
 `SizeValue` and `CornerRadii` and no `Rect`, `Point` or `Size`: geometry lived in
 `Native.Engine/Geometry.cs`, ABOVE the vocabulary, where Flutter puts `Rect`, `Offset` and `Size` in
-`dart:ui`, under everything. The consequences were measurable: `ICanvasPainter` spells every box as
-four floats; `Charts` carries its own `BarRect` with x, y, width and height spelled out, since no
-`Rect` was visible to it; `SemanticNode` carries a `Rect` and therefore could not move down, which
+`dart:ui`, under everything. The consequences were measurable: `ICanvasPainter` spelled every box as
+four floats; `Charts` carried its own `BarRect` with x, y, width and height spelled out, since no
+`Rect` was visible to it — both fixed once the move made a `Rect` reachable; `SemanticNode` carries a `Rect` and therefore could not move down, which
 kept `SemanticRole` inside one target's assembly (section 6) — that one is unblocked and done, and
 what it did NOT unblock is recorded there; and `LayoutConstraints`, the constraint value #119 introduced and the one an author-facing
 `LayoutBuilder` would hand out, had to be born in `Native.Framework` for want of a lower home.
@@ -726,11 +726,12 @@ makes the rest safe.
    had been causing went with it (section 7), and `ValueShapeCollisionTests` now asks about the
    next one. ~~`SemanticRole` and `SemanticNode` to `Primitives`~~ done too, for the same three
    `using` lines — and it did NOT unmute `Navigable` and `Overlay`, which needs the group role
-   (section 7). ~~`ICanvasPainter` takes a `Rect` and a `Point`, `BarRect` carries a `Rect`~~ done
-   (#143), with the TypeScript twin in the same commit because the draw callback transpiles — and
-   the sweep that rewrote the call sites also rewrote three of the engine's own calls in the golden
-   scenes, which already took a `Point`; only reading the diff caught the double wrap. Remaining:
-   the group role, which is Edgar's decision. — M, done but for that
+   (section 7). ~~`Charts` drops `BarRect`'s own geometry~~ and ~~`ICanvasPainter` takes a `Rect`~~
+   are done, twin included — the draw callback transpiles, so the two had to move together, and the
+   hit test came with them: it reads the box through its own edges and builds none, because a `Rect`
+   is a struct here and a class there. The sweep that rewrote the call sites also rewrote three of the engine's own calls in the
+   golden scenes, which already took a `Point`; only reading the diff caught the double wrap.
+   Remaining: the group role, which is Edgar's decision. — M, done but for that
 4. **Node shapes**: a `SingleChildNode` base (Flutter: `SingleChildRenderObjectWidget`), the wrapper
    set and the node-intrinsic questions hoisted onto the vocabulary, `VisualNode.cs` split along the
    four shapes. — M

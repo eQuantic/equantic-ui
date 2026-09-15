@@ -50,7 +50,7 @@ public class CheckStateSemanticsTests
     public void TheNameIsStableAcrossTheToggle()
     {
         string NameOf(bool @checked) =>
-            ControlOf(new Checkbox(@checked, () => { }, "Terms")).Attributes.GetValueOrDefault("aria-label", "");
+            ControlOf(new Checkbox(@checked, () => { }, "Terms")).Attributes.GetValueOrDefault("aria-label", "") ?? "";
 
         NameOf(false).Should().Be(NameOf(true));
     }

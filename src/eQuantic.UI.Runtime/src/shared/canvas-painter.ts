@@ -7,6 +7,8 @@
 
 import type { HtmlNode } from '../core/types';
 import type { ColorTokenValue, ICanvasPainter } from './nodes';
+import { Point, Size } from './value-types';
+import type { Rect } from './value-types';
 import { num, tokenValue } from './css-values';
 
 /**
@@ -19,10 +21,11 @@ import { num, tokenValue } from './css-values';
 export class DomCanvasPainter implements ICanvasPainter {
   readonly shapes: HtmlNode[] = [];
 
-  constructor(
-    readonly width: number,
-    readonly height: number,
-  ) {}
+  readonly size: Size;
+
+  constructor(width: number, height: number) {
+    this.size = new Size(width, height);
+  }
 
   private shape(tag: string, attributes: Record<string, string | undefined>): void {
     this.shapes.push({ tag, attributes, events: {}, children: [] });
@@ -44,36 +47,37 @@ export class DomCanvasPainter implements ICanvasPainter {
     });
   }
 
-  fillRect(x: number, y: number, width: number, height: number, color: ColorTokenValue, cornerRadius = 0): void {
+  fillRect(box: Rect, color: ColorTokenValue, cornerRadius = 0): void {
     this.shape('rect', {
-      x: num(x), y: num(y), width: num(width), height: num(height),
+      x: num(box.x), y: num(box.y), width: num(box.width), height: num(box.height),
       fill: tokenValue(color),
       rx: cornerRadius > 0 ? num(cornerRadius) : undefined,
     });
   }
 
-  strokeRect(x: number, y: number, width: number, height: number, color: ColorTokenValue,
-    strokeWidth: number, cornerRadius = 0): void {
+  strokeRect(box: Rect, color: ColorTokenValue, strokeWidth: number, cornerRadius = 0): void {
     // Inset by half the stroke: SVG centres a stroke on its path, and every border in this
     // framework is drawn INSIDE its bounds (the C# painter says the same, for the same reason).
     const inset = strokeWidth / 2;
     this.shape('rect', {
-      x: num(x + inset), y: num(y + inset),
-      width: num(Math.max(0, width - strokeWidth)),
-      height: num(Math.max(0, height - strokeWidth)),
+      x: num(box.x + inset), y: num(box.y + inset),
+      width: num(Math.max(0, box.width - strokeWidth)),
+      height: num(Math.max(0, box.height - strokeWidth)),
       fill: 'none', stroke: tokenValue(color), 'stroke-width': num(strokeWidth),
       rx: cornerRadius > 0 ? num(Math.max(0, cornerRadius - inset)) : undefined,
     });
   }
 
-  fillCircle(centerX: number, centerY: number, radius: number, color: ColorTokenValue): void {
+  fillCircle(center: Point, radius: number, color: ColorTokenValue): void {
     this.shape('circle', {
-      cx: num(centerX), cy: num(centerY), r: num(radius), fill: tokenValue(color),
+      cx: num(center.x), cy: num(center.y), r: num(radius), fill: tokenValue(color),
     });
   }
 
-  fillAnnularSector(centerX: number, centerY: number, innerRadius: number, outerRadius: number,
+  fillAnnularSector(center: Point, innerRadius: number, outerRadius: number,
     startAngle: number, endAngle: number, color: ColorTokenValue, cornerSmoothing = 0): void {
+    const centerX = center.x;
+    const centerY = center.y;
     // The guards and clamps are the ENGINE's (C# DisplayList.FillAnnularSector), because a target
     // that quietly drew a reversed sector — or inked a hairline where the band has no width —
     // would break the write-once promise in the one place nobody looks: degenerate input.
@@ -87,8 +91,8 @@ export class DomCanvasPainter implements ICanvasPainter {
     // is NOT forwarded to the halves: a full ring has no corners on Photon, so rounding them would
     // draw a seam that exists on one target only.
     if (sweep >= Math.PI * 2 - 1e-4) {
-      this.fillAnnularSector(centerX, centerY, innerRadius, outerRadius, startAngle, startAngle + Math.PI, color);
-      this.fillAnnularSector(centerX, centerY, innerRadius, outerRadius, startAngle + Math.PI, startAngle + Math.PI * 2, color);
+      this.fillAnnularSector(center, innerRadius, outerRadius, startAngle, startAngle + Math.PI, color);
+      this.fillAnnularSector(center, innerRadius, outerRadius, startAngle + Math.PI, startAngle + Math.PI * 2, color);
       return;
     }
 
@@ -120,9 +124,9 @@ export class DomCanvasPainter implements ICanvasPainter {
     });
   }
 
-  line(x1: number, y1: number, x2: number, y2: number, color: ColorTokenValue, strokeWidth: number): void {
+  line(from: Point, to: Point, color: ColorTokenValue, strokeWidth: number): void {
     this.shape('line', {
-      x1: num(x1), y1: num(y1), x2: num(x2), y2: num(y2),
+      x1: num(from.x), y1: num(from.y), x2: num(to.x), y2: num(to.y),
       stroke: tokenValue(color), 'stroke-width': num(strokeWidth),
     });
   }

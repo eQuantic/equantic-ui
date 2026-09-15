@@ -22,6 +22,8 @@ public static class EntitlementsManifest
     /// which case the signing step passes no <c>--entitlements</c> at all, which is correct: an
     /// empty entitlements file is not the same as no file, and signing with one grants nothing
     /// while still changing the signature.</summary>
+    /// <param name="assemblyPath">The built assembly whose declared entitlements are read.</param>
+    /// <param name="plistPath">Where the entitlements plist is written.</param>
     /// <param name="alsoRequired">
     /// What the RUNTIME needs, which the SDK knows and the app should never have to. A
     /// framework-dependent .NET app under the hardened runtime cannot load its own runtime's dylibs

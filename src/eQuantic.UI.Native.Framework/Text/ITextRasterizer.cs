@@ -6,6 +6,9 @@ namespace eQuantic.UI.Native.Framework;
 /// A rasterized text BLOCK (W4): pure A8 coverage at device scale — color is the draw command's
 /// tint, so one raster serves every theme mode. Width/Height are PIXELS (dp × scale).
 /// </summary>
+/// <param name="Width">The raster's width in device PIXELS (dp × scale).</param>
+/// <param name="Height">The raster's height in device PIXELS.</param>
+/// <param name="Alpha">The A8 coverage, one byte per pixel, row-major.</param>
 /// <param name="PadTop">
 /// Device pixels of INK the rasterizer had to add ABOVE the line box — an ascender or an accent
 /// that does not fit inside it. The caller draws the bitmap that much higher, so the line box

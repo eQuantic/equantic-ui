@@ -50,11 +50,6 @@ public enum DrawCommandKind : byte
 }
 
 /// <summary>
-/// One flat, heap-free draw command. <see cref="Shape"/> is in LOCAL space; <see cref="Transform"/>
-/// maps local → device (baked by the builder from its transform stack, so rasterizers never track
-/// state). Radii are pre-normalized by the builder.
-/// </summary>
-/// <summary>
 /// An A8 coverage bitmap a draw command samples (W4 text: one raster per Text block, tinted by the
 /// command's paint). Referenced by index into the display list's texture table; equality is
 /// IDENTITY (the caches reuse instances), never a byte compare.
@@ -109,6 +104,11 @@ public enum TextureFormat : byte
     Rgba8 = 1,
 }
 
+/// <summary>
+/// One flat, heap-free draw command. <see cref="Shape"/> is in LOCAL space; <see cref="Transform"/>
+/// maps local → device (baked by the builder from its transform stack, so rasterizers never track
+/// state). Radii are pre-normalized by the builder.
+/// </summary>
 public readonly record struct DrawCommand
 {
     public DrawCommandKind Kind { get; init; }
@@ -324,11 +324,6 @@ public sealed class DisplayListBuilder
 
     private int _openLayers;
 
-    /// <summary>
-    /// Begins a GROUP-opacity layer: everything until <see cref="PopLayer"/> composites as one
-    /// surface at <paramref name="alpha"/> — overlapping children inside never double-blend
-    /// (the CSS <c>opacity</c> semantics). Alpha is clamped to 0–1.
-    /// </summary>
     /// <summary>Commands recorded so far — marks a subtree's start for presence-exit snapshots.</summary>
     public int CommandCount => _commands.Count;
 
@@ -371,6 +366,11 @@ public sealed class DisplayListBuilder
         _commands.Add(command with { Transform = command.Transform * offset, Clip = clip });
     }
 
+    /// <summary>
+    /// Begins a GROUP-opacity layer: everything until <see cref="PopLayer"/> composites as one
+    /// surface at <paramref name="alpha"/> — overlapping children inside never double-blend
+    /// (the CSS <c>opacity</c> semantics). Alpha is clamped to 0–1.
+    /// </summary>
     public void PushLayer(float alpha)
     {
         _openLayers++;

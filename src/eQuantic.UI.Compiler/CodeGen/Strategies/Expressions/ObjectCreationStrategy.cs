@@ -12,8 +12,8 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// <summary>
 /// Strategy for object creation (new T() or new()).
 /// Handles:
-/// - List<T> -> []
-/// - Dictionary<K,V> -> {}
+/// - <c>List&lt;T&gt;</c> -> []
+/// - <c>Dictionary&lt;K,V&gt;</c> -> {}
 /// - HtmlNode -> {} (UI config)
 /// - UI Components -> new Component(config) or just config
 /// </summary>

@@ -326,7 +326,7 @@ public class FactoryAuthoringTests
         Assert.Contains("bound = ", result.TypeScript);
         // … so it must be DECLARED. Exactly once: a second `let` in an enclosing scope means the
         // scanner leaked the binding out of the scope that owns it.
-        Assert.Equal(1, System.Text.RegularExpressions.Regex.Matches(result.TypeScript, @"let bound: any;").Count);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(result.TypeScript, @"let bound: any;"));
     }
 
 
@@ -360,7 +360,7 @@ public class FactoryAuthoringTests
 
         Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
         Assert.Contains("(bound = Once.maybe(v)) != null", result.TypeScript);
-        Assert.Equal(1, System.Text.RegularExpressions.Regex.Matches(result.TypeScript, @"Once\.maybe\(v\)").Count);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(result.TypeScript, @"Once\.maybe\(v\)"));
     }
 
     /// <summary>A TYPE test must still check before it assigns — the optimisation applies to
@@ -524,7 +524,7 @@ public class FactoryAuthoringTests
         // It is BOUND …
         Assert.Contains("bound = ", typescript);
         // … so it must be DECLARED, exactly once.
-        Assert.Equal(1, System.Text.RegularExpressions.Regex.Matches(typescript, @"let bound: any;").Count);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(typescript, @"let bound: any;"));
     }
 
 }

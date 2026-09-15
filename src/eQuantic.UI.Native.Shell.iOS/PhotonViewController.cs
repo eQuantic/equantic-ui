@@ -47,6 +47,8 @@ public sealed class PhotonViewController : UIViewController
     private nfloat _lastWidth;
     private nfloat _lastHeight;
 
+    /// <param name="root">The tree this controller presents.</param>
+    /// <param name="theme">The app's theme, which every measurement and every paint reads.</param>
     /// <param name="forcedMode">
     /// Null follows the system's light/dark setting, which is what an app should do; a value pins
     /// the mode, which is what a screenshot test wants.

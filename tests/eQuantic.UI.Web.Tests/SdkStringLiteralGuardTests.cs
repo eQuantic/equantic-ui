@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using FluentAssertions;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -45,7 +46,7 @@ public class SdkStringLiteralGuardTests
             foreach (var assignment in root.DescendantNodes().OfType<AssignmentExpressionSyntax>())
             {
                 if (assignment.Right is not LiteralExpressionSyntax literal) continue;
-                if (literal.Token.Kind() != SyntaxKind.StringLiteralToken) continue;
+                if (!literal.Token.IsKind(SyntaxKind.StringLiteralToken)) continue;
                 var target = assignment.Left switch
                 {
                     IdentifierNameSyntax identifier => identifier.Identifier.Text,
@@ -61,7 +62,7 @@ public class SdkStringLiteralGuardTests
             {
                 if (argument.NameColon is null) continue;
                 if (argument.Expression is not LiteralExpressionSyntax literal) continue;
-                if (literal.Token.Kind() != SyntaxKind.StringLiteralToken) continue;
+                if (!literal.Token.IsKind(SyntaxKind.StringLiteralToken)) continue;
                 var parameter = argument.NameColon.Name.Identifier.Text;
                 if (HumanFacingNames.Any(n => string.Equals(n, parameter, StringComparison.OrdinalIgnoreCase))
                     && literal.Token.ValueText.Length > 0)

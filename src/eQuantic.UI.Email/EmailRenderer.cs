@@ -72,6 +72,19 @@ public static class EmailRenderer
     }
 
     /// <summary>
+    /// The line break this renderer writes, on every host.
+    /// <para>
+    /// `StringBuilder.AppendLine` appends <c>Environment.NewLine</c>, so the plain-text body came
+    /// out CRLF on Windows and LF everywhere else — the same message rendered into different bytes
+    /// depending on which machine the server happened to be. A mail body is a PAYLOAD, and the
+    /// constant an SDK owes its payloads is its own; the transport is what owns the wire format
+    /// (SMTP's own CRLF is applied by the client that sends it, not by the tree that built the
+    /// text).
+    /// </para>
+    /// </summary>
+    private const string Newline = "\n";
+
+    /// <summary>
     /// The text alternative, from the SAME tree: one line per text, a blank line where a Column
     /// gap separated sections. Writing it by hand is how the two parts drift; walking the tree is
     /// how they cannot.
@@ -96,10 +109,10 @@ public static class EmailRenderer
                     inline.Append(run.Content);
                     if (run.Destination is { } destination) inline.Append($" ({destination})");
                 }
-                text.AppendLine(inline.ToString());
+                text.Append(inline.ToString()).Append(Newline);
                 break;
             case Text t:
-                text.AppendLine(t.PlainContent);
+                text.Append(t.PlainContent).Append(Newline);
                 break;
             case Column column:
                 // The gap that separates sections in the HTML separates them here too — a blank
@@ -107,7 +120,7 @@ public static class EmailRenderer
                 var firstChild = true;
                 foreach (var child in column.Children)
                 {
-                    if (!firstChild && column.Gap > 0) text.AppendLine();
+                    if (!firstChild && column.Gap > 0) text.Append(Newline);
                     firstChild = false;
                     WalkText(child, theme, text);
                 }
@@ -121,7 +134,7 @@ public static class EmailRenderer
                     var line = part.ToString().Trim();
                     if (line.Length > 0) parts.Add(line);
                 }
-                if (parts.Count > 0) text.AppendLine(string.Join("  ", parts));
+                if (parts.Count > 0) text.Append(string.Join("  ", parts)).Append(Newline);
                 break;
             case Box box when box.Child is { } child:
                 WalkText(child, theme, text);
@@ -136,10 +149,10 @@ public static class EmailRenderer
                 // The same fallback the HTML's aria-label carries: an icon-only link with an empty
                 // alt is exactly what Label exists for, and the two alternatives must not drift.
                 if (trimmed.Length == 0 && !string.IsNullOrEmpty(link.Label)) trimmed = link.Label;
-                text.AppendLine(trimmed.Length > 0 ? $"{trimmed}: {link.Destination}" : link.Destination);
+                text.Append(trimmed.Length > 0 ? $"{trimmed}: {link.Destination}" : link.Destination).Append(Newline);
                 break;
             case Image image when image.Label.Length > 0:
-                text.AppendLine(image.Label);
+                text.Append(image.Label).Append(Newline);
                 break;
             case UiComponent component:
                 // Build, not BuildContained — the same deliberate divergence the HTML walker makes:

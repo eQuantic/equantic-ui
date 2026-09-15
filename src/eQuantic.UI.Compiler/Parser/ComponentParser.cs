@@ -52,15 +52,14 @@ public class ComponentParser
     /// <c>width:NaNpx</c>, a rule the CSS parser drops whole. It showed up on a code block, on a
     /// client-rendered page only, because SSR computes the same property in C# where it is 0.
     /// </para>
-    /// <para>Null for reference types, where C#'s default and `undefined` really do behave alike.</para>
-    /// </summary>
-    /// <summary>
-    /// What an auto-property holds when the caller supplies none — C#'s default for its type, which
-    /// `undefined` is not. Answered by the one table (<see cref="Strategies.DefaultValue"/>), and it
+    /// <para>
+    /// The value is answered by the one table (<see cref="CodeGen.Strategies.DefaultValue"/>), and it
     /// has to be: a `long` defaults to 0n and a `decimal` to a Decimal, and answering plain `0` for
     /// them put a NUMBER in a slot the twin declares `bigint`, so the first arithmetic on it threw
     /// "Cannot mix BigInt and other types" — in the browser only, after hydration, on a page whose
     /// server render was perfect.
+    /// </para>
+    /// <para>Null for reference types, where C#'s default and `undefined` really do behave alike.</para>
     /// </summary>
     /// <returns>The JS default, or null where there is none to write (a reference type, a nullable
     /// value type, an enum with no zero member — C#'s default there is null or an unnamed value,

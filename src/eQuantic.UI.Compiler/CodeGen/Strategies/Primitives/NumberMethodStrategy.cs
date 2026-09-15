@@ -67,14 +67,12 @@ public class NumberMethodStrategy : IConversionStrategy
             var outArg = args[^1];
             
             string varName = "";
-            bool isDeclaration = false;
             
             if (outArg.Expression is DeclarationExpressionSyntax decl)
             {
                 if (decl.Designation is SingleVariableDesignationSyntax single)
                 {
                     varName = single.Identifier.Text;
-                    isDeclaration = true;
                 }
             }
             else

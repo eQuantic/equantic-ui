@@ -3,7 +3,8 @@
  * targets rather than a convenience.
  *
  * A canvas draws inside the box the LAYOUT gives it, and asks the painter how big that box is —
- * `p.FillCircle(p.Width / 2, p.Height / 2, …)` is the ordinary shape of a visualization. On Photon
+ * `p.FillCircle(new Point(p.Size.Width / 2, p.Size.Height / 2), …)` is the ordinary shape of a
+ * visualization. On Photon
  * the answer is known before the draw: the frame lays out and then paints, every frame. In a
  * browser the box is decided by CSS AFTER the markup exists, so a canvas that FILLS its space has
  * no size to report while its own SVG is being built.
@@ -11,7 +12,7 @@
  * So a filling canvas is NOT drawn at lowering at all: it is declared, and drawn the moment the
  * element has been measured — and again after every resize, which is the same redraw Photon
  * performs for free by rebuilding each frame. Drawing it at lowering would mean drawing it at zero,
- * which puts every `p.width / 2` in the top-left corner. A canvas with a FIXED size skips all of
+ * which puts every `p.size.width / 2` in the top-left corner. A canvas with a FIXED size skips all of
  * this: its box was knowable, so SSR draws the final picture and hydration changes nothing.
  *
  * The declaration is collected during the pass and committed after the DOM is written, the same

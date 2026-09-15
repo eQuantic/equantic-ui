@@ -29,6 +29,16 @@ public sealed class StudioShell : StatefulComponent
     /// the environment and the command line, already merged — so `--section sliders` opens there
     /// with nothing parsed here.
     /// </summary>
+    /// <param name="configuration">The merged configuration the section is read from.</param>
+    /// <param name="biometrics">The device's biometric prompt, when this head has one.</param>
+    /// <param name="network">Whether the device is online, and over what.</param>
+    /// <param name="motion">The device's accelerometer/gyroscope, when this head has one.</param>
+    /// <param name="location">The device's positioning, when this head has one.</param>
+    /// <param name="camera">The device's camera, when this head has one.</param>
+    /// <param name="themeSwitch">The host's light/dark control, when it exposes one.</param>
+    /// <param name="clipboard">The system clipboard, when this head has one.</param>
+    /// <param name="culture">The host's language control, when it exposes one.</param>
+    /// <param name="deepLinks">The URLs this head was opened with, when it carries any.</param>
     /// <param name="library">
     /// The device's own photo library, arriving like any other dependency — the shell registered
     /// whichever one this platform has and this page never learns which. Nullable so a head with

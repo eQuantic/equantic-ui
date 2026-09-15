@@ -232,7 +232,7 @@ public class MethodDefinition
     public bool IsStatic { get; set; }
     public Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax? SyntaxNode { get; set; }
     /// <summary>The body block — works for constructors too (whose declaration isn't a
-    /// <see cref="MethodDeclarationSyntax"/>), so the emitter can transpile and run a ctor's body.</summary>
+    /// <see cref="Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax"/>), so the emitter can transpile and run a ctor's body.</summary>
     public Microsoft.CodeAnalysis.CSharp.Syntax.BlockSyntax? BodyNode { get; set; }
     /// <summary>
     /// The other half a body can take: <c>public Chart(x) =&gt; _x = x;</c>. Held beside

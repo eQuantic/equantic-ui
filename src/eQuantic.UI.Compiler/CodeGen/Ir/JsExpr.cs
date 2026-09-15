@@ -23,7 +23,7 @@ public abstract record JsExpr
     /// and its branches one at a time.</summary>
     public static implicit operator JsExpr(string text) => new JsOpaque(text);
 
-    /// <summary>The node standing alone, as JavaScript — see <see cref="JsExprWriter.Write"/>.</summary>
+    /// <summary>The node standing alone, as JavaScript — see <see cref="JsExprWriter.Write(JsExpr)"/>.</summary>
     public sealed override string ToString() => JsExprWriter.Write(this);
 
     /// <summary>Already-emitted text of unknown shape. See <see cref="JsPrecedence.Opaque"/>.</summary>

@@ -10,7 +10,7 @@ namespace eQuantic.Wallet;
 /// <para>
 /// Written in the write-once vocabulary, so the same trees serve the browser — including the two
 /// gestures: the transactions list pulls to refresh and its first row swipes to reveal, both on the
-/// same <see cref="Draggable"/> the vocabulary now carries.
+/// same <see cref="eQuantic.UI.Primitives.Draggable"/> the vocabulary now carries.
 /// </para>
 /// <para>
 /// SIGNPOST — this file predates the declarative factory surface and composes nodes imperatively

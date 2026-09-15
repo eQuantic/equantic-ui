@@ -68,7 +68,9 @@ public class Usage
         var evaluator = new CompileTimeEvaluator(semanticModel);
 
         // Act
-        var result = evaluator.TryEvaluate(expression.Parent as ExpressionSyntax);
+        var target = expression.Parent as ExpressionSyntax
+            ?? throw new InvalidOperationException("the located node's parent is the expression under test");
+        var result = evaluator.TryEvaluate(target);
 
         // Assert
         Assert.Equal("flex", result);
@@ -205,7 +207,9 @@ public class Usage
         var evaluator = new CompileTimeEvaluator(semanticModel);
 
         // Act
-        var result = evaluator.TryEvaluate(expression.Parent as ExpressionSyntax);
+        var target = expression.Parent as ExpressionSyntax
+            ?? throw new InvalidOperationException("the located node's parent is the expression under test");
+        var result = evaluator.TryEvaluate(target);
 
         // Assert
         Assert.Null(result);

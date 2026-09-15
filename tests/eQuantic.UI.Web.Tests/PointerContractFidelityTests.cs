@@ -93,7 +93,7 @@ public class PointerContractFidelityTests
         var clear = Walk(html)
             .Single(node => node.Attributes.GetValueOrDefault("aria-label", "") == SdkStrings.ClearSearch);
 
-        var target = Walk(clear).Select(node => node.Attributes.GetValueOrDefault("style", ""))
+        var target = Walk(clear).Select(node => node.Attributes.GetValueOrDefault("style", "") ?? "")
             .First(style => style.Contains("width:"));
         target.Should().Contain($"width: {Touch.MinTarget}px");
         target.Should().Contain("border-radius:", "a Full circle, per B10");

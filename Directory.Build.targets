@@ -1,5 +1,22 @@
 <Project>
     <!--
+      NU5128 says the nuspec declares a dependency group for a framework with no lib/ or ref/ beside
+      it. For twelve packages here that is the DESIGN, not a mistake: a package with
+      IncludeBuildOutput=false ships content — runtime.js, an embedded bun, an MSBuild SDK, the
+      templates, a generator under analyzers/ — and carries dependencies so a consumer restores the
+      rest. There is no assembly to add, so the warning's own remedy ("add lib or ref assemblies")
+      is the one thing that would be wrong.
+
+      In .targets rather than .props: this reads IncludeBuildOutput, which each project sets AFTER
+      Directory.Build.props has been evaluated. Conditioned on it rather than listed, so a new
+      content-only package is covered the day it is written and a package that grows an assembly
+      loses the exemption by itself.
+    -->
+    <PropertyGroup Condition="'$(IncludeBuildOutput)' == 'false'">
+        <NoWarn>$(NoWarn);NU5128</NoWarn>
+    </PropertyGroup>
+
+    <!--
       Development helper target: clears NuGet cache for eQuantic packages
       Usage: dotnet msbuild -t:ClearEQuanticCache
     -->

@@ -1,3 +1,4 @@
+using NodeAction = global::Android.Views.Accessibility.AccessibilityNodeInfo.AccessibilityAction;
 using Android.OS;
 using Android.Views;
 using Android.Views.Accessibility;
@@ -119,13 +120,14 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
         // What TalkBack's heading swipe walks. Like UIKit, the platform records THAT an element is
         // a heading and not how deep — the level is the document's shape, and the gesture only
         // needs the stops.
-        info.Heading = node.HeadingLevel > 0;
+        if (OperatingSystem.IsAndroidVersionAtLeast(28))
+            info.Heading = node.HeadingLevel > 0;
 
         info.Focusable = true;
         info.AccessibilityFocused = _focused == virtualViewId;
         info.AddAction(_focused == virtualViewId
-            ? global::Android.Views.Accessibility.Action.ClearAccessibilityFocus
-            : global::Android.Views.Accessibility.Action.AccessibilityFocus);
+            ? NodeAction.ActionClearAccessibilityFocus
+            : NodeAction.ActionAccessibilityFocus);
 
         // Only what can actually be ACTED on says so. Marking every node clickable — which a
         // blanket rule does, static text included — makes a screen reader offer "double tap to
@@ -133,20 +135,18 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
         if (!node.Disabled && Activatable(node.Role))
         {
             info.Clickable = true;
-            info.AddAction(global::Android.Views.Accessibility.Action.Click);
+            info.AddAction(NodeAction.ActionClick);
             // Disclosure is an ACTION here, not a flag: offering expand is how a node says it is
             // closed on Android, and offering collapse is how it says it is open. Performing either
             // is the same toggle a tap does.
             if (node.Expanded is { } open)
-                info.AddAction(open
-                    ? global::Android.Views.Accessibility.Action.Collapse
-                    : global::Android.Views.Accessibility.Action.Expand);
+                info.AddAction(open ? NodeAction.ActionCollapse : NodeAction.ActionExpand);
             // An Adjustable takes the swipe up and down, which is where the platform routes them
             // for a node that has no numeric range to set.
             if (node.Role == SemanticRole.Slider)
             {
-                info.AddAction(global::Android.Views.Accessibility.Action.ScrollForward);
-                info.AddAction(global::Android.Views.Accessibility.Action.ScrollBackward);
+                info.AddAction(NodeAction.ActionScrollForward);
+                info.AddAction(NodeAction.ActionScrollBackward);
             }
         }
 

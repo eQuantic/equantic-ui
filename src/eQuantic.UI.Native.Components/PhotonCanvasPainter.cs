@@ -16,43 +16,41 @@ namespace eQuantic.UI.Native.Components;
 internal sealed class PhotonCanvasPainter(
     DisplayListBuilder builder, Rect box, ThemeMode mode) : ICanvasPainter
 {
-    public float Width => box.Width;
-    public float Height => box.Height;
+    public Size Size => box.Size;
 
     /// <summary>Canvas coordinates are the box's own; the engine's are the window's.</summary>
-    private Point At(float x, float y) => new(box.X + x, box.Y + y);
+    private Point At(Point local) => new(box.X + local.X, box.Y + local.Y);
 
-    public void FillRect(float x, float y, float width, float height, ColorToken color, float cornerRadius = 0)
+    public void FillRect(Rect local, ColorToken color, float cornerRadius = 0)
     {
-        var origin = At(x, y);
+        var origin = At(new Point(local.X, local.Y));
         builder.FillRRect(
-            new RRect(new Rect(origin.X, origin.Y, width, height), new CornerRadii(cornerRadius)),
+            new RRect(new Rect(origin.X, origin.Y, local.Width, local.Height), new CornerRadii(cornerRadius)),
             Paint.Solid(color.Resolve(mode)));
     }
 
-    public void StrokeRect(float x, float y, float width, float height, ColorToken color,
-        float strokeWidth, float cornerRadius = 0)
+    public void StrokeRect(Rect local, ColorToken color, float strokeWidth, float cornerRadius = 0)
     {
-        var origin = At(x, y);
+        var origin = At(new Point(local.X, local.Y));
         builder.StrokeRRect(
-            new RRect(new Rect(origin.X, origin.Y, width, height), new CornerRadii(cornerRadius)),
+            new RRect(new Rect(origin.X, origin.Y, local.Width, local.Height), new CornerRadii(cornerRadius)),
             strokeWidth, Paint.Solid(color.Resolve(mode)));
     }
 
-    public void FillCircle(float centerX, float centerY, float radius, ColorToken color) =>
-        builder.FillCircle(At(centerX, centerY), radius, Paint.Solid(color.Resolve(mode)));
+    public void FillCircle(Point center, float radius, ColorToken color) =>
+        builder.FillCircle(At(center), radius, Paint.Solid(color.Resolve(mode)));
 
-    public void FillAnnularSector(float centerX, float centerY, float innerRadius, float outerRadius,
+    public void FillAnnularSector(Point center, float innerRadius, float outerRadius,
         float startAngle, float endAngle, ColorToken color, float cornerSmoothing = 0) =>
-        builder.FillAnnularSector(At(centerX, centerY), innerRadius, outerRadius,
+        builder.FillAnnularSector(At(center), innerRadius, outerRadius,
             startAngle, endAngle, Paint.Solid(color.Resolve(mode)), cornerSmoothing);
 
-    public void Line(float x1, float y1, float x2, float y2, ColorToken color, float strokeWidth)
+    public void Line(Point start, Point end, ColorToken color, float strokeWidth)
     {
         // A line is a thin filled rect, rotated to its own angle — the honest spelling of what an
         // SDF engine draws, and the reason the painter offers no MoveTo/LineTo pair.
-        var from = At(x1, y1);
-        var to = At(x2, y2);
+        var from = At(start);
+        var to = At(end);
         var dx = to.X - from.X;
         var dy = to.Y - from.Y;
         var length = MathF.Sqrt((dx * dx) + (dy * dy));

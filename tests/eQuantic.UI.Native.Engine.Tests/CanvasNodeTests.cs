@@ -30,8 +30,8 @@ public class CanvasNodeTests
         // Inside a padded box, so the canvas's (0,0) is demonstrably NOT the window's.
         var canvas = new Canvas(painter =>
         {
-            painter.Width.Should().Be(160, "the offered box, minus the padding");
-            painter.FillRect(0, 0, 10, 10, Ink);
+            painter.Size.Width.Should().Be(160, "the offered box, minus the padding");
+            painter.FillRect(new Rect(0, 0, 10, 10), Ink);
         });
         var (_, commands) = Render(new Box(new BoxStyle
         {
@@ -48,7 +48,7 @@ public class CanvasNodeTests
     public void AFixedSizeIsHonoured()
     {
         float? seen = null;
-        var canvas = new Canvas(p => seen = p.Width, width: SizeValue.Fixed(64), height: SizeValue.Fixed(32));
+        var canvas = new Canvas(p => seen = p.Size.Width, width: SizeValue.Fixed(64), height: SizeValue.Fixed(32));
         Render(canvas);
         seen.Should().Be(64);
     }
@@ -59,10 +59,10 @@ public class CanvasNodeTests
         // The painter is not an intermediate representation: a FillCircle here IS the engine's.
         var (_, commands) = Render(new Canvas(p =>
         {
-            p.FillCircle(50, 50, 20, Ink);
-            p.FillAnnularSector(50, 50, 10, 30, 0, MathF.PI / 2, Ink);
-            p.StrokeRect(0, 0, 40, 40, Ink, 2);
-            p.Line(0, 0, 30, 40, Ink, 3);
+            p.FillCircle(new Point(50, 50), 20, Ink);
+            p.FillAnnularSector(new Point(50, 50), 10, 30, 0, MathF.PI / 2, Ink);
+            p.StrokeRect(new Rect(0, 0, 40, 40), Ink, 2);
+            p.Line(new Point(0, 0), new Point(30, 40), Ink, 3);
         }));
 
         commands.Should().Contain(c => c.Kind == DrawCommandKind.FillAnnularSector);
@@ -198,13 +198,13 @@ public class CanvasDegenerateSectorTests
     [InlineData(30f, 20f, 0f, 1f)]
     public void DegenerateSectorsDrawNothing(float inner, float outer, float start, float end)
     {
-        Sectors(p => p.FillAnnularSector(50, 50, inner, outer, start, end, Ink)).Should().Be(0);
+        Sectors(p => p.FillAnnularSector(new Point(50, 50), inner, outer, start, end, Ink)).Should().Be(0);
     }
 
     [Fact]
     public void AZeroInnerRadiusIsAPieSlice_AndDraws()
     {
-        Sectors(p => p.FillAnnularSector(50, 50, 0, 20, 0, 1, Ink)).Should().Be(1);
+        Sectors(p => p.FillAnnularSector(new Point(50, 50), 0, 20, 0, 1, Ink)).Should().Be(1);
     }
 
     [Fact]
@@ -212,7 +212,7 @@ public class CanvasDegenerateSectorTests
     {
         // The one place the targets differ in SPELLING: SVG has no ring primitive and an arc whose
         // ends coincide draws nothing, so the web splits. The engine has no such trouble.
-        Sectors(p => p.FillAnnularSector(50, 50, 10, 20, 0, MathF.Tau, Ink)).Should().Be(1);
+        Sectors(p => p.FillAnnularSector(new Point(50, 50), 10, 20, 0, MathF.Tau, Ink)).Should().Be(1);
     }
 }
 

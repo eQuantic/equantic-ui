@@ -78,10 +78,9 @@ public sealed class SheetDocument
     public bool HasValue(CellRef cell) => _cells.ContainsKey(cell.Key);
 
     /// <summary>
-    /// Shifts every populated cell, row size and column size to make room for (or close over)
-    /// inserted/deleted rows or columns. <paramref name="atRow"/>/<paramref name="atCol"/> pick the
-    /// axis; positive <paramref name="delta"/> inserts, negative deletes. The REMOVED band's cells
-    /// are returned so the edit can restore them on undo.
+    /// Shifts every populated cell and row size to make room for (or close over) inserted or
+    /// deleted rows at <paramref name="atRow"/>: positive <paramref name="delta"/> inserts,
+    /// negative deletes. The REMOVED band's cells are returned so the edit can restore them on undo.
     /// </summary>
     internal List<SheetCellSnapshot> ShiftRows(int atRow, int delta)
     {
@@ -108,6 +107,10 @@ public sealed class SheetDocument
         return removed;
     }
 
+    /// <summary>
+    /// The same along the other axis: columns at <paramref name="atCol"/>, positive
+    /// <paramref name="delta"/> inserting and negative deleting, the removed band returned for undo.
+    /// </summary>
     internal List<SheetCellSnapshot> ShiftCols(int atCol, int delta)
     {
         var removed = new List<SheetCellSnapshot>();

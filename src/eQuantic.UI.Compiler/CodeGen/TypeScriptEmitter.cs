@@ -660,6 +660,7 @@ public class TypeScriptEmitter
             .Select(m => m.Value)
             .ToHashSet();
 
+    /// <param name="component">The component whose module is being written.</param>
     /// <param name="emittedBody">The already-emitted class body. The type scan is deliberately permissive
     /// (it walks the build tree, member bodies, field initializers and declared property types, plus the
     /// resolver's transitive closure) so nothing needed is ever missed; filtering the result against what

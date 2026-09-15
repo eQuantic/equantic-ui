@@ -350,47 +350,51 @@ public sealed class BarChart : StatefulComponent
         if (theme == null) return;
         var vertical = _orientation == ChartOrientation.Vertical;
         var geometry = BarChartLayout.Solve(_series, Visible(), _categories.Categories.Count, _layout, _orientation,
-            _values, p.Width, p.Height);
+            _values, p.Size.Width, p.Size.Height);
         _geometry = geometry;
 
         // Hairline gridlines one step off the surface, the baseline a step stronger — recessive chrome.
         for (var i = 0; i < geometry.Ticks.Count; i++)
         {
             var at = geometry.TickPosition(i);
-            if (vertical) p.Line(0, at, p.Width, at, theme.Border, 1);
-            else p.Line(at, 0, at, p.Height, theme.Border, 1);
+            if (vertical) p.Line(new Point(0, at), new Point(p.Size.Width, at), theme.Border, 1);
+            else p.Line(new Point(at, 0), new Point(at, p.Size.Height), theme.Border, 1);
         }
 
-        if (vertical) p.Line(0, geometry.Baseline, p.Width, geometry.Baseline, theme.BorderStrong, 1);
-        else p.Line(geometry.Baseline, 0, geometry.Baseline, p.Height, theme.BorderStrong, 1);
+        if (vertical)
+            p.Line(new Point(0, geometry.Baseline), new Point(p.Size.Width, geometry.Baseline),
+                theme.BorderStrong, 1);
+        else
+            p.Line(new Point(geometry.Baseline, 0), new Point(geometry.Baseline, p.Size.Height),
+                theme.BorderStrong, 1);
 
         for (var i = 0; i < geometry.Bars.Count; i++)
         {
             var b = geometry.Bars[i];
-            if (b.Width <= 0 || b.Height <= 0) continue;
+            if (b.Box.IsEmpty) continue;
             var color = SeriesColor(theme, b.Series);
             if (i == _hover) color = color.WithOpacity(0.8f);
             if (!b.DataEnd)
             {
-                p.FillRect(b.X, b.Y, b.Width, b.Height, color);
+                p.FillRect(b.Box, color);
                 continue;
             }
 
             // The data end is rounded; the baseline end is square: a rounded rect, then a plain one
             // over the half nearest the baseline.
-            var radius = Math.Min(BarChartLayout.DataEndRadius, Math.Min(b.Width, b.Height) / 2);
-            p.FillRect(b.X, b.Y, b.Width, b.Height, color, radius);
+            var radius = Math.Min(BarChartLayout.DataEndRadius, Math.Min(b.Box.Width, b.Box.Height) / 2);
+            p.FillRect(b.Box, color, radius);
             if (vertical)
             {
-                var half = b.Height / 2;
-                if (b.Negative) p.FillRect(b.X, b.Y, b.Width, half, color);
-                else p.FillRect(b.X, b.Y + half, b.Width, half, color);
+                var half = b.Box.Height / 2;
+                if (b.Negative) p.FillRect(new Rect(b.Box.X, b.Box.Y, b.Box.Width, half), color);
+                else p.FillRect(new Rect(b.Box.X, b.Box.Y + half, b.Box.Width, half), color);
             }
             else
             {
-                var half = b.Width / 2;
-                if (b.Negative) p.FillRect(b.X + half, b.Y, half, b.Height, color);
-                else p.FillRect(b.X, b.Y, half, b.Height, color);
+                var half = b.Box.Width / 2;
+                if (b.Negative) p.FillRect(new Rect(b.Box.X + half, b.Box.Y, half, b.Box.Height), color);
+                else p.FillRect(new Rect(b.Box.X, b.Box.Y, half, b.Box.Height), color);
             }
         }
     }

@@ -19,6 +19,7 @@ public readonly record struct ValueMember(string Display, string Js, string Defa
 /// </summary>
 public static class TypeDeclarationExtensions
 {
+    /// <param name="type">The declaration whose value members to read.</param>
     /// <param name="model">The semantic model, when the caller has one. A default that is not a
     /// literal — <c>TextAlignment.Start</c>, a named constant — can only be lowered by ASKING what it
     /// is, and getting it wrong is silent: the C# side used Start while the emitted class defaulted to

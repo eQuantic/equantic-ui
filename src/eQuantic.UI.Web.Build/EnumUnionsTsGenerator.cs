@@ -1,7 +1,7 @@
 using System.Reflection;
 using System.Text;
-using eQuantic.UI.Primitives;
 using eQuantic.UI.Codegen;
+using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Web.Build;
 
@@ -55,8 +55,6 @@ public static class EnumUnionsTsGenerator
             }
 
             ts.AppendLine($"export type {type.Name}Value =");
-            // LINE ONLY — this accumulates one line and never a break; `ts` writes every break,
-            // through CodeWriter, which spells it LF on every host.
             var line = new StringBuilder("  "); // LINE ONLY
             foreach (var member in members)
             {

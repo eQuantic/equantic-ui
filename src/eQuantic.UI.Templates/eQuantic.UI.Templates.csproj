@@ -15,7 +15,6 @@
     <IncludeContentInPack>true</IncludeContentInPack>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <ContentTargetFolders>content</ContentTargetFolders>
-    <NoWarn>$(NoWarn);NU5128</NoWarn>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <NoDefaultExcludes>true</NoDefaultExcludes>
   </PropertyGroup>

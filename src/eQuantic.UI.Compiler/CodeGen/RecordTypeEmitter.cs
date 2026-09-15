@@ -94,6 +94,7 @@ public class RecordTypeEmitter
     /// Emits the type as a standalone TypeScript module — the structural <c>equals</c>/<c>with</c> use
     /// <c>$eq</c>, imported from the runtime, and the class is exported so components can import it.
     /// </summary>
+    /// <param name="type">The record (or struct) to emit a twin module for.</param>
     /// <param name="tsTypeDeclarations">TypeScript output. FALSE is plain JavaScript, and it has to
     /// reach here: a record emitted with `declare x: string` and `constructor(x: any = null)` is a
     /// TypeScript file, so a consumer that runs the module directly — the playground, which asks

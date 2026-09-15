@@ -13,7 +13,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// Handles:
 /// - == -> === (strict)
 /// - != -> !==
-/// - &&, || pass through
+/// - <c>&amp;&amp;</c>, <c>||</c> pass through
 /// </summary>
 public class BinaryExpressionStrategy : IExpressionIrStrategy
 {
