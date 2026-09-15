@@ -96,7 +96,11 @@ static int Entitlements(string[] args)
     // `false` is the developer turning the hardened runtime off by hand; an EMPTY value is an
     // ordinary development build, which never asked for it, cannot be blamed for not having it, and
     // is the case the previous warning fired on every single time.
-    if (Arg("--hardened") == "false")
+    // CASE-INSENSITIVELY, because the value comes from an MSBuild property and MSBuild's own `==`
+    // is case-insensitive: `<EQuanticHardenedRuntime>False</EQuanticHardenedRuntime>` leaves the
+    // bundle signed adhoc with no `runtime` flag (measured: flags=0x2), so an ordinal comparison
+    // here would agree with the developer's spelling and miss the one build that is a mistake.
+    if (string.Equals(Arg("--hardened"), "false", StringComparison.OrdinalIgnoreCase))
     {
         // Over everything the file will carry rather than the app's own half: `--also` is empty
         // whenever hardening is off, so the two are the same list here, and a message phrased about

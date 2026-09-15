@@ -152,6 +152,57 @@ public class EntitlementsManifestTests
         });
     }
 
+    /// <summary>
+    /// The SPELLING of the property, which is not a detail: MSBuild's own `==` is case-insensitive,
+    /// so `<EQuanticHardenedRuntime>False</EQuanticHardenedRuntime>` leaves the bundle signed adhoc
+    /// with no `runtime` flag — measured, flags=0x2 — exactly like the lower-case spelling. An
+    /// ordinal comparison in the tool agreed with the developer's capital F and said nothing.
+    /// </summary>
+    [Theory]
+    [InlineData("false")]
+    [InlineData("False")]
+    [InlineData("FALSE")]
+    public void HardeningTurnedOff_InAnySpellingMSBuildAccepts_IsReported(string hardened)
+    {
+        WithPlist(plist =>
+        {
+            var (output, _) = Eqicon(ThisAssembly, plist, hardened);
+
+            output.Should().Contain("warning EQ4003");
+        });
+    }
+
+    [Fact]
+    public void OneKeyIsAddressedInTheSingular()
+    {
+        // The message picks its words from the count, and THIS assembly declares two — so without a
+        // one-key row the singular branch ships having never run. `--also` supplies the one key.
+        WithPlist(plist =>
+        {
+            var noDeclarations = typeof(string).Assembly.Location;
+            var (output, _) = Eqicon(noDeclarations, plist, hardened: "false",
+                also: PhotonEntitlements.AllowJit);
+
+            output.Should().Contain("warning EQ4003");
+            output.Should().Contain("consults that key");
+            output.Should().Contain("will ignore it.");
+            output.Should().Contain("drop the declaration.");
+        });
+    }
+
+    [Fact]
+    public void ManyKeysAreAddressedInThePlural()
+    {
+        WithPlist(plist =>
+        {
+            var (output, _) = Eqicon(ThisAssembly, plist, hardened: "false");
+
+            output.Should().Contain("consults those keys");
+            output.Should().Contain("will ignore them.");
+            output.Should().Contain("drop the declarations.");
+        });
+    }
+
     [Fact]
     public void AnOrdinaryDevelopmentBuild_IsNotReported()
     {

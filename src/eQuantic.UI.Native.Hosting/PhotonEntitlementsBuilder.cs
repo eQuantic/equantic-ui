@@ -13,6 +13,9 @@ namespace eQuantic.UI.Native.Hosting;
 /// never have to learn that .NET on macOS has a library-validation problem.
 /// </para>
 /// <code>
+/// // The two below are HOLES IN THE SANDBOX, so the sandbox comes with them — on its own,
+/// // RequireNetworkClient() grants nothing, because nothing was blocking the connection.
+/// builder.Entitlements.RequireAppSandbox();
 /// builder.Entitlements.RequireNetworkClient();
 /// builder.Entitlements.RequireUserSelectedFiles();
 /// </code>

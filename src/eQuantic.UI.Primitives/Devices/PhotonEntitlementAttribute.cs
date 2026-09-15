@@ -1,16 +1,20 @@
 namespace eQuantic.UI.Primitives;
 
 /// <summary>
-/// Declares that this app needs the operating system to PERMIT something the hardened runtime
-/// forbids by default — the release-build counterpart of <see cref="PhotonCapabilityAttribute"/>.
+/// Declares that this app needs the operating system to PERMIT something it would otherwise refuse
+/// — the release-build counterpart of <see cref="PhotonCapabilityAttribute"/>. WHICH protection is
+/// being asked about is the key's own business and not one question: this type carries the hardened
+/// runtime's exceptions AND the App Sandbox's permissions, which answer to different switches. The
+/// families are set out below, and getting them backwards is what this file's own summary used to
+/// do.
 /// <para>
 /// A capability asks the USER (a sheet, a reason, an answer). An entitlement asks the SYSTEM, and
 /// it is not negotiated at run time: it is signed into the binary, and code that needs one without
 /// having it is not refused politely — the process is killed. An app that JITs (a WASM engine, a
 /// scripting runtime) and ships with the hardened runtime dies on its first generated page with
 /// SIGKILL/CODESIGNING, which no <c>catch</c> can see, and which never happens in an ad-hoc
-/// development build. That is the trap this exists to close: the failure appears only in the build
-/// you publish.
+/// development build — the trap that gives this type its urgency, though it is the trap of ONE
+/// family rather than of entitlements as such.
 /// </para>
 /// <para>
 /// One declaration in C#, like every other platform fact here — the SDK writes the entitlements

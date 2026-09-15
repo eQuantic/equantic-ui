@@ -244,12 +244,20 @@
 
         <!--
             ENTITLEMENTS — what the app needs the SYSTEM to permit, read from its own
-            `[assembly: PhotonEntitlement(…)]` declarations. This is the release half of the
-            capability idea and it is invisible until release, which is what makes it dangerous: a
-            development build signs ad hoc, where the hardened runtime is not in force and nothing
-            needs permitting, so an app that generates code (a scripting VM, a WASM engine) runs
-            perfectly for months and is then killed with SIGKILL/CODESIGNING on the first machine
-            that installs the signed build. No catch sees it; the process is simply gone.
+            `[assembly: PhotonEntitlement(…)]` declarations.
+
+            ONE of the two families is invisible until release, and that is what makes it dangerous.
+            A development build signs ad hoc, WITHOUT the hardened runtime, so the exceptions that
+            relax it (`com.apple.security.cs.*`) permit nothing and are asked for by nothing: an app
+            that generates code (a scripting VM, a WASM engine) runs perfectly for months and is
+            then killed with SIGKILL/CODESIGNING on the first machine that installs the signed
+            build. No catch sees it; the process is simply gone.
+
+            The App Sandbox's permissions are NOT that shape and saying so matters here, because
+            this block used to read as though nothing at all needed permitting in development. The
+            sandbox is enforced from the signature, an ad-hoc one included, so an app declaring
+            `com.apple.security.app-sandbox` is sandboxed on the developer's own machine and its
+            `network.client` is honoured there. That is why EQ4003 reports only the first family.
 
             Note which key each shape needs, because the names mislead: the allow-jit in
             _EqRuntimeEntitlements covers pages mapped through MAP_JIT, which is what the .NET
