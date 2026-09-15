@@ -18,6 +18,8 @@ rot. What holds each claim here:
 | the vocabulary is closed: outside `Primitives` a node is a `UiComponent` or nothing | `ClosedHierarchyTests` — both graphs, the scan derived from the output directory (#138) |
 | a measurer that claims the trailing mark draws it, and one that withholds it still does not | `TruncationContractTests` — every measurer the machine hosts, the count asserted (#123, #136) |
 | the wiki speaks the tree's current names | `WikiVocabularyTests` — both languages, allowances checked both ways |
+| every document at the top of `docs/` has a row in its index, and every local link there resolves | `DocsIndexTests` — the folder held to its README; nine dangling rows the day it was written (#216) |
+| a custom `[Fact]` in the tree is applied somewhere | `AFenceNobodyAppliesTests` — scans the source across `tests/`, since after the deletion no custom `Fact` remained to reflect over (#154) |
 | the suite runs where the code runs | `ci.yml` — `build-packages` on macOS and the `test` job on Ubuntu and Windows, every project under `tests/` (#139) |
 
 **Until 2026-09-14 the suite ran on one operating system**, and the record stays because the cost
@@ -85,8 +87,18 @@ regenerated only on purpose; the two format fixtures derive their expectation fr
 formatter or leave the host-dependent value out. Deterministic on three runners, with no ICU
 pinned — which is as well, because `Microsoft.ICU.ICU4C.Runtime` ships no `osx` package at all (the
 `osx-x64` and `osx-arm64` ids are 404 on nuget.org), so "app-local ICU in the tests" could never
-have agreed on the macOS leg. One leftover: `CultureDataFactAttribute` exists in the test project
-and is applied nowhere; preview's rule says delete it, and #147 narrows to whatever still differs.
+have agreed on the macOS leg. The leftover — `CultureDataFactAttribute`, declared and applied
+nowhere — was deleted in #154, with `AFenceNobodyAppliesTests` so that the next unapplied fence fails
+(it scans the SOURCE across `tests/`, because after the deletion no custom `Fact` was left to reflect
+over); #147 narrows to whatever still differs.
+
+What no guard holds yet: the wiki's Diagnostics page against `DIAGNOSTICS.md`. `DiagnosticsDocumentedTests`
+pins the docs to the codes the compiler and the build raise; the wiki's copy — the page readers and the
+site see, in two languages — drifted the day #153 added `EQ4003` (a row here, none there, nothing red).
+CI clones the wiki beside the repository for the docs guards, so the guard would run where it matters;
+it is [#217](https://github.com/eQuantic/equantic-ui/issues/217). The same shape, one folder over:
+`DocsIndexTests` (#216) holds `docs/` to its own index, after nine retired documents left nine dangling
+rows that nothing had noticed.
 
 The counts that carry no pin — lines, fields, how many times a word appears — are dated by the line
 above and will drift. They are here to SIZE a decision, not to be believed a year on.
