@@ -235,7 +235,8 @@ already writes `enums.generated.ts` and `design-system.generated.ts` from the as
   would live: a node with no `Visit` in the realizer's own assembly, not in a test's; a call through the
   concrete node, not the abstract. And the same rule from the other end (#145): a fix for a
   host-dependent line break cannot be exercised on the host where `Environment.NewLine` is already
-  `\n`, so its guard asserts the property directly — no CR in any committed file, the writer breaks
+  `\n`, so its guard asserts the property directly — no CR in the runtime's committed `shared/`
+  artifacts (`.ts`, `.json`, `.txt`), the writer breaks
   lines with LF, no source names a construct that asks the host — rather than the fix's effect. An
   instrument that can only pass where it runs is not an instrument.
 - **An assertion names every row it claims.** #141's import check was `NotContain("Matrix2D")` as a

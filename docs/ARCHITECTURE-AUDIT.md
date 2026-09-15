@@ -68,17 +68,25 @@ through `CodeWriter` now, which this repository built for exactly this and says 
 and the JSON fixtures through one `FixtureJson`. The guard matters more than the fix, because the fix
 cannot be exercised where it was written: on macOS and Linux `Environment.NewLine` already IS `\n`,
 so a writer that asks the host looks correct locally and fails on somebody else's checkout. Three
-assertions hold it — no committed file carries a CR (A/B'd by injecting one), `CodeWriter` breaks
+assertions hold it — no committed artifact under the runtime's `shared/` (its `.ts`, `.json` and
+`.txt`) carries a CR (A/B'd by injecting one), `CodeWriter` breaks
 lines with LF, and no source in the generators or the fixture tests names a construct that asks the
 host — and the third found two more before they could be pushed. An instrument that can only pass
 where it runs is not an instrument. The other three failures are not ours to fix by regenerating:
 `ar-EG`'s Sunday is الأحد on macOS and أحد on the Linux runner, `en-US`'s long time pattern loses its
 seconds on Windows, and `(-3).ToString("C0")` is `-$3` under one ICU and `($3)` under another — same
 .NET, different ICU, and a fixture whose SUBJECT is the culture tables disagrees with two hosts
-whichever one writes it. They are fenced as `[CultureDataFact]`, macOS only, named, with the open
-question in the attribute (#147); the decision put to Edgar for the calendar names covers all three,
-and app-local ICU in the test project alone is the answer that makes every one of them deterministic
-without touching a consumer's server.
+whichever one writes it. What landed is the fourth answer to the calendar question, not one of the
+three that were put to Edgar: the fixtures assert the SDK's MAPPING against the host's own formatter
+on whichever runner runs them — `CalendarNamesFixtureTests` reads `DateTimeFormatInfo` and checks
+that the short names are `AbbreviatedDayNames` and never `ShortestDayNames`, twelve months and not
+thirteen, the culture's first day of the week — and the committed data is a sample the twin reads,
+regenerated only on purpose; the two format fixtures derive their expectation from the same
+formatter or leave the host-dependent value out. Deterministic on three runners, with no ICU
+pinned — which is as well, because `Microsoft.ICU.ICU4C.Runtime` ships no `osx` package at all (the
+`osx-x64` and `osx-arm64` ids are 404 on nuget.org), so "app-local ICU in the tests" could never
+have agreed on the macOS leg. One leftover: `CultureDataFactAttribute` exists in the test project
+and is applied nowhere; preview's rule says delete it, and #147 narrows to whatever still differs.
 
 The counts that carry no pin — lines, fields, how many times a word appears — are dated by the line
 above and will drift. They are here to SIZE a decision, not to be believed a year on.

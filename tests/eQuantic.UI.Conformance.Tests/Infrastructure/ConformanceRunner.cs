@@ -63,10 +63,13 @@ public static class ConformanceRunner
     ///
     /// <para>
     /// This does NOT make the divergence go away, and the test says so rather than the suite going
-    /// quiet: a page using `AppendLine` produces `\n` in the browser and `\r\n` from a
-    /// Windows-hosted server's SSR pass, which the reconciler sees as a text mismatch at hydration.
-    /// Fixing that is a product decision — fence the no-argument forms, or make the server honour
-    /// the SDK's newline — and it is open.
+    /// quiet. WHERE it shows was measured rather than assumed: a browser folds CR LF in markup before
+    /// the DOM exists — text, `pre`, `textarea` and attributes all parse to LF — so a Windows-hosted
+    /// server's SSR pass hydrates clean. What differs is DATA: a string built with `AppendLine` on the
+    /// server and carried to the client in a payload holds `\r\n` where the browser's same code makes
+    /// `\n`. The product answer under discussion is the SDK normalising its own strings to `\n` (the
+    /// transport owns the wire's format); it is open, and docs/ARCHITECTURE-AUDIT.md section 7 carries
+    /// the measurement.
     /// </para>
     /// </summary>
     public static void AssertSameAsDotNetExceptTheHostsNewline(string csharpExpression, string why)
