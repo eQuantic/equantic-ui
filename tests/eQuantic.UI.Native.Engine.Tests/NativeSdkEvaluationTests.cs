@@ -24,10 +24,14 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// compiled it, and the Xcode version check that the SDK means to leave alone.
 /// </para>
 /// <para>
-/// EVALUATION, not a build: <c>-getProperty</c>/<c>-getItem</c> answer from the project graph in a
-/// couple of seconds and need no restore, no compiler and no device. The desktop shape needs
-/// nothing installed and so runs on every runner; the iOS one needs the ios workload and says so
-/// when it is missing rather than reporting a wrong answer.
+/// EVALUATION, not a build: <c>-getProperty</c>/<c>-getItem</c> answer from the project graph in
+/// under a second each, with no restore, no compiler and no device. Every value asserted below is
+/// one THIS SDK decides, so none of it needs the platform's workload installed — measured, these
+/// run and pass on all three runners, including the Linux and Windows legs that have no iOS or
+/// Android workload at all. An earlier revision fenced them behind a skip for a missing workload;
+/// evaluation never emits those diagnostics (confirmed against tvos and maccatalyst, whose packs
+/// are absent here and which evaluate cleanly), so the fence was a branch that could not run and
+/// could only ever have swallowed a real failure.
 /// </para>
 /// </summary>
 public class NativeSdkEvaluationTests
@@ -43,14 +47,6 @@ public class NativeSdkEvaluationTests
     /// hung MSBuild fails this test rather than the whole job's time budget.
     /// </summary>
     private static readonly TimeSpan EvaluationTimeout = TimeSpan.FromMinutes(3);
-
-    /// <summary>
-    /// The two .NET diagnostics that both mean "this runner cannot evaluate that target framework":
-    /// the workload is not installed (1147), or its platform is not even known here because the
-    /// manifest that would name it is absent (1139). Named one by one rather than matched loosely —
-    /// a fence wide enough to swallow a real failure is how a suite goes quietly green.
-    /// </summary>
-    private static readonly string[] WorkloadMissing = ["NETSDK1147", "NETSDK1139"];
 
     /// <summary>
     /// A consumer of the SDK with <paramref name="targetFramework"/> written in the BODY, which is
@@ -88,10 +84,7 @@ public class NativeSdkEvaluationTests
                 : [];
     }
 
-    /// <summary>
-    /// Asks MSBuild, and skips ONLY for a missing workload — with the target framework named, so a
-    /// skip reads as "this runner cannot answer" and never as "the answer was fine".
-    /// </summary>
+    /// <summary>Asks MSBuild, and fails loudly with the child's own output when it cannot.</summary>
     private static Evaluation Evaluate(string targetFramework, string bodyProperties = "")
     {
         var dir = WriteConsumer(targetFramework, bodyProperties);
@@ -152,13 +145,6 @@ public class NativeSdkEvaluationTests
             var stderr = errText.GetAwaiter().GetResult();
 
             var output = stdout + stderr;
-            var absent = WorkloadMissing
-                .FirstOrDefault(code => output.Contains(code, StringComparison.Ordinal));
-            Skip.If(absent is not null,
-                $"This {RuntimeOs()} runner cannot evaluate a {targetFramework} project ({absent}): " +
-                $"its workload is not installed. `dotnet workload install ios android` is what the " +
-                $"macOS CI job runs before the suite, which is where this assertion lands.");
-
             process.ExitCode.Should().Be(0,
                 $"evaluating a {targetFramework} consumer of the native SDK must succeed.\n{output}");
 
@@ -175,9 +161,6 @@ public class NativeSdkEvaluationTests
         }
     }
 
-    private static string RuntimeOs() =>
-        OperatingSystem.IsMacOS() ? "macOS" : OperatingSystem.IsWindows() ? "Windows" : "Linux";
-
     private static string Shell(Evaluation evaluation) =>
         evaluation.Identities("ProjectReference").Concat(evaluation.Identities("PackageReference"))
             .Select(identity => Path.GetFileNameWithoutExtension(identity.Replace('\\', '/')))
@@ -188,7 +171,7 @@ public class NativeSdkEvaluationTests
     /// The row that was wrong. Every value here is the one a multi-target iOS leg already got; the
     /// defect was that this shape got a different one, silently.
     /// </summary>
-    [SkippableFact]
+    [Fact]
     public void ASingleTargetIosApp_ResolvesAsIos()
     {
         var ios = Evaluate("net10.0-ios");
@@ -219,7 +202,7 @@ public class NativeSdkEvaluationTests
     /// notice it going: the multi-target sample proves only that an APK comes out, never which
     /// minimum it carries.
     /// </summary>
-    [SkippableFact]
+    [Fact]
     public void ASingleTargetAndroidApp_ResolvesAsAndroid()
     {
         var android = Evaluate("net10.0-android");
@@ -249,7 +232,7 @@ public class NativeSdkEvaluationTests
     /// Sdk.targets is imported BELOW it and could overwrite it.
     /// </para>
     /// </summary>
-    [SkippableFact]
+    [Fact]
     public void TheDeveloperCanAskForTheXcodeCheckBack()
     {
         Evaluate("net10.0-ios", "<ValidateXcodeVersion>true</ValidateXcodeVersion>")
@@ -262,7 +245,7 @@ public class NativeSdkEvaluationTests
     /// with no target platform is still the desktop one, resolved from the HOST rather than named
     /// by the project.
     /// </summary>
-    [SkippableFact]
+    [Fact]
     public void ADesktopAppStillResolvesFromTheHost()
     {
         var desktop = Evaluate("net10.0");
