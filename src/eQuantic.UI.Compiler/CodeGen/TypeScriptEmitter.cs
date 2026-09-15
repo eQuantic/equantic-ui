@@ -2164,14 +2164,15 @@ public class TypeScriptEmitter
         }
         else
         {
-            // Fallback for legacy parsing (should happen rarely now)
-            var body = method.Body.Trim().TrimEnd(';');
-            _converter.SetCurrentClass(className);
-            var convertedExpr = _converter.Convert(body);
-            var generics = method.TypeParameters is { } typeParameters && typeParameters.Any()
-                ? $"<{string.Join(", ", typeParameters)}>" : "";
-            c.Member(JsClassMember.Method(asyncPrefix, methodName, generics, parameters, "",
-                JsStatement.Raw($"return {convertedExpr};")));
+            // There is no second way to emit a method. This branch re-parsed `method.Body` as a
+            // STRING and called the result "legacy parsing (should happen rarely now)" — measured
+            // with a throw in its place across the compiler, web and conformance suites (2,769
+            // tests): never once. A parser that hands the emitter a method hands it a syntax node.
+            throw new InvalidOperationException(
+                $"{className}.{methodName} reached the emitter with no syntax node. Every method "
+                + "comes from ComponentParser with one; a null marks a CONSTRUCTOR, which is "
+                + "emitted elsewhere. Fix whatever produced this definition rather than re-parsing "
+                + "its body as text.");
         }
     }
     

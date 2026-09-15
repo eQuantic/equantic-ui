@@ -169,9 +169,14 @@ public class ServiceProviderStrategy : IConversionStrategy
             return $"{caller}.{jsMethodName}({arg})";
         }
 
-        // If no generic type or argument, this is an error - we should warn
-        // But fallback to empty call for backwards compatibility
-        return $"{caller}.{jsMethodName}()";
+        // The same situation the branch above reports, reached a different way: no type argument and
+        // no argument, so there is nothing to key the registry on. It used to emit
+        // `caller.getService()` and say nothing — a call the runtime cannot answer, written silently
+        // because an earlier shape of this compiler had emitted it. One question, one diagnostic.
+        context.Report(node, ConversionSeverity.Error, "EQ2111",
+            $"{jsMethodName} needs its type argument to cross — the registry is keyed by the "
+            + "interface NAME, and there is nothing to key on here.");
+        return "null";
     }
 
     public int Priority => 10;
