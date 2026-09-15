@@ -785,9 +785,15 @@ its C# callers and nothing else. The shared transpilation (`SharedComponentTrans
 every top-level `Components/*.cs` to eqc, and `ComponentParser`'s static-helper discovery emits a
 module for EVERY top-level `static class` it meets there, skipping only resource Designer classes and
 `[ServerOnly]` — it never consults `[RuntimeProvided]`, the attribute that already means "the
-runtime provides this twin". `ButtonStyles` escapes today only because the `Primitives` namespace is
-routed to the runtime implicitly; in `Components` it would gain a second TypeScript twin beside the
-one `design-system.generated.ts` generates from the same class. The fix is the compiler's (brief H:
-skip `[RuntimeProvided]` where `[ServerOnly]` is skipped, with the fact that proves it), and the
-lesson is this document's: an item of the order of attack that moves a type across the transpiler's
-boundary is measured against the TRANSPILED set too, not against its C# callers alone.
+runtime provides this twin". `ButtonStyles` escapes today by its FOLDER alone: the shared
+transpilation's set is an unfiltered glob of `Components/*.cs` and `Charts/*.cs` plus exactly three
+`Primitives` subfolders (`Code`, `Sheet`, `Forms`), and `Primitives/Styles` is in none of them — the
+first measurement of this paragraph said "namespace routing", and the executor's reading of the test
+corrected it. In `Components` the file is swept up with nothing to stop it, and would gain a second
+TypeScript twin beside the `export const ButtonStyles` that `design-system.generated.ts` already
+generates and `runtime-exports.ts` already re-exports. The fix has two halves, and one without the
+other prevents nothing: the compiler skips a `[RuntimeProvided]` static helper where it skips
+`[ServerOnly]` (brief H, with the fact that proves it), AND the moved class carries the attribute,
+which travels with the file and so belongs in the contributor's PR. The lesson is this document's: an
+item of the order of attack that moves a type across the transpiler's boundary is measured against
+the TRANSPILED set too, not against its C# callers alone.
