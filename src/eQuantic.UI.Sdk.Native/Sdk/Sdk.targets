@@ -268,10 +268,12 @@
         <!--
             The `hardened` argument below carries the CONFIGURATION half of EQ4003, because that
             half is this file's to know and the other half — which of Apple's families a signature
-            consults — is the vocabulary's. Three states, and the middle one is the whole point: `true` is hardened,
-            `false` is the developer turning it off by hand while declaring keys that need it, and
-            EMPTY is an ordinary development build that never asked. Only `false` is a mistake;
-            empty is the normal case a warning here used to fire on at every single build.
+            consults — is the vocabulary's. It is passed VERBATIM, and the tool mirrors the question
+            asked a few lines down (`_EqHardenedArg`) rather than being told the answer: hardening is
+            on for `true` and off for every other non-empty value, so `False`, `off` and the typo
+            `ture` are all builds without it. EMPTY is the case that is not a mistake at all — an
+            ordinary development build that never asked, and the one a warning here used to fire on
+            at every single build.
         -->
         <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; entitlements --assembly &quot;$(TargetDir)$(TargetFileName)&quot; --plist &quot;$(_EqIconDir)/$(AssemblyName).entitlements&quot; --also &quot;$(_EqRuntimeEntitlements)&quot; --hardened &quot;$(EQuanticHardenedRuntime)&quot;"
               StandardOutputImportance="normal" />

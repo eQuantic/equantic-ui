@@ -92,15 +92,21 @@ static int Entitlements(string[] args)
     // well, and reporting them here is what made the warning this replaced wrong about the one
     // sample that triggered it.
     //
-    // WHICH BUILD is a question about configuration, so the SDK answers it and passes the answer.
-    // `false` is the developer turning the hardened runtime off by hand; an EMPTY value is an
-    // ordinary development build, which never asked for it, cannot be blamed for not having it, and
-    // is the case the previous warning fired on every single time.
-    // CASE-INSENSITIVELY, because the value comes from an MSBuild property and MSBuild's own `==`
-    // is case-insensitive: `<EQuanticHardenedRuntime>False</EQuanticHardenedRuntime>` leaves the
-    // bundle signed adhoc with no `runtime` flag (measured: flags=0x2), so an ordinal comparison
-    // here would agree with the developer's spelling and miss the one build that is a mistake.
-    if (string.Equals(Arg("--hardened"), "false", StringComparison.OrdinalIgnoreCase))
+    // WHICH BUILD is a question about configuration, so the SDK answers it and passes the answer —
+    // and an EMPTY answer is an ordinary development build, which never asked for the hardened
+    // runtime, cannot be blamed for not having it, and is the case the previous warning fired on
+    // every single time.
+    //
+    // MIRRORING THE SDK'S OWN QUESTION, rather than testing for the word "false". `Sdk.targets`
+    // signs with `--options runtime` when and only when EQuanticHardenedRuntime is `true`, compared
+    // the MSBuild way — case-insensitively — so EVERY other non-empty value is a build with the
+    // hardened runtime off. `False` is one (measured: flags=0x2(adhoc), no `runtime` flag), and so
+    // are `off`, `0`, and `ture`. A test for the word would have covered the spellings of "false"
+    // and missed the TYPO, which is the one case where the developer believes they turned it on.
+    // Empty is not in the set: that is an ordinary development build that never asked.
+    var hardened = Arg("--hardened");
+    if (!string.IsNullOrEmpty(hardened)
+        && !string.Equals(hardened, "true", StringComparison.OrdinalIgnoreCase))
     {
         // Over everything the file will carry rather than the app's own half: `--also` is empty
         // whenever hardening is off, so the two are the same list here, and a message phrased about
@@ -108,13 +114,18 @@ static int Entitlements(string[] args)
         var ineffective = written.Where(PhotonEntitlements.IsHardenedRuntimeException).ToList();
         if (ineffective.Count > 0)
         {
+            // QUOTING WHAT WAS WRITTEN, because the value is half the diagnosis: `false` is a
+            // decision to revisit and `ture` is a typo, and only the developer's own text tells
+            // them apart. Note what this does NOT advise: EQuanticSigningIdentity turns hardening
+            // on only where the property is EMPTY, so recommending it here would be the unreachable
+            // advice the warning this replaced gave.
             var one = ineffective.Count == 1;
             Console.WriteLine(
                 $"eqicon : warning EQ4003: {string.Join(", ", ineffective)} will be signed into this "
                 + $"app, and only the hardened runtime consults {(one ? "that key" : "those keys")} — "
-                + "EQuanticHardenedRuntime is set to false, so the system will ignore "
-                + $"{(one ? "it" : "them")}. Remove EQuanticHardenedRuntime=false, or drop the "
-                + $"{(one ? "declaration" : "declarations")}.");
+                + $"EQuanticHardenedRuntime is '{hardened}' and only 'true' turns it on, so the "
+                + $"system will ignore {(one ? "it" : "them")}. Set EQuanticHardenedRuntime=true, or "
+                + $"drop the {(one ? "declaration" : "declarations")}.");
         }
     }
 

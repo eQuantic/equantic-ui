@@ -153,22 +153,45 @@ public class EntitlementsManifestTests
     }
 
     /// <summary>
-    /// The SPELLING of the property, which is not a detail: MSBuild's own `==` is case-insensitive,
-    /// so `<EQuanticHardenedRuntime>False</EQuanticHardenedRuntime>` leaves the bundle signed adhoc
-    /// with no `runtime` flag — measured, flags=0x2 — exactly like the lower-case spelling. An
-    /// ordinal comparison in the tool agreed with the developer's capital F and said nothing.
+    /// EVERY value that is not `true`, because that is the question `Sdk.targets` itself asks: it
+    /// signs with `--options runtime` only for `true`, compared the MSBuild way. So `False` leaves
+    /// the bundle adhoc with no `runtime` flag (measured, flags=0x2) and so does anything else.
+    /// <para>
+    /// The last row is the one that matters most and the one a test for the word "false" would
+    /// never have had: a developer who typed `ture` believes the hardened runtime is ON. The
+    /// message quotes the value back for exactly that reason, so the assertion reads it.
+    /// </para>
     /// </summary>
     [Theory]
     [InlineData("false")]
     [InlineData("False")]
     [InlineData("FALSE")]
-    public void HardeningTurnedOff_InAnySpellingMSBuildAccepts_IsReported(string hardened)
+    [InlineData("ture")]
+    public void AnyValueTheSdkDoesNotHardenOn_IsReported(string hardened)
     {
         WithPlist(plist =>
         {
             var (output, _) = Eqicon(ThisAssembly, plist, hardened);
 
             output.Should().Contain("warning EQ4003");
+            output.Should().Contain($"EQuanticHardenedRuntime is '{hardened}'",
+                "the developer's own text is what tells a decision from a typo");
+        });
+    }
+
+    [Theory]
+    [InlineData("true")]
+    [InlineData("True")]
+    [InlineData("TRUE")]
+    public void AnyValueTheSdkDoesHardenOn_IsSilent(string hardened)
+    {
+        // The other side of the mirror. MSBuild hardens on all three, so all three must be silent —
+        // a predicate that only widened would report every hardened build instead.
+        WithPlist(plist =>
+        {
+            var (output, _) = Eqicon(ThisAssembly, plist, hardened);
+
+            output.Should().NotContain("EQ4003");
         });
     }
 
