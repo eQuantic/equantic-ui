@@ -81,7 +81,7 @@ public class PrimitiveValueFixtureTests
             },
         };
 
-        var json = JsonSerializer.Serialize(pinned, new JsonSerializerOptions { WriteIndented = true, NewLine = "\n" });
+        var json = FixtureJson.Write(pinned).TrimEnd('\n');
         var path = FixturePath();
         var current = File.Exists(path) ? File.ReadAllText(path) : null;
         if (current?.TrimEnd() == json.TrimEnd()) return;

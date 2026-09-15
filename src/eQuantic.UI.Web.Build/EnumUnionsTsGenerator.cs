@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text;
+using eQuantic.UI.Codegen;
 using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Web.Build;
@@ -25,15 +26,15 @@ public static class EnumUnionsTsGenerator
 {
     public static string Generate()
     {
-        var ts = new StringBuilder();
-        ts.AppendLf("/**");
-        ts.AppendLf(" * GENERATED — do not edit. One string union per non-flags enum of the C# vocabulary");
-        ts.AppendLf(" * (eQuantic.UI.Primitives), spelled as the transpiler emits its members: camelCase strings.");
-        ts.AppendLf(" * Regenerate: EQ_UPDATE_ENUMS_TS=1 dotnet test eQuantic.UI.Web.Tests");
-        ts.AppendLf(" * (EnumUnionsTsGeneratorTests pins this file byte-for-byte against the generator).");
-        ts.AppendLf(" *");
-        ts.AppendLf(" * A [Flags] enum is absent by design: its members combine, so it crosses as a number.");
-        ts.AppendLf(" */");
+        var ts = new CodeWriter();
+        ts.AppendLine("/**");
+        ts.AppendLine(" * GENERATED — do not edit. One string union per non-flags enum of the C# vocabulary");
+        ts.AppendLine(" * (eQuantic.UI.Primitives), spelled as the transpiler emits its members: camelCase strings.");
+        ts.AppendLine(" * Regenerate: EQ_UPDATE_ENUMS_TS=1 dotnet test eQuantic.UI.Web.Tests");
+        ts.AppendLine(" * (EnumUnionsTsGeneratorTests pins this file byte-for-byte against the generator).");
+        ts.AppendLine(" *");
+        ts.AppendLine(" * A [Flags] enum is absent by design: its members combine, so it crosses as a number.");
+        ts.AppendLine(" */");
 
         foreach (var type in Unions())
         {
@@ -43,30 +44,30 @@ public static class EnumUnionsTsGenerator
                 .Distinct(StringComparer.Ordinal)
                 .ToList();
 
-            ts.Append('\n');
+            ts.AppendLine();
             // Long unions wrap: Icons alone is a curated set of dozens, and a single line of it is
             // unreadable in a diff.
             var oneLine = $"export type {type.Name}Value = {string.Join(" | ", members)};";
             if (oneLine.Length <= 100)
             {
-                ts.AppendLf(oneLine);
+                ts.AppendLine(oneLine);
                 continue;
             }
 
-            ts.AppendLf($"export type {type.Name}Value =");
-            var line = new StringBuilder("  ");
+            ts.AppendLine($"export type {type.Name}Value =");
+            var line = new StringBuilder("  "); // LINE ONLY
             foreach (var member in members)
             {
                 var piece = line.Length == 2 ? member : $" | {member}";
                 if (line.Length + piece.Length > 100)
                 {
-                    ts.AppendLf(line.ToString());
-                    line = new StringBuilder("  | " + member);
+                    ts.AppendLine(line.ToString());
+                    line = new StringBuilder("  | " + member); // LINE ONLY
                     continue;
                 }
                 line.Append(piece);
             }
-            ts.AppendLf(line.Append(';').ToString());
+            ts.AppendLine(line.Append(';').ToString());
         }
 
         return ts.ToString();

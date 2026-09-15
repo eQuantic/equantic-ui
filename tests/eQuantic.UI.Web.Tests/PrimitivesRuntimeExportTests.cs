@@ -88,8 +88,7 @@ public class PrimitivesRuntimeExportTests
             .OrderBy(name => name, StringComparer.Ordinal)
             .ToList();
 
-        var json = System.Text.Json.JsonSerializer.Serialize(names,
-            new System.Text.Json.JsonSerializerOptions { WriteIndented = true, NewLine = "\n" });
+        var json = FixtureJson.Write(names).TrimEnd('\n');
 
         var path = FixturePath();
         var current = File.Exists(path) ? File.ReadAllText(path) : null;

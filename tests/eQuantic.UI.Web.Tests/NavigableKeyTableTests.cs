@@ -45,7 +45,7 @@ public class NavigableKeyTableTests
                 move is null ? null : char.ToLowerInvariant(move.Value.ToString()[0]) + move.Value.ToString()[1..];
         }
 
-        var json = JsonSerializer.Serialize(table, new JsonSerializerOptions { WriteIndented = true, NewLine = "\n" }) + "\n";
+        var json = FixtureJson.Write(table);
         var path = FixturePath();
         if (Environment.GetEnvironmentVariable("EQ_UPDATE_NAVIGABLE_KEYS") == "1")
         {

@@ -131,15 +131,9 @@ public class CalendarNamesFixtureTests
         if (Environment.GetEnvironmentVariable("EQ_UPDATE_CALENDAR_FIXTURE") == "1")
         {
             var pinned = Cultures.ToDictionary(culture => culture, Snapshot);
-            File.WriteAllText(path, JsonSerializer.Serialize(pinned, new JsonSerializerOptions
-            {
-                WriteIndented = true,
-                // LF: WriteIndented indents with Environment.NewLine, and this file is committed.
-                NewLine = "\n",
-                // The names are the point: escaping every accent and every CJK glyph would make
-                // the fixture unreadable and its diffs meaningless.
-                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-            }) + "\n");
+            // Readable, not the default options: the names ARE the point here, and escaping every
+            // accent and every CJK glyph would make the file unreadable and its diffs meaningless.
+            File.WriteAllText(path, FixtureJson.Write(pinned, FixtureJson.Readable));
             return;
         }
 
