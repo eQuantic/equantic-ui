@@ -1,5 +1,5 @@
-using System.Text;
 using System.Text.Json;
+using eQuantic.UI.Codegen;
 using System.Xml.Linq;
 
 namespace eQuantic.UI.Web.Build;
@@ -35,7 +35,7 @@ public static class SdkStringsTsGenerator
             values[name] = entry.Element("value")?.Value ?? "";
         }
 
-        var builder = new StringBuilder();
+        var builder = new CodeWriter();
         builder.Append("""
             /**
              * GENERATED — do not edit. The SDK's own neutral strings, from SdkResources.resx.

@@ -274,12 +274,44 @@ jobs:
           # Conformance must FAIL (not skip) if no JS engine works on the runner.
           EQ_REQUIRE_JS: "1"
         run: |
-          set -euo pipefail
-          # find, not globstar: macOS ships bash 3.2, which has no globstar.
-          find tests -name "*.csproj" | while read -r test_project; do
-            echo "Testing $test_project..."
-            dotnet test "$test_project" --configuration Release --verbosity normal
-          done
+          set -uo pipefail
+          # EVERY project reports, and the step fails at the END. `set -e` with a plain loop stops
+          # at the first red project, so the ones after it never run — and the report reads as one
+          # failure when it is an unknown number. The same reason the matrix sets fail-fast: false,
+          # one level further in. Measured: Web.Tests went red on both legs and hid eight projects.
+          #
+          # Sorted, because `find` returns filesystem order: without it, WHICH project hides the
+          # others changes from one machine to the next.
+          #
+          # find, not globstar: macOS ships bash 3.2, which has no globstar. Process substitution
+          # rather than a pipe, so the loop body is not a subshell and `status` survives it.
+          status=0
+          ran=0
+          failed=""
+          while IFS= read -r test_project; do
+            echo "::group::$test_project"
+            ran=$((ran + 1))
+            dotnet test "$test_project" --configuration Release --verbosity normal || {
+              status=1
+              failed="$failed$test_project"$'\n'
+            }
+            echo "::endgroup::"
+          done < <(find tests -name "*.csproj" | sort)
+
+          # An empty list is not a pass. Without this the step is green when `find` matches nothing —
+          # a renamed folder, a wrong working directory — having tested exactly nothing, which is the
+          # same silence this whole job exists to break.
+          if [ "$ran" -eq 0 ]; then
+            echo "::error::Found no test projects under tests/. That is not a green suite."
+            exit 1
+          fi
+          echo "Ran $ran test projects on ${{ runner.os }}."
+
+          if [ "$status" -ne 0 ]; then
+            echo "::error::These test projects failed on ${{ runner.os }}:"
+            printf '%s' "$failed"
+          fi
+          exit $status
 
       - name: Collect All NuGet Packages
         shell: bash
@@ -353,20 +385,59 @@ jobs:
           # Conformance must FAIL (not skip) if no JS engine works on the runner.
           EQ_REQUIRE_JS: "1"
         run: |
-          set -euo pipefail
+          set -uo pipefail
+          # EVERY project reports, and the step fails at the END. `set -e` with a plain loop stops at
+          # the first red project, so the ones after it never run — and the report then reads as one
+          # failure when it is an unknown number. The same reason the matrix sets fail-fast: false,
+          # one level further in.
+          #
+          # Sorted, because `find` returns filesystem order: without it, WHICH project hides the
+          # others changes from one machine to the next.
+          #
           # find, not globstar: the same reason the macOS leg avoids it, and the Windows leg runs
-          # this through Git Bash, whose bash is not the one on the PATH of the other two.
-          find tests -name "*.csproj" | while read -r test_project; do
+          # this through Git Bash, whose bash is not the one on the PATH of the other two. Process
+          # substitution rather than a pipe, so the loop body is not a subshell and `status` survives.
+          status=0
+          ran=0
+          failed=""
+          while IFS= read -r test_project; do
             echo "::group::$test_project"
-            dotnet test "$test_project" --configuration Release --verbosity normal
+            ran=$((ran + 1))
+            dotnet test "$test_project" --configuration Release --verbosity normal || {
+              status=1
+              failed="$failed$test_project"$'\n'
+            }
             echo "::endgroup::"
-          done
+          done < <(find tests -name "*.csproj" | sort)
+
+          # An empty list is not a pass: a renamed folder and the step is green having tested nothing.
+          if [ "$ran" -eq 0 ]; then
+            echo "::error::Found no test projects under tests/. That is not a green suite."
+            exit 1
+          fi
+          echo "Ran $ran test projects on ${{ runner.os }}."
+
+          if [ "$status" -ne 0 ]; then
+            echo "::error::These test projects failed on ${{ runner.os }}:"
+            printf '%s' "$failed"
+          fi
+          exit $status
 
 
   # GitHub Packages is a convenience feed for every main push — a light ubuntu job so the heavy
   # macOS build job never dies on the upload (exit 137).
   publish-github:
     needs: [build-packages, gate-templates, test]
+    # The cross-OS suite is a GATE, not a report: `needs.test` below. Without it a red Linux or
+    # Windows leg sat beside a green macOS build and the packages published anyway — coverage that
+    # cannot stop anything is a comment with a check's authority.
+    #
+    # These lines live HERE and not inside the `if:` below, and that is not style. `if: |` is a
+    # LITERAL block scalar, so a `#` inside it is part of the expression, not a comment — GitHub
+    # then fails to parse the condition and the whole workflow fails at STARTUP, with zero jobs and
+    # no log. Every push in this repository ran no CI at all for an hour because of three lines of
+    # prose written one indent too far down.
+    #
     # On a TAG this waits for the gate, as nuget.org already does. It did not, so a release whose
     # templates failed to scaffold still landed here: preview.31 sat on this feed carrying a broken
     # template while the public feed correctly never got it, and the two had to be reconciled by
@@ -381,9 +452,6 @@ jobs:
       always()
       && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
       && needs.build-packages.result == 'success'
-      # The cross-OS suite is a GATE, not a report. Without this a red Linux or Windows leg sat
-      # beside a green macOS build and the packages published anyway — coverage that cannot stop
-      # anything is a comment with a check's authority, which is the defect this job was added for.
       && needs.test.result == 'success'
       && (needs.gate-templates.result == 'success' || needs.gate-templates.result == 'skipped')
     runs-on: ubuntu-latest

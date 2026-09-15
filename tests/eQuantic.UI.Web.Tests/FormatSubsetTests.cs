@@ -69,7 +69,7 @@ public class FormatSubsetTests
     internal static string Normalize(string value) =>
         value.Replace(' ', ' ').Replace(' ', ' ');
 
-    [Fact]
+    [CultureDataFact]
     public void TheFormatSubset_IsWhatBothRuntimesProduce()
     {
         var builder = new StringBuilder();

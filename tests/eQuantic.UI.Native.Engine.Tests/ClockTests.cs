@@ -203,6 +203,24 @@ public class ClockTests
     /// The REAL native realization, which is .NET's own timer and not a frame-loop invention: it
     /// fires on its own thread, and disposing stops it. Generous windows — this asserts that the
     /// wiring is real, never how punctual a thread pool is.
+    /// <para>
+    /// It does NOT compare counts before and after, and that is the whole design. <c>Dispose</c>
+    /// stops NEW callbacks; it does not wait for one already running — waiting is
+    /// <c>Dispose(WaitHandle)</c>, which this realization deliberately avoids, because the callback
+    /// arrives on a thread-pool thread by contract. So a tick already in flight may land at any
+    /// later moment, and every count-based shape is a bet on how long that takes: the first version
+    /// read the counter at the instant Dispose returned (expected 1, found 2, on a loaded runner),
+    /// and sleeping first only widens the bet — a thread-pool stall outlasts any constant you pick.
+    /// Found in review, after the sleep had already been widened once.
+    /// </para>
+    /// <para>
+    /// So the callback answers the question itself, at ENTRY: did I start after <c>Dispose</c>
+    /// returned? A callback that entered before the flag was written is the in-flight case and is
+    /// legal whenever it finishes; one that reads the flag STARTED after disposal, which is exactly
+    /// what <c>Dispose</c> forbids. No stall can make that a false failure. The sleeps stay, but
+    /// only to give the timer a CHANCE to misbehave, so a short one costs a missed violation rather
+    /// than a red build — and the A/B below is what proves the window is long enough.
+    /// </para>
     /// </summary>
     [Fact]
     public void ThePhotonClock_Fires_AndDisposingStopsIt()
@@ -210,18 +228,29 @@ public class ClockTests
         var clock = new PhotonClock();
         using var fired = new ManualResetEventSlim();
         var ticks = 0;
+        var disposed = 0;
+        var startedAfterDisposal = 0;
 
         var subscription = clock.Every(TimeSpan.FromMilliseconds(20), () =>
         {
+            // At ENTRY, before any work: this is the moment that separates "already running" from
+            // "started after we were told to stop".
+            if (Volatile.Read(ref disposed) == 1) Interlocked.Increment(ref startedAfterDisposal);
             Interlocked.Increment(ref ticks);
             fired.Set();
         });
 
         fired.Wait(TimeSpan.FromSeconds(5)).Should().BeTrue("the timer fires without anyone pumping it");
+        Volatile.Read(ref ticks).Should().BeGreaterThan(0, "the subscription delivered before we stopped it");
 
         subscription.Dispose();
-        var afterDispose = Volatile.Read(ref ticks);
-        Thread.Sleep(120);
-        Volatile.Read(ref ticks).Should().Be(afterDispose, "disposing stops it for good");
+        Volatile.Write(ref disposed, 1);
+
+        // Twenty periods. A live timer would enter the callback about twenty times in here; a
+        // disposed one enters it zero times, however long the machine stalls.
+        Thread.Sleep(400);
+
+        Volatile.Read(ref startedAfterDisposal).Should().Be(0,
+            "disposing stops it for good — a callback already running may finish, but none may START");
     }
 }

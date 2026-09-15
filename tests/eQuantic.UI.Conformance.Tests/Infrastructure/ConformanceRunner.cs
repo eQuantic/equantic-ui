@@ -45,6 +45,56 @@ public static class ConformanceRunner
     }
 
     /// <summary>
+    /// For the expressions whose .NET answer is the HOST's newline.
+    ///
+    /// <para>
+    /// `Environment.NewLine` is `\r\n` on Windows and `\n` everywhere else, and the browser has no
+    /// environment at all — so the SDK decided its newline is `\n`, in both the tail strategy
+    /// ("the eqc world's NewLine") and the `StringBuilder` twin ("Unix Environment.NewLine,
+    /// matching the server/runtime"). That decision was written down twice and was true until
+    /// somebody hosts the server on Windows.
+    /// </para>
+    ///
+    /// <para>
+    /// So these compare with `\r\n` folded to `\n` on BOTH sides, and assert that the difference
+    /// is ONLY that: a translation defect still fails, because the folded strings must match
+    /// exactly and the raw ones must differ only where a newline is.
+    /// </para>
+    ///
+    /// <para>
+    /// This does NOT make the divergence go away, and the test says so rather than the suite going
+    /// quiet: a page using `AppendLine` produces `\n` in the browser and `\r\n` from a
+    /// Windows-hosted server's SSR pass, which the reconciler sees as a text mismatch at hydration.
+    /// Fixing that is a product decision — fence the no-argument forms, or make the server honour
+    /// the SDK's newline — and it is open.
+    /// </para>
+    /// </summary>
+    public static void AssertSameAsDotNetExceptTheHostsNewline(string csharpExpression, string why)
+    {
+        var js = Transpiler.TranspileExpression(csharpExpression, "");
+        var program = $"{BuildHelperImport(js)}console.log(JSON.stringify(((v) => v === undefined ? null : v)({js})))";
+
+        var actual = JsExecutor.Run(program);
+        var expected = DotNetEvaluator.EvaluateToJson(csharpExpression, "");
+        if (actual == expected) return;
+
+        Folded(actual).Should().Be(Folded(expected),
+            $"C# `{csharpExpression}` (transpiled to JS `{js}`) differs from .NET by MORE than the "
+            + $"host's newline, which is the only difference this overload excuses: {why}");
+    }
+
+    /// <summary>
+    /// A JSON-encoded answer with the host's `\r\n` folded to the SDK's `\n`.
+    /// <para>
+    /// PUBLIC so it can be tested directly, and it has to be: the caller returns early when the two
+    /// sides agree, which they do everywhere but Windows. On any other machine the folding never
+    /// runs, and a suite that only ran the two conformance cases would be claiming a comparison it
+    /// had never exercised.
+    /// </para>
+    /// </summary>
+    public static string Folded(string jsonEncoded) => jsonEncoded.Replace("\\r\\n", "\\n");
+
+    /// <summary>
     /// For the handful of values .NET itself does not compute identically on every platform.
     ///
     /// <para>

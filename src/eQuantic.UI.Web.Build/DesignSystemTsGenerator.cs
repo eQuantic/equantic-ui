@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Reflection;
-using System.Text;
 using eQuantic.UI.Primitives;
+using eQuantic.UI.Codegen;
 
 namespace eQuantic.UI.Web.Build;
 
@@ -18,7 +18,7 @@ public static class DesignSystemTsGenerator
 {
     public static string Generate(IAppTheme theme)
     {
-        var ts = new StringBuilder();
+        var ts = new CodeWriter();
         ts.AppendLine("/**");
         ts.AppendLine(" * GENERATED — do not edit. Every value comes from the C# design-system single source");
         ts.AppendLine(" * (eQuantic.UI.Primitives). Regenerate: EQ_UPDATE_DESIGN_TS=1 dotnet test eQuantic.UI.Web.Tests");
@@ -53,7 +53,7 @@ public static class DesignSystemTsGenerator
 
     /// <summary>The spec §06 easing curves → the CSS-ready control-point tuples the TS twin feeds
     /// <c>cubic-bezier()</c> (the C# TokenCss.Bezier mirror).</summary>
-    private static void AppendCurves(StringBuilder ts)
+    private static void AppendCurves(CodeWriter ts)
     {
         ts.AppendLine();
         ts.AppendLine("export const Curve = {");
@@ -67,7 +67,7 @@ public static class DesignSystemTsGenerator
     }
 
     /// <summary>A static token class of numeric consts (Space, Radius, …) → a const object of camelCase members.</summary>
-    private static void AppendConstScale(StringBuilder ts, Type scale, string exportName)
+    private static void AppendConstScale(CodeWriter ts, Type scale, string exportName)
     {
         ts.AppendLine();
         ts.AppendLine($"export const {exportName} = {{");
@@ -100,7 +100,7 @@ public static class DesignSystemTsGenerator
     /// The CONTROL LADDER (spec A12) — one method per measurement, each a switch over
     /// <see cref="SizeVariant"/>, reflected so a new rung never needs a generator edit.
     /// </summary>
-    private static void AppendSizing(StringBuilder ts)
+    private static void AppendSizing(CodeWriter ts)
     {
         ts.AppendLine();
         ts.AppendLine("/** The control ladder — every control of a given size measures the same (spec A12). */");
@@ -155,7 +155,7 @@ public static class DesignSystemTsGenerator
     }
 
     /// <summary>The metrics tuple for every rung, at a given density.</summary>
-    private static void AppendMetricsSwitch(StringBuilder ts, Density density, string indent)
+    private static void AppendMetricsSwitch(CodeWriter ts, Density density, string indent)
     {
         ts.AppendLine($"{indent}switch (size) {{");
         foreach (var size in Enum.GetValues<SizeVariant>())
@@ -171,7 +171,7 @@ public static class DesignSystemTsGenerator
     }
 
     /// <summary>One switch over the size rungs, at a given density.</summary>
-    private static void AppendSizeSwitch(StringBuilder ts, MethodInfo method, Density density, string indent)
+    private static void AppendSizeSwitch(CodeWriter ts, MethodInfo method, Density density, string indent)
     {
         ts.AppendLine($"{indent}switch (size) {{");
         foreach (var size in Enum.GetValues<SizeVariant>())
@@ -188,7 +188,7 @@ public static class DesignSystemTsGenerator
     /// <summary>The spec A12 size table, one entry per <see cref="SizeVariant"/> — emitted as the ARRAY the
     /// transpiled tuple deconstruction (`let [height, padX, …] = ButtonStyles.metrics(size)`) expects.
     /// The C# switch's `_` arm (XLarge) becomes the `default` case, preserving unknown-value behavior.</summary>
-    private static void AppendButtonStyles(StringBuilder ts)
+    private static void AppendButtonStyles(CodeWriter ts)
     {
         ts.AppendLine();
         ts.AppendLine("/** Height · PadX · Gap · Label · Icon · Radius · HitTarget — the spec A12 size table. */");
@@ -205,7 +205,7 @@ public static class DesignSystemTsGenerator
         ts.AppendLine("};");
     }
 
-    private static void AppendVariantColors(StringBuilder ts, IAppTheme theme)
+    private static void AppendVariantColors(CodeWriter ts, IAppTheme theme)
     {
         ts.AppendLine();
         ts.AppendLine("const variantColors: Record<string, VariantColors> = {");
@@ -223,7 +223,7 @@ public static class DesignSystemTsGenerator
         ts.AppendLine("};");
     }
 
-    private static void AppendTypeScale(StringBuilder ts, IAppTheme theme)
+    private static void AppendTypeScale(CodeWriter ts, IAppTheme theme)
     {
         ts.AppendLine();
         ts.AppendLine("const typeScale: Record<string, TypeStyle> = {");
@@ -237,7 +237,7 @@ public static class DesignSystemTsGenerator
         ts.AppendLine("};");
     }
 
-    private static void AppendElevations(StringBuilder ts, IAppTheme theme)
+    private static void AppendElevations(CodeWriter ts, IAppTheme theme)
     {
         ts.AppendLine();
         ts.AppendLine("const elevations: ShadowSpec[] = [");
@@ -251,7 +251,7 @@ public static class DesignSystemTsGenerator
         ts.AppendLine("];");
     }
 
-    private static void AppendShape(StringBuilder ts, IAppTheme theme)
+    private static void AppendShape(CodeWriter ts, IAppTheme theme)
     {
         ts.AppendLine();
         ts.AppendLine("const shapeScale: Record<string, number> = {");
@@ -260,7 +260,7 @@ public static class DesignSystemTsGenerator
         ts.AppendLine("};");
     }
 
-    private static void AppendTheme(StringBuilder ts, IAppTheme theme)
+    private static void AppendTheme(CodeWriter ts, IAppTheme theme)
     {
         AppendDataPalette(ts, theme.Data);
         ts.AppendLine();
@@ -305,7 +305,7 @@ public static class DesignSystemTsGenerator
     /// <summary>The data palette (C# <c>IAppTheme.Data</c>), emitted from the values the theme holds and
     /// assigned to <c>DataPalette.default</c> here — this module is the one that knows the values, so no
     /// hex is ever written twice.</summary>
-    private static void AppendDataPalette(StringBuilder ts, DataPalette data)
+    private static void AppendDataPalette(CodeWriter ts, DataPalette data)
     {
         ts.AppendLine();
         ts.AppendLine("// The data palette: eight series slots in a FIXED order, the sequential ramp, the diverging");
@@ -325,7 +325,7 @@ public static class DesignSystemTsGenerator
         ts.AppendLine("DataPalette.default = defaultData;");
     }
 
-    private static void AppendTokenList(StringBuilder ts, IReadOnlyList<ColorToken> tokens)
+    private static void AppendTokenList(CodeWriter ts, IReadOnlyList<ColorToken> tokens)
     {
         ts.AppendLine("  [");
         foreach (var token in tokens) ts.AppendLine($"    {Token(token)},");

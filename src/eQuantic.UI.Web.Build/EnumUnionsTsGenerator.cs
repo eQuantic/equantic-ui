@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text;
 using eQuantic.UI.Primitives;
+using eQuantic.UI.Codegen;
 
 namespace eQuantic.UI.Web.Build;
 
@@ -25,7 +26,7 @@ public static class EnumUnionsTsGenerator
 {
     public static string Generate()
     {
-        var ts = new StringBuilder();
+        var ts = new CodeWriter();
         ts.AppendLine("/**");
         ts.AppendLine(" * GENERATED — do not edit. One string union per non-flags enum of the C# vocabulary");
         ts.AppendLine(" * (eQuantic.UI.Primitives), spelled as the transpiler emits its members: camelCase strings.");
@@ -54,14 +55,16 @@ public static class EnumUnionsTsGenerator
             }
 
             ts.AppendLine($"export type {type.Name}Value =");
-            var line = new StringBuilder("  ");
+            // LINE ONLY — this accumulates one line and never a break; `ts` writes every break,
+            // through CodeWriter, which spells it LF on every host.
+            var line = new StringBuilder("  "); // LINE ONLY
             foreach (var member in members)
             {
                 var piece = line.Length == 2 ? member : $" | {member}";
                 if (line.Length + piece.Length > 100)
                 {
                     ts.AppendLine(line.ToString());
-                    line = new StringBuilder("  | " + member);
+                    line = new StringBuilder("  | " + member); // LINE ONLY
                     continue;
                 }
                 line.Append(piece);
