@@ -161,6 +161,24 @@ public class NativeSdkEvaluationTests
         }
     }
 
+    /// <summary>
+    /// The platform minimum as a VERSION rather than as text.
+    ///
+    /// <para>
+    /// MSBuild hands back whatever the platform's own targets left there, and they do not agree on
+    /// spelling: the Android workload normalises this SDK's <c>26</c> to <c>26.0</c>, while a runner
+    /// with no Android workload reports the <c>26</c> we wrote. Asserting the string therefore pins
+    /// the RUNNER, not the decision — measured in this PR, <c>"26.0"</c> was green on macOS and red
+    /// on Linux for a tree where nothing was wrong.
+    /// </para>
+    /// </summary>
+    private static Version Minimum(Evaluation evaluation)
+    {
+        var text = evaluation.Property("SupportedOSPlatformVersion");
+        text.Should().NotBeEmpty("the SDK must state a platform minimum of its own");
+        return Version.Parse(text.Contains('.', StringComparison.Ordinal) ? text : text + ".0");
+    }
+
     private static string Shell(Evaluation evaluation) =>
         evaluation.Identities("ProjectReference").Concat(evaluation.Identities("PackageReference"))
             .Select(identity => Path.GetFileNameWithoutExtension(identity.Replace('\\', '/')))
@@ -182,7 +200,7 @@ public class NativeSdkEvaluationTests
         ios.Property("ValidateXcodeVersion").Should().Be("false",
             "the SDK does not dictate which Xcode the developer has — and this is the shape where " +
             "that default was missed, so it is the shape worth pinning");
-        ios.Property("SupportedOSPlatformVersion").Should().Be("15.0",
+        Minimum(ios).Should().Be(new Version(15, 0),
             "15.0 is the SDK's minimum; without it the app silently takes the iOS SDK's own, and " +
             "refuses to install on anything older than the machine that built it");
         ios.Property("_EqMacHead").Should().BeEmpty("an iPhone app is not a macOS head");
@@ -208,7 +226,7 @@ public class NativeSdkEvaluationTests
         var android = Evaluate("net10.0-android");
 
         android.Property("_EqPlatform").Should().Be("android");
-        android.Property("SupportedOSPlatformVersion").Should().Be("26.0",
+        Minimum(android).Should().Be(new Version(26, 0),
             "26 is where adaptive icons, the Choreographer's frame callback and Vulkan all " +
             "arrived; without it the app takes the Android SDK's own minimum");
         android.Property("ValidateXcodeVersion").Should().BeEmpty(
