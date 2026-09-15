@@ -105,6 +105,15 @@ public class ConversionContext
     /// </summary>
     public HashSet<string> UsedRuntimeTypes { get; } = new();
 
+    /// <summary>Type receivers known by the source-directory fallback. These sets are populated by
+    /// the emitter from <see cref="ComponentDependencyResolver"/> so expression strategies do not
+    /// misclassify a known static/runtime type as an instance member or enum solely by shape.</summary>
+    public IReadOnlySet<string> FallbackStaticTypes { get; set; } = new HashSet<string>();
+    public IReadOnlySet<string> FallbackRuntimeTypes { get; set; } = new HashSet<string>();
+
+    public bool IsFallbackTypeReceiver(string name) =>
+        FallbackStaticTypes.Contains(name) || FallbackRuntimeTypes.Contains(name);
+
     /// <summary>Diagnostics raised during this conversion (unconverted or impossible constructs).</summary>
     public List<ConversionDiagnostic> Diagnostics { get; } = new();
 
