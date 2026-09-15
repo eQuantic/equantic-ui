@@ -68,8 +68,8 @@ record of a release, the wiki's Upgrading page is the distillate.
 - **2026-08-07 · `dotnet new equantic-app`**, the version stamped at pack time.
   **2026-08-08 · The declarative surface**: factories instead of `new`, no overloads, a factory
   mirrors its constructor; the app's own components join it through a source generator. The first
-  release tag, **0.2.0-preview.1**, is cut the same day; forty-three previews follow by 2026-08-24
-  as the site and the studio dogfood the SDK.
+  release tag, **0.2.0-preview.1**, is cut the same day, and by 2026-08-24 forty-three previews have
+  been cut as the site and the studio dogfood the SDK.
 - **2026-08-14 · The visual editor's decision**: declarative is the preferred form and the fence
   stays there, but *understanding* is not fenced — reading, selecting, inspecting and property-editing
   work over any code, only structural insertion is held to `children: [...]`. Phases 0–18 land
@@ -204,7 +204,7 @@ record of a release, the wiki's Upgrading page is the distillate.
 |---|---|---|
 | `COMPILE-TIME-EVALUATION-INDEX.md`, `COMPILE-TIME-EVALUATION-SUMMARY.md`, `COMPILER-COMPILE-TIME-EVALUATION.md`, `COMPILER-IMPLEMENTATION-GUIDE.md` | 1,561 lines around a compile-time class evaluator for a Tailwind adapter removed on 2026-08-08; `[CompileTimeEvaluate]` is applied to zero types | [#214](https://github.com/eQuantic/equantic-ui/issues/214) deletes the evaluator; the audit's §9 records the measurement |
 | `IMPLEMENTATION-PLAN.md` | Phase 1 — transpiler correctness and the conformance harness; complete 2026-06-10 | `tests/eQuantic.UI.Conformance.Tests`; [`DOTNET-COVERAGE-PROGRAM.md`](DOTNET-COVERAGE-PROGRAM.md); the compiler section of `CLAUDE.md` |
-| `PHASE-2-CLIENT-ROUTER-PLAN.md` | Phase 2 — the client router; all exit criteria met 2026-06-10 | `src/eQuantic.UI.Runtime/src/router`; the wiki's Routing page |
+| `PHASE-2-CLIENT-ROUTER-PLAN.md` | Phase 2 — the client router; all exit criteria met 2026-06-10 | `src/eQuantic.UI.Runtime/src/router`, and `boot.ts` importing the page's module on navigation |
 | `DEVICE-CAPABILITIES-PLAN.md` | Track D — typed device capabilities instead of method channels; D1–D7 closed 2026-08-04 | the capability interfaces in `Primitives/Contracts`; the wiki's Capabilities page; the `MethodChannel` row of [`FLUTTER-PARITY.md`](FLUTTER-PARITY.md) |
 | `DATE-PICKER-PLAN.md` | the date and time pickers; slices 1, 2 and 4 delivered | what is owed is [#202](https://github.com/eQuantic/equantic-ui/issues/202); the C15 spec stays in [`design/`](design/README.md) |
 | `VSCODE-VISUAL-EDITOR-PLAN.md` | Track E — the visual editor in VS Code; phases 0–18 done, the decision of 2026-08-14 | the tiers are [#215](https://github.com/eQuantic/equantic-ui/issues/215); the design host is `src/eQuantic.UI.Design*`, the extension `extensions/vscode` |
