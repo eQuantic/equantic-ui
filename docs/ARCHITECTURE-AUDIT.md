@@ -778,3 +778,16 @@ are two numbers, and a cross-pin promises the second — a translation rule just
 owes a measurement against the real runtime. The pin that will hold it is parked with the fix, and
 the fix is two: an arrow body reaches the emitter as a string while `ReturnStatementStrategy` has the
 node, so the repro is written in both shapes first, the lesson of #98.
+
+A second one arrived the same way, from the first external contributor's issue rather than from a
+pin. #127 asks for `ButtonStyles` to move from `Primitives` to `Components`, and the issue measured
+its C# callers and nothing else. The shared transpilation (`SharedComponentTranspilationTests`) feeds
+every top-level `Components/*.cs` to eqc, and `ComponentParser`'s static-helper discovery emits a
+module for EVERY top-level `static class` it meets there, skipping only resource Designer classes and
+`[ServerOnly]` — it never consults `[RuntimeProvided]`, the attribute that already means "the
+runtime provides this twin". `ButtonStyles` escapes today only because the `Primitives` namespace is
+routed to the runtime implicitly; in `Components` it would gain a second TypeScript twin beside the
+one `design-system.generated.ts` generates from the same class. The fix is the compiler's (brief H:
+skip `[RuntimeProvided]` where `[ServerOnly]` is skipped, with the fact that proves it), and the
+lesson is this document's: an item of the order of attack that moves a type across the transpiler's
+boundary is measured against the TRANSPILED set too, not against its C# callers alone.
