@@ -72,6 +72,31 @@
         <SupportedOSPlatformVersion>15.0</SupportedOSPlatformVersion>
     </PropertyGroup>
 
+    <!--
+        The SDK does not dictate which Xcode the developer has.
+
+        .NET for iOS fails the build (E0191) unless the installed Xcode's MAJOR.MINOR equals the
+        one its SDK pack recommends: pack 26.5 demands Xcode 26.6 exactly, so Xcode 27.0 is an
+        error and so would 26.5 be. That is a version comparison, not a capability check — nothing
+        was asked of the toolchain and nothing failed.
+
+        Measured: this repository's own two environments already disagree. A developer machine on
+        macOS 26.6.2 carries Xcode 27.0, and the macos-26 runner carries the Xcode its image ships;
+        both have the 26.5 and 27.0 packs installed. With the check on, an app builds on one and
+        refuses on the other, for no reason either of them can act on.
+
+        Telling the app author to install a second Xcode is the shape this product rules out: a
+        platform artifact they never asked for, to satisfy a check about a platform detail the SDK
+        already resolved. It stays a decision they can take back — setting the property in their own
+        csproj wins, because this only fills it in when it is empty.
+
+        What this does NOT do is silence a real failure: a toolchain that genuinely cannot build
+        still fails, with the error from the thing that failed rather than from a comparison.
+    -->
+    <PropertyGroup Condition="'$(_EqPlatform)' == 'ios' AND '$(ValidateXcodeVersion)' == ''">
+        <ValidateXcodeVersion>false</ValidateXcodeVersion>
+    </PropertyGroup>
+
     <!-- 26 is where adaptive icons, the Choreographer's frame callback and Vulkan all arrived. -->
     <PropertyGroup Condition="'$(_EqPlatform)' == 'android' AND '$(SupportedOSPlatformVersion)' == ''">
         <SupportedOSPlatformVersion>26</SupportedOSPlatformVersion>
