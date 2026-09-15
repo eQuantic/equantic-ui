@@ -44,7 +44,7 @@ the workflow's registered name reverted from `CI` to its own path, `.github/work
 push from 35fa67ed to a3f1efc2 has a run under that name with zero jobs and the conclusion "failure",
 and seven pull requests merged in that window on their authors' local runs alone: #135, #137, #138,
 #140, #141, and this document's own #142 and #144. Their claims are not wrong; they are narrower
-than they read. #145 moved the prose above the key, and the proof is the run being called `CI` again.
+than they read. #145 moved the prose above the key (on `main` as d21a98d2), and the proof is the run being called `CI` again: the first one on `main` had 13 jobs and ran 11 test projects on each of the three runners.
 Two instruments failed in a row, and they are the same family as the one-OS gap, one turn further: a
 check that could not STOP anything — the ruleset requires a review and Copilot's, not a status
 check, so a pull request with zero CI jobs was `CLEAN` — and then a check that never ran. The
