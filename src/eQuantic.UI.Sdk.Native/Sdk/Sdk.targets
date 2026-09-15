@@ -257,7 +257,15 @@
             memory instead — wasmtime, so YARA-X — needs allow-unsigned-executable-memory, and
             declares that one itself through PhotonEntitlement.
         -->
-        <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; entitlements --assembly &quot;$(TargetDir)$(TargetFileName)&quot; --plist &quot;$(_EqIconDir)/$(AssemblyName).entitlements&quot; --also &quot;$(_EqRuntimeEntitlements)&quot;"
+        <!--
+            The `hardened` argument below carries the CONFIGURATION half of EQ4003, because that
+            half is this file's to know and the other half — which of Apple's families a signature
+            consults — is the vocabulary's. Three states, and the middle one is the whole point: `true` is hardened,
+            `false` is the developer turning it off by hand while declaring keys that need it, and
+            EMPTY is an ordinary development build that never asked. Only `false` is a mistake;
+            empty is the normal case a warning here used to fire on at every single build.
+        -->
+        <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; entitlements --assembly &quot;$(TargetDir)$(TargetFileName)&quot; --plist &quot;$(_EqIconDir)/$(AssemblyName).entitlements&quot; --also &quot;$(_EqRuntimeEntitlements)&quot; --hardened &quot;$(EQuanticHardenedRuntime)&quot;"
               StandardOutputImportance="normal" />
 
         <PropertyGroup>
@@ -268,19 +276,30 @@
 
             <!-- Ad hoc unless the app names a real identity. Ad hoc is right for development and
                  says so honestly: it proves nothing about origin, and it is what lets a local app be
-                 treated as an app at all. A published build sets EQuanticSigningIdentity to a
-                 Developer ID and gets the hardened runtime with it, because notarization requires
-                 both and entitlements mean nothing without them. -->
+                 treated as an app at all. It also carries entitlements — an ad-hoc signed app IS
+                 sandboxed when it declares the App Sandbox — so what development does not exercise
+                 is the hardened runtime, not entitlements as a whole. A published build sets
+                 EQuanticSigningIdentity to a Developer ID and gets the hardened runtime with it,
+                 because notarization requires both. -->
             <_EqSignIdentity>-</_EqSignIdentity>
             <_EqSignIdentity Condition="'$(EQuanticSigningIdentity)' != ''">$(EQuanticSigningIdentity)</_EqSignIdentity>
             <_EqHardenedArg Condition="'$(EQuanticHardenedRuntime)' == 'true'">--options runtime</_EqHardenedArg>
         </PropertyGroup>
 
-        <!-- An entitlement the app declares but never gets is the failure this whole block exists to
-             prevent, so say plainly when the two halves disagree rather than shipping a bundle whose
-             declarations are decoration. -->
-        <Warning Condition="Exists('$(_EqEntitlements)') AND '$(EQuanticHardenedRuntime)' != 'true'"
-                 Text="This app declares entitlements, but they are only consulted under the hardened runtime — set EQuanticSigningIdentity (which turns it on) or EQuanticHardenedRuntime=true, or the declarations do nothing." />
+        <!--
+            An entitlement the app declares but never gets is the failure this whole block exists to
+            prevent, and it IS reported — as EQ4003, by the eqicon call above, which is the only
+            thing here that knows which keys the answer depends on.
+
+            It used to be a <Warning> on this spot, and it was wrong three ways. It claimed
+            entitlements "are only consulted under the hardened runtime", which holds for
+            `com.apple.security.cs.*` and NOT for the App Sandbox's permissions — the sample that
+            fired it declares `network.client`, whose gate is the sandbox and which an ad-hoc
+            signature honours. It advised setting EQuanticSigningIdentity, a branch that cannot
+            reach it, because the property above turns the hardened runtime on with the identity. And
+            it fired on every development build, where there is no certificate, the bundle is
+            ad-hoc signed, and there is nothing the developer could have done differently.
+        -->
     </Target>
 
     <!--

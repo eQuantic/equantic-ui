@@ -77,9 +77,43 @@ static int Entitlements(string[] args)
     if (!File.Exists(appAssembly)) return 0;      // nothing built yet; the build will come back
     var required = (Arg("--also") ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries
         | StringSplitOptions.TrimEntries);
-    Console.WriteLine(EntitlementsManifest.Write(appAssembly, plist, required)
+    var written = EntitlementsManifest.Write(appAssembly, plist, required);
+    Console.WriteLine(written.Count > 0
         ? $"eqicon: wrote {plist}"
         : "eqicon: no entitlements declared");
+
+    // EQ4003 — a declaration the signature about to be produced will not consult.
+    //
+    // WHICH KEYS is a question about Apple's families, so it is asked here, of the vocabulary that
+    // already names them, rather than by a condition in the SDK's targets that nothing could test.
+    // Only the hardened runtime's own exceptions qualify: they exist to relax protections the
+    // hardened runtime imposes, so without it they relax nothing. The App Sandbox's permissions are
+    // NOT in this set — their gate is the sandbox, which an ad-hoc signature enforces perfectly
+    // well, and reporting them here is what made the warning this replaced wrong about the one
+    // sample that triggered it.
+    //
+    // WHICH BUILD is a question about configuration, so the SDK answers it and passes the answer.
+    // `false` is the developer turning the hardened runtime off by hand; an EMPTY value is an
+    // ordinary development build, which never asked for it, cannot be blamed for not having it, and
+    // is the case the previous warning fired on every single time.
+    if (Arg("--hardened") == "false")
+    {
+        // Over everything the file will carry rather than the app's own half: `--also` is empty
+        // whenever hardening is off, so the two are the same list here, and a message phrased about
+        // the SIGNATURE stays true if that ever stops holding.
+        var ineffective = written.Where(PhotonEntitlements.IsHardenedRuntimeException).ToList();
+        if (ineffective.Count > 0)
+        {
+            var one = ineffective.Count == 1;
+            Console.WriteLine(
+                $"eqicon : warning EQ4003: {string.Join(", ", ineffective)} will be signed into this "
+                + $"app, and only the hardened runtime consults {(one ? "that key" : "those keys")} — "
+                + "EQuanticHardenedRuntime is set to false, so the system will ignore "
+                + $"{(one ? "it" : "them")}. Remove EQuanticHardenedRuntime=false, or drop the "
+                + $"{(one ? "declaration" : "declarations")}.");
+        }
+    }
+
     return 0;
 }
 

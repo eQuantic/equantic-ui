@@ -18,10 +18,16 @@ public static class EntitlementsManifest
 {
     private const string AttributeName = "PhotonEntitlementAttribute";
 
-    /// <summary>Writes the entitlements plist, or returns false when the app declared none — in
-    /// which case the signing step passes no <c>--entitlements</c> at all, which is correct: an
-    /// empty entitlements file is not the same as no file, and signing with one grants nothing
-    /// while still changing the signature.</summary>
+    /// <summary>Writes the entitlements plist and returns the keys it wrote — empty when the app
+    /// declared none, in which case the signing step passes no <c>--entitlements</c> at all, which
+    /// is correct: an empty entitlements file is not the same as no file, and signing with one
+    /// grants nothing while still changing the signature.
+    /// <para>
+    /// The keys rather than a bare "did I write one", because the caller has a second question to
+    /// ask of the same answer — which of them the signature about to be produced will actually
+    /// consult — and re-reading the assembly to ask it would be two readers of one fact.
+    /// </para>
+    /// </summary>
     /// <param name="assemblyPath">The built assembly whose declared entitlements are read.</param>
     /// <param name="plistPath">Where the entitlements plist is written.</param>
     /// <param name="alsoRequired">
@@ -33,7 +39,7 @@ public static class EntitlementsManifest
     /// self-contained?) and passes them here, so they land in the SAME file by the SAME writer
     /// rather than being merged by whoever signs.
     /// </param>
-    public static bool Write(string assemblyPath, string plistPath,
+    public static IReadOnlyList<string> Write(string assemblyPath, string plistPath,
         IEnumerable<string>? alsoRequired = null)
     {
         var declared = Read(assemblyPath).Concat(alsoRequired ?? [])
@@ -48,7 +54,7 @@ public static class EntitlementsManifest
             // yesterday's entitlements into an app whose declarations were removed — the app would
             // keep a permission its source no longer asks for, which nobody would ever notice.
             if (File.Exists(plistPath)) File.Delete(plistPath);
-            return false;
+            return [];
         }
 
         Directory.CreateDirectory(Path.GetDirectoryName(plistPath)!);
@@ -60,7 +66,7 @@ public static class EntitlementsManifest
             // means something else.
             foreach (var entitlement in declared) plist.Bool(entitlement, true);
         }));
-        return true;
+        return declared;
     }
 
     /// <summary>The declarations, read straight from the assembly's metadata — the tool never loads
