@@ -44,15 +44,21 @@ public sealed class PhotonEntitlementsBuilder
     public PhotonEntitlementsBuilder RequireForeignLibraries() =>
         Require(PhotonEntitlements.DisableLibraryValidation);
 
-    /// <summary>Reading and writing the files a person picked in a dialog.</summary>
+    /// <summary>Reading and writing the files a person picked in a dialog. Takes effect only inside
+    /// the App Sandbox — see <see cref="RequireAppSandbox"/> — because outside it the app already
+    /// reaches the file system.</summary>
     public PhotonEntitlementsBuilder RequireUserSelectedFiles() =>
         Require(PhotonEntitlements.UserSelectedFiles);
 
-    /// <summary>Outgoing network connections from a sandboxed app.</summary>
+    /// <summary>Outgoing network connections from a SANDBOXED app: it is a hole in the sandbox, so
+    /// on its own — with no <see cref="RequireAppSandbox"/> — it changes nothing, because nothing
+    /// was blocking the connection.</summary>
     public PhotonEntitlementsBuilder RequireNetworkClient() =>
         Require(PhotonEntitlements.NetworkClient);
 
-    /// <summary>The App Sandbox itself — required by the Mac App Store, optional outside it.</summary>
+    /// <summary>The App Sandbox itself — required by the Mac App Store, optional outside it, and the
+    /// switch that makes the two above mean anything. Independent of the hardened runtime, and
+    /// enforced from an ad-hoc signature too, so a development build does exercise it.</summary>
     public PhotonEntitlementsBuilder RequireAppSandbox() => Require(PhotonEntitlements.AppSandbox);
 
     /// <summary>Any key by name, because the list is Apple's and it grows. Prefer the named methods

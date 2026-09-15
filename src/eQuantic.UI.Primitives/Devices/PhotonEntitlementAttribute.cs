@@ -20,9 +20,20 @@ namespace eQuantic.UI.Primitives;
 /// fencing the rest out.
 /// </para>
 /// <para>
-/// Entitlements are only consulted when the app is signed with a real identity and the hardened
-/// runtime (<c>EQuanticSigningIdentity</c> + <c>EQuanticHardenedRuntime</c>). A development build
-/// signs ad hoc and needs none of them, which is exactly why the need is invisible until release.
+/// WHAT CONSULTS A KEY DEPENDS ON WHICH FAMILY IT IS IN, and reading that as one rule is how this
+/// file used to be wrong. The hardened runtime's own exceptions
+/// (<c>com.apple.security.cs.*</c> — see <see cref="PhotonEntitlements.IsHardenedRuntimeException"/>)
+/// exist only to relax protections the hardened runtime imposes, so without it there is nothing to
+/// relax and they grant nothing. The App Sandbox's permissions
+/// (<c>com.apple.security.network.*</c>, <c>…files.*</c>, <c>…device.*</c>) answer to
+/// <see cref="PhotonEntitlements.AppSandbox"/> instead, and the sandbox is enforced from the
+/// SIGNATURE — including an ad-hoc one, which is how sandboxing is tested locally without a
+/// certificate. So a development build is not a build where entitlements do nothing.
+/// </para>
+/// <para>
+/// What IS invisible until release is the first family: an ad-hoc build signs without
+/// <c>--options runtime</c>, so a missing hardened-runtime exception costs nothing until the
+/// signed build reaches a machine you do not own. That is the trap, stated precisely.
 /// </para>
 /// </summary>
 [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
@@ -115,12 +126,53 @@ public static class PhotonEntitlements
     public const string DisableLibraryValidation = "com.apple.security.cs.disable-library-validation";
 
     /// <summary>Reading and writing the files a person picked in a dialog. The App Sandbox's whole
-    /// point: what the user chose, and nothing else.</summary>
+    /// point: what the user chose, and nothing else. Its gate is <see cref="AppSandbox"/>, not the
+    /// hardened runtime — an app that is not sandboxed reaches the file system regardless, and this
+    /// key grants it nothing it did not already have.</summary>
     public const string UserSelectedFiles = "com.apple.security.files.user-selected.read-write";
 
-    /// <summary>Outgoing network connections from a sandboxed app (an update check, an API call).</summary>
+    /// <summary>Outgoing network connections from a sandboxed app (an update check, an API call).
+    /// Gated by <see cref="AppSandbox"/> in the same way: outside the sandbox nothing blocks an
+    /// outgoing connection, so declaring this alone changes nothing.</summary>
     public const string NetworkClient = "com.apple.security.network.client";
 
-    /// <summary>The App Sandbox itself — required by the Mac App Store, optional outside it.</summary>
+    /// <summary>The App Sandbox itself — required by the Mac App Store, optional outside it.
+    /// <para>
+    /// The SWITCH for the permissions above, and independent of the hardened runtime in both
+    /// directions: an app can be sandboxed without being hardened and hardened without being
+    /// sandboxed. It is enforced from the signature, an AD-HOC one included, which is how sandboxing
+    /// is exercised on a machine with no certificate — so unlike
+    /// <see cref="IsHardenedRuntimeException"/>'s family, this one is not invisible in development.
+    /// </para>
+    /// <para>
+    /// The exception worth knowing: a few sandbox entitlements — app groups, iCloud, push — must be
+    /// authorised by a provisioning profile and do NOT take under a plain ad-hoc signature. The ones
+    /// named here are not among them.
+    /// </para>
+    /// </summary>
     public const string AppSandbox = "com.apple.security.app-sandbox";
+
+    /// <summary>
+    /// Apple's namespace for the hardened runtime's own exceptions. A PREFIX rather than a list,
+    /// because the list is Apple's and it grows: an app declares by KEY — this class names the
+    /// common ones and fences none of the rest out — so a rule written as an enumeration would be
+    /// wrong the first time Apple added one.
+    /// </summary>
+    public const string HardenedRuntimePrefix = "com.apple.security.cs.";
+
+    /// <summary>
+    /// Whether the HARDENED RUNTIME is what consults this key — the one family that grants nothing
+    /// without it, because every member of it exists to relax a protection the hardened runtime
+    /// imposes. False for the App Sandbox's permissions, which answer to <see cref="AppSandbox"/>.
+    /// <para>
+    /// One caveat this deliberately does not try to express: a handful of keys are in BOTH lists
+    /// (<c>com.apple.security.device.camera</c>, <c>…personal-information.*</c>,
+    /// <c>…automation.apple-events</c>), because the hardened runtime gates those resources too.
+    /// That makes them consulted under either regime, so calling them false here is the safe answer:
+    /// this question is only ever asked to find declarations that do NOTHING, and a key in both
+    /// lists never does nothing.
+    /// </para>
+    /// </summary>
+    public static bool IsHardenedRuntimeException(string entitlement) =>
+        entitlement.StartsWith(HardenedRuntimePrefix, StringComparison.Ordinal);
 }
