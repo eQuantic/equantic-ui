@@ -3,7 +3,8 @@
  * targets rather than a convenience.
  *
  * A canvas draws inside the box the LAYOUT gives it, and asks the painter how big that box is —
- * `p.FillCircle(p.Width / 2, p.Height / 2, …)` is the ordinary shape of a visualization. On Photon
+ * `p.FillCircle(new Point(p.Size.Width / 2, p.Size.Height / 2), …)` is the ordinary shape of a
+ * visualization. On Photon
  * the answer is known before the draw: the frame lays out and then paints, every frame. In a
  * browser the box is decided by CSS AFTER the markup exists, so a canvas that FILLS its space has
  * no size to report while its own SVG is being built.
