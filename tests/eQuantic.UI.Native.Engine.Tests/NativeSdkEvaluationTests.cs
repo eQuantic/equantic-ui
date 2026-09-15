@@ -56,7 +56,7 @@ public class NativeSdkEvaluationTests
     /// A consumer of the SDK with <paramref name="targetFramework"/> written in the BODY, which is
     /// the whole point: imported above it, Sdk.props cannot see it.
     /// </summary>
-    private static string WriteConsumer(string targetFramework)
+    private static string WriteConsumer(string targetFramework, string bodyProperties)
     {
         var dir = Path.Combine(Path.GetTempPath(), "eq-sdk-eval-" + Guid.NewGuid().ToString("n")[..12]);
         Directory.CreateDirectory(dir);
@@ -69,6 +69,7 @@ public class NativeSdkEvaluationTests
                     <OutputType>Exe</OutputType>
                     <ApplicationId>tech.equantic.eval</ApplicationId>
                     <ApplicationTitle>Eval</ApplicationTitle>
+                    {bodyProperties}
                 </PropertyGroup>
                 <Import Project="{Path.Combine(sdk, "Sdk.targets")}" />
             </Project>
@@ -91,9 +92,9 @@ public class NativeSdkEvaluationTests
     /// Asks MSBuild, and skips ONLY for a missing workload — with the target framework named, so a
     /// skip reads as "this runner cannot answer" and never as "the answer was fine".
     /// </summary>
-    private static Evaluation Evaluate(string targetFramework, params string[] extraArgs)
+    private static Evaluation Evaluate(string targetFramework, string bodyProperties = "")
     {
-        var dir = WriteConsumer(targetFramework);
+        var dir = WriteConsumer(targetFramework, bodyProperties);
         try
         {
             var args = new List<string>
@@ -105,7 +106,6 @@ public class NativeSdkEvaluationTests
                 "-getItem:ProjectReference", "-getItem:PackageReference",
                 "-getItem:PartialAppManifest", "-getItem:TrimmerRootAssembly",
             };
-            args.AddRange(extraArgs);
 
             var info = new ProcessStartInfo("dotnet")
             {
@@ -240,13 +240,21 @@ public class NativeSdkEvaluationTests
     /// <summary>
     /// The escape hatch, which is what makes the default a default rather than a decision taken for
     /// the developer: their own value survives.
+    ///
+    /// <para>
+    /// From the project BODY, which is the case the SDK's comment promises and the only one that
+    /// can fail. Passing it as a global property (`-p:`) proves nothing here: MSBuild refuses to
+    /// let any file overwrite a global, so that assertion would pass even if this SDK assigned the
+    /// property unconditionally — it would be testing MSBuild. The body is the real test, because
+    /// Sdk.targets is imported BELOW it and could overwrite it.
+    /// </para>
     /// </summary>
     [SkippableFact]
     public void TheDeveloperCanAskForTheXcodeCheckBack()
     {
-        Evaluate("net10.0-ios", "-p:ValidateXcodeVersion=true")
+        Evaluate("net10.0-ios", "<ValidateXcodeVersion>true</ValidateXcodeVersion>")
             .Property("ValidateXcodeVersion").Should().Be("true",
-                "the SDK only fills this in when it is empty");
+                "the SDK only fills this in when it is empty, so an app that states its own keeps it");
     }
 
     /// <summary>

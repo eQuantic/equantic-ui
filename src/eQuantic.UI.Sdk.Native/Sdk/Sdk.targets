@@ -130,15 +130,25 @@
         error and so would 26.5 be. That is a version comparison, not a capability check — nothing
         was asked of the toolchain and nothing failed.
 
-        Measured: this repository's own two environments already disagree. A developer machine on
-        macOS 26.6.2 carries Xcode 27.0, and the macos-26 runner carries the Xcode its image ships;
-        both have the 26.5 and 27.0 packs installed. With the check on, an app builds on one and
-        refuses on the other, for no reason either of them can act on.
+        MEASURED on the machine this was found on, and the numbers are the argument. Xcode 27.0,
+        with the 26.0, 26.5 AND 27.0 iOS packs all installed — and the build resolves 26.5, which
+        demands Xcode 26.6:
+
+            This version of .NET for iOS (26.5.10315) requires Xcode 26.6.
+            The current version of Xcode is 27.0.
+
+        The 27.0 pack, which matches the installed Xcode exactly, is sitting right beside it and
+        never gets a say: WHICH pack resolves is decided by the workload manifest, not by the Xcode
+        you have. So "install Xcode 26.6" does not settle anything either — it satisfies today's
+        resolved pack and breaks on the next manifest that moves one.
 
         Telling the app author to install a second Xcode is the shape this product rules out: a
         platform artifact they never asked for, to satisfy a check about a platform detail the SDK
         already resolved. It stays a decision they can take back — setting the property in their own
-        csproj wins, because this only fills it in when it is empty.
+        csproj wins, because this only fills it in when it is empty, and this file is imported below
+        the project body. `NativeSdkEvaluationTests` pins that, from the body rather than from a
+        global property: a global one MSBuild refuses to overwrite anyway, so asserting it would
+        test MSBuild and leave an unconditional assignment here undetected.
 
         What this does NOT do is silence a real failure: a toolchain that genuinely cannot build
         still fails, with the error from the thing that failed rather than from a comparison.
