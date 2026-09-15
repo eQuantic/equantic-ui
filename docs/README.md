@@ -29,24 +29,20 @@ Plans for work that is still landing. Each names its slices and which are done.
 | [SHARED-COMPONENTS-PLAN.md](SHARED-COMPONENTS-PLAN.md) | The write-once architecture: one vocabulary, realized per target. The plan that produced the current layering. |
 | [STYLE-SEMANTICS-PLAN.md](STYLE-SEMANTICS-PLAN.md) | Track S — CSS-free authoring and the atomic style engine. |
 | [CHARTS-PLAN.md](CHARTS-PLAN.md) | The chart library, written once and drawn by both realizers. |
-| [DATE-PICKER-PLAN.md](DATE-PICKER-PLAN.md) | The date and time pickers, and what the vocabulary owes them. |
-| [DEVICE-CAPABILITIES-PLAN.md](DEVICE-CAPABILITIES-PLAN.md) | Track D — typed device capabilities instead of method channels. |
 | [I18N-PLAN.md](I18N-PLAN.md) | Track L — localization the .NET way. |
-| [VSCODE-VISUAL-EDITOR-PLAN.md](VSCODE-VISUAL-EDITOR-PLAN.md) | Track E — the visual editor in VS Code. |
 | [BOUND-TREE-PLAN.md](BOUND-TREE-PLAN.md) | Compiler phase 5 — translating from the bound tree. |
 | [COVERAGE-PLAN.md](COVERAGE-PLAN.md) | Compiler phase 6 — deriving the BCL mapping, with baselines that may only shrink. |
 
 ## History
 
-Plans whose work finished, kept for the reasoning they record. Their status lines say so; nothing in
-them is an instruction any more, and the numbers they quote are the numbers of their day.
+What happened and when, and the one finished plan still kept for the reasoning it records. A plan
+whose slices are all delivered is retired into the ledger — its dated lines condensed, what it still
+owed turned into an issue — unless code or another document cites it.
 
-| Document | What it was |
+| Document | What it is |
 |---|---|
-| [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md) | Phase 1 — transpiler correctness and the conformance harness. Complete 2026-06. |
-| [PHASE-2-CLIENT-ROUTER-PLAN.md](PHASE-2-CLIENT-ROUTER-PLAN.md) | Phase 2 — the client router. Complete. |
+| [LEDGER.md](LEDGER.md) | The chronology: one line per event, oldest first, each with the pull request, release, issue or section that holds the evidence; the retired plans' status lines; a snapshot of the [board](https://github.com/orgs/eQuantic/projects/11) naming every issue. Held to the folder by `DocsIndexTests`. |
 | [DOTNET-COVERAGE-PROGRAM.md](DOTNET-COVERAGE-PROGRAM.md) | The program behind phases 5 and 6: maximal C# → JS fidelity, three mechanisms per construct. |
-| [COMPILE-TIME-EVALUATION-INDEX.md](COMPILE-TIME-EVALUATION-INDEX.md), [-SUMMARY.md](COMPILE-TIME-EVALUATION-SUMMARY.md), [COMPILER-COMPILE-TIME-EVALUATION.md](COMPILER-COMPILE-TIME-EVALUATION.md), [COMPILER-IMPLEMENTATION-GUIDE.md](COMPILER-IMPLEMENTATION-GUIDE.md) | Compile-time evaluation of class-string builders — the machinery behind a Tailwind adapter that has since been removed. The audit lists these, with the evaluator itself, as candidates to retire. |
 
 ## The rules these documents follow
 

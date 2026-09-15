@@ -3,8 +3,8 @@
 > Goal: transpile as much of the .NET/C# surface as possible with behavior identical to .NET;
 > where JS has no native equivalent, provide a faithful **.NET-compat runtime in TypeScript**; and
 > where conversion is genuinely impossible, **fail the build with a clear C# diagnostic**.
-> This program extends Phase 1 (see `docs/IMPLEMENTATION-PLAN.md`) and is driven by the conformance
-> harness.
+> This program extends Phase 1 — transpiler correctness, retired into `docs/LEDGER.md` — and is driven
+> by the conformance harness.
 
 ## The three mechanisms (every construct resolves to exactly one)
 
@@ -172,7 +172,7 @@ Design notes:
     static-field names read as `ClassName.X` no longer leak as bogus `import { X } from "./X"`. Helper-method
     and property-accessor BODIES are scanned too (a type constructed only inside a helper is now imported).
   - Methods ✅, server actions ✅.
-  (Surfaced + fixed via the Phase 2 sample + authoring sweep: see `docs/PHASE-2-CLIENT-ROUTER-PLAN.md` M3;
+  (Surfaced + fixed via the Phase 2 sample + authoring sweep — the client-router plan, M3, retired into `docs/LEDGER.md`;
   compiler tests `ComponentStaticFieldTests`, `AuthoringCoverageTests`, `StringStrategyTests`,
   `EnumCastStrategyTests`, `EnumFlagsStrategyTests`; conformance `EnumConformanceTests`, `StringConformanceTests`.
   Advanced **switch-expression patterns ✅** — nested `var` bindings in property (`{ X: var x }`) and

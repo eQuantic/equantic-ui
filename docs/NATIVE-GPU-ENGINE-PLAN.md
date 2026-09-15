@@ -1,8 +1,8 @@
 # eQuantic.UI Native — Proprietary GPU Engine Plan (codename: "Photon")
 
-> Track N of `ROADMAP.md` (a parallel track, independent of web Phases 3–7). Same shape as
-> `docs/PHASE-2-CLIENT-ROUTER-PLAN.md`: why → decisions → architecture → workstreams → milestones →
-> risks → exit criteria.
+> Track N of the wiki's roadmap (a parallel track, independent of web Phases 3–7). Same shape as the
+> retired client-router plan (`docs/LEDGER.md`): why → decisions → architecture → workstreams →
+> milestones → risks → exit criteria.
 >
 > **Strategic decision (recorded 2026-06-10):** eQuantic.UI's mobile story starts **directly with a
 > proprietary GPU backend** — native Metal (iOS/macOS) and native Vulkan (Android) with **offline,
