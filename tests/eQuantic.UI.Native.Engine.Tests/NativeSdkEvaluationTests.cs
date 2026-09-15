@@ -32,9 +32,17 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// </summary>
 public class NativeSdkEvaluationTests
 {
-    private static string SdkDir([CallerFilePath] string sourcePath = "") =>
-        Path.GetFullPath(Path.Combine(Path.GetDirectoryName(sourcePath)!, "..", "..",
-            "src", "eQuantic.UI.Sdk.Native", "Sdk"));
+    private static string RepoRoot([CallerFilePath] string sourcePath = "") =>
+        Path.GetFullPath(Path.Combine(Path.GetDirectoryName(sourcePath)!, "..", ".."));
+
+    private static string SdkDir() =>
+        Path.Combine(RepoRoot(), "src", "eQuantic.UI.Sdk.Native", "Sdk");
+
+    /// <summary>
+    /// Long enough that a cold evaluation on a loaded runner never trips it, short enough that a
+    /// hung MSBuild fails this test rather than the whole job's time budget.
+    /// </summary>
+    private static readonly TimeSpan EvaluationTimeout = TimeSpan.FromMinutes(3);
 
     /// <summary>
     /// The two .NET diagnostics that both mean "this runner cannot evaluate that target framework":
@@ -103,7 +111,12 @@ public class NativeSdkEvaluationTests
             {
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                WorkingDirectory = dir,
+                // The REPOSITORY root, not the throwaway project's folder: `dotnet` picks its SDK
+                // from the global.json it finds by walking up from the working directory, and this
+                // repository pins one. Run from a temp folder and the child evaluates with whatever
+                // SDK the machine happens to default to, which makes the answers below depend on
+                // the machine rather than on the tree.
+                WorkingDirectory = RepoRoot(),
             };
             foreach (var arg in args)
                 info.ArgumentList.Add(arg);
@@ -113,10 +126,30 @@ public class NativeSdkEvaluationTests
                     "`dotnet` did not start. This suite runs on .NET, so the SDK is installed — " +
                     "it is not on this process's PATH.");
 
-            var stdout = process.StandardOutput.ReadToEnd();
-            var stderr = process.StandardError.ReadToEnd();
-            process.WaitForExit(milliseconds: 180_000).Should().BeTrue(
-                $"evaluating a {targetFramework} consumer must not hang");
+            // Both pipes drain from the start, and the wait is what enforces the deadline. Reading
+            // one stream to the end before touching the other deadlocks the moment the child fills
+            // the pipe nobody is reading — and a deadline checked only after both reads returned is
+            // not a deadline at all: it can never fire on the hang it exists for.
+            var outText = process.StandardOutput.ReadToEndAsync();
+            var errText = process.StandardError.ReadToEndAsync();
+
+            using var deadline = new CancellationTokenSource(EvaluationTimeout);
+            try
+            {
+                process.WaitForExitAsync(deadline.Token).GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException)
+            {
+                try { process.Kill(entireProcessTree: true); }
+                catch (InvalidOperationException) { /* it exited between the timeout and the kill */ }
+
+                throw new TimeoutException(
+                    $"evaluating a {targetFramework} consumer did not finish within " +
+                    $"{EvaluationTimeout}; the process tree was killed.");
+            }
+
+            var stdout = outText.GetAwaiter().GetResult();
+            var stderr = errText.GetAwaiter().GetResult();
 
             var output = stdout + stderr;
             var absent = WorkloadMissing
@@ -179,6 +212,29 @@ public class NativeSdkEvaluationTests
         ios.Identities("TrimmerRootAssembly")
             .Should().Contain("eQuantic.UI.Native.Shell.iOS",
                 "nothing references the shell in code, so the trimmer removes it unless it is rooted");
+    }
+
+    /// <summary>
+    /// Android's twin. The fix moved this platform's minimum too, and nothing else here would
+    /// notice it going: the multi-target sample proves only that an APK comes out, never which
+    /// minimum it carries.
+    /// </summary>
+    [SkippableFact]
+    public void ASingleTargetAndroidApp_ResolvesAsAndroid()
+    {
+        var android = Evaluate("net10.0-android");
+
+        android.Property("_EqPlatform").Should().Be("android");
+        android.Property("SupportedOSPlatformVersion").Should().Be("26.0",
+            "26 is where adaptive icons, the Choreographer's frame callback and Vulkan all " +
+            "arrived; without it the app takes the Android SDK's own minimum");
+        android.Property("ValidateXcodeVersion").Should().BeEmpty(
+            "the iOS default must not leak to a platform that has never heard of Xcode");
+        android.Property("_EqMacHead").Should().BeEmpty("an Android app is not a macOS head");
+
+        Shell(android).Should().Be("eQuantic.UI.Native.Shell.Android");
+        android.Identities("TrimmerRootAssembly")
+            .Should().Contain("eQuantic.UI.Native.Shell.Android");
     }
 
     /// <summary>

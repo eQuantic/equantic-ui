@@ -44,9 +44,14 @@ public class NativeSdkPlatformQuestionTests
         var props = Path.Combine(SdkDir(), "Sdk.props");
         File.Exists(props).Should().BeTrue($"{props} is what this guard reads");
 
+        // The GROUP's condition and each property's own: MSBuild treats them the same way, and a
+        // default written as `<PropertyGroup><Foo Condition="…$(_EqPlatform)…">` is evaluated just
+        // as early as one written on the group. Reading only the group would leave the rule true in
+        // letter and bypassable in one line.
         var offenders = XDocument.Load(props)
             .Descendants()
             .Where(element => element.Name.LocalName == "PropertyGroup")
+            .SelectMany(group => group.Elements().Prepend(group))
             .Select(element => (string?)element.Attribute("Condition"))
             .Where(condition => condition?.Contains(Platform, StringComparison.Ordinal) == true)
             .ToList();
