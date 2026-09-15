@@ -72,11 +72,6 @@ public static class EmailRenderer
     }
 
     /// <summary>
-    /// The text alternative, from the SAME tree: one line per text, a blank line where a Column
-    /// gap separated sections. Writing it by hand is how the two parts drift; walking the tree is
-    /// how they cannot.
-    /// </summary>
-    /// <summary>
     /// The line break this renderer writes, on every host.
     /// <para>
     /// `StringBuilder.AppendLine` appends <c>Environment.NewLine</c>, so the plain-text body came
@@ -89,6 +84,11 @@ public static class EmailRenderer
     /// </summary>
     private const string Newline = "\n";
 
+    /// <summary>
+    /// The text alternative, from the SAME tree: one line per text, a blank line where a Column
+    /// gap separated sections. Writing it by hand is how the two parts drift; walking the tree is
+    /// how they cannot.
+    /// </summary>
     private static string PlainText(VisualNode node, IAppTheme theme)
     {
         var text = new StringBuilder();

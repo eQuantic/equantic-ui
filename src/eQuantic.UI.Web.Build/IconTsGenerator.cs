@@ -1,5 +1,5 @@
+using System.Text;
 using eQuantic.UI.Primitives;
-using eQuantic.UI.Codegen;
 
 namespace eQuantic.UI.Web.Build;
 
@@ -9,19 +9,19 @@ public static class IconTsGenerator
 {
     public static string Generate()
     {
-        var ts = new CodeWriter();
-        ts.AppendLine("/**");
-        ts.AppendLine(" * GENERATED — do not edit. Glyph path data comes from the C# IconRegistry single source.");
-        ts.AppendLine(" * Regenerate: EQ_UPDATE_ICONS_TS=1 dotnet test eQuantic.UI.Web.Tests (IconTsGeneratorTests).");
-        ts.AppendLine(" */");
-        ts.AppendLine();
-        ts.AppendLine("export const iconPaths: Record<string, string> = {");
+        var ts = new StringBuilder();
+        ts.AppendLf("/**");
+        ts.AppendLf(" * GENERATED — do not edit. Glyph path data comes from the C# IconRegistry single source.");
+        ts.AppendLf(" * Regenerate: EQ_UPDATE_ICONS_TS=1 dotnet test eQuantic.UI.Web.Tests (IconTsGeneratorTests).");
+        ts.AppendLf(" */");
+        ts.Append('\n');
+        ts.AppendLf("export const iconPaths: Record<string, string> = {");
         foreach (var glyph in Enum.GetValues<Icons>())
         {
             var name = char.ToLowerInvariant(glyph.ToString()[0]) + glyph.ToString()[1..];
-            ts.AppendLine($"  {name}: '{IconRegistry.Path(glyph)}',");
+            ts.AppendLf($"  {name}: '{IconRegistry.Path(glyph)}',");
         }
-        ts.AppendLine("};");
+        ts.AppendLf("};");
         return ts.ToString();
     }
 }

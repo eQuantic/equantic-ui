@@ -134,6 +134,8 @@ public class CalendarNamesFixtureTests
             File.WriteAllText(path, JsonSerializer.Serialize(pinned, new JsonSerializerOptions
             {
                 WriteIndented = true,
+                // LF: WriteIndented indents with Environment.NewLine, and this file is committed.
+                NewLine = "\n",
                 // The names are the point: escaping every accent and every CJK glyph would make
                 // the fixture unreadable and its diffs meaningless.
                 Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,

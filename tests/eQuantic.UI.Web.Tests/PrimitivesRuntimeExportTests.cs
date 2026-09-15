@@ -88,7 +88,8 @@ public class PrimitivesRuntimeExportTests
             .OrderBy(name => name, StringComparer.Ordinal)
             .ToList();
 
-        var json = FixtureJson.Write(names);
+        var json = System.Text.Json.JsonSerializer.Serialize(names,
+            new System.Text.Json.JsonSerializerOptions { WriteIndented = true, NewLine = "\n" });
 
         var path = FixturePath();
         var current = File.Exists(path) ? File.ReadAllText(path) : null;
@@ -108,7 +109,10 @@ public class PrimitivesRuntimeExportTests
         // them for.
         if (Environment.GetEnvironmentVariable("EQ_UPDATE_PRIMITIVES_FIXTURE") == "1")
         {
-            File.WriteAllText(path, json);
+            // LF, not the host's: this file is COMMITTED and compared byte for byte, so a
+            // Windows regeneration would rewrite every line ending and fail the pin
+            // on the next host that read it.
+            File.WriteAllText(path, json + "\n");
             return;
         }
 
