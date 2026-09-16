@@ -72,19 +72,6 @@ public static class EmailRenderer
     }
 
     /// <summary>
-    /// The line break this renderer writes, on every host.
-    /// <para>
-    /// `StringBuilder.AppendLine` appends <c>Environment.NewLine</c>, so the plain-text body came
-    /// out CRLF on Windows and LF everywhere else — the same message rendered into different bytes
-    /// depending on which machine the server happened to be. A mail body is a PAYLOAD, and the
-    /// constant an SDK owes its payloads is its own; the transport is what owns the wire format
-    /// (SMTP's own CRLF is applied by the client that sends it, not by the tree that built the
-    /// text).
-    /// </para>
-    /// </summary>
-    private const string Newline = "\n";
-
-    /// <summary>
     /// The text alternative, from the SAME tree: one line per text, a blank line where a Column
     /// gap separated sections. Writing it by hand is how the two parts drift; walking the tree is
     /// how they cannot.
@@ -92,73 +79,7 @@ public static class EmailRenderer
     private static string PlainText(VisualNode node, IAppTheme theme)
     {
         var text = new StringBuilder();
-        WalkText(node, theme, text);
+        node.Accept(new EmailTextVisitor(theme, text), default);
         return text.ToString().Trim();
-    }
-
-    private static void WalkText(VisualNode node, IAppTheme theme, StringBuilder text)
-    {
-        switch (node)
-        {
-            case Text t when t.Spans is { Count: > 0 } spans:
-                // Run by run, so a LINKED run keeps its address — inline, the convention is
-                // "label (URL)", the paragraph-level Link keeps "label: URL".
-                var inline = new StringBuilder();
-                foreach (var run in spans)
-                {
-                    inline.Append(run.Content);
-                    if (run.Destination is { } destination) inline.Append($" ({destination})");
-                }
-                text.Append(inline.ToString()).Append(Newline);
-                break;
-            case Text t:
-                text.Append(t.PlainContent).Append(Newline);
-                break;
-            case Column column:
-                // The gap that separates sections in the HTML separates them here too — a blank
-                // line between children, never after the last, the same rule the spacer rows follow.
-                var firstChild = true;
-                foreach (var child in column.Children)
-                {
-                    if (!firstChild && column.Gap > 0) text.Append(Newline);
-                    firstChild = false;
-                    WalkText(child, theme, text);
-                }
-                break;
-            case Row row:
-                var parts = new List<string>();
-                foreach (var child in row.Children)
-                {
-                    var part = new StringBuilder();
-                    WalkText(child, theme, part);
-                    var line = part.ToString().Trim();
-                    if (line.Length > 0) parts.Add(line);
-                }
-                if (parts.Count > 0) text.Append(string.Join("  ", parts)).Append(Newline);
-                break;
-            case Box box when box.Child is { } child:
-                WalkText(child, theme, text);
-                break;
-            case Link link:
-                // The address IS the content: a text alternative without the URL is a message the
-                // reader cannot act on. Label first, address after, the convention every plain-text
-                // mail has always used.
-                var label = new StringBuilder();
-                WalkText(link.Child, theme, label);
-                var trimmed = label.ToString().Trim();
-                // The same fallback the HTML's aria-label carries: an icon-only link with an empty
-                // alt is exactly what Label exists for, and the two alternatives must not drift.
-                if (trimmed.Length == 0 && !string.IsNullOrEmpty(link.Label)) trimmed = link.Label;
-                text.Append(trimmed.Length > 0 ? $"{trimmed}: {link.Destination}" : link.Destination).Append(Newline);
-                break;
-            case Image image when image.Label.Length > 0:
-                text.Append(image.Label).Append(Newline);
-                break;
-            case UiComponent component:
-                // Build, not BuildContained — the same deliberate divergence the HTML walker makes:
-                // a broken component fails the SEND, it does not reach an inbox dressed as content.
-                WalkText(component.Build(new ComponentContext(theme)), theme, text);
-                break;
-        }
     }
 }
