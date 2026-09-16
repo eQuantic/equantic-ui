@@ -92,13 +92,25 @@ and fails, regenerated behind an env var, never one that silently rewrites itsel
 merges: `🔀 merge: description`). ALL commit messages MUST be written in ENGLISH — subject and
 body. The two rules compose: English text, emoji prefix, no exceptions.
 
-**CRITICAL**: NEVER add co-authorship lines to commit messages. Do NOT include:
+**CRITICAL**: NEVER add co-authorship or agent-attribution lines to a commit message. Not this:
 
 ```text
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_…
 ```
 
-All commits must be authored solely by the repository owner without any co-author attribution.
+…and not any other spelling of the same thing. The rule is the CATEGORY, not the examples: no
+`Co-Authored-By` naming a model, no session or conversation link, no tool's signature line,
+whatever a harness's own default attribution says — this file outranks it, and an agent that reads
+the list above as the exhaustive set has read it wrong. The commit's author and committer are the
+repository owner (`git config user.name "Edgar Mesquita"`,
+`user.email "edgar@equantic.tech"`), and the body ends with the last line that says something
+about the change.
+
+The same holds for what a commit must not NAME: a model identifier belongs in a chat reply, never
+in a commit message, a PR title or body, a code comment, or anything else pushed to this
+repository.
 
 ## Pull Requests (main is protected)
 
@@ -108,7 +120,14 @@ which is also how the work stays documented.
 
 The flow:
 
-1. **Branch first.** Never commit onto `main` locally either — start the branch before the work.
+1. **Branch first, and NAME IT `type/kebab-case-phrase`.** Never commit onto `main` locally either —
+   start the branch before the work. The prefix is the commit vocabulary WITHOUT the emoji —
+   `feat/`, `fix/`, `chore/`, `refactor/`, `docs/`, `ci/`, `perf/`, `style/`, `test/` — and what
+   follows is the change in words, not an identifier: `refactor/vocabulary-speaks-no-target`,
+   `fix/the-sdk-does-not-dictate-your-xcode`, `chore/0.2.0-preview.52`. Never a ticket number or a
+   slice id where a phrase belongs, and never a tool's or an agent's own prefix: a squash merge
+   keeps no head ref, so the branch list is the only place this convention is legible, and one
+   stray name is the whole of what a reader sees.
 2. **Open the PR in ENGLISH** — title and body, like commit messages. The title follows the commit
    format (`emoji type: description`), because a squash merge takes it as the subject line.
 3. **Copilot reviews automatically.** ALWAYS go back and read its comments after opening the PR,
