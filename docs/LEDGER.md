@@ -197,6 +197,14 @@ record of a release, the wiki's Upgrading page is the distillate.
   flight · [#208](https://github.com/eQuantic/equantic-ui/issues/208) the audit continues. The
   organisation gains the Epic and User Story issue types; nine finished or orphaned documents are
   retired into this file (below).
+- **2026-09-16 · The first two dispatches leave the switch**: the semantics walk becomes
+  `SemanticsVisitor` — thirteen nodes announce, twenty-seven decline through a constant named for
+  its reason ([#177](https://github.com/eQuantic/equantic-ui/issues/177)) — and both email
+  alternatives become visitors over ONE shared refusal set, `EmailWalk`, which closes the
+  divergence where the HTML part threw on a node the plain-text part skipped in silence
+  ([#178](https://github.com/eQuantic/equantic-ui/issues/178)). `VocabularyCoverageTests` goes from
+  six dispatches to four; the two it lost are answered by the compiler now, and the thirty-three
+  nodes email refuses are checked through both alternatives by `EmailRefusalParityTests`.
 
 ## Retired documents
 
