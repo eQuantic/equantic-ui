@@ -121,31 +121,12 @@ public class VocabularyCoverageTests
             "AdaptiveNode", "Flexible", "Grid", "InFlow", "Navigable", "Pinned", "Positioned",
             "SafeArea", "Spacer", "Stack", "WebFrame"),
 
-        new("Semantics",
-            "src/eQuantic.UI.Native.Components/Semantics.cs",
-            "Walk",
-            "what does a screen reader say",
-            Language.CSharp,
-            // Pure layout and pure behaviour announce nothing of their own: a Row is not an object
-            // to a screen reader, and a Shortcut, a Hoverable or a Simulated wraps a child without
-            // being anything itself.
-            "AdaptiveNode", "Anchored", "Box", "Column", "DragDismiss", "Draggable", "Flexible",
-            "Grid", "Hoverable", "InFlow", "InView", "Pinned", "Positioned", "Presence", "Row",
-            "SafeArea", "ScrollView", "Shortcut", "Simulated", "Spacer", "Stack", "WebFrame",
-            // DECORATIVE BY AGREEMENT, and this is where that agreement is written down. The web
-            // marks both `aria-hidden`, on the reasoning that a busy indicator is ornament and the
-            // surrounding copy is what announces the wait. Photon reaches the same answer by having
-            // no case at all — the two agree, and until this line nothing recorded that they were
-            // supposed to.
-            "LoopMotion", "Spinner",
-            // A REAL GAP WEARING AN EXEMPTION, and the only two rows here that should not be here.
-            // The web honours both (WebRealizer's LowerNavigable and LowerOverlay) and Photon is
-            // silent, because every case in the walk adds one node and returns — "one stop for the
-            // whole control" — and doing that to a navigable grid would hide every row inside it.
-            // What they need is a role that means "a labelled group, keep walking", and
-            // SemanticRole has none: it is ten leaf roles. That is a vocabulary decision with a
-            // bridge per platform behind it.
-            "Navigable", "Overlay"),
+        // `Semantics` LEFT THIS LIST, and that is the shape the rest are headed for. The semantics
+        // walk is a visitor now (`SemanticsVisitor`, one method per node, no default arm), so the
+        // question this pin asks of it — "is every node accounted for?" — is asked by the COMPILER,
+        // and the reasons that lived in an exemption array are constants named for them, returned
+        // by the arm the compiler now demands for every node. A regex over source cannot be wrong
+        // about a dispatch that no longer has a switch.
 
         new("WebRealizer",
             "src/eQuantic.UI.Web/WebRealizer.cs",
@@ -169,7 +150,7 @@ public class VocabularyCoverageTests
             // The MEDIUM, not an omission: an email is a printed page that happens to have links.
             // No scrolling, no pressing, no dragging, no script, no stylesheet — Outlook renders
             // with Word's engine. The realizer composes from Box, Row, Column, Text, Image and Link
-            // and its default arm is the ONLY loud one among the six dispatches here: it throws
+            // and its default arm is the ONLY loud one among the five dispatches here: it throws
             // NotSupportedException naming the node, which is why this list can be long and still
             // honest. A node leaving it means the medium learned something.
             "AdaptiveNode", "Adjustable", "Anchored", "CameraPreview", "Canvas", "CodeSurface",

@@ -1,4 +1,3 @@
-using eQuantic.UI.Native.Engine;
 using eQuantic.UI.Native.Framework;
 using eQuantic.UI.Primitives;
 
@@ -16,160 +15,33 @@ namespace eQuantic.UI.Native.Components;
 /// scrolls to it; clipping exists so nobody can click what they cannot see, and a screen reader is
 /// the opposite of a pointer.
 /// </para>
+/// <para>
+/// THE FAÇADE OWNS THE RECURSION, <see cref="SemanticsVisitor"/> owns what each word means. The
+/// split is what lets the vocabulary hold the dispatch to account: this class knows a frame has a
+/// root and overlays, and the visitor has one method per node with no default arm to fall through.
+/// </para>
 /// </summary>
 public static class SemanticsTree
 {
     public static IReadOnlyList<SemanticNode> Collect(RealizeResult frame)
     {
         var nodes = new List<SemanticNode>();
-        Walk(frame.Root, nodes);
+        var visitor = new SemanticsVisitor(nodes);
+        Walk(frame.Root, visitor);
         foreach (var overlay in frame.OverlayRoots)
-            Walk(overlay, nodes);
+            Walk(overlay, visitor);
         return nodes;
     }
 
-    private static void Walk(LayoutNode node, List<SemanticNode> nodes)
+    /// <summary>
+    /// Tree order, which is reading order and the order Tab walks. A node that announced CONSUMED
+    /// its subtree — its inner text is its name — so the descent is what the visitor declined to
+    /// answer for.
+    /// </summary>
+    private static void Walk(LayoutNode node, SemanticsVisitor visitor)
     {
-        switch (node.Source)
-        {
-            // A control's inner text IS its name, not a separate stop — the subtree is consumed,
-            // exactly as the web's <button>text</button> reads as one element.
-            case Pressable pressable:
-            {
-                // A check states its state beside the name, never inside it — the exact mirror of
-                // the web's aria-checked. Mixed is checkbox-only, ARIA's own rule.
-                var (role, check) = pressable.Role switch
-                {
-                    PressableRole.Checkbox => (SemanticRole.Checkbox,
-                        (SemanticCheck?)(pressable.Mixed ? SemanticCheck.Mixed
-                            : pressable.Selected == true ? SemanticCheck.On : SemanticCheck.Off)),
-                    PressableRole.Switch => (SemanticRole.Switch,
-                        (SemanticCheck?)(pressable.Selected == true ? SemanticCheck.On : SemanticCheck.Off)),
-                    PressableRole.GridCell => (SemanticRole.GridCell, (SemanticCheck?)null),
-                    _ => (SemanticRole.Button, null),
-                };
-                // PICKED-ness, for the three roles that have it. Before the Selected field existed
-                // a Tab and an Option arrived here as plain Buttons whose selection was paint only.
-                bool? selected = pressable.Role is PressableRole.Tab or PressableRole.Option
-                    or PressableRole.GridCell
-                    ? pressable.Selected == true
-                    : null;
-                nodes.Add(new(role, node.Path ?? "", node.Bounds,
-                    pressable.Label ?? TextWithin(node), null, pressable.Disabled, check,
-                    pressable.Expanded,
-                    pressable.Role == PressableRole.Destination && pressable.Selected == true,
-                    selected));
-                return;
-            }
-
-            case Link link:
-                nodes.Add(new(SemanticRole.Link, node.Path ?? "", node.Bounds,
-                    link.Label ?? TextWithin(node), null, false, Current: link.Current));
-                return;
-
-            case TextEntry entry:
-                // The explicit Label names the field; the placeholder is only the fallback name
-                // (visually it vanishes under text). The VALUE is what the field holds.
-                nodes.Add(new(SemanticRole.TextField, node.Path ?? "", node.Bounds,
-                    entry.Label ?? entry.Placeholder ?? "", entry.Value, entry.Disabled));
-                return;
-
-            // v1: a grid announces as an editable region with its label; per-cell semantics (the
-            // real AX grid role) joins with the component slice.
-            case SheetSurface sheetSurface:
-                nodes.Add(new(SemanticRole.CodeField, node.Path ?? "", node.Bounds,
-                    sheetSurface.Label ?? "", null, false));
-                return;
-
-            case CodeSurface code:
-                nodes.Add(new(SemanticRole.CodeField, node.Path ?? "", node.Bounds,
-                    code.Label ?? "", null, false));
-                return;
-
-            // One stop for the whole control, inner pressables stay pointer-only — the same rule
-            // the focus route applies (InputSink.WithoutFocusStops).
-            case Adjustable adjustable:
-                nodes.Add(new(SemanticRole.Slider, node.Path ?? "", node.Bounds,
-                    adjustable.Label, null, false));
-                return;
-
-            // PLAIN content, never Content: a paragraph with runs carries an EMPTY Content — the
-            // words live in the spans — so reading the field dropped the whole node and a styled
-            // paragraph reached a screen reader as nothing at all. PlainContent's own summary says
-            // it is what accessibility reads; this is the caller that was not doing it.
-            case Text text when text.PlainContent.Length > 0:
-                nodes.Add(new(SemanticRole.StaticText, node.Path ?? "", node.Bounds,
-                    text.PlainContent, null, false, HeadingLevel: text.HeadingLevel));
-                return;
-
-            // A labelled icon announces; an unlabelled one is decoration and stays silent.
-            case Icon { Label: { Length: > 0 } label }:
-                nodes.Add(new(SemanticRole.Image, node.Path ?? "", node.Bounds,
-                    label, null, false));
-                return;
-
-            // A11, and the same rule one node over: alt text is what an image says. This case was
-            // simply absent, so a photo with alt text emitted NOTHING on Photon and was invisible to
-            // VoiceOver and TalkBack — while the web has carried <img alt> all along. An empty alt is
-            // HTML's own way of saying decorative, and stays silent here too.
-            case Primitives.Image { Label.Length: > 0 } image:
-                nodes.Add(new(SemanticRole.Image, node.Path ?? "", node.Bounds,
-                    image.Label, null, false));
-                return;
-
-            // …and the SAME rule one node further on. `Canvas.Label` says "what assistive technology
-            // is told this canvas IS, because a drawing says nothing on its own", and only the web
-            // read it — a labelled chart or diagram emitted nothing at all on Photon.
-            //
-            // Third time this family has been found by hand (Icon, then Image, now Canvas), which is
-            // why LabelledNodesReachSemanticsTests now enumerates the labelled vocabulary by
-            // REFLECTION: the next node to grow a Label fails a test instead of waiting for someone
-            // to notice a screen reader saying nothing.
-            case Canvas { Label: { Length: > 0 } canvasLabel }:
-                nodes.Add(new(SemanticRole.Image, node.Path ?? "", node.Bounds,
-                    canvasLabel, null, false));
-                return;
-
-            // The rest of the artwork, found in one run once the question was asked of the ASSEMBLY
-            // instead of a reader's memory. Each is a leaf that draws and says what it is; the web
-            // has carried all three (LowerGlyph passes a vector's label, the drawing's lands on the
-            // svg, the camera's on its element) and Photon carried none.
-            case Vector { Label: { Length: > 0 } vectorLabel }:
-                nodes.Add(new(SemanticRole.Image, node.Path ?? "", node.Bounds,
-                    vectorLabel, null, false));
-                return;
-
-            case Drawing { Label: { Length: > 0 } drawingLabel }:
-                nodes.Add(new(SemanticRole.Image, node.Path ?? "", node.Bounds,
-                    drawingLabel, null, false));
-                return;
-
-            case CameraPreview { Label: { Length: > 0 } cameraLabel }:
-                nodes.Add(new(SemanticRole.Image, node.Path ?? "", node.Bounds,
-                    cameraLabel, null, false));
-                return;
-        }
-
+        if (!node.Source.Accept(visitor, node)) return;
         foreach (var child in node)
-            Walk(child, nodes);
-    }
-
-    /// <summary>Every Text string under a node, joined — the derived accessible name of a control
-    /// whose author gave it no explicit Label.</summary>
-    private static string TextWithin(LayoutNode node)
-    {
-        var parts = new List<string>();
-        Gather(node, parts);
-        return string.Join(" ", parts);
-
-        static void Gather(LayoutNode node, List<string> parts)
-        {
-            // PlainContent, for the reason the StaticText case above gives: a paragraph with runs
-            // has an empty Content. Here it costs more than a missing announcement — a control
-            // whose label happens to emphasise one word derived NO name at all, and a nameless
-            // button is announced as "button" and nothing else.
-            if (node.Source is Text { PlainContent.Length: > 0 } text) parts.Add(text.PlainContent);
-            foreach (var child in node) Gather(child, parts);
-        }
+            Walk(child, visitor);
     }
 }
