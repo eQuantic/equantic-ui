@@ -15,9 +15,17 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// <para>
 /// The SDK has ONE visual vocabulary and several places that decide what each word means — how big
 /// it is, what the GPU draws, what a screen reader says, what DOM the server writes, what DOM the
-/// browser writes, what an email client is allowed to see. Each is a switch over the node type, each
-/// covers a different subset, and until this file nothing made them agree. A deliberate omission and
-/// a forgotten one looked identical to a reader and to the build.
+/// browser writes, what an email client is allowed to see. Each was a switch over the node type,
+/// each covers a different subset, and until this file nothing made them agree. A deliberate
+/// omission and a forgotten one looked identical to a reader and to the build.
+/// </para>
+///
+/// <para>
+/// FOUR REMAIN. Two of those six — the semantics walk and the email realizer, the second of them
+/// carrying the plain-text alternative that had no default arm at all — are visitors now, so the
+/// question below is asked of them by the COMPILER and they left this list. Each departure is
+/// recorded where its entry used to be. This file retires with the last one; the plan is
+/// <c>docs/VOCABULARY-DISPATCH-PLAN.md</c>.
 /// </para>
 ///
 /// <para>
@@ -57,8 +65,9 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// from outside its own assembly can be held to TODAY; the structural answer is the one the language
 /// already has — a visitor whose methods are abstract, so a node added to the vocabulary is a
 /// compile error in every realizer until it is handled or explicitly declined, and a generated
-/// <c>NodeKind</c> union with an exhaustive switch on the TypeScript side. When every dispatch below
-/// is a visitor, this file retires; until then it is what keeps the seven from becoming eight.
+/// <c>NodeKind</c> union with an exhaustive switch on the TypeScript side — and that answer is now
+/// landing, two dispatches down. Until the last one, this is what keeps the seven from becoming
+/// eight.
 /// See <c>docs/ARCHITECTURE-AUDIT.md</c>.
 /// </para>
 /// </summary>
@@ -142,22 +151,13 @@ public class VocabularyCoverageTests
             // page rather than a guess. `SurfaceSsrTests` holds the half that is done.
             "CodeSurface"),
 
-        new("EmailRealizer",
-            "src/eQuantic.UI.Email/EmailRealizer.cs",
-            "Write",
-            "what may an email client see",
-            Language.CSharp,
-            // The MEDIUM, not an omission: an email is a printed page that happens to have links.
-            // No scrolling, no pressing, no dragging, no script, no stylesheet — Outlook renders
-            // with Word's engine. The realizer composes from Box, Row, Column, Text, Image and Link
-            // and its default arm is the ONLY loud one among the five dispatches here: it throws
-            // NotSupportedException naming the node, which is why this list can be long and still
-            // honest. A node leaving it means the medium learned something.
-            "AdaptiveNode", "Adjustable", "Anchored", "CameraPreview", "Canvas", "CodeSurface",
-            "DragDismiss", "Draggable", "Drawing", "Flexible", "Grid", "Hoverable", "Icon",
-            "InFlow", "InView", "LoopMotion", "Navigable", "Overlay", "Pinned", "Positioned",
-            "Presence", "Pressable", "SafeArea", "ScrollView", "SheetSurface", "Shortcut",
-            "Simulated", "Spacer", "Spinner", "Stack", "TextEntry", "Vector", "WebFrame"),
+        // `EmailRealizer` LEFT THIS LIST TOO, and took the longest exemption array with it. Both
+        // email walks are visitors over one shared refusal set (`EmailWalk`), so the thirty-three
+        // nodes that used to be strings here are methods the compiler demands — and the plain-text
+        // walk, which had NO default arm and skipped what it did not know in silence, now refuses
+        // exactly what the HTML refuses. `EmailRefusalParityTests` sends every one of the 33 through
+        // both alternatives and expects the same reason from each: the half a source regex could
+        // never check.
 
         new("lowering.ts",
             "src/eQuantic.UI.Runtime/src/shared/lowering.ts",

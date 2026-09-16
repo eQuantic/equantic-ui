@@ -12,4 +12,12 @@
     <ProjectReference Include="..\eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The two alternatives are internal — a message is rendered through EmailRenderer, never by
+         picking a visitor — but the contract that binds them is that they REFUSE THE SAME NODES,
+         and a whole-message test cannot see it: the HTML part is built first and throws, so the
+         text walk is never reached. The suite asks each visitor directly instead. -->
+    <InternalsVisibleTo Include="eQuantic.UI.Email.Tests" />
+  </ItemGroup>
+
 </Project>
