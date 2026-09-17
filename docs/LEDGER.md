@@ -215,6 +215,13 @@ record of a release, the wiki's Upgrading page is the distillate.
   the TypeScript dispatch leaves it and three C# dispatches remain. Settled the same day, on purpose
   rather than by default: a page does NOT walk a tree — `Accept` stays `[ServerOnly]` and the twins
   get no `accept`.
+- **2026-09-17 · The web realizer leaves its switch**: `WebLoweringVisitor` answers for all forty
+  nodes across four family files, and `WebRealizer` keeps the façade and the gradient contract
+  ([#180](https://github.com/eQuantic/equantic-ui/issues/180)). Row and Column gain separate doors,
+  `CodeSurface` becomes the only node that may lower to nothing and says so at its arm, and
+  `_simulated` stops being an `AsyncLocal` — the ceremony a static class needed, which a per-pass
+  visitor does not. Four of the six dispatches have now crossed; `LayoutEngine.MeasureCore` and
+  `PhotonRealizer.EmitNode` remain, and `VocabularyCoverageTests` is down to two entries.
 
 ## Retired documents
 

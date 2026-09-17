@@ -13,10 +13,11 @@ namespace eQuantic.UI.Primitives;
 /// </para>
 ///
 /// <para>
-/// Three have crossed: the semantics walk (<c>SemanticsVisitor</c>), both email alternatives over
-/// one shared refusal set (<c>EmailWalk</c>), and the runtime's lowering — that last one differently,
-/// through a generated <c>NodeKind</c> union and an <c>assertNever</c>, since the browser has no
-/// interface to implement. Three to go: the layout engine and the two remaining realizers.
+/// Four have crossed: the semantics walk (<c>SemanticsVisitor</c>), both email alternatives over
+/// one shared refusal set (<c>EmailWalk</c>), the web realizer (<c>WebLoweringVisitor</c>), and the
+/// runtime's lowering — that last one differently, through a generated <c>NodeKind</c> union and an
+/// <c>assertNever</c>, since the browser has no interface to implement. Two to go: the layout engine
+/// and the Photon realizer.
 /// </para>
 ///
 /// <para>
