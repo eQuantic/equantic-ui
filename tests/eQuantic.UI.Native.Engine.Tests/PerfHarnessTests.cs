@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Linq;
 using eQuantic.UI.Components;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine;
@@ -77,7 +78,7 @@ public class PerfHarnessTests
     /// sheet and a tooltip open. Found in review of the S5 visitor, which was built per call before
     /// it was cached on the context.
     /// </summary>
-    private static VisualNode OverlayHeavyScene(IAppTheme theme)
+    private static Stack OverlayHeavyScene(IAppTheme theme)
     {
         var page = new Stack();
         page.Add(DenseScene(theme));
@@ -246,6 +247,13 @@ public class PerfHarnessTests
     /// is what the code promises, and bytes are a proxy for it.
     /// </para>
     /// <para>
+    /// It lays out what the realizer lays out — the page, then each Overlay's CHILD against the
+    /// viewport on its own root path — rather than the same tree nine times. The first version did
+    /// the latter: it asserted the right invariant (one pass per context, whatever the calls) on a
+    /// scene DRESSED as the production path, since `Layout` never extracts an Overlay into a root of
+    /// its own. A guard that mimes the thing it guards is how the next reader learns the wrong shape.
+    /// </para>
+    /// <para>
     /// Mutation-verified: putting `new MeasureVisitor(context)` back at the call site in
     /// `LayoutEngine.Layout` fails this and nothing else in this file.
     /// </para>
@@ -260,11 +268,16 @@ public class PerfHarnessTests
     public void EveryOverlayLayer_SharesTheOneMeasurementPass()
     {
         var context = new LayoutContext(PhotonTheme.Instance, ApproximateTextMeasurer.Instance);
+        var page = OverlayHeavyScene(PhotonTheme.Instance);
 
-        // Nine layout calls on one context: the page and its eight overlay layers.
-        var scene = OverlayHeavyScene(PhotonTheme.Instance);
-        for (var layer = 0; layer < 9; layer++)
-            LayoutEngine.Layout(scene, 1280, 900, context, rootPath: $"r{layer}");
+        // The shape PhotonRealizer.Realize lays out, rather than a scene that merely looks like it:
+        // the page once, then each Overlay's CHILD against the viewport on its own root path
+        // (`ov<i>`), all on the one context. Nine calls, because the scene carries eight layers.
+        LayoutEngine.Layout(page, 1280, 900, context);
+        var overlays = page.Children.OfType<Overlay>().ToList();
+        overlays.Should().HaveCount(8, "the scene is built with eight layers, and this test counts on it");
+        for (var i = 0; i < overlays.Count; i++)
+            LayoutEngine.Layout(overlays[i].Child, 1280, 900, context, rootPath: $"ov{i}");
 
         context.PassesBuilt.Should().Be(1,
             "a layer is a tree to lay out, not a per-frame allocation — the pass belongs to the "
