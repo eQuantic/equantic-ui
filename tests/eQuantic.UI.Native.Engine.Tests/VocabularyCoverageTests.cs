@@ -21,11 +21,11 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// </para>
 ///
 /// <para>
-/// THREE REMAIN. Of those six, the semantics walk and the email realizer (the second carrying the
-/// plain-text alternative that had no default arm at all) are visitors now, and the browser's
-/// lowering answers to a generated union and <c>assertNever</c> — so the question below is asked of
-/// all three by a COMPILER, and they left this list. Each departure is recorded where its entry used
-/// to be. This file retires with the last one; the plan is
+/// TWO REMAIN — the layout engine and the Photon realizer. Four of the six have left: the semantics
+/// walk, both email alternatives over one shared refusal set, the web realizer, and the browser's
+/// lowering, which answers to a generated union and <c>assertNever</c> because it has no interface
+/// to implement. The question below is asked of all four by a COMPILER now, and each departure is
+/// recorded where its entry used to be. This file retires with the last one; the plan is
 /// <c>docs/VOCABULARY-DISPATCH-PLAN.md</c>.
 /// </para>
 ///
@@ -66,7 +66,7 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// language already has — a visitor whose methods are abstract, so a node added to the vocabulary
 /// is a compile error in every realizer until it is handled or explicitly declined, and on the
 /// TypeScript side a generated <c>NodeKind</c> union ending in <c>assertNever</c>, since the browser
-/// has no interface to implement. Three dispatches down, three to go. Until the last one, this is
+/// has no interface to implement. Four dispatches down, two to go. Until the last one, this is
 /// what keeps the seven from becoming eight.
 /// See <c>docs/ARCHITECTURE-AUDIT.md</c>.
 /// </para>
@@ -126,18 +126,11 @@ public class VocabularyCoverageTests
         // by the arm the compiler now demands for every node. A regex over source cannot be wrong
         // about a dispatch that no longer has a switch.
 
-        new("WebRealizer",
-            "src/eQuantic.UI.Web/WebRealizer.cs",
-            "LowerNodeKind",
-            "what DOM does the server write",
-            // `SheetSurface` left this list when the server learned to write it. `CodeSurface` is
-            // still here, and the reason CHANGED rather than survived: it is no longer "nobody
-            // noticed", it is that the client appends a caret to every code surface and the server
-            // has no business rendering a caret. Emitting only the child would give hydration a tree
-            // one element short, which the reconciler records as a failed adoption — so the shape
-            // has to be settled before the arm is worth having, and settling it needs a running
-            // page rather than a guess. `SurfaceSsrTests` holds the half that is done.
-            "CodeSurface"),
+        // `WebRealizer` LEFT THIS LIST, and it was the one with an exemption that had already
+        // changed its reason once. `WebLoweringVisitor` answers for all forty nodes, so `CodeSurface`
+        // is not a string in an array any more — it is a method that returns null and says, where
+        // the node is, that the client appends a caret the server has no business rendering. The
+        // difference is that the compiler now knows it is the ONLY node that may.
 
         // `EmailRealizer` LEFT THIS LIST TOO, and took the longest exemption array with it. Both
         // email walks are visitors over one shared refusal set (`EmailWalk`), so the thirty-three
