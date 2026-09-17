@@ -205,6 +205,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#178](https://github.com/eQuantic/equantic-ui/issues/178)). `VocabularyCoverageTests` goes from
   six dispatches to four; the two it lost are answered by the compiler now, and the thirty-three
   nodes email refuses are checked through both alternatives by `EmailRefusalParityTests`.
+- **2026-09-17 · The browser's door closes too**: `NodeKind` is a GENERATED TypeScript union
+  (`node-kinds.generated.ts`, byte-pinned beside the enum unions), `nodeKind` is that union on both
+  the wire shapes and the runtime classes instead of `string`, and `lowerNodeKind` ends in
+  `assertNever` — deleting one arm makes `tsc` refuse, which is the exhaustiveness the C# side gets
+  from a visitor and the client could not have, since class names do not survive bundling
+  ([#179](https://github.com/eQuantic/equantic-ui/issues/179)). The three rules that make a wire kind
+  an identity move into the generator, so `VocabularyCoverageTests` can retire without losing them;
+  the TypeScript dispatch leaves it and three C# dispatches remain. Settled the same day, on purpose
+  rather than by default: a page does NOT walk a tree — `Accept` stays `[ServerOnly]` and the twins
+  get no `accept`.
 
 ## Retired documents
 
