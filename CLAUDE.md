@@ -453,6 +453,27 @@ quoted here):
 - `[Authorize(Roles = "Admin")]` - RBAC authorization on server actions
 - `[AllowAnonymous]` - Bypasses authorization
 
+## One type per file, or the file says why not
+
+A `.cs` file declares ONE top-level type, and takes its name. A second type riding behind the
+first one's closing brace is invisible — to a reader who looks for it by file name, and to any tool
+that moves code by member. `RealizedElement`, the web realizer's only output shape, lived at the
+tail of a 2,666-line `WebRealizer.cs` and was DROPPED for one build when that file was split,
+because the range check driving the split stopped at the last member of the class instead of at the
+end of the file. The compiler caught it; the point is that it could go missing at all.
+
+The exceptions are a LIST rather than a category, in
+`tests/eQuantic.UI.Compiler.Tests/Coverage/one-type-per-file.baseline.txt`, which may ONLY SHRINK.
+Each entry carries the count it was measured at and why the file is the unit: an interop header
+transcribed in one place, a closed hierarchy whose cases ARE the type, one protocol's record set,
+one vendor's options object — or the honest `not looked at yet`. A category the test waves through
+("interop is exempt") hides a careless second type inside it; a named entry stays visible and stays
+reducible, and the count is what stops a listed file quietly growing one more.
+
+A new file gets no entry. Split it, or add the entry BY HAND with its reason — the regenerator
+(`EQ_UPDATE_ONE_TYPE_BASELINE=1`) exists for a REMOVAL: it carries every reason across and never
+writes the sentence that would justify a new one.
+
 ## Authoring: the declarative surface
 
 Trees are written with FACTORIES, never `new`: `Column(gap: Space.S3, children: [ Text(…),
