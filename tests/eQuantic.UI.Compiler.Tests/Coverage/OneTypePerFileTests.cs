@@ -11,8 +11,8 @@ namespace eQuantic.UI.Compiler.Tests.Coverage;
 /// stopped at the last member of the class instead of at the end of the file. The compiler caught
 /// it; the point is that it could go missing at all.
 /// <para>
-/// So the rule is one top-level type per file — and, because the tree says otherwise in 132 places,
-/// the exceptions are a LIST rather than a category. A category the test waves through ("interop is
+/// So the rule is one top-level type per file — and, because the tree says otherwise in a long tail
+/// of places, the exceptions are a LIST rather than a category. A category the test waves through ("interop is
 /// exempt") hides a careless second type inside it; a named entry with its reason stays visible and
 /// stays reducible. The list may only shrink, and each entry carries the count it was measured at,
 /// so an already-exempt file cannot quietly grow a third type either.
@@ -95,7 +95,7 @@ public class OneTypePerFileTests
 
             var unit = CSharpSyntaxTree.ParseText(File.ReadAllText(file),
                 new CSharpParseOptions(LanguageVersion.Preview)).GetCompilationUnitRoot();
-            var declared = TopLevelTypes(unit.Members).ToHashSet(StringComparer.Ordinal);
+            var declared = TopLevelTypes(unit.Members, "").ToHashSet(StringComparer.Ordinal);
             if (declared.Count > 1)
                 census[Path.GetRelativePath(RepoRoot(), file).Replace(Path.DirectorySeparatorChar, '/')] = declared.Count;
         }
@@ -103,21 +103,32 @@ public class OneTypePerFileTests
         return census;
     }
 
-    /// <summary>The types a compilation unit declares, through however many namespaces it opens —
-    /// a nested type belongs to the type that owns it and is not one of these.</summary>
-    private static IEnumerable<string> TopLevelTypes(IEnumerable<MemberDeclarationSyntax> members)
+    /// <summary>
+    /// The types a compilation unit declares, through however many namespaces it opens — a nested
+    /// type belongs to the type that owns it and is not one of these.
+    /// <para>
+    /// The key carries the NAMESPACE, because the deduplication is for partial halves of ONE type
+    /// and two halves are one type only when the namespace agrees too. Without it,
+    /// <c>namespace A { class Item; } namespace B { class Item; }</c> — legal C#, and two types —
+    /// counted as one and walked past both the unlisted-file check and the growth check. Found by
+    /// review; no file in the tree does it today, which is exactly why the hole was invisible.
+    /// </para>
+    /// </summary>
+    private static IEnumerable<string> TopLevelTypes(IEnumerable<MemberDeclarationSyntax> members, string prefix)
     {
         foreach (var member in members)
             switch (member)
             {
                 case BaseNamespaceDeclarationSyntax nested:
-                    foreach (var name in TopLevelTypes(nested.Members)) yield return name;
+                    foreach (var name in TopLevelTypes(nested.Members, $"{prefix}{nested.Name}."))
+                        yield return name;
                     break;
                 case BaseTypeDeclarationSyntax type:
-                    yield return type.Identifier.Text + '`' + Arity(type);
+                    yield return prefix + type.Identifier.Text + '`' + Arity(type);
                     break;
                 case DelegateDeclarationSyntax @delegate:
-                    yield return @delegate.Identifier.Text + '`' + (@delegate.TypeParameterList?.Parameters.Count ?? 0);
+                    yield return prefix + @delegate.Identifier.Text + '`'
+                        + (@delegate.TypeParameterList?.Parameters.Count ?? 0);
                     break;
             }
     }
@@ -141,7 +152,8 @@ public class OneTypePerFileTests
     /// <summary>
     /// Rewrites the list from the measurement, carrying every reason already written across. A file
     /// that is newly over the line gets <see cref="Unjudged"/> and nothing more — the regenerator
-    /// cannot write the sentence that justifies it, so it says so and leaves the author to.
+    /// cannot write the sentence that justifies it, so it says so and leaves that sentence to the
+    /// author.
     /// </summary>
     private static void Regenerate(Dictionary<string, int> measured,
         Dictionary<string, (int Count, string Reason)> committed)

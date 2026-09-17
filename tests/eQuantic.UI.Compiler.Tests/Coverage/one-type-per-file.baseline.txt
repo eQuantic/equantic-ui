@@ -9,8 +9,10 @@
 #   vendor schema       one library's options object transcribed, same argument as an interop header
 #   not looked at yet   MEASURED, not judged — nobody has decided whether this file is the unit
 #
-# 123 of the 135 say "not looked at yet", and that is the honest state: judging them is its own
-# body of work, and a plausible sentence nobody checked would make the list unshrinkable instead.
+# Most entries say "not looked at yet", and that is the honest state: judging them is its own body
+# of work, and a plausible sentence nobody checked would make the list unshrinkable instead. No
+# count is quoted in this header, because regeneration keeps the header verbatim and would leave a
+# quoted one behind as the list shrank — `grep -vc '^#'` answers it from the file itself.
 #
 # Regenerate with EQ_UPDATE_ONE_TYPE_BASELINE=1 after a REMOVAL. It carries every reason across and
 # writes "not looked at yet" for a file that is newly over the line, which is not an approval: it
