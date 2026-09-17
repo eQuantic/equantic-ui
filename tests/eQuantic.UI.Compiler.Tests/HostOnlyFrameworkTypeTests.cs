@@ -228,4 +228,37 @@ public class HostOnlyFrameworkTypeTests
         Diagnostics("var insets = EdgeInsets.All(8f);")
             .Should().BeEmpty("the shared vocabulary is exactly what the runtime does ship");
     }
+
+    /// <summary>
+    /// THE SHAPE IS FENCED, NOT THE NODES UNDER IT. <c>SingleChildNode</c> (#162) is the first
+    /// host-only type that is a BASE rather than a sealed utility, and the type-level fence read it
+    /// as "every member of this type", which is twenty client-visible nodes' <c>Child</c>.
+    /// <para>
+    /// Measured before it was fixed, which is the only reason it was found: the probe reported
+    /// EQ2010 on <c>new Pressable(new Text("hi")).Child</c> — a read that compiled on the release
+    /// before, names a property every wrapper's runtime twin carries, and was answered with "call
+    /// it from server code — a [ServerAction]". Advice that makes no sense for reading a node's
+    /// child is worse than no fence: it sends the reader somewhere there is nothing to do.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void AWrappersOwnChild_IsReachableThroughTheNodeThatInheritsIt()
+    {
+        Diagnostics("var child = new Pressable(new Text(\"hi\")).Child;")
+            .Should().BeEmpty("Child is inherited into a client-visible node whose twin carries it");
+    }
+
+    /// <summary>
+    /// And the other direction, because a fence that stops reporting is not a narrower fence, it is
+    /// a removed one: the TYPE is still refused, which is the reason it carries the attribute at all
+    /// — the runtime exports no <c>SingleChildNode</c>, so a component naming it emits an import of
+    /// a missing export and dies at hydration.
+    /// </summary>
+    [Fact]
+    public void TheShapeItself_IsStillRefusedWhenAComponentNamesIt()
+    {
+        Diagnostics("var child = ((SingleChildNode)new Pressable(new Text(\"hi\"))).Child;")
+            .Should().Contain(d => d.Code == "EQ2010" && d.Message.Contains("SingleChildNode"),
+                "the SAME read, reached by naming the shape, is what the runtime has no twin for");
+    }
 }

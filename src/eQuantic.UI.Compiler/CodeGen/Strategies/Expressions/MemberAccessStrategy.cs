@@ -48,7 +48,10 @@ public class MemberAccessStrategy : IExpressionIrStrategy
         // guards calls and not reads reads as protection while being none — the emitted
         // `FaceResolution.unresolved` names an export the runtime does not have, and the page dies
         // at hydration with SSR still answering 200.
-        if (symbol is not null) symbol.ReportIfHostOnly(node, context);
+        // Through the RECEIVER's type, so a host-only BASE fences itself without fencing the
+        // inherited members of the client-visible nodes under it (SingleChildNode.Child, #162).
+        if (symbol is not null)
+            symbol.ReportIfHostOnly(node, context, context.SemanticHelper.GetType(memberAccess.Expression));
 
         if (symbol != null)
         {

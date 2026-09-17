@@ -79,15 +79,50 @@ internal static class HostOnlySymbolExtensions
     /// Reports and returns true when <paramref name="symbol"/> may not be named from client code.
     /// Says nothing about a symbol declared in THIS compilation: an app's own <c>[ServerOnly]</c>
     /// member is handled by the parser, which emits no module for it at all.
+    /// <para>
+    /// <paramref name="through"/> is the type the member was reached THROUGH, where the call site
+    /// has a receiver to ask about. A host-only type fences the members a component could only
+    /// reach by naming it — <c>FaceResolution.Unresolved</c> — and that is the whole of what the
+    /// type-level test meant while every host-only type was a sealed utility. A host-only BASE is
+    /// the case it did not foresee: <c>SingleChildNode</c> is fenced because the runtime exports no
+    /// twin for the TYPE, while the <c>Child</c> it declares is inherited by twenty nodes that are
+    /// client-visible, each with a twin carrying that child. Fencing the type there fenced
+    /// <c>pressable.Child</c> too, which compiled on the release before and names nothing the
+    /// runtime lacks — measured, not reasoned: the probe reported
+    /// <c>'…SingleChildNode.Child' is HOST ONLY</c> and told the reader to move an ordinary read
+    /// into a <c>[ServerAction]</c>.
+    /// </para>
+    /// <para>
+    /// So the type-level test asks where the member was reached from. A member carrying the
+    /// attribute ITSELF is unaffected and still reports through any receiver — that is
+    /// <c>VisualNode.Accept</c> on a <c>Text</c>, and it is checked FIRST here for that reason.
+    /// </para>
     /// </summary>
-    internal static bool ReportIfHostOnly(this ISymbol symbol, SyntaxNode node, ConversionContext context)
+    internal static bool ReportIfHostOnly(this ISymbol symbol, SyntaxNode node, ConversionContext context,
+        ITypeSymbol? through = null)
     {
         var declaring = symbol.ContainingType;
         if (declaring is null) return false;
         if (declaring.Locations.Any(location => location.IsInSource)) return false;
-        if (!symbol.IsHostOnly() && !declaring.IsHostOnly()) return false;
+        if (symbol.IsHostOnly()) return Report(declaring, symbol.Name, node, context);
+        if (!declaring.IsHostOnly()) return false;
+        if (ReachedThroughAClientVisibleType(through)) return false;
         return Report(declaring, symbol.Name, node, context);
     }
+
+    /// <summary>
+    /// The member was read off something whose own type is not fenced — so the component named a
+    /// node, not the shape behind it. A null receiver type (a static access, or a model that cannot
+    /// answer) keeps the fence exactly as it was.
+    /// <para>
+    /// It does NOT also test that the receiver differs from the fenced type, which the first version
+    /// did: a receiver that IS the fenced type is host-only, so the second clause already decided
+    /// every case the first could have. Measured by removing it — both tests stayed green, which is
+    /// the definition of a branch that never decides.
+    /// </para>
+    /// </summary>
+    private static bool ReachedThroughAClientVisibleType(ITypeSymbol? through) =>
+        through is not null && !through.IsHostOnly();
 
     /// <summary>
     /// The TYPE named on its own — a construction, where there is no member to ask about. Same

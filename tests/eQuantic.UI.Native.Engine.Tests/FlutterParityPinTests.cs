@@ -160,6 +160,36 @@ public class FlutterParityPinTests
             .Count(t => t is { IsAbstract: false } && shape.IsAssignableFrom(t))
         : 0;
 
+    /// <summary>
+    /// Does this node wrap EXACTLY ONE REQUIRED child — the shape's own definition, read off the
+    /// type rather than off a list someone keeps up to date. <c>Box</c> answers no: its child is
+    /// nullable, which is the stated reason the base does not claim it.
+    /// </summary>
+    private static bool WrapsOneRequiredChild(Type node) =>
+        node.GetProperty("Child", BindingFlags.Public | BindingFlags.Instance) is { } child
+        && child.PropertyType == typeof(VisualNode)
+        && new NullabilityInfoContext().Create(child).ReadState == NullabilityState.NotNull;
+
+    /// <summary>
+    /// The INVARIANT, not the tally. A count stays green under a swap — move one wrapper back under
+    /// <c>VisualNode</c> and put any other node under the base, and twenty is still twenty while the
+    /// moved one misses every arm written over the shape. This asks the thing the shape means
+    /// instead: a node that wraps one required child IS a <see cref="SingleChildNode"/>, so neither
+    /// half of that swap survives.
+    /// <para>
+    /// Scoped to the VOCABULARY's own assembly, which is not decoration: written over the whole
+    /// surface it failed on <c>Card</c>, <c>PullToRefresh</c>, <c>SwipeableRow</c> and
+    /// <c>Tooltip</c> — components that take a <c>Child</c> and are <c>StatelessComponent</c>s, so
+    /// they reach the layout engine by BUILDING rather than by being a shape. The shapes partition
+    /// the vocabulary; the component library is not theirs to partition.
+    /// </para>
+    /// </summary>
+    private static bool EveryOneChildNodeIsA(string baseType) => Find(baseType) is { } shape
+        && typeof(VisualNode).Assembly.GetExportedTypes()
+            .Where(t => t is { IsAbstract: false } && typeof(VisualNode).IsAssignableFrom(t))
+            .Where(WrapsOneRequiredChild)
+            .All(shape.IsAssignableFrom);
+
     // ---- what each row claims ---------------------------------------------------------------------
 
     private static readonly Dictionary<string, Func<bool>> Probes = new()
@@ -181,13 +211,16 @@ public class FlutterParityPinTests
         // required, and FlexNode covers the flex containers only — nothing sits between VisualNode
         // and the four many-child nodes, or between it and the eleven leaves.
         //
-        // The COUNT is the part that guards the invariant. "The base exists" stays true while a
-        // wrapper is declared straight under VisualNode, and that wrapper then misses the arms
-        // written over the shape. Twenty is measured, not chosen: twenty-one nodes wrap one child
-        // and Box's is optional. WrapperNode and ProxyNode stay in the negative set they were in
-        // while this row was a GAP — a SECOND wrapper base would change the shape surface just as
-        // much as a first one did.
-        ["SingleChildRenderObjectWidget"] = () => Descendants("SingleChildNode") == 20 && Has("FlexNode")
+        // WHAT GUARDS THE INVARIANT. "The base exists" stays true while a wrapper is declared
+        // straight under VisualNode, and that wrapper then misses the arms written over the shape.
+        // The COUNT was the first answer and is not enough either: swap a wrapper out for any other
+        // node under the base and twenty is still twenty. So the row asks both — every node that
+        // wraps one required child IS one (the rule), and there are twenty of them (the measurement
+        // this PR's prose and the audit both quote; twenty-one nodes wrap one child and Box's is
+        // optional). WrapperNode and ProxyNode stay in the negative set they were in while this row
+        // was a GAP — a SECOND wrapper base would change the shape surface just as much as a first.
+        ["SingleChildRenderObjectWidget"] = () => EveryOneChildNodeIsA("SingleChildNode")
+            && Descendants("SingleChildNode") == 20 && Has("FlexNode")
             && Nothing("MultiChildNode", "LeafNode", "WrapperNode", "ProxyNode"),
 
         // 2 — layout

@@ -76,6 +76,24 @@ public class DocsIndexTests
         new(@"^(?<name>[A-Z]\w*)\s*=\s*-?\d+\s*,?$", RegexOptions.Compiled),
     ];
 
+    /// <summary>
+    /// DECLARES it, rather than mentions it. The first version of this asked whether the file
+    /// contained the word anywhere, which a doc comment satisfies: <c>Presence.cs</c> says "The
+    /// SlideUp rise distance" in the summary above <c>SlideDistance</c> and declares no
+    /// <c>SlideUp</c> at all, so a citation of <c>SlideUp</c> moved to <c>Presence.cs</c> stayed
+    /// green — the instrument built to catch a citation naming the wrong file had the same hole it
+    /// was built to close.
+    /// <para>
+    /// The same three shapes read the source, so the question is symmetric: the quoted line declares
+    /// a name, and some line of the named file must declare that same name.
+    /// </para>
+    /// </summary>
+    private static bool Declares(string sourceFile, string name) =>
+        File.ReadLines(sourceFile).Any(line =>
+            DeclaredName.Any(pattern =>
+                pattern.Match(line.Trim()) is { Success: true } match
+                && match.Groups["name"].Value == name));
+
     private static string Root()
     {
         var here = new DirectoryInfo(AppContext.BaseDirectory);
@@ -197,8 +215,7 @@ public class DocsIndexTests
                     continue; // a bare name that resolves to nothing mentions rather than locates
                 }
 
-                if (!candidates.Any(candidate =>
-                        Regex.IsMatch(File.ReadAllText(candidate), $@"\b{Regex.Escape(name)}\b")))
+                if (!candidates.Any(candidate => Declares(candidate, name)))
                     misplaced.Add($"{where} → {path} does not declare {name}");
             }
         }
