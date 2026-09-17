@@ -562,20 +562,19 @@ public enum LoopEffect : byte
 /// t) and re-renders while active; the web realizer lowers to generated CSS keyframes (the browser
 /// owns the clock; `prefers-reduced-motion` statically disables it — the spec's Reduce Motion rule).
 /// </summary>
-public sealed class LoopMotion : VisualNode
+public sealed class LoopMotion : SingleChildNode
 {
     public override string NodeKind => "loopMotion";
 
     public LoopMotion(VisualNode child, LoopEffect effect, float fromX, float toX, int durationMs)
+        : base(child)
     {
-        Child = child;
         Effect = effect;
         FromX = fromX;
         ToX = toX;
         DurationMs = durationMs;
     }
 
-    public VisualNode Child { get; init; }
     public LoopEffect Effect { get; init; }
 
     /// <summary>Loop start offset as a fraction of the node's own width (e.g. -0.35 = -35%).</summary>
@@ -604,16 +603,15 @@ public sealed class LoopMotion : VisualNode
 /// centering, sheets) from the ordinary vocabulary — Overlay is only the layer. Declarative:
 /// presence in the build shows it (`if (_confirming) … new Overlay(…)`), state removes it.
 /// </summary>
-public sealed class Overlay : VisualNode
+public sealed class Overlay : SingleChildNode
 {
     public override string NodeKind => "overlay";
 
     public Overlay(VisualNode child)
+        : base(child)
     {
-        Child = child;
     }
 
-    public VisualNode Child { get; init; }
 
     /// <summary>False = a NON-MODAL layer (toasts): pointer input passes through everywhere except
     /// the layer's own pressables. Native is passthrough by construction (only registered regions
@@ -815,17 +813,16 @@ public sealed class Anchored : VisualNode
 /// (press semantics) — presence COMPOSES with both by nesting. Web attaches
 /// mouseenter/mouseleave; native rides the host's hover pipeline (the same one Style.Hover uses).
 /// </summary>
-public sealed class Hoverable : VisualNode
+public sealed class Hoverable : SingleChildNode
 {
     public override string NodeKind => "hoverable";
 
     public Hoverable(VisualNode child, Action<bool> onChanged)
+        : base(child)
     {
-        Child = child;
         OnChanged = onChanged;
     }
 
-    public VisualNode Child { get; init; }
 
     /// <summary><c>true</c> = pointer entered, <c>false</c> = pointer left.</summary>
     public Action<bool> OnChanged { get; init; }
@@ -853,7 +850,7 @@ public enum PresenceMotion : byte
 /// lowers to a mount-playing CSS animation class; native resolves a presence clock per layout path.
 /// v1 is ENTER only: exit (removal-deferred motion) stays a fence on both targets.
 /// </summary>
-public sealed class Presence : VisualNode
+public sealed class Presence : SingleChildNode
 {
     public override string NodeKind => "presence";
 
@@ -861,12 +858,11 @@ public sealed class Presence : VisualNode
     public const float SlideDistance = 16;
 
     public Presence(VisualNode child, PresenceMotion enter = PresenceMotion.Fade)
+        : base(child)
     {
-        Child = child;
         Enter = enter;
     }
 
-    public VisualNode Child { get; init; }
     public PresenceMotion Enter { get; init; }
 
     public sealed override TResult Accept<TState, TResult>(
@@ -893,17 +889,16 @@ public enum DragAxis : byte
 /// -96 in <see cref="OnReleased"/>; one that springs back is a caller that left it at 0.
 /// </para>
 /// </summary>
-public sealed class Draggable : VisualNode
+public sealed class Draggable : SingleChildNode
 {
     public override string NodeKind => "draggable";
 
     public Draggable(VisualNode child, Action<float>? onReleased = null)
+        : base(child)
     {
-        Child = child;
         OnReleased = onReleased;
     }
 
-    public VisualNode Child { get; init; }
 
     public DragAxis Axis { get; init; }
 
@@ -953,7 +948,7 @@ public sealed class Draggable : VisualNode
 /// marker. v1 fences: detents (partial heights), flick-velocity dismissal, horizontal axis, and
 /// nested-scroll interplay.
 /// </summary>
-public sealed class DragDismiss : VisualNode
+public sealed class DragDismiss : SingleChildNode
 {
     public override string NodeKind => "dragDismiss";
 
@@ -961,12 +956,11 @@ public sealed class DragDismiss : VisualNode
     public const float ThresholdDp = 96;
 
     public DragDismiss(VisualNode child, Action? onDismiss = null)
+        : base(child)
     {
-        Child = child;
         OnDismiss = onDismiss;
     }
 
-    public VisualNode Child { get; init; }
     public Action? OnDismiss { get; init; }
 
     public sealed override TResult Accept<TState, TResult>(
@@ -981,18 +975,17 @@ public sealed class DragDismiss : VisualNode
 /// navigation seam (<c>PhotonHost.NavigationRequested</c> — the platform shell maps hrefs to pages).
 /// Pressables INSIDE a link win the tap (topmost dispatch), exactly like a button inside an anchor.
 /// </summary>
-public sealed class Link : VisualNode
+public sealed class Link : SingleChildNode
 {
     public override string NodeKind => "link";
 
     public Link(string destination, VisualNode child)
+        : base(child)
     {
         Destination = destination;
-        Child = child;
     }
 
     public string Destination { get; init; }
-    public VisualNode Child { get; init; }
 
     /// <summary>Accessible name when the child carries no text of its own (icon-only links).</summary>
     public string? Label { get; init; }
@@ -1157,17 +1150,16 @@ public enum AdjustableRole
 /// <see cref="Role"/> with a keydown handler — the reason this is a NODE and not component
 /// wiring: both realizers need to agree on what focus means here.
 /// </summary>
-public sealed class Adjustable : VisualNode
+public sealed class Adjustable : SingleChildNode
 {
     public override string NodeKind => "adjustable";
 
     public Adjustable(VisualNode child, Action<int> onAdjust)
+        : base(child)
     {
-        Child = child;
         OnAdjust = onAdjust;
     }
 
-    public VisualNode Child { get; init; }
 
     /// <summary>+1 for the increasing arrow, −1 for the decreasing one. The CONTROL owns what a
     /// step is worth — the keyboard only says which way; whether the ends WRAP is the control's
@@ -1294,18 +1286,17 @@ public sealed class Navigable : VisualNode
 /// host's key pipeline (desktop shells) — bindings are inert on native until it lands.
 /// </para>
 /// </summary>
-public sealed class Shortcut : VisualNode
+public sealed class Shortcut : SingleChildNode
 {
     public override string NodeKind => "shortcut";
 
     public Shortcut(VisualNode child, KeyChord chord, Action onPressed)
+        : base(child)
     {
-        Child = child;
         Chord = chord;
         OnPressed = onPressed;
     }
 
-    public VisualNode Child { get; init; }
     public KeyChord Chord { get; init; }
     public Action OnPressed { get; init; }
 
@@ -1318,17 +1309,16 @@ public sealed class Shortcut : VisualNode
 /// spec §08 hit contract — the hit rect is expanded symmetrically to at least 48×48dp even when the
 /// visual is smaller (realizers register it; overlapping hit rects assert in debug).
 /// </summary>
-public sealed class Pressable : VisualNode
+public sealed class Pressable : SingleChildNode
 {
     public override string NodeKind => "pressable";
 
     public Pressable(VisualNode child, Action? onPressed = null)
+        : base(child)
     {
-        Child = child;
         OnPressed = onPressed;
     }
 
-    public VisualNode Child { get; init; }
     public Action? OnPressed { get; init; }
     public bool Disabled { get; init; }
 
@@ -1788,19 +1778,18 @@ public sealed class Column : FlexNode
 }
 
 /// <summary>Marks a flex child that shares LEFTOVER main-axis space by weight (spec A2 <c>Flex(n)</c>).</summary>
-public sealed class Flexible : VisualNode
+public sealed class Flexible : SingleChildNode
 {
     public override string NodeKind => "flexible";
 
     public Flexible(VisualNode child, int flex = 1, float basis = 0, int shrink = 1)
+        : base(child)
     {
-        Child = child;
         Flex = Math.Max(1, flex);
         Basis = MathF.Max(0, basis);
         Shrink = Math.Max(0, shrink);
     }
 
-    public VisualNode Child { get; init; }
     public int Flex { get; init; }
 
     /// <summary>
@@ -2040,21 +2029,20 @@ public sealed class Stack : VisualNode
 /// Anchors a <see cref="Stack"/> child to the stack's edges (spec A3) — offsets may be negative
 /// (the Badge overlay attaches at top −4 / end −4). Unset axes fall back to the stack alignment.
 /// </summary>
-public sealed class Positioned : VisualNode
+public sealed class Positioned : SingleChildNode
 {
     public sealed override string NodeKind => "positioned";
 
     public Positioned(VisualNode child, float? top = null, float? end = null,
         float? bottom = null, float? start = null)
+        : base(child)
     {
-        Child = child;
         Top = top;
         End = end;
         Bottom = bottom;
         Start = start;
     }
 
-    public VisualNode Child { get; }
     public float? Top { get; init; }
     public float? End { get; init; }
     public float? Bottom { get; init; }
@@ -2111,17 +2099,16 @@ public enum SafeEdges : byte
 /// and a bottom bar inside one sits above the home indicator instead of under it.
 /// </para>
 /// </summary>
-public sealed class SafeArea : VisualNode
+public sealed class SafeArea : SingleChildNode
 {
     public override string NodeKind => "safeArea";
 
     public SafeArea(VisualNode child, SafeEdges edges = SafeEdges.All)
+        : base(child)
     {
-        Child = child;
         Edges = edges;
     }
 
-    public VisualNode Child { get; init; }
     public SafeEdges Edges { get; init; }
 
     /// <summary>Added to whatever the host reports — a bar's own padding on top of the inset.</summary>
@@ -2138,17 +2125,16 @@ public sealed class SafeArea : VisualNode
 /// native scroll compositor when engine scrolling lands — until then it renders in flow (correct
 /// at scroll offset 0).
 /// </summary>
-public sealed class Pinned : VisualNode
+public sealed class Pinned : SingleChildNode
 {
     public override string NodeKind => "pinned";
 
     public Pinned(VisualNode child, float offset = 0)
+        : base(child)
     {
-        Child = child;
         Offset = offset;
     }
 
-    public VisualNode Child { get; }
 
     /// <summary>Distance from the viewport's start edge while pinned (dp).</summary>
     public float Offset { get; init; }
@@ -2184,17 +2170,16 @@ public sealed class Pinned : VisualNode
 /// with the native interaction system; today the scroll position is the programmatic
 /// <see cref="Offset"/> (web realizes as native browser scrolling, which owns its own physics).
 /// </summary>
-public sealed class ScrollView : VisualNode
+public sealed class ScrollView : SingleChildNode
 {
     public sealed override string NodeKind => "scrollView";
 
     public ScrollView(VisualNode child, ScrollAxis axis = ScrollAxis.Vertical)
+        : base(child)
     {
-        Child = child;
         Axis = axis;
     }
 
-    public VisualNode Child { get; }
     public ScrollAxis Axis { get; init; }
     public SizeValue Width { get; init; }
     public SizeValue Height { get; init; }
@@ -2233,7 +2218,7 @@ public sealed class ScrollView : VisualNode
 /// keystroke causes — which is exactly why the surface carries it rather than a copy of its state.
 /// </para>
 /// </summary>
-public sealed class CodeSurface : VisualNode
+public sealed class CodeSurface : SingleChildNode
 {
     /// <summary>
     /// How long the caret holds each phase, in ms — 500 on, 500 off. Normative for BOTH targets: a
@@ -2245,12 +2230,11 @@ public sealed class CodeSurface : VisualNode
     public override string NodeKind => "codeSurface";
 
     public CodeSurface(VisualNode child, CodeEditorController editor)
+        : base(child)
     {
-        Child = child;
         Editor = editor;
     }
 
-    public VisualNode Child { get; init; }
 
     /// <summary>The document, the selection, and every command that changes either.</summary>
     public CodeEditorController Editor { get; init; }
@@ -2300,17 +2284,16 @@ public sealed class CodeSurface : VisualNode
 /// top-left is (the virtualized window's origin), so the surface's marks line up with the pixels.
 /// </para>
 /// </summary>
-public sealed class SheetSurface : VisualNode
+public sealed class SheetSurface : SingleChildNode
 {
     public override string NodeKind => "sheetSurface";
 
     public SheetSurface(VisualNode child, SheetController controller)
+        : base(child)
     {
-        Child = child;
         Controller = controller;
     }
 
-    public VisualNode Child { get; init; }
     public SheetController Controller { get; init; }
 
     /// <summary>The window's origin: the sheet row/col the child's first cell renders.</summary>

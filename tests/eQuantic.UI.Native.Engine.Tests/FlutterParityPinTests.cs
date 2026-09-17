@@ -166,8 +166,11 @@ public class FlutterParityPinTests
         ["RenderObject"] = () => HasMember("LayoutNode", "Parent"),
         ["parentData"] = () => !HasMember("LayoutNode", "ParentData") && HasMember("LayoutNode", "Bounds"),
         ["RenderSliver"] = () => Has("ListView") && Nothing("Sliver", "SliverList"),
-        // The shapes: FlexNode is the one base the vocabulary names; nothing names the single-child one.
-        ["SingleChildRenderObjectWidget"] = () => Has("FlexNode") && Nothing("SingleChildNode", "WrapperNode", "ProxyNode"),
+        // The shapes, ONE of three named: SingleChildNode holds the twenty wrappers whose child is
+        // required, and FlexNode covers the flex containers only — nothing sits between VisualNode
+        // and the four many-child nodes, or between it and the eleven leaves.
+        ["SingleChildRenderObjectWidget"] = () => Has("SingleChildNode") && Has("FlexNode")
+            && Nothing("MultiChildNode", "LeafNode"),
 
         // 2 — layout
         ["Constraints go down,"] = () => Has("LayoutContext"),

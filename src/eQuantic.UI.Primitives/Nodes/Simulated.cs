@@ -47,19 +47,18 @@ public enum SimulatedState
 /// a simulated press is a picture of a press.
 /// </para>
 /// </summary>
-public sealed class Simulated : VisualNode
+public sealed class Simulated : SingleChildNode
 {
     public override string NodeKind => "simulated";
 
     public Simulated(SimulatedState state, VisualNode child)
+        : base(child)
     {
         State = state;
-        Child = child;
     }
 
     public SimulatedState State { get; init; }
 
-    public VisualNode Child { get; init; }
 
     public sealed override TResult Accept<TState, TResult>(
         IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);

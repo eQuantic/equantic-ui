@@ -21,17 +21,16 @@ namespace eQuantic.UI.Primitives;
 /// Photon compares bounds with the surface once a frame, which it is already walking.
 /// </para>
 /// </summary>
-public sealed class InView : VisualNode
+public sealed class InView : SingleChildNode
 {
     public override string NodeKind => "inView";
 
     public InView(VisualNode child, Action<bool> onChanged)
+        : base(child)
     {
-        Child = child;
         OnChanged = onChanged;
     }
 
-    public VisualNode Child { get; init; }
 
     /// <summary>
     /// Fires on the TRANSITIONS only — true when the child comes into view, false when it goes.

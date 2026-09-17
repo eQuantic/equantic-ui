@@ -21,13 +21,12 @@ namespace eQuantic.UI.Primitives;
 /// for something floating above a page.
 /// </para>
 /// </summary>
-public sealed class InFlow : VisualNode
+public sealed class InFlow : SingleChildNode
 {
     public override string NodeKind => "inFlow";
 
-    public InFlow(VisualNode child) => Child = child;
+    public InFlow(VisualNode child) : base(child) { }
 
-    public VisualNode Child { get; init; }
 
     // ---- The AMBIENT intent, while this subtree builds ---------------------------------------
 
