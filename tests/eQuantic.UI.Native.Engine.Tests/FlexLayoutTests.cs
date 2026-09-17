@@ -201,6 +201,45 @@ public class FlexLayoutTests
             "the shrunk text was CUT — and since TruncationContractTests, the measurer that\n            cut it also put the mark in, so this flag and the glyphs agree");
     }
 
+    /// <summary>
+    /// Wrapping a child must not change what a shrinking row does to it. It does not today — and
+    /// this test exists because the REASON is not the one anybody would guess, and the guess breaks
+    /// it.
+    /// <para>
+    /// A bare <c>Text</c> is cut by the truncation contract, which finds text among a row's children
+    /// BY TYPE and so cannot see a wrapped one. What shrinks the wrapper instead is its min-content
+    /// floor, which answers ZERO for eight of the twenty wrappers — an omission from a hand-kept
+    /// list that happens to land the wrapped text exactly where the contract would have put the bare
+    /// one. Let all the readers look through, as the shape now invites, and the wrapper stops
+    /// shrinking at its child's longest word: 150 where bare gives 22.
+    /// </para>
+    /// <para>
+    /// So this pins the agreement while #225 decides what transparency means for all four readers,
+    /// and it is what caught the blanket fix. Asserted as PARITY rather than as a pixel: the number
+    /// is the text measurer's business and the claim is only that wrapping changes nothing.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void ALayoutTransparentWrapper_DoesNotChangeItsChildsFloor()
+    {
+        static float WidthOfSecondChild(VisualNode second)
+        {
+            var row = new Row(gap: 8) { Width = SizeValue.Fixed(150) };
+            row.Add(FixedBox(120, 20));
+            row.Add(second);
+            return Layout(row, w: 150).Children[1].Bounds.Width;
+        }
+
+        var text = new Text("antidisestablishmentarianism", TypeRole.BodyM);
+
+        var bare = WidthOfSecondChild(text);
+        var wrapped = WidthOfSecondChild(new Draggable(text));
+
+        wrapped.Should().BeApproximately(bare, 0.01f,
+            "Draggable carries no geometry of its own, so a row must treat it exactly as it treats "
+            + "the text inside it — however the engine happens to arrive there");
+    }
+
     [Fact]
     public void Pressable_HitRect_ExpandsTo48()
     {

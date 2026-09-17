@@ -553,19 +553,15 @@ public static class LayoutEngine
         Spinner spinner => spinner.Size,
         CameraPreview camera => camera.Width,
         Spacer spacer => spacer.FixedLength,
+        // EIGHT WRAPPERS ANSWER ZERO, and this arm is where that is now visible. It was an
+        // omission from a list before — these simply were not named — and it is load-bearing where
+        // anybody looked: a wrapped Text is invisible to the truncation contract, so the zero floor
+        // is what lets a shrinking row cut it down to where the bare text would have landed.
+        // Measured, and #225 is where the three readers are made to agree.
+        DragDismiss or Draggable or LoopMotion or Overlay
+            or Pinned or Positioned or SafeArea or ScrollView => 0,
         // Wrappers are transparent to the floor exactly as they are to layout.
-        Pressable pressable => MinContentWidth(pressable.Child, ctx),
-        CodeSurface surface => MinContentWidth(surface.Child, ctx),
-        SheetSurface sheet => MinContentWidth(sheet.Child, ctx),
-        Link link => MinContentWidth(link.Child, ctx),
-        Adjustable adjustable => MinContentWidth(adjustable.Child, ctx),
-        Hoverable hoverable => MinContentWidth(hoverable.Child, ctx),
-        Simulated simulated => MinContentWidth(simulated.Child, ctx),
-        InView inView => MinContentWidth(inView.Child, ctx),
-        InFlow inFlow => MinContentWidth(inFlow.Child, ctx),
-        Shortcut shortcut => MinContentWidth(shortcut.Child, ctx),
-        Flexible flexible => MinContentWidth(flexible.Child, ctx),
-        Presence presence => MinContentWidth(presence.Child, ctx),
+        SingleChildNode wrapper => MinContentWidth(wrapper.Child, ctx),
         UiComponent component => component.ExpandContained(ctx.Components, ctx,
             static (built, context) => MinContentWidth(built, context)),
         _ => 0,
@@ -1848,13 +1844,7 @@ public static class LayoutEngine
     {
         Box box => (horizontal ? box.Style.Height : box.Style.Width).Kind,
         FlexNode flex => (horizontal ? flex.Height : flex.Width).Kind,
-        Pressable pressable => CrossSizeKind(pressable.Child, horizontal),
-        CodeSurface surface => CrossSizeKind(surface.Child, horizontal),
-        SheetSurface sheet => CrossSizeKind(sheet.Child, horizontal),
-        Hoverable hoverable => CrossSizeKind(hoverable.Child, horizontal),
-        Shortcut shortcut => CrossSizeKind(shortcut.Child, horizontal),
-        Adjustable adjustable => CrossSizeKind(adjustable.Child, horizontal),
-        Flexible flexible => CrossSizeKind(flexible.Child, horizontal),
+
         // Always-explicit nodes: their constructors demand a size — stretch must never override.
         Image => SizeKind.Fixed,
         Icon => SizeKind.Fixed,
@@ -1862,15 +1852,13 @@ public static class LayoutEngine
         Drawing => SizeKind.Fixed,
         Spinner => SizeKind.Fixed,
         Grid grid => (horizontal ? grid.Height : grid.Width).Kind,
-        // Layout-transparent wrappers delegate to what they wrap.
-        Pinned pinned => CrossSizeKind(pinned.Child, horizontal),
-        Draggable draggable => CrossSizeKind(draggable.Child, horizontal),
-        SafeArea safeArea => CrossSizeKind(safeArea.Child, horizontal),
-        Presence presence => CrossSizeKind(presence.Child, horizontal),
-        LoopMotion loop => CrossSizeKind(loop.Child, horizontal),
-        DragDismiss drag => CrossSizeKind(drag.Child, horizontal),
-        Link link => CrossSizeKind(link.Child, horizontal),
+        // SIX WRAPPERS ANSWER HUG, and they are not the same six the floor above excuses — the two
+        // lists were kept by hand and disagree in eight places. Preserved exactly as measured;
+        // reconciling them moves pixels, which is #225 and not this slice.
+        InFlow or InView or Overlay or Positioned or ScrollView or Simulated => SizeKind.Hug,
         Anchored anchored => CrossSizeKind(anchored.Anchor, horizontal),
+        // Layout-transparent wrappers delegate to what they wrap.
+        SingleChildNode wrapper => CrossSizeKind(wrapper.Child, horizontal),
         _ => SizeKind.Hug,
     };
 
