@@ -269,11 +269,11 @@ meaning.
 
 ## 3. The vocabulary's shape
 
-Thirty-nine concrete nodes, in four shapes the vocabulary never names:
+Thirty-nine concrete nodes, in four shapes — ONE of which the vocabulary names since #162:
 
 | Shape | Count | Nodes |
 |---|---|---|
-| wraps exactly one child | 21 | `Box`, `Pressable`, `Link`, `Adjustable`, `Shortcut`, `Hoverable`, `Simulated`, `InView`, `InFlow`, `Presence`, `Draggable`, `DragDismiss`, `LoopMotion`, `Flexible`, `Positioned`, `Pinned`, `SafeArea`, `ScrollView`, `Overlay`, `CodeSurface`, `SheetSurface` |
+| wraps exactly one child | 21 | the twenty under `SingleChildNode` — `Pressable`, `Link`, `Adjustable`, `Shortcut`, `Hoverable`, `Simulated`, `InView`, `InFlow`, `Presence`, `Draggable`, `DragDismiss`, `LoopMotion`, `Flexible`, `Positioned`, `Pinned`, `SafeArea`, `ScrollView`, `Overlay`, `CodeSurface`, `SheetSurface` — plus `Box`, which is NOT one: its child is optional |
 | holds many | 4 | `Row`, `Column`, `Grid`, `Stack` |
 | named slots | 3 | `Anchored` (anchor, panel), `AdaptiveNode` (compact, medium, expanded), `Navigable` (rows) |
 | leaf | 11 | `Text`, `TextEntry`, `Icon`, `Image`, `Vector`, `Drawing`, `Canvas`, `Spinner`, `CameraPreview`, `WebFrame`, `Spacer` |
@@ -295,9 +295,9 @@ which is [#225](https://github.com/eQuantic/equantic-ui/issues/225).
 *How does Flutter solve it?* Four abstract shapes, named once: `LeafRenderObjectWidget`,
 `SingleChildRenderObjectWidget`, `MultiChildRenderObjectWidget`, and `ProxyWidget` for the wrappers
 that change nothing about layout. Every widget picks one, and the framework walks children through
-the shape rather than through the widget. Ours would be a `SingleChildNode` base (and the ten inner
-switches of section 2 mostly disappear into it), with the same `IEnumerable<VisualNode>` the
-multi-child nodes already implement.
+the shape rather than through the widget. Ours is `SingleChildNode` (#162), and two of section 2's
+inner switches disappeared into it; the many-child nodes keep the `IEnumerable<VisualNode>` they
+already implement, with no base above them yet.
 
 **The questions the ten inner switches ask are questions about the NODE**, answered by the consumer:
 does it shrink, what is its width kind, is it transparent to layout, does it cap at its content.
@@ -305,10 +305,11 @@ Flutter puts those on the object — `sizedByParent`, `isRepaintBoundary`, `alwa
 and the tree asks. Hoisting them onto the vocabulary is the same move as the base class: the realizer
 asks instead of remembering, and two realizers cannot remember differently.
 
-**58 public types in one file.** `Primitives/Nodes/VisualNode.cs` is 2,213 lines and declares 58
-public types, while the same folder holds 23 other files. Readability rather than architecture — but
-it interacts with section 2, because a vocabulary that is hard to enumerate by eye has dispatches
-that are hard to check by eye, and the four shapes above are the lines to split it along.
+**~~58 public types in one file.~~ Split in #162.** `Primitives/Nodes/VisualNode.cs` had grown to
+2,334 lines and 59 top-level types; it is 59 files now, one per type, which is what the
+one-type-per-file rule of #222 asks for. Readability rather than architecture — but it interacted
+with section 2, because a vocabulary that is hard to enumerate by eye has dispatches that are hard to
+check by eye.
 
 ---
 
@@ -436,7 +437,7 @@ for it: `RouteData` → `RouteValues` and the provider → `CapabilityScope` are
 | `Runtime/src/shared/lowering.ts` | 3,418 | the browser's realizer, one module |
 | `Web/WebRealizer.cs` | 2,629 | the server's realizer, one static class, ~70 `Lower*` methods |
 | `Compiler/CodeGen/TypeScriptEmitter.cs` | 2,411 | 71 methods; the strangler boundary's last text |
-| `Primitives/Nodes/VisualNode.cs` | 2,213 | 58 public types |
+| ~~`Primitives/Nodes/VisualNode.cs`~~ | ~~2,213~~ | split into 59 files, one per type (#162) |
 | `Design/DesignSession.cs` | 2,151 | the visual editor's session |
 | `Native.Components/PhotonHost.cs` | 2,074 | 44 fields, 27 public methods |
 | `Native.Framework/Layout/LayoutEngine.cs` | 1,948 | one static class, six switches |
@@ -486,7 +487,7 @@ among them — and byte-pinned against the live compiler. The vocabulary itself 
 
 | C# | Hand-written TypeScript twin | Kept in step by |
 |---|---|---|
-| `VisualNode.cs` (2,213) + `LayoutTypes`, `CornerRadii` | `vocabulary.ts` (1,787) + `nodes.ts` (877) + `value-types.ts` (397) | `vocabulary-config.spec.ts`, `DesignSystemTsGenerator`, the transpiled fixtures |
+| the vocabulary's own files (one per type since #162) + `LayoutTypes`, `CornerRadii` | `vocabulary.ts` (1,787) + `nodes.ts` (877) + `value-types.ts` (397) | `vocabulary-config.spec.ts`, `DesignSystemTsGenerator`, the transpiled fixtures |
 | `WebRealizer.cs` (2,629) | `lowering.ts` (3,418) | cross-pinned style strings, `MarkerParityTests` |
 | `StyleAtomizer.cs` (421) | `style-atomizer.ts` (468) | byte-identical hashes, both suites |
 | `ComponentInstanceStore.cs` (90) | `instance-store.ts` (195) | the reconciler specs |
@@ -718,8 +719,8 @@ Worth recording, because an audit that only lists faults misleads about the whol
   not the decisions.
 - **The vocabulary's names keep its rule.** No public signature in `Primitives` carries a target's
   word, the four that did having been renamed — one parameter excepted (section 4). Its PROSE mentions
-  the web freely, 73 times in `VisualNode.cs` alone, to say what a node lowers to; that is what the
-  comments are for.
+  the web freely, 73 times across the vocabulary's files — one file until #162 split it — to say
+  what a node lowers to; that is what the comments are for.
 - **The declarative surface is held to its contract**: `UiFactoryConformanceTests` checks that each of
   the 75 factories in `UI.cs` is named like its type and mirrors a constructor parameter for
   parameter, with three named exceptions listed by name.

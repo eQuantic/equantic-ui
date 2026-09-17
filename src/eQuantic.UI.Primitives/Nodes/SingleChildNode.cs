@@ -24,7 +24,18 @@ namespace eQuantic.UI.Primitives;
 /// CLOSED BY CONSTRUCTION, for the same reason <see cref="VisualNode"/> and <see cref="FlexNode"/>
 /// are: a public constructor on a public abstract class is a second door into the vocabulary, and
 /// the visitor is exhaustive only while there is none.
+/// <para>
+/// HOST ONLY, and the alternative is worse than it looks. Every public `Primitives` type silently
+/// promises a runtime export of the same name, because the transpiler routes that namespace to
+/// `@equantic/runtime` — so a component naming this one in a property or a signature would emit an
+/// import of an export that is not there and die at hydration. The exception list exists for that,
+/// and the list's own note says which side of it a type like this belongs on: a `[ServerOnly]` type
+/// is REFUSED at the call site (EQ2010) and drops out of the pin by that rule, "gone from here
+/// rather than excused here". A shape is not something a page names anyway; it is how a realizer
+/// asks what a node is.
+/// </para>
 /// </remarks>
+[ServerOnly]
 public abstract class SingleChildNode : VisualNode
 {
     private protected SingleChildNode(VisualNode child) => Child = child;

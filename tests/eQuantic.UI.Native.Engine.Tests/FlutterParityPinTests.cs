@@ -149,6 +149,17 @@ public class FlutterParityPinTests
     /// <summary>NOTHING in the public surface answers to this name — the shape a GAP takes.</summary>
     private static bool Nothing(params string[] names) => names.All(n => !Has(n));
 
+    /// <summary>
+    /// How many concrete nodes sit under a shape. A probe that only asks whether the BASE exists
+    /// stays green while a wrapper is declared straight under <c>VisualNode</c> — and that wrapper
+    /// then misses the arms written over the shape and falls to the wrong default, which is the
+    /// exact failure the base was introduced to end.
+    /// </summary>
+    private static int Descendants(string baseType) => Find(baseType) is { } shape
+        ? Surface.SelectMany(a => a.GetExportedTypes())
+            .Count(t => t is { IsAbstract: false } && shape.IsAssignableFrom(t))
+        : 0;
+
     // ---- what each row claims ---------------------------------------------------------------------
 
     private static readonly Dictionary<string, Func<bool>> Probes = new()
@@ -169,8 +180,15 @@ public class FlutterParityPinTests
         // The shapes, ONE of three named: SingleChildNode holds the twenty wrappers whose child is
         // required, and FlexNode covers the flex containers only — nothing sits between VisualNode
         // and the four many-child nodes, or between it and the eleven leaves.
-        ["SingleChildRenderObjectWidget"] = () => Has("SingleChildNode") && Has("FlexNode")
-            && Nothing("MultiChildNode", "LeafNode"),
+        //
+        // The COUNT is the part that guards the invariant. "The base exists" stays true while a
+        // wrapper is declared straight under VisualNode, and that wrapper then misses the arms
+        // written over the shape. Twenty is measured, not chosen: twenty-one nodes wrap one child
+        // and Box's is optional. WrapperNode and ProxyNode stay in the negative set they were in
+        // while this row was a GAP — a SECOND wrapper base would change the shape surface just as
+        // much as a first one did.
+        ["SingleChildRenderObjectWidget"] = () => Descendants("SingleChildNode") == 20 && Has("FlexNode")
+            && Nothing("MultiChildNode", "LeafNode", "WrapperNode", "ProxyNode"),
 
         // 2 — layout
         ["Constraints go down,"] = () => Has("LayoutContext"),

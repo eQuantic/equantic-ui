@@ -40,7 +40,6 @@ const NO_TWIN_OWED = new Set([
   // here. A list kept by hand in two files had already drifted between them.
   'ComponentInstanceStore',
   'FlexNode',
-  'SingleChildNode',
   'VisualNodeExtensions',
   // BUILD TIME ONLY: reading a `.svg` and normalizing its path data happens where FILES exist,
   // and the browser has none. What crosses is the DRAWING those produce — VectorDrawing and its
