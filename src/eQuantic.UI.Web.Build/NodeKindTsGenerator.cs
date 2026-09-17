@@ -88,6 +88,23 @@ public static class NodeKindTsGenerator
                 "A node without a wire kind cannot cross to the browser, and would generate '' into "
                 + $"the union: {string.Join(", ", empty)}");
 
+        // NOT ESCAPED — REFUSED. A kind ends up in two places that must agree character for
+        // character: a quoted member of this union, and a `case '…':` in the browser's lowering. A
+        // kind carrying a quote, a backslash or a newline could be escaped into the union and would
+        // still be a kind nobody can write a case for — so escaping it would buy a file that
+        // compiles and a dispatch that never matches. Every kind the vocabulary has is a plain
+        // camelCase identifier, which is the only shape that works on both sides; anything else is
+        // a mistake at the declaration, and this says so there instead of as a TypeScript syntax
+        // error two build steps away.
+        var unwritable = all.Where(d => d.Kind.Length > 0 && !IsWritableKind(d.Kind))
+            .Select(d => $"{d.Node}: '{d.Kind}'")
+            .ToList();
+        if (unwritable.Count > 0)
+            throw new InvalidOperationException(
+                "A wire kind has to be a plain camelCase identifier — it is quoted into this union "
+                + "AND written as a case in the browser's lowering, and the two must match exactly: "
+                + $"{string.Join(", ", unwritable)}");
+
         var stolen = all.Where(d => d.Kind == Seam).Select(d => d.Node).ToList();
         if (stolen.Count > 0)
             throw new InvalidOperationException(
@@ -108,6 +125,11 @@ public static class NodeKindTsGenerator
             .Append(Seam)
             .ToList();
     }
+
+    /// <summary>A lowercase-initial identifier, and nothing else: the shape every kind in the
+    /// vocabulary already has, and the only one a TypeScript literal and a switch case can share.</summary>
+    private static bool IsWritableKind(string kind) =>
+        char.IsAsciiLetterLower(kind[0]) && kind.All(char.IsAsciiLetterOrDigit);
 
     /// <summary>What the vocabulary actually declares, read off the assembly.</summary>
     public static IEnumerable<(string Node, string Kind)> Declared() =>

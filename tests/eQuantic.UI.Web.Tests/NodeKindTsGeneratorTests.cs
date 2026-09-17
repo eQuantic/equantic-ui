@@ -131,6 +131,27 @@ public class NodeKindTsGeneratorTests
     }
 
     /// <summary>
+    /// A kind that cannot be WRITTEN is refused rather than escaped. It is quoted into this union
+    /// and written as a <c>case '…':</c> in the browser's lowering, and the two have to match
+    /// character for character — so a kind carrying a quote could be escaped into a union that
+    /// compiles and still be a kind nobody can write a case for. Refusing it says so at the
+    /// declaration instead of as a TypeScript syntax error two build steps away.
+    /// </summary>
+    [Theory]
+    [InlineData("foo'bar", "a quote would end the literal early")]
+    [InlineData("foo\\bar", "a backslash escapes whatever follows it")]
+    [InlineData("foo\nbar", "a newline cannot sit inside a single-quoted literal at all")]
+    [InlineData("Box", "a capital initial is not the camelCase the transpiler emits")]
+    [InlineData("code-surface", "a hyphen is not an identifier character")]
+    public void AKindThatCannotBeWrittenAsATypeScriptLiteral_IsRefused(string kind, string why)
+    {
+        var refuse = () => NodeKindTsGenerator.Kinds([("Box", "box"), ("Odd", kind)]);
+
+        refuse.Should().Throw<InvalidOperationException>(why)
+            .WithMessage("*Odd*", "a refusal that does not name the node is a puzzle");
+    }
+
+    /// <summary>
     /// The other direction, without which the three above could pass on a generator that refuses
     /// EVERYTHING: a well-formed set is accepted, sorted, and given the seam last.
     /// </summary>
