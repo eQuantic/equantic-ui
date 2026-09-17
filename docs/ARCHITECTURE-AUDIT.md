@@ -278,9 +278,19 @@ Thirty-nine concrete nodes, in four shapes the vocabulary never names:
 | named slots | 3 | `Anchored` (anchor, panel), `AdaptiveNode` (compact, medium, expanded), `Navigable` (rows) |
 | leaf | 11 | `Text`, `TextEntry`, `Icon`, `Image`, `Vector`, `Drawing`, `Canvas`, `Spinner`, `CameraPreview`, `WebFrame`, `Spacer` |
 
-`FlexNode` — the base of `Row` and `Column` — is the only shape with a type. The single-child shape
-is written 21 times, each node declaring its own `Child`, and so "a layout-transparent wrapper" is a
-LIST held by the code that consumes it: enumerated 8 of 8 in `WebRealizer`, 6 of 8 in `LayoutEngine`.
+`SingleChildNode` names the single-child shape since #162 — 20 of the 21, with `Box` left out
+because its child is OPTIONAL and a base meaning "wraps a child" would have to be nullable for all
+twenty to admit the one. `FlexNode` covers the flex containers. The many-child and leaf shapes are
+still unnamed, which is what keeps the parity row PARTIAL rather than SAME.
+
+What the shape replaced was a list held by each consumer, and measuring the two in `LayoutEngine`
+before removing them is the finding: `MinContentWidth` looked through 12 of 20 and `CrossSizeKind`
+through 14, **disagreeing in eight places**. Three nodes are in neither list for real reasons (a
+scroller's floor is not its content's, an overlay is a viewport layer, a `Positioned` is a contract
+with a `Stack`); the eight were nobody's decision. They are preserved exactly, as named exceptions to
+a rule the type now states — reconciling them moves pixels and needs a fourth reader decided too
+(the truncation contract finds `Text` among a row's children BY TYPE and cannot see a wrapped one),
+which is [#225](https://github.com/eQuantic/equantic-ui/issues/225).
 
 *How does Flutter solve it?* Four abstract shapes, named once: `LeafRenderObjectWidget`,
 `SingleChildRenderObjectWidget`, `MultiChildRenderObjectWidget`, and `ProxyWidget` for the wrappers
@@ -757,9 +767,14 @@ makes the rest safe.
    is a struct here and a class there. The sweep that rewrote the call sites also rewrote three of the engine's own calls in the
    golden scenes, which already took a `Point`; only reading the diff caught the double wrap.
    Remaining: the group role, which is Edgar's decision. — M, done but for that
-4. **Node shapes**: a `SingleChildNode` base (Flutter: `SingleChildRenderObjectWidget`), the wrapper
-   set and the node-intrinsic questions hoisted onto the vocabulary, `VisualNode.cs` split along the
-   four shapes. — M
+4. **Node shapes**: `SingleChildNode` holds the twenty wrappers; the two engine lists became one arm
+   over it plus named exceptions; `VisualNode.cs` became 59 files, one per type, which is what the
+   one-type-per-file rule of #222 asks for where "four shape files" would have added four entries to
+   a baseline that may only shrink. TWO OF THE FIVE QUESTIONS DID NOT HOIST, and the reason is
+   layering rather than effort: `MinContentWidth` measures text through the `LayoutContext` and
+   `PositionedOf` reads a measured `LayoutNode`, both of which live in `Native.Framework`, which
+   `Primitives` cannot reference. They collapsed onto the shape and stayed in the engine.
+   — M, done ([#162](https://github.com/eQuantic/equantic-ui/issues/162))
 5. **The Primitives diet**: ~~`ButtonStyles` → `Components`~~ (it is gone instead); `PaletteAudit` → tests or an analyzer;
    `Photon*` attributes → `Native.Hosting`; `Navigator.Go(href)` → `destination`; `Nodes/` holds
    nodes. And Edgar's decision on the editor models (Flutter: controllers in `widgets`). — S, plus a

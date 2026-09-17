@@ -224,6 +224,24 @@ record of a release, the wiki's Upgrading page is the distillate.
   visitor does not. Four of the six dispatches have now crossed; `LayoutEngine.MeasureCore` and
   `PhotonRealizer.EmitNode` remain, and `VocabularyCoverageTests` is down to two entries.
 
+- **2026-09-17 · One type per file, with the exceptions named**: a Roslyn census of every `.cs` under
+  `src/` and a baseline that may only shrink, each entry carrying the count it was measured at and
+  why the file is the unit ([#220](https://github.com/eQuantic/equantic-ui/issues/220)). 135 files,
+  not the 132 the issue estimated. Found because splitting `WebRealizer.cs` had dropped
+  `RealizedElement` for one build.
+- **2026-09-17 · A cyclic component is contained**: `ComponentBoundary.ExpandContained` bounds the
+  chain a realizer expands, so a component that builds itself renders the containment surface
+  instead of taking the request or the frame down by an uncatchable stack overflow
+  ([#221](https://github.com/eQuantic/equantic-ui/issues/221)). Four expansion sites across both
+  realizers go through it; the email realizer deliberately does not, which is
+  [#223](https://github.com/eQuantic/equantic-ui/issues/223).
+- **2026-09-17 · The single-child shape is a type**: `SingleChildNode` for twenty of the twenty-one
+  wrappers, the two engine lists collapsed onto it with their exceptions named, and `VisualNode.cs`
+  split into 59 files, one per type ([#162](https://github.com/eQuantic/equantic-ui/issues/162)).
+  Measuring the lists before removing them is the finding: they disagreed in eight places, and the
+  disagreement is load-bearing — [#225](https://github.com/eQuantic/equantic-ui/issues/225) is where
+  transparency is decided for all four readers. S5's prerequisite is done.
+
 ## Retired documents
 
 | document | what it was | where its substance lives now |
