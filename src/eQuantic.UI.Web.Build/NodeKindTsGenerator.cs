@@ -64,28 +64,37 @@ public static class NodeKindTsGenerator
     /// Every concrete node's wire kind in ordinal order, then the seam — the order the file is
     /// written in, so it is stable whatever order reflection hands the types back.
     /// </summary>
+    public static IReadOnlyList<string> Kinds() => Kinds(Declared());
+
+    /// <summary>
+    /// The same three rules over ANY declaration set, which is the point of the overload: a healthy
+    /// assembly cannot exercise a refusal, so the rules would otherwise be code no test reaches. A
+    /// test builds the malformed vocabularies the real one is not allowed to have and watches each
+    /// one be refused. (A first version of that test read this file looking for the message strings,
+    /// which would have passed for a generator whose checks had been deleted and whose prose
+    /// remained — review caught it, and it is the same defect this whole PR is about: an instrument
+    /// that cannot fail.)
+    /// </summary>
     /// <exception cref="InvalidOperationException">
     /// A node declares no kind, two declare the same one, or a concrete node claims the seam's word.
     /// </exception>
-    public static IReadOnlyList<string> Kinds()
+    public static IReadOnlyList<string> Kinds(IEnumerable<(string Node, string Kind)> declared)
     {
-        var declared = Vocabulary()
-            .Select(node => (Node: node.Name, Kind: WireKind(node)))
-            .ToList();
+        var all = declared.ToList();
 
-        var empty = declared.Where(d => d.Kind.Length == 0).Select(d => d.Node).ToList();
+        var empty = all.Where(d => d.Kind.Length == 0).Select(d => d.Node).ToList();
         if (empty.Count > 0)
             throw new InvalidOperationException(
                 "A node without a wire kind cannot cross to the browser, and would generate '' into "
                 + $"the union: {string.Join(", ", empty)}");
 
-        var stolen = declared.Where(d => d.Kind == Seam).Select(d => d.Node).ToList();
+        var stolen = all.Where(d => d.Kind == Seam).Select(d => d.Node).ToList();
         if (stolen.Count > 0)
             throw new InvalidOperationException(
                 $"\"{Seam}\" is UiComponent's kind — the expansion seam — and belongs to no concrete "
                 + $"node: {string.Join(", ", stolen)}");
 
-        var shared = declared.GroupBy(d => d.Kind, StringComparer.Ordinal)
+        var shared = all.GroupBy(d => d.Kind, StringComparer.Ordinal)
             .Where(group => group.Count() > 1)
             .Select(group => $"{group.Key}: {string.Join(" and ", group.Select(d => d.Node))}")
             .ToList();
@@ -94,11 +103,15 @@ public static class NodeKindTsGenerator
                 "The wire kind is a node's identity on the client; two nodes on one kind lower as "
                 + $"the same thing: {string.Join("; ", shared)}");
 
-        return declared.Select(d => d.Kind)
+        return all.Select(d => d.Kind)
             .OrderBy(kind => kind, StringComparer.Ordinal)
             .Append(Seam)
             .ToList();
     }
+
+    /// <summary>What the vocabulary actually declares, read off the assembly.</summary>
+    public static IEnumerable<(string Node, string Kind)> Declared() =>
+        Vocabulary().Select(node => (node.Name, Kind: WireKind(node)));
 
     /// <summary>The vocabulary, asked of the assembly rather than listed.</summary>
     public static IEnumerable<Type> Vocabulary() =>

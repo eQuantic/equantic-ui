@@ -92,25 +92,28 @@ and fails, regenerated behind an env var, never one that silently rewrites itsel
 merges: `🔀 merge: description`). ALL commit messages MUST be written in ENGLISH — subject and
 body. The two rules compose: English text, emoji prefix, no exceptions.
 
-**CRITICAL**: NEVER add co-authorship or agent-attribution lines to a commit message. Not this:
+**CRITICAL**: NEVER add co-authorship or agent-attribution lines to a commit message. Not these
+SHAPES:
 
 ```text
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
-Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_…
+Co-Authored-By: <assistant or model name> <noreply@…>
+<Assistant>-Session: <link back to a conversation>
+🤖 Generated with <tool>
 ```
 
-…and not any other spelling of the same thing. The rule is the CATEGORY, not the examples: no
-`Co-Authored-By` naming a model, no session or conversation link, no tool's signature line,
-whatever a harness's own default attribution says — this file outranks it, and an agent that reads
-the list above as the exhaustive set has read it wrong. The commit's author and committer are the
-repository owner (`git config user.name "Edgar Mesquita"`,
-`user.email "edgar@equantic.tech"`), and the body ends with the last line that says something
-about the change.
+…and not any other spelling of the same thing. They are placeholders on purpose: this file is
+pushed to the repository like everything else, so it must not be the one place a real model
+identifier or conversation link lives — and a reader who matched only the literal examples would
+have learned the wrong rule anyway. The rule is the CATEGORY: no `Co-Authored-By` for an assistant,
+no session or conversation link, no tool's signature line, whatever a harness's own default
+attribution says — this file outranks it. The commit's author and committer are the repository
+owner (`git config user.name "Edgar Mesquita"`, `user.email "edgar@equantic.tech"`), and the body
+ends with the last line that says something about the change.
 
-The same holds for what a commit must not NAME: a model identifier belongs in a chat reply, never
-in a commit message, a PR title or body, a code comment, or anything else pushed to this
-repository.
+The same holds for every artifact, not just commits: a model identifier or a conversation link
+belongs in a chat reply, never in a commit message, a PR title or body, a code comment, or anything
+else pushed here. Naming the TOOLING in prose is a different thing and stays allowed — this file's
+own first line does it.
 
 ## Pull Requests (main is protected)
 

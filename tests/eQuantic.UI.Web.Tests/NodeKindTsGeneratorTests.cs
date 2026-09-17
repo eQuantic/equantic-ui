@@ -84,30 +84,70 @@ public class NodeKindTsGeneratorTests
     }
 
     /// <summary>
-    /// The generator REFUSES rather than emitting a union that lies. These three were assertions in
-    /// the source-reading coverage pin; they live here now, in the code that cannot proceed without
-    /// them, so that pin can retire without losing a check. The messages are what a maintainer sees,
-    /// so they name the node and say what it broke.
+    /// The generator REFUSES rather than emitting a union that lies, and each refusal is PROVOKED
+    /// here rather than described. These three were assertions in the source-reading coverage pin;
+    /// they live in the generator now, in the code that cannot proceed without them, so that pin can
+    /// retire without losing a check.
+    ///
+    /// <para>
+    /// A healthy assembly cannot exercise a refusal — which is exactly how the first version of this
+    /// test went wrong: it ran <c>Kinds()</c> against the real vocabulary and then GREPPED the
+    /// generator's source for its message strings. That would have passed for a generator whose
+    /// checks had been deleted and whose comments remained. Review caught it, and it is the same
+    /// defect the whole slice is about: an instrument that cannot fail is not an instrument. So the
+    /// rules take a declaration set, and these build the malformed vocabularies the real one is not
+    /// allowed to have.
+    /// </para>
     /// </summary>
     [Fact]
-    public void TheGeneratorNamesWhatWouldMakeAKindStopBeingAnIdentity()
+    public void ANodeWithNoWireKind_IsRefusedAndNamed()
     {
-        var refuse = () => NodeKindTsGenerator.Kinds();
+        var refuse = () => NodeKindTsGenerator.Kinds([("Box", "box"), ("Mystery", "")]);
 
-        // Today the vocabulary is well-formed, so the refusals cannot be provoked without a broken
-        // build. What CAN be asserted is that they are the reasons the generator gives — each one
-        // spelled where a reader looking for it will find it.
-        refuse.Should().NotThrow("the vocabulary is well-formed; this is the case that must keep passing");
-
-        var source = File.ReadAllText(GeneratorSourcePath());
-        source.Should().Contain("A node without a wire kind cannot cross to the browser");
-        source.Should().Contain("belongs to no concrete ");
-        source.Should().Contain("two nodes on one kind lower as ");
+        refuse.Should().Throw<InvalidOperationException>(
+                "an empty kind would generate '' into the union, which matches nothing the client sends")
+            .WithMessage("*Mystery*", "a refusal that does not name the node is a puzzle");
     }
 
-    private static string GeneratorSourcePath([CallerFilePath] string sourcePath = "")
+    [Fact]
+    public void TwoNodesOnOneWireKind_AreRefusedAndBothNamed()
     {
-        var repoRoot = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(sourcePath)!, "..", ".."));
-        return Path.Combine(repoRoot, "src", "eQuantic.UI.Web.Build", "NodeKindTsGenerator.cs");
+        var refuse = () => NodeKindTsGenerator.Kinds([("Box", "box"), ("Crate", "box")]);
+
+        refuse.Should().Throw<InvalidOperationException>(
+                "the kind is a node's identity on the client; two on one kind lower as the same thing")
+            .WithMessage("*Box*").WithMessage("*Crate*");
+    }
+
+    [Fact]
+    public void AConcreteNodeClaimingTheSeamsWord_IsRefused()
+    {
+        var refuse = () => NodeKindTsGenerator.Kinds([("Box", "box"), ("Impostor", NodeKindTsGenerator.Seam)]);
+
+        refuse.Should().Throw<InvalidOperationException>(
+                "\"component\" is UiComponent's, and a concrete node taking it would collide with the "
+                + "one case the client's own expansion seam needs")
+            .WithMessage("*Impostor*");
+    }
+
+    /// <summary>
+    /// The other direction, without which the three above could pass on a generator that refuses
+    /// EVERYTHING: a well-formed set is accepted, sorted, and given the seam last.
+    /// </summary>
+    [Fact]
+    public void AWellFormedSet_IsAcceptedSortedWithTheSeamLast()
+    {
+        NodeKindTsGenerator.Kinds([("Row", "row"), ("Box", "box"), ("Anchored", "anchored")])
+            .Should().Equal("anchored", "box", "row", NodeKindTsGenerator.Seam);
+    }
+
+    /// <summary>And the real vocabulary is one of those: the case that must keep passing.</summary>
+    [Fact]
+    public void TheRealVocabulary_IsWellFormed()
+    {
+        var declared = NodeKindTsGenerator.Declared().ToList();
+
+        declared.Should().HaveCount(NodeKindTsGenerator.Vocabulary().Count());
+        NodeKindTsGenerator.Kinds(declared).Should().Equal(NodeKindTsGenerator.Kinds());
     }
 }
