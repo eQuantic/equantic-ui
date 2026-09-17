@@ -1,5 +1,8 @@
+using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 using FluentAssertions;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace eQuantic.UI.Web.Tests;
 
@@ -58,7 +61,7 @@ public class DocsIndexTests
     /// quotes — <c>src/…/DragDismiss.cs    public const float ThresholdDp = 96;</c>.
     /// </summary>
     private static readonly Regex EvidenceLine = new(
-        @"^\s{0,6}(?<path>(?:[\w.]+/)*[\w.]+\.cs)(?::\d+(?:-\d+)?)?\s{2,}(?<code>\S.*)$",
+        @"^\s{0,6}(?<path>(?:[\w.]+/)*[\w.]+\.cs)(?<at>:\d+(?:-\d+)?)?\s{2,}(?<code>\S.*)$",
         RegexOptions.Compiled);
 
     /// <summary>
@@ -78,42 +81,77 @@ public class DocsIndexTests
 
     /// <summary>
     /// The names a quoted line declares — ONE, because a line that quotes several at once is
-    /// declined rather than guessed at.
+    /// declined rather than guessed at, and none at all when the line is an ASSIGNMENT that reads
+    /// like one.
     /// <para>
-    /// The guess was tried and measured wrong. An enum quoted as a list with its middle left out —
-    /// <c>Fade = 0, ... SlideUp = 1,</c> — matches none of the whole-line shapes, so that citation
-    /// was skipped in silence: the guard looked like it covered the line and did not. Reading every
-    /// comma-separated <c>Name = number</c> instead accused
-    /// <c>BottomSheet.cs   Width = 32, Height = 4,</c> of not declaring <c>Width</c> — an object
-    /// initializer decomposes exactly like an enum list, and nothing in the text tells them apart.
+    /// <c>Name = 0,</c> is an enum member or an object initializer's assignment and NOTHING in the
+    /// text tells them apart. That is why reading every comma-separated assignment was rejected
+    /// (it accused <c>BottomSheet.cs   Width = 32, Height = 4,</c>), and the single-name form had
+    /// the identical defect one line further down: <c>AppBar.cs:72   Height = 56,</c> sets a
+    /// <c>BoxStyle</c> property that <c>AppBar</c> does not declare. Seven citations were being
+    /// judged that way and passing only because the old line-based source scan made the SAME
+    /// mistake symmetrically — two wrong readings cancelling, which is the shape of defect this PR
+    /// found in the layout lists.
     /// </para>
     /// <para>
-    /// So the evidence lines carry ONE declaration each and the instrument stays narrow. The audit's
-    /// one elided list was split for it, which is the cheaper half of the trade: a guard that cannot
-    /// be fooled, over a guard that covers a line nobody had to write that way.
+    /// What tells them apart is the citation, not the code: <paramref name="located"/> is true when
+    /// it carried a <c>:line</c>, and then it points at a LINE OF CODE — a claim this instrument
+    /// cannot check, since the number is the part that rots. Without one it names the file that
+    /// HOLDS the member, which is exactly the claim being checked. So the assignment form is read
+    /// only there. A property or a <c>const</c> is a declaration wherever it is quoted and is read
+    /// either way.
     /// </para>
     /// </summary>
-    private static IEnumerable<string> QuotedDeclarations(string code) =>
-        DeclaredName.Select(pattern => pattern.Match(code)).FirstOrDefault(m => m.Success)
-            is { } single ? [single.Groups["name"].Value] : [];
+    private static IEnumerable<string> QuotedDeclarations(string code, bool located)
+    {
+        foreach (var pattern in DeclaredName)
+        {
+            if (pattern.Match(code) is not { Success: true } match) continue;
+            if (located && ReferenceEquals(pattern, DeclaredName[^1])) return [];
+            return [match.Groups["name"].Value];
+        }
+
+        return [];
+    }
 
     /// <summary>
-    /// DECLARES it, rather than mentions it. The first version of this asked whether the file
-    /// contained the word anywhere, which a doc comment satisfies: <c>Presence.cs</c> says "The
-    /// SlideUp rise distance" in the summary above <c>SlideDistance</c> and declares no
-    /// <c>SlideUp</c> at all, so a citation of <c>SlideUp</c> moved to <c>Presence.cs</c> stayed
-    /// green — the instrument built to catch a citation naming the wrong file had the same hole it
-    /// was built to close.
+    /// DECLARES it, rather than mentions it — and PARSED, rather than read line by line.
     /// <para>
-    /// The same three shapes read the source, so the question is symmetric: the quoted line declares
-    /// a name, and some line of the named file must declare that same name.
+    /// Two holes, found one after the other, and both were the same hole on opposite sides. The
+    /// first version asked whether the file CONTAINED the word, which a doc comment satisfies:
+    /// <c>Presence.cs</c> says "The SlideUp rise distance" above <c>SlideDistance</c> and declares
+    /// no <c>SlideUp</c>. Matching the declaration SHAPES against raw lines fixed that and kept the
+    /// hole: <c>ComponentDefinition.cs</c> carries the XML-doc example
+    /// <c>public Matrix2D Placement { get; init; }</c>, which reads as a property declaration to any
+    /// regex, so a citation of <c>Placement</c> moved there would have stayed green.
+    /// </para>
+    /// <para>
+    /// A comment is TRIVIA to a parser and can never be a declaration, so the class of defect closes
+    /// rather than narrowing again. The asymmetry with the quoted line is deliberate and is not a
+    /// second hole: the audit quotes a FRAGMENT, with elisions and annotations inside it, which no
+    /// parser accepts — so the quote is read by shape and the source is read by parse, each by what
+    /// it actually is.
     /// </para>
     /// </summary>
     private static bool Declares(string sourceFile, string name) =>
-        File.ReadLines(sourceFile).Any(line =>
-            DeclaredName.Any(pattern =>
-                pattern.Match(line.Trim()) is { Success: true } match
-                && match.Groups["name"].Value == name));
+        Declarations.GetOrAdd(sourceFile, static file =>
+            CSharpSyntaxTree.ParseText(File.ReadAllText(file)).GetRoot().DescendantNodes()
+                .SelectMany(node => node switch
+                {
+                    PropertyDeclarationSyntax property => [property.Identifier.Text],
+                    EnumMemberDeclarationSyntax member => [member.Identifier.Text],
+                    MethodDeclarationSyntax method => [method.Identifier.Text],
+                    EventDeclarationSyntax @event => [@event.Identifier.Text],
+                    BaseTypeDeclarationSyntax type => [type.Identifier.Text],
+                    FieldDeclarationSyntax field =>
+                        field.Declaration.Variables.Select(variable => variable.Identifier.Text),
+                    _ => Enumerable.Empty<string>(),
+                })
+                .ToHashSet(StringComparer.Ordinal))
+            .Contains(name);
+
+    /// <summary>One parse per file: the audits cite the same handful many times over.</summary>
+    private static readonly ConcurrentDictionary<string, HashSet<string>> Declarations = new(StringComparer.Ordinal);
 
     private static string Root()
     {
@@ -190,13 +228,20 @@ public class DocsIndexTests
     /// skipped, exactly as the backtick rule above skips <c>`LEDGER.md`</c> — a rooted path that
     /// resolves to nothing is a citation, and is reported.
     /// <para>
-    /// WHAT IT CANNOT SEE, stated rather than implied: it asks whether the named file declares an
-    /// identifier by that name, not whether it is the RIGHT one of two. Mutation-verified on the
-    /// three citations this test was written for — sending <c>SlideUp</c> or <c>ThresholdDp</c> back
-    /// to <c>VisualNode.cs</c> fails the test, and sending <c>BoxStyle.Gradient</c> back to
-    /// <c>Text.cs</c> does NOT, because <c>Text</c> has a <c>Gradient</c> of its own. Two members
-    /// sharing a name across two files is the case a reader still has to catch.
+    /// WHAT IT CANNOT SEE, stated rather than implied, because a guard whose reach is guessed at is
+    /// how three of these holes got here:
     /// </para>
+    /// <list type="bullet">
+    /// <item>Which of TWO members of the same name is meant. Sending <c>SlideUp</c> or
+    /// <c>ThresholdDp</c> back to <c>VisualNode.cs</c> fails the test; sending
+    /// <c>BoxStyle.Gradient</c> back to <c>Text.cs</c> does not, because <c>Text</c> has a
+    /// <c>Gradient</c> of its own.</item>
+    /// <item>An evidence block that puts the PATH on its own line and the quoted code beneath it.
+    /// Only the one-line <c>path␣␣code</c> form is read, so those blocks are unjudged — found by
+    /// mutating one and watching the test stay green.</item>
+    /// <item>A citation carrying a <c>:line</c> whose quoted code is an assignment; see
+    /// <see cref="QuotedDeclarations"/> for why that form is read only without one.</item>
+    /// </list>
     /// </summary>
     [Fact]
     public void Every_quoted_declaration_is_declared_by_the_file_its_citation_names()
@@ -219,7 +264,8 @@ public class DocsIndexTests
                 var cited = EvidenceLine.Match(line);
                 if (!cited.Success) continue;
 
-                var declarations = QuotedDeclarations(cited.Groups["code"].Value).ToArray();
+                var declarations = QuotedDeclarations(
+                    cited.Groups["code"].Value, cited.Groups["at"].Success).ToArray();
                 if (declarations.Length == 0) continue;
 
                 var path = cited.Groups["path"].Value;

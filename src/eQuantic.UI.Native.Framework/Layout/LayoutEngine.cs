@@ -553,14 +553,22 @@ public static class LayoutEngine
         Spinner spinner => spinner.Size,
         CameraPreview camera => camera.Width,
         Spacer spacer => spacer.FixedLength,
-        // EIGHT WRAPPERS ANSWER ZERO, and this arm is where that is now visible. It was an
-        // omission from a list before — these simply were not named — and it is load-bearing where
-        // anybody looked: a wrapped Text is invisible to the truncation contract, so the zero floor
+        // EIGHT WRAPPERS ANSWER ZERO HERE, and they are not eight of a kind — the split below is
+        // the distinction, because a reader who takes all eight for oversights "fixes" three
+        // deliberate contracts.
+        //
+        // FIVE ARE OMISSIONS: named by CrossSizeKind and not by this list, which was kept by hand.
+        // Nobody decided them, and they are load-bearing anyway — a wrapped Text is invisible to
+        // the truncation contract (it finds Text among a row's children BY TYPE), so the zero floor
         // is what lets a shrinking row cut it down to where the bare text would have landed.
-        // Measured, and #225 is where the FOUR readers are made to agree — these two, `Shrinkable`,
-        // and the truncation contract, which finds Text among a row's children by type.
-        DragDismiss or Draggable or LoopMotion or Overlay
-            or Pinned or Positioned or SafeArea or ScrollView => 0,
+        // Preserved exactly as measured; #225 is where the FOUR readers are made to agree — these
+        // two, `Shrinkable`, and that contract.
+        DragDismiss or Draggable or LoopMotion or Pinned or SafeArea => 0,
+        // THREE ARE PRINCIPLED, and were in NEITHER list: a scroller's floor is not its content's
+        // (it scrolls instead of growing), an Overlay is a viewport layer that takes no space in the
+        // page flow at all, and a Positioned is a contract with a Stack rather than a child of the
+        // row. These answer zero because zero is right, not because nobody wrote them down.
+        Overlay or Positioned or ScrollView => 0,
         // Wrappers are transparent to the floor exactly as they are to layout.
         SingleChildNode wrapper => MinContentWidth(wrapper.Child, ctx),
         UiComponent component => component.ExpandContained(ctx.Components, ctx,
@@ -1853,10 +1861,14 @@ public static class LayoutEngine
         Drawing => SizeKind.Fixed,
         Spinner => SizeKind.Fixed,
         Grid grid => (horizontal ? grid.Height : grid.Width).Kind,
-        // SIX WRAPPERS ANSWER HUG, and they are not the same six the floor above excuses — the two
-        // lists were kept by hand and disagree in eight places. Preserved exactly as measured;
-        // reconciling them moves pixels, which is #225 and not this slice.
-        InFlow or InView or Overlay or Positioned or ScrollView or Simulated => SizeKind.Hug,
+        // SIX WRAPPERS ANSWER HUG, split the same way as the floor above and for the same reason.
+        // THREE ARE OMISSIONS: named by MinContentWidth and not here, the other half of the
+        // eight-place disagreement between two lists kept by hand.
+        InFlow or InView or Simulated => SizeKind.Hug,
+        // THREE ARE PRINCIPLED, the same three, in neither list and deliberate in both: a scroller,
+        // a viewport layer, and a Stack's contract do not take their cross size from a child.
+        // Preserved exactly as measured; reconciling the omissions moves pixels, which is #225.
+        Overlay or Positioned or ScrollView => SizeKind.Hug,
         Anchored anchored => CrossSizeKind(anchored.Anchor, horizontal),
         // Layout-transparent wrappers delegate to what they wrap.
         SingleChildNode wrapper => CrossSizeKind(wrapper.Child, horizontal),
