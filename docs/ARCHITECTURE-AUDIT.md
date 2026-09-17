@@ -191,10 +191,16 @@ once. FIVE of the six are visitors — `Semantics` (S2), `EmailRealizer` and its
 this section. The slice table in `VOCABULARY-DISPATCH-PLAN.md` carries each one's detail.
 
 Beside the six, at least ten smaller switches re-ask "what kind of node is this" from the consumer's
-side: five inside `LayoutEngine` alone (`MinContentWidth`, `Shrinkable`, `WidthKind`,
-`CrossSizeKind`, `PositionedOf`), four inside `WebRealizer` (`TextContentOf`,
-`ResolveForPositioning`, `CapsAt`, `Fills`), and `EmailRenderer.WalkText`. Section 3 says what those
-are really asking.
+side: five inside the layout engine (`MinContentWidth`, `Shrinkable`, `WidthKind`, `CrossSizeKind`,
+`PositionedOf`), four inside the web realizer (`TextContentOf`, `ResolveForPositioning`, `CapsAt`,
+`Fills`), and the email renderer's plain-text walk. Section 3 says what those are really asking.
+
+**Where those ten stand now**, on the same rule as the line above — the count is the finding and this
+sentence is the status. Nine are still switches and have MOVED with their dispatch: the five are in
+`MeasureVisitor.Intrinsics.cs` (S5) and the four in the `WebLoweringVisitor` partials (S4). The tenth
+is gone rather than moved — `EmailRenderer.WalkText` became `EmailTextVisitor` in S3, so its switch
+is forty methods the compiler demands. Hoisting the five onto the vocabulary is a separate question
+that #162 answered for two of them and section 3 carries.
 
 Low coverage is not itself a fault. `PhotonRealizer` paints LAID-OUT nodes, so a container the layout
 pass already resolved into geometry has nothing left to draw; `Semantics` announces controls and
