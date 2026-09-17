@@ -202,6 +202,21 @@ public class ComponentBoundaryTests
     }
 
     [Fact]
+    public void A_cyclic_component_reaches_the_bound_through_the_positioning_door_too()
+    {
+        // `Visit(UiComponent)` is not the only door a component enters by: a Stack child goes
+        // through `ResolveForPositioning` FIRST, because a `Positioned` returned by a component
+        // still has to position. Nothing else here exercises that path.
+        var stack = new Stack();
+        stack.Add(new Text("behind", TypeRole.BodyM));
+        stack.Add(new OuroborosCard());
+
+        var rendered = Rendered(stack);
+
+        rendered.Should().Contain("behind").And.Contain("could not be displayed");
+    }
+
+    [Fact]
     public void An_ordinary_chain_of_components_is_not_a_cycle()
     {
         // The bound exists for what never terminates; a component building a component is ordinary

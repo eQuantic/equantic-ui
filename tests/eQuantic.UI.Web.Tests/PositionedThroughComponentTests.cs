@@ -54,6 +54,25 @@ public class PositionedThroughComponentTests
         Css(WithCorner(new CornerAction())).Should().Contain("position:absolute");
         Css(WithCorner(direct)).Should().Contain("position:absolute");
     }
+
+    /// <summary>
+    /// The chain may be LONGER than the loop that used to resolve it. `ResolveForPositioning` walked
+    /// at most eight hops and then gave up, handing back a still-unresolved component — whose
+    /// `Positioned` was never seen, so the corner button silently rejoined the flow, which is the
+    /// exact defect this file exists for, one composition deeper. It recurses through the component
+    /// boundary now, and stops at the boundary's own bound rather than at a hop count of its own.
+    /// </summary>
+    [Fact]
+    public void APositionedBehindALongChainOfComponents_StillPositions()
+    {
+        Css(WithCorner(new WrappedCorner(depth: 10))).Should().Contain("position:absolute");
+    }
+
+    private sealed class WrappedCorner(int depth) : Primitives.StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) =>
+            depth <= 0 ? new CornerAction() : new WrappedCorner(depth - 1);
+    }
 }
 
 /// <summary>

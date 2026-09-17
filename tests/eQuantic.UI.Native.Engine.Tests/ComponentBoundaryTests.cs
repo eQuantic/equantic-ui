@@ -138,6 +138,21 @@ public class ComponentBoundaryTests
     }
 
     [Fact]
+    public void The_min_content_pass_contains_a_cycle_too()
+    {
+        // `MeasureComponent` is not the only door either. A row that has to SHRINK asks every
+        // shrinkable child for its min-content width, and that walk expands components on its own,
+        // through a different call site — so it needs its own regression or the two doors drift.
+        var row = new Row(gap: 8) { Width = SizeValue.Fixed(80) };
+        row.Add(new Text("a line far too long to fit inside eighty pixels of row", TypeRole.BodyM));
+        row.Add(new OuroborosCard());
+
+        var layout = () => LayoutEngine.Layout(row, 80, 200, Layout);
+
+        layout.Should().NotThrow();
+    }
+
+    [Fact]
     public void An_ordinary_chain_of_components_is_not_a_cycle()
     {
         // The bound is for what never terminates; a component building a component is ordinary
