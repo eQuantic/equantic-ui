@@ -43,6 +43,25 @@ public static class ComponentBoundary
     private static readonly AsyncLocal<List<string>?> _contained = new();
 
     /// <summary>
+    /// How deep the current expansion walk is, in COMPONENTS. Thread-static rather than
+    /// <see cref="AsyncLocal{T}"/> like everything else here, and the difference is what each one
+    /// measures: those are a render SCOPE a host arms, which may cross an await, while this counts
+    /// one synchronous walk that never leaves its thread. Restored in a finally, so two walks
+    /// interleaved on one thread cannot see each other's depth either.
+    /// </summary>
+    [ThreadStatic] private static int _depth;
+
+    /// <summary>
+    /// How many components may nest inside one another before the walk is treated as
+    /// non-terminating. Not a guess about cycles — a cycle is INFINITE, so it exceeds any bound, and
+    /// the only question is whether a real tree could. Sixty-four is several times the deepest thing
+    /// anybody composes, and the evidence is that the Studio gallery walk and the layout goldens
+    /// render the real pages through this path: a page that exceeded it would be contained, and they
+    /// would fail naming it.
+    /// </summary>
+    private const int MaxDepth = 64;
+
+    /// <summary>
     /// Whether a DEVELOPER is watching. Armed by the host per render scope — the SSR pipeline from
     /// the environment, the browser boot from <c>__EQ_DEV__</c>, a window from its build — the same
     /// way the atomic style sink is armed around a page render.
@@ -113,15 +132,82 @@ public static class ComponentBoundary
         }
         catch (Exception error)
         {
-            // DISTINCT, and the reason is the failure mode itself: a component that throws throws on
-            // every frame, so a count would report the frame rate and bury the one fact worth
-            // having, which is its name.
-            var seen = _contained.Value ??= [];
-            var name = component.GetType().Name;
-            if (!seen.Contains(name)) seen.Add(name);
-            Report?.Invoke(component, error);
-            return Describe(component, error, context);
+            return Contain(component, error, context);
         }
+    }
+
+    /// <summary>
+    /// Expands a component AND realizes what it built — the move every realizer actually makes, and
+    /// the one that has to be bounded, because <see cref="BuildContained"/> alone cannot be.
+    ///
+    /// <para>
+    /// A component whose <c>Build</c> returns another component is ordinary composition. One that
+    /// returns ITSELF, or two that return each other, is a chain with no subtree at the end of it —
+    /// and every realizer expands what Build returned, so the chain walks back into Build forever
+    /// and dies on a <see cref="StackOverflowException"/>, which .NET does not let anyone catch. The
+    /// request goes with it, or the frame, or the window: precisely what this boundary exists to
+    /// prevent, arriving by the one route it did not watch.
+    /// </para>
+    ///
+    /// <para>
+    /// Exceeding the bound is a CONTAINED failure, not a throw and not a silent null: the same
+    /// surface a throwing component gets, the same entry in <see cref="Contained"/>, the same
+    /// <see cref="Report"/>. A host that refuses to exit zero while the tally is non-empty catches a
+    /// cycle exactly as it catches a throw, and every realizer inherits that by calling this instead
+    /// of expanding by hand.
+    /// </para>
+    ///
+    /// <para>
+    /// NOT the email realizer, and that is deliberate rather than an omission: it expands through
+    /// <c>Build</c> on purpose, because a component that fails must fail the SEND rather than reach
+    /// an inbox dressed as a describe-box. A cycle there is still a stack overflow, and #223 is
+    /// where that is decided — the bound is the same, the answer at the bound is not.
+    /// </para>
+    /// </summary>
+    /// <remarks>
+    /// The caller's state travels as an ARGUMENT rather than a capture, so <c>realize</c> can be a
+    /// <c>static</c> lambda and the delegate is cached once instead of allocated per component. It
+    /// is the shape .NET's own APIs use for this (<c>ConcurrentDictionary.GetOrAdd</c>,
+    /// <c>string.Create</c>), and it is not decoration: Photon measures every component every frame,
+    /// and the closure form put the frame 2,786 bytes over the recycled-frame budget, which is how
+    /// it was found: <c>PerfHarnessTests.SteadyMotion_WithRecycledFrames_AllocatesFarLess</c> read
+    /// 78,562 against a ceiling of 75,776 and failed.
+    /// </remarks>
+    public static TResult ExpandContained<TState, TResult>(this UiComponent component,
+        ComponentContext context, TState state, Func<VisualNode, TState, TResult> realize)
+    {
+        if (_depth >= MaxDepth)
+            return realize(Contain(component, new InvalidOperationException(
+                $"{component.GetType().Name}.Build never reached a node: {MaxDepth} components nest "
+                + "here, so this is a component building itself, or a cycle of components, rather "
+                + "than a tree."), context), state);
+
+        _depth++;
+        try
+        {
+            return realize(BuildContained(component, context), state);
+        }
+        finally
+        {
+            _depth--;
+        }
+    }
+
+    /// <summary>
+    /// What a contained failure costs, wherever it comes from: the name on the tally, one call to
+    /// the host's logger, and the surface that takes the subtree's place. Shared by the two ways a
+    /// component can fail to produce one — a throw, and a chain that never ends.
+    /// </summary>
+    private static VisualNode Contain(UiComponent component, Exception error, ComponentContext context)
+    {
+        // DISTINCT, and the reason is the failure mode itself: a component that throws throws on
+        // every frame, so a count would report the frame rate and bury the one fact worth
+        // having, which is its name.
+        var seen = _contained.Value ??= [];
+        var name = component.GetType().Name;
+        if (!seen.Contains(name)) seen.Add(name);
+        Report?.Invoke(component, error);
+        return Describe(component, error, context);
     }
 
     /// <summary>

@@ -16,15 +16,14 @@ internal sealed partial class WebLoweringVisitor
     /// `Positioned` returned by one still positions. Only for the positioning decision — the node
     /// that comes back is lowered normally.
     /// </summary>
-    private VisualNode ResolveForPositioning(VisualNode child)
-    {
-        // Bounded: a component whose build returns itself would otherwise spin here.
-        for (var hops = 0; hops < 8 && child is UiComponent component; hops++)
-        {
-            child = component.BuildContained(_context);
-        }
-        return child;
-    }
+    private VisualNode ResolveForPositioning(VisualNode child) =>
+        child is UiComponent component
+            // Through the boundary's bound rather than a hop count of this method's own: the loop
+            // it replaces stopped ITSELF spinning after eight hops and then handed a still
+            // unresolved component back, which `LowerStack` lowered straight into the same chain.
+            ? component.ExpandContained(_context, this,
+                static (built, visitor) => visitor.ResolveForPositioning(built))
+            : child;
 
     /// <summary>
     /// Spec A3 lowering: single-cell CSS grid — every NON-positioned child sits in cell 1/1

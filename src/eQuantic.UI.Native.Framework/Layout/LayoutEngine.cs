@@ -566,7 +566,8 @@ public static class LayoutEngine
         Shortcut shortcut => MinContentWidth(shortcut.Child, ctx),
         Flexible flexible => MinContentWidth(flexible.Child, ctx),
         Presence presence => MinContentWidth(presence.Child, ctx),
-        UiComponent component => MinContentWidth(component.BuildContained(ctx.Components), ctx),
+        UiComponent component => component.ExpandContained(ctx.Components, ctx,
+            static (built, context) => MinContentWidth(built, context)),
         _ => 0,
     };
 
@@ -652,9 +653,14 @@ public static class LayoutEngine
     {
         var (maxW, maxH) = (constraints.MaxWidth, constraints.MaxHeight);
         var resolved = ctx.Instances?.Reconcile(path, component) ?? component;
-        // BuildContained, never Build: a throw here used to reach the host and cost the FRAME — the
-        // window stops presenting and the app is gone, for one component's null reference.
-        return MeasureWrapper(resolved, resolved.BuildContained(ctx.Components), constraints, ctx, path);
+        // Through the BOUNDARY, never Build: a throw here used to reach the host and cost the FRAME —
+        // the window stops presenting and the app is gone, for one component's null reference. And
+        // ExpandContained rather than BuildContained, because this recurses: measuring what a
+        // component built reaches MeasureComponent again, so a component that builds itself would
+        // otherwise take the frame down by a stack overflow instead of a throw.
+        return resolved.ExpandContained(ctx.Components, (resolved, constraints, ctx, path),
+            static (built, state) =>
+                MeasureWrapper(state.resolved, built, state.constraints, state.ctx, state.path));
     }
 
     /// <summary>A transparent wrapper that also resolves the ENTRANCE progress against the host's

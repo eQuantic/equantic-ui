@@ -191,11 +191,14 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context)
     // ---- the seam ----------------------------------------------------------------------------------
 
     /// <summary>
-    /// BuildContained, never Build: one component's throw must cost that component's subtree and
-    /// nothing else — on the server it used to cost the whole request (a 500 for a card).
+    /// Through the BOUNDARY, never `Build`: one component's failure must cost that component's
+    /// subtree and nothing else — on the server it used to cost the whole request (a 500 for a
+    /// card). `ExpandContained` rather than `BuildContained` because the expansion RECURSES here,
+    /// and a component that builds itself would otherwise walk back in forever.
     /// </summary>
     public HtmlElement? Visit(UiComponent component, bool? horizontalAxis) =>
-        Lower(component.BuildContained(_context), horizontalAxis);
+        component.ExpandContained(_context, (Visitor: this, Axis: horizontalAxis),
+            static (built, state) => state.Visitor.Lower(built, state.Axis));
 
     // ---- what more than one family reaches ---------------------------------------------
 
