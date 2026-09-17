@@ -120,7 +120,6 @@ src/eQuantic.UI.Primitives/Nodes/IconGlyph.cs  3  not looked at yet
 src/eQuantic.UI.Primitives/Nodes/Image.cs  2  not looked at yet
 src/eQuantic.UI.Primitives/Nodes/Simulated.cs  2  not looked at yet
 src/eQuantic.UI.Primitives/Nodes/UiComponent.cs  4  not looked at yet
-src/eQuantic.UI.Primitives/Nodes/VisualNode.cs  59  closed hierarchy, and the one entry with work already scheduled against it: #162 splits the vocabulary file
 src/eQuantic.UI.Primitives/Nodes/WebFrame.cs  2  not looked at yet
 src/eQuantic.UI.Primitives/Sheet/SheetController.cs  3  not looked at yet
 src/eQuantic.UI.Primitives/Sheet/SheetDocument.cs  2  not looked at yet
