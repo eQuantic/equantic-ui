@@ -310,9 +310,11 @@ describe('components centre like nodes', () => {
     const { Text } = await import('./vocabulary');
 
     // Not an oversight, and worth pinning so nobody "fixes" it by moving nodeKind onto the base:
-    // the lowering's default branch IS the mixing seam, and it recognises a web component by its
-    // LACK of a nodeKind, embedding the HtmlNode it renders for itself. Give every component the
-    // field and that routing changes for the whole library — a runtime decision, not a typing one.
+    // the lowering's MIXING SEAM recognises a web component by its LACK of a nodeKind, embedding the
+    // HtmlNode it renders for itself. Give every component the field and that routing changes for
+    // the whole library — a runtime decision, not a typing one. The seam used to be the lowering's
+    // default arm and is now the check ahead of its switch, since `nodeKind` became a closed union
+    // and the default arm became the compiler's (node-kinds.spec.ts walks it from the other side).
     const card = new Card(new Text('hi') as never) as unknown as { nodeKind?: string };
     expect(card.nodeKind).toBeUndefined();
   });

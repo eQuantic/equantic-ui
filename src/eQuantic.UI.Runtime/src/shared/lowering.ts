@@ -11,6 +11,7 @@
  *   class string per element; only custom-property tails stay inline.
  */
 
+import { assertNever } from '../utils/assert-never';
 import { round as dotnetRound } from '../utils/dotnet-math';
 import { PINNED_MARKER } from './markers';
 import type { EventHandler, HtmlNode } from '../core/types';
@@ -324,6 +325,16 @@ function lowerNodeKind(
   horizontalAxis: boolean | null,
   path: string,
 ): HtmlNode | null {
+  // MIXING SEAM, and it is ahead of the switch rather than in a default arm because the switch no
+  // longer HAS one: a WEB component (transpiled shared component or low-level HtmlElement) composed
+  // inside an abstract tree is typed as a VisualNodeValue at the call site and is not one — it
+  // carries no nodeKind at all, and renders itself. So the test is for the discriminator's ABSENCE,
+  // which is the truth about these objects, rather than for a case the union does not have.
+  const foreign = node as { nodeKind?: string; render?: () => HtmlNode };
+  if (foreign.nodeKind === undefined) {
+    return typeof foreign.render === 'function' ? foreign.render() : null;
+  }
+
   switch (node.nodeKind) {
     case 'box':
       return lowerBox(node as BoxNode, context, path);
@@ -440,13 +451,13 @@ function lowerNodeKind(
       }
       return lowerNode(built as VisualNodeValue, context, horizontalAxis, path + '/0');
     }
-    default: {
-      // Mixing seam: a WEB component (transpiled shared component or low-level HtmlElement) composed
-      // inside an abstract tree has no nodeKind but renders itself — embed its HtmlNode directly.
-      const renderable = node as { render?: () => HtmlNode };
-      if (typeof renderable.render === 'function') return renderable.render();
-      return null;
-    }
+    // THE DOOR CLOSED. `nodeKind` is the generated NodeKind union, so this arm is unreachable for
+    // every kind the vocabulary declares — and the day it declares one more, this line stops
+    // compiling until the case above it exists. It is the browser's half of "one door per node":
+    // the C# realizers get the same guarantee from a visitor, which the client cannot have because
+    // class names do not survive bundling.
+    default:
+      return assertNever(node.nodeKind, 'node kind');
   }
 }
 

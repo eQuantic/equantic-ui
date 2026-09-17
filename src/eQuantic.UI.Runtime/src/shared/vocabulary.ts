@@ -9,6 +9,7 @@
  */
 
 import type { AnchorPlacementValue, ComponentChild, ICanvasPainter, NavigableMoveValue } from './nodes';
+import type { NodeKind } from './node-kinds.generated';
 import type { HtmlNode } from '../core/types';
 import { setCenterWrapper } from '../core/types';
 import { iconPaths } from './icons.generated';
@@ -40,7 +41,7 @@ export { StyleChannels } from './value-types';
 export type EqConfig = Record<string, unknown>;
 
 export abstract class VisualNode {
-  abstract readonly nodeKind: string;
+  abstract readonly nodeKind: NodeKind;
   key?: string | null;
   /**
    * A named place a link can reach (the C# `VisualNode.Bookmark`), which becomes this element's

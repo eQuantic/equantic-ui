@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Text;
 using eQuantic.UI.Codegen;
 using eQuantic.UI.Primitives;
 
@@ -40,34 +39,11 @@ public static class EnumUnionsTsGenerator
         {
             // Distinct: an alias (two names, one value) is one member of the union, named twice.
             var members = Enum.GetNames(type)
-                .Select(name => $"'{char.ToLowerInvariant(name[0]) + name[1..]}'")
-                .Distinct(StringComparer.Ordinal)
-                .ToList();
+                .Select(name => char.ToLowerInvariant(name[0]) + name[1..])
+                .Distinct(StringComparer.Ordinal);
 
             ts.AppendLine();
-            // Long unions wrap: Icons alone is a curated set of dozens, and a single line of it is
-            // unreadable in a diff.
-            var oneLine = $"export type {type.Name}Value = {string.Join(" | ", members)};";
-            if (oneLine.Length <= 100)
-            {
-                ts.AppendLine(oneLine);
-                continue;
-            }
-
-            ts.AppendLine($"export type {type.Name}Value =");
-            var line = new StringBuilder("  "); // LINE ONLY
-            foreach (var member in members)
-            {
-                var piece = line.Length == 2 ? member : $" | {member}";
-                if (line.Length + piece.Length > 100)
-                {
-                    ts.AppendLine(line.ToString());
-                    line = new StringBuilder("  | " + member); // LINE ONLY
-                    continue;
-                }
-                line.Append(piece);
-            }
-            ts.AppendLine(line.Append(';').ToString());
+            TsUnion.Write(ts, $"{type.Name}Value", members);
         }
 
         return ts.ToString();

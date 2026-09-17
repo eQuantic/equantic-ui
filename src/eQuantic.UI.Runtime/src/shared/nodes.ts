@@ -30,6 +30,9 @@ import type {
   SizeKindValue,
   VectorPaintKindValue,
 } from './enums.generated';
+import type { NodeKind } from './node-kinds.generated';
+
+export type { NodeKind } from './node-kinds.generated';
 
 export type { SizeKindValue, NavigableMoveValue } from './enums.generated';
 
@@ -322,7 +325,10 @@ export interface VisualNodeValue {
    * and not called `anchor`, a word `Anchored` already spends on popover positioning.
    */
   bookmark?: string | null;
-  nodeKind: string;
+  /** The wire discriminator, CLOSED: every kind the C# vocabulary declares, generated from it. A
+   *  `string` here would make `lowerNodeKind`'s switch look exhaustive while a kind it has never
+   *  heard of walked past. */
+  nodeKind: NodeKind;
   key?: string | null;
   /** Spec S4: grid column span (parent-interpreted; 0/1 = one column). */
   gridSpan?: number;
