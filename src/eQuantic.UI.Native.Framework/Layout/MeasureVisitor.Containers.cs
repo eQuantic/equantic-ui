@@ -132,6 +132,10 @@ internal sealed partial class MeasureVisitor
         return false;
     }
 
+    /// <summary>Spec A6: the child lays out UNBOUNDED on the scroll axis (bounded content measures its
+    /// natural extent) and is offset by the programmatic scroll position; the viewport itself resolves
+    /// explicit &gt; Fill &gt; hug-the-child (capped by the available space). Clipping happens at the
+    /// realizer via the engine clip primitive.</summary>
     private LayoutNode MeasureScrollView(ScrollView scroll, LayoutConstraints constraints, LayoutContext ctx, string path)
     {
         var (maxW, maxH) = (constraints.MaxWidth, constraints.MaxHeight);

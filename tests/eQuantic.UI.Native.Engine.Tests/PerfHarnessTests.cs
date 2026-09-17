@@ -249,6 +249,12 @@ public class PerfHarnessTests
     /// Mutation-verified: putting `new MeasureVisitor(context)` back at the call site in
     /// `LayoutEngine.Layout` fails this and nothing else in this file.
     /// </para>
+    /// <para>
+    /// WHAT IT CANNOT SEE: one context, so nothing about FRAMES. `PhotonRealizer.Realize` builds a
+    /// new context per frame, which makes the pass per frame too — 32 bytes, measured against `main`
+    /// byte for byte, and out of this test's reach by construction. Said here rather than left for a
+    /// reader to assume the cost is zero.
+    /// </para>
     /// </summary>
     [Fact]
     public void EveryOverlayLayer_SharesTheOneMeasurementPass()

@@ -111,10 +111,6 @@ internal sealed partial class MeasureVisitor
         _ => true,
     };
 
-    /// <summary>Spec A6: the child lays out UNBOUNDED on the scroll axis (bounded content measures its
-    /// natural extent) and is offset by the programmatic scroll position; the viewport itself resolves
-    /// explicit &gt; Fill &gt; hug-the-child (capped by the available space). Clipping happens at the
-    /// realizer via the engine clip primitive.</summary>
     /// <summary>
     /// The <see cref="Positioned"/> a Stack child resolves to, THROUGH any components in between.
     /// <para>
@@ -219,8 +215,6 @@ internal sealed partial class MeasureVisitor
     /// only as a cap, and `Width = WindowMinus(24)` hugged natively while the web sized it.</summary>
     private float WindowSize(SizeValue size, float window) => MathF.Max(0, window - size.Value);
 
-    /// <summary>Own size: explicit &gt; Fill &gt; Hug (spec A1). On an INDETERMINATE axis — one the
-    /// parent is sizing from its content — Fill has nothing to fill and falls back to Hug.</summary>
     /// <summary>The size a node asks to BE, with the window in hand — the window-relative kind is
     /// the one that cannot be answered from the available space alone.</summary>
     private float ResolveSelf(SizeValue size, float available, float hug, float window,
@@ -228,6 +222,8 @@ internal sealed partial class MeasureVisitor
         ? WindowSize(size, window)
         : ResolveSelf(size, available, hug, indeterminate, stretched);
 
+    /// <summary>Own size: explicit &gt; Fill &gt; Hug (spec A1). On an INDETERMINATE axis — one the
+    /// parent is sizing from its content — Fill has nothing to fill and falls back to Hug.</summary>
     private float ResolveSelf(SizeValue size, float available, float hug, bool indeterminate = false,
         bool stretched = false) => size.Kind switch
     {

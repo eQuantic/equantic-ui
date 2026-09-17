@@ -57,8 +57,21 @@ public sealed class LayoutContext
     /// </para>
     /// <para>
     /// Holding it here rather than passing one in keeps <see cref="LayoutEngine.Layout"/>'s signature,
-    /// and the visitor reads nothing but this context, so a context outliving a frame reuses it
-    /// safely — one object for as long as the host keeps the context, not one per layer per frame.
+    /// and the visitor reads nothing but this context, so a context outliving a frame reuses it.
+    /// </para>
+    /// <para>
+    /// WHAT THAT COSTS IN PRODUCTION, measured rather than claimed: `PhotonRealizer.Realize` builds a
+    /// NEW context per frame, so this is one object per frame — not one per layer, which it was, and
+    /// not one for the life of the host, which an earlier version of this sentence said. The static
+    /// switch it replaced allocated none. Comparing the pooled steady state on this branch against
+    /// `main`, byte for byte rather than at the harness's KB resolution: 75,714 against 75,682, so
+    /// THIRTY-TWO BYTES a frame — one object, 0.04% of a 74 KB budget.
+    /// </para>
+    /// <para>
+    /// Removing even that means the realizer reusing its context across frames, which is its
+    /// decision and not the engine's: the context carries per-frame state and is built with
+    /// `init` properties that vary per frame. Worth doing if the budget ever needs the 32 bytes —
+    /// it has 0.1 KB of headroom, so this is a third of what is left.
     /// </para>
     /// </summary>
     internal MeasureVisitor MeasurePass => _measurePass ??= new MeasureVisitor(this);

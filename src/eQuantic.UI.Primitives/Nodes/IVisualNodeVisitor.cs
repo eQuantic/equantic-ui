@@ -18,6 +18,8 @@ namespace eQuantic.UI.Primitives;
 /// engine (<c>MeasureVisitor</c>) and the runtime's lowering — that last one differently, through a
 /// generated <c>NodeKind</c> union and an <c>assertNever</c>, since the browser has no interface to
 /// implement. ONE TO GO: <c>PhotonRealizer.EmitNode</c>.
+/// </para>
+///
 /// <para>
 /// That sentence is a running tally, which is the shape that rots — it was written at four and was
 /// still saying four two slices later, in the doc of the very interface the crossings implement.
@@ -25,7 +27,6 @@ namespace eQuantic.UI.Primitives;
 /// countdown. Until then the slice table in <c>docs/VOCABULARY-DISPATCH-PLAN.md</c> is where the
 /// detail lives, and <c>docs/ARCHITECTURE-AUDIT.md</c> section 2 carries the same status in one
 /// line.
-/// </para>
 /// </para>
 ///
 /// <para>
