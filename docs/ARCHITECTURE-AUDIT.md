@@ -440,7 +440,7 @@ for it: `RouteData` → `RouteValues` and the provider → `CapabilityScope` are
 | ~~`Primitives/Nodes/VisualNode.cs`~~ | ~~2,213~~ | split into 59 files, one per type (#162) |
 | `Design/DesignSession.cs` | 2,151 | the visual editor's session |
 | `Native.Components/PhotonHost.cs` | 2,074 | 44 fields, 27 public methods |
-| ~~`Native.Framework/Layout/LayoutEngine.cs`~~ | ~~1,948~~ | 408 now: the measure half became `MeasureVisitor`, six files (S5) |
+| ~~`Native.Framework/Layout/LayoutEngine.cs`~~ | ~~1,948~~ | 408 now: the measure half became `MeasureVisitor` in six files plus `MeasureState.cs` (S5) |
 | `Native.Components/PhotonRealizer.cs` | 1,805 | one static class |
 | `Server/UIExtensions.cs` | 1,461 | five types; `ServeAppShell` alone is 348 lines |
 

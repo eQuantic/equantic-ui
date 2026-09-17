@@ -30,11 +30,17 @@ namespace eQuantic.UI.Native.Framework;
 /// allocation budget of 74 KB that <c>PerfHarnessTests</c> fails on.
 /// </para>
 /// </summary>
-internal sealed partial class MeasureVisitor(LayoutContext context)
-    : IVisualNodeVisitor<MeasureState, LayoutNode>
+internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, LayoutNode>
 {
     /// <summary>The theme, the text metrics and the node pool this pass runs against — fixed for it.</summary>
-    private readonly LayoutContext _ctx = context;
+    private readonly LayoutContext _ctx;
+
+    internal MeasureVisitor(LayoutContext context)
+    {
+        _ctx = context;
+        // Tallied on the context so a test can say "one pass, nine layers" — see PassesBuilt.
+        context.CountPass();
+    }
 
     /// <summary>
     /// Measures, then stamps the node with WHERE it is. Every node gets the path, so any gesture

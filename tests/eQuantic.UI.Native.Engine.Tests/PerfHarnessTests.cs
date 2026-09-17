@@ -2,6 +2,7 @@ using System.Diagnostics;
 using eQuantic.UI.Components;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine;
+using eQuantic.UI.Native.Framework;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
 using Xunit;
@@ -68,9 +69,35 @@ public class PerfHarnessTests
         return page;
     }
 
-    private static PhotonHost Open(bool recycleFrames = false)
+    /// <summary>
+    /// The dense scene with EIGHT overlay layers on it. A frame is not one layout call: the realizer
+    /// lays the page out and then each Overlay against the viewport, so anything built per call is
+    /// built per LAYER — and <see cref="DenseScene"/> has no overlay at all, which is why the pooled
+    /// budget could stay green while a per-call cost was crossing it on any screen with a menu, a
+    /// sheet and a tooltip open. Found in review of the S5 visitor, which was built per call before
+    /// it was cached on the context.
+    /// </summary>
+    private static VisualNode OverlayHeavyScene(IAppTheme theme)
     {
-        var host = new PhotonHost(DenseScene(PhotonTheme.Instance), PhotonTheme.Instance,
+        var page = new Stack();
+        page.Add(DenseScene(theme));
+        for (var i = 0; i < 8; i++)
+            page.Add(new Overlay(new Box(new BoxStyle
+            {
+                Width = SizeValue.Fixed(240),
+                Height = SizeValue.Fixed(160),
+                Background = theme.Surface,
+                CornerRadius = new CornerRadii(8),
+            }, new Text($"Layer {i}", TypeRole.BodyM, theme.TextPrimary, maxLines: 1))));
+        return page;
+    }
+
+    private static PhotonHost Open(bool recycleFrames = false) =>
+        Open(DenseScene(PhotonTheme.Instance), recycleFrames);
+
+    private static PhotonHost Open(VisualNode scene, bool recycleFrames)
+    {
+        var host = new PhotonHost(scene, PhotonTheme.Instance,
             ThemeMode.Light, 1280, 900)
         {
             RecycleFrames = recycleFrames,
@@ -206,4 +233,36 @@ public class PerfHarnessTests
         p95.Should().BeLessThan(RealizeP95CeilingMs,
             "an order of magnitude over the frame budget is a regression whatever the machine");
     }
+
+    /// <summary>
+    /// A LAYER IS NOT AN OBJECT. The realizer lays the page out and then each Overlay against the
+    /// viewport, so anything built per <see cref="LayoutEngine.Layout"/> call is built per layer —
+    /// and the measurement pass is built once for the context they share.
+    /// <para>
+    /// Asserted as an IDENTITY rather than as bytes on purpose. The per-layer cost this guards
+    /// against is one small object, which is far below what an allocation ceiling can resolve: the
+    /// eight-layer scene below allocates 78.1 KB/frame either way, so a byte test would have passed
+    /// with the defect in place. It is also the honest shape of the claim — "one pass per context"
+    /// is what the code promises, and bytes are a proxy for it.
+    /// </para>
+    /// <para>
+    /// Mutation-verified: putting `new MeasureVisitor(context)` back at the call site in
+    /// `LayoutEngine.Layout` fails this and nothing else in this file.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void EveryOverlayLayer_SharesTheOneMeasurementPass()
+    {
+        var context = new LayoutContext(PhotonTheme.Instance, ApproximateTextMeasurer.Instance);
+
+        // Nine layout calls on one context: the page and its eight overlay layers.
+        var scene = OverlayHeavyScene(PhotonTheme.Instance);
+        for (var layer = 0; layer < 9; layer++)
+            LayoutEngine.Layout(scene, 1280, 900, context, rootPath: $"r{layer}");
+
+        context.PassesBuilt.Should().Be(1,
+            "a layer is a tree to lay out, not a per-frame allocation — the pass belongs to the "
+            + "context every layer shares, and building it per call put one object on each");
+    }
+
 }

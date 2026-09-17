@@ -3,8 +3,9 @@ using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Native.Framework;
 
-/// <summary>Text, which is the only measurement that asks the host: every other node computes its
-/// box from numbers the tree already carries.</summary>
+/// <summary>The two measurements that ask the HOST for metrics — <c>Text</c> and <c>TextEntry</c>,
+/// both through <c>ctx.Measurer</c>. Every other node computes its box from numbers the tree already
+/// carries, which is what makes this seam the one place a layout depends on the platform.</summary>
 internal sealed partial class MeasureVisitor
 {
     private LayoutNode MeasureText(Text text, float maxW, LayoutContext ctx)

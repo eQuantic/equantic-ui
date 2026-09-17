@@ -46,6 +46,40 @@ public sealed class LayoutContext
     public LayoutNodePool? Pool { get; init; }
 
     // The single factory every laid-out node passes through.
+    /// <summary>
+    /// The measurement pass for this context, made once and kept.
+    /// <para>
+    /// A frame is not ONE <see cref="LayoutEngine.Layout"/> call: the realizer lays the page out and
+    /// then each Overlay against the viewport, sharing this context. Building the visitor at the call
+    /// site therefore allocated one per LAYER, which the dense-scene harness could not see because it
+    /// has no overlays — and the pooled budget it guards is 0.1 KB under its ceiling, so a handful of
+    /// layers would have crossed it with every test still green. Found in review.
+    /// </para>
+    /// <para>
+    /// Holding it here rather than passing one in keeps <see cref="LayoutEngine.Layout"/>'s signature,
+    /// and the visitor reads nothing but this context, so a context outliving a frame reuses it
+    /// safely — one object for as long as the host keeps the context, not one per layer per frame.
+    /// </para>
+    /// </summary>
+    internal MeasureVisitor MeasurePass => _measurePass ??= new MeasureVisitor(this);
+
+    private MeasureVisitor? _measurePass;
+
+    /// <summary>
+    /// How many measurement passes were built AGAINST THIS CONTEXT — one, for as long as the host
+    /// keeps it, however many layers a frame lays out.
+    /// <para>
+    /// It exists because nothing else can see the difference. Reading <see cref="MeasurePass"/> is a
+    /// tautology (the property caches whatever it makes, whether or not `Layout` used it), and the
+    /// allocation harness cannot resolve one small object inside a frame — the eight-layer scene
+    /// allocates 78.1 KB either way. Counting per CONTEXT rather than globally keeps it honest under
+    /// xUnit's parallel classes, which is where a static tally would have gone flaky.
+    /// </para>
+    /// </summary>
+    internal int PassesBuilt { get; private set; }
+
+    internal void CountPass() => PassesBuilt++;
+
     internal LayoutNode Node(VisualNode source) => Pool?.Rent(source) ?? new(source);
 
     internal LayoutNode Node(VisualNode source, Rect bounds)
@@ -385,10 +419,10 @@ public static class LayoutEngine
         // several Layout calls (the page plus each Overlay subtree) sharing one retention pass.
         context.WindowWidth = viewportWidth;
         context.WindowHeight = viewportHeight;
-        // ONE visitor per pass, which is what lets the context be a field on it and only the
+        // ONE visitor per CONTEXT, which is what lets the context be a field on it and only the
         // constraints and the path travel down. A frame runs several Layout calls (the page plus
-        // each Overlay subtree), so this is a handful of objects per frame, not one per node.
-        var node = new MeasureVisitor(context).Measure(
+        // each Overlay subtree) and they share this context, so they share its visitor.
+        var node = context.MeasurePass.Measure(
             root,
             LayoutConstraints.Of(viewportWidth, viewportHeight).Stretched(rootStretch, StretchKind.None),
             context,

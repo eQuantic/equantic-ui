@@ -6,11 +6,17 @@ namespace eQuantic.UI.Native.Framework;
 /// <summary>The questions asked ABOUT a node rather than of it — its floor, whether it may shrink,
 /// what kind of size it wants — and the arithmetic every measurement shares.
 /// <para>
-/// They are here rather than spread through the families because MEASURING said so: not one of them
-/// is called from more than one family, so nothing about the call graph places them, and the subject
-/// does. The alternative was to file each beside its only caller, which would put the whole of the
-/// resolve-and-clamp arithmetic inside the flex pass and hide that the other families share its
-/// rules by not needing them yet.
+/// They are here rather than spread through the families because MEASURING said so, and the first
+/// measurement was wrong in a way worth recording: taken before the flex pass became its own file,
+/// it reported that none of the fifteen crossed. Re-run against the files as they actually stand,
+/// TWO do — <c>CrossSizeKind</c> from Containers and Flex, <c>ResolveSelf</c> from Containers and
+/// the doors. (S4 found exactly two crossing helpers as well, and kept them on its class file.)
+/// </para>
+/// <para>
+/// Thirteen of fifteen having a single caller is still not a placement: filing each beside it would
+/// put the whole resolve-and-clamp arithmetic inside the flex pass, and then the two that cross
+/// would have to live somewhere else anyway. The subject is what groups them — the questions asked
+/// ABOUT a node, and the arithmetic every measurement shares whether or not it shares it yet.
 /// </para></summary>
 internal sealed partial class MeasureVisitor
 {

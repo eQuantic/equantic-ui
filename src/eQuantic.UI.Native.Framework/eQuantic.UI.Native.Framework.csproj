@@ -15,4 +15,13 @@
     <ProjectReference Include="..\eQuantic.UI.Native.Engine\eQuantic.UI.Native.Engine.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The measurement pass is internal — a caller lays out through LayoutEngine.Layout, never by
+         picking a visitor — but "one pass per context, however many layers a frame lays out" is a
+         promise no public surface shows. The realizer calls Layout once per Overlay, so anything
+         built per call is built per layer, and the allocation budget cannot resolve one small
+         object. The suite asks the context directly instead. -->
+    <InternalsVisibleTo Include="eQuantic.UI.Native.Engine.Tests" />
+  </ItemGroup>
+
 </Project>
