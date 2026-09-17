@@ -1,0 +1,152 @@
+# One top-level type per file. These are the exceptions: the path, how many types were MEASURED
+# there, and why the file is the unit. The list may ONLY SHRINK, and an entry is not a licence for
+# the NEXT type either — the count is checked, so a listed file cannot quietly grow one.
+#
+# The reasons, and what each claims:
+#   interop header      one native header transcribed in one place; splitting it loses the mirror
+#   closed hierarchy    the cases ARE the type, and a case alone means nothing
+#   protocol set        one wire protocol's records, which version together
+#   vendor schema       one library's options object transcribed, same argument as an interop header
+#   not looked at yet   MEASURED, not judged — nobody has decided whether this file is the unit
+#
+# 123 of the 135 say "not looked at yet", and that is the honest state: judging them is its own
+# body of work, and a plausible sentence nobody checked would make the list unshrinkable instead.
+#
+# Regenerate with EQ_UPDATE_ONE_TYPE_BASELINE=1 after a REMOVAL. It carries every reason across and
+# writes "not looked at yet" for a file that is newly over the line, which is not an approval: it
+# is a file nobody has judged, and the diff is where that gets noticed.
+src/eQuantic.UI.Charts.ApexCharts/Models/ApexOptions.cs  11  vendor schema
+src/eQuantic.UI.Charts.ChartJs/ChartData.cs  2  not looked at yet
+src/eQuantic.UI.Charts.ChartJs/Models/ChartJsOptions.cs  8  vendor schema
+src/eQuantic.UI.Charts.ChartJs/SpecializedCharts.cs  5  not looked at yet
+src/eQuantic.UI.Charts/BarChartLayout.cs  3  not looked at yet
+src/eQuantic.UI.Charts/ChartSeries.cs  5  not looked at yet
+src/eQuantic.UI.Charts/ValueScale.cs  2  not looked at yet
+src/eQuantic.UI.Codegen/CodeWriter.cs  2  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/ConversionDiagnostic.cs  2  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/CssEmitter.cs  2  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Extensions/TypeDeclarationExtensions.cs  2  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Ir/JsClass.cs  2  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Ir/JsClassMember.cs  6  closed hierarchy
+src/eQuantic.UI.Compiler/CodeGen/Ir/JsExpr.cs  13  closed hierarchy
+src/eQuantic.UI.Compiler/CodeGen/Ir/JsModule.cs  3  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Ir/JsPrecedence.cs  2  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Ir/JsStatement.cs  20  closed hierarchy
+src/eQuantic.UI.Compiler/CodeGen/Ir/JsStatementWriter.cs  2  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/AssignmentExpressionStrategy.cs  2  not looked at yet
+src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/CompileTimeEvaluatedExpressionStrategy.cs  2  not looked at yet
+src/eQuantic.UI.Compiler/ComponentCompiler.cs  3  not looked at yet
+src/eQuantic.UI.Compiler/Models/ComponentDefinition.cs  8  not looked at yet
+src/eQuantic.UI.Compiler/Services/EmittedTwins.cs  2  not looked at yet
+src/eQuantic.UI.Compiler/Services/FormatSubset.cs  2  not looked at yet
+src/eQuantic.UI.Compiler/Services/ResourceClasses.cs  2  not looked at yet
+src/eQuantic.UI.Components/Accordion.cs  2  not looked at yet
+src/eQuantic.UI.Components/Avatar.cs  2  not looked at yet
+src/eQuantic.UI.Components/BottomNavigation.cs  2  not looked at yet
+src/eQuantic.UI.Components/Breadcrumb.cs  2  not looked at yet
+src/eQuantic.UI.Components/Card.cs  2  not looked at yet
+src/eQuantic.UI.Components/Chip.cs  2  not looked at yet
+src/eQuantic.UI.Components/CultureSwitcher.cs  3  not looked at yet
+src/eQuantic.UI.Components/DataTable.cs  4  not looked at yet
+src/eQuantic.UI.Components/Dialog.cs  2  not looked at yet
+src/eQuantic.UI.Components/Divider.cs  3  not looked at yet
+src/eQuantic.UI.Components/Drawer.cs  2  not looked at yet
+src/eQuantic.UI.Components/EmptyState.cs  3  not looked at yet
+src/eQuantic.UI.Components/FormInput.cs  2  not looked at yet
+src/eQuantic.UI.Components/IconButton.cs  2  not looked at yet
+src/eQuantic.UI.Components/ListItem.cs  2  not looked at yet
+src/eQuantic.UI.Components/Markdown.cs  2  not looked at yet
+src/eQuantic.UI.Components/MarkdownBlocks.cs  6  not looked at yet
+src/eQuantic.UI.Components/MarkdownParser.cs  3  not looked at yet
+src/eQuantic.UI.Components/Menu.cs  2  not looked at yet
+src/eQuantic.UI.Components/MermaidModel.cs  12  not looked at yet
+src/eQuantic.UI.Components/MermaidParser.cs  3  not looked at yet
+src/eQuantic.UI.Design/Protocol.cs  15  protocol set
+src/eQuantic.UI.Email/EmailRenderer.cs  2  not looked at yet
+src/eQuantic.UI.Material/ColorScience/Cam16.cs  2  not looked at yet
+src/eQuantic.UI.Native.Components/PhotonRealizer.cs  14  not looked at yet
+src/eQuantic.UI.Native.Engine.Metal/MetalTexture.cs  3  not looked at yet
+src/eQuantic.UI.Native.Engine.Metal/ObjC.cs  3  interop header
+src/eQuantic.UI.Native.Engine.Vulkan/VulkanNative.cs  59  interop header
+src/eQuantic.UI.Native.Engine.Vulkan/VulkanSurfaceNative.cs  9  interop header
+src/eQuantic.UI.Native.Engine.Vulkan/VulkanTexture.cs  3  not looked at yet
+src/eQuantic.UI.Native.Engine/Blur.cs  2  not looked at yet
+src/eQuantic.UI.Native.Engine/Color.cs  2  not looked at yet
+src/eQuantic.UI.Native.Engine/DisplayList.cs  6  not looked at yet
+src/eQuantic.UI.Native.Engine/Paint.cs  2  not looked at yet
+src/eQuantic.UI.Native.Engine/Rendering.cs  3  not looked at yet
+src/eQuantic.UI.Native.Engine/Rhi.cs  11  not looked at yet
+src/eQuantic.UI.Native.Framework/Layout/LayoutConstraints.cs  2  not looked at yet
+src/eQuantic.UI.Native.Framework/Layout/LayoutEngine.cs  5  not looked at yet
+src/eQuantic.UI.Native.Framework/Text/IImageLoader.cs  2  not looked at yet
+src/eQuantic.UI.Native.Framework/Text/ITextMeasurer.cs  5  not looked at yet
+src/eQuantic.UI.Native.Framework/Text/ITextRasterizer.cs  2  not looked at yet
+src/eQuantic.UI.Native.Generators/CapabilityDeclarations.cs  2  not looked at yet
+src/eQuantic.UI.Native.Hosting/IPhotonCapabilities.cs  2  not looked at yet
+src/eQuantic.UI.Native.Hosting/IPhotonRunner.cs  2  not looked at yet
+src/eQuantic.UI.Native.Shell.Apple/AppleCamera.cs  3  not looked at yet
+src/eQuantic.UI.Native.Shell.Apple/ObjC.cs  5  interop header
+src/eQuantic.UI.Native.Shell.Windows/Devices/WindowsAppStorage.cs  2  not looked at yet
+src/eQuantic.UI.Native.Shell.Windows/Devices/WindowsCapabilities.cs  4  not looked at yet
+src/eQuantic.UI.Native.Shell.Windows/Presenter.cs  3  not looked at yet
+src/eQuantic.UI.Native.Shell.iOS/PhotonAccessibility.cs  2  not looked at yet
+src/eQuantic.UI.Primitives/Code/CodeEditing.cs  17  not looked at yet
+src/eQuantic.UI.Primitives/Code/CodeEditorController.cs  3  not looked at yet
+src/eQuantic.UI.Primitives/Code/CodeLanguages.cs  7  not looked at yet
+src/eQuantic.UI.Primitives/Code/CodeModel.cs  5  not looked at yet
+src/eQuantic.UI.Primitives/Contracts/SemanticNode.cs  3  not looked at yet
+src/eQuantic.UI.Primitives/Devices/DeviceCapability.cs  2  not looked at yet
+src/eQuantic.UI.Primitives/Devices/IBiometrics.cs  2  not looked at yet
+src/eQuantic.UI.Primitives/Devices/ICamera.cs  2  not looked at yet
+src/eQuantic.UI.Primitives/Devices/IConsent.cs  2  not looked at yet
+src/eQuantic.UI.Primitives/Devices/IDeepLinks.cs  2  not looked at yet
+src/eQuantic.UI.Primitives/Devices/IFileDialogs.cs  2  not looked at yet
+src/eQuantic.UI.Primitives/Devices/IFrameTicker.cs  2  not looked at yet
+src/eQuantic.UI.Primitives/Devices/ILocation.cs  2  not looked at yet
+src/eQuantic.UI.Primitives/Devices/IMotionSensor.cs  4  not looked at yet
+src/eQuantic.UI.Primitives/Devices/INetworkStatus.cs  3  not looked at yet
+src/eQuantic.UI.Primitives/Devices/IUiDispatcher.cs  2  not looked at yet
+src/eQuantic.UI.Primitives/Devices/PhotonBundleKeyAttribute.cs  3  not looked at yet
+src/eQuantic.UI.Primitives/Devices/PhotonEntitlementAttribute.cs  2  not looked at yet
+src/eQuantic.UI.Primitives/Forms/FormController.cs  2  not looked at yet
+src/eQuantic.UI.Primitives/Forms/FormModel.cs  3  not looked at yet
+src/eQuantic.UI.Primitives/Geometry/Geometry.cs  5  not looked at yet
+src/eQuantic.UI.Primitives/Layout/LayoutTypes.cs  5  not looked at yet
+src/eQuantic.UI.Primitives/Nodes/CanvasNode.cs  3  not looked at yet
+src/eQuantic.UI.Primitives/Nodes/Icon.cs  3  not looked at yet
+src/eQuantic.UI.Primitives/Nodes/IconGlyph.cs  3  not looked at yet
+src/eQuantic.UI.Primitives/Nodes/Image.cs  2  not looked at yet
+src/eQuantic.UI.Primitives/Nodes/Simulated.cs  2  not looked at yet
+src/eQuantic.UI.Primitives/Nodes/UiComponent.cs  4  not looked at yet
+src/eQuantic.UI.Primitives/Nodes/VisualNode.cs  59  closed hierarchy, and the one entry with work already scheduled against it: #162 splits the vocabulary file
+src/eQuantic.UI.Primitives/Nodes/WebFrame.cs  2  not looked at yet
+src/eQuantic.UI.Primitives/Sheet/SheetController.cs  3  not looked at yet
+src/eQuantic.UI.Primitives/Sheet/SheetDocument.cs  2  not looked at yet
+src/eQuantic.UI.Primitives/Sheet/SheetEditing.cs  4  not looked at yet
+src/eQuantic.UI.Primitives/Sheet/SheetModel.cs  2  not looked at yet
+src/eQuantic.UI.Primitives/Theme/ColorToken.cs  3  not looked at yet
+src/eQuantic.UI.Primitives/Theme/DataPalette.cs  3  not looked at yet
+src/eQuantic.UI.Primitives/Theme/IAppTheme.cs  4  not looked at yet
+src/eQuantic.UI.Primitives/Theme/PaletteAudit.cs  5  not looked at yet
+src/eQuantic.UI.Primitives/Theme/Tokens.cs  11  not looked at yet
+src/eQuantic.UI.Primitives/Theme/Typography.cs  3  not looked at yet
+src/eQuantic.UI.Primitives/Vector/VectorDrawing.cs  6  not looked at yet
+src/eQuantic.UI.Primitives/Vector/VectorPath.cs  3  not looked at yet
+src/eQuantic.UI.Server/AlternateLinks.cs  2  not looked at yet
+src/eQuantic.UI.Server/Assets/IAsset.cs  5  closed hierarchy
+src/eQuantic.UI.Server/Authorization/IServerActionAuthorizationService.cs  2  not looked at yet
+src/eQuantic.UI.Server/CultureRoutes.cs  3  not looked at yet
+src/eQuantic.UI.Server/HtmlTemplateEngine.cs  3  not looked at yet
+src/eQuantic.UI.Server/IServerActionRegistry.cs  2  not looked at yet
+src/eQuantic.UI.Server/Metadata/IMetaTag.cs  2  not looked at yet
+src/eQuantic.UI.Server/Metadata/MetaTags.cs  3  not looked at yet
+src/eQuantic.UI.Server/Rendering/IServerRenderingService.cs  2  not looked at yet
+src/eQuantic.UI.Server/ServerActionsMiddleware.cs  2  not looked at yet
+src/eQuantic.UI.Server/SsrConsent.cs  2  not looked at yet
+src/eQuantic.UI.Server/UIExtensions.cs  5  not looked at yet
+src/eQuantic.UI.Web/Dom/CssEnums.cs  8  not looked at yet
+src/eQuantic.UI.Web/Dom/EventArgs.cs  3  not looked at yet
+src/eQuantic.UI.Web/StyleAtomizer.cs  7  not looked at yet
+src/eQuantic.UI.Web/Styling/ClassBuilder.cs  2  not looked at yet
+src/eQuantic.UI.Web/Styling/StyleClass.cs  3  not looked at yet
+src/eQuantic.UI.Web/TokenCss.cs  2  not looked at yet
