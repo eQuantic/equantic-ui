@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace eQuantic.UI.Conformance.Tests.Infrastructure;
 
@@ -19,9 +20,32 @@ namespace eQuantic.UI.Conformance.Tests.Infrastructure;
 /// </summary>
 public static class JsExecutor
 {
-    private static string? _bunPath;
-    private static bool? _bunWorks;
-    private static bool? _nodeWorks;
+    /// <summary>
+    /// Answered ONCE, by one thread, in this order: where Bun is (extracting it if the tree only
+    /// has the zip), then whether it runs, then — only if it does not — whether Node does.
+    /// <para>
+    /// These were three <c>bool?</c> fields written outside any lock, and xUnit runs test classes
+    /// in parallel. Two classes arriving together both probed and both wrote, so the answer a test
+    /// read was whichever probe finished last. On a cold Windows runner that put the on-demand
+    /// unzip of <c>bun.exe</c> in one thread against a ten-second probe of that same file in
+    /// another, and ONE test in an otherwise green suite was told no JS engine works while every
+    /// other test in the same process ran Bun perfectly. A harness that reports an engine the suite
+    /// is demonstrably using is worse than no report at all.
+    /// </para>
+    /// <para>
+    /// <see cref="LazyThreadSafetyMode.ExecutionAndPublication"/> is the mechanism .NET already has
+    /// for this: the factory runs exactly once, nobody sees a half-extracted binary, and the probe
+    /// times the ENGINE rather than whatever else was writing to it.
+    /// </para>
+    /// </summary>
+    private static readonly Lazy<string?> Bun =
+        new(ResolveBun, LazyThreadSafetyMode.ExecutionAndPublication);
+
+    private static readonly Lazy<bool> BunRuns =
+        new(ProbeBun, LazyThreadSafetyMode.ExecutionAndPublication);
+
+    private static readonly Lazy<bool> NodeRuns =
+        new(ProbeNode, LazyThreadSafetyMode.ExecutionAndPublication);
 
     public static bool IsAvailable
     {
@@ -71,9 +95,10 @@ public static class JsExecutor
         }
     }
 
-    private static string? BunPath()
+    private static string? BunPath() => Bun.Value;
+
+    private static string? ResolveBun()
     {
-        if (_bunPath != null) return _bunPath;
         var root = RepoRoot.Find();
         if (root == null) return null;
 
@@ -113,39 +138,32 @@ public static class JsExecutor
             }
             catch
             {
-                // Extraction failed (corrupt zip, perms): leave _bunPath null so we fall back to Node.
+                // Extraction failed (corrupt zip, perms): answer null so we fall back to Node.
             }
         }
 
-        _bunPath = File.Exists(exePath) ? exePath : null;
-        return _bunPath;
+        return File.Exists(exePath) ? exePath : null;
     }
 
-    private static bool BunWorks()
-    {
-        if (_bunWorks.HasValue) return _bunWorks.Value;
-        _bunWorks = CanExecute(() =>
-        {
-            var bun = BunPath();
-            if (bun == null) return null;
-            var probe = Path.Combine(Path.GetTempPath(), $"eq-probe-{Guid.NewGuid():N}.mjs");
-            File.WriteAllText(probe, "console.log('ok')");
-            try { return RunProcess(bun, new[] { "run", probe }, 10000); }
-            finally { try { File.Delete(probe); } catch { } }
-        });
-        return _bunWorks.Value;
-    }
+    private static bool BunWorks() => BunRuns.Value;
 
-    private static bool NodeWorks()
+    private static bool ProbeBun() => CanExecute(() =>
     {
-        if (_nodeWorks.HasValue) return _nodeWorks.Value;
-        _nodeWorks = CanExecute(() =>
-        {
-            try { return RunProcess("node", new[] { "-e", "console.log('ok')" }, 10000); }
-            catch { return null; }
-        });
-        return _nodeWorks.Value;
-    }
+        var bun = BunPath();
+        if (bun == null) return null;
+        var probe = Path.Combine(Path.GetTempPath(), $"eq-probe-{Guid.NewGuid():N}.mjs");
+        File.WriteAllText(probe, "console.log('ok')");
+        try { return RunProcess(bun, new[] { "run", probe }, 10000); }
+        finally { try { File.Delete(probe); } catch { } }
+    });
+
+    private static bool NodeWorks() => NodeRuns.Value;
+
+    private static bool ProbeNode() => CanExecute(() =>
+    {
+        try { return RunProcess("node", new[] { "-e", "console.log('ok')" }, 10000); }
+        catch { return null; }
+    });
 
     private static bool CanExecute(Func<(int, string, string)?> probe)
     {
