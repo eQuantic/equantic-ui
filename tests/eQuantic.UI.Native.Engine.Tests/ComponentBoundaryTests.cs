@@ -157,6 +157,13 @@ public class ComponentBoundaryTests
     {
         // The bound is for what never terminates; a component building a component is ordinary
         // composition and must be untouched by it.
+        //
+        // CLEARED FIRST, and the reason is the assertion below: `Contained` is ambient state scoped
+        // to the RUN, not to this render, and the cyclic tests in this class fill it. Without this
+        // the result depends on which test ran before — a green assertion that a neighbour can turn
+        // red is exactly the instrument this epic exists to remove.
+        ComponentBoundary.ClearContained();
+
         var node = LayoutEngine.Layout(new WrapperCard(depth: 12), 400, 300, Layout);
 
         node.Bounds.Width.Should().BeGreaterThan(0);

@@ -177,10 +177,16 @@ public static class ComponentBoundary
         ComponentContext context, TState state, Func<VisualNode, TState, TResult> realize)
     {
         if (_depth >= MaxDepth)
+            // What was OBSERVED, not what is suspected: the bound is on depth, so all it knows is
+            // that {MaxDepth} components nested without one of them reaching an ordinary node. That
+            // is a cycle in every case anybody has met, and it is also what a finite tree nested
+            // deeper than this boundary allows would look like — naming only the cycle would hand
+            // that developer a false diagnosis to chase.
             return realize(Contain(component, new InvalidOperationException(
-                $"{component.GetType().Name}.Build never reached a node: {MaxDepth} components nest "
-                + "here, so this is a component building itself, or a cycle of components, rather "
-                + "than a tree."), context), state);
+                $"{component.GetType().Name} was still building components after {MaxDepth} "
+                + "expansions, so what it builds was never reached: a component that builds itself, "
+                + "a cycle of components, or a tree nested deeper than this boundary allows."),
+                context), state);
 
         _depth++;
         try
