@@ -19,6 +19,15 @@ namespace eQuantic.UI.Web.Tests;
 /// A path locates; a bare file name mentions. <c>`docs/LEDGER.md`</c> is checked, <c>`LEDGER.md`</c>
 /// in prose is not — the ledger's own table of retired documents names them, and must be allowed to.
 /// </para>
+/// <para>
+/// A path that RESOLVES can still be the wrong file, which is the failure the first two tests cannot
+/// see. When <c>VisualNode.cs</c> became fifty-nine files (#162), fifty-five citations were rewritten
+/// to name the file holding each member — and eleven named a file that exists and does not hold it
+/// (<c>ThresholdDp</c> sent to <c>VisualNode.cs</c>, <c>SlideUp</c> to <c>BoxStyle.cs</c>, the gradient
+/// axis to <c>LinearGradient.cs</c> rather than <c>GradientDirection.cs</c>). Every one passed the
+/// resolution test above. The third test reads the evidence blocks instead: where an audit quotes a
+/// DECLARATION beside a path, the file it names must declare that identifier.
+/// </para>
 /// </summary>
 public class DocsIndexTests
 {
@@ -43,6 +52,29 @@ public class DocsIndexTests
     private static readonly Regex BacktickPath = new(
         @"`(?<path>[^`\s<>]*/[^`\s<>]*\.md)(?:[:#][^`]*)?`",
         RegexOptions.Compiled);
+
+    /// <summary>
+    /// An evidence line of the audits: a source path, two or more spaces, then the line of code it
+    /// quotes — <c>src/…/DragDismiss.cs    public const float ThresholdDp = 96;</c>.
+    /// </summary>
+    private static readonly Regex EvidenceLine = new(
+        @"^\s{0,6}(?<path>(?:[\w.]+/)*[\w.]+\.cs)(?::\d+(?:-\d+)?)?\s{2,}(?<code>\S.*)$",
+        RegexOptions.Compiled);
+
+    /// <summary>
+    /// The three shapes whose DECLARED NAME can be read out of a quoted line without parsing C#: a
+    /// property, a const or readonly field, and an enum member. Everything else the audits quote is a
+    /// call, a fragment, or a paraphrase with an elision in it — the audits quote to be READ, not to
+    /// be diffed, so a line this cannot name is one the instrument declines to judge rather than one
+    /// it fails. Narrow and certain beats wide and noisy: measured over the two audits, these three
+    /// find every wrong file and accuse none of the seventy-eight paraphrased lines.
+    /// </summary>
+    private static readonly Regex[] DeclaredName =
+    [
+        new(@"(?<name>[A-Z]\w*)\s*\{\s*get", RegexOptions.Compiled),
+        new(@"\b(?:const|readonly)\s+[\w?<>\[\].]+\s+(?<name>[A-Z]\w*)\s*=", RegexOptions.Compiled),
+        new(@"^(?<name>[A-Z]\w*)\s*=\s*-?\d+\s*,?$", RegexOptions.Compiled),
+    ];
 
     private static string Root()
     {
@@ -111,5 +143,68 @@ public class DocsIndexTests
 
         string.Join(Environment.NewLine, dangling).Should().BeEmpty(
             "a link or a backtick path in the repository's Markdown names a file that is not there; a retired or moved document takes its citations with it");
+    }
+
+    /// <summary>
+    /// A citation that quotes a declaration is checkable: the file it names either declares that
+    /// identifier or is the wrong file. A bare file name that resolves to nothing is a MENTION and is
+    /// skipped, exactly as the backtick rule above skips <c>`LEDGER.md`</c> — a rooted path that
+    /// resolves to nothing is a citation, and is reported.
+    /// <para>
+    /// WHAT IT CANNOT SEE, stated rather than implied: it asks whether the named file declares an
+    /// identifier by that name, not whether it is the RIGHT one of two. Mutation-verified on the
+    /// three citations this test was written for — sending <c>SlideUp</c> or <c>ThresholdDp</c> back
+    /// to <c>VisualNode.cs</c> fails the test, and sending <c>BoxStyle.Gradient</c> back to
+    /// <c>Text.cs</c> does NOT, because <c>Text</c> has a <c>Gradient</c> of its own. Two members
+    /// sharing a name across two files is the case a reader still has to catch.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void Every_quoted_declaration_is_declared_by_the_file_its_citation_names()
+    {
+        var root = Root();
+        var sources = Directory.GetFiles(Path.Combine(root, "src"), "*.cs", SearchOption.AllDirectories)
+            .ToLookup(Path.GetFileName, StringComparer.Ordinal);
+
+        var misplaced = new List<string>();
+        foreach (var file in RepositoryMarkdown(root))
+        {
+            var fenced = false;
+            var lineNumber = 0;
+            foreach (var line in File.ReadLines(file))
+            {
+                lineNumber++;
+                if (line.TrimStart().StartsWith("```", StringComparison.Ordinal)) { fenced = !fenced; continue; }
+                if (!fenced) continue;
+
+                var cited = EvidenceLine.Match(line);
+                if (!cited.Success) continue;
+
+                var declared = DeclaredName.Select(pattern => pattern.Match(cited.Groups["code"].Value))
+                    .FirstOrDefault(match => match.Success);
+                if (declared is null) continue;
+
+                var name = declared.Groups["name"].Value;
+                var path = cited.Groups["path"].Value;
+                var rooted = path.Contains('/', StringComparison.Ordinal);
+                var candidates = (rooted ? [Path.Combine(root, path)] : sources[path].ToArray())
+                    .Where(File.Exists).ToArray();
+
+                var where = $"{Path.GetRelativePath(root, file)}:{lineNumber}";
+                if (candidates.Length == 0)
+                {
+                    if (rooted) misplaced.Add($"{where} → {path} (no such file) quoting {name}");
+                    continue; // a bare name that resolves to nothing mentions rather than locates
+                }
+
+                if (!candidates.Any(candidate =>
+                        Regex.IsMatch(File.ReadAllText(candidate), $@"\b{Regex.Escape(name)}\b")))
+                    misplaced.Add($"{where} → {path} does not declare {name}");
+            }
+        }
+
+        string.Join(Environment.NewLine, misplaced).Should().BeEmpty(
+            "an audit quotes a declaration beside the file it says declares it; a file that resolves can still be "
+            + "the wrong one, and a split moves the member without moving the citation");
     }
 }

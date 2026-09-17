@@ -61,7 +61,7 @@ the pill's 40 down.
 
 ### A5 SafeArea · behaviour · **unverified**
 
-- **Component**: `src/eQuantic.UI.Primitives/Nodes/VisualNode.cs`
+- **Component**: `src/eQuantic.UI.Primitives/Nodes/SafeArea.cs`
 - **Handoff**: minimum merges via max(inset, minimum) — gutters never collapse to zero on rectangular screens.
 - **Code**: The slot is named Extra and is ADDED to the host inset instead of being a floor under it. src/eQuantic.UI.Native.Framework/Layout/LayoutEngine.cs:359 and src/eQuantic.UI.Web/WebRealizer.cs:524 both compute inset+extra, and the intent is pinned by a test named ExtraPaddingAddsToTheInset_NotInsteadOfIt (tests/eQuantic.UI.Native.Engine.Tests/SafeAreaTests.cs:50). On a rectangular screen the two rules agree (0+16 == max(0,16)), so the divergence only shows on a device that HAS an inset: with a 54dp notch and minimum 16 the handoff wants 54, the code produces 70.
 - **Evidence**:
@@ -75,7 +75,7 @@ the pill's 40 down.
 
 ### A5 SafeArea · missing-feature · **unverified**
 
-- **Component**: `src/eQuantic.UI.Primitives/Nodes/VisualNode.cs`
+- **Component**: `src/eQuantic.UI.Primitives/Nodes/SafeArea.cs`
 - **Handoff**: Consumption: a SafeArea zeroes the inset for its subtree — nested SafeAreas never double-pad.
 - **Code**: Nothing consumes the inset. Native: MeasureSafeArea reads ctx.SafeAreaInsets and passes the SAME ctx to the child, and LayoutContext.SafeAreaInsets is init-only (LayoutEngine.cs:105) so it cannot be zeroed for the subtree. Web/TS: every SafeArea emits its own env(safe-area-inset-*) padding, and env() is not scoped, so a nested pair pads twice. A screen SafeArea wrapping a bar that also uses one gets 2x the notch.
 - **Evidence**:
@@ -393,7 +393,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/TextInput.cs`
 - **Handoff**: States: ... error = Destructive border + error glyph + Destructive helper
-- **Code**: The error branch swaps only the border colour and the caption colour — no glyph is ever added to the row. TextInput.cs:81-84 and :132 are the entire error treatment; the row (TextInput.cs:95-114) holds the leading Icon and the Flexible entry and nothing else. This is NOT covered by the class doc's fence, which names only "the trailing slot (clear/eye/counter)". Icons.Error exists in the vocabulary (src/eQuantic.UI.Primitives/Nodes/IconGlyph.cs:37), so nothing blocks it.
+- **Code**: The error branch swaps only the border colour and the caption colour — no glyph is ever added to the row. TextInput.cs:81-84 and :132 are the entire error treatment; the row (TextInput.cs:95-114) holds the leading Icon and the Flexible entry and nothing else. This is NOT covered by the class doc's fence, which names only "the trailing slot (clear/eye/counter)". Icons.Error exists in the vocabulary (src/eQuantic.UI.Primitives/Nodes/IconGlyph.cs), so nothing blocks it.
 - **Evidence**:
 
   ```
@@ -1140,9 +1140,9 @@ the pill's 40 down.
 
 ### A3 Stack · missing-feature · **unverified**
 
-- **Component**: `src/eQuantic.UI.Primitives/Nodes/VisualNode.cs`
+- **Component**: `src/eQuantic.UI.Primitives/Nodes/Stack.cs`
 - **Handoff**: Positioned(top/end/bottom/start, width?, height?)
-- **Code**: Positioned takes only the four insets plus ZIndex — there is no width/height slot, so a positioned child cannot be given an explicit size and must carry a sized Box of its own (src/eQuantic.UI.Primitives/Nodes/Box.cs).
+- **Code**: Positioned takes only the four insets plus ZIndex — there is no width/height slot, so a positioned child cannot be given an explicit size and must carry a sized Box of its own (src/eQuantic.UI.Primitives/Nodes/Positioned.cs).
 - **Evidence**:
 
   ```
@@ -1164,14 +1164,17 @@ the pill's 40 down.
 
 ### A6 ScrollView · missing-feature · **unverified**
 
-- **Component**: `src/eQuantic.UI.Primitives/Nodes/VisualNode.cs`
+- **Component**: `src/eQuantic.UI.Primitives/Nodes/ScrollView.cs`
 - **Handoff**: contentPadding merges safe-area bottom (§A5). Keyboard: bottom inset grows by IME height; focused input kept visible (M4).
 - **Code**: ScrollView exposes no contentPadding slot at all — its whole surface is Child, Axis, Width, Height, Offset, OnScrolled, OnViewportChanged — and "ContentPadding" appears nowhere in src/. With no such prop there is nothing for the safe-area bottom to merge into, so A5's "Don't wrap ScrollView in a bottom SafeArea — pass the inset as content padding instead" has no supported spelling. No IME-height inset either (no KeyboardHeight/ImeHeight anywhere). The keep-focused-input-visible half IS present: PhotonHost.ScrollIntoView (PhotonHost.cs:360).
 - **Evidence**:
 
   ```
   src/eQuantic.UI.Primitives/Nodes/ScrollView.cs
-      public VisualNode Child { get; }
+  src/eQuantic.UI.Primitives/Nodes/SingleChildNode.cs
+      public VisualNode Child { get; init; }
+
+  src/eQuantic.UI.Primitives/Nodes/ScrollView.cs
       public ScrollAxis Axis { get; init; }
       public SizeValue Width { get; init; }
       public SizeValue Height { get; init; }
@@ -1631,7 +1634,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Avatar.cs`
 - **Handoff**: "Semantics — Image role named by the person or entity; the initials fallback keeps the same name." / "Non-interactive by default (image role, name as label)"
-- **Code**: Only the IMAGE tier carries the name (passed as Image alt, Avatar.cs:63). The initials tier renders a bare Text of the 2 clipped characters with no accessible name (Avatar.cs:83-84), and the person-glyph tier renders an Icon with no Label, which Icon documents as decorative/aria-hidden (src/eQuantic.UI.Primitives/Nodes/Icon.cs:142 "Accessibility label; null = decorative (aria-hidden on web)"). A screen reader gets "AB" — or nothing at all on the glyph tier — instead of "Ana Beatriz".
+- **Code**: Only the IMAGE tier carries the name (passed as Image alt, Avatar.cs:63). The initials tier renders a bare Text of the 2 clipped characters with no accessible name (Avatar.cs:83-84), and the person-glyph tier renders an Icon with no Label, which Icon documents as decorative/aria-hidden (src/eQuantic.UI.Primitives/Nodes/Icon.cs "Accessibility label; null = decorative (aria-hidden on web)"). A screen reader gets "AB" — or nothing at all on the glyph tier — instead of "Ana Beatriz".
 - **Evidence**:
 
   ```
@@ -1974,7 +1977,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/EmptyState.cs`
 - **Handoff**: A11y: reader focus moves to the title when a list becomes empty; action is next in order.
-- **Code**: The title is a plain Text node with no focus marker, and the vocabulary has no way to express one: Autofocus exists only on TextEntry/CodeSurface (src/eQuantic.UI.Primitives/Nodes/CodeSurface.cs, 1912), which ListDetail.cs:30 states outright — "vocabulary has no target-neutral 'focus this subtree' yet". Focus stays wherever it was when the list emptied.
+- **Code**: The title is a plain Text node with no focus marker, and the vocabulary has no way to express one: Autofocus exists only on TextEntry/CodeSurface (src/eQuantic.UI.Primitives/Nodes/TextEntry.cs and src/eQuantic.UI.Primitives/Nodes/CodeSurface.cs), which ListDetail.cs:30 states outright — "vocabulary has no target-neutral 'focus this subtree' yet". Focus stays wherever it was when the list emptied.
 - **Evidence**:
 
   ```
@@ -2021,7 +2024,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Banner.cs`
 - **Handoff**: Enter: fade + height Slow 300ms decelerate (layout animates once — allowed exception); exit ⅔ accelerate.
-- **Code**: Build wraps nothing in a Presence node (the vocabulary's enter/exit motion, VisualNode.cs 'presence' NodeKind, realized at WebRealizer.LowerPresence) — the tree is Box > Row > Column with no motion at all. The banner pops in and out instantly, and there is no fade or height animation on either realizer.
+- **Code**: Build wraps nothing in a Presence node (the vocabulary's enter/exit motion, Presence.cs 'presence' NodeKind, realized at WebRealizer.LowerPresence) — the tree is Box > Row > Column with no motion at all. The banner pops in and out instantly, and there is no fade or height animation on either realizer.
 - **Evidence**:
 
   ```
@@ -2055,11 +2058,11 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/BottomSheet.cs`
 - **Handoff**: Fling down > 700dp/s dismisses ... release snaps to nearest detent by position + velocity
-- **Code**: Dismissal is a pure DISTANCE threshold: DragDismiss.ThresholdDp = 96 (Primitives/Nodes/src/eQuantic.UI.Primitives/Nodes/DragDismiss.cs) — velocity is never read. The DragDismiss doc names the fence: "v1 fences: detents (partial heights), flick-velocity dismissal, horizontal axis, and nested-scroll interplay" (src/eQuantic.UI.Primitives/Nodes/DragDismiss.cs). Stated reason: gesture-system v1 scope. The paired "Release glide — 200ms" DOES match (glide back runs Motion.Base = 200).
+- **Code**: Dismissal is a pure DISTANCE threshold: DragDismiss.ThresholdDp = 96 (src/eQuantic.UI.Primitives/Nodes/DragDismiss.cs) — velocity is never read. The DragDismiss doc names the fence: "v1 fences: detents (partial heights), flick-velocity dismissal, horizontal axis, and nested-scroll interplay" (src/eQuantic.UI.Primitives/Nodes/DragDismiss.cs). Stated reason: gesture-system v1 scope. The paired "Release glide — 200ms" DOES match (glide back runs Motion.Base = 200).
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Primitives/Nodes/VisualNode.cs    public const float ThresholdDp = 96;
+  src/eQuantic.UI.Primitives/Nodes/DragDismiss.cs    public const float ThresholdDp = 96;
   BottomSheet.cs:80        VisualNode sheetNode = Dismissible ? new DragDismiss(sheet, OnDismiss) : sheet;
   ```
 
@@ -2110,7 +2113,7 @@ the pill's 40 down.
 
   ```
   Dialog.cs:120        var layer = new Overlay(new Presence(layers))
-  src/eQuantic.UI.Primitives/Nodes/Presence.cs    Fade = 0, ... SlideUp = 1,
+  src/eQuantic.UI.Primitives/Nodes/PresenceMotion.cs    Fade = 0, ... SlideUp = 1,
   ```
 
 ### C2 Modal · semantics · **unverified**
@@ -2640,7 +2643,7 @@ the pill's 40 down.
 
 ### A1 Box · semantics · **unverified**
 
-- **Component**: `src/eQuantic.UI.Primitives/Nodes/VisualNode.cs`
+- **Component**: `src/eQuantic.UI.Primitives/Nodes/Box.cs`
 - **Handoff**: Shadow — Elevation(0–5) token only — free-form ShadowSpec requires design review.
 - **Code**: BoxStyle exposes a free-form ShadowSpec (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), a LIST of them (185) and an InsetHighlight (192); the web realizer joins elevation + shadow + list + inset into one box-shadow (WebRealizer.cs:1259-1267) and Photon issues one ShadowRRect per entry (PhotonRealizer.cs:598-608). This also contradicts the framework's own ShadowSpec doc in Tokens.cs:209-211, which calls stacked shadows a spec violation.
 - **Evidence**:
@@ -2652,7 +2655,7 @@ the pill's 40 down.
 
 ### A1 Box · documented-deviation · **unverified**
 
-- **Component**: `src/eQuantic.UI.Primitives/Nodes/VisualNode.cs`
+- **Component**: `src/eQuantic.UI.Primitives/Nodes/Box.cs`
 - **Handoff**: Background — ColorToken, or LinearGradient(from, to, angle) — exactly 2 stops (fence).
 - **Code**: LinearGradient carries an optional third stop, Via, at ViaPosition (src/eQuantic.UI.Primitives/Nodes/LinearGradient.cs), and the web emits it as a real middle stop (TokenCss.Gradient). The type's doc names the break and its reason — the design system's from/via/to triples need the hue turn — and states the Photon fence: the shader interpolates two stops, so native paints From→To and the midpoint is web-only (PhotonRealizer.cs:582-583). So a via-gradient is a genuine cross-target appearance difference.
 - **Evidence**:
@@ -2664,7 +2667,7 @@ the pill's 40 down.
 
 ### A1 Box · documented-deviation · **unverified**
 
-- **Component**: `src/eQuantic.UI.Primitives/Nodes/VisualNode.cs`
+- **Component**: `src/eQuantic.UI.Primitives/Nodes/Box.cs`
 - **Handoff**: Border(color, width) — uniform width only; drawn inside. Per-side widths are outside the fence: compose thin Boxes instead.
 - **Code**: BoxStyle.BorderSides selects WHICH edges draw (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), and the web realizer emits per-side border-width when it is not All (WebRealizer.cs:1274-1276). The doc explicitly rejects the handoff's remedy — it calls the wrapping one-dp Box "a layout lie about what the design meant" — and states its own fence: at a non-zero radius the corner where a present edge meets an absent one differs (web mitres, Photon squares), so only radius 0 is target-identical.
 - **Evidence**:
@@ -2675,9 +2678,9 @@ the pill's 40 down.
 
 ### A1 Box · semantics · **unverified**
 
-- **Component**: `src/eQuantic.UI.Primitives/Nodes/VisualNode.cs`
+- **Component**: `src/eQuantic.UI.Primitives/Nodes/Box.cs`
 - **Handoff**: Pointer — Inert — arrow cursor, no hover, right-click falls through. A Box gains pointer states only by composing Pressable.
-- **Code**: A bare Box carries three pointer facilities of its own: Hover and Focus style diffs (src/eQuantic.UI.Primitives/Nodes/Box.cs, 226) and Cursor (231). The web realizer lowers them to :hover/:focus-visible rules and a cursor declaration (WebRealizer.cs:1298, 1324-1333) and Photon registers a HoverRegion and a CursorRegion for the box (PhotonRealizer.cs:571-572, 620-621) — no Pressable involved.
+- **Code**: A bare Box carries three pointer facilities of its own: Hover and Focus style diffs (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs) and Cursor. The web realizer lowers them to :hover/:focus-visible rules and a cursor declaration (WebRealizer.cs:1298, 1324-1333) and Photon registers a HoverRegion and a CursorRegion for the box (PhotonRealizer.cs:571-572, 620-621) — no Pressable involved.
 - **Evidence**:
 
   ```
@@ -2688,7 +2691,7 @@ the pill's 40 down.
 
 ### A1 Box · missing-feature · **unverified**
 
-- **Component**: `src/eQuantic.UI.Primitives/Nodes/VisualNode.cs`
+- **Component**: `src/eQuantic.UI.Primitives/Nodes/Box.cs`
 - **Handoff**: Transform — 2D translate · scale · rotate about a pivot. Does not affect layout (paint-only).
 - **Code**: Transform2D has no pivot component (src/eQuantic.UI.Primitives/Nodes/Transform2D.cs) and both realizers hard-anchor at the element centre: the doc says "anchored at the element's center (the CSS default origin)" and Photon calls CenterAnchored(…, node.Bounds.Center) (PhotonRealizer.cs:465). A rotation about a corner or an arbitrary pivot is inexpressible. Paint-only is honoured on both targets.
 - **Evidence**:
@@ -2700,9 +2703,9 @@ the pill's 40 down.
 
 ### A1 Box · missing-feature · **unverified**
 
-- **Component**: `src/eQuantic.UI.Primitives/Nodes/VisualNode.cs`
+- **Component**: `src/eQuantic.UI.Primitives/Nodes/Box.cs`
 - **Handoff**: LinearGradient(from, to, angle)
-- **Code**: The axis is a four-value closed enum, not an angle: ToRight, ToBottom, ToBottomRight, ToBottomLeft (src/eQuantic.UI.Primitives/Nodes/LinearGradient.cs), and TokenCss.Gradient emits only those four CSS keywords. A gradient at any other angle cannot be authored.
+- **Code**: The axis is a four-value closed enum, not an angle: ToRight, ToBottom, ToBottomRight, ToBottomLeft (src/eQuantic.UI.Primitives/Nodes/GradientDirection.cs), and TokenCss.Gradient emits only those four CSS keywords. A gradient at any other angle cannot be authored.
 - **Evidence**:
 
   ```
@@ -2714,7 +2717,7 @@ the pill's 40 down.
 
 ### A1 Box · semantics · **unverified**
 
-- **Component**: `src/eQuantic.UI.Primitives/Nodes/VisualNode.cs`
+- **Component**: `src/eQuantic.UI.Primitives/Nodes/Box.cs`
 - **Handoff**: A Box is the engine's rrect surfaced as a widget: 1 fill draw + optional border draw + optional shadow draw. … Paint order: shadow → fill (solid or 2-stop linear gradient) → border (inside stroke) → child.
 - **Code**: BoxStyle carries two further fill layers beyond the single fill: Pattern, a repeating hairline grid (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), and Glow, a radial gradient (121). Both reach paint — EmitChrome takes gradient, pattern and glow together (PhotonRealizer.cs:634-636) and the web stacks them as background-image layers (WebRealizer.cs:1254-1255). The documented order is grid below gradient, glow above the grid, which is a four-layer fill, not one.
 - **Evidence**:
@@ -2738,7 +2741,7 @@ the pill's 40 down.
 
 ### A2 Row · Column · semantics · **unverified**
 
-- **Component**: `src/eQuantic.UI.Primitives/Nodes/VisualNode.cs`
+- **Component**: `src/eQuantic.UI.Primitives/Nodes/FlexNode.cs`
 - **Handoff**: wrap — Row only: children flow to new lines (chip groups).
 - **Code**: Wrap lives on the shared FlexNode base (src/eQuantic.UI.Primitives/Nodes/FlexNode.cs) and the Column constructor takes it as a parameter (1456-1457), so a wrapping Column is authorable; the native engine routes it through the same MeasureFlexWrapped (LayoutEngine.cs:959) and the web emits flex-wrap on a column container (WebRealizer.cs:1465). The doc attributes wrap to spec S3 rather than A2.
 - **Evidence**:
@@ -2750,9 +2753,9 @@ the pill's 40 down.
 
 ### A2 Row · Column · semantics · **unverified**
 
-- **Component**: `src/eQuantic.UI.Primitives/Nodes/VisualNode.cs`
+- **Component**: `src/eQuantic.UI.Primitives/Nodes/FlexNode.cs`
 - **Handoff**: wrap — … Line spacing = gap.
-- **Code**: RunGap lets line spacing differ from gap (src/eQuantic.UI.Primitives/Nodes/VisualNode.cs); the web emits the "run main" pair when they differ (WebRealizer.cs:1591-1600) and native uses `flex.RunGap ?? flex.Gap` (LayoutEngine.cs:1331). The default matches the handoff, so this is an added override rather than a wrong default.
+- **Code**: RunGap lets line spacing differ from gap (src/eQuantic.UI.Primitives/Nodes/FlexNode.cs); the web emits the "run main" pair when they differ (WebRealizer.cs:1591-1600) and native uses `flex.RunGap ?? flex.Gap` (LayoutEngine.cs:1331). The default matches the handoff, so this is an added override rather than a wrong default.
 - **Evidence**:
 
   ```
@@ -2846,7 +2849,7 @@ the pill's 40 down.
 
 ### A6 ScrollView · documented-deviation · **unverified**
 
-- **Component**: `src/eQuantic.UI.Primitives/Nodes/VisualNode.cs`
+- **Component**: `src/eQuantic.UI.Primitives/Nodes/ScrollView.cs`
 - **Handoff**: 3dp pill, Radius.Full, BorderStrong @ 60%, 2dp from edge. Appears on scroll, fades out 800ms after idle (Fast/Base motion). Non-interactive in v1.
 - **Code**: No scrollbar is drawn on Photon — "scrollbar" matches nothing in eQuantic.UI.Native.Components or the engine, so none of the five figures (3dp, Radius.Full, BorderStrong 60%, 2dp offset, 800ms fade) exists to check. The web realizer leaves the browser's own scrollbar in place by design (WebRealizer.cs:300 comment: the browser owns physics, momentum and the scrollbar). The ScrollView fence names it: "the fading scrollbar pill join[s] with the native interaction system". Consequence: the desktop contract's overlay, hover-revealed, DRAGGABLE scrollbar is also absent on Photon.
 - **Evidence**:
@@ -2871,7 +2874,7 @@ the pill's 40 down.
 
 ### A8 Text · missing-feature · **unverified**
 
-- **Component**: `src/eQuantic.UI.Primitives/Nodes/VisualNode.cs`
+- **Component**: `src/eQuantic.UI.Primitives/Nodes/Text.cs`
 - **Handoff**: new Text("…", role: TypeRole.BodyL, color: theme.TextPrimary, maxLines: 2, overflow: Overflow.Ellipsis)
 - **Code**: The Text constructor has no `overflow` parameter and no `Overflow` enum exists anywhere in the repo (`git grep "enum Overflow"` finds nothing); the UI factory mirrors the same eight parameters (src/eQuantic.UI.Components/UI.cs:95-98). Ellipsis is hard-wired as the only truncation mode, so the handoff's example call does not compile and a caller cannot ask for clip-without-ellipsis.
 - **Evidence**:
@@ -3098,7 +3101,7 @@ the pill's 40 down.
   ```
   Avatar.cs:16  /// from the name (the spec's 2-stop gradient hash upgrades this when gradient tokens land); the
   Avatar.cs:95  Background = hasInitials ? tint.Subtle : theme.SurfaceSubtle,
-  src/eQuantic.UI.Primitives/Nodes/Text.cs  public LinearGradient? Gradient { get; init; }
+  src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs  public LinearGradient? Gradient { get; init; }
   ```
 
 ### B7 Badge · missing-feature · **CONFIRMED**
@@ -3110,8 +3113,8 @@ the pill's 40 down.
 
   ```
   Badge.cs:77  return new Box(new BoxStyle
-  src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs      Fade = 0,
-  src/eQuantic.UI.Primitives/Nodes/VisualNode.cs      SlideUp = 1,
+  src/eQuantic.UI.Primitives/Nodes/PresenceMotion.cs      Fade = 0,
+  src/eQuantic.UI.Primitives/Nodes/PresenceMotion.cs      SlideUp = 1,
   ```
 
 ### B8 Chip · missing-feature · **CONFIRMED**
