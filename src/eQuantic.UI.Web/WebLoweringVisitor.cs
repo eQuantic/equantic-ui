@@ -127,8 +127,12 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context)
     /// short, which the reconciler records as a failed adoption. Settling the shape needs a running
     /// page rather than a guess. <c>SurfaceSsrTests</c> holds the half that is done.
     /// <para>
-    /// It returns null exactly as the old default arm did — the difference is that this is now the
-    /// only node that can, and it says so where the node is.
+    /// It returns null exactly as the old default arm did. What is new is not that null is rare —
+    /// <see cref="Visit(Spacer, bool?)"/> returns it outside a flex axis, and every wrapper
+    /// propagates a null child — but that this is the only node with NO lowering at all, the only
+    /// one that answers null for every instance, and that the answer is written where the node is
+    /// instead of in an exemption list. (Review caught the overstatement in the first draft of this
+    /// comment, which claimed it was the only node that could return null.)
     /// </para>
     /// </summary>
     public HtmlElement? Visit(CodeSurface code, bool? horizontalAxis) => null;
@@ -195,6 +199,8 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context)
 
     // ---- what more than one family reaches ---------------------------------------------
 
+    /// <summary>Whether a node requests Fill on each axis — wrappers (Pressable's button) must
+    /// stretch for the 100% chain to reach it (the native MeasureWrapper sizes to the child).</summary>
     private (bool Width, bool Height) Fills(VisualNode node) => node switch
     {
         Box box => (box.Style.Width.Kind == SizeKind.Fill, box.Style.Height.Kind == SizeKind.Fill),

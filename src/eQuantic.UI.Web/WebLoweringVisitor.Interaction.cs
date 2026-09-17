@@ -78,14 +78,6 @@ internal sealed partial class WebLoweringVisitor
         wrapper.Children.Add(child);
         return wrapper;
     }
-    /// <summary>Spec A11 lowering: an explicitly sized <c>&lt;img&gt;</c> with object-fit and the
-    /// rrect clip via border-radius; empty alt = decorative (HTML semantics).</summary>
-    /// <summary>
-    /// Phase C viewport layer: a generated fixed inset-0 stacking layer (.eq-overlay) — the child
-    /// owns its composition (scrim, centering) from the ordinary vocabulary. Fixed positioning
-    /// escapes the page flow visually without a portal; keep Overlays out of transformed subtrees
-    /// (LoopMotion) — CSS transforms re-anchor fixed descendants.
-    /// </summary>
     /// <summary>
     /// Spec S8: the binding is MARKED on the child's root (<c>data-eq-shortcut</c>) and the runtime's
     /// window controller dispatches to it — SSR has no key events, so the marker is the whole
@@ -120,11 +112,6 @@ internal sealed partial class WebLoweringVisitor
         parts.Add(chord.Key.ToLowerInvariant());
         return string.Join("+", parts);
     }
-    /// <summary>
-    /// The live surface (TS twin: lowerCameraPreview). No session — which is every SSR, since a
-    /// stream only ever exists client-side — renders the SurfaceSubtle placeholder div both
-    /// realizers agree on; with one, the muted autoplaying video the runtime wires by session id.
-    /// </summary>
     /// <summary>
     /// The TS twin's SSR half: same markup, no handler — keydown only exists client-side, exactly
     /// as Pressable's click does. One focusable wrapper is the control's whole Tab presence.
@@ -568,11 +555,6 @@ internal sealed partial class WebLoweringVisitor
     }
 
     /// <summary>
-    /// Gestures v2 (SSR half): the drag marker rides the child's own root — the CLIENT runtime's
-    /// pointer-capture controller drives the actual drag (the server only emits the marker; the
-    /// dismiss callback attaches client-side through the lowering mirror's custom event).
-    /// </summary>
-    /// <summary>
     /// A continuous gesture: the child carries its RULES as data, and one document-level controller
     /// in the runtime does the tracking. The rest offset is a plain transform, so a row that is
     /// already open renders open on the server too, before any script has run.
@@ -624,6 +606,11 @@ internal sealed partial class WebLoweringVisitor
         return child;
     }
 
+    /// <summary>
+    /// Gestures v2 (SSR half): the drag marker rides the child's own root — the CLIENT runtime's
+    /// pointer-capture controller drives the actual drag (the server only emits the marker; the
+    /// dismiss callback attaches client-side through the lowering mirror's custom event).
+    /// </summary>
     private HtmlElement? LowerDragDismiss(DragDismiss drag, bool? horizontalAxis)
     {
         if (Lower(drag.Child, horizontalAxis) is not { } child) return null;

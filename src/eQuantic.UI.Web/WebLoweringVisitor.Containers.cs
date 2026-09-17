@@ -12,12 +12,6 @@ namespace eQuantic.UI.Web;
 internal sealed partial class WebLoweringVisitor
 {
     /// <summary>
-    /// Spec A3 lowering: single-cell CSS grid — every NON-positioned child sits in cell 1/1
-    /// (overlapping, painted in child order) with <c>place-items</c> carrying the alignment;
-    /// Positioned children wrap in <c>position:absolute</c> against the stack's
-    /// <c>position:relative</c> frame, with signed offsets (End→right, Start→left).
-    /// </summary>
-    /// <summary>
     /// A Stack child as the STACK sees it: a component is expanded to what it builds, so a
     /// `Positioned` returned by one still positions. Only for the positioning decision — the node
     /// that comes back is lowered normally.
@@ -32,6 +26,12 @@ internal sealed partial class WebLoweringVisitor
         return child;
     }
 
+    /// <summary>
+    /// Spec A3 lowering: single-cell CSS grid — every NON-positioned child sits in cell 1/1
+    /// (overlapping, painted in child order) with <c>place-items</c> carrying the alignment;
+    /// Positioned children wrap in <c>position:absolute</c> against the stack's
+    /// <c>position:relative</c> frame, with signed offsets (End→right, Start→left).
+    /// </summary>
     private HtmlElement LowerStack(Stack stack)
     {
         var element = new RealizedElement("div")
@@ -132,12 +132,6 @@ internal sealed partial class WebLoweringVisitor
         return element;
     }
 
-    /// <summary>Spec A6 lowering: native browser scrolling — <c>overflow-y/x: auto</c> on the axis
-    /// (the browser owns physics, momentum and the scrollbar); the cross axis stays hidden so content
-    /// never leaks. The programmatic Offset is a native-side concept (browser scroll state lives in
-    /// the DOM).</summary>
-    /// <summary>Spec S7: scroll-anchored chrome — in flow until scrolling would push it out, then
-    /// pinned at <c>Offset</c> from the viewport start (CSS <c>position: sticky</c>; v1 vertical).</summary>
     /// <summary>
     /// Wave 3 anchored overlay: a position:relative host wrapping the anchor; while Open, an
     /// invisible fixed scrim (a real Pressable — tap-outside dismisses through the ordinary event
@@ -420,6 +414,8 @@ internal sealed partial class WebLoweringVisitor
     /// <summary>Floating chrome — see <see cref="PinnedLayer"/> for why it is a band of its own.</summary>
     private const string FloatingChromeLayer = "110";
 
+    /// <summary>Spec S7: scroll-anchored chrome — in flow until scrolling would push it out, then
+    /// pinned at <c>Offset</c> from the viewport start (CSS <c>position: sticky</c>; v1 vertical).</summary>
     private HtmlElement LowerPinned(Pinned pinned)
     {
         var element = new RealizedElement("div")
@@ -473,6 +469,10 @@ internal sealed partial class WebLoweringVisitor
         return element;
     }
 
+    /// <summary>Spec A6 lowering: native browser scrolling — <c>overflow-y/x: auto</c> on the axis
+    /// (the browser owns physics, momentum and the scrollbar); the cross axis stays hidden so content
+    /// never leaks. The programmatic Offset is a native-side concept (browser scroll state lives in
+    /// the DOM).</summary>
     private HtmlElement LowerScrollView(ScrollView scroll)
     {
         var element = new RealizedElement("div")
@@ -505,7 +505,7 @@ internal sealed partial class WebLoweringVisitor
         return element;
     }
 
-    /// <summary>CSS <c>place-items</c> = "&lt;align&gt; &lt;justify&gt;" (vertical then horizontal).</summary>
+    // The two halves of CSS `place-items` = "<align> <justify>" (vertical then horizontal).
     /// <summary>Horizontal anchor of the 9-point alignment → flex justify-content.</summary>
     private JustifyContent AlignmentJustify(Alignment align) => ((int)align % 3) switch
     {
@@ -521,6 +521,12 @@ internal sealed partial class WebLoweringVisitor
         2 => AlignItem.FlexEnd,
         _ => AlignItem.FlexStart,
     };
+    /// <summary>
+    /// Phase C viewport layer: a generated fixed inset-0 stacking layer (.eq-overlay) — the child
+    /// owns its composition (scrim, centering) from the ordinary vocabulary. Fixed positioning
+    /// escapes the page flow visually without a portal; keep Overlays out of transformed subtrees
+    /// (LoopMotion) — CSS transforms re-anchor fixed descendants.
+    /// </summary>
     private HtmlElement LowerOverlay(Overlay overlay)
     {
         var element = new RealizedElement("div")
@@ -736,7 +742,6 @@ internal sealed partial class WebLoweringVisitor
         };
     }
 
-    /// <summary>One box-shadow list from the optional parts (null when none are set).</summary>
     /// <summary>
     /// <c>border-width</c> in CSS's own order — top, right, bottom, left — from the logical sides.
     /// Start/End map to left/right here because this is the LTR realization; a right-to-left
@@ -749,6 +754,7 @@ internal sealed partial class WebLoweringVisitor
         return $"{Edge(BorderSides.Top)} {Edge(BorderSides.End)} {Edge(BorderSides.Bottom)} {Edge(BorderSides.Start)}";
     }
 
+    /// <summary>One box-shadow list from the optional parts (null when none are set).</summary>
     private string? ComposeShadows(params string?[] parts)
     {
         var present = parts.Where(part => part != null).ToList();
@@ -947,8 +953,6 @@ internal sealed partial class WebLoweringVisitor
         }
         return flex.Gap > 0 ? TokenCss.Px(flex.Gap) : null;
     }
-    /// <summary>Whether a node requests Fill on each axis — wrappers (Pressable's button) must
-    /// stretch for the 100% chain to reach it (the native MeasureWrapper sizes to the child).</summary>
     /// <summary>
     /// The <c>background-image</c> layer LIST, in CSS paint order — the FIRST entry sits on top.
     /// The order (gradient → glow → grid) is the one the native realizer emits back-to-front, so a

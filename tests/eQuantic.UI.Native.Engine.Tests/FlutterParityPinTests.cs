@@ -80,23 +80,45 @@ public class FlutterParityPinTests
     /// file does rather than what a type is.
     /// <para>
     /// The comments have to go, and the first version of this probe proved why by failing on one:
-    /// `WebRealizer` mentions `SemanticRole.Image` in a note about the a11y pass, and a mention is
+    /// the realizer mentions `SemanticRole.Image` in a note about the a11y pass, and a mention is
     /// not a use — which is the same distinction the coverage pin learned when its matcher read a
-    /// whole file instead of a method body.
+    /// whole file instead of a method body. That note is still there, in the graphics family now.
     /// </para>
     /// </summary>
     private static string WebRealizerCode() =>
         Regex.Replace(Regex.Replace(WebRealizerSource(), @"/\*.*?\*/", "", RegexOptions.Singleline),
             @"//[^\n]*", "");
 
+    /// <summary>
+    /// THE WHOLE REALIZER, not one file of it — every <c>.cs</c> in <c>eQuantic.UI.Web</c>.
+    /// <para>
+    /// It read <c>WebRealizer.cs</c> alone until the dispatch moved into <c>WebLoweringVisitor</c>,
+    /// and that move is what showed the shape of the bug: the probe went on passing while the code
+    /// it was meant to watch had left the file, so a lowering that started producing
+    /// <see cref="SemanticRole"/> would have kept this row green. A guard narrowed by a file move
+    /// is worse than no guard, because it still reports.
+    /// </para>
+    /// <para>
+    /// So it reads the PROJECT. There is no file name here for the next split to invalidate, and
+    /// the assertion means what it says: no code in the web realizer produces semantics.
+    /// </para>
+    /// </summary>
     private static string WebRealizerSource()
     {
         var here = new DirectoryInfo(AppContext.BaseDirectory);
-        while (here is not null
-               && !File.Exists(Path.Combine(here.FullName, "src", "eQuantic.UI.Web", "WebRealizer.cs")))
+        while (here is not null && !Directory.Exists(Path.Combine(here.FullName, "src", "eQuantic.UI.Web")))
             here = here.Parent;
         here.Should().NotBeNull("the probe reads the realizer's source, so it has to find the tree");
-        return File.ReadAllText(Path.Combine(here!.FullName, "src", "eQuantic.UI.Web", "WebRealizer.cs"));
+
+        var project = Path.Combine(here!.FullName, "src", "eQuantic.UI.Web");
+        var files = Directory.EnumerateFiles(project, "*.cs", SearchOption.AllDirectories)
+            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                        && !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .ToArray();
+        files.Should().HaveCountGreaterThan(10,
+            "the realizer is many files; a probe that found one or none would assert about nothing");
+        return string.Join("\n", files.Select(File.ReadAllText));
     }
 
     private static Type? Find(string name) => Surface
@@ -217,7 +239,7 @@ public class FlutterParityPinTests
         // TWO halves, because the row is half fixed. The types are under the vocabulary now, so
         // every realizer can name them — asserted by ASSEMBLY, like `Rect`. What has not changed is
         // that only ONE realizer produces them: the web still decides the same things inline, and
-        // `WebRealizer` does not mention `SemanticRole` anywhere. The day it does, this fails and
+        // no code in the web realizer mentions `SemanticRole`. The day it does, this fails and
         // the row moves off PARTIAL — which is what the location half did when the move landed.
         // All THREE that moved, including `SemanticCheck` — a location assertion that names two of
         // three leaves the third free to be stale or misplaced with the row still green. Found in

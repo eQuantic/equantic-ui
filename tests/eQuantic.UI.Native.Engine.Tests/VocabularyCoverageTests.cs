@@ -21,12 +21,13 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// </para>
 ///
 /// <para>
-/// TWO REMAIN — the layout engine and the Photon realizer. Four of the six have left: the semantics
-/// walk, both email alternatives over one shared refusal set, the web realizer, and the browser's
-/// lowering, which answers to a generated union and <c>assertNever</c> because it has no interface
-/// to implement. The question below is asked of all four by a COMPILER now, and each departure is
-/// recorded where its entry used to be. This file retires with the last one; the plan is
-/// <c>docs/VOCABULARY-DISPATCH-PLAN.md</c>.
+/// TWO REMAIN, and they are the only two this file still checks — the layout engine and the Photon
+/// realizer. The other four left because a COMPILER asks them the question instead: the semantics
+/// walk, both email alternatives over one shared refusal set and the web realizer are visitors, and
+/// the browser's lowering answers to a generated union ending in <c>assertNever</c>, since it has no
+/// interface to implement. Nothing below scans those four any more, which is the point — each
+/// departure is recorded where its entry used to be. This file retires with the last one; the plan
+/// is <c>docs/VOCABULARY-DISPATCH-PLAN.md</c>.
 /// </para>
 ///
 /// <para>

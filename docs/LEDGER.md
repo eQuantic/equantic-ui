@@ -218,7 +218,8 @@ record of a release, the wiki's Upgrading page is the distillate.
 - **2026-09-17 · The web realizer leaves its switch**: `WebLoweringVisitor` answers for all forty
   nodes across four family files, and `WebRealizer` keeps the façade and the gradient contract
   ([#180](https://github.com/eQuantic/equantic-ui/issues/180)). Row and Column gain separate doors,
-  `CodeSurface` becomes the only node that may lower to nothing and says so at its arm, and
+  `CodeSurface` becomes the only node with no lowering at all — the only one that answers null for
+  every instance, said at its arm rather than in an exemption list — and
   `_simulated` stops being an `AsyncLocal` — the ceremony a static class needed, which a per-pass
   visitor does not. Four of the six dispatches have now crossed; `LayoutEngine.MeasureCore` and
   `PhotonRealizer.EmitNode` remain, and `VocabularyCoverageTests` is down to two entries.

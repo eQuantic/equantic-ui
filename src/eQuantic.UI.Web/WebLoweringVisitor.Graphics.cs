@@ -13,11 +13,6 @@ namespace eQuantic.UI.Web;
 internal sealed partial class WebLoweringVisitor
 {
     /// <summary>
-    /// Spec A10 lowering: inline 24×24-viewBox SVG with the registry's single alpha-mask path and
-    /// <c>fill="currentColor"</c> — the tint rides the CSS <c>color</c> property exactly like text
-    /// (token → light-dark()). Null color inherits; null label = decorative (aria-hidden).
-    /// </summary>
-    /// <summary>
     /// Spec B15, drawn inside the fence: an SVG of 8 rrect bars (2×5 in the 16 viewBox) rotated
     /// i·45° about the center; the phase stagger rides per-bar NEGATIVE animation-delays over the
     /// generated 800ms 1→0.3 fade (exact parity with the native f(t) alphas). Color inherits via
@@ -158,6 +153,11 @@ internal sealed partial class WebLoweringVisitor
     private HtmlElement LowerVector(Vector vector) =>
         LowerGlyph(vector.Glyph, vector.Size, vector.Height, vector.Color, vector.Label);
 
+    /// <summary>
+    /// Spec A10 lowering: inline 24×24-viewBox SVG with the registry's single alpha-mask path and
+    /// <c>fill="currentColor"</c> — the tint rides the CSS <c>color</c> property exactly like text
+    /// (token → light-dark()). Null color inherits; null label = decorative (aria-hidden).
+    /// </summary>
     private HtmlElement LowerIcon(Icon icon)
         => LowerGlyph(icon.Glyph, icon.Size, icon.Size, icon.Color, icon.Label);
 
@@ -298,6 +298,11 @@ internal sealed partial class WebLoweringVisitor
         svg.Children.Add(glyphPath);
         return svg;
     }
+    /// <summary>
+    /// The live surface (TS twin: lowerCameraPreview). No session — which is every SSR, since a
+    /// stream only ever exists client-side — renders the SurfaceSubtle placeholder div both
+    /// realizers agree on; with one, the muted autoplaying video the runtime wires by session id.
+    /// </summary>
     private HtmlElement LowerCameraPreview(CameraPreview camera)
     {
         var style = new HtmlStyle
@@ -365,6 +370,8 @@ internal sealed partial class WebLoweringVisitor
             _ => null, // hug = the element's own default
         };
     }
+    /// <summary>Spec A11 lowering: an explicitly sized <c>&lt;img&gt;</c> with object-fit and the
+    /// rrect clip via border-radius; empty alt = decorative (HTML semantics).</summary>
     private HtmlElement LowerImage(Primitives.Image image)
     {
         var element = new RealizedElement("img")
