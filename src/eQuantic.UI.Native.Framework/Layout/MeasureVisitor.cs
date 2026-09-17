@@ -24,10 +24,13 @@ namespace eQuantic.UI.Native.Framework;
 /// </para>
 ///
 /// <para>
-/// Built once per <see cref="LayoutEngine.Layout"/> call, which is what lets
-/// <see cref="LayoutContext"/> be a field: it is fixed for the pass, so only the constraints and the
-/// path travel down, and they travel as a struct. One object per layout pass, against a per-frame
-/// allocation budget of 74 KB that <c>PerfHarnessTests</c> fails on.
+/// Built once per <see cref="LayoutContext"/> and held there
+/// (<see cref="LayoutContext.MeasurePass"/>), which is what lets the context be a field: it is
+/// fixed for the pass, so only the constraints and the path travel down, and they travel as a
+/// struct. It was built per <see cref="LayoutEngine.Layout"/> CALL for one commit, which is one per
+/// Overlay layer — invisible to a 74 KB per-frame budget with 0.1 KB of headroom and no overlay in
+/// any harness scene. `PerfHarnessTests` counts the passes a context builds now, rather than hoping
+/// to see them in bytes.
 /// </para>
 /// </summary>
 internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, LayoutNode>

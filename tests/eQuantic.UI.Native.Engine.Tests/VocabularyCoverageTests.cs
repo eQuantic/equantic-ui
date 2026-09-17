@@ -67,8 +67,9 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// language already has — a visitor whose methods are abstract, so a node added to the vocabulary
 /// is a compile error in every realizer until it is handled or explicitly declined, and on the
 /// TypeScript side a generated <c>NodeKind</c> union ending in <c>assertNever</c>, since the browser
-/// has no interface to implement. Four dispatches down, two to go. Until the last one, this is
-/// what keeps the seven from becoming eight.
+/// has no interface to implement. FIVE DISPATCHES DOWN, ONE TO GO — `PhotonRealizer.EmitNode` is
+/// the only row left in the array below, and S6 takes it. Until then this is what keeps the seven
+/// from becoming eight.
 /// See <c>docs/ARCHITECTURE-AUDIT.md</c>.
 /// </para>
 /// </summary>
