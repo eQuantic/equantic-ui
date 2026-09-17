@@ -16,10 +16,10 @@ public class RuntimeProvidedClassTests
         var dir = CreateTempDirectory();
         try
         {
-            var helperPath = Path.Combine(dir, "ButtonStyles.cs");
+            var helperPath = Path.Combine(dir, "PretendHelper.cs");
             File.WriteAllText(helperPath, """
                 [RuntimeProvided]
-                public static class ButtonStyles
+                public static class PretendHelper
                 {
                     public const int MinWidth = 64;
                 }
@@ -28,26 +28,26 @@ public class RuntimeProvidedClassTests
             File.WriteAllText(probePath, """
                 public class Probe
                 {
-                    public int Build() => ButtonStyles.MinWidth;
+                    public int Build() => PretendHelper.MinWidth;
                 }
                 """);
             var resolver = new ComponentDependencyResolver();
             resolver.ScanSourceDirectories([dir]);
-            resolver.GetRuntimeProvidedTypes().Should().Contain("ButtonStyles");
-            resolver.GetAllStaticHelpers().Should().NotContain("ButtonStyles");
+            resolver.GetRuntimeProvidedTypes().Should().Contain("PretendHelper");
+            resolver.GetAllStaticHelpers().Should().NotContain("PretendHelper");
 
             var compiler = new ComponentCompiler { SymbolsAreAuthoritative = false };
             compiler.SetDependencyResolver(resolver);
             var probe = compiler.CompileFile(probePath).Single(result => result.ComponentName == "Probe");
 
             probe.Success.Should().BeTrue(string.Join("; ", probe.Errors.Select(error => error.Message)));
-            ImportLineFor(probe.TypeScript, "ButtonStyles")
+            ImportLineFor(probe.TypeScript, "PretendHelper")
                 .Should().Contain("from \"@equantic/runtime\"");
-            probe.TypeScript.Should().NotContain("from \"./ButtonStyles\"");
+            probe.TypeScript.Should().NotContain("from \"./PretendHelper\"");
             probe.TypeScript.Should().NotContain("'minWidth'");
 
             File.WriteAllText(helperPath, """
-                public static class ButtonStyles
+                public static class PretendHelper
                 {
                     public const int MinWidth = 64;
                 }
@@ -55,16 +55,16 @@ public class RuntimeProvidedClassTests
 
             var withoutAttribute = new ComponentDependencyResolver();
             withoutAttribute.ScanSourceDirectories([dir]);
-            withoutAttribute.GetRuntimeProvidedTypes().Should().NotContain("ButtonStyles");
-            withoutAttribute.GetAllStaticHelpers().Should().Contain("ButtonStyles");
+            withoutAttribute.GetRuntimeProvidedTypes().Should().NotContain("PretendHelper");
+            withoutAttribute.GetAllStaticHelpers().Should().Contain("PretendHelper");
             var localCompiler = new ComponentCompiler { SymbolsAreAuthoritative = false };
             localCompiler.SetDependencyResolver(withoutAttribute);
             var localProbe = localCompiler.CompileFile(probePath)
                 .Single(result => result.ComponentName == "Probe");
 
             localProbe.Success.Should().BeTrue(string.Join("; ", localProbe.Errors.Select(error => error.Message)));
-            ImportLineFor(localProbe.TypeScript, "ButtonStyles")
-                .Should().Contain("from \"./ButtonStyles\"");
+            ImportLineFor(localProbe.TypeScript, "PretendHelper")
+                .Should().Contain("from \"./PretendHelper\"");
         }
         finally
         {
@@ -78,9 +78,9 @@ public class RuntimeProvidedClassTests
         var dir = CreateTempDirectory();
         try
         {
-            File.WriteAllText(Path.Combine(dir, "ButtonStyles.cs"), """
+            File.WriteAllText(Path.Combine(dir, "PretendHelper.cs"), """
                 [RuntimeProvided]
-                public static class ButtonStyles
+                public static class PretendHelper
                 {
                     public static int MinWidth() => 64;
                 }
@@ -89,7 +89,7 @@ public class RuntimeProvidedClassTests
             File.WriteAllText(probePath, """
                 public class Probe
                 {
-                    public int Build() => ButtonStyles.MinWidth();
+                    public int Build() => PretendHelper.MinWidth();
                 }
                 """);
 
@@ -100,10 +100,10 @@ public class RuntimeProvidedClassTests
             var probe = compiler.CompileFile(probePath).Single(result => result.ComponentName == "Probe");
 
             probe.Success.Should().BeTrue(string.Join("; ", probe.Errors.Select(error => error.Message)));
-            ImportLineFor(probe.TypeScript, "ButtonStyles")
+            ImportLineFor(probe.TypeScript, "PretendHelper")
                 .Should().Contain("from \"@equantic/runtime\"");
             probe.TypeScript.Should().NotContain("this.buttonStyles");
-            probe.TypeScript.Should().NotContain("from \"./ButtonStyles\"");
+            probe.TypeScript.Should().NotContain("from \"./PretendHelper\"");
         }
         finally
         {
