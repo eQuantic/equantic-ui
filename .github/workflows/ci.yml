@@ -379,6 +379,47 @@ jobs:
           set -euo pipefail
           git clone --depth 1 https://github.com/eQuantic/equantic-ui.wiki.git ../equantic-ui.wiki
 
+      # THROWAWAY: pins why the embedded Bun crashes inside an eqs pod. Not meant to merge.
+      - name: Diagnose the JS engine on this runner
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set +e
+          echo "::group::host"
+          echo "arch:   $(uname -m)"
+          echo "avx2:   $(grep -m1 -ow avx2 /proc/cpuinfo || echo no-avx2)"
+          echo "node:   $(command -v node || echo no-node)"
+          head -2 /etc/os-release
+          echo "libc:   $(ldd --version 2>&1 | head -1)"
+          echo "::endgroup::"
+
+          # The SAME binary JsExecutor resolves: per architecture, extracted from the tracked zip.
+          case "$(uname -m)" in
+            aarch64|arm64) pkg=eQuantic.UI.Runtime.LinuxArm64 ;;
+            *)             pkg=eQuantic.UI.Runtime.Linux64 ;;
+          esac
+          dir="src/$pkg/tools/bun"
+          bun="$dir/bun-linux"
+          echo "::group::bun binary ($pkg)"
+          [ -f "$bun" ] || unzip -o -q "$bun.zip" -d "$dir"
+          chmod +x "$bun" 2>/dev/null
+          ls -l "$bun"
+          file "$bun"
+          ldd "$bun" 2>&1 | head -12
+          echo "::endgroup::"
+
+          # The SAME probe JsExecutor runs: `bun run <file>` printing ok, ten-second budget.
+          echo "::group::bun probe"
+          probe="$(mktemp --suffix=.mjs)"
+          echo "console.log('ok')" > "$probe"
+          timeout 10 "$bun" run "$probe" > /tmp/bun.out 2> /tmp/bun.err
+          code=$?
+          echo "exit code: $code   (132 = SIGILL illegal instruction, 139 = SIGSEGV, 124 = timeout)"
+          echo "--- stdout"; cat /tmp/bun.out
+          echo "--- stderr"; cat /tmp/bun.err
+          echo "--- bun --version"; timeout 10 "$bun" --version; echo "exit: $?"
+          echo "::endgroup::"
+          exit 0
       - name: Test
         shell: bash
         env:
