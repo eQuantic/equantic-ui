@@ -77,6 +77,27 @@ public class DocsIndexTests
     ];
 
     /// <summary>
+    /// The names a quoted line declares — ONE, because a line that quotes several at once is
+    /// declined rather than guessed at.
+    /// <para>
+    /// The guess was tried and measured wrong. An enum quoted as a list with its middle left out —
+    /// <c>Fade = 0, ... SlideUp = 1,</c> — matches none of the whole-line shapes, so that citation
+    /// was skipped in silence: the guard looked like it covered the line and did not. Reading every
+    /// comma-separated <c>Name = number</c> instead accused
+    /// <c>BottomSheet.cs   Width = 32, Height = 4,</c> of not declaring <c>Width</c> — an object
+    /// initializer decomposes exactly like an enum list, and nothing in the text tells them apart.
+    /// </para>
+    /// <para>
+    /// So the evidence lines carry ONE declaration each and the instrument stays narrow. The audit's
+    /// one elided list was split for it, which is the cheaper half of the trade: a guard that cannot
+    /// be fooled, over a guard that covers a line nobody had to write that way.
+    /// </para>
+    /// </summary>
+    private static IEnumerable<string> QuotedDeclarations(string code) =>
+        DeclaredName.Select(pattern => pattern.Match(code)).FirstOrDefault(m => m.Success)
+            is { } single ? [single.Groups["name"].Value] : [];
+
+    /// <summary>
     /// DECLARES it, rather than mentions it. The first version of this asked whether the file
     /// contained the word anywhere, which a doc comment satisfies: <c>Presence.cs</c> says "The
     /// SlideUp rise distance" in the summary above <c>SlideDistance</c> and declares no
@@ -198,11 +219,9 @@ public class DocsIndexTests
                 var cited = EvidenceLine.Match(line);
                 if (!cited.Success) continue;
 
-                var declared = DeclaredName.Select(pattern => pattern.Match(cited.Groups["code"].Value))
-                    .FirstOrDefault(match => match.Success);
-                if (declared is null) continue;
+                var declarations = QuotedDeclarations(cited.Groups["code"].Value).ToArray();
+                if (declarations.Length == 0) continue;
 
-                var name = declared.Groups["name"].Value;
                 var path = cited.Groups["path"].Value;
                 var rooted = path.Contains('/', StringComparison.Ordinal);
                 var candidates = (rooted ? [Path.Combine(root, path)] : sources[path].ToArray())
@@ -211,12 +230,14 @@ public class DocsIndexTests
                 var where = $"{Path.GetRelativePath(root, file)}:{lineNumber}";
                 if (candidates.Length == 0)
                 {
-                    if (rooted) misplaced.Add($"{where} → {path} (no such file) quoting {name}");
+                    if (rooted)
+                        misplaced.Add($"{where} → {path} (no such file) quoting {string.Join(", ", declarations)}");
                     continue; // a bare name that resolves to nothing mentions rather than locates
                 }
 
-                if (!candidates.Any(candidate => Declares(candidate, name)))
-                    misplaced.Add($"{where} → {path} does not declare {name}");
+                foreach (var name in declarations)
+                    if (!candidates.Any(candidate => Declares(candidate, name)))
+                        misplaced.Add($"{where} → {path} does not declare {name}");
             }
         }
 

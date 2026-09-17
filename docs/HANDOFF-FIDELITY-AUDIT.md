@@ -2113,7 +2113,8 @@ the pill's 40 down.
 
   ```
   Dialog.cs:120        var layer = new Overlay(new Presence(layers))
-  src/eQuantic.UI.Primitives/Nodes/PresenceMotion.cs    Fade = 0, ... SlideUp = 1,
+  src/eQuantic.UI.Primitives/Nodes/PresenceMotion.cs    Fade = 0,
+  src/eQuantic.UI.Primitives/Nodes/PresenceMotion.cs    SlideUp = 1,
   ```
 
 ### C2 Modal · semantics · **unverified**
