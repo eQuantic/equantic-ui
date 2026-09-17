@@ -139,7 +139,12 @@ The flow:
    keeps no head ref, so the branch list is the only place this convention is legible, and one
    stray name is the whole of what a reader sees.
 2. **Open the PR in ENGLISH** — title and body, like commit messages. The title follows the commit
-   format (`emoji type: description`), because a squash merge takes it as the subject line.
+   format (`emoji type: description`), because a squash merge takes it as the subject line. Then
+   **READ BACK THE BODY YOU JUST POSTED**: a harness appends its own attribution footer as the pull
+   request is CREATED, while the same footer on a later edit of the body is stripped — so the one
+   body nobody re-reads is the one that keeps it. That is the attribution rule above, in the single
+   place where obeying it is not a matter of declining to type the line. Read it back, delete the
+   footer, and read back the squash message at step 4 for the same reason.
 3. **Copilot reviews automatically.** ALWAYS go back and read its comments after opening the PR,
    and address them (fix, or reply saying why not). A PR is not done when it is opened.
 4. **Complete the PR yourself** once the review is clean and CI is green — that is what lands the
