@@ -242,6 +242,18 @@ record of a release, the wiki's Upgrading page is the distillate.
   disagreement is load-bearing — [#225](https://github.com/eQuantic/equantic-ui/issues/225) is where
   transparency is decided for all four readers. S5's prerequisite is done.
 
+- **2026-09-17 · The layout dispatch leaves its switch**: `LayoutEngine.MeasureCore` becomes
+  `MeasureVisitor` over `MeasureState`, and `LayoutEngine.cs` goes 1,932 → 442 lines
+  ([#181](https://github.com/eQuantic/equantic-ui/issues/181)). The default arm was hiding two nodes:
+  `Navigable` and `WebFrame` measured as a zero box, their reasons alive in an exemption array with
+  nothing tying them to the code — a `WebFrame` cannot cross to a surface with no browser behind it,
+  while a `Navigable` is a real node nobody has laid out, and only doors can hold that difference.
+  FIVE OF THE SIX DISPATCHES HAVE NOW CROSSED; `PhotonRealizer.EmitNode` is the last, and
+  `VocabularyCoverageTests` is down to one entry. Review found the cost that mattered: a frame is not
+  one `Layout` call — the realizer lays out the page and then each `Overlay` — so a per-call visitor
+  was one per layer, invisible to a budget with 0.1 KB of headroom and no overlay in any scene.
+
+
 ## Retired documents
 
 | document | what it was | where its substance lives now |

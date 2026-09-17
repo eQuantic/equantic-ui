@@ -182,6 +182,14 @@ reader and to the build.
 | `Semantics` | Native.Components | `Walk` | 13 / 39 | walks the children | what a screen reader says |
 | `EmailRealizer` | Email | `Write` | 6 / 39 | **throws**, naming the node | what an email client may see |
 
+**WHERE THAT TABLE STANDS NOW, in one place rather than six.** It is the finding, and it is kept as
+found; this line is the only thing a landed slice updates, so the audit stops carrying two states at
+once. FIVE of the six are visitors — `Semantics` (S2), `EmailRealizer` and its text twin (S3),
+`WebRealizer` (S4) and `LayoutEngine` (S5, which is `MeasureVisitor` and no longer has a
+`MeasureCore`) — and `lowering.ts` answers to a generated union ending in `assertNever` (S7).
+`PhotonRealizer.EmitNode` is the last switch, which S6 takes; S8 then deletes the pin and rewrites
+this section. The slice table in `VOCABULARY-DISPATCH-PLAN.md` carries each one's detail.
+
 Beside the six, at least ten smaller switches re-ask "what kind of node is this" from the consumer's
 side: five inside `LayoutEngine` alone (`MinContentWidth`, `Shrinkable`, `WidthKind`,
 `CrossSizeKind`, `PositionedOf`), four inside `WebRealizer` (`TextContentOf`,
