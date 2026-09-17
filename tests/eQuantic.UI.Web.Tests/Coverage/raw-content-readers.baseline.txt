@@ -4,6 +4,7 @@
 # GUARDED by `Spans is null`, so Content is genuinely the whole paragraph here: the runs branch
 # renders the spans as child elements instead, and there is no inner HTML to set.
 #
-# The PATH moved when the web realizer's dispatch became a visitor; the read did not. Edited by
-# hand rather than regenerated, because regenerating is for a removal and this set did not shrink.
-src/eQuantic.UI.Web/WebLoweringVisitor.cs  InnerHtml = text.Spans is null ? text.Content : null,
+# The PATH moved twice while the web realizer's dispatch became a visitor and then split by family;
+# the read did not change either time. Edited by hand rather than regenerated, because regenerating
+# is for a REMOVAL and this set has never shrunk — which is also why it caught both moves.
+src/eQuantic.UI.Web/WebLoweringVisitor.Text.cs  InnerHtml = text.Spans is null ? text.Content : null,
