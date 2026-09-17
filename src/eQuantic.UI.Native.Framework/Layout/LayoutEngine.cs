@@ -557,7 +557,8 @@ public static class LayoutEngine
         // omission from a list before — these simply were not named — and it is load-bearing where
         // anybody looked: a wrapped Text is invisible to the truncation contract, so the zero floor
         // is what lets a shrinking row cut it down to where the bare text would have landed.
-        // Measured, and #225 is where the three readers are made to agree.
+        // Measured, and #225 is where the FOUR readers are made to agree — these two, `Shrinkable`,
+        // and the truncation contract, which finds Text among a row's children by type.
         DragDismiss or Draggable or LoopMotion or Overlay
             or Pinned or Positioned or SafeArea or ScrollView => 0,
         // Wrappers are transparent to the floor exactly as they are to layout.

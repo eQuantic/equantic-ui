@@ -45,9 +45,9 @@ public sealed class AdaptiveNode : VisualNode
     public VisualNode ResolveWidth(float widthDp)
     {
         if (Expanded is { } expanded && widthDp >= ExpandedFrom) return expanded;
+        // This arm is also the fallback the third branch used to repeat: a width past the Expanded
+        // threshold with no Expanded variant is past the Medium one too, so it lands here.
         if (Medium is { } medium && widthDp >= MediumFrom) return medium;
-        // A width past the Expanded threshold with no Expanded variant still wants Medium.
-        if (Medium is { } fallbackMedium && widthDp >= MediumFrom) return fallbackMedium;
         return Compact;
     }
 
