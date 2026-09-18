@@ -118,6 +118,26 @@ public class AdjustableValueTests
     }
 
     /// <summary>
+    /// A range with NO WIDTH announces the one position it has. Collapsed (Max == Min) and inverted
+    /// (Max &lt; Min) are the same case to the layout — <c>fraction</c> is 0 and the thumb sits at the
+    /// start — so they are the same case to the announcement. Passing the caller's bounds through
+    /// would emit <c>aria-valuemin="10"</c> beside <c>aria-valuemax="0"</c>, which is not a range,
+    /// and the rendering path's tolerance for the input is not the markup's licence to be invalid.
+    /// </summary>
+    [Theory]
+    [InlineData(5f, 10f, 0f)]   // inverted
+    [InlineData(5f, 3f, 3f)]    // collapsed
+    public void ARangeWithNoWidthAnnouncesTheOnePositionItHas(float value, float min, float max)
+    {
+        var host = Host(new Slider(value, _ => { }) { Min = min, Max = max }, "slider");
+
+        host.Attributes["aria-valuenow"].Should().Be(TokenCss.Number(min));
+        host.Attributes["aria-valuemin"].Should().Be(TokenCss.Number(min));
+        host.Attributes["aria-valuemax"].Should().Be(TokenCss.Number(min),
+            "a width-less range is announced as the single value it is, never as min > max");
+    }
+
+    /// <summary>
     /// A slider with no value is NOT ANNOUNCED AS ONE. ARIA pairs the role with the number, so the
     /// realizer settles both together and a value-less slider announces <c>group</c> — a focusable
     /// container the arrows adjust, which is exactly what it is. The pairing lives in the realizer

@@ -83,12 +83,18 @@ public sealed class Slider : StatelessComponent
         var theme = context.Theme;
         var span = Max - Min;
         var fraction = span <= 0 ? 0f : Math.Clamp((Value - Min) / span, 0f, 1f);
-        // What the control ACTUALLY holds, which is where the thumb is — `fraction` clamps, so the
-        // announcement has to clamp with it. A caller passing 99 into a 0..10 slider draws a thumb
-        // at the end; announcing the raw 99 would put aria-valuenow outside the aria-valuemax
-        // beside it (invalid ARIA on its own) and make the pixels and the words disagree about the
-        // same control. A collapsed range has one value and it is Min.
-        var announced = span <= 0 ? Min : Math.Clamp(Value, Min, Max);
+        // What the control ACTUALLY holds AND the bounds it actually moves over — both taken from
+        // where the thumb is, because `fraction` is what the pixels obey and the announcement has to
+        // say the same thing they do. A caller passing 99 into a 0..10 slider draws a thumb at the
+        // end; announcing the raw 99 would put aria-valuenow outside the aria-valuemax beside it,
+        // invalid ARIA on its own terms and two descriptions of one control.
+        // A range with NO WIDTH — collapsed (Max == Min) or inverted (Max < Min) — puts `fraction`
+        // at 0, so the control has exactly one position and it is Min. Passing the caller's bounds
+        // through would pair aria-valuemin="10" with aria-valuemax="0", which is not a range at all;
+        // the pixels already decided, and the announcement follows them rather than the arguments.
+        var announced = span <= 0
+            ? new AdjustableValue(Min, Min, Min)
+            : new AdjustableValue(Math.Clamp(Value, Min, Max), Min, Max);
         var step = Step > 0 ? Step : span / 10f;
         var accent = theme.Colors(Variant).Base;
         var fill = Disabled ? theme.BorderStrong : accent;
@@ -161,7 +167,7 @@ public sealed class Slider : StatelessComponent
                 // Spec C7: the value, its bounds and the words for it. Before this the host emitted
                 // role="slider" with no aria-valuenow — invalid ARIA, and a screen-reader user heard
                 // "Brightness, slider" and never which way it was set.
-                Value = new AdjustableValue(announced, Min, Max) { Text = ValueText },
+                Value = announced with { Text = ValueText },
             };
     }
 

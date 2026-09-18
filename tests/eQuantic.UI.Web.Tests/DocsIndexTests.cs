@@ -612,12 +612,149 @@ public class DocsIndexTests
     /// <c>node_modules</c> and the build outputs are cut because they are not ours to cite and would
     /// make the sweep tens of thousands of files long.
     /// </para>
+    /// <para>
+    /// BOTH trees × BOTH languages, written as a cross product rather than four hand-kept lines: the
+    /// first version added TypeScript under <c>src</c> only and left <c>tests/e2e</c> out, so a
+    /// citation of the hydration spec stayed a mention nothing checked — the same shape of gap, one
+    /// level down, made by the same habit of listing instead of enumerating.
+    /// </para>
     /// </summary>
+    /// <summary>
+    /// A prose citation that names NO MEMBER is anchored by nothing, and this counts them so the
+    /// number can only go down.
+    ///
+    /// <para>
+    /// The three guards above between them check a fenced citation against its quote, a prose
+    /// citation against the member it names, and every citation against its file's length. What
+    /// falls through all three is a prose citation written as a bare <c>File.cs:123</c>: no quote to
+    /// settle it, no member to move with, and a line number inside the file is all the overshoot
+    /// guard asks. It rots the moment anything above it grows, and nothing says so.
+    /// </para>
+    ///
+    /// <para>
+    /// MEASURED, not feared. Of the audit's prose citations, 75 name a member and 293 did not, and
+    /// the failure is not hypothetical: <c>Slider.cs:119</c> in the drag-slop row was CORRECT at the
+    /// base of this branch, was broken by the first commit that added lines above it, and was then
+    /// carried forward — still wrong — by a repointing pass that resolves by line identity, because
+    /// resolving by identity preserves where a citation points and that is worthless when it already
+    /// pointed at the wrong thing. A guard that could name it would have stopped both steps.
+    /// </para>
+    ///
+    /// <para>
+    /// WHY A COUNT AND NOT A BAN: anchoring one means deciding which member the sentence meant,
+    /// which is a reading of the prose and not a transformation of it. There are 273 left; they are
+    /// #207's to work through block by block, and the baseline is what keeps that work visible and
+    /// keeps the number from quietly growing while it happens. Anchoring one moves it under
+    /// <see cref="Every_member_named_beside_a_citation_is_declared_where_the_citation_points"/>,
+    /// which is the whole point: the count going down means citations becoming checkable.
+    /// </para>
+    ///
+    /// <para>
+    /// TypeScript is counted too but cannot be anchored the same way — the member guard reads C#
+    /// through Roslyn. A <c>.ts</c> citation earns its check by moving into a fence with the line it
+    /// quotes, so its entries shrink by being re-written as evidence rather than by gaining a name.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void Every_prose_citation_that_names_no_member_is_counted_and_the_count_only_falls()
+    {
+        var root = Root();
+        var measured = new SortedDictionary<string, int>(StringComparer.Ordinal);
+
+        foreach (var file in RepositoryMarkdown(root))
+        {
+            var fenced = false;
+            foreach (var line in File.ReadLines(file))
+            {
+                if (line.TrimStart().StartsWith("```", StringComparison.Ordinal)) { fenced = !fenced; continue; }
+                if (fenced) continue;
+
+                foreach (Match cited in AnyCitation.Matches(line))
+                {
+                    var named = MemberAfter.Match(cited.Groups["after"].Value);
+                    if (named.Success
+                        && (named.Groups["member"].Value.Contains('.', StringComparison.Ordinal)
+                            || TwoCapitals.IsMatch(named.Groups["member"].Value)))
+                        continue;
+
+                    var key = $"{Path.GetRelativePath(root, file).Replace('\\', '/')} {Path.GetFileName(cited.Groups["path"].Value)}";
+                    measured[key] = measured.GetValueOrDefault(key) + 1;
+                }
+            }
+        }
+
+        var path = Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Coverage", "unanchored-citations.baseline.txt");
+        var rendered = string.Join("\n", measured.Select(entry => $"{entry.Key} {entry.Value}"));
+
+        // REGENERATE ONLY FOR A REMOVAL, like every other baseline here. The regenerator cannot tell
+        // a citation somebody anchored from one somebody added, so the assertion below is what
+        // refuses the second: a count that GREW names the file and the number it grew to.
+        if (Environment.GetEnvironmentVariable("EQ_UPDATE_UNANCHORED_BASELINE") == "1")
+        {
+            File.WriteAllText(path, Header + rendered + "\n");
+            return;
+        }
+
+        var baseline = File.ReadAllLines(path)
+            .Where(line => line.Length > 0 && !line.StartsWith('#'))
+            .ToDictionary(
+                line => line[..line.LastIndexOf(' ')],
+                line => int.Parse(line[(line.LastIndexOf(' ') + 1)..], CultureInfo.InvariantCulture),
+                StringComparer.Ordinal);
+
+        var grown = measured
+            .Where(entry => entry.Value > baseline.GetValueOrDefault(entry.Key))
+            .Select(entry => $"{entry.Key}: {baseline.GetValueOrDefault(entry.Key)} → {entry.Value}")
+            .ToArray();
+
+        string.Join(Environment.NewLine, grown).Should().BeEmpty(
+            "a prose citation that names no member is checked by nothing but its file's length, so it rots "
+            + "the moment anything above it grows. Write the member beside the line — `Slider.cs:149 Build` — "
+            + "and the member guard takes it from there; when the count falls, regenerate with "
+            + "EQ_UPDATE_UNANCHORED_BASELINE=1");
+
+        var fallen = baseline.Keys.Except(measured.Keys).Concat(
+            measured.Where(entry => entry.Value < baseline.GetValueOrDefault(entry.Key)).Select(e => e.Key)).ToArray();
+
+        fallen.Should().BeEmpty(
+            "the baseline is stale in the good direction — these are now anchored or gone, so regenerate "
+            + "with EQ_UPDATE_UNANCHORED_BASELINE=1 and commit it WITH the change that earned it: "
+            + string.Join(", ", fallen));
+    }
+
+    /// <summary>The audits' own header, rewritten whole so the file can never explain itself wrongly.</summary>
+    private const string Header = """
+        # Prose citations that name no member, by citing document and cited file.
+        #
+        # A citation in prose is `File.cs:123` with nothing beside it: no quote to settle it and no
+        # member to move with, so the only guard that sees it is the one asking whether 123 is inside
+        # the file. It rots the moment anything above it grows, silently.
+        #
+        # THIS FILE MAY ONLY SHRINK. Anchor one by writing the member after the line —
+        # `Slider.cs:149 Build` — and it moves under the member guard, which checks that the line
+        # really is inside that declaration. Regenerate with EQ_UPDATE_UNANCHORED_BASELINE=1 and
+        # commit the result WITH the change that earned it.
+        #
+        # A .ts citation cannot be anchored this way (the member guard reads C# through Roslyn); it
+        # earns its check by moving into a fence beside the line it quotes.
+
+
+        """;
+
+    /// <summary>Any citation at all — the shape the two anchored guards look for, minus the anchor.</summary>
+    private static readonly Regex AnyCitation = new(
+        @"(?<!\w)(?<path>(?:[\w.-]+/)*[\w.-]+\.(?:cs|ts)):(?<from>\d+)(?:-(?<to>\d+))?(?<after>.{0,40})",
+        RegexOptions.Compiled);
+
+    /// <summary>The member name a citation may carry, read from what follows it.</summary>
+    private static readonly Regex MemberAfter = new(
+        @"^ (?<member>[A-Z][A-Za-z0-9]*(?:\.[A-Z][A-Za-z0-9]*)*)", RegexOptions.Compiled);
+
     private static ILookup<string, string> SourceFiles(string root) =>
-        Directory.GetFiles(Path.Combine(root, "src"), "*.cs", SearchOption.AllDirectories)
-            .Concat(Directory.GetFiles(Path.Combine(root, "tests"), "*.cs", SearchOption.AllDirectories))
-            .Concat(Directory.GetFiles(Path.Combine(root, "src"), "*.ts", SearchOption.AllDirectories)
-                .Where(Ours))
+        new[] { "src", "tests" }
+            .SelectMany(tree => new[] { "*.cs", "*.ts" }.SelectMany(pattern =>
+                Directory.GetFiles(Path.Combine(root, tree), pattern, SearchOption.AllDirectories)))
+            .Where(Ours)
             .ToLookup(file => Path.GetFileName(file)!, StringComparer.Ordinal);
 
     /// <summary>Written in this repository, rather than restored or generated into it.</summary>

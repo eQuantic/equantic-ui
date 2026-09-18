@@ -59,7 +59,7 @@ Each of these has a test that names its handoff block, so the figure cannot drif
 **Hit slop is a promise nothing keeps.** `Touch.MinTarget`'s own doc says "visuals may be smaller —
 the framework expands hit-slop symmetrically", and no realizer implements it: `grep` for
 `MinTarget`/`HitTarget` outside `Tokens.cs` finds only components sizing their own target by hand
-(`Slider.cs:104`, `PageIndicator.cs:88`, and now `SearchField`). Every small pressable that does NOT
+(`Slider.cs:155 Build`, `PageIndicator.cs:88 Build`, and now `SearchField`). Every small pressable that does NOT
 do that by hand ships with its visual as its hit rect. That is a framework-wide §08 gap, larger than
 any row in this file, and it is why the search field's clear button reaches 48 across and stops at
 the pill's 40 down.
@@ -354,7 +354,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Avatar.cs`
 - **Handoff**: "Group stack: overlap −25%, 2dp Surface ring, max 4 + \"+n\" counter chip." (also drawn in the block: "AB TK +3 group · overlap −8 · 2dp ring")
-- **Code**: Avatar renders exactly ONE face and has no group/stack surface at all; no AvatarGroup type exists in the repo (grep -rn "AvatarGroup" over src/ and tests/ returns nothing), and the only public factory is the single-face one at src/eQuantic.UI.Components/UI.cs:255-257.
+- **Code**: Avatar renders exactly ONE face and has no group/stack surface at all; no AvatarGroup type exists in the repo (grep -rn "AvatarGroup" over src/ and tests/ returns nothing), and the only public factory is the single-face one at src/eQuantic.UI.Components/UI.cs:333-335 UI.Avatar.
 - **Evidence**:
 
   ```
@@ -432,7 +432,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/SearchField.cs`
 - **Handoff**: clear button appears when non-empty (glyph 20 in Full circle, hit 48)
-- **Code**: The clear button is a bare Pressable around a 20dp Icon — no Radius.Full container Box behind the glyph and no hit-target expansion, so the pressable measures 20x20. The web lowering emits a <button> with `padding: '0'` (src/eQuantic.UI.Runtime/src/shared/lowering.ts:2053-2063) and lowerPressable applies no minimum, so the hit rect is the 20dp glyph, not Touch.MinTarget (48, src/eQuantic.UI.Primitives/Theme/Tokens.cs:184). Components that need the 48 do it explicitly (e.g. PageIndicator.cs:88, Slider.cs:104).
+- **Code**: The clear button is a bare Pressable around a 20dp Icon — no Radius.Full container Box behind the glyph and no hit-target expansion, so the pressable measures 20x20. The web lowering emits a <button> with `padding: '0'` (src/eQuantic.UI.Runtime/src/shared/lowering.ts:2053-2063) and lowerPressable applies no minimum, so the hit rect is the 20dp glyph, not Touch.MinTarget (48, src/eQuantic.UI.Primitives/Theme/Tokens.cs:184). Components that need the 48 do it explicitly (e.g. PageIndicator.cs:88, Slider.cs:110).
 - **Evidence**:
 
   ```
@@ -686,26 +686,26 @@ the pill's 40 down.
   ```
   Slider.cs:43  private const float ThumbSize = 24;
   Slider.cs:47  private const float ThumbBorder = 1;
-  Slider.cs:102              BorderWidth = ThumbBorder,
+  Slider.cs:108              BorderWidth = ThumbBorder,
   ```
 
 ### C7 Slider · metric · **CONFIRMED**
 
 - **Component**: `src/eQuantic.UI.Components/Slider.cs`
 - **Handoff**: Track 4dp Radius.Full: active Primary, rest SurfaceSubtle (two rrects).
-- **Code**: Reproduced. Track height 4 and the active Primary half were right; the REST half was painted `theme.BorderStrong` — the token for a line that DIVIDES — so the unfilled rail was as dark as a text field's outline and a slider at 10% read as mostly full. FIXED here (Slider.cs:118). A SECOND defect fell out of the same line and is not in the row above it: a DISABLED slider drops the accent to BorderStrong too (Slider.cs:82), so both halves were painted the same colour and the value was unreadable — `ADisabledSliderStillReadsAsAValue` is the assertion that says so.
+- **Code**: Reproduced. Track height 4 and the active Primary half were right; the REST half was painted `theme.BorderStrong` — the token for a line that DIVIDES — so the unfilled rail was as dark as a text field's outline and a slider at 10% read as mostly full. FIXED here (Slider.cs:130 Build). A SECOND defect fell out of the same line and is not in the row above it: a DISABLED slider drops the accent to BorderStrong too (Slider.cs:100 Build), so both halves were painted the same colour and the value was unreadable — `ADisabledSliderStillReadsAsAValue` is the assertion that says so.
 - **Evidence**:
 
   ```
-  Slider.cs:124          row.Add(new Flexible(TrackHalf(theme.SurfaceSubtle, filled: false, enabled: !Disabled,
-  Slider.cs:94          var fill = Disabled ? theme.BorderStrong : accent;
+  Slider.cs:130          row.Add(new Flexible(TrackHalf(theme.SurfaceSubtle, filled: false, enabled: !Disabled,
+  Slider.cs:100          var fill = Disabled ? theme.BorderStrong : accent;
   ```
 
 ### C7 Slider · semantics · **CONFIRMED**
 
 - **Component**: `src/eQuantic.UI.Components/Slider.cs`
 - **Handoff**: role=slider + aria-valuenow/min/max (+ valuetext for units) ... announces "Limit, R$ 400"; live value announced with 200ms debounce while dragging.
-- **Code**: Reproduced, and it was the most severe of this block: `Adjustable` carried only a child, a direction callback, a label and a role, so neither realizer could emit aria-valuenow/valuemin/valuemax/valuetext. Both emitted `role="slider"` + `tabindex="0"` + `aria-label` and nothing else — INVALID ARIA, since role=slider requires aria-valuenow, and a screen-reader user got the name and no value at all. FIXED by the vocabulary change the fence named: `AdjustableValue` carries the now, its bounds and the words to say them in (src/eQuantic.UI.Primitives/Nodes/AdjustableValue.cs), the node takes one (Adjustable.cs:45 Value), both realizers emit it (WebLoweringVisitor.Interaction.cs:145-158 LowerAdjustable; SemanticsVisitor.Interaction.cs:64 SemanticsVisitor) and the Slider hands its own over, CLAMPED to the range the thumb is drawn from (Slider.cs:91 Build; Slider.cs:164) — the track halves come from a fraction clamped to 0..1, so announcing a raw out-of-range value would put aria-valuenow outside the aria-valuemax beside it and make the pixels and the words describe different controls. The realizer DERIVES the pairing rather than copying it (WebLoweringVisitor.Interaction.cs:182-187 AriaRole): role="slider" requires aria-valuenow, so a value-less node announces `group`, and a value on a role that has none is not emitted — the rule therefore holds for a bare `new Adjustable(...)` and for `UI.Adjustable(...)`, not only for the components this library happens to ship. `Slider.ValueText` is the "valuetext for units" half — "R$ 400" rather than 400 — because only the app knows what its numbers mean. The 200ms announcement debounce is the platform's, not the markup's, and is untouched.
+- **Code**: Reproduced, and it was the most severe of this block: `Adjustable` carried only a child, a direction callback, a label and a role, so neither realizer could emit aria-valuenow/valuemin/valuemax/valuetext. Both emitted `role="slider"` + `tabindex="0"` + `aria-label` and nothing else — INVALID ARIA, since role=slider requires aria-valuenow, and a screen-reader user got the name and no value at all. FIXED by the vocabulary change the fence named: `AdjustableValue` carries the now, its bounds and the words to say them in (src/eQuantic.UI.Primitives/Nodes/AdjustableValue.cs), the node takes one (Adjustable.cs:50 Value), both realizers emit it (WebLoweringVisitor.Interaction.cs:145-158 LowerAdjustable; SemanticsVisitor.Interaction.cs:64 SemanticsVisitor) and the Slider hands its own over, CLAMPED to the range the thumb is drawn from, BOUNDS INCLUDED (Slider.cs:95 Build; Slider.cs:170 Build) — the track halves come from a fraction clamped to 0..1, so announcing a raw out-of-range value would put aria-valuenow outside the aria-valuemax beside it and make the pixels and the words describe different controls; a range with no width — collapsed or INVERTED — is announced as the single position it has rather than as a min above its own max. The realizer DERIVES the pairing rather than copying it (WebLoweringVisitor.Interaction.cs:182-187 AriaRole): role="slider" requires aria-valuenow, so a value-less node announces `group`, and a value on a role that has none is not emitted — the rule therefore holds for a bare `new Adjustable(...)` and for `UI.Adjustable(...)`, not only for the components this library happens to ship. `Slider.ValueText` is the "valuetext for units" half — "R$ 400" rather than 400 — because only the app knows what its numbers mean. The 200ms announcement debounce is the platform's, not the markup's, and is untouched.
 - **Guard**: `NoSliderRoleReachesTheMarkupWithoutItsValue` walks every component that reaches a slider role and refuses a host that states the role without the number, so a second control cannot repeat this.
 - **Evidence**:
 
@@ -713,43 +713,43 @@ the pill's 40 down.
   lowering.ts:2899-2911  const value = role === 'slider' ? node.value : undefined; host.attributes['role'] = role === 'slider' && !value ? 'group' : role; host.attributes['tabindex'] = '0'; if (node.label) host.attributes['aria-label'] = node.label;
   WebLoweringVisitor.Interaction.cs:125  var adjustableValue = adjustable.Role == AdjustableRole.Slider ? adjustable.Value : null;
   WebLoweringVisitor.Interaction.cs:184-186  AdjustableRole.Tablist => "tablist", AdjustableRole.Radiogroup => "radiogroup", _ => value is null ? "group" : "slider",
-  Slider.cs:157-165              : new Adjustable(box, direction =>
+  Slider.cs:163-171              : new Adjustable(box, direction =>
   ```
 
 ### C7 Slider · behaviour · **CONFIRMED**
 
 - **Component**: `src/eQuantic.UI.Components/Slider.cs`
 - **Handoff**: Drag: no slop on the thumb (immediate capture) ... thumb drag has no slop.
-- **Code**: Reproduced: the web Draggable controller arms only after `Touch.PressCancelSlop` of travel, and Slider.cs:125 wraps the whole row — thumb included — in that node, so the first 12dp of every drag is swallowed before the value moves. FENCED rather than fixed: the slop is what stops a sideways swipe hijacking a vertical scroll, so opting out is the GESTURE's decision to expose (a property on `Draggable` read by both controllers), not something a component may override for itself.
+- **Code**: Reproduced: the web Draggable controller arms only after `Touch.PressCancelSlop` of travel, and Slider.cs:137 Build wraps the whole row — thumb included — in that node, so the first 12dp of every drag is swallowed before the value moves. FENCED rather than fixed: the slop is what stops a sideways swipe hijacking a vertical scroll, so opting out is the GESTURE's decision to expose (a property on `Draggable` read by both controllers), not something a component may override for itself.
 - **Evidence**:
 
   ```
   src/eQuantic.UI.Runtime/src/dom/draggable.ts:13  const SLOP = 12; // Touch.PressCancelSlop — cross-pinned with the C# host
   draggable.ts:61  if (!active && Math.abs(raw) > SLOP) {
-  Slider.cs:131          VisualNode surface = Disabled ? row : new Draggable(row)
+  Slider.cs:137          VisualNode surface = Disabled ? row : new Draggable(row)
   ```
 
 ### C7 Slider · missing-feature · **CONFIRMED**
 
 - **Component**: `src/eQuantic.UI.Components/Slider.cs`
 - **Handoff**: Steps: 4dp dots — OnPrimary over active track, BorderStrong over rest
-- **Code**: Reproduced: `TrackHalf` (Slider.cs:173-195) builds exactly one Box — the bar — inside one centring Column inside one press target, with no per-detent children; `Step` is read only as an arithmetic quantum. FENCED, and the reason is geometric rather than a matter of effort: the track is SPLIT at the thumb into two flex halves, so a dot at 3/10 of the whole track is at no fixed fraction of either half, and the component has no pixel width to compute one from — that is the same measurement the bubble below needs.
+- **Code**: Reproduced: `TrackHalf` (Slider.cs:189-211 TrackHalf) builds exactly one Box — the bar — inside one centring Column inside one press target, with no per-detent children; `Step` is read only as an arithmetic quantum. FENCED, and the reason is geometric rather than a matter of effort: the track is SPLIT at the thumb into two flex halves, so a dot at 3/10 of the whole track is at no fixed fraction of either half, and the component has no pixel width to compute one from — that is the same measurement the bubble below needs.
 - **Evidence**:
 
   ```
-  Slider.cs:175-186          var bar = new Box(new BoxStyle
-  Slider.cs:196-197          var centered = new Column(gap: 0) { Height = SizeValue.Fill, Main = MainAlign.Center };
+  Slider.cs:181-192          var bar = new Box(new BoxStyle
+  Slider.cs:202-203          var centered = new Column(gap: 0) { Height = SizeValue.Fill, Main = MainAlign.Center };
   ```
 
 ### C7 Slider · missing-feature · **CONFIRMED**
 
 - **Component**: `src/eQuantic.UI.Components/Slider.cs`
 - **Handoff**: bubble = inverse surface + Radius.Sm, Caption tnum, 10dp above
-- **Code**: Reproduced: the whole tree is Box → Draggable → Row(TrackHalf, thumb, TrackHalf) (Slider.cs:110-145), with no overlay, no `Anchored` and no `Text` anywhere in the component. FENCED with the detent dots above, for the same reason: a bubble sits over the THUMB, whose position is a flex weight rather than a coordinate, so placing it needs a measurement the component does not have.
+- **Code**: Reproduced: the whole tree is Box → Draggable → Row(TrackHalf, thumb, TrackHalf) (Slider.cs:122-158 Build), with no overlay, no `Anchored` and no `Text` anywhere in the component. FENCED with the detent dots above, for the same reason: a bubble sits over the THUMB, whose position is a flex weight rather than a coordinate, so placing it needs a measurement the component does not have.
 - **Evidence**:
 
   ```
-  Slider.cs:136-145          var box = new Box(new BoxStyle
+  Slider.cs:142-151          var box = new Box(new BoxStyle
   ```
 
 ### C8 Stepper · metric · **unverified**
@@ -795,7 +795,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Stepper.cs`
 - **Handoff**: A11y: adjustable role — "Quantity, 2"; increment/decrement actions; each change announced. ... Group named by its label
-- **Code**: Build returns a bare Box (Stepper.cs:67-76) — there is no Adjustable wrapper, unlike SegmentedControl.cs:109 and Slider.cs:112 — so the control has no adjustable role, no group, and no accessible name from Label: the Label property is only ever interpolated into the two button names (lines 45 and 65). Nothing announces "Quantity, 2"; the value renders as loose text. The increment/decrement actions themselves are present and correctly named.
+- **Code**: Build returns a bare Box (Stepper.cs:67-76) — there is no Adjustable wrapper, unlike SegmentedControl.cs:109 and Slider.cs:118 — so the control has no adjustable role, no group, and no accessible name from Label: the Label property is only ever interpolated into the two button names (lines 45 and 65). Nothing announces "Quantity, 2"; the value renders as loose text. The increment/decrement actions themselves are present and correctly named.
 - **Evidence**:
 
   ```
@@ -1236,7 +1236,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Divider.cs`
 - **Handoff**: Consumes exactly its thickness — vertical rhythm comes from the parent's gap, never from Divider "spacing" props (it has none).
-- **Code**: True for every horizontal case, but a VERTICAL divider with an inset consumes the parent's whole width instead of its 1dp thickness: the inset wrapper is hardcoded Width = SizeValue.Fill and pads on the horizontal axis regardless of Axis, so Divider(DividerInset.Middle, DividerAxis.Vertical) in a toolbar Row eats all the remaining space and pushes the line off-centre. Reachable straight from the public factory UI.Divider(inset, axis) (UI.cs:309-311). In-repo callers happen to dodge it — ListDetail.cs:107 uses the vertical divider with the default None inset.
+- **Code**: True for every horizontal case, but a VERTICAL divider with an inset consumes the parent's whole width instead of its 1dp thickness: the inset wrapper is hardcoded Width = SizeValue.Fill and pads on the horizontal axis regardless of Axis, so Divider(DividerInset.Middle, DividerAxis.Vertical) in a toolbar Row eats all the remaining space and pushes the line off-centre. Reachable straight from the public factory UI.Divider(inset, axis) (UI.cs:406-408 UI.Divider). In-repo callers happen to dodge it — ListDetail.cs:107 uses the vertical divider with the default None inset.
 - **Evidence**:
 
   ```
@@ -1359,7 +1359,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Button.cs`
 - **Handoff**: new Button("Continue", variant: Variant.Primary, size: SizeVariant.Medium, icon: Icons.ArrowRight?, loading: false, onPressed: fn)
-- **Code**: The constructor takes only (label, variant, size, onPressed) and the mandated factory surface mirrors it exactly (UI.cs:226-228), so the handoff's call does not compile. `icon` and `loading` exist only as init-only properties reachable through `new Button(…) { Leading = …, Loading = true }` — i.e. unreachable from the `using static UI` factory form the SDK prescribes. The icon slot is also typed IconGlyph, not Icons: callers must write `CuratedIcons.Resolve(Icons.Plus)` (samples/WalletMobile/WalletApp.cs:617).
+- **Code**: The constructor takes only (label, variant, size, onPressed) and the mandated factory surface mirrors it exactly (UI.cs:299-301 UI.Button), so the handoff's call does not compile. `icon` and `loading` exist only as init-only properties reachable through `new Button(…) { Leading = …, Loading = true }` — i.e. unreachable from the `using static UI` factory form the SDK prescribes. The icon slot is also typed IconGlyph, not Icons: callers must write `CuratedIcons.Resolve(Icons.Plus)` (samples/WalletMobile/WalletApp.cs:617).
 - **Evidence**:
 
   ```
@@ -1370,7 +1370,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/IconButton.cs`
 - **Handoff**: new IconButton(Icons.Heart, label: "Favorite", kind: IconButtonKind.Standard, selected: bool?, onPressed: fn)
-- **Code**: `selected` is not a constructor parameter and is absent from the factory (UI.cs:327-330), so the handoff's call does not compile; the toggle state is only settable through an object initializer on `new`. It is also `bool`, not `bool?` — the component cannot distinguish "not a toggle at all" from "a toggle currently off", which is precisely the distinction Pressable.Selected (bool?) exists to carry (src/eQuantic.UI.Primitives/Nodes/Pressable.cs).
+- **Code**: `selected` is not a constructor parameter and is absent from the factory (UI.cs:313-315 UI.Chip), so the handoff's call does not compile; the toggle state is only settable through an object initializer on `new`. It is also `bool`, not `bool?` — the component cannot distinguish "not a toggle at all" from "a toggle currently off", which is precisely the distinction Pressable.Selected (bool?) exists to carry (src/eQuantic.UI.Primitives/Nodes/Pressable.cs).
 - **Evidence**:
 
   ```
@@ -1666,7 +1666,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Avatar.cs`
 - **Handoff**: "new Avatar(image?, initials: \"AB\", size: SizeVariant.Medium, status: Status.Online?)" — image and status are constructor slots
-- **Code**: The constructor takes only (initials, size, name) (Avatar.cs:26); ImageSource and Status are init-only PROPERTIES (Avatar.cs:37, Avatar.cs:46), and the generated declarative factory mirrors the constructor (src/eQuantic.UI.Components/UI.cs:255-257). Under the repo's own authoring rule (factories mirror the ctor, no `new`), the photo tier and the presence dot are unreachable from the declarative surface — a caller must fall back to `new Avatar(...) { ImageSource = …, Status = … }`.
+- **Code**: The constructor takes only (initials, size, name) (Avatar.cs:26); ImageSource and Status are init-only PROPERTIES (Avatar.cs:37, Avatar.cs:46), and the generated declarative factory mirrors the constructor (src/eQuantic.UI.Components/UI.cs:333-335 UI.Avatar). Under the repo's own authoring rule (factories mirror the ctor, no `new`), the photo tier and the presence dot are unreachable from the declarative surface — a caller must fall back to `new Avatar(...) { ImageSource = …, Status = … }`.
 - **Evidence**:
 
   ```
@@ -1716,7 +1716,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Chip.cs`
 - **Handoff**: "Input (removable; close 20dp visual, 48dp hit)"
-- **Code**: The 20dp visual is right (IconSize.Dense = 20, src/eQuantic.UI.Primitives/Theme/Tokens.cs:48) but the 48dp hit does not exist on the WEB target. The chip relies on Pressable's §08 contract (Chip.cs:16-17 "48dp hit through Pressable"), and the native realizer honours it (EmitVisitor.ExpandHitRect, src/eQuantic.UI.Native.Components/EmitVisitor.Interaction.cs:114-122, grows the rect to Touch.MinTarget), but WebRealizer.LowerPressable emits a <button> with padding 0 and no min-width/min-height, and TokenCss adds no sizing rule for .eq-pressable — so the web ✕ is a ~20×20 target. Components that need the guarantee on web build it themselves (Slider.cs:104, PageIndicator.cs:88 both set Height = Touch.MinTarget).
+- **Code**: The 20dp visual is right (IconSize.Dense = 20, src/eQuantic.UI.Primitives/Theme/Tokens.cs:48) but the 48dp hit does not exist on the WEB target. The chip relies on Pressable's §08 contract (Chip.cs:16-17 "48dp hit through Pressable"), and the native realizer honours it (EmitVisitor.ExpandHitRect, src/eQuantic.UI.Native.Components/EmitVisitor.Interaction.cs:114-122, grows the rect to Touch.MinTarget), but WebRealizer.LowerPressable emits a <button> with padding 0 and no min-width/min-height, and TokenCss adds no sizing rule for .eq-pressable — so the web ✕ is a ~20×20 target. Components that need the guarantee on web build it themselves (Slider.cs:155 Build, PageIndicator.cs:88 Build both set Height = Touch.MinTarget).
 - **Evidence**:
 
   ```
@@ -1973,7 +1973,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/EmptyState.cs`
 - **Handoff**: illustration slot is an Image (bitmap atlas), optional.
-- **Code**: There is no illustration slot. The only visual input is `Icons icon`, always rendered as a 32dp glyph inside the 64dp well; the class exposes Icon/Title/Body/Action/SecondaryAction and nothing that accepts an Image. The UI factory (UI.cs:333) mirrors the same three parameters.
+- **Code**: There is no illustration slot. The only visual input is `Icons icon`, always rendered as a 32dp glyph inside the 64dp well; the class exposes Icon/Title/Body/Action/SecondaryAction and nothing that accepts an Image. The UI factory (UI.cs:440 UI.EmptyState) mirrors the same three parameters.
 - **Evidence**:
 
   ```
@@ -2318,10 +2318,10 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Slider.cs:100              Background = theme.Surface,
-  Slider.cs:102              BorderWidth = ThumbBorder,
-  Slider.cs:109              BorderColor = theme.Border,
-  Slider.cs:110              Elevation = 2,
+  Slider.cs:106              Background = theme.Surface,
+  Slider.cs:108              BorderWidth = ThumbBorder,
+  Slider.cs:115              BorderColor = theme.Border,
+  Slider.cs:116              Elevation = 2,
   ```
 
 ### C7 Slider · behaviour · **unverified**
@@ -2340,19 +2340,19 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Slider.cs`
 - **Handoff**: thumb grows to 28 while held ... Thumb hover grows it 24→26 and shows the value bubble (Motion.Press)
-- **Code**: the thumb is a fixed ThumbSize square with a Colors-only transition and no Hover diff (Slider.cs:54-64), so it grows neither on hover nor while held — size is not even in the animated channel set.
+- **Code**: the thumb is a fixed ThumbSize square with a Colors-only transition and no Hover diff (Slider.cs:102-113 Build), so it grows neither on hover nor while held — size is not even in the animated channel set.
 - **Evidence**:
 
   ```
-  Slider.cs:98-99  Width = ThumbSize,  Height = ThumbSize,
-  Slider.cs:111  Transition = TransitionSpec.Of(StyleChannels.Colors, Motion.Press),
+  Slider.cs:104-105  Width = ThumbSize,  Height = ThumbSize,
+  Slider.cs:117  Transition = TransitionSpec.Of(StyleChannels.Colors, Motion.Press),
   ```
 
 ### C7 Slider · missing-feature · **unverified**
 
 - **Component**: `src/eQuantic.UI.Components/Slider.cs`
 - **Handoff**: new Slider(value, onChanged, min: 0, max: 100, step: null, haptics: true) ... + haptic per detent; min/max edges get a firmer haptic.
-- **Code**: there is no haptics parameter and no haptic feedback anywhere in the framework — the constructor takes only value and onChanged (Slider.cs:24-28), and a case-insensitive grep for "haptic" across src/ matches nothing outside node_modules.
+- **Code**: there is no haptics parameter and no haptic feedback anywhere in the framework — the constructor takes only value and onChanged (Slider.cs:49-53 Slider), and a case-insensitive grep for "haptic" across src/ matches nothing outside node_modules.
 - **Evidence**:
 
   ```
@@ -2892,7 +2892,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Text.cs`
 - **Handoff**: new Text("…", role: TypeRole.BodyL, color: theme.TextPrimary, maxLines: 2, overflow: Overflow.Ellipsis)
-- **Code**: The Text constructor has no `overflow` parameter and no `Overflow` enum exists anywhere in the repo (`git grep "enum Overflow"` finds nothing); the UI factory mirrors the same eight parameters (src/eQuantic.UI.Components/UI.cs:95-98). Ellipsis is hard-wired as the only truncation mode, so the handoff's example call does not compile and a caller cannot ask for clip-without-ellipsis.
+- **Code**: The Text constructor has no `overflow` parameter and no `Overflow` enum exists anywhere in the repo (`git grep "enum Overflow"` finds nothing); the UI factory mirrors the same eight parameters (src/eQuantic.UI.Components/UI.cs:119-121 UI.Text). Ellipsis is hard-wired as the only truncation mode, so the handoff's example call does not compile and a caller cannot ask for clip-without-ellipsis.
 - **Evidence**:
 
   ```
@@ -3457,22 +3457,22 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Slider.cs`
 - **Handoff**: track-tap jumps with Base animation
-- **Code**: a track press moves ONE step toward the press instead of jumping to the pressed position (Slider.cs:70-74). The class doc names and justifies it: "Pressing the track moves ONE step toward the press — the scrollbar's page-click, which is what a track press means everywhere else" (lines 12-14).
+- **Code**: a track press moves ONE step toward the press instead of jumping to the pressed position (Slider.cs:125-131 Build). The class doc names and justifies it: "Pressing the track moves ONE step toward the press — the scrollbar's page-click, which is what a track press means everywhere else" (lines 12-14).
 - **Evidence**:
 
   ```
-  Slider.cs:117-118  row.Add(new Flexible(TrackHalf(fill, filled: true, enabled: !Disabled, onPressed: () => OnChanged?.Invoke(Math.Max(Min, Value - step))), Weight(fraction)));
+  Slider.cs:123-124  row.Add(new Flexible(TrackHalf(fill, filled: true, enabled: !Disabled, onPressed: () => OnChanged?.Invoke(Math.Max(Min, Value - step))), Weight(fraction)));
   ```
 
 ### C7 Slider · documented-deviation · **unverified**
 
 - **Component**: `src/eQuantic.UI.Components/Slider.cs`
 - **Handoff**: snaps on release (Release glide — 200ms smoothstep (§06); velocity spring still REQUEST)
-- **Code**: quantization happens on EVERY move rather than on release — Slider.cs:94 quantizes each frame and Draggable.OnReleased is never wired, so there is no release glide at all. The Quantize doc names the choice: "A scrub lands on the same values a press does — a stepped slider has no in-between positions, however finely the finger moves" (lines 113-114).
+- **Code**: quantization happens on EVERY move rather than on release — Slider.cs:145 Build quantizes each frame and Draggable.OnReleased is never wired, so there is no release glide at all. The Quantize doc names the choice: "A scrub lands on the same values a press does — a stepped slider has no in-between positions, however finely the finger moves" (lines 113-114).
 - **Evidence**:
 
   ```
-  Slider.cs:139  OnMoved = f => OnChanged?.Invoke(Quantize(Min + f * span, step)),
+  Slider.cs:145  OnMoved = f => OnChanged?.Invoke(Quantize(Min + f * span, step)),
   ```
 
 ### C8 Stepper · behaviour · **unverified**

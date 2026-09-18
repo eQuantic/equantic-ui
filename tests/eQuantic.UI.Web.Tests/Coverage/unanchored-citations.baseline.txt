@@ -1,0 +1,84 @@
+# Prose citations that name no member, by citing document and cited file.
+#
+# A citation in prose is `File.cs:123` with nothing beside it: no quote to settle it and no
+# member to move with, so the only guard that sees it is the one asking whether 123 is inside
+# the file. It rots the moment anything above it grows, silently.
+#
+# THIS FILE MAY ONLY SHRINK. Anchor one by writing the member after the line —
+# `Slider.cs:149 Build` — and it moves under the member guard, which checks that the line
+# really is inside that declaration. Regenerate with EQ_UPDATE_UNANCHORED_BASELINE=1 and
+# commit the result WITH the change that earned it.
+#
+# A .ts citation cannot be anchored this way (the member guard reads C# through Roslyn); it
+# earns its check by moving into a fence beside the line it quotes.
+
+ROADMAP.md TypeScriptEmitter.cs 1
+docs/DESKTOP-PLAN.md PhotonHost.cs 1
+docs/DESKTOP-PLAN.md PhotonWindow.cs 2
+docs/HANDOFF-FIDELITY-AUDIT.md Accordion.cs 6
+docs/HANDOFF-FIDELITY-AUDIT.md Adjustable.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md AndroidTextService.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md AppBar.cs 7
+docs/HANDOFF-FIDELITY-AUDIT.md Avatar.cs 7
+docs/HANDOFF-FIDELITY-AUDIT.md Badge.cs 2
+docs/HANDOFF-FIDELITY-AUDIT.md BottomNavigation.cs 7
+docs/HANDOFF-FIDELITY-AUDIT.md BottomSheet.cs 10
+docs/HANDOFF-FIDELITY-AUDIT.md Button.cs 3
+docs/HANDOFF-FIDELITY-AUDIT.md Card.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md Checkbox.cs 7
+docs/HANDOFF-FIDELITY-AUDIT.md Chip.cs 10
+docs/HANDOFF-FIDELITY-AUDIT.md ColorToken.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md CoreTextService.cs 2
+docs/HANDOFF-FIDELITY-AUDIT.md Dialog.cs 7
+docs/HANDOFF-FIDELITY-AUDIT.md EmitVisitor.Chrome.cs 6
+docs/HANDOFF-FIDELITY-AUDIT.md EmitVisitor.Containers.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md EmitVisitor.Interaction.cs 4
+docs/HANDOFF-FIDELITY-AUDIT.md EmitVisitor.Media.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md EmitVisitor.Text.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md EmitVisitor.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md GalleryComponentTests.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md HtmlElement.cs 3
+docs/HANDOFF-FIDELITY-AUDIT.md IAppTheme.cs 2
+docs/HANDOFF-FIDELITY-AUDIT.md IImageLoader.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md ITextMeasurer.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md IconButton.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md Image.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md LayoutTypes.cs 2
+docs/HANDOFF-FIDELITY-AUDIT.md ListDetail.cs 2
+docs/HANDOFF-FIDELITY-AUDIT.md ListItem.cs 3
+docs/HANDOFF-FIDELITY-AUDIT.md Media.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md Menu.cs 3
+docs/HANDOFF-FIDELITY-AUDIT.md MotionScope.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md NavigationRail.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md PageIndicator.cs 7
+docs/HANDOFF-FIDELITY-AUDIT.md Pagination.cs 2
+docs/HANDOFF-FIDELITY-AUDIT.md PhotonAccessibility.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md PhotonActivity.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md PhotonHost.cs 8
+docs/HANDOFF-FIDELITY-AUDIT.md PhotonTheme.cs 15
+docs/HANDOFF-FIDELITY-AUDIT.md PhotonViewController.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md ProgressBar.cs 2
+docs/HANDOFF-FIDELITY-AUDIT.md PullToRefresh.cs 10
+docs/HANDOFF-FIDELITY-AUDIT.md RadioGroup.cs 3
+docs/HANDOFF-FIDELITY-AUDIT.md SafeAreaTests.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md ScrollStore.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md SearchField.cs 2
+docs/HANDOFF-FIDELITY-AUDIT.md SegmentedControl.cs 11
+docs/HANDOFF-FIDELITY-AUDIT.md Slider.cs 11
+docs/HANDOFF-FIDELITY-AUDIT.md Spinner.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md Stepper.cs 7
+docs/HANDOFF-FIDELITY-AUDIT.md SwipeableRow.cs 9
+docs/HANDOFF-FIDELITY-AUDIT.md Switch.cs 6
+docs/HANDOFF-FIDELITY-AUDIT.md Tabs.cs 6
+docs/HANDOFF-FIDELITY-AUDIT.md TextInput.cs 12
+docs/HANDOFF-FIDELITY-AUDIT.md TextInputRealizerTests.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md Toast.cs 9
+docs/HANDOFF-FIDELITY-AUDIT.md TokenCss.cs 18
+docs/HANDOFF-FIDELITY-AUDIT.md Tokens.cs 22
+docs/HANDOFF-FIDELITY-AUDIT.md Typography.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md UIExtensions.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md WalletApp.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md Wave2ComponentTests.cs 1
+docs/HANDOFF-FIDELITY-AUDIT.md draggable.ts 6
+docs/HANDOFF-FIDELITY-AUDIT.md lowering.ts 24
+docs/HANDOFF-FIDELITY-AUDIT.md reconciler.ts 1
