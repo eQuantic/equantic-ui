@@ -373,8 +373,6 @@ public class InvocationStrategy : IExpressionIrStrategy
             + "runs on the server — mark THAT class [ServerOnly] so no module is emitted for it.");
     }
 
-    /// <summary>Does the file import the declarative factory surface with `using static`? Matched on
-    /// the directive's own text — in standalone mode the directive is the only evidence there is.</summary>
     /// <summary>
     /// What an instance call was reached THROUGH — <c>column</c> in <c>column.Add(child)</c> — so
     /// the fence can tell a host-only SHAPE from a member inherited into a node that crosses. Null
@@ -386,6 +384,8 @@ public class InvocationStrategy : IExpressionIrStrategy
             ? context.SemanticHelper.GetType(access.Expression)
             : null;
 
+    /// <summary>Does the file import the declarative factory surface with `using static`? Matched on
+    /// the directive's own text — in standalone mode the directive is the only evidence there is.</summary>
     private static bool HasFactoryUsingStatic(SyntaxNode node) =>
         node.SyntaxTree.GetRoot().DescendantNodes().OfType<UsingDirectiveSyntax>()
             .Any(directive => directive.StaticKeyword.IsKind(SyntaxKind.StaticKeyword)
