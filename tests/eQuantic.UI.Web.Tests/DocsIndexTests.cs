@@ -32,6 +32,14 @@ namespace eQuantic.UI.Web.Tests;
 /// resolution test above. The third test reads the evidence blocks instead: where an audit quotes a
 /// DECLARATION beside a path, the file it names must declare that identifier.
 /// </para>
+/// <para>
+/// A citation into a <c>.cs</c> file carries a LINE too, and the line is the part that rots: the last
+/// three tests read it. One refuses a line past the end of the file, which is what a SPLIT leaves
+/// behind; one holds a fenced citation to the code it QUOTES; one holds a prose citation to the MEMBER
+/// it names. The last two are the drift a line number alone cannot show — a component gaining ten lines
+/// moves every citation below it, and on the day they were written 100 of the handoff audit's 290
+/// fenced quotes had slid off their line across twenty files no split ever touched.
+/// </para>
 /// </summary>
 public class DocsIndexTests
 {
@@ -308,8 +316,13 @@ public class DocsIndexTests
     /// <para>
     /// WHAT IT CANNOT SEE: drift WITHIN the file's length. Half of those twenty were already wrong
     /// on <c>main</c> before the move — <c>ExpandHitRect</c> was cited at 1658 and declared at 1797
-    /// — and a line that still exists is a line this test accepts. Naming the member is what closes
-    /// that, and only the fenced form does it today.
+    /// — and a line that still exists is a line this test accepts. That half is closed by the two
+    /// guards below, each reading the part of a citation that survives a move:
+    /// <see cref="Every_quoted_line_is_at_the_line_its_citation_names"/> reads the QUOTE a fenced
+    /// citation carries, and
+    /// <see cref="Every_member_named_beside_a_citation_is_declared_where_the_citation_points"/> the
+    /// MEMBER a prose one names. This test stays, because a citation can also point past a file that
+    /// quotes nothing and names nobody.
     /// </para>
     /// </summary>
     [Fact]
@@ -382,8 +395,265 @@ public class DocsIndexTests
         string.Join(Environment.NewLine, grown).Should().BeEmpty(
             "a citation into a file shorter than the line it names cannot be read by anyone; this is what a "
             + "split leaves behind, and it is the half of citation rot a machine can settle without judgement. "
-            + "The baseline holds what five earlier slices left (issue #207) and may only shrink");
+            + "The baseline is EMPTY — #207 repointed the ninety-five that five earlier slices left — "
+            + "so a file appearing here is a citation nobody can follow, not a known debt");
     }
+
+    /// <summary>
+    /// A fenced citation QUOTES the code it points at, so the quote is the claim and the line is
+    /// checkable against it: the quoted text must be found at the lines the citation names.
+    ///
+    /// <para>
+    /// This is the half of citation rot the two guards above are documented as unable to see —
+    /// drift WITHIN the file's length, where the line still exists and holds something else. It was
+    /// not a theory: on the day this was written 100 of the audit's 290 fenced quotes had slid off
+    /// their line, across twenty files that no split ever touched, because a component gaining ten
+    /// lines moves every citation below it and nothing said so. Eighty-eight were repointed by
+    /// searching for the quote, the rest were re-quoted because the code itself had changed.
+    /// </para>
+    ///
+    /// <para>
+    /// THE CONVENTION THE RULE RESTS ON, stated because it is now load-bearing: inside a fence a
+    /// citation is followed by the CODE it names (two spaces, then the line, exactly as
+    /// <see cref="EvidenceLine"/> already reads it); in prose it is followed by the MEMBER it names,
+    /// which <see cref="Every_member_named_beside_a_citation_is_declared_where_the_citation_points"/>
+    /// checks. A member name written inside a fence would eat the two-space seam and blind the
+    /// declaration guard, so the two forms stay apart.
+    /// </para>
+    ///
+    /// <para>
+    /// WHAT IT DECLINES, rather than guesses at: a quote with an ELISION in its first forty
+    /// characters (<c>...</c>) and a quote shorter than twelve — <c>{</c> and <c>}, Child);</c> are
+    /// quoted to be read, not diffed, and would match anywhere. Four citations are declined today.
+    /// The audits also ANNOTATE a quote (<c>   // native only</c>, <c>   (no minimum reaches it)</c>);
+    /// the annotation is cut at the first run of three spaces, or at two before <c>/</c>, <c>→</c>,
+    /// <c>—</c> or <c>(</c>, which is the separator they already use.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void Every_quoted_line_is_at_the_line_its_citation_names()
+    {
+        var root = Root();
+        var sources = SourceFiles(root);
+        var stale = new List<string>();
+
+        foreach (var file in RepositoryMarkdown(root))
+        {
+            var fenced = false;
+            var lineNumber = 0;
+            foreach (var line in File.ReadLines(file))
+            {
+                lineNumber++;
+                if (line.TrimStart().StartsWith("```", StringComparison.Ordinal)) { fenced = !fenced; continue; }
+                if (!fenced) continue;
+
+                // A quote ends where the NEXT citation begins, whatever separates them: the audits
+                // write `A.cs:1  code  → B.cs:2  code` on one line, and reading to end-of-line swept
+                // the second citation into the first one's claim.
+                var starts = CitedLine.Matches(line).Select(next => next.Index).ToArray();
+                foreach (Match cited in EvidenceQuote.Matches(line))
+                {
+                    var from = cited.Index + cited.Length;
+                    var to = starts.Where(start => start > cited.Index).DefaultIfEmpty(line.Length).Min();
+                    var claim = Claim(line[from..to]);
+                    if (claim is null) continue;
+
+                    var path = cited.Groups["path"].Value;
+                    var rooted = path.Contains('/', StringComparison.Ordinal);
+                    var candidates = (rooted ? [Path.Combine(root, path)] : sources[Path.GetFileName(path)].ToArray())
+                        .Where(File.Exists).ToArray();
+                    var where = $"{Path.GetRelativePath(root, file)}:{lineNumber}";
+                    if (candidates.Length == 0)
+                    {
+                        if (rooted) stale.Add($"{where} → {path} (no such file)");
+                        continue;
+                    }
+
+                    var lo = int.Parse(cited.Groups["from"].Value, CultureInfo.InvariantCulture);
+                    var hi = cited.Groups["to"].Success
+                        ? int.Parse(cited.Groups["to"].Value, CultureInfo.InvariantCulture)
+                        : lo;
+                    if (candidates.Any(candidate => Spans(candidate, lo, hi).Contains(claim, StringComparison.Ordinal)))
+                        continue;
+
+                    stale.Add($"{where} → {path}:{lo}"
+                        + (hi == lo ? "" : $"-{hi}") + $" no longer holds \"{claim}\"");
+                }
+            }
+        }
+
+        string.Join(Environment.NewLine, stale).Should().BeEmpty(
+            "a fenced citation quotes the code it points at, so the quote settles the line without judgement: "
+            + "search the repository for the quote and repoint the citation, or re-quote it when the code itself "
+            + "changed — and when it changed enough that the row's CLAIM is spent, re-judge the row");
+    }
+
+    /// <summary>
+    /// A prose citation that names a MEMBER says which member the line holds, and that is checkable
+    /// where the line alone is not: the named member must be declared in the file the citation names,
+    /// and the line must fall inside it.
+    ///
+    /// <para>
+    /// The overshoot guard accepts any line within the file's length, so a member that moved down its
+    /// own file takes its citations with it invisibly — <c>Tokens.cs:241 BaseMs</c> was declared at
+    /// 259 and read as fine. Naming the member closes that, and the audit's own convention already
+    /// wrote it that way (<c>EmitVisitor.Interaction.cs:114-122 ExpandHitRect</c>) for the twenty
+    /// citations S6 repointed; #207 repointed the remaining ninety-five the same way.
+    /// </para>
+    ///
+    /// <para>
+    /// WHAT COUNTS AS A NAME, and why it is narrow: an identifier with TWO capitals
+    /// (<c>LowerPressable</c>, <c>MeasureStack</c>) or a dotted pair. English does not write those,
+    /// so a sentence that happens to continue with a capitalised word after a citation cannot be
+    /// accused — which is what a single-capital rule would do to <c>The</c>, and what a
+    /// "declared anywhere" rule would do to <c>Text</c>, a common noun that is also a type here.
+    /// The cost is stated rather than hidden: a one-word member (<c>Visit</c>, <c>Walk</c>) cannot be
+    /// named, and citations of those name the enclosing type instead.
+    /// </para>
+    ///
+    /// <para>
+    /// The span is the declaration's FULL span, so citing a member's doc comment is citing the
+    /// member. An overloaded name passes if ANY of its declarations contains the line — which is the
+    /// honest answer, since the citation named a member and not an overload.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void Every_member_named_beside_a_citation_is_declared_where_the_citation_points()
+    {
+        var root = Root();
+        var sources = SourceFiles(root);
+        var misplaced = new List<string>();
+
+        foreach (var file in RepositoryMarkdown(root))
+        {
+            var fenced = false;
+            var lineNumber = 0;
+            foreach (var line in File.ReadLines(file))
+            {
+                lineNumber++;
+                if (line.TrimStart().StartsWith("```", StringComparison.Ordinal)) { fenced = !fenced; continue; }
+                if (fenced) continue;
+
+                foreach (Match cited in NamedMember.Matches(line))
+                {
+                    var token = cited.Groups["member"].Value;
+                    if (!token.Contains('.', StringComparison.Ordinal) && !TwoCapitals.IsMatch(token)) continue;
+                    var member = token.Split('.')[^1];
+
+                    var path = cited.Groups["path"].Value;
+                    var rooted = path.Contains('/', StringComparison.Ordinal);
+                    var candidates = (rooted ? [Path.Combine(root, path)] : sources[Path.GetFileName(path)].ToArray())
+                        .Where(File.Exists).ToArray();
+                    if (candidates.Length == 0) continue; // the overshoot guard already reports a path that is not there
+
+                    var line0 = int.Parse(cited.Groups["from"].Value, CultureInfo.InvariantCulture);
+                    var where = $"{Path.GetRelativePath(root, file)}:{lineNumber}";
+                    var declaring = candidates.Where(candidate => DeclarationSpans(candidate).ContainsKey(member)).ToArray();
+                    if (declaring.Length == 0)
+                    {
+                        misplaced.Add($"{where} → {path} does not declare {member}");
+                        continue;
+                    }
+
+                    if (declaring.Any(candidate => DeclarationSpans(candidate)[member]
+                            .Any(span => line0 >= span.First && line0 <= span.Last)))
+                        continue;
+
+                    var declared = string.Join(", ", declaring
+                        .SelectMany(candidate => DeclarationSpans(candidate)[member])
+                        .Select(span => $"{span.First}-{span.Last}"));
+                    misplaced.Add($"{where} → {path}:{line0} is outside {member}, which is at {declared}");
+                }
+            }
+        }
+
+        string.Join(Environment.NewLine, misplaced).Should().BeEmpty(
+            "a prose citation names the member the line holds; the member is the part that survives a move, "
+            + "so it decides where the citation points — repoint the line to the member, or name the member "
+            + "that is actually there");
+    }
+
+    /// <summary>The repository's own C#: what a citation can name. Test sources included, because the audits cite the tests that pin a fix.</summary>
+    private static ILookup<string, string> SourceFiles(string root) =>
+        Directory.GetFiles(Path.Combine(root, "src"), "*.cs", SearchOption.AllDirectories)
+            .Concat(Directory.GetFiles(Path.Combine(root, "tests"), "*.cs", SearchOption.AllDirectories))
+            .ToLookup(file => Path.GetFileName(file)!, StringComparer.Ordinal);
+
+    /// <summary>A fenced evidence citation: the path, the line or range, and the two-space seam before the quote.</summary>
+    private static readonly Regex EvidenceQuote = new(
+        @"(?<path>(?:[\w.]+/)*[\w.]+\.cs):(?<from>\d+)(?:-(?<to>\d+))?\s{2,}",
+        RegexOptions.Compiled);
+
+    /// <summary>A prose citation followed by ONE space and the member it names.</summary>
+    private static readonly Regex NamedMember = new(
+        @"(?<!\w)(?<path>(?:[\w.]+/)*[\w.]+\.cs):(?<from>\d+)(?:-(?<to>\d+))? (?<member>[A-Z][A-Za-z0-9]*(?:\.[A-Z][A-Za-z0-9]*)*)",
+        RegexOptions.Compiled);
+
+    private static readonly Regex TwoCapitals = new(@"[A-Z][A-Za-z0-9]*[A-Z]", RegexOptions.Compiled);
+
+    /// <summary>The audits' own annotation seam: three spaces, or two before a comment, arrow, dash or parenthesis.</summary>
+    private static readonly Regex Annotation = new(@" {3,}| {2,}(?=[/→—(])", RegexOptions.Compiled);
+
+    /// <summary>
+    /// What a quote CLAIMS about the line: its first forty characters, with the audits' flattening
+    /// escape expanded, whitespace collapsed and the annotation cut. <c>null</c> when the quote is
+    /// too short or elided to settle anything.
+    /// </summary>
+    private static string? Claim(string quoted)
+    {
+        var text = Annotation.Split(quoted)[0].Replace("\\n", " ", StringComparison.Ordinal);
+        var claim = Whitespace.Replace(text, " ").Trim();
+        if (claim.Length > 40) claim = claim[..40];
+        return claim.Length < 12 || claim.Contains("...", StringComparison.Ordinal)
+            || claim.Contains('…', StringComparison.Ordinal) ? null : claim;
+    }
+
+    private static readonly Regex Whitespace = new(@"\s+", RegexOptions.Compiled);
+
+    /// <summary>Lines <paramref name="from"/> to <paramref name="to"/> of a source file, joined and collapsed — a quote the audit flattened is read against the same shape.</summary>
+    private static string Spans(string sourceFile, int from, int to)
+    {
+        var lines = SourceLines.GetOrAdd(sourceFile, static file => File.ReadAllLines(file));
+        if (from > lines.Length) return string.Empty;
+        return Whitespace.Replace(string.Join(' ', lines[(from - 1)..Math.Min(to, lines.Length)]), " ").Trim();
+    }
+
+    private static readonly ConcurrentDictionary<string, string[]> SourceLines = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Every member a file declares, with the LINES it spans — the full span, so a member's doc
+    /// comment belongs to it. Parsed, for the reason <see cref="Declares"/> gives: a declaration
+    /// quoted inside a comment is trivia to a parser and a declaration to a regex.
+    /// </summary>
+    private static Dictionary<string, List<(int First, int Last)>> DeclarationSpans(string sourceFile) =>
+        Spanned.GetOrAdd(sourceFile, static file =>
+        {
+            var tree = CSharpSyntaxTree.ParseText(File.ReadAllText(file));
+            var spans = new Dictionary<string, List<(int, int)>>(StringComparer.Ordinal);
+            foreach (var node in tree.GetRoot().DescendantNodes())
+            {
+                var names = node switch
+                {
+                    PropertyDeclarationSyntax property => [property.Identifier.Text],
+                    EnumMemberDeclarationSyntax member => [member.Identifier.Text],
+                    MethodDeclarationSyntax method => [method.Identifier.Text],
+                    EventDeclarationSyntax @event => [@event.Identifier.Text],
+                    BaseTypeDeclarationSyntax type => [type.Identifier.Text],
+                    FieldDeclarationSyntax field =>
+                        field.Declaration.Variables.Select(variable => variable.Identifier.Text),
+                    _ => Enumerable.Empty<string>(),
+                };
+                var lines = node.SyntaxTree.GetLineSpan(node.FullSpan);
+                foreach (var name in names)
+                    (spans.TryGetValue(name, out var known) ? known : spans[name] = [])
+                        .Add((lines.StartLinePosition.Line + 1, lines.EndLinePosition.Line + 1));
+            }
+
+            return spans;
+        });
+
+    private static readonly ConcurrentDictionary<string, Dictionary<string, List<(int First, int Last)>>> Spanned =
+        new(StringComparer.Ordinal);
 
     /// <summary>
     /// A prose or fenced citation: a <c>.cs</c> path and the line, or RANGE, it points at. The

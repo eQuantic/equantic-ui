@@ -2,15 +2,15 @@
 # MEASURED at and what moved under them. The list may ONLY SHRINK, and the counts are checked, so a
 # listed file cannot quietly gain one either.
 #
-# Every entry has the same cause: a slice of the dispatch epic split a big file, and
-# docs/HANDOFF-FIDELITY-AUDIT.md kept citing the old line numbers. Five slices did it before anyone
-# noticed, because nothing read a citation that sat in prose rather than in a fenced evidence block.
-# S6 repointed its own twenty (PhotonRealizer.cs -> EmitVisitor.*) and added this guard; the rest is
-# issue #207's, and each line below is a bounded, countable piece of it.
+# IT IS EMPTY, and that is the point: every entry had the same cause — a slice of the dispatch epic
+# split a big file and docs/HANDOFF-FIDELITY-AUDIT.md kept citing the old line numbers. Five slices
+# did it before anyone noticed, because nothing read a citation that sat in prose rather than in a
+# fenced evidence block. S6 repointed its own twenty (PhotonRealizer.cs -> EmitVisitor.*) and added
+# the guard; #207 repointed the remaining ninety-five the same way — by finding the code, not by
+# guessing the number — and the three entries that held them went to zero together:
 #
-# The counts are what the guard reports, not a judgement: a citation inside the file's length can
-# still be wrong, and this instrument says so in its own summary.
-
-WebRealizer.cs    78  S4 (#180) split the lowering into WebLoweringVisitor partials; the file went to 175 lines and the audit still cites up to 1806
-LayoutEngine.cs   10  S5 (#181) moved the measure half into MeasureVisitor; the file went to 455 lines and the audit still cites up to 591
-Semantics.cs       7  S2 (#177) moved the walk into SemanticsVisitor; the file went to 47 lines and the audit still cites up to 165
+#   WebRealizer.cs    78   S4 (#180) split the lowering into WebLoweringVisitor.*
+#   LayoutEngine.cs   10   S5 (#181) moved the measure half into MeasureVisitor.*
+#   Semantics.cs       7   S2 (#177) moved the walk into SemanticsVisitor.*
+#
+# A file added back here is a citation somebody could not read. Repoint it instead.
