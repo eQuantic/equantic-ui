@@ -95,11 +95,31 @@ public readonly record struct LayoutConstraints(AxisConstraint Width, AxisConstr
     public static readonly LayoutConstraints Unbounded =
         new(AxisConstraint.Unbounded, AxisConstraint.Unbounded);
 
+    /// <summary>
+    /// Whether this child is being CUT TO FIT rather than measured for its own sake — the truncation
+    /// contract (spec A2) asking a text to yield an ellipsis instead of wrapping.
+    ///
+    /// <para>
+    /// It is here, and not a parameter on the text measurement, because the item the contract cuts
+    /// is not always the text: <c>Pressable(Text(...))</c> is a text as far as the row is concerned,
+    /// and the cut has to travel through the wrapper to reach it. That is the same journey
+    /// <see cref="AxisConstraint.Stretch"/> makes, for the same reason — a fact about what the
+    /// PARENT decided, which only the node at the bottom can act on.
+    /// </para>
+    ///
+    /// <para>
+    /// It travels exactly as far as a layout-transparent wrapper does: every other door measures its
+    /// children through <see cref="ForChild"/>, which clears it, so a Row nested inside a cut
+    /// wrapper is measured normally and its own texts wrap as they always did.
+    /// </para>
+    /// </summary>
+    public bool Truncating { get; init; }
+
     public float MaxWidth => Width.Max;
     public float MaxHeight => Height.Max;
 
     public LayoutConstraints WithMax(float maxWidth, float maxHeight) =>
-        new(Width.WithMax(maxWidth), Height.WithMax(maxHeight));
+        this with { Width = Width.WithMax(maxWidth), Height = Height.WithMax(maxHeight) };
 
     public LayoutConstraints WithMaxWidth(float maxWidth) => this with { Width = Width.WithMax(maxWidth) };
 
@@ -114,19 +134,26 @@ public readonly record struct LayoutConstraints(AxisConstraint Width, AxisConstr
     /// context and trusting every reader to have already looked.
     /// </summary>
     public LayoutConstraints ForChild(float maxWidth, float maxHeight) =>
-        new(Width.WithMax(maxWidth).Released(), Height.WithMax(maxHeight).Released());
+        new(Width.WithMax(maxWidth).Released(), Height.WithMax(maxHeight).Released())
+        { Truncating = false };
 
+    /// <summary>Being cut to fit. See <see cref="Truncating"/>.</summary>
+    public LayoutConstraints Truncated() => this with { Truncating = true };
+
+    // The rest RESTATE one axis and keep everything else, `Truncating` included: a transparent
+    // wrapper is precisely what a cut travels through, and three of them — Pressable, Adjustable,
+    // Link — reach their child through Inline().
     /// <inheritdoc cref="AxisConstraint.Released"/>
-    public LayoutConstraints Released() => new(Width.Released(), Height.Released());
+    public LayoutConstraints Released() => this with { Width = Width.Released(), Height = Height.Released() };
 
     /// <inheritdoc cref="AxisConstraint.Inline"/>
-    public LayoutConstraints Inline() => new(Width.Inline(), Height.Inline());
+    public LayoutConstraints Inline() => this with { Width = Width.Inline(), Height = Height.Inline() };
 
     /// <inheritdoc cref="AxisConstraint.Stretched"/>
     public LayoutConstraints Stretched(StretchKind width, StretchKind height) =>
-        new(Width.Stretched(width), Height.Stretched(height));
+        this with { Width = Width.Stretched(width), Height = Height.Stretched(height) };
 
     /// <inheritdoc cref="AxisConstraint.DecidedByContent"/>
     public LayoutConstraints DecidedByContent(bool width, bool height) =>
-        new(Width.DecidedByContent(width), Height.DecidedByContent(height));
+        this with { Width = Width.DecidedByContent(width), Height = Height.DecidedByContent(height) };
 }

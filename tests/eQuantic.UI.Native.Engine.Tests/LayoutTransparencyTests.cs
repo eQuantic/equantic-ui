@@ -1,0 +1,304 @@
+using System.Reflection;
+using eQuantic.UI.Native.Framework;
+using eQuantic.UI.Primitives;
+using FluentAssertions;
+
+namespace eQuantic.UI.Native.Engine.Tests;
+
+/// <summary>
+/// ONE statement of layout transparency, read by the three readers that need it (#225).
+///
+/// <para>
+/// THE MEASUREMENT THAT SET THE SHAPE OF THESE TESTS. TWO readers in the layout engine kept
+/// hand-written lists of wrappers to look through — a flex item's min-content floor and its
+/// cross-axis size kind — and the lists differed in eight of the twenty wrappers. A third,
+/// <c>Shrinkable</c>, had no wrapper arm at all. A fourth, the truncation contract, looked through
+/// none of them: it found text with <c>children[i] is Text</c>, so a wrapped text was not a text as
+/// far as it was concerned.
+/// </para>
+///
+/// <para>
+/// The issue framed the eight as omissions nobody had decided, and asked whether fixing them would
+/// move pixels. Measured, the answer was sharper than that in two ways, and both are pinned below.
+/// ELEVEN of the twenty overflowed a fixed row outright — <c>Pressable</c>, <c>Link</c> and
+/// <c>Hoverable</c> among them, which is most of the tappable text in a real screen — by 128dp
+/// where the text was one unbreakable word and the bare one ellipsized. And the nine that did NOT
+/// overflow agreed only in WIDTH: NINETEEN of the twenty wrapped to as many lines as they liked
+/// where the bare text was cut to one — every wrapper but <c>Overlay</c>, which takes no space in
+/// the flow at all. The one test that guarded this
+/// (<c>ALayoutTransparentWrapper_DoesNotChangeItsChildsFloor</c>) was measuring the one number on
+/// which the two agreed.
+/// </para>
+///
+/// <para>
+/// So these enumerate BY REFLECTION rather than listing the eight: every wrapper the vocabulary has
+/// is asserted against the bare child, and a twenty-first is covered on the day it is declared.
+/// </para>
+/// </summary>
+public class LayoutTransparencyTests
+{
+    private static readonly LayoutContext Ctx =
+        new(PhotonTheme.Instance, ApproximateTextMeasurer.Instance);
+
+    private static Box FixedBox(float w, float h) => new(new BoxStyle { Width = w, Height = h });
+
+    /// <summary>
+    /// Every wrapper in the vocabulary, each around the child it is handed. Hand-written because
+    /// their constructors take different arguments, and pinned COMPLETE by
+    /// <see cref="TheVocabularysWrappers_AreAllCoveredHere"/> — so the list cannot fall behind the
+    /// vocabulary the way the three it replaces did.
+    /// </summary>
+    private static IReadOnlyList<SingleChildNode> Wrappers(VisualNode c) =>
+    [
+        new Adjustable(c, _ => { }),
+        new CodeSurface(c, new CodeEditorController()),
+        new DragDismiss(c),
+        new Draggable(c),
+        new Flexible(c),
+        new Hoverable(c, _ => { }),
+        new InFlow(c),
+        new InView(c, _ => { }),
+        new Link("#", c),
+        new LoopMotion(c, LoopEffect.SlideX, 0, 1, 100),
+        new Overlay(c),
+        new Pinned(c),
+        new Positioned(c, top: 0),
+        new Presence(c),
+        new Pressable(c),
+        new SafeArea(c),
+        new ScrollView(c),
+        new SheetSurface(c, new SheetController()),
+        new Shortcut(c, new KeyChord("a"), () => { }),
+        new Simulated(new SimulatedState(), c),
+    ];
+
+    private static IEnumerable<SingleChildNode> Transparent(VisualNode c) =>
+        Wrappers(c).Where(w => w.IsLayoutTransparent());
+
+    [Fact]
+    public void TheVocabularysWrappers_AreAllCoveredHere()
+    {
+        var declared = typeof(SingleChildNode).Assembly.GetTypes()
+            .Where(t => t.IsSubclassOf(typeof(SingleChildNode)) && !t.IsAbstract)
+            .Select(t => t.Name)
+            .OrderBy(n => n, StringComparer.Ordinal)
+            .ToList();
+
+        Wrappers(new Text("x")).Select(w => w.GetType().Name).OrderBy(n => n, StringComparer.Ordinal)
+            .Should().Equal(declared,
+                "a wrapper the vocabulary declares and this file does not build is a wrapper nothing "
+                + "below asserts anything about — which is exactly how the two hand-kept lists "
+                + "drifted eight places apart");
+    }
+
+    /// <summary>
+    /// The statement itself. Three wrappers are not transparent, and each is named with what it
+    /// establishes that its child cannot speak for. Pinned as a SET so neither side can grow
+    /// quietly: a fourth exception has to be argued for here.
+    /// </summary>
+    [Fact]
+    public void ExactlyThreeWrappers_CarryGeometryOfTheirOwn()
+    {
+        Wrappers(new Text("x")).Where(w => !w.IsLayoutTransparent()).Select(w => w.GetType().Name)
+            .Should().BeEquivalentTo(["ScrollView", "Overlay", "Positioned"],
+                "a scroller has its own viewport, an Overlay takes no space in the flow, and a "
+                + "Positioned is a contract with a Stack");
+    }
+
+    // ---- reader 1 + reader 4: the floor, and the contract that cuts the text -------------------
+
+    /// <summary>
+    /// A row fixed at 150 with a 120 box in it leaves 22dp. What lands in those 22dp must not depend
+    /// on whether the text was wrapped — in WIDTH, in LINE COUNT, and in whether the line carries
+    /// the mark. The last two are what the old guard could not see.
+    /// </summary>
+    private static (float Width, float Right, int Lines, bool Ellipsized) InTheSlot(VisualNode second)
+    {
+        var row = new Row(gap: 8) { Width = SizeValue.Fixed(150) };
+        row.Add(FixedBox(120, 20));
+        row.Add(second);
+        var item = LayoutEngine.Layout(row, 150, 300, Ctx).Children[1];
+        var text = item.Text ?? (item.Children.Count > 0 ? item.Children[0].Text : null);
+        return (item.Bounds.Width, item.Bounds.X + item.Bounds.Width,
+            text?.Lines.Count ?? -1, text?.Lines[^1].Ellipsized ?? false);
+    }
+
+    [Theory]
+    [InlineData("antidisestablishmentarianism")]      // ONE word: nothing can wrap, only cut
+    [InlineData("a very long description that will not fit")]  // MANY: wrapping is the alternative
+    public void ATransparentWrapper_IsCutExactlyAsTheBareTextIs(string content)
+    {
+        var bare = InTheSlot(new Text(content, TypeRole.BodyM));
+
+        foreach (var wrapper in Transparent(new Text(content, TypeRole.BodyM)))
+        {
+            // A Flexible is sized from the row's LEFTOVER rather than from its content, so it takes
+            // the slot it is granted; that is the one transparency does not decide.
+            if (wrapper is Flexible) continue;
+
+            var wrapped = InTheSlot(wrapper);
+            var why = $"{wrapper.GetType().Name} carries no geometry of its own";
+
+            wrapped.Right.Should().BeLessThanOrEqualTo(150.01f,
+                $"{why}, and nine of the twenty used to run past the end of this row");
+            wrapped.Width.Should().BeApproximately(bare.Width, 0.01f, why);
+            wrapped.Lines.Should().Be(bare.Lines,
+                $"{why} — and WIDTH parity alone hid that a wrapped text wrapped where the bare one "
+                + "was cut, because a single unbreakable word cannot wrap either way");
+            wrapped.Ellipsized.Should().Be(bare.Ellipsized, why);
+        }
+    }
+
+    [Fact]
+    public void ARichText_KeepsItsRuns_WhenTheContractCutsIt()
+    {
+        // The cut used to be built by hand from `ctx.Measurer`, on a node rebuilt from PlainContent:
+        // a paragraph of runs went in and a flat string came out, losing every run's colour, face
+        // and link destination. Now it re-measures through the same pass, so the runs survive it.
+        var rich = new Text("placeholder")
+        {
+            Spans = [new TextRun("a very long "), new TextRun("emphasised"),
+                     new TextRun(" description that cannot possibly fit")],
+        };
+
+        var alone = LayoutEngine.Layout(rich, 400, 300, Ctx);
+        alone.TextRuns.Should().NotBeNullOrEmpty("a rich paragraph is laid out as runs");
+
+        var row = new Row(gap: 8) { Width = SizeValue.Fixed(150) };
+        row.Add(FixedBox(120, 20));
+        row.Add(rich);
+        var cut = LayoutEngine.Layout(row, 150, 300, Ctx).Children[1];
+
+        cut.TextRuns.Should().NotBeNullOrEmpty("the cut must not flatten the paragraph");
+        cut.Text!.Lines.Should().HaveCount(1, "spec A2 cuts it to a line rather than letting it wrap");
+        cut.Text.Lines[^1].Ellipsized.Should().BeTrue();
+        cut.TextRuns![^1].Content.Should().Be("…",
+            "the mark is INSIDE the measurement (ITextMeasurer's contract), so the fragments a "
+            + "rasterizer draws carry it and nothing downstream adds one outside the promised width");
+        (cut.TextRuns[^1].X + cut.TextRuns[^1].Width).Should().BeLessThanOrEqualTo(cut.Bounds.Width + 0.01f,
+            "and it is inside the width the measurement reports");
+    }
+
+    // ---- reader 2: the cross-axis size kind ----------------------------------------------------
+
+    /// <summary>
+    /// A row 100 tall that stretches its children, holding one 40×20 box. Stretch fills AUTO cross
+    /// sizes only, so the box keeps its 20 — and so must a wrapper around it. Three of the twenty
+    /// answered Hug here and were stretched to 100, overriding the height the author pinned.
+    /// </summary>
+    [Fact]
+    public void ATransparentWrapper_TakesItsChildsCrossSizeKind()
+    {
+        static float HeightUnderStretch(VisualNode only)
+        {
+            var row = new Row(gap: 0, cross: CrossAlign.Stretch) { Height = SizeValue.Fixed(100) };
+            row.Add(only);
+            return LayoutEngine.Layout(row, 400, 100, Ctx).Children[0].Bounds.Height;
+        }
+
+        HeightUnderStretch(FixedBox(40, 20)).Should().Be(20, "an explicit cross size is kept");
+
+        foreach (var wrapper in Transparent(FixedBox(40, 20)))
+            HeightUnderStretch(wrapper).Should().Be(20,
+                $"{wrapper.GetType().Name} wraps a box whose height the author fixed, and a wrapper "
+                + "that answered Hug here stretched it to the line");
+    }
+
+    // ---- the third reader, and the one that turned out not to need the statement ---------------
+
+    private static float WidthOfSecond(VisualNode second, float rowWidth = 150)
+    {
+        var row = new Row(gap: 8) { Width = SizeValue.Fixed(rowWidth) };
+        row.Add(FixedBox(120, 20));
+        row.Add(second);
+        return LayoutEngine.Layout(row, rowWidth, 300, Ctx).Children[1].Bounds.Width;
+    }
+
+    /// <summary>
+    /// The FLOOR a wrapper reports is its child's, so a shrinking row squeezes the space between two
+    /// buttons and never the word inside one.
+    ///
+    /// <para>
+    /// A fixed size is the wrong probe for this and a first draft used one: a Box measured at a
+    /// narrower bound comes back at its fixed width regardless, so the assertion held with the
+    /// transparency removed. What actually responds to the bound is content that can be squeezed —
+    /// a padded box around a word — which is why this builds the shape the shared-buttons golden
+    /// builds. That golden is what caught the draft.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void ATransparentWrapper_FloorsWhereItsChildFloors()
+    {
+        // A "button": a padded box around a word. Its floor is the word plus the padding.
+        static Box Labelled(string word) =>
+            new(new BoxStyle { Padding = EdgeInsets.All(8), Height = 20 },
+                new Text(word, TypeRole.BodyM));
+
+        // Narrow enough that the row must take width from somewhere.
+        var bare = WidthOfSecond(Labelled("Continue"), rowWidth: 190);
+        bare.Should().BeGreaterThan(0);
+
+        foreach (var wrapper in Transparent(Labelled("Continue")))
+        {
+            if (wrapper is Flexible) continue;
+
+            WidthOfSecond(wrapper, rowWidth: 190).Should().BeApproximately(bare, 0.01f,
+                $"{wrapper.GetType().Name} reports the floor of what it wraps, so the row cannot "
+                + "squeeze it below the word it contains — with the floor answering zero instead, "
+                + "the wrapped button collapses and the bare one does not");
+        }
+    }
+
+    /// <summary>
+    /// THE CASE THAT SAYS <c>Shrinkable</c> MUST NOT LOOK THROUGH, and the reason the statement has
+    /// three readers instead of the four #225 expected.
+    ///
+    /// <para>
+    /// <c>Shrinkable</c> excludes a <see cref="Flexible"/> because its size came from the row's
+    /// LEFTOVER — a contract with the direct parent, exactly like a <see cref="Positioned"/>'s with
+    /// a <see cref="Stack"/>. A wrapper is not that parent and was granted nothing, so an arm that
+    /// inherited the exclusion inherited a promise nobody made: measured, the wrapped Flexible then
+    /// kept the whole row (100/150/220) beside a 120 sibling, while the bare one yields 0/22/92.
+    /// </para>
+    ///
+    /// <para>
+    /// Pinned as PARITY with the bare Flexible, because the numbers are the flex pass's business
+    /// and the claim is only that wrapping changes nothing.
+    /// </para>
+    /// </summary>
+    [Theory]
+    [InlineData(100f)]
+    [InlineData(150f)]
+    [InlineData(220f)]
+    public void AWrappedFlexible_YieldsExactlyAsABareOneDoes(float rowWidth)
+    {
+        static Flexible Fill() =>
+            new(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 20 }));
+
+        var bare = WidthOfSecond(Fill(), rowWidth);
+
+        WidthOfSecond(new Pressable(Fill()), rowWidth).Should().BeApproximately(bare, 0.01f,
+            "a flex weight is a contract with the ROW, and the row granted the wrapper nothing");
+        WidthOfSecond(new SafeArea(Fill()), rowWidth).Should().BeApproximately(bare, 0.01f);
+    }
+
+    // ---- the flag the cut travels on -----------------------------------------------------------
+
+    [Fact]
+    public void TheCut_DoesNotEscapeIntoANestedContainer()
+    {
+        // `Truncating` rides the constraints through transparent wrappers, which is how it reaches a
+        // wrapped text. Every other door measures its children through `ForChild`, which clears it —
+        // so a Row nested inside a cut wrapper wraps its own text as it always did. Without that,
+        // one overflowing item would ellipsize paragraphs anywhere below it.
+        var inner = new Text("a very long description that will not fit", TypeRole.BodyM);
+        var row = new Row(gap: 8) { Width = SizeValue.Fixed(150) };
+        row.Add(FixedBox(120, 20));
+        row.Add(new Pressable(new Column(gap: 0) { inner }));
+
+        var column = LayoutEngine.Layout(row, 150, 300, Ctx).Children[1].Children[0];
+
+        column.Children[0].Text!.Lines.Count.Should().BeGreaterThan(1,
+            "the text is in a Column, not directly under the wrapper the row is cutting");
+    }
+}

@@ -287,6 +287,32 @@ record of a release, the wiki's Upgrading page is the distillate.
   too: the statement probe reports nothing for `row.Add(child)` with the fix reverted, so a test
   written there would have passed either way — the first one I wrote did.
 
+- **2026-09-18 · One statement of layout transparency, and the contract that made four lists
+  necessary**: three readers in the layout engine kept hand-written lists of which wrappers to look
+  through, and they differed in eight of the twenty
+  ([#225](https://github.com/eQuantic/equantic-ui/issues/225)). The issue framed the eight as
+  omissions nobody had decided and asked whether fixing them moved pixels. MEASURED, the answer was
+  sharper in both directions. ELEVEN of the twenty overflowed a fixed row outright — `Pressable`,
+  `Link`, `Hoverable`, most of the tappable text in a real screen — by 128dp where the text was one
+  unbreakable word and the bare one ellipsized. And the nine that did NOT overflow agreed only in
+  WIDTH: NINETEEN of the twenty wrapped to as many lines as they liked where the bare text was cut
+  to one, every wrapper but `Overlay`. The single guard on this could not see it, because it
+  asserted the one number on which the two agreed. Both come from
+  the FOURTH reader: the truncation contract found its subjects with `children[i] is Text`, so a
+  wrapped text was not a text, and it re-measured by HAND — which could only ever cut a bare `Text`
+  and dropped a rich paragraph's runs by rebuilding the node from `PlainContent`. The cut is a
+  re-measure of the ITEM now, through the same pass everything else takes, carrying the line cap on
+  the constraints; `LayoutTransparency` states once which wrappers carry geometry of their own, and
+  the default is transparent so a twenty-first wrapper is covered on the day it is declared. THREE
+  READERS, NOT FOUR, and that is measured rather than tidy: `Shrinkable` looked like the fourth, but
+  across 168 rows an arm there changed exactly one family of cases and changed it for the worse — a
+  `Flexible`'s exclusion is a contract with the DIRECT parent, so inheriting it through a wrapper
+  inherits a promise nobody made, and the wrapped Flexible then kept 100/150/220 where the bare one
+  yields 0/22/92. TWO OF THE NEW TESTS WERE TAUTOLOGIES on the first draft and mutation-checking
+  caught both: a fixed Box measured at a narrower bound comes back at its fixed width either way, so
+  the probe had to become the shape the shared-buttons golden builds — which is the golden that
+  caught it. The 91 goldens did not move.
+
 
 ## Retired documents
 

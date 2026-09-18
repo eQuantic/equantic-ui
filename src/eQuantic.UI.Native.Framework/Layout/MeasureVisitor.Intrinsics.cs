@@ -44,24 +44,13 @@ internal sealed partial class MeasureVisitor
         Spinner spinner => spinner.Size,
         CameraPreview camera => camera.Width,
         Spacer spacer => spacer.FixedLength,
-        // EIGHT WRAPPERS ANSWER ZERO HERE, and they are not eight of a kind — the split below is
-        // the distinction, because a reader who takes all eight for oversights "fixes" three
-        // deliberate contracts.
-        //
-        // FIVE ARE OMISSIONS: named by CrossSizeKind and not by this list, which was kept by hand.
-        // Nobody decided them, and they are load-bearing anyway — a wrapped Text is invisible to
-        // the truncation contract (it finds Text among a row's children BY TYPE), so the zero floor
-        // is what lets a shrinking row cut it down to where the bare text would have landed.
-        // Preserved exactly as measured; #225 is where the FOUR readers are made to agree — these
-        // two, `Shrinkable`, and that contract.
-        DragDismiss or Draggable or LoopMotion or Pinned or SafeArea => 0,
-        // THREE ARE PRINCIPLED, and were in NEITHER list: a scroller's floor is not its content's
-        // (it scrolls instead of growing), an Overlay is a viewport layer that takes no space in the
-        // page flow at all, and a Positioned is a contract with a Stack rather than a child of the
-        // row. These answer zero because zero is right, not because nobody wrote them down.
-        Overlay or Positioned or ScrollView => 0,
-        // Wrappers are transparent to the floor exactly as they are to layout.
-        SingleChildNode wrapper => MinContentWidth(wrapper.Child, ctx),
+        // A TRANSPARENT wrapper's floor IS its child's, and the three that are not floor at zero:
+        // a scroller scrolls instead of growing, an Overlay takes no space in the flow, a
+        // Positioned is a contract with a Stack. Which is which is stated ONCE, in
+        // `LayoutTransparency` — this used to be a hand-kept list of five that disagreed with
+        // CrossSizeKind's hand-kept list of three (#225).
+        SingleChildNode wrapper =>
+            wrapper.IsLayoutTransparent() ? MinContentWidth(wrapper.Child, ctx) : 0,
         // Same rule as MeasureComponent's: the visitor travels in the state so the lambda stays
         // `static` and allocates nothing.
         UiComponent component => component.ExpandContained(ctx.Components, (self: this, ctx),
@@ -108,7 +97,42 @@ internal sealed partial class MeasureVisitor
         Spacer or Flexible => false,
         Box box => box.Style.Width.Kind != SizeKind.Fixed,
         FlexNode flex => flex.Width.Kind != SizeKind.Fixed,
+        // NO WRAPPER ARM, and that is measured rather than left out. #225 assumed four readers
+        // needed the transparency statement; this is the one that does not, twice over.
+        //
+        // It is already answered by the FLOOR: an item whose min-content floor equals its main size
+        // has no room to give, which is what "not shrinkable" does operationally — so
+        // `Pressable(FixedBox(120))` keeps its 120 through MinContentWidth looking through, with or
+        // without an arm here. Across a battery of 168 rows (four wrappers x seven child kinds x
+        // three widths x either order) adding one changed exactly one family of cases.
+        //
+        // And it changed that one for the WORSE. `Flexible` is excluded above because its size came
+        // from the row's leftover — a contract with the DIRECT parent, like a Positioned's with a
+        // Stack. A wrapper is not that parent and was granted nothing, so inheriting the exclusion
+        // inherits a promise nobody made: `Pressable(Flexible(Fill))` kept 100/150/220 in rows of
+        // 100/150/220 that already held a 120 sibling, where the BARE Flexible yields 0/22/92. The
+        // arm made the wrapped one disagree with its child, which is the opposite of transparency.
         _ => true,
+    };
+
+    /// <summary>
+    /// The text an item ultimately IS, seen through layout-transparent wrappers — the FOURTH reader
+    /// of the same statement, and the one whose absence made the other three's disagreement
+    /// invisible.
+    /// <para>
+    /// The truncation contract found its subjects with <c>children[i] is Text</c>, so a wrapped one
+    /// was not a text as far as it was concerned. ELEVEN of the twenty wrappers therefore ran past
+    /// the end of a fixed row rather than ellipsizing — <c>Pressable</c>, <c>Link</c> and
+    /// <c>Hoverable</c> among them — and the rest only agreed in WIDTH: NINETEEN of the twenty
+    /// wrapped to as many lines as they liked instead of being cut, every one but <c>Overlay</c>,
+    /// which takes no space in the flow to begin with. #225 measured both.
+    /// </para>
+    /// </summary>
+    private static Text? TextWithin(VisualNode node) => node switch
+    {
+        Text text => text,
+        SingleChildNode wrapper when wrapper.IsLayoutTransparent() => TextWithin(wrapper.Child),
+        _ => null,
     };
 
     /// <summary>
@@ -169,17 +193,12 @@ internal sealed partial class MeasureVisitor
         Drawing => SizeKind.Fixed,
         Spinner => SizeKind.Fixed,
         Grid grid => (horizontal ? grid.Height : grid.Width).Kind,
-        // SIX WRAPPERS ANSWER HUG, split the same way as the floor above and for the same reason.
-        // THREE ARE OMISSIONS: named by MinContentWidth and not here, the other half of the
-        // eight-place disagreement between two lists kept by hand.
-        InFlow or InView or Simulated => SizeKind.Hug,
-        // THREE ARE PRINCIPLED, the same three, in neither list and deliberate in both: a scroller,
-        // a viewport layer, and a Stack's contract do not take their cross size from a child.
-        // Preserved exactly as measured; reconciling the omissions moves pixels, which is #225.
-        Overlay or Positioned or ScrollView => SizeKind.Hug,
         Anchored anchored => CrossSizeKind(anchored.Anchor, horizontal),
-        // Layout-transparent wrappers delegate to what they wrap.
-        SingleChildNode wrapper => CrossSizeKind(wrapper.Child, horizontal),
+        // The same statement the floor reads, so the two can no longer drift: a transparent wrapper
+        // delegates, and one that carries its own geometry hugs.
+        SingleChildNode wrapper => wrapper.IsLayoutTransparent()
+            ? CrossSizeKind(wrapper.Child, horizontal)
+            : SizeKind.Hug,
         _ => SizeKind.Hug,
     };
 

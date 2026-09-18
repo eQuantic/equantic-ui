@@ -8,19 +8,37 @@ namespace eQuantic.UI.Native.Framework;
 /// carries, which is what makes this seam the one place a layout depends on the platform.</summary>
 internal sealed partial class MeasureVisitor
 {
-    private LayoutNode MeasureText(Text text, float maxW, LayoutContext ctx)
+    private LayoutNode MeasureText(Text text, LayoutConstraints constraints, LayoutContext ctx)
     {
         var result = ctx.Node(text);
+        var maxW = constraints.MaxWidth;
         // The SAME resolver the realizers use. This built the merge by hand and therefore measured
         // without the theme's code face while PhotonRealizer rasterized with it — wrapping, widths
         // and a caret column computed against one face and drawn in another.
         var style = text.Resolve(ctx.Theme);
-        if (text.Spans is { Count: > 0 } spans) return MeasureRuns(result, text, spans, style, maxW, ctx);
-        var measurement = ctx.Measurer.Measure(text.PlainContent, style, ctx.TypeScale, maxW, text.MaxLines);
+        var maxLines = LineCap(text, constraints);
+        if (text.Spans is { Count: > 0 } spans)
+            return MeasureRuns(result, text, spans, style, maxW, maxLines, ctx);
+        var measurement = ctx.Measurer.Measure(text.PlainContent, style, ctx.TypeScale, maxW, maxLines);
         result.Text = measurement;
         result.Bounds = new Rect(0, 0, measurement.Width, measurement.Height);
         return result;
     }
+
+    /// <summary>
+    /// How many lines this measurement may use — the text's own <see cref="Text.MaxLines"/>, or AT
+    /// LEAST ONE when the parent is cutting it to fit (spec A2: text yields an ellipsis before a
+    /// sibling is pushed out).
+    /// <para>
+    /// The cut used to live in the flex pass, which re-measured the text itself with this same
+    /// <c>Max(1, …)</c>. Asking here is what lets the contract cut a WRAPPED text: the pass now
+    /// re-measures the ITEM — <c>Pressable(Text(…))</c> and the bare text alike — and the cap
+    /// arrives through the wrapper on the constraints, so both take one path instead of one path
+    /// and one hand-built copy of it.
+    /// </para>
+    /// </summary>
+    private static int LineCap(Text text, LayoutConstraints constraints) =>
+        constraints.Truncating ? Math.Max(1, text.MaxLines) : text.MaxLines;
 
     /// <summary>
     /// A RICH paragraph: the runs are laid out as one flowing line of text, breaking between WORDS
@@ -37,7 +55,7 @@ internal sealed partial class MeasureVisitor
     /// </para>
     /// </summary>
     private LayoutNode MeasureRuns(LayoutNode result, Text text, IReadOnlyList<TextRun> spans,
-        TypeStyle paragraph, float maxW, LayoutContext ctx)
+        TypeStyle paragraph, float maxW, int maxLines, LayoutContext ctx)
     {
         var lineHeight = paragraph.ScaledLineHeight(ctx.TypeScale);
         var limit = float.IsPositiveInfinity(maxW) || maxW <= 0 ? float.PositiveInfinity : maxW;
@@ -47,9 +65,11 @@ internal sealed partial class MeasureVisitor
         float x = 0;
         var line = 0;
         float widest = 0;
+        var cut = false;
 
         foreach (var run in spans)
         {
+            if (cut) break;
             var runStyle = run.Resolve(paragraph, ctx.Theme);
 
             foreach (var word in Words(run.Content))
@@ -59,6 +79,14 @@ internal sealed partial class MeasureVisitor
                 var width = ctx.Measurer.Measure(word, runStyle, ctx.TypeScale, float.PositiveInfinity, 1).Width;
                 if (x > 0 && x + width > limit && word != " ")
                 {
+                    // The line is full, and a cap says there is no next one: the paragraph ends
+                    // HERE, with the mark inside the measurement.
+                    if (maxLines > 0 && line + 1 >= maxLines)
+                    {
+                        x = Ellipsize(fragments, runStyle, x, limit, line, lineHeight, ctx);
+                        cut = true;
+                        break;
+                    }
                     lines.Add(new MeasuredLine(x, false));
                     if (x > widest) widest = x;
                     line++;
@@ -72,13 +100,46 @@ internal sealed partial class MeasureVisitor
             }
         }
 
-        lines.Add(new MeasuredLine(x, false));
+        lines.Add(new MeasuredLine(x, cut));
         if (x > widest) widest = x;
 
         result.TextRuns = fragments;
         result.Text = new TextMeasurement(widest, lines.Count * lineHeight, lineHeight, lines);
         result.Bounds = new Rect(0, 0, widest, lines.Count * lineHeight);
         return result;
+    }
+
+    /// <summary>
+    /// Ends a cut line with the mark, INSIDE the width the measurement reports — the promise
+    /// <see cref="ITextMeasurer"/> makes and the plain path already keeps.
+    ///
+    /// <para>
+    /// Trailing words are dropped until the mark fits, which the plain path never has to do: there
+    /// a cut line is a NUMBER and the rasterizer re-wraps from the string, while here every word
+    /// carries the rectangle it will be drawn in. Clamping the reported width without dropping them
+    /// would leave glyphs positioned past the box the width promised.
+    /// </para>
+    ///
+    /// <para>
+    /// Never below one word. A line that kept nothing would report a mark standing where a word had
+    /// been, and an ellipsis alone tells a reader less than a cut word does.
+    /// </para>
+    /// </summary>
+    private float Ellipsize(List<TextFragment> fragments, TypeStyle style, float x, float limit,
+        int line, float lineHeight, LayoutContext ctx)
+    {
+        const string mark = "\u2026";
+        var markWidth = ctx.Measurer.Measure(mark, style, ctx.TypeScale, float.PositiveInfinity, 1).Width;
+
+        while (x + markWidth > limit && fragments.Count > 1
+               && fragments[^1].Line == line && fragments[^2].Line == line)
+        {
+            x = fragments[^1].X;
+            fragments.RemoveAt(fragments.Count - 1);
+        }
+
+        fragments.Add(new TextFragment(mark, style, x, line * lineHeight, markWidth, line));
+        return x + markWidth;
     }
 
     /// <summary>

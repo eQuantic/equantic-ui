@@ -202,21 +202,29 @@ public class FlexLayoutTests
     }
 
     /// <summary>
-    /// Wrapping a child must not change what a shrinking row does to it. It does not today — and
-    /// this test exists because the REASON is not the one anybody would guess, and the guess breaks
-    /// it.
+    /// Wrapping a child must not change what a shrinking row does to it. It does not — and the
+    /// REASON is worth keeping, because for a while it was an accident and this test could not tell
+    /// the difference.
     /// <para>
-    /// A bare <c>Text</c> is cut by the truncation contract, which finds text among a row's children
-    /// BY TYPE and so cannot see a wrapped one. What shrinks the wrapper instead is its min-content
-    /// floor, which answers ZERO for eight of the twenty wrappers — an omission from a hand-kept
-    /// list that happens to land the wrapped text exactly where the contract would have put the bare
-    /// one. Let all the readers look through, as the shape now invites, and the wrapper stops
-    /// shrinking at its child's longest word: 150 where bare gives 22.
+    /// WHAT IT USED TO PIN. A bare <c>Text</c> was cut by the truncation contract, which found text
+    /// among a row's children BY TYPE and so could not see a wrapped one. What shrank the wrapper
+    /// instead was its min-content floor answering ZERO — an omission from a hand-kept list that
+    /// happened to land the wrapped text where the contract would have put the bare one. Letting
+    /// every reader look through, as the shape invites, broke exactly this: the wrapper stopped
+    /// shrinking at its child's longest word, 150 where bare gives 22. So it stood as the guard
+    /// against the blanket fix while #225 was open.
     /// </para>
     /// <para>
-    /// So this pins the agreement while #225 decides what transparency means for all four readers,
-    /// and it is what caught the blanket fix. Asserted as PARITY rather than as a pixel: the number
-    /// is the text measurer's business and the claim is only that wrapping changes nothing.
+    /// WHAT IT PINS NOW: the same parity, arrived at on purpose. The contract looks through
+    /// transparent wrappers (<c>LayoutTransparency</c>) and cuts the item by re-measuring it, so the
+    /// wrapped text takes the bare text's path rather than landing on its number by cancellation.
+    /// <c>LayoutTransparencyTests</c> asks the same question of all twenty wrappers, and of the line
+    /// count and the ellipsis this one cannot see — because a single unbreakable word cannot wrap
+    /// either way, which is how a wrapped text that wrapped to eight lines passed here for months.
+    /// </para>
+    /// <para>
+    /// Asserted as PARITY rather than as a pixel: the number is the text measurer's business and the
+    /// claim is only that wrapping changes nothing.
     /// </para>
     /// </summary>
     [Fact]

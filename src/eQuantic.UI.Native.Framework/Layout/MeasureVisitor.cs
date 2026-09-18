@@ -108,7 +108,7 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     public LayoutNode Visit(Positioned node, MeasureState s) =>
         MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.Path);
 
-    public LayoutNode Visit(Text node, MeasureState s) => MeasureText(node, s.Constraints.MaxWidth, _ctx);
+    public LayoutNode Visit(Text node, MeasureState s) => MeasureText(node, s.Constraints, _ctx);
 
     public LayoutNode Visit(TextEntry node, MeasureState s) => MeasureTextEntry(node, s.Constraints.MaxWidth, _ctx);
 
