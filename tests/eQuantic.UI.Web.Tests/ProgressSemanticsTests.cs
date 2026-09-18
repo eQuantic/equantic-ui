@@ -126,6 +126,51 @@ public class ProgressSemanticsTests
     }
 
     /// <summary>
+    /// The instance is RETAINED across the app's rebuilds, so what `Build` reads is whatever
+    /// `AdoptConfig` copied. `UiComponent.AdoptConfig`'s contract is the fresh CONFIGURATION —
+    /// constructor AND init props — and it copied only the value and the variant, so a parent that
+    /// renamed the bar went on announcing the old name forever. An `init` accessor cannot be written
+    /// from `AdoptConfig`, which is why the three are backed by fields.
+    /// </summary>
+    [Fact]
+    public void ARetainedBarAdoptsItsWholeConfiguration()
+    {
+        var bar = new ProgressBar(0.2f) { Label = "Uploading", ValueText = "1 of 5", Prominent = false };
+        Host(bar).Attributes["aria-label"].Should().Be("Uploading");
+
+        bar.AdoptConfig(new ProgressBar(0.6f) { Label = "Verifying", ValueText = "3 of 5", Prominent = true });
+
+        var host = Host(bar);
+        host.Attributes["aria-label"].Should().Be("Verifying");
+        host.Attributes["aria-valuetext"].Should().Be("3 of 5");
+        host.Attributes["aria-valuenow"].Should().Be("0.6");
+        host.Children[0].Attributes["style"].Should().Contain("height: 8px",
+            "prominence is configuration too — the bar that adopted a new name adopted its height with it");
+    }
+
+    /// <summary>
+    /// The wrapper keeps the child's layout CONTRACT on the way through: a Progress under a
+    /// Pressable must not lose the fill or the cap, or SSR and the hydrated runtime disagree about
+    /// the width of the same bar. The TypeScript twin walks through it; the C# `Fills` and `CapsAt`
+    /// did not, which is a divergence that only shows on a real page.
+    /// </summary>
+    [Fact]
+    public void TheWrapperCarriesTheChildsLayoutContractThrough()
+    {
+        var capped = new Box(new BoxStyle { Width = SizeValue.Fill, MaxWidth = 320 });
+        var pressed = new Pressable(new Progress(capped) { Label = "Uploading" }, () => { });
+
+        // A Pressable lowers to a real <button>, which carries no role attribute of its own.
+        var host = Lower(pressed);
+        host.Tag.Should().Be("button");
+
+        host.Attributes["style"].Should().Contain("width: 100%",
+            "the fill reaches the Pressable through the Progress");
+        host.Attributes["style"].Should().Contain("max-width: 320px",
+            "and so does the cap — a wrapper that takes the width and drops the maximum is half a contract");
+    }
+
+    /// <summary>
     /// THE RULE, not the instance: a progress role reaches the markup for every ProgressBar, and it
     /// carries the number whenever the bar HAS one. Stated as a sweep so a second component that
     /// grows a progress role cannot state it half-way.

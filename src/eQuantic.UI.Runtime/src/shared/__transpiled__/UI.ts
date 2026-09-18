@@ -1,4 +1,4 @@
-import { AdaptiveNode, Adjustable, AdjustableRoleValue, AlignmentValue, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxStyle, Button, Calendar, Canvas, CanvasPointer, Card, Checkbox, Chip, ColorToken, Column, CookieConsent, CrossAlignValue, CultureOption, CultureSwitcher, DateOnly, DatePicker, DateTime, DateTimePicker, Dialog, DialogAction, Divider, DragDismiss, Draggable, Drawer, Drawing, EdgeInsets, EmptyState, Flexible, Grid, GridTrack, Hoverable, Icon, IconButton, IconGlyph, IconsValue, Image, ImageFitValue, InFlow, InView, KeyChord, Link, ListDetail, ListItem, ListView, MainAlignValue, Markdown, Mermaid, NavigationRail, NavItem, Overlay, Pinned, Positioned, Presence, PresenceMotionValue, Pressable, PressableRoleValue, ProgressBar, RangeValue, Row, SafeArea, ScrollAxisValue, ScrollView, SearchField, SegmentedControl, Select, Shortcut, Simulated, SizeValue, SizeVariantValue, Skeleton, Slider, Spacer, Spinner, Stack, Stepper, Switch, Tabs, Text, TextAlignmentValue, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TypeRoleValue, TypeStyle, VariantValue, Vector, VectorDrawing, VisualNode } from "@equantic/runtime";
+import { AdaptiveNode, Adjustable, AdjustableRoleValue, AlignmentValue, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxStyle, Button, Calendar, Canvas, CanvasPointer, Card, Checkbox, Chip, ColorToken, Column, CookieConsent, CrossAlignValue, CultureOption, CultureSwitcher, DateOnly, DatePicker, DateTime, DateTimePicker, Dialog, DialogAction, Divider, DragDismiss, Draggable, Drawer, Drawing, EdgeInsets, EmptyState, Flexible, Grid, GridTrack, Hoverable, Icon, IconButton, IconGlyph, IconsValue, Image, ImageFitValue, InFlow, InView, KeyChord, Link, ListDetail, ListItem, ListView, MainAlignValue, Markdown, Mermaid, NavigationRail, NavItem, Overlay, Pinned, Positioned, Presence, PresenceMotionValue, Pressable, PressableRoleValue, Progress, ProgressBar, RangeValue, Row, SafeArea, ScrollAxisValue, ScrollView, SearchField, SegmentedControl, Select, Shortcut, Simulated, SizeValue, SizeVariantValue, Skeleton, Slider, Spacer, Spinner, Stack, Stepper, Switch, Tabs, Text, TextAlignmentValue, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TypeRoleValue, TypeStyle, VariantValue, Vector, VectorDrawing, VisualNode } from "@equantic/runtime";
 
 export class UI {
     static column(gap: number = 0, main: MainAlignValue = 'start', cross: CrossAlignValue = 'stretch', wrap: boolean = false, runGap: number | null = null, padding: EdgeInsets | null = null, width?: SizeValue, height?: SizeValue, children: VisualNode[] | null = null) {
@@ -135,6 +135,10 @@ export class UI {
 
     static dragDismiss(child: VisualNode, onDismiss: (() => void) | null = null) {
         return new DragDismiss(child, onDismiss);
+    }
+
+    static progress(child: VisualNode, label: string = '', value: RangeValue | null = null) {
+        return new Progress(child, { label: label, value: value });
     }
 
     static adjustable(child: VisualNode, onAdjust: (int: number) => void, value: RangeValue | null = null, role: AdjustableRoleValue = 'slider') {

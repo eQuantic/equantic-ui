@@ -175,11 +175,15 @@ internal sealed partial class WebLoweringVisitor
     private HtmlElement LowerProgress(Progress progress)
     {
         var progressFills = Fills(progress.Child);
+        var progressCap = CapsAt(progress.Child);
         var element = new RealizedElement("div")
         {
             Style = new HtmlStyle
             {
                 Width = progressFills.Width ? "100%" : null,
+                // The child's cap comes THROUGH: a wrapper that took the width and dropped the
+                // maximum is the half-contract that made the Link diverge once already.
+                MaxWidth = Size(progressCap),
                 Height = progressFills.Height ? "100%" : null,
             },
             RawAttributes = new Dictionary<string, string> { ["role"] = "progressbar" },
@@ -361,6 +365,7 @@ internal sealed partial class WebLoweringVisitor
         Pressable pressable => CapsAt(pressable.Child),
         Hoverable hoverable => CapsAt(hoverable.Child),
         Adjustable adjustable => CapsAt(adjustable.Child),
+        Progress progress => CapsAt(progress.Child),
         Flexible flexible => CapsAt(flexible.Child),
         LoopMotion motion => CapsAt(motion.Child),
         Link link => CapsAt(link.Child),

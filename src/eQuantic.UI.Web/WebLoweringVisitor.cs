@@ -214,6 +214,7 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context)
         Pressable pressable => Fills(pressable.Child),
         Hoverable hoverable => Fills(hoverable.Child),
         Adjustable adjustable => Fills(adjustable.Child),
+        Progress progress => Fills(progress.Child),
         Flexible flexible => Fills(flexible.Child),
         LoopMotion motion => Fills(motion.Child),
         _ => (false, false),

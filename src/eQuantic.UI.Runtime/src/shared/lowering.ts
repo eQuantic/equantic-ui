@@ -2888,8 +2888,12 @@ function chordId(chord: KeyChordValue | undefined): string {
  */
 function lowerProgress(node: ProgressNode, context: LoweringContext, path: string): HtmlNode {
   const fill = fills(node.child);
+  const cap = capsAt(node.child);
   const host = element('div', {
     width: fill.width ? '100%' : undefined,
+    // The child's cap comes THROUGH (C# twin: LowerProgress) — a wrapper that takes the width and
+    // drops the maximum is the half-contract that made the Link diverge once already.
+    'max-width': sizeValue(cap),
     height: fill.height ? '100%' : undefined,
   });
   host.attributes['role'] = 'progressbar';

@@ -272,6 +272,18 @@ public static class UI
         new DragDismiss(child, onDismiss);
 
     /// <summary>
+    /// Progress semantics: the child REPORTS how far along something is. Not a control — no Tab
+    /// stop and no handler, which is the whole difference from <see cref="Adjustable"/>.
+    /// <para>
+    /// <paramref name="value"/> null is INDETERMINATE, and the role stays: "something is happening
+    /// and nobody knows how far" is exactly what a reader should say. That is the inverse of the
+    /// slider's rule, where a missing value means the node is not a slider at all.
+    /// </para>
+    /// </summary>
+    public static Progress Progress(VisualNode child, string label = "", RangeValue? value = null) =>
+        new Progress(child) { Label = label, Value = value };
+
+    /// <summary>
     /// Arrow-key adjustment semantics: one Tab stop, arrows call back with ±1.
     /// <para>
     /// <paramref name="value"/> is what the control HOLDS, and a slider needs it —

@@ -35,22 +35,35 @@ public sealed class ProgressBar : StatefulComponent
 
     public Variant Variant { get; private set; }
 
-    /// <summary>8dp meter styling (goal/quota) instead of the 4dp default.</summary>
-    public bool Prominent { get; init; }
+    /// <summary>
+    /// 8dp meter styling (goal/quota) instead of the 4dp default.
+    /// <para>
+    /// Backed by a FIELD so <see cref="AdoptConfig"/> can copy it. This component is retained across
+    /// the app's rebuilds, and <c>UiComponent.AdoptConfig</c>'s contract is to copy the fresh
+    /// CONFIGURATION — constructor AND init props. An `init` accessor cannot be written from there,
+    /// so a plain auto-property would silently keep the first parent build's value forever: the bar
+    /// would go on announcing a name the screen has since changed.
+    /// </para>
+    /// </summary>
+    public bool Prominent { get => _prominent; init => _prominent = value; }
 
     /// <summary>
     /// What the progress is FOR, announced by assistive tech — "Uploading", "Storage used". Spec
     /// B14 asks for role=progressbar, and a role with no name announces "progress bar" and nothing
     /// about which one, on a screen that may hold several.
     /// </summary>
-    public string Label { get; init; } = "";
+    public string Label { get => _label; init => _label = value; }
 
     /// <summary>
     /// The progress IN WORDS, when the ratio is not what a person would say — "3 of 7 files",
     /// "2 minutes left". Null announces the number against its range, which a reader renders as a
     /// percentage by itself and is right for a bare ratio.
     /// </summary>
-    public string? ValueText { get; init; }
+    public string? ValueText { get => _valueText; init => _valueText = value; }
+
+    private bool _prominent;
+    private string _label = "";
+    private string? _valueText;
 
     public override void AdoptConfig(UiComponent next)
     {
@@ -59,6 +72,11 @@ public sealed class ProgressBar : StatefulComponent
         _snapNext = fresh.Value is { } incoming && Value is { } current && incoming < current;
         Value = fresh.Value;
         Variant = fresh.Variant;
+        // The rest of the configuration too, or a parent that renames the bar keeps announcing the
+        // old name: this instance is RETAINED, so what Build reads is whatever was adopted here.
+        _label = fresh.Label;
+        _valueText = fresh.ValueText;
+        _prominent = fresh.Prominent;
     }
 
     public override VisualNode Build(ComponentContext context)

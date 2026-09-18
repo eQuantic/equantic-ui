@@ -5,19 +5,41 @@ export class ProgressBar extends StatefulComponent {
     static sweepToX: number = Math.fround(1.05);
     static sweepDurationMs: number = 1200;
     _snapNext: boolean = false;
+    _prominent: boolean = false;
+    _label: string = '';
+    _valueText: any;
     declare value: any;
     declare variant: VariantValue;
-    declare prominent: boolean;
-    declare label: string;
-    declare valueText: any;
+
+    get prominent() {
+        return this._prominent;
+    }
+
+    set prominent(value) {
+        this._prominent = value;
+    }
+
+    get label() {
+        return this._label;
+    }
+
+    set label(value) {
+        this._label = value;
+    }
+
+    get valueText() {
+        return this._valueText;
+    }
+
+    set valueText(value) {
+        this._valueText = value;
+    }
 
     constructor(value: any = null, variant: any = 'primary', props?: any) {
         super();
         if (value !== undefined) this.value = value;
         if (variant !== undefined) this.variant = variant;
         if (this.variant === undefined) this.variant = 'primary';
-        if (this.prominent === undefined) this.prominent = false;
-        if (this.label === undefined) this.label = '';
         this.value = value;
         this.variant = variant;
         if (props && typeof props === 'object') Object.assign(this, props);
@@ -54,6 +76,9 @@ export class ProgressBar extends StatefulComponent {
         this._snapNext = (incoming = fresh.value) != null && (current = this.value) != null && incoming < current;
         this.value = fresh.value;
         this.variant = fresh.variant;
+        this._label = fresh.label;
+        this._valueText = fresh.valueText;
+        this._prominent = fresh.prominent;
     }
 }
 
