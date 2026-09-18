@@ -2,7 +2,8 @@ import { $eq, Adjustable, Box, BoxStyle, BuildContext, ColorToken, Column, Corne
 
 export class Slider extends StatelessComponent {
     static trackHeight: number = 4;
-    static thumbSize: number = 20;
+    static thumbSize: number = 24;
+    static thumbBorder: number = 1;
     declare value: number;
     declare onChanged: any;
     declare min: number;
@@ -35,11 +36,11 @@ export class Slider extends StatelessComponent {
         let step = Math.fround(this.step > 0 ? this.step : span / 10);
         let accent = theme.colors(this.variant).base;
         let fill = this.disabled ? theme.borderStrong : accent;
-        let thumb = new Box(new BoxStyle({ width: Slider.thumbSize, height: Slider.thumbSize, background: theme.surface, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: 2, borderColor: fill, elevation: 2, transition: TransitionSpec.of(1, Motion.press) }));
+        let thumb = new Box(new BoxStyle({ width: Slider.thumbSize, height: Slider.thumbSize, background: theme.surface, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: Slider.thumbBorder, borderColor: theme.border, elevation: 2, transition: TransitionSpec.of(1, Motion.press) }));
         let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'center' });
         row.add(new Flexible(Slider.trackHalf(fill, true, !this.disabled, () => this.onChanged?.(Math.max(this.min, this.value - step))), Slider.weight(fraction)));
         row.add(thumb);
-        row.add(new Flexible(Slider.trackHalf(theme.borderStrong, false, !this.disabled, () => this.onChanged?.(Math.min(this.max, this.value + step))), Slider.weight(1 - fraction)));
+        row.add(new Flexible(Slider.trackHalf(theme.surfaceSubtle, false, !this.disabled, () => this.onChanged?.(Math.min(this.max, this.value + step))), Slider.weight(1 - fraction)));
         let surface = this.disabled ? row : new Draggable(row, null, { axis: 'horizontal', normalized: true, follows: false, min: 0, max: 1, restOffset: fraction, onMoved: (f: number) => this.onChanged?.(this.quantize(this.min + f * span, step)) });
         let box = new Box(new BoxStyle({ width: SizeValue.fill, minWidth: 120, height: 48, opacity: this.disabled ? theme.disabledOpacity : 1 }), surface);
         return this.disabled ? box : new Adjustable(box, (direction: number) => this.onChanged?.(this.quantize(this.value + direction * step, step)), { label: this.label });

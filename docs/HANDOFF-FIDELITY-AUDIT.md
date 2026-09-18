@@ -9,10 +9,10 @@ resolving every token through `Primitives/Theme/Tokens.cs` before judging.
 against the code adversarially; it covered 78 of the 294 before the run hit its session
 limit. So:
 
-- `CONFIRMED` — a skeptic reproduced the divergence from the code. 72 rows.
+- `CONFIRMED` — a skeptic reproduced the divergence from the code. 79 rows.
 - `REFUTED` — the skeptic could not: the code actually matches, or the token resolves to
   the handoff's value. 8 rows, left in deliberately so the same claim is not re-filed.
-- `unverified` — audited but never re-checked. 214 rows. The confirmed/refuted split above
+- `unverified` — audited but never re-checked. 207 rows. The confirmed/refuted split above
   ran at roughly 14 refutations per 100, so expect most to be real and none to be trusted
   without reading the code.
 
@@ -22,6 +22,12 @@ because the code they describe was changed; A9 Heading now names a much smaller 
 was filed with; and B3 AppBar's heading half was FIXED in that pass, leaving the focus anchor
 as what the row holds. A row is re-judged only with the measurement that settles it — never
 because it reads stale.
+
+**C7 Slider was then re-checked as a BLOCK** — all seven of its rows, which is what this
+column is meant to be walked as. Every one reproduced; three were fixed (the 24dp thumb, its
+1dp Border-token ring, the SurfaceSubtle groove), three are fenced on the component with the
+reason, and the seventh is half of each. The re-check also found a defect no row had: a
+DISABLED slider painted both halves of its track the same colour, so its value was unreadable.
 
 `documented-deviation` means the component's own doc comment names and justifies the
 difference. Those are review items, not bugs.
@@ -39,6 +45,7 @@ Each of these has a test that names its handoff block, so the figure cannot drif
 | B10 SearchField | the clear affordance was a 20dp glyph with a 20dp hit rect | `PointerContractFidelityTests` |
 | A10 Icon | a labelled glyph carried a name and no `role="img"` | `DestinationSemanticsTests` |
 | B3 AppBar | the screen's title was a span, so a page had no level-1 heading | `HeadingOutlineTests` |
+| C7 Slider | thumb 20dp with a 2dp accent ring; the unfilled track painted BorderStrong | `SliderHandoffFidelityTests` |
 | A11 Image | no `case Image` in the native semantics walk — alt text was silent on Photon | `GraphicSemanticsTests` |
 
 ### Found while fixing, not by the audit
@@ -663,76 +670,78 @@ the pill's 40 down.
   SegmentedControl.cs:80  Transition = TransitionSpec.Of(StyleChannels.Colors | StyleChannels.Shadow, Motion.Press),
   ```
 
-### C7 Slider · metric · **unverified**
+### C7 Slider · metric · **CONFIRMED**
 
 - **Component**: `src/eQuantic.UI.Components/Slider.cs`
 - **Handoff**: Thumb 24dp white + E2 + 1dp Border
-- **Code**: Slider.cs:22 fixes the thumb at 20dp — a hardcoded const, not a token lookup, so no size or density resolves it to 24.
+- **Code**: Reproduced, and WIDER than filed: the thumb was 20dp AND its ring was 2dp, two deviations compounding in opposite directions — the white face came out 16dp across where the handoff draws 22. E2 and the surface fill were already right. FIXED here: 24dp with a 1dp ring (Slider.cs:48 ThumbSize, Slider.cs:52 ThumbBorder), pinned by `TheThumbIsTheHandoffsKnob`, which asserts all four figures because fixing the size alone still misses the face.
 - **Evidence**:
 
   ```
-  Slider.cs:22  private const float ThumbSize = 20;
+  Slider.cs:48  private const float ThumbSize = 24;
+  Slider.cs:52  private const float ThumbBorder = 1;
+  Slider.cs:90              BorderWidth = ThumbBorder,
   ```
 
-### C7 Slider · metric · **unverified**
+### C7 Slider · metric · **CONFIRMED**
 
 - **Component**: `src/eQuantic.UI.Components/Slider.cs`
 - **Handoff**: Track 4dp Radius.Full: active Primary, rest SurfaceSubtle (two rrects).
-- **Code**: the REST half is painted theme.BorderStrong (Slider.cs:73), not SurfaceSubtle — a much darker rail than specified. Track height 4 (line 21) and the active Primary half (lines 51-52, 70) are correct.
+- **Code**: Reproduced. Track height 4 and the active Primary half were right; the REST half was painted `theme.BorderStrong` — the token for a line that DIVIDES — so the unfilled rail was as dark as a text field's outline and a slider at 10% read as mostly full. FIXED here (Slider.cs:112). A SECOND defect fell out of the same line and is not in the row above it: a DISABLED slider drops the accent to BorderStrong too (Slider.cs:82), so both halves were painted the same colour and the value was unreadable — `ADisabledSliderStillReadsAsAValue` is the assertion that says so.
 - **Evidence**:
 
   ```
-  Slider.cs:73  row.Add(new Flexible(TrackHalf(theme.BorderStrong, filled: false, enabled: !Disabled,
-  Slider.cs:74      onPressed: () => OnChanged?.Invoke(Math.Min(Max, Value + step))), Weight(1 - fraction)));
+  Slider.cs:112          row.Add(new Flexible(TrackHalf(theme.SurfaceSubtle, filled: false, enabled: !Disabled,
+  Slider.cs:82          var fill = Disabled ? theme.BorderStrong : accent;
   ```
 
-### C7 Slider · semantics · **unverified**
+### C7 Slider · semantics · **CONFIRMED**
 
 - **Component**: `src/eQuantic.UI.Components/Slider.cs`
 - **Handoff**: role=slider + aria-valuenow/min/max (+ valuetext for units) ... announces "Limit, R$ 400"; live value announced with 200ms debounce while dragging.
-- **Code**: the Adjustable node carries only Child, OnAdjust, Label and Role (src/eQuantic.UI.Primitives/Nodes/Adjustable.cs) — it has no value fields, so neither realizer can emit aria-valuenow/valuemin/valuemax/valuetext. Both emit role="slider" + tabindex="0" + aria-label and nothing else, which is invalid ARIA (role=slider requires aria-valuenow) and means the value is never announced at all, debounced or otherwise. Slider.cs:106-110 passes only Label.
+- **Code**: Reproduced, and it is the most severe of this block: `Adjustable` carries only a child, a direction callback, a label and a role (src/eQuantic.UI.Primitives/Nodes/Adjustable.cs), so neither realizer can emit aria-valuenow/valuemin/valuemax/valuetext. Both emit `role="slider"` + `tabindex="0"` + `aria-label` and nothing else — INVALID ARIA, since role=slider requires aria-valuenow, and a screen-reader user gets the name and no value at all, debounced or otherwise. FENCED rather than fixed: the value has to join the VOCABULARY, and `Adjustable` is shared with RadioGroup, SegmentedControl and Tabs, so it is a change to the node and both realizers rather than a line in this component. The fence is written on the Slider (Slider.cs:18-35).
 - **Evidence**:
 
   ```
   lowering.ts:2377-2380  const role = node.role ?? 'slider'; host.attributes['role'] = role; host.attributes['tabindex'] = '0'; if (node.label) host.attributes['aria-label'] = node.label;
   WebLoweringVisitor.Interaction.cs:136-146  ["role"] = ... "slider", ["tabindex"] = "0" ... element.RawAttributes["aria-label"] = label;
-  Slider.cs:106-110  new Adjustable(box, direction => OnChanged?.Invoke(Quantize(Value + direction * step, step))) { Label = Label, };
+  Slider.cs:145-148              : new Adjustable(box, direction =>
   ```
 
-### C7 Slider · behaviour · **unverified**
+### C7 Slider · behaviour · **CONFIRMED**
 
 - **Component**: `src/eQuantic.UI.Components/Slider.cs`
 - **Handoff**: Drag: no slop on the thumb (immediate capture) ... thumb drag has no slop.
-- **Code**: the web Draggable controller arms only after 12dp of travel, and Slider.cs:80 wraps the whole row (thumb included) in that node, so the first 12dp of every drag is swallowed before the value moves.
+- **Code**: Reproduced: the web Draggable controller arms only after `Touch.PressCancelSlop` of travel, and Slider.cs:119 wraps the whole row — thumb included — in that node, so the first 12dp of every drag is swallowed before the value moves. FENCED rather than fixed: the slop is what stops a sideways swipe hijacking a vertical scroll, so opting out is the GESTURE's decision to expose (a property on `Draggable` read by both controllers), not something a component may override for itself.
 - **Evidence**:
 
   ```
   src/eQuantic.UI.Runtime/src/dom/draggable.ts:13  const SLOP = 12; // Touch.PressCancelSlop — cross-pinned with the C# host
   draggable.ts:61  if (!active && Math.abs(raw) > SLOP) {
-  Slider.cs:80  VisualNode surface = Disabled ? row : new Draggable(row)
+  Slider.cs:119          VisualNode surface = Disabled ? row : new Draggable(row)
   ```
 
-### C7 Slider · missing-feature · **unverified**
+### C7 Slider · missing-feature · **CONFIRMED**
 
 - **Component**: `src/eQuantic.UI.Components/Slider.cs`
 - **Handoff**: Steps: 4dp dots — OnPrimary over active track, BorderStrong over rest
-- **Code**: a stepped slider draws no detent dots: TrackHalf (Slider.cs:128-149) builds exactly one Box (the bar) inside one centring Column inside one press target, with no per-detent children, and Step is only ever read as an arithmetic quantum (lines 50 and 116).
+- **Code**: Reproduced: `TrackHalf` (Slider.cs:167-189) builds exactly one Box — the bar — inside one centring Column inside one press target, with no per-detent children; `Step` is read only as an arithmetic quantum. FENCED, and the reason is geometric rather than a matter of effort: the track is SPLIT at the thumb into two flex halves, so a dot at 3/10 of the whole track is at no fixed fraction of either half, and the component has no pixel width to compute one from — that is the same measurement the bubble below needs.
 - **Evidence**:
 
   ```
-  Slider.cs:130-140  var bar = new Box(new BoxStyle { Width = SizeValue.Fill, Height = TrackHeight, Background = color, CornerRadius = ..., Transition = ... });
-  Slider.cs:142-143  var centered = new Column(gap: 0) { Height = SizeValue.Fill, Main = MainAlign.Center }; centered.Add(bar);
+  Slider.cs:169-180          var bar = new Box(new BoxStyle
+  Slider.cs:181-182          var centered = new Column(gap: 0) { Height = SizeValue.Fill, Main = MainAlign.Center };
   ```
 
-### C7 Slider · missing-feature · **unverified**
+### C7 Slider · missing-feature · **CONFIRMED**
 
 - **Component**: `src/eQuantic.UI.Components/Slider.cs`
 - **Handoff**: bubble = inverse surface + Radius.Sm, Caption tnum, 10dp above
-- **Code**: there is no value bubble — the entire tree is Box → Draggable → Row(TrackHalf, thumb, TrackHalf) (Slider.cs:68-100), with no overlay, no Anchored node, and no Text node anywhere in the component.
+- **Code**: Reproduced: the whole tree is Box → Draggable → Row(TrackHalf, thumb, TrackHalf) (Slider.cs:104-139), with no overlay, no `Anchored` and no `Text` anywhere in the component. FENCED with the detent dots above, for the same reason: a bubble sits over the THUMB, whose position is a flex weight rather than a coordinate, so placing it needs a measurement the component does not have.
 - **Evidence**:
 
   ```
-  Slider.cs:91-100  var box = new Box(new BoxStyle { Width = SizeValue.Fill, MinWidth = 120, Height = Touch.MinTarget, Opacity = Disabled ? theme.DisabledOpacity : 1f, }, surface);
+  Slider.cs:130-139          var box = new Box(new BoxStyle
   ```
 
 ### C8 Stepper · metric · **unverified**
@@ -2296,18 +2305,18 @@ the pill's 40 down.
   PhotonHost.cs:2043  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
-### C7 Slider · metric · **unverified**
+### C7 Slider · metric · **CONFIRMED**
 
 - **Component**: `src/eQuantic.UI.Components/Slider.cs`
 - **Handoff**: Thumb 24dp white + E2 + 1dp Border (all themes — white thumb is the cross-platform constant).
-- **Code**: the thumb fill is theme.Surface (Slider.cs:57), which is the dark surface under a dark theme rather than the constant white the block calls cross-platform; and its border is 2dp of the accent colour (lines 60-61) rather than 1dp of the Border token. Elevation 2 (E2) is correct.
+- **Code**: Two claims; one was a bug and is FIXED, the other is a deviation this SDK keeps on purpose. The RING was 2dp of the accent colour where the block asks for 1dp of the Border token, and the theme's own elevation contract agrees with the block — "dark E1-E2 ALSO require a 1dp border" (IAppTheme) — so the hairline belongs to the elevation, not to the variant, and the Switch's knob (same surface, same E2) carries none. It is `theme.Border` at 1dp now. The FILL stays `theme.Surface` and will not become a literal white: a component that hardcodes a colour breaks the one rule the styling system has, and the handoff's "white" is that token rendered under a light theme. E2 was already right.
 - **Evidence**:
 
   ```
-  Slider.cs:58  Background = theme.Surface,
-  Slider.cs:60  BorderWidth = 2,
-  Slider.cs:61  BorderColor = fill,
-  Slider.cs:62  Elevation = 2,
+  Slider.cs:88              Background = theme.Surface,
+  Slider.cs:90              BorderWidth = ThumbBorder,
+  Slider.cs:97              BorderColor = theme.Border,
+  Slider.cs:98              Elevation = 2,
   ```
 
 ### C7 Slider · behaviour · **unverified**
@@ -2331,8 +2340,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Slider.cs:56-57  Width = ThumbSize,  Height = ThumbSize,
-  Slider.cs:63  Transition = TransitionSpec.Of(StyleChannels.Colors, Motion.Press),
+  Slider.cs:86-87  Width = ThumbSize,  Height = ThumbSize,
+  Slider.cs:99  Transition = TransitionSpec.Of(StyleChannels.Colors, Motion.Press),
   ```
 
 ### C7 Slider · missing-feature · **unverified**
@@ -2343,8 +2352,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Slider.cs:24  public Slider(float value, Action<float>? onChanged = null)
-  Slider.cs:26-27  Value = value;  OnChanged = onChanged;
+  Slider.cs:54  public Slider(float value, Action<float>? onChanged = null)
+  Slider.cs:56-57  Value = value;  OnChanged = onChanged;
   ```
 
 ### C8 Stepper · metric · **unverified**
@@ -3448,7 +3457,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Slider.cs:70-71  row.Add(new Flexible(TrackHalf(fill, filled: true, enabled: !Disabled, onPressed: () => OnChanged?.Invoke(Math.Max(Min, Value - step))), Weight(fraction)));
+  Slider.cs:106-107  row.Add(new Flexible(TrackHalf(fill, filled: true, enabled: !Disabled, onPressed: () => OnChanged?.Invoke(Math.Max(Min, Value - step))), Weight(fraction)));
   ```
 
 ### C7 Slider · documented-deviation · **unverified**
@@ -3459,7 +3468,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Slider.cs:88  OnMoved = f => OnChanged?.Invoke(Quantize(Min + f * span, step)),
+  Slider.cs:127  OnMoved = f => OnChanged?.Invoke(Quantize(Min + f * span, step)),
   ```
 
 ### C8 Stepper · behaviour · **unverified**
@@ -3676,6 +3685,6 @@ the pill's 40 down.
 
 | Severity | Confirmed | Refuted | Unverified |
 | --- | --- | --- | --- |
-| visible | 13 | 1 | 69 |
-| subtle | 36 | 4 | 86 |
+| visible | 19 | 1 | 63 |
+| subtle | 37 | 4 | 85 |
 | note | 23 | 3 | 59 |

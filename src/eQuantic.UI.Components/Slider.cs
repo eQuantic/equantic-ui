@@ -14,12 +14,42 @@ namespace eQuantic.UI.Components;
 /// means everywhere else — and dragging anywhere on it SCRUBS continuously, relative to where the
 /// value already is, so grabbing the thumb never makes it jump out from under the finger.
 /// </para>
+/// <para>
+/// V1 FENCES — three things spec C7 asks for that this does not do, each because it belongs to
+/// something larger than a component:
+/// </para>
+/// <list type="bullet">
+/// <item><b>The VALUE is not announced.</b> "role=slider + aria-valuenow/min/max" needs
+/// <see cref="Adjustable"/> to carry a value, and it carries only a child, a direction callback, a
+/// label and a role — so both realizers emit <c>role="slider"</c> with no value, which is invalid
+/// ARIA and leaves a screen-reader user with a name and nothing else. The fix is a vocabulary
+/// change shared with RadioGroup, SegmentedControl and Tabs, not a line in this file.</item>
+/// <item><b>The first 12dp of a drag are swallowed.</b> The handoff asks for immediate capture on
+/// the thumb; <see cref="Draggable"/> arms after <c>Touch.PressCancelSlop</c>, which is what stops
+/// a sideways swipe hijacking a vertical scroll. A slider that opts out needs the slop to become a
+/// property of the gesture, and that is the DRAGGABLE's decision to expose.</item>
+/// <item><b>No detent dots and no value bubble.</b> Both are painted geometry over a track that is
+/// SPLIT at the thumb into two flex halves, so neither can be placed without the pixel width the
+/// component deliberately does not have — they join whatever gives a component its own measure.
+/// </item>
+/// </list>
 /// </summary>
 public sealed class Slider : StatelessComponent
 {
     /// <summary>Track thickness; the thumb is the target, the track is the readout.</summary>
     private const float TrackHeight = 4;
-    private const float ThumbSize = 20;
+
+    /// <summary>
+    /// Spec C7: 24dp, and the figure is a TARGET rather than a decoration — the thumb is what a
+    /// finger goes for, and the track around it is only the readout. It was 20 with a 2dp border,
+    /// which read as a smaller knob inside a heavier ring; the handoff asks for a bigger knob with
+    /// a hairline (<see cref="ThumbBorder"/>).
+    /// </summary>
+    private const float ThumbSize = 24;
+
+    /// <summary>Spec C7: 1dp. A 2dp ring on a 20dp knob was two deviations compounding — the
+    /// border grew as the thumb shrank, so the white face was 16dp across instead of 22.</summary>
+    private const float ThumbBorder = 1;
 
     public Slider(float value, Action<float>? onChanged = null)
     {
@@ -57,8 +87,14 @@ public sealed class Slider : StatelessComponent
             Height = ThumbSize,
             Background = theme.Surface,
             CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
-            BorderWidth = 2,
-            BorderColor = fill,
+            BorderWidth = ThumbBorder,
+            // The BORDER token, not the accent. This hairline is the ELEVATION contract's — "dark
+            // E1-E2 also require a 1dp border", IAppTheme.Elevation — and its job is to separate a
+            // raised surface from the one behind it, which a Primary-blue ring does not do. The
+            // variant already reads: it is the filled half of the track. A tinted ring made the
+            // knob a second readout of the same fact and the Switch, whose knob is the same
+            // surface at the same elevation, carries none.
+            BorderColor = theme.Border,
             Elevation = 2,
             Transition = TransitionSpec.Of(StyleChannels.Colors, Motion.Press),
         });
@@ -70,7 +106,10 @@ public sealed class Slider : StatelessComponent
         row.Add(new Flexible(TrackHalf(fill, filled: true, enabled: !Disabled,
             onPressed: () => OnChanged?.Invoke(Math.Max(Min, Value - step))), Weight(fraction)));
         row.Add(thumb);
-        row.Add(new Flexible(TrackHalf(theme.BorderStrong, filled: false, enabled: !Disabled,
+        // Spec C7: the REST half is SurfaceSubtle — the unfilled rail is a groove, not a border.
+        // BorderStrong is the token for a line that DIVIDES, and using it here painted the rail as
+        // dark as the outline of a text field, so a slider at 10% read as mostly-full.
+        row.Add(new Flexible(TrackHalf(theme.SurfaceSubtle, filled: false, enabled: !Disabled,
             onPressed: () => OnChanged?.Invoke(Math.Min(Max, Value + step))), Weight(1 - fraction)));
 
         // The gesture is NORMALIZED because the track is fluid: the component cannot know its pixel
