@@ -12,6 +12,6 @@ export type NodeKind =
   'adaptive' | 'adjustable' | 'anchored' | 'box' | 'cameraPreview' | 'canvas' | 'codeSurface'
   | 'column' | 'dragDismiss' | 'draggable' | 'drawing' | 'flexible' | 'grid' | 'hoverable' | 'icon'
   | 'image' | 'inFlow' | 'inView' | 'link' | 'loopMotion' | 'navigable' | 'overlay' | 'pinned'
-  | 'positioned' | 'presence' | 'pressable' | 'row' | 'safeArea' | 'scrollView' | 'sheetSurface'
-  | 'shortcut' | 'simulated' | 'spacer' | 'spinner' | 'stack' | 'text' | 'textEntry' | 'vector'
-  | 'webFrame' | 'component';
+  | 'positioned' | 'presence' | 'pressable' | 'progress' | 'row' | 'safeArea' | 'scrollView'
+  | 'sheetSurface' | 'shortcut' | 'simulated' | 'spacer' | 'spinner' | 'stack' | 'text'
+  | 'textEntry' | 'vector' | 'webFrame' | 'component';

@@ -38,6 +38,20 @@ public sealed class ProgressBar : StatefulComponent
     /// <summary>8dp meter styling (goal/quota) instead of the 4dp default.</summary>
     public bool Prominent { get; init; }
 
+    /// <summary>
+    /// What the progress is FOR, announced by assistive tech — "Uploading", "Storage used". Spec
+    /// B14 asks for role=progressbar, and a role with no name announces "progress bar" and nothing
+    /// about which one, on a screen that may hold several.
+    /// </summary>
+    public string Label { get; init; } = "";
+
+    /// <summary>
+    /// The progress IN WORDS, when the ratio is not what a person would say — "3 of 7 files",
+    /// "2 minutes left". Null announces the number against its range, which a reader renders as a
+    /// percentage by itself and is right for a bare ratio.
+    /// </summary>
+    public string? ValueText { get; init; }
+
     public override void AdoptConfig(UiComponent next)
     {
         if (next is not ProgressBar fresh) return;
@@ -84,7 +98,15 @@ public sealed class ProgressBar : StatefulComponent
                 // visible ratio glides instead of jumping when only one side moved.
                 track.Add(new Spacer(1000 - filledWeight) { AnimateChanges = animate });
             }
-            return track;
+            // Spec B14: role=progressbar with the value it holds. The CLAMPED value, not the
+            // caller's — the flex weights are drawn from `clamped`, and an announcement that
+            // disagreed with the pixels would describe a different control. The range is 0..1 by
+            // this component's own definition of Value, so it is stated rather than guessed at.
+            return new Progress(track)
+            {
+                Label = Label,
+                Value = new RangeValue(clamped, 0, 1) { Text = ValueText },
+            };
         }
 
         // Indeterminate: a full-width layer holds the 30% segment by flex weight; LoopMotion sweeps
@@ -98,13 +120,18 @@ public sealed class ProgressBar : StatefulComponent
         }), 300));
         segment.Add(new Spacer(700));
 
-        return new Box(new BoxStyle
+        // Indeterminate keeps the ROLE and carries no value — ARIA's own rule, and the honest one:
+        // the bar is saying that something is happening, which is all it knows.
+        return new Progress(new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
             Height = height,
             Background = theme.SurfaceSubtle,
             CornerRadius = new CornerRadii(theme.Shape(ShapeScale.Full)),
             Clip = true,
-        }, new LoopMotion(segment, LoopEffect.SlideX, SweepFromX, SweepToX, SweepDurationMs));
+        }, new LoopMotion(segment, LoopEffect.SlideX, SweepFromX, SweepToX, SweepDurationMs)))
+        {
+            Label = Label,
+        };
     }
 }

@@ -47,7 +47,7 @@ public sealed class Adjustable : SingleChildNode
     /// a value on those would be a second answer to a question their children already answer.
     /// </para>
     /// </summary>
-    public AdjustableValue? Value { get; init; }
+    public RangeValue? Value { get; init; }
 
     public sealed override TResult Accept<TState, TResult>(
         IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);

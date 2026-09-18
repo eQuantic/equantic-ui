@@ -127,7 +127,9 @@ public class SpinnerRealizerTests
     public void ProgressBar_ForwardChangeAnimates_RegressionSnaps()
     {
         var bar = new ProgressBar(0.3f);
-        string FillStyle() => Render(bar).Children[0].Attributes["style"]!;
+        // The tree gained a LEVEL when spec B14's role=progressbar joined the vocabulary: the host
+        // carrying the role wraps the track, and the animated FILL is still the track's first child.
+        string FillStyle() => Render(bar).Children[0].Children[0].Attributes["style"]!;
 
         FillStyle().Should().Contain("transition: flex-grow",
             "a fresh bar has no regression to honor");

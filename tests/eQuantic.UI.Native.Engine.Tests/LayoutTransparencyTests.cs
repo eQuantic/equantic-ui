@@ -51,6 +51,7 @@ public class LayoutTransparencyTests
     private static IReadOnlyList<SingleChildNode> Wrappers(VisualNode c) =>
     [
         new Adjustable(c, _ => { }),
+        new Progress(c),
         new CodeSurface(c, new CodeEditorController()),
         new DragDismiss(c),
         new Draggable(c),

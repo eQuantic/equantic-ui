@@ -54,7 +54,8 @@ describe('loop motion lowering (C# LoopMotionRealizerTests cross-pin)', () => {
   });
 
   it('the transpiled indeterminate ProgressBar sweeps a flex segment inside the clipped track', () => {
-    const track = lower(new ProgressBar());
+    // One level in: spec B14's role=progressbar host wraps the track (C# twin does the same).
+    const track = lower(new ProgressBar()).children[0];
 
     expect(effectiveStyle(track)).toContain(
       `background-color: ${tokenValue(photonTheme.surfaceSubtle)}`,
@@ -72,7 +73,8 @@ describe('loop motion lowering (C# LoopMotionRealizerTests cross-pin)', () => {
   });
 
   it('the transpiled determinate ProgressBar keeps the flex-weight split', () => {
-    const node = lower(new ProgressBar(0.64));
+    // One level in: spec B14's role=progressbar host wraps the track (C# twin does the same).
+    const node = lower(new ProgressBar(0.64)).children[0];
 
     expect(effectiveStyle(node.children[0])).toContain('flex: 640 1 0%');
     expect(effectiveStyle(node.children[1])).toContain('flex: 360 1 0%');

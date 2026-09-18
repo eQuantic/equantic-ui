@@ -291,6 +291,7 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
         SemanticRole.Button => "android.widget.Button",
         SemanticRole.Link => "android.widget.Button",
         SemanticRole.Image => "android.widget.ImageView",
+        SemanticRole.ProgressIndicator => "android.widget.ProgressBar",
         SemanticRole.Slider => "android.widget.SeekBar",
         SemanticRole.Checkbox => "android.widget.CheckBox",
         SemanticRole.Switch => "android.widget.Switch",

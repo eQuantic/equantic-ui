@@ -225,7 +225,7 @@ public class SemanticsTests
             {
                 Label = "Period",
                 Role = Role,
-                Value = new AdjustableValue(2, 0, 5),
+                Value = new RangeValue(2, 0, 5),
             };
     }
 
@@ -251,6 +251,68 @@ public class SemanticsTests
 
         withWords.Semantics().Single(s => s.Role == SemanticRole.Slider).Value
             .Should().Be("40%", "words REPLACE the number, exactly as aria-valuetext does on the web");
+    }
+
+    private sealed class UploadPage : Primitives.StatefulComponent
+    {
+        public float? Done = 0.45f;
+        public string? Spoken;
+
+        public override VisualNode Build(ComponentContext context) =>
+            new ProgressBar(Done) { Label = "Uploading", ValueText = Spoken };
+    }
+
+    /// <summary>
+    /// Spec B14: the bar announces WHAT IT IS FOR and HOW FAR ALONG — and as a PROGRESS INDICATOR,
+    /// not a slider. The platforms split the two (AXProgressIndicator, android.widget.ProgressBar,
+    /// and UIKit's UpdatesFrequently over UIKit's Adjustable), and reporting it as a slider would
+    /// offer VoiceOver's adjust gestures on something nothing can move.
+    /// <para>
+    /// Before this the component lowered to a bare Row and Photon announced nothing at all — the
+    /// native half of the unlabelled pair of divs the web emitted.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void AProgressBar_AnnouncesItsName_AndHowFarAlong()
+    {
+        var host = new PhotonHost(new UploadPage(), PhotonTheme.Instance, ThemeMode.Light, 400, 400);
+        host.RenderFrame(new DisplayListBuilder());
+
+        var bar = host.Semantics().Single(s => s.Role == SemanticRole.ProgressIndicator);
+        bar.Label.Should().Be("Uploading", "the NAME is what the progress is for");
+        bar.Value.Should().Be("0.45", "and the VALUE is how far along it is");
+
+        host.Semantics().Should().NotContain(s => s.Role == SemanticRole.Slider,
+            "a progress bar is read, never moved — announcing it as a slider promises a gesture that does nothing");
+    }
+
+    /// <summary>
+    /// An INDETERMINATE bar keeps its role and announces no number: the honest answer when nothing
+    /// knows how far along it is, and the INVERSE of the Adjustable rule, where a missing value
+    /// means the node was never a slider.
+    /// </summary>
+    [Fact]
+    public void AnIndeterminateBar_IsStillAnnounced_WithNoNumber()
+    {
+        var host = new PhotonHost(new UploadPage { Done = null }, PhotonTheme.Instance, ThemeMode.Light, 400, 400);
+        host.RenderFrame(new DisplayListBuilder());
+
+        var bar = host.Semantics().Single(s => s.Role == SemanticRole.ProgressIndicator);
+        bar.Label.Should().Be("Uploading");
+        bar.Value.Should().BeNull("nothing knows how far along it is, and saying a number would invent one");
+    }
+
+    /// <summary>The words REPLACE the ratio, exactly as aria-valuetext does on the web — one
+    /// announcement across both targets rather than two spellings of it.</summary>
+    [Fact]
+    public void AProgressBar_SpeaksTheWordsWhenTheCallerGivesThem()
+    {
+        var host = new PhotonHost(new UploadPage { Spoken = "3 of 7 files" },
+            PhotonTheme.Instance, ThemeMode.Light, 400, 400);
+        host.RenderFrame(new DisplayListBuilder());
+
+        host.Semantics().Single(s => s.Role == SemanticRole.ProgressIndicator).Value
+            .Should().Be("3 of 7 files");
     }
 
     /// <summary>

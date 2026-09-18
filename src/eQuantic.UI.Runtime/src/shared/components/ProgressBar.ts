@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CornerRadii, Flexible, LoopMotion, Row, SizeValue, Spacer, StatefulComponent, UiComponent, VariantValue } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CornerRadii, Flexible, LoopMotion, Progress, RangeValue, Row, SizeValue, Spacer, StatefulComponent, UiComponent, VariantValue } from "../runtime-exports";
 
 export class ProgressBar extends StatefulComponent {
     static sweepFromX: number = -Math.fround(0.35);
@@ -8,6 +8,8 @@ export class ProgressBar extends StatefulComponent {
     declare value: any;
     declare variant: VariantValue;
     declare prominent: boolean;
+    declare label: string;
+    declare valueText: any;
 
     constructor(value: any = null, variant: any = 'primary', props?: any) {
         super();
@@ -15,6 +17,7 @@ export class ProgressBar extends StatefulComponent {
         if (variant !== undefined) this.variant = variant;
         if (this.variant === undefined) this.variant = 'primary';
         if (this.prominent === undefined) this.prominent = false;
+        if (this.label === undefined) this.label = '';
         this.value = value;
         this.variant = variant;
         if (props && typeof props === 'object') Object.assign(this, props);
@@ -36,12 +39,12 @@ export class ProgressBar extends StatefulComponent {
             if (filledWeight < 1000) {
                 track.add(new Spacer(1000 - filledWeight, { animateChanges: animate }));
             }
-            return track;
+            return new Progress(track, { label: this.label, value: new RangeValue(clamped, 0, 1, { text: this.valueText }) });
         }
         let segment = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: height });
         segment.add(new Flexible(new Box(new BoxStyle({ height: height, background: theme.colors(this.variant).base, cornerRadius: new CornerRadii(theme.shape('full')) })), 300));
         segment.add(new Spacer(700));
-        return new Box(new BoxStyle({ width: SizeValue.fill, height: height, background: theme.surfaceSubtle, cornerRadius: new CornerRadii(theme.shape('full')), clip: true }), new LoopMotion(segment, 'slideX', ProgressBar.sweepFromX, ProgressBar.sweepToX, ProgressBar.sweepDurationMs));
+        return new Progress(new Box(new BoxStyle({ width: SizeValue.fill, height: height, background: theme.surfaceSubtle, cornerRadius: new CornerRadii(theme.shape('full')), clip: true }), new LoopMotion(segment, 'slideX', ProgressBar.sweepFromX, ProgressBar.sweepToX, ProgressBar.sweepDurationMs)), { label: this.label });
     }
 
     adoptConfig(next: UiComponent) {

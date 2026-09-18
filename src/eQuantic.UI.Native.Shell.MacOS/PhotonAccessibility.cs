@@ -137,6 +137,7 @@ internal static class PhotonAccessibility
         SemanticRole.CodeField => "AXTextArea",
         SemanticRole.Slider => "AXSlider",
         SemanticRole.Image => "AXImage",
+        SemanticRole.ProgressIndicator => "AXProgressIndicator",
         // Both checks are AXCheckBox to AppKit — macOS has no switch role; the DISTINCTION lives
         // in SemanticRole for the mobile bridges, which do (UISwitch trait, Switch class).
         SemanticRole.Checkbox or SemanticRole.Switch => "AXCheckBox",

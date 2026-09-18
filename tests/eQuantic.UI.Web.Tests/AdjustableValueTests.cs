@@ -199,7 +199,7 @@ public class AdjustableValueTests
         var node = new Adjustable(new Text("strip", TypeRole.Label), _ => { })
         {
             Role = AdjustableRole.Tablist,
-            Value = new AdjustableValue(2, 0, 5),
+            Value = new RangeValue(2, 0, 5),
         };
 
         var host = Host(node, "tablist");
@@ -235,7 +235,7 @@ public class AdjustableValueTests
             ("bare-node", new Adjustable(new Text("knob", TypeRole.Label), _ => { })),
             ("ui-factory", Components.UI.Adjustable(new Text("knob", TypeRole.Label), _ => { })),
             ("ui-factory-valued", Components.UI.Adjustable(new Text("knob", TypeRole.Label), _ => { },
-                new AdjustableValue(0.4f, 0, 1))),
+                new RangeValue(0.4f, 0, 1))),
         ];
 
         var naked = cases

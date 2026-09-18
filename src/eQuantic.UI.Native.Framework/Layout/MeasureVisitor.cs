@@ -178,6 +178,11 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     public LayoutNode Visit(Adjustable node, MeasureState s) =>
         MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.Path);
 
+    // Layout-transparent, and NOT inlined the way an Adjustable is: a slider is an inline
+    // control that takes its own width, a progress bar reports across whatever it is given.
+    public LayoutNode Visit(Progress node, MeasureState s) =>
+        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.Path);
+
     // A Link is layout-transparent (semantics + interaction only — the child owns visuals).
     public LayoutNode Visit(Link node, MeasureState s) =>
         MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.Path);

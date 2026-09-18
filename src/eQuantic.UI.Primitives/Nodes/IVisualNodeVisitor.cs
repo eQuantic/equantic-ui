@@ -106,6 +106,8 @@ public interface IVisualNodeVisitor<in TState, out TResult>
 
     TResult Visit(Presence node, TState state);
 
+    TResult Visit(Progress node, TState state);
+
     TResult Visit(Pressable node, TState state);
 
     TResult Visit(Row node, TState state);

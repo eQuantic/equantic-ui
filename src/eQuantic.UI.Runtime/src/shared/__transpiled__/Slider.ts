@@ -1,4 +1,4 @@
-import { $eq, Adjustable, AdjustableValue, Box, BoxStyle, BuildContext, ColorToken, Column, CornerRadii, Draggable, Flexible, Motion, Pressable, Row, SizeValue, StatelessComponent, TransitionSpec, VariantValue } from "@equantic/runtime";
+import { $eq, Adjustable, Box, BoxStyle, BuildContext, ColorToken, Column, CornerRadii, Draggable, Flexible, Motion, Pressable, RangeValue, Row, SizeValue, StatelessComponent, TransitionSpec, VariantValue } from "@equantic/runtime";
 
 export class Slider extends StatelessComponent {
     static trackHeight: number = 4;
@@ -34,7 +34,7 @@ export class Slider extends StatelessComponent {
         let theme = context.theme;
         let span = Math.fround(this.max - this.min);
         let fraction = span <= 0 ? 0 : Math.min(Math.max((this.value - this.min) / span, 0), 1);
-        let announced = span <= 0 ? new AdjustableValue(this.min, this.min, this.min) : new AdjustableValue(Math.min(Math.max(this.value, this.min), this.max), this.min, this.max);
+        let announced = span <= 0 ? new RangeValue(this.min, this.min, this.min) : new RangeValue(Math.min(Math.max(this.value, this.min), this.max), this.min, this.max);
         let step = Math.fround(this.step > 0 ? this.step : span / 10);
         let accent = theme.colors(this.variant).base;
         let fill = this.disabled ? theme.borderStrong : accent;

@@ -21,6 +21,16 @@ public enum SemanticRole : byte
     /// maps both onto AXCheckBox.</summary>
     Switch,
 
+    /// <summary>
+    /// Something REPORTING how far along it is — a progress bar, determinate or not. Split from
+    /// Slider because the platforms split them: AXProgressIndicator is not AXSlider, and a SeekBar
+    /// is not a ProgressBar. The difference a user feels is that this one cannot be moved, and a
+    /// bridge that called it a slider would offer gestures that do nothing.
+    /// <para>Its value rides <see cref="SemanticNode.Value"/>, and is NULL when indeterminate —
+    /// which is a state to announce, not a value that went missing.</para>
+    /// </summary>
+    ProgressIndicator,
+
     /// <summary>One cell of a two-dimensional composite — a calendar day (design system C15).
     /// Its picked-ness rides <see cref="SemanticNode.Selected"/>, the same field a tab and a
     /// listbox option use, and never the label.</summary>

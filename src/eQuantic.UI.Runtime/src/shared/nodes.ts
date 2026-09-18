@@ -618,15 +618,28 @@ export interface AdjustableNode extends VisualNodeValue {
   /** ARIA identity of the host — 'slider' (default), 'tablist' or 'radiogroup'. */
   role?: 'slider' | 'tablist' | 'radiogroup';
   /** Where the value sits, for a role that has one; absent on a tablist or a radiogroup. */
-  value?: AdjustableValueValue | null;
+  value?: RangeValueValue | null;
 }
 
 /**
- * Wire shape of the C# `AdjustableValue`: the trio ARIA calls now/min/max, plus the words to say it
+ * A bar REPORTING how far along something is (C# twin: Progress). Not a control — no tab index and
+ * no handler; `value` absent means INDETERMINATE, which is a state the role exists to announce
+ * rather than a value that went missing.
+ */
+export interface ProgressNode extends VisualNodeValue {
+  nodeKind: 'progress';
+  child: VisualNodeValue;
+  label?: string;
+  /** How far along, over the range it covers; absent when indeterminate. */
+  value?: RangeValueValue | null;
+}
+
+/**
+ * Wire shape of the C# `RangeValue`: the trio ARIA calls now/min/max, plus the words to say it
  * in. One object rather than three fields because `role="slider"` REQUIRES a now, and a now without
  * its bounds is read against ARIA's own 0-100 default — wrong for every slider in this system.
  */
-export interface AdjustableValueValue {
+export interface RangeValueValue {
   now: number;
   min: number;
   max: number;

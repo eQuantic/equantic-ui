@@ -68,7 +68,8 @@ public class LoopMotionRealizerTests
     [Fact]
     public void IndeterminateProgressBar_SweepsAFlexSegmentInsideTheClippedTrack()
     {
-        var track = Render(new ProgressBar());
+        // One level in: the progressbar host wraps the track (spec B14).
+        var track = Render(new ProgressBar()).Children[0];
 
         // Track: SurfaceSubtle, Radius.Full, clipping.
         track.Attributes["style"].Should().Contain($"background-color: {TokenCss.Value(Theme.SurfaceSubtle)}");
@@ -89,7 +90,7 @@ public class LoopMotionRealizerTests
     [Fact]
     public void DeterminateProgressBar_KeepsTheFlexWeightSplit()
     {
-        var node = Render(new ProgressBar(0.64f));
+        var node = Render(new ProgressBar(0.64f)).Children[0];
         node.Children[0].Attributes["style"].Should().Contain("flex: 640 1 0%");
         node.Children[1].Attributes["style"].Should().Contain("flex: 360 1 0%");
         node.Attributes["style"].Should().NotContain("overflow", "a determinate track never clips");

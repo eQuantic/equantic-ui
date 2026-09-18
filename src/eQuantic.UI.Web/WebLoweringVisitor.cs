@@ -165,6 +165,8 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context)
 
     public HtmlElement? Visit(Adjustable adjustable, bool? horizontalAxis) => LowerAdjustable(adjustable);
 
+    public HtmlElement? Visit(Progress progress, bool? horizontalAxis) => LowerProgress(progress);
+
     public HtmlElement? Visit(Navigable navigable, bool? horizontalAxis) => LowerNavigable(navigable);
 
     public HtmlElement? Visit(Shortcut shortcut, bool? horizontalAxis) =>

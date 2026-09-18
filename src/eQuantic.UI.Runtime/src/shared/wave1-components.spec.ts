@@ -22,7 +22,8 @@ describe('wave-1 transpiled components (real eqc output)', () => {
   });
 
   it('ProgressBar splits the track by flex weights (640/360 at 64%)', () => {
-    const node = new ProgressBar(0.64).render();
+    // One level in: spec B14's role=progressbar host wraps the track (C# twin does the same).
+    const node = new ProgressBar(0.64).render().children[0];
     expect(effectiveStyle(node.children[0])).toContain('flex: 640 1 0%');
     expect(effectiveStyle(node.children[1])).toContain('flex: 360 1 0%');
   });

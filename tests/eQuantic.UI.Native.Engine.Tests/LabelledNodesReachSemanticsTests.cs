@@ -56,6 +56,7 @@ public class LabelledNodesReachSemanticsTests
         ["Navigable"] = label => new Navigable([new Text("row", TypeRole.BodyM)], _ => { }) { Label = label },
         ["Overlay"] = label => new Overlay(new Text("over", TypeRole.BodyM)) { Label = label },
         ["Adjustable"] = label => new Adjustable(new Text("x", TypeRole.BodyM), _ => { }) { Label = label },
+        ["Progress"] = label => new Progress(new Text("bar", TypeRole.BodyM)) { Label = label },
         // Real surfaces with minimal controllers. These two were a `Text` standing in for them —
         // a sample that builds the WRONG TYPE proves nothing and, worse, let
         // `EveryLabelledNode_IsAccountedFor` report complete coverage over a hole. Both are cheap to

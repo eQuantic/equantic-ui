@@ -16,7 +16,6 @@ ROADMAP.md TypeScriptEmitter.cs 1
 docs/DESKTOP-PLAN.md PhotonHost.cs 1
 docs/DESKTOP-PLAN.md PhotonWindow.cs 2
 docs/HANDOFF-FIDELITY-AUDIT.md Accordion.cs 6
-docs/HANDOFF-FIDELITY-AUDIT.md Adjustable.cs 1
 docs/HANDOFF-FIDELITY-AUDIT.md AndroidTextService.cs 1
 docs/HANDOFF-FIDELITY-AUDIT.md AppBar.cs 7
 docs/HANDOFF-FIDELITY-AUDIT.md Avatar.cs 7
@@ -57,14 +56,13 @@ docs/HANDOFF-FIDELITY-AUDIT.md PhotonActivity.cs 1
 docs/HANDOFF-FIDELITY-AUDIT.md PhotonHost.cs 8
 docs/HANDOFF-FIDELITY-AUDIT.md PhotonTheme.cs 15
 docs/HANDOFF-FIDELITY-AUDIT.md PhotonViewController.cs 1
-docs/HANDOFF-FIDELITY-AUDIT.md ProgressBar.cs 2
+docs/HANDOFF-FIDELITY-AUDIT.md ProgressBar.cs 1
 docs/HANDOFF-FIDELITY-AUDIT.md PullToRefresh.cs 10
 docs/HANDOFF-FIDELITY-AUDIT.md RadioGroup.cs 3
 docs/HANDOFF-FIDELITY-AUDIT.md SafeAreaTests.cs 1
 docs/HANDOFF-FIDELITY-AUDIT.md ScrollStore.cs 1
 docs/HANDOFF-FIDELITY-AUDIT.md SearchField.cs 2
 docs/HANDOFF-FIDELITY-AUDIT.md SegmentedControl.cs 11
-docs/HANDOFF-FIDELITY-AUDIT.md Slider.cs 11
 docs/HANDOFF-FIDELITY-AUDIT.md Spinner.cs 1
 docs/HANDOFF-FIDELITY-AUDIT.md Stepper.cs 7
 docs/HANDOFF-FIDELITY-AUDIT.md SwipeableRow.cs 9

@@ -93,8 +93,8 @@ public sealed class Slider : StatelessComponent
         // through would pair aria-valuemin="10" with aria-valuemax="0", which is not a range at all;
         // the pixels already decided, and the announcement follows them rather than the arguments.
         var announced = span <= 0
-            ? new AdjustableValue(Min, Min, Min)
-            : new AdjustableValue(Math.Clamp(Value, Min, Max), Min, Max);
+            ? new RangeValue(Min, Min, Min)
+            : new RangeValue(Math.Clamp(Value, Min, Max), Min, Max);
         var step = Step > 0 ? Step : span / 10f;
         var accent = theme.Colors(Variant).Base;
         var fill = Disabled ? theme.BorderStrong : accent;

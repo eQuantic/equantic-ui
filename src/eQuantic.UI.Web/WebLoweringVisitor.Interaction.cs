@@ -160,6 +160,43 @@ internal sealed partial class WebLoweringVisitor
     }
 
     /// <summary>
+    /// The web twin of the progress semantics (spec B14): one host carrying
+    /// <c>role="progressbar"</c>, its name, and how far along it is. No tab index and no handler —
+    /// nothing here is operable, which is the whole difference from <c>LowerAdjustable</c> above.
+    /// <para>
+    /// An INDETERMINATE bar keeps the role and omits <c>aria-valuenow</c>, which is ARIA's own rule
+    /// and reads as "in progress, amount unknown". Note this is the INVERSE of the slider: there a
+    /// missing value means the node is not a slider and the role is withheld; here a missing value
+    /// is a state the role exists to report. Two rules that look alike and are not, so they are
+    /// written out rather than shared.
+    /// </para>
+    /// <para>SSR half: the same markup either way — there is no handler to leave out.</para>
+    /// </summary>
+    private HtmlElement LowerProgress(Progress progress)
+    {
+        var progressFills = Fills(progress.Child);
+        var element = new RealizedElement("div")
+        {
+            Style = new HtmlStyle
+            {
+                Width = progressFills.Width ? "100%" : null,
+                Height = progressFills.Height ? "100%" : null,
+            },
+            RawAttributes = new Dictionary<string, string> { ["role"] = "progressbar" },
+        };
+        if (progress.Label is { Length: > 0 } label) element.RawAttributes["aria-label"] = label;
+        if (progress.Value is { } value)
+        {
+            element.RawAttributes["aria-valuenow"] = TokenCss.Number(value.Now);
+            element.RawAttributes["aria-valuemin"] = TokenCss.Number(value.Min);
+            element.RawAttributes["aria-valuemax"] = TokenCss.Number(value.Max);
+            if (value.Text is { Length: > 0 } spoken) element.RawAttributes["aria-valuetext"] = spoken;
+        }
+        if (Lower(progress.Child, null) is { } child) element.Children.Add(child);
+        return element;
+    }
+
+    /// <summary>
     /// What the host ANNOUNCES itself as — DERIVED from the role and the value together rather than
     /// copied from <see cref="Adjustable.Role"/>, because the pairing is ARIA's rule and this is the
     /// one place in the SDK that speaks ARIA.
@@ -179,7 +216,7 @@ internal sealed partial class WebLoweringVisitor
     /// (<c>lowerAdjustable</c> in lowering.ts).
     /// </para>
     /// </summary>
-    private static string AriaRole(AdjustableRole role, AdjustableValue? value) => role switch
+    private static string AriaRole(AdjustableRole role, RangeValue? value) => role switch
     {
         AdjustableRole.Tablist => "tablist",
         AdjustableRole.Radiogroup => "radiogroup",

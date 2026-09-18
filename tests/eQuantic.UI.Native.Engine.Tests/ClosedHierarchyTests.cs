@@ -126,7 +126,7 @@ public class ClosedHierarchyTests
         }
     }
 
-    /// <summary>…and the concrete ones cannot be extended at all, which the 39 already were. Stated
+    /// <summary>…and the concrete ones cannot be extended at all, which the 40 already were. Stated
     /// anyway: an unsealed one is a subtype the visitor would dispatch as its BASE, silently.</summary>
     [Fact]
     public void AConcreteNode_IsSealed()
@@ -150,7 +150,7 @@ public class ClosedHierarchyTests
     public void TheScanActuallySeesTheVocabulary()
     {
         EveryNodeType().Count(t => !t.IsAbstract && t.Assembly == typeof(VisualNode).Assembly)
-            .Should().Be(39, "the vocabulary is 39 concrete nodes, and IVisualNodeVisitor has a "
+            .Should().Be(40, "the vocabulary is 40 concrete nodes, and IVisualNodeVisitor has a "
                 + "method for each — if this number moved, the interface moved with it or the "
                 + "compiler would have said so");
 

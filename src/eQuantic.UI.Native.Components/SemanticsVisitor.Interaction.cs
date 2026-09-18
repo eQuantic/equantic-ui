@@ -67,6 +67,20 @@ internal sealed partial class SemanticsVisitor
             node.Role == AdjustableRole.Slider ? node.Value?.Spoken : null,
             false));
 
+    /// <summary>
+    /// Spec B14: the bar says WHAT IT IS FOR and HOW FAR ALONG. It is not a Slider — the platforms
+    /// split the two (AXProgressIndicator, android.widget.ProgressBar), and calling this one a
+    /// slider would offer VoiceOver's adjust gestures on something nothing can move.
+    /// <para>
+    /// A null value is INDETERMINATE and announces the name alone, which is the honest answer when
+    /// nothing knows how far along it is — the opposite of the Adjustable rule, where a missing
+    /// value means the node was never a slider.
+    /// </para>
+    /// </summary>
+    public bool Visit(Progress node, LayoutNode laidOut) =>
+        Announce(new(SemanticRole.ProgressIndicator, laidOut.Path ?? "", laidOut.Bounds,
+            node.Label, node.Value?.Spoken, false));
+
     /// <inheritdoc cref="AwaitsGroupRole"/>
     public bool Visit(Navigable node, LayoutNode laidOut) => AwaitsGroupRole;
 

@@ -51,13 +51,16 @@ public class Wave1ComponentTests
     [Fact]
     public void ProgressBar_SplitsTheTrackByFlexWeights()
     {
-        var node = Render(new ProgressBar(0.64f));
+        // The TRACK is one level in: spec B14's role=progressbar host wraps it, and the host is a
+        // name and a number over whatever the track paints.
+        var node = Render(new ProgressBar(0.64f)).Children[0];
         node.Attributes["style"].Should().Contain("height: 4px");
         node.Attributes["style"].Should().Contain($"background-color: {TokenCss.Value(Theme.SurfaceSubtle)}");
         node.Children[0].Attributes["style"].Should().Contain("flex: 640 1 0%");
         node.Children[1].Attributes["style"].Should().Contain("flex: 360 1 0%");
 
-        Render(new ProgressBar(0.5f) { Prominent = true }).Attributes["style"].Should().Contain("height: 8px");
+        Render(new ProgressBar(0.5f) { Prominent = true }).Children[0]
+            .Attributes["style"].Should().Contain("height: 8px");
     }
 
     [Fact]

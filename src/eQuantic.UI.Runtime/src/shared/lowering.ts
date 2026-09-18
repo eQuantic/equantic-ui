@@ -61,6 +61,7 @@ import type {
   IconGlyphValue,
   IconNode,
   AdjustableNode,
+  ProgressNode,
   NavigableNode,
   NavigableMoveValue,
   CameraPreviewNode,
@@ -417,6 +418,8 @@ function lowerNodeKind(
       return lowerAnchored(node as unknown as AnchoredNode, context, path);
     case 'adjustable':
       return lowerAdjustable(node as unknown as AdjustableNode, context, path);
+    case 'progress':
+      return lowerProgress(node as unknown as ProgressNode, context, path);
     case 'navigable':
       return lowerNavigable(node as unknown as NavigableNode, context, path);
     case 'hoverable':
@@ -2467,6 +2470,7 @@ function capsAt(node: unknown): SizeValueValue | undefined {
     case 'pressable':
     case 'hoverable':
     case 'adjustable':
+    case 'progress':
     case 'flexible':
     case 'loopMotion':
     case 'link':
@@ -2496,6 +2500,8 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as PressableNode).child);
     case 'adjustable':
       return fills((node as AdjustableNode).child as VisualNodeValue);
+    case 'progress':
+      return fills((node as unknown as ProgressNode).child as VisualNodeValue);
     case 'navigable':
       // A grid host has ROWS, not one child: nothing to inherit a fill from.
       return { width: false, height: false };
@@ -2871,6 +2877,35 @@ function chordId(chord: KeyChordValue | undefined): string {
  * S5 programmable hover (the C# LowerHoverable twin): a layout-transparent div whose
  * mouseenter/mouseleave feed the boolean callback. Fill passes through like Pressable's button.
  */
+/**
+ * PROGRESS semantics (C# twin: LowerProgress). One host carrying role="progressbar", its name and
+ * how far along it is. No tabindex and no handler — nothing here is operable, which is the whole
+ * difference from lowerAdjustable below.
+ *
+ * An INDETERMINATE bar keeps the role and omits aria-valuenow: ARIA's own rule, and the INVERSE of
+ * the slider's, where a missing value means the node is not a slider and the role is withheld.
+ * Two rules that look alike and are not, so they are written out rather than shared.
+ */
+function lowerProgress(node: ProgressNode, context: LoweringContext, path: string): HtmlNode {
+  const fill = fills(node.child);
+  const host = element('div', {
+    width: fill.width ? '100%' : undefined,
+    height: fill.height ? '100%' : undefined,
+  });
+  host.attributes['role'] = 'progressbar';
+  if (node.label) host.attributes['aria-label'] = node.label;
+  const value = node.value;
+  if (value) {
+    host.attributes['aria-valuenow'] = num(value.now);
+    host.attributes['aria-valuemin'] = num(value.min);
+    host.attributes['aria-valuemax'] = num(value.max);
+    if (value.text) host.attributes['aria-valuetext'] = value.text;
+  }
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) host.children.push(child);
+  return host;
+}
+
 /**
  * ADJUSTMENT semantics (C# twin: the Photon host's arrow dispatch): one focusable wrapper for the
  * whole control, arrows nudge, and the inner press targets stay pointer-only — the wrapper is the

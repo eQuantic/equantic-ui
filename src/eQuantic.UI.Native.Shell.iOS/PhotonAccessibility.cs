@@ -115,6 +115,10 @@ internal sealed class PhotonAccessibility
             SemanticRole.Link => UIAccessibilityTrait.Link,
             SemanticRole.Image => UIAccessibilityTrait.Image,
             SemanticRole.Slider => UIAccessibilityTrait.Adjustable,
+            // UIKit has no progress trait. UIProgressView reports as a plain element whose
+            // VALUE is the progress, and UpdatesFrequently is what stops VoiceOver
+            // re-announcing a bar that moves every frame — the noise this row exists to avoid.
+            SemanticRole.ProgressIndicator => UIAccessibilityTrait.UpdatesFrequently,
             // UIKit has no checkbox role and no switch role: a UISwitch itself reports the button
             // trait and puts its state in the value, which is exactly what these do.
             SemanticRole.Checkbox or SemanticRole.Switch => UIAccessibilityTrait.Button,

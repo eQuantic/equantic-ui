@@ -84,7 +84,8 @@ describe('B14 value transition (transpiled stateful ProgressBar)', () => {
 
   it('forward changes animate; regressions snap for exactly one build', () => {
     const bar = new ProgressBar(0.3);
-    const fillStyle = () => effectiveStyle(lower(bar).children[0])!;
+    // The animated FILL is the track's first child, and the track is the progressbar host's.
+    const fillStyle = () => effectiveStyle(lower(bar).children[0].children[0])!;
 
     expect(fillStyle()).toContain('transition: flex-grow');
 

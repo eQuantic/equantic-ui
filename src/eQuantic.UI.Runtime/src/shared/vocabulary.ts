@@ -1220,14 +1220,14 @@ export class Image extends VisualNode {
 }
 
 /**
- * Mirror of the C# `AdjustableValue`: WHERE an Adjustable's value sits — the trio ARIA calls
+ * Mirror of the C# `RangeValue`: WHERE an Adjustable's value sits — the trio ARIA calls
  * `aria-valuenow` / `aria-valuemin` / `aria-valuemax`, plus the words to say it in.
  *
  * One type rather than three fields on the node, because the three are only meaningful together:
  * `role="slider"` REQUIRES a now, and a now with no bounds is announced against ARIA's own 0-100
  * default, which no slider in this design system uses.
  */
-export class AdjustableValue {
+export class RangeValue {
   now: number;
   min: number;
   max: number;
@@ -1242,12 +1242,30 @@ export class AdjustableValue {
   }
 
   /**
-   * C# twin: `AdjustableValue.Spoken` — the words, or the number when there are none. The rounding
+   * C# twin: `RangeValue.Spoken` — the words, or the number when there are none. The rounding
    * matches C#'s `"0.####"`: up to four decimals, no trailing zeros, so both sides announce one
    * number rather than two spellings of it.
    */
   get spoken(): string {
     return this.text ? this.text : `${parseFloat(this.now.toFixed(4))}`;
+  }
+}
+
+/**
+ * Mirror of the C# `Progress` node: the child reports how far along something is. Layout-transparent
+ * and non-interactive — a slider is moved, a progress bar is read.
+ */
+export class Progress extends VisualNode {
+  readonly nodeKind = 'progress';
+  child: VisualNode;
+  label = '';
+  /** How far along; null or absent is INDETERMINATE, which is a state rather than an omission. */
+  value?: RangeValue | null;
+
+  constructor(child: VisualNode, config?: { label?: string; value?: RangeValue | null }) {
+    super();
+    this.child = child;
+    if (config) Object.assign(this, config);
   }
 }
 
@@ -1260,7 +1278,7 @@ export class Adjustable extends VisualNode {
   /** ARIA identity of the host element — 'slider' (default), 'tablist' or 'radiogroup'. */
   role: 'slider' | 'tablist' | 'radiogroup' = 'slider';
   /** Where the value sits, for a role that has one; absent on a tablist or a radiogroup. */
-  value?: AdjustableValue | null;
+  value?: RangeValue | null;
 
   constructor(
     child: VisualNode,
@@ -1268,7 +1286,7 @@ export class Adjustable extends VisualNode {
     config?: {
       label?: string;
       role?: 'slider' | 'tablist' | 'radiogroup';
-      value?: AdjustableValue | null;
+      value?: RangeValue | null;
     },
   ) {
     super();

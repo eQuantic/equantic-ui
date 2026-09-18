@@ -281,7 +281,7 @@ public static class UI
     /// </para>
     /// </summary>
     public static Adjustable Adjustable(VisualNode child, Action<int> onAdjust,
-        AdjustableValue? value = null, AdjustableRole role = AdjustableRole.Slider) =>
+        RangeValue? value = null, AdjustableRole role = AdjustableRole.Slider) =>
         new Adjustable(child, onAdjust) { Value = value, Role = role };
 
     /// <summary>A keyboard shortcut live while this subtree is mounted (spec S8).</summary>
@@ -414,8 +414,9 @@ public static class UI
         new SearchField(query, onChanged, placeholder, onSubmit);
 
     /// <summary>Linear progress; null value = indeterminate.</summary>
-    public static ProgressBar ProgressBar(float? value = null, Variant variant = Variant.Primary) =>
-        new ProgressBar(value, variant);
+    public static ProgressBar ProgressBar(float? value = null, Variant variant = Variant.Primary,
+        string label = "", string? valueText = null, bool prominent = false) =>
+        new ProgressBar(value, variant) { Label = label, ValueText = valueText, Prominent = prominent };
 
     /// <summary>Hairline separator.</summary>
     public static Divider Divider(DividerInset inset = DividerInset.None,
