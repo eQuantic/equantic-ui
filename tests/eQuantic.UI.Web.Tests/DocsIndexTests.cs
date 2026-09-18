@@ -344,9 +344,9 @@ public class DocsIndexTests
     public void No_citation_points_past_the_end_of_the_file_it_names()
     {
         var root = Root();
-        var sources = Directory.GetFiles(Path.Combine(root, "src"), "*.cs", SearchOption.AllDirectories)
-            .Concat(Directory.GetFiles(Path.Combine(root, "tests"), "*.cs", SearchOption.AllDirectories))
-            .ToLookup(Path.GetFileName, StringComparer.Ordinal);
+        // ONE roster, the same one every citation guard reads. This used to build its own, which is
+        // how it stayed C#-only after the others had reason to grow.
+        var sources = SourceFiles(root);
         var lengths = new Dictionary<string, int>(StringComparer.Ordinal);
 
         int Length(string path) =>
@@ -600,17 +600,47 @@ public class DocsIndexTests
     }
 
     /// <summary>The repository's own C#: what a citation can name. Test sources included, because the audits cite the tests that pin a fix.</summary>
+    /// <summary>
+    /// Every source file a citation can NAME, by file name. TypeScript is in here beside C# because
+    /// the audits cite both — the runtime's client-side lowering is a realizer of its own, and a row
+    /// about what reaches the markup quotes it. It was left out when these guards were written, and
+    /// the cost was measured rather than guessed: twelve of the fifteen checkable <c>.ts</c> evidence
+    /// quotes had slid or been reformatted out from under their line, invisibly, while the same
+    /// guards held every <c>.cs</c> citation in the file to the letter. A guard that cannot see a
+    /// whole language is a guard that passes because it did not look.
+    /// <para>
+    /// <c>node_modules</c> and the build outputs are cut because they are not ours to cite and would
+    /// make the sweep tens of thousands of files long.
+    /// </para>
+    /// </summary>
     private static ILookup<string, string> SourceFiles(string root) =>
         Directory.GetFiles(Path.Combine(root, "src"), "*.cs", SearchOption.AllDirectories)
             .Concat(Directory.GetFiles(Path.Combine(root, "tests"), "*.cs", SearchOption.AllDirectories))
+            .Concat(Directory.GetFiles(Path.Combine(root, "src"), "*.ts", SearchOption.AllDirectories)
+                .Where(Ours))
             .ToLookup(file => Path.GetFileName(file)!, StringComparer.Ordinal);
 
-    /// <summary>A fenced evidence citation: the path, the line or range, and the two-space seam before the quote.</summary>
+    /// <summary>Written in this repository, rather than restored or generated into it.</summary>
+    private static bool Ours(string file) =>
+        !file.Split('/', '\\').Any(segment =>
+            segment is "node_modules" or "dist" or "obj" or "bin");
+
+    /// <summary>A fenced evidence citation: the path, the line or range, and the two-space seam
+    /// before the quote. C# OR TypeScript — a quote settles its line by being found there, which
+    /// needs no parser and so needs no language.</summary>
     private static readonly Regex EvidenceQuote = new(
-        @"(?<path>(?:[\w.]+/)*[\w.]+\.cs):(?<from>\d+)(?:-(?<to>\d+))?\s{2,}",
+        @"(?<path>(?:[\w.-]+/)*[\w.-]+\.(?:cs|ts)):(?<from>\d+)(?:-(?<to>\d+))?\s{2,}",
         RegexOptions.Compiled);
 
-    /// <summary>A prose citation followed by ONE space and the member it names.</summary>
+    /// <summary>
+    /// A prose citation followed by ONE space and the member it names. C# ONLY, and that is a
+    /// LIMIT rather than an oversight: this guard asks Roslyn where a member is declared, and
+    /// Roslyn does not read TypeScript. A .ts citation is held to its quote by
+    /// <see cref="Every_quoted_line_is_at_the_line_its_citation_names"/> and to its file's length by
+    /// <see cref="No_citation_points_past_the_end_of_the_file_it_names"/>, neither of which parses
+    /// anything — so the TypeScript side is covered by what does not need a compiler, and claims
+    /// nothing it cannot check.
+    /// </summary>
     private static readonly Regex NamedMember = new(
         @"(?<!\w)(?<path>(?:[\w.]+/)*[\w.]+\.cs):(?<from>\d+)(?:-(?<to>\d+))? (?<member>[A-Z][A-Za-z0-9]*(?:\.[A-Z][A-Za-z0-9]*)*)",
         RegexOptions.Compiled);
@@ -687,5 +717,5 @@ public class DocsIndexTests
     /// still a range nobody can read, and the audit writes ranges far more often than single lines.
     /// </summary>
     private static readonly Regex CitedLine =
-        new(@"(?<path>[A-Za-z0-9_./-]+\.cs):(?<from>\d+)(?:-(?<to>\d+))?", RegexOptions.Compiled);
+        new(@"(?<path>[A-Za-z0-9_./-]+\.(?:cs|ts)):(?<from>\d+)(?:-(?<to>\d+))?", RegexOptions.Compiled);
 }

@@ -105,7 +105,7 @@ the pill's 40 down.
   MeasureVisitor.Containers.cs:18  var host = ctx.SafeAreaInsets;
   LayoutEngine.cs:173  public EdgeInsets SafeAreaInsets { get; init; }
   WebLoweringVisitor.Containers.cs:368  var env = $"env(safe-area-inset-{name}, 0px)";
-  lowering.ts:2581  const env = `env(safe-area-inset-${name}, 0px)`;
+  lowering.ts:3267  const env = `env(safe-area-inset-${name}, 0px)`;
   ```
 
 ### A5 SafeArea · behaviour · **unverified**
@@ -227,7 +227,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Button.cs:78  var inert = Disabled || Loading;  → Button.cs:132 `Disabled = inert` → WebLoweringVisitor.Interaction.cs:378  Disabled = pressable.Disabled && !wrapping ? true : null,  /  lowering.ts:2111  if (disabled && !wrapping) node.attributes['disabled'] = '';
+  Button.cs:78  var inert = Disabled || Loading;  → Button.cs:132 `Disabled = inert` → WebLoweringVisitor.Interaction.cs:378  Disabled = pressable.Disabled && !wrapping ? true : null,  /  lowering.ts:2609  if (disabled && !wrapping) node.attributes['disabled'] = '';
   ```
 
 ### A13 IconButton · semantics · **CONFIRMED**
@@ -619,7 +619,7 @@ the pill's 40 down.
 
   ```
   Drawer.cs:76  var overlay = new Overlay(layer);
-  lowering.ts:781  if (node.label) layer.attributes['aria-label'] = node.label;
+  lowering.ts:911  if (node.label) layer.attributes['aria-label'] = node.label;
   ```
 
 ### C5 Drawer · missing-feature · **unverified**
@@ -710,7 +710,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  lowering.ts:2377-2380  const role = node.role ?? 'slider'; host.attributes['role'] = role; host.attributes['tabindex'] = '0'; if (node.label) host.attributes['aria-label'] = node.label;
+  lowering.ts:2899-2911  const value = role === 'slider' ? node.value : undefined; host.attributes['role'] = role === 'slider' && !value ? 'group' : role; host.attributes['tabindex'] = '0'; if (node.label) host.attributes['aria-label'] = node.label;
   WebLoweringVisitor.Interaction.cs:139-144  ["role"] = ... "slider", ["tabindex"] = "0" ... element.RawAttributes["aria-label"] = label;
   Slider.cs:157-165              : new Adjustable(box, direction =>
   ```
@@ -1302,7 +1302,7 @@ the pill's 40 down.
   src/eQuantic.UI.Web/WebLoweringVisitor.Graphics.cs:291-294 —
           svg.RawAttributes["role"] = "img";
           svg.RawAttributes["aria-label"] = label;
-  src/eQuantic.UI.Runtime/src/shared/lowering.ts:1541  attributes['role'] = 'img';
+  src/eQuantic.UI.Runtime/src/shared/lowering.ts:1546  attributes['role'] = 'img';
   ```
 
 ### A11 Image · missing-feature · **REFUTED**
@@ -1589,7 +1589,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Runtime/src/shared/lowering.ts:2387-2392  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? (downIsNext ? -1 : 1) : event.key === 'ArrowDown' ? (downIsNext ? 1 : -1) : 0;  if (direction === 0) return;
+  src/eQuantic.UI.Runtime/src/shared/lowering.ts:2919-2933  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
   ```
 
 ### B5 Tabs · semantics · **unverified**
@@ -1600,7 +1600,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Runtime/src/shared/lowering.ts:2084-2086  node.attributes['role'] = 'tab'; node.attributes['aria-selected'] = pressable.selected === true ? 'true' : 'false'; node.attributes['tabindex'] = '-1';
+  src/eQuantic.UI.Runtime/src/shared/lowering.ts:2573-2575  node.attributes['role'] = 'tab'; node.attributes['aria-selected'] = pressable.selected === true ? 'true' : 'false'; node.attributes['tabindex'] = '-1';
   ```
 
 ### B5 Tabs · missing-feature · **unverified**
@@ -2305,10 +2305,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  lowering.ts:2387  const direction = event.key === 'ArrowRight' ? 1
-  lowering.ts:2388    : event.key === 'ArrowLeft' ? -1
-  lowering.ts:2391    : 0;
-  lowering.ts:2392  if (direction === 0) return;
+  lowering.ts:2919-2933  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
   PhotonHost.cs:2043  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
@@ -2334,8 +2331,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  lowering.ts:2389  : event.key === 'ArrowUp' ? (downIsNext ? -1 : 1)
-  lowering.ts:2392  if (direction === 0) return;
+  lowering.ts:2919-2933  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
   PhotonHost.cs:2043  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
