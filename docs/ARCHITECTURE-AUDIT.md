@@ -179,7 +179,6 @@ reader and to the build.
 | `WebRealizer` | Web | `LowerNodeKind` | 38 / 39 | `null`, silently | what DOM the server writes |
 | `lowering.ts` | TypeScript runtime | `lowerNodeKind` | 39 / 39 | `render()` or `null`, silently | what DOM the browser writes |
 | `PhotonRealizer` | Native.Components | `EmitNode` | 28 / 39 | nothing, silently | what the GPU draws |
-
 | `Semantics` | Native.Components | `Walk` | 13 / 39 | walks the children | what a screen reader says |
 | `EmailRealizer` | Email | `Write` | 6 / 39 | **throws**, naming the node | what an email client may see |
 

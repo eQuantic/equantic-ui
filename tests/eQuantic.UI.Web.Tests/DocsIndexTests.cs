@@ -334,16 +334,24 @@ public class DocsIndexTests
                 foreach (Match cited in CitedLine.Matches(line))
                 {
                     var path = cited.Groups["path"].Value;
-                    var candidates = (path.Contains('/', StringComparison.Ordinal)
-                            ? [Path.Combine(root, path)]
-                            : sources[Path.GetFileName(path)].ToArray())
+                    var rooted = path.Contains('/', StringComparison.Ordinal);
+                    var candidates = (rooted ? [Path.Combine(root, path)] : sources[Path.GetFileName(path)].ToArray())
                         .Where(File.Exists).ToArray();
-                    if (candidates.Length == 0) continue; // a name that resolves to nothing mentions rather than locates
+                    var where = $"{Path.GetRelativePath(root, file)}:{lineNumber}";
+                    if (candidates.Length == 0)
+                    {
+                        // A BARE NAME that resolves to nothing mentions rather than locates. A ROOTED
+                        // one names a path, and a path that is not there is already wrong.
+                        if (rooted) overshot.Add($"{where} → {path} (no such file)");
+                        continue;
+                    }
 
-                    var wanted = int.Parse(cited.Groups["line"].Value, CultureInfo.InvariantCulture);
+                    var wanted = int.Parse(
+                        cited.Groups["to"].Success ? cited.Groups["to"].Value : cited.Groups["from"].Value,
+                        CultureInfo.InvariantCulture);
                     if (candidates.Any(candidate => Length(candidate) >= wanted)) continue;
 
-                    overshot.Add($"{Path.GetRelativePath(root, file)}:{lineNumber} → {path}:{wanted}, "
+                    overshot.Add($"{where} → {path}:{wanted}, "
                         + $"but the longest file of that name has {candidates.Max(Length)} lines");
                 }
             }
@@ -356,7 +364,8 @@ public class DocsIndexTests
             .ToDictionary(p => p[0], p => int.Parse(p[1], CultureInfo.InvariantCulture), StringComparer.Ordinal);
 
         var counted = overshot
-            .GroupBy(entry => Path.GetFileName(entry.Split('\u2192')[1].Split(':')[0].Trim()), StringComparer.Ordinal)
+            .GroupBy(entry => Path.GetFileName(entry.Split('\u2192')[1].Trim().Split(':', ' ')[0]),
+                StringComparer.Ordinal)
             .ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal);
 
         var grown = counted
@@ -376,7 +385,11 @@ public class DocsIndexTests
             + "The baseline holds what five earlier slices left (issue #207) and may only shrink");
     }
 
-    /// <summary>A prose or fenced citation: a <c>.cs</c> path and the line it points at.</summary>
+    /// <summary>
+    /// A prose or fenced citation: a <c>.cs</c> path and the line, or RANGE, it points at. The
+    /// upper bound is what gets checked — a range whose start exists and whose end does not is
+    /// still a range nobody can read, and the audit writes ranges far more often than single lines.
+    /// </summary>
     private static readonly Regex CitedLine =
-        new(@"(?<path>[A-Za-z0-9_./-]+\.cs):(?<line>\d+)", RegexOptions.Compiled);
+        new(@"(?<path>[A-Za-z0-9_./-]+\.cs):(?<from>\d+)(?:-(?<to>\d+))?", RegexOptions.Compiled);
 }

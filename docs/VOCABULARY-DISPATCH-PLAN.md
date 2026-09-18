@@ -24,10 +24,16 @@ with silence.
 | `Semantics` | `Walk(laidOut, nodes)` | 13 of 39 | the children are walked |
 | `EmailRealizer` | `Write(node, context, html)` | 6 of 39 | **throws**, naming the node |
 
-Seven defects came through the silent five; the audit's ledger lists them. What holds the line today
-is `VocabularyCoverageTests`: a regex over each method's source, an exemption list per dispatch with
-a reason per entry, three assertions in both directions. It is an instrument, and it has the limits
-of one — it reads the six methods it is told about and not the seventh, it credits text shapes rather
+Nine defects came through the silent five; they are listed further down, with the grouping that
+makes the count reproducible. What held the line until the last dispatch crossed was
+`VocabularyCoverageTests`: a regex over each method's source, an exemption list per dispatch with
+a reason per entry, three assertions in both directions. **It is deleted (S8), and what holds the
+line now is the compiler** — six visitors over `IVisualNodeVisitor`, plus `assertNever` on a
+generated union in the browser. The paragraphs below are kept in the present tense they were written
+in, because they argue for the design rather than report its state; this is the state.
+
+It was an instrument, and it had the limits of one — it read the six methods it was told about and
+not the seventh, it credited text shapes rather
 than semantics, and it moved twice under review before it stopped crediting an arm in one method for
 a claim about another. The structural fix makes the compiler do that job for all seven, and retires
 the regex.

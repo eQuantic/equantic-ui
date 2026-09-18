@@ -2000,7 +2000,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Banner.cs`
 - **Handoff**: Dismiss X ... (glyph 18, hit 48). Actions: ≤ 2 text buttons ... hit 48.
-- **Code**: The dismiss is a bare Pressable around a 20dp Icon, relying on Pressable's documented guarantee ("the hit rect is expanded symmetrically to at least 48×48dp", src/eQuantic.UI.Primitives/Nodes/Pressable.cs). Photon honours it (EmitVisitor.ExpandHitRect, line 1658-1665), but the WEB realizer never does: LowerPressable emits a <button> with padding 0 and no min-width/min-height, and no .eq-pressable rule in TokenCss sets one. On the web the X is a 20×20 target, not 48.
+- **Code**: The dismiss is a bare Pressable around a 20dp Icon, relying on Pressable's documented guarantee ("the hit rect is expanded symmetrically to at least 48×48dp", src/eQuantic.UI.Primitives/Nodes/Pressable.cs). Photon honours it (EmitVisitor.ExpandHitRect, EmitVisitor.Interaction.cs:114-122), but the WEB realizer never does: LowerPressable emits a <button> with padding 0 and no min-width/min-height, and no .eq-pressable rule in TokenCss sets one. On the web the X is a 20×20 target, not 48.
 - **Evidence**:
 
   ```
@@ -2694,7 +2694,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Box.cs`
 - **Handoff**: Transform — 2D translate · scale · rotate about a pivot. Does not affect layout (paint-only).
-- **Code**: Transform2D has no pivot component (src/eQuantic.UI.Primitives/Nodes/Transform2D.cs) and both realizers hard-anchor at the element centre: the doc says "anchored at the element's center (the CSS default origin)" and Photon calls CenterAnchored(…, node.Bounds.Center) (EmitVisitor.cs:74). A rotation about a corner or an arbitrary pivot is inexpressible. Paint-only is honoured on both targets.
+- **Code**: Transform2D has no pivot component (src/eQuantic.UI.Primitives/Nodes/Transform2D.cs) and both realizers hard-anchor at the element centre: the doc says "anchored at the element's center (the CSS default origin)" and Photon calls CenterAnchored(…, node.Bounds.Center) (EmitVisitor.cs:77). A rotation about a corner or an arbitrary pivot is inexpressible. Paint-only is honoured on both targets.
 - **Evidence**:
 
   ```
@@ -3158,7 +3158,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/TextInput.cs`
 - **Handoff**: new TextInput(..., keyboard: Keyboard.Email, ...) ... keyboard type + return action from keyboard:
-- **Code**: The constructor has no keyboard parameter and no Keyboard vocabulary exists in Primitives (no inputmode/keyboard-type concept outside eQuantic.UI.Core/HtmlElement.cs:370's raw escape hatch). Stated reason, class doc TextInput.cs:12-13: "v1 fences: keyboard hints and the trailing slot (clear/eye/counter) land with IME at M4".
+- **Code**: The constructor has no keyboard parameter and no Keyboard vocabulary exists in Primitives (no inputmode/keyboard-type concept outside src/eQuantic.UI.Web/Dom/HtmlElement.cs:61's raw escape hatch, written out at :380). Stated reason, class doc TextInput.cs:12-13: "v1 fences: keyboard hints and the trailing slot (clear/eye/counter) land with IME at M4".
 - **Evidence**:
 
   ```
