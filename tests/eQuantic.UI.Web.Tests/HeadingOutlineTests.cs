@@ -106,6 +106,31 @@ public class HeadingOutlineTests
         Walk(tree).Where(n => n.Tag.StartsWith('h')).Should().HaveCount(2);
     }
 
+    /// <summary>
+    /// Handoff block B3 AppBar, a11y: "title is the screen's level-1 Heading". The row was filed as
+    /// inexpressible — there was no level slot anywhere — and stayed filed after A9 landed one,
+    /// because the component was never asked again. It is asked here.
+    /// <para>
+    /// The heading is the TITLE, not the bar: an `h1` wrapping the leading button and the actions
+    /// would name the whole chrome, and a reader jumping by heading would land on a row of icons.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void TheAppBarTitleIsTheScreensLevelOneHeading()
+    {
+        var tree = Render(new AppBar("Portfolio")
+        {
+            Leading = new IconButton(new Icon(Icons.ChevronLeft), "Back"),
+        });
+
+        var headings = Walk(tree).Where(n => n.Tag.StartsWith('h')).ToArray();
+        headings.Should().ContainSingle("a screen has one level-1, and the bar is what names it")
+            .Which.Tag.Should().Be("h1");
+        // The element IS the title and nothing else — the back button is beside it, not inside it.
+        headings[0].Attributes.Should().NotContainKey("role");
+        Walk(headings[0]).Should().NotContain(n => n.Tag == "button");
+    }
+
     [Fact]
     public void ALevelOutsideTheSixIsRefused_AtEveryDoor()
     {

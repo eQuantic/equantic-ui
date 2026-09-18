@@ -9,6 +9,11 @@ namespace eQuantic.UI.Components;
 /// title gets 12dp when there is no leading slot. v1 fences: the scrolled Surface+E2 elevation
 /// swap joins the scroll-linking system; safe-area top painting joins the host insets; titleAlign
 /// Platform (iOS center) joins the platform services — v1 renders leading-aligned.
+/// <para>
+/// The title is the screen's LEVEL-1 HEADING (spec B3 a11y). Nothing checks that a screen has only
+/// one — that assert is the handoff's and is still missing — but the bar is the screen's name, so a
+/// second level-1 beside it is the mistake, not this.
+/// </para>
 /// </summary>
 public sealed class AppBar : StatelessComponent
 {
@@ -51,8 +56,13 @@ public sealed class AppBar : StatelessComponent
         };
         if (Leading is { } leading) row.Add(leading);
 
+        // The SCREEN's heading (spec B3 a11y), not a size: the bar names where you are, so it is the
+        // one level-1 on the page and the anchor a reader jumps to. The level is independent of the
+        // type scale — the StyleOverride beside it is what the title LOOKS like — so declaring it
+        // moves nothing on screen and gives the web its `h1` and the bridges their heading trait.
         var title = new Text(Title, TypeRole.Title, theme.TextPrimary, maxLines: 1)
         {
+            HeadingLevel = 1,
             StyleOverride = new TypeStyle(20, 26, FontWeight.SemiBold, 0, 1.3f),
         };
         var titlePad = new Box(new BoxStyle
