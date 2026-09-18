@@ -61,6 +61,27 @@ describe('a wrapper carries the whole width contract', () => {
     expect(styleOf(lowered)).toContain('height: 100%');
   });
 
+  for (const [name, wrap] of [
+    ['simulated', (child: unknown) => ({ nodeKind: 'simulated', child, state: {} })],
+    ['inFlow', (child: unknown) => ({ nodeKind: 'inFlow', child })],
+    ['inView', (child: unknown) => ({ nodeKind: 'inView', child, onChanged: () => {} })],
+  ] as const) {
+    it(`the whole contract reaches through a nested ${name}`, () => {
+      // These three are not in the sweep above — they emit no host of their own — so the only way
+      // to exercise their arms is UNDER one that does. `fills` walked them and `capsAt` did not,
+      // which handed the role-bearing progress host the child's 100% and none of its maximum: a box
+      // announced wider than the bar it names. C# cross-pin:
+      // WrapperLayoutTransparencyTests.TheWholeWidthContractReachesThroughAWrapperTheSweepDoesNotList
+      const lowered = lowerVisualNode(
+        { nodeKind: 'progress', child: wrap(capped()) } as unknown as VisualNodeValue,
+        ctx,
+      );
+
+      expect(styleOf(lowered)).toContain('width: 100%');
+      expect(styleOf(lowered)).toContain('max-width: 980px');
+    });
+  }
+
   it('a child with no cap acquires none', () => {
     const plain = {
       nodeKind: 'box',

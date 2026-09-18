@@ -2474,6 +2474,11 @@ function capsAt(node: unknown): SizeValueValue | undefined {
     case 'flexible':
     case 'loopMotion':
     case 'link':
+    // The three `fills` walks and this did not. Walking one and not the other is the half-contract
+    // recorded above: the host takes the child's 100% and drops its maximum.
+    case 'simulated':
+    case 'inFlow':
+    case 'inView':
       return capsAt(value.child);
     default:
       return undefined;

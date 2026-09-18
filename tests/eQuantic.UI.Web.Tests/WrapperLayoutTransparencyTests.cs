@@ -79,24 +79,29 @@ public class WrapperLayoutTransparencyTests
     }
 
     /// <summary>
-    /// The walk reaches a Fill child THROUGH the wrappers that are not themselves in the sweep —
-    /// which is the half the sweep above cannot see, because it puts one wrapper over a Fill child
-    /// and never nests.
+    /// BOTH walks reach a child THROUGH the wrappers that are not themselves in the sweep — which
+    /// is the half the sweep above cannot see, because it puts one wrapper over a Fill child and
+    /// never nests.
     /// <para>
     /// `Simulated`, `InFlow` and `InView` were in the TypeScript `fills` and not in the C# `Fills`.
     /// A missing arm does not throw: it answers `(false, false)`, which is exactly what a child
     /// that does not fill answers, so SSR served a hugging host while the hydrated runtime walked
-    /// through and filled. Caught by review; it is the same shape as the `Progress` arms two rounds
-    /// earlier, and the same reason a NESTED case is the only one that sees it.
+    /// through and filled.
+    /// <para>
+    /// Then the FIX was half of one. Adding the three to `Fills` and not to `CapsAt` left the host
+    /// taking the child's 100% and dropping its maximum — the same half-contract the Link had, now
+    /// written down three times, and on a ROLE-BEARING host it announces a box wider than the bar
+    /// it names. So this asserts both halves, and the cap is the half that came second.
+    /// </para>
     /// </para>
     /// </summary>
     [Theory]
     [InlineData("Simulated")]
     [InlineData("InFlow")]
     [InlineData("InView")]
-    public void TheFillWalkReachesThroughAWrapperTheSweepDoesNotList(string inner)
+    public void TheWholeWidthContractReachesThroughAWrapperTheSweepDoesNotList(string inner)
     {
-        var fill = new Box(new BoxStyle { Width = SizeValue.Fill }, new Text("x"));
+        var fill = new Box(new BoxStyle { Width = SizeValue.Fill, MaxWidth = 320 }, new Text("x"));
         VisualNode wrapped = inner switch
         {
             "Simulated" => new Simulated(new SimulatedState(), fill),
@@ -113,6 +118,12 @@ public class WrapperLayoutTransparencyTests
             $"the Fill child is under a {inner}, and the progress host stands in for it — a walk "
             + "that stops at the wrapper reports (false, false), which is what a child that does "
             + "not fill reports, so the host hugs on the server and fills in the browser");
+
+        lowered.Attributes.GetValueOrDefault("style", "").Should().Contain("max-width: 320px",
+            $"and the CAP comes through the same {inner} — adding the arm to `Fills` and not to "
+            + "`CapsAt` is the half-contract this repository has now written down three times: the "
+            + "host takes the child's 100% and drops its maximum, so a role-bearing one announces "
+            + "a box wider than the bar it names");
     }
 
     [Fact]

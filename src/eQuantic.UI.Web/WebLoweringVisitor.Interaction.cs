@@ -376,6 +376,12 @@ internal sealed partial class WebLoweringVisitor
         Flexible flexible => CapsAt(flexible.Child),
         LoopMotion motion => CapsAt(motion.Child),
         Link link => CapsAt(link.Child),
+        // The three <see cref="Fills"/> gained one round ago. Adding them THERE and not here is the
+        // half-contract this file already records twice: the host takes the child's 100% and drops
+        // its maximum, so a role-bearing one announces a box wider than the bar it names.
+        Simulated simulated => CapsAt(simulated.Child),
+        InFlow inFlow => CapsAt(inFlow.Child),
+        InView inView => CapsAt(inView.Child),
         _ => SizeValue.Hug,
     };
     /// <summary>
