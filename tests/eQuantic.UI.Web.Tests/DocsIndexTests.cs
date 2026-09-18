@@ -528,8 +528,11 @@ public class DocsIndexTests
     ///
     /// <para>
     /// The span is the declaration's FULL span, so citing a member's doc comment is citing the
-    /// member. An overloaded name passes if ANY of its declarations contains the line — which is the
-    /// honest answer, since the citation named a member and not an overload.
+    /// member, and a RANGE must fit inside one declaration end to end. Reading only the range's
+    /// start let <c>:311-600 LowerPressable</c> through — a member that ends at 458 plus a hundred
+    /// and fifty lines of its neighbours, which the overshoot guard cannot see either because 600 is
+    /// inside the file. An overloaded name passes if ANY of its declarations contains the range,
+    /// which is the honest answer: the citation named a member and not an overload.
     /// </para>
     /// </summary>
     [Fact]
@@ -561,7 +564,15 @@ public class DocsIndexTests
                         .Where(File.Exists).ToArray();
                     if (candidates.Length == 0) continue; // the overshoot guard already reports a path that is not there
 
-                    var line0 = int.Parse(cited.Groups["from"].Value, CultureInfo.InvariantCulture);
+                    // The WHOLE range, not its first line: `…:311-600 LowerPressable` names a member
+                    // that ends at 458 and a hundred and fifty lines of its neighbours, and reading
+                    // only the start accepted it — the overshoot guard cannot see it either, because
+                    // 600 is inside the file. A range belongs to ONE declaration or it names two things.
+                    var first = int.Parse(cited.Groups["from"].Value, CultureInfo.InvariantCulture);
+                    var last = cited.Groups["to"].Success
+                        ? int.Parse(cited.Groups["to"].Value, CultureInfo.InvariantCulture)
+                        : first;
+                    var cites = first == last ? $"{path}:{first}" : $"{path}:{first}-{last}";
                     var where = $"{Path.GetRelativePath(root, file)}:{lineNumber}";
                     var declaring = candidates.Where(candidate => DeclarationSpans(candidate).ContainsKey(member)).ToArray();
                     if (declaring.Length == 0)
@@ -571,13 +582,13 @@ public class DocsIndexTests
                     }
 
                     if (declaring.Any(candidate => DeclarationSpans(candidate)[member]
-                            .Any(span => line0 >= span.First && line0 <= span.Last)))
+                            .Any(span => first >= span.First && last <= span.Last)))
                         continue;
 
                     var declared = string.Join(", ", declaring
                         .SelectMany(candidate => DeclarationSpans(candidate)[member])
                         .Select(span => $"{span.First}-{span.Last}"));
-                    misplaced.Add($"{where} → {path}:{line0} is outside {member}, which is at {declared}");
+                    misplaced.Add($"{where} → {cites} is not inside {member}, which is at {declared}");
                 }
             }
         }
