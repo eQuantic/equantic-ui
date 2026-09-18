@@ -36,6 +36,7 @@ export {
   Icon,
   IconGlyph,
   Adjustable,
+  AdjustableValue,
   Navigable,
   CameraPreview,
   WebFrame,

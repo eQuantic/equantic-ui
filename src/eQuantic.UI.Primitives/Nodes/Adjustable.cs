@@ -31,6 +31,19 @@ public sealed class Adjustable : SingleChildNode
     /// one stop, arrows adjust.</summary>
     public AdjustableRole Role { get; init; } = AdjustableRole.Slider;
 
+    /// <summary>
+    /// WHERE the value sits, for a role that has one (spec C7). Without it a slider is announced by
+    /// NAME and nothing else: <c>role="slider"</c> requires <c>aria-valuenow</c>, so a host that
+    /// emits the role and no value is invalid ARIA, and a screen-reader user hears what the control
+    /// is for and never what it holds.
+    /// <para>
+    /// Null for the roles that have no such number — a tablist and a radiogroup announce a SELECTION
+    /// (their items carry <c>aria-selected</c> / <c>aria-checked</c>), not a position on a range, and
+    /// a value on those would be a second answer to a question their children already answer.
+    /// </para>
+    /// </summary>
+    public AdjustableValue? Value { get; init; }
+
     public sealed override TResult Accept<TState, TResult>(
         IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }

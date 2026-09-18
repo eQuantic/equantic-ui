@@ -48,10 +48,15 @@ internal sealed partial class SemanticsVisitor
     /// <summary>
     /// One stop for the whole control, inner pressables stay pointer-only — the same rule the focus
     /// route applies (<c>InputSink.WithoutFocusStops</c>).
+    /// <para>
+    /// The VALUE rides the same slot a text field's does (spec C7): the bridges report an Adjustable
+    /// as their platform's slider, and a slider whose value is null announces its name and nothing
+    /// else — the native half of the invalid <c>role="slider"</c> the web emitted.
+    /// </para>
     /// </summary>
     public bool Visit(Adjustable node, LayoutNode laidOut) =>
         Announce(new(SemanticRole.Slider, laidOut.Path ?? "", laidOut.Bounds,
-            node.Label, null, false));
+            node.Label, node.Value?.Spoken, false));
 
     /// <inheritdoc cref="AwaitsGroupRole"/>
     public bool Visit(Navigable node, LayoutNode laidOut) => AwaitsGroupRole;

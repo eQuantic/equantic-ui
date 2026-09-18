@@ -617,6 +617,21 @@ export interface AdjustableNode extends VisualNodeValue {
   label?: string;
   /** ARIA identity of the host — 'slider' (default), 'tablist' or 'radiogroup'. */
   role?: 'slider' | 'tablist' | 'radiogroup';
+  /** Where the value sits, for a role that has one; absent on a tablist or a radiogroup. */
+  value?: AdjustableValueValue | null;
+}
+
+/**
+ * Wire shape of the C# `AdjustableValue`: the trio ARIA calls now/min/max, plus the words to say it
+ * in. One object rather than three fields because `role="slider"` REQUIRES a now, and a now without
+ * its bounds is read against ARIA's own 0-100 default — wrong for every slider in this system.
+ */
+export interface AdjustableValueValue {
+  now: number;
+  min: number;
+  max: number;
+  /** The value SPOKEN when the number is not it — "R$ 400", "40%". Replaces the number for a reader. */
+  text?: string | null;
 }
 
 /**

@@ -132,6 +132,7 @@ export {
   CodeSurface,
   SheetSurface,
   Adjustable,
+  AdjustableValue,
   Navigable,
   CameraPreview,
   WebFrame,

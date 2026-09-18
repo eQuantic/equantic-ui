@@ -1220,6 +1220,38 @@ export class Image extends VisualNode {
 }
 
 /** Mirror of the C# `Adjustable` node: the child answers to the arrow keys as ONE Tab stop. */
+/**
+ * Mirror of the C# `AdjustableValue`: WHERE an Adjustable's value sits — the trio ARIA calls
+ * `aria-valuenow` / `aria-valuemin` / `aria-valuemax`, plus the words to say it in.
+ *
+ * One type rather than three fields on the node, because the three are only meaningful together:
+ * `role="slider"` REQUIRES a now, and a now with no bounds is announced against ARIA's own 0-100
+ * default, which no slider in this design system uses.
+ */
+export class AdjustableValue {
+  now: number;
+  min: number;
+  max: number;
+  /** The value SPOKEN when the number is not it — "R$ 400", "40%". A reader says this INSTEAD. */
+  text?: string | null;
+
+  constructor(now: number, min: number, max: number, config?: { text?: string | null }) {
+    this.now = now;
+    this.min = min;
+    this.max = max;
+    if (config) Object.assign(this, config);
+  }
+
+  /**
+   * C# twin: `AdjustableValue.Spoken` — the words, or the number when there are none. The rounding
+   * matches C#'s `"0.####"`: up to four decimals, no trailing zeros, so both sides announce one
+   * number rather than two spellings of it.
+   */
+  get spoken(): string {
+    return this.text ? this.text : `${parseFloat(this.now.toFixed(4))}`;
+  }
+}
+
 export class Adjustable extends VisualNode {
   readonly nodeKind = 'adjustable';
   child: VisualNode;
@@ -1227,11 +1259,17 @@ export class Adjustable extends VisualNode {
   label = '';
   /** ARIA identity of the host element — 'slider' (default), 'tablist' or 'radiogroup'. */
   role: 'slider' | 'tablist' | 'radiogroup' = 'slider';
+  /** Where the value sits, for a role that has one; absent on a tablist or a radiogroup. */
+  value?: AdjustableValue | null;
 
   constructor(
     child: VisualNode,
     onAdjust: (direction: number) => void,
-    config?: { label?: string; role?: 'slider' | 'tablist' | 'radiogroup' },
+    config?: {
+      label?: string;
+      role?: 'slider' | 'tablist' | 'radiogroup';
+      value?: AdjustableValue | null;
+    },
   ) {
     super();
     this.child = child;

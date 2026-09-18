@@ -206,4 +206,37 @@ public class SemanticsTests
         page.Volume.Should().Be(4, "+1 then −1 then −1");
         host.AdjustPath("nowhere", 1).Should().BeFalse("a stale path answers false, never throws");
     }
+
+    private sealed class VolumePage : Primitives.StatefulComponent
+    {
+        public float Volume = 0.4f;
+        public string? Spoken;
+
+        public override VisualNode Build(ComponentContext context) =>
+            new Slider(Volume, v => SetState(() => Volume = v)) { Label = "Volume", ValueText = Spoken };
+    }
+
+    /// <summary>
+    /// Spec C7: a slider announces WHAT IT HOLDS, not only what it is for. The bridges report an
+    /// Adjustable as their platform's slider, and the value slot was null — the native half of the
+    /// invalid <c>role="slider"</c> the web emitted with no <c>aria-valuenow</c>.
+    /// </summary>
+    [Fact]
+    public void ASlider_AnnouncesItsValue_AndTheWordsWhenTheCallerGivesThem()
+    {
+        var page = new VolumePage();
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 400);
+        host.RenderFrame(new DisplayListBuilder());
+
+        var slider = host.Semantics().Single(s => s.Role == SemanticRole.Slider);
+        slider.Label.Should().Be("Volume", "the NAME is what the control is for");
+        slider.Value.Should().Be("0.4", "and the VALUE is what it holds");
+
+        var spoken = new VolumePage { Spoken = "40%" };
+        var withWords = new PhotonHost(spoken, PhotonTheme.Instance, ThemeMode.Light, 400, 400);
+        withWords.RenderFrame(new DisplayListBuilder());
+
+        withWords.Semantics().Single(s => s.Role == SemanticRole.Slider).Value
+            .Should().Be("40%", "words REPLACE the number, exactly as aria-valuetext does on the web");
+    }
 }

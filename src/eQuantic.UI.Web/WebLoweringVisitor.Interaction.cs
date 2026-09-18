@@ -144,6 +144,19 @@ internal sealed partial class WebLoweringVisitor
             },
         };
         if (adjustable.Label is { Length: > 0 } label) element.RawAttributes["aria-label"] = label;
+        // The VALUE, for a role that has one (spec C7). role="slider" REQUIRES aria-valuenow, so the
+        // host emitted invalid ARIA until this existed — a name and no number. The bounds go with it
+        // or the number is read against ARIA's own 0-100 default, which no slider here uses.
+        if (adjustable.Value is { } value)
+        {
+            element.RawAttributes["aria-valuenow"] = TokenCss.Number(value.Now);
+            element.RawAttributes["aria-valuemin"] = TokenCss.Number(value.Min);
+            element.RawAttributes["aria-valuemax"] = TokenCss.Number(value.Max);
+            // Only when the caller gave words: aria-valuetext REPLACES the number for a reader, so
+            // echoing the number into it would trade a value for the same value and lose nothing but
+            // the chance to say "40%".
+            if (value.Text is { Length: > 0 } spoken) element.RawAttributes["aria-valuetext"] = spoken;
+        }
         if (Lower(adjustable.Child, null) is { } child) element.Children.Add(child);
         return element;
     }

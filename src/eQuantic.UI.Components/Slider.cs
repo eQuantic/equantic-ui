@@ -15,15 +15,10 @@ namespace eQuantic.UI.Components;
 /// value already is, so grabbing the thumb never makes it jump out from under the finger.
 /// </para>
 /// <para>
-/// V1 FENCES — three things spec C7 asks for that this does not do, each because it belongs to
+/// V1 FENCES — two things spec C7 asks for that this does not do, each because it belongs to
 /// something larger than a component:
 /// </para>
 /// <list type="bullet">
-/// <item><b>The VALUE is not announced.</b> "role=slider + aria-valuenow/min/max" needs
-/// <see cref="Adjustable"/> to carry a value, and it carries only a child, a direction callback, a
-/// label and a role — so both realizers emit <c>role="slider"</c> with no value, which is invalid
-/// ARIA and leaves a screen-reader user with a name and nothing else. The fix is a vocabulary
-/// change shared with RadioGroup, SegmentedControl and Tabs, not a line in this file.</item>
 /// <item><b>The first 12dp of a drag are swallowed.</b> The handoff asks for immediate capture on
 /// the thumb; <see cref="Draggable"/> arms after <c>Touch.PressCancelSlop</c>, which is what stops
 /// a sideways swipe hijacking a vertical scroll. A slider that opts out needs the slop to become a
@@ -71,6 +66,17 @@ public sealed class Slider : StatelessComponent
 
     /// <summary>Announced by the control — "Brightness", not "0.4".</summary>
     public string Label { get; init; } = "";
+
+    /// <summary>
+    /// The value IN WORDS, when the number is not what a person would say — "R$ 400", "40%",
+    /// "Large" (spec C7: valuetext for units). A reader says this INSTEAD of the number, so the
+    /// caller that owns <see cref="Value"/> owns its wording too: this control is CONTROLLED, and
+    /// only the app knows whether 0.4 is a ratio, a currency or the fourth of six named steps.
+    /// <para>Null announces the number, which is right for a bare ratio and wrong for anything with
+    /// a unit — the announcement is the one place a slider's units can exist at all, since the ends
+    /// are labelled by the caller outside the control.</para>
+    /// </summary>
+    public string? ValueText { get; init; }
 
     public override VisualNode Build(ComponentContext context)
     {
@@ -146,6 +152,10 @@ public sealed class Slider : StatelessComponent
                 OnChanged?.Invoke(Quantize(Value + direction * step, step)))
             {
                 Label = Label,
+                // Spec C7: the value, its bounds and the words for it. Before this the host emitted
+                // role="slider" with no aria-valuenow — invalid ARIA, and a screen-reader user heard
+                // "Brightness, slider" and never which way it was set.
+                Value = new AdjustableValue(Value, Min, Max) { Text = ValueText },
             };
     }
 
