@@ -6,53 +6,6 @@ using Xunit;
 namespace eQuantic.UI.Email.Tests;
 
 /// <summary>
-/// A component whose Build returns <c>this</c> — the shape the web and native cycle tests pin, so
-/// the three realizers are asked the same question.
-/// </summary>
-file sealed class BuildsItself : UiComponent
-{
-    public override VisualNode Build(ComponentContext context) => this;
-}
-
-/// <summary>
-/// The other self-cycle: a FRESH instance every time. The same infinite chain to a realizer that
-/// expands what Build returned, and a different one to anything that recognises a node by identity —
-/// which is why both are asked rather than only the tidier one.
-/// </summary>
-file sealed class AllocatesAnother : UiComponent
-{
-    public override VisualNode Build(ComponentContext context) => new AllocatesAnother();
-}
-
-/// <summary>
-/// A FINITE chain of exactly <paramref name="remaining"/> components, ending in a subtree. Nothing
-/// about it is cyclic: it is how the bound's edges are asked, and how the root expansion is asked
-/// whether it counts itself.
-/// </summary>
-file sealed class Chain(int remaining) : UiComponent
-{
-    public override VisualNode Build(ComponentContext context) =>
-        remaining > 0 ? new Chain(remaining - 1) : new Text("the chain ended", TypeRole.BodyM);
-}
-
-/// <summary>Two that build each other: the same chain, with nothing in either type to see it.</summary>
-file sealed class BuildsTheOther : UiComponent
-{
-    public override VisualNode Build(ComponentContext context) => new BuildsTheFirst();
-}
-
-file sealed class BuildsTheFirst : UiComponent
-{
-    public override VisualNode Build(ComponentContext context) => new BuildsTheOther();
-}
-
-/// <summary>An ORDINARY component: one expansion and it reaches a subtree.</summary>
-file sealed class BuildsAGreeting : UiComponent
-{
-    public override VisualNode Build(ComponentContext context) => new Text("after two cycles", TypeRole.BodyM);
-}
-
-/// <summary>
 /// A cycle FAILS THE SEND rather than the process (#223).
 ///
 /// <para>
@@ -87,6 +40,53 @@ public class ComponentCycleTests
     /// chains below is what would fail if it ever moved, which is the right way to find out.
     /// </summary>
     private const int Bound = 64;
+
+    /// <summary>
+    /// A component whose Build returns <c>this</c> — the shape the web and native cycle tests pin, so
+    /// the three realizers are asked the same question.
+    /// </summary>
+    private sealed class BuildsItself : UiComponent
+    {
+        public override VisualNode Build(ComponentContext context) => this;
+    }
+
+    /// <summary>
+    /// The other self-cycle: a FRESH instance every time. The same infinite chain to a realizer that
+    /// expands what Build returned, and a different one to anything that recognises a node by identity —
+    /// which is why both are asked rather than only the tidier one.
+    /// </summary>
+    private sealed class AllocatesAnother : UiComponent
+    {
+        public override VisualNode Build(ComponentContext context) => new AllocatesAnother();
+    }
+
+    /// <summary>
+    /// A FINITE chain of exactly <paramref name="remaining"/> components, ending in a subtree. Nothing
+    /// about it is cyclic: it is how the bound's edges are asked, and how the root expansion is asked
+    /// whether it counts itself.
+    /// </summary>
+    private sealed class Chain(int remaining) : UiComponent
+    {
+        public override VisualNode Build(ComponentContext context) =>
+            remaining > 0 ? new Chain(remaining - 1) : new Text("the chain ended", TypeRole.BodyM);
+    }
+
+    /// <summary>Two that build each other: the same chain, with nothing in either type to see it.</summary>
+    private sealed class BuildsTheOther : UiComponent
+    {
+        public override VisualNode Build(ComponentContext context) => new BuildsTheFirst();
+    }
+
+    private sealed class BuildsTheFirst : UiComponent
+    {
+        public override VisualNode Build(ComponentContext context) => new BuildsTheOther();
+    }
+
+    /// <summary>An ORDINARY component: one expansion and it reaches a subtree.</summary>
+    private sealed class BuildsAGreeting : UiComponent
+    {
+        public override VisualNode Build(ComponentContext context) => new Text("after two cycles", TypeRole.BodyM);
+    }
 
     /// <summary>
     /// BOTH self-cycles: the one that returns <c>this</c>, which is the shape the web and native
