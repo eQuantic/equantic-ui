@@ -11,7 +11,7 @@ namespace eQuantic.UI.Web.Tests;
 /// <para>
 /// The token's own doc has promised this from the start — "visuals may be smaller, the framework
 /// expands hit-slop symmetrically" — and Photon has kept it in one place since
-/// (<c>PhotonRealizer.ExpandHitRect</c>). On the web nothing kept it: every small pressable shipped
+/// (<c>EmitVisitor.ExpandHitRect</c>). On the web nothing kept it: every small pressable shipped
 /// with its visual as its hit rect, and the three components that cared sized a target by hand. A
 /// promise a framework makes and does not keep is worse than one it never made, because every
 /// author who read it stopped checking.

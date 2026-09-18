@@ -701,10 +701,10 @@ function plainContent(text: TextNode): string {
 const PINNED_LAYER = '100';
 const FLOATING_CHROME_LAYER = '110';
 
-/** The caret's width in px — the C# `PhotonRealizer.CaretWidth` twin. */
+/** The caret's width in px — the C# `EmitVisitor.CaretWidth` twin. */
 const CARET_WIDTH = 2;
 
-/** How much of the selection band shows through — the C# `PhotonRealizer.SelectionAlpha` twin. */
+/** How much of the selection band shows through — the C# `EmitVisitor.SelectionAlpha` twin. */
 const SELECTION_ALPHA = 0.28;
 
 /**
@@ -1337,7 +1337,7 @@ function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: s
 
 /** Spec A11 mirror: explicitly sized <img> with object-fit and the rrect clip. */
 /**
- * The live surface (C# twin: PhotonRealizer.EmitCameraPreview). Without a session it is the SAME
+ * The live surface (C# twin: EmitVisitor.EmitCameraPreview). Without a session it is the SAME
  * SurfaceSubtle placeholder Image degrades to — both realizers must agree, or hydration does not.
  * With one, a muted autoplaying video the after-pass sweep wires to its MediaStream by id.
  */

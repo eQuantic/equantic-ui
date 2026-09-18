@@ -397,7 +397,7 @@ public static class PhotonCssGenerator
         // framework expands hit-slop symmetrically" — and on the web nothing kept the promise: every
         // small pressable shipped with its visual as its hit rect, and the components that cared
         // (Slider, PageIndicator, SearchField's clear) each sized a target by hand. Photon has always
-        // done it in one place (PhotonRealizer.ExpandHitRect); this is the same contract, once, here.
+        // done it in one place (EmitVisitor.ExpandHitRect); this is the same contract, once, here.
         //
         // A PSEUDO-ELEMENT rather than padding: the target has to grow without moving anything, and
         // padding is layout. It is centred on the control and at least the minimum on each side, so
