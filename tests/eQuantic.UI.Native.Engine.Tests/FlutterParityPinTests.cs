@@ -207,17 +207,17 @@ public class FlutterParityPinTests
         ["RenderObject"] = () => HasMember("LayoutNode", "Parent"),
         ["parentData"] = () => !HasMember("LayoutNode", "ParentData") && HasMember("LayoutNode", "Bounds"),
         ["RenderSliver"] = () => Has("ListView") && Nothing("Sliver", "SliverList"),
-        // The shapes, ONE of three named: SingleChildNode holds the twenty wrappers whose child is
-        // required, and FlexNode covers the flex containers only — nothing sits between VisualNode
+        // The shapes, ONE of three named: SingleChildNode holds the twenty-one wrappers whose child
+        // is required, and FlexNode covers the flex containers only — nothing sits between VisualNode
         // and the four many-child nodes, or between it and the eleven leaves.
         //
         // WHAT GUARDS THE INVARIANT. "The base exists" stays true while a wrapper is declared
         // straight under VisualNode, and that wrapper then misses the arms written over the shape.
         // The COUNT was the first answer and is not enough either: swap a wrapper out for any other
-        // node under the base and twenty is still twenty. So the row asks both — every node that
-        // wraps one required child IS one (the rule), and there are twenty of them (the measurement
-        // this PR's prose and the audit both quote; twenty-one nodes wrap one child and Box's is
-        // optional). WrapperNode and ProxyNode stay in the negative set they were in while this row
+        // node under the base and twenty-one is still twenty-one. So the row asks both — every node
+        // that wraps one required child IS one (the rule), and there are twenty-one of them (the
+        // measurement this PR's prose and the audit both quote; twenty-two nodes wrap one child and
+        // Box's is optional). WrapperNode and ProxyNode stay in the negative set they were in while this row
         // was a GAP — a SECOND wrapper base would change the shape surface just as much as a first.
         ["SingleChildRenderObjectWidget"] = () => EveryOneChildNodeIsA("SingleChildNode")
             && Descendants("SingleChildNode") == 21 && Has("FlexNode")

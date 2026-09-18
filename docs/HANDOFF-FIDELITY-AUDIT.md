@@ -186,7 +186,7 @@ the pill's 40 down.
 
 - **Component**: `MISSING`
 - **Handoff**: new Heading("Portfolio", level: 1) — "Heading — semantic Text. Level 1 → Heading role, 2 → Title, 3 → Label-strong… Announced as 'heading, level N' — VoiceOver rotor / TalkBack heading navigation jump between them. Exactly one level-1 per screen (debug assert)." Semantics: "Web emits real heading levels; native marks the node as a header so readers can jump by heading."
-- **Code**: Half of this has landed since the audit and half has not. The LEVEL exists and is not decoration: `Text.HeadingLevel` is a 1–6 slot refused at every door (src/eQuantic.UI.Primitives/Nodes/Text.cs:65-73 HeadingLevel), the web emits the real element (WebLoweringVisitor.Text.cs:147 LowerText), the semantic node carries it (SemanticsVisitor.Text.cs:16-20 SemanticsVisitor), and `HeadingOutlineTests` / `HeadingSemanticsTests` pin both. What is still missing is (a) a `Heading` COMPONENT — there is no `class Heading`, so an author writes `new Text("Portfolio") { HeadingLevel = 1 }`; (b) the level-1 uniqueness assert, which nothing checks; and (c) two of the four bridges — Android reports the trait (src/eQuantic.UI.Native.Shell.Android/PhotonAccessibility.cs:128), the Apple and Windows shells never read `HeadingLevel`, so the VoiceOver rotor still has nothing to jump between on macOS/iOS.
+- **Code**: Half of this has landed since the audit and half has not. The LEVEL exists and is not decoration: `Text.HeadingLevel` is a 1–6 slot refused at every door (src/eQuantic.UI.Primitives/Nodes/Text.cs:65-73 HeadingLevel), the web emits the real element (WebLoweringVisitor.Text.cs:147 LowerText), the semantic node carries it (SemanticsVisitor.Text.cs:16-20 SemanticsVisitor), and `HeadingOutlineTests` / `HeadingSemanticsTests` pin both. What is still missing is (a) a `Heading` COMPONENT — there is no `class Heading`, so an author writes `new Text("Portfolio") { HeadingLevel = 1 }`; (b) the level-1 uniqueness assert, which nothing checks; and (c) two of the four bridges — Android reports the trait (src/eQuantic.UI.Native.Shell.Android/PhotonAccessibility.cs:124), the Apple and Windows shells never read `HeadingLevel`, so the VoiceOver rotor still has nothing to jump between on macOS/iOS.
 - **Evidence**:
 
   ```
@@ -476,7 +476,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  ProgressBar.cs:126              Value = new RangeValue(clamped, 0, 1) { Text = ValueText },
+  ProgressBar.cs:128                Value = new RangeValue(filledWeight / 1000f, 0, 1) { Text = ValueText },
   WebLoweringVisitor.Interaction.cs:196  RawAttributes = new Dictionary<string, string> { ["role"] = "progressbar" },
   SemanticsVisitor.Interaction.cs:83          Announce(new(SemanticRole.ProgressIndicator, laidOut.Path ?? "", laidOut.Bounds,
   ```

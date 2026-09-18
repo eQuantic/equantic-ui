@@ -76,6 +76,11 @@ public class ProgressSemanticsTests
     [InlineData(1.8f, "1")]
     [InlineData(-0.5f, "0")]
     [InlineData(0.25f, "0.25")]
+    // BETWEEN thousandths, which is where the paint and the announcement came apart: the flex
+    // weights round to 450/550, so the bar is at 0.45 and announcing the caller's 0.4504 describes
+    // a control drawn somewhere else — the same defect as the unclamped value, one decimal down.
+    [InlineData(0.4504f, "0.45")]
+    [InlineData(0.4996f, "0.5")]
     public void TheAnnouncedValueIsTheOneTheBarIsDrawnFrom(float value, string announced)
     {
         Host(new ProgressBar(value)).Attributes["aria-valuenow"].Should().Be(announced);
@@ -128,8 +133,9 @@ public class ProgressSemanticsTests
     /// <summary>
     /// The instance is RETAINED across the app's rebuilds, so what `Build` reads is whatever
     /// `AdoptConfig` copied. `UiComponent.AdoptConfig`'s contract is the fresh CONFIGURATION —
-    /// constructor AND init props — and it copied only the value and the variant, so a parent that
-    /// renamed the bar went on announcing the old name forever. An `init` accessor cannot be written
+    /// constructor AND init props — and the implementation this test was written against copied
+    /// only the value and the variant, so a parent that renamed the bar went on announcing the old
+    /// name forever. It copies all five now, which is the regression being guarded. An `init` accessor cannot be written
     /// from `AdoptConfig`, which is why the three are backed by fields.
     /// </summary>
     [Fact]

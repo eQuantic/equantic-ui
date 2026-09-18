@@ -89,8 +89,9 @@ public class EnumValueAbiTests
     {
         ((byte)SemanticRole.GridCell).Should().Be(9,
             "GridCell shipped as 9 — ProgressIndicator was inserted above it once and took it to 10");
-        ((byte)SemanticRole.ProgressIndicator).Should().Be(
-            (byte)Enum.GetValues<SemanticRole>().Max(),
-            "the role added last takes the next free number, which is what leaves every other one alone");
+        ((byte)SemanticRole.ProgressIndicator).Should().Be(10,
+            "it took the next free number rather than someone else's — and this asserts the SHIPPED "
+            + "value, not that it is still the highest: a role appended after it keeps 10 correct "
+            + "while `Max()` would make this fail on the very append the contract above allows");
     }
 }

@@ -116,14 +116,16 @@ public sealed class ProgressBar : StatefulComponent
                 // visible ratio glides instead of jumping when only one side moved.
                 track.Add(new Spacer(1000 - filledWeight) { AnimateChanges = animate });
             }
-            // Spec B14: role=progressbar with the value it holds. The CLAMPED value, not the
-            // caller's — the flex weights are drawn from `clamped`, and an announcement that
-            // disagreed with the pixels would describe a different control. The range is 0..1 by
-            // this component's own definition of Value, so it is stated rather than guessed at.
+            // Spec B14: role=progressbar with the value it holds — the value the bar IS DRAWN FROM,
+            // not the caller's, because an announcement that disagreed with the pixels would
+            // describe a different control. That is `filledWeight`, NOT `clamped`: the weights
+            // quantize to a thousandth, so 0.4504 paints 450/550 — the bar is at 0.45 and saying
+            // 0.4504 is the same defect one decimal place further down. The range is 0..1 by this
+            // component's own definition of Value, so it is stated rather than guessed at.
             return new Progress(track)
             {
                 Label = Label,
-                Value = new RangeValue(clamped, 0, 1) { Text = ValueText },
+                Value = new RangeValue(filledWeight / 1000f, 0, 1) { Text = ValueText },
             };
         }
 
