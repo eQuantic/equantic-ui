@@ -182,12 +182,54 @@ internal sealed partial class MeasureVisitor
             markWidth = MarkWidth();
         }
 
+        // Dropping stops at one word, so when that word is itself wider than the room the WORD is
+        // what gives: its tail is cut to leave exactly the mark's width. That is the operation the
+        // plain path's measurer performs inside itself, and without it the mark was placed past the
+        // clamped bounds — present in the fragments, invisible behind the realizer's clip, on a
+        // line the measurement already called ellipsized.
+        if (!float.IsPositiveInfinity(limit) && x + markWidth > limit
+            && fragments.Count > 0 && fragments[^1].Line == line)
+        {
+            var last = fragments[^1];
+            var (kept, keptWidth) = LongestPrefixWithin(
+                last.Content, last.Style, limit - markWidth - last.X, ctx);
+
+            if (kept.Length == 0) fragments.RemoveAt(fragments.Count - 1);
+            else fragments[^1] = last with { Content = kept, Width = keptWidth };
+
+            x = MathF.Max(0, MathF.Min(last.X + keptWidth, limit - markWidth));
+        }
+
         fragments.Add(new TextFragment(mark, tail?.Style ?? fallback, x, line * lineHeight,
             markWidth, line, tail?.Color, tail?.Destination));
         return x + markWidth;
 
         float MarkWidth() => ctx.Measurer
             .Measure(mark, tail?.Style ?? fallback, ctx.TypeScale, float.PositiveInfinity, 1).Width;
+    }
+
+    /// <summary>
+    /// The longest prefix of <paramref name="word"/> that measures within <paramref name="room"/>,
+    /// and what it measures. Empty when not one character fits.
+    /// <para>
+    /// Asked of the MEASURER one prefix at a time rather than estimated, because an advance is the
+    /// measurer's business and the whole point of the seam is that a real shaper answers differently
+    /// from the stand-in. Walked from the end because a cut normally takes a character or two, and
+    /// it runs only on a line that is already being truncated.
+    /// </para>
+    /// </summary>
+    private (string Text, float Width) LongestPrefixWithin(string word, TypeStyle style, float room,
+        LayoutContext ctx)
+    {
+        if (room <= 0) return (string.Empty, 0);
+
+        for (var take = word.Length - 1; take > 0; take--)
+        {
+            var width = ctx.Measurer
+                .Measure(word[..take], style, ctx.TypeScale, float.PositiveInfinity, 1).Width;
+            if (width <= room) return (word[..take], width);
+        }
+        return (string.Empty, 0);
     }
 
     /// <summary>

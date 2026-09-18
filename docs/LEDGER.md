@@ -335,8 +335,17 @@ record of a release, the wiki's Upgrading page is the distillate.
   splits on `' '` with `RemoveEmptyEntries`, so a lone space is an empty word list. Identical for one
   word, exactly 5.1dp short per gap after that — a paragraph with emphasis claims less room than the
   same sentence without. It is a different mechanism, in the measurer rather than the clamp, and
-  moving it moves every rich paragraph's geometry; pinned rather than widened into this change. The
-  91 goldens did not move.
+  moving it moves every rich paragraph's geometry; pinned rather than widened into this change. A
+  FOURTH ROUND then found the half of the clamp that clamping alone could not reach: with the room
+  too narrow for even one word, the reported width was right and the MARK was placed past it —
+  present in the fragments and invisible behind the realizer's clip, on a line the measurement
+  already called ellipsized. Dropping stops at one word, so the word is what gives now: its tail is
+  cut to leave exactly the mark's width, asked of the measurer one prefix at a time because an
+  advance is the measurer's business. `alphabet` in a box of 40 lays out as `alp…` at 31.28. That
+  cost the exact-parity assertion of the round before, and dropping it was a decision rather than a
+  concession: the rich path reports the content it laid out where the plain measurer reports the
+  clamp, and reporting LESS than the room offered is what every hugging node does. The 91 goldens
+  did not move.
 
 
 ## Retired documents

@@ -220,11 +220,23 @@ public class LayoutTransparencyTests
         };
         var plain = new Text(content, TypeRole.BodyL) { MaxLines = 1 };
 
-        WidthIn(plain, room).Should().BeApproximately(room, 0.01f,
+        WidthIn(plain, room).Should().BeLessThanOrEqualTo(room + 0.01f,
             "the plain path has always clamped a cut line to the room it had");
-        WidthIn(rich, room).Should().BeApproximately(WidthIn(plain, room), 0.01f,
+        WidthIn(rich, room).Should().BeLessThanOrEqualTo(room + 0.01f,
             "and the runs path is the same measurement with per-word rectangles, not a different "
             + "contract — it reported 75.48 into a box of " + room + " before this");
+
+        // The ITextMeasurer contract, on the path that has rectangles to check it with: a cut line
+        // is measured WITH its mark, so nothing it lays out may sit outside the width it reports.
+        var laid = LayoutEngine.Layout(new Box(new BoxStyle { Width = SizeValue.Fixed(room) }, rich),
+            400, 300, Ctx).Children[0];
+        laid.TextRuns.Should().NotBeNullOrEmpty();
+        laid.TextRuns!.Should().Contain(f => f.Content == "\u2026", "the line was cut");
+        foreach (var fragment in laid.TextRuns!)
+            (fragment.X + fragment.Width).Should().BeLessThanOrEqualTo(laid.Bounds.Width + 0.01f,
+                $"'{fragment.Content}' is drawn where the measurement put it, and the realizer clips "
+                + "at the bounds — the mark used to land entirely outside them, present in the "
+                + "fragments and invisible on the screen");
     }
 
     /// <summary>
