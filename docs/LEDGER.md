@@ -325,8 +325,18 @@ record of a release, the wiki's Upgrading page is the distillate.
   measured width grows WITH the mark, so the fragment is inside it) and its consequence was right
   anyway, which is the case for reading a finding past its first sentence. It also caught a stale
   count my own mutation harness had reverted: a restore from a backup taken before the fix put
-  "nine of the twenty" back, and I did not re-read the file after the last restore. The 91 goldens
-  did not move.
+  "nine of the twenty" back, and I did not re-read the file after the last restore. A THIRD ROUND
+  said the runs path read `maxW <= 0` as unbounded, and measuring it found the finding was narrower
+  than the fault: the runs path clamped NO line to its limit, where the plain measurer has always
+  committed each one at `Min(candidate, maxWidth)` — 170dp reported into a box of 0, and 54.4 into a
+  box of 10, which has nothing to do with zero. Every line is clamped now, and only infinity counts
+  as unbounded. THAT TEST THEN FOUND A DEFECT IT DOES NOT FIX: every inter-word space in a rich
+  paragraph measures ZERO, because `MeasureRuns` asks the measurer for each piece and the measurer
+  splits on `' '` with `RemoveEmptyEntries`, so a lone space is an empty word list. Identical for one
+  word, exactly 5.1dp short per gap after that — a paragraph with emphasis claims less room than the
+  same sentence without. It is a different mechanism, in the measurer rather than the clamp, and
+  moving it moves every rich paragraph's geometry; pinned rather than widened into this change. The
+  91 goldens did not move.
 
 
 ## Retired documents

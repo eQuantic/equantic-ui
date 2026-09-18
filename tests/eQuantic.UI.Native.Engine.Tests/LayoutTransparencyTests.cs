@@ -196,7 +196,8 @@ public class LayoutTransparencyTests
     /// <para>
     /// So the two paths are pinned AGAINST EACH OTHER rather than against a number. An unbreakable
     /// word wider than its box overflows on both and the realizer clips it; what must not differ is
-    /// what they report.
+    /// what they report. <see cref="RichAndPlainTextReportTheSameRoom"/> is the general case — the
+    /// divergence turned out not to be about the cut line at all.
     /// </para>
     /// </summary>
     [Theory]
@@ -224,6 +225,98 @@ public class LayoutTransparencyTests
         WidthIn(rich, room).Should().BeApproximately(WidthIn(plain, room), 0.01f,
             "and the runs path is the same measurement with per-word rectangles, not a different "
             + "contract — it reported 75.48 into a box of " + room + " before this");
+    }
+
+    /// <summary>
+    /// THE TWO TEXT PATHS REPORT THE SAME ROOM, at every width including zero — the general form of
+    /// the case above, and the one that showed the first fix had been too narrow.
+    ///
+    /// <para>
+    /// A third review round said <c>MeasureRuns</c> read <c>maxW &lt;= 0</c> as unbounded, so a rich
+    /// paragraph laid out at full width in a zero-width slot. Measured, that was real and it was not
+    /// the whole of it: the runs path clamped NO line to its limit, where the plain measurer has
+    /// always committed each one at <c>Min(candidate, maxWidth)</c>. A rich paragraph reported 170dp
+    /// into a box of 0, and 54.4 into a box of 10 — the second has nothing to do with zero.
+    /// </para>
+    ///
+    /// <para>
+    /// A zero-width slot is not hypothetical: the flex pass hands one down whenever a row has
+    /// nothing left to give, which is the same truncation path the rest of this file is about.
+    /// </para>
+    ///
+    /// <para>
+    /// THE WIDTHS HERE ARE THE ONES WHERE THE ROOM BINDS, and the reason is a SEPARATE defect this
+    /// test found and does not fix — see
+    /// <see cref="ARichParagraphMeasuresNarrowerThanItsPlainTwin_BecauseItsSpacesCostNothing"/>.
+    /// Given room to spare the two disagree for a reason that has nothing to do with clamping, so
+    /// asserting parity there would be asserting two things and blaming this one.
+    /// </para>
+    /// </summary>
+    [Theory]
+    [InlineData(0f)]
+    [InlineData(1f)]
+    [InlineData(10f)]
+    [InlineData(40f)]
+    public void RichAndPlainTextReportTheSameRoom(float room)
+    {
+        const string content = "alpha beta gamma delta";
+
+        static float WidthIn(VisualNode text, float room) =>
+            LayoutEngine.Layout(new Box(new BoxStyle { Width = SizeValue.Fixed(room) }, text),
+                400, 300, Ctx).Children[0].Bounds.Width;
+
+        var rich = new Text("placeholder")
+        {
+            Spans = [new TextRun("alpha beta"), new TextRun(" gamma delta")],
+        };
+        rich.PlainContent.Should().Be(content,
+            "the two have to be the same paragraph for the comparison to mean anything");
+
+        WidthIn(rich, room).Should().BeApproximately(WidthIn(new Text(content, TypeRole.BodyL), room),
+            0.01f, "runs are how a paragraph is measured when it has emphasis in it, not a different "
+            + "contract for how much room it may claim");
+    }
+
+    /// <summary>
+    /// A DEFECT THIS PR FOUND AND DELIBERATELY DOES NOT FIX, pinned so it cannot change unnoticed
+    /// and so the number is on the record.
+    ///
+    /// <para>
+    /// Every inter-word space in a RICH paragraph measures zero. <c>MeasureRuns</c> asks the
+    /// measurer for each piece including the spaces, and <c>ApproximateTextMeasurer</c> splits its
+    /// input on <c>' '</c> with <c>RemoveEmptyEntries</c> — so a lone space is an empty word list
+    /// and comes back 0 wide. The plain path never asks: it adds <c>Advance(' ')</c> between words
+    /// itself.
+    /// </para>
+    ///
+    /// <para>
+    /// Measured: identical for one word, and exactly 5.1dp short per GAP after that. A paragraph
+    /// with emphasis in it therefore claims less room than the same sentence without, which is a
+    /// different mechanism from the clamp this PR is about — it lives in the measurer, and changing
+    /// it moves every rich paragraph's geometry. Left for its own change rather than widened into
+    /// this one.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void ARichParagraphMeasuresNarrowerThanItsPlainTwin_BecauseItsSpacesCostNothing()
+    {
+        static float Unbounded(VisualNode t) => LayoutEngine.Layout(t, 4000, 300, Ctx).Bounds.Width;
+
+        static (float Rich, float Plain) Pair(string content) =>
+            (Unbounded(new Text("x") { Spans = [new TextRun(content)] }),
+             Unbounded(new Text(content, TypeRole.BodyL)));
+
+        var one = Pair("alpha");
+        var two = Pair("alpha beta");
+        var four = Pair("alpha beta gamma delta");
+
+        one.Rich.Should().BeApproximately(one.Plain, 0.01f,
+            "with no space in it there is nothing to lose, which is what says the loss is the spaces");
+
+        var perGap = two.Plain - two.Rich;
+        perGap.Should().BeGreaterThan(0, "a space costs nothing on the runs path and something on the other");
+        (four.Plain - four.Rich).Should().BeApproximately(perGap * 3, 0.01f,
+            "and it is exactly one space's width per gap — three gaps, three times the shortfall");
     }
 
     /// <summary>

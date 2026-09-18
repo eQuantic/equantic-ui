@@ -58,7 +58,12 @@ internal sealed partial class MeasureVisitor
         TypeStyle paragraph, float maxW, int maxLines, LayoutContext ctx)
     {
         var lineHeight = paragraph.ScaledLineHeight(ctx.TypeScale);
-        var limit = float.IsPositiveInfinity(maxW) || maxW <= 0 ? float.PositiveInfinity : maxW;
+        // ONLY INFINITY IS UNBOUNDED. A zero-width slot is a real constraint — the flex pass hands
+        // one down whenever a row has nothing left to give — and the plain measurer has always
+        // honoured it. Reading `<= 0` as "no limit" here is what let a rich paragraph report 170dp
+        // into a box of 0. A negative bound floors at zero rather than travelling as a negative
+        // width, which is the one place this is stricter than the plain path.
+        var limit = float.IsPositiveInfinity(maxW) ? float.PositiveInfinity : MathF.Max(0, maxW);
         var fragments = new List<TextFragment>();
         var lines = new List<MeasuredLine>();
 
@@ -66,6 +71,19 @@ internal sealed partial class MeasureVisitor
         var line = 0;
         float widest = 0;
         var cut = false;
+
+        // EVERY line is reported at no more than the room it had, which is what the plain path does
+        // with `Min(candidate, maxWidth)` on each line it commits. The runs path clamped none of
+        // them: a word wider than the slot reported ITS width, so a paragraph of one long word said
+        // 54.4 where the plain one said 10. The glyphs overflow on both and the realizer clips them;
+        // the NUMBER is what layout reads, and a node claiming more room than it was given makes its
+        // parent grow.
+        void CommitLine(float width, bool ellipsized)
+        {
+            var reported = MathF.Min(width, limit);
+            lines.Add(new MeasuredLine(reported, ellipsized));
+            if (reported > widest) widest = reported;
+        }
 
         foreach (var run in spans)
         {
@@ -87,8 +105,7 @@ internal sealed partial class MeasureVisitor
                         cut = true;
                         break;
                     }
-                    lines.Add(new MeasuredLine(x, false));
-                    if (x > widest) widest = x;
+                    CommitLine(x, ellipsized: false);
                     line++;
                     x = 0;
                 }
@@ -100,8 +117,7 @@ internal sealed partial class MeasureVisitor
             }
         }
 
-        lines.Add(new MeasuredLine(x, cut));
-        if (x > widest) widest = x;
+        CommitLine(x, cut);
 
         result.TextRuns = fragments;
         result.Text = new TextMeasurement(widest, lines.Count * lineHeight, lineHeight, lines);
@@ -123,11 +139,9 @@ internal sealed partial class MeasureVisitor
     /// <para>
     /// Never below one word. A line that kept nothing would report a mark standing where a word had
     /// been, and an ellipsis alone tells a reader less than a cut word does. When that one word is
-    /// itself wider than the room — nothing left to drop — the reported width CLAMPS to the limit,
-    /// which is what the plain path has always done (<c>Min(lineWidth + ellipsis, maxWidth)</c>).
-    /// An unbreakable word overflows its box on both paths and the realizer clips it; what must not
-    /// differ between them is the NUMBER handed back to layout, because a node reporting more room
-    /// than it was given makes its parent grow.
+    /// itself wider than the room there is nothing to drop, and the width this returns exceeds the
+    /// limit — <c>CommitLine</c> is what clamps it, for this line and every other, because the
+    /// divergence from the plain path was never only about the cut one.
     /// </para>
     ///
     /// <para>
@@ -170,9 +184,7 @@ internal sealed partial class MeasureVisitor
 
         fragments.Add(new TextFragment(mark, tail?.Style ?? fallback, x, line * lineHeight,
             markWidth, line, tail?.Color, tail?.Destination));
-        // `limit` is already positive infinity when the room is unbounded, and Min against it
-        // is the identity — so the unbounded case needs no arm of its own.
-        return MathF.Min(x + markWidth, limit);
+        return x + markWidth;
 
         float MarkWidth() => ctx.Measurer
             .Measure(mark, tail?.Style ?? fallback, ctx.TypeScale, float.PositiveInfinity, 1).Width;
