@@ -42,6 +42,7 @@ public class WrapperLayoutTransparencyTests
         { "Hoverable", new Hoverable(CappedCard(), _ => { }) },
         { "Link", new Link("/somewhere", CappedCard()) },
         { "Adjustable", new Adjustable(CappedCard(), _ => { }) },
+        { "Progress", new Progress(CappedCard()) },
     };
 
     [Theory]

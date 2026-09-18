@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { lowerVisualNode } from './lowering';
 import type { LoweringContext } from './lowering';
 import { photonTheme } from './design-system.generated';
+import { effectiveStyle } from './style-atomizer';
 import type { ProgressNode } from './nodes';
 
 const ctx: LoweringContext = { textPrimary: photonTheme.textPrimary };
@@ -65,6 +66,30 @@ describe('progress lowering (C# cross-pin)', () => {
     const html = lower({ now: 1 / 3, min: 0, max: 1 });
 
     expect(html.attributes['aria-valuenow']).toBe('0.3333');
+  });
+
+  it('a wrapper above it sees the child through, fill and cap', () => {
+    // The `case 'progress'` arms in `fills` and `capsAt` only matter when a Progress is NESTED:
+    // lowerProgress calls capsAt on its own child directly, so a Progress at the top exercises
+    // nothing. This is the mirror of the C# TheWrapperCarriesTheChildsLayoutContractThrough, and
+    // without it deleting those two arms leaves vitest green — which is exactly what happened when
+    // the first attempt at this test put the Progress outermost.
+    const capped = {
+      nodeKind: 'box',
+      style: { width: { kind: 'fill' }, maxWidth: 320 },
+      child: { nodeKind: 'text', content: 'bar', role: 'label', maxLines: 0 },
+    };
+    const pressed = {
+      nodeKind: 'pressable',
+      child: { nodeKind: 'progress', child: capped, label: 'Uploading' },
+      onPressed: () => {},
+    };
+
+    const html = lowerVisualNode(pressed as never, ctx);
+    const style = effectiveStyle(html as { attributes: Record<string, string | undefined> });
+
+    expect(style).toContain('width: 100%');
+    expect(style).toContain('max-width: 320px');
   });
 
   it('is not a control', () => {

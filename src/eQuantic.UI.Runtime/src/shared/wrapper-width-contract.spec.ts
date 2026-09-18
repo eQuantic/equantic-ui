@@ -35,6 +35,7 @@ describe('a wrapper carries the whole width contract', () => {
     ['hoverable', (child: unknown) => ({ nodeKind: 'hoverable', child, onChanged: () => {} })],
     ['link', (child: unknown) => ({ nodeKind: 'link', child, destination: '/somewhere' })],
     ['adjustable', (child: unknown) => ({ nodeKind: 'adjustable', child, onAdjust: () => {} })],
+    ['progress', (child: unknown) => ({ nodeKind: 'progress', child })],
   ] as const) {
     it(`${name} passes the cap through with the fill`, () => {
       const lowered = lowerVisualNode(wrap(capped()) as unknown as VisualNodeValue, ctx);

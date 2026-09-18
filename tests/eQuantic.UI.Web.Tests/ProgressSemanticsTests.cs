@@ -153,6 +153,14 @@ public class ProgressSemanticsTests
     /// Pressable must not lose the fill or the cap, or SSR and the hydrated runtime disagree about
     /// the width of the same bar. The TypeScript twin walks through it; the C# `Fills` and `CapsAt`
     /// did not, which is a divergence that only shows on a real page.
+    /// <para>
+    /// NESTED on purpose, and the row in <c>WrapperLayoutTransparencyTests</c> does not replace it.
+    /// That sweep puts the Progress OUTERMOST, where `LowerProgress` calls `CapsAt` on its own child
+    /// directly and the `Progress` arms in `Fills`/`CapsAt` are never consulted — deleting both arms
+    /// leaves the sweep green (measured: 11 passed). This is the test that goes red. The two guard
+    /// different things and both were mutated to prove it: the sweep catches `LowerProgress` dropping
+    /// the cap, this catches the recursion forgetting the node.
+    /// </para>
     /// </summary>
     [Fact]
     public void TheWrapperCarriesTheChildsLayoutContractThrough()
