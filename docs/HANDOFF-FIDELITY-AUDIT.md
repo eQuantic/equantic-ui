@@ -2617,7 +2617,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/NavigationRail.cs`
 - **Handoff**: "Selection: pill crossfade + glyph fill swap, Motion.State 200ms."
-- **Code**: The pill's BoxStyle declares no Transition, so the Primary-subtle background and the tint snap between destinations instead of crossfading. The vocabulary exists and is used by siblings — `Transition = TransitionSpec.Of(StyleChannels.Colors | StyleChannels.Size, Motion.State)` in PageIndicator.cs:62 — and Motion.State resolves to exactly the handoff's 200ms (Tokens.cs:259 BaseMs = 200, line 258 State = new(BaseMs, Curve.Standard)). The glyph fill swap itself is implemented (line 85 picks SelectedIcon), only its 200ms motion is absent.
+- **Code**: The pill's BoxStyle declares no Transition, so the Primary-subtle background and the tint snap between destinations instead of crossfading. The vocabulary exists and is used by siblings — `Transition = TransitionSpec.Of(StyleChannels.Colors | StyleChannels.Size, Motion.State)` in PageIndicator.cs:62 — and Motion.State resolves to exactly the handoff's 200ms (Tokens.cs:259 BaseMs = 200, Tokens.cs:276 Motion.State = new(BaseMs, Curve.Standard)). The glyph fill swap itself is implemented (line 85 picks SelectedIcon), only its 200ms motion is absent.
 - **Evidence**:
 
   ```

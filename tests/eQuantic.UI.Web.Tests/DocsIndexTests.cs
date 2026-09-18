@@ -2,6 +2,8 @@ using System.Globalization;
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 using FluentAssertions;
+using eQuantic.UI.Compiler.Services;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -144,7 +146,7 @@ public class DocsIndexTests
     /// </summary>
     private static bool Declares(string sourceFile, string name) =>
         Declarations.GetOrAdd(sourceFile, static file =>
-            CSharpSyntaxTree.ParseText(File.ReadAllText(file)).GetRoot().DescendantNodes()
+            Parse(file).GetRoot().DescendantNodes()
                 .SelectMany(node => node switch
                 {
                     PropertyDeclarationSyntax property => [property.Identifier.Text],
@@ -158,6 +160,19 @@ public class DocsIndexTests
                 })
                 .ToHashSet(StringComparer.Ordinal))
             .Contains(name);
+
+    /// <summary>
+    /// A repository source file, parsed the way the repository's own compiler parses it —
+    /// <see cref="ParseDefaults.Options"/>, which is <c>LanguageVersion.Preview</c>. Roslyn's default
+    /// is the latest RELEASED version and turns preview syntax into error nodes, and an error node
+    /// declares nothing: a file using C# 15's <c>union</c> or <c>closed</c> would quietly lose its
+    /// members here and let a wrong citation of one pass. Measured across the 1,267 files in
+    /// <c>src/</c> and <c>tests/</c> today the two options agree exactly — same member counts, no
+    /// parse errors either way — so this is the hole closed BEFORE it opens, on the day eqc's own
+    /// preview support is used in the tree it reads.
+    /// </summary>
+    private static SyntaxTree Parse(string sourceFile) =>
+        CSharpSyntaxTree.ParseText(File.ReadAllText(sourceFile), ParseDefaults.Options, sourceFile);
 
     /// <summary>One parse per file: the audits cite the same handful many times over.</summary>
     private static readonly ConcurrentDictionary<string, HashSet<string>> Declarations = new(StringComparer.Ordinal);
@@ -628,7 +643,7 @@ public class DocsIndexTests
     private static Dictionary<string, List<(int First, int Last)>> DeclarationSpans(string sourceFile) =>
         Spanned.GetOrAdd(sourceFile, static file =>
         {
-            var tree = CSharpSyntaxTree.ParseText(File.ReadAllText(file));
+            var tree = Parse(file);
             var spans = new Dictionary<string, List<(int, int)>>(StringComparer.Ordinal);
             foreach (var node in tree.GetRoot().DescendantNodes())
             {
