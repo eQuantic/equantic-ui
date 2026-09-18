@@ -106,7 +106,7 @@ the pill's 40 down.
   MeasureVisitor.Containers.cs:18  var host = ctx.SafeAreaInsets;
   LayoutEngine.cs:173  public EdgeInsets SafeAreaInsets { get; init; }
   WebLoweringVisitor.Containers.cs:368  var env = $"env(safe-area-inset-{name}, 0px)";
-  lowering.ts:3301  const env = `env(safe-area-inset-${name}, 0px)`;
+  lowering.ts:3307  const env = `env(safe-area-inset-${name}, 0px)`;
   ```
 
 ### A5 SafeArea · behaviour · **unverified**
@@ -163,7 +163,7 @@ the pill's 40 down.
   src/eQuantic.UI.Native.Components/SemanticsVisitor.Text.cs:16-20 —
       public bool Visit(Text node, LayoutNode laidOut) =>
           node.PlainContent.Length > 0
-  src/eQuantic.UI.Native.Components/SemanticsVisitor.Interaction.cs:128  if (node.Source is Text { PlainContent.Length: > 0 } text) parts.Add(text.PlainContent);
+  src/eQuantic.UI.Native.Components/SemanticsVisitor.Interaction.cs:130  if (node.Source is Text { PlainContent.Length: > 0 } text) parts.Add(text.PlainContent);
   src/eQuantic.UI.Components/Markdown.cs:167  return new Text("", style.Body, theme.TextSecondary, maxLines: 0) { Spans = spans };
   ```
 
@@ -213,7 +213,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Button.cs`
 - **Handoff**: Hit rect: Small "≥48 (slop)", Medium "≥48 (slop)" — "Sizes — toggle "Hit areas" in the top bar: Small 32 · hit 48 / Medium 40 · hit 48".
-- **Code**: The Button never asks for the hit rect: Button.cs:62-66 reads the size ladder for height, padding, gap and the two type sizes and asks for no hit slot at all — `Touch.MinTarget` has zero references in Button.cs, and no min-size reaches the tree. (The row was filed against `ButtonStyles.Metrics`, a tuple whose seventh slot the Button discarded; the tuple is gone and the seven calls are read straight, which changes the mechanism and not the outcome.) Only the Photon realizer expands (EmitVisitor.Interaction.cs:114-122 ExpandHitRect, called at :15). The web path has no equivalent: `Touch.MinTarget` has zero references in src/eQuantic.UI.Web and src/eQuantic.UI.Runtime, and neither lowerPressable (lowering.ts:2036-2129) nor LowerPressable (WebLoweringVisitor.Interaction.cs:391-427 LowerPressable) nor the generated `.eq-pressable` rules (TokenCss.cs:317-332) set any minimum. On web a Small button's tap target is 32×32 and a Medium's is 40×40.
+- **Code**: The Button never asks for the hit rect: Button.cs:62-66 reads the size ladder for height, padding, gap and the two type sizes and asks for no hit slot at all — `Touch.MinTarget` has zero references in Button.cs, and no min-size reaches the tree. (The row was filed against `ButtonStyles.Metrics`, a tuple whose seventh slot the Button discarded; the tuple is gone and the seven calls are read straight, which changes the mechanism and not the outcome.) Only the Photon realizer expands (EmitVisitor.Interaction.cs:114-122 ExpandHitRect, called at :15). The web path has no equivalent: `Touch.MinTarget` has zero references in src/eQuantic.UI.Web and src/eQuantic.UI.Runtime, and neither lowerPressable (lowering.ts:2036-2129) nor LowerPressable (WebLoweringVisitor.Interaction.cs:398-434 LowerPressable) nor the generated `.eq-pressable` rules (TokenCss.cs:317-332) set any minimum. On web a Small button's tap target is 32×32 and a Medium's is 40×40.
 - **Evidence**:
 
   ```
@@ -228,7 +228,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Button.cs:78  var inert = Disabled || Loading;  → Button.cs:132 `Disabled = inert` → WebLoweringVisitor.Interaction.cs:420  Disabled = pressable.Disabled && !wrapping ? true : null,  /  lowering.ts:2610  if (disabled && !wrapping) node.attributes['disabled'] = '';
+  Button.cs:78  var inert = Disabled || Loading;  → Button.cs:132 `Disabled = inert` → WebLoweringVisitor.Interaction.cs:427  Disabled = pressable.Disabled && !wrapping ? true : null,  /  lowering.ts:2610  if (disabled && !wrapping) node.attributes['disabled'] = '';
   ```
 
 ### A13 IconButton · semantics · **CONFIRMED**
@@ -377,7 +377,7 @@ the pill's 40 down.
   Chip.cs:92    {
   Chip.cs:107        Label = Label,
   Chip.cs:109        PressedBackground = Selected ? primary.Pressed.WithOpacity(0.24f) : theme.SurfaceSubtle,
-  WebLoweringVisitor.Interaction.cs:423  AriaPressed = pressable.Selected is { } selected ? (selected ? "true" : "false") : null,
+  WebLoweringVisitor.Interaction.cs:430  AriaPressed = pressable.Selected is { } selected ? (selected ? "true" : "false") : null,
   ```
 
 ### B8 Chip · behaviour · **CONFIRMED**
@@ -390,7 +390,7 @@ the pill's 40 down.
   ```
   Chip.cs:73  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, textColor), OnRemove)
   Chip.cs:104  return Kind == ChipKind.Filter && OnPressed != null
-  WebLoweringVisitor.Interaction.cs:401  var element = new RealizedElement(wrapping ? "span" : "button")
+  WebLoweringVisitor.Interaction.cs:408  var element = new RealizedElement(wrapping ? "span" : "button")
   ```
 
 ### B8 Chip · behaviour · **CONFIRMED**
@@ -477,8 +477,8 @@ the pill's 40 down.
 
   ```
   ProgressBar.cs:126              Value = new RangeValue(clamped, 0, 1) { Text = ValueText },
-  WebLoweringVisitor.Interaction.cs:189  RawAttributes = new Dictionary<string, string> { ["role"] = "progressbar" },
-  SemanticsVisitor.Interaction.cs:81          Announce(new(SemanticRole.ProgressIndicator, laidOut.Path ?? "", laidOut.Bounds,
+  WebLoweringVisitor.Interaction.cs:196  RawAttributes = new Dictionary<string, string> { ["role"] = "progressbar" },
+  SemanticsVisitor.Interaction.cs:83          Announce(new(SemanticRole.ProgressIndicator, laidOut.Path ?? "", laidOut.Bounds,
   ```
 
 ### B18 Banner · semantics · **CONFIRMED**
@@ -713,9 +713,9 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  lowering.ts:2933-2945  const value = role === 'slider' ? node.value : undefined; host.attributes['role'] = role === 'slider' && !value ? 'group' : role; host.attributes['tabindex'] = '0'; if (node.label) host.attributes['aria-label'] = node.label;
+  lowering.ts:2939-2951  const value = role === 'slider' ? node.value : undefined; host.attributes['role'] = role === 'slider' && !value ? 'group' : role; host.attributes['tabindex'] = '0'; if (node.label) host.attributes['aria-label'] = node.label;
   WebLoweringVisitor.Interaction.cs:125  var adjustableValue = adjustable.Role == AdjustableRole.Slider ? adjustable.Value : null;
-  WebLoweringVisitor.Interaction.cs:225-227  AdjustableRole.Tablist => "tablist", AdjustableRole.Radiogroup => "radiogroup", _ => value is null ? "group" : "slider",
+  WebLoweringVisitor.Interaction.cs:232-234  AdjustableRole.Tablist => "tablist", AdjustableRole.Radiogroup => "radiogroup", _ => value is null ? "group" : "slider",
   Slider.cs:163-171              : new Adjustable(box, direction =>
   ```
 
@@ -1425,7 +1425,7 @@ the pill's 40 down.
 
   ```
   ListItem.cs:132  Label = Title,
-  WebLoweringVisitor.Interaction.cs:421  AriaLabel = pressable.Label,
+  WebLoweringVisitor.Interaction.cs:428  AriaLabel = pressable.Label,
   ```
 
 ### B2 List · ListItem · semantics · **CONFIRMED**
@@ -1593,7 +1593,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Runtime/src/shared/lowering.ts:2953-2967  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
+  src/eQuantic.UI.Runtime/src/shared/lowering.ts:2959-2973  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
   ```
 
 ### B5 Tabs · semantics · **unverified**
@@ -1700,7 +1700,7 @@ the pill's 40 down.
   ```
   BottomNavigation.cs:60  var iconNode = item.BadgeCount > 0 ? Badge.Over(icon, item.BadgeCount) : (VisualNode)icon;
   BottomNavigation.cs:85  Label = item.Label,
-  WebLoweringVisitor.Interaction.cs:421  AriaLabel = pressable.Label,
+  WebLoweringVisitor.Interaction.cs:428  AriaLabel = pressable.Label,
   ```
 
 ### B8 Chip · semantics · **CONFIRMED**
@@ -1724,7 +1724,7 @@ the pill's 40 down.
 
   ```
   Chip.cs:73  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, textColor), OnRemove)
-  WebLoweringVisitor.Interaction.cs:406  Padding = "0",
+  WebLoweringVisitor.Interaction.cs:413  Padding = "0",
   EmitVisitor.Interaction.cs:118  var minimum = density == Density.Compact ? 0 : Touch.MinTarget;
   ```
 
@@ -1853,7 +1853,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Checkbox.cs`
 - **Handoff**: "A11y: checkbox role … error appended to description."
-- **Code**: `Error` changes the border colour and nothing else — it never reaches the accessibility tree. The Pressable carries no description/invalid slot and none is emitted: WebLoweringVisitor.Interaction.cs:391-538 LowerPressable writes aria-label / aria-checked / aria-pressed / aria-expanded / aria-current only, so a checkbox in error announces identically to one that is not.
+- **Code**: `Error` changes the border colour and nothing else — it never reaches the accessibility tree. The Pressable carries no description/invalid slot and none is emitted: WebLoweringVisitor.Interaction.cs:398-545 LowerPressable writes aria-label / aria-checked / aria-pressed / aria-expanded / aria-current only, so a checkbox in error announces identically to one that is not.
 - **Evidence**:
 
   ```
@@ -1930,7 +1930,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/ProgressBar.cs`
 - **Handoff**: determinate announces at 25% steps + completion; indeterminate announces "in progress" once, not per frame.
-- **Code**: No announcement path exists. AdoptConfig (ProgressBar.cs:68-80) only records the snap flag and copies Value/Variant; nothing crosses a 25% threshold or fires a live-region update, and there is no live-region node in Primitives/Nodes at all (the only aria-live in the write-once path is the TextInput description, WebLoweringVisitor.Text.cs:76 LowerTextEntry).
+- **Code**: No announcement path exists. `ProgressBar.cs:68-80 ProgressBar.AdoptConfig` now adopts the whole configuration — the snap flag, the value, the variant, the label, the words and the prominence — and NONE of that is an announcement: nothing crosses a 25% threshold or fires a live-region update, and there is no live-region node in Primitives/Nodes at all (the only aria-live in the write-once path is the TextInput description, WebLoweringVisitor.Text.cs:76 LowerTextEntry). Adopting more of itself is what B14 · semantics fixed; this row is the OTHER half and stays open.
 - **Evidence**:
 
   ```
@@ -1957,7 +1957,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  WebLoweringVisitor.Interaction.cs:339  Animation = $"eq-slide-x {motion.DurationMs}ms linear infinite",
+  WebLoweringVisitor.Interaction.cs:346  Animation = $"eq-slide-x {motion.DurationMs}ms linear infinite",
   ```
 
 ### B16 Skeleton · missing-feature · **CONFIRMED**
@@ -2026,7 +2026,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  WebLoweringVisitor.Interaction.cs:388-405  var element = new RealizedElement(wrapping ? "span" : "button") { Style = new HtmlStyle { Padding = "0", Border = "none", Background = "none", FontFamily = "inherit", Cursor = ..., TextAlign = TextAlign.Start, Width = fills.Width ? "100%" : null, Height = fills.Height ? "100%" : null, } };
+  WebLoweringVisitor.Interaction.cs:408-426  var element = new RealizedElement(wrapping ? "span" : "button") { Style = new HtmlStyle { Padding = "0", Border = "none", Background = "none", FontFamily = "inherit", Cursor = ..., TextAlign = TextAlign.Start, Width = fills.Width ? "100%" : null, Height = fills.Height ? "100%" : null, } };
   ```
 
 ### B18 Banner · behaviour · **CONFIRMED**
@@ -2309,7 +2309,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  lowering.ts:2953-2967  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
+  lowering.ts:2959-2973  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
   PhotonHost.cs:2043  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
@@ -2335,7 +2335,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  lowering.ts:2953-2967  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
+  lowering.ts:2959-2973  const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowUp' ? downIsNext ? -1 : 1 : event.key === 'ArrowDown' ? downIsNext ? 1 : -1 : 0; if (direction === 0) return;
   PhotonHost.cs:2043  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
@@ -3487,7 +3487,7 @@ the pill's 40 down.
 
   ```
   EmitVisitor.Interaction.cs:114  private static Rect ExpandHitRect(Rect bounds, Density density = Density.Comfortable)   // native only
-  WebLoweringVisitor.Interaction.cs:406-414  Padding = "0", Border = "none", Background = "none", ... Width = fills.Width ? "100%" : null, Height = fills.Height ? "100%" : null,
+  WebLoweringVisitor.Interaction.cs:413-421  Padding = "0", Border = "none", Background = "none", ... Width = fills.Width ? "100%" : null, Height = fills.Height ? "100%" : null,
   TokenCss.cs:379  css.AppendLine(".eq-pressable { -webkit-tap-highlight-color: transparent; }");
   ```
 

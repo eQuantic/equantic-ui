@@ -10,7 +10,7 @@ namespace eQuantic.UI.Email;
 /// (<see cref="EmailTextVisitor"/>) — built from the same tree so they cannot drift. Seven words
 /// cross into that medium: <see cref="Column"/>, <see cref="Row"/>, <see cref="Text"/>,
 /// <see cref="Box"/>, <see cref="Image"/>, <see cref="Link"/>, and the component seam. They are
-/// abstract here, because each alternative writes them differently. The other THIRTY-THREE are
+/// abstract here, because each alternative writes them differently. The other THIRTY-FOUR are
 /// refused, and refused IDENTICALLY — one <see cref="Refuse"/>, inherited by both.
 /// </para>
 ///

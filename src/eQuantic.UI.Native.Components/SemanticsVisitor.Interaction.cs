@@ -4,8 +4,10 @@ using eQuantic.UI.Primitives;
 namespace eQuantic.UI.Native.Components;
 
 /// <summary>
-/// Interaction and motion — thirteen words. Three are controls and announce as one stop each; nine
-/// wrap a child or are ornament; the thirteenth, <see cref="Navigable"/>, is the gap.
+/// Interaction and motion — fourteen words. Three are controls and announce as one stop each; a
+/// fourth, <see cref="Progress"/>, announces WITHOUT being one — it is read, never moved, which is
+/// why it carries no tab stop and no key handler; nine wrap a child or are ornament; the
+/// fourteenth, <see cref="Navigable"/>, is the gap.
 /// </summary>
 internal sealed partial class SemanticsVisitor
 {

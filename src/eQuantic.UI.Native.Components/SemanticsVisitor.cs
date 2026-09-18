@@ -25,9 +25,17 @@ namespace eQuantic.UI.Native.Components;
 /// <para>
 /// A DECLINE IS A CONSTANT NAMED FOR ITS REASON. The exemption list of <c>VocabularyCoverageTests</c>
 /// carried those reasons in a comment beside a string; they are here now, where the compiler sees the
-/// node and a reviewer sees why. Thirteen nodes announce, twenty-seven decline, and the twenty-seven
-/// are not one kind of silence: pure layout, a wrapper, ornament, an escape hatch that cannot cross,
-/// the expansion seam, and two that are a real gap wearing an exemption.
+/// node and a reviewer sees why. TEN arms call <c>Announce</c> outright and THIRTY do not, and the
+/// thirty are not one kind of silence: five are graphics that announce only when LABELLED
+/// (<c>Graphic</c>), and the rest are pure layout, a wrapper, ornament, an escape hatch that cannot
+/// cross, the expansion seam, and two that are a real gap wearing an exemption.
+/// <para>
+/// Counted rather than remembered — <c>grep -c "public bool Visit(" SemanticsVisitor*.cs</c> is the
+/// forty, and the ten are the arms whose body says <c>Announce</c>. The pair this replaces
+/// ("thirteen announce, twenty-seven decline") summed to forty while the vocabulary held
+/// thirty-nine, so it had already stopped describing anything before this node arrived; a number in
+/// prose that no instrument checks is a number that drifts.
+/// </para>
 /// </para>
 /// </summary>
 internal sealed partial class SemanticsVisitor(List<SemanticNode> nodes)

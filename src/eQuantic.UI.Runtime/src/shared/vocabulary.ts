@@ -1220,12 +1220,18 @@ export class Image extends VisualNode {
 }
 
 /**
- * Mirror of the C# `RangeValue`: WHERE an Adjustable's value sits — the trio ARIA calls
+ * Mirror of the C# `RangeValue`: WHERE A RANGE NODE'S VALUE SITS — the trio ARIA calls
  * `aria-valuenow` / `aria-valuemin` / `aria-valuemax`, plus the words to say it in.
+ *
+ * Named for the SHAPE rather than the first node that needed it. `Adjustable` baptised it and
+ * `Progress` uses the same quartet, because ARIA gives it to every range node — slider, progressbar,
+ * meter — and a progress bar is not adjustable: it reports, and nothing can move it.
  *
  * One type rather than three fields on the node, because the three are only meaningful together:
  * `role="slider"` REQUIRES a now, and a now with no bounds is announced against ARIA's own 0-100
- * default, which no slider in this design system uses.
+ * default, which no slider in this design system uses. A null VALUE is a different matter and the
+ * two nodes read it oppositely: absent on an Adjustable means it is not a slider, absent on a
+ * Progress means INDETERMINATE and the role stays.
  */
 export class RangeValue {
   now: number;

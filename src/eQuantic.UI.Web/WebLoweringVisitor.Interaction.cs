@@ -127,7 +127,10 @@ internal sealed partial class WebLoweringVisitor
         {
             Style = new HtmlStyle
             {
-                Width = adjustableFills.Width ? "100%" : null,
+                // Same rule as LowerProgress, and it bites harder here: this host is a TAB STOP, so
+                // a block div stretched to the container draws the focus ring around empty space
+                // beside the control.
+                Width = adjustableFills.Width ? "100%" : "fit-content",
                 MaxWidth = Size(adjustableCap),
                 PointerEvents = "auto",
                 // BOTH axes, like every other wrapper and like the twin already did. Taking the
@@ -180,7 +183,11 @@ internal sealed partial class WebLoweringVisitor
         {
             Style = new HtmlStyle
             {
-                Width = progressFills.Width ? "100%" : null,
+                // FIT-CONTENT, not nothing: this host CARRIES THE ROLE, so its box is the bounds a
+                // reader announces and a focus highlight draws. A bare block div stretches to the
+                // container while the bar stays its own width, and the two stop describing the same
+                // thing — on Photon `MeasureWrapper` gives the wrapper exactly the child's bounds.
+                Width = progressFills.Width ? "100%" : "fit-content",
                 // The child's cap comes THROUGH: a wrapper that took the width and dropped the
                 // maximum is the half-contract that made the Link diverge once already.
                 MaxWidth = Size(progressCap),
