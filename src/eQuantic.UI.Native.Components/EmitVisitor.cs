@@ -10,9 +10,11 @@ namespace eQuantic.UI.Native.Components;
 ///
 /// <para>
 /// It replaced a pair: an eighteen-arm chrome switch and, after it, a nine-branch <c>is</c> chain
-/// every falling-through node reached. They looked like two dispatches and were not: NOTHING that
-/// fell through ever touched its children — the only three arms that descended were the only three
-/// that returned. So the second half was never a second decision, it was what to do with the
+/// every falling-through node reached. They looked like two dispatches and were not, and the
+/// measurement is narrower than it first reads: no arm that <c>break</c>s ever descended INSIDE ITS
+/// OWN BODY — the only three that did were the only three that <c>return</c>ed. (Their children
+/// were still walked, by the bare <c>foreach</c> at the end; what no chrome arm ever did was decide
+/// anything about them.) So the second half was never a second decision, it was what to do with the
 /// children, which is the same node's business. One door per node says both.
 /// </para>
 ///
@@ -25,9 +27,10 @@ namespace eQuantic.UI.Native.Components;
 /// </para>
 ///
 /// <para>
-/// ONE PER FRAME. <see cref="PhotonRealizer"/> builds it once and walks the page and every overlay
-/// layer with it; what is per-layer rides in <see cref="EmitState"/> instead. #229 measured what the
-/// other arrangement costs.
+/// ONE, FULL STOP. <see cref="Shared"/> is the only instance there is: not per frame, not per
+/// layer, because the visitor holds nothing for either to vary. Everything rides in
+/// <see cref="EmitState"/>. The first arrangement gave it six fields and cost one object per frame,
+/// which `PerfHarnessTests` refused by two bytes — see that struct's doc for the measurement.
 /// </para>
 /// </summary>
 internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothing>

@@ -196,11 +196,11 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Button.cs`
 - **Handoff**: Hit rect: Small "≥48 (slop)", Medium "≥48 (slop)" — "Sizes — toggle "Hit areas" in the top bar: Small 32 · hit 48 / Medium 40 · hit 48".
-- **Code**: The Button never asks for the hit rect: Button.cs:59 destructures the size table and DISCARDS the Hit slot (`_, _`), and no min-size reaches the tree. Only the Photon realizer expands (PhotonRealizer.cs:1658-1665 ExpandHitRect, called at :835). The web path has no equivalent: `Touch.MinTarget` has zero references in src/eQuantic.UI.Web and src/eQuantic.UI.Runtime, and neither lowerPressable (lowering.ts:2038-2131) nor LowerPressable (WebRealizer.cs:1777-1808) nor the generated `.eq-pressable` rules (TokenCss.cs:317-332) set any minimum. On web a Small button's tap target is 32×32 and a Medium's is 40×40.
+- **Code**: The Button never asks for the hit rect: Button.cs:59 destructures the size table and DISCARDS the Hit slot (`_, _`), and no min-size reaches the tree. Only the Photon realizer expands (EmitVisitor.Interaction.cs:114-122 ExpandHitRect, called at :15). The web path has no equivalent: `Touch.MinTarget` has zero references in src/eQuantic.UI.Web and src/eQuantic.UI.Runtime, and neither lowerPressable (lowering.ts:2038-2131) nor LowerPressable (WebRealizer.cs:1777-1808) nor the generated `.eq-pressable` rules (TokenCss.cs:317-332) set any minimum. On web a Small button's tap target is 32×32 and a Medium's is 40×40.
 - **Evidence**:
 
   ```
-  Button.cs:59  var (height, padX, gap, labelSize, iconSize, _, _) = ButtonStyles.Metrics(Size, context.Density);   //  vs PhotonRealizer.cs:1662  var minimum = density == Density.Compact ? 0 : Touch.MinTarget;
+  Button.cs:59  var (height, padX, gap, labelSize, iconSize, _, _) = ButtonStyles.Metrics(Size, context.Density);   //  vs EmitVisitor.Interaction.cs:118  var minimum = density == Density.Compact ? 0 : Touch.MinTarget;
   ```
 
 ### A12 Button · behaviour · **unverified**
@@ -233,7 +233,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  IconButton.cs:54  var side = Sizing.Height(Size, context.Density);  … IconButton.cs:101-103  Width = side,\n            Height = side,   (no minimum reaches the Pressable; cf. PhotonRealizer.cs:1662 which is the only place Touch.MinTarget is applied)
+  IconButton.cs:54  var side = Sizing.Height(Size, context.Density);  … IconButton.cs:101-103  Width = side,\n            Height = side,   (no minimum reaches the Pressable; cf. EmitVisitor.Interaction.cs:118 which is the only place Touch.MinTarget is applied)
   ```
 
 ### B1 Card · missing-feature · **CONFIRMED**
@@ -432,7 +432,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Checkbox.cs`
 - **Handoff**: "the whole row is the target (hit ≥ 48 tall)"
-- **Code**: The row is laid out with no height and no min-height, so it measures its tallest child — the 22dp box (the BodyM label's line box is 20) — giving a 22dp-tall target. The Photon realizer rescues this (PhotonRealizer.cs:1662 `var minimum = density == Density.Compact ? 0 : Touch.MinTarget;` expands the hit rect to 48), but the web realizer emits no minimum at all: WebRealizer.cs:1786-1800 sets only padding/border/background/font/cursor/text-align, and TokenCss.cs:317-332 (.eq-pressable rules) adds no sizing. Checkbox.cs:60. The component's own doc comment (Checkbox.cs:9) asserts "hit ≥ 48 via the Pressable contract", which holds on Photon and not on web.
+- **Code**: The row is laid out with no height and no min-height, so it measures its tallest child — the 22dp box (the BodyM label's line box is 20) — giving a 22dp-tall target. The Photon realizer rescues this (EmitVisitor.Interaction.cs:118 `var minimum = density == Density.Compact ? 0 : Touch.MinTarget;` expands the hit rect to 48), but the web realizer emits no minimum at all: WebRealizer.cs:1786-1800 sets only padding/border/background/font/cursor/text-align, and TokenCss.cs:317-332 (.eq-pressable rules) adds no sizing. Checkbox.cs:60. The component's own doc comment (Checkbox.cs:9) asserts "hit ≥ 48 via the Pressable contract", which holds on Photon and not on web.
 - **Evidence**:
 
   ```
@@ -443,7 +443,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Switch.cs`
 - **Handoff**: "Hit rect 48, extends over the paired label row in ListItems."
-- **Code**: The pressable's subtree is the 52×32 track, so the web target's hit rect is 32dp tall: WebRealizer.LowerPressable emits no min sizing (WebRealizer.cs:1786-1800) and TokenCss's .eq-pressable rules add none (TokenCss.cs:317-332). Photon does honour it (PhotonRealizer.cs:1662 expands to Touch.MinTarget = 48), so the contract holds on native and breaks on web. Switch.cs:46-52, :72-87.
+- **Code**: The pressable's subtree is the 52×32 track, so the web target's hit rect is 32dp tall: WebRealizer.LowerPressable emits no min sizing (WebRealizer.cs:1786-1800) and TokenCss's .eq-pressable rules add none (TokenCss.cs:317-332). Photon does honour it (EmitVisitor.Interaction.cs:118 expands to Touch.MinTarget = 48), so the contract holds on native and breaks on web. Switch.cs:46-52, :72-87.
 - **Evidence**:
 
   ```
@@ -1244,7 +1244,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Native.Framework/Layout/LayoutEngine.cs`
 - **Handoff**: Truncation — live (resize-safe): "maxLines: 1 · Ellipsis", "maxLines: 2 · Ellipsis"; "Wrapping happens at shaping time; the ellipsis glyph replaces the last cluster that fits". Rich runs: "Span(text, weight?, color?) children for inline emphasis."
-- **Code**: MaxLines is honoured only on the plain-content path (passed to the measurer at line 714). The rich-run path branches away one line earlier and MeasureRuns never reads text.MaxLines — it wraps to as many lines as the words need and reports `lines.Count * lineHeight` as the height. The draw path agrees (src/eQuantic.UI.Native.Components/PhotonRealizer.cs:1272-1290 emits every fragment), so on Photon a Text with Spans and maxLines: 2 renders unlimited lines, un-ellipsised, and overflows the box the card reserved for it. The web/TS realizers clamp with CSS, so the two targets disagree on the same tree.
+- **Code**: MaxLines is honoured only on the plain-content path (passed to the measurer at line 714). The rich-run path branches away one line earlier and MeasureRuns never reads text.MaxLines — it wraps to as many lines as the words need and reports `lines.Count * lineHeight` as the height. The draw path agrees (src/eQuantic.UI.Native.Components/EmitVisitor.Text.cs:82-154 emits every fragment), so on Photon a Text with Spans and maxLines: 2 renders unlimited lines, un-ellipsised, and overflows the box the card reserved for it. The web/TS realizers clamp with CSS, so the two targets disagree on the same tree.
 - **Evidence**:
 
   ```
@@ -1329,7 +1329,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Button.cs`
 - **Handoff**: "Pressed fill applies on touch-down in the same frame (≤ 50ms budget); release fades back over Fast 100ms."
-- **Code**: The generated stylesheet puts a symmetric 100ms background-color transition on the pressed child, so the pressed fill fades IN over Motion.FastMs as well as out — there is no rule suppressing the transition on :active. The press-in is animated over 100ms instead of landing in the same frame. (Photon is the mirror image: PhotonRealizer.cs:554-555 swaps the fill instantly with no release fade.)
+- **Code**: The generated stylesheet puts a symmetric 100ms background-color transition on the pressed child, so the pressed fill fades IN over Motion.FastMs as well as out — there is no rule suppressing the transition on :active. The press-in is animated over 100ms instead of landing in the same frame. (Photon is the mirror image: EmitVisitor.Chrome.cs:79-84 swaps the fill instantly with no release fade.)
 - **Evidence**:
 
   ```
@@ -1697,13 +1697,13 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Chip.cs`
 - **Handoff**: "Input (removable; close 20dp visual, 48dp hit)"
-- **Code**: The 20dp visual is right (IconSize.Dense = 20, src/eQuantic.UI.Primitives/Theme/Tokens.cs:48) but the 48dp hit does not exist on the WEB target. The chip relies on Pressable's §08 contract (Chip.cs:16-17 "48dp hit through Pressable"), and the native realizer honours it (PhotonRealizer.ExpandHitRect, src/eQuantic.UI.Native.Components/PhotonRealizer.cs:1658-1666, grows the rect to Touch.MinTarget), but WebRealizer.LowerPressable emits a <button> with padding 0 and no min-width/min-height, and TokenCss adds no sizing rule for .eq-pressable — so the web ✕ is a ~20×20 target. Components that need the guarantee on web build it themselves (Slider.cs:98, PageIndicator.cs:88 both set Height = Touch.MinTarget).
+- **Code**: The 20dp visual is right (IconSize.Dense = 20, src/eQuantic.UI.Primitives/Theme/Tokens.cs:48) but the 48dp hit does not exist on the WEB target. The chip relies on Pressable's §08 contract (Chip.cs:16-17 "48dp hit through Pressable"), and the native realizer honours it (EmitVisitor.ExpandHitRect, src/eQuantic.UI.Native.Components/EmitVisitor.Interaction.cs:114-122, grows the rect to Touch.MinTarget), but WebRealizer.LowerPressable emits a <button> with padding 0 and no min-width/min-height, and TokenCss adds no sizing rule for .eq-pressable — so the web ✕ is a ~20×20 target. Components that need the guarantee on web build it themselves (Slider.cs:98, PageIndicator.cs:88 both set Height = Touch.MinTarget).
 - **Evidence**:
 
   ```
   Chip.cs:73  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, textColor), OnRemove)
   WebRealizer.cs:1791  Padding = "0",
-  PhotonRealizer.cs:1662  var minimum = density == Density.Compact ? 0 : Touch.MinTarget;
+  EmitVisitor.Interaction.cs:118  var minimum = density == Density.Compact ? 0 : Touch.MinTarget;
   ```
 
 ### B9 TextInput · metric · **CONFIRMED**
@@ -1931,7 +1931,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/EmptyState.cs`
 - **Handoff**: All shapes share one 1.4s phase (single global clock — no sparkle chaos).
-- **Code**: Native does share a global clock (PhotonRealizer.cs:1114, `motion.TimeMs % loop.DurationMs / loop.DurationMs`). Web does not: LowerLoopMotion emits a plain CSS animation with no animation-delay, so each element's phase starts at its own mount time. Skeletons for a region that begins loading later shimmer out of phase with the ones already on screen — the sparkle chaos the rule forbids — and web disagrees with native.
+- **Code**: Native does share a global clock (EmitVisitor.Containers.cs:203, `motion.TimeMs % loop.DurationMs / loop.DurationMs`). Web does not: LowerLoopMotion emits a plain CSS animation with no animation-delay, so each element's phase starts at its own mount time. Skeletons for a region that begins loading later shimmer out of phase with the ones already on screen — the sparkle chaos the rule forbids — and web disagrees with native.
 - **Evidence**:
 
   ```
@@ -2000,7 +2000,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Banner.cs`
 - **Handoff**: Dismiss X ... (glyph 18, hit 48). Actions: ≤ 2 text buttons ... hit 48.
-- **Code**: The dismiss is a bare Pressable around a 20dp Icon, relying on Pressable's documented guarantee ("the hit rect is expanded symmetrically to at least 48×48dp", src/eQuantic.UI.Primitives/Nodes/Pressable.cs). Photon honours it (PhotonRealizer.ExpandHitRect, line 1658-1665), but the WEB realizer never does: LowerPressable emits a <button> with padding 0 and no min-width/min-height, and no .eq-pressable rule in TokenCss sets one. On the web the X is a 20×20 target, not 48.
+- **Code**: The dismiss is a bare Pressable around a 20dp Icon, relying on Pressable's documented guarantee ("the hit rect is expanded symmetrically to at least 48×48dp", src/eQuantic.UI.Primitives/Nodes/Pressable.cs). Photon honours it (EmitVisitor.ExpandHitRect, line 1658-1665), but the WEB realizer never does: LowerPressable emits a <button> with padding 0 and no min-width/min-height, and no .eq-pressable rule in TokenCss sets one. On the web the X is a 20×20 target, not 48.
 - **Evidence**:
 
   ```
@@ -2646,7 +2646,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Box.cs`
 - **Handoff**: Shadow — Elevation(0–5) token only — free-form ShadowSpec requires design review.
-- **Code**: BoxStyle exposes a free-form ShadowSpec (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), a LIST of them (185) and an InsetHighlight (192); the web realizer joins elevation + shadow + list + inset into one box-shadow (WebRealizer.cs:1259-1267) and Photon issues one ShadowRRect per entry (PhotonRealizer.cs:598-608). This also contradicts the framework's own ShadowSpec doc in Tokens.cs:209-211, which calls stacked shadows a spec violation.
+- **Code**: BoxStyle exposes a free-form ShadowSpec (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), a LIST of them (185) and an InsetHighlight (192); the web realizer joins elevation + shadow + list + inset into one box-shadow (WebRealizer.cs:1259-1267) and Photon issues one ShadowRRect per entry (EmitVisitor.Chrome.cs:49-70). This also contradicts the framework's own ShadowSpec doc in Tokens.cs:209-211, which calls stacked shadows a spec violation.
 - **Evidence**:
 
   ```
@@ -2658,7 +2658,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Box.cs`
 - **Handoff**: Background — ColorToken, or LinearGradient(from, to, angle) — exactly 2 stops (fence).
-- **Code**: LinearGradient carries an optional third stop, Via, at ViaPosition (src/eQuantic.UI.Primitives/Nodes/LinearGradient.cs), and the web emits it as a real middle stop (TokenCss.Gradient). The type's doc names the break and its reason — the design system's from/via/to triples need the hue turn — and states the Photon fence: the shader interpolates two stops, so native paints From→To and the midpoint is web-only (PhotonRealizer.cs:582-583). So a via-gradient is a genuine cross-target appearance difference.
+- **Code**: LinearGradient carries an optional third stop, Via, at ViaPosition (src/eQuantic.UI.Primitives/Nodes/LinearGradient.cs), and the web emits it as a real middle stop (TokenCss.Gradient). The type's doc names the break and its reason — the design system's from/via/to triples need the hue turn — and states the Photon fence: the shader interpolates two stops, so native paints From→To and the midpoint is web-only (EmitVisitor.Chrome.cs:26-27). So a via-gradient is a genuine cross-target appearance difference.
 - **Evidence**:
 
   ```
@@ -2681,7 +2681,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Box.cs`
 - **Handoff**: Pointer — Inert — arrow cursor, no hover, right-click falls through. A Box gains pointer states only by composing Pressable.
-- **Code**: A bare Box carries three pointer facilities of its own: Hover and Focus style diffs (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs) and Cursor. The web realizer lowers them to :hover/:focus-visible rules and a cursor declaration (WebRealizer.cs:1298, 1324-1333) and Photon registers a HoverRegion and a CursorRegion for the box (PhotonRealizer.cs:571-572, 620-621) — no Pressable involved.
+- **Code**: A bare Box carries three pointer facilities of its own: Hover and Focus style diffs (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs) and Cursor. The web realizer lowers them to :hover/:focus-visible rules and a cursor declaration (WebRealizer.cs:1298, 1324-1333) and Photon registers a HoverRegion and a CursorRegion for the box (EmitVisitor.Chrome.cs:16, 89) — no Pressable involved.
 - **Evidence**:
 
   ```
@@ -2694,7 +2694,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Box.cs`
 - **Handoff**: Transform — 2D translate · scale · rotate about a pivot. Does not affect layout (paint-only).
-- **Code**: Transform2D has no pivot component (src/eQuantic.UI.Primitives/Nodes/Transform2D.cs) and both realizers hard-anchor at the element centre: the doc says "anchored at the element's center (the CSS default origin)" and Photon calls CenterAnchored(…, node.Bounds.Center) (PhotonRealizer.cs:465). A rotation about a corner or an arbitrary pivot is inexpressible. Paint-only is honoured on both targets.
+- **Code**: Transform2D has no pivot component (src/eQuantic.UI.Primitives/Nodes/Transform2D.cs) and both realizers hard-anchor at the element centre: the doc says "anchored at the element's center (the CSS default origin)" and Photon calls CenterAnchored(…, node.Bounds.Center) (EmitVisitor.cs:74). A rotation about a corner or an arbitrary pivot is inexpressible. Paint-only is honoured on both targets.
 - **Evidence**:
 
   ```
@@ -2720,7 +2720,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Box.cs`
 - **Handoff**: A Box is the engine's rrect surfaced as a widget: 1 fill draw + optional border draw + optional shadow draw. … Paint order: shadow → fill (solid or 2-stop linear gradient) → border (inside stroke) → child.
-- **Code**: BoxStyle carries two further fill layers beyond the single fill: Pattern, a repeating hairline grid (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), and Glow, a radial gradient (121). Both reach paint — EmitChrome takes gradient, pattern and glow together (PhotonRealizer.cs:634-636) and the web stacks them as background-image layers (WebRealizer.cs:1254-1255). The documented order is grid below gradient, glow above the grid, which is a four-layer fill, not one.
+- **Code**: BoxStyle carries two further fill layers beyond the single fill: Pattern, a repeating hairline grid (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), and Glow, a radial gradient (121). Both reach paint — EmitChrome takes gradient, pattern and glow together (EmitVisitor.Chrome.cs:115) and the web stacks them as background-image layers (WebRealizer.cs:1254-1255). The documented order is grid below gradient, glow above the grid, which is a four-layer fill, not one.
 - **Evidence**:
 
   ```
@@ -2732,7 +2732,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Web/WebRealizer.cs`
 - **Handoff**: Shadow — Elevation(0–5) token only … Paint order: shadow → fill … → border → child.
-- **Code**: On the web, Elevation additionally rewrites stacking: any Elevation > 0 sets z-index to the level and forces position:relative (WebRealizer.cs:1310-1316). Photon does no such thing — its Box case only draws the analytic shadow (PhotonRealizer.cs:586-594), so paint order there stays tree order. The deviation is argued at length in the comment above it ("a raised surface that anything drawn after it covers is not raised"), but it is web-only and unstated in the block.
+- **Code**: On the web, Elevation additionally rewrites stacking: any Elevation > 0 sets z-index to the level and forces position:relative (WebRealizer.cs:1310-1316). Photon does no such thing — its Box case only draws the analytic shadow (EmitVisitor.Chrome.cs:49-70), so paint order there stays tree order. The deviation is argued at length in the comment above it ("a raised surface that anything drawn after it covers is not raised"), but it is web-only and unstated in the block.
 - **Evidence**:
 
   ```
@@ -2931,7 +2931,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Image.cs`
 - **Handoff**: "Loading: SurfaceSubtle fill (or Skeleton shimmer when inside one). Error: SurfaceSubtle + Md broken-image glyph in TextMuted. Decoded image crossfades in, 200ms."
-- **Code**: Neither realizer has a loading or error state: the web lowering emits a bare <img> with src/alt and no placeholder, no error fallback and no crossfade (WebRealizer.cs:1181-1202); the native path draws a plain SurfaceSubtle rrect on a null/failed decode, with no Md broken-image glyph in TextMuted and no 200ms fade (PhotonRealizer.cs:496-501). Stated reason: the class doc fences "the loading/error states and the decode crossfade" to the asset/animation systems.
+- **Code**: Neither realizer has a loading or error state: the web lowering emits a bare <img> with src/alt and no placeholder, no error fallback and no crossfade (WebRealizer.cs:1181-1202); the native path draws a plain SurfaceSubtle rrect on a null/failed decode, with no Md broken-image glyph in TextMuted and no 200ms fade (EmitVisitor.Media.cs:201-205). Stated reason: the class doc fences "the loading/error states and the decode crossfade" to the asset/animation systems.
 - **Evidence**:
 
   ```
@@ -2940,7 +2940,7 @@ the pill's 40 down.
       builder.FillRRect(new RRect(node.Bounds, image.CornerRadius),
           Paint.Solid(theme.SurfaceSubtle.Resolve(mode)));
       return;
-  }                                                     // PhotonRealizer.cs:496-501
+  }                                                     // EmitVisitor.Media.cs:201-205
   ```
 
 ### A11 Image · missing-feature · **CONFIRMED**
@@ -2952,19 +2952,19 @@ the pill's 40 down.
 
   ```
   var decoded = loader.Load(image.Source);
-  data = decoded is null ? null : TextureData.Rgba(decoded.Width, decoded.Height, decoded.Rgba);   // PhotonRealizer.cs:491-492
+  data = decoded is null ? null : TextureData.Rgba(decoded.Width, decoded.Height, decoded.Rgba);   // EmitVisitor.Media.cs:196-197
   ```
 
 ### A11 Image · missing-feature · **CONFIRMED**
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Image.cs`
 - **Handoff**: "atlas pages evict LRU under memory pressure (M4 lifecycle)"
-- **Code**: The native image cache is an unbounded Dictionary keyed by source string with no eviction policy, no LRU ordering, no size cap and no memory-pressure hook — entries are only ever added (PhotonRealizer.cs:344 declares it, :493 writes it). Not named as a fence in the Image or EmitImage doc comments.
+- **Code**: The native image cache is an unbounded Dictionary keyed by source string with no eviction policy, no LRU ordering, no size cap and no memory-pressure hook — entries are only ever added (MotionScope.cs:33 declares it, EmitVisitor.Media.cs:198 writes it). Not named as a fence in the Image or EmitImage doc comments.
 - **Evidence**:
 
   ```
-  public Dictionary<string, TextureData?>? ImageCache { get; init; }   // PhotonRealizer.cs:344
-  cache?[image.Source] = data;                                          // PhotonRealizer.cs:493
+  public Dictionary<string, TextureData?>? ImageCache { get; init; }   // MotionScope.cs:33
+  cache?[image.Source] = data;                                          // EmitVisitor.Media.cs:198
   ```
 
 ### A12 Button · documented-deviation · **CONFIRMED**
@@ -3312,12 +3312,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Spinner.cs`
 - **Handoff**: Appears only after a 400ms delay (skip flash for fast ops).
-- **Code**: Spinner.AppearDelayMs has exactly one consumer, the generated web stylesheet (TokenCss.cs:428). PhotonRealizer.EmitSpinner (PhotonRealizer.cs:1626-1653) paints the bars from frame 0 with no appear gate, so the native spinner flashes on fast operations. The Spinner doc names the fence: the delay "is generated CSS on web and joins the native transition animator".
+- **Code**: Spinner.AppearDelayMs has exactly one consumer, the generated web stylesheet (TokenCss.cs:428). EmitVisitor.EmitSpinner (EmitVisitor.Media.cs:286-314) paints the bars from frame 0 with no appear gate, so the native spinner flashes on fast operations. The Spinner doc names the fence: the delay "is generated CSS on web and joins the native transition animator".
 - **Evidence**:
 
   ```
   TokenCss.cs:428  css.AppendLine($".eq-spinner {{ opacity: 0; animation: eq-appear 1ms linear {Spinner.AppearDelayMs}ms forwards; }}");
-  PhotonRealizer.cs:1629  motion.Active = true;   // EmitSpinner — no AppearDelayMs anywhere
+  EmitVisitor.Media.cs:289  motion.Active = true;   // EmitSpinner — no AppearDelayMs anywhere
   ```
 
 ### B16 Skeleton · semantics · **CONFIRMED**
@@ -3464,11 +3464,11 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Stepper.cs`
 - **Handoff**: Hit: 48dp per half, split at cell boundary.
-- **Code**: the 48dp hit expansion the Pressable contract promises (src/eQuantic.UI.Primitives/Nodes/Pressable.cs) is implemented only in the native realizer, PhotonRealizer.ExpandHitRect (PhotonRealizer.cs:1658-1666). The web realizer emits the visual box as the button's box with no min-width/min-height (WebRealizer.cs:1789-1800), the TS twin does the same (lowering.ts:2053-2063), and the generated .eq-pressable rules add none (TokenCss.cs:317-332) — so on the web an arm's hit rect is its visual 40×40. The same gap defeats C6's "Whole control = one hit strip (≥ 48 with slop)".
+- **Code**: the 48dp hit expansion the Pressable contract promises (src/eQuantic.UI.Primitives/Nodes/Pressable.cs) is implemented only in the native realizer, EmitVisitor.ExpandHitRect (EmitVisitor.Interaction.cs:114-122). The web realizer emits the visual box as the button's box with no min-width/min-height (WebRealizer.cs:1789-1800), the TS twin does the same (lowering.ts:2053-2063), and the generated .eq-pressable rules add none (TokenCss.cs:317-332) — so on the web an arm's hit rect is its visual 40×40. The same gap defeats C6's "Whole control = one hit strip (≥ 48 with slop)".
 - **Evidence**:
 
   ```
-  PhotonRealizer.cs:1658  private static Rect ExpandHitRect(Rect bounds, Density density = Density.Comfortable)   // native only
+  EmitVisitor.Interaction.cs:114  private static Rect ExpandHitRect(Rect bounds, Density density = Density.Comfortable)   // native only
   WebRealizer.cs:1791-1799  Padding = "0", Border = "none", Background = "none", ... Width = fills.Width ? "100%" : null, Height = fills.Height ? "100%" : null,
   TokenCss.cs:317  css.AppendLine(".eq-pressable { -webkit-tap-highlight-color: transparent; }");
   ```

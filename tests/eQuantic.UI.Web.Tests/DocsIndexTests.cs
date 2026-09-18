@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 using FluentAssertions;
@@ -291,4 +292,91 @@ public class DocsIndexTests
             "an audit quotes a declaration beside the file it says declares it; a file that resolves can still be "
             + "the wrong one, and a split moves the member without moving the citation");
     }
+
+    /// <summary>
+    /// A citation cannot point PAST THE END of the file it names.
+    ///
+    /// <para>
+    /// The guard above reads only fenced evidence blocks in the one-line <c>path␣␣code</c> form.
+    /// Citations in PROSE — <c>(PhotonRealizer.cs:1658-1665 ExpandHitRect)</c> — were unjudged, and
+    /// S6 showed what that costs: moving 1,300 lines out of one file left TWENTY such citations
+    /// pointing into a file that now ends at 343, and nothing went red. This is the cheapest rule
+    /// that catches the whole class, needs no prose parsing, and cannot false-positive: if the file
+    /// has fewer lines than the citation names, the citation is wrong, whatever it meant.
+    /// </para>
+    ///
+    /// <para>
+    /// WHAT IT CANNOT SEE: drift WITHIN the file's length. Half of those twenty were already wrong
+    /// on <c>main</c> before the move — <c>ExpandHitRect</c> was cited at 1658 and declared at 1797
+    /// — and a line that still exists is a line this test accepts. Naming the member is what closes
+    /// that, and only the fenced form does it today.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void No_citation_points_past_the_end_of_the_file_it_names()
+    {
+        var root = Root();
+        var sources = Directory.GetFiles(Path.Combine(root, "src"), "*.cs", SearchOption.AllDirectories)
+            .Concat(Directory.GetFiles(Path.Combine(root, "tests"), "*.cs", SearchOption.AllDirectories))
+            .ToLookup(Path.GetFileName, StringComparer.Ordinal);
+        var lengths = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        int Length(string path) =>
+            lengths.TryGetValue(path, out var known) ? known : lengths[path] = File.ReadAllLines(path).Length;
+
+        var overshot = new List<string>();
+        foreach (var file in RepositoryMarkdown(root))
+        {
+            var lineNumber = 0;
+            foreach (var line in File.ReadLines(file))
+            {
+                lineNumber++;
+                foreach (Match cited in CitedLine.Matches(line))
+                {
+                    var path = cited.Groups["path"].Value;
+                    var candidates = (path.Contains('/', StringComparison.Ordinal)
+                            ? [Path.Combine(root, path)]
+                            : sources[Path.GetFileName(path)].ToArray())
+                        .Where(File.Exists).ToArray();
+                    if (candidates.Length == 0) continue; // a name that resolves to nothing mentions rather than locates
+
+                    var wanted = int.Parse(cited.Groups["line"].Value, CultureInfo.InvariantCulture);
+                    if (candidates.Any(candidate => Length(candidate) >= wanted)) continue;
+
+                    overshot.Add($"{Path.GetRelativePath(root, file)}:{lineNumber} → {path}:{wanted}, "
+                        + $"but the longest file of that name has {candidates.Max(Length)} lines");
+                }
+            }
+        }
+
+        var allowed = File.ReadAllLines(Path.Combine(root, "tests", "eQuantic.UI.Web.Tests", "Coverage",
+                "citation-overshoot.baseline.txt"))
+            .Where(l => l.Length > 0 && !l.StartsWith('#'))
+            .Select(l => l.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+            .ToDictionary(p => p[0], p => int.Parse(p[1], CultureInfo.InvariantCulture), StringComparer.Ordinal);
+
+        var counted = overshot
+            .GroupBy(entry => Path.GetFileName(entry.Split('\u2192')[1].Split(':')[0].Trim()), StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal);
+
+        var grown = counted
+            .Where(pair => !allowed.TryGetValue(pair.Key, out var was) || pair.Value > was)
+            .Select(pair => allowed.ContainsKey(pair.Key)
+                ? $"{pair.Key}: {pair.Value} citations overshoot, baselined at {allowed[pair.Key]}"
+                : $"{pair.Key}: {pair.Value} citations overshoot, and it is not in the baseline at all")
+            .Concat(allowed
+                .Where(pair => counted.GetValueOrDefault(pair.Key) < pair.Value)
+                .Select(pair => $"{pair.Key}: baselined at {pair.Value} but only "
+                    + $"{counted.GetValueOrDefault(pair.Key)} remain — shrink the baseline, it may only go down"))
+            .ToArray();
+
+        string.Join(Environment.NewLine, grown).Should().BeEmpty(
+            "a citation into a file shorter than the line it names cannot be read by anyone; this is what a "
+            + "split leaves behind, and it is the half of citation rot a machine can settle without judgement. "
+            + "The baseline holds what five earlier slices left (issue #207) and may only shrink");
+    }
+
+    /// <summary>A prose or fenced citation: a <c>.cs</c> path and the line it points at.</summary>
+    private static readonly Regex CitedLine =
+        new(@"(?<path>[A-Za-z0-9_./-]+\.cs):(?<line>\d+)", RegexOptions.Compiled);
 }

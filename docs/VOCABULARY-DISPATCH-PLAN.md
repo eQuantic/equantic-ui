@@ -306,7 +306,7 @@ already writes `enums.generated.ts` and `design-system.generated.ts` from the as
 and was DELETED when the last one crossed (S6/S8). Its own summary named that retirement condition,
 so this is where its record goes — a deleted file is not an argument that the problem never existed.
 
-**Seven defects reached shipping code through this gap, and only two were found by the pin itself:**
+**Nine defects reached shipping code through this gap, and only two were found by the pin itself** — counted one per node-and-property, which is the only grouping that does not move:
 
 - `Canvas.Label` silent to VoiceOver — found by a consumer counting accessibility elements.
 - `Image.Label` emitting nothing on Photon while the web had carried `alt` all along.
@@ -317,6 +317,11 @@ so this is where its record goes — a deleted file is not an argument that the 
   realizer.
 - `CodeSurface` and `SheetSurface` lowering to an EMPTY span on the server since the day each
   shipped, while the browser drew both — found the day the pin grew to cover the web realizer.
+
+The deleted file said *seven*, and getting a different number from the same list is the point rather
+than a nitpick: it counted the three-node sweep as one item and the two-node one as two. A tally
+whose grouping is not stated is a tally that drifts, which is the defect this whole epic kept
+finding in its own prose.
 
 **Why it was an instrument and not the fix.** A switch arm is not a member, so there is nothing to
 reflect over: the pin named the one method answering each dispatch's question, cut its body out by
