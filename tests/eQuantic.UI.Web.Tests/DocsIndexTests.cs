@@ -599,11 +599,11 @@ public class DocsIndexTests
             + "that is actually there");
     }
 
-    /// <summary>The repository's own C#: what a citation can name. Test sources included, because the audits cite the tests that pin a fix.</summary>
     /// <summary>
-    /// Every source file a citation can NAME, by file name. TypeScript is in here beside C# because
-    /// the audits cite both — the runtime's client-side lowering is a realizer of its own, and a row
-    /// about what reaches the markup quotes it. It was left out when these guards were written, and
+    /// Every source file a citation can NAME, by file name. Test sources are in here too, because
+    /// the audits cite the tests that pin a fix. TypeScript is in here beside C# because the audits
+    /// cite both — the runtime's client-side lowering is a realizer of its own, and a row about what
+    /// reaches the markup quotes it. It was left out when these guards were written, and
     /// the cost was measured rather than guessed: twelve of the fifteen checkable <c>.ts</c> evidence
     /// quotes had slid or been reformatted out from under their line, invisibly, while the same
     /// guards held every <c>.cs</c> citation in the file to the letter. A guard that cannot see a

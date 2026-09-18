@@ -216,6 +216,19 @@ public class SemanticsTests
             new Slider(Volume, v => SetState(() => Volume = v)) { Label = "Volume", ValueText = Spoken };
     }
 
+    private sealed class GroupPage : Primitives.StatefulComponent
+    {
+        public AdjustableRole Role = AdjustableRole.Tablist;
+
+        public override VisualNode Build(ComponentContext context) =>
+            new Adjustable(new Box(new BoxStyle { Width = 120, Height = 24 }), _ => { })
+            {
+                Label = "Period",
+                Role = Role,
+                Value = new AdjustableValue(2, 0, 5),
+            };
+    }
+
     /// <summary>
     /// Spec C7: a slider announces WHAT IT HOLDS, not only what it is for. The bridges report an
     /// Adjustable as their platform's slider, and the value slot was null — the native half of the
@@ -238,5 +251,28 @@ public class SemanticsTests
 
         withWords.Semantics().Single(s => s.Role == SemanticRole.Slider).Value
             .Should().Be("40%", "words REPLACE the number, exactly as aria-valuetext does on the web");
+    }
+
+    /// <summary>
+    /// The value is the SLIDER role's here too. The bridges report all three roles as one, so nothing
+    /// on this side would notice — but the node's contract says a tablist and a radiogroup announce a
+    /// SELECTION their children state, and a contract that holds only in the DOM is not a contract.
+    /// <para>
+    /// Reachable since <c>UI.Adjustable</c> grew a value argument beside a role one: before that, no
+    /// component in the library could build the pair, and the divergence would have shipped on the
+    /// first app that did.
+    /// </para>
+    /// </summary>
+    [Theory]
+    [InlineData(AdjustableRole.Tablist)]
+    [InlineData(AdjustableRole.Radiogroup)]
+    public void AGroupRoleAnnouncesNoValue_TheSameRuleTheWebApplies(AdjustableRole role)
+    {
+        var host = new PhotonHost(new GroupPage { Role = role }, PhotonTheme.Instance, ThemeMode.Light, 400, 400);
+        host.RenderFrame(new DisplayListBuilder());
+
+        var announced = host.Semantics().Single(s => s.Role == SemanticRole.Slider);
+        announced.Label.Should().Be("Period", "the NAME is still announced");
+        announced.Value.Should().BeNull("ARIA has no valuenow for either role, and neither realizer invents one");
     }
 }
