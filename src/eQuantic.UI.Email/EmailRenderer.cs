@@ -21,10 +21,21 @@ public static class EmailRenderer
     /// <summary>The conventional width every client tolerates.</summary>
     private const int BodyWidth = 600;
 
+    /// <summary>
+    /// The ROOT expansion, and it enters the boundary like every other one — held open across the
+    /// realization below it, so the depth a nested component sees counts this one too.
+    /// <para>
+    /// It was left outside at first, on the reasoning that the visitors bound everything after it so
+    /// a cycle could not escape. True, and not the point: a <c>Build</c> outside the seam is a
+    /// second place the rule lives, and it showed up as a test that could not tell whether the
+    /// counter had been restored — the component it rendered afterwards was expanded here, without
+    /// ever asking.
+    /// </para>
+    /// </summary>
     public static EmailMessage Render(UiComponent component, IAppTheme theme, string? preheader = null)
     {
-        var tree = component.Build(new ComponentContext(theme));
-        return Render(tree, theme, preheader);
+        using var _ = ComponentBoundary.Enter(component);
+        return Render(component.Build(new ComponentContext(theme)), theme, preheader);
     }
 
     public static EmailMessage Render(VisualNode tree, IAppTheme theme, string? preheader = null)

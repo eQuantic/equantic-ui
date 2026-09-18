@@ -36,6 +36,14 @@ internal abstract partial class EmailWalk : IVisualNodeVisitor<Nothing, Nothing>
     /// describe-box in its place, which is right on a live page a developer is looking at and wrong
     /// in a message about to be SENT to a reader. In email, a broken component must fail the send,
     /// never reach an inbox dressed as content.
+    /// <para>
+    /// THE BOUND IS NOT PART OF THE DIVERGENCE, and for a while it was taken to be. An implementor
+    /// opens <c>ComponentBoundary.Enter</c> around the expansion, which shares the one depth counter
+    /// with the containing realizers and THROWS where they contain — catchable, so the render fails
+    /// and nothing is sent. Without it a component that builds itself walked back into Build forever
+    /// and died on a <c>StackOverflowException</c>: uncatchable, so the sending process went with it
+    /// and reported nothing at all, which is the one outcome worse than a failed send.
+    /// </para>
     /// </summary>
     public abstract Nothing Visit(UiComponent node, Nothing state);
 

@@ -17,8 +17,11 @@ namespace eQuantic.UI.Email;
 internal sealed class EmailVisitor(ComponentContext context, StringBuilder html) : EmailWalk
 {
     /// <inheritdoc/>
-    public override Nothing Visit(UiComponent node, Nothing state) =>
-        node.Build(context).Accept(this, state);
+    public override Nothing Visit(UiComponent node, Nothing state)
+    {
+        using var _ = ComponentBoundary.Enter(node);
+        return node.Build(context).Accept(this, state);
+    }
 
     /// <summary>
     /// A Column is a table with one row per child. Its gap — which no email engine implements as a

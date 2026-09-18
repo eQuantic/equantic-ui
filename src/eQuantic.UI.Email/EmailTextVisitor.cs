@@ -36,8 +36,11 @@ internal sealed class EmailTextVisitor(IAppTheme theme, StringBuilder text) : Em
     private const string Newline = "\n";
 
     /// <inheritdoc/>
-    public override Nothing Visit(UiComponent node, Nothing state) =>
-        node.Build(new ComponentContext(theme)).Accept(this, state);
+    public override Nothing Visit(UiComponent node, Nothing state)
+    {
+        using var _ = ComponentBoundary.Enter(node);
+        return node.Build(new ComponentContext(theme)).Accept(this, state);
+    }
 
     public override Nothing Visit(Text node, Nothing state)
     {

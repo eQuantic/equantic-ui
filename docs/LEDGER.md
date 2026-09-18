@@ -353,6 +353,21 @@ record of a release, the wiki's Upgrading page is the distillate.
   the last two were about the fix rather than the subject — which is what happens when a change
   reaches into a stack next to its own. The 91 goldens did not move.
 
+- **2026-09-18 · A cycle fails the send rather than the process**: the email realizer takes the
+  component-chain bound too, through a scope that shares one counter with the containing realizers
+  and THROWS where they contain ([#223](https://github.com/eQuantic/equantic-ui/issues/223)). #221
+  left it out deliberately, because email expands through `Build` rather than `BuildContained` — a
+  broken component must fail the send, never reach an inbox dressed as a describe-box. THE BOUND WAS
+  READ AS PART OF THAT DIVERGENCE AND IS NOT: reproduced first, a component that builds itself died
+  on `Test host process crashed : Stack overflow`, uncatchable, so the sending process went with it
+  and reported nothing — the one outcome worse than a failed send. A sweep for other hand-rolled
+  expansions found `eqicon`'s, which turned out to be bounded already by the layout pass it hands
+  its tree to, and the email RENDERER's own root, which was not. That root was the finding: left
+  outside on the reasoning that the visitors bound everything after it (true, and not the point — a
+  `Build` outside the seam is a second place the rule lives), it surfaced as a test that could not
+  tell whether the counter had been restored, because the component it rendered afterwards was
+  expanded there without ever asking. The A/B is not an assertion and cannot be: with the bound
+  removed the tests do not fail, they abort the host, which is the shape #221 measured.
 
 ## Retired documents
 
