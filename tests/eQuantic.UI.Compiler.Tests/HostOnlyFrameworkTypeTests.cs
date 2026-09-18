@@ -261,4 +261,55 @@ public class HostOnlyFrameworkTypeTests
             .Should().Contain(d => d.Code == "EQ2010" && d.Message.Contains("SingleChildNode"),
                 "the SAME read, reached by naming the shape, is what the runtime has no twin for");
     }
+
+    /// <summary>
+    /// THE SAME PAIR FOR <c>FlexNode</c> (#228), which is the shape <c>Row</c> and <c>Column</c>
+    /// share. It waited a release behind <c>SingleChildNode</c> because fencing
+    /// a type that has already shipped newly refuses code that compiles today, and #228 measured the
+    /// radius before spending it: nothing in `samples`, `Components`, `Charts` or `Templates` names
+    /// `FlexNode` — every reference is the framework's own machinery.
+    /// </summary>
+    [Fact]
+    public void AFlexContainersOwnGap_IsReachableThroughTheNodeThatInheritsIt()
+    {
+        Diagnostics("var gap = new Row(gap: 8f).Gap;")
+            .Should().BeEmpty("Gap is inherited into a client-visible node whose twin carries it");
+    }
+
+    /// <inheritdoc cref="TheShapeItself_IsStillRefusedWhenAComponentNamesIt"/>
+    [Fact]
+    public void TheFlexShapeItself_IsStillRefusedWhenAComponentNamesIt()
+    {
+        Diagnostics("var gap = ((FlexNode)new Row(gap: 8f)).Gap;")
+            .Should().Contain(d => d.Code == "EQ2010" && d.Message.Contains("FlexNode"),
+                "the SAME read, reached by naming the shape, is what the runtime has no twin for");
+    }
+
+    /// <summary>
+    /// THE ONE PUBLIC SURFACE THAT NAMES THE FENCED SHAPE, and the reason #228 is cheap rather than
+    /// breaking. <c>VisualNodeExtensions.With&lt;T&gt;(this T, VisualNode) where T : FlexNode</c> is
+    /// public API, so a page can write <c>Row(...).With(child)</c> — and a constraint is a way of
+    /// naming a type.
+    /// <para>
+    /// It compiles, and the fence is why: since #226 it asks what type a member was reached THROUGH.
+    /// <c>With</c> is declared on <c>VisualNodeExtensions</c> and reached through <c>Row</c>, and
+    /// neither is host-only. This is pinned rather than reasoned about, because the doc on
+    /// <c>FlexNode</c> asserts it and a doc is not a test.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void TheFluentWith_StillCompiles_ThoughItsConstraintNamesTheFencedShape()
+    {
+        Diagnostics("var row = new Row(gap: 8f).With(new Text(\"hi\"));")
+            .Should().BeEmpty("a generic constraint is not a call site; the page names Row, not the shape");
+    }
+
+    /// <inheritdoc cref="TheFlexShapeItself_IsStillRefusedWhenAComponentNamesIt"/>
+    [Fact]
+    public void TheFlexShapesOwnAdd_IsStillRefusedWhenAComponentNamesTheShape()
+    {
+        Diagnostics("((FlexNode)new Row(gap: 8f)).Add(new Text(\"hi\"));")
+            .Should().Contain(d => d.Code == "EQ2010" && d.Message.Contains("FlexNode"),
+                "the SAME call, reached by naming the shape, is what the runtime has no twin for");
+    }
 }

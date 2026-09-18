@@ -8,6 +8,32 @@ namespace eQuantic.UI.Primitives;
 /// weight. Truncation contract: TEXT children shrink to ellipsis before any sibling is pushed out;
 /// fixed children (icons, avatars) never shrink.
 /// </summary>
+/// <remarks>
+/// HOST ONLY, for the reason <see cref="SingleChildNode"/> carries the same attribute, and this one
+/// waited a release longer on purpose. Every public `Primitives` type silently promises a runtime
+/// export of the same name, because the transpiler routes that namespace to `@equantic/runtime` — so
+/// a component naming this one in a property, a signature or a type expression emits an import of an
+/// export that is not there and dies at HYDRATION, while SSR keeps answering 200 with correct
+/// markup. That is how `RouteValues` shipped once.
+/// <para>
+/// It sat in the runtime pin's `NO_TWIN_OWED` list instead, which is that list's WEAKER side — an
+/// excuse rather than a rule — and #226 left it there deliberately: fencing a type that has already
+/// shipped newly refuses code that compiles today, which is a decision with a blast radius rather
+/// than a drive-by on a refactor. The radius was then MEASURED (#228). Nothing in `samples`,
+/// `Components`, `Charts` or `Templates` names `FlexNode`; every reference is the framework's own
+/// machinery — the two nodes that derive from it, the three visitors that pattern-match it, and one
+/// generic constraint.
+/// </para>
+/// <para>
+/// That constraint is the surface worth knowing about:
+/// <c>VisualNodeExtensions.With&lt;T&gt;(this T, VisualNode) where T : FlexNode</c> is public, and a
+/// page writing <c>Row(...).With(child)</c> reaches it. It still compiles, and the fence is why:
+/// since #226 it asks what type a member was reached THROUGH, and <c>With</c> is declared on
+/// <c>VisualNodeExtensions</c> and reached through <c>Row</c>. Neither is host-only. A page that
+/// names the SHAPE is refused; a page that uses a row is not.
+/// </para>
+/// </remarks>
+[ServerOnly]
 public abstract class FlexNode : VisualNode, IEnumerable<VisualNode>
 {
     /// <summary>A public abstract intermediate INHERITS an accessible constructor, so closing

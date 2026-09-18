@@ -39,7 +39,11 @@ const NO_TWIN_OWED = new Set([
   // drops them from the pinned list by that rule — so they are gone from here rather than excused
   // here. A list kept by hand in two files had already drifted between them.
   'ComponentInstanceStore',
-  'FlexNode',
+  // `FlexNode` left this list in #228, the same way and for the same reason: it is `[ServerOnly]`
+  // now, so the compiler refuses a page that names the shape (EQ2010) and the C# side drops it by
+  // that rule. It waited a release behind `SingleChildNode` because fencing a SHIPPED type refuses
+  // code that compiled yesterday — so the radius was measured first, and nothing outside the
+  // framework's own machinery names it.
   'VisualNodeExtensions',
   // BUILD TIME ONLY: reading a `.svg` and normalizing its path data happens where FILES exist,
   // and the browser has none. What crosses is the DRAWING those produce — VectorDrawing and its

@@ -272,6 +272,21 @@ record of a release, the wiki's Upgrading page is the distillate.
   byte-identical to `main`. A budget with no headroom left is a real constraint, not a nuisance, and
   it bought a better design than the one it refused.
 
+- **2026-09-18 · FlexNode stops promising a twin, and a hole in #226's fence is what it found**:
+  `FlexNode` is `[ServerOnly]` and leaves the runtime pin's `NO_TWIN_OWED` list
+  ([#228](https://github.com/eQuantic/equantic-ui/issues/228)). #226 had left it there deliberately
+  — fencing a SHIPPED type refuses code that compiled yesterday — so the radius was measured first:
+  nothing in `samples`, `Components`, `Charts` or `Templates` names it, and the one public surface
+  that does (`With<T>(…) where T : FlexNode`) still compiles, because a constraint is not a call
+  site. THE MEASUREMENT WAS INCOMPLETE ANYWAY, and the gap is the finding. Applying the attribute
+  turned 29 `Add` calls in the shared component library red — sixteen tests across three suites —
+  because #226 made the fence receiver-aware at the member-ACCESS site and nowhere else. A property
+  inherited into a client-visible node was fixed; a METHOD was not, and nothing caught it because
+  `SingleChildNode`'s members are all properties. The invocation path asks what the call went
+  through now. Its guard is a whole compilation rather than a statement probe, and that is measured
+  too: the statement probe reports nothing for `row.Add(child)` with the fix reverted, so a test
+  written there would have passed either way — the first one I wrote did.
+
 
 ## Retired documents
 

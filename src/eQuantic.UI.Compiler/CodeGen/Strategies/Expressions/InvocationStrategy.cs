@@ -354,7 +354,14 @@ public class InvocationStrategy : IExpressionIrStrategy
         if (declaring is null) return;
         // The fence comes FIRST and asks about the SYMBOL: a framework type that crosses can carry
         // a member that does not, and asking only the type waves that member through.
-        if (symbol.ReportIfHostOnly(node, context)) return;
+        //
+        // AND IT ASKS WHAT THE CALL WENT THROUGH. #226 made the fence receiver-aware and wired it at
+        // the member-ACCESS site only, so `pressable.Child` — a property on a host-only base,
+        // inherited into a client-visible node — stopped being refused and `column.Add(child)` did
+        // not. Nothing caught it because no host-only base carried an inherited METHOD until #228
+        // fenced `FlexNode`, and then every `Add` in the shared component library turned red at once.
+        // A hole that only opens for the next host-only type is a hole nobody sees.
+        if (symbol.ReportIfHostOnly(node, context, ReceiverType(node, context))) return;
         // Declared in this compilation → it becomes a module of its own.
         if (declaring.Locations.Any(location => location.IsInSource)) return;
         if (IsFrameworkProvided(declaring)) return;
@@ -368,6 +375,17 @@ public class InvocationStrategy : IExpressionIrStrategy
 
     /// <summary>Does the file import the declarative factory surface with `using static`? Matched on
     /// the directive's own text — in standalone mode the directive is the only evidence there is.</summary>
+    /// <summary>
+    /// What an instance call was reached THROUGH — <c>column</c> in <c>column.Add(child)</c> — so
+    /// the fence can tell a host-only SHAPE from a member inherited into a node that crosses. Null
+    /// for an unqualified call, where there is no receiver and the declaring type IS what the source
+    /// names.
+    /// </summary>
+    private static ITypeSymbol? ReceiverType(SyntaxNode node, ConversionContext context) =>
+        node is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax access }
+            ? context.SemanticHelper.GetType(access.Expression)
+            : null;
+
     private static bool HasFactoryUsingStatic(SyntaxNode node) =>
         node.SyntaxTree.GetRoot().DescendantNodes().OfType<UsingDirectiveSyntax>()
             .Any(directive => directive.StaticKeyword.IsKind(SyntaxKind.StaticKeyword)
