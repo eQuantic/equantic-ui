@@ -8,7 +8,8 @@ namespace eQuantic.UI.Native.Framework;
 /// with a default arm and onto the visitor the compiler checks.
 ///
 /// <para>
-/// The default arm was not harmless. Thirty-seven of the forty nodes were named; `Column` and `Row`
+/// The default arm was not harmless. Thirty-seven of the forty doors THEN were named — a record of
+/// that measurement, not a running count; `Column` and `Row`
 /// arrived through `FlexNode`, and <see cref="Navigable"/> and <see cref="WebFrame"/> arrived
 /// nowhere — they fell to <c>_ =&gt; ctx.Node(node)</c> and measured as a ZERO-SIZE box with no arm
 /// saying so. Their reasons were not lost, but they lived in a coverage pin's exemption array,
@@ -18,7 +19,8 @@ namespace eQuantic.UI.Native.Framework;
 /// </para>
 ///
 /// <para>
-/// The forty doors are a flat list here and the measurements live in the family files beside them,
+/// The forty-one doors are a flat list here and the measurements live in the family files beside
+/// them,
 /// which is the shape <c>WebLoweringVisitor</c> settled on in S4: the list IS the exhaustive
 /// surface, and a reader checking whether a node is handled reads it in one screen.
 /// </para>
@@ -62,7 +64,7 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
         return measured;
     }
 
-    // ---- the forty doors ------------------------------------------------------------------------
+    // ---- the forty-one doors ---------------------------------------------------------------------
 
     // Only the nodes that can HAVE an auto size worth stretching take the flags; for the rest
     // (text, images, fixed primitives) the parent's decision changes nothing.
@@ -178,10 +180,16 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     public LayoutNode Visit(Adjustable node, MeasureState s) =>
         MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.Path);
 
-    // Layout-transparent, and NOT inlined the way an Adjustable is: a slider is an inline
-    // control that takes its own width, a progress bar reports across whatever it is given.
+    // INLINED like the three wrappers above it, and the reason this comment once said otherwise is
+    // worth keeping: "a progress bar reports across whatever it is given" sounds right and is not
+    // what the other target does. `LowerProgress` gives the host `fit-content` when the child does
+    // not ask to fill, so a hugging child leaves a hugging box on the web — and the box is the
+    // announcement, because it is what a reader outlines. Passing the constraints through let
+    // StretchKind.Block cross: measured, a hugging Row inside a 600-wide Box came back 600 under
+    // Progress and 40 under Adjustable, Pressable and Link. A fixed-width Box child hides it
+    // completely, which is why the first probe of this found nothing.
     public LayoutNode Visit(Progress node, MeasureState s) =>
-        MeasureWrapper(node, node.Child, s.Constraints, _ctx, s.Path);
+        MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.Path);
 
     // A Link is layout-transparent (semantics + interaction only — the child owns visuals).
     public LayoutNode Visit(Link node, MeasureState s) =>

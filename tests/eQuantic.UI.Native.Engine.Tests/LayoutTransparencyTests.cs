@@ -149,6 +149,71 @@ public class LayoutTransparencyTests
             + "and announcing a different box from the one Photon lays out");
     }
 
+    /// <summary>
+    /// BLOCK STRETCH does not cross a wrapper that emits a HOST OF ITS OWN — the half the test
+    /// above cannot see.
+    /// <para>
+    /// That one hands each wrapper a Box with a STATED width, and a stated width is immune: stretch
+    /// does not overrule it, so every wrapper passed whether or not it released the stretch. The
+    /// case that tells them apart is a HUGGING child whose size is decided by what goes in it. A
+    /// hugging <see cref="Row"/> inside a 600-wide Box measured 600 under <see cref="Progress"/> and
+    /// 40 under the other three — they reach their child through <c>Constraints.Inline()</c>, which
+    /// drops <see cref="StretchKind.Block"/>, and Progress did not.
+    /// </para>
+    /// <para>
+    /// It matters because the web decided the other way: `LowerProgress` gives the host
+    /// `fit-content` when the child does not ask to fill. So the same tree hugged in a browser and
+    /// spanned on Photon, and on a role-bearing host the box IS the announcement. Reported by review
+    /// AFTER a first probe of the same claim — written with a fixed Box — found nothing and was used
+    /// to argue the defect did not exist.
+    /// </para>
+    /// <para>
+    /// THESE FOUR AND NOT THE VOCABULARY, which is measured rather than assumed: the other fourteen
+    /// transparent wrappers all answer 600 here, and that is not the same defect. They emit no host
+    /// of their own — the child's element is what reaches the parent, so the child IS the box and
+    /// the stretch is its to take — or they have geometry of their own on purpose (`SafeArea` pads,
+    /// `Pinned` sticks, `Flexible` is a flex item). The four below put an ELEMENT between parent and
+    /// child and give it a width, so what crosses them is theirs to answer for.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void BlockStretch_DoesNotCrossAWrapperThatEmitsItsOwnHost()
+    {
+        static Row HuggingRow()
+        {
+            var row = new Row(gap: 0);
+            row.Add(new Box(new BoxStyle { Width = 40, Height = 8 }));
+            return row;
+        }
+
+        SingleChildNode[] hosts =
+        [
+            new Pressable(HuggingRow()),
+            new Link("#", HuggingRow()),
+            new Adjustable(HuggingRow(), _ => { }),
+            new Progress(HuggingRow()),
+        ];
+
+        var crossed = new List<string>();
+
+        foreach (var wrapper in hosts)
+        {
+            // A fixed-width Box is what hands its child block stretch in the first place.
+            var parent = new Box(new BoxStyle { Width = 600 }, wrapper);
+            var laid = LayoutEngine.Layout(parent, 800f, 400f, Ctx);
+            var host = laid.Children[0];
+
+            if (host.Bounds.Width != 40)
+                crossed.Add($"{wrapper.GetType().Name} = {host.Bounds.Width}");
+        }
+
+        string.Join(", ", crossed).Should().BeEmpty(
+            "the row hugs to 40 and the wrapper's own element stands in for it, so a wrapper that "
+            + "came back 600 let the parent's block stretch through — and the web host, which takes "
+            + "fit-content for a child that does not fill, would then draw and announce a different "
+            + "box from the one Photon lays out");
+    }
+
     // ---- reader 1 + reader 4: the floor, and the contract that cuts the text -------------------
 
     /// <summary>

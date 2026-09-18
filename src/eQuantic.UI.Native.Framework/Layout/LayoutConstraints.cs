@@ -141,8 +141,10 @@ public readonly record struct LayoutConstraints(AxisConstraint Width, AxisConstr
     public LayoutConstraints Truncated() => this with { Truncating = true };
 
     // The rest RESTATE one axis and keep everything else, `Truncating` included: a transparent
-    // wrapper is precisely what a cut travels through, and three of them — Pressable, Adjustable,
-    // Link — reach their child through Inline().
+    // wrapper is precisely what a cut travels through, and FOUR of them — Pressable, Adjustable,
+    // Link, Progress — reach their child through Inline(). They are the four that put an ELEMENT
+    // between parent and child and give it a width; the rest either emit no host at all, so the
+    // child's own element takes the stretch, or own their geometry on purpose.
     /// <inheritdoc cref="AxisConstraint.Released"/>
     public LayoutConstraints Released() => this with { Width = Width.Released(), Height = Height.Released() };
 

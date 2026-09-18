@@ -28,6 +28,28 @@ describe('wave-1 transpiled components (real eqc output)', () => {
     expect(effectiveStyle(node.children[1])).toContain('flex: 360 1 0%');
   });
 
+  it('ProgressBar announces the value it PAINTS, between thousandths', () => {
+    // The host is what carries role=progressbar, so this reads it rather than the track.
+    //
+    // The C# side pins this in `TheAnnouncedValueIsTheOneTheBarIsDrawnFrom`, and until this test
+    // existed the runtime twin could announce the caller's raw number instead of the quantized one
+    // and the whole vitest suite stayed green — 131 files, 1080 tests, measured. The C# suite would
+    // still have required 0.45, so the two sides would have disagreed with nothing to say so. The
+    // exact values matter: 0.4504 and 0.4996 are BETWEEN the thousandths the flex weights land on,
+    // which is the only place the raw and the painted value differ.
+    for (const [given, announced, weights] of [
+      [0.4504, '0.45', ['flex: 450 1 0%', 'flex: 550 1 0%']],
+      [0.4996, '0.5', ['flex: 500 1 0%', 'flex: 500 1 0%']],
+    ] as const) {
+      const host = new ProgressBar(given).render();
+
+      expect(host.attributes['role']).toBe('progressbar');
+      expect(host.attributes['aria-valuenow']).toBe(announced);
+      expect(effectiveStyle(host.children[0].children[0])).toContain(weights[0]);
+      expect(effectiveStyle(host.children[0].children[1])).toContain(weights[1]);
+    }
+  });
+
   it('Filter chip toggles through a lowered button and fires onPressed', () => {
     let toggled = false;
     const node = new Chip('Income', 'filter', false, () => {

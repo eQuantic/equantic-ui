@@ -129,7 +129,7 @@ public class LabelledNodesReachSemanticsTests
     /// today adds one node and returns — "one stop for the whole control" — and doing that to a
     /// navigable grid would hide every row from assistive tech, which is worse than the missing
     /// label. What they need is a role that says "a labelled group, keep walking", and
-    /// <see cref="SemanticRole"/> has no such member: it is ten leaf roles. Adding one is a
+    /// <see cref="SemanticRole"/> has no such member: it is eleven leaf roles. Adding one is a
     /// vocabulary decision with a bridge on each platform behind it, so it is a decision to take
     /// rather than a line to write.
     /// </para>
