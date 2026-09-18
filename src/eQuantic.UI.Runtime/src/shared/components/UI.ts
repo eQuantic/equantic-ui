@@ -189,8 +189,8 @@ export class UI {
         return new Switch(on, onChanged, { label: label, disabled: disabled });
     }
 
-    static slider(value: number, onChanged: ((float: number) => void) | null = null) {
-        return new Slider(value, onChanged);
+    static slider(value: number, onChanged: ((float: number) => void) | null = null, min: number = 0, max: number = 1, step: number = 0, label: string = '', valueText: string | null = null, disabled: boolean = false, variant: VariantValue = 'primary') {
+        return new Slider(value, onChanged, { min: min, max: max, step: step, label: label, valueText: valueText, disabled: disabled, variant: variant });
     }
 
     static stepper(value: number, onChanged: ((int: number) => void) | null = null) {

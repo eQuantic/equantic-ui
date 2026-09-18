@@ -600,26 +600,6 @@ public class DocsIndexTests
     }
 
     /// <summary>
-    /// Every source file a citation can NAME, by file name. Test sources are in here too, because
-    /// the audits cite the tests that pin a fix. TypeScript is in here beside C# because the audits
-    /// cite both — the runtime's client-side lowering is a realizer of its own, and a row about what
-    /// reaches the markup quotes it. It was left out when these guards were written, and
-    /// the cost was measured rather than guessed: twelve of the fifteen checkable <c>.ts</c> evidence
-    /// quotes had slid or been reformatted out from under their line, invisibly, while the same
-    /// guards held every <c>.cs</c> citation in the file to the letter. A guard that cannot see a
-    /// whole language is a guard that passes because it did not look.
-    /// <para>
-    /// <c>node_modules</c> and the build outputs are cut because they are not ours to cite and would
-    /// make the sweep tens of thousands of files long.
-    /// </para>
-    /// <para>
-    /// BOTH trees × BOTH languages, written as a cross product rather than four hand-kept lines: the
-    /// first version added TypeScript under <c>src</c> only and left <c>tests/e2e</c> out, so a
-    /// citation of the hydration spec stayed a mention nothing checked — the same shape of gap, one
-    /// level down, made by the same habit of listing instead of enumerating.
-    /// </para>
-    /// </summary>
-    /// <summary>
     /// A prose citation that names NO MEMBER is anchored by nothing, and this counts them so the
     /// number can only go down.
     ///
@@ -750,6 +730,26 @@ public class DocsIndexTests
     private static readonly Regex MemberAfter = new(
         @"^ (?<member>[A-Z][A-Za-z0-9]*(?:\.[A-Z][A-Za-z0-9]*)*)", RegexOptions.Compiled);
 
+    /// <summary>
+    /// Every source file a citation can NAME, by file name. Test sources are in here too, because
+    /// the audits cite the tests that pin a fix. TypeScript is in here beside C# because the audits
+    /// cite both — the runtime's client-side lowering is a realizer of its own, and a row about what
+    /// reaches the markup quotes it. It was left out when these guards were written, and
+    /// the cost was measured rather than guessed: twelve of the fifteen checkable <c>.ts</c> evidence
+    /// quotes had slid or been reformatted out from under their line, invisibly, while the same
+    /// guards held every <c>.cs</c> citation in the file to the letter. A guard that cannot see a
+    /// whole language is a guard that passes because it did not look.
+    /// <para>
+    /// <c>node_modules</c> and the build outputs are cut because they are not ours to cite and would
+    /// make the sweep tens of thousands of files long.
+    /// </para>
+    /// <para>
+    /// BOTH trees × BOTH languages, written as a cross product rather than four hand-kept lines: the
+    /// first version added TypeScript under <c>src</c> only and left <c>tests/e2e</c> out, so a
+    /// citation of the hydration spec stayed a mention nothing checked — the same shape of gap, one
+    /// level down, made by the same habit of listing instead of enumerating.
+    /// </para>
+    /// </summary>
     private static ILookup<string, string> SourceFiles(string root) =>
         new[] { "src", "tests" }
             .SelectMany(tree => new[] { "*.cs", "*.ts" }.SelectMany(pattern =>

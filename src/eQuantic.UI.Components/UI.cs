@@ -353,8 +353,23 @@ public static class UI
         new Switch(on, onChanged) { Label = label, Disabled = disabled };
 
     /// <summary>Continuous value control.</summary>
-    public static Slider Slider(float value, Action<float>? onChanged = null) =>
-        new Slider(value, onChanged);
+    public static Slider Slider(float value, Action<float>? onChanged = null,
+        float min = 0, float max = 1, float step = 0, string label = "", string? valueText = null,
+        bool disabled = false, Variant variant = Variant.Primary) =>
+        new Slider(value, onChanged)
+        {
+            Min = min,
+            Max = max,
+            Step = step,
+            Label = label,
+            // The value IN WORDS — "R$ 400" for 400. Reachable HERE because the factory is the
+            // authoring surface: a control whose factory cannot express its own configuration
+            // leaves `new` as the only way to write it, which is the one thing the authoring rule
+            // forbids. UI.Switch already carried its label and disabled the same way.
+            ValueText = valueText,
+            Disabled = disabled,
+            Variant = variant,
+        };
 
     /// <summary>Discrete increment/decrement control.</summary>
     public static Stepper Stepper(int value, Action<int>? onChanged = null) =>

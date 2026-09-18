@@ -118,6 +118,31 @@ public class AdjustableValueTests
     }
 
     /// <summary>
+    /// The words are reachable from the AUTHORING surface, not only from <c>new</c>.
+    /// <para>
+    /// Trees here are written with factories — that is the repo's authoring rule — and an init-only
+    /// property cannot be set on the result of a method call, so a factory that does not take it
+    /// puts the property out of reach of every screen written the sanctioned way. `ValueText` went
+    /// in beside `Min`, `Max`, `Step`, `Label`, `Disabled` and `Variant`, none of which the Slider's
+    /// factory carried either: the gap was older and wider than the one property this PR added, and
+    /// fixing only the new one would have left a factory that can say "40%" but not what 40% is of.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void TheFactoryCanExpressWhatTheComponentHolds()
+    {
+        var host = Host(
+            Components.UI.Slider(400, _ => { }, min: 100, max: 900, label: "Limit", valueText: "R$ 400"),
+            "slider");
+
+        host.Attributes["aria-valuenow"].Should().Be("400");
+        host.Attributes["aria-valuemin"].Should().Be("100");
+        host.Attributes["aria-valuemax"].Should().Be("900");
+        host.Attributes["aria-label"].Should().Be("Limit");
+        host.Attributes["aria-valuetext"].Should().Be("R$ 400");
+    }
+
+    /// <summary>
     /// A range with NO WIDTH announces the one position it has. Collapsed (Max == Min) and inverted
     /// (Max &lt; Min) are the same case to the layout — <c>fraction</c> is 0 and the thumb sits at the
     /// start — so they are the same case to the announcement. Passing the caller's bounds through

@@ -191,11 +191,6 @@ export function px(dp: number): string {
   return `${parseFloat(dp.toFixed(2))}px`;
 }
 
-/** An ARIA value attribute: C# `TokenCss.Number` — up to four decimals, no trailing zeros. */
-function ariaNumber(value: number): string {
-  return `${parseFloat(value.toFixed(4))}`;
-}
-
 
 /** Mirrors C# TokenCss.Transform: translate → rotate → scale, only non-neutral parts. */
 function transformValue(t: TransformValue): string | undefined {
@@ -2905,9 +2900,9 @@ function lowerAdjustable(node: AdjustableNode, context: LoweringContext, path: s
   // bounds go with it or the number is read against ARIA's own 0-100 default, which no slider here
   // uses; aria-valuetext REPLACES the number for a reader, so it is emitted only when given.
   if (value) {
-    host.attributes['aria-valuenow'] = ariaNumber(value.now);
-    host.attributes['aria-valuemin'] = ariaNumber(value.min);
-    host.attributes['aria-valuemax'] = ariaNumber(value.max);
+    host.attributes['aria-valuenow'] = num(value.now);
+    host.attributes['aria-valuemin'] = num(value.min);
+    host.attributes['aria-valuemax'] = num(value.max);
     if (value.text) host.attributes['aria-valuetext'] = value.text;
   }
   if (node.onAdjust) {
