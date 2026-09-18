@@ -208,7 +208,7 @@ public static class ComponentBoundary
     /// <para>
     /// A struct, disposed by <c>using</c>, because the scope IS the recursion: the walk enters on
     /// the way down and leaves on the way back up, including when the throw unwinds through it. A
-    /// <c>default</c> one decrements nothing, so a value nobody entered cannot corrupt the count.
+    /// <c>default</c> one restores nothing, so a value nobody entered cannot corrupt the count.
     /// </para>
     /// </summary>
     /// <exception cref="InvalidOperationException">
@@ -219,20 +219,43 @@ public static class ComponentBoundary
     public static Expansion Enter(UiComponent component)
     {
         if (_depth >= MaxDepth) throw Exceeded(component);
-        _depth++;
-        return new Expansion(true);
+        return new Expansion(_depth++);
     }
 
-    /// <summary>One level of an expansion walk. See <see cref="Enter"/>.</summary>
+    /// <summary>
+    /// One level of an expansion walk (see <see cref="Enter"/>), which RESTORES the depth it found
+    /// rather than decrementing.
+    ///
+    /// <para>
+    /// The difference is idempotence, and it is not theoretical for a public value type: a copy of
+    /// this struct disposed beside the original — by hand as well as by its <c>using</c>, or simply
+    /// because a struct assigns by value — would decrement twice. The counter would then sit BELOW
+    /// the walk's real depth, and far enough below it the bound stops being reached at all: the
+    /// stack overflow this exists to replace, arriving through the thing that replaced it.
+    /// </para>
+    ///
+    /// <para>
+    /// Putting back a NUMBER is idempotent by construction, so the second disposal writes the value
+    /// the first one wrote. <see cref="CapabilityScope"/>'s scope reaches the same property with a
+    /// <c>_done</c> flag on a reference type, because what IT restores is a resolver and repeating
+    /// that would resurrect an older one; here there is nothing to resurrect, and a struct keeps the
+    /// per-component allocation off a path Photon walks every frame.
+    /// </para>
+    /// </summary>
     public readonly struct Expansion : IDisposable
     {
+        private readonly int _restore;
         private readonly bool _entered;
 
-        internal Expansion(bool entered) => _entered = entered;
+        internal Expansion(int restore)
+        {
+            _restore = restore;
+            _entered = true;
+        }
 
         public void Dispose()
         {
-            if (_entered) _depth--;
+            if (_entered) _depth = _restore;
         }
     }
 

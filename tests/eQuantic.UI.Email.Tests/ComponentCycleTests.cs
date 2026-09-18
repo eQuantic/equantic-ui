@@ -5,10 +5,34 @@ using Xunit;
 
 namespace eQuantic.UI.Email.Tests;
 
-/// <summary>A component whose Build returns ITSELF — the simplest chain with no subtree at the end.</summary>
+/// <summary>
+/// A component whose Build returns <c>this</c> — the shape the web and native cycle tests pin, so
+/// the three realizers are asked the same question.
+/// </summary>
 file sealed class BuildsItself : UiComponent
 {
-    public override VisualNode Build(ComponentContext context) => new BuildsItself();
+    public override VisualNode Build(ComponentContext context) => this;
+}
+
+/// <summary>
+/// The other self-cycle: a FRESH instance every time. The same infinite chain to a realizer that
+/// expands what Build returned, and a different one to anything that recognises a node by identity —
+/// which is why both are asked rather than only the tidier one.
+/// </summary>
+file sealed class AllocatesAnother : UiComponent
+{
+    public override VisualNode Build(ComponentContext context) => new AllocatesAnother();
+}
+
+/// <summary>
+/// A FINITE chain of exactly <paramref name="remaining"/> components, ending in a subtree. Nothing
+/// about it is cyclic: it is how the bound's edges are asked, and how the root expansion is asked
+/// whether it counts itself.
+/// </summary>
+file sealed class Chain(int remaining) : UiComponent
+{
+    public override VisualNode Build(ComponentContext context) =>
+        remaining > 0 ? new Chain(remaining - 1) : new Text("the chain ended", TypeRole.BodyM);
 }
 
 /// <summary>Two that build each other: the same chain, with nothing in either type to see it.</summary>
@@ -57,17 +81,82 @@ public class ComponentCycleTests
 {
     private static readonly IAppTheme Theme = PhotonTheme.Instance;
 
-    [Fact]
-    public void AComponentThatBuildsItself_FailsTheRenderAndIsNamed()
-    {
-        var failure = Assert.Throws<InvalidOperationException>(
-            () => EmailRenderer.Render(new BuildsItself(), Theme));
+    /// <summary>
+    /// How many components the boundary allows to nest. Private there and quoted in the message it
+    /// throws, so it is written here once rather than spelled into each case — and the pair of
+    /// chains below is what would fail if it ever moved, which is the right way to find out.
+    /// </summary>
+    private const int Bound = 64;
 
-        failure.Message.Should().Contain(nameof(BuildsItself),
+    /// <summary>
+    /// BOTH self-cycles: the one that returns <c>this</c>, which is the shape the web and native
+    /// suites pin, and the one that allocates a fresh instance every time. They are the same
+    /// infinite chain to a realizer that expands what Build returned, and asking only the tidier one
+    /// would leave the other to be assumed.
+    /// </summary>
+    [Theory]
+    [InlineData(nameof(BuildsItself))]
+    [InlineData(nameof(AllocatesAnother))]
+    public void AComponentThatBuildsItself_FailsTheRenderAndIsNamed(string shape)
+    {
+        UiComponent cyclic = shape == nameof(BuildsItself) ? new BuildsItself() : new AllocatesAnother();
+
+        var failure = Assert.Throws<InvalidOperationException>(() => EmailRenderer.Render(cyclic, Theme));
+
+        failure.Message.Should().Contain(shape,
             "the one actionable fact is WHICH component never reached a subtree");
         failure.Message.Should().Contain("builds itself",
             "the bound observes DEPTH, so it names every shape that reaches it rather than "
             + "diagnosing a cycle it cannot distinguish from a tree nested too deep");
+    }
+
+    /// <summary>
+    /// THE ROOT EXPANSION COUNTS ITSELF, asked with a finite chain rather than a cycle — which is
+    /// the only way to ask it. Review found the gap and it was real: with the root's scope removed,
+    /// every cycle test above stays green, because the visitors enter each component of the tree the
+    /// root returned and a cycle exceeds any bound whether or not one level was counted.
+    ///
+    /// <para>
+    /// A chain of exactly <see cref="Bound"/> components renders; one component longer does not —
+    /// and that last one is over the line ONLY because the root was counted. Both edges are here on
+    /// purpose: the first would pass if the bound were merely lower, and the second if it were
+    /// merely absent.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void TheRootExpansionCountsItself()
+    {
+        EmailRenderer.Render(new Chain(Bound - 1), Theme)
+            .Html.Should().Contain("the chain ended",
+                $"{Bound} components is what the boundary allows, and this chain is exactly that");
+
+        Assert.Throws<InvalidOperationException>(() => EmailRenderer.Render(new Chain(Bound), Theme))
+            .Message.Should().Contain(nameof(Chain),
+                "one more component is one more than the bound — and it only is if the root, which "
+                + "the renderer expands rather than a visitor, entered the boundary like the rest");
+    }
+
+    /// <summary>
+    /// DISPOSING TWICE PUTS BACK THE SAME NUMBER. The scope is a public value type, so a copy of it
+    /// disposed beside the original is a thing a caller can write by accident — a struct assigns by
+    /// value — and a scope that DECREMENTED would then leave the counter below the walk's real
+    /// depth. Far enough below, the bound stops being reached at all: the stack overflow this exists
+    /// to replace, arriving through the thing that replaced it.
+    /// </summary>
+    [Fact]
+    public void DisposingTheSameScopeTwice_LeavesTheDepthWhereItWas()
+    {
+        var component = new BuildsAGreeting();
+
+        var scope = ComponentBoundary.Enter(component);
+        var copy = scope;
+        scope.Dispose();
+        copy.Dispose();
+
+        // If either disposal had decremented, the depth would now be -1 and a chain one longer than
+        // the bound would fit inside it.
+        Assert.Throws<InvalidOperationException>(() => EmailRenderer.Render(new Chain(Bound), Theme));
+        EmailRenderer.Render(new Chain(Bound - 1), Theme).Html.Should().Contain("the chain ended");
     }
 
     /// <summary>
