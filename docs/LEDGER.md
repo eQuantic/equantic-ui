@@ -344,8 +344,14 @@ record of a release, the wiki's Upgrading page is the distillate.
   advance is the measurer's business. `alphabet` in a box of 40 lays out as `alp…` at 31.28. That
   cost the exact-parity assertion of the round before, and dropping it was a decision rather than a
   concession: the rich path reports the content it laid out where the plain measurer reports the
-  clamp, and reporting LESS than the room offered is what every hugging node does. The 91 goldens
-  did not move.
+  clamp, and reporting LESS than the room offered is what every hugging node does. A FIFTH ROUND
+  took the prefix search from a walk to a binary one — a long unbreakable word cost one measurement
+  per character, and against a real shaper those are not arithmetic — and caught a doc of mine
+  contradicting my own code two paragraphs above it, which is the defect this whole PR keeps
+  finding. The search's correctness does not rest on monotonicity, only its optimality: every
+  candidate it returns is one it measured and saw fit. FIVE ROUNDS, SEVEN FINDINGS, all real, and
+  the last two were about the fix rather than the subject — which is what happens when a change
+  reaches into a stack next to its own. The 91 goldens did not move.
 
 
 ## Retired documents

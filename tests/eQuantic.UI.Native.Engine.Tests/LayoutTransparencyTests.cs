@@ -237,6 +237,22 @@ public class LayoutTransparencyTests
                 $"'{fragment.Content}' is drawn where the measurement put it, and the realizer clips "
                 + "at the bounds — the mark used to land entirely outside them, present in the "
                 + "fragments and invisible on the screen");
+
+        // The cut keeps the LONGEST prefix that leaves the mark its width — not merely a fitting
+        // one. The search for it is binary, so settling for a shorter cut is the way it can regress
+        // and stay green on every assertion above.
+        var kept = laid.TextRuns!.First().Content;
+        var mark = laid.TextRuns!.Single(f => f.Content == "\u2026");
+        kept.Should().Be("alphabet"[..kept.Length], "the cut is a prefix of the word");
+        kept.Length.Should().BeLessThan("alphabet".Length, "and a real one at this width");
+
+        float Measure(string t) => Ctx.Measurer
+            .Measure(t, new Text(t, TypeRole.BodyL).Resolve(Ctx.Theme), Ctx.TypeScale,
+                float.PositiveInfinity, 1).Width;
+
+        (Measure("alphabet"[..(kept.Length + 1)]) + mark.Width).Should().BeGreaterThan(room + 0.01f,
+            "one character more would not have left the mark its room — which is what makes the "
+            + "kept prefix the longest rather than just a fitting one");
     }
 
     /// <summary>

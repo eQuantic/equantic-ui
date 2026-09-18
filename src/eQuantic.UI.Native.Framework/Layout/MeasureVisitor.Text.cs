@@ -137,11 +137,12 @@ internal sealed partial class MeasureVisitor
     /// </para>
     ///
     /// <para>
-    /// Never below one word. A line that kept nothing would report a mark standing where a word had
-    /// been, and an ellipsis alone tells a reader less than a cut word does. When that one word is
-    /// itself wider than the room there is nothing to drop, and the width this returns exceeds the
-    /// limit — <c>CommitLine</c> is what clamps it, for this line and every other, because the
-    /// divergence from the plain path was never only about the cut one.
+    /// DROPPING never goes below one word: a line that dropped its way to nothing would report a
+    /// mark standing where a word had been, and an ellipsis alone tells a reader less than a cut
+    /// word does. What happens to that last word instead is that it is CUT — its tail trimmed to
+    /// leave the mark exactly its width. Only when not one character fits beside the mark does the
+    /// fragment go and the mark stand alone, which is the honest answer for a slot narrower than a
+    /// single glyph plus an ellipsis.
     /// </para>
     ///
     /// <para>
@@ -211,25 +212,49 @@ internal sealed partial class MeasureVisitor
     /// <summary>
     /// The longest prefix of <paramref name="word"/> that measures within <paramref name="room"/>,
     /// and what it measures. Empty when not one character fits.
+    ///
     /// <para>
-    /// Asked of the MEASURER one prefix at a time rather than estimated, because an advance is the
-    /// measurer's business and the whole point of the seam is that a real shaper answers differently
-    /// from the stand-in. Walked from the end because a cut normally takes a character or two, and
-    /// it runs only on a line that is already being truncated.
+    /// Asked of the MEASURER rather than estimated, because an advance is the measurer's business
+    /// and the whole point of that seam is that a real shaper answers differently from the stand-in.
+    /// Binary search rather than a walk: a long unbreakable word — a URL in a narrow column is the
+    /// case — cost one measurement per character, and against a real shaper those are not
+    /// arithmetic.
+    /// </para>
+    ///
+    /// <para>
+    /// CORRECTNESS DOES NOT ASSUME MONOTONICITY; only optimality does. Every candidate returned is
+    /// one this method measured and saw fit, so a measurer whose widths did not grow with the prefix
+    /// could make it settle for a shorter cut, never for one that overflows. The stand-in is
+    /// monotonic — each character adds a positive advance and the design system has no negative
+    /// tracking — and a shaper's kerning is bounded by the glyph it adds.
     /// </para>
     /// </summary>
     private (string Text, float Width) LongestPrefixWithin(string word, TypeStyle style, float room,
         LayoutContext ctx)
     {
-        if (room <= 0) return (string.Empty, 0);
+        if (room <= 0 || word.Length <= 1) return (string.Empty, 0);
 
-        for (var take = word.Length - 1; take > 0; take--)
+        var best = (Text: string.Empty, Width: 0f);
+        int low = 1, high = word.Length - 1;
+
+        while (low <= high)
         {
+            var take = (low + high) / 2;
+            var candidate = word[..take];
             var width = ctx.Measurer
-                .Measure(word[..take], style, ctx.TypeScale, float.PositiveInfinity, 1).Width;
-            if (width <= room) return (word[..take], width);
+                .Measure(candidate, style, ctx.TypeScale, float.PositiveInfinity, 1).Width;
+
+            if (width <= room)
+            {
+                best = (candidate, width);
+                low = take + 1;
+            }
+            else
+            {
+                high = take - 1;
+            }
         }
-        return (string.Empty, 0);
+        return best;
     }
 
     /// <summary>
