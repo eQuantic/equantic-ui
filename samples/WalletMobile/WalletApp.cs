@@ -669,7 +669,7 @@ public sealed class WalletApp : StatefulComponent
 
         var content = new Column(gap: Space.S4) { Width = SizeValue.Fill };
         content.Add(head);
-        content.Add(new ProgressBar(0.5f));
+        content.Add(new ProgressBar(0.5f) { Label = "Monthly spending" });
         content.Add(new Text("Who are you\nsending to?", TypeRole.Heading, theme.TextPrimary, maxLines: 2));
         content.Add(new TextInput(_pixKey, v => SetState(() => _pixKey = v), "PIX key",
             helper: "Email, phone, CPF/CNPJ or random key"));

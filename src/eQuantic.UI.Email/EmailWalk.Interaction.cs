@@ -3,7 +3,7 @@ using eQuantic.UI.Primitives;
 namespace eQuantic.UI.Email;
 
 /// <summary>
-/// Interaction and motion — thirteen words, of which the medium has one. A <see cref="Link"/> is the
+/// Interaction and motion — fourteen words, of which the medium has one. A <see cref="Link"/> is the
 /// whole of what a reader can DO with a message; pressing, dragging, hovering, adjusting and
 /// animating each need script or a pointer the client will not give, and an email that pretended
 /// otherwise would be a control that does nothing when tapped.

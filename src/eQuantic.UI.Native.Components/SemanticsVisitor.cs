@@ -82,7 +82,7 @@ internal sealed partial class SemanticsVisitor(List<SemanticNode> nodes)
     /// The web honours both (<c>WebRealizer.LowerNavigable</c> and <c>LowerOverlay</c>) and Photon is
     /// silent, because every announcement consumes its subtree and doing that to a navigable grid
     /// would hide every row inside it. What they need is a role meaning "a labelled group, keep
-    /// walking", and <see cref="SemanticRole"/> has none: it is ten leaf roles. That is a vocabulary
+    /// walking", and <see cref="SemanticRole"/> has none: it is eleven leaf roles. That is a vocabulary
     /// decision with a bridge per platform behind it —
     /// <see href="https://github.com/eQuantic/equantic-ui/issues/187">#187</see>, which turns both of
     /// these into announcements the day it is answered.

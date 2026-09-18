@@ -198,7 +198,7 @@ public sealed class PaymentsPage : StatefulComponent
         grid.Add(Kpi(theme, $"Volume · {ConsoleData.LabelOf(_range)}", ConsoleData.VolumeOf(_range),
             Chip(theme, "▲ 12,4%", Variant.Success), "vs prev."));
         grid.Add(Kpi(theme, "Success rate", "98,2%",
-            new Box(new BoxStyle { Width = SizeValue.Fill }, new ProgressBar(0.982f, Variant.Success)), null));
+            new Box(new BoxStyle { Width = SizeValue.Fill }, new ProgressBar(0.982f, Variant.Success) { Label = "Settlement progress" }), null));
         grid.Add(Kpi(theme, "Pending review", "7", Chip(theme, "3 over 24h", Variant.Warning), null));
         grid.Add(Kpi(theme, "Disputes", "2", Chip(theme, "R$ 1.840 at risk", Variant.Destructive), null));
         return grid;

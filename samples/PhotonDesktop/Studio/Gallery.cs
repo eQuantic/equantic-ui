@@ -496,11 +496,11 @@ public static class Gallery
     private static VisualNode Progress(IAppTheme theme, SectionState state)
     {
         var determinate = Labelled(theme,
-            new Box(new BoxStyle { Width = SizeValue.Fill }, new ProgressBar(state.Budget)),
+            new Box(new BoxStyle { Width = SizeValue.Fill }, new ProgressBar(state.Budget) { Label = "Budget used" }),
             $"Determinate · {state.Budget * 100:0}%", 200);
 
         var indeterminate = Labelled(theme,
-            new Box(new BoxStyle { Width = SizeValue.Fill }, new ProgressBar()),
+            new Box(new BoxStyle { Width = SizeValue.Fill }, new ProgressBar { Label = "Syncing" }),
             "Indeterminate · length honestly unknown", 200);
 
         var spinner = Labelled(theme,

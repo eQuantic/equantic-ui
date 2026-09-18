@@ -2874,10 +2874,6 @@ function chordId(chord: KeyChordValue | undefined): string {
 }
 
 /**
- * S5 programmable hover (the C# LowerHoverable twin): a layout-transparent div whose
- * mouseenter/mouseleave feed the boolean callback. Fill passes through like Pressable's button.
- */
-/**
  * PROGRESS semantics (C# twin: LowerProgress). One host carrying role="progressbar", its name and
  * how far along it is. No tabindex and no handler — nothing here is operable, which is the whole
  * difference from lowerAdjustable below.
@@ -3230,6 +3226,10 @@ function lowerInFlow(
   }
 }
 
+/**
+ * S5 programmable hover (the C# LowerHoverable twin): a layout-transparent div whose
+ * mouseenter/mouseleave feed the boolean callback. Fill passes through like Pressable's button.
+ */
 function lowerHoverable(node: HoverableNode, context: LoweringContext, path: string): HtmlNode {
   const fill = fills(node.child);
   const cap = capsAt(node.child);

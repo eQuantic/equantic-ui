@@ -34,7 +34,7 @@ public abstract class VisualNode
     /// in the browser on a method that is not there.
     /// <para>
     /// Declared once, on the abstract: the fence follows an OVERRIDE to what it overrides, so the
-    /// 39 one-line implementations carry it without saying so and a fortieth cannot forget.
+    /// 40 one-line implementations carry it without saying so and a forty-first cannot forget.
     /// </para>
     /// </remarks>
     [ServerOnly]

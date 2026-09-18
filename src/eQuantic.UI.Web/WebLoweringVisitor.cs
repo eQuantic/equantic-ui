@@ -217,6 +217,13 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context)
         Progress progress => Fills(progress.Child),
         Flexible flexible => Fills(flexible.Child),
         LoopMotion motion => Fills(motion.Child),
+        // The three the TypeScript `fills` already walked and this side did not. A wrapper missing
+        // here does not fail — it answers (false, false), which reads as "the child does not fill"
+        // and is indistinguishable from the truth until a child actually does. `Progress(InView(Box
+        // { Width = Fill }))` served a hugging host and hydrated into a filling one.
+        Simulated simulated => Fills(simulated.Child),
+        InFlow inFlow => Fills(inFlow.Child),
+        InView inView => Fills(inView.Child),
         _ => (false, false),
     };
     /// <summary>

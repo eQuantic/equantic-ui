@@ -78,6 +78,43 @@ public class WrapperLayoutTransparencyTests
             $"{name} stands in for a child that fills the cross axis");
     }
 
+    /// <summary>
+    /// The walk reaches a Fill child THROUGH the wrappers that are not themselves in the sweep —
+    /// which is the half the sweep above cannot see, because it puts one wrapper over a Fill child
+    /// and never nests.
+    /// <para>
+    /// `Simulated`, `InFlow` and `InView` were in the TypeScript `fills` and not in the C# `Fills`.
+    /// A missing arm does not throw: it answers `(false, false)`, which is exactly what a child
+    /// that does not fill answers, so SSR served a hugging host while the hydrated runtime walked
+    /// through and filled. Caught by review; it is the same shape as the `Progress` arms two rounds
+    /// earlier, and the same reason a NESTED case is the only one that sees it.
+    /// </para>
+    /// </summary>
+    [Theory]
+    [InlineData("Simulated")]
+    [InlineData("InFlow")]
+    [InlineData("InView")]
+    public void TheFillWalkReachesThroughAWrapperTheSweepDoesNotList(string inner)
+    {
+        var fill = new Box(new BoxStyle { Width = SizeValue.Fill }, new Text("x"));
+        VisualNode wrapped = inner switch
+        {
+            "Simulated" => new Simulated(new SimulatedState(), fill),
+            "InFlow" => new InFlow(fill),
+            _ => new InView(fill, _ => { }),
+        };
+
+        var row = new Row(gap: 0) { Width = SizeValue.Fill };
+        row.Add(new Progress(wrapped));
+
+        var lowered = Render(row).Children.Should().ContainSingle().Which;
+
+        lowered.Attributes.GetValueOrDefault("style", "").Should().Contain("width: 100%",
+            $"the Fill child is under a {inner}, and the progress host stands in for it — a walk "
+            + "that stops at the wrapper reports (false, false), which is what a child that does "
+            + "not fill reports, so the host hugs on the server and fills in the browser");
+    }
+
     [Fact]
     public void AChildWithNoCapIsUntouched()
     {
