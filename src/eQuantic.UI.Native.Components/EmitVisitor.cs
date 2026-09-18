@@ -236,12 +236,25 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     public Nothing Visit(WebFrame node, EmitState s) { Descend(s); return Nothing.Value; }
 
     /// <summary>
-    /// CANNOT ARRIVE, and it was never in the exemption array — the twelfth absence, invisible to
-    /// that instrument because it asks only about non-abstract nodes and this one is abstract.
-    /// Components are expanded during the LAYOUT pass (<c>MeasureVisitor</c> via
-    /// <c>ExpandContained</c>), so what reaches paint is the built subtree, never the component.
-    /// It descends rather than refusing, because this slice moved the dispatch and did not change
-    /// what it does; turning an impossible state into a loud one is its own decision.
+    /// A LAYOUT-TRANSPARENT WRAPPER, and it arrives constantly. <c>MeasureComponent</c> expands the
+    /// component through <c>ExpandContained</c> and hands the result to <c>MeasureWrapper</c>, which
+    /// builds the <c>LayoutNode</c> with the COMPONENT as its <c>Source</c> and ADOPTS the built
+    /// subtree beneath it. So a component node reaches this walk on every frame that has one, sized
+    /// to its child, and its children are the picture — which is what <see cref="Descend"/> says.
+    ///
+    /// <para>
+    /// THIS DOC SAID "CANNOT ARRIVE" AND WAS WRONG. Review challenged it and the probe settled it:
+    /// making this door throw fails 428 of the 1,237 Photon tests. The claim was reasoned from
+    /// `UiComponent` appearing nowhere in the old `PhotonRealizer.cs` — which is true, and means
+    /// only that the default <c>foreach</c> answered for it, exactly as it did for the eleven
+    /// positioners. Absent from the source is not absent from the walk.
+    /// </para>
+    ///
+    /// <para>
+    /// It is still the TWELFTH the exemption array could not name: the array listed eleven, and the
+    /// pin asked its question only of non-abstract nodes, so this one was outside the question. A
+    /// door has no such limit.
+    /// </para>
     /// </summary>
     public Nothing Visit(UiComponent node, EmitState s) { Descend(s); return Nothing.Value; }
 }

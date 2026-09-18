@@ -261,9 +261,12 @@ record of a release, the wiki's Upgrading page is the distillate.
   dispatches over the same node, and `Box` sat in both four hundred lines apart, so a single
   27-door visitor would have dropped the chrome of every clipping box. What made one door right is
   that nothing which `break`s ever touches its children — the three arms that descend are the three
-  that `return`. A TWELFTH ABSENCE appeared that the pin could not have seen: it named eleven exempt
-  nodes and the dispatch never handled twelve, because `UiComponent` is abstract and the pin asked
-  its question only of non-abstract ones. And the harness refused the first arrangement **by two
+  that `return`. A TWELFTH DOOR appeared that the pin could not have asked about: it named eleven
+  exempt nodes, and `UiComponent` is abstract, which is outside the vocabulary the pin enumerates.
+  What I first wrote on that door was WRONG — "cannot arrive" — and review challenging it, then a
+  probe, settled it: making the door throw fails 428 of 1,237 Photon tests, because `MeasureWrapper`
+  builds the LayoutNode with the component as its `Source` and adopts the built subtree beneath it.
+  Absent from a file is not absent from the walk. And the harness refused the first arrangement **by two
   bytes** — a visitor with six fields cost 64 bytes a frame against a ceiling with 2 to spare — so
   the fields moved into the state and the visitor became a singleton: 75,714 bytes/frame,
   byte-identical to `main`. A budget with no headroom left is a real constraint, not a nuisance, and
