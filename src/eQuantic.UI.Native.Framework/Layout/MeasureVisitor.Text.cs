@@ -122,7 +122,12 @@ internal sealed partial class MeasureVisitor
     ///
     /// <para>
     /// Never below one word. A line that kept nothing would report a mark standing where a word had
-    /// been, and an ellipsis alone tells a reader less than a cut word does.
+    /// been, and an ellipsis alone tells a reader less than a cut word does. When that one word is
+    /// itself wider than the room — nothing left to drop — the reported width CLAMPS to the limit,
+    /// which is what the plain path has always done (<c>Min(lineWidth + ellipsis, maxWidth)</c>).
+    /// An unbreakable word overflows its box on both paths and the realizer clips it; what must not
+    /// differ between them is the NUMBER handed back to layout, because a node reporting more room
+    /// than it was given makes its parent grow.
     /// </para>
     ///
     /// <para>
@@ -165,7 +170,9 @@ internal sealed partial class MeasureVisitor
 
         fragments.Add(new TextFragment(mark, tail?.Style ?? fallback, x, line * lineHeight,
             markWidth, line, tail?.Color, tail?.Destination));
-        return x + markWidth;
+        // `limit` is already positive infinity when the room is unbounded, and Min against it
+        // is the identity — so the unbounded case needs no arm of its own.
+        return MathF.Min(x + markWidth, limit);
 
         float MarkWidth() => ctx.Measurer
             .Measure(mark, tail?.Style ?? fallback, ctx.TypeScale, float.PositiveInfinity, 1).Width;

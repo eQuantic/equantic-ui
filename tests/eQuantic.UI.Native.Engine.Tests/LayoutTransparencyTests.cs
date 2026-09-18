@@ -140,7 +140,7 @@ public class LayoutTransparencyTests
             var why = $"{wrapper.GetType().Name} carries no geometry of its own";
 
             wrapped.Right.Should().BeLessThanOrEqualTo(150.01f,
-                $"{why}, and nine of the twenty used to run past the end of this row");
+                $"{why}, and eleven of the twenty used to run past the end of this row");
             wrapped.Width.Should().BeApproximately(bare.Width, 0.01f, why);
             wrapped.Lines.Should().Be(bare.Lines,
                 $"{why} — and WIDTH parity alone hid that a wrapped text wrapped where the bare one "
@@ -177,6 +177,53 @@ public class LayoutTransparencyTests
             + "rasterizer draws carry it and nothing downstream adds one outside the promised width");
         (cut.TextRuns[^1].X + cut.TextRuns[^1].Width).Should().BeLessThanOrEqualTo(cut.Bounds.Width + 0.01f,
             "and it is inside the width the measurement reports");
+    }
+
+    /// <summary>
+    /// A CUT LINE NEVER REPORTS MORE ROOM THAN IT WAS GIVEN, even when there is nothing left to
+    /// drop. Copilot's second review on #232 named this, and the mechanism it gave was not the one
+    /// measured — worth recording, because the consequence was right anyway.
+    ///
+    /// <para>
+    /// It read as "the ellipsis fragment is placed outside the measured width". It is not: the
+    /// measured width GROWS to include the mark, so the fragment is inside it. What the growth
+    /// breaks is the other side — the number handed back to layout exceeded the room the parent
+    /// offered, and a node that reports more room than it was given makes its parent grow. The
+    /// plain path never did that: it has always ended a cut line with
+    /// <c>Min(lineWidth + ellipsis, maxWidth)</c>.
+    /// </para>
+    ///
+    /// <para>
+    /// So the two paths are pinned AGAINST EACH OTHER rather than against a number. An unbreakable
+    /// word wider than its box overflows on both and the realizer clips it; what must not differ is
+    /// what they report.
+    /// </para>
+    /// </summary>
+    [Theory]
+    [InlineData(40f)]
+    [InlineData(48f)]
+    [InlineData(60f)]
+    public void ACutLineReportsAtMostTheRoomItHad_OnBothTextPaths(float room)
+    {
+        const string content = "alphabet zzzzzzzzzzzzzzzz";
+
+        static float WidthIn(VisualNode text, float room) =>
+            LayoutEngine.Layout(new Box(new BoxStyle { Width = SizeValue.Fixed(room) }, text),
+                400, 300, Ctx).Children[0].Bounds.Width;
+
+        // One word fills the line and the next overflows, so the drop loop has nothing to take.
+        var rich = new Text("placeholder")
+        {
+            Spans = [new TextRun("alphabet"), new TextRun(" zzzzzzzzzzzzzzzz")],
+            MaxLines = 1,
+        };
+        var plain = new Text(content, TypeRole.BodyL) { MaxLines = 1 };
+
+        WidthIn(plain, room).Should().BeApproximately(room, 0.01f,
+            "the plain path has always clamped a cut line to the room it had");
+        WidthIn(rich, room).Should().BeApproximately(WidthIn(plain, room), 0.01f,
+            "and the runs path is the same measurement with per-word rectangles, not a different "
+            + "contract — it reported 75.48 into a box of " + room + " before this");
     }
 
     /// <summary>

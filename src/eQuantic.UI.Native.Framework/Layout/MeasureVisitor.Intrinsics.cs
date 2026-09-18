@@ -121,10 +121,11 @@ internal sealed partial class MeasureVisitor
     /// invisible.
     /// <para>
     /// The truncation contract found its subjects with <c>children[i] is Text</c>, so a wrapped one
-    /// was not a text as far as it was concerned. Nine of the twenty wrappers therefore ran past the
-    /// end of a fixed row rather than ellipsizing — <c>Pressable</c>, <c>Link</c> and
-    /// <c>Hoverable</c> among them — and the eight that did not only agreed in WIDTH: their text
-    /// wrapped to as many lines as it liked instead of being cut. #225 measured both.
+    /// was not a text as far as it was concerned. ELEVEN of the twenty wrappers therefore ran past
+    /// the end of a fixed row rather than ellipsizing — <c>Pressable</c>, <c>Link</c> and
+    /// <c>Hoverable</c> among them — and the rest only agreed in WIDTH: NINETEEN of the twenty
+    /// wrapped to as many lines as they liked instead of being cut, every one but <c>Overlay</c>,
+    /// which takes no space in the flow to begin with. #225 measured both.
     /// </para>
     /// </summary>
     private static Text? TextWithin(VisualNode node) => node switch

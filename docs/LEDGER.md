@@ -317,7 +317,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   truncated link's mark was not pressable where a target hit-tests per fragment. The remedy needed
   one step more than the review said: the last fragment on a cut line is frequently the SPACE that
   follows the last word, and that space already belongs to the next run, so the mark takes the last
-  VISIBLE fragment's. The 91 goldens did not move.
+  VISIBLE fragment's. A SECOND ROUND found the edge the first left: with one word on the cut line
+  and nothing to drop, the mark's width was added to a line already at the limit, so the node
+  reported more room than its parent gave it — 75.48 into a box of 40 — where the plain path has
+  always ended a cut line with `Min(lineWidth + ellipsis, maxWidth)`. The two paths are pinned
+  against EACH OTHER now rather than against a number. The review's stated mechanism was wrong (the
+  measured width grows WITH the mark, so the fragment is inside it) and its consequence was right
+  anyway, which is the case for reading a finding past its first sentence. It also caught a stale
+  count my own mutation harness had reverted: a restore from a backup taken before the fix put
+  "nine of the twenty" back, and I did not re-read the file after the last restore. The 91 goldens
+  did not move.
 
 
 ## Retired documents
