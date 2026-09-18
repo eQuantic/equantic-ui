@@ -9,12 +9,19 @@ resolving every token through `Primitives/Theme/Tokens.cs` before judging.
 against the code adversarially; it covered 78 of the 294 before the run hit its session
 limit. So:
 
-- `CONFIRMED` — a skeptic reproduced the divergence from the code. 73 rows.
+- `CONFIRMED` — a skeptic reproduced the divergence from the code. 72 rows.
 - `REFUTED` — the skeptic could not: the code actually matches, or the token resolves to
-  the handoff's value. 5 rows, left in deliberately so the same claim is not re-filed.
-- `unverified` — audited but never re-checked. 216 rows. The confirmed/refuted split above
+  the handoff's value. 8 rows, left in deliberately so the same claim is not re-filed.
+- `unverified` — audited but never re-checked. 214 rows. The confirmed/refuted split above
   ran at roughly 14 refutations per 100, so expect most to be real and none to be trusted
   without reading the code.
+
+**A status can also be spent by the code moving underneath it.** Five rows were re-judged
+when their citations were repointed (#207): A8 Text, A10 Icon and A11 Image are REFUTED
+because the code they describe was changed; A9 Heading now names a much smaller gap than it
+was filed with; and B3 AppBar's heading half was FIXED in that pass, leaving the focus anchor
+as what the row holds. A row is re-judged only with the measurement that settles it — never
+because it reads stale.
 
 `documented-deviation` means the component's own doc comment names and justifies the
 difference. Those are review items, not bugs.
@@ -31,6 +38,7 @@ Each of these has a test that names its handoff block, so the figure cannot drif
 | B2 ListItem · B8 Chip | no §10 hover on an interactive row or on any chip kind | `PointerContractFidelityTests` |
 | B10 SearchField | the clear affordance was a 20dp glyph with a 20dp hit rect | `PointerContractFidelityTests` |
 | A10 Icon | a labelled glyph carried a name and no `role="img"` | `DestinationSemanticsTests` |
+| B3 AppBar | the screen's title was a span, so a page had no level-1 heading | `HeadingOutlineTests` |
 | A11 Image | no `case Image` in the native semantics walk — alt text was silent on Photon | `GraphicSemanticsTests` |
 
 ### Found while fixing, not by the audit
@@ -51,7 +59,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Native.Framework/Layout/LayoutEngine.cs`
 - **Handoff**: Positioned(top/end/bottom/start, width?, height?) — inset-anchored children; two opposite insets stretch the child.
-- **Code**: The native MeasureStack never stretches: with both Start and End set, End is discarded (`Start ??` short-circuits) and the child keeps the width it measured intrinsically; same for Top/Bottom (LayoutEngine.cs:591-593). The web realizer DOES honour it — it emits both left and right so CSS spans the box (WebRealizer.cs:250-253) — so the same tree has two geometries.
+- **Code**: The native MeasureStack never stretches: with both Start and End set, End is discarded (`Start ??` short-circuits) and the child keeps the width it measured intrinsically; same for Top/Bottom (MeasureVisitor.Containers.cs:96-97 MeasureStack). The web realizer DOES honour it — it emits both left and right so CSS spans the box (WebLoweringVisitor.Containers.cs:79-82 LowerStack) — so the same tree has two geometries.
 - **Evidence**:
 
   ```
@@ -63,27 +71,27 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/SafeArea.cs`
 - **Handoff**: minimum merges via max(inset, minimum) — gutters never collapse to zero on rectangular screens.
-- **Code**: The slot is named Extra and is ADDED to the host inset instead of being a floor under it. src/eQuantic.UI.Native.Framework/Layout/LayoutEngine.cs:359 and src/eQuantic.UI.Web/WebRealizer.cs:524 both compute inset+extra, and the intent is pinned by a test named ExtraPaddingAddsToTheInset_NotInsteadOfIt (tests/eQuantic.UI.Native.Engine.Tests/SafeAreaTests.cs:50). On a rectangular screen the two rules agree (0+16 == max(0,16)), so the divergence only shows on a device that HAS an inset: with a 54dp notch and minimum 16 the handoff wants 54, the code produces 70.
+- **Code**: The slot is named Extra and is ADDED to the host inset instead of being a floor under it. src/eQuantic.UI.Native.Framework/Layout/MeasureVisitor.Containers.cs:19 MeasureSafeArea and src/eQuantic.UI.Web/WebLoweringVisitor.Containers.cs:370 LowerSafeArea both compute inset+extra, and the intent is pinned by a test named ExtraPaddingAddsToTheInset_NotInsteadOfIt (tests/eQuantic.UI.Native.Engine.Tests/SafeAreaTests.cs:50). On a rectangular screen the two rules agree (0+16 == max(0,16)), so the divergence only shows on a device that HAS an inset: with a 54dp notch and minimum 16 the handoff wants 54, the code produces 70.
 - **Evidence**:
 
   ```
   src/eQuantic.UI.Primitives/Nodes/SafeArea.cs  /// <summary>Added to whatever the host reports — a bar's own padding on top of the inset.</summary>
       public EdgeInsets Extra { get; init; }
-  LayoutEngine.cs:359  var top = (safeArea.Edges.HasFlag(SafeEdges.Top) ? host.Top : 0) + safeArea.Extra.Top;
-  WebRealizer.cs:524  return extra == 0 ? env : $"calc({env} + {TokenCss.Px(extra)})";
+  MeasureVisitor.Containers.cs:19  var top = (safeArea.Edges.HasFlag(SafeEdges.Top) ? host.Top : 0) + safeArea.Extra.Top;
+  WebLoweringVisitor.Containers.cs:370  return extra == 0 ? env : $"calc({env} + {TokenCss.Px(extra)})";
   ```
 
 ### A5 SafeArea · missing-feature · **unverified**
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/SafeArea.cs`
 - **Handoff**: Consumption: a SafeArea zeroes the inset for its subtree — nested SafeAreas never double-pad.
-- **Code**: Nothing consumes the inset. Native: MeasureSafeArea reads ctx.SafeAreaInsets and passes the SAME ctx to the child, and LayoutContext.SafeAreaInsets is init-only (LayoutEngine.cs:105) so it cannot be zeroed for the subtree. Web/TS: every SafeArea emits its own env(safe-area-inset-*) padding, and env() is not scoped, so a nested pair pads twice. A screen SafeArea wrapping a bar that also uses one gets 2x the notch.
+- **Code**: Nothing consumes the inset. Native: MeasureSafeArea reads ctx.SafeAreaInsets and passes the SAME ctx to the child, and LayoutContext.SafeAreaInsets is init-only (LayoutEngine.cs:173 SafeAreaInsets) so it cannot be zeroed for the subtree. Web/TS: every SafeArea emits its own env(safe-area-inset-*) padding, and env() is not scoped, so a nested pair pads twice. A screen SafeArea wrapping a bar that also uses one gets 2x the notch.
 - **Evidence**:
 
   ```
-  LayoutEngine.cs:358  var host = ctx.SafeAreaInsets;
-  LayoutEngine.cs:105  public EdgeInsets SafeAreaInsets { get; init; }
-  WebRealizer.cs:522  var env = $"env(safe-area-inset-{name}, 0px)";
+  MeasureVisitor.Containers.cs:18  var host = ctx.SafeAreaInsets;
+  LayoutEngine.cs:173  public EdgeInsets SafeAreaInsets { get; init; }
+  WebLoweringVisitor.Containers.cs:368  var env = $"env(safe-area-inset-{name}, 0px)";
   lowering.ts:2581  const env = `env(safe-area-inset-${name}, 0px)`;
   ```
 
@@ -100,7 +108,7 @@ the pill's 40 down.
               (float)insets.Left, (float)insets.Top, (float)insets.Right, (float)insets.Bottom);
   
           if (bounds.Width == _lastWidth && bounds.Height == _lastHeight) return;
-  PhotonHost.cs:128  public EdgeInsets SafeAreaInsets { get; set; }
+  PhotonHost.cs:149  public EdgeInsets SafeAreaInsets { get; set; }
   ```
 
 ### A5 SafeArea · missing-feature · **unverified**
@@ -122,7 +130,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  PhotonHost.cs:1508-1519  _pan = null;
+  PhotonHost.cs:1592-1603  _pan = null;
           if (_drag is null)
           {
               var scrollRegions = _lastFrame.ScrollRegions;
@@ -130,20 +138,19 @@ the pill's 40 down.
                       _scrolls.Get(region.Path) ?? region.Fallback, along, _lastTimeMs, 0, false);
   ```
 
-### A8 Text · semantics · **unverified**
+### A8 Text · semantics · **REFUTED**
 
-- **Component**: `src/eQuantic.UI.Native.Components/Semantics.cs`
+- **Component**: `src/eQuantic.UI.Native.Components/SemanticsVisitor.Text.cs`
 - **Handoff**: Semantics — "StaticText — the run's text is its accessible value." / A11y — "Role: static text; label = full untruncated string (readers speak past the ellipsis)."
-- **Code**: The native semantics walk keys on Text.Content and IGNORES Text.Spans, so a rich-run paragraph (Content empty, runs carrying the text) produces NO semantic node at all — the guard `when text.Content.Length > 0` fails and Walk falls through to a node with no children. Text.PlainContent exists for exactly this and its own doc says it is "what accessibility reads" (src/eQuantic.UI.Primitives/Nodes/Text.cs), but nothing calls it here. The framework's own Markdown builds every inline paragraph this way (src/eQuantic.UI.Components/Markdown.cs:160), so on Photon every markdown paragraph with bold/code/link runs is silent to VoiceOver/TalkBack. The same Content-only rule at Semantics.cs:165 empties the derived name of a Pressable whose only text is a rich-run Text.
+- **Code**: Filed against a `Content`-only guard that is no longer there. Both readers take `PlainContent`, which concatenates the runs: the Text arm announces a rich-run paragraph (SemanticsVisitor.Text.cs:16-20 SemanticsVisitor), and the derived name of a label-less control gathers the same field (SemanticsVisitor.Interaction.cs:88-103 TextWithin). A Markdown paragraph with bold/code/link runs — the shape that produced nothing at all — announces its whole string on Photon. What the row asked for is what the code does; the READ remains untruncated (PlainContent is the full string, not the ellipsised line), which is the second half of the handoff's claim.
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Native.Components/Semantics.cs:139-141 —
-              case Text text when text.Content.Length > 0:
-                  nodes.Add(new(SemanticRole.StaticText, node.Path ?? "", node.Bounds,
-                      text.Content, null, false));
-  src/eQuantic.UI.Components/Markdown.cs:160 —
-          return new Text("", style.Body, theme.TextSecondary, maxLines: 0) { Spans = spans };
+  src/eQuantic.UI.Native.Components/SemanticsVisitor.Text.cs:16-20 —
+      public bool Visit(Text node, LayoutNode laidOut) =>
+          node.PlainContent.Length > 0
+  src/eQuantic.UI.Native.Components/SemanticsVisitor.Interaction.cs:100  if (node.Source is Text { PlainContent.Length: > 0 } text) parts.Add(text.PlainContent);
+  src/eQuantic.UI.Components/Markdown.cs:167  return new Text("", style.Body, theme.TextSecondary, maxLines: 0) { Spans = spans };
   ```
 
 ### A8 Text · documented-deviation · **unverified**
@@ -165,16 +172,12 @@ the pill's 40 down.
 
 - **Component**: `MISSING`
 - **Handoff**: new Heading("Portfolio", level: 1) — "Heading — semantic Text. Level 1 → Heading role, 2 → Title, 3 → Label-strong… Announced as 'heading, level N' — VoiceOver rotor / TalkBack heading navigation jump between them. Exactly one level-1 per screen (debug assert)." Semantics: "Web emits real heading levels; native marks the node as a header so readers can jump by heading."
-- **Code**: No Heading component exists — there is no `class Heading` in the repo (only the TypeRole.Heading enum member, icon glyphs of that name, and stale `new Heading(...)` calls in dead template content that also references a non-existent `Container` and the vanished namespace eQuantic.UI.Web.Components). Nothing carries a heading LEVEL: Text has no level/semantics slot, the web realizer lowers every Text to a bare <span> with only a type class (no h1-h6, no role="heading", no aria-level), and the native semantics enum has no header role at all — so neither the VoiceOver rotor nor TalkBack heading navigation has anything to jump between, and there is no level-1 uniqueness assert.
+- **Code**: Half of this has landed since the audit and half has not. The LEVEL exists and is not decoration: `Text.HeadingLevel` is a 1–6 slot refused at every door (src/eQuantic.UI.Primitives/Nodes/Text.cs:65-73 HeadingLevel), the web emits the real element (WebLoweringVisitor.Text.cs:147 LowerText), the semantic node carries it (SemanticsVisitor.Text.cs:16-20 SemanticsVisitor), and `HeadingOutlineTests` / `HeadingSemanticsTests` pin both. What is still missing is (a) a `Heading` COMPONENT — there is no `class Heading`, so an author writes `new Text("Portfolio") { HeadingLevel = 1 }`; (b) the level-1 uniqueness assert, which nothing checks; and (c) two of the four bridges — Android reports the trait (src/eQuantic.UI.Native.Shell.Android/PhotonAccessibility.cs:124), the Apple and Windows shells never read `HeadingLevel`, so the VoiceOver rotor still has nothing to jump between on macOS/iOS.
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Web/WebRealizer.cs:1611-1613 —
-          var element = new RealizedElement("span")
-          {
-              ClassName = $"eq-type-{text.Role.ToString().ToLowerInvariant()}",
-  src/eQuantic.UI.Native.Components/Semantics.cs:11-26 (no header/heading member) —
-      StaticText,
+  src/eQuantic.UI.Web/WebLoweringVisitor.Text.cs:147  var element = new RealizedElement(text.HeadingLevel > 0 ? $"h{text.HeadingLevel}" : "span")
+  src/eQuantic.UI.Native.Shell.Android/PhotonAccessibility.cs:124  info.Heading = node.HeadingLevel > 0;
   ```
 
 ### A9 Heading · Label · missing-component · **unverified**
@@ -196,11 +199,11 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Button.cs`
 - **Handoff**: Hit rect: Small "≥48 (slop)", Medium "≥48 (slop)" — "Sizes — toggle "Hit areas" in the top bar: Small 32 · hit 48 / Medium 40 · hit 48".
-- **Code**: The Button never asks for the hit rect: Button.cs:59 destructures the size table and DISCARDS the Hit slot (`_, _`), and no min-size reaches the tree. Only the Photon realizer expands (EmitVisitor.Interaction.cs:114-122 ExpandHitRect, called at :15). The web path has no equivalent: `Touch.MinTarget` has zero references in src/eQuantic.UI.Web and src/eQuantic.UI.Runtime, and neither lowerPressable (lowering.ts:2038-2131) nor LowerPressable (WebRealizer.cs:1777-1808) nor the generated `.eq-pressable` rules (TokenCss.cs:317-332) set any minimum. On web a Small button's tap target is 32×32 and a Medium's is 40×40.
+- **Code**: The Button never asks for the hit rect: Button.cs:62-66 reads the size ladder for height, padding, gap and the two type sizes and asks for no hit slot at all — `Touch.MinTarget` has zero references in Button.cs, and no min-size reaches the tree. (The row was filed against `ButtonStyles.Metrics`, a tuple whose seventh slot the Button discarded; the tuple is gone and the seven calls are read straight, which changes the mechanism and not the outcome.) Only the Photon realizer expands (EmitVisitor.Interaction.cs:114-122 ExpandHitRect, called at :15). The web path has no equivalent: `Touch.MinTarget` has zero references in src/eQuantic.UI.Web and src/eQuantic.UI.Runtime, and neither lowerPressable (lowering.ts:2038-2131) nor LowerPressable (WebLoweringVisitor.Interaction.cs:311-347 LowerPressable) nor the generated `.eq-pressable` rules (TokenCss.cs:317-332) set any minimum. On web a Small button's tap target is 32×32 and a Medium's is 40×40.
 - **Evidence**:
 
   ```
-  Button.cs:59  var (height, padX, gap, labelSize, iconSize, _, _) = ButtonStyles.Metrics(Size, context.Density);   //  vs EmitVisitor.Interaction.cs:118  var minimum = density == Density.Compact ? 0 : Touch.MinTarget;
+  Button.cs:62  var height = Sizing.Height(Size, context.Density);   //  vs EmitVisitor.Interaction.cs:118  var minimum = density == Density.Compact ? 0 : Touch.MinTarget;
   ```
 
 ### A12 Button · behaviour · **unverified**
@@ -211,18 +214,18 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Button.cs:71  var inert = Disabled || Loading;  → Button.cs:132 `Disabled = inert` → WebRealizer.cs:1801  Disabled = pressable.Disabled && !wrapping ? true : null,  /  lowering.ts:2111  if (disabled && !wrapping) node.attributes['disabled'] = '';
+  Button.cs:78  var inert = Disabled || Loading;  → Button.cs:132 `Disabled = inert` → WebLoweringVisitor.Interaction.cs:340  Disabled = pressable.Disabled && !wrapping ? true : null,  /  lowering.ts:2111  if (disabled && !wrapping) node.attributes['disabled'] = '';
   ```
 
 ### A13 IconButton · semantics · **CONFIRMED**
 
 - **Component**: `src/eQuantic.UI.Components/IconButton.cs`
 - **Handoff**: "Toggle form: role toggle button, announces "selected"" · "Toggle form: aria-pressed — state stays out of the name."
-- **Code**: IconButton builds its Pressable with only Disabled/Label/PressedBackground — `Selected` is never handed to the Pressable, and `Pressable.Selected` is the ONLY route to aria-pressed on both realizers (WebRealizer.cs:1804 `AriaPressed = pressable.Selected is { } selected ? …`; lowering.ts:2108-2109 `else if (pressable.selected !== undefined && pressable.selected !== null) node.attributes['aria-pressed'] = …`). A selected IconButton therefore announces exactly like an unselected one; the toggle state exists only as a tint and a glyph swap.
+- **Code**: IconButton builds its Pressable with only Disabled/Label/PressedBackground — `Selected` is never handed to the Pressable, and `Pressable.Selected` is the ONLY route to aria-pressed on both realizers (WebLoweringVisitor.Interaction.cs:343 LowerPressable `AriaPressed = pressable.Selected is { } selected ? …`; lowering.ts:2108-2109 `else if (pressable.selected !== undefined && pressable.selected !== null) node.attributes['aria-pressed'] = …`). A selected IconButton therefore announces exactly like an unselected one; the toggle state exists only as a tint and a glyph swap.
 - **Evidence**:
 
   ```
-  IconButton.cs:111-116  return new Pressable(box, Disabled ? null : OnPressed)\n        {\n            Disabled = Disabled,\n            Label = Label,\n            PressedBackground = Disabled ? null : pressedFill,\n        };
+  IconButton.cs:133-138  return new Pressable(box, Disabled ? null : OnPressed)\n        {\n            Disabled = Disabled,\n            Label = Label,\n            PressedBackground = Disabled ? null : pressedFill,\n        };
   ```
 
 ### A13 IconButton · metric · **unverified**
@@ -233,7 +236,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  IconButton.cs:54  var side = Sizing.Height(Size, context.Density);  … IconButton.cs:101-103  Width = side,\n            Height = side,   (no minimum reaches the Pressable; cf. EmitVisitor.Interaction.cs:118 which is the only place Touch.MinTarget is applied)
+  IconButton.cs:76  var side = Sizing.Height(Size, context.Density);  … IconButton.cs:124-126  Width = side,\n            Height = side,   (no minimum reaches the Pressable; cf. EmitVisitor.Interaction.cs:118 which is the only place Touch.MinTarget is applied)
   ```
 
 ### B1 Card · missing-feature · **CONFIRMED**
@@ -254,12 +257,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/ListItem.cs`
 - **Handoff**: "Whole row = one hit target (≥ 52 > 48 ✓); an interactive trailing control splits: row activates on the row area, Switch on its own 48dp rect." (and B1's rule: "never nest two activation targets on one surface")
-- **Code**: The Trailing node is added INSIDE the Row, and the whole Row (Trailing included) is then wrapped in the row's Pressable — so the trailing control sits inside the row's activation area rather than beside it. The web realizer degrades the outer element to span[role=button] (WebRealizer.cs:1785-1786) so the markup is legal, but the click listener is attached directly with no propagation stop (reconciler.ts:422-425), so a tap on a trailing Switch fires its OnChanged AND the row's OnPressed.
+- **Code**: The Trailing node is added INSIDE the Row, and the whole Row (Trailing included) is then wrapped in the row's Pressable — so the trailing control sits inside the row's activation area rather than beside it. The web realizer degrades the outer element to span[role=button] (WebLoweringVisitor.Interaction.cs:320-321 LowerPressable) so the markup is legal, but the click listener is attached directly with no propagation stop (reconciler.ts:422-425), so a tap on a trailing Switch fires its OnChanged AND the row's OnPressed.
 - **Evidence**:
 
   ```
   ListItem.cs:109  if (Trailing is { } trailing) row.Add(trailing);
-  ListItem.cs:118-120  return OnPressed is null ? body : new Pressable(body, Disabled ? null : OnPressed)
+  ListItem.cs:127-129  return OnPressed is null ? body : new Pressable(body, Disabled ? null : OnPressed)
   reconciler.ts:422-425  if (eventName === 'click') { (handler as () => void)(); return; }
   ```
 
@@ -267,7 +270,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/ListItem.cs`
 - **Handoff**: "Pointer — Interactive rows: hover = SurfaceSubtle wash (§10); cursor pointer."
-- **Code**: The row's BoxStyle declares Width, MinHeight and a Selected background, but no Hover diff, so an interactive row has no hover wash. The mechanism exists and is used by every sibling row-like component (Menu.cs:88, Table.cs:54, DataTable.cs:199, Accordion.cs:76 all set `Hover = new StyleDiff { Background = theme.SurfaceSubtle }`); ListItem is the one that does not. Cursor pointer is satisfied (WebRealizer.cs:1795).
+- **Code**: The row's BoxStyle declares Width, MinHeight and a Selected background, but no Hover diff, so an interactive row has no hover wash. The mechanism exists and is used by every sibling row-like component (Menu.cs:88, Table.cs:54, DataTable.cs:199, Accordion.cs:76 all set `Hover = new StyleDiff { Background = theme.SurfaceSubtle }`); ListItem is the one that does not. Cursor pointer is satisfied (WebLoweringVisitor.Interaction.cs:330 LowerPressable).
 - **Evidence**:
 
   ```
@@ -287,7 +290,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  AppBar.cs:62  row.Add(new Flexible(titlePad));
+  AppBar.cs:72  row.Add(new Flexible(titlePad));
   ```
 
 ### B3 AppBar · documented-deviation · **unverified**
@@ -298,14 +301,14 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  AppBar.cs:72  Height = 56,
+  AppBar.cs:82  Height = 56,
   ```
 
 ### B4 BottomNavigation · metric · **unverified**
 
 - **Component**: `src/eQuantic.UI.Components/BottomNavigation.cs`
 - **Handoff**: item hit = full column ≥ 48 wide · Equal-width columns, whole column = hit target.
-- **Code**: The item Column asks for Height Fill but never Width Fill, so the Pressable's <button> gets no width:100% (WebRealizer.cs:1798 `Width = fills.Width ? "100%" : null`; the inline-block fence is stated at WebRealizer.cs:1357). Verified render: `<div style="flex: 1 1 0%"><button style="height: 100%; padding: 0; ...">` — the flex CELL is equal-width, but the button inside hugs its 56dp pill and sits at the start of the column, so the hit rect is 56dp wide, not the column, and the pill/label are left-aligned instead of centred. Height is lost the same way: the row's default Cross=Center leaves the flex item content-tall, so `height: 100%` resolves against auto (~42dp, not 56). The native engine stretches through Flexible and has a test for it (tests/eQuantic.UI.Native.Engine.Tests/StretchLayoutTests.cs:71 StretchReachesTHROUGHaFlexible), so this is the web target only.
+- **Code**: The item Column asks for Height Fill but never Width Fill, so the Pressable's <button> gets no width:100% (WebLoweringVisitor.Interaction.cs:333 LowerPressable `Width = fills.Width ? "100%" : null`; the inline-block fence is stated at WebLoweringVisitor.Containers.cs:731 StretchesChildHeight). Verified render: `<div style="flex: 1 1 0%"><button style="height: 100%; padding: 0; ...">` — the flex CELL is equal-width, but the button inside hugs its 56dp pill and sits at the start of the column, so the hit rect is 56dp wide, not the column, and the pill/label are left-aligned instead of centred. Height is lost the same way: the row's default Cross=Center leaves the flex item content-tall, so `height: 100%` resolves against auto (~42dp, not 56). The native engine stretches through Flexible and has a test for it (tests/eQuantic.UI.Native.Engine.Tests/StretchLayoutTests.cs:71 StretchReachesTHROUGHaFlexible), so this is the web target only.
 - **Evidence**:
 
   ```
@@ -327,7 +330,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Tabs.cs`
 - **Handoff**: row 48 · indicator 3dp rrect, inset 16 · Fixed mode: 2–4 tabs, equal width · Hit: full cell height 48.
-- **Code**: The cell Column asks for Height Fill but not Width Fill, so the tab <button> gets height:100% and NO width (WebRealizer.cs:1798). Verified render: `<div style="flex: 1 1 0%; min-width: 0"><button ... role="tab">` — the flex cell is equal-width, but everything inside hugs the label, so the 3dp indicator (Width Fill, padding 0 16px) spans (label width − 32) start-aligned instead of (cell width − 32), and the label is not centred in its cell. This is exactly the bug the native engine already fixed and pinned (tests/eQuantic.UI.Native.Engine.Tests/StretchLayoutTests.cs:88 ATabLabelSitsOverItsOwnIndicator, whose comment says the old behaviour "put every tab label against the left edge of its tab"); the web target still has it.
+- **Code**: The cell Column asks for Height Fill but not Width Fill, so the tab <button> gets height:100% and NO width (WebLoweringVisitor.Interaction.cs:333 LowerPressable). Verified render: `<div style="flex: 1 1 0%; min-width: 0"><button ... role="tab">` — the flex cell is equal-width, but everything inside hugs the label, so the 3dp indicator (Width Fill, padding 0 16px) spans (label width − 32) start-aligned instead of (cell width − 32), and the label is not centred in its cell. This is exactly the bug the native engine already fixed and pinned (tests/eQuantic.UI.Native.Engine.Tests/StretchLayoutTests.cs:88 ATabLabelSitsOverItsOwnIndicator, whose comment says the old behaviour "put every tab label against the left edge of its tab"); the web target still has it.
 - **Evidence**:
 
   ```
@@ -344,36 +347,36 @@ the pill's 40 down.
   ```
   Avatar.cs:19  public sealed class Avatar : StatelessComponent
   Avatar.cs:26  public Avatar(string initials, SizeVariant size = SizeVariant.Medium, string? name = null)
-  UI.cs:255  public static Avatar Avatar(string initials, SizeVariant size = SizeVariant.Medium,
-  UI.cs:257      new Avatar(initials, size, name);
+  UI.cs:324  public static Avatar Avatar(string initials, SizeVariant size = SizeVariant.Medium,
+  UI.cs:326      new Avatar(initials, size, name);
   ```
 
 ### B8 Chip · semantics · **CONFIRMED**
 
 - **Component**: `src/eQuantic.UI.Components/Chip.cs`
 - **Handoff**: "A11y: Filter = toggle button \"Income, filter, selected\"" / "Filter/toggle chip = button + aria-pressed"
-- **Code**: The filter chip's Pressable never sets Selected, so no aria-pressed is emitted and the selection lives only in the fill colour (src/eQuantic.UI.Components/Chip.cs:90-96). Pressable.Selected exists precisely for this and lowers to aria-pressed (src/eQuantic.UI.Primitives/Nodes/Pressable.cs; src/eQuantic.UI.Web/WebRealizer.cs:1804 emits the attribute only when Selected is non-null).
+- **Code**: The filter chip's Pressable never sets Selected, so no aria-pressed is emitted and the selection lives only in the fill colour (src/eQuantic.UI.Components/Chip.cs:90-96). Pressable.Selected exists precisely for this and lowers to aria-pressed (src/eQuantic.UI.Primitives/Nodes/Pressable.cs; src/eQuantic.UI.Web/WebLoweringVisitor.Interaction.cs:343 LowerPressable emits the attribute only when Selected is non-null).
 - **Evidence**:
 
   ```
-  Chip.cs:91  ? new Pressable(box, OnPressed)
+  Chip.cs:105  ? new Pressable(box, OnPressed)
   Chip.cs:92    {
-  Chip.cs:93        Label = Label,
-  Chip.cs:95        PressedBackground = Selected ? primary.Pressed.WithOpacity(0.24f) : theme.SurfaceSubtle,
-  WebRealizer.cs:1804  AriaPressed = pressable.Selected is { } selected ? (selected ? "true" : "false") : null,
+  Chip.cs:107        Label = Label,
+  Chip.cs:109        PressedBackground = Selected ? primary.Pressed.WithOpacity(0.24f) : theme.SurfaceSubtle,
+  WebLoweringVisitor.Interaction.cs:343  AriaPressed = pressable.Selected is { } selected ? (selected ? "true" : "false") : null,
   ```
 
 ### B8 Chip · behaviour · **CONFIRMED**
 
 - **Component**: `src/eQuantic.UI.Components/Chip.cs`
 - **Handoff**: "Keys — A chip is a tab stop; Space/Enter toggles or activates; Delete/Backspace removes a removable chip — the ✕ is not a separate stop."
-- **Code**: Exactly inverted for Input chips. The chip body is wrapped in a Pressable only for Filter kind (Chip.cs:90), so a removable Input chip is NOT a tab stop; the ✕ IS one, because the remove glyph is its own Pressable (Chip.cs:73) and Pressable lowers to a real <button> (src/eQuantic.UI.Web/WebRealizer.cs:1786). There is no Delete/Backspace handling anywhere in the component — no Shortcut node, no key binding.
+- **Code**: Exactly inverted for Input chips. The chip body is wrapped in a Pressable only for Filter kind (Chip.cs:90), so a removable Input chip is NOT a tab stop; the ✕ IS one, because the remove glyph is its own Pressable (Chip.cs:73) and Pressable lowers to a real <button> (src/eQuantic.UI.Web/WebLoweringVisitor.Interaction.cs:321 LowerPressable). There is no Delete/Backspace handling anywhere in the component — no Shortcut node, no key binding.
 - **Evidence**:
 
   ```
   Chip.cs:73  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, textColor), OnRemove)
-  Chip.cs:90  return Kind == ChipKind.Filter && OnPressed != null
-  WebRealizer.cs:1786  var element = new RealizedElement(wrapping ? "span" : "button")
+  Chip.cs:104  return Kind == ChipKind.Filter && OnPressed != null
+  WebLoweringVisitor.Interaction.cs:321  var element = new RealizedElement(wrapping ? "span" : "button")
   ```
 
 ### B8 Chip · behaviour · **CONFIRMED**
@@ -384,9 +387,9 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Chip.cs:79  var box = new Box(new BoxStyle
-  Chip.cs:82      Background = fill,
-  Button.cs:126  Hover = inert || hoverFill is null ? null : new StyleDiff { Background = hoverFill },
+  Chip.cs:92  var box = new Box(new BoxStyle
+  Chip.cs:96      Background = fill,
+  Button.cs:133  Hover = inert || hoverFill is null ? null : new StyleDiff { Background = hoverFill },
   ```
 
 ### B9 TextInput · missing-feature · **CONFIRMED**
@@ -404,7 +407,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/TextInput.cs`
 - **Handoff**: Helper/error below: 12/500, 5dp gap — the line is always reserved so error swaps never shift layout.
-- **Code**: The caption line is a plain Text whose content is "" when there is neither helper nor error (TextInput.cs:91, :136). On the web target that lowers to an EMPTY span (src/eQuantic.UI.Web/WebRealizer.cs:1614 `InnerHtml = text.Spans is null ? text.Content : null`) which, with maxLines:1 forcing `display:block` (src/eQuantic.UI.Runtime/src/shared/lowering.ts:1943), generates no line box and measures 0dp tall — so a field authored without a helper grows by the Caption line height (16dp) the first time an error is set. The native target does reserve it: the measurer floors at one line (src/eQuantic.UI.Native.Framework/Text/ITextMeasurer.cs:92 `if (lines.Count == 0) lines.Add(new MeasuredLine(0, false));`), so the two targets also disagree with each other on the same tree.
+- **Code**: The caption line is a plain Text whose content is "" when there is neither helper nor error (TextInput.cs:91, :136). On the web target that lowers to an EMPTY span (src/eQuantic.UI.Web/WebLoweringVisitor.Text.cs:150 LowerText `InnerHtml = text.Spans is null ? text.Content : null`) which, with maxLines:1 forcing `display:block` (src/eQuantic.UI.Runtime/src/shared/lowering.ts:1943), generates no line box and measures 0dp tall — so a field authored without a helper grows by the Caption line height (16dp) the first time an error is set. The native target does reserve it: the measurer floors at one line (src/eQuantic.UI.Native.Framework/Text/ITextMeasurer.cs:92 `if (lines.Count == 0) lines.Add(new MeasuredLine(0, false));`), so the two targets also disagree with each other on the same tree.
 - **Evidence**:
 
   ```
@@ -432,22 +435,22 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Checkbox.cs`
 - **Handoff**: "the whole row is the target (hit ≥ 48 tall)"
-- **Code**: The row is laid out with no height and no min-height, so it measures its tallest child — the 22dp box (the BodyM label's line box is 20) — giving a 22dp-tall target. The Photon realizer rescues this (EmitVisitor.Interaction.cs:118 `var minimum = density == Density.Compact ? 0 : Touch.MinTarget;` expands the hit rect to 48), but the web realizer emits no minimum at all: WebRealizer.cs:1786-1800 sets only padding/border/background/font/cursor/text-align, and TokenCss.cs:317-332 (.eq-pressable rules) adds no sizing. Checkbox.cs:60. The component's own doc comment (Checkbox.cs:9) asserts "hit ≥ 48 via the Pressable contract", which holds on Photon and not on web.
+- **Code**: The row is laid out with no height and no min-height, so it measures its tallest child — the 22dp box (the BodyM label's line box is 20) — giving a 22dp-tall target. The Photon realizer rescues this (EmitVisitor.Interaction.cs:118 `var minimum = density == Density.Compact ? 0 : Touch.MinTarget;` expands the hit rect to 48), but the web realizer emits no minimum at all: WebLoweringVisitor.Interaction.cs:321-338 LowerPressable sets only padding/border/background/font/cursor/text-align, and TokenCss.cs:317-332 (.eq-pressable rules) adds no sizing. Checkbox.cs:60. The component's own doc comment (Checkbox.cs:9) asserts "hit ≥ 48 via the Pressable contract", which holds on Photon and not on web.
 - **Evidence**:
 
   ```
-  Checkbox.cs:60 — `var row = new Row(gap: Space.S3) { Cross = CrossAlign.Center };`  /  WebRealizer.cs:1786 — `var element = new RealizedElement(wrapping ? "span" : "button")` (Style sets Padding/Border/Background/FontFamily/Cursor/TextAlign only)
+  Checkbox.cs:60 — `var row = new Row(gap: Space.S3) { Cross = CrossAlign.Center };`  /  WebLoweringVisitor.Interaction.cs:321 — `var element = new RealizedElement(wrapping ? "span" : "button")` (Style sets Padding/Border/Background/FontFamily/Cursor/TextAlign only)
   ```
 
 ### B12 Switch · metric · **unverified**
 
 - **Component**: `src/eQuantic.UI.Components/Switch.cs`
 - **Handoff**: "Hit rect 48, extends over the paired label row in ListItems."
-- **Code**: The pressable's subtree is the 52×32 track, so the web target's hit rect is 32dp tall: WebRealizer.LowerPressable emits no min sizing (WebRealizer.cs:1786-1800) and TokenCss's .eq-pressable rules add none (TokenCss.cs:317-332). Photon does honour it (EmitVisitor.Interaction.cs:118 expands to Touch.MinTarget = 48), so the contract holds on native and breaks on web. Switch.cs:46-52, :72-87.
+- **Code**: The pressable's subtree is the 52×32 track, so the web target's hit rect is 32dp tall: WebRealizer.LowerPressable emits no min sizing (WebLoweringVisitor.Interaction.cs:321-338 LowerPressable) and TokenCss's .eq-pressable rules add none (TokenCss.cs:317-332). Photon does honour it (EmitVisitor.Interaction.cs:118 expands to Touch.MinTarget = 48), so the contract holds on native and breaks on web. Switch.cs:46-52, :72-87.
 - **Evidence**:
 
   ```
-  Switch.cs:47-49 — `Width = Sizing.SwitchWidth(density),` / `Height = Sizing.SwitchHeight(density),` (52×32 Comfortable) with no MinHeight anywhere in Build; WebRealizer.cs:1789-1800 — Style sets `Padding`, `Border`, `Background`, `FontFamily`, `Cursor`, `TextAlign` only
+  Switch.cs:47-49 — `Width = Sizing.SwitchWidth(density),` / `Height = Sizing.SwitchHeight(density),` (52×32 Comfortable) with no MinHeight anywhere in Build; WebLoweringVisitor.Interaction.cs:324-338 — Style sets `Padding`, `Border`, `Background`, `FontFamily`, `Cursor`, `TextAlign` only
   ```
 
 ### B14 ProgressBar · semantics · **CONFIRMED**
@@ -466,7 +469,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Banner.cs`
 - **Handoff**: role=status (polite) for info/success · role=alert for error severity. Content change re-announces. Warning/Destructive = assertive alert role; Info/Success = polite status.
-- **Code**: Build returns an unannotated Box — the Status variant picks a glyph and a fill and nothing else. No role, no aria-live, and no node in the vocabulary can carry them (the only 'alert' in the write-once path is the alertdialog on Overlay, WebRealizer.cs:985). A Banner that appears or changes announces nothing, which is the whole point of the component.
+- **Code**: Build returns an unannotated Box — the Status variant picks a glyph and a fill and nothing else. No role, no aria-live, and no node in the vocabulary can carry them (the only 'alert' in the write-once path is the alertdialog on Overlay, WebLoweringVisitor.Containers.cs:546 LowerOverlay). A Banner that appears or changes announces nothing, which is the whole point of the component.
 - **Evidence**:
 
   ```
@@ -493,7 +496,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Components/AppBar.cs:36            ? throw new ArgumentException("AppBar takes at most 3 actions (spec B3) — overflow belongs in an ActionSheet.", nameof(Actions))
+  src/eQuantic.UI.Components/AppBar.cs:41            ? throw new ArgumentException("AppBar takes at most 3 actions (spec B3) — overflow belongs in an ActionSheet.", nameof(Actions))
   src/eQuantic.UI.Components/Dialog.cs:28                "A Dialog carries 1-2 actions — a third means an ActionSheet or a screen (spec C2).");
   ```
 
@@ -523,12 +526,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Toast.cs`
 - **Handoff**: A11y: polite live announcement ... Semantics: Polite live region (role=status)
-- **Code**: The toast is never announced. It lowers to `new Overlay(anchor) { Modal = false }` (Toast.cs:74), and BOTH realizers gate every semantic attribute on the layer being modal: WebRealizer.cs:983 `if (overlay.Modal && overlay.Open)` and the TS twin lowering.ts:775 `const modalAndOpen = node.modal !== false && ...`. A non-modal layer therefore emits a bare `<div class="eq-overlay eq-overlay-passthrough">` — no role=status, no aria-live. Overlay has no live-region property at all, so native cannot announce it either.
+- **Code**: The toast is never announced. It lowers to `new Overlay(anchor) { Modal = false }` (Toast.cs:74), and BOTH realizers gate every semantic attribute on the layer being modal: WebLoweringVisitor.Containers.cs:541 LowerOverlay `if (overlay.Modal && overlay.Open)` and the TS twin lowering.ts:775 `const modalAndOpen = node.modal !== false && ...`. A non-modal layer therefore emits a bare `<div class="eq-overlay eq-overlay-passthrough">` — no role=status, no aria-live. Overlay has no live-region property at all, so native cannot announce it either.
 - **Evidence**:
 
   ```
   Toast.cs:74        return new Overlay(anchor) { Modal = false };
-  WebRealizer.cs:983        if (overlay.Modal && overlay.Open)
+  WebLoweringVisitor.Containers.cs:541        if (overlay.Modal && overlay.Open)
   ```
 
 ### C4 Toast · documented-deviation · **unverified**
@@ -590,7 +593,7 @@ the pill's 40 down.
 
   ```
   Drawer.cs:62  Elevation = 3,
-  PhotonTheme.cs:135-136  3 => new ShadowSpec(6, 16, -2, Shadow(0.16f, 0.52f)),
+  PhotonTheme.cs:145-146  3 => new ShadowSpec(6, 16, -2, Shadow(0.16f, 0.52f)),
           4 => new ShadowSpec(12, 28, -4, Shadow(0.20f, 0.56f)),
   ```
 
@@ -644,7 +647,7 @@ the pill's 40 down.
 
   ```
   SegmentedControl.cs:68  StyleOverride = theme.Type(TypeRole.Label).WithSize(Sizing.LabelSize(Size, context.Density)),
-  Tokens.cs:154  SizeVariant.Medium => density == Density.Compact ? 13 : 15,
+  Tokens.cs:172  SizeVariant.Medium => density == Density.Compact ? 13 : 15,
   ```
 
 ### C6 SegmentedControl · behaviour · **unverified**
@@ -692,7 +695,7 @@ the pill's 40 down.
 
   ```
   lowering.ts:2377-2380  const role = node.role ?? 'slider'; host.attributes['role'] = role; host.attributes['tabindex'] = '0'; if (node.label) host.attributes['aria-label'] = node.label;
-  WebRealizer.cs:1099-1108  ["role"] = ... "slider", ["tabindex"] = "0" ... element.RawAttributes["aria-label"] = label;
+  WebLoweringVisitor.Interaction.cs:136-146  ["role"] = ... "slider", ["tabindex"] = "0" ... element.RawAttributes["aria-label"] = label;
   Slider.cs:106-110  new Adjustable(box, direction => OnChanged?.Invoke(Quantize(Value + direction * step, step))) { Label = Label, };
   ```
 
@@ -740,9 +743,9 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Stepper.cs:39  var height = Sizing.Height(Size, context.Density);
-  Stepper.cs:92  var box = new Box(new BoxStyle { Width = height, Height = SizeValue.Fill }, centered);
-  Stepper.cs:62  row.Add(new Box(new BoxStyle { MinWidth = height, Height = SizeValue.Fill }, reading));
+  Stepper.cs:47  var height = Sizing.Height(Size, context.Density);
+  Stepper.cs:100  var box = new Box(new BoxStyle { Width = height, Height = SizeValue.Fill }, centered);
+  Stepper.cs:70  row.Add(new Box(new BoxStyle { MinWidth = height, Height = SizeValue.Fill }, reading));
   ```
 
 ### C8 Stepper · missing-feature · **unverified**
@@ -753,10 +756,10 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Stepper.cs:43  var row = new Row(gap: 0) { Height = SizeValue.Fill, Cross = CrossAlign.Center };
-  Stepper.cs:44  row.Add(Arm(theme, Icons.Minus, height, canDecrement, ...));
-  Stepper.cs:62  row.Add(new Box(new BoxStyle { MinWidth = height, Height = SizeValue.Fill }, reading));
-  Stepper.cs:64  row.Add(Arm(theme, Icons.Plus, height, canIncrement, ...));
+  Stepper.cs:51  var row = new Row(gap: 0) { Height = SizeValue.Fill, Cross = CrossAlign.Center };
+  Stepper.cs:52  row.Add(Arm(theme, Icons.Minus, height, canDecrement, ...));
+  Stepper.cs:70  row.Add(new Box(new BoxStyle { MinWidth = height, Height = SizeValue.Fill }, reading));
+  Stepper.cs:72  row.Add(Arm(theme, Icons.Plus, height, canIncrement, ...));
   ```
 
 ### C8 Stepper · missing-feature · **unverified**
@@ -767,8 +770,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Stepper.cs:94  return new Pressable(box, enabled ? onPressed : null) { Disabled = !enabled, Label = label };
-  Stepper.cs:44-45  row.Add(Arm(theme, Icons.Minus, height, canDecrement, () => OnChanged?.Invoke(Value - Step), $"Decrease {Label}"));
+  Stepper.cs:102  return new Pressable(box, enabled ? onPressed : null) { Disabled = !enabled, Label = label };
+  Stepper.cs:52-53  row.Add(Arm(theme, Icons.Minus, height, canDecrement, () => OnChanged?.Invoke(Value - Step), $"Decrease {Label}"));
   ```
 
 ### C8 Stepper · semantics · **unverified**
@@ -779,8 +782,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Stepper.cs:67-76  return new Box(new BoxStyle { Width = SizeValue.Hug, Height = height, Background = ..., CornerRadius = ..., BorderWidth = 1, BorderColor = theme.BorderStrong, Opacity = ... }, row);
-  Stepper.cs:45  () => OnChanged?.Invoke(Value - Step), $"Decrease {Label}"));
+  Stepper.cs:75-84  return new Box(new BoxStyle { Width = SizeValue.Hug, Height = height, Background = ..., CornerRadius = ..., BorderWidth = 1, BorderColor = theme.BorderStrong, Opacity = ... }, row);
+  Stepper.cs:53  () => OnChanged?.Invoke(Value - Step), Action("Decrease")));
   ```
 
 ### C8 Stepper · behaviour · **unverified**
@@ -791,8 +794,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Stepper.cs:62  row.Add(new Box(new BoxStyle { MinWidth = height, Height = SizeValue.Fill }, reading));   // not focusable
-  Stepper.cs:67  return new Box(new BoxStyle   // no Adjustable wrapper
+  Stepper.cs:70  row.Add(new Box(new BoxStyle { MinWidth = height, Height = SizeValue.Fill }, reading));   // not focusable
+  Stepper.cs:75  return new Box(new BoxStyle   // no Adjustable wrapper
   ```
 
 ### C9 PullToRefresh · metric · **unverified**
@@ -919,7 +922,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Accordion.cs`
 - **Handoff**: Header = button + aria-expanded + aria-controls → its region.
-- **Code**: aria-expanded is emitted (Pressable.Expanded lowers to it — src/eQuantic.UI.Runtime/src/shared/lowering.ts:2072, src/eQuantic.UI.Web/WebRealizer.cs:1806), but aria-controls is not: Pressable has no Controls property (src/eQuantic.UI.Primitives/Nodes/Pressable.cs), the only aria-controls in the runtime belongs to Anchored panels (lowering.ts:2230), and the content Box (Accordion.cs:85-89) carries no id and no region role for a header to point at.
+- **Code**: aria-expanded is emitted (Pressable.Expanded lowers to it — src/eQuantic.UI.Runtime/src/shared/lowering.ts:2072, src/eQuantic.UI.Web/WebLoweringVisitor.Interaction.cs:345 LowerPressable), but aria-controls is not: Pressable has no Controls property (src/eQuantic.UI.Primitives/Nodes/Pressable.cs), the only aria-controls in the runtime belongs to Anchored panels (lowering.ts:2230), and the content Box (Accordion.cs:85-89) carries no id and no region role for a header to point at.
 - **Evidence**:
 
   ```
@@ -993,7 +996,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  IconButton.cs:111-116  return new Pressable(box, Disabled ? null : OnPressed)
+  IconButton.cs:133-138  return new Pressable(box, Disabled ? null : OnPressed)
           {
               Disabled = Disabled,
               Label = Label,
@@ -1119,7 +1122,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Native.Framework/Layout/LayoutEngine.cs`
 - **Handoff**: Truncation contract: text children shrink to ellipsis before any sibling is pushed out; fixed children (icons, avatars) never shrink.
-- **Code**: The whole truncation block (text-to-ellipsis pass AND the flex-shrink pass that follows it at LayoutEngine.cs:1120-1167) is gated on `&& horizontal`, so it runs for Row only. An overflowing Column never clamps its text and never shrinks a child — siblings are pushed past the bottom edge and clipped. The comment two lines above claims the opposite ("Applies whenever the available extent is finite"), and the web realizer emits a plain column flex whose items shrink by default.
+- **Code**: The whole truncation block (text-to-ellipsis pass AND the flex-shrink pass that follows it at MeasureVisitor.Flex.cs:148-229 MeasureFlex) is gated on `&& horizontal`, so it runs for Row only. An overflowing Column never clamps its text and never shrinks a child — siblings are pushed past the bottom edge and clipped. The comment two lines above claims the opposite ("Applies whenever the available extent is finite"), and the web realizer emits a plain column flex whose items shrink by default.
 - **Evidence**:
 
   ```
@@ -1130,7 +1133,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Layout/LayoutTypes.cs`
 - **Handoff**: RTL — Row mirrors automatically in RTL locales; reading/focus order stays = child order.
-- **Code**: No realizer mirrors. The native layout maps Start to X unconditionally (LayoutEngine.cs:1266, and Padding.Start→X at 891/927/1473), and the web shell emits lang but never dir (src/eQuantic.UI.Server/Templates/app-shell.html:2 with the culture at UIExtensions.cs:561), so an ar/he culture renders LTR there too. LayoutTypes.cs:5 documents the v1 limit for the insets, while Row's own doc (src/eQuantic.UI.Primitives/Nodes/Row.cs) still asserts mirroring happens.
+- **Code**: No realizer mirrors. The native layout maps Start to X unconditionally (MeasureVisitor.Flex.cs:329 MeasureFlex, and Padding.Start→X at 891/927/1473), and the web shell emits lang but never dir (src/eQuantic.UI.Server/Templates/app-shell.html:2 with the culture at UIExtensions.cs:561), so an ar/he culture renders LTR there too. LayoutTypes.cs:5 documents the v1 limit for the insets, while Row's own doc (src/eQuantic.UI.Primitives/Nodes/Row.cs) still asserts mirroring happens.
 - **Evidence**:
 
   ```
@@ -1158,8 +1161,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Tokens.cs:187  public const float PressCancelSlop = 12;
-  PhotonHost.cs:1296  if (!pan.Active && MathF.Abs(travelled) > Touch.PressCancelSlop)
+  Tokens.cs:205  public const float PressCancelSlop = 12;
+  PhotonHost.cs:1362  if (!pan.Active && MathF.Abs(travelled) > Touch.PressCancelSlop)
   ```
 
 ### A6 ScrollView · missing-feature · **unverified**
@@ -1185,14 +1188,14 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Web/WebRealizer.cs`
 - **Handoff**: Exposed as a scrollable region; VoiceOver 3-finger / TalkBack 2-finger swipes page by 80% viewport and announce "Page X of Y" when paging is enabled.
-- **Code**: Nothing exposes the viewport to assistive tech on either target. Web: the element is a bare div carrying only Style — no role, no aria, no tabindex (the TS twin at lowering.ts:1150 is identical), while other nodes in the same file do set element.TabIndex/["role"] when they need them. Native: SemanticRole has no scrollable/region member and SemanticsTree.Walk has no ScrollView case, so the viewport is invisible to the bridges. No paging notion exists either. The one half that IS honoured is offscreen content staying in the tree (Semantics.cs:65-68).
+- **Code**: Nothing exposes the viewport to assistive tech on either target. Web: the element is a bare div carrying only Style — no role, no aria, no tabindex (the TS twin at lowering.ts:1150 is identical), while other nodes in the same file do set element.TabIndex/["role"] when they need them. Native: SemanticRole has no scrollable/region member and SemanticsTree.Walk has no ScrollView case, so the viewport is invisible to the bridges. No paging notion exists either. The one half that IS honoured is offscreen content staying in the tree (Semantics.cs:12-17 SemanticsTree).
 - **Evidence**:
 
   ```
-  WebRealizer.cs:607-609  var element = new RealizedElement("div")
+  WebLoweringVisitor.Containers.cs:477-480  var element = new RealizedElement("div")
           {
               Style = new HtmlStyle
-  Semantics.cs:9-11  public enum SemanticRole : byte
+  SemanticNode.cs:5-7  public enum SemanticRole : byte
   {
       StaticText,
   ```
@@ -1205,8 +1208,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  PhotonHost.cs:1394  public bool ScrollBy(float x, float y, float delta)
-  PhotonHost.cs:988-991  case "Home" or "ArrowUp":
+  PhotonHost.cs:1460  public bool ScrollBy(float x, float y, float delta)
+  PhotonHost.cs:1033-1036  case "Home" or "ArrowUp":
                   MoveCaret(0, selecting);
                   return true;
               case "End" or "ArrowDown":
@@ -1248,10 +1251,10 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Native.Framework/Layout/LayoutEngine.cs:713-714 —
+  src/eQuantic.UI.Native.Framework/Layout/MeasureVisitor.Text.cs:20-21 —
           if (text.Spans is { Count: > 0 } spans) return MeasureRuns(result, text, spans, style, maxW, ctx);
           var measurement = ctx.Measurer.Measure(text.PlainContent, style, ctx.TypeScale, maxW, text.MaxLines);
-  src/eQuantic.UI.Native.Framework/Layout/LayoutEngine.cs:778-779 (MeasureRuns, no MaxLines anywhere in the method) —
+  src/eQuantic.UI.Native.Framework/Layout/MeasureVisitor.Text.cs:123-124 (MeasureRuns, no MaxLines anywhere in the method) —
           result.Text = new TextMeasurement(widest, lines.Count * lineHeight, lineHeight, lines);
           result.Bounds = new Rect(0, 0, widest, lines.Count * lineHeight);
   ```
@@ -1272,33 +1275,32 @@ the pill's 40 down.
       End = 2,
   ```
 
-### A10 Icon · semantics · **CONFIRMED**
+### A10 Icon · semantics · **REFUTED**
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Icon.cs`
 - **Handoff**: "With label → image role." / "Semantics: Labelled Icon announces its label (image role)"
-- **Code**: Both web lowerings put only aria-label on the bare <svg> and never emit role="img", so the labelled icon has no image role in the accessibility tree (src/eQuantic.UI.Web/WebRealizer.cs:919, twin at src/eQuantic.UI.Runtime/src/shared/lowering.ts:1374). No role is added downstream either — WebRealizer sets element.Role for dialog/button/radio/tab/menuitem/option/switch/checkbox/tooltip/listbox but never for a glyph.
+- **Code**: FIXED since the audit (see "Closed since the audit ran"): a labelled glyph states the role beside the name on both sides, and an unlabelled one is still hidden. `DestinationSemanticsTests` names the block, so the figure cannot drift back.
 - **Evidence**:
 
   ```
-  if (label is { }) svg.RawAttributes["aria-label"] = label;
-  else svg.RawAttributes["aria-hidden"] = "true";   // WebRealizer.cs:919-920
-  if (label) attributes['aria-label'] = label;
-  else attributes['aria-hidden'] = 'true';           // lowering.ts:1374-1375
+  src/eQuantic.UI.Web/WebLoweringVisitor.Graphics.cs:291-294 —
+          svg.RawAttributes["role"] = "img";
+          svg.RawAttributes["aria-label"] = label;
+  src/eQuantic.UI.Runtime/src/shared/lowering.ts:1541  attributes['role'] = 'img';
   ```
 
-### A11 Image · missing-feature · **CONFIRMED**
+### A11 Image · missing-feature · **REFUTED**
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Image.cs`
 - **Handoff**: "Semantics: Labelled = image role + label; unlabelled = decorative, hidden." / "Alt read as image role."
-- **Code**: The native semantics walk has a case for a labelled Icon but none for Image, so on Photon (iOS/macOS/Android) an Image with alt text is never emitted as a SemanticNode and is invisible to assistive tech — SemanticRole.Image is produced in exactly one place, the Icon case (src/eQuantic.UI.Native.Components/Semantics.cs:145-148). Web is correct (<img alt> carries the role).
+- **Code**: FIXED since the audit (see "Closed since the audit ran"), and fixed for the whole family rather than for Image alone: the graphics visitor asks one question of all six labelled graphics — Icon, Image, Canvas, Vector, Drawing, CameraPreview — through a single `Graphic` arm, so a seventh cannot repeat the omission. `GraphicSemanticsTests` names the block.
 - **Evidence**:
 
   ```
-  // A labelled icon announces; an unlabelled one is decoration and stays silent.
-  case Icon { Label: { Length: > 0 } label }:
-      nodes.Add(new(SemanticRole.Image, node.Path ?? "", node.Bounds,
-          label, null, false));
-      return;                                   // Semantics.cs:144-148 — no `case Image` anywhere in Walk
+  src/eQuantic.UI.Native.Components/SemanticsVisitor.Graphics.cs:27  public bool Visit(Primitives.Image node, LayoutNode laidOut) => Graphic(node.Label, laidOut);
+  src/eQuantic.UI.Native.Components/SemanticsVisitor.Graphics.cs:50-53 —
+      private bool Graphic(string? label, LayoutNode laidOut) =>
+          label is { Length: > 0 }
   ```
 
 ### A11 Image · missing-feature · **CONFIRMED**
@@ -1322,7 +1324,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Button.cs:71  var inert = Disabled || Loading;   (Button.cs:49-51 doc: "The button reads disabled to assistive tech for the duration, which is the truth: it cannot be actioned.")
+  Button.cs:78  var inert = Disabled || Loading;   (Button.cs:49-51 doc: "The button reads disabled to assistive tech for the duration, which is the truth: it cannot be actioned.")
   ```
 
 ### A12 Button · behaviour · **CONFIRMED**
@@ -1333,7 +1335,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  TokenCss.cs:318  css.AppendLine(".eq-pressable > :first-child { transition: background-color var(--eq-motion-fast) ease-out; }");   with TokenCss.cs:283  --eq-motion-fast: {Motion.FastMs}ms;
+  TokenCss.cs:380  css.AppendLine(".eq-pressable > :first-child { transition: background-color var(--eq-motion-fast) ease-out; }");   with TokenCss.cs:319  --eq-motion-fast: {Motion.FastMs}ms;
   ```
 
 ### A12 Button · missing-feature · **unverified**
@@ -1344,7 +1346,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Button.cs:18-19  public Button(string label, Variant variant = Variant.Primary, SizeVariant size = SizeVariant.Medium,\n        Action? onPressed = null)   /  UI.cs:226-228  public static Button Button(string label, Variant variant = Variant.Primary,\n        SizeVariant size = SizeVariant.Medium, Action? onPressed = null) =>\n        new Button(label, variant, size, onPressed);
+  Button.cs:18-19  public Button(string label, Variant variant = Variant.Primary, SizeVariant size = SizeVariant.Medium,\n        Action? onPressed = null)   /  UI.cs:290-292  public static Button Button(string label, Variant variant = Variant.Primary,\n        SizeVariant size = SizeVariant.Medium, Action? onPressed = null) =>\n        new Button(label, variant, size, onPressed);
   ```
 
 ### A13 IconButton · missing-feature · **CONFIRMED**
@@ -1355,7 +1357,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  IconButton.cs:27-28  public IconButton(Icons glyph, string label, IconButtonKind kind = IconButtonKind.Standard,\n        SizeVariant size = SizeVariant.Medium, Action? onPressed = null)   /  IconButton.cs:45  public bool Selected { get; init; }
+  IconButton.cs:46-47  public IconButton(Icon glyph, string label, IconButtonKind kind = IconButtonKind.Standard,\n        SizeVariant size = SizeVariant.Medium, Action? onPressed = null)   /  IconButton.cs:67  public bool Selected { get; init; }
   ```
 
 ### A13 IconButton · missing-feature · **CONFIRMED**
@@ -1366,7 +1368,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  IconButton.cs:111  return new Pressable(box, Disabled ? null : OnPressed)   (no Tooltip/Anchored anywhere in IconButton.cs)
+  IconButton.cs:133  return new Pressable(box, Disabled ? null : OnPressed)   (no Tooltip/Anchored anywhere in IconButton.cs)
   ```
 
 ### B1 Card · missing-feature · **REFUTED**
@@ -1390,7 +1392,7 @@ the pill's 40 down.
 
   ```
   ListItem.cs:98  content.Add(new Text(subtitle, TypeRole.Caption, theme.TextSecondary,
-  PhotonTheme.cs:120  TypeRole.Caption => new TypeStyle(12, 16, FontWeight.Medium, 0.2f, 1.3f),
+  PhotonTheme.cs:130  TypeRole.Caption => new TypeStyle(12, 16, FontWeight.Medium, 0.2f, 1.3f),
   (cf. ListItem.cs:95  StyleOverride = new TypeStyle(15, 20, FontWeight.Medium, 0, 1.3f),)
   ```
 
@@ -1398,12 +1400,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/ListItem.cs`
 - **Handoff**: "A11y: one merged node per row — \"Wi-Fi, Photon-5G, button\""
-- **Code**: The Pressable's Label is set to the Title alone, and the realizer emits it as aria-label on the row element (WebRealizer.cs:1802). aria-label REPLACES the element's text content as the accessible name, so the subtitle inside the row is never announced: the row reads "Wi-Fi, button", not "Wi-Fi, Photon-5G, button".
+- **Code**: The Pressable's Label is set to the Title alone, and the realizer emits it as aria-label on the row element (WebLoweringVisitor.Interaction.cs:341 LowerPressable). aria-label REPLACES the element's text content as the accessible name, so the subtitle inside the row is never announced: the row reads "Wi-Fi, button", not "Wi-Fi, Photon-5G, button".
 - **Evidence**:
 
   ```
-  ListItem.cs:123  Label = Title,
-  WebRealizer.cs:1802  AriaLabel = pressable.Label,
+  ListItem.cs:132  Label = Title,
+  WebLoweringVisitor.Interaction.cs:341  AriaLabel = pressable.Label,
   ```
 
 ### B2 List · ListItem · semantics · **CONFIRMED**
@@ -1414,8 +1416,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  ListItem.cs:156  var column = new Column(gap: 0) { Width = SizeValue.Fill };
-  ListItem.cs:164  return column;
+  ListItem.cs:165  var column = new Column(gap: 0) { Width = SizeValue.Fill };
+  ListItem.cs:173  return column;
   ```
 
 ### B2 List · ListItem · behaviour · **CONFIRMED**
@@ -1426,8 +1428,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  TokenCss.cs:318  css.AppendLine(".eq-pressable > :first-child { transition: background-color var(--eq-motion-fast) ease-out; }");
-  TokenCss.cs:319  css.AppendLine(".eq-pressable:active > :first-child { background-color: var(--eq-pressed-bg) !important; }");
+  TokenCss.cs:380  css.AppendLine(".eq-pressable > :first-child { transition: background-color var(--eq-motion-fast) ease-out; }");
+  TokenCss.cs:381  css.AppendLine(".eq-pressable:active > :first-child { background-color: var(--eq-pressed-bg) !important; }");
   ```
 
 ### B2 List · ListItem · missing-feature · **CONFIRMED**
@@ -1438,7 +1440,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Components/SwipeableRow.cs:26  public SwipeableRow(VisualNode child, string actionLabel, Icons actionIcon, Action? onAction = null)  — no context-menu hook on this or any node type
+  src/eQuantic.UI.Components/SwipeableRow.cs:25  public SwipeableRow(VisualNode child, string actionLabel, Icons actionIcon, Action? onAction = null)  — no context-menu hook on this or any node type
   ```
 
 ### B3 AppBar · documented-deviation · **unverified**
@@ -1449,7 +1451,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  AppBar.cs:41  public bool Scrolled { get; init; }
+  AppBar.cs:46  public bool Scrolled { get; init; }
   ```
 
 ### B3 AppBar · behaviour · **unverified**
@@ -1460,7 +1462,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  AppBar.cs:74-75  Background = Scrolled ? theme.Surface : null,
+  AppBar.cs:84-85  Background = Scrolled ? theme.Surface : null,
               Elevation = Scrolled ? 2 : 0,
   ```
 
@@ -1472,18 +1474,18 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  AppBar.cs:69-76  return new Box(new BoxStyle { Width = SizeValue.Fill, Height = 56, ... }, row);
+  AppBar.cs:79-86  return new Box(new BoxStyle { Width = SizeValue.Fill, Height = 56, ... }, row);
   ```
 
-### B3 AppBar · semantics · **unverified**
+### B3 AppBar · semantics · **CONFIRMED**
 
 - **Component**: `src/eQuantic.UI.Components/AppBar.cs`
 - **Handoff**: A11y: title is the screen's level-1 Heading and the focus anchor after navigation.
-- **Code**: The title is an ordinary Text node, which lowers to <span> (WebRealizer.cs:1611 `new RealizedElement("span")`) — no heading role, no aria-level, and nothing moves focus to it after navigation. The Text node has no heading/level property at all, so this is not expressible today.
+- **Code**: Two claims; the first is now met and the second is not. The heading HALF was filed as inexpressible and stayed filed after A9 landed the level, because nobody asked the component again: the title now declares `HeadingLevel = 1` (AppBar.cs:63-67), which lowers to the real `h1` on the web and rides the semantic node on Photon, pinned by `TheAppBarTitleIsTheScreensLevelOneHeading`. The FOCUS ANCHOR is untouched: nothing moves focus to the title after navigation, on either target, and no node in the vocabulary can ask for it — that is what this row now holds.
 - **Evidence**:
 
   ```
-  AppBar.cs:54  var title = new Text(Title, TypeRole.Title, theme.TextPrimary, maxLines: 1)
+  AppBar.cs:63-67  var title = new Text(Title, TypeRole.Title, theme.TextPrimary, maxLines: 1)
   ```
 
 ### B4 BottomNavigation · documented-deviation · **unverified**
@@ -1567,7 +1569,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Tabs.cs`
 - **Handoff**: Keys: The tablist is ONE tab stop: ←/→ move focus and select (wraps) · Home/End · Tab leaves to the active panel.
-- **Code**: ←/→ and the wrap are correct (Tabs.cs:78 `(Selected + direction + count) % count`), but Home and End do nothing: the Adjustable keydown maps only the four arrows and returns on direction 0, and the C# SSR twin emits no keydown at all (WebRealizer.cs:1088-1111). Nothing else in the tree handles Home/End.
+- **Code**: ←/→ and the wrap are correct (Tabs.cs:78 `(Selected + direction + count) % count`), but Home and End do nothing: the Adjustable keydown maps only the four arrows and returns on direction 0, and the C# SSR twin emits no keydown at all (WebLoweringVisitor.Interaction.cs:119-149 LowerAdjustable). Nothing else in the tree handles Home/End.
 - **Evidence**:
 
   ```
@@ -1626,8 +1628,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Avatar.cs:70  var seed = Name ?? Initials;
-  Avatar.cs:71  var tint = theme.Colors(TintPalette[seed.Length % TintPalette.Length]);
+  Avatar.cs:65  var seed = Name ?? Initials;
+  Avatar.cs:66  var tint = theme.Colors(TintPalette[seed.Length % TintPalette.Length]);
   ```
 
 ### B6 Avatar · semantics · **CONFIRMED**
@@ -1638,9 +1640,9 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Avatar.cs:63  var photo = new Image(source, side, side, ImageFit.Cover, Name ?? Initials)
-  Avatar.cs:84  ? new Text(clipped, TypeRole.Caption, tint.OnSubtle, maxLines: 1)
-  Avatar.cs:88  : new Icon(Icons.Person, glyphSize, theme.TextMuted);
+  Avatar.cs:58  var photo = new Image(source, side, side, ImageFit.Cover, Name ?? Initials)
+  Avatar.cs:79  ? new Text(clipped, TypeRole.Caption, tint.OnSubtle, maxLines: 1)
+  Avatar.cs:83  : new Icon(Icons.Person, glyphSize, theme.TextMuted);
   ```
 
 ### B6 Avatar · missing-feature · **REFUTED**
@@ -1654,7 +1656,7 @@ the pill's 40 down.
   Avatar.cs:26  public Avatar(string initials, SizeVariant size = SizeVariant.Medium, string? name = null)
   Avatar.cs:37  public string? ImageSource { get; init; }
   Avatar.cs:46  public PresenceStatus Status { get; init; }
-  UI.cs:255  public static Avatar Avatar(string initials, SizeVariant size = SizeVariant.Medium,
+  UI.cs:324  public static Avatar Avatar(string initials, SizeVariant size = SizeVariant.Medium,
   ```
 
 ### B7 Badge · metric · **CONFIRMED**
@@ -1672,13 +1674,13 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Badge.cs`
 - **Handoff**: "Decorative; the count folds into the host's announcement (\"Notifications, 3 new\")."
-- **Code**: The count never reaches the host's accessible name. The badge is attached inside the host's Pressable (BottomNavigation.cs:60 / NavigationRail.cs:93), and the Pressable's Label is the plain item label (BottomNavigation.cs:85 `Label = item.Label`), which lowers to aria-label (src/eQuantic.UI.Web/WebRealizer.cs:1802) and therefore OVERRIDES the badge text inside the button. The button announces "Cards" with no mention of the 2 unread items.
+- **Code**: The count never reaches the host's accessible name. The badge is attached inside the host's Pressable (BottomNavigation.cs:60 / NavigationRail.cs:93), and the Pressable's Label is the plain item label (BottomNavigation.cs:85 `Label = item.Label`), which lowers to aria-label (src/eQuantic.UI.Web/WebLoweringVisitor.Interaction.cs:341 LowerPressable) and therefore OVERRIDES the badge text inside the button. The button announces "Cards" with no mention of the 2 unread items.
 - **Evidence**:
 
   ```
   BottomNavigation.cs:60  var iconNode = item.BadgeCount > 0 ? Badge.Over(icon, item.BadgeCount) : (VisualNode)icon;
   BottomNavigation.cs:85  Label = item.Label,
-  WebRealizer.cs:1802  AriaLabel = pressable.Label,
+  WebLoweringVisitor.Interaction.cs:341  AriaLabel = pressable.Label,
   ```
 
 ### B8 Chip · semantics · **CONFIRMED**
@@ -1689,7 +1691,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Chip.cs:76  Label = SdkStrings.Remove,
+  Chip.cs:75  Label = SdkStrings.Remove,
   SdkResources.resx:16  <value>Remove</value>
   ```
 
@@ -1702,7 +1704,7 @@ the pill's 40 down.
 
   ```
   Chip.cs:73  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, textColor), OnRemove)
-  WebRealizer.cs:1791  Padding = "0",
+  WebLoweringVisitor.Interaction.cs:326  Padding = "0",
   EmitVisitor.Interaction.cs:118  var minimum = density == Density.Compact ? 0 : Touch.MinTarget;
   ```
 
@@ -1721,11 +1723,11 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/TextInput.cs`
 - **Handoff**: error announced assertively on appear and appended to the field's description
-- **Code**: The description twin that carries the error is a POLITE live region on both realizers, so an error appearing mid-form queues behind whatever is speaking instead of interrupting: src/eQuantic.UI.Web/WebRealizer.cs:1063 and src/eQuantic.UI.Runtime/src/shared/lowering.ts:861. The region is shared with the non-error helper text (TextInput.cs:91 feeds one string into TextEntry.Description at :104), so there is no seam to raise politeness only for the error. The append-to-description half of the claim IS met (aria-describedby, WebRealizer.cs:1070).
+- **Code**: The description twin that carries the error is a POLITE live region on both realizers, so an error appearing mid-form queues behind whatever is speaking instead of interrupting: src/eQuantic.UI.Web/WebLoweringVisitor.Text.cs:76 LowerTextEntry and src/eQuantic.UI.Runtime/src/shared/lowering.ts:861. The region is shared with the non-error helper text (TextInput.cs:91 feeds one string into TextEntry.Description at :104), so there is no seam to raise politeness only for the error. The append-to-description half of the claim IS met (aria-describedby, WebLoweringVisitor.Text.cs:83 LowerTextEntry).
 - **Evidence**:
 
   ```
-  RawAttributes = new Dictionary<string, string> { ["aria-live"] = "polite" },  // WebRealizer.cs:1063
+  RawAttributes = new Dictionary<string, string> { ["aria-live"] = "polite" },  // WebLoweringVisitor.Text.cs:76
   ```
 
 ### B9 TextInput · behaviour · **CONFIRMED**
@@ -1776,7 +1778,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/SearchField.cs`
 - **Handoff**: A11y: search-field role ... Semantics: role=searchbox
-- **Code**: SearchField composes a plain TextEntry, and TextEntry has no way to say "search": the web lowering hardcodes the input type to password-or-text and never emits role=searchbox (src/eQuantic.UI.Runtime/src/shared/lowering.ts:820; identical in src/eQuantic.UI.Web/WebRealizer.cs:1042), so the pill announces as a generic textbox. The native side is the same — every TextEntry maps to SemanticRole.TextField (src/eQuantic.UI.Native.Components/Semantics.cs:115-117).
+- **Code**: SearchField composes a plain TextEntry, and TextEntry has no way to say "search": the web lowering hardcodes the input type to password-or-text and never emits role=searchbox (src/eQuantic.UI.Runtime/src/shared/lowering.ts:820; identical in src/eQuantic.UI.Web/WebLoweringVisitor.Text.cs:48 LowerTextEntry), so the pill announces as a generic textbox. The native side is the same — every TextEntry maps to SemanticRole.TextField (src/eQuantic.UI.Native.Components/SemanticsVisitor.Text.cs:26-28 SemanticsVisitor).
 - **Evidence**:
 
   ```
@@ -1798,11 +1800,11 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Checkbox.cs`
 - **Handoff**: "Tab stop · Space toggles (Enter does not) · mixed → checked → unchecked."
-- **Code**: The pressable lowers to a real `<button>` (the child Row holds no interactive, so `wrapping` is false) carrying role=checkbox and a click handler. A native button fires click on BOTH Space and Enter, and neither realizer installs a keydown filter, so Enter toggles the checkbox. WebRealizer.cs:1786 + WebRealizer.cs:1895-1904; TS twin lowering.ts:2053 + 2096-2102.
+- **Code**: The pressable lowers to a real `<button>` (the child Row holds no interactive, so `wrapping` is false) carrying role=checkbox and a click handler. A native button fires click on BOTH Space and Enter, and neither realizer installs a keydown filter, so Enter toggles the checkbox. WebLoweringVisitor.Interaction.cs:321 LowerPressable + WebLoweringVisitor.Interaction.cs:445-455 LowerPressable; TS twin lowering.ts:2053 + 2096-2102.
 - **Evidence**:
 
   ```
-  WebRealizer.cs:1786 — `var element = new RealizedElement(wrapping ? "span" : "button")`; WebRealizer.cs:1897 — `element.Role = pressable.Role == PressableRole.Switch ? "switch" : "checkbox";` (no keydown handling anywhere in LowerPressable)
+  WebLoweringVisitor.Interaction.cs:321 — `var element = new RealizedElement(wrapping ? "span" : "button")`; WebLoweringVisitor.Interaction.cs:447 — `element.Role = pressable.Role == PressableRole.Switch ? "switch" : "checkbox";` (no keydown handling anywhere in LowerPressable)
   ```
 
 ### B11 Checkbox · missing-feature · **unverified**
@@ -1831,7 +1833,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Checkbox.cs`
 - **Handoff**: "A11y: checkbox role … error appended to description."
-- **Code**: `Error` changes the border colour and nothing else — it never reaches the accessibility tree. The Pressable carries no description/invalid slot and none is emitted: WebRealizer.cs:1777-1908 writes aria-label / aria-checked / aria-pressed / aria-expanded / aria-current only, so a checkbox in error announces identically to one that is not.
+- **Code**: `Error` changes the border colour and nothing else — it never reaches the accessibility tree. The Pressable carries no description/invalid slot and none is emitted: WebLoweringVisitor.Interaction.cs:311-458 LowerPressable writes aria-label / aria-checked / aria-pressed / aria-expanded / aria-current only, so a checkbox in error announces identically to one that is not.
 - **Evidence**:
 
   ```
@@ -1886,7 +1888,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/RadioGroup.cs`
 - **Handoff**: "radiogroup / radio + aria-checked; the group is named by its label." and "single focus stop for the group"
-- **Code**: The radiogroup wrapper is conditional. When the group is Disabled, or OnChanged is null, or Options is empty, the Adjustable is never built: the tree is a bare Column of `role="radio"` buttons with `tabindex="-1"` (WebRealizer.cs:1848-1854) and no owning `role="radiogroup"` and no aria-label — orphan radios, no group name, and no focus stop at all, because the rows have deliberately left the tab order. The visible Label Text is a sibling and is not programmatically associated. RadioGroup.cs:85-95.
+- **Code**: The radiogroup wrapper is conditional. When the group is Disabled, or OnChanged is null, or Options is empty, the Adjustable is never built: the tree is a bare Column of `role="radio"` buttons with `tabindex="-1"` (WebLoweringVisitor.Interaction.cs:387-394 LowerPressable) and no owning `role="radiogroup"` and no aria-label — orphan radios, no group name, and no focus stop at all, because the rows have deliberately left the tab order. The visible Label Text is a sibling and is not programmatically associated. RadioGroup.cs:85-95.
 - **Evidence**:
 
   ```
@@ -1897,7 +1899,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/RadioGroup.cs`
 - **Handoff**: "Row hover = SurfaceSubtle wash (§10); cursor pointer; the label row toggles."
-- **Code**: Neither the row nor the circle declares BoxStyle.Hover (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), and there is no framework-level hover wash for pressables (TokenCss.cs:317-332 covers :active and :focus-visible only). The pointer cursor IS set (WebRealizer.cs:1795). RadioGroup.cs:56-65.
+- **Code**: Neither the row nor the circle declares BoxStyle.Hover (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), and there is no framework-level hover wash for pressables (TokenCss.cs:317-332 covers :active and :focus-visible only). The pointer cursor IS set (WebLoweringVisitor.Interaction.cs:330 LowerPressable). RadioGroup.cs:56-65.
 - **Evidence**:
 
   ```
@@ -1908,7 +1910,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/ProgressBar.cs`
 - **Handoff**: determinate announces at 25% steps + completion; indeterminate announces "in progress" once, not per frame.
-- **Code**: No announcement path exists. AdoptConfig (ProgressBar.cs:41-48) only records the snap flag and copies Value/Variant; nothing crosses a 25% threshold or fires a live-region update, and there is no live-region node in Primitives/Nodes at all (the only aria-live in the write-once path is the TextInput description, WebRealizer.cs:1063).
+- **Code**: No announcement path exists. AdoptConfig (ProgressBar.cs:41-48) only records the snap flag and copies Value/Variant; nothing crosses a 25% threshold or fires a live-region update, and there is no live-region node in Primitives/Nodes at all (the only aria-live in the write-once path is the TextInput description, WebLoweringVisitor.Text.cs:76 LowerTextEntry).
 - **Evidence**:
 
   ```
@@ -1920,11 +1922,11 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Spinner.cs`
 - **Handoff**: Hidden from the tree — the OWNING region announces busy, never the spinner itself ... inside Button the host announces busy (A12).
-- **Code**: The spinner half is correct (aria-hidden="true", WebRealizer.cs:677 / lowering.ts:1317), but no owner ever announces. Button.Loading only swaps the leading icon for a Spinner and dims the tokens — it sets no busy state, and HtmlElement.AriaBusy (HtmlElement.cs:73) is never assigned by any realizer or component in the write-once path. Net effect: a loading Button says nothing at all to a screen reader.
+- **Code**: The spinner half is correct (aria-hidden="true", WebLoweringVisitor.Graphics.cs:37 LowerSpinner / lowering.ts:1317), but no owner ever announces. Button.Loading only swaps the leading icon for a Spinner and dims the tokens — it sets no busy state, and HtmlElement.AriaBusy (HtmlElement.cs:73) is never assigned by any realizer or component in the write-once path. Net effect: a loading Button says nothing at all to a screen reader.
 - **Evidence**:
 
   ```
-  Button.cs:93  if (Loading) content.Add(new Spinner(iconSize, textColor));
+  Button.cs:100  if (Loading) content.Add(new Spinner(iconSize, textColor));
   ```
 
 ### B16 Skeleton · behaviour · **CONFIRMED**
@@ -1935,7 +1937,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  WebRealizer.cs:1440  Animation = $"eq-slide-x {motion.DurationMs}ms linear infinite",
+  WebLoweringVisitor.Interaction.cs:260  Animation = $"eq-slide-x {motion.DurationMs}ms linear infinite",
   ```
 
 ### B16 Skeleton · missing-feature · **CONFIRMED**
@@ -1946,8 +1948,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  EmptyState.cs:91  public Skeleton(SkeletonShape shape, float width, float height = 0)
-  EmptyState.cs:99  public float Width { get; init; }
+  EmptyState.cs:95  public Skeleton(SkeletonShape shape, float width, float height = 0)
+  EmptyState.cs:103  public float Width { get; init; }
   ```
 
 ### B17 EmptyState · missing-feature · **CONFIRMED**
@@ -1958,8 +1960,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  EmptyState.cs:13  public EmptyState(Icons icon, string title, string? body = null)
-  EmptyState.cs:30  var wellContent = new Icon(Icon, IconSize.Lg, theme.TextMuted).Centered();
+  EmptyState.cs:13  public EmptyState(Icon icon, string title, string? body = null)
+  EmptyState.cs:34  var wellContent = new Icon(Icon.Glyph, IconSize.Lg, theme.TextMuted).Centered();
   ```
 
 ### B17 EmptyState · behaviour · **CONFIRMED**
@@ -1970,7 +1972,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  EmptyState.cs:39-44  var column = new Column(gap: 0) { Width = SizeValue.Fill, Cross = CrossAlign.Center, Padding = EdgeInsets.Symmetric(Space.S4, Space.S12), };
+  EmptyState.cs:43-48  var column = new Column(gap: 0) { Width = SizeValue.Fill, Cross = CrossAlign.Center, Padding = EdgeInsets.Symmetric(Space.S4, Space.S12), };
   ```
 
 ### B17 EmptyState · missing-feature · **CONFIRMED**
@@ -1981,7 +1983,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  EmptyState.cs:47  column.Add(new Text(Title, TypeRole.Title, theme.TextPrimary, maxLines: 2)
+  EmptyState.cs:51  column.Add(new Text(Title, TypeRole.Title, theme.TextPrimary, maxLines: 2)
   ```
 
 ### B18 Banner · metric · **CONFIRMED**
@@ -2004,7 +2006,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  WebRealizer.cs:1786-1800  var element = new RealizedElement(wrapping ? "span" : "button") { Style = new HtmlStyle { Padding = "0", Border = "none", Background = "none", FontFamily = "inherit", Cursor = ..., TextAlign = TextAlign.Start, Width = fills.Width ? "100%" : null, Height = fills.Height ? "100%" : null, } };
+  WebLoweringVisitor.Interaction.cs:321-338  var element = new RealizedElement(wrapping ? "span" : "button") { Style = new HtmlStyle { Padding = "0", Border = "none", Background = "none", FontFamily = "inherit", Cursor = ..., TextAlign = TextAlign.Start, Width = fills.Width ? "100%" : null, Height = fills.Height ? "100%" : null, } };
   ```
 
 ### B18 Banner · behaviour · **CONFIRMED**
@@ -2070,7 +2072,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/BottomSheet.cs`
 - **Handoff**: Dialog role; focus trapped; first focus = title
-- **Code**: Nothing in the sheet is marked InitialFocus, so focus lands on the Overlay container (tabindex=-1, WebRealizer.cs:991). The doc comment names and justifies it: "with nothing focusable in the sheet, focus lands on the sheet container itself, which is what §10 asks for" (BottomSheet.cs:10-12). Note the sheet also passes no Overlay.Label, so a reader hears "dialog" with no name — the title is inside Content, which the component never sees.
+- **Code**: Nothing in the sheet is marked InitialFocus, so focus lands on the Overlay container (tabindex=-1, WebLoweringVisitor.Containers.cs:549 LowerOverlay). The doc comment names and justifies it: "with nothing focusable in the sheet, focus lands on the sheet container itself, which is what §10 asks for" (BottomSheet.cs:10-12). Note the sheet also passes no Overlay.Label, so a reader hears "dialog" with no name — the title is inside Content, which the component never sees.
 - **Evidence**:
 
   ```
@@ -2121,7 +2123,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Dialog.cs`
 - **Handoff**: A11y: alertdialog role — name = title, description = body
-- **Code**: The title becomes the accessible NAME (Overlay.Label → aria-label, WebRealizer.cs:990), but nothing wires the body as the accessible DESCRIPTION: Overlay has no Description property, and LowerOverlay emits no aria-describedby (WebRealizer.cs:983-992). A reader announces the dialog's name and then must reach the body as ordinary content.
+- **Code**: The title becomes the accessible NAME (Overlay.Label → aria-label, WebLoweringVisitor.Containers.cs:548 LowerOverlay), but nothing wires the body as the accessible DESCRIPTION: Overlay has no Description property, and LowerOverlay emits no aria-describedby (WebLoweringVisitor.Containers.cs:541-551 LowerOverlay). A reader announces the dialog's name and then must reach the body as ordinary content.
 - **Evidence**:
 
   ```
@@ -2141,7 +2143,7 @@ the pill's 40 down.
 
   ```
   Dialog.cs:60            actions.Add(new Button(action.Label, action.Variant, SizeVariant.Medium, action.OnPressed)
-  Button.cs:132            Label = Label,
+  Button.cs:139            Label = Label,
   ```
 
 ### C4 Toast · metric · **unverified**
@@ -2185,7 +2187,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  TokenCss.cs:412        css.AppendLine(".eq-presence-slideup { animation: eq-presence-slideup var(--eq-motion-base) ease-out; }");
+  TokenCss.cs:509        css.AppendLine(".eq-presence-slideup { animation: eq-presence-slideup var(--eq-motion-base) ease-out; }");
   ```
 
 ### C5 Drawer · missing-feature · **unverified**
@@ -2213,7 +2215,7 @@ the pill's 40 down.
 
   ```
   Drawer.cs:66  if (context.InFlow) return panel;
-  InFlow.cs:11-13  a design review, a visual-regression suite — wants the surface and none of that machinery
+  InFlow.cs:11  design review, a visual-regression suite — wants the surface and none of that machinery
   ```
 
 ### C6 SegmentedControl · metric · **unverified**
@@ -2249,7 +2251,7 @@ the pill's 40 down.
 
   ```
   SegmentedControl.cs:83  var press = new Pressable(segment, Disabled || selected ? null : () => OnChanged?.Invoke(index))
-  SegmentedControl.cs:85-88  { Disabled = Disabled, Label = Segments[index], Role = PressableRole.Radio, Selected = selected, }   // no PressedBackground
+  SegmentedControl.cs:84-89  { Disabled = Disabled, Label = Segments[index], Role = PressableRole.Radio, Selected = selected, }   // no PressedBackground
   Tabs.cs:65  PressedBackground = theme.SurfaceSubtle,
   ```
 
@@ -2283,7 +2285,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/SegmentedControl.cs`
 - **Handoff**: ONE tab stop, roving: ←/→ move AND select (wraps) · Home/End.
-- **Code**: the one Tab stop and the wrapping arrows are correct (SegmentedControl.cs:109-113), but Home/End are handled on no target: the Adjustable keydown recognises only the four arrow keys on the web (lowering.ts:2387-2392), only the same four on native (PhotonHost.cs:1919), and the SSR realizer emits no key handler at all (WebRealizer.cs:1088-1111).
+- **Code**: the one Tab stop and the wrapping arrows are correct (SegmentedControl.cs:109-113), but Home/End are handled on no target: the Adjustable keydown recognises only the four arrow keys on the web (lowering.ts:2387-2392), only the same four on native (PhotonHost.cs:1919), and the SSR realizer emits no key handler at all (WebLoweringVisitor.Interaction.cs:119-149 LowerAdjustable).
 - **Evidence**:
 
   ```
@@ -2291,7 +2293,7 @@ the pill's 40 down.
   lowering.ts:2388    : event.key === 'ArrowLeft' ? -1
   lowering.ts:2391    : 0;
   lowering.ts:2392  if (direction === 0) return;
-  PhotonHost.cs:1919  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
+  PhotonHost.cs:2043  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
 ### C7 Slider · metric · **unverified**
@@ -2302,7 +2304,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Slider.cs:57  Background = theme.Surface,
+  Slider.cs:58  Background = theme.Surface,
   Slider.cs:60  BorderWidth = 2,
   Slider.cs:61  BorderColor = fill,
   Slider.cs:62  Elevation = 2,
@@ -2318,7 +2320,7 @@ the pill's 40 down.
   ```
   lowering.ts:2389  : event.key === 'ArrowUp' ? (downIsNext ? -1 : 1)
   lowering.ts:2392  if (direction === 0) return;
-  PhotonHost.cs:1919  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
+  PhotonHost.cs:2043  && (key is "ArrowLeft" or "ArrowRight" or "ArrowUp" or "ArrowDown")
   ```
 
 ### C7 Slider · missing-feature · **unverified**
@@ -2329,7 +2331,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Slider.cs:55-56  Width = ThumbSize,  Height = ThumbSize,
+  Slider.cs:56-57  Width = ThumbSize,  Height = ThumbSize,
   Slider.cs:63  Transition = TransitionSpec.Of(StyleChannels.Colors, Motion.Press),
   ```
 
@@ -2353,7 +2355,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Stepper.cs:90  centered.Add(new Icon(glyph, IconSize.Dense, enabled ? theme.TextPrimary : theme.TextMuted));
+  Stepper.cs:98  centered.Add(new Icon(glyph, IconSize.Dense, enabled ? theme.TextPrimary : theme.TextMuted));
   Tokens.cs:48  public const float Dense = 20;
   ```
 
@@ -2365,8 +2367,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Stepper.cs:94  return new Pressable(box, enabled ? onPressed : null) { Disabled = !enabled, Label = label };
-  Stepper.cs:55-61  reading.Add(new Text($"{Value}{Suffix}", TypeRole.Label, ...) { Align = ..., Tabular = true, StyleOverride = ... });   // no Transition
+  Stepper.cs:102  return new Pressable(box, enabled ? onPressed : null) { Disabled = !enabled, Label = label };
+  Stepper.cs:63-69  reading.Add(new Text($"{Value}{Suffix}", TypeRole.Label, ...) { Align = ..., Tabular = true, StyleOverride = ... });   // no Transition
   ```
 
 ### C8 Stepper · metric · **unverified**
@@ -2377,9 +2379,9 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Stepper.cs:90  centered.Add(new Icon(glyph, IconSize.Dense, enabled ? theme.TextPrimary : theme.TextMuted));
-  Stepper.cs:92  var box = new Box(new BoxStyle { Width = height, Height = SizeValue.Fill }, centered);   // no Opacity
-  Stepper.cs:75  Opacity = Disabled ? theme.DisabledOpacity : 1f,
+  Stepper.cs:98  centered.Add(new Icon(glyph, IconSize.Dense, enabled ? theme.TextPrimary : theme.TextMuted));
+  Stepper.cs:100  var box = new Box(new BoxStyle { Width = height, Height = SizeValue.Fill }, centered);   // no Opacity
+  Stepper.cs:83  Opacity = Disabled ? theme.DisabledOpacity : 1f,
   ```
 
 ### C9 PullToRefresh · metric · **unverified**
@@ -2550,7 +2552,7 @@ the pill's 40 down.
   ```
   Tooltip.cs:38  Padding = EdgeInsets.Symmetric(Space.S2, Space.S1),
   LayoutTypes.cs:12  public static EdgeInsets Symmetric(float horizontal, float vertical) =>
-  Tokens.cs:11-12  public const float S1 = 4;
+  Tokens.cs:10-11  public const float S1 = 4;
       public const float S2 = 8;
   ```
 
@@ -2563,7 +2565,7 @@ the pill's 40 down.
 
   ```
   Tooltip.cs:39  }, new Text(Text, TypeRole.Caption, theme.TextInverse, maxLines: 1));
-  TokenCss.cs:353  css.AppendLine(".eq-anchor-panel { position: absolute; z-index: 1050; width: max-content; max-width: min(92vw, 420px); }");
+  TokenCss.cs:449  css.AppendLine(".eq-anchor-panel { position: absolute; z-index: 1050; width: max-content; max-width: min(92vw, 420px); }");
   ```
 
 ### C13 Tooltip · metric · **unverified**
@@ -2615,7 +2617,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/NavigationRail.cs`
 - **Handoff**: "Selection: pill crossfade + glyph fill swap, Motion.State 200ms."
-- **Code**: The pill's BoxStyle declares no Transition, so the Primary-subtle background and the tint snap between destinations instead of crossfading. The vocabulary exists and is used by siblings — `Transition = TransitionSpec.Of(StyleChannels.Colors | StyleChannels.Size, Motion.State)` in PageIndicator.cs:62 — and Motion.State resolves to exactly the handoff's 200ms (Tokens.cs:241 BaseMs = 200, line 258 State = new(BaseMs, Curve.Standard)). The glyph fill swap itself is implemented (line 85 picks SelectedIcon), only its 200ms motion is absent.
+- **Code**: The pill's BoxStyle declares no Transition, so the Primary-subtle background and the tint snap between destinations instead of crossfading. The vocabulary exists and is used by siblings — `Transition = TransitionSpec.Of(StyleChannels.Colors | StyleChannels.Size, Motion.State)` in PageIndicator.cs:62 — and Motion.State resolves to exactly the handoff's 200ms (Tokens.cs:259 BaseMs = 200, line 258 State = new(BaseMs, Curve.Standard)). The glyph fill swap itself is implemented (line 85 picks SelectedIcon), only its 200ms motion is absent.
 - **Evidence**:
 
   ```
@@ -2646,7 +2648,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Box.cs`
 - **Handoff**: Shadow — Elevation(0–5) token only — free-form ShadowSpec requires design review.
-- **Code**: BoxStyle exposes a free-form ShadowSpec (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), a LIST of them (185) and an InsetHighlight (192); the web realizer joins elevation + shadow + list + inset into one box-shadow (WebRealizer.cs:1259-1267) and Photon issues one ShadowRRect per entry (EmitVisitor.Chrome.cs:49-76). This also contradicts the framework's own ShadowSpec doc in Tokens.cs:209-211, which calls stacked shadows a spec violation.
+- **Code**: BoxStyle exposes a free-form ShadowSpec (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), a LIST of them (185) and an InsetHighlight (192); the web realizer joins elevation + shadow + list + inset into one box-shadow (WebLoweringVisitor.Containers.cs:627-635 LowerBox) and Photon issues one ShadowRRect per entry (EmitVisitor.Chrome.cs:49-76). This also contradicts the framework's own ShadowSpec doc in Tokens.cs:209-211, which calls stacked shadows a spec violation.
 - **Evidence**:
 
   ```
@@ -2670,7 +2672,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Box.cs`
 - **Handoff**: Border(color, width) — uniform width only; drawn inside. Per-side widths are outside the fence: compose thin Boxes instead.
-- **Code**: BoxStyle.BorderSides selects WHICH edges draw (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), and the web realizer emits per-side border-width when it is not All (WebRealizer.cs:1274-1276). The doc explicitly rejects the handoff's remedy — it calls the wrapping one-dp Box "a layout lie about what the design meant" — and states its own fence: at a non-zero radius the corner where a present edge meets an absent one differs (web mitres, Photon squares), so only radius 0 is target-identical.
+- **Code**: BoxStyle.BorderSides selects WHICH edges draw (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), and the web realizer emits per-side border-width when it is not All (WebLoweringVisitor.Containers.cs:642-644 LowerBox). The doc explicitly rejects the handoff's remedy — it calls the wrapping one-dp Box "a layout lie about what the design meant" — and states its own fence: at a non-zero radius the corner where a present edge meets an absent one differs (web mitres, Photon squares), so only radius 0 is target-identical.
 - **Evidence**:
 
   ```
@@ -2681,7 +2683,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Box.cs`
 - **Handoff**: Pointer — Inert — arrow cursor, no hover, right-click falls through. A Box gains pointer states only by composing Pressable.
-- **Code**: A bare Box carries three pointer facilities of its own: Hover and Focus style diffs (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs) and Cursor. The web realizer lowers them to :hover/:focus-visible rules and a cursor declaration (WebRealizer.cs:1298, 1324-1333) and Photon registers a HoverRegion and a CursorRegion for the box (EmitVisitor.Chrome.cs:16, 89) — no Pressable involved.
+- **Code**: A bare Box carries three pointer facilities of its own: Hover and Focus style diffs (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs) and Cursor. The web realizer lowers them to :hover/:focus-visible rules and a cursor declaration (WebLoweringVisitor.Containers.cs:666 LowerBox, 1324-1333) and Photon registers a HoverRegion and a CursorRegion for the box (EmitVisitor.Chrome.cs:16, 89) — no Pressable involved.
 - **Evidence**:
 
   ```
@@ -2720,7 +2722,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Box.cs`
 - **Handoff**: A Box is the engine's rrect surfaced as a widget: 1 fill draw + optional border draw + optional shadow draw. … Paint order: shadow → fill (solid or 2-stop linear gradient) → border (inside stroke) → child.
-- **Code**: BoxStyle carries two further fill layers beyond the single fill: Pattern, a repeating hairline grid (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), and Glow, a radial gradient (121). Both reach paint — EmitChrome takes gradient, pattern and glow together (EmitVisitor.Chrome.cs:115) and the web stacks them as background-image layers (WebRealizer.cs:1254-1255). The documented order is grid below gradient, glow above the grid, which is a four-layer fill, not one.
+- **Code**: BoxStyle carries two further fill layers beyond the single fill: Pattern, a repeating hairline grid (src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs), and Glow, a radial gradient (121). Both reach paint — EmitChrome takes gradient, pattern and glow together (EmitVisitor.Chrome.cs:115) and the web stacks them as background-image layers (WebLoweringVisitor.Containers.cs:960-970 BackgroundLayers). The documented order is grid below gradient, glow above the grid, which is a four-layer fill, not one.
 - **Evidence**:
 
   ```
@@ -2732,7 +2734,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Web/WebRealizer.cs`
 - **Handoff**: Shadow — Elevation(0–5) token only … Paint order: shadow → fill … → border → child.
-- **Code**: On the web, Elevation additionally rewrites stacking: any Elevation > 0 sets z-index to the level and forces position:relative (WebRealizer.cs:1310-1316). Photon does no such thing — its Box case only draws the analytic shadow (EmitVisitor.Chrome.cs:49-76), so paint order there stays tree order. The deviation is argued at length in the comment above it ("a raised surface that anything drawn after it covers is not raised"), but it is web-only and unstated in the block.
+- **Code**: On the web, Elevation additionally rewrites stacking: any Elevation > 0 sets z-index to the level and forces position:relative (WebLoweringVisitor.Containers.cs:683-689 LowerBox). Photon does no such thing — its Box case only draws the analytic shadow (EmitVisitor.Chrome.cs:49-76), so paint order there stays tree order. The deviation is argued at length in the comment above it ("a raised surface that anything drawn after it covers is not raised"), but it is web-only and unstated in the block.
 - **Evidence**:
 
   ```
@@ -2744,7 +2746,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/FlexNode.cs`
 - **Handoff**: wrap — Row only: children flow to new lines (chip groups).
-- **Code**: Wrap lives on the shared FlexNode base (src/eQuantic.UI.Primitives/Nodes/FlexNode.cs) and the Column constructor takes it as a parameter (1456-1457), so a wrapping Column is authorable; the native engine routes it through the same MeasureFlexWrapped (LayoutEngine.cs:959) and the web emits flex-wrap on a column container (WebRealizer.cs:1465). The doc attributes wrap to spec S3 rather than A2.
+- **Code**: Wrap lives on the shared FlexNode base (src/eQuantic.UI.Primitives/Nodes/FlexNode.cs) and the Column constructor takes it as a parameter (1456-1457), so a wrapping Column is authorable; the native engine routes it through the same MeasureFlexWrapped (MeasureVisitor.Flex.cs:13 MeasureFlex) and the web emits flex-wrap on a column container (WebLoweringVisitor.Containers.cs:809 LowerFlex). The doc attributes wrap to spec S3 rather than A2.
 - **Evidence**:
 
   ```
@@ -2756,7 +2758,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/FlexNode.cs`
 - **Handoff**: wrap — … Line spacing = gap.
-- **Code**: RunGap lets line spacing differ from gap (src/eQuantic.UI.Primitives/Nodes/FlexNode.cs); the web emits the "run main" pair when they differ (WebRealizer.cs:1591-1600) and native uses `flex.RunGap ?? flex.Gap` (LayoutEngine.cs:1331). The default matches the handoff, so this is an added override rather than a wrong default.
+- **Code**: RunGap lets line spacing differ from gap (src/eQuantic.UI.Primitives/Nodes/FlexNode.cs); the web emits the "run main" pair when they differ (WebLoweringVisitor.Containers.cs:944-954 GapValue) and native uses `flex.RunGap ?? flex.Gap` (MeasureVisitor.Flex.cs:394 MeasureFlexWrapped). The default matches the handoff, so this is an added override rather than a wrong default.
 - **Evidence**:
 
   ```
@@ -2768,7 +2770,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Native.Framework/Layout/LayoutEngine.cs`
 - **Handoff**: A11y: order = child order (base first, overlays after).
-- **Code**: When any Positioned child carries a non-zero ZIndex, native re-sorts the Stack's layout children by Z (LayoutEngine.cs:603-613), and both the semantics walk and the focus/hit walk read that list in order (SemanticsTree.Walk; PhotonHost.cs:288 "order, depth-first — hit regions register in exactly that order"). Reading order then follows z-order instead of child order. The web keeps DOM order and only writes z-index (WebRealizer.cs:255), so the two targets announce a z-ordered Stack differently.
+- **Code**: When any Positioned child carries a non-zero ZIndex, native re-sorts the Stack's layout children by Z (MeasureVisitor.Containers.cs:108-121 MeasureStack), and both the semantics walk and the focus/hit walk read that list in order (SemanticsTree.Walk; PhotonHost.cs:288 "order, depth-first — hit regions register in exactly that order"). Reading order then follows z-order instead of child order. The web keeps DOM order and only writes z-index (WebLoweringVisitor.Containers.cs:84 LowerStack), so the two targets announce a z-ordered Stack differently.
 - **Evidence**:
 
   ```
@@ -2780,7 +2782,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Web/WebRealizer.cs`
 - **Handoff**: Pointer — Never hit-testable — clicks pass through to whatever sits beneath.
-- **Code**: The web Spacer is a plain div with no pointer-events:none (WebRealizer.cs:2088-2106, and the TS twin lowerSpacer at src/eQuantic.UI.Runtime/src/shared/lowering.ts:2713-2729), so it is the hit target over its own area and a click on it never reaches a layer beneath it in a Stack. The realizer already uses PointerEvents = "none" elsewhere for exactly this (WebRealizer.cs:404, 481, 1003). Native matches the handoff — a Spacer registers no region at all. "Announces nothing" is honoured on both (aria-hidden).
+- **Code**: The web Spacer is a plain div with no pointer-events:none (WebLoweringVisitor.Containers.cs:1011-1029 LowerSpacer, and the TS twin lowerSpacer at src/eQuantic.UI.Runtime/src/shared/lowering.ts:2713-2729), so it is the hit target over its own area and a click on it never reaches a layer beneath it in a Stack. The realizer already uses PointerEvents = "none" elsewhere for exactly this (WebLoweringVisitor.Containers.cs:238 LowerAnchored, 481, 1003). Native matches the handoff — a Spacer registers no region at all. "Announces nothing" is honoured on both (aria-hidden).
 - **Evidence**:
 
   ```
@@ -2824,7 +2826,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  LayoutEngine.cs:649-656  private static LayoutNode MeasureScrollView(ScrollView scroll, float maxW, float maxH, LayoutContext ctx, string path)
+  MeasureVisitor.Containers.cs:139-147  private LayoutNode MeasureScrollView(ScrollView scroll, LayoutConstraints constraints, LayoutContext ctx, string path)
       {
           var result = ctx.Node(scroll);
           var horizontal = scroll.Axis == ScrollAxis.Horizontal;
@@ -2841,7 +2843,7 @@ the pill's 40 down.
 
   ```
   ScrollStore.cs:17  private const float SmoothingPerMs = 0.022f;
-  ScrollStore.cs:36  private const float FlingReach = 90;
+  ScrollStore.cs:37  private const float FlingReach = 90;
   src/eQuantic.UI.Primitives/Nodes/ScrollView.cs  /// The child lays out UNBOUNDED on the scroll axis and is clipped to the viewport. v1 fences: the
   /// platform physics (decay/fling/rubber-band), gesture capture and the fading scrollbar pill join
   /// with the native interaction system; today the scroll position is the programmatic
@@ -2852,7 +2854,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/ScrollView.cs`
 - **Handoff**: 3dp pill, Radius.Full, BorderStrong @ 60%, 2dp from edge. Appears on scroll, fades out 800ms after idle (Fast/Base motion). Non-interactive in v1.
-- **Code**: No scrollbar is drawn on Photon — "scrollbar" matches nothing in eQuantic.UI.Native.Components or the engine, so none of the five figures (3dp, Radius.Full, BorderStrong 60%, 2dp offset, 800ms fade) exists to check. The web realizer leaves the browser's own scrollbar in place by design (WebRealizer.cs:300 comment: the browser owns physics, momentum and the scrollbar). The ScrollView fence names it: "the fading scrollbar pill join[s] with the native interaction system". Consequence: the desktop contract's overlay, hover-revealed, DRAGGABLE scrollbar is also absent on Photon.
+- **Code**: No scrollbar is drawn on Photon — "scrollbar" matches nothing in eQuantic.UI.Native.Components or the engine, so none of the five figures (3dp, Radius.Full, BorderStrong 60%, 2dp offset, 800ms fade) exists to check. The web realizer leaves the browser's own scrollbar in place by design (WebLoweringVisitor.Containers.cs:472 LowerScrollView comment: the browser owns physics, momentum and the scrollbar). The ScrollView fence names it: "the fading scrollbar pill join[s] with the native interaction system". Consequence: the desktop contract's overlay, hover-revealed, DRAGGABLE scrollbar is also absent on Photon.
 - **Evidence**:
 
   ```
@@ -2864,12 +2866,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Native.Components/PhotonHost.cs`
 - **Handoff**: Scroll = translated rrect clip. The compositor caches the content layer; a scroll frame re-encodes zero widgets — it updates one transform.
-- **Code**: A scroll frame re-encodes the WHOLE tree. ScrollTo/ScrollBy only set NeedsRender, and RenderFrame then re-runs PhotonRealizer.Realize over _root, which re-measures the ScrollView's child from scratch and moves it by writing child.Bounds (LayoutEngine.cs:654, 668-672) — the offset is a layout translate, not a retained transform on a cached layer. There is object recycling (nodePool) and raster caching (text/icon), but no content-layer cache and no transform-only path, so the 8.33ms 120Hz claim is not what the code buys.
+- **Code**: A scroll frame re-encodes the WHOLE tree. ScrollTo/ScrollBy only set NeedsRender, and RenderFrame then re-runs PhotonRealizer.Realize over _root, which re-measures the ScrollView's child from scratch and moves it by writing child.Bounds (MeasureVisitor.Containers.cs:159-163 MeasureScrollView, 668-672) — the offset is a layout translate, not a retained transform on a cached layer. There is object recycling (nodePool) and raster caching (text/icon), but no content-layer cache and no transform-only path, so the 8.33ms 120Hz claim is not what the code buys.
 - **Evidence**:
 
   ```
-  PhotonHost.cs:177  _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, …
-  PhotonHost.cs:1313  if (_scrolls.ScrollTo(pan.Path, pan.FromOffset - travelled, pan.MaxOffset))
+  PhotonHost.cs:218  _lastFrame = PhotonRealizer.Realize(_root, Width, Height, _theme, Mode, builder, _measurer, _typeScale, _pressed, …
+  PhotonHost.cs:1379  if (_scrolls.ScrollTo(pan.Path, pan.FromOffset - travelled, pan.MaxOffset))
                       NeedsRender = true;
   ```
 
@@ -2931,7 +2933,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Nodes/Image.cs`
 - **Handoff**: "Loading: SurfaceSubtle fill (or Skeleton shimmer when inside one). Error: SurfaceSubtle + Md broken-image glyph in TextMuted. Decoded image crossfades in, 200ms."
-- **Code**: Neither realizer has a loading or error state: the web lowering emits a bare <img> with src/alt and no placeholder, no error fallback and no crossfade (WebRealizer.cs:1181-1202); the native path draws a plain SurfaceSubtle rrect on a null/failed decode, with no Md broken-image glyph in TextMuted and no 200ms fade (EmitVisitor.Media.cs:201-205). Stated reason: the class doc fences "the loading/error states and the decode crossfade" to the asset/animation systems.
+- **Code**: Neither realizer has a loading or error state: the web lowering emits a bare <img> with src/alt and no placeholder, no error fallback and no crossfade (WebLoweringVisitor.Graphics.cs:375-396 LowerImage); the native path draws a plain SurfaceSubtle rrect on a null/failed decode, with no Md broken-image glyph in TextMuted and no 200ms fade (EmitVisitor.Media.cs:201-205). Stated reason: the class doc fences "the loading/error states and the decode crossfade" to the asset/animation systems.
 - **Evidence**:
 
   ```
@@ -2975,7 +2977,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Button.cs:99-104  ColorToken? pressedFill = Variant switch\n        {\n            Variant.Link => null,   (Button.cs:98 "(Link's pressed TEXT swap joins with rich text.)")
+  Button.cs:106-111  ColorToken? pressedFill = Variant switch\n        {\n            Variant.Link => null,   (Button.cs:98 "(Link's pressed TEXT swap joins with rich text.)")
   ```
 
 ### A12 Button · documented-deviation · **CONFIRMED**
@@ -2986,18 +2988,18 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Button.cs:109-114  ColorToken? hoverFill = Variant switch\n        {\n            Variant.Link => null,   (Button.cs:107-108 "Link's hover is an underline, which joins when the style diff grows a text channel.")
+  Button.cs:116-121  ColorToken? hoverFill = Variant switch\n        {\n            Variant.Link => null,   (Button.cs:107-108 "Link's hover is an underline, which joins when the style diff grows a text channel.")
   ```
 
 ### A12 Button · behaviour · **unverified**
 
 - **Component**: `src/eQuantic.UI.Components/Button.cs`
 - **Handoff**: "Min width 64dp · label scales with Dynamic Type, height grows with the line box, padding fixed."
-- **Code**: MinWidth 64 and the Dynamic-Type-scaling label are right (ButtonStyles.MinWidth = 64; TypeStyle.OfSize defaults MaxScale 1.3), but the container height is a FIXED dp, not a floor: BoxStyle.Height lowers to `height: 40px` on the web (WebRealizer.cs:1238 `Height = Size(style.Height)`, and MinHeight is only emitted from style.MinHeight, :1245). The box therefore does not grow with the line box under an OS text scale — inside the ×1.3 clamp the label still fits, so nothing clips today, but the stated rule is not what the code expresses.
+- **Code**: MinWidth 64 and the Dynamic-Type-scaling label are right (ButtonStyles.MinWidth = 64; TypeStyle.OfSize defaults MaxScale 1.3), but the container height is a FIXED dp, not a floor: BoxStyle.Height lowers to `height: 40px` on the web (WebLoweringVisitor.Containers.cs:603 LowerBox `Height = Size(style.Height)`, and MinHeight is only emitted from style.MinHeight, :1245). The box therefore does not grow with the line box under an OS text scale — inside the ×1.3 clamp the label still fits, so nothing clips today, but the stated rule is not what the code expresses.
 - **Evidence**:
 
   ```
-  Button.cs:116-118  var container = new Box(new BoxStyle\n        {\n            Height = height,
+  Button.cs:123-125  var container = new Box(new BoxStyle\n        {\n            Height = height,
   ```
 
 ### A13 IconButton · documented-deviation · **CONFIRMED**
@@ -3008,7 +3010,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  IconButton.cs:81  var glyph = Selected && SelectedGlyph is { } filledGlyph ? filledGlyph : Glyph;   (IconButton.cs:22-23 doc: "the glyph swaps to SelectedGlyph (outline → filled pairs are DISTINCT glyphs, spec A10)")
+  IconButton.cs:103  var glyph = (Selected && SelectedGlyph is { } filledGlyph ? filledGlyph : Glyph).Glyph;   (IconButton.cs:22-23 doc: "the glyph swaps to SelectedGlyph (outline → filled pairs are DISTINCT glyphs, spec A10)")
   ```
 
 ### B1 Card · documented-deviation · **CONFIRMED**
@@ -3031,8 +3033,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  PhotonTheme.cs:116  TypeRole.Title => new TypeStyle(20, 26, FontWeight.SemiBold, -0.2f, 1.25f),
-  PhotonTheme.cs:121  TypeRole.TitleSmall => new TypeStyle(15, 20, FontWeight.Bold, -0.1f, 1.3f),
+  PhotonTheme.cs:126  TypeRole.Title => new TypeStyle(20, 26, FontWeight.SemiBold, -0.2f, 1.25f),
+  PhotonTheme.cs:131  TypeRole.TitleSmall => new TypeStyle(15, 20, FontWeight.Bold, -0.1f, 1.3f),
   ```
 
 ### B2 List · ListItem · documented-deviation · **CONFIRMED**
@@ -3043,19 +3045,19 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  ListItem.cs:145  public List(IReadOnlyList<ListItem> items, bool dividers = true)
-  ListItem.cs:138-139  /// v1 fences: recycling/virtualization joins the List engine work (this renders bounded item sets),
+  ListItem.cs:154  public List(IReadOnlyList<ListItem> items, bool dividers = true)
+  ListItem.cs:147-148  /// v1 fences: recycling/virtualization joins the List engine work (this renders bounded item sets),
   ```
 
 ### B2 List · ListItem · documented-deviation · **CONFIRMED**
 
 - **Component**: `src/eQuantic.UI.Components/ListItem.cs`
 - **Handoff**: "Selectable lists are ONE stop: ↑/↓ move, Space toggles, Home/End jump." · "selectable = listbox / option + aria-selected. Native Selected field: REQUEST (§10)."
-- **Code**: The requested Selected field now exists, but it implements the NAVIGATION contract instead of the selectable one: it lowers to PressableRole.Destination → aria-current="page" (WebRealizer.cs:1886-1889), each row keeps its own tab stop, and no roving ↑/↓/Space/Home/End exists. The doc comment names this fence and its reason: the roving stop belongs to the container, and an `option` row without it "would leave the tab order with nothing to put it back".
+- **Code**: The requested Selected field now exists, but it implements the NAVIGATION contract instead of the selectable one: it lowers to PressableRole.Destination → aria-current="page" (WebLoweringVisitor.Interaction.cs:436-440 LowerPressable), each row keeps its own tab stop, and no roving ↑/↓/Space/Home/End exists. The doc comment names this fence and its reason: the roving stop belongs to the container, and an `option` row without it "would leave the tab order with nothing to put it back".
 - **Evidence**:
 
   ```
-  ListItem.cs:127  Role = Selected ? PressableRole.Destination : PressableRole.Button,
+  ListItem.cs:136  Role = Selected ? PressableRole.Destination : PressableRole.Button,
   ListItem.cs:53-59  /// FENCE — the handoff's B2 draws a line this does not yet cross. … a SELECTABLE list is a listbox of option rows stating aria-selected, and one tab stop for the whole thing
   ```
 
@@ -3067,7 +3069,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  AppBar.cs:52  if (Leading is { } leading) row.Add(leading);
+  AppBar.cs:57  if (Leading is { } leading) row.Add(leading);
   ```
 
 ### B4 BottomNavigation · semantics · **unverified**
@@ -3101,7 +3103,7 @@ the pill's 40 down.
 
   ```
   Avatar.cs:16  /// from the name (the spec's 2-stop gradient hash upgrades this when gradient tokens land); the
-  Avatar.cs:95  Background = hasInitials ? tint.Subtle : theme.SurfaceSubtle,
+  Avatar.cs:90  Background = hasInitials ? tint.Subtle : theme.SurfaceSubtle,
   src/eQuantic.UI.Primitives/Nodes/BoxStyle.cs  public LinearGradient? Gradient { get; init; }
   ```
 
@@ -3150,7 +3152,7 @@ the pill's 40 down.
 
   ```
   Chip.cs:14  /// The design system's Chip / Tag (spec B8): height 32, Radius.Full, 12dp X padding, 13/600 label —
-  Chip.cs:81  Height = Sizing.Height(SizeVariant.Small, context.Density),
+  Chip.cs:94  Height = Sizing.Height(SizeVariant.Small, context.Density),
   Tokens.cs:83  SizeVariant.Small => density == Density.Compact ? 26 : 32,
   ```
 
@@ -3257,7 +3259,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/RadioGroup.cs`
 - **Handoff**: "The group is ONE tab stop with roving focus"
-- **Code**: It is one tab stop, but the focus does not rove: the Adjustable host is the only focusable element (`tabindex="0"`, WebRealizer.cs:1105 / lowering.ts:2379) and every row is pinned at `tabindex="-1"`, so no individual radio ever holds focus and nothing tells assistive tech which one is current. The component names the gap — `aria-activedescendant` is an explicit v1 fence awaiting the shared id machinery. RadioGroup.cs:12-13.
+- **Code**: It is one tab stop, but the focus does not rove: the Adjustable host is the only focusable element (`tabindex="0"`, WebLoweringVisitor.Interaction.cs:144 LowerAdjustable / lowering.ts:2379) and every row is pinned at `tabindex="-1"`, so no individual radio ever holds focus and nothing tells assistive tech which one is current. The component names the gap — `aria-activedescendant` is an explicit v1 fence awaiting the shared id machinery. RadioGroup.cs:12-13.
 - **Evidence**:
 
   ```
@@ -3268,7 +3270,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/RadioGroup.cs`
 - **Handoff**: "Space selects when landing unselected"
-- **Code**: The Adjustable's keydown maps the four arrows and returns on anything else, and the host is a `<div role="radiogroup">` (not a button), so Space does nothing at all on the group. In practice the state is hard to reach because the arrows both move and select, but the key is genuinely unhandled. lowering.ts:2386-2394 (C# SSR twin WebRealizer.cs:1088-1110 emits the same markup with no handler).
+- **Code**: The Adjustable's keydown maps the four arrows and returns on anything else, and the host is a `<div role="radiogroup">` (not a button), so Space does nothing at all on the group. In practice the state is hard to reach because the arrows both move and select, but the key is genuinely unhandled. lowering.ts:2386-2394 (C# SSR twin WebLoweringVisitor.Interaction.cs:119-149 LowerAdjustable emits the same markup with no handler).
 - **Evidence**:
 
   ```
@@ -3290,18 +3292,18 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/RadioGroup.cs`
 - **Handoff**: "A11y: … 'Monthly, radio button, 2 of 3, selected'" (with "Native Checked field: REQUEST")
-- **Code**: On the web target the rows announce correctly (role=radio + aria-checked, WebRealizer.cs:1848-1854). On Photon they do not: the semantics builder maps only Checkbox and Switch to a checked role and drops every other PressableRole to a plain Button with no checked bit, so a native radio row reads as "Monthly, button". The fence is stated on the role itself (src/eQuantic.UI.Primitives/Nodes/PressableRole.cs: "Native fence: the semantics tree carries no checked bit yet; the role joins its expansion"), and the block's own "Native Checked field: REQUEST" acknowledges the field.
+- **Code**: On the web target the rows announce correctly (role=radio + aria-checked, WebLoweringVisitor.Interaction.cs:387-394 LowerPressable). On Photon they do not: the semantics builder maps only Checkbox and Switch to a checked role and drops every other PressableRole to a plain Button with no checked bit, so a native radio row reads as "Monthly, button". The fence is stated on the role itself (src/eQuantic.UI.Primitives/Nodes/PressableRole.cs: "Native fence: the semantics tree carries no checked bit yet; the role joins its expansion"), and the block's own "Native Checked field: REQUEST" acknowledges the field.
 - **Evidence**:
 
   ```
-  Semantics.cs:99 — `_ => (SemanticRole.Button, null),` (the fallback that PressableRole.Radio falls into)
+  SemanticsVisitor.Interaction.cs:28 — `_ => (SemanticRole.Button, null),` (the fallback that PressableRole.Radio falls into)
   ```
 
 ### B14 ProgressBar · documented-deviation · **REFUTED**
 
 - **Component**: `src/eQuantic.UI.Components/ProgressBar.cs`
 - **Handoff**: Value changes animate Base 200ms standard, forward only — regressions snap (honesty over smoothness).
-- **Code**: Web honours it (WebRealizer.cs:2075-2077 emits "flex-grow var(--eq-motion-base) var(--eq-curve-standard)", i.e. Motion.BaseMs=200 + Curve.Standard). On Photon the value change SNAPS — Flexible.AnimateChanges names the fence: "native joins with the transition animator (until then weights snap, the documented fence)". Stated reason: the native transition animator has not landed.
+- **Code**: Web honours it (WebLoweringVisitor.Containers.cs:996-1000 LowerFlexible emits "flex-grow var(--eq-motion-base) var(--eq-curve-standard)", i.e. Motion.BaseMs=200 + Curve.Standard). On Photon the value change SNAPS — Flexible.AnimateChanges names the fence: "native joins with the transition animator (until then weights snap, the documented fence)". Stated reason: the native transition animator has not landed.
 - **Evidence**:
 
   ```
@@ -3316,7 +3318,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  TokenCss.cs:428  css.AppendLine($".eq-spinner {{ opacity: 0; animation: eq-appear 1ms linear {Spinner.AppearDelayMs}ms forwards; }}");
+  TokenCss.cs:529  css.AppendLine($".eq-spinner {{ opacity: 0; animation: eq-appear 1ms linear {Spinner.AppearDelayMs}ms forwards; }}");
   EmitVisitor.Media.cs:289  motion.Active = true;   // EmitSpinner — no AppearDelayMs anywhere
   ```
 
@@ -3324,11 +3326,11 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/EmptyState.cs`
 - **Handoff**: A11y: shapes hidden; the region announces "loading content" once, then "loaded".
-- **Code**: The returned Box carries no hidden marker — the only place the web realizer emits aria-hidden is the Spacer (WebRealizer.cs:2106), the icon/vector SVGs (745, 920) and the spinner (677). Boxes and flex containers never get it, so the shapes are present in the a11y tree (empty, but present), and no region announcement mechanism exists at all.
+- **Code**: The returned Box carries no hidden marker — the only place the web realizer emits aria-hidden is the Spacer (WebLoweringVisitor.Containers.cs:1029 LowerSpacer), the icon/vector SVGs (745, 920) and the spinner (677). Boxes and flex containers never get it, so the shapes are present in the a11y tree (empty, but present), and no region announcement mechanism exists at all.
 - **Evidence**:
 
   ```
-  EmptyState.cs:133  return new Box(new BoxStyle { Width = Width, Height = height, Background = theme.SurfaceSubtle, CornerRadius = new CornerRadii(radius), Clip = true }, new LoopMotion(...));
+  EmptyState.cs:137-144  return new Box(new BoxStyle { Width = Width, Height = height, Background = theme.SurfaceSubtle, CornerRadius = new CornerRadii(radius), Clip = true, }, new LoopMotion(...));
   ```
 
 ### C1 BottomSheet · missing-feature · **unverified**
@@ -3351,14 +3353,14 @@ the pill's 40 down.
 
   ```
   BottomSheet.cs:6  /// The design system's BottomSheet (spec C4): a MODAL surface anchored to the bottom edge — top
-  Toast.cs:5  /// The design system's Toast/Snackbar (spec C3): a TRANSIENT, NON-MODAL notice anchored to the
+  Toast.cs:6  /// The design system's Toast/Snackbar (spec C3): a TRANSIENT, NON-MODAL notice anchored to the
   ```
 
 ### C2 Modal · documented-deviation · **unverified**
 
 - **Component**: `src/eQuantic.UI.Components/Dialog.cs`
 - **Handoff**: A11y: alertdialog role — name = title, description = body  (the block's own Semantics line instead says: role=dialog + aria-modal=true, named by the title)
-- **Code**: The role is CONDITIONAL: alertdialog only when some action is Variant.Destructive, otherwise dialog (Dialog.cs:123 → WebRealizer.cs:988). The doc comment names and justifies the split — "role (alertdialog when an action is destructive)" (Dialog.cs:15) and "the assertive announcement a destructive confirm deserves" (Dialog.cs:118-119). Flagging it because the block's two sections disagree with each other, so somebody should say which one is normative.
+- **Code**: The role is CONDITIONAL: alertdialog only when some action is Variant.Destructive, otherwise dialog (Dialog.cs:123 → WebLoweringVisitor.Containers.cs:546 LowerOverlay). The doc comment names and justifies the split — "role (alertdialog when an action is destructive)" (Dialog.cs:15) and "the assertive announcement a destructive confirm deserves" (Dialog.cs:118-119). Flagging it because the block's two sections disagree with each other, so somebody should say which one is normative.
 - **Evidence**:
 
   ```
@@ -3373,7 +3375,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  TokenCss.cs:418        css.AppendLine(".eq-presence-exit-fade { animation: eq-presence-exit-fade var(--eq-motion-fast) ease-in forwards; }");
+  TokenCss.cs:515        css.AppendLine(".eq-presence-exit-fade { animation: eq-presence-exit-fade var(--eq-motion-fast) ease-in forwards; }");
   ```
 
 ### C2 Modal · metric · **unverified**
@@ -3464,13 +3466,13 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Stepper.cs`
 - **Handoff**: Hit: 48dp per half, split at cell boundary.
-- **Code**: the 48dp hit expansion the Pressable contract promises (src/eQuantic.UI.Primitives/Nodes/Pressable.cs) is implemented only in the native realizer, EmitVisitor.ExpandHitRect (EmitVisitor.Interaction.cs:114-122). The web realizer emits the visual box as the button's box with no min-width/min-height (WebRealizer.cs:1789-1800), the TS twin does the same (lowering.ts:2053-2063), and the generated .eq-pressable rules add none (TokenCss.cs:317-332) — so on the web an arm's hit rect is its visual 40×40. The same gap defeats C6's "Whole control = one hit strip (≥ 48 with slop)".
+- **Code**: the 48dp hit expansion the Pressable contract promises (src/eQuantic.UI.Primitives/Nodes/Pressable.cs) is implemented only in the native realizer, EmitVisitor.ExpandHitRect (EmitVisitor.Interaction.cs:114-122). The web realizer emits the visual box as the button's box with no min-width/min-height (WebLoweringVisitor.Interaction.cs:324-338 LowerPressable), the TS twin does the same (lowering.ts:2053-2063), and the generated .eq-pressable rules add none (TokenCss.cs:317-332) — so on the web an arm's hit rect is its visual 40×40. The same gap defeats C6's "Whole control = one hit strip (≥ 48 with slop)".
 - **Evidence**:
 
   ```
   EmitVisitor.Interaction.cs:114  private static Rect ExpandHitRect(Rect bounds, Density density = Density.Comfortable)   // native only
-  WebRealizer.cs:1791-1799  Padding = "0", Border = "none", Background = "none", ... Width = fills.Width ? "100%" : null, Height = fills.Height ? "100%" : null,
-  TokenCss.cs:317  css.AppendLine(".eq-pressable { -webkit-tap-highlight-color: transparent; }");
+  WebLoweringVisitor.Interaction.cs:326-334  Padding = "0", Border = "none", Background = "none", ... Width = fills.Width ? "100%" : null, Height = fills.Height ? "100%" : null,
+  TokenCss.cs:379  css.AppendLine(".eq-pressable { -webkit-tap-highlight-color: transparent; }");
   ```
 
 ### C9 PullToRefresh · missing-feature · **unverified**
@@ -3568,8 +3570,8 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  TokenCss.cs:367  css.AppendLine(".eq-hoverreveal > .eq-anchor-panel { opacity: 0; pointer-events: none; transition: opacity 120ms ease-out; }");
-  Tokens.cs:239  public const int FastMs = 100;
+  TokenCss.cs:464  css.AppendLine(".eq-hoverreveal > .eq-anchor-panel { opacity: 0; pointer-events: none; transition: opacity 120ms ease-out; }");
+  Tokens.cs:257  public const int FastMs = 100;
   ```
 
 ### C13 Tooltip · documented-deviation · **unverified**
@@ -3581,7 +3583,7 @@ the pill's 40 down.
 
   ```
   Tooltip.cs:16  /// v1 fences: show/hide delay, arrow caret.
-  TokenCss.cs:368  css.AppendLine(".eq-hoverreveal:hover > .eq-anchor-panel { opacity: 1; }");
+  TokenCss.cs:465  css.AppendLine(".eq-hoverreveal:hover > .eq-anchor-panel { opacity: 1; }");
   ```
 
 ### C13 Tooltip · documented-deviation · **unverified**
@@ -3609,7 +3611,7 @@ the pill's 40 down.
               Width = SizeValue.Fill,
               Padding = EdgeInsets.Symmetric(Space.S3, 0),
   TextInput.cs:22  Icons? leading = null, SizeVariant size = SizeVariant.Large)
-  TextInput.cs:86  var paddingX = _focused ? 13f : 14f;
+  TextInput.cs:101  var paddingX = _focused ? 13f : 14f;
   ```
 
 ### C14 Select · documented-deviation · **unverified**
@@ -3674,6 +3676,6 @@ the pill's 40 down.
 
 | Severity | Confirmed | Refuted | Unverified |
 | --- | --- | --- | --- |
-| visible | 13 | 0 | 70 |
-| subtle | 37 | 2 | 87 |
+| visible | 13 | 1 | 69 |
+| subtle | 36 | 4 | 86 |
 | note | 23 | 3 | 59 |
