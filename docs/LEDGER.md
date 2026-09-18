@@ -311,7 +311,13 @@ record of a release, the wiki's Upgrading page is the distillate.
   yields 0/22/92. TWO OF THE NEW TESTS WERE TAUTOLOGIES on the first draft and mutation-checking
   caught both: a fixed Box measured at a narrower bound comes back at its fixed width either way, so
   the probe had to become the shape the shared-buttons golden builds — which is the golden that
-  caught it. The 91 goldens did not move.
+  caught it. REVIEW FOUND ONE MORE, and it was real: the ellipsis took its face from the style in
+  hand at the wrap decision — the word that FAILED to fit, which is the first word of the next run
+  as often as not — and carried neither the ink nor the link of the run it was ending, so a
+  truncated link's mark was not pressable where a target hit-tests per fragment. The remedy needed
+  one step more than the review said: the last fragment on a cut line is frequently the SPACE that
+  follows the last word, and that space already belongs to the next run, so the mark takes the last
+  VISIBLE fragment's. The 91 goldens did not move.
 
 
 ## Retired documents

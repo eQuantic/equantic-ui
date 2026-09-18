@@ -149,13 +149,8 @@ internal sealed partial class MeasureVisitor
         {
             var deficit = rigidSum + gapTotal - mainAvail;
             var textTotal = 0f;
-            // `laid[i] is null` means pass 1 DEFERRED this child — a flexible, or a spacer with a
-            // weight — and pass 2 sizes it from the leftover. It has no main extent to reduce, and
-            // writing one here would be reaching into the other pass's half of the algorithm.
-            // Inert as the arithmetic stands (a deferred child's main is 0, so its share of the
-            // deficit is 0 too); the condition is the scope of this loop, not a repair.
             for (var i = 0; i < children.Count; i++)
-                if (laid[i] is not null && TextWithin(children[i]) is not null) textTotal += mains[i];
+                if (TextWithin(children[i]) is not null) textTotal += mains[i];
 
             if (textTotal > 0)
             {
@@ -164,7 +159,7 @@ internal sealed partial class MeasureVisitor
                     // A TEXT CHILD, seen through layout-transparent wrappers. Asking `is Text` here
                     // is what made `Pressable(Text(…))` run past the end of a fixed row: not a text,
                     // so not cut, so its floor was its longest word and nothing could shrink it.
-                    if (laid[i] is null || TextWithin(children[i]) is null) continue;
+                    if (TextWithin(children[i]) is null) continue;
                     var reduced = MathF.Max(0, mains[i] - deficit * (mains[i] / textTotal));
                     // The cut is a RE-MEASURE of the item, through the same pass everything else
                     // takes, carrying the line cap on the constraints. It used to be built here by

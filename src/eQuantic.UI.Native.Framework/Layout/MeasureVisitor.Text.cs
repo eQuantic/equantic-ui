@@ -124,22 +124,51 @@ internal sealed partial class MeasureVisitor
     /// Never below one word. A line that kept nothing would report a mark standing where a word had
     /// been, and an ellipsis alone tells a reader less than a cut word does.
     /// </para>
+    ///
+    /// <para>
+    /// THE MARK BELONGS TO THE TEXT IT TERMINATES, not to the word that failed to fit. Those are
+    /// different runs as often as not — the word that overflowed is usually the first of the NEXT
+    /// run, whose face the reader never sees on this line — so it takes the style, the ink and the
+    /// link of the last VISIBLE fragment left on the line. The link matters most: an ellipsis is
+    /// the tail of the sentence it cut, and one that carried no destination made the end of a
+    /// truncated link unpressable on a target that hit-tests per fragment.
+    /// </para>
     /// </summary>
-    private float Ellipsize(List<TextFragment> fragments, TypeStyle style, float x, float limit,
+    private float Ellipsize(List<TextFragment> fragments, TypeStyle fallback, float x, float limit,
         int line, float lineHeight, LayoutContext ctx)
     {
         const string mark = "\u2026";
-        var markWidth = ctx.Measurer.Measure(mark, style, ctx.TypeScale, float.PositiveInfinity, 1).Width;
+
+        // The last fragment on the line that a reader can SEE. A trailing space is skipped because
+        // it carries the next run's face and none of its ink — which is exactly the mismatch this
+        // is here to avoid, one fragment further along.
+        TextFragment? Tail()
+        {
+            for (var i = fragments.Count - 1; i >= 0 && fragments[i].Line == line; i--)
+                if (!string.IsNullOrWhiteSpace(fragments[i].Content)) return fragments[i];
+            return null;
+        }
+
+        var tail = Tail();
+        var markWidth = MarkWidth();
 
         while (x + markWidth > limit && fragments.Count > 1
                && fragments[^1].Line == line && fragments[^2].Line == line)
         {
             x = fragments[^1].X;
             fragments.RemoveAt(fragments.Count - 1);
+            // Dropping a word can change which run ends the line, and a narrower face needs less
+            // room for the mark — so both are asked again rather than once at the top.
+            tail = Tail();
+            markWidth = MarkWidth();
         }
 
-        fragments.Add(new TextFragment(mark, style, x, line * lineHeight, markWidth, line));
+        fragments.Add(new TextFragment(mark, tail?.Style ?? fallback, x, line * lineHeight,
+            markWidth, line, tail?.Color, tail?.Destination));
         return x + markWidth;
+
+        float MarkWidth() => ctx.Measurer
+            .Measure(mark, tail?.Style ?? fallback, ctx.TypeScale, float.PositiveInfinity, 1).Width;
     }
 
     /// <summary>

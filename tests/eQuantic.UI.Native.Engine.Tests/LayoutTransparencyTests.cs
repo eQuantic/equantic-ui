@@ -179,6 +179,51 @@ public class LayoutTransparencyTests
             "and it is inside the width the measurement reports");
     }
 
+    /// <summary>
+    /// THE MARK BELONGS TO THE TEXT IT TERMINATES. Copilot found this on #232 and it was real: the
+    /// ellipsis took its face from <c>runStyle</c> at the moment of the wrap decision — the style of
+    /// the word that FAILED to fit, which is the first word of the next run as often as not — and
+    /// carried neither the ink nor the link of the run it was actually ending.
+    ///
+    /// <para>
+    /// Measured, the link half is the one that bites: a truncated link's ellipsis had no
+    /// <c>Destination</c>, so on a target that hit-tests per fragment the end of the link was not
+    /// pressable. And the review's own remedy needed one more step than it said — the last fragment
+    /// on a cut line is frequently the SPACE that follows the last word, which already belongs to
+    /// the next run, so "the final fragment that remains" still lands on the wrong face. It is the
+    /// last VISIBLE one.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void TheMarkTakesTheFaceAndTheLinkOfTheRunItEnds()
+    {
+        // Run 1 fits whole and is a mono link. Run 2's first word is what overflows, so the style
+        // in hand at the wrap decision is run 2's — and the space between them is run 2's too.
+        var rich = new Text("placeholder")
+        {
+            Spans =
+            [
+                new TextRun("alpha", Mono: true) { Destination = "https://example.test" },
+                new TextRun(" deltaepsilonzetaeta"),
+            ],
+        };
+
+        var row = new Row(gap: 8) { Width = SizeValue.Fixed(190) };
+        row.Add(FixedBox(120, 20));
+        row.Add(rich);
+        var cut = LayoutEngine.Layout(row, 190, 300, Ctx).Children[1];
+
+        var mark = cut.TextRuns!.Single(f => f.Content == "\u2026");
+        var word = cut.TextRuns!.First(f => f.Content == "alpha");
+
+        mark.Style.Mono.Should().BeTrue(
+            "the mark ends the mono run, not the proportional one whose word could not fit");
+        mark.Destination.Should().Be(word.Destination,
+            "an ellipsis is the tail of the link it cut, and a fragment without a destination is "
+            + "not pressable where a target hit-tests per fragment");
+        mark.Color.Should().Be(word.Color);
+    }
+
     // ---- reader 2: the cross-axis size kind ----------------------------------------------------
 
     /// <summary>
