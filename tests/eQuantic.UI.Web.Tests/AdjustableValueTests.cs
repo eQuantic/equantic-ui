@@ -14,9 +14,11 @@ namespace eQuantic.UI.Web.Tests;
 /// rather than a line in the Slider.
 /// </para>
 /// <para>
-/// The last test is the one that matters beyond this fix: it walks the lowered tree of every
-/// component that reaches a slider role and refuses any host that states the role without the
-/// number. A second control that grows a slider role cannot repeat this.
+/// The last test is the one that matters beyond this fix: it walks the lowered tree of everything
+/// that reaches a slider role — the components AND the bare node — and refuses any host that states
+/// the role without the number. It began as a list of six components, which is a guard that holds
+/// for six things somebody remembered; the realizer now DERIVES the role from the value, so the
+/// rule holds for a tree nobody here wrote and the list is a witness rather than the mechanism.
 /// </para>
 /// </summary>
 public class AdjustableValueTests
@@ -62,6 +64,24 @@ public class AdjustableValueTests
     }
 
     /// <summary>
+    /// The announcement is the value the THUMB is drawn from, which is the clamped one. The track
+    /// halves come from a fraction clamped to 0..1, so a raw value outside the range draws a thumb
+    /// at the end; announcing the raw number would put aria-valuenow outside the aria-valuemax
+    /// beside it — invalid on its own terms — and make the pixels and the words describe different
+    /// controls.
+    /// </summary>
+    [Theory]
+    [InlineData(99f, "10")]
+    [InlineData(-5f, "0")]
+    [InlineData(7f, "7")]
+    public void TheAnnouncedValueIsTheOneTheThumbIsDrawnFrom(float value, string announced)
+    {
+        var host = Host(new Slider(value, _ => { }) { Min = 0, Max = 10 }, "slider");
+
+        host.Attributes["aria-valuenow"].Should().Be(announced);
+    }
+
+    /// <summary>
     /// "announces 'Limit, R$ 400'" — the words are the app's, because only the app knows whether
     /// 0.4 is a ratio, a currency or the fourth of six named steps.
     /// </summary>
@@ -98,10 +118,62 @@ public class AdjustableValueTests
     }
 
     /// <summary>
+    /// A slider with no value is NOT ANNOUNCED AS ONE. ARIA pairs the role with the number, so the
+    /// realizer settles both together and a value-less slider announces <c>group</c> — a focusable
+    /// container the arrows adjust, which is exactly what it is. The pairing lives in the realizer
+    /// rather than in the component library because the library is not the only way an Adjustable
+    /// is built: these two paths were the invalid pair the components no longer produce, and
+    /// <c>UI.Adjustable</c> could produce NOTHING ELSE until its signature grew the value.
+    /// </summary>
+    [Fact]
+    public void ASliderWithNoValueAnnouncesWhatItActuallyIs()
+    {
+        VisualNode[] built =
+        [
+            new Adjustable(new Text("knob", TypeRole.Label), _ => { }) { Label = "Budget" },
+            Components.UI.Adjustable(new Text("knob", TypeRole.Label), _ => { }),
+        ];
+
+        foreach (var node in built)
+        {
+            var host = Host(node, "group");
+
+            host.Attributes["tabindex"].Should().Be("0", "it is still one Tab stop for the control");
+            host.Attributes.Should().NotContainKey("aria-valuenow");
+        }
+    }
+
+    /// <summary>
+    /// The pairing's other half. A value handed to a role that has none is not emitted either —
+    /// ARIA has no valuenow for a tablist or a radiogroup, so passing one through would trade one
+    /// invalid host for another.
+    /// </summary>
+    [Fact]
+    public void AValueOnARoleThatHasNoneIsNotEmitted()
+    {
+        var node = new Adjustable(new Text("strip", TypeRole.Label), _ => { })
+        {
+            Role = AdjustableRole.Tablist,
+            Value = new AdjustableValue(2, 0, 5),
+        };
+
+        var host = Host(node, "tablist");
+
+        host.Attributes.Should().NotContainKey("aria-valuenow");
+        host.Attributes.Should().NotContainKey("aria-valuemin");
+        host.Attributes.Should().NotContainKey("aria-valuemax");
+    }
+
+    /// <summary>
     /// THE RULE, not the instance: wherever a slider role reaches the markup, the number reaches it
     /// too. ARIA makes aria-valuenow required on role=slider, and a host that states the role
     /// without it is not a slider a reader can read — it is a control that announces its name and
     /// stops.
+    /// <para>
+    /// The last three cases are the PRIMITIVE, not a component — the rule has to hold for a tree
+    /// nobody in this library wrote, or it only ever held for the six things somebody remembered to
+    /// list here.
+    /// </para>
     /// </summary>
     [Fact]
     public void NoSliderRoleReachesTheMarkupWithoutItsValue()
@@ -111,9 +183,14 @@ public class AdjustableValueTests
             ("slider", new Slider(0.4f, _ => { }) { Label = "Brightness" }),
             ("slider-disabled", new Slider(0.4f) { Disabled = true }),
             ("slider-stepped", new Slider(3, _ => { }) { Min = 0, Max = 10, Step = 1 }),
+            ("slider-out-of-range", new Slider(99, _ => { }) { Min = 0, Max = 10 }),
             ("tabs", new Tabs(["One", "Two"], 0, _ => { })),
             ("segmented", new SegmentedControl(["Day", "Week"], 0, _ => { })),
             ("radio-group", new RadioGroup(["Monthly", "Yearly"], 0, _ => { })),
+            ("bare-node", new Adjustable(new Text("knob", TypeRole.Label), _ => { })),
+            ("ui-factory", Components.UI.Adjustable(new Text("knob", TypeRole.Label), _ => { })),
+            ("ui-factory-valued", Components.UI.Adjustable(new Text("knob", TypeRole.Label), _ => { },
+                new AdjustableValue(0.4f, 0, 1))),
         ];
 
         var naked = cases
@@ -126,5 +203,20 @@ public class AdjustableValueTests
         string.Join(", ", naked).Should().BeEmpty(
             "role=slider REQUIRES aria-valuenow; a host that states the role and not the number announces "
             + "what the control is for and never what it holds");
+
+        // And the sweep really did MEET slider roles: a guard that finds none passes by looking in
+        // the wrong place, which is the shape of failure this whole body of work is about. The
+        // disabled slider is the one that legitimately has none — it is not a Tab stop, so it never
+        // becomes an Adjustable at all, and asserting otherwise is how this assertion first failed.
+        var hosts = cases.ToDictionary(one => one.Name,
+            one => Walk(Lower(one.Node)).Count(n => n.Attributes.GetValueOrDefault("role") == "slider"));
+
+        hosts["slider"].Should().Be(1);
+        hosts["slider-stepped"].Should().Be(1);
+        hosts["slider-out-of-range"].Should().Be(1);
+        hosts["ui-factory-valued"].Should().Be(1, "the factory can express a valid slider now");
+        hosts["slider-disabled"].Should().Be(0, "a disabled slider is not a Tab stop and never wraps in an Adjustable");
+        hosts["bare-node"].Should().Be(0, "a value-less node announces group — that is the rule, not an omission");
+        hosts["ui-factory"].Should().Be(0, "same node, same rule, through the public factory");
     }
 }

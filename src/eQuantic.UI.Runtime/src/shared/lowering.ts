@@ -2891,14 +2891,19 @@ function lowerAdjustable(node: AdjustableNode, context: LoweringContext, path: s
     height: fill.height ? '100%' : undefined,
   });
   const role = node.role ?? 'slider';
-  host.attributes['role'] = role;
+  // ARIA pairs the role with the value, so BOTH halves are derived here rather than copied (C# twin:
+  // WebLoweringVisitor's AriaRole). The value is the SLIDER role's and no other's, and a slider with
+  // no value is not one: role="slider" REQUIRES aria-valuenow, so it announces `group` — a focusable
+  // container the arrows adjust, with no position of its own. Deriving it here is what makes the
+  // rule unoutrunnable, since the component library is not the only way an adjustable node is built.
+  const value = role === 'slider' ? node.value : undefined;
+  host.attributes['role'] = role === 'slider' && !value ? 'group' : role;
   host.attributes['tabindex'] = '0';
   if (node.label) host.attributes['aria-label'] = node.label;
   // The VALUE, for a role that has one (C# twin: LowerAdjustable). role="slider" REQUIRES
   // aria-valuenow, so the host emitted invalid ARIA until this existed — a name and no number. The
   // bounds go with it or the number is read against ARIA's own 0-100 default, which no slider here
   // uses; aria-valuetext REPLACES the number for a reader, so it is emitted only when given.
-  const value = node.value;
   if (value) {
     host.attributes['aria-valuenow'] = ariaNumber(value.now);
     host.attributes['aria-valuemin'] = ariaNumber(value.min);

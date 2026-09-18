@@ -120,6 +120,9 @@ internal sealed partial class WebLoweringVisitor
     {
         var adjustableFills = Fills(adjustable.Child);
         var adjustableCap = CapsAt(adjustable.Child);
+        // ARIA pairs the role with the value, so BOTH halves are derived here rather than copied:
+        // the value is the SLIDER role's and no other's, and a slider that has none is not one.
+        var adjustableValue = adjustable.Role == AdjustableRole.Slider ? adjustable.Value : null;
         var element = new RealizedElement("div")
         {
             Style = new HtmlStyle
@@ -134,12 +137,7 @@ internal sealed partial class WebLoweringVisitor
             },
             RawAttributes = new Dictionary<string, string>
             {
-                ["role"] = adjustable.Role switch
-                {
-                    AdjustableRole.Tablist => "tablist",
-                    AdjustableRole.Radiogroup => "radiogroup",
-                    _ => "slider",
-                },
+                ["role"] = AriaRole(adjustable.Role, adjustableValue),
                 ["tabindex"] = "0",
             },
         };
@@ -147,7 +145,7 @@ internal sealed partial class WebLoweringVisitor
         // The VALUE, for a role that has one (spec C7). role="slider" REQUIRES aria-valuenow, so the
         // host emitted invalid ARIA until this existed — a name and no number. The bounds go with it
         // or the number is read against ARIA's own 0-100 default, which no slider here uses.
-        if (adjustable.Value is { } value)
+        if (adjustableValue is { } value)
         {
             element.RawAttributes["aria-valuenow"] = TokenCss.Number(value.Now);
             element.RawAttributes["aria-valuemin"] = TokenCss.Number(value.Min);
@@ -160,6 +158,33 @@ internal sealed partial class WebLoweringVisitor
         if (Lower(adjustable.Child, null) is { } child) element.Children.Add(child);
         return element;
     }
+
+    /// <summary>
+    /// What the host ANNOUNCES itself as — DERIVED from the role and the value together rather than
+    /// copied from <see cref="Adjustable.Role"/>, because the pairing is ARIA's rule and this is the
+    /// one place in the SDK that speaks ARIA.
+    /// <para>
+    /// <c>role="slider"</c> REQUIRES <c>aria-valuenow</c>. A node that asks for the slider role and
+    /// carries no value cannot be given it: the combination is invalid, and a reader meeting it
+    /// behaves however it likes — some announce a position of zero, some announce none. So a
+    /// value-less slider announces <c>group</c>, which is what it actually is: a focusable container
+    /// the arrows adjust, with no position of its own. The role the caller asked for is honoured
+    /// wherever ARIA allows it to be, and never where it would be a lie.
+    /// </para>
+    /// <para>
+    /// Deriving it HERE is what makes the rule unoutrunnable. The component library is not the only
+    /// way an Adjustable is built, and a guard that enumerates components leaves
+    /// <c>new Adjustable(child, onAdjust)</c> and <c>UI.Adjustable(...)</c> free to emit the invalid
+    /// pair — which is exactly what they did. The TS twin derives it the same way
+    /// (<c>lowerAdjustable</c> in lowering.ts).
+    /// </para>
+    /// </summary>
+    private static string AriaRole(AdjustableRole role, AdjustableValue? value) => role switch
+    {
+        AdjustableRole.Tablist => "tablist",
+        AdjustableRole.Radiogroup => "radiogroup",
+        _ => value is null ? "group" : "slider",
+    };
 
     /// <summary>
     /// The 2-D composite (TS twin: lowerNavigable). One focusable host carrying the grid role and

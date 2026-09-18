@@ -83,6 +83,12 @@ public sealed class Slider : StatelessComponent
         var theme = context.Theme;
         var span = Max - Min;
         var fraction = span <= 0 ? 0f : Math.Clamp((Value - Min) / span, 0f, 1f);
+        // What the control ACTUALLY holds, which is where the thumb is — `fraction` clamps, so the
+        // announcement has to clamp with it. A caller passing 99 into a 0..10 slider draws a thumb
+        // at the end; announcing the raw 99 would put aria-valuenow outside the aria-valuemax
+        // beside it (invalid ARIA on its own) and make the pixels and the words disagree about the
+        // same control. A collapsed range has one value and it is Min.
+        var announced = span <= 0 ? Min : Math.Clamp(Value, Min, Max);
         var step = Step > 0 ? Step : span / 10f;
         var accent = theme.Colors(Variant).Base;
         var fill = Disabled ? theme.BorderStrong : accent;
@@ -155,7 +161,7 @@ public sealed class Slider : StatelessComponent
                 // Spec C7: the value, its bounds and the words for it. Before this the host emitted
                 // role="slider" with no aria-valuenow — invalid ARIA, and a screen-reader user heard
                 // "Brightness, slider" and never which way it was set.
-                Value = new AdjustableValue(Value, Min, Max) { Text = ValueText },
+                Value = new AdjustableValue(announced, Min, Max) { Text = ValueText },
             };
     }
 

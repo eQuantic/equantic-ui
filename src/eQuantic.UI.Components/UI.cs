@@ -271,9 +271,18 @@ public static class UI
     public static DragDismiss DragDismiss(VisualNode child, Action? onDismiss = null) =>
         new DragDismiss(child, onDismiss);
 
-    /// <summary>Arrow-key adjustment semantics: one Tab stop, arrows call back with ±1.</summary>
-    public static Adjustable Adjustable(VisualNode child, Action<int> onAdjust) =>
-        new Adjustable(child, onAdjust);
+    /// <summary>
+    /// Arrow-key adjustment semantics: one Tab stop, arrows call back with ±1.
+    /// <para>
+    /// <paramref name="value"/> is what the control HOLDS, and a slider needs it —
+    /// <c>role="slider"</c> requires <c>aria-valuenow</c>, so a slider built without one announces
+    /// <c>group</c> instead of lying about a position it does not know. The other two roles
+    /// announce a SELECTION their children already state and take none.
+    /// </para>
+    /// </summary>
+    public static Adjustable Adjustable(VisualNode child, Action<int> onAdjust,
+        AdjustableValue? value = null, AdjustableRole role = AdjustableRole.Slider) =>
+        new Adjustable(child, onAdjust) { Value = value, Role = role };
 
     /// <summary>A keyboard shortcut live while this subtree is mounted (spec S8).</summary>
     public static Shortcut Shortcut(VisualNode child, KeyChord chord, Action onPressed) =>

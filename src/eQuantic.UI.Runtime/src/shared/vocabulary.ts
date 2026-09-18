@@ -1219,7 +1219,6 @@ export class Image extends VisualNode {
   }
 }
 
-/** Mirror of the C# `Adjustable` node: the child answers to the arrow keys as ONE Tab stop. */
 /**
  * Mirror of the C# `AdjustableValue`: WHERE an Adjustable's value sits — the trio ARIA calls
  * `aria-valuenow` / `aria-valuemin` / `aria-valuemax`, plus the words to say it in.
@@ -1252,6 +1251,7 @@ export class AdjustableValue {
   }
 }
 
+/** Mirror of the C# `Adjustable` node: the child answers to the arrow keys as ONE Tab stop. */
 export class Adjustable extends VisualNode {
   readonly nodeKind = 'adjustable';
   child: VisualNode;

@@ -27,8 +27,13 @@ public sealed class Adjustable : SingleChildNode
     /// <summary>Announced by assistive tech, exactly as <see cref="Pressable.Label"/> is.</summary>
     public string Label { get; init; } = "";
 
-    /// <summary>The ARIA identity of the web twin. The native side treats every role the same —
-    /// one stop, arrows adjust.</summary>
+    /// <summary>
+    /// The ARIA identity the web twin ASKS FOR. It is honoured wherever ARIA allows it to be: the
+    /// slider role requires <see cref="Value"/>, so a node that asks for it without one is announced
+    /// as a group instead — the realizer settles the pair, because that rule is ARIA's and the
+    /// realizer is where the SDK speaks ARIA. The native side treats every role the same — one stop,
+    /// arrows adjust.
+    /// </summary>
     public AdjustableRole Role { get; init; } = AdjustableRole.Slider;
 
     /// <summary>
