@@ -8,25 +8,24 @@ namespace eQuantic.UI.Primitives;
 /// lowering — and every one of them was a switch with a default arm. A node added to the vocabulary
 /// joined that arm silently in all six, which is how a spreadsheet rendered as an empty
 /// <c>&lt;span&gt;</c> to every crawler for a month: nothing asked the web realizer whether it had
-/// heard of <c>SheetSurface</c>. The coverage pin that found it reads the switches with a regex,
-/// which is a net stretched under a hole rather than the hole closed.
+/// heard of <c>SheetSurface</c>. The coverage pin that found it read the switches with a regex,
+/// which was a net stretched under a hole rather than the hole closed.
 /// </para>
 ///
 /// <para>
-/// FIVE HAVE CROSSED: the semantics walk (<c>SemanticsVisitor</c>), both email alternatives over one
-/// shared refusal set (<c>EmailWalk</c>), the web realizer (<c>WebLoweringVisitor</c>), the layout
-/// engine (<c>MeasureVisitor</c>) and the runtime's lowering — that last one differently, through a
-/// generated <c>NodeKind</c> union and an <c>assertNever</c>, since the browser has no interface to
-/// implement. ONE TO GO: <c>PhotonRealizer.EmitNode</c>.
+/// ALL SIX HAVE CROSSED: the semantics walk (<c>SemanticsVisitor</c>), both email alternatives over
+/// one shared refusal set (<c>EmailWalk</c>), the web realizer (<c>WebLoweringVisitor</c>), the
+/// layout engine (<c>MeasureVisitor</c>), the Photon realizer (<c>EmitVisitor</c>) and the runtime's
+/// lowering — that last one differently, through a generated <c>NodeKind</c> union and an
+/// <c>assertNever</c>, since the browser has no interface to implement.
 /// </para>
 ///
 /// <para>
-/// That sentence is a running tally, which is the shape that rots — it was written at four and was
-/// still saying four two slices later, in the doc of the very interface the crossings implement.
-/// It is the LAST one: when the Photon realizer crosses, this says all six and stops being a
-/// countdown. Until then the slice table in <c>docs/VOCABULARY-DISPATCH-PLAN.md</c> is where the
-/// detail lives, and <c>docs/ARCHITECTURE-AUDIT.md</c> section 2 carries the same status in one
-/// line.
+/// This was a running tally, which is the shape that rots: it was written at four and was still
+/// saying four two slices later, in the doc of the very interface the crossings implement. It says
+/// all six now and has stopped counting down, which is the only way that shape stops being wrong.
+/// The regex pin that stood in for this interface is GONE with the last crossing — a compiler asks
+/// the question at every door. The detail is in <c>docs/VOCABULARY-DISPATCH-PLAN.md</c>.
 /// </para>
 ///
 /// <para>

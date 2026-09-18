@@ -253,6 +253,22 @@ record of a release, the wiki's Upgrading page is the distillate.
   one `Layout` call — the realizer lays out the page and then each `Overlay` — so a per-call visitor
   was one per layer, invisible to a budget with 0.1 KB of headroom and no overlay in any scene.
 
+- **2026-09-18 · The last dispatch crosses, and the pin that policed them all retires**:
+  `PhotonRealizer.EmitNode` becomes `EmitVisitor`, `PhotonRealizer.cs` goes 1,806 → 343 lines, and
+  `VocabularyCoverageTests` is deleted ([#182](https://github.com/eQuantic/equantic-ui/issues/182),
+  [#183](https://github.com/eQuantic/equantic-ui/issues/183)). ALL SIX HAVE CROSSED. The plan called
+  this "the nine `is` branches become visits" and the shape was not that: `EmitNode` was TWO
+  dispatches over the same node, and `Box` sat in both four hundred lines apart, so a single
+  27-door visitor would have dropped the chrome of every clipping box. What made one door right is
+  that nothing which `break`s ever touches its children — the three arms that descend are the three
+  that `return`. A TWELFTH ABSENCE appeared that the pin could not have seen: it named eleven exempt
+  nodes and the dispatch never handled twelve, because `UiComponent` is abstract and the pin asked
+  its question only of non-abstract ones. And the harness refused the first arrangement **by two
+  bytes** — a visitor with six fields cost 64 bytes a frame against a ceiling with 2 to spare — so
+  the fields moved into the state and the visitor became a singleton: 75,714 bytes/frame,
+  byte-identical to `main`. A budget with no headroom left is a real constraint, not a nuisance, and
+  it bought a better design than the one it refused.
+
 
 ## Retired documents
 

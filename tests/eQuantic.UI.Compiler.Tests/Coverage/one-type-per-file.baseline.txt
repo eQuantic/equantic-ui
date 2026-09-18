@@ -66,7 +66,7 @@ src/eQuantic.UI.Components/MermaidParser.cs  3  not looked at yet
 src/eQuantic.UI.Design/Protocol.cs  15  protocol set
 src/eQuantic.UI.Email/EmailRenderer.cs  2  not looked at yet
 src/eQuantic.UI.Material/ColorScience/Cam16.cs  2  not looked at yet
-src/eQuantic.UI.Native.Components/PhotonRealizer.cs  14  not looked at yet
+src/eQuantic.UI.Native.Components/PhotonRealizer.cs  14  one protocol's record set: twelve region records the realizer hands the host (hit, hover, scroll, drag, link, text, sheet, cursor, code, canvas, shortcut, focus stop), the RealizeResult that carries them and the realizer that fills it. Looked at during S6, which took the paint pass out to EmitVisitor and left these — the count is unchanged because all fourteen were always top-level; what left was two nested scopes.
 src/eQuantic.UI.Native.Engine.Metal/MetalTexture.cs  3  not looked at yet
 src/eQuantic.UI.Native.Engine.Metal/ObjC.cs  3  interop header
 src/eQuantic.UI.Native.Engine.Vulkan/VulkanNative.cs  59  interop header

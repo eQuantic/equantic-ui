@@ -10,7 +10,7 @@ rot. What holds each claim here:
 
 | Claim | Instrument |
 |---|---|
-| every node reaches every dispatch, or is named there as an absence | `VocabularyCoverageTests` — six dispatches, C# and TypeScript |
+| every node reaches every dispatch, or is named there as an absence | the COMPILER — six visitors over `IVisualNodeVisitor`, plus `assertNever` on a generated union in the browser. `VocabularyCoverageTests` held this until the last dispatch crossed and is deleted; the plan keeps its record |
 | the layering — which core assembly may reference which, exactly | `AssemblyLayeringTests` — thirteen assemblies |
 | the handoff speaks the vocabulary's current names | `HandoffVocabularyTests` |
 | the handoff's numbers are the SDK's numbers | `HandoffTokenPinTests` |
@@ -179,16 +179,20 @@ reader and to the build.
 | `WebRealizer` | Web | `LowerNodeKind` | 38 / 39 | `null`, silently | what DOM the server writes |
 | `lowering.ts` | TypeScript runtime | `lowerNodeKind` | 39 / 39 | `render()` or `null`, silently | what DOM the browser writes |
 | `PhotonRealizer` | Native.Components | `EmitNode` | 28 / 39 | nothing, silently | what the GPU draws |
+
 | `Semantics` | Native.Components | `Walk` | 13 / 39 | walks the children | what a screen reader says |
 | `EmailRealizer` | Email | `Write` | 6 / 39 | **throws**, naming the node | what an email client may see |
 
 **WHERE THAT TABLE STANDS NOW, in one place rather than six.** It is the finding, and it is kept as
 found; this line is the only thing a landed slice updates, so the audit stops carrying two states at
-once. FIVE of the six are visitors — `Semantics` (S2), `EmailRealizer` and its text twin (S3),
-`WebRealizer` (S4) and `LayoutEngine` (S5, which is `MeasureVisitor` and no longer has a
-`MeasureCore`) — and `lowering.ts` answers to a generated union ending in `assertNever` (S7).
-`PhotonRealizer.EmitNode` is the last switch, which S6 takes; S8 then deletes the pin and rewrites
-this section. The slice table in `VOCABULARY-DISPATCH-PLAN.md` carries each one's detail.
+once. ALL SIX HAVE CROSSED, and this line has stopped counting. Five are visitors — `Semantics`
+(S2), `EmailRealizer` and its text twin (S3), `WebRealizer` (S4), `LayoutEngine` (S5, which is
+`MeasureVisitor` and no longer has a `MeasureCore`) and `PhotonRealizer` (S6, which is `EmitVisitor`
+and no longer has an `EmitNode`) — and `lowering.ts` answers to a generated union ending in
+`assertNever` (S7). `VocabularyCoverageTests` went with the last one (S8): a regex that re-states
+what the compiler now enforces is a second copy of a fact, which is what this audit exists to
+remove. The slice table in `VOCABULARY-DISPATCH-PLAN.md` carries each one's detail, and the record
+of what that pin caught in its lifetime.
 
 Beside the six, at least ten smaller switches re-ask "what kind of node is this" from the consumer's
 side: five inside the layout engine (`MinContentWidth`, `Shrinkable`, `WidthKind`, `CrossSizeKind`,
@@ -248,9 +252,12 @@ transpiler's OPEN set** (C# syntax, extended by every language version), **Visit
 vocabulary's CLOSED set** (39 types we own). One pattern applied to both would be wrong for one of
 them.
 
-### What holds it until then
+### What held it until the compiler did
 
-`VocabularyCoverageTests` asks the ASSEMBLY for the vocabulary and the SOURCE for each dispatch's
+*(Historical. `VocabularyCoverageTests` was deleted when the sixth dispatch crossed; this is what it
+did, and `VOCABULARY-DISPATCH-PLAN.md` keeps the record of what it caught.)*
+
+It asked the ASSEMBLY for the vocabulary and the SOURCE for each dispatch's
 cases — the one method that answers the question, cut out by its braces with comments and strings
 removed, so a node named in prose or in a diagnostic message cannot pass for an arm. A node with no
 case must be named in that dispatch's exemption list with its reason, and the list is checked in both
@@ -455,7 +462,7 @@ for it: `RouteData` → `RouteValues` and the provider → `CapabilityScope` are
 | `Design/DesignSession.cs` | 2,151 | the visual editor's session |
 | `Native.Components/PhotonHost.cs` | 2,074 | 44 fields, 27 public methods |
 | ~~`Native.Framework/Layout/LayoutEngine.cs`~~ | ~~1,948~~ | 442 now: the measure half became `MeasureVisitor` in six files plus `MeasureState.cs` (S5) |
-| `Native.Components/PhotonRealizer.cs` | 1,805 | one static class |
+| ~~`Native.Components/PhotonRealizer.cs`~~ | ~~1,805~~ | 343 now: the paint pass became `EmitVisitor` in six files, plus `EmitState.cs` and the two scopes it threads (S6) |
 | `Server/UIExtensions.cs` | 1,461 | five types; `ServeAppShell` alone is 348 lines |
 
 Nine files, 20,110 lines — the nine largest hand-written files in the tree.
@@ -739,7 +746,7 @@ Worth recording, because an audit that only lists faults misleads about the whol
   the 75 factories in `UI.cs` is named like its type and mirrors a constructor parameter for
   parameter, with three named exceptions listed by name.
 - **The pins exist, and they are the pattern**: `FlutterParityPinTests` (64 rows, a probe each),
-  `HandoffTokenPinTests`, `VocabularyCoverageTests` (six doors), `AssemblyLayeringTests`,
+  `HandoffTokenPinTests`, `AssemblyLayeringTests`,
   `ClosedHierarchyTests` (both graphs, the scan derived), `ValueShapeCollisionTests` (the whole native
   graph, a sentence per excused shape group, failing both ways), `TruncationContractTests` (claimants
   and withholders alike), `HandoffVocabularyTests`, `WikiVocabularyTests`, `MarkerParityTests`,

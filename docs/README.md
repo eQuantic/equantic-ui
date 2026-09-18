@@ -11,7 +11,7 @@ Read these first, in this order. Every claim in the first two is held by a test,
 
 | Document | What it answers |
 |---|---|
-| [ARCHITECTURE-AUDIT.md](ARCHITECTURE-AUDIT.md) | *Where is our own structure weak?* — the layering, the dispatches over the vocabulary, the weight of each assembly, the duplications, and an order of attack. Pinned by `VocabularyCoverageTests`, `AssemblyLayeringTests`, `HandoffVocabularyTests`. |
+| [ARCHITECTURE-AUDIT.md](ARCHITECTURE-AUDIT.md) | *Where is our own structure weak?* — the layering, the dispatches over the vocabulary, the weight of each assembly, the duplications, and an order of attack. Pinned by `AssemblyLayeringTests`, `HandoffVocabularyTests` — and, for the dispatches, by the compiler itself since the sixth visitor landed. |
 | [FLUTTER-PARITY.md](FLUTTER-PARITY.md) | *How does Flutter solve this?* — one row per Flutter concept, with a verdict (SAME, DIFFERENT, PARTIAL, GAP) measured against the tree. Pinned by `FlutterParityPinTests`. |
 | [VOCABULARY-DISPATCH-PLAN.md](VOCABULARY-DISPATCH-PLAN.md) | The plan for the audit's step 2: one visitor per realizer, slice by slice. |
 | [HANDOFF-FIDELITY-AUDIT.md](HANDOFF-FIDELITY-AUDIT.md) | The design system's component blocks compared with the shipped components, claim by claim. A snapshot (2026-08-16) with a "closed since" ledger. |
