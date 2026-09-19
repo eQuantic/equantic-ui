@@ -68,8 +68,15 @@ public sealed class Toast : StatelessComponent
             Cross = CrossAlign.Center,
             Padding = EdgeInsets.Symmetric(Space.S4, Space.S6),
         };
+        // Spec C4: a POLITE live region — the toast tells the user what just happened and must not
+        // cut off whatever a reader is saying. It wraps the PILL rather than the layer: the layer
+        // fills the viewport, and a live region that size would hand a reader the whole screen as
+        // the announcement. The Overlay below cannot carry this itself — both realizers strip every
+        // semantic from a non-modal layer, which is exactly why this row stayed open.
+        var announced = new LiveRegion(pill);
+
         // Enter motion (spec §06): the pill rises into place (SlideUp) — the toast entrance.
-        anchor.Add(new Presence(pill, PresenceMotion.SlideUp));
+        anchor.Add(new Presence(announced, PresenceMotion.SlideUp));
 
         return new Overlay(anchor) { Modal = false };
     }

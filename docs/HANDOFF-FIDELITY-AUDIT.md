@@ -54,6 +54,7 @@ Each of these has a test that names its handoff block, so the figure cannot drif
 | C7 Slider | `role="slider"` with no `aria-valuenow` — invalid ARIA, the value never announced | `AdjustableValueTests` |
 | A11 Image | no `case Image` in the native semantics walk — alt text was silent on Photon | `GraphicSemanticsTests` |
 | B14 ProgressBar | no `role="progressbar"` and no value on either realizer — the bar painted a fact and never stated it | `ProgressSemanticsTests` |
+| B18 Banner · C4 Toast | neither could be announced: a banner was an unannotated Box, a toast a non-modal layer both realizers strip every semantic from | `LiveRegionSemanticsTests` |
 
 ### Found while fixing, not by the audit
 
@@ -485,11 +486,11 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Banner.cs`
 - **Handoff**: role=status (polite) for info/success · role=alert for error severity. Content change re-announces. Warning/Destructive = assertive alert role; Info/Success = polite status.
-- **Code**: Build returns an unannotated Box — the Status variant picks a glyph and a fill and nothing else. No role, no aria-live, and no node in the vocabulary can carry them (the only 'alert' in the write-once path is the alertdialog on Overlay, WebLoweringVisitor.Containers.cs:546 LowerOverlay). A Banner that appears or changes announces nothing, which is the whole point of the component.
+- **Code**: Reproduced: Build returned an unannotated Box — the Status variant picked a glyph and a fill and nothing else — and no node in the vocabulary could carry a role or an aria-live, so the gap was the same shape as B14's and not a line in this component (the only 'alert' in the write-once path was the alertdialog on Overlay, WebLoweringVisitor.Containers.cs:546 LowerOverlay; the only aria-live was the text field's description). FIXED by the node the gap named: `LiveRegion` joins the vocabulary (src/eQuantic.UI.Primitives/Nodes/LiveRegion.cs) and the Banner returns one around its surface (Banner.cs:88 Banner.Build), so everything it paints is INSIDE the region and a content change re-announces without the component tracking anything. The severity split is the handoff's own and rides on the node: Warning and Destructive ask for `LiveRegionUrgency.Assertive`, Info and Success take the Polite default. Both realizers emit the pair — role=status/alert WITH aria-live=polite/assertive, plus aria-atomic so the region is read whole (WebLoweringVisitor.Interaction.cs:210-254 LowerLiveRegion; lowering.ts:2918-2945). The role and the live value are stated together rather than inferred from one another: `role="alert"` implies assertive in the spec, and implementations have long disagreed about whether an alert inserted after load is announced at all.
 - **Evidence**:
 
   ```
-  Banner.cs:75-81  return new Box(new BoxStyle { Width = SizeValue.Fill, Padding = new EdgeInsets(14, 12, 14, 12), Background = tint.Subtle, CornerRadius = new CornerRadii(context.Theme.Shape(ShapeScale.Large)), }, content);
+  Banner.cs:88        return new LiveRegion(surface)
   ```
 
 ### C1 BottomSheet · documented-deviation · **unverified**
@@ -538,16 +539,15 @@ the pill's 40 down.
   Toast.cs:48            }, new Text(label, TypeRole.Label, theme.TextInverse)), OnAction)
   ```
 
-### C4 Toast · semantics · **unverified**
+### C4 Toast · semantics · **CONFIRMED**
 
 - **Component**: `src/eQuantic.UI.Components/Toast.cs`
 - **Handoff**: A11y: polite live announcement ... Semantics: Polite live region (role=status)
-- **Code**: The toast is never announced. It lowers to `new Overlay(anchor) { Modal = false }` (Toast.cs:74), and BOTH realizers gate every semantic attribute on the layer being modal: WebLoweringVisitor.Containers.cs:541 LowerOverlay `if (overlay.Modal && overlay.Open)` and the TS twin lowering.ts:773 `const modalAndOpen = node.modal !== false && ...`. A non-modal layer therefore emits a bare `<div class="eq-overlay eq-overlay-passthrough">` — no role=status, no aria-live. Overlay has no live-region property at all, so native cannot announce it either.
+- **Code**: Reproduced: the toast was never announced. It lowers to `new Overlay(anchor) { Modal = false }` (Toast.cs:81) and BOTH realizers gate every semantic attribute on the layer being modal — WebLoweringVisitor.Containers.cs:541 LowerOverlay `if (overlay.Modal && overlay.Open)` and the TS twin lowering.ts:776 — so a non-modal layer emitted a bare `<div class="eq-overlay eq-overlay-passthrough">`. FIXED by the same node as B18 rather than by loosening that gate, which would have made every toast layer a dialog: the pill is wrapped in a `LiveRegion` at its Polite default (Toast.cs:76 Toast.Build). It wraps the PILL and not the layer on purpose — the layer fills the viewport, and a live region that size hands a reader the whole screen as the announcement. Overlay still carries no live-region property, and does not need one.
 - **Evidence**:
 
   ```
-  Toast.cs:74        return new Overlay(anchor) { Modal = false };
-  WebLoweringVisitor.Containers.cs:541        if (overlay.Modal && overlay.Open)
+  Toast.cs:76        var announced = new LiveRegion(pill);
   ```
 
 ### C4 Toast · documented-deviation · **unverified**
@@ -2196,7 +2196,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  Toast.cs:72        anchor.Add(new Presence(pill, PresenceMotion.SlideUp));
+  Toast.cs:79        anchor.Add(new Presence(announced, PresenceMotion.SlideUp));
   ```
 
 ### C4 Toast · behaviour · **unverified**

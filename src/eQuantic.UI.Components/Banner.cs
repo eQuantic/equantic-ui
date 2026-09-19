@@ -72,12 +72,24 @@ public sealed class Banner : StatelessComponent
             });
         }
 
-        return new Box(new BoxStyle
+        var surface = new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
             Padding = new EdgeInsets(14, 12, 14, 12),
             Background = tint.Subtle,
             CornerRadius = new CornerRadii(context.Theme.Shape(ShapeScale.Large)),
         }, content);
+
+        // Spec B18: the banner IS an announcement — it appears to tell the user something, and a
+        // surface that only looks urgent says nothing to a reader. The severity decides how hard it
+        // interrupts, which is the spec's own split: Warning and Destructive are alerts, Info and
+        // Success are statuses. Everything the banner holds is inside the region, so a content
+        // change re-announces without the component tracking anything.
+        return new LiveRegion(surface)
+        {
+            Urgency = Status is Variant.Warning or Variant.Destructive
+                ? LiveRegionUrgency.Assertive
+                : LiveRegionUrgency.Polite,
+        };
     }
 }

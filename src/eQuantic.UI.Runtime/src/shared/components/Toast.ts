@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Overlay, Presence, Pressable, Row, SizeValue, StatelessComponent, Text, VariantValue } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, LiveRegion, Overlay, Presence, Pressable, Row, SizeValue, StatelessComponent, Text, VariantValue } from "../runtime-exports";
 
 export class Toast extends StatelessComponent {
     declare message: string;
@@ -31,7 +31,8 @@ export class Toast extends StatelessComponent {
         }
         let pill = new Box(new BoxStyle({ background: theme.textPrimary, cornerRadius: new CornerRadii(theme.shape('full')), elevation: 3, padding: EdgeInsets.symmetric(16, 12), maxWidth: 480 }), row);
         let anchor = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, main: 'end', cross: 'center', padding: EdgeInsets.symmetric(16, 24) });
-        anchor.add(new Presence(pill, 'slideUp'));
+        let announced = new LiveRegion(pill);
+        anchor.add(new Presence(announced, 'slideUp'));
         return new Overlay(anchor, { modal: false });
     }
 }

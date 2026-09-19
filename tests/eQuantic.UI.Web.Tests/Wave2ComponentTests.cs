@@ -237,7 +237,9 @@ public class Wave2ComponentTests
 
         var dismissed = false;
         var banner = Render(new Banner(Variant.Info, "Maintenance") { OnDismiss = () => dismissed = true });
-        var dismiss = banner.Children[0].Children[2];
+        // region → surface → content row → the dismiss button. The region is B18's announcement
+        // wrapper; everything the banner paints is still inside it.
+        var dismiss = banner.Children[0].Children[0].Children[2];
         dismiss.Tag.Should().Be("button");
         dismiss.Attributes["aria-label"].Should().Be("Dismiss");
         ((Action)dismiss.Events["click"])();

@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconsValue, Pressable, Row, SdkStrings, SizeValue, StatelessComponent, Text, TypeStyle, VariantValue } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconsValue, LiveRegion, Pressable, Row, SdkStrings, SizeValue, StatelessComponent, Text, TypeStyle, VariantValue } from "../runtime-exports";
 
 export class Banner extends StatelessComponent {
     declare status: VariantValue;
@@ -40,7 +40,8 @@ export class Banner extends StatelessComponent {
         if (this.onDismiss != null) {
             content.add(new Pressable(new Icon('close', 20, tint.onSubtle), this.onDismiss, { label: SdkStrings.dismiss }));
         }
-        return new Box(new BoxStyle({ width: SizeValue.fill, padding: new EdgeInsets(14, 12, 14, 12), background: tint.subtle, cornerRadius: new CornerRadii(context.theme.shape('large')) }), content);
+        let surface = new Box(new BoxStyle({ width: SizeValue.fill, padding: new EdgeInsets(14, 12, 14, 12), background: tint.subtle, cornerRadius: new CornerRadii(context.theme.shape('large')) }), content);
+        return new LiveRegion(surface, { urgency: (this.status === 'warning' || this.status === 'destructive') ? 'assertive' : 'polite' });
     }
 }
 

@@ -1,3 +1,4 @@
+using eQuantic.UI.Components;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
 
@@ -95,6 +96,69 @@ public class LiveRegionSemanticsTests
 
         Region(new LiveRegion(new Text("40%", TypeRole.BodyM)))
             .Attributes.Should().NotContainKey("aria-label");
+    }
+
+    /// <summary>Spec B18: the banner IS the announcement, and the severity decides how hard it
+    /// interrupts.</summary>
+    [Theory]
+    [InlineData(Variant.Info, "status", "polite")]
+    [InlineData(Variant.Success, "status", "polite")]
+    [InlineData(Variant.Warning, "alert", "assertive")]
+    [InlineData(Variant.Destructive, "alert", "assertive")]
+    public void ABannerAnnouncesItselfAtItsOwnSeverity(Variant status, string role, string live)
+    {
+        var host = Region(new Banner(status, "Your card expires this month.", "Renew it."));
+
+        host.Attributes["role"].Should().Be(role);
+        host.Attributes["aria-live"].Should().Be(live);
+    }
+
+    /// <summary>
+    /// The banner's content is INSIDE the region — which is the half that makes "content change
+    /// re-announces" true without the component tracking anything. A region announced beside the
+    /// surface rather than around it would say nothing when the text changed.
+    /// </summary>
+    [Fact]
+    public void TheBannersOwnWordsAreInsideTheRegion()
+    {
+        var host = Region(new Banner(Variant.Info, "Maintenance tonight", "From 22:00 UTC."));
+
+        Walk(host).Should().Contain(n => n.TextContent == "Maintenance tonight");
+        Walk(host).Should().Contain(n => n.TextContent == "From 22:00 UTC.");
+    }
+
+    /// <summary>
+    /// Spec C4: a POLITE live region. The toast tells the user what just happened and must not cut
+    /// off whatever a reader is saying.
+    /// </summary>
+    [Fact]
+    public void AToastAnnouncesPolitely()
+    {
+        var host = Region(new Toast("Card removed", Variant.Info, "Undo", () => { }));
+
+        host.Attributes["role"].Should().Be("status");
+        host.Attributes["aria-live"].Should().Be("polite");
+        Walk(host).Should().Contain(n => n.TextContent == "Card removed",
+            "the message is what gets announced");
+    }
+
+    /// <summary>
+    /// The region wraps the PILL, not the layer. The layer fills the viewport, and a live region
+    /// that size hands a reader the whole screen as the announcement — every toast would re-read
+    /// the page behind it.
+    /// </summary>
+    [Fact]
+    public void TheToastsRegionIsThePillRatherThanTheLayer()
+    {
+        var layer = Lower(new Toast("Card removed"));
+
+        layer.Attributes.Should().NotContainKey("aria-live",
+            "the outermost element is the non-modal Overlay layer");
+        // Taken from the SAME tree, so "not the layer" is a real statement about where the region
+        // sits rather than about two separate lowerings being different objects.
+        Walk(layer).Should()
+            .ContainSingle(n => n.Attributes.ContainsKey("aria-live")).Which
+            .Should().NotBeSameAs(layer, "the region is inside the layer, not the layer itself");
     }
 
     /// <summary>

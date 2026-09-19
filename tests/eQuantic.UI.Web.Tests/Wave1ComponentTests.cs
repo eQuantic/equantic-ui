@@ -76,7 +76,12 @@ public class Wave1ComponentTests
     [Fact]
     public void Banner_UsesTheStatusSubtlePair()
     {
-        var node = Render(new Banner(Variant.Warning, "Your card expires this month.", "Renew it."));
+        // A Banner's root is its LIVE REGION now (spec B18) and the painted surface is inside it —
+        // the announcement wraps the box rather than replacing it, so the styling rule is unchanged
+        // and simply one level down.
+        var region = Render(new Banner(Variant.Warning, "Your card expires this month.", "Renew it."));
+        region.Attributes["role"].Should().Be("alert", "a warning banner interrupts");
+        var node = region.Children.Should().ContainSingle().Which;
         var style = node.Attributes["style"]!;
         style.Should().Contain($"background-color: {TokenCss.Value(Theme.Colors(Variant.Warning).Subtle)}");
         style.Should().Contain("border-radius: 14px");
