@@ -137,6 +137,108 @@ public class NativeRoleTests
     }
 
     /// <summary>
+    /// What "activatable" MEANS for an editable surface, which answering <c>true</c> does not say:
+    /// the keyboard is now THEIRS. The three routes have to agree, because landing somewhere is one
+    /// behaviour — a pointer, the Tab walk and a screen reader's activate all reach the same state.
+    /// <para>
+    /// They did not. The pointer route set <c>_textPath</c> (<c>BeginCodeEditing</c>), which is what
+    /// <see cref="PhotonHost.CodeTarget"/> and <see cref="PhotonHost.SheetTarget"/> resolve from, and
+    /// the Tab walk set a focus RING instead — so Tab onto a code editor looked like arrival and
+    /// every keystroke went nowhere. A reader's activate inherited that gap the moment it shared the
+    /// landing, and returning <c>true</c> hid it: the first version of this test asked only that.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void ActivatingAnEditableSurfaceHandsItTheKeyboard()
+    {
+        var code = new CodeEditorController("x");
+        var sheet = new SheetController(rows: 2, cols: 2);
+        var page = new Column(gap: Space.S2) { Width = SizeValue.Fill };
+        page.Add(new CodeSurface(new Text("code", TypeRole.BodyM), code) { Label = "Source" });
+        page.Add(new SheetSurface(new Text("sheet", TypeRole.BodyM), sheet) { Label = "Budget" });
+
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 600);
+        var frame = host.RenderFrame(new DisplayListBuilder());
+
+        // The CODE surface: activate, then type — the controller is where the text has to land.
+        host.ActivatePath(frame.CodeRegions[0].Path).Should().BeTrue();
+        host.CodeTarget.Should().NotBeNull("activating a CodeField makes it the editing target");
+        host.TextInput("Z").Should().BeTrue();
+        code.Document.Text.Should().Contain("Z", "the keystroke reached the surface, not just its ring");
+
+        // The SPREADSHEET: the same claim, through the other kind of stop — the one that carries
+        // neither an entry nor a code surface, and was skipped entirely until this round.
+        host.ActivatePath(frame.SheetRegions[0].Path).Should().BeTrue();
+        host.SheetTarget.Should().NotBeNull("activating a SheetSurface makes it the editing target");
+        host.TextInput("7").Should().BeTrue();
+        sheet.Draft.Should().Contain("7");
+    }
+
+    /// <summary>
+    /// ARRIVING and ENTERING are one thing for a text field and two for a surface that owns the
+    /// keyboard — the distinction this landed on the hard way. Tab ARRIVES: the ring shows and the
+    /// next Tab travels on. Activating ENTERS, which is what a pointer press does and what a
+    /// reader's double tap means.
+    /// <para>
+    /// Sharing the landing outright looked right and was not: the caret went into the code editor
+    /// on Tab, <c>CodeKeymap</c> then took the NEXT Tab as an indent, and the Studio's own walk
+    /// caught a focus ring that never came back round. An editor you cannot Tab out of is the same
+    /// defect its Escape branch already names.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void TabArrivesAtACodeSurfaceAndOnlyActivateEntersIt()
+    {
+        var code = new CodeEditorController("x");
+        var page = new Column(gap: Space.S2) { Width = SizeValue.Fill };
+        page.Add(new CodeSurface(new Text("code", TypeRole.BodyM), code) { Label = "Source" });
+        page.Add(new Pressable(new Text("after", TypeRole.Label), () => { }) { Label = "After" });
+
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 400);
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        var codePath = frame.CodeRegions[0].Path;
+
+        host.FocusNext().Should().BeTrue();
+        host.FocusedPath.Should().Be(codePath, "Tab arrives at the surface");
+        host.CodeTarget.Should().BeNull("arriving is not entering — the keys still belong to the page");
+
+        host.KeyDown("Tab").Should().BeTrue();
+        host.FocusedPath.Should().NotBe(codePath,
+            "and the next Tab TRAVELS ON rather than being eaten as an indent");
+
+        host.ActivatePath(codePath).Should().BeTrue();
+        host.CodeTarget.Should().NotBeNull("activating enters it, which is what the table advertises");
+        host.TextInput("Z").Should().BeTrue();
+        code.Document.Text.Should().Contain("Z");
+    }
+
+    /// <summary>
+    /// The KEYBOARD reaches the same door. Tab arrives and leaves the keys with the page, so Enter
+    /// is the only way in for somebody with no pointer — and it ran nothing at all, which made the
+    /// ring as far as a keyboard could get into a code editor. Asserted beside the reader's route
+    /// rather than apart from it: they are one behaviour through two doors, and the version of this
+    /// work that fixed only the reader's would have been the odder half.
+    /// </summary>
+    [Fact]
+    public void EnterOnAnArrivedCodeSurfaceEntersItAsWell()
+    {
+        var code = new CodeEditorController("x");
+        var page = new Column(gap: Space.S2) { Width = SizeValue.Fill };
+        page.Add(new CodeSurface(new Text("code", TypeRole.BodyM), code) { Label = "Source" });
+
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 400);
+        host.RenderFrame(new DisplayListBuilder());
+
+        host.FocusNext().Should().BeTrue();
+        host.CodeTarget.Should().BeNull();
+
+        host.KeyDown("Enter").Should().BeTrue();
+        host.CodeTarget.Should().NotBeNull();
+        host.TextInput("Z").Should().BeTrue();
+        code.Document.Text.Should().Contain("Z");
+    }
+
+    /// <summary>
     /// The one control this cannot yet be said of, pinned so the day it changes somebody is told.
     /// A <see cref="Link"/> IS announced — it has a role, a name and a place in reading order — and
     /// it is reachable by neither Tab nor a screen reader's activate: <c>LinkRegion</c> carries a

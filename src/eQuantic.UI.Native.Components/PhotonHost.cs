@@ -1152,7 +1152,13 @@ public sealed class PhotonHost
             NeedsRender = true;
             return true;
         }
-        return false;
+        // The KEYBOARD's own door into an editing surface, and the same one a screen reader takes.
+        // Tab ARRIVES at a code editor or a spreadsheet and leaves the keys with the page (it has
+        // to: the editor would eat the next Tab as an indent), so Enter is how somebody with no
+        // pointer says "in here". Without it the ring was as far as a keyboard could get — this
+        // method's own doc says it runs the focused control "the way Enter and Space do everywhere
+        // else", and for the two surfaces that own the keyboard it ran nothing.
+        return _focusedPath is { Length: > 0 } focused && ActivatePath(focused);
     }
 
     /// <summary>
@@ -1199,7 +1205,25 @@ public sealed class PhotonHost
             // the catch-all this file's NativeRole was written to end.
             if (stops[i].Path != path) continue;
             if (stops[i].Pressable is not null || stops[i].Adjustable is not null) continue;
-            return Land(stops[i]);
+            Land(stops[i]);
+            // ARRIVING and ENTERING are the same thing for a text field and two different things
+            // for a surface that owns the keyboard, which is the one place `Land` is not the whole
+            // answer. Tab ARRIVES: the ring shows and the next Tab travels on. Activating ENTERS,
+            // which is what a pointer press does (BeginCodeEditing) and what a reader's double tap
+            // means — CodeTarget and SheetTarget both resolve from _textPath, so entering IS
+            // setting it.
+            //
+            // Telling them apart was not a preference. Making the Tab walk enter put the caret in a
+            // code editor, and the editor then ate the next Tab through CodeKeymap — the Studio's
+            // own walk caught a ring that never came back round.
+            if (stops[i] is { Entry: null })
+            {
+                _textPath = stops[i].Path;
+                _focused = null;
+                _focusedPath = null;
+                NeedsRender = true;
+            }
+            return true;
         }
         return false;
     }
