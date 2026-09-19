@@ -21,6 +21,7 @@ public class ComponentDependencyResolver
     /// <summary>Static utility classes (`static class X`) discovered during the scan — emitted as their
     /// own module, so a component referencing <c>X.Foo()</c> imports it.</summary>
     private readonly HashSet<string> _staticHelpers = new();
+    private readonly HashSet<string> _runtimeProvidedTypes = new();
     private readonly HashSet<string> _plainClasses = new();
 
     /// <summary>
@@ -87,7 +88,11 @@ public class ComponentDependencyResolver
                 // per-app module, so registering one here would manufacture a dangling ./Type import.
                 if (classDecl.AttributeLists.SelectMany(list => list.Attributes)
                     .Any(attribute => attribute.IsNamed("RuntimeProvided")))
+                {
+                    if (classDecl.Parent is not ClassDeclarationSyntax)
+                        _runtimeProvidedTypes.Add(className);
                     continue;
+                }
 
                 // Static utility classes are emitted as their own module — register so referencers
                 // import. NESTED static classes embed in their owner's module (private scope, every
@@ -211,6 +216,10 @@ public class ComponentDependencyResolver
 
     /// <summary>Names of static utility classes emitted as their own modules.</summary>
     public IReadOnlySet<string> GetAllStaticHelpers() => _staticHelpers;
+
+    /// <summary>Top-level types whose implementation is supplied by <c>@equantic/runtime</c>.
+    /// Collected syntactically for the no-semantic-model fallback.</summary>
+    public IReadOnlySet<string> GetRuntimeProvidedTypes() => _runtimeProvidedTypes;
 
     /// <summary>Plain classes the app declares — each its own module, each importable.</summary>
     public IReadOnlySet<string> GetAllPlainClasses() => _plainClasses;

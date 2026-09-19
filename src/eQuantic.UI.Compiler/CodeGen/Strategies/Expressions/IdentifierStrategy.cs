@@ -113,6 +113,13 @@ public class IdentifierStrategy : IExpressionIrStrategy
             }
         }
 
+        // A source-directory scan can prove that an otherwise-unbound PascalCase receiver is a
+        // top-level static/runtime type. Preserve the type name so the emitter can route its import;
+        // do not turn it into an instance member purely by casing.
+        var isReceiver = (identifier.Parent as MemberAccessExpressionSyntax)?.Expression == identifier;
+        if (isReceiver && context.CanGuess(identifier) && context.IsFallbackTypeReceiver(name))
+            return JsExpr.Identifier(name);
+
         // Fallback Heuristics
         if (name.StartsWith("_"))
         {

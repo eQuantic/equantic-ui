@@ -234,6 +234,7 @@ public class TypeScriptEmitter
     public void SetDependencyResolver(ComponentDependencyResolver resolver)
     {
         _dependencyResolver = resolver;
+        _converter.SetFallbackTypeReceivers(resolver.GetAllStaticHelpers(), resolver.GetRuntimeProvidedTypes());
     }
 
     /// <summary>The model backing the CURRENT emission — the import collector asks it for the type
@@ -816,6 +817,12 @@ public class TypeScriptEmitter
             foreach (var appType in component.AppTypes)
             {
                 if (appType == component.Name) continue;
+                if (_dependencyResolver.GetRuntimeProvidedTypes().Contains(appType))
+                {
+                    component.RuntimeProvidedTypes.Add(appType);
+                    componentTypes.Add(appType);
+                    continue;
+                }
                 if (_dependencyResolver.GetAllStaticHelpers().Contains(appType)
                     || _dependencyResolver.GetAllRecords().Contains(appType)
                     || _dependencyResolver.GetAllPlainClasses().Contains(appType)
@@ -832,8 +839,13 @@ public class TypeScriptEmitter
         // "Row" would pull the WEB Row's dependency chain (Flex) into a page that never uses it.
         if (_dependencyResolver != null)
         {
+            var fallbackRuntime = _dependencyResolver.GetRuntimeProvidedTypes();
             var perAppSeeds = componentTypes
-                .Where(t => !component.RuntimeProvidedTypes.Contains(t.Contains('.') ? t[(t.LastIndexOf('.') + 1)..] : t))
+                .Where(t =>
+                {
+                    var simple = t.Contains('.') ? t[(t.LastIndexOf('.') + 1)..] : t;
+                    return !component.RuntimeProvidedTypes.Contains(simple) && !fallbackRuntime.Contains(simple);
+                })
                 .ToHashSet();
             var dependencies = _dependencyResolver.ResolveDependencies(perAppSeeds);
             foreach (var dep in dependencies)
@@ -850,6 +862,7 @@ public class TypeScriptEmitter
         var knownComponents = _dependencyResolver?.GetAllComponents().ToHashSet() ?? new HashSet<string>();
         var knownRecords = _dependencyResolver?.GetAllRecords() ?? (IReadOnlySet<string>)new HashSet<string>();
         var knownStaticHelpers = _dependencyResolver?.GetAllStaticHelpers() ?? (IReadOnlySet<string>)new HashSet<string>();
+        var knownRuntimeProvided = _dependencyResolver?.GetRuntimeProvidedTypes() ?? (IReadOnlySet<string>)new HashSet<string>();
         var knownPlain = _dependencyResolver?.GetAllPlainClasses() ?? (IReadOnlySet<string>)new HashSet<string>();
         bool KnownUserType(string name) => knownComponents.Contains(name) || knownRecords.Contains(name)
                                            || knownStaticHelpers.Contains(name) || knownPlain.Contains(name);
@@ -905,7 +918,7 @@ public class TypeScriptEmitter
 
             // Types the runtime provides (the shared vocabulary — discovered semantically by the parser,
             // see ComponentDefinition.RuntimeProvidedTypes) import from @equantic/runtime, never ./<Type>.
-            if (component.RuntimeProvidedTypes.Contains(cleanType))
+            if (component.RuntimeProvidedTypes.Contains(cleanType) || knownRuntimeProvided.Contains(cleanType))
             {
                 coreImports.Add(cleanType);
                 continue;
@@ -1968,6 +1981,7 @@ public class TypeScriptEmitter
         _dependencyResolver?.GetAllComponents().Contains(name) == true
         || _dependencyResolver?.GetAllRecords().Contains(name) == true
         || _dependencyResolver?.GetAllStaticHelpers().Contains(name) == true
+        || _dependencyResolver?.GetRuntimeProvidedTypes().Contains(name) == true
         || _dependencyResolver?.GetAllPlainClasses().Contains(name) == true;
 
     public string EmitPlainClassModule(ClassDeclarationSyntax cls, SemanticModel? semanticModel) =>
@@ -2015,6 +2029,8 @@ public class TypeScriptEmitter
         if (semanticModel != null)
             Services.RuntimeProvidedTypeScanner.Collect(cls, semanticModel, runtimeProvided,
                 referencedEnums, appTypes: null, hostOnly: hostOnlyInSignatures);
+        else if (_dependencyResolver != null)
+            runtimeProvided.UnionWith(_dependencyResolver.GetRuntimeProvidedTypes());
         // A TYPE POSITION is the seventh way to name a host-only symbol and the one no expression
         // strategy can reach: `public Matrix2D Placement { get; init; }` on a component compiled,
         // emitted `import { Matrix2D } from "@equantic/runtime"`, and took the page down at
