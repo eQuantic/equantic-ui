@@ -319,11 +319,13 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
     );
   });
 
-  it('WebFrame lowers to a sandboxed iframe — srcdoc wins, sandbox always present', () => {
+  // The title used to read "srcdoc wins": the node carried `source` and `document` as two nullable
+  // strings and the realizer picked one. WebContent makes that unrepresentable on both sides, so
+  // what is pinned now is that the ONE content value names the ONE attribute.
+  it('WebFrame lowers to a sandboxed iframe — one content attribute, sandbox always present', () => {
     const frame: VisualNodeValue = {
       nodeKind: 'webFrame',
-      document: '<!doctype html><p>hello</p>',
-      source: '/ignored',
+      content: { value: '<!doctype html><p>hello</p>', isInline: true },
       sandbox: 3, // Scripts | SameOrigin — the [Flags] number as it crosses the bridge
       title: 'Live preview',
       width: { kind: 'fill', value: 0 },
@@ -342,11 +344,27 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
 
     // Locked frame: the attribute stays, EMPTY — omitting it would be no isolation at all.
     const locked = lowerVisualNode(
-      { nodeKind: 'webFrame', source: '/x', sandbox: 0 } as unknown as VisualNodeValue,
+      {
+        nodeKind: 'webFrame',
+        content: { value: '/x', isInline: false },
+        sandbox: 0,
+      } as unknown as VisualNodeValue,
       ctx,
     );
     expect(locked.attributes['sandbox']).toBe('');
     expect(locked.attributes['src']).toBe('/x');
+    expect(locked.attributes['srcdoc']).toBeUndefined();
+  });
+
+  // The C# side asserts the same thing in WebFrameRealizerTests.TheDefaultContentDrawsNeitherAttribute.
+  it('WebFrame with no content draws neither attribute', () => {
+    const empty = lowerVisualNode(
+      { nodeKind: 'webFrame', sandbox: 1, title: 'Empty' } as unknown as VisualNodeValue,
+      ctx,
+    );
+    expect(empty.attributes['src']).toBeUndefined();
+    expect(empty.attributes['srcdoc']).toBeUndefined();
+    expect(empty.attributes['title']).toBe('Empty');
   });
 
   it('single-line MONO text keeps its spaces (nowrap would collapse the indentation)', () => {

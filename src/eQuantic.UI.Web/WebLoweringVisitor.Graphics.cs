@@ -330,9 +330,13 @@ internal sealed partial class WebLoweringVisitor
 
     /// <summary>
     /// A sandboxed <c>iframe</c>. <c>sandbox</c> is ALWAYS present — an empty value is the locked
-    /// frame, and each <see cref="WebSandbox"/> flag appends its <c>allow-</c> token. Inline
-    /// <see cref="WebFrame.Document"/> wins over <see cref="WebFrame.Source"/>; the border is the
-    /// frame's own 1990s default, so it goes.
+    /// frame, and each <see cref="WebSandbox"/> flag appends its <c>allow-</c> token. The border is
+    /// the frame's own 1990s default, so it goes.
+    /// <para>
+    /// The content is ONE attribute and no precedence: <see cref="WebContent"/> can only be an
+    /// address or a document, so this reads which and writes it. It used to be an <c>if/else if</c>
+    /// over two nullable strings, with the rule that inline won stated here in prose.
+    /// </para>
     /// </summary>
     private HtmlElement LowerWebFrame(WebFrame frame)
     {
@@ -347,8 +351,8 @@ internal sealed partial class WebLoweringVisitor
             ["sandbox"] = string.Join(' ', tokens),
             ["title"] = frame.Title,
         };
-        if (frame.Document is { Length: > 0 } document) attributes["srcdoc"] = document;
-        else if (frame.Source is { Length: > 0 } source) attributes["src"] = source;
+        if (frame.Content.Value is { Length: > 0 } content)
+            attributes[frame.Content.IsInline ? "srcdoc" : "src"] = content;
 
         return new RealizedElement("iframe")
         {

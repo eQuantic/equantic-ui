@@ -27,7 +27,7 @@ import { CanvasPointer } from './canvas-pointer';
 export { CanvasPointer };
 import { lowerVisualNode } from './lowering';
 import { ambientLoweringContext } from './photon-context';
-import { CornerRadii, EdgeInsets, SizeValue, StyleChannels } from './value-types';
+import { CornerRadii, EdgeInsets, SizeValue, StyleChannels, WebContent } from './value-types';
 import { Curve, Motion } from './design-system.generated';
 
 export { StyleChannels } from './value-types';
@@ -1391,24 +1391,26 @@ export class CameraPreview extends VisualNode {
  */
 export class WebFrame extends VisualNode {
   readonly nodeKind = 'webFrame';
-  source: string | null = null;
-  document: string | null = null;
+  content: WebContent;
+  title: string;
   sandbox = 1;
-  title = '';
   width: SizeValue | number = SizeValue.fill;
   height: SizeValue | number = SizeValue.fill;
   cornerRadius?: CornerRadii;
 
-  constructor(config?: {
-    source?: string | null;
-    document?: string | null;
-    sandbox?: number;
-    title?: string;
-    width?: SizeValue | number;
-    height?: SizeValue | number;
-    cornerRadius?: CornerRadii;
-  }) {
+  constructor(
+    content: WebContent,
+    title: string,
+    config?: {
+      sandbox?: number;
+      width?: SizeValue | number;
+      height?: SizeValue | number;
+      cornerRadius?: CornerRadii;
+    },
+  ) {
     super();
+    this.content = content;
+    this.title = title;
     if (config) Object.assign(this, config);
     this.width = SizeValue.from(this.width)!;
     this.height = SizeValue.from(this.height)!;

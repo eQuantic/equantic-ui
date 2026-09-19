@@ -1407,8 +1407,8 @@ function lowerWebFrame(node: WebFrameNode): HtmlNode {
     sandbox: tokens.join(' '),
     title: node.title ?? '',
   };
-  if (node.document) attributes['srcdoc'] = node.document;
-  else if (node.source) attributes['src'] = node.source;
+  // ONE attribute, no precedence: WebContent is an address or a document and never both.
+  if (node.content?.value) attributes[node.content.isInline ? 'srcdoc' : 'src'] = node.content.value;
 
   return { tag: 'iframe', attributes, events: {}, children: [] };
 }

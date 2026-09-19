@@ -749,8 +749,8 @@ export interface CameraPreviewNode extends VisualNodeValue {
  */
 export interface WebFrameNode extends VisualNodeValue {
   nodeKind: 'webFrame';
-  source?: string | null;
-  document?: string | null;
+  /** An address or an inline document — never both. See WebContent in value-types.ts. */
+  content?: { value: string; isInline: boolean } | null;
   sandbox: number;
   title?: string;
   width?: SizeValueValue;

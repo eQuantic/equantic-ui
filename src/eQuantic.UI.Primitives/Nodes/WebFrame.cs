@@ -1,31 +1,6 @@
 namespace eQuantic.UI.Primitives;
 
 /// <summary>
-/// What an embedded document is ALLOWED to do — the vocabulary's word for the iframe sandbox,
-/// composed instead of spelled. <see cref="None"/> is the fully locked-down frame; every flag
-/// hands one capability back.
-/// </summary>
-[Flags]
-public enum WebSandbox
-{
-    /// <summary>Maximum isolation: no scripts, no origin, no forms, no popups.</summary>
-    None = 0,
-
-    /// <summary>The document may run script.</summary>
-    Scripts = 1,
-
-    /// <summary>The document keeps the host's origin — required for it to fetch same-origin
-    /// resources (module imports, styles). Trust the content before granting it.</summary>
-    SameOrigin = 2,
-
-    /// <summary>The document may submit forms.</summary>
-    Forms = 4,
-
-    /// <summary>The document may open new windows.</summary>
-    Popups = 8,
-}
-
-/// <summary>
 /// An embedded web DOCUMENT — someone else's page by address, or a document handed over whole —
 /// presented isolated from the tree around it. The playground's live preview, an embedded map, a
 /// sandboxed demo: content that must render without being able to touch the app.
@@ -34,6 +9,14 @@ public enum WebSandbox
 /// <see cref="WebSandbox.Scripts"/> alone, and every further capability is granted by name. The
 /// frame never dictates its own size — a document has no intrinsic extent the layout could ask
 /// for — so it fills what the parent offers unless given explicit dp.
+/// </para>
+/// <para>
+/// Both of its constructor arguments are arguments and not properties BECAUSE they are not
+/// optional. <see cref="WebContent"/> makes the address-or-document choice a value rather than
+/// two nullable strings with a precedence between them, and <see cref="Title"/> is what assistive
+/// tech announces the frame as — a screen reader cannot describe a page it cannot enter, so a
+/// frame without one is not a frame anybody can use. It was an <c>init</c> property defaulting to
+/// the empty string while its own doc called it mandatory.
 /// </para>
 /// <para>
 /// Web-only for now: the web realizer lowers it to a sandboxed <c>iframe</c>; Photon has no
@@ -45,21 +28,32 @@ public sealed class WebFrame : VisualNode
 {
     public sealed override string NodeKind => "webFrame";
 
-    /// <summary>An address to load — the embed-by-URL form. Ignored when
-    /// <see cref="Document"/> is set.</summary>
-    public string? Source { get; init; }
+    public WebFrame(WebContent content, string title)
+    {
+        Content = content;
+        Title = title;
+    }
 
-    /// <summary>The whole document, inline — the playground form: markup that exists only in
-    /// memory, never at an address.</summary>
-    public string? Document { get; init; }
+    /// <summary>The address to load, or the whole document inline — exactly one of the two.</summary>
+    public WebContent Content { get; }
+
+    /// <summary>What assistive tech announces the frame as.</summary>
+    public string Title { get; }
 
     /// <summary>What the document may do. Scripts only, until told otherwise.</summary>
     public WebSandbox Sandbox { get; init; } = WebSandbox.Scripts;
 
-    /// <summary>What assistive tech announces the frame as. Every embedded document needs one —
-    /// a screen reader cannot describe a page it cannot enter.</summary>
-    public string Title { get; init; } = "";
-
+    /// <summary>
+    /// The extent, defaulting to FILL — a document has none of its own to be asked for.
+    /// <para>
+    /// These two are the reason the <c>UI.WebFrame</c> factory carries no tail for them: a tail
+    /// parameter's default is written in the factory's signature, C# has no constant expression
+    /// for <see cref="SizeValue.Fill"/>, and a <c>= default</c> would quietly hand back a HUG
+    /// frame from the factory where <c>new</c> gives a filling one. The factory surface's whole
+    /// promise is that named arguments carry between the two forms unchanged, so the two that
+    /// cannot keep it stay reachable only through the initializer.
+    /// </para>
+    /// </summary>
     public SizeValue Width { get; init; } = SizeValue.Fill;
     public SizeValue Height { get; init; } = SizeValue.Fill;
 

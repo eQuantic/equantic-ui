@@ -186,6 +186,7 @@ export {
   Transform2D,
   TypeStyle,
   VariantColors,
+  WebContent,
 } from './shared/value-types';
 export type { AppTheme } from './shared/value-types';
 export {
