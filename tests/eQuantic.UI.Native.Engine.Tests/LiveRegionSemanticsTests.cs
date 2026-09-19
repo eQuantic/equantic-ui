@@ -61,7 +61,7 @@ public class LiveRegionSemanticsTests
         column.Add(new Pressable(new Text("press", TypeRole.BodyM), () => { }) { Label = "Press" });
         column.Add(new Progress(new Text("bar", TypeRole.BodyM)) { Label = "Uploading" });
         column.Add(new Adjustable(new Text("x", TypeRole.BodyM), _ => { }) { Label = "Volume" });
-        column.Add(new Navigable([new Text("row", TypeRole.BodyM)], _ => { }) { Label = "July 2026" });
+        column.Add(new Navigable(_ => { }, [new Text("row", TypeRole.BodyM)]) { Label = "July 2026" });
         column.Add(Region(LiveRegionUrgency.Polite));
 
         var semantics = Describe(column);

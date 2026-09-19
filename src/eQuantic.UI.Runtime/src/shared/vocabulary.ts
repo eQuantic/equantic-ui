@@ -1342,8 +1342,8 @@ export class Navigable extends VisualNode {
   activeCell: readonly number[] | null = null;
 
   constructor(
-    rows: VisualNode[],
     onMove: (move: NavigableMoveValue) => void,
+    rows: VisualNode[],
     config?: {
       label?: string;
       role?: 'grid';
@@ -1352,8 +1352,8 @@ export class Navigable extends VisualNode {
     },
   ) {
     super();
-    this.rows = rows;
     this.onMove = onMove;
+    this.rows = rows;
     if (config) Object.assign(this, config);
   }
 }

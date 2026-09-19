@@ -53,7 +53,7 @@ public class LabelledNodesReachSemanticsTests
         ["Vector"] = label => new Vector(CuratedIcons.Resolve(Icons.Search), 24, label: label),
         ["Drawing"] = label => new Drawing(new VectorDrawing(0, 0, 24, 24, []), 24, 24) { Label = label },
         ["CameraPreview"] = label => new CameraPreview(null, 120, 80) { Label = label },
-        ["Navigable"] = label => new Navigable([new Text("row", TypeRole.BodyM)], _ => { }) { Label = label },
+        ["Navigable"] = label => new Navigable(_ => { }, [new Text("row", TypeRole.BodyM)]) { Label = label },
         ["Overlay"] = label => new Overlay(new Text("over", TypeRole.BodyM)) { Label = label },
         ["LiveRegion"] = label => new LiveRegion(new Text("region", TypeRole.BodyM)) { Label = label },
         ["Adjustable"] = label => new Adjustable(new Text("x", TypeRole.BodyM), _ => { }) { Label = label },

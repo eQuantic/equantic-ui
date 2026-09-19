@@ -127,7 +127,7 @@ public class NavigableOnPhotonTests
             return row;
         }
 
-        var reordered = new Navigable([Row("b", "second"), Row("a", "first")], _ => { }) { Label = "Weeks" };
+        var reordered = new Navigable(_ => { }, [Row("b", "second"), Row("a", "first")]) { Label = "Weeks" };
         var host = new PhotonHost(reordered, PhotonTheme.Instance, ThemeMode.Light, 400, 400);
         var frame = host.RenderFrame(new DisplayListBuilder());
 

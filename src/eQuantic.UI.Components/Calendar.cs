@@ -119,7 +119,7 @@ public sealed class Calendar : StatefulComponent
 
         var month = new Column(gap: Space.S2);
         month.Add(header);
-        month.Add(new Navigable(rows, Move)
+        month.Add(new Navigable(Move, rows)
         {
             Label = Label ?? monthTitle,
             HasHeaderRow = true,

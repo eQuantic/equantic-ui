@@ -49,7 +49,7 @@ export class Calendar extends StatefulComponent {
         }
         let month = new Column(8);
         month.add(header);
-        month.add(new Navigable(rows, this.move.bind(this), { label: this.label ?? monthTitle, hasHeaderRow: true, activeCell: this.cursorCell(start), role: 'grid' }));
+        month.add(new Navigable(this.move.bind(this), rows, { label: this.label ?? monthTitle, hasHeaderRow: true, activeCell: this.cursorCell(start), role: 'grid' }));
         return month;
     }
 

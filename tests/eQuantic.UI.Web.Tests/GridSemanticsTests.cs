@@ -45,11 +45,11 @@ public class GridSemanticsTests
 
     private static Navigable Month(Action<NavigableMove>? onMove = null, string label = "July 2026") =>
         new(
+            onMove ?? (_ => { }),
             [
                 Row(new Text("S"), new Text("M"), new Text("T")),
                 Row(Cell("1", false), Cell("2", true), Cell("3", false)),
-            ],
-            onMove ?? (_ => { }))
+            ])
         {
             Label = label,
             HasHeaderRow = true,

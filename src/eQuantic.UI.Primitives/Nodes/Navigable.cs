@@ -24,14 +24,22 @@ public sealed class Navigable : VisualNode
 {
     public override string NodeKind => "navigable";
 
-    public Navigable(IReadOnlyList<VisualNode> rows, Action<NavigableMove> onMove)
+    public Navigable(Action<NavigableMove> onMove, IReadOnlyList<VisualNode> rows)
     {
-        Rows = rows;
         OnMove = onMove;
+        Rows = rows;
     }
 
     /// <summary>The rows, in reading order. Each becomes one row of the accessibility tree; how it
-    /// LOOKS is the caller's — a Row node, a slice of a Grid, whatever the design asks for.</summary>
+    /// LOOKS is the caller's — a Row node, a slice of a Grid, whatever the design asks for.
+    /// <para>
+    /// LAST in the constructor, like every container's children — <c>new Navigable(Move, rows)</c>
+    /// rather than the other way round, which made this the one multi-child node in the vocabulary
+    /// that OPENED with its collection. It keeps the name
+    /// <c>rows</c> rather than becoming <c>children</c> because they are not interchangeable: a
+    /// grid whose cells are not inside rows is an invalid accessibility tree, so what this list
+    /// holds is a structural claim and not just "what is inside".
+    /// </para></summary>
     public IReadOnlyList<VisualNode> Rows { get; init; }
 
     /// <summary>Where the keyboard asked to go. The COMPOSITE owns what a move means — which cell
