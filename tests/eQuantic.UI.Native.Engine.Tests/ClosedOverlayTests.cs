@@ -90,20 +90,25 @@ public class ClosedOverlayTests
     public void ClosingTheLayerAboveAnotherDoesNotRenameIt()
     {
         var both = Render(Page(
-            new Overlay(Dialog("Toast")) { Open = true, Motion = Fade, Modal = false },
+            new Overlay(Dialog("Drawer")) { Open = true, Motion = Fade, Label = "Drawer" },
             new Overlay(Dialog("Dialog")) { Open = true, Motion = Fade, Label = "Dialog" }));
 
-        both.Frame.OverlayRoots.Select(root => root.Path).Should().Equal("ov0", "ov1");
+        both.Frame.OverlayRoots.Select(root => root.Path).Should().Equal(["ov0", "ov1"]);
 
-        var toastGone = Render(Page(
-            new Overlay(Dialog("Toast")) { Open = false, Motion = Fade, Modal = false },
+        var drawerGone = Render(Page(
+            new Overlay(Dialog("Drawer")) { Open = false, Motion = Fade, Label = "Drawer" },
             new Overlay(Dialog("Dialog")) { Open = true, Motion = Fade, Label = "Dialog" }));
 
-        toastGone.Frame.OverlayRoots.Select(root => root.Path).Should().Equal(["ov1"],
+        drawerGone.Frame.OverlayRoots.Select(root => root.Path).Should().Equal(["ov1"],
             "the surviving layer keeps the identity it had while the other was open");
-        toastGone.Frame.OverlayLayers.Should().ContainSingle()
-            .Which.Label.Should().Be("Dialog",
-                "the layers pair index for index with the roots, so the list that shrank is the same one");
+
+        // THE PAIRING, at the place it is observable: the semantics walk reads OverlayLayers[i]
+        // beside OverlayRoots[i], so a list that shrinks out of step announces the closed layer's
+        // name over the open layer's contents — or, when the closed one is first, announces nothing
+        // at all, because the gate that reads Modal and Open finds the wrong node.
+        drawerGone.Host.Semantics().Should()
+            .ContainSingle(node => node.Role == SemanticRole.Group)
+            .Which.Should().Match<SemanticNode>(group => group.Label == "Dialog" && group.Path == "ov1");
     }
 
     /// <summary>

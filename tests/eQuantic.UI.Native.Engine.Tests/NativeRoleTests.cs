@@ -78,7 +78,9 @@ public class NativeRoleTests
     /// was static text that nothing could activate. An <see cref="Adjustable"/>'s two swipe actions
     /// sat INSIDE the Android click gate, whose predicate said false for the only role that reaches
     /// them. And a text field was advertised as activatable while <c>ActivatePath</c> searched hit
-    /// regions alone, where a field never appears.
+    /// regions alone, where a field never appears — and then, once that was fixed, over a
+    /// <see cref="SheetSurface"/>, whose stop carries neither an entry nor a code surface, because
+    /// the repair had enumerated the kinds it knew instead of naming the two answered elsewhere.
     /// </para>
     /// </summary>
     [Fact]
@@ -94,6 +96,12 @@ public class NativeRoleTests
             { Label = "Wi-Fi", Role = PressableRole.Switch });
         page.Add(new Pressable(new Text("c", TypeRole.Label), () => { })
             { Label = "Agree", Role = PressableRole.Checkbox });
+        // Both editable SURFACES, because both announce as CodeField and they register different
+        // kinds of stop — a sample holding only one of them cannot see the other go unanswered.
+        page.Add(new CodeSurface(new Text("code", TypeRole.BodyM), new CodeEditorController("x"))
+            { Label = "Source" });
+        page.Add(new SheetSurface(new Text("sheet", TypeRole.BodyM), new SheetController(rows: 2, cols: 2))
+            { Label = "Budget" });
 
         var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 600);
         var frame = host.RenderFrame(new DisplayListBuilder());
@@ -105,8 +113,11 @@ public class NativeRoleTests
 
         reached.Select(node => node.Role).Should().Contain(
             [SemanticRole.Button, SemanticRole.TextField, SemanticRole.Slider,
-             SemanticRole.GridCell, SemanticRole.Switch, SemanticRole.Checkbox],
+             SemanticRole.GridCell, SemanticRole.Switch, SemanticRole.Checkbox,
+             SemanticRole.CodeField],
             "the sample really does put one of each within reach");
+        reached.Count(node => node.Role == SemanticRole.CodeField).Should().Be(2,
+            "BOTH surfaces that announce as one are in the sample, not just the first");
 
         foreach (var node in reached)
         {

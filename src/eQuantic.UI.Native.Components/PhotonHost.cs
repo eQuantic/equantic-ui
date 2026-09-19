@@ -1190,9 +1190,15 @@ public sealed class PhotonHost
         if (stops is null) return false;
         for (var i = 0; i < stops.Count; i++)
         {
-            // A pressable stop was already answered above, by the region that carries its handler;
-            // an Adjustable is stepped by AdjustPath and activating it does nothing on any platform.
-            if (stops[i].Path != path || stops[i] is { Entry: null, Code: null }) continue;
+            // Everything else that takes focus is LANDED ON, and the condition names the two that
+            // are answered ELSEWHERE rather than the kinds it happens to know: a pressable was
+            // already answered above by the region carrying its handler, and an Adjustable is
+            // stepped by AdjustPath, where activating does nothing on any platform. Listing the
+            // kinds instead (an entry, a code surface) silently dropped the SheetSurface, which
+            // announces as a CodeField and carries a stop of its own — the same shape of mistake as
+            // the catch-all this file's NativeRole was written to end.
+            if (stops[i].Path != path) continue;
+            if (stops[i].Pressable is not null || stops[i].Adjustable is not null) continue;
             return Land(stops[i]);
         }
         return false;
