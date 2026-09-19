@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 import type { HtmlNode } from '../core/types';
 import { photonTheme } from './design-system.generated';
 import { tokenValue } from './lowering';
-import { Box, BoxStyle, Column, Pressable, Row, Spacer, Text } from './vocabulary';
-import { ColorToken, CornerRadii, EdgeInsets, SizeValue } from './value-types';
+import { Box, BoxStyle, Column, Pressable, Row, Spacer, Text, WebFrame } from './vocabulary';
+import { ColorToken, CornerRadii, EdgeInsets, SizeValue, WebContent } from './value-types';
 import { Avatar } from './components/Avatar';
 import { ComponentContext } from './photon-context';
 
@@ -145,5 +145,24 @@ describe('transpiled components carry C#’s implicit value-type defaults', () =
       nodeKind: string;
     };
     expect(built.nodeKind).toBe('box');
+  });
+});
+
+describe('WebFrame content', () => {
+  // C#'s `default(WebContent)` is a real state — a frame that draws neither `src` nor `srcdoc` —
+  // and the compiler lowers a default struct to `undefined` like any other. So a page writing
+  // `new WebFrame(default, "Empty")` emits `new WebFrame(undefined, 'Empty')`, and without this the
+  // field holds `undefined` behind a `WebContent` annotation: reading `.value` throws, and the two
+  // sides disagree about a state C# answers `""`/`false` for.
+  it('normalizes an absent content the way C# answers default(WebContent)', () => {
+    const frame = new WebFrame(undefined as unknown as WebContent, 'Empty');
+
+    expect(frame.content.value).toBe('');
+    expect(frame.content.isInline).toBe(false);
+  });
+
+  it('keeps the content it is given', () => {
+    expect(new WebFrame(WebContent.url('/x'), 'X').content).toEqual(WebContent.url('/x'));
+    expect(new WebFrame(WebContent.document('<p>a</p>'), 'A').content.isInline).toBe(true);
   });
 });

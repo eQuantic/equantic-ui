@@ -86,4 +86,56 @@ public class EnumInsideAGenericTests
         Emit("Action<eQuantic.UI.Primitives.ICanvasPainter> draw")
             .Should().Contain("(iCanvasPainter: any) => void");
     }
+
+    /// <summary>
+    /// ONE NESTING DOWN, which the first pass at this did not reach: the string mapper flattens
+    /// <c>IReadOnlyList&lt;NavigableMove&gt;</c> to <c>NavigableMove[]</c> before the symbol pass
+    /// runs, and walking only the outer generic's own arguments never sees the enum. It emitted the
+    /// C# spelling with no import — the same defect as the un-nested case, one level in.
+    /// </summary>
+    [Fact]
+    public void AVocabularyEnum_NestedTwoDeep_CrossesAsItsUnionToo()
+    {
+        var js = Emit("Action<IReadOnlyList<eQuantic.UI.Primitives.NavigableMove>> onMoves");
+
+        js.Should().Contain("NavigableMoveValue[]");
+        js.Should().NotContain("NavigableMove[]", "the C# spelling names nothing on the other side");
+        js.Should().Contain("import { NavigableMoveValue } from \"@equantic/runtime\";");
+    }
+
+    /// <summary>
+    /// An interface nested the same way, for the same reason the un-nested one is asserted: the two
+    /// kinds share the walk, so a change to it has to face both.
+    /// </summary>
+    [Fact]
+    public void AnInterface_NestedTwoDeep_AnswersAnyToo()
+    {
+        Emit("Action<IReadOnlyList<eQuantic.UI.Primitives.ICanvasPainter>> draws")
+            .Should().Contain("any[]");
+    }
+
+    /// <summary>
+    /// A PARAMETER NAME has to be a name. <c>Action&lt;T&gt;</c> derived one from its type argument,
+    /// which is fine while the argument IS an identifier and produced <c>iReadOnlyList&lt;T&gt;</c>
+    /// in the parameter position when it was not — a module that does not parse at all, found by
+    /// the same review that found the nesting. <c>Func&lt;…&gt;</c> beside it has always answered
+    /// <c>value</c> without deriving anything, and this now agrees with it.
+    /// </summary>
+    [Fact]
+    public void AGenericTypeArgument_DoesNotBecomeAParameterName()
+    {
+        var js = Emit("Action<IReadOnlyList<eQuantic.UI.Primitives.NavigableMove>> onMoves");
+
+        js.Should().Contain("(value: NavigableMoveValue[]) => void");
+        js.Should().NotContain("iReadOnlyList<", "that is a type, and it was landing in the name slot");
+    }
+
+    /// <summary>The control for the one above: a SIMPLE type argument still names the parameter
+    /// after itself, which is what every delegate in the tree already emits.</summary>
+    [Fact]
+    public void ASimpleTypeArgument_StillNamesTheParameter()
+    {
+        Emit("Action<eQuantic.UI.Primitives.NavigableMove> onMove")
+            .Should().Contain("(navigableMove: NavigableMoveValue) => void");
+    }
 }

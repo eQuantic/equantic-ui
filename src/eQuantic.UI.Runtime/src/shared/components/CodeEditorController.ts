@@ -47,7 +47,7 @@ export class CodeEditorController {
     }
 
     readOnly: boolean = false;
-    changed: ((codeEdit?: CodeEdit | null) => void) | null = null;
+    changed: ((codeEdit: CodeEdit | null) => void) | null = null;
     selectionChanged: ((codeRange: CodeRange) => void) | null = null;
 
     apply(range: CodeRange, text: string) {

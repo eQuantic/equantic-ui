@@ -148,6 +148,18 @@ export class WebContent {
   static document(markup: string): WebContent {
     return new WebContent(markup, true);
   }
+
+  /**
+   * C#'s `default(WebContent)`, which the compiler lowers to `undefined` like any default struct —
+   * so a page writing `new WebFrame(default, "Empty")` emits `new WebFrame(undefined, 'Empty')` and
+   * the field would hold `undefined` behind a `WebContent` annotation. This is what it normalizes
+   * to: empty value, not inline, drawing neither attribute — exactly what C# answers for the same
+   * frame. Same shape as `SizeValue.from`, and called from the same two lines of the same
+   * constructor.
+   */
+  static from(content: WebContent | undefined | null): WebContent {
+    return content ?? new WebContent('', false);
+  }
 }
 
 export class EdgeInsets {

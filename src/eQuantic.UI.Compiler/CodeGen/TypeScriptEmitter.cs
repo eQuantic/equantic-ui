@@ -1844,9 +1844,13 @@ public class TypeScriptEmitter
         // only when a factory first took a delegate over a vocabulary enum (UI.Navigable, #251):
         // every earlier one took a primitive, and a BARE enum parameter had always gone down the
         // `core` switch below, which has answered this correctly all along.
+        // NESTED, not just the outer generic's own arguments: `Action<IReadOnlyList<NavigableMove>>`
+        // maps to `NavigableMove[]` before this runs, and the enum is one level further in than a
+        // single pass over TypeArguments can see. Walking only the top level left that emitting the
+        // C# spelling with no import — the exact defect this block exists to end, one nesting down.
         if (!echoed && resolved is INamedTypeSymbol { TypeArguments.Length: > 0 } generic)
         {
-            foreach (var argument in generic.TypeArguments)
+            foreach (var argument in generic.TypeArguments.SelectMany(Nested))
             {
                 var crossesAs = argument.TypeKind switch
                 {
@@ -1877,6 +1881,21 @@ public class TypeScriptEmitter
         // handler itself may be absent.
         if (!nullable || core == "any") return core;
         return core.Contains("=>") ? $"({core}) | null" : $"{core} | null";
+    }
+
+    /// <summary>
+    /// A type and every type argument BELOW it, to any depth — `IReadOnlyList&lt;NavigableMove&gt;`
+    /// yields itself and the enum inside it. What the rewrite above needs, because the string
+    /// mapper has already flattened the shape (`NavigableMove[]`) and only the NAME inside it is
+    /// still the C# one.
+    /// </summary>
+    private static IEnumerable<ITypeSymbol> Nested(ITypeSymbol type)
+    {
+        yield return type;
+        if (type is not INamedTypeSymbol { TypeArguments.Length: > 0 } generic) yield break;
+        foreach (var argument in generic.TypeArguments)
+            foreach (var inner in Nested(argument))
+                yield return inner;
     }
 
     /// <summary>
@@ -2319,7 +2338,20 @@ public class TypeScriptEmitter
         else if (tsType.StartsWith("Action<") && tsType.EndsWith(">"))
         {
             var itemType = tsType.Substring(7, tsType.Length - 8);
-            tsType = $"({itemType.ToCamelCase()}: {CSharpTypeToTypeScript(itemType)}) => void";
+            // The NAME comes from the type only while the type IS a name. `Action<IReadOnlyList<T>>`
+            // otherwise produced `iReadOnlyList<T>` in the parameter position — not an identifier at
+            // all, so the emitted module did not parse. `Func<…>` below has always answered `value`
+            // rather than deriving anything, which is the same answer asked of the same problem.
+            //
+            // A trailing `?` is not what makes a type composite: `Action<CodeEdit?>` has always
+            // named its parameter `codeEdit` and still should, so nullability comes off before the
+            // question is asked. Testing the raw string instead cost that name for nothing.
+            var named = itemType.TrimEnd('?');
+            var parameter = named.Length > 0
+                && named.All(character => char.IsLetterOrDigit(character) || character == '_')
+                ? named.ToCamelCase()
+                : "value";
+            tsType = $"({parameter}: {CSharpTypeToTypeScript(itemType)}) => void";
         }
         else if (tsType == "Action")
         {

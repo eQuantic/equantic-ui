@@ -1409,7 +1409,7 @@ export class WebFrame extends VisualNode {
     },
   ) {
     super();
-    this.content = content;
+    this.content = WebContent.from(content);
     this.title = title;
     if (config) Object.assign(this, config);
     this.width = SizeValue.from(this.width)!;
