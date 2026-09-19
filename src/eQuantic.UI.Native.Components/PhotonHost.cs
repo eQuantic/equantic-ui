@@ -356,6 +356,16 @@ public sealed class PhotonHost
         var index = ((start % stops.Count) + stops.Count) % stops.Count;
         var stop = stops[index];
 
+        return Land(stop);
+    }
+
+    /// <summary>
+    /// Puts the focus ON a stop, whatever kind it is. Shared by the Tab walk and by a screen
+    /// reader's activate, because landing somewhere is one behaviour and not two: a field that
+    /// starts editing when Tab reaches it has to start editing when TalkBack's double tap does.
+    /// </summary>
+    private bool Land(FocusStop stop)
+    {
         // Bring it into view BEFORE it takes focus: a caret blinking somewhere off screen is the
         // same as no caret at all.
         ScrollIntoView(stop);
@@ -382,7 +392,7 @@ public sealed class PhotonHost
         }
         _focused = stop.Pressable;
         _focusedPath = stop.Path;
-        _focusVisible = true;   // arrived by Tab: this is exactly who the ring is for
+        _focusVisible = true;   // arrived without a pointer: this is exactly who the ring is for
         NeedsRender = true;
         return true;
     }
@@ -1153,10 +1163,15 @@ public sealed class PhotonHost
         _lastFrame is null ? Array.Empty<SemanticNode>() : SemanticsTree.Collect(_lastFrame);
 
     /// <summary>
-    /// Runs the control at <paramref name="path"/>, the way a screen reader's activate action
-    /// does. Resolved out of THIS frame's regions — same reason as every press: the handler on a
-    /// node from an old rebuild closes over dead state. Answers false when the path holds nothing
-    /// pressable.
+    /// Runs the control at <paramref name="path"/>, the way a screen reader's activate action does.
+    /// Resolved out of THIS frame's regions — same reason as every press: the handler on a node from
+    /// an old rebuild closes over dead state. Answers false when the path holds nothing to do.
+    /// <para>
+    /// A pressable RUNS; anything else that takes focus is LANDED ON, which is what activating it
+    /// means: double-tapping a field on TalkBack opens the keyboard in it, exactly as Tab does. Only
+    /// the first half existed, so the Android bridge offered <c>ACTION_CLICK</c> over every text and
+    /// code field — the table says those roles are activatable — and the tap did nothing at all.
+    /// </para>
     /// </summary>
     public bool ActivatePath(string path)
     {
@@ -1169,6 +1184,16 @@ public sealed class PhotonHost
             region.Node.OnPressed?.Invoke();
             NeedsRender = true;
             return true;
+        }
+
+        var stops = _lastFrame?.FocusStops;
+        if (stops is null) return false;
+        for (var i = 0; i < stops.Count; i++)
+        {
+            // A pressable stop was already answered above, by the region that carries its handler;
+            // an Adjustable is stepped by AdjustPath and activating it does nothing on any platform.
+            if (stops[i].Path != path || stops[i] is { Entry: null, Code: null }) continue;
+            return Land(stops[i]);
         }
         return false;
     }

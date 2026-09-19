@@ -109,30 +109,7 @@ internal sealed class PhotonAccessibility
     /// </summary>
     private static UIAccessibilityTrait TraitsOf(SemanticNode node)
     {
-        var traits = node.Role switch
-        {
-            SemanticRole.Button => UIAccessibilityTrait.Button,
-            SemanticRole.Link => UIAccessibilityTrait.Link,
-            SemanticRole.Image => UIAccessibilityTrait.Image,
-            SemanticRole.Slider => UIAccessibilityTrait.Adjustable,
-            // UIKit has no progress trait. UIProgressView reports as a plain element whose
-            // VALUE is the progress, and UpdatesFrequently is what stops VoiceOver
-            // re-announcing a bar that moves every frame — the noise this row exists to avoid.
-            SemanticRole.ProgressIndicator => UIAccessibilityTrait.UpdatesFrequently,
-            // UIKit has no checkbox role and no switch role: a UISwitch itself reports the button
-            // trait and puts its state in the value, which is exactly what these do.
-            SemanticRole.Checkbox or SemanticRole.Switch => UIAccessibilityTrait.Button,
-            // A text field is an element with no trait at all — UITextField carries none either;
-            // what identifies it is that it has a value and takes the keyboard.
-            SemanticRole.TextField or SemanticRole.CodeField => UIAccessibilityTrait.None,
-            // The container role (#187) carries NO trait, and that is the mapping rather than a
-            // gap: UIKit expresses a group by being an accessibility CONTAINER whose children are
-            // the elements, not by a trait on itself. The label still reaches VoiceOver, which is
-            // what makes the group named; giving it a trait here would make it a stop that
-            // swallows its own children — the opposite of what the role means.
-            SemanticRole.Group => UIAccessibilityTrait.None,
-            _ => UIAccessibilityTrait.StaticText,
-        };
+        var traits = Trait(NativeRole.Of(node.Role).UIKit);
         if (node.Disabled) traits |= UIAccessibilityTrait.NotEnabled;
         // The destination the user is ON, or the one of a set that is PICKED (a tab, an option, a
         // calendar day) — UIKit has one trait for both. A check never gets it (its state is its
@@ -144,6 +121,26 @@ internal sealed class PhotonAccessibility
         if (node.HeadingLevel > 0) traits |= UIAccessibilityTrait.Header;
         return traits;
     }
+
+    /// <summary>
+    /// UIKit's own constant for the trait <see cref="NativeRole"/> named. The set is CLOSED and
+    /// grows only when somebody decides to speak a new trait, which is why the last arm throws
+    /// instead of falling back to static text: a default here would reopen, one assembly along,
+    /// exactly the hole that table was written to close (#249).
+    /// </summary>
+    private static UIAccessibilityTrait Trait(UIKitTrait trait) => trait switch
+    {
+        UIKitTrait.None => UIAccessibilityTrait.None,
+        UIKitTrait.Button => UIAccessibilityTrait.Button,
+        UIKitTrait.Link => UIAccessibilityTrait.Link,
+        UIKitTrait.Image => UIAccessibilityTrait.Image,
+        UIKitTrait.Adjustable => UIAccessibilityTrait.Adjustable,
+        UIKitTrait.UpdatesFrequently => UIAccessibilityTrait.UpdatesFrequently,
+        UIKitTrait.StaticText => UIAccessibilityTrait.StaticText,
+        _ => throw new ArgumentOutOfRangeException(nameof(trait), trait,
+            "A named UIKit trait with no UIKit constant beside it. Add the arm — an element that "
+            + "announces itself as something it is not is the failure this refuses to make quietly."),
+    };
 
     /// <summary>
     /// What VoiceOver reads after the name. A field's value is its text; a check's is "1" or "0" —

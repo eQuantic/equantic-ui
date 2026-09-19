@@ -310,11 +310,26 @@ public static class PhotonRealizer
         // last-wins dispatch routes taps to the layer — a full-viewport scrim Pressable in the
         // layer blocks (and optionally handles) everything behind it.
         var overlayRoots = new List<LayoutNode>();
+        var realizedLayers = new List<Overlay>();
         for (var i = 0; i < overlays.Count; i++)
         {
+            // A CLOSED layer is realized NOWHERE — no pixels, no hit region, no focus stop, no
+            // semantic node. That is the state the web expresses with `visibility: hidden`, and
+            // Photon used to express as nothing at all: `Open` was read by no native reader, so a
+            // dismissed dialog kept painting at full opacity, kept eating taps, kept its Tab stop
+            // and was still read out (#252). Motion gates it because Motion is what makes `Open`
+            // mean anything — without one the layer is shown and hidden by being built or not, and
+            // the web ignores the flag for the same reason.
+            //
+            // Not queuing it in EmitOverlay would have been shorter and wrong: the layer's paths are
+            // `ov{i}`, so dropping a closed layer from the QUEUE renumbers every layer after it, and
+            // closing a toast would move the dialog underneath it to a new identity — losing its
+            // focus, its press state and its presence snapshots. The index stays; only the work goes.
+            if (overlays[i] is { Motion: not null, Open: false }) continue;
             var overlayLayout = LayoutEngine.Layout(overlays[i].Child, viewportWidth, viewportHeight,
                 context, rootPath: $"ov{i}");
             overlayRoots.Add(overlayLayout);
+            realizedLayers.Add(overlays[i]);
             // The UNCLIPPED sink: a layer lays out against the viewport, not inside whatever the
             // page happens to be scrolling.
             EmitVisitor.Shared.Emit(new EmitState(overlayLayout, input, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredPaths) { ScrollOffset = scrollOffset, MarkedText = markedText, Surface = new Rect(0, 0, viewportWidth, viewportHeight), InView = inViewStore },
@@ -346,8 +361,8 @@ public static class PhotonRealizer
         return new RealizeResult(layout, hits,
             motion.Active || transitions is { AnyActive: true } || presences is { AnyActive: true }
                 || drags is { AnyActive: true },
-            hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes, overlayRoots, overlays,
-            sheets, cursors, canvases);
+            hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes, overlayRoots,
+            realizedLayers, sheets, cursors, canvases);
     }
 
 

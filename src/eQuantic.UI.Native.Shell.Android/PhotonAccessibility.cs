@@ -85,8 +85,10 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
         var info = AccessibilityNodeInfo.Obtain(_view, virtualViewId);
         if (info is null) return null;
 
+        var native = NativeRole.Of(node.Role);
+
         info.PackageName = _view.Context?.PackageName;
-        info.ClassName = ClassOf(node.Role);
+        info.ClassName = native.Android;
         info.SetParent(_view);
         info.SetBoundsInScreen(ScreenBounds(node));
         info.Enabled = !node.Disabled;
@@ -132,7 +134,7 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
         // Only what can actually be ACTED on says so. Marking every node clickable — which a
         // blanket rule does, static text included — makes a screen reader offer "double tap to
         // activate" over a paragraph and do nothing when the user takes it up.
-        if (!node.Disabled && Activatable(node.Role))
+        if (!node.Disabled && native.Activatable)
         {
             info.Clickable = true;
             info.AddAction(NodeAction.ActionClick);
@@ -141,13 +143,17 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
             // is the same toggle a tap does.
             if (node.Expanded is { } open)
                 info.AddAction(open ? NodeAction.ActionCollapse : NodeAction.ActionExpand);
-            // An Adjustable takes the swipe up and down, which is where the platform routes them
-            // for a node that has no numeric range to set.
-            if (node.Role == SemanticRole.Slider)
-            {
-                info.AddAction(NodeAction.ActionScrollForward);
-                info.AddAction(NodeAction.ActionScrollBackward);
-            }
+        }
+
+        // An Adjustable takes the swipe up and down, which is where the platform routes them for a
+        // node that has no numeric range to set. Its OWN gate, beside the click and not inside it:
+        // these two lines used to sit under the clickable branch, whose predicate answered false for
+        // the one role that reaches them — so PerformAction's ScrollForward/Backward arms were
+        // wired to _adjust and never offered, and a slider was unreachable to TalkBack.
+        if (!node.Disabled && native.Adjustable)
+        {
+            info.AddAction(NodeAction.ActionScrollForward);
+            info.AddAction(NodeAction.ActionScrollBackward);
         }
 
         return info;
@@ -250,7 +256,7 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
         var accessibilityEvent = AccessibilityEvent.Obtain(type);
         if (accessibilityEvent is null) return;
         accessibilityEvent.PackageName = _view.Context?.PackageName;
-        accessibilityEvent.ClassName = ClassOf(node.Role);
+        accessibilityEvent.ClassName = NativeRole.Of(node.Role).Android;
         accessibilityEvent.SetSource(_view, virtualViewId);
         parent.RequestSendAccessibilityEvent(_view, accessibilityEvent);
     }
@@ -271,37 +277,6 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
             origin[0] + (int)(node.Bounds.Right * density),
             origin[1] + (int)(node.Bounds.Bottom * density));
     }
-
-    /// <summary>Whether a tap on this does anything — the roles that carry a handler. A label and
-    /// an image are read, not pressed.</summary>
-    private static bool Activatable(SemanticRole role) => role is
-        SemanticRole.Button or SemanticRole.Link or SemanticRole.Checkbox or SemanticRole.Switch
-        or SemanticRole.TextField or SemanticRole.CodeField;
-
-    /// <summary>
-    /// What the platform calls this kind of control. The class name is Android's role: TalkBack
-    /// reads "button", "checkbox", "switch" from it, in the user's language.
-    /// <para>
-    /// Fence: Android has no link class. A link is announced by what it DOES, and what it does here
-    /// is exactly what a button does.
-    /// </para>
-    /// </summary>
-    private static string ClassOf(SemanticRole role) => role switch
-    {
-        SemanticRole.Button => "android.widget.Button",
-        SemanticRole.Link => "android.widget.Button",
-        SemanticRole.Image => "android.widget.ImageView",
-        SemanticRole.ProgressIndicator => "android.widget.ProgressBar",
-        SemanticRole.Slider => "android.widget.SeekBar",
-        SemanticRole.Checkbox => "android.widget.CheckBox",
-        SemanticRole.Switch => "android.widget.Switch",
-        SemanticRole.TextField or SemanticRole.CodeField => "android.widget.EditText",
-        // The container role (#187). ViewGroup is what TalkBack reads as "a thing with things in
-        // it": it names the group and then walks its children, which is the whole distinction from
-        // every leaf above — announcing one of those consumes what is inside it.
-        SemanticRole.Group => "android.view.ViewGroup",
-        _ => "android.widget.TextView",
-    };
 
     /// <summary>Two trees are the same when every node is — the record struct's own equality, which
     /// covers role, path, bounds, label, value and state.</summary>

@@ -85,7 +85,7 @@ internal static class PhotonAccessibility
         foreach (var node in semantics)
         {
             var element = Send(Send(ElementClass(), Sel("alloc")), Sel("init"));
-            SendVoid(element, Sel("setAccessibilityRole:"), NSString(RoleName(node.Role)));
+            SendVoid(element, Sel("setAccessibilityRole:"), NSString(NativeRole.Of(node.Role).AppKit));
             SendVoid(element, Sel("setAccessibilityLabel:"), NSString(node.Label));
             if (node.Value is { } value)
                 SendVoid(element, Sel("setAccessibilityValue:"), NSString(value));
@@ -126,24 +126,4 @@ internal static class PhotonAccessibility
         }
         return _children;
     }
-
-    /// <summary>The AX role STRINGS, written literally: the exported constants hold exactly these
-    /// values, and dlsym-ing AppKit to read them back buys nothing.</summary>
-    private static string RoleName(SemanticRole role) => role switch
-    {
-        SemanticRole.Button => "AXButton",
-        SemanticRole.Link => "AXLink",
-        SemanticRole.TextField => "AXTextField",
-        SemanticRole.CodeField => "AXTextArea",
-        SemanticRole.Slider => "AXSlider",
-        SemanticRole.Image => "AXImage",
-        SemanticRole.ProgressIndicator => "AXProgressIndicator",
-        // Both checks are AXCheckBox to AppKit — macOS has no switch role; the DISTINCTION lives
-        // in SemanticRole for the mobile bridges, which do (UISwitch trait, Switch class).
-        SemanticRole.Checkbox or SemanticRole.Switch => "AXCheckBox",
-        // The container role (#187): VoiceOver stops on it, reads its name and then walks INTO it,
-        // which is the whole reason it is not a leaf like everything above.
-        SemanticRole.Group => "AXGroup",
-        _ => "AXStaticText",
-    };
 }
