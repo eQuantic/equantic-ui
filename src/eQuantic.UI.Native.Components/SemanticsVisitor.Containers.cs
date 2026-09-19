@@ -28,8 +28,17 @@ internal sealed partial class SemanticsVisitor
     /// <inheritdoc cref="PureLayout"/>
     public bool Visit(Grid node, LayoutNode laidOut) => PureLayout;
 
-    /// <inheritdoc cref="AwaitsGroupRole"/>
-    public bool Visit(Overlay node, LayoutNode laidOut) => AwaitsGroupRole;
+    /// <summary>
+    /// A dialog is a GROUP with a name: the reader says which wall appeared and then walks into it.
+    /// Gated on modal AND open exactly as the web realizer gates its `role="dialog"` — a toast layer
+    /// is not a dialog and a closed one is not one right now, so the two targets agree on when this
+    /// is a stop at all. This declined until <see cref="SemanticRole.Group"/> existed (#187).
+    /// </summary>
+    public bool Visit(Overlay node, LayoutNode laidOut) =>
+        node is { Modal: true, Open: true }
+            ? AnnounceGroup(new(SemanticRole.Group, laidOut.Path ?? "", laidOut.Bounds,
+                node.Label ?? "", null, false))
+            : Descend;
 
     /// <inheritdoc cref="PureLayout"/>
     public bool Visit(Pinned node, LayoutNode laidOut) => PureLayout;

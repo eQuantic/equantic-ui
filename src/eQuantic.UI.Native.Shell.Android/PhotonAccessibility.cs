@@ -296,6 +296,10 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
         SemanticRole.Checkbox => "android.widget.CheckBox",
         SemanticRole.Switch => "android.widget.Switch",
         SemanticRole.TextField or SemanticRole.CodeField => "android.widget.EditText",
+        // The container role (#187). ViewGroup is what TalkBack reads as "a thing with things in
+        // it": it names the group and then walks its children, which is the whole distinction from
+        // every leaf above — announcing one of those consumes what is inside it.
+        SemanticRole.Group => "android.view.ViewGroup",
         _ => "android.widget.TextView",
     };
 

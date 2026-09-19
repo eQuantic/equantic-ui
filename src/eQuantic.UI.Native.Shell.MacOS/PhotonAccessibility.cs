@@ -141,6 +141,9 @@ internal static class PhotonAccessibility
         // Both checks are AXCheckBox to AppKit — macOS has no switch role; the DISTINCTION lives
         // in SemanticRole for the mobile bridges, which do (UISwitch trait, Switch class).
         SemanticRole.Checkbox or SemanticRole.Switch => "AXCheckBox",
+        // The container role (#187): VoiceOver stops on it, reads its name and then walks INTO it,
+        // which is the whole reason it is not a leaf like everything above.
+        SemanticRole.Group => "AXGroup",
         _ => "AXStaticText",
     };
 }

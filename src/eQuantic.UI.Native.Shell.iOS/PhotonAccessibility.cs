@@ -125,6 +125,12 @@ internal sealed class PhotonAccessibility
             // A text field is an element with no trait at all — UITextField carries none either;
             // what identifies it is that it has a value and takes the keyboard.
             SemanticRole.TextField or SemanticRole.CodeField => UIAccessibilityTrait.None,
+            // The container role (#187) carries NO trait, and that is the mapping rather than a
+            // gap: UIKit expresses a group by being an accessibility CONTAINER whose children are
+            // the elements, not by a trait on itself. The label still reaches VoiceOver, which is
+            // what makes the group named; giving it a trait here would make it a stop that
+            // swallows its own children — the opposite of what the role means.
+            SemanticRole.Group => UIAccessibilityTrait.None,
             _ => UIAccessibilityTrait.StaticText,
         };
         if (node.Disabled) traits |= UIAccessibilityTrait.NotEnabled;

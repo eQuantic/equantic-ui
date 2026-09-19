@@ -156,14 +156,14 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Native.Components/SemanticsVisitor.Text.cs`
 - **Handoff**: Semantics — "StaticText — the run's text is its accessible value." / A11y — "Role: static text; label = full untruncated string (readers speak past the ellipsis)."
-- **Code**: Filed against a `Content`-only guard that is no longer there. Both readers take `PlainContent`, which concatenates the runs: the Text arm announces a rich-run paragraph (SemanticsVisitor.Text.cs:16-20 SemanticsVisitor), and the derived name of a label-less control gathers the same field (SemanticsVisitor.Interaction.cs:117-132 TextWithin). A Markdown paragraph with bold/code/link runs — the shape that produced nothing at all — announces its whole string on Photon. What the row asked for is what the code does; the READ remains untruncated (PlainContent is the full string, not the ellipsised line), which is the second half of the handoff's claim.
+- **Code**: Filed against a `Content`-only guard that is no longer there. Both readers take `PlainContent`, which concatenates the runs: the Text arm announces a rich-run paragraph (SemanticsVisitor.Text.cs:16-20 SemanticsVisitor), and the derived name of a label-less control gathers the same field (SemanticsVisitor.Interaction.cs:123-138 TextWithin). A Markdown paragraph with bold/code/link runs — the shape that produced nothing at all — announces its whole string on Photon. What the row asked for is what the code does; the READ remains untruncated (PlainContent is the full string, not the ellipsised line), which is the second half of the handoff's claim.
 - **Evidence**:
 
   ```
   src/eQuantic.UI.Native.Components/SemanticsVisitor.Text.cs:16-20 —
       public bool Visit(Text node, LayoutNode laidOut) =>
           node.PlainContent.Length > 0
-  src/eQuantic.UI.Native.Components/SemanticsVisitor.Interaction.cs:130  if (node.Source is Text { PlainContent.Length: > 0 } text) parts.Add(text.PlainContent);
+  src/eQuantic.UI.Native.Components/SemanticsVisitor.Interaction.cs:136  if (node.Source is Text { PlainContent.Length: > 0 } text) parts.Add(text.PlainContent);
   src/eQuantic.UI.Components/Markdown.cs:167  return new Text("", style.Body, theme.TextSecondary, maxLines: 0) { Spans = spans };
   ```
 

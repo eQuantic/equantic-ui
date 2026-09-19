@@ -244,6 +244,7 @@ SemanticRole.Checkbox = 7
 SemanticRole.Switch = 8
 SemanticRole.GridCell = 9
 SemanticRole.ProgressIndicator = 10
+SemanticRole.Group = 11
 ShapeScale.None = 0
 ShapeScale.ExtraSmall = 1
 ShapeScale.Small = 2

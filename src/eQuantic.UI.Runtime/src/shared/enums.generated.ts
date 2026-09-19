@@ -109,7 +109,7 @@ export type SemanticCheckValue = 'off' | 'on' | 'mixed';
 
 export type SemanticRoleValue =
   'staticText' | 'button' | 'link' | 'textField' | 'codeField' | 'slider' | 'image' | 'checkbox'
-  | 'switch' | 'gridCell' | 'progressIndicator';
+  | 'switch' | 'gridCell' | 'progressIndicator' | 'group';
 
 export type ShapeScaleValue =
   'none' | 'extraSmall' | 'small' | 'medium' | 'large' | 'extraLarge' | 'full';

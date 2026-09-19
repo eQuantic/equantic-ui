@@ -83,8 +83,14 @@ internal sealed partial class SemanticsVisitor
         Announce(new(SemanticRole.ProgressIndicator, laidOut.Path ?? "", laidOut.Bounds,
             node.Label, node.Value?.Spoken, false));
 
-    /// <inheritdoc cref="AwaitsGroupRole"/>
-    public bool Visit(Navigable node, LayoutNode laidOut) => AwaitsGroupRole;
+    /// <summary>
+    /// A navigable region is a GROUP: the reader names it and then walks its rows. Consuming it —
+    /// the only shape available before <see cref="SemanticRole.Group"/> (#187) — would have hidden
+    /// every row inside, which is why this declined while the web honoured it.
+    /// </summary>
+    public bool Visit(Navigable node, LayoutNode laidOut) =>
+        AnnounceGroup(new(SemanticRole.Group, laidOut.Path ?? "", laidOut.Bounds,
+            node.Label, null, false));
 
     /// <inheritdoc cref="Wraps"/>
     public bool Visit(DragDismiss node, LayoutNode laidOut) => Wraps;

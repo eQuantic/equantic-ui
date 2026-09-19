@@ -77,18 +77,6 @@ internal sealed partial class SemanticsVisitor(List<SemanticNode> nodes)
     /// node on this target to announce.</summary>
     private const bool EscapeHatch = Descend;
 
-    /// <summary>
-    /// A REAL GAP WEARING AN EXEMPTION, and the only two declines here that should not be declines.
-    /// The web honours both (<c>WebRealizer.LowerNavigable</c> and <c>LowerOverlay</c>) and Photon is
-    /// silent, because every announcement consumes its subtree and doing that to a navigable grid
-    /// would hide every row inside it. What they need is a role meaning "a labelled group, keep
-    /// walking", and <see cref="SemanticRole"/> has none: it is eleven leaf roles. That is a vocabulary
-    /// decision with a bridge per platform behind it —
-    /// <see href="https://github.com/eQuantic/equantic-ui/issues/187">#187</see>, which turns both of
-    /// these into announcements the day it is answered.
-    /// </summary>
-    private const bool AwaitsGroupRole = Descend;
-
     /// <summary>The expansion seam. A component is not a thing on screen; it BUILT the things on
     /// screen, and the layout pass keeps it in the tree as the parent of what it built
     /// (<c>MeasureComponent</c>). Walking through it is how the built tree is reached.</summary>
@@ -106,5 +94,20 @@ internal sealed partial class SemanticsVisitor(List<SemanticNode> nodes)
     {
         _nodes.Add(node);
         return Consumed;
+    }
+
+    /// <summary>
+    /// Add one stop and KEEP WALKING — the container form, and the only one that does both.
+    /// <para>
+    /// A reader stops on the group, says its name, and then goes on into what it holds. That is the
+    /// whole difference from <see cref="Announce"/>, and the reason it could not be expressed until
+    /// <see cref="SemanticRole.Group"/> existed: every other role is a leaf whose inner text IS its
+    /// name, so consuming is right for them and would have hidden every row of a navigable grid.
+    /// </para>
+    /// </summary>
+    private bool AnnounceGroup(SemanticNode node)
+    {
+        _nodes.Add(node);
+        return Descend;
     }
 }

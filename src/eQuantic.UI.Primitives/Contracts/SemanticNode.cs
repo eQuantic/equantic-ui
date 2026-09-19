@@ -42,6 +42,24 @@ public enum SemanticRole : byte
     /// </para>
     /// </summary>
     ProgressIndicator,
+
+    /// <summary>
+    /// A LABELLED GROUP THAT KEEPS WALKING — the one container role, and the only one here that does
+    /// not consume what is inside it. A reader stops on it, says its name, and then goes on into the
+    /// rows or the fields it holds.
+    /// <para>
+    /// It exists because every other role here is a LEAF: announcing consumes the subtree, which is
+    /// right for a button whose inner text is its name and catastrophic for a navigable grid, whose
+    /// every row would vanish. <see cref="Navigable"/> and <see cref="Overlay"/> were both declining
+    /// on Photon for exactly that reason while the web honoured them (#187), and a live region could
+    /// not have existed at all without it.
+    /// </para>
+    /// <para>
+    /// The platforms all have it: AXGroup on macOS, <c>android.view.ViewGroup</c> with screen-reader
+    /// focusability off, and an accessibility container on UIKit. Appended, by the rule above.
+    /// </para>
+    /// </summary>
+    Group,
 }
 
 /// <summary>A check's state, in ARIA's own three words. Mixed exists for checkboxes and nothing
