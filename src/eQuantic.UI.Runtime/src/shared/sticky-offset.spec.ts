@@ -250,10 +250,23 @@ describe('the first measurement corrects a cold load that landed under the chrom
   const realNow = performance.now;
   let clock = 0;
 
+  /**
+   * WHERE THE PAGE IS, driven by hand. The frame budget is spent on STILLNESS, so a spec that
+   * cannot move the page cannot express a jump that is still travelling — which is the one column
+   * `scroll-behavior: smooth` puts every fragment link in, and the column this suite was blind to
+   * while it stayed green.
+   */
+  let scrolled = 0;
+  const scrollTo = (y: number): void => {
+    scrolled = y;
+  };
+
   beforeEach(() => {
     resetColdLoadRealignmentForTests();
     pending = [];
     clock = 0;
+    scrolled = 0;
+    Object.defineProperty(window, 'scrollY', { get: () => scrolled, configurable: true });
     performance.now = () => clock;
     window.requestAnimationFrame = ((cb: FrameRequestCallback) => {
       pending.push(() => cb(0));
@@ -554,6 +567,78 @@ describe('the first measurement corrects a cold load that landed under the chrom
     frame();
 
     expect(target.seen()).toBe(1);
+    bar.remove();
+  });
+
+  /**
+   * A SMOOTH jump outlives a budget counted from `load`, and that is the third time this watch has
+   * broken.
+   *
+   * <para>
+   * `html { scroll-behavior: smooth }` makes the native fragment jump an animation of about 630 ms.
+   * Measured in Chrome at 1280x748 against a live site: the browser computed the destination at
+   * 70 ms — before the offset existed, so it headed for `scroll-margin-top: 0` — the target entered
+   * the band at 452 ms and landed under the bar at 702 ms. The budget only starts counting once
+   * `readyState` is complete, about 333 ms in, so it retired around 400 ms with the target still
+   * around 100 and nobody left watching.
+   * </para>
+   *
+   * <para>
+   * The line is not exotic: it is line 17 of all six handoffs in `docs/design/*.dc.html`, and the
+   * site transcribed it. The SDK never emits it, which is exactly why this suite could stay green —
+   * it never set it either, so its jump was instant and twenty frames were always enough.
+   * </para>
+   */
+  it('keeps watching while a SMOOTH jump is still travelling', () => {
+    loaded();
+    const bar = chrome(61);
+    const target = bookmark('features', 767);
+    window.history.replaceState(null, '', '/probe#features');
+
+    publishAnchorOffset(); // the offset is published while the animation is under way
+    expect(target.seen()).toBe(0);
+
+    // Thirty frames of travel — more than the whole budget — with the target always above the band.
+    for (let step = 1; step <= 30; step++) {
+      scrollTo(step * 22);
+      target.moveTo(767 - step * 22);
+      frame();
+    }
+    expect(target.seen()).toBe(0);
+
+    // It enters the band, and the watch is still there because the page never stood still.
+    scrollTo(708);
+    target.moveTo(59);
+    frame();
+
+    expect(target.seen()).toBe(1);
+    bar.remove();
+  });
+
+  /**
+   * And stillness is what the budget is spent on, so a page that has STOPPED still retires in the
+   * twenty frames it always did. Without this the rule above would be a watch that never closes on
+   * any page whose scroll position happens to change.
+   */
+  it('retires after twenty still frames on a page that has stopped', () => {
+    loaded();
+    const bar = chrome(61);
+    const target = bookmark('features', 767); // never enters the band
+    window.history.replaceState(null, '', '/probe#features');
+
+    publishAnchorOffset();
+    scrollTo(300);
+    frame(); // one moving frame, which refills the budget
+    expect(pending.length).toBeGreaterThan(0);
+
+    frame(20); // …and twenty still ones spend it
+    expect(pending).toHaveLength(0);
+
+    // Retired, not merely idle: entering the band afterwards moves nothing.
+    target.moveTo(10);
+    document.documentElement.style.removeProperty('--eq-anchor-offset');
+    publishAnchorOffset();
+    expect(target.seen()).toBe(0);
     bar.remove();
   });
 
