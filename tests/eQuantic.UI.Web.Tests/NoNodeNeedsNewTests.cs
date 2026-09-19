@@ -11,10 +11,16 @@ namespace eQuantic.UI.Web.Tests;
 /// node, so that "named arguments carry over unchanged" is a fact rather than a promise.
 ///
 /// <para>
-/// <see cref="UiFactoryConformanceTests"/> already checks the SHAPE of every factory by reflection
-/// — names, types, defaults, the init-only tail. What it cannot see is whether the body applies
-/// the tail it declares, or whether a tail parameter's default agrees with the property's own.
-/// Those are value questions, and this file asks them for the six.
+/// <see cref="UiFactoryConformanceTests"/> checks the SHAPE of every factory by reflection —
+/// names, types, defaults, the init-only tail — and, since #259, both value questions about the
+/// TAIL: that omitting one leaves what <c>new</c> leaves, and that the body applies every one it
+/// declares. Over every tail on every surface, so no node needs its own copy.
+/// </para>
+///
+/// <para>
+/// What is left here is what only these six can say: that a mirrored PREFIX argument lands where
+/// <c>new</c> puts it — the suite passes the same prefix to both forms and so cannot see one
+/// carried into the wrong slot — and each node's own promises.
 /// </para>
 /// </summary>
 public class NoNodeNeedsNewTests
@@ -114,30 +120,23 @@ public class NoNodeNeedsNewTests
     }
 
     /// <summary>
-    /// THE TRAP THIS FILE EXISTS FOR. <see cref="WebFrame.Width"/> and <see cref="WebFrame.Height"/>
-    /// default to <see cref="SizeValue.Fill"/> on the node, and C# has no constant expression for
-    /// that — so a <c>SizeValue width = default</c> tail parameter would compile, satisfy every
-    /// reflection rule in <see cref="UiFactoryConformanceTests"/>, and silently hand back a HUG
-    /// frame from the factory where <c>new</c> gives a filling one.
+    /// A frame FILLS unless told otherwise — the node's own initializer, which nothing else in the
+    /// tree states.
     /// <para>
-    /// The factory therefore carries no tail for them, and this is what says so. Mutation: add
-    /// <c>SizeValue width = default, SizeValue height = default</c> to <c>UI.WebFrame</c> and apply
-    /// them, and this fails while nothing else does.
+    /// This used to be the fence #251 stretched by hand under one hole: the same two properties
+    /// compared between <c>WebFrame(…)</c> and <c>new WebFrame(…)</c>, because nothing compared a
+    /// tail parameter's default with the property's own. #259 closed that generally — over 65 tails
+    /// on both factory surfaces — so the comparison has one owner again, and what is left here is
+    /// the part that was never about the factory.
     /// </para>
     /// </summary>
     [Fact]
-    public void WebFrame_FillsLikeNewDoes_BecauseItsSizeIsNotInTheTail()
+    public void WebFrame_FillsUnlessToldOtherwise()
     {
-        var content = WebContent.Url("https://example.com/embed");
+        var made = WebFrame(WebContent.Url("https://example.com/embed"), "Embed");
 
-        var made = WebFrame(content, "Embed");
-        var written = new WebFrame(content, "Embed");
-
-        made.Width.Should().Be(written.Width).And.Be(SizeValue.Fill);
-        made.Height.Should().Be(written.Height).And.Be(SizeValue.Fill);
-        made.Sandbox.Should().Be(written.Sandbox).And.Be(WebSandbox.Scripts);
-        made.Content.Should().Be(content);
-        made.Title.Should().Be("Embed");
+        made.Width.Should().Be(SizeValue.Fill);
+        made.Height.Should().Be(SizeValue.Fill);
     }
 
     [Fact]
