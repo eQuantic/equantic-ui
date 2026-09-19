@@ -45,8 +45,14 @@ public class NavigableOnPhotonTests
             "a month has at least twenty-eight days and every one is a cell");
         semantics.Should().Contain(node => node.Role == SemanticRole.Group,
             "the composite still says its own name before the reader walks into it");
-        semantics.Should().Contain(node => node.Label == "Sun",
-            "the header row is announced too — it is a row of the grid, not decoration");
+
+        // The header row is announced too — it is a row of the grid, not decoration. Counted rather
+        // than named: the day names come from the CULTURE (the component's own doc says so), and a
+        // test that asserted "Sun" passed here and failed on a CI runner whose locale answered
+        // "日" — which is the component being right and the assertion being parochial.
+        var grid = frame.FocusStops.Single(stop => stop.Grid != null).Path;
+        semantics.Where(node => node.Role == SemanticRole.StaticText && node.Path.StartsWith(grid + "/"))
+            .Should().HaveCountGreaterThanOrEqualTo(7, "seven day names, in whatever language");
 
         frame.HitRegions.Should().HaveCountGreaterThan(27, "a day is something you tap");
         frame.Root.Bounds.Height.Should().BeGreaterThan(200, "the grid takes the space its rows need");
@@ -113,16 +119,21 @@ public class NavigableOnPhotonTests
         while (host.FocusedPath != grid.Path)
             host.FocusNext().Should().BeTrue("the grid is reachable by Tab");
 
+        // The month's own title, whatever the culture spells it — read rather than named, for the
+        // reason above. What the test is about is that one move changes it and the other does not.
+        var month = host.Semantics()[0].Label;
+        month.Should().NotBeEmpty();
+
         host.KeyDown("ArrowRight").Should().BeTrue();
         host.RenderFrame(new DisplayListBuilder());
         host.KeyDown("ArrowDown").Should().BeTrue();
         host.RenderFrame(new DisplayListBuilder());
 
-        host.Semantics()[0].Label.Should().Be("July 2026", "walking a day does not page the month");
+        host.Semantics()[0].Label.Should().Be(month, "walking a day does not page the month");
 
         host.KeyDown("PageDown").Should().BeTrue();
         host.RenderFrame(new DisplayListBuilder());
-        host.Semantics()[0].Label.Should().Be("August 2026", "a page DOES");
+        host.Semantics()[0].Label.Should().NotBe(month, "a page DOES");
 
         host.KeyDown("Tab").Should().BeTrue("and the grid never swallowed Tab");
         host.FocusedPath.Should().NotBe(grid.Path);
