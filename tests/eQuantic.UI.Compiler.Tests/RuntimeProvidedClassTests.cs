@@ -102,7 +102,7 @@ public class RuntimeProvidedClassTests
             probe.Success.Should().BeTrue(string.Join("; ", probe.Errors.Select(error => error.Message)));
             ImportLineFor(probe.TypeScript, "PretendHelper")
                 .Should().Contain("from \"@equantic/runtime\"");
-            probe.TypeScript.Should().NotContain("this.buttonStyles");
+            probe.TypeScript.Should().NotContain("this.pretendHelper");
             probe.TypeScript.Should().NotContain("from \"./PretendHelper\"");
         }
         finally
