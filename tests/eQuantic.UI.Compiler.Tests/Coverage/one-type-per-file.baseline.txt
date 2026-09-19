@@ -22,7 +22,6 @@ src/eQuantic.UI.Charts.ChartJs/ChartData.cs  2  not looked at yet
 src/eQuantic.UI.Charts.ChartJs/Models/ChartJsOptions.cs  8  vendor schema
 src/eQuantic.UI.Charts.ChartJs/SpecializedCharts.cs  5  not looked at yet
 src/eQuantic.UI.Charts/BarChartLayout.cs  3  not looked at yet
-src/eQuantic.UI.Charts/ChartSeries.cs  5  not looked at yet
 src/eQuantic.UI.Charts/ValueScale.cs  2  not looked at yet
 src/eQuantic.UI.Codegen/CodeWriter.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/ConversionDiagnostic.cs  2  not looked at yet
