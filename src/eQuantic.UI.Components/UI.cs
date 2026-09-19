@@ -284,6 +284,21 @@ public static class UI
         new Progress(child) { Label = label, Value = value };
 
     /// <summary>
+    /// Live-region semantics: what changes INSIDE this subtree is announced wherever the user
+    /// happens to be, and focus never moves. Announcing is not labelling — a label says what a thing
+    /// IS and is read on arrival, a live region says what just HAPPENED.
+    /// <para>
+    /// <paramref name="urgency"/> defaults to polite because assertive is a cost every other
+    /// announcement on the page pays: ask for it when the user cannot go on without hearing this,
+    /// and not to be noticed. <paramref name="label"/> is what the region is FOR when the subtree
+    /// alone does not say it — "Upload status" beside a bar whose own text is a percentage.
+    /// </para>
+    /// </summary>
+    public static LiveRegion LiveRegion(VisualNode child,
+        LiveRegionUrgency urgency = LiveRegionUrgency.Polite, string label = "") =>
+        new LiveRegion(child) { Urgency = urgency, Label = label };
+
+    /// <summary>
     /// Arrow-key adjustment semantics: one Tab stop, arrows call back with ±1.
     /// <para>
     /// <paramref name="value"/> is what the control HOLDS, and a slider needs it —

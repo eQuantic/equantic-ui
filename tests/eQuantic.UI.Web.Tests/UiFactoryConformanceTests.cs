@@ -175,6 +175,54 @@ public class UiFactoryConformanceTests
         }
     }
 
+    /// <summary>
+    /// The vocabulary nodes a consumer can still only reach with <c>new</c>, named so the list can
+    /// shrink and so a NEW one cannot join it in silence.
+    ///
+    /// <para>
+    /// "Trees are written with FACTORIES, never <c>new</c>" is the authoring rule, and until this
+    /// test nothing checked it against the vocabulary — <see cref="TheCoreVocabulary_IsCovered"/>
+    /// names seven factories every screen starts from and says nothing about the other thirty. A
+    /// reviewer caught <c>LiveRegion</c> shipping without one, which is how these six came to be
+    /// counted at all.
+    /// </para>
+    ///
+    /// <para>
+    /// Each is a real omission rather than a category — a <see cref="WebFrame"/> is the DOM escape
+    /// hatch and a <c>CodeSurface</c> takes a controller, but neither is a reason to make a consumer
+    /// write <c>new</c>. They are listed rather than exempted so the list is reducible; the test
+    /// below fails when one gains a factory, which is what makes removing an entry part of the work.
+    /// </para>
+    /// </summary>
+    private static readonly string[] ReachableOnlyByNew =
+    [
+        "CameraPreview", "CodeSurface", "LoopMotion", "Navigable", "SheetSurface", "WebFrame",
+    ];
+
+    /// <summary>
+    /// Every node in the vocabulary is reachable through the declarative surface, or is named above.
+    /// The set is compared BOTH WAYS on purpose: a node that gains a factory fails here too, so the
+    /// list above cannot quietly keep an entry it no longer owns.
+    /// </summary>
+    [Fact]
+    public void EveryVocabularyNode_IsReachableThroughTheSurface()
+    {
+        var factories = AllFactories.Select(method => method.Name).ToHashSet(StringComparer.Ordinal);
+
+        var missing = typeof(VisualNode).Assembly.GetExportedTypes()
+            .Where(type => type is { IsAbstract: false, IsPublic: true }
+                && typeof(VisualNode).IsAssignableFrom(type))
+            .Select(type => type.Name)
+            .Where(name => !factories.Contains(name))
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+
+        missing.Should().BeEquivalentTo(ReachableOnlyByNew,
+            "a node with no factory is a node a screen has to reach with `new`, against the one "
+            + "authoring rule this surface exists to keep — add the factory, or add the name above "
+            + "with the reason it cannot have one");
+    }
+
     [Fact]
     public void TheCoreVocabulary_IsCovered()
     {
