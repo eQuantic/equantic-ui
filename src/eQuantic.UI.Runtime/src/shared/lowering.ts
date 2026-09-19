@@ -1380,8 +1380,12 @@ function lowerCameraPreview(node: CameraPreviewNode): HtmlNode {
 
 /**
  * A sandboxed iframe (C# twin: WebRealizer.LowerWebFrame). `sandbox` is ALWAYS emitted — empty
- * means fully locked — with one `allow-` token per set flag. Inline document wins over source;
- * the border is the frame's own 1990s default, so it goes.
+ * means fully locked — with one `allow-` token per set flag. The border is the frame's own 1990s
+ * default, so it goes.
+ *
+ * The content is ONE attribute and no precedence: WebContent is an address or a document and never
+ * both. This doc used to say "inline document wins over source", which is what the node's two
+ * nullable strings needed and what the type now makes unrepresentable.
  */
 function lowerWebFrame(node: WebFrameNode): HtmlNode {
   const tokens: string[] = [];
