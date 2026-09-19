@@ -261,6 +261,17 @@ describe('the first measurement corrects a cold load that landed under the chrom
     scrolled = y;
   };
 
+  /**
+   * `scrollY` is the WINDOW's, shared by every test in this worker, so the override goes back in
+   * teardown. The whole DESCRIPTOR goes back, not just the value: `defineProperty` defaults the
+   * fields you leave out, so putting back `{ value, configurable }` would pin `writable` and
+   * `enumerable` to false for good. Where there was no own descriptor, the override is deleted and
+   * the prototype's shows through again — the same shape `router.spec.ts` uses for
+   * `location.assign`, and for the same reason: replacing a window member and walking away makes
+   * some later test fail for something it has nothing to do with.
+   */
+  const originalScrollY = Object.getOwnPropertyDescriptor(window, 'scrollY');
+
   beforeEach(() => {
     resetColdLoadRealignmentForTests();
     pending = [];
@@ -277,6 +288,8 @@ describe('the first measurement corrects a cold load that landed under the chrom
   });
 
   afterEach(() => {
+    if (originalScrollY) Object.defineProperty(window, 'scrollY', originalScrollY);
+    else delete (window as unknown as Record<string, unknown>).scrollY;
     window.requestAnimationFrame = realRaf;
     performance.now = realNow;
     pending = [];
