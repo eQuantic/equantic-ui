@@ -202,9 +202,11 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     //     picture, which is what `Descend` says.
     //   * cannot cross — a WebFrame embeds a document, and there is no browser behind a Photon
     //     surface. `SemanticsVisitor` says the same thing in one word (`EscapeHatch`).
-    //   * not written — Navigable is a real two-dimensional composite the web realizer lays out as
-    //     a grid, and Photon has never painted it. #229 gave it the same standing in the layout
-    //     pass; this is the other half.
+    //   * a COMPOSITE — one stop for the whole thing and the cells inside it pointer-only, which is
+    //     what Adjustable has always done here. Navigable was the third standing until #248, "not
+    //     written": the web realizer laid its declared rows out as a grid and Photon had never
+    //     painted them. Both halves landed together, because rows that lay out without a composite
+    //     stop make a month 31 Tab presses.
 
     /// <summary>Resolved into geometry: the variant IS this node by the time paint runs.</summary>
     public Nothing Visit(AdaptiveNode node, EmitState s) { Descend(s); return Nothing.Value; }
@@ -233,8 +235,9 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     /// <summary>Resolved into geometry: layering is the order the children are walked in.</summary>
     public Nothing Visit(Stack node, EmitState s) { Descend(s); return Nothing.Value; }
 
-    /// <summary>NOT WRITTEN. The web realizer lays its declared rows out as a grid; Photon never
-    /// has. A real node with real semantics, and this is the gap, named where the behaviour is.</summary>
+    /// <summary>A COMPOSITE: one focus stop for the whole grid, and the cells inside it pointer-only
+    /// (<see cref="EmitNavigable"/>). The rows it walks are the ones the measure pass lays out — this
+    /// arm painted nothing at all while they did not (#248).</summary>
     public Nothing Visit(Navigable node, EmitState s) { EmitNavigable(node, s); return Nothing.Value; }
 
     /// <summary>CANNOT CROSS. It embeds a document, and there is no browser behind a Photon

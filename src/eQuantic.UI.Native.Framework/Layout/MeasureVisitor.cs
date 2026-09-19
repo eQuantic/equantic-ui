@@ -224,20 +224,13 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     public LayoutNode Visit(Spacer node, MeasureState s) => _ctx.Node(node); // zero outside a flex container (layout-only)
 
     /// <summary>
-    /// WEB-ONLY TODAY, which is a judgement somebody made and this dispatch never carried. A
-    /// Navigable is the two-dimensional composite behind a calendar — its own doc's example — and it
-    /// declares <see cref="Navigable.Rows"/>, which the web realizer lays out as a grid. Photon
-    /// measures it as nothing, so its rows never lay out at all.
+    /// The two-dimensional composite behind a calendar, laid out — see <see cref="MeasureNavigable"/>
+    /// for how and why that shape.
     /// <para>
-    /// The reason existed: <c>VocabularyCoverageTests</c> exempted it as "a web-only keyboard
-    /// container today". What did not exist was any connection between that sentence and the code,
-    /// which reached this node through a default arm and answered zero without mentioning it. The
-    /// behaviour is unchanged and the sentence is now where the behaviour is.
-    /// </para>
-    /// <para>
-    /// It is the weaker of the two exemptions the pin held, and worth saying so: a
-    /// <see cref="WebFrame"/> CANNOT cross, while this one simply has not been written. Nothing about
-    /// a calendar is web-shaped.
+    /// It was WEB-ONLY, and the sentence that said so stood here: "Photon measures it as nothing, so
+    /// its rows never lay out at all". It was the weaker of the two exemptions the old coverage pin
+    /// held — a <see cref="WebFrame"/> CANNOT cross, while this one simply had not been written, and
+    /// nothing about a calendar is web-shaped. It is written now (#248).
     /// </para>
     /// </summary>
     public LayoutNode Visit(Navigable node, MeasureState s) => MeasureNavigable(node, s.Constraints, _ctx, s.Path);
@@ -283,7 +276,11 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
         var widest = 0f;
         for (var index = 0; index < node.Rows.Count; index++)
         {
-            var row = Measure(node.Rows[index], constraints, ctx, ctx.ChildPath(path, index));
+            // KEYED, like every other multi-child arm: a row that says Key takes the key as its
+            // segment, so a grid whose rows are rebuilt or reordered keeps each row's identity —
+            // and the path IS identity here (focus, hover, scroll offset, a drag in flight).
+            var row = Measure(node.Rows[index], constraints, ctx,
+                ctx.ChildPath(path, index, node.Rows[index]));
             row.Bounds = row.Bounds with { X = 0, Y = y };
             result.Adopt(row);
             y += row.Bounds.Height;

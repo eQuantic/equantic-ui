@@ -25,7 +25,14 @@ namespace eQuantic.UI.Primitives;
 /// A key the grid does NOT claim answers null and must reach the page untouched — an inline grid
 /// that swallowed Tab, or the browser's own Home/End, would be worse than one with no keyboard.
 /// </para>
+/// <para>
+/// <c>[ServerOnly]</c> for what that buys over an exception in the runtime-export pin: the compiler
+/// REFUSES a page that names it (EQ2010), rather than letting one compile, emit an import and die at
+/// hydration against a symbol the runtime never exported. Three types left that hand-kept list the
+/// same way, and the list says why — two files whose contents had already drifted apart.
+/// </para>
 /// </summary>
+[ServerOnly]
 public static class NavigableKeys
 {
     public static NavigableMove? Move(string key, bool shift) => key switch

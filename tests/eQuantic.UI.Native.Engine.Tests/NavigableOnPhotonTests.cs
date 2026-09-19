@@ -72,6 +72,34 @@ public class NavigableOnPhotonTests
     }
 
     /// <summary>
+    /// A row that says <see cref="VisualNode.Key"/> keeps its identity, which is the rule every other
+    /// multi-child arm follows and this one missed on its first pass: the path IS identity on Photon
+    /// — focus, hover, a scroll offset, a drag in flight are all remembered by it — so a grid whose
+    /// rows are rebuilt or reordered under a positional path hands the ring to the row that took the
+    /// index. Found in review, and the fix is the keyed <c>ChildPath</c> overload the flex, stack and
+    /// grid passes already use.
+    /// </summary>
+    [Fact]
+    public void AKeyedRowKeepsItsIdentity()
+    {
+        VisualNode Row(string key, string text)
+        {
+            var row = new Row(gap: 0) { Key = key };
+            row.Add(new Text(text, TypeRole.BodyM));
+            return row;
+        }
+
+        var reordered = new Navigable([Row("b", "second"), Row("a", "first")], _ => { }) { Label = "Weeks" };
+        var host = new PhotonHost(reordered, PhotonTheme.Instance, ThemeMode.Light, 400, 400);
+        var frame = host.RenderFrame(new DisplayListBuilder());
+
+        var rows = frame.Root.Children.Select(child => child.Path).ToList();
+        rows.Should().Equal(["r/[b]", "r/[a]"],
+            "a keyed row takes the key as its segment, so its identity survives the reorder that "
+            + "would have renamed a positional one");
+    }
+
+    /// <summary>
     /// And the keyboard the stop promises actually moves the grid: a page turns the month, which is
     /// the one move whose effect is visible from outside the composite. A key the grid does not claim
     /// travels on, so the page keeps its Tab.
