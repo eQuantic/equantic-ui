@@ -28,8 +28,14 @@ public static class SemanticsTree
         var nodes = new List<SemanticNode>();
         var visitor = new SemanticsVisitor(nodes);
         Walk(frame.Root, visitor);
-        foreach (var overlay in frame.OverlayRoots)
-            Walk(overlay, visitor);
+        for (var i = 0; i < frame.OverlayRoots.Count; i++)
+        {
+            // The LAYER's own stop comes first and belongs to the layer, not to the placeholder the
+            // page flow keeps: announced here it carries the overlay root's bounds and sits
+            // immediately before its own descendants, which is the whole of what a group means.
+            if (i < frame.OverlayLayers.Count) visitor.AnnounceOverlay(frame.OverlayLayers[i], frame.OverlayRoots[i]);
+            Walk(frame.OverlayRoots[i], visitor);
+        }
         return nodes;
     }
 

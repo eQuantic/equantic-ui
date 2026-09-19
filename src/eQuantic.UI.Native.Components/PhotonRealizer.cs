@@ -134,6 +134,19 @@ public sealed class RealizeResult
     /// walk sees what a dialog shows, not just the page beneath it.</summary>
     public IReadOnlyList<LayoutNode> OverlayRoots { get; }
 
+    /// <summary>
+    /// The <see cref="Overlay"/> NODES behind those roots, index for index — what each layer IS,
+    /// beside where it landed. The root's own source is the overlay's CHILD (the realizer lays that
+    /// out against the viewport), so without this the semantics walk reaches a dialog's contents
+    /// with no way to know it is in one.
+    /// <para>
+    /// An init-only property rather than a constructor parameter, by the rule the vocabulary's own
+    /// records follow: C# bakes an optional argument into each CALL SITE, so widening this public
+    /// constructor would delete the signature an already-compiled caller invokes.
+    /// </para>
+    /// </summary>
+    public IReadOnlyList<Overlay> OverlayLayers { get; init; } = Array.Empty<Overlay>();
+
     /// <summary>Everything Tab visits, in tree order: buttons and fields in one sequence.</summary>
     public IReadOnlyList<FocusStop> FocusStops { get; }
 
@@ -336,7 +349,10 @@ public static class PhotonRealizer
         return new RealizeResult(layout, hits,
             motion.Active || transitions is { AnyActive: true } || presences is { AnyActive: true }
                 || drags is { AnyActive: true },
-            hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes, overlayRoots, sheets, cursors, canvases);
+            hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes, overlayRoots, sheets, cursors, canvases)
+        {
+            OverlayLayers = overlays,
+        };
     }
 
 

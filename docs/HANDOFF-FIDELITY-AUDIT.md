@@ -54,7 +54,7 @@ Each of these has a test that names its handoff block, so the figure cannot drif
 | C7 Slider | `role="slider"` with no `aria-valuenow` — invalid ARIA, the value never announced | `AdjustableValueTests` |
 | A11 Image | no `case Image` in the native semantics walk — alt text was silent on Photon | `GraphicSemanticsTests` |
 | B14 ProgressBar | no `role="progressbar"` and no value on either realizer — the bar painted a fact and never stated it | `ProgressSemanticsTests` |
-| B18 Banner · C4 Toast | neither could be announced: a banner was an unannotated Box, a toast a non-modal layer both realizers strip every semantic from | `LiveRegionSemanticsTests` |
+| B18 Banner · C4 Toast (web) | neither could be announced: a banner was an unannotated Box, a toast a non-modal layer both realizers strip every semantic from. Photon carries the region and its urgency and does not POST yet — the semantics tree is a per-frame snapshot with no diff (#247) | `LiveRegionSemanticsTests` |
 
 ### Found while fixing, not by the audit
 

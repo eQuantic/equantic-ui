@@ -110,4 +110,21 @@ internal sealed partial class SemanticsVisitor(List<SemanticNode> nodes)
         _nodes.Add(node);
         return Descend;
     }
+
+    /// <summary>
+    /// A modal layer's own stop, announced at its OVERLAY ROOT rather than at the
+    /// <see cref="Overlay"/> node in the page flow — see that arm for why, and what the first
+    /// version of this cost.
+    /// <para>
+    /// Gated on modal AND open exactly as the web realizer gates its <c>role="dialog"</c>: a toast
+    /// layer is not a dialog and a closed one is not one right now, so the two targets agree on
+    /// when this is a stop at all.
+    /// </para>
+    /// </summary>
+    internal void AnnounceOverlay(Overlay overlay, LayoutNode root)
+    {
+        if (overlay is not { Modal: true, Open: true }) return;
+        AnnounceGroup(new(SemanticRole.Group, root.Path ?? "", root.Bounds, overlay.Label ?? "",
+            null, false));
+    }
 }

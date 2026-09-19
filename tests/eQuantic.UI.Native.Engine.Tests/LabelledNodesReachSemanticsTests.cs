@@ -196,6 +196,48 @@ public class LabelledNodesReachSemanticsTests
             + "and consumes it — and which one it is belongs in this file, not only in the walk");
     }
 
+    /// <summary>
+    /// A modal layer's group belongs to the LAYER, and this is the case the theory above cannot see.
+    ///
+    /// <para>
+    /// It builds each container as the ROOT of the tree, where an <see cref="Overlay"/> looks
+    /// harmless: its page-flow placeholder happens to be the whole viewport and there is no page
+    /// content to be interleaved with. Put the same overlay INSIDE a column and the first version of
+    /// this change announced a group at 400x0 — the placeholder's bounds, since
+    /// <c>MeasureVisitor</c> gives that node no subtree — sitting between the text before it and the
+    /// text after, while the dialog's own elements arrived later under <c>ov0</c> as unrelated
+    /// siblings. A zero-height rect is a touch-exploration target that covers nothing.
+    /// </para>
+    ///
+    /// <para>
+    /// So the announcement happens at the overlay ROOT, and this asserts both halves of what that
+    /// buys: the group has a real box, and the next stop after it is the dialog's own content.
+    /// Found in review; the probe that passed is the theory above.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void AModalOverlaysGroup_HasTheLayersBoundsAndSitsWithItsOwnContent()
+    {
+        var dialog = new Column(gap: 0);
+        dialog.Add(new Text("dialog title", TypeRole.BodyM));
+        var page = new Column(gap: 0);
+        page.Add(new Text("before", TypeRole.BodyM));
+        page.Add(new Overlay(dialog) { Label = "Confirm" });
+        page.Add(new Text("after", TypeRole.BodyM));
+
+        var semantics = Describe(page);
+        var group = semantics.Should().ContainSingle(s => s.Role == SemanticRole.Group).Which;
+
+        group.Bounds.Height.Should().BeGreaterThan(0,
+            "the page-flow placeholder measures nothing, and a reader outlines what the group says "
+            + "it is — the LAYER, which is where the dialog actually laid out");
+
+        semantics.SkipWhile(s => s.Role != SemanticRole.Group).Skip(1).Should()
+            .StartWith(semantics.Single(s => s.Label == "dialog title"),
+                "a group is a stop you walk INTO, so what follows it has to be what it holds — "
+                + "announced in the page flow it was followed by the text after the overlay instead");
+    }
+
     /// <summary>The containers, for the theory above.</summary>
     public static TheoryData<string> Containers
     {
