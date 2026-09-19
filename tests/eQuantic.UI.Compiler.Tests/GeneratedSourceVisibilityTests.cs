@@ -237,8 +237,15 @@ public class GeneratedSourceVisibilityTests : IDisposable
         Assert.DoesNotContain(units, u => u.File.EndsWith("Copied.cs", StringComparison.Ordinal));
         // Old.g.cs IS under a generated directory, so the unscoped fallback takes it — as generated,
         // which is the whole point: it is there because the sweep named it, not because of its path.
-        Assert.All(units.Where(u => u.File.EndsWith("Old.g.cs", StringComparison.Ordinal)),
-            u => Assert.True(u.IsGenerated));
+        // PRESENCE FIRST, then the flag: `Assert.All` passes over an empty sequence, so checking
+        // only the flag would stay green on the day the fallback stopped returning the file at all —
+        // and the two `DoesNotContain` above would then be the whole test, which would read as if
+        // nothing under obj/ ever becomes a module. Found in review, and it is the vacuous pass this
+        // repository keeps meeting.
+        var generated = units.Where(u => u.File.EndsWith("Old.g.cs", StringComparison.Ordinal)).ToList();
+        Assert.Single(generated);
+        Assert.True(generated[0].IsGenerated, "it is there because the sweep named it, not because "
+            + "its path contains the word");
     }
 
     /// <summary>
