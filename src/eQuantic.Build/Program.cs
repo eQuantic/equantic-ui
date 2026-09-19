@@ -336,27 +336,21 @@ bool CompileAndBundle()
         // dir so their entry-point rule is the project's own; nothing here is an entry point unless
         // it is a page. Files a generator wrote for other purposes (ASP.NET's public Program, say)
         // pass through the parser and come back empty, exactly as a non-component always has.
-        var compileUnits = sourceDirs
-            .Where(Directory.Exists)
-            .SelectMany(dir => Directory.GetFiles(dir, "*.cs", SearchOption.AllDirectories)
-                .Select(file => (Dir: dir, File: file)))
-            .Concat(ProjectCompilationHelper.GetCompilerGeneratedFiles(primarySourceDir, generatedDir)
-                .Select(file => (Dir: primarySourceDir, File: file)))
-            .GroupBy(unit => unit.Dir);
+        //
+        // The list comes from the SAME function the semantic model is built from, and each unit
+        // says whether it is generated. That is the whole of #244: this used to be a raw recursive
+        // GetFiles filtered by the SHAPE of the path — obj/ and bin/ skipped "unless the path
+        // contains /generated/" — so a Release build transpiled obj/Debug's factory surface too.
+        var compileUnits = ProjectCompilationHelper
+            .GetCompilationUnits(sourceDirs, generatedDir)
+            .GroupBy(unit => unit.Directory);
 
         foreach (var group in compileUnits)
         {
             var dir = group.Key;
-            var files = group.Select(unit => unit.File);
 
-            foreach (var file in files)
+            foreach (var (_, file, isGenerated) in group)
             {
-                var isGenerated = file.Contains($"{Path.DirectorySeparatorChar}generated{Path.DirectorySeparatorChar}");
-                if (!isGenerated &&
-                    (file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") ||
-                     file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}")))
-                    continue;
-
                 // Try to compile - parser will return empty if not a component
                 // This removes restrictions on naming, inheritance patterns, aliases, etc.
                 var results = compiler.CompileFile(file);
