@@ -29,6 +29,7 @@ import { Checkbox } from './components/Checkbox';
 import { Chip } from './components/Chip';
 import { Divider } from './components/Divider';
 import { Banner } from './components/Banner';
+import { Toast } from './components/Toast';
 import { Stepper } from './components/Stepper';
 import { Pagination } from './components/Pagination';
 import { PageIndicator } from './components/PageIndicator';
@@ -112,6 +113,7 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     divider: still(new Divider()),
     'divider-vertical': still(new Divider('none', 'vertical')),
     banner: still(new Banner('destructive', 'Careful', 'Something needs attention')),
+    toast: still(new Toast('Card removed', 'info', 'Undo', () => {})),
     stepper: still(new Stepper(3)),
     'stepper-labelled': still(Object.assign(new Stepper(3), { label: 'quantity' })),
     pagination: still(new Pagination(5, 2)),

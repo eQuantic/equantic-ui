@@ -64,6 +64,10 @@ public class ComponentParityFixtureTests
         ("divider", new Divider(), NoPresses),
         ("divider-vertical", new Divider(DividerInset.None, DividerAxis.Vertical), NoPresses),
         ("banner", new Banner(Variant.Destructive, "Careful", "Something needs attention"), NoPresses),
+        // Its LIVE REGION is the reason it is here: the Banner's was cross-pinned and the Toast's
+        // was asserted on this side only, so the twin could have lowered a non-modal layer with no
+        // region at all and stayed green. Found by a review of the PR that added both.
+        ("toast", new Toast("Card removed", Variant.Info, "Undo", () => { }), NoPresses),
         ("stepper", new Stepper(3), NoPresses),
         ("stepper-labelled", new Stepper(3) { Label = "quantity" }, NoPresses),
         ("pagination", new Pagination(5, 2), NoPresses),
