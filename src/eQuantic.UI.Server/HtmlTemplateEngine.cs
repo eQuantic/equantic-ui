@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -15,7 +16,14 @@ namespace eQuantic.UI.Server;
 public class HtmlTemplateEngine
 {
     private readonly string _template;
-    private static readonly Dictionary<string, string> _templateCache = new();
+    /// <summary>
+    /// The shell templates already read, keyed by assembly and resource name. CONCURRENT because it
+    /// is static and every request that serves the app shell reaches it: two arriving on a cold
+    /// cache wrote a plain Dictionary at once and one of them took the process down with
+    /// "Operations that change non-concurrent collections must have exclusive access". Caught in CI
+    /// by two test hosts starting together, which is the same shape as two first requests.
+    /// </summary>
+    private static readonly ConcurrentDictionary<string, string> _templateCache = new();
 
     // Regex patterns for template constructs
     private static readonly Regex _conditionalRegex = new(@"\{\{#if\s+(\w+)\}\}(.*?)\{\{/if\}\}",
@@ -41,14 +49,20 @@ public class HtmlTemplateEngine
     {
         assembly ??= Assembly.GetExecutingAssembly();
 
-        // Check cache
         var cacheKey = $"{assembly.FullName}:{resourceName}";
-        if (_templateCache.TryGetValue(cacheKey, out var cachedTemplate))
-        {
-            return new HtmlTemplateEngine(cachedTemplate);
-        }
+        // GetOrAdd rather than check-then-write: the check and the write were two steps, and a
+        // second request could land between them. Two readers may both read the resource on a cold
+        // cache — it is a few KB off an embedded stream and the loser's copy is simply dropped,
+        // which is cheaper than holding a lock across I/O on every first request.
+        var template = _templateCache.GetOrAdd(cacheKey, _ => Read(resourceName, assembly));
 
-        // Load from embedded resource
+        return new HtmlTemplateEngine(template);
+    }
+
+    /// <summary>The resource's text, or a failure that names what the assembly actually holds —
+    /// a missing shell template is a deployment fault and the list is what tells you which.</summary>
+    private static string Read(string resourceName, Assembly assembly)
+    {
         using var stream = assembly.GetManifestResourceStream(resourceName);
         if (stream == null)
         {
@@ -59,12 +73,7 @@ public class HtmlTemplateEngine
         }
 
         using var reader = new StreamReader(stream);
-        var template = reader.ReadToEnd();
-
-        // Cache for future use
-        _templateCache[cacheKey] = template;
-
-        return new HtmlTemplateEngine(template);
+        return reader.ReadToEnd();
     }
 
     /// <summary>
