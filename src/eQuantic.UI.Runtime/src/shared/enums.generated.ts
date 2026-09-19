@@ -77,6 +77,8 @@ export type IconsValue =
 
 export type ImageFitValue = 'contain' | 'cover' | 'stretch';
 
+export type LiveRegionUrgencyValue = 'polite' | 'assertive';
+
 export type LoopEffectValue = 'slideX';
 
 export type MainAlignValue = 'start' | 'center' | 'end' | 'spaceBetween';

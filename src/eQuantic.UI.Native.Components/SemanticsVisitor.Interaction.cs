@@ -4,10 +4,15 @@ using eQuantic.UI.Primitives;
 namespace eQuantic.UI.Native.Components;
 
 /// <summary>
-/// Interaction and motion — fourteen words. Three are controls and announce as one stop each; a
+/// Interaction and motion — fifteen words. Three are controls and announce as one stop each; a
 /// fourth, <see cref="Progress"/>, announces WITHOUT being one — it is read, never moved, which is
-/// why it carries no tab stop and no key handler; nine wrap a child or are ornament; the
-/// fourteenth, <see cref="Navigable"/>, is the gap.
+/// why it carries no tab stop and no key handler; two, <see cref="Navigable"/> and
+/// <see cref="LiveRegion"/>, are GROUPS that announce and then keep walking; the remaining nine wrap
+/// a child or are ornament.
+/// <para>
+/// This tally said "the fourteenth, Navigable, is the gap" until <see cref="SemanticRole.Group"/>
+/// landed — the running-count shape that rots, caught here one commit after the gap closed.
+/// </para>
 /// </summary>
 internal sealed partial class SemanticsVisitor
 {
@@ -91,6 +96,33 @@ internal sealed partial class SemanticsVisitor
     public bool Visit(Navigable node, LayoutNode laidOut) =>
         AnnounceGroup(new(SemanticRole.Group, laidOut.Path ?? "", laidOut.Bounds,
             node.Label, null, false));
+
+    /// <summary>
+    /// A live region is a GROUP THE PLATFORM WATCHES. The urgency rides on the node rather than the
+    /// role because that is how every platform models it — Android sets
+    /// <c>accessibilityLiveRegion</c> on a container, UIKit posts an announcement — and because the
+    /// region is still an ordinary group when nothing has changed.
+    ///
+    /// <para>
+    /// PHOTON FENCE — the announcement itself does not happen here yet, and the reason is
+    /// structural rather than a missing line. Announcing means noticing that a subtree CHANGED, and
+    /// <c>PhotonHost.Semantics()</c> is a snapshot of the current frame with nothing to compare it
+    /// against: no previous tree is kept and no pass diffs one. Posting from this walk would fire on
+    /// every frame, which is worse than silence — a reader that repeats itself sixty times a second
+    /// is a reader the user turns off. So what lands here is the DATA the announcement needs
+    /// (<see cref="SemanticNode.Live"/> on a named group, at its bounds), and the frame-to-frame
+    /// comparison plus one post per platform is its own slice.
+    /// </para>
+    ///
+    /// <para>
+    /// The web needs none of that: the DOM diff already knows what changed, so <c>aria-live</c> on
+    /// the host IS the mechanism. That asymmetry is why this row closes on one target and not both,
+    /// and it is stated rather than left to be discovered from a silent VoiceOver.
+    /// </para>
+    /// </summary>
+    public bool Visit(LiveRegion node, LayoutNode laidOut) =>
+        AnnounceGroup(new(SemanticRole.Group, laidOut.Path ?? "", laidOut.Bounds,
+            node.Label, null, false, Live: node.Urgency));
 
     /// <inheritdoc cref="Wraps"/>
     public bool Visit(DragDismiss node, LayoutNode laidOut) => Wraps;

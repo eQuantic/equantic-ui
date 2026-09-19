@@ -48,6 +48,10 @@ public class RoleBearingHostBoundsTests
     {
         { "Progress", new Progress(HugTrack()) { Label = "Uploading" }, new Progress(FillTrack()) },
         { "Adjustable", new Adjustable(HugTrack(), _ => { }), new Adjustable(FillTrack(), _ => { }) },
+        // A live region's box is what a reader outlines when it announces the change inside it, so
+        // the same rule applies for the same reason — written down when the node was added rather
+        // than found on a page later, which is what the two above cost.
+        { "LiveRegion", new LiveRegion(HugTrack()) { Label = "Upload status" }, new LiveRegion(FillTrack()) },
     };
 
     [Theory]

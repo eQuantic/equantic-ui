@@ -37,6 +37,7 @@ export {
   IconGlyph,
   Adjustable,
   Progress,
+  LiveRegion,
   RangeValue,
   Navigable,
   CameraPreview,

@@ -208,6 +208,51 @@ internal sealed partial class WebLoweringVisitor
     }
 
     /// <summary>
+    /// LIVE REGION semantics (TS twin: lowerLiveRegion): one host the platform WATCHES, so a change
+    /// inside it is announced wherever the user is, without moving focus.
+    /// <para>
+    /// <c>role</c> and <c>aria-live</c> are set TOGETHER and neither is redundant. The role is what
+    /// a reader reports the region as; the live value is what makes it watched. `role="alert"` does
+    /// imply assertive in the ARIA spec, but implementations have historically disagreed about
+    /// whether an alert added to the DOM after load is announced at all, and the pairing is what
+    /// every practical guide recommends — so this states both rather than relying on the implication.
+    /// </para>
+    /// <para>
+    /// LAYOUT-TRANSPARENT, and the whole width contract passes through: this is the fifth wrapper
+    /// that puts an element between parent and child and gives it a width, so it takes `fit-content`
+    /// off the fill branch for the reason the other four do — the box a reader outlines is the box
+    /// it announces.
+    /// </para>
+    /// </summary>
+    private HtmlElement LowerLiveRegion(LiveRegion live)
+    {
+        var fills = Fills(live.Child);
+        var cap = CapsAt(live.Child);
+        var assertive = live.Urgency == LiveRegionUrgency.Assertive;
+        var element = new RealizedElement("div")
+        {
+            Style = new HtmlStyle
+            {
+                Width = fills.Width ? "100%" : "fit-content",
+                MaxWidth = Size(cap),
+                Height = fills.Height ? "100%" : null,
+            },
+            RawAttributes = new Dictionary<string, string>
+            {
+                ["role"] = assertive ? "alert" : "status",
+                ["aria-live"] = assertive ? "assertive" : "polite",
+                // The region is announced as a WHOLE when any part of it changes. Without this a
+                // reader reads only the changed node, so a banner whose title and body both change
+                // is announced as a fragment of itself.
+                ["aria-atomic"] = "true",
+            },
+        };
+        if (live.Label is { Length: > 0 } label) element.RawAttributes["aria-label"] = label;
+        if (Lower(live.Child, null) is { } child) element.Children.Add(child);
+        return element;
+    }
+
+    /// <summary>
     /// What the host ANNOUNCES itself as — DERIVED from the role and the value together rather than
     /// copied from <see cref="Adjustable.Role"/>, because the pairing is ARIA's rule and this is the
     /// one place in the SDK that speaks ARIA.
@@ -373,6 +418,7 @@ internal sealed partial class WebLoweringVisitor
         Hoverable hoverable => CapsAt(hoverable.Child),
         Adjustable adjustable => CapsAt(adjustable.Child),
         Progress progress => CapsAt(progress.Child),
+        LiveRegion live => CapsAt(live.Child),
         Flexible flexible => CapsAt(flexible.Child),
         LoopMotion motion => CapsAt(motion.Child),
         Link link => CapsAt(link.Child),

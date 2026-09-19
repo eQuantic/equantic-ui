@@ -6,8 +6,8 @@ using Xunit;
 namespace eQuantic.UI.Web.Tests;
 
 /// <summary>
-/// The five wrappers that stand between a child and its flex parent — Pressable, Hoverable, Link,
-/// Adjustable and Progress — carry the child's WIDTH CONTRACT, not half of it.
+/// The six wrappers that stand between a child and its flex parent — Pressable, Hoverable, Link,
+/// Adjustable, Progress and LiveRegion — carry the child's WIDTH CONTRACT, not half of it.
 /// <para>
 /// Each takes `width: 100%` from a Fill child, because a wrapper that hugged would collapse the
 /// child's own 100% against a shrink-to-fit box. None of them took the child's MAX-WIDTH, so a
@@ -43,6 +43,7 @@ public class WrapperLayoutTransparencyTests
         { "Link", new Link("/somewhere", CappedCard()) },
         { "Adjustable", new Adjustable(CappedCard(), _ => { }) },
         { "Progress", new Progress(CappedCard()) },
+        { "LiveRegion", new LiveRegion(CappedCard()) },
     };
 
     [Theory]

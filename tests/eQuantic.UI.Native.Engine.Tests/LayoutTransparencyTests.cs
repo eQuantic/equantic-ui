@@ -34,7 +34,7 @@ namespace eQuantic.UI.Native.Engine.Tests;
 ///
 /// <para>
 /// So these enumerate BY REFLECTION rather than listing the eight: every wrapper the vocabulary has
-/// is asserted against the bare child, and a twenty-second is covered on the day it is declared.
+/// is asserted against the bare child, and a twenty-third is covered on the day it is declared.
 /// </para>
 /// </summary>
 public class LayoutTransparencyTests
@@ -62,6 +62,7 @@ public class LayoutTransparencyTests
         new InFlow(c),
         new InView(c, _ => { }),
         new Link("#", c),
+        new LiveRegion(c),
         new LoopMotion(c, LoopEffect.SlideX, 0, 1, 100),
         new Overlay(c),
         new Pinned(c),

@@ -62,6 +62,7 @@ import type {
   IconNode,
   AdjustableNode,
   ProgressNode,
+  LiveRegionNode,
   NavigableNode,
   NavigableMoveValue,
   CameraPreviewNode,
@@ -420,6 +421,8 @@ function lowerNodeKind(
       return lowerAdjustable(node as unknown as AdjustableNode, context, path);
     case 'progress':
       return lowerProgress(node as unknown as ProgressNode, context, path);
+    case 'liveRegion':
+      return lowerLiveRegion(node as unknown as LiveRegionNode, context, path);
     case 'navigable':
       return lowerNavigable(node as unknown as NavigableNode, context, path);
     case 'hoverable':
@@ -2471,6 +2474,7 @@ function capsAt(node: unknown): SizeValueValue | undefined {
     case 'hoverable':
     case 'adjustable':
     case 'progress':
+    case 'liveRegion':
     case 'flexible':
     case 'loopMotion':
     case 'link':
@@ -2507,6 +2511,8 @@ function fills(node: VisualNodeValue): { width: boolean; height: boolean } {
       return fills((node as AdjustableNode).child as VisualNodeValue);
     case 'progress':
       return fills((node as unknown as ProgressNode).child as VisualNodeValue);
+    case 'liveRegion':
+      return fills((node as unknown as LiveRegionNode).child as VisualNodeValue);
     case 'navigable':
       // A grid host has ROWS, not one child: nothing to inherit a fill from.
       return { width: false, height: false };
@@ -2910,6 +2916,37 @@ function lowerProgress(node: ProgressNode, context: LoweringContext, path: strin
     host.attributes['aria-valuemax'] = num(value.max);
     if (value.text) host.attributes['aria-valuetext'] = value.text;
   }
+  const child = lowerNode(node.child, context, null, path + '/0');
+  if (child) host.children.push(child);
+  return host;
+}
+
+/**
+ * LIVE REGION semantics (C# twin: LowerLiveRegion) — one host the platform WATCHES, so a change
+ * inside it is announced wherever the user is and focus never moves.
+ *
+ * `role` and `aria-live` are set TOGETHER and neither is redundant: the role is what a reader
+ * reports the region as, the live value is what makes it watched. `role="alert"` does imply
+ * assertive in the spec, but implementations have historically disagreed about whether an alert
+ * added to the DOM after load is announced at all, so this states both rather than relying on it.
+ */
+function lowerLiveRegion(node: LiveRegionNode, context: LoweringContext, path: string): HtmlNode {
+  const fill = fills(node.child);
+  const cap = capsAt(node.child);
+  const assertive = node.urgency === 'assertive';
+  const host = element('div', {
+    // Same rule as lowerProgress: this host CARRIES THE ROLE, so its box is the bounds a reader
+    // announces — and the child's cap comes through with the 100%, never one without the other.
+    width: fill.width ? '100%' : 'fit-content',
+    'max-width': sizeValue(cap),
+    height: fill.height ? '100%' : undefined,
+  });
+  host.attributes['role'] = assertive ? 'alert' : 'status';
+  host.attributes['aria-live'] = assertive ? 'assertive' : 'polite';
+  // The region is announced as a WHOLE when any part of it changes. Without this a reader reads
+  // only the changed node, so a banner whose title and body both change is announced as a fragment.
+  host.attributes['aria-atomic'] = 'true';
+  if (node.label) host.attributes['aria-label'] = node.label;
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) host.children.push(child);
   return host;

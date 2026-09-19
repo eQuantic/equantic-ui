@@ -167,6 +167,8 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context)
 
     public HtmlElement? Visit(Progress progress, bool? horizontalAxis) => LowerProgress(progress);
 
+    public HtmlElement? Visit(LiveRegion live, bool? horizontalAxis) => LowerLiveRegion(live);
+
     public HtmlElement? Visit(Navigable navigable, bool? horizontalAxis) => LowerNavigable(navigable);
 
     public HtmlElement? Visit(Shortcut shortcut, bool? horizontalAxis) =>
@@ -215,6 +217,7 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context)
         Hoverable hoverable => Fills(hoverable.Child),
         Adjustable adjustable => Fills(adjustable.Child),
         Progress progress => Fills(progress.Child),
+        LiveRegion live => Fills(live.Child),
         Flexible flexible => Fills(flexible.Child),
         LoopMotion motion => Fills(motion.Child),
         // The three the TypeScript `fills` already walked and this side did not. A wrapper missing

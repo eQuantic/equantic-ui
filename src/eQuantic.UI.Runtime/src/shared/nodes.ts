@@ -25,6 +25,7 @@ export interface ColorTokenValue {
 // re-export alone does not bring a name into this module's own scope.
 import type {
   CrossAlignValue,
+  LiveRegionUrgencyValue,
   MainAlignValue,
   NavigableMoveValue,
   SizeKindValue,
@@ -633,6 +634,22 @@ export interface ProgressNode extends VisualNodeValue {
   /** How far along, over the range it covers; absent when indeterminate. */
   value?: RangeValueValue | null;
 }
+
+/**
+ * A region the platform WATCHES (C# twin: LiveRegion) — what changes inside it is announced
+ * wherever the user happens to be, and focus never moves. Announcing is not labelling: a label says
+ * what a thing IS and is read on arrival, a live region says what just HAPPENED.
+ */
+export interface LiveRegionNode extends VisualNodeValue {
+  nodeKind: 'liveRegion';
+  child: VisualNodeValue;
+  /** How hard the announcement interrupts; 'polite' when absent, as on the C# side. */
+  urgency?: LiveRegionUrgencyValue;
+  /** What the region is FOR, when the subtree alone does not say it. */
+  label?: string;
+}
+
+export type { LiveRegionUrgencyValue } from './enums.generated';
 
 /**
  * Wire shape of the C# `RangeValue`: the trio ARIA calls now/min/max, plus the words to say it

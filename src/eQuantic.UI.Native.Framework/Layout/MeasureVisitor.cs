@@ -180,6 +180,13 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     public LayoutNode Visit(Adjustable node, MeasureState s) =>
         MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.Path);
 
+    // The fifth wrapper that emits a host of its own, so it releases block stretch for the reason
+    // the other four do (BlockStretch_DoesNotCrossAWrapperThatEmitsItsOwnHost): `LowerLiveRegion`
+    // gives the host `fit-content` when the child does not ask to fill, and the box a reader
+    // outlines has to be the box Photon lays out.
+    public LayoutNode Visit(LiveRegion node, MeasureState s) =>
+        MeasureWrapper(node, node.Child, s.Constraints.Inline(), _ctx, s.Path);
+
     // INLINED like the three wrappers above it, and the reason this comment once said otherwise is
     // worth keeping: "a progress bar reports across whatever it is given" sounds right and is not
     // what the other target does. `LowerProgress` gives the host `fit-content` when the child does

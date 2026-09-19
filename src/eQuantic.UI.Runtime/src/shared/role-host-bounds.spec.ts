@@ -41,6 +41,9 @@ describe('a role-bearing host has the bounds of what it names', () => {
   for (const [name, wrap] of [
     ['progress', (child: unknown) => ({ nodeKind: 'progress', child, label: 'Uploading' })],
     ['adjustable', (child: unknown) => ({ nodeKind: 'adjustable', child, onAdjust: () => {} })],
+    // A live region's box is what a reader outlines when it announces the change inside it, so the
+    // same rule applies for the same reason.
+    ['liveRegion', (child: unknown) => ({ nodeKind: 'liveRegion', child, label: 'Upload status' })],
   ] as const) {
     it(`${name} hugs a hug child and fills a fill child`, () => {
       const hug = lowerVisualNode(wrap(hugTrack()) as unknown as VisualNodeValue, ctx);

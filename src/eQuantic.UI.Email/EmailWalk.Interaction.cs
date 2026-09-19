@@ -17,6 +17,8 @@ internal abstract partial class EmailWalk
 
     public Nothing Visit(Progress node, Nothing state) => Refuse(node);
 
+    public Nothing Visit(LiveRegion node, Nothing state) => Refuse(node);
+
     public Nothing Visit(DragDismiss node, Nothing state) => Refuse(node);
 
     public Nothing Visit(Draggable node, Nothing state) => Refuse(node);

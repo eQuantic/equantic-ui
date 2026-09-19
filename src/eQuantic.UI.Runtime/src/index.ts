@@ -133,6 +133,7 @@ export {
   SheetSurface,
   Adjustable,
   Progress,
+  LiveRegion,
   RangeValue,
   Navigable,
   CameraPreview,

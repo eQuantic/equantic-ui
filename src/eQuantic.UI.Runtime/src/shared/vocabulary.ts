@@ -19,6 +19,7 @@ import type {
   ColorValue,
   CrossAlignValue,
   EdgeInsetsValue,
+  LiveRegionUrgencyValue,
   MainAlignValue,
   TypeStyleValue,
 } from './nodes';
@@ -1269,6 +1270,26 @@ export class Progress extends VisualNode {
   value?: RangeValue | null;
 
   constructor(child: VisualNode, config?: { label?: string; value?: RangeValue | null }) {
+    super();
+    this.child = child;
+    if (config) Object.assign(this, config);
+  }
+}
+
+/**
+ * Mirror of the C# `LiveRegion` node: the platform WATCHES this subtree and announces what changes
+ * inside it wherever the user happens to be, without moving focus. Layout-transparent and
+ * non-interactive, like `Progress` — announcing is not labelling.
+ */
+export class LiveRegion extends VisualNode {
+  readonly nodeKind = 'liveRegion';
+  child: VisualNode;
+  /** How hard the announcement interrupts. Polite by default: assertive is a cost every other
+   * announcement on the page pays, so a component has to ask for it. */
+  urgency: LiveRegionUrgencyValue = 'polite';
+  label = '';
+
+  constructor(child: VisualNode, config?: { urgency?: LiveRegionUrgencyValue; label?: string }) {
     super();
     this.child = child;
     if (config) Object.assign(this, config);

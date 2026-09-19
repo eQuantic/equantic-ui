@@ -55,6 +55,7 @@ public class LabelledNodesReachSemanticsTests
         ["CameraPreview"] = label => new CameraPreview(null, 120, 80) { Label = label },
         ["Navigable"] = label => new Navigable([new Text("row", TypeRole.BodyM)], _ => { }) { Label = label },
         ["Overlay"] = label => new Overlay(new Text("over", TypeRole.BodyM)) { Label = label },
+        ["LiveRegion"] = label => new LiveRegion(new Text("region", TypeRole.BodyM)) { Label = label },
         ["Adjustable"] = label => new Adjustable(new Text("x", TypeRole.BodyM), _ => { }) { Label = label },
         ["Progress"] = label => new Progress(new Text("bar", TypeRole.BodyM)) { Label = label },
         // Real surfaces with minimal controllers. These two were a `Text` standing in for them —
@@ -77,7 +78,7 @@ public class LabelledNodesReachSemanticsTests
     /// only to shrink; it reached zero, so what is worth writing down is no longer who is silent but
     /// what a container has to do.
     /// </summary>
-    private static readonly string[] LabelledContainers = ["Navigable", "Overlay"];
+    private static readonly string[] LabelledContainers = ["LiveRegion", "Navigable", "Overlay"];
 
     /// <summary>
     /// The one container whose subtree cannot be reached on Photon — and NOT because of the role.
