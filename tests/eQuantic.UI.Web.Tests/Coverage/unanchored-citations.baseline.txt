@@ -72,7 +72,6 @@ docs/HANDOFF-FIDELITY-AUDIT.md TextInputRealizerTests.cs 1
 docs/HANDOFF-FIDELITY-AUDIT.md Toast.cs 9
 docs/HANDOFF-FIDELITY-AUDIT.md TokenCss.cs 18
 docs/HANDOFF-FIDELITY-AUDIT.md Tokens.cs 22
-docs/HANDOFF-FIDELITY-AUDIT.md Typography.cs 1
 docs/HANDOFF-FIDELITY-AUDIT.md UIExtensions.cs 1
 docs/HANDOFF-FIDELITY-AUDIT.md WalletApp.cs 1
 docs/HANDOFF-FIDELITY-AUDIT.md Wave2ComponentTests.cs 1

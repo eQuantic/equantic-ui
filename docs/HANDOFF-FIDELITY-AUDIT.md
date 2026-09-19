@@ -1239,7 +1239,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Divider.cs`
 - **Handoff**: Consumes exactly its thickness — vertical rhythm comes from the parent's gap, never from Divider "spacing" props (it has none).
-- **Code**: True for every horizontal case, but a VERTICAL divider with an inset consumes the parent's whole width instead of its 1dp thickness: the inset wrapper is hardcoded Width = SizeValue.Fill and pads on the horizontal axis regardless of Axis, so Divider(DividerInset.Middle, DividerAxis.Vertical) in a toolbar Row eats all the remaining space and pushes the line off-centre. Reachable straight from the public factory UI.Divider(inset, axis) (UI.cs:468-470 UI.Divider). In-repo callers happen to dodge it — ListDetail.cs:107 uses the vertical divider with the default None inset.
+- **Code**: True for every horizontal case, but a VERTICAL divider with an inset consumes the parent's whole width instead of its 1dp thickness: the inset wrapper is hardcoded Width = SizeValue.Fill and pads on the horizontal axis regardless of Axis, so Divider(DividerInset.Middle, DividerAxis.Vertical) in a toolbar Row eats all the remaining space and pushes the line off-centre. Reachable straight from the public factory UI.Divider(inset, axis) (UI.cs:452-454 UI.Divider). In-repo callers happen to dodge it — ListDetail.cs:107 uses the vertical divider with the default None inset.
 - **Evidence**:
 
   ```
@@ -1253,14 +1253,12 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Primitives/Theme/Typography.cs`
 - **Handoff**: Dynamic Type — "Scales by OS factor to the role cap; re-shape + re-layout, atlas re-uses whitelist sizes. Never scales below ×1."
-- **Code**: The scaling helper clamps the OS factor to a FLOOR of 0.5, not 1 — an OS factor below ×1 (iOS xSmall ≈ 0.82, Android fontScale 0.85) shrinks the type down to half the role's dp size. ScaledLineHeight applies the same 0.5 floor at Typography.cs:88, and no caller re-clamps: the shells pass the factor straight through (src/eQuantic.UI.Native.Shell.Apple/CoreTextService.cs:180-181, src/eQuantic.UI.Native.Shell.Android/AndroidTextService.cs:27-28) and the summary comment only documents `Size × min(factor, MaxScale)`, so the extra lower bound is unstated as well as wrong.
+- **Code**: The scaling helper clamps the OS factor to a FLOOR of 0.5, not 1 — an OS factor below ×1 (iOS xSmall ≈ 0.82, Android fontScale 0.85) shrinks the type down to half the role's dp size. ScaledLineHeight applies the same 0.5 floor at Typography.cs:109-112 ScaledLineHeight, and no caller re-clamps: the shells pass the factor straight through (src/eQuantic.UI.Native.Shell.Apple/CoreTextService.cs:180-181, src/eQuantic.UI.Native.Shell.Android/AndroidTextService.cs:27-28) and the summary comment only documents `Size × min(factor, MaxScale)`, so the extra lower bound is unstated as well as wrong.
 - **Evidence**:
 
   ```
-  src/eQuantic.UI.Primitives/Theme/Typography.cs:63 —
-          var scaled = Size * MathF.Min(MathF.Max(osFactor, 0.5f), MaxScale);
-  src/eQuantic.UI.Primitives/Theme/Typography.cs:88 —
-          var scaled = LineHeight * MathF.Min(MathF.Max(osFactor, 0.5f), MaxScale);
+  src/eQuantic.UI.Primitives/Theme/Typography.cs:86  var scaled = Size * MathF.Min(MathF.Max(osFactor, 0.5f), MaxScale);
+  src/eQuantic.UI.Primitives/Theme/Typography.cs:111  var scaled = LineHeight * MathF.Min(MathF.Max(osFactor, 0.5f), MaxScale);
   ```
 
 ### A8 Text · behaviour · **unverified**
@@ -1976,7 +1974,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/EmptyState.cs`
 - **Handoff**: illustration slot is an Image (bitmap atlas), optional.
-- **Code**: There is no illustration slot. The only visual input is `Icons icon`, always rendered as a 32dp glyph inside the 64dp well; the class exposes Icon/Title/Body/Action/SecondaryAction and nothing that accepts an Image. The UI factory (UI.cs:502 UI.EmptyState) mirrors the same three parameters.
+- **Code**: There is no illustration slot. The only visual input is `Icons icon`, always rendered as a 32dp glyph inside the 64dp well; the class exposes Icon/Title/Body/Action/SecondaryAction and nothing that accepts an Image. The UI factory (UI.cs:486 UI.EmptyState) mirrors the same three parameters.
 - **Evidence**:
 
   ```

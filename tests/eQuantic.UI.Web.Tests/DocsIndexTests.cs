@@ -439,7 +439,10 @@ public class DocsIndexTests
     /// <para>
     /// WHAT IT DECLINES, rather than guesses at: a quote with an ELISION in its first forty
     /// characters (<c>...</c>) and a quote shorter than twelve — <c>{</c> and <c>}, Child);</c> are
-    /// quoted to be read, not diffed, and would match anywhere. Four citations are declined today.
+    /// quoted to be read, not diffed, and would match anywhere. The count of declines is deliberately
+    /// NOT written here: it was, and a running tally is the shape that rots — it moves whenever a
+    /// citation is reformatted, and nothing fails when it stops being true. What is checkable is the
+    /// RULE, and `unanchored-citations.baseline.txt` is where a decline is named and may only shrink.
     /// The audits also ANNOTATE a quote (<c>   // native only</c>, <c>   (no minimum reaches it)</c>);
     /// the annotation is cut at the first run of three spaces, or at two before <c>/</c>, <c>→</c>,
     /// <c>—</c> or <c>(</c>, which is the separator they already use.

@@ -97,12 +97,14 @@ public sealed class RealizeResult
         IReadOnlyList<DragRegion>? dragRegions = null, IReadOnlyList<LinkRegion>? linkRegions = null,
         IReadOnlyList<ShortcutBinding>? shortcuts = null, IReadOnlyList<TextRegion>? textRegions = null,
         IReadOnlyList<FocusStop>? focusStops = null, IReadOnlyList<CodeRegion>? codeRegions = null,
-        IReadOnlyList<LayoutNode>? overlayRoots = null, IReadOnlyList<SheetRegion>? sheetRegions = null,
+        IReadOnlyList<LayoutNode>? overlayRoots = null, IReadOnlyList<Overlay>? overlayLayers = null,
+        IReadOnlyList<SheetRegion>? sheetRegions = null,
         IReadOnlyList<CursorRegion>? cursorRegions = null,
         IReadOnlyList<CanvasRegion>? canvasRegions = null)
     {
         Root = root;
         OverlayRoots = overlayRoots ?? Array.Empty<LayoutNode>();
+        OverlayLayers = overlayLayers ?? Array.Empty<Overlay>();
         SheetRegions = sheetRegions ?? Array.Empty<SheetRegion>();
         CursorRegions = cursorRegions ?? Array.Empty<CursorRegion>();
         CanvasRegions = canvasRegions ?? Array.Empty<CanvasRegion>();
@@ -139,13 +141,8 @@ public sealed class RealizeResult
     /// beside where it landed. The root's own source is the overlay's CHILD (the realizer lays that
     /// out against the viewport), so without this the semantics walk reaches a dialog's contents
     /// with no way to know it is in one.
-    /// <para>
-    /// An init-only property rather than a constructor parameter, by the rule the vocabulary's own
-    /// records follow: C# bakes an optional argument into each CALL SITE, so widening this public
-    /// constructor would delete the signature an already-compiled caller invokes.
-    /// </para>
     /// </summary>
-    public IReadOnlyList<Overlay> OverlayLayers { get; init; } = Array.Empty<Overlay>();
+    public IReadOnlyList<Overlay> OverlayLayers { get; }
 
     /// <summary>Everything Tab visits, in tree order: buttons and fields in one sequence.</summary>
     public IReadOnlyList<FocusStop> FocusStops { get; }
@@ -349,10 +346,8 @@ public static class PhotonRealizer
         return new RealizeResult(layout, hits,
             motion.Active || transitions is { AnyActive: true } || presences is { AnyActive: true }
                 || drags is { AnyActive: true },
-            hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes, overlayRoots, sheets, cursors, canvases)
-        {
-            OverlayLayers = overlays,
-        };
+            hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes, overlayRoots, overlays,
+            sheets, cursors, canvases);
     }
 
 

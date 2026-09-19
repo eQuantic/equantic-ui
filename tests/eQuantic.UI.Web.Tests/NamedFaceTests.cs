@@ -406,42 +406,6 @@ public class NamedFaceTests
         public float Shape(ShapeScale scale) => inner.Shape(scale);
     }
 
-    // ---- The released surface -------------------------------------------------------------------
-
-    /// <summary>
-    /// <c>TypeStyle</c> gained a parameter, and a positional record answers that by REPLACING both
-    /// halves of its surface: the constructor and the synthesised <c>Deconstruct</c>. C# optional
-    /// parameters are not overloads — the default is baked into each call site — so an assembly
-    /// compiled against the released package calls signatures that no longer exist and finds a
-    /// <c>MissingMethodException</c> at load.
-    /// <para>
-    /// Reflection rather than a call, because a call would be compiled against THIS tree and would
-    /// pass by binding to the eight-parameter form. The question is what the metadata offers an
-    /// assembly that was compiled elsewhere.
-    /// </para>
-    /// </summary>
-    [Fact]
-    public void TypeStyle_StillOffersTheSurfaceItShippedWith()
-    {
-        var constructor = typeof(TypeStyle).GetConstructors()
-            .Where(c => c.GetParameters().Length == 7)
-            .ToArray();
-        constructor.Should().ContainSingle("a consumer compiled against the 7-parameter form calls it");
-
-        var deconstruct = typeof(TypeStyle).GetMethods()
-            .Where(m => m.Name == "Deconstruct" && m.GetParameters().Length == 7)
-            .ToArray();
-        deconstruct.Should().ContainSingle(
-            "and `var (size, line, weight, tracking, scale, mono, italic) = style;` binds to it");
-
-        // The half that is easy to lose: the same value, whichever way it is read.
-        var style = new TypeStyle(15, 20, FontWeight.Regular, 0, 1.3f, false, false);
-        var (size, line, weight, tracking, scale, mono, italic) = style;
-        (size, line, weight, tracking, scale, mono, italic)
-            .Should().Be((15f, 20f, FontWeight.Regular, 0f, 1.3f, false, false));
-        style.Family.Should().BeNull("the compatibility shape has no face, which is the default");
-    }
-
     // ---- fixture plumbing -----------------------------------------------------------------------
 
     private sealed record FaceCase(string Family, bool WellFormed, string Why);

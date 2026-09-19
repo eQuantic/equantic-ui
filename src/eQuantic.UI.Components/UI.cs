@@ -441,24 +441,8 @@ public static class UI
         new SearchField(query, onChanged, placeholder, onSubmit);
 
     /// <summary>
-    /// Linear progress; null value = indeterminate.
-    /// <para>
-    /// <b>This signature WIDENED in the release that added progress semantics, and no compatibility
-    /// form is offered — the architecture does not allow one.</b> C# optional parameters are not
-    /// overloads, so an assembly compiled against the two-parameter form calls it by that exact
-    /// signature and finds a <c>MissingMethodException</c>; the repair <c>TypeStyle</c> used for the
-    /// same problem is a second member keeping the old shape, and here that member cannot exist.
-    /// The twin is JavaScript: two same-named statics collide, which
-    /// <c>UiFactoryConformanceTests.NoFactoryOverloads_TheTwinIsJavaScript</c> refuses by name and
-    /// <c>tsc</c> reports as TS2393 on both generated files. Measured, not assumed — it was written
-    /// and reverted.
-    /// </para>
-    /// <para>
-    /// It is also moot in this release: <see cref="Adjustable"/> beside it took the same break by
-    /// swapping <c>AdjustableValue</c> for <c>RangeValue</c>, and THAT one is unrepairable at any
-    /// price, because a compatibility overload would have to name a type that no longer exists. An
-    /// assembly this form's repair would have saved breaks on the other one regardless.
-    /// </para>
+    /// Linear progress; null value = INDETERMINATE, which is a state the role reports rather than a
+    /// value that went missing.
     /// </summary>
     public static ProgressBar ProgressBar(float? value = null, Variant variant = Variant.Primary,
         string label = "", string? valueText = null, bool prominent = false) =>

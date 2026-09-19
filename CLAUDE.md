@@ -83,6 +83,32 @@ that it is missing); prefer the mechanism .NET already has to a home-grown one (
 solution's own output); and prefer an instrument that FAILS to one that warns — a pin that compares
 and fails, regenerated behind an env var, never one that silently rewrites itself.
 
+### NO MEMBER SURVIVES TO KEEP AN OLD SHAPE ALIVE
+
+The SDK is in **preview**, and a preview version means exactly this: **a signature widens and the
+old one GOES.** A breaking change is the cheapest thing here — cheaper than the member kept beside
+the real one, cheaper than the doc explaining why that member exists, cheaper than the test pinning
+it, and far cheaper than the reader who has to work out which of two shapes is the live one.
+
+So: no compatibility constructor, no retained `Deconstruct`, no `[Obsolete]` forwarder, no property
+that exists because widening a constructor would have been a break. Change the shape, fix every call
+site, delete what the change replaced.
+
+This rule is written down because the opposite one was, in code, and it taught two rounds of the
+wrong lesson. `TypeStyle` gained a face and grew a seven-parameter constructor and a seven-output
+`Deconstruct` to keep the shipped surface reachable, plus a test asserting they stayed. `SemanticNode`
+then gained a live-region urgency and copied the repair — which cost a CS0121 ambiguity across every
+six-argument call in the tree, and a paragraph explaining the trap. A third site (`UI.ProgressBar`)
+carried twenty lines explaining why it could NOT offer the same repair. Three artefacts, all of them
+serving a consumer nothing in this repository has: no project here compiles against a released
+`eQuantic.UI.*` package — the VS Code extension is TypeScript. All three are gone.
+
+The rule ENDS at the vocabulary's enums, and for a reason that is not compatibility: `SemanticRole`,
+`NodeKind` and their siblings are append-only because C# bakes an enum constant into the CONSUMING
+assembly's IL, so renumbering is silent rather than a break a compiler would report. That is a
+correctness pin (`EnumValueAbiTests`), not a shape kept alive — a member is never deleted or moved
+there, and nothing is kept beside anything.
+
 ---
 
 ## Git Commit Guidelines
