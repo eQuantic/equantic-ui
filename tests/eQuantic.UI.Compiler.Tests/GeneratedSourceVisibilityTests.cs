@@ -170,4 +170,108 @@ public class GeneratedSourceVisibilityTests : IDisposable
 
         Assert.Equal(2, found.Count(file => file.EndsWith("Registry.g.cs", StringComparison.Ordinal)));
     }
+
+    /// <summary>
+    /// THE MODULE LIST, which is the other half and was answered by a different reader. The
+    /// semantic model was scoped correctly all along — <c>GetProjectSourceFiles</c> excludes
+    /// <c>obj/</c> and <c>--generated</c> names one configuration — while the list of files to
+    /// TRANSPILE was a raw recursive <c>GetFiles</c> filtered by the SHAPE of each path: skip
+    /// <c>obj/</c> and <c>bin/</c>, unless the path contains <c>/generated/</c>.
+    ///
+    /// <para>
+    /// That exemption existed to let the <c>--generated</c> files through and let every
+    /// configuration's through instead. A Release build transpiled <c>obj/Debug</c>'s factory
+    /// surface as well, which the site hit twice: EQ2006 against a component it had deleted, and
+    /// EQ1006 saying <c>AppUI</c> is declared in more than one place while a Debug dev server and a
+    /// Release build shared the project (#244).
+    /// </para>
+    ///
+    /// <para>
+    /// The DOUBLE SLASH is not decoration: the .NET SDK's own default for the generated directory is
+    /// <c>$(IntermediateOutputPath)/generated</c>, so the SDK really does pass the path this way and
+    /// the same file arrived once through <c>--generated</c> and once from the walk.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void TheModuleList_HoldsOnlyTheConfigurationBeingBuilt()
+    {
+        var own = Path.Combine(_project, "Components");
+        Directory.CreateDirectory(own);
+        File.WriteAllText(Path.Combine(own, "StatTile.cs"), "public class StatTile { }");
+        WriteGeneratedIn("Debug", "AppUI.g.cs", "public static class AppUI { public static int Stale() => 1; }");
+        var release = WriteGeneratedIn("Release", "AppUI.g.cs", "public static class AppUI { }");
+
+        var units = ProjectCompilationHelper.GetCompilationUnits(
+            [_project],
+            Path.Combine(_project, "obj", "Release", "net10.0") + Path.DirectorySeparatorChar + "/generated")
+            .ToList();
+
+        var factories = units.Where(u => u.File.EndsWith("AppUI.g.cs", StringComparison.Ordinal)).ToList();
+        Assert.Single(factories);
+        Assert.Equal(Path.GetFullPath(release), factories[0].File);
+        Assert.True(factories[0].IsGenerated, "it is generated because --generated named it");
+
+        Assert.Single(units, u => u.File.EndsWith("StatTile.cs", StringComparison.Ordinal));
+        Assert.False(units.Single(u => u.File.EndsWith("StatTile.cs", StringComparison.Ordinal)).IsGenerated);
+    }
+
+    /// <summary>
+    /// The project's own walk never enters <c>obj/</c> or <c>bin/</c> at all, so a stray
+    /// <c>.cs</c> under either is not a module — with or without the word "generated" in its path.
+    /// The old filter decided this by path shape; provenance decides it now.
+    /// </summary>
+    [Fact]
+    public void NothingUnderObjOrBin_IsAModuleUnlessGeneratedNamedIt()
+    {
+        foreach (var junk in new[] { Path.Combine(_project, "obj", "Scratch.cs"),
+                                     Path.Combine(_project, "bin", "Debug", "Copied.cs"),
+                                     Path.Combine(_project, "obj", "Debug", "generated", "Old.g.cs") })
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(junk)!);
+            File.WriteAllText(junk, "public class Junk { }");
+        }
+
+        var units = ProjectCompilationHelper.GetCompilationUnits([_project], generatedDirectory: null).ToList();
+
+        Assert.DoesNotContain(units, u => u.File.EndsWith("Scratch.cs", StringComparison.Ordinal));
+        Assert.DoesNotContain(units, u => u.File.EndsWith("Copied.cs", StringComparison.Ordinal));
+        // Old.g.cs IS under a generated directory, so the unscoped fallback takes it — as generated,
+        // which is the whole point: it is there because the sweep named it, not because of its path.
+        // PRESENCE FIRST, then the flag: `Assert.All` passes over an empty sequence, so checking
+        // only the flag would stay green on the day the fallback stopped returning the file at all —
+        // and the two `DoesNotContain` above would then be the whole test, which would read as if
+        // nothing under obj/ ever becomes a module. Found in review, and it is the vacuous pass this
+        // repository keeps meeting.
+        var generated = units.Where(u => u.File.EndsWith("Old.g.cs", StringComparison.Ordinal)).ToList();
+        Assert.Single(generated);
+        Assert.True(generated[0].IsGenerated, "it is there because the sweep named it, not because "
+            + "its path contains the word");
+    }
+
+    /// <summary>
+    /// A second transpiled root (the SDK passes the standard components beside the project) keeps
+    /// its own directory, because the entry-point rule reads it: only the FIRST root's top-level and
+    /// Pages files are entry points.
+    /// </summary>
+    [Fact]
+    public void EachUnitRemembersWhichRootItCameFrom()
+    {
+        var shared = Path.Combine(Path.GetTempPath(), "eqc-shared-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(shared);
+        Directory.CreateDirectory(_project);
+        File.WriteAllText(Path.Combine(_project, "Home.cs"), "public class Home { }");
+        File.WriteAllText(Path.Combine(shared, "Card.cs"), "public class Card { }");
+        try
+        {
+            var units = ProjectCompilationHelper.GetCompilationUnits([_project, shared], null).ToList();
+
+            Assert.Equal(_project, units.Single(u => u.File.EndsWith("Home.cs", StringComparison.Ordinal)).Directory);
+            Assert.Equal(shared, units.Single(u => u.File.EndsWith("Card.cs", StringComparison.Ordinal)).Directory);
+        }
+        finally
+        {
+            Directory.Delete(shared, recursive: true);
+        }
+    }
+
 }

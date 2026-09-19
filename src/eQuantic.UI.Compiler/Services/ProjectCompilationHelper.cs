@@ -213,6 +213,64 @@ public static class ProjectCompilationHelper
     }
 
     /// <summary>
+    /// WHICH FILES THIS PROJECT TRANSPILES, answered ONCE — the project's own sources, plus the
+    /// generated ones for the configuration being built, each tagged with where it came from.
+    ///
+    /// <para>
+    /// It exists because the question was answered twice and the two answers disagreed. The
+    /// semantic model was assembled from <see cref="GetProjectSourceFiles"/> (which excludes
+    /// <c>obj/</c>) plus <see cref="GetCompilerGeneratedFiles(string, string?)"/> (which the SDK scopes to ONE
+    /// configuration with <c>--generated</c>); the list of MODULES was a raw recursive
+    /// <c>Directory.GetFiles</c> over the project directory, filtered by the SHAPE of each path —
+    /// skip <c>obj/</c> and <c>bin/</c>, unless the path contains <c>/generated/</c>. That
+    /// exemption was meant to let the <c>--generated</c> files through and instead let EVERY
+    /// configuration's through, so a Release build transpiled <c>obj/Debug/…/AppUI.g.cs</c> as
+    /// well: EQ2006 against a component the app had deleted, or EQ1006 saying the factory surface
+    /// is declared in more than one place.
+    /// </para>
+    ///
+    /// <para>
+    /// So provenance decides, not the path: a file is generated because <c>--generated</c> named
+    /// it, and the project's own walk never enters <c>obj/</c> at all. Paths are normalized with
+    /// <see cref="Path.GetFullPath(string)"/> and deduplicated on the result, which is what collapses the
+    /// same file reached under two spellings — the .NET SDK's own default for the generated
+    /// directory is <c>$(IntermediateOutputPath)/generated</c>, with the double slash that produced.
+    /// </para>
+    /// </summary>
+    /// <param name="sourceDirectories">
+    /// The transpiled roots, the project's own FIRST: the SDK passes
+    /// <c>$(MSBuildProjectDirectory);$(_StandardComponentsDir)</c>. Order matters — generated files
+    /// are the first directory's, and the entry-point rule reads the same position.
+    /// </param>
+    /// <param name="generatedDirectory">The configuration's generated-sources directory, or null to
+    /// let <see cref="GetCompilerGeneratedFiles(string, string?)"/> fall back to sweeping <c>obj</c>.</param>
+    public static IEnumerable<(string Directory, string File, bool IsGenerated)> GetCompilationUnits(
+        IReadOnlyList<string> sourceDirectories, string? generatedDirectory)
+    {
+        if (sourceDirectories.Count == 0) yield break;
+
+        // Ordinal, and deliberately not OrdinalIgnoreCase: after GetFullPath the only way one file
+        // appears twice is under the same spelling, and two sources differing only in case are two
+        // files on Linux — merging them would silently drop a module.
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var directory in sourceDirectories)
+        {
+            foreach (var file in GetProjectSourceFiles(directory))
+            {
+                var full = Path.GetFullPath(file);
+                if (seen.Add(full)) yield return (directory, full, false);
+            }
+        }
+
+        foreach (var file in GetCompilerGeneratedFiles(sourceDirectories[0], generatedDirectory))
+        {
+            var full = Path.GetFullPath(file);
+            if (seen.Add(full)) yield return (sourceDirectories[0], full, true);
+        }
+    }
+
+    /// <summary>
     /// Gets all .cs source files from a project directory.
     /// Excludes obj/ and bin/ directories.
     /// </summary>

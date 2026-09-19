@@ -196,11 +196,36 @@ function realignColdLoad(offset: number): void {
 }
 
 /**
- * How many frames the correction keeps watching ONCE THE DOCUMENT HAS LOADED. The browser performs
- * its fragment jump when layout allows, which is not a moment any event names — so this counts
- * frames after the page has settled rather than waiting for a signal that does not exist.
+ * How many frames the correction keeps watching once the document has completed AND THE PAGE HAS
+ * STOPPED MOVING. The browser performs its fragment jump when layout allows, which is not a moment
+ * any event names — so this counts frames rather than waiting for a signal that does not exist.
+ *
+ * <para>
+ * STILL frames, and that word is the fix. Counting from `load` is a bet that the jump LANDS within
+ * N frames of it, and `html { scroll-behavior: smooth }` is the case where the bet loses: the jump
+ * becomes an animation of about 630 ms, and this budget retires around 400 ms with the target still
+ * travelling. Measured in Chrome at 1280x748 against a live site — the destination was computed at
+ * 70 ms, before the offset existed, so it headed for `scroll-margin-top: 0`; the target entered the
+ * band at 452 ms and landed under the bar at 702 ms, with nobody left watching. That line is not
+ * exotic: it is line 17 of all six handoffs in `docs/design/*.dc.html`, and the site transcribed it.
+ * </para>
+ *
+ * <para>
+ * So a frame spends the budget only when the page did not scroll since the previous one, and the
+ * window measures how long the page has been STILL rather than how long since `load`. A travelling
+ * jump keeps the watch open by definition, and a settled page retires in exactly the twenty frames
+ * it always did. <c>MaxWatchMs</c> stays as the bound that does not depend on the page cooperating,
+ * which is what keeps a page that scrolls itself from watching forever.
+ * </para>
+ *
+ * <para>
+ * NOT `scrollend`, though it names the end of the jump exactly: it would be a second signal to keep
+ * correct beside this one, with its own support matrix, and it answers a question this rule already
+ * answers — a page that has stopped scrolling is a page that is still. It is worth adding the day
+ * something needs the end of the jump and cannot infer it.
+ * </para>
  */
-const FramesAfterLoad = 20;
+const StillFrames = 20;
 
 /**
  * The wall clock the watch stops against, whatever the document says about itself.
@@ -252,7 +277,8 @@ function bookRecheck(): void {
   // and either suppresses its correction or performs one nobody asked for — a suite that lies about
   // itself, which is worse than a suite that fails. Found in review.
   const booked = generation;
-  let framesLeft = FramesAfterLoad;
+  let framesLeft = StillFrames;
+  let lastScrollY = scrollPosition();
 
   const tick = (): void => {
     if (booked !== generation || coldLoadHandled) return;
@@ -265,9 +291,17 @@ function bookRecheck(): void {
     realignColdLoad(measured);
     if (coldLoadHandled) return;
 
-    // The frame budget can stay AFTER the correction: it only decides when to stop watching a page
-    // that is behaving, and a tick inside the deadline is one this watch is entitled to act on.
-    if (document.readyState === 'complete' && --framesLeft <= 0) {
+    // The budget is spent on STILLNESS. A page that moved since the last frame is a page whose
+    // jump is still travelling — under `scroll-behavior: smooth` that is most of the first 630 ms —
+    // and retiring in the middle of it is the whole of this defect. The frame budget can stay AFTER
+    // the correction: it only decides when to stop watching a page that is behaving, and a tick
+    // inside the deadline is one this watch is entitled to act on.
+    const scrolled = scrollPosition();
+    const moved = scrolled !== lastScrollY;
+    lastScrollY = scrolled;
+    if (moved) {
+      framesLeft = StillFrames;
+    } else if (document.readyState === 'complete' && --framesLeft <= 0) {
       coldLoadHandled = true;
       return;
     }
@@ -308,6 +342,17 @@ function schedule(callback: () => void): void {
 
 /** Long enough not to fight rAF on a visible tab, short enough to bound a hidden one. */
 const BackstopMs = 120;
+
+/**
+ * Where the page is, for the one question this file asks of it: did it move since the last frame.
+ * `scrollY` is what a browser reports for the root scroller; `documentElement.scrollTop` is the
+ * fallback for an environment that has the element and not the window property.
+ */
+function scrollPosition(): number {
+  if (typeof window !== 'undefined' && typeof window.scrollY === 'number') return window.scrollY;
+  if (typeof document !== 'undefined') return document.documentElement?.scrollTop ?? 0;
+  return 0;
+}
 
 /** Monotonic where it exists; the wall clock is only used to bound a watch, so Date is enough. */
 function now(): number {
