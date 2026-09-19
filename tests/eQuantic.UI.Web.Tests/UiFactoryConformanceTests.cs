@@ -176,28 +176,28 @@ public class UiFactoryConformanceTests
     }
 
     /// <summary>
-    /// The vocabulary nodes a consumer can still only reach with <c>new</c>, named so the list can
-    /// shrink and so a NEW one cannot join it in silence.
+    /// The vocabulary nodes a consumer can still only reach with <c>new</c> — EMPTY, and kept as
+    /// an empty list rather than deleted so a new node with no factory still has somewhere it
+    /// would have to be written down.
     ///
     /// <para>
     /// "Trees are written with FACTORIES, never <c>new</c>" is the authoring rule, and until this
     /// test nothing checked it against the vocabulary — <see cref="TheCoreVocabulary_IsCovered"/>
     /// names seven factories every screen starts from and says nothing about the other thirty. A
-    /// reviewer caught <c>LiveRegion</c> shipping without one, which is how these six came to be
-    /// counted at all.
+    /// reviewer caught <c>LiveRegion</c> shipping without one, which is how the six that used to
+    /// be listed here came to be counted at all (#251).
     /// </para>
     ///
     /// <para>
-    /// Each is a real omission rather than a category — a <see cref="WebFrame"/> is the DOM escape
-    /// hatch and a <c>CodeSurface</c> takes a controller, but neither is a reason to make a consumer
-    /// write <c>new</c>. They are listed rather than exempted so the list is reducible; the test
-    /// below fails when one gains a factory, which is what makes removing an entry part of the work.
+    /// Emptying it cost two SHAPE changes rather than six methods, which is what the list was for:
+    /// <c>Navigable</c> took its rows FIRST, alone among the vocabulary's multi-child nodes, and
+    /// <c>WebFrame</c> had no constructor at all — an address and an inline document as two
+    /// nullable strings, with which one won written down in the web realizer's prose. A factory
+    /// over that shape would have put the precedence in the SDK's public signature, so the
+    /// exclusion became <see cref="WebContent"/> instead.
     /// </para>
     /// </summary>
-    private static readonly string[] ReachableOnlyByNew =
-    [
-        "CameraPreview", "CodeSurface", "LoopMotion", "Navigable", "SheetSurface", "WebFrame",
-    ];
+    private static readonly string[] ReachableOnlyByNew = [];
 
     /// <summary>
     /// Every node in the vocabulary is reachable through the declarative surface, or is named above.

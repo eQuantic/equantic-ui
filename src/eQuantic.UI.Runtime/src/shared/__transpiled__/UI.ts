@@ -1,4 +1,4 @@
-import { AdaptiveNode, Adjustable, AdjustableRoleValue, AlignmentValue, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxStyle, Button, Calendar, Canvas, CanvasPointer, Card, Checkbox, Chip, ColorToken, Column, CookieConsent, CrossAlignValue, CultureOption, CultureSwitcher, DateOnly, DatePicker, DateTime, DateTimePicker, Dialog, DialogAction, Divider, DragDismiss, Draggable, Drawer, Drawing, EdgeInsets, EmptyState, Flexible, Grid, GridTrack, Hoverable, Icon, IconButton, IconGlyph, IconsValue, Image, ImageFitValue, InFlow, InView, KeyChord, Link, ListDetail, ListItem, ListView, LiveRegion, LiveRegionUrgencyValue, MainAlignValue, Markdown, Mermaid, NavigationRail, NavItem, Overlay, Pinned, Positioned, Presence, PresenceMotionValue, Pressable, PressableRoleValue, Progress, ProgressBar, RangeValue, Row, SafeArea, ScrollAxisValue, ScrollView, SearchField, SegmentedControl, Select, Shortcut, Simulated, SizeValue, SizeVariantValue, Skeleton, Slider, Spacer, Spinner, Stack, Stepper, Switch, Tabs, Text, TextAlignmentValue, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TypeRoleValue, TypeStyle, VariantValue, Vector, VectorDrawing, VisualNode } from "@equantic/runtime";
+import { AdaptiveNode, Adjustable, AdjustableRoleValue, AlignmentValue, Anchored, AppBar, Avatar, Badge, Banner, BottomNavigation, Box, BoxStyle, Button, Calendar, CameraPreview, Canvas, CanvasPointer, Card, Checkbox, Chip, CodeEditorController, CodeSurface, ColorToken, Column, CookieConsent, CornerRadii, CrossAlignValue, CultureOption, CultureSwitcher, DateOnly, DatePicker, DateTime, DateTimePicker, Dialog, DialogAction, Divider, DragDismiss, Draggable, Drawer, Drawing, EdgeInsets, EmptyState, Flexible, Grid, GridTrack, Hoverable, Icon, IconButton, IconGlyph, IconsValue, Image, ImageFitValue, InFlow, InView, KeyChord, Link, ListDetail, ListItem, ListView, LiveRegion, LiveRegionUrgencyValue, LoopEffectValue, LoopMotion, MainAlignValue, Markdown, Mermaid, Navigable, NavigableMoveValue, NavigableRoleValue, NavigationRail, NavItem, Overlay, Pinned, Positioned, Presence, PresenceMotionValue, Pressable, PressableRoleValue, Progress, ProgressBar, RangeValue, Row, SafeArea, ScrollAxisValue, ScrollView, SearchField, SegmentedControl, Select, SheetController, SheetSurface, Shortcut, Simulated, SizeValue, SizeVariantValue, Skeleton, Slider, Spacer, Spinner, Stack, Stepper, Switch, Tabs, Text, TextAlignmentValue, TextEntry, TextInput, TimeOnly, TimePicker, Toast, Tooltip, TypeRoleValue, TypeStyle, VariantValue, Vector, VectorDrawing, VisualNode, WebContent, WebFrame } from "@equantic/runtime";
 
 export class UI {
     static column(gap: number = 0, main: MainAlignValue = 'start', cross: CrossAlignValue = 'stretch', wrap: boolean = false, runGap: number | null = null, padding: EdgeInsets | null = null, width?: SizeValue, height?: SizeValue, children: VisualNode[] | null = null) {
@@ -149,12 +149,36 @@ export class UI {
         return new Adjustable(child, onAdjust, { value: value, role: role });
     }
 
+    static navigable(onMove: (navigableMove: NavigableMoveValue) => void, rows: VisualNode[], label: string = '', role: NavigableRoleValue = 'grid', hasHeaderRow: boolean = false, activeCell: [number, number] | null = null) {
+        return new Navigable(onMove, rows, { label: label, role: role, hasHeaderRow: hasHeaderRow, activeCell: activeCell });
+    }
+
     static shortcut(child: VisualNode, chord: KeyChord, onPressed: () => void) {
         return new Shortcut(child, chord, onPressed);
     }
 
     static adaptiveNode(compact: VisualNode, medium: VisualNode | null = null, expanded: VisualNode | null = null) {
         return new AdaptiveNode(compact, medium, expanded);
+    }
+
+    static cameraPreview(session: any, width: number, height: number, cornerRadius?: CornerRadii, label: string = '') {
+        return new CameraPreview(session, width, height, { cornerRadius: cornerRadius, label: label });
+    }
+
+    static loopMotion(child: VisualNode, effect: LoopEffectValue, fromX: number, toX: number, durationMs: number, hideAtRest: boolean = false) {
+        return new LoopMotion(child, effect, fromX, toX, durationMs, { hideAtRest: hideAtRest });
+    }
+
+    static codeSurface(child: VisualNode, editor: CodeEditorController, onChanged: (() => void) | null = null, label: string | null = null, autofocus: boolean = false) {
+        return Object.assign(new CodeSurface(child, editor), { onChanged: onChanged, label: label, autofocus: autofocus });
+    }
+
+    static sheetSurface(child: VisualNode, controller: SheetController, onChanged: (() => void) | null = null, label: string | null = null, firstRow: number = 0, firstCol: number = 0) {
+        return Object.assign(new SheetSurface(child, controller), { onChanged: onChanged, label: label, firstRow: firstRow, firstCol: firstCol });
+    }
+
+    static webFrame(content: WebContent, title: string, sandbox: number = 1, cornerRadius?: CornerRadii) {
+        return new WebFrame(content, title, { sandbox: sandbox, cornerRadius: cornerRadius });
     }
 
     static button(label: string, variant: VariantValue = 'primary', size: SizeVariantValue = 'medium', onPressed: (() => void) | null = null) {

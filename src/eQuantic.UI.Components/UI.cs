@@ -44,7 +44,6 @@ public static class UI
         return node;
     }
 
-    /// <summary>Horizontal flex without <c>new</c> — <c>Row(gap: Space.S2, children: [ … ])</c>.</summary>
     /// <summary>Tells you when its child is ON SCREEN, and when it leaves — the question a table of
     /// contents asks, without wrapping the page in a scroll view to ask it.</summary>
     public static InView InView(VisualNode child, Action<bool> onChanged) => new InView(child, onChanged);
@@ -58,6 +57,7 @@ public static class UI
     public static Simulated Simulated(SimulatedState state, VisualNode child) =>
         new Simulated(state, child);
 
+    /// <summary>Horizontal flex without <c>new</c> — <c>Row(gap: Space.S2, children: [ … ])</c>.</summary>
     public static Row Row(float gap = 0, MainAlign main = MainAlign.Start,
         CrossAlign cross = CrossAlign.Center, bool wrap = false, float? runGap = null,
         EdgeInsets? padding = null, SizeValue width = default, SizeValue height = default,
@@ -311,6 +311,28 @@ public static class UI
         RangeValue? value = null, AdjustableRole role = AdjustableRole.Slider) =>
         new Adjustable(child, onAdjust) { Value = value, Role = role };
 
+    /// <summary>
+    /// The 2-D twin of <see cref="Adjustable"/>: one Tab stop for the whole thing, and a keyboard
+    /// that moves a selection around inside it — a calendar's month, a picker's grid.
+    /// <para>
+    /// <paramref name="rows"/> is a structural claim rather than "what is inside": a grid whose
+    /// cells are not inside rows is an invalid accessibility tree, which is why it is not called
+    /// <c>children</c>. <paramref name="hasHeaderRow"/> marks row 0 as the column headers, and
+    /// <paramref name="activeCell"/> is what a screen reader announces the arrows moving to —
+    /// without the focus ever leaving the composite's one stop.
+    /// </para>
+    /// </summary>
+    public static Navigable Navigable(Action<NavigableMove> onMove, IReadOnlyList<VisualNode> rows,
+        string label = "", NavigableRole role = NavigableRole.Grid, bool hasHeaderRow = false,
+        (int Row, int Item)? activeCell = null) =>
+        new Navigable(onMove, rows)
+        {
+            Label = label,
+            Role = role,
+            HasHeaderRow = hasHeaderRow,
+            ActiveCell = activeCell,
+        };
+
     /// <summary>A keyboard shortcut live while this subtree is mounted (spec S8).</summary>
     public static Shortcut Shortcut(VisualNode child, KeyChord chord, Action onPressed) =>
         new Shortcut(child, chord, onPressed);
@@ -319,6 +341,90 @@ public static class UI
     public static AdaptiveNode AdaptiveNode(VisualNode compact, VisualNode? medium = null,
         VisualNode? expanded = null) =>
         new AdaptiveNode(compact, medium, expanded);
+
+    /// <summary>A LIVE camera surface. Explicitly sized like <see cref="Image"/>, and for the same
+    /// reason: layout cannot infer an extent from a source that has not answered yet. A null
+    /// <paramref name="session"/> draws the placeholder, so "not started yet" needs no branch.</summary>
+    public static CameraPreview CameraPreview(ICameraSession? session, float width, float height,
+        CornerRadii cornerRadius = default, string label = "") =>
+        new CameraPreview(session, width, height) { CornerRadius = cornerRadius, Label = label };
+
+    /// <summary>
+    /// Continuous transform-only loop motion around one child — the shimmer and
+    /// indeterminate-progress building block. All five of its arguments are positional because
+    /// none of them has a default worth guessing: a loop with no extent and no period is not a
+    /// loop. <paramref name="hideAtRest"/> is the Reduce Motion policy, and the one thing that
+    /// differs between a decorative shimmer (hidden at rest) and a progress bar (still, but
+    /// there).
+    /// </summary>
+    public static LoopMotion LoopMotion(VisualNode child, LoopEffect effect, float fromX, float toX,
+        int durationMs, bool hideAtRest = false) =>
+        new LoopMotion(child, effect, fromX, toX, durationMs) { HideAtRest = hideAtRest };
+
+    /// <summary>
+    /// An EDITABLE code surface: whatever the child draws, plus a caret, a selection and a
+    /// keyboard. The controller is a live object the composing component OWNS and keeps — it
+    /// survives the rebuild each keystroke causes, which is why it is an argument and not state
+    /// this node holds. <paramref name="onChanged"/> is how that rebuild is asked for, since the
+    /// controller mutates outside the tree.
+    /// <para>
+    /// The surface's geometry (<c>ContentTop</c>, <c>LineHeight</c>, <c>ContentLeft</c>,
+    /// <c>ColumnWidth</c>) and the two mark colours stay on the initializer: they are one
+    /// component's arithmetic against its own font, not what a screen says when it places an
+    /// editor.
+    /// </para>
+    /// </summary>
+    public static CodeSurface CodeSurface(VisualNode child, CodeEditorController editor,
+        Action? onChanged = null, string? label = null, bool autofocus = false) =>
+        new CodeSurface(child, editor)
+        {
+            OnChanged = onChanged,
+            Label = label,
+            Autofocus = autofocus,
+        };
+
+    /// <summary>
+    /// An EDITABLE SPREADSHEET surface: the grid the child draws, plus the selection band, the
+    /// active-cell ring and the keyboard. The controller is owned and kept by the composing
+    /// component, exactly as <see cref="CodeSurface"/>'s is.
+    /// <para>
+    /// <paramref name="firstRow"/> and <paramref name="firstCol"/> are the VIRTUALIZED window's
+    /// origin — which sheet cell the child's top-left one draws — so they ride here rather than on
+    /// the initializer: a scrolled sheet whose marks are placed against the wrong origin draws
+    /// them over the wrong cells, which is a correctness answer and not decoration. The header
+    /// offsets are the component's own arithmetic and stay behind <c>new</c>.
+    /// </para>
+    /// </summary>
+    public static SheetSurface SheetSurface(VisualNode child, SheetController controller,
+        Action? onChanged = null, string? label = null, int firstRow = 0, int firstCol = 0) =>
+        new SheetSurface(child, controller)
+        {
+            OnChanged = onChanged,
+            Label = label,
+            FirstRow = firstRow,
+            FirstCol = firstCol,
+        };
+
+    /// <summary>
+    /// An embedded web DOCUMENT, isolated from the tree around it —
+    /// <c>WebFrame(WebContent.Url("https://…"), title: "Map")</c> or
+    /// <c>WebFrame(WebContent.Document(markup), title: "Live preview")</c>.
+    /// <para>
+    /// Both arguments are required and neither is a knob: <see cref="WebContent"/> is what makes
+    /// address-or-document a choice the type enforces instead of a precedence, and a frame with no
+    /// title is one a screen reader cannot describe. <paramref name="sandbox"/> starts at scripts
+    /// alone and every further capability is granted by name.
+    /// </para>
+    /// <para>
+    /// <c>Width</c> and <c>Height</c> are deliberately absent: they default to
+    /// <see cref="SizeValue.Fill"/> on the node, C# has no constant expression for that, and a
+    /// <c>= default</c> here would hand back a HUG frame where <c>new</c> gives a filling one —
+    /// the one promise this surface makes that a tail cannot keep. They stay on the initializer.
+    /// </para>
+    /// </summary>
+    public static WebFrame WebFrame(WebContent content, string title,
+        WebSandbox sandbox = WebSandbox.Scripts, CornerRadii cornerRadius = default) =>
+        new WebFrame(content, title) { Sandbox = sandbox, CornerRadius = cornerRadius };
 
     // ---- Shared component library ------------------------------------------------------------
 
