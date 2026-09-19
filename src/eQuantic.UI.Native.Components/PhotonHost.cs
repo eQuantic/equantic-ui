@@ -2107,6 +2107,28 @@ public sealed class PhotonHost
             }
         }
 
+        // A two-dimensional COMPOSITE under focus answers the moves its keyboard declares: arrows
+        // walk a cell, PgUp/PgDn a page, +Shift a section, Home/End the row's bounds. Resolved out of
+        // THIS frame's stops by path, like the Adjustable above, and read from NavigableKeys — the
+        // very table the web realizer reads, which is why that table moved to where both can.
+        //
+        // Nothing dispatched here at all before the rows laid out (#248): Navigable.OnMove was wired
+        // on one target, so a calendar on Photon was a grid you could not walk. A key the grid does
+        // not claim answers null and travels on, so Tab and Escape still belong to the page.
+        if (modifiers is KeyModifiers.None or KeyModifiers.Shift
+            && _focusedPath is { Length: > 0 } gridPath
+            && NavigableKeys.Move(key, modifiers.HasFlag(KeyModifiers.Shift)) is { } move
+            && _lastFrame?.FocusStops is { } gridStops)
+        {
+            for (var i = 0; i < gridStops.Count; i++)
+            {
+                if (gridStops[i].Path != gridPath || gridStops[i].Grid is not { } grid) continue;
+                grid.OnMove(move);
+                NeedsRender = true;
+                return true;
+            }
+        }
+
         switch (key)
         {
             case "Tab":

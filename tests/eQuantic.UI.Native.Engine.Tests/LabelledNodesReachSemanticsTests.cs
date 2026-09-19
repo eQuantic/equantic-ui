@@ -81,17 +81,19 @@ public class LabelledNodesReachSemanticsTests
     private static readonly string[] LabelledContainers = ["LiveRegion", "Navigable", "Overlay"];
 
     /// <summary>
-    /// The one container whose subtree cannot be reached on Photon — and NOT because of the role.
-    /// <c>MeasureVisitor.Visit(Navigable)</c> measures the node and none of its <c>Rows</c> ("web-only
-    /// today", in that arm's own words), so the group is announced over nothing. The role is still
-    /// the right answer: VoiceOver now says the composite's name where it said nothing at all. It is
-    /// the second half of the contract that has nothing to assert about here yet.
+    /// EMPTY, and kept for what emptying it took. It held <c>Navigable</c>, whose subtree could not be
+    /// reached on Photon — not because of the role, but because
+    /// <c>MeasureVisitor.Visit(Navigable)</c> measured the node and none of its <c>Rows</c>, so the
+    /// group was announced over nothing (#248). The rows lay out now, and this list emptied the way a
+    /// pinned gap is supposed to: the theory below asserted the EMPTINESS rather than skipping the
+    /// case, so the day the rows landed it failed and named itself.
     /// <para>
-    /// MAY ONLY SHRINK, and the theory below pins the emptiness rather than skipping it — the day
-    /// those rows lay out, this fails and the entry goes.
+    /// MAY ONLY SHRINK. An entry here is a container announcing over a subtree the target cannot
+    /// reach, which is a gap wearing an exemption — and a reader who finds this list empty should
+    /// leave it that way.
     /// </para>
     /// </summary>
-    private static readonly string[] SubtreeDoesNotLayOutOnPhoton = ["Navigable"];
+    private static readonly string[] SubtreeDoesNotLayOutOnPhoton = [];
 
     /// <summary>
     /// The nodes this suite asserts about, taken from the ASSEMBLY rather than written down. The

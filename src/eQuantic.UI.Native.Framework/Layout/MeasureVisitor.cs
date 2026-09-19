@@ -240,7 +240,7 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     /// a calendar is web-shaped.
     /// </para>
     /// </summary>
-    public LayoutNode Visit(Navigable node, MeasureState s) => _ctx.Node(node);
+    public LayoutNode Visit(Navigable node, MeasureState s) => MeasureNavigable(node, s.Constraints, _ctx, s.Path);
 
     /// <summary>
     /// CANNOT CROSS, which is the stronger of the two and settled rather than pending. A WebFrame is
@@ -262,6 +262,36 @@ internal sealed partial class MeasureVisitor : IVisualNodeVisitor<MeasureState, 
     public LayoutNode Visit(UiComponent node, MeasureState s) => MeasureComponent(node, s.Constraints, _ctx, s.Path);
 
     // ---- what every wrapper does ----------------------------------------------------------------
+
+    /// <summary>
+    /// The rows lay out as a COLUMN of themselves, which is exactly what the other target does: a
+    /// <c>Navigable</c> lowers to a block <c>div[role=grid]</c> whose <c>role="row"</c> wrappers are
+    /// <c>display: contents</c>, so the caller's own row node becomes a direct child of the grid box
+    /// and the grid stacks them. No gap, no padding and no cross alignment of its own — the rows are
+    /// measured against the constraints the grid was given, so every layout and styling decision
+    /// stays the caller's, which is what <see cref="Navigable.Rows"/> promises in words.
+    /// <para>
+    /// Before this the arm was <c>_ctx.Node(node)</c>: the node measured, none of its rows did, and a
+    /// calendar was a grid with no days in it — nothing laid out, nothing painted, and the group
+    /// #187 gave it announced over an empty subtree (#248).
+    /// </para>
+    /// </summary>
+    private LayoutNode MeasureNavigable(Navigable node, LayoutConstraints constraints, LayoutContext ctx, string path)
+    {
+        var result = ctx.Node(node);
+        var y = 0f;
+        var widest = 0f;
+        for (var index = 0; index < node.Rows.Count; index++)
+        {
+            var row = Measure(node.Rows[index], constraints, ctx, ctx.ChildPath(path, index));
+            row.Bounds = row.Bounds with { X = 0, Y = y };
+            result.Adopt(row);
+            y += row.Bounds.Height;
+            widest = MathF.Max(widest, row.Bounds.Width);
+        }
+        result.Bounds = new Rect(0, 0, widest, y);
+        return result;
+    }
 
     private LayoutNode MeasureWrapper(VisualNode node, VisualNode child, LayoutConstraints constraints, LayoutContext ctx, string path)
     {

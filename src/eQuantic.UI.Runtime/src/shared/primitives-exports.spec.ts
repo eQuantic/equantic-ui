@@ -97,6 +97,15 @@ const NO_TWIN_OWED = new Set([
   'PaletteAudit',
   'AuditLine',
   'AuditReport',
+  // THE TWIN EXISTS AND IS NOT NAMED THIS. `lowering.ts`'s `navigableMove` is the same table as a
+  // function, which is what the client half has always called it, and the two are cross-pinned
+  // (NavigableKeyTableTests) rather than trusted. A same-named export here would be a THIRD copy of
+  // one table — the drift that pin exists to catch.
+  //
+  // It is public in Primitives because BOTH realizers read it: the SSR lowering and, since #248,
+  // PhotonHost.KeyDown, whose key names are the same strings. A page never asks — the abstract layer
+  // names MOVES, and which key means which move is the realizer's business on every target.
+  'NavigableKeys',
 ]);
 
 describe('Primitives ⇄ runtime export parity', () => {

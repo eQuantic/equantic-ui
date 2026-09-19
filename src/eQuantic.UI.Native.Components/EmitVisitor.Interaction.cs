@@ -67,7 +67,20 @@ internal sealed partial class EmitVisitor
     // and neither of them answers to the arrows.
     private void EmitAdjustable(Adjustable adjustable, EmitState s)
     {
-        s.Input.AddAdjustable(new FocusStop(s.Node.Path ?? "", null, null, s.Node.Bounds, adjustable));
+        s.Input.AddComposite(new FocusStop(s.Node.Path ?? "", null, null, s.Node.Bounds, adjustable));
+        foreach (var child in s.Node)
+            Emit(s with { Node = child, Input = s.Input.WithoutFocusStops() });
+    }
+
+    /// <summary>
+    /// The 2-D twin of the line above, and the same two moves: ONE stop for the whole grid, and the
+    /// cells inside it pointer-only. Its own node says why — "one Tab stop for the whole thing, and
+    /// a keyboard that moves a selection around inside it" — and the moment the rows started laying
+    /// out (#248) the alternative was measurable: a month became 31 Tab presses.
+    /// </summary>
+    private void EmitNavigable(Navigable navigable, EmitState s)
+    {
+        s.Input.AddComposite(new FocusStop(s.Node.Path ?? "", null, null, s.Node.Bounds, Grid: navigable));
         foreach (var child in s.Node)
             Emit(s with { Node = child, Input = s.Input.WithoutFocusStops() });
     }

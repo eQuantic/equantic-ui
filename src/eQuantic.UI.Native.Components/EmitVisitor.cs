@@ -235,7 +235,7 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
 
     /// <summary>NOT WRITTEN. The web realizer lays its declared rows out as a grid; Photon never
     /// has. A real node with real semantics, and this is the gap, named where the behaviour is.</summary>
-    public Nothing Visit(Navigable node, EmitState s) { Descend(s); return Nothing.Value; }
+    public Nothing Visit(Navigable node, EmitState s) { EmitNavigable(node, s); return Nothing.Value; }
 
     /// <summary>CANNOT CROSS. It embeds a document, and there is no browser behind a Photon
     /// surface — the DOM escape hatch, settled rather than pending.</summary>
