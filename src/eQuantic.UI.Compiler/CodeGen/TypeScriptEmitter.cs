@@ -1835,13 +1835,28 @@ public class TypeScriptEmitter
         // among them must answer the same `any` a bare interface parameter does, or the module
         // names something the runtime can export no value for — an interface has none. Asked of
         // the symbol, so there is no state to keep, evict, or share between compilations.
+        //
+        // AN ENUM among them needs the same repair for the same reason, and it is the same defect
+        // one type kind along: the string mapper leaves the C# spelling, and the runtime exports no
+        // `NavigableMove` — it mirrors a vocabulary enum as the `<Enum>Value` union, or as `number`
+        // when it is [Flags]. `Action<NavigableMove>` emitted `(navigableMove: NavigableMove) =>
+        // void`, which named nothing and failed the emitted module's own type check. It surfaced
+        // only when a factory first took a delegate over a vocabulary enum (UI.Navigable, #251):
+        // every earlier one took a primitive, and a BARE enum parameter had always gone down the
+        // `core` switch below, which has answered this correctly all along.
         if (!echoed && resolved is INamedTypeSymbol { TypeArguments.Length: > 0 } generic)
         {
             foreach (var argument in generic.TypeArguments)
             {
-                if (argument.TypeKind != TypeKind.Interface) continue;
+                var crossesAs = argument.TypeKind switch
+                {
+                    TypeKind.Interface => "any",
+                    TypeKind.Enum => IsFlags(argument) ? "number" : EnumUnion(argument),
+                    _ => null,
+                };
+                if (crossesAs is null) continue;
                 mapped = System.Text.RegularExpressions.Regex.Replace(
-                    mapped, $@"\b{System.Text.RegularExpressions.Regex.Escape(argument.Name)}\b", "any");
+                    mapped, $@"\b{System.Text.RegularExpressions.Regex.Escape(argument.Name)}\b", crossesAs);
             }
         }
 
