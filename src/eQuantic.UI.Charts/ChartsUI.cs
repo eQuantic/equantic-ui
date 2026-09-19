@@ -9,7 +9,7 @@ namespace eQuantic.UI.Charts;
 /// BarChart(title: "Revenue",
 ///     series: [ ChartSeries("2025", [12, 18, 9]), ChartSeries("2026", [15, 21, 14]) ],
 ///     categories: CategoryAxis(["Q1", "Q2", "Q3"]),
-///     values: ValueAxis(format: "C0"))
+///     values: ValueAxis(Format: "C0"))
 /// </code>
 /// </summary>
 public static class ChartsUI
@@ -23,13 +23,19 @@ public static class ChartsUI
         string? subtitle = null, float plotHeight = Charts.BarChart.DefaultPlotHeight) =>
         new(series, categories, values, layout, orientation, title, subtitle, plotHeight);
 
-    public static ChartSeries ChartSeries(string name, IReadOnlyList<double> values, int slot = -1) =>
-        new(name, values, slot);
+    // The three below take PASCAL-CASE parameters, alone on either surface, because they mirror
+    // POSITIONAL RECORDS: a record's positional parameters ARE its properties, so `Name` is the
+    // name `new ChartSeries(Name: "2026")` takes, and a camel-cased factory parameter would be a
+    // second spelling of the same argument — the one thing the mirror exists to prevent. Every
+    // value record in the SDK (NavItem, DialogAction, GridTrack…) is named this way already; a
+    // consumer moving between the two forms should not have to recase anything.
+    public static ChartSeries ChartSeries(string Name, IReadOnlyList<double> Values, int Slot = -1) =>
+        new(Name, Values, Slot);
 
-    public static CategoryAxis CategoryAxis(IReadOnlyList<string> categories, string? title = null) =>
-        new(categories, title);
+    public static CategoryAxis CategoryAxis(IReadOnlyList<string> Categories, string? Title = null) =>
+        new(Categories, Title);
 
-    public static ValueAxis ValueAxis(string? title = null, double? min = null, double? max = null,
-        string format = "N0", int ticks = 5) =>
-        new(title, min, max, format, ticks);
+    public static ValueAxis ValueAxis(string? Title = null, double? Min = null, double? Max = null,
+        string Format = "N0", int Ticks = 5) =>
+        new(Title, Min, Max, Format, Ticks);
 }

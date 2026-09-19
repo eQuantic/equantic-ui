@@ -5,16 +5,16 @@ export class ChartsUI {
         return new BarChart(series, categories, values, layout, orientation, title, subtitle, plotHeight);
     }
 
-    static chartSeries(name: string, values: number[], slot: number = -1) {
-        return new ChartSeries(name, values, slot);
+    static chartSeries(Name: string, Values: number[], Slot: number = -1) {
+        return new ChartSeries(Name, Values, Slot);
     }
 
-    static categoryAxis(categories: string[], title: string | null = null) {
-        return new CategoryAxis(categories, title);
+    static categoryAxis(Categories: string[], Title: string | null = null) {
+        return new CategoryAxis(Categories, Title);
     }
 
-    static valueAxis(title: string | null = null, min: number | null = null, max: number | null = null, format: string = 'N0', ticks: number = 5) {
-        return new ValueAxis(title, min, max, format, ticks);
+    static valueAxis(Title: string | null = null, Min: number | null = null, Max: number | null = null, Format: string = 'N0', Ticks: number = 5) {
+        return new ValueAxis(Title, Min, Max, Format, Ticks);
     }
 }
 

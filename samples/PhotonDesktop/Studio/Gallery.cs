@@ -781,7 +781,7 @@ public static class Gallery
                 ChartSeries("Asia", [61, 73, 88, 96]),
             ],
             categories: CategoryAxis(["Q1", "Q2", "Q3", "Q4"]),
-            values: ValueAxis(format: "N0", title: "kEUR")));
+            values: ValueAxis(Format: "N0", Title: "kEUR")));
         column.Add(BarChart(
             title: "Stacked",
             series:

@@ -42,13 +42,13 @@ public sealed class ChartsScreen : StatefulComponent
             subtitle: "Three regions, side by side",
             series: Regions(),
             categories: CategoryAxis(Quarters),
-            values: ValueAxis(format: "N0", title: "Revenue")))));
+            values: ValueAxis(Format: "N0", Title: "Revenue")))));
         wide.Add(new Flexible(Card(theme, BarChart(
             title: "Stacked",
             subtitle: "The same regions, one on top of another",
             series: Regions(),
             categories: CategoryAxis(Quarters),
-            values: ValueAxis(format: "N0"),
+            values: ValueAxis(Format: "N0"),
             layout: BarLayout.Stacked))));
         page.Add(wide);
 
@@ -57,7 +57,7 @@ public sealed class ChartsScreen : StatefulComponent
             subtitle: "Long category names read best this way",
             series: [ChartSeries("Tickets closed", [42, 31, 57, 12, 26])],
             categories: CategoryAxis(["Billing", "Onboarding", "Performance", "Security", "Accessibility"]),
-            values: ValueAxis(format: "N0"),
+            values: ValueAxis(Format: "N0"),
             orientation: ChartOrientation.Horizontal,
             plotHeight: 200)));
 
