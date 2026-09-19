@@ -78,6 +78,38 @@ public class NavigableOnPhotonTests
     }
 
     /// <summary>
+    /// ACTIVATING the grid focuses it and leaves its keyboard working — which is the whole of what
+    /// activating a composite can mean, and what the macOS and iOS bridges do to every element they
+    /// expose. Found in review: <c>ActivatePath</c> asked by ELIMINATION which stops take the
+    /// keyboard ("not a text field, so a surface"), and the composite stop this PR adds carries
+    /// neither, so activating a calendar put its own path in <c>_textPath</c>, left
+    /// <c>CodeTarget</c>, <c>SheetTarget</c> and <c>TextTarget</c> all null, and killed the arrows.
+    /// Measured before the fix:
+    /// <code>
+    /// ActivatePath(grid) => True
+    ///   FocusedPath=r/0/1  HasTextFocus=True  CodeTarget=null  SheetTarget=null
+    ///   PageDown after activate => False
+    /// </code>
+    /// The question is asked by what the stop IS now, so a kind nobody has invented yet arrives and
+    /// nothing more — which is the right default.
+    /// </summary>
+    [Fact]
+    public void ActivatingTheGridLeavesItsKeyboardWorking()
+    {
+        var (host, frame, _) = Open();
+        var grid = frame.FocusStops.Single(stop => stop.Grid != null).Path;
+
+        host.ActivatePath(grid).Should().BeTrue();
+        host.FocusedPath.Should().Be(grid);
+        host.HasTextFocus.Should().BeFalse("a grid is not an editing surface and never takes the caret");
+
+        var month = host.Semantics()[0].Label;
+        host.KeyDown("PageDown").Should().BeTrue("the arrows still reach the composite");
+        host.RenderFrame(new DisplayListBuilder());
+        host.Semantics()[0].Label.Should().NotBe(month);
+    }
+
+    /// <summary>
     /// A row that says <see cref="VisualNode.Key"/> keeps its identity, which is the rule every other
     /// multi-child arm follows and this one missed on its first pass: the path IS identity on Photon
     /// — focus, hover, a scroll offset, a drag in flight are all remembered by it — so a grid whose

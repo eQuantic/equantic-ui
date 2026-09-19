@@ -1216,7 +1216,13 @@ public sealed class PhotonHost
             // Telling them apart was not a preference. Making the Tab walk enter put the caret in a
             // code editor, and the editor then ate the next Tab through CodeKeymap — the Studio's
             // own walk caught a ring that never came back round.
-            if (stops[i] is { Entry: null })
+            //
+            // Asked POSITIVELY, by what the stop IS. The first version asked by elimination — "not
+            // a text field, so a surface" — and the Navigable stop that arrived one PR later
+            // carried neither, so activating a calendar put its own path in _textPath, left every
+            // target null and killed the arrows the composite exists for. A stop that is none of
+            // these ARRIVES and nothing more, which is the right default for whatever comes next.
+            if (stops[i] is { Code: not null } or { Sheet: not null })
             {
                 _textPath = stops[i].Path;
                 _focused = null;

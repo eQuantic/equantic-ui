@@ -101,8 +101,12 @@ internal sealed class InputSink(
 
     public void Add(SheetRegion region)
     {
+        // The stop carries the SURFACE, like a text entry and a code surface carry theirs. It used
+        // to carry nothing but a path, and every reader then had to work out what it was by
+        // ELIMINATION — which is how a Navigable stop, added later and also carrying neither, fell
+        // through a branch meant for editing surfaces and put a calendar into text mode.
         if (!suppressFocusStops)
-            stops.Add(new FocusStop(region.Path, null, null, region.Bounds));
+            stops.Add(new FocusStop(region.Path, null, null, region.Bounds, Sheet: region.Surface));
         if (!Visible(region.Bounds)) return;
         sheets.Add(region);
     }

@@ -87,7 +87,8 @@ public readonly record struct CodeRegion(Rect Bounds, CodeSurface Surface, strin
 /// </para>
 /// </summary>
 public readonly record struct FocusStop(string Path, Pressable? Pressable, TextEntry? Entry, Rect Bounds,
-    Adjustable? Adjustable = null, CodeSurface? Code = null, Navigable? Grid = null);
+    Adjustable? Adjustable = null, CodeSurface? Code = null, Navigable? Grid = null,
+    SheetSurface? Sheet = null);
 
 /// <summary>The realized frame: the laid-out tree (absolute bounds) and the interactive hit regions.</summary>
 public sealed class RealizeResult
