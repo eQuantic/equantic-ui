@@ -40,6 +40,24 @@ public static class SemanticsTree
     }
 
     /// <summary>
+    /// What a reader would say for the CHILDREN of one node — the announcement of a live region,
+    /// and nothing else's business. Its own group is skipped on purpose: that node carries the
+    /// region's NAME, which does not change when the content does, and a diff that included it
+    /// would still be a diff of the content with a constant glued to the front.
+    /// <para>
+    /// Over ONE subtree rather than the frame. A live region is small by construction — a status
+    /// line, a banner, a toast — and walking the whole semantics tree every frame to find out
+    /// whether one of them changed would cost the entire page to answer a question about a corner
+    /// of it.
+    /// </para>
+    /// </summary>
+    internal static void CollectChildren(LayoutNode node, List<SemanticNode> into)
+    {
+        var visitor = new SemanticsVisitor(into);
+        foreach (var child in node) Walk(child, visitor);
+    }
+
+    /// <summary>
     /// Tree order, which is reading order and the order Tab walks. A node that announced CONSUMED
     /// its subtree — its inner text is its name — so the descent is what the visitor declined to
     /// answer for.

@@ -217,6 +217,11 @@ public sealed class PhotonWindow
             frameBuilder.Reset();
             var builder = frameBuilder;
             host.RenderFrame(builder, (float)clock.Elapsed.TotalMilliseconds);
+            // What a live region just said, if anything. DRAINED every frame rather than polled by
+            // the accessibility tree: an announcement is an event, and the tree is asked at
+            // VoiceOver's moments rather than the content's. The host has already decided whether
+            // there is anything to say — this loop pays one empty-list check when there is not.
+            PhotonAnnouncements.Post(window, host.TakeAnnouncements());
             backend.RenderToDrawable(builder.Build(), Send(drawable, Sel("texture")),
                 MetalBackend.PixelFormatBgra8UnormSrgb, drawable);
             FramesPresented++;

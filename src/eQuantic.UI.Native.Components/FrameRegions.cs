@@ -26,4 +26,20 @@ internal sealed class FrameRegions
     public List<SheetRegion> Sheets { get; } = [];
     public List<CursorRegion> Cursors { get; } = [];
     public List<CanvasRegion> Canvases { get; } = [];
+
+    /// <summary>
+    /// The live regions this frame holds — LAZY, alone among the thirteen, and measured rather than
+    /// assumed. Created eagerly beside the others it cost two bytes a frame, and
+    /// <c>SteadyMotion_WithRecycledFrames_AllocatesFarLess</c> refused the frame at 75,778 against
+    /// its 75,776 ceiling. That ceiling may only ever come down, and an accessibility feature that
+    /// almost no frame uses is the last thing that should raise it: a page with no live region now
+    /// allocates nothing for one, which is what <see cref="LivesOrEmpty"/> reads back.
+    /// </summary>
+    public List<LiveRegionMark> Lives => _lives ??= [];
+
+    /// <summary>What the frame reads back, without creating the list to find out it is empty.</summary>
+    public IReadOnlyList<LiveRegionMark> LivesOrEmpty =>
+        (IReadOnlyList<LiveRegionMark>?)_lives ?? Array.Empty<LiveRegionMark>();
+
+    private List<LiveRegionMark>? _lives;
 }

@@ -136,6 +136,14 @@ public sealed class RealizeResult
     /// <summary>Canvases the pointer can reach, in paint order (topmost last).</summary>
     public IReadOnlyList<CanvasRegion> CanvasRegions { get; }
 
+    /// <summary>
+    /// The live regions this frame holds, in tree order. INTERNAL, unlike every list beside it: a
+    /// mark carries a <c>LayoutNode</c> belonging to this frame, and this frame's tree is recycled
+    /// the moment the next one lands. What crosses to a shell is the ANNOUNCEMENT
+    /// (<see cref="LiveAnnouncement"/>), which is strings and outlives anything.
+    /// </summary>
+    internal IReadOnlyList<LiveRegionMark> LiveRegions { get; init; } = Array.Empty<LiveRegionMark>();
+
     /// <summary>Editable code surfaces, in paint order (topmost last).</summary>
     public IReadOnlyList<CodeRegion> CodeRegions { get; }
 
@@ -365,7 +373,13 @@ public static class PhotonRealizer
                 || drags is { AnyActive: true },
             regions.Hovers, regions.Scrolls, regions.Drags, regions.Links, regions.Shortcuts,
             regions.Texts, regions.Stops, regions.Codes, overlayRoots,
-            realizedLayers, regions.Sheets, regions.Cursors, regions.Canvases);
+            realizedLayers, regions.Sheets, regions.Cursors, regions.Canvases)
+        {
+            // Set here rather than through the constructor: the mark is INTERNAL (it holds a node
+            // of this frame), and a public constructor cannot take one. The public shape is
+            // unchanged, which is also what every existing caller wants.
+            LiveRegions = regions.LivesOrEmpty,
+        };
     }
 
 

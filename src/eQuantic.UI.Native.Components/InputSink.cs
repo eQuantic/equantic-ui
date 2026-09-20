@@ -118,6 +118,14 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
     /// clip has nothing to say about it.</summary>
     public void Add(ShortcutBinding binding) => regions.Shortcuts.Add(binding);
 
+    /// <summary>
+    /// A live region is registered WHEREVER it is, like a link and for the same reason: being seen
+    /// is not the test. A status line scrolled below the fold still changed, and a reader that only
+    /// hears about what happens to be on screen is a reader that misses the upload finishing.
+    /// Announcing is not a pointer act, so the clip has nothing to say about it.
+    /// </summary>
+    public void Add(LiveRegionMark mark) => regions.Lives.Add(mark);
+
     public void Add(SheetRegion region)
     {
         // The stop carries the SURFACE, like a text entry and a code surface carry theirs. It used

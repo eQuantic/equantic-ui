@@ -20,6 +20,7 @@ public sealed class PhotonHost
     private readonly ITextMeasurer? _measurer;
     private readonly float _typeScale;
     private RealizeResult? _lastFrame;
+    private readonly LiveRegionAnnouncer _announcer = new();
 
     public PhotonHost(VisualNode root, IAppTheme theme, ThemeMode mode, float width, float height,
         ITextMeasurer? measurer = null, float typeScale = 1f)
@@ -230,6 +231,11 @@ public sealed class PhotonHost
             _nodePool.RecycleTree(previousFrame.Root);
             foreach (var overlay in previousFrame.OverlayRoots) _nodePool.RecycleTree(overlay);
         }
+        // WHAT CHANGED, once per frame. Here rather than in the semantics walk because that walk is
+        // asked by a bridge whenever assistive tech is curious — never, once, or three times in a
+        // frame — and an announcement posted from it would fire a number of times nobody chose.
+        // Costs one length check in a frame with no live region, which is almost every frame.
+        _announcer.Observe(_lastFrame, timeMs);
         AdoptAutofocus();
         // The ROOT is not in the instance store (nothing reconciles it — it IS the tree), so the
         // surface owes it the mount its children get from the store. After the first frame realized:
@@ -1164,9 +1170,28 @@ public sealed class PhotonHost
     /// <summary>
     /// The frame's semantics tree, in reading order — what a platform accessibility bridge hands
     /// to VoiceOver/TalkBack. Derived from the last realized frame; empty before the first render.
+    /// <para>
+    /// A pure snapshot, deliberately: it answers "what is there", and it may be asked any number of
+    /// times per frame. "What just CHANGED" is a different question with a different cadence, and
+    /// it is answered by <see cref="TakeAnnouncements"/>.
+    /// </para>
     /// </summary>
     public IReadOnlyList<SemanticNode> Semantics() =>
         _lastFrame is null ? Array.Empty<SemanticNode>() : SemanticsTree.Collect(_lastFrame);
+
+    /// <summary>
+    /// The live-region announcements produced since this was last called, and the queue is emptied.
+    /// A shell drains it after each frame and posts each one the way its platform does —
+    /// <c>NSAccessibilityPostNotification</c> on macOS, an announcement notification on UIKit, and
+    /// nothing on Android, where setting <c>accessibilityLiveRegion</c> on the container IS the
+    /// platform doing the posting.
+    /// <para>
+    /// DRAINING, not reading. An announcement is an event; a bridge that polled a list would post
+    /// the same one every poll, which is the failure the whole diff exists to prevent, arriving
+    /// from the other end.
+    /// </para>
+    /// </summary>
+    public IReadOnlyList<LiveAnnouncement> TakeAnnouncements() => _announcer.Take();
 
     /// <summary>
     /// Runs the control at <paramref name="path"/>, the way a screen reader's activate action does.

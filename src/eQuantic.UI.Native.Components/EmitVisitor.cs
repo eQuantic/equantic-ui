@@ -170,8 +170,17 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     // whatever its child draws, so the emit walk simply carries on through it.
     public Nothing Visit(Progress node, EmitState s) { Descend(s); return Nothing.Value; }
     // A LiveRegion paints nothing either: it is a mark the platform's accessibility layer reads, and
-    // the paint walk has no business with it.
-    public Nothing Visit(LiveRegion node, EmitState s) { Descend(s); return Nothing.Value; }
+    // the paint walk has no business with it. It is RECORDED here all the same, because this walk
+    // runs exactly once per frame and the announcement diff needs that cadence — the semantics walk
+    // is on demand, so posting from there would fire once per bridge query instead of once per
+    // change. Recording is two fields and a list add; the subtree is not read until something
+    // asks whether it changed.
+    public Nothing Visit(LiveRegion node, EmitState s)
+    {
+        s.Input.Add(new LiveRegionMark(s.Node.Path ?? "", node.Label ?? "", node.Urgency, s.Node));
+        Descend(s);
+        return Nothing.Value;
+    }
     public Nothing Visit(ScrollView node, EmitState s) { EmitScrollView(node, s); return Nothing.Value; }
     public Nothing Visit(SheetSurface node, EmitState s) { EmitSheet(node, s); return Nothing.Value; }
     public Nothing Visit(Overlay node, EmitState s) { EmitOverlay(node, s); return Nothing.Value; }
