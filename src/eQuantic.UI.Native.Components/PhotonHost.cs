@@ -1192,6 +1192,30 @@ public sealed class PhotonHost
             return true;
         }
 
+        // A LINK is FOLLOWED, never landed on — a reader's double tap, Enter and Space through
+        // ActivateFocused, and a tap through ResolveLink are three routes to one seam. Resolved by
+        // its REGION rather than by its focus stop, which is where the first version put it and got
+        // two things wrong at once (#255, found by the review):
+        //
+        //   - a composite SUPPRESSES the stops inside it (an Adjustable, a Navigable), so a linked
+        //     run inside a grid was announced as a link the reader could not follow — the very
+        //     defect this closed, one level in. A region is not suppressed, which is exactly why a
+        //     pressable cell inside a Navigable is activatable today;
+        //   - the stop matched on a NON-EMPTY destination, so `Link("")` was landed on by the
+        //     keyboard while the pointer navigated with the empty string. The region carries what
+        //     it carries, and both routes now say the same thing.
+        var links = _lastFrame?.LinkRegions;
+        if (links is not null)
+        {
+            for (var i = 0; i < links.Count; i++)
+            {
+                if (links[i].Path != path) continue;
+                if (_navigationRequested is null) return false;
+                _navigationRequested(links[i].Destination);
+                return true;
+            }
+        }
+
         var stops = _lastFrame?.FocusStops;
         if (stops is null) return false;
         for (var i = 0; i < stops.Count; i++)
@@ -1204,15 +1228,6 @@ public sealed class PhotonHost
             // announces as a CodeField and carries a stop of its own — the same shape of mistake as
             // the catch-all this file's NativeRole was written to end.
             if (stops[i].Path != path) continue;
-            // A LINK is FOLLOWED, never landed on: that is what a reader's double tap means, what
-            // Enter and Space mean through ActivateFocused, and what a tap already meant through
-            // ResolveLink — three routes, one seam. Asked by what the stop IS, like the two below.
-            if (stops[i].Destination is { Length: > 0 } destination)
-            {
-                if (_navigationRequested is null) return false;
-                _navigationRequested(destination);
-                return true;
-            }
             if (stops[i].Pressable is not null || stops[i].Adjustable is not null) continue;
             Land(stops[i]);
             // ARRIVING and ENTERING are the same thing for a text field and two different things

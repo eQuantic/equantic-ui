@@ -103,7 +103,7 @@ public class FocusRingTests
 
         var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 300, 120);
         var frame = host.RenderFrame(new DisplayListBuilder());
-        var link = frame.FocusStops.Single(stop => stop.Destination is not null);
+        var link = frame.FocusStops.Single(stop => stop.Path == frame.LinkRegions[0].Path);
         var button = frame.FocusStops.Single(stop => stop.Pressable is not null);
 
         host.KeyDown("Tab").Should().BeTrue();

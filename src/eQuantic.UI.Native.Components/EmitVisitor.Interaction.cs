@@ -101,10 +101,9 @@ internal sealed partial class EmitVisitor
 
         // "Tab reaches every interactive control" (handoff, Foundations · Keyboard conventions), and
         // a link is one — the web gets the stop and the activate from <a href> for nothing, and
-        // Photon announced a link it could then reach by neither (#255). The stop carries the
-        // DESTINATION rather than this node, because the OTHER shape this route serves has no node:
-        // see LinkRegion.
-        s.Input.Add(new FocusStop(path, null, null, s.Node.Bounds, Destination: link.Destination));
+        // Photon announced a link it could then reach by neither (#255). The stop is the TAB half
+        // only; following it is the REGION's, which is what survives a composite's suppression.
+        s.Input.Add(new FocusStop(path, null, null, s.Node.Bounds));
 
         // The ring the Box arm draws for a focused control, drawn here because a link is words and
         // has no box of its own. Radius zero: the ring follows the text's own rectangle.

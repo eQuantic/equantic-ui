@@ -216,8 +216,8 @@ public class RichTextRunTests
         link.Path.Should().EndWith("#0");
 
         frame.LinkRegions.Should().ContainSingle().Which.Path.Should().Be(link.Path);
-        frame.FocusStops.Should().ContainSingle(stop => stop.Path == link.Path)
-            .Which.Destination.Should().Be("/docs/start");
+        frame.FocusStops.Should().ContainSingle(stop => stop.Path == link.Path);
+        frame.LinkRegions.Should().ContainSingle().Which.Destination.Should().Be("/docs/start");
 
         host.ActivatePath(link.Path).Should().BeTrue();
         followed.Should().Be("/docs/start");
@@ -250,7 +250,7 @@ public class RichTextRunTests
 
         frame.LinkRegions.Should().HaveCountGreaterThan(1, "the words cover two lines of pixels")
             .And.OnlyContain(region => region.Path == link.Path);
-        frame.FocusStops.Should().ContainSingle(stop => stop.Destination == "/wrapped");
+        frame.FocusStops.Should().ContainSingle(stop => stop.Path == link.Path);
     }
 
     /// <summary>
@@ -282,8 +282,9 @@ public class RichTextRunTests
         var links = host.Semantics().Where(node => node.Role == SemanticRole.Link).ToList();
         links.Select(link => link.Label).Should().Equal("terms", "privacy");
         links.Select(link => link.Path).Should().OnlyHaveUniqueItems();
-        frame.FocusStops.Where(stop => stop.Destination is not null).Select(stop => stop.Destination)
+        frame.LinkRegions.Select(region => region.Destination).Distinct()
             .Should().Equal("/terms", "/privacy");
+        frame.FocusStops.Select(stop => stop.Path).Should().Contain(links.Select(link => link.Path));
     }
 
     /// <summary>
@@ -313,7 +314,7 @@ public class RichTextRunTests
 
         host.Semantics().Should().ContainSingle(node => node.Role == SemanticRole.Link)
             .Which.Label.Should().Be("read the guide");
-        frame.FocusStops.Should().ContainSingle(stop => stop.Destination == "/docs");
+        frame.LinkRegions.Select(region => region.Destination).Distinct().Should().Equal("/docs");
     }
 
     private sealed class Rich(Text text) : StatelessComponent

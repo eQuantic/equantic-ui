@@ -269,9 +269,11 @@ public class NativeRoleTests
         NativeRole.Of(SemanticRole.Link).Activatable.Should().BeTrue(
             "every platform announces a link as something you follow");
 
-        frame.FocusStops.Should().ContainSingle(stop => stop.Path == link.Path)
+        frame.FocusStops.Should().ContainSingle(stop => stop.Path == link.Path,
+            "Tab reaches every interactive control");
+        frame.LinkRegions.Should().ContainSingle(region => region.Path == link.Path)
             .Which.Destination.Should().Be("/home",
-                "the stop carries what following it needs, since the other shape has no node");
+                "following it is the REGION's half — a stop is suppressed inside a composite");
         host.ActivatePath(link.Path).Should().BeTrue();
         followed.Should().Be("/home");
     }
@@ -330,8 +332,76 @@ public class NativeRoleTests
         announced.Should().ContainSingle("the outer link consumes what it wraps").Which
             .Path.Should().Be("r/0");
 
-        frame.FocusStops.Where(stop => stop.Destination is not null).Should()
-            .ContainSingle("a stop the reader never names is an offer nothing performs")
-            .Which.Destination.Should().Be("/outer");
+        frame.FocusStops.Where(stop => stop.Path.StartsWith("r/0", StringComparison.Ordinal))
+            .Should().ContainSingle("a stop the reader never names is an offer nothing performs")
+            .Which.Path.Should().Be("r/0");
+    }
+
+    /// <summary>
+    /// A COMPOSITE SUPPRESSES THE STOPS INSIDE IT, so a link's activation route cannot be its stop.
+    /// A grid is one Tab stop with a keyboard of its own — that is the whole point of
+    /// <c>WithoutFocusStops</c> — and a linked run inside one still reaches the semantics tree,
+    /// because <c>Visit(Navigable)</c> announces and DESCENDS. Resolving activate through the stop
+    /// left it announced and unfollowable: #255's own defect, one level in. Measured:
+    /// <code>
+    /// before  ANNOUNCED r/0/0/0#0 · STOPS r/0 · ACTIVATE=False
+    /// after   ANNOUNCED r/0/0/0#0 · STOPS r/0 · ACTIVATE=True -> /inner
+    /// </code>
+    /// The route is the REGION, which is not suppressed — exactly why a pressable cell inside a
+    /// grid is activatable today. Found by the review's summary; no comment was posted for it.
+    /// </summary>
+    [Fact]
+    public void ALinkedRunInsideAGridIsFollowableThoughItIsNotATabStop()
+    {
+        var cell = new Text("", TypeRole.BodyM)
+        {
+            Spans = [new TextRun("open") { Destination = "/inner" }],
+        };
+        var row = new Row(gap: 0);
+        row.Add(cell);
+        var page = new Column(gap: 0) { Width = SizeValue.Fill };
+        page.Add(new Navigable(_ => { }, [row]));
+
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 200);
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        string? followed = null;
+        host.NavigationRequested = destination => followed = destination;
+
+        var link = host.Semantics().Should().ContainSingle(node => node.Role == SemanticRole.Link)
+            .Which;
+        frame.FocusStops.Should().NotContain(stop => stop.Path == link.Path,
+            "the grid is ONE Tab stop, and the arrows move inside it");
+
+        host.ActivatePath(link.Path).Should().BeTrue(
+            "a reader that announces a link must be able to follow it, stop or no stop");
+        followed.Should().Be("/inner");
+    }
+
+    /// <summary>
+    /// An EMPTY destination is a value, not an absence: the pointer has always navigated with
+    /// whatever the region carries, and the keyboard used to land instead — it matched a
+    /// NON-EMPTY destination on the stop and fell through to the focus branch. Both routes read the
+    /// region now, so they cannot say different things about the same link.
+    /// </summary>
+    [Fact]
+    public void AnEmptyDestinationFollowsTheSameRouteOnBothHalves()
+    {
+        var page = new Column(gap: 0) { Width = SizeValue.Fill };
+        page.Add(new Link("", new Text("here", TypeRole.Label)));
+
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 200);
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        var region = frame.LinkRegions.Should().ContainSingle().Subject;
+
+        string? byPointer = null;
+        host.NavigationRequested = destination => byPointer = destination;
+        host.PressDown(region.Bounds.Center.X, region.Bounds.Center.Y);
+        host.PressUp(region.Bounds.Center.X, region.Bounds.Center.Y);
+        byPointer.Should().Be("");
+
+        string? byKeyboard = null;
+        host.NavigationRequested = destination => byKeyboard = destination;
+        host.ActivatePath(region.Path).Should().BeTrue();
+        byKeyboard.Should().Be("", "the two routes read the same region");
     }
 }

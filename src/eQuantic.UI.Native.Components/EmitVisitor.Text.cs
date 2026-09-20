@@ -21,7 +21,7 @@ internal sealed partial class EmitVisitor
         {
             foreach (var rect in link.Rects)
                 s.Input.Add(new LinkRegion(rect, link.Destination, link.Path));
-            s.Input.Add(new FocusStop(link.Path, null, null, link.Bounds, Destination: link.Destination));
+            s.Input.Add(new FocusStop(link.Path, null, null, link.Bounds));
 
             // Focused by PATH alone: a run is not a node, so nothing up the dispatch could have
             // recognised it and set the pending ring.

@@ -93,15 +93,14 @@ public readonly record struct CodeRegion(Rect Bounds, CodeSurface Surface, strin
 /// mouse, with the tab order quietly looping over the five that showed.
 /// </para>
 /// <para>
-/// A stop whose <c>Destination</c> is set is a LINK, and it is FOLLOWED rather than landed on. The
-/// destination is a string rather than the <see cref="Link"/> node for the reason
-/// <see cref="LinkRegion"/> gives: the other shape this route serves — a linked run inside a
-/// sentence — has no node to carry, and the destination was all the host ever wanted.
+/// A LINK registers one of these too, so Tab reaches it — but what FOLLOWING it takes lives on
+/// <see cref="LinkRegion"/> rather than here. A stop is suppressed inside a composite and a region
+/// is not, and a link inside a grid still has to be followable by the reader that announces it.
 /// </para>
 /// </summary>
 public readonly record struct FocusStop(string Path, Pressable? Pressable, TextEntry? Entry, Rect Bounds,
     Adjustable? Adjustable = null, CodeSurface? Code = null, Navigable? Grid = null,
-    SheetSurface? Sheet = null, string? Destination = null);
+    SheetSurface? Sheet = null);
 
 /// <summary>The realized frame: the laid-out tree (absolute bounds) and the interactive hit regions.</summary>
 public sealed class RealizeResult
