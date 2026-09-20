@@ -346,10 +346,39 @@ public static class TypeSymbolExtensions
     /// </summary>
     public static void RegisterIntroduced(this INamedTypeSymbol home, ConversionContext context)
     {
-        var ns = home.ContainingNamespace?.ToDisplayString() ?? string.Empty;
-        if (Services.RuntimeProvidedTypeScanner.IsRuntimeProvidedNamespace(ns))
+        if (home.IsRuntimeProvided())
             context.UsedRuntimeTypes.Add(home.Name);
         else
             context.UsedAppTypes.Add(home.Name);
     }
+
+    /// <summary>
+    /// Whether the RUNTIME supplies this type — the one rule, for every reader that has to agree
+    /// about it.
+    /// <para>
+    /// Two things answer yes. A runtime-provided NAMESPACE says so implicitly (the shared
+    /// vocabulary and component libraries), and <c>[RuntimeProvided]</c> says so explicitly, which
+    /// its own doc exists for: it "extends it to runtime-backed types living elsewhere — e.g. the
+    /// web adapter <c>VisualNodeComponent</c>".
+    /// </para>
+    /// <para>
+    /// This answers WHERE AN IMPORT COMES FROM, and it is deliberately not the question the
+    /// extension-home lowering asks. That one is "does the runtime export a home under this name",
+    /// which only the attribute can answer: the namespace is too broad, because
+    /// <c>eQuantic.UI.Primitives</c> also holds types the runtime exports no twin for
+    /// (<c>CurveEvaluator</c>). Collapsing the two into this predicate sends that type's extension
+    /// home again — measured, and caught by the case written for it.
+    /// </para>
+    /// <para>
+    /// What the attribute half fixes HERE is the other direction: a home the attribute marks,
+    /// living outside those namespaces (its doc exists for exactly that — the web adapter
+    /// <c>VisualNodeComponent</c>), used to be bucketed as an app type. The call was emitted as
+    /// <c>Home.method(…)</c> and the parser skips runtime-provided classes, so no app module was
+    /// written either, and the call named nothing at all.
+    /// </para>
+    /// </summary>
+    public static bool IsRuntimeProvided(this INamedTypeSymbol type) =>
+        Services.RuntimeProvidedTypeScanner.IsRuntimeProvidedNamespace(
+            type.ContainingNamespace?.ToDisplayString() ?? string.Empty)
+        || type.GetAttributes().Any(a => a.AttributeClass?.Name == "RuntimeProvidedAttribute");
 }

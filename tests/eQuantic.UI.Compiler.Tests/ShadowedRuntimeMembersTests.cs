@@ -1,6 +1,10 @@
 using eQuantic.UI.Compiler;
+using eQuantic.UI.Compiler.CodeGen;
 using eQuantic.UI.Compiler.Services;
 using FluentAssertions;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace eQuantic.UI.Compiler.Tests;
 
@@ -199,5 +203,48 @@ public class ShadowedRuntimeMembersTests
         // pinning the hole rather than the guard.
         ShadowedRuntimeMembers.All.Should().Contain(["_mounted", "_renderManager", "_instances"],
             "a leading underscore lowers unchanged, and what these corrupt is the lifecycle");
+    }
+
+    /// <summary>
+    /// ONE RULE FOR "THE RUNTIME PROVIDES THIS", because two readers have to agree about it: the
+    /// extension-home lowering asks it whether to emit a qualified call, and `RegisterIntroduced`
+    /// asks it where to import that call's home from. They were two rules — an attribute check and
+    /// a namespace check — and a home marked `[RuntimeProvided]` OUTSIDE the runtime namespaces
+    /// answered yes to one and no to the other: emitted as `Home.method(…)`, bucketed as an app
+    /// type, and written as no module either, because the parser skips runtime-provided classes.
+    /// The call would have named nothing at all.
+    /// <para>
+    /// The attribute's own doc is what makes that case real rather than hypothetical — it exists to
+    /// "extend it to runtime-backed types living elsewhere — e.g. the web adapter
+    /// <c>VisualNodeComponent</c>".
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void TheAttributeSaysRuntimeProvided_WhereverTheTypeLives()
+    {
+        const string source = """
+            namespace App.Elsewhere;
+
+            public sealed class RuntimeProvidedAttribute : System.Attribute;
+
+            [RuntimeProvided]
+            public static class WebHelpers;
+
+            public static class PlainHelpers;
+            """;
+        var tree = CSharpSyntaxTree.ParseText(source);
+        var compilation = CSharpCompilation.Create("RuleProbe", [tree],
+            [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)]);
+        var model = compilation.GetSemanticModel(tree);
+
+        INamedTypeSymbol Named(string name) => tree.GetRoot().DescendantNodes()
+            .OfType<ClassDeclarationSyntax>()
+            .Select(declaration => model.GetDeclaredSymbol(declaration)!)
+            .Single(symbol => symbol.Name == name);
+
+        Named("WebHelpers").IsRuntimeProvided().Should().BeTrue(
+            "the attribute says so, and a namespace outside the runtime's own does not unsay it");
+        Named("PlainHelpers").IsRuntimeProvided().Should().BeFalse(
+            "an ordinary app class is the app's to emit");
     }
 }

@@ -209,8 +209,20 @@ public class InvocationStrategy : IExpressionIrStrategy
                         + "part of this compilation, so nothing emits it. Use an instance member, or "
                         + "add a strategy for it.");
                 }
-                // A FRAMEWORK home the runtime does not declare it provides keeps the reduced form
-                // it always had — see the paragraph above for why the namespace cannot decide it.
+                // A FRAMEWORK home the runtime does not EXPORT keeps the reduced form it always
+                // had, and only the ATTRIBUTE can answer that. The namespace cannot: `CurveEvaluator`
+                // sits in `eQuantic.UI.Primitives` and the runtime exports no twin for it, so
+                // asking `IsRuntimeProvided()` here — which is the broader namespace-or-attribute
+                // rule the IMPORT routing uses — sent its `Ease` home again and imported a name the
+                // bundle has not. Measured: `AHomeTheRuntimeDoesNotProvide_KeepsTheReducedCall`
+                // failed on `import { Curve, CurveEvaluator }`.
+                //
+                // The two questions are genuinely different, which is why the predicates are. This
+                // one is "does the runtime export a home under this name", answered by the
+                // attribute's own contract. `RegisterIntroduced` answers "given that we emitted a
+                // qualified call, where does its import come from", and there the namespace counts
+                // too — a home the attribute marks must reach `UsedRuntimeTypes` whatever namespace
+                // it lives in, which is the half that was missing.
                 else if (!declaredHere && !symbol.ContainingType.GetAttributes()
                              .Any(a => a.AttributeClass?.Name == "RuntimeProvidedAttribute"))
                 {

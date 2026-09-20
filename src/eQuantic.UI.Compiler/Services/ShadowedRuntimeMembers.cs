@@ -42,14 +42,30 @@ public static class ShadowedRuntimeMembers
 
     private static readonly HashSet<string> Names = Load();
 
+    /// <summary>
+    /// THROWS rather than returning nothing. An empty set is a guard that refuses everything it was
+    /// written to refuse and says so to no one — every consumer would compile with no protection
+    /// and find out in the browser, which is the exact failure this exists to prevent. The resource
+    /// is embedded by the Compiler's own csproj, so its absence is a broken build of eqc rather than
+    /// anything a consumer did, and it should read that way.
+    /// </summary>
     private static HashSet<string> Load()
     {
-        using var stream = typeof(ShadowedRuntimeMembers).Assembly.GetManifestResourceStream(ResourceName);
-        if (stream is null) return new HashSet<string>(StringComparer.Ordinal);
+        using var stream = typeof(ShadowedRuntimeMembers).Assembly.GetManifestResourceStream(ResourceName)
+            ?? throw new InvalidOperationException(
+                $"eqc is missing its embedded '{ResourceName}'. It is the list of members a component "
+                + "already has, generated from the runtime by core/runtime-members.spec.ts and embedded "
+                + "by eQuantic.UI.Compiler.csproj. Without it EQ2011 would refuse nothing and a member "
+                + "shadowing the runtime's would fail only in the browser (#245).");
         using var reader = new StreamReader(stream);
-        return reader.ReadToEnd()
+        var names = reader.ReadToEnd()
             .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .ToHashSet(StringComparer.Ordinal);
+        return names.Count > 0
+            ? names
+            : throw new InvalidOperationException(
+                $"eqc's embedded '{ResourceName}' is empty, which disables EQ2011 silently. "
+                + "Regenerate it with EQ_UPDATE_RUNTIME_MEMBERS=1 on the runtime's vitest suite.");
     }
 
     /// <summary>The members a component already has — for a test that pins this against the runtime.</summary>
