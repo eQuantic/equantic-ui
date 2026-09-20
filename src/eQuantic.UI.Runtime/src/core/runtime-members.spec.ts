@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { Component } from './types';
+import { Component, HtmlElement } from './types';
 import { StatefulComponent, StatelessComponent } from './component';
 
 /**
@@ -71,16 +71,27 @@ describe('the members a component already has', () => {
         throw new Error('never rendered');
       }
     }
+    class Element extends HtmlElement {
+      render(): never {
+        throw new Error('never rendered');
+      }
+    }
 
-    const members = [
-      ...new Set([
-        ...membersOf(Stateless as never),
-        ...membersOf(Stateful as never),
-        ...membersOf(Bare as never),
-      ]),
-    ].sort();
+    // PER BASE, not one union of them. The bases differ by eleven names — `setState`, `key`,
+    // `onMount`, `_sharedStateful` and the rest are a STATEFUL component's — and a union refuses
+    // them on a stateless one, where they shadow nothing at all. `HtmlElement` is its own case
+    // again: it carries the DOM surface that a component does not.
+    const bases: ReadonlyArray<readonly [string, new () => object]> = [
+      ['Component', Bare as never],
+      ['HtmlElement', Element as never],
+      ['StatelessComponent', Stateless as never],
+      ['StatefulComponent', Stateful as never],
+    ];
 
-    const written = `${members.join('\n')}\n`;
+    const written = `${bases
+      .flatMap(([name, ctor]) => [...membersOf(ctor)].sort().map((member) => `${name}\t${member}`))
+      .join('\n')}\n`;
+
     if (process.env.EQ_UPDATE_RUNTIME_MEMBERS === '1') {
       mkdirSync(dirname(FIXTURE), { recursive: true });
       writeFileSync(FIXTURE, written, 'utf8');

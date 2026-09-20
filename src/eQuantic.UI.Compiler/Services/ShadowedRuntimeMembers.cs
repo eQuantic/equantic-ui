@@ -40,7 +40,7 @@ public static class ShadowedRuntimeMembers
 {
     private const string ResourceName = "eQuantic.UI.Compiler.Resources.runtime-members.txt";
 
-    private static readonly HashSet<string> Names = Load();
+    private static readonly Dictionary<string, HashSet<string>> ByBase = Load();
 
     /// <summary>
     /// THROWS rather than returning nothing. An empty set is a guard that refuses everything it was
@@ -49,7 +49,7 @@ public static class ShadowedRuntimeMembers
     /// is embedded by the Compiler's own csproj, so its absence is a broken build of eqc rather than
     /// anything a consumer did, and it should read that way.
     /// </summary>
-    private static HashSet<string> Load()
+    private static Dictionary<string, HashSet<string>> Load()
     {
         using var stream = typeof(ShadowedRuntimeMembers).Assembly.GetManifestResourceStream(ResourceName)
             ?? throw new InvalidOperationException(
@@ -58,18 +58,47 @@ public static class ShadowedRuntimeMembers
                 + "by eQuantic.UI.Compiler.csproj. Without it EQ2011 would refuse nothing and a member "
                 + "shadowing the runtime's would fail only in the browser (#245).");
         using var reader = new StreamReader(stream);
-        var names = reader.ReadToEnd()
-            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .ToHashSet(StringComparer.Ordinal);
-        return names.Count > 0
-            ? names
+        var byBase = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+        foreach (var line in reader.ReadToEnd()
+                     .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var tab = line.IndexOf('\t');
+            if (tab <= 0) continue;
+            var baseName = line[..tab];
+            if (!byBase.TryGetValue(baseName, out var members))
+                byBase[baseName] = members = new HashSet<string>(StringComparer.Ordinal);
+            members.Add(line[(tab + 1)..]);
+        }
+        return byBase.Count > 0
+            ? byBase
             : throw new InvalidOperationException(
-                $"eqc's embedded '{ResourceName}' is empty, which disables EQ2011 silently. "
+                $"eqc's embedded '{ResourceName}' names no base, which disables EQ2011 silently. "
                 + "Regenerate it with EQ_UPDATE_RUNTIME_MEMBERS=1 on the runtime's vitest suite.");
     }
 
-    /// <summary>The members a component already has — for a test that pins this against the runtime.</summary>
-    public static IReadOnlyCollection<string> All => Names;
+    /// <summary>
+    /// The members the base this component ACTUALLY extends carries. One union of all of them would
+    /// be simpler and wrong: the bases differ by eleven names — <c>setState</c>, <c>key</c>,
+    /// <c>onMount</c>, <c>_sharedStateful</c> and the rest belong to a STATEFUL component — and a
+    /// union refuses them on a stateless one, where they shadow nothing at all. <c>HtmlElement</c>
+    /// is its own case again, carrying the DOM surface a component does not.
+    /// <para>
+    /// An unrecognised base falls back to <c>Component</c>, which is what every one of them extends:
+    /// refusing its three (<c>children</c>, <c>constructor</c>, <c>render</c>) is the floor, not
+    /// a guess.
+    /// </para>
+    /// </summary>
+    private static HashSet<string> MembersFor(ComponentDefinition component) =>
+        component.BaseClassName is { Length: > 0 } declared && ByBase.TryGetValue(declared, out var exact)
+            ? exact
+            : ByBase.TryGetValue(component.IsStateful ? "StatefulComponent" : "Component", out var fallback)
+                ? fallback
+                : [];
+
+    /// <summary>What each base carries — for a test that pins this against the runtime.</summary>
+    public static IReadOnlyDictionary<string, IReadOnlyCollection<string>> All =>
+        ByBase.ToDictionary(pair => pair.Key, pair => (IReadOnlyCollection<string>)pair.Value,
+            StringComparer.Ordinal);
 
     /// <summary>
     /// Every member of <paramref name="component"/> that would land on a name the runtime uses —
@@ -103,7 +132,7 @@ public static class ShadowedRuntimeMembers
         void Collides(string name, string kind)
         {
             var lowered = name.ToCamelCase();
-            if (!Names.Contains(lowered)) return;
+            if (!MembersFor(component).Contains(lowered)) return;
             // What the emission LOOKS like, which is the half a reader cannot see from the C#.
             var emitted = kind == "method" ? $"{lowered}()" : $"this.{lowered}";
             errors.Add(new CompilationError

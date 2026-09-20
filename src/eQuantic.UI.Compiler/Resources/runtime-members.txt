@@ -1,27 +1,52 @@
-_instances
-_invalidationHook
-_lifecycleMounted
-_mounted
-_renderManager
-_renderScheduled
-_scheduleRender
-_sharedStateful
-build
-children
-constructor
-disposeQuietly
-getCurrentTree
-getVirtualNode
-hydrate
-key
-mount
-mountReconcile
-nodeKind
-notifyMounted
-notifyUnmounted
-onMount
-onUnmount
-render
-serviceProvider
-setState
-unmount
+Component	children
+Component	constructor
+Component	render
+HtmlElement	buildAttributes
+HtmlElement	buildEvents
+HtmlElement	children
+HtmlElement	constructor
+HtmlElement	htmlNode
+HtmlElement	render
+StatelessComponent	_instances
+StatelessComponent	_mounted
+StatelessComponent	_renderManager
+StatelessComponent	_renderScheduled
+StatelessComponent	_scheduleRender
+StatelessComponent	build
+StatelessComponent	children
+StatelessComponent	constructor
+StatelessComponent	disposeQuietly
+StatelessComponent	getCurrentTree
+StatelessComponent	getVirtualNode
+StatelessComponent	hydrate
+StatelessComponent	mount
+StatelessComponent	mountReconcile
+StatelessComponent	render
+StatelessComponent	serviceProvider
+StatefulComponent	_instances
+StatefulComponent	_invalidationHook
+StatefulComponent	_lifecycleMounted
+StatefulComponent	_mounted
+StatefulComponent	_renderManager
+StatefulComponent	_renderScheduled
+StatefulComponent	_scheduleRender
+StatefulComponent	_sharedStateful
+StatefulComponent	build
+StatefulComponent	children
+StatefulComponent	constructor
+StatefulComponent	disposeQuietly
+StatefulComponent	getCurrentTree
+StatefulComponent	getVirtualNode
+StatefulComponent	hydrate
+StatefulComponent	key
+StatefulComponent	mount
+StatefulComponent	mountReconcile
+StatefulComponent	nodeKind
+StatefulComponent	notifyMounted
+StatefulComponent	notifyUnmounted
+StatefulComponent	onMount
+StatefulComponent	onUnmount
+StatefulComponent	render
+StatefulComponent	serviceProvider
+StatefulComponent	setState
+StatefulComponent	unmount

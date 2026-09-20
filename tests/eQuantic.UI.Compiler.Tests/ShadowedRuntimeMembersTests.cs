@@ -36,14 +36,15 @@ public class ShadowedRuntimeMembersTests
         new ComponentCompiler().CompileSource(Header + body).Single();
 
     [Theory]
-    [InlineData("render")]
-    [InlineData("setState")]
-    [InlineData("mount")]
-    [InlineData("children")]
-    [InlineData("serviceProvider")]
-    public void APrimaryConstructorParameter_MayNotTakeAMemberTheRuntimeUses(string member)
+    [InlineData("StatelessComponent", "render")]
+    [InlineData("StatelessComponent", "mount")]
+    [InlineData("StatelessComponent", "children")]
+    [InlineData("StatelessComponent", "serviceProvider")]
+    [InlineData("StatefulComponent", "setState")]
+    [InlineData("StatefulComponent", "key")]
+    public void APrimaryConstructorParameter_MayNotTakeAMemberTheRuntimeUses(string @base, string member)
     {
-        var result = Compile($"public class C(string {member}) : StatelessComponent {{ "
+        var result = Compile($"public class C(string {member}) : {@base} {{ "
                              + "  public override IComponent Build(RenderContext c) => new Text(\"hi\"); }");
 
         result.Success.Should().BeFalse();
@@ -51,6 +52,24 @@ public class ShadowedRuntimeMembersTests
         result.Errors[0].Message.Should().Contain($"this.{member}",
             "a diagnostic that names only the C# side leaves the reader to work out what it hit — "
             + "the emission is the half they cannot see");
+    }
+
+    /// <summary>
+    /// AND THE BASE DECIDES, which is the half a union got wrong. `setState`, `key`, `onMount`,
+    /// `_sharedStateful` and seven more belong to a STATEFUL component; on a stateless one they
+    /// shadow nothing at all, and refusing them is refusing valid code. `buildAttributes` is the
+    /// same story one branch over — the escape hatch has it and a component does not.
+    /// </summary>
+    [Theory]
+    [InlineData("setState")]
+    [InlineData("key")]
+    [InlineData("onMount")]
+    [InlineData("buildAttributes")]
+    public void AStatelessComponentKeepsTheNamesItsBaseDoesNotHave(string member)
+    {
+        Compile($"public class C(string {member}) : StatelessComponent {{ "
+                + "  public override IComponent Build(RenderContext c) => new Text(\"hi\"); }")
+            .Errors.Should().NotContain(error => error.Code == "EQ2011");
     }
 
     /// <summary>A PROPERTY and a FIELD lower to the same key a parameter does, so they are refused
@@ -193,16 +212,28 @@ public class ShadowedRuntimeMembersTests
     [Fact]
     public void TheListIsEmbedded_AndComesFromTheRuntime()
     {
-        ShadowedRuntimeMembers.All.Should().NotBeEmpty(
+        var all = ShadowedRuntimeMembers.All;
+        all.Should().NotBeEmpty(
             "an empty fixture is a guard that refuses nothing, and it would pass every test above "
             + "that asks for a rename");
-        ShadowedRuntimeMembers.All.Should().Contain(["render", "setState", "children"]);
+        all.Keys.Should().BeEquivalentTo(
+            ["Component", "HtmlElement", "StatelessComponent", "StatefulComponent"],
+            "one union of the bases refuses a stateful member on a stateless component, where it "
+            + "shadows nothing at all");
+
+        all["StatelessComponent"].Should().Contain(["render", "mount", "children"]);
         // This case used to assert the OPPOSITE — that no `_` name is in the list, "because no C#
         // member lowers to one". `IdentifierStrategy` lowers a leading underscore unchanged, so
         // every one of them is reachable by a C# field, and a test asserting they were absent was
         // pinning the hole rather than the guard.
-        ShadowedRuntimeMembers.All.Should().Contain(["_mounted", "_renderManager", "_instances"],
+        all["StatelessComponent"].Should().Contain(["_mounted", "_renderManager", "_instances"],
             "a leading underscore lowers unchanged, and what these corrupt is the lifecycle");
+
+        // The eleven a stateful component adds, and the surface only the escape hatch carries.
+        all["StatefulComponent"].Should().Contain(["setState", "key", "_sharedStateful"]);
+        all["StatelessComponent"].Should().NotContain(["setState", "key", "_sharedStateful"]);
+        all["HtmlElement"].Should().Contain(["buildAttributes", "buildEvents"]);
+        all["Component"].Should().NotContain(["buildAttributes", "buildEvents"]);
     }
 
     /// <summary>
