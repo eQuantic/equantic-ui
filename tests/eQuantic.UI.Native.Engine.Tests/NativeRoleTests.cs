@@ -298,4 +298,40 @@ public class NativeRoleTests
         host.KeyDown(key).Should().BeTrue();
         followed.Should().Be("/pricing");
     }
+
+    /// <summary>
+    /// THE EMIT WALK AND THE SEMANTICS WALK AGREE ABOUT WHAT ONE LINK IS. <c>Visit(Link)</c>
+    /// announces and CONSUMES its subtree, so a paragraph inside a link is not announced — and the
+    /// emit walk has to say the same thing, or a run inside that paragraph registers a stop nothing
+    /// names. Measured before the fence went on:
+    /// <code>
+    /// STOPS            r/0 -> /outer ,  r/0/0#0 -> /inner
+    /// ANNOUNCED-LINKS  r/0
+    /// </code>
+    /// A link IS the stop for its subtree, the same shape <c>Adjustable</c> and <c>Navigable</c>
+    /// use, and for the same reason. Found by the review's SUMMARY, with no comment posted for it.
+    /// <para>Mutation: drop <c>WithoutFocusStops</c> from <c>EmitLink</c> and the counts diverge
+    /// again — two stops, one announcement.</para>
+    /// </summary>
+    [Fact]
+    public void ALinkOverALinkedRunIsOneStopAndOneAnnouncement()
+    {
+        var paragraph = new Text("", TypeRole.BodyM)
+        {
+            Spans = [new TextRun("read the "), new TextRun("guide") { Destination = "/inner" }],
+        };
+        var page = new Column(gap: Space.S2) { Width = SizeValue.Fill };
+        page.Add(new Link("/outer", paragraph));
+
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 200);
+        var frame = host.RenderFrame(new DisplayListBuilder());
+
+        var announced = host.Semantics().Where(node => node.Role == SemanticRole.Link).ToList();
+        announced.Should().ContainSingle("the outer link consumes what it wraps").Which
+            .Path.Should().Be("r/0");
+
+        frame.FocusStops.Where(stop => stop.Destination is not null).Should()
+            .ContainSingle("a stop the reader never names is an offer nothing performs")
+            .Which.Destination.Should().Be("/outer");
+    }
 }

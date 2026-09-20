@@ -214,11 +214,11 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Button.cs`
 - **Handoff**: Hit rect: Small "≥48 (slop)", Medium "≥48 (slop)" — "Sizes — toggle "Hit areas" in the top bar: Small 32 · hit 48 / Medium 40 · hit 48".
-- **Code**: The Button never asks for the hit rect: Button.cs:62-66 reads the size ladder for height, padding, gap and the two type sizes and asks for no hit slot at all — `Touch.MinTarget` has zero references in Button.cs, and no min-size reaches the tree. (The row was filed against `ButtonStyles.Metrics`, a tuple whose seventh slot the Button discarded; the tuple is gone and the seven calls are read straight, which changes the mechanism and not the outcome.) Only the Photon realizer expands (EmitVisitor.Interaction.cs:144-152 ExpandHitRect, called at :15). The web path has no equivalent: `Touch.MinTarget` has zero references in src/eQuantic.UI.Web and src/eQuantic.UI.Runtime, and neither lowerPressable (lowering.ts:2039-2132) nor LowerPressable (WebLoweringVisitor.Interaction.cs:450-486 LowerPressable) nor the generated `.eq-pressable` rules (TokenCss.cs:317-332) set any minimum. On web a Small button's tap target is 32×32 and a Medium's is 40×40.
+- **Code**: The Button never asks for the hit rect: Button.cs:62-66 reads the size ladder for height, padding, gap and the two type sizes and asks for no hit slot at all — `Touch.MinTarget` has zero references in Button.cs, and no min-size reaches the tree. (The row was filed against `ButtonStyles.Metrics`, a tuple whose seventh slot the Button discarded; the tuple is gone and the seven calls are read straight, which changes the mechanism and not the outcome.) Only the Photon realizer expands (EmitVisitor.Interaction.cs:150-158 ExpandHitRect, called at :15). The web path has no equivalent: `Touch.MinTarget` has zero references in src/eQuantic.UI.Web and src/eQuantic.UI.Runtime, and neither lowerPressable (lowering.ts:2039-2132) nor LowerPressable (WebLoweringVisitor.Interaction.cs:450-486 LowerPressable) nor the generated `.eq-pressable` rules (TokenCss.cs:317-332) set any minimum. On web a Small button's tap target is 32×32 and a Medium's is 40×40.
 - **Evidence**:
 
   ```
-  Button.cs:62  var height = Sizing.Height(Size, context.Density);   //  vs EmitVisitor.Interaction.cs:148  var minimum = density == Density.Compact ? 0 : Touch.MinTarget;
+  Button.cs:62  var height = Sizing.Height(Size, context.Density);   //  vs EmitVisitor.Interaction.cs:154  var minimum = density == Density.Compact ? 0 : Touch.MinTarget;
   ```
 
 ### A12 Button · behaviour · **unverified**
@@ -251,7 +251,7 @@ the pill's 40 down.
 - **Evidence**:
 
   ```
-  IconButton.cs:76  var side = Sizing.Height(Size, context.Density);  … IconButton.cs:124-126  Width = side,\n            Height = side,   (no minimum reaches the Pressable; cf. EmitVisitor.Interaction.cs:148 which is the only place Touch.MinTarget is applied)
+  IconButton.cs:76  var side = Sizing.Height(Size, context.Density);  … IconButton.cs:124-126  Width = side,\n            Height = side,   (no minimum reaches the Pressable; cf. EmitVisitor.Interaction.cs:154 which is the only place Touch.MinTarget is applied)
   ```
 
 ### B1 Card · missing-feature · **CONFIRMED**
@@ -450,7 +450,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Checkbox.cs`
 - **Handoff**: "the whole row is the target (hit ≥ 48 tall)"
-- **Code**: The row is laid out with no height and no min-height, so it measures its tallest child — the 22dp box (the BodyM label's line box is 20) — giving a 22dp-tall target. The Photon realizer rescues this (EmitVisitor.Interaction.cs:148 `var minimum = density == Density.Compact ? 0 : Touch.MinTarget;` expands the hit rect to 48), but the web realizer emits no minimum at all: WebLoweringVisitor.Interaction.cs:453-470 LowerPressable sets only padding/border/background/font/cursor/text-align, and TokenCss.cs:317-332 (.eq-pressable rules) adds no sizing. Checkbox.cs:60. The component's own doc comment (Checkbox.cs:9) asserts "hit ≥ 48 via the Pressable contract", which holds on Photon and not on web.
+- **Code**: The row is laid out with no height and no min-height, so it measures its tallest child — the 22dp box (the BodyM label's line box is 20) — giving a 22dp-tall target. The Photon realizer rescues this (EmitVisitor.Interaction.cs:154 `var minimum = density == Density.Compact ? 0 : Touch.MinTarget;` expands the hit rect to 48), but the web realizer emits no minimum at all: WebLoweringVisitor.Interaction.cs:453-470 LowerPressable sets only padding/border/background/font/cursor/text-align, and TokenCss.cs:317-332 (.eq-pressable rules) adds no sizing. Checkbox.cs:60. The component's own doc comment (Checkbox.cs:9) asserts "hit ≥ 48 via the Pressable contract", which holds on Photon and not on web.
 - **Evidence**:
 
   ```
@@ -461,7 +461,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Switch.cs`
 - **Handoff**: "Hit rect 48, extends over the paired label row in ListItems."
-- **Code**: The pressable's subtree is the 52×32 track, so the web target's hit rect is 32dp tall: WebRealizer.LowerPressable emits no min sizing (WebLoweringVisitor.Interaction.cs:453-470 LowerPressable) and TokenCss's .eq-pressable rules add none (TokenCss.cs:317-332). Photon does honour it (EmitVisitor.Interaction.cs:148 expands to Touch.MinTarget = 48), so the contract holds on native and breaks on web. Switch.cs:46-52, :72-87.
+- **Code**: The pressable's subtree is the 52×32 track, so the web target's hit rect is 32dp tall: WebRealizer.LowerPressable emits no min sizing (WebLoweringVisitor.Interaction.cs:453-470 LowerPressable) and TokenCss's .eq-pressable rules add none (TokenCss.cs:317-332). Photon does honour it (EmitVisitor.Interaction.cs:154 expands to Touch.MinTarget = 48), so the contract holds on native and breaks on web. Switch.cs:46-52, :72-87.
 - **Evidence**:
 
   ```
@@ -1717,13 +1717,13 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Chip.cs`
 - **Handoff**: "Input (removable; close 20dp visual, 48dp hit)"
-- **Code**: The 20dp visual is right (IconSize.Dense = 20, src/eQuantic.UI.Primitives/Theme/Tokens.cs:48) but the 48dp hit does not exist on the WEB target. The chip relies on Pressable's §08 contract (Chip.cs:16-17 "48dp hit through Pressable"), and the native realizer honours it (EmitVisitor.ExpandHitRect, src/eQuantic.UI.Native.Components/EmitVisitor.Interaction.cs:144-152, grows the rect to Touch.MinTarget), but WebRealizer.LowerPressable emits a <button> with padding 0 and no min-width/min-height, and TokenCss adds no sizing rule for .eq-pressable — so the web ✕ is a ~20×20 target. Components that need the guarantee on web build it themselves (Slider.cs:155 Slider.Build, PageIndicator.cs:88 PageIndicator.HitPadded both set Height = Touch.MinTarget).
+- **Code**: The 20dp visual is right (IconSize.Dense = 20, src/eQuantic.UI.Primitives/Theme/Tokens.cs:48) but the 48dp hit does not exist on the WEB target. The chip relies on Pressable's §08 contract (Chip.cs:16-17 "48dp hit through Pressable"), and the native realizer honours it (EmitVisitor.ExpandHitRect, src/eQuantic.UI.Native.Components/EmitVisitor.Interaction.cs:150-158, grows the rect to Touch.MinTarget), but WebRealizer.LowerPressable emits a <button> with padding 0 and no min-width/min-height, and TokenCss adds no sizing rule for .eq-pressable — so the web ✕ is a ~20×20 target. Components that need the guarantee on web build it themselves (Slider.cs:155 Slider.Build, PageIndicator.cs:88 PageIndicator.HitPadded both set Height = Touch.MinTarget).
 - **Evidence**:
 
   ```
   Chip.cs:73  content.Add(new Pressable(new Icon(Icons.Close, IconSize.Dense, textColor), OnRemove)
   WebLoweringVisitor.Interaction.cs:465  Padding = "0",
-  EmitVisitor.Interaction.cs:148  var minimum = density == Density.Compact ? 0 : Touch.MinTarget;
+  EmitVisitor.Interaction.cs:154  var minimum = density == Density.Compact ? 0 : Touch.MinTarget;
   ```
 
 ### B9 TextInput · metric · **CONFIRMED**
@@ -2020,7 +2020,7 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Banner.cs`
 - **Handoff**: Dismiss X ... (glyph 18, hit 48). Actions: ≤ 2 text buttons ... hit 48.
-- **Code**: The dismiss is a bare Pressable around a 20dp Icon, relying on Pressable's documented guarantee ("the hit rect is expanded symmetrically to at least 48×48dp", src/eQuantic.UI.Primitives/Nodes/Pressable.cs). Photon honours it (EmitVisitor.ExpandHitRect, EmitVisitor.Interaction.cs:144-152), but the WEB realizer never does: LowerPressable emits a <button> with padding 0 and no min-width/min-height, and no .eq-pressable rule in TokenCss sets one. On the web the X is a 20×20 target, not 48.
+- **Code**: The dismiss is a bare Pressable around a 20dp Icon, relying on Pressable's documented guarantee ("the hit rect is expanded symmetrically to at least 48×48dp", src/eQuantic.UI.Primitives/Nodes/Pressable.cs). Photon honours it (EmitVisitor.ExpandHitRect, EmitVisitor.Interaction.cs:150-158), but the WEB realizer never does: LowerPressable emits a <button> with padding 0 and no min-width/min-height, and no .eq-pressable rule in TokenCss sets one. On the web the X is a 20×20 target, not 48.
 - **Evidence**:
 
   ```
@@ -3480,11 +3480,11 @@ the pill's 40 down.
 
 - **Component**: `src/eQuantic.UI.Components/Stepper.cs`
 - **Handoff**: Hit: 48dp per half, split at cell boundary.
-- **Code**: the 48dp hit expansion the Pressable contract promises (src/eQuantic.UI.Primitives/Nodes/Pressable.cs) is implemented only in the native realizer, EmitVisitor.ExpandHitRect (EmitVisitor.Interaction.cs:144-152). The web realizer emits the visual box as the button's box with no min-width/min-height (WebLoweringVisitor.Interaction.cs:450-464 LowerPressable), the TS twin does the same (lowering.ts:2054-2064), and the generated .eq-pressable rules add none (TokenCss.cs:317-332) — so on the web an arm's hit rect is its visual 40×40. The same gap defeats C6's "Whole control = one hit strip (≥ 48 with slop)".
+- **Code**: the 48dp hit expansion the Pressable contract promises (src/eQuantic.UI.Primitives/Nodes/Pressable.cs) is implemented only in the native realizer, EmitVisitor.ExpandHitRect (EmitVisitor.Interaction.cs:150-158). The web realizer emits the visual box as the button's box with no min-width/min-height (WebLoweringVisitor.Interaction.cs:450-464 LowerPressable), the TS twin does the same (lowering.ts:2054-2064), and the generated .eq-pressable rules add none (TokenCss.cs:317-332) — so on the web an arm's hit rect is its visual 40×40. The same gap defeats C6's "Whole control = one hit strip (≥ 48 with slop)".
 - **Evidence**:
 
   ```
-  EmitVisitor.Interaction.cs:144  private static Rect ExpandHitRect(Rect bounds, Density density = Density.Comfortable)   // native only
+  EmitVisitor.Interaction.cs:150  private static Rect ExpandHitRect(Rect bounds, Density density = Density.Comfortable)   // native only
   WebLoweringVisitor.Interaction.cs:459-467  Padding = "0", Border = "none", Background = "none", ... Width = fills.Width ? "100%" : null, Height = fills.Height ? "100%" : null,
   TokenCss.cs:379  css.AppendLine(".eq-pressable { -webkit-tap-highlight-color: transparent; }");
   ```

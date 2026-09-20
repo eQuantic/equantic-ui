@@ -114,8 +114,14 @@ internal sealed partial class EmitVisitor
             FocusRing(s, s.Node.Bounds, default);
         }
 
+        // A LINK IS THE STOP FOR ITS SUBTREE, which the semantics walk already says by CONSUMING it
+        // (Visit(Link) announces and stops). Without this the emit walk disagreed with the walk
+        // beside it: a Link over a paragraph holding its own linked run registered two stops and
+        // announced one, so Tab landed on an inner run no reader names — the empty offer #256 spent
+        // two rounds removing, one level down. Measured: stops `r/0`, `r/0/0#0`; announced `r/0`.
+        // The same shape as Adjustable and Navigable, for the same reason.
         foreach (var child in s.Node)
-            Emit(s with { Node = child });
+            Emit(s with { Node = child, Input = s.Input.WithoutFocusStops() });
     }
 
     private void EmitDrag(EmitState s, string dragPath)
