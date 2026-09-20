@@ -49,6 +49,23 @@ public sealed class Adjustable : SingleChildNode
     /// </summary>
     public RangeValue? Value { get; init; }
 
+    /// <summary>
+    /// The value IN WORDS, when the number is not what a person would say — "3 of 7 files",
+    /// "2 minutes left", "R$ 400", "Large". A reader that has this says it INSTEAD of the number.
+    /// <para>
+    /// On the NODE rather than inside <see cref="RangeValue"/>, which is #243: the words used to
+    /// ride on the value, so a node with no value had no words either. A slider always has one, so nothing was lost here — it moves for the same reason a shared type carries only what both share: the words are the NODE's, and putting them back on the value would give <see cref="Progress"/> two places to look.
+    /// </para>
+    /// </summary>
+    public string? ValueText { get; init; }
+
+    /// <summary>
+    /// What a reader announces — the words when there are any, the number otherwise, and nothing
+    /// at all when there is neither. ONE place to look, determinate or not.
+    /// </summary>
+    public string? Spoken => ValueText is { Length: > 0 } text ? text : Value?.Number;
+
+
     public sealed override TResult Accept<TState, TResult>(
         IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);
 }

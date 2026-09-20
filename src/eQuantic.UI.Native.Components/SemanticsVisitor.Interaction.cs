@@ -71,8 +71,13 @@ internal sealed partial class SemanticsVisitor
     public bool Visit(Adjustable node, LayoutNode laidOut) =>
         Announce(new(SemanticRole.Slider, laidOut.Path ?? "", laidOut.Bounds,
             node.Label,
-            node.Role == AdjustableRole.Slider ? node.Value?.Spoken : null,
-            false));
+            node.Role == AdjustableRole.Slider ? node.Spoken : null,
+            false,
+            // The NUMBERS travel beside the words now, so a bridge can offer its platform's own
+            // range — a `RangeInfo` on Android, `AXMinValue`/`AXMaxValue` on macOS. They ride under
+            // the same condition as the words: a node that is not announced as a slider is not
+            // announced as having a range either (#243).
+            Range: node.Role == AdjustableRole.Slider ? node.Value : null));
 
     /// <summary>
     /// Spec B14: the bar says WHAT IT IS FOR and HOW FAR ALONG. It is not a Slider — the platforms
@@ -86,7 +91,10 @@ internal sealed partial class SemanticsVisitor
     /// </summary>
     public bool Visit(Progress node, LayoutNode laidOut) =>
         Announce(new(SemanticRole.ProgressIndicator, laidOut.Path ?? "", laidOut.Bounds,
-            node.Label, node.Value?.Spoken, false));
+            // `node.Spoken`, not `node.Value?.Spoken`: an indeterminate bar has no value and may
+            // still have WORDS, which is the half #243 calls the real loss. "Estimating time
+            // remaining" is most useful exactly where there is no number to fall back on.
+            node.Label, node.Spoken, false, Range: node.Value));
 
     /// <summary>
     /// A navigable region is a GROUP: the reader names it and then walks its rows. Consuming it —

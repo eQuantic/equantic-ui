@@ -89,6 +89,28 @@ internal static class PhotonAccessibility
             SendVoid(element, Sel("setAccessibilityLabel:"), NSString(node.Label));
             if (node.Value is { } value)
                 SendVoid(element, Sel("setAccessibilityValue:"), NSString(value));
+            // THE NUMBERS BEHIND THE WORDS (#243). VoiceOver reads AXValue as the announcement and
+            // uses AXMinValue/AXMaxValue to place it — "45%", or "45 of 100" on a control whose
+            // range is not a ratio. Before the semantic snapshot carried numbers, this bridge had
+            // only the formatted string and could offer neither bound, so every progress bar and
+            // slider was announced against AppKit's assumptions rather than its own range.
+            //
+            // AFTER the string value above, deliberately: a caller's WORDS win over the number
+            // (that is what aria-valuetext means on the web and what `Spoken` decides here), so the
+            // bounds are added beside the announcement rather than over it.
+            if (node.Range is { } range)
+            {
+                SendVoid(element, Sel("setAccessibilityMinValue:"),
+                    Send(objc_getClass("NSNumber"), Sel("numberWithDouble:"), (double)range.Min));
+                SendVoid(element, Sel("setAccessibilityMaxValue:"),
+                    Send(objc_getClass("NSNumber"), Sel("numberWithDouble:"), (double)range.Max));
+                // The value as a NUMBER only when nothing spoke for it — otherwise the words above
+                // are the announcement and replacing them with "0.45" is the loss this exists to
+                // prevent.
+                if (node.Value is null)
+                    SendVoid(element, Sel("setAccessibilityValue:"),
+                        Send(objc_getClass("NSNumber"), Sel("numberWithDouble:"), (double)range.Now));
+            }
             // A check's value is a NUMBER (0/1/2 — off/on/mixed): AXCheckBox's own contract, and
             // what VoiceOver reads as "checked"/"unchecked"/"mixed" without the label saying it.
             if (node.Checked is { } check)

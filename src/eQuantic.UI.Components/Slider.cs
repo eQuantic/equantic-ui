@@ -167,7 +167,8 @@ public sealed class Slider : StatelessComponent
                 // Spec C7: the value, its bounds and the words for it. Before this the host emitted
                 // role="slider" with no aria-valuenow — invalid ARIA, and a screen-reader user heard
                 // "Brightness, slider" and never which way it was set.
-                Value = announced with { Text = ValueText },
+                Value = announced,
+                ValueText = ValueText,
             };
     }
 

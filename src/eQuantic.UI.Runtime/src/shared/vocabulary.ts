@@ -1223,10 +1223,19 @@ export class RangeValue {
   now: number;
   min: number;
   max: number;
-  /** The value SPOKEN when the number is not it — "R$ 400", "40%". A reader says this INSTEAD. */
-  text?: string | null;
 
-  constructor(now: number, min: number, max: number, config?: { text?: string | null }) {
+  /**
+   * The trailing config stays even though #243 took the one member that used it. A positional
+   * record struct's components are `init`-settable in C#, so `new RangeValue(0.45f, 0, 1) { Now = … }`
+   * is legal and eqc lowers it to a config object — a twin without the slot would drop it silently,
+   * which is what `vocabulary-config.spec.ts` exists to refuse.
+   */
+  constructor(
+    now: number,
+    min: number,
+    max: number,
+    config?: { now?: number; min?: number; max?: number },
+  ) {
     this.now = now;
     this.min = min;
     this.max = max;
@@ -1234,12 +1243,16 @@ export class RangeValue {
   }
 
   /**
-   * C# twin: `RangeValue.Spoken` — the words, or the number when there are none. The rounding
-   * matches C#'s `"0.####"`: up to four decimals, no trailing zeros, so both sides announce one
-   * number rather than two spellings of it.
+   * C# twin: `RangeValue.Number` — `now` as a reader would hear it when no words replace it. The
+   * rounding matches C#'s `"0.####"`: up to four decimals, no trailing zeros, so both sides
+   * announce one number rather than two spellings of it.
+   *
+   * THE WORDS ARE NOT HERE (#243). They moved to the NODE (`Progress.valueText`,
+   * `Adjustable.valueText`), because tying them to a number meant an indeterminate bar — which has
+   * no number by definition — lost them too.
    */
-  get spoken(): string {
-    return this.text ? this.text : `${parseFloat(this.now.toFixed(4))}`;
+  get number(): string {
+    return `${parseFloat(this.now.toFixed(4))}`;
   }
 }
 
@@ -1254,7 +1267,19 @@ export class Progress extends VisualNode {
   /** How far along; null or absent is INDETERMINATE, which is a state rather than an omission. */
   value?: RangeValue | null;
 
-  constructor(child: VisualNode, config?: { label?: string; value?: RangeValue | null }) {
+  /** The value IN WORDS, said INSTEAD of the number — and said even when there is no number. */
+  valueText?: string | null;
+
+  /** What a reader announces: the words when there are any, the number otherwise, neither if
+   * there is neither. C# twin: `Progress.Spoken`. */
+  get spoken(): string | null {
+    return this.valueText ? this.valueText : (this.value?.number ?? null);
+  }
+
+  constructor(
+    child: VisualNode,
+    config?: { label?: string; value?: RangeValue | null; valueText?: string | null },
+  ) {
     super();
     this.child = child;
     if (config) Object.assign(this, config);
@@ -1292,6 +1317,15 @@ export class Adjustable extends VisualNode {
   /** Where the value sits, for a role that has one; absent on a tablist or a radiogroup. */
   value?: RangeValue | null;
 
+  /** The value IN WORDS, said INSTEAD of the number — and said even when there is no number. */
+  valueText?: string | null;
+
+  /** What a reader announces: the words when there are any, the number otherwise, neither if
+   * there is neither. C# twin: `Adjustable.Spoken`. */
+  get spoken(): string | null {
+    return this.valueText ? this.valueText : (this.value?.number ?? null);
+  }
+
   constructor(
     child: VisualNode,
     onAdjust: (direction: number) => void,
@@ -1299,6 +1333,7 @@ export class Adjustable extends VisualNode {
       label?: string;
       role?: 'slider' | 'tablist' | 'radiogroup';
       value?: RangeValue | null;
+      valueText?: string | null;
     },
   ) {
     super();

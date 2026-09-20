@@ -24,9 +24,12 @@ namespace eQuantic.UI.Primitives;
 /// </para>
 ///
 /// <para>
-/// <see cref="Text"/> is the value SPOKEN when the number alone is not it — "R$ 400", "40%",
-/// "Large", "3 of 7". A reader that has it says it INSTEAD of the number, which is the whole point:
-/// 0.4 is what the control holds and "40%" is what a person would say.
+/// THE WORDS ARE NOT HERE, and that is #243. They used to be (<c>Text</c>, and a <c>Spoken</c> that
+/// preferred it), which tied them to a number that a <see cref="Progress"/> may not have: an
+/// INDETERMINATE bar carries no <c>RangeValue</c> at all, so "Estimating time remaining" went with
+/// the number that was never there — on both realizers, since both read the text from inside the
+/// value. The words now live on the NODE (<c>Progress.ValueText</c>, <c>Adjustable.ValueText</c>),
+/// which is the one place a reader looks whether or not there is a number to replace.
 /// </para>
 /// </summary>
 /// <param name="Now">The value the node currently reports.</param>
@@ -35,18 +38,10 @@ namespace eQuantic.UI.Primitives;
 public readonly record struct RangeValue(float Now, float Min, float Max)
 {
     /// <summary>
-    /// The value in words, when the number is not what a person would say — a currency, a unit, a
-    /// named step. Null leaves the number to speak for itself, which is right for a bare ratio.
+    /// <see cref="Now"/> as a reader would hear it when no words replace it. INVARIANT, because
+    /// this is the same string both realizers hand their platform — the web as an attribute and
+    /// Photon as the semantic node's value — and a decimal comma on one target and a point on the
+    /// other would be two announcements of one number.
     /// </summary>
-    public string? Text { get; init; }
-
-    /// <summary>
-    /// What a reader announces: <see cref="Text"/> when the caller gave one, the number otherwise.
-    /// INVARIANT, because this is the same string both realizers hand their platform — the web as
-    /// an attribute and Photon as the semantic node's value — and a decimal comma on one target and
-    /// a point on the other would be two announcements of one number.
-    /// </summary>
-    public string Spoken => Text is { Length: > 0 } text
-        ? text
-        : Now.ToString("0.####", CultureInfo.InvariantCulture);
+    public string Number => Now.ToString("0.####", CultureInfo.InvariantCulture);
 }

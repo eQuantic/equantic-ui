@@ -61,12 +61,12 @@ export class ProgressBar extends StatefulComponent {
             if (filledWeight < 1000) {
                 track.add(new Spacer(1000 - filledWeight, { animateChanges: animate }));
             }
-            return new Progress(track, { label: this.label, value: new RangeValue(filledWeight / 1000, 0, 1, { text: this.valueText }) });
+            return new Progress(track, { label: this.label, value: new RangeValue(filledWeight / 1000, 0, 1), valueText: this.valueText });
         }
         let segment = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: height });
         segment.add(new Flexible(new Box(new BoxStyle({ height: height, background: theme.colors(this.variant).base, cornerRadius: new CornerRadii(theme.shape('full')) })), 300));
         segment.add(new Spacer(700));
-        return new Progress(new Box(new BoxStyle({ width: SizeValue.fill, height: height, background: theme.surfaceSubtle, cornerRadius: new CornerRadii(theme.shape('full')), clip: true }), new LoopMotion(segment, 'slideX', ProgressBar.sweepFromX, ProgressBar.sweepToX, ProgressBar.sweepDurationMs)), { label: this.label });
+        return new Progress(new Box(new BoxStyle({ width: SizeValue.fill, height: height, background: theme.surfaceSubtle, cornerRadius: new CornerRadii(theme.shape('full')), clip: true }), new LoopMotion(segment, 'slideX', ProgressBar.sweepFromX, ProgressBar.sweepToX, ProgressBar.sweepDurationMs)), { label: this.label, valueText: this.valueText });
     }
 
     adoptConfig(next: UiComponent) {

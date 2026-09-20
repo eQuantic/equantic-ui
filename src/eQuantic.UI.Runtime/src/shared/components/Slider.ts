@@ -45,7 +45,7 @@ export class Slider extends StatelessComponent {
         row.add(new Flexible(Slider.trackHalf(theme.surfaceSubtle, false, !this.disabled, () => this.onChanged?.(Math.min(this.max, this.value + step))), Slider.weight(1 - fraction)));
         let surface = this.disabled ? row : new Draggable(row, null, { axis: 'horizontal', normalized: true, follows: false, min: 0, max: 1, restOffset: fraction, onMoved: (f: number) => this.onChanged?.(this.quantize(this.min + f * span, step)) });
         let box = new Box(new BoxStyle({ width: SizeValue.fill, minWidth: 120, height: 48, opacity: this.disabled ? theme.disabledOpacity : 1 }), surface);
-        return this.disabled ? box : new Adjustable(box, (direction: number) => this.onChanged?.(this.quantize(this.value + direction * step, step)), { label: this.label, value: $eq.withPatch(announced, { text: this.valueText }) });
+        return this.disabled ? box : new Adjustable(box, (direction: number) => this.onChanged?.(this.quantize(this.value + direction * step, step)), { label: this.label, value: announced, valueText: this.valueText });
     }
 
     quantize(value: number, step: number) {

@@ -107,6 +107,24 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
             info.ContentDescription = node.Label;
         }
 
+        // THE NUMBERS BEHIND THE WORDS (#243). TalkBack treats a node with RangeInfo as a real
+        // indicator — it announces the position within the range and, on a SeekBar, offers the
+        // adjust gestures. Without it a progress bar mapped to android.widget.ProgressBar by role
+        // and then carried only a formatted string, so the platform had the class and none of the
+        // numbers: the role said "indicator" and nothing said how far.
+        //
+        // The cause was upstream of this bridge rather than in it. `SemanticNode.Value` is a
+        // string, so the numbers were formatted away before ANY shell saw them — the web was the
+        // only target that got the real trio, because it reads the node rather than the snapshot.
+        //
+        // An INDETERMINATE bar reaches here with no Range, and gets no RangeInfo — which is the
+        // honest mapping: Android's own indeterminate ProgressBar reports no position either.
+        if (node.Range is { } range)
+        {
+            info.RangeInfo = AccessibilityNodeInfo.RangeInfo.Obtain(
+                AccessibilityNodeInfo.RangeInfo.RangeTypeFloat, range.Min, range.Max, range.Now);
+        }
+
         // The check's state, in the platform's own words — announced in the USER's language, which
         // is the whole reason this framework ships neither "checked" nor "on". Android has no third
         // state: a mixed check is announced without one rather than claiming to be off.

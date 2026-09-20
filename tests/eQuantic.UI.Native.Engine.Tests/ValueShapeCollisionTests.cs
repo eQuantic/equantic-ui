@@ -71,8 +71,14 @@ public class ValueShapeCollisionTests
             + "and are never interchanged: one indexes a grid, the other a text buffer, and one of "
             + "them is 1-based to its user."),
         ["Single,Single,Single"] = (
-            ["MotionVector", "SpringSpec"],
-            "a device's three axes of acceleration, against a spring's stiffness, damping and mass."),
+            ["MotionVector", "RangeValue", "SpringSpec"],
+            "a device's three axes of acceleration, a spring's stiffness, damping and mass, and "
+            + "where a value sits between two ends. RangeValue JOINED this group when #243 moved "
+            + "the WORDS off it onto the nodes — it was (Single,Single,Single,String) and is now "
+            + "three numbers like its neighbours. Asked its own reason rather than let in on "
+            + "theirs: a now-min-max triple is ordered and bounded, where a motion vector's axes "
+            + "are independent and a spring's three are unrelated units. None of them adds to, "
+            + "converts to, or is ever passed as another."),
         ["SizeKind,Single"] = (
             ["GridTrack", "SizeValue"],
             "how wide a thing wants to be, and how wide a grid COLUMN wants to be. The second is "

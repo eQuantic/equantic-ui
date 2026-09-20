@@ -153,11 +153,13 @@ internal sealed partial class WebLoweringVisitor
             element.RawAttributes["aria-valuenow"] = TokenCss.Number(value.Now);
             element.RawAttributes["aria-valuemin"] = TokenCss.Number(value.Min);
             element.RawAttributes["aria-valuemax"] = TokenCss.Number(value.Max);
-            // Only when the caller gave words: aria-valuetext REPLACES the number for a reader, so
-            // echoing the number into it would trade a value for the same value and lose nothing but
-            // the chance to say "40%".
-            if (value.Text is { Length: > 0 } spoken) element.RawAttributes["aria-valuetext"] = spoken;
         }
+        // OUTSIDE the block above, which is #243. aria-valuetext REPLACES the number for a reader,
+        // so echoing the number into it would trade a value for the same value — but it does not
+        // DEPEND on there being one, and reading it from inside the value meant a node with no
+        // number had no words either.
+        if (adjustable.ValueText is { Length: > 0 } spoken)
+            element.RawAttributes["aria-valuetext"] = spoken;
         if (Lower(adjustable.Child, null) is { } child) element.Children.Add(child);
         return element;
     }
@@ -201,8 +203,13 @@ internal sealed partial class WebLoweringVisitor
             element.RawAttributes["aria-valuenow"] = TokenCss.Number(value.Now);
             element.RawAttributes["aria-valuemin"] = TokenCss.Number(value.Min);
             element.RawAttributes["aria-valuemax"] = TokenCss.Number(value.Max);
-            if (value.Text is { Length: > 0 } spoken) element.RawAttributes["aria-valuetext"] = spoken;
         }
+        // An INDETERMINATE bar has no aria-valuenow and may still have words — and that is the case
+        // where they matter most, because there is no number for a reader to fall back on. They used
+        // to be read from inside the value, so "Estimating time remaining" was dropped exactly when
+        // it was the only thing the bar could say (#243).
+        if (progress.ValueText is { Length: > 0 } spoken)
+            element.RawAttributes["aria-valuetext"] = spoken;
         if (Lower(progress.Child, null) is { } child) element.Children.Add(child);
         return element;
     }

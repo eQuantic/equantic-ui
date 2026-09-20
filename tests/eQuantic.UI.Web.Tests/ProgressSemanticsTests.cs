@@ -36,6 +36,37 @@ public class ProgressSemanticsTests
     private static HtmlNode Host(VisualNode node) =>
         Walk(Lower(node)).First(n => n.Attributes.GetValueOrDefault("role") == "progressbar");
 
+    /// <summary>
+    /// THE WORDS SURVIVE THE MISSING NUMBER (#243). `aria-valuetext` REPLACES the number for a
+    /// reader, so it never depended on there being one — but it was read from inside the value, and
+    /// an indeterminate bar carries no value by definition. Measured:
+    /// <c>new ProgressBar { Label = "Syncing", ValueText = "Estimating time remaining" }</c>
+    /// announced "Syncing" and nothing else, which is the case where a spoken description is MOST
+    /// useful because there is no number to fall back on.
+    /// <para>Mutation: read the text from inside `progress.Value` again and this fails alone.</para>
+    /// </summary>
+    [Fact]
+    public void AnIndeterminateBarStillSaysItsWords()
+    {
+        var host = Host(new ProgressBar { Label = "Syncing", ValueText = "Estimating time remaining" });
+
+        host.Attributes.Should().ContainKey("aria-valuetext")
+            .WhoseValue.Should().Be("Estimating time remaining");
+        host.Attributes.Should().NotContainKey("aria-valuenow",
+            "indeterminate keeps the role and omits the number — that half was always right");
+    }
+
+    /// <summary>
+    /// And a bar with NEITHER says neither. The words are optional, not defaulted — a reader that
+    /// heard an empty `aria-valuetext` would announce a name followed by nothing.
+    /// </summary>
+    [Fact]
+    public void AnIndeterminateBarWithNoWordsCarriesNoValueText()
+    {
+        Host(new ProgressBar { Label = "Syncing" })
+            .Attributes.Should().NotContainKey("aria-valuetext");
+    }
+
     [Fact]
     public void ADeterminateBarStatesHowFarAlongItIs()
     {

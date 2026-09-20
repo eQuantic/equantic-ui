@@ -125,7 +125,8 @@ public sealed class ProgressBar : StatefulComponent
             return new Progress(track)
             {
                 Label = Label,
-                Value = new RangeValue(filledWeight / 1000f, 0, 1) { Text = ValueText },
+                Value = new RangeValue(filledWeight / 1000f, 0, 1),
+                ValueText = ValueText,
             };
         }
 
@@ -140,8 +141,8 @@ public sealed class ProgressBar : StatefulComponent
         }), 300));
         segment.Add(new Spacer(700));
 
-        // Indeterminate keeps the ROLE and carries no value — ARIA's own rule, and the honest one:
-        // the bar is saying that something is happening, which is all it knows.
+        // Indeterminate keeps the ROLE and carries no NUMBER — ARIA's own rule, and the honest one:
+        // the bar is saying that something is happening, which is all it knows. It keeps its words.
         return new Progress(new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
@@ -152,6 +153,12 @@ public sealed class ProgressBar : StatefulComponent
         }, new LoopMotion(segment, LoopEffect.SlideX, SweepFromX, SweepToX, SweepDurationMs)))
         {
             Label = Label,
+            // THE WORDS SURVIVE THE MISSING NUMBER (#243). They used to ride inside the RangeValue,
+            // so this branch — which has no RangeValue by definition — dropped them silently:
+            // `new ProgressBar { Label = "Syncing", ValueText = "Estimating time remaining" }`
+            // announced "Syncing" and nothing else, on BOTH realizers. That is the case where a
+            // spoken description is most useful, because there is no number to fall back on.
+            ValueText = ValueText,
         };
     }
 }

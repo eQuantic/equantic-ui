@@ -123,6 +123,25 @@ public enum SemanticCheck : byte
 /// <para>A TRAIT rather than a role, because a heading is still static text — the bridges add
 /// the platform's header trait on top of what they already report.</para>
 /// </param>
+/// <param name="Range">
+/// The NUMBERS behind <paramref name="Value"/>, for the roles that have them — a progress
+/// indicator, a slider. Null for everything else, and null for an INDETERMINATE progress bar,
+/// which is a state rather than a missing number.
+/// <para>
+/// It exists because <paramref name="Value"/> is a <c>string</c>: the numbers were formatted away
+/// before any bridge saw them, so NO bridge could populate a platform range — Android's
+/// <c>AccessibilityNodeInfo.RangeInfo</c>, or <c>AXValue</c>/<c>AXMinValue</c>/<c>AXMaxValue</c> on
+/// macOS. The web was the only target that got the real trio, because it is the only one that reads
+/// the NODE rather than this snapshot (#243).
+/// </para>
+/// <para>
+/// APPENDED, like every parameter before it, and for the reason the roles are: a consumer compiles
+/// against this shape. It is <see cref="ServerOnlyAttribute"/> so the blast radius is internal, but
+/// inserting rather than appending would still renumber nothing and break every positional call
+/// site at once — which is what the seven-argument repairs this repository removed were trying to
+/// avoid, the expensive way.
+/// </para>
+/// </param>
 /// <param name="Live">
 /// Set when this node is a LIVE REGION: the platform watches it and announces a change inside it
 /// wherever the user happens to be, without moving focus. Null for everything else, which is almost
@@ -146,4 +165,5 @@ public readonly record struct SemanticNode(
     bool Current = false,
     bool? Selected = null,
     int HeadingLevel = 0,
-    LiveRegionUrgency? Live = null);
+    LiveRegionUrgency? Live = null,
+    RangeValue? Range = null);
