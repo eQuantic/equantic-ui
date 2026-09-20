@@ -280,8 +280,9 @@ public static class UI
     /// slider's rule, where a missing value means the node is not a slider at all.
     /// </para>
     /// </summary>
-    public static Progress Progress(VisualNode child, string label = "", RangeValue? value = null) =>
-        new Progress(child) { Label = label, Value = value };
+    public static Progress Progress(VisualNode child, string label = "", RangeValue? value = null,
+        string? valueText = null) =>
+        new Progress(child) { Label = label, Value = value, ValueText = valueText };
 
     /// <summary>
     /// Live-region semantics: what changes INSIDE this subtree is announced wherever the user
@@ -308,8 +309,9 @@ public static class UI
     /// </para>
     /// </summary>
     public static Adjustable Adjustable(VisualNode child, Action<int> onAdjust,
-        RangeValue? value = null, AdjustableRole role = AdjustableRole.Slider) =>
-        new Adjustable(child, onAdjust) { Value = value, Role = role };
+        RangeValue? value = null, AdjustableRole role = AdjustableRole.Slider,
+        string? valueText = null) =>
+        new Adjustable(child, onAdjust) { Value = value, Role = role, ValueText = valueText };
 
     /// <summary>
     /// The 2-D twin of <see cref="Adjustable"/>: one Tab stop for the whole thing, and a keyboard

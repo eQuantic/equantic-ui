@@ -2930,8 +2930,10 @@ function lowerProgress(node: ProgressNode, context: LoweringContext, path: strin
     host.attributes['aria-valuenow'] = num(value.now);
     host.attributes['aria-valuemin'] = num(value.min);
     host.attributes['aria-valuemax'] = num(value.max);
-    if (value.text) host.attributes['aria-valuetext'] = value.text;
   }
+  // OUTSIDE the gate (C# twin: LowerProgress). An INDETERMINATE bar has no aria-valuenow and may
+  // still have words — the case where they matter most, since there is no number to fall back on.
+  if (node.valueText) host.attributes['aria-valuetext'] = node.valueText;
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) host.children.push(child);
   return host;
@@ -3002,7 +3004,10 @@ function lowerAdjustable(node: AdjustableNode, context: LoweringContext, path: s
     host.attributes['aria-valuenow'] = num(value.now);
     host.attributes['aria-valuemin'] = num(value.min);
     host.attributes['aria-valuemax'] = num(value.max);
-    if (value.text) host.attributes['aria-valuetext'] = value.text;
+    // INSIDE the gate, unlike the Progress arm (C# twin: LowerAdjustable). An Adjustable with no
+    // value is a tablist or a radiogroup, and words there would describe a value the host never
+    // claims to have.
+    if (node.valueText) host.attributes['aria-valuetext'] = node.valueText;
   }
   if (node.onAdjust) {
     const adjust = node.onAdjust;

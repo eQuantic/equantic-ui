@@ -107,7 +107,14 @@ internal static class PhotonAccessibility
                 // The value as a NUMBER only when nothing spoke for it — otherwise the words above
                 // are the announcement and replacing them with "0.45" is the loss this exists to
                 // prevent.
-                if (node.Value is null)
+                //
+                // AGAINST THE NUMBER, not against null. `SemanticsVisitor` sends `Spoken`, which
+                // falls back to `range.Number` when a caller gave no words — so `Value` is never
+                // null for a node that has a range, and a null check here was dead code that left
+                // AXValue an NSString of "0.45" on every ordinary bar. Comparing is exact rather
+                // than a heuristic: both strings come from the same formatter, so they are equal
+                // precisely when nothing replaced the number.
+                if (node.Value is null || node.Value == range.Number)
                     SendVoid(element, Sel("setAccessibilityValue:"),
                         Send(objc_getClass("NSNumber"), Sel("numberWithDouble:"), (double)range.Now));
             }

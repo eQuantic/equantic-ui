@@ -620,6 +620,8 @@ export interface AdjustableNode extends VisualNodeValue {
   role?: 'slider' | 'tablist' | 'radiogroup';
   /** Where the value sits, for a role that has one; absent on a tablist or a radiogroup. */
   value?: RangeValueValue | null;
+  /** The value IN WORDS, said INSTEAD of the number — for a role that HAS one (#243). */
+  valueText?: string | null;
 }
 
 /**
@@ -633,6 +635,8 @@ export interface ProgressNode extends VisualNodeValue {
   label?: string;
   /** How far along, over the range it covers; absent when indeterminate. */
   value?: RangeValueValue | null;
+  /** The value IN WORDS, said INSTEAD of the number — and said even when there is none (#243). */
+  valueText?: string | null;
 }
 
 /**
@@ -652,16 +656,17 @@ export interface LiveRegionNode extends VisualNodeValue {
 export type { LiveRegionUrgencyValue } from './enums.generated';
 
 /**
- * Wire shape of the C# `RangeValue`: the trio ARIA calls now/min/max, plus the words to say it
- * in. One object rather than three fields because `role="slider"` REQUIRES a now, and a now without
- * its bounds is read against ARIA's own 0-100 default — wrong for every slider in this system.
+ * Wire shape of the C# `RangeValue`: the trio ARIA calls now/min/max. One object rather than three
+ * fields because `role="slider"` REQUIRES a now, and a now without its bounds is read against ARIA's
+ * own 0-100 default — wrong for every slider in this system.
+ *
+ * THE WORDS ARE NOT HERE (#243). They sit on the NODE (`valueText`), because tying them to a number
+ * meant an indeterminate bar — which has none by definition — lost them too.
  */
 export interface RangeValueValue {
   now: number;
   min: number;
   max: number;
-  /** The value SPOKEN when the number is not it — "R$ 400", "40%". Replaces the number for a reader. */
-  text?: string | null;
 }
 
 /**

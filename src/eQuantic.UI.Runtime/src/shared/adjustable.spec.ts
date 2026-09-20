@@ -12,6 +12,7 @@ describe('adjustable lowering (C# cross-pin)', () => {
     onAdjust?: (d: number) => void,
     role?: AdjustableNode['role'],
     value?: AdjustableNode['value'],
+    valueText?: string,
   ) {
     const node: AdjustableNode = {
       nodeKind: 'adjustable',
@@ -24,6 +25,7 @@ describe('adjustable lowering (C# cross-pin)', () => {
       onAdjust,
       ...(role ? { role } : {}),
       ...(value ? { value } : {}),
+      ...(valueText ? { valueText } : {}),
     };
     return lowerVisualNode(node, ctx);
   }
@@ -94,10 +96,20 @@ describe('adjustable lowering (C# cross-pin)', () => {
   it('the words REPLACE the number, never join it', () => {
     // aria-valuetext substitutes for aria-valuenow in what a reader says, so echoing the number
     // into it would spend the one chance to say "40%" saying "0.4" twice.
-    const html = lower(undefined, undefined, { now: 0.4, min: 0, max: 1, text: '40%' });
+    const html = lower(undefined, undefined, { now: 0.4, min: 0, max: 1 }, '40%');
 
     expect(html.attributes['aria-valuetext']).toBe('40%');
     expect(html.attributes['aria-valuenow']).toBe('0.4');
+  });
+
+  // #243, and the ASYMMETRY with Progress: an Adjustable with no value is a tablist or a
+  // radiogroup, whose role reports no range at all — words there would describe a value the host
+  // never claims to have. A bar, by contrast, is legitimately indeterminate and keeps its words.
+  it('a role with no value says no words either', () => {
+    const html = lower(undefined, 'tablist', undefined, '40%');
+
+    expect(html.attributes['aria-valuetext']).toBeUndefined();
+    expect(html.attributes['aria-valuenow']).toBeUndefined();
   });
 
   it('a group role carries no value, however it is built', () => {

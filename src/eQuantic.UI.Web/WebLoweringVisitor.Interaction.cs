@@ -153,13 +153,15 @@ internal sealed partial class WebLoweringVisitor
             element.RawAttributes["aria-valuenow"] = TokenCss.Number(value.Now);
             element.RawAttributes["aria-valuemin"] = TokenCss.Number(value.Min);
             element.RawAttributes["aria-valuemax"] = TokenCss.Number(value.Max);
+            // INSIDE the gate, unlike the Progress arm below, and the asymmetry is the point.
+            // aria-valuetext REPLACES the number for a reader — on a bar that legitimately has no
+            // number (indeterminate) the words are all there is, but an Adjustable with no value is
+            // a TABLIST or a RADIOGROUP, which resolves to a role that reports no range at all.
+            // Words there would describe a value the host never claims to have, and the native
+            // visitor agrees: it announces neither unless the role is Slider.
+            if (adjustable.ValueText is { Length: > 0 } spoken)
+                element.RawAttributes["aria-valuetext"] = spoken;
         }
-        // OUTSIDE the block above, which is #243. aria-valuetext REPLACES the number for a reader,
-        // so echoing the number into it would trade a value for the same value — but it does not
-        // DEPEND on there being one, and reading it from inside the value meant a node with no
-        // number had no words either.
-        if (adjustable.ValueText is { Length: > 0 } spoken)
-            element.RawAttributes["aria-valuetext"] = spoken;
         if (Lower(adjustable.Child, null) is { } child) element.Children.Add(child);
         return element;
     }

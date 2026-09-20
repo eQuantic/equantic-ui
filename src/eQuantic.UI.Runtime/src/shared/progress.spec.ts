@@ -16,7 +16,7 @@ const ctx: LoweringContext = { textPrimary: photonTheme.textPrimary };
  * after a reviewer asks.
  */
 describe('progress lowering (C# cross-pin)', () => {
-  function lower(value?: ProgressNode['value'], label = 'Uploading') {
+  function lower(value?: ProgressNode['value'], label = 'Uploading', valueText?: string) {
     const node: ProgressNode = {
       nodeKind: 'progress',
       child: {
@@ -26,6 +26,7 @@ describe('progress lowering (C# cross-pin)', () => {
       } as unknown as ProgressNode['child'],
       label,
       ...(value ? { value } : {}),
+      ...(valueText ? { valueText } : {}),
     };
     return lowerVisualNode(node, ctx);
   }
@@ -54,10 +55,19 @@ describe('progress lowering (C# cross-pin)', () => {
   });
 
   it('the words REPLACE the ratio, never join it', () => {
-    const html = lower({ now: 0.43, min: 0, max: 1, text: '3 of 7 files' });
+    const html = lower({ now: 0.43, min: 0, max: 1 }, 'Uploading', '3 of 7 files');
 
     expect(html.attributes['aria-valuetext']).toBe('3 of 7 files');
     expect(html.attributes['aria-valuenow']).toBe('0.43');
+  });
+
+  // #243: the words are the NODE's, so they survive a bar that has no number — the case where a
+  // spoken description matters most. C# twin: ProgressSemanticsTests.AnIndeterminateBarStillSaysItsWords.
+  it('an indeterminate bar still says its words', () => {
+    const html = lower(undefined, 'Syncing', 'Estimating time remaining');
+
+    expect(html.attributes['aria-valuetext']).toBe('Estimating time remaining');
+    expect(html.attributes['aria-valuenow']).toBeUndefined();
   });
 
   it('rounds through the SHARED formatter, as every other number does', () => {

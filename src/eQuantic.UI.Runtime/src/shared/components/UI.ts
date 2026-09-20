@@ -137,16 +137,16 @@ export class UI {
         return new DragDismiss(child, onDismiss);
     }
 
-    static progress(child: VisualNode, label: string = '', value: RangeValue | null = null) {
-        return new Progress(child, { label: label, value: value });
+    static progress(child: VisualNode, label: string = '', value: RangeValue | null = null, valueText: string | null = null) {
+        return new Progress(child, { label: label, value: value, valueText: valueText });
     }
 
     static liveRegion(child: VisualNode, urgency: LiveRegionUrgencyValue = 'polite', label: string = '') {
         return new LiveRegion(child, { urgency: urgency, label: label });
     }
 
-    static adjustable(child: VisualNode, onAdjust: (int: number) => void, value: RangeValue | null = null, role: AdjustableRoleValue = 'slider') {
-        return new Adjustable(child, onAdjust, { value: value, role: role });
+    static adjustable(child: VisualNode, onAdjust: (int: number) => void, value: RangeValue | null = null, role: AdjustableRoleValue = 'slider', valueText: string | null = null) {
+        return new Adjustable(child, onAdjust, { value: value, role: role, valueText: valueText });
     }
 
     static navigable(onMove: (navigableMove: NavigableMoveValue) => void, rows: VisualNode[], label: string = '', role: NavigableRoleValue = 'grid', hasHeaderRow: boolean = false, activeCell: [number, number] | null = null) {
