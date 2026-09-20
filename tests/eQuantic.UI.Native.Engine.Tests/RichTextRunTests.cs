@@ -188,6 +188,140 @@ public class RichTextRunTests
         Ink(bold).Should().BeGreaterThan(Ink(plain), "a bold run is drawn in the bold cut");
     }
 
+    /// <summary>
+    /// A linked RUN is reached exactly like a <see cref="Link"/> node, which is the decision #255
+    /// had to make: a run has no node, so <c>RichTextRuns</c> gives it the paragraph's path with the
+    /// link's index after a <c>#</c> — a spelling <c>ChildPath</c> never produces, so it can collide
+    /// with neither a position nor a key — and the region, the focus stop and the announcement all
+    /// carry that same string.
+    /// <para>Mutation: drop the stop from <c>EmitTextNode</c> and the Tab half and the activate half
+    /// both fail; drop the announcement and the reader has a stop it cannot name.</para>
+    /// </summary>
+    [Fact]
+    public void ALinkedRunIsATabStopAndIsAnnounced()
+    {
+        var service = new WidthByStyle();
+        var host = new PhotonHost(new Paragraph(), PhotonTheme.Instance, ThemeMode.Light, 400, 200,
+            measurer: service)
+        {
+            TextRasterizer = service,
+        };
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        string? followed = null;
+        host.NavigationRequested = destination => followed = destination;
+
+        var link = host.Semantics().Should().ContainSingle(node => node.Role == SemanticRole.Link)
+            .Which;
+        link.Label.Should().Be("guide", "the link's own words name it, not the sentence around it");
+        link.Path.Should().EndWith("#0");
+
+        frame.LinkRegions.Should().ContainSingle().Which.Path.Should().Be(link.Path);
+        frame.FocusStops.Should().ContainSingle(stop => stop.Path == link.Path);
+        frame.LinkRegions.Should().ContainSingle().Which.Destination.Should().Be("/docs/start");
+
+        host.ActivatePath(link.Path).Should().BeTrue();
+        followed.Should().Be("/docs/start");
+    }
+
+    /// <summary>
+    /// A link that WRAPS is two things to the pointer and one to the keyboard, which is exactly why
+    /// the region count and the stop count are allowed to differ: both lines stay pressable, Tab
+    /// stops once, and the reader is told once.
+    /// </summary>
+    [Fact]
+    public void AWrappedLinkIsOneStopOverSeveralRectangles()
+    {
+        var service = new WidthByStyle();
+        var wrapped = new Text("", TypeRole.BodyM)
+        {
+            Spans = [new TextRun("alpha beta") { Destination = "/wrapped" }],
+        };
+
+        var host = new PhotonHost(new Rich(wrapped), PhotonTheme.Instance, ThemeMode.Light, 60, 200,
+            measurer: service)
+        {
+            TextRasterizer = service,
+        };
+        var frame = host.RenderFrame(new DisplayListBuilder());
+
+        var link = host.Semantics().Should().ContainSingle(node => node.Role == SemanticRole.Link)
+            .Which;
+        link.Label.Should().Be("alpha beta", "the pieces are one link, however many lines it took");
+
+        frame.LinkRegions.Should().HaveCountGreaterThan(1, "the words cover two lines of pixels")
+            .And.OnlyContain(region => region.Path == link.Path);
+        frame.FocusStops.Should().ContainSingle(stop => stop.Path == link.Path);
+    }
+
+    /// <summary>
+    /// Two links in one sentence are told apart, and what ends the first is the words between them:
+    /// the rule is ADJACENCY plus the same destination, which needs nothing added to
+    /// <see cref="TextFragment"/> — a measurement's shape, not an input route's.
+    /// </summary>
+    [Fact]
+    public void TwoLinksInOneSentenceAreToldApart()
+    {
+        var service = new WidthByStyle();
+        var sentence = new Text("", TypeRole.BodyM)
+        {
+            Spans =
+            [
+                new TextRun("terms") { Destination = "/terms" },
+                new TextRun(" and "),
+                new TextRun("privacy") { Destination = "/privacy" },
+            ],
+        };
+
+        var host = new PhotonHost(new Rich(sentence), PhotonTheme.Instance, ThemeMode.Light, 400, 200,
+            measurer: service)
+        {
+            TextRasterizer = service,
+        };
+        var frame = host.RenderFrame(new DisplayListBuilder());
+
+        var links = host.Semantics().Where(node => node.Role == SemanticRole.Link).ToList();
+        links.Select(link => link.Label).Should().Equal("terms", "privacy");
+        links.Select(link => link.Path).Should().OnlyHaveUniqueItems();
+        frame.LinkRegions.Select(region => region.Destination).Distinct()
+            .Should().Equal("/terms", "/privacy");
+        frame.FocusStops.Select(stop => stop.Path).Should().Contain(links.Select(link => link.Path));
+    }
+
+    /// <summary>
+    /// The other half of that rule: two ADJACENT runs sharing a destination are ONE link, which is
+    /// what a link with a bold word inside it is. Counting runs instead would have announced it
+    /// twice and stopped Tab on it twice.
+    /// </summary>
+    [Fact]
+    public void AdjacentRunsWithOneDestinationAreOneLink()
+    {
+        var service = new WidthByStyle();
+        var styled = new Text("", TypeRole.BodyM)
+        {
+            Spans =
+            [
+                new TextRun("read the ") { Destination = "/docs" },
+                new TextRun("guide") { Weight = FontWeight.Bold, Destination = "/docs" },
+            ],
+        };
+
+        var host = new PhotonHost(new Rich(styled), PhotonTheme.Instance, ThemeMode.Light, 400, 200,
+            measurer: service)
+        {
+            TextRasterizer = service,
+        };
+        var frame = host.RenderFrame(new DisplayListBuilder());
+
+        host.Semantics().Should().ContainSingle(node => node.Role == SemanticRole.Link)
+            .Which.Label.Should().Be("read the guide");
+        frame.LinkRegions.Select(region => region.Destination).Distinct().Should().Equal("/docs");
+    }
+
+    private sealed class Rich(Text text) : StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) => text;
+    }
+
     private sealed class Paragraph : StatelessComponent
     {
         public override VisualNode Build(ComponentContext context) => Sentence();

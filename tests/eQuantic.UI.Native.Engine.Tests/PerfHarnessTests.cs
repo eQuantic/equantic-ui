@@ -141,6 +141,15 @@ public class PerfHarnessTests
     /// them back, the field can move to a ConditionalWeakTable that only design mode populates —
     /// same authoring surface, zero bytes per node when nobody is inspecting.
     /// </para>
+    /// <para>
+    /// NOT raised on 2026-09-20, and the reason is the instrument working: it measured 75,754 of
+    /// 75,776 — twenty-two bytes of headroom, which the very next object would have spent. Making
+    /// a Pressable one Tab stop for its subtree wanted exactly one such object per frame (a sink
+    /// with stops suppressed, 152 bytes), so the sink became a VALUE over a shared
+    /// <c>FrameRegions</c> instead, and the fix landed at 75,730. A ruler this close to its mark is
+    /// what a ruler is for; the answer is to make the change free, and the ConditionalWeakTable
+    /// above is still the next kilobyte when one is genuinely needed.
+    /// </para>
     /// </summary>
     private const long PooledAllocationCeilingBytesPerFrame = 74 * 1024;
 

@@ -96,6 +96,69 @@ public class ClippedInputTests
             region.Bounds.Bottom.Should().BeLessThanOrEqualTo(viewport.Bottom + 0.01f);
         }
     }
+
+    /// <summary>A scrolling list of links, and under it a footer band that does not scroll.</summary>
+    private sealed class LinksOverFooter : Primitives.StatefulComponent
+    {
+        public override VisualNode Build(ComponentContext context)
+        {
+            var body = new Column(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill };
+            var list = new Column(gap: Space.S2) { Width = SizeValue.Fill };
+            for (var i = 0; i < 20; i++)
+                list.Add(new Link($"/p{i}", new Text($"page {i}", TypeRole.Label)));
+            body.Add(new Flexible(new ScrollView(list) { Width = SizeValue.Fill }, 1));
+            body.Add(new Box(new BoxStyle { Width = SizeValue.Fill, Height = 56 },
+                new Text("footer", TypeRole.Label)));
+            return body;
+        }
+    }
+
+    /// <summary>
+    /// A LINK'S IDENTITY OUTLIVES ITS VISIBILITY; ITS RECTANGLE DOES NOT. Following a link is not a
+    /// pointer act — the keyboard and a reader's activate find it by PATH — and a focus stop is
+    /// deliberately kept when it scrolls away. The link REGION was dropped instead, so the two
+    /// halves disagreed the moment a list was longer than its viewport:
+    /// <code>
+    /// STOPS  r/0/0 … r/0/19   (20)
+    /// LINKS  r/0/0 … r/0/4    (5)
+    /// ActivatePath("r/0/19") = True, NavigationRequested never called
+    /// </code>
+    /// True and nowhere is the worst answer available: a reader reports the link as followed.
+    /// <para>
+    /// The rectangle still obeys the clip, and that is the second half here: a link entirely
+    /// outside intersects to ZERO AREA, and no point is inside a rect whose left edge is its right
+    /// one — so the footer drawn over where that link would have been keeps taking its own taps.
+    /// </para>
+    /// <para>Mutation: register a link region only when it is visible and the first half fails
+    /// (nothing followed); register it unclipped and the second fails (a tap on the footer band
+    /// follows the link that scrolled under it).</para>
+    /// </summary>
+    [Fact]
+    public void AnOffScreenLinkIsFollowableByPath_AndStillTakesNoTap()
+    {
+        var host = new PhotonHost(new LinksOverFooter(), PhotonTheme.Instance, ThemeMode.Light, 390, 220);
+        host.RenderFrame(new DisplayListBuilder());
+        var frame = host.RenderFrame(new DisplayListBuilder(), 1000);
+
+        frame.LinkRegions.Select(region => region.Destination).Should()
+            .BeEquivalentTo(Enumerable.Range(0, 20).Select(index => $"/p{index}"),
+                "all twenty keep a destination though four fit on screen — a stop with no region "
+                + "is an activate that returns true and goes nowhere");
+
+        string? followed = null;
+        host.NavigationRequested = destination => followed = destination;
+
+        var offScreen = frame.LinkRegions.Single(region => region.Destination == "/p19");
+        host.ActivatePath(offScreen.Path).Should().BeTrue();
+        followed.Should().Be("/p19", "the twentieth link is below the viewport and still has a destination");
+
+        // A point in the FOOTER's band, which the list scrolls under: without the clip it is the
+        // link at that coordinate that a tap there follows.
+        followed = null;
+        host.PressDown(195, 200);
+        host.PressUp(195, 200);
+        followed.Should().BeNull("a link clipped out of the viewport is drawn nowhere, so it is tapped nowhere");
+    }
 }
 
 /// <summary>
@@ -194,4 +257,5 @@ public class PressAcrossFramesTests
 
         page.Fired.Should().BeEmpty("a press abandoned off the control is not a press");
     }
+
 }

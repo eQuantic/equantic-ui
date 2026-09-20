@@ -239,28 +239,237 @@ public class NativeRoleTests
     }
 
     /// <summary>
-    /// The one control this cannot yet be said of, pinned so the day it changes somebody is told.
-    /// A <see cref="Link"/> IS announced — it has a role, a name and a place in reading order — and
-    /// it is reachable by neither Tab nor a screen reader's activate: <c>LinkRegion</c> carries a
-    /// destination and no path, deliberately (a linked run inside a sentence is a rectangle and a
-    /// string, not a node), so there is nothing for either route to name. Closing it means deciding
-    /// what identity a linked RUN has, which is an input-route change and not this table's (#255).
+    /// WHAT THAT PIN SAID WAS MISSING, closed (#255). A <see cref="Link"/> was announced — a role, a
+    /// name, a place in reading order — and then reachable by neither Tab nor a screen reader's
+    /// activate: it sat in no <c>FocusStops</c> entry, and <c>ActivatePath</c> found no region at its
+    /// path. The web gets both from <c>&lt;a href&gt;</c> for nothing, so this was a write-once
+    /// promise only one realizer kept.
+    /// <para>
+    /// The rule is the handoff's, not this test's: "Tab reaches every interactive control"
+    /// (Foundations · Keyboard conventions), with activation on Space/Enter/double-tap.
+    /// </para>
+    /// <para>
+    /// Mutation: drop the <c>FocusStop</c> from <c>EmitLink</c> and both halves fail — the stop
+    /// assertion by name, and the activate because <c>ActivatePath</c> resolves links through it.
+    /// </para>
     /// </summary>
     [Fact]
-    public void ALinkIsAnnouncedAndReachedByNeitherTabNorActivate()
+    public void ALinkIsATabStopAndActivateFollowsIt()
     {
         var page = new Column(gap: Space.S2) { Width = SizeValue.Fill };
         page.Add(new Link("/home", new Text("home", TypeRole.Label)));
 
         var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 200);
         var frame = host.RenderFrame(new DisplayListBuilder());
+        string? followed = null;
+        host.NavigationRequested = destination => followed = destination;
 
         var link = host.Semantics().Should().ContainSingle(node => node.Role == SemanticRole.Link)
             .Which;
         NativeRole.Of(SemanticRole.Link).Activatable.Should().BeTrue(
             "every platform announces a link as something you follow");
 
-        frame.FocusStops.Should().NotContain(stop => stop.Path == link.Path);
-        host.ActivatePath(link.Path).Should().BeFalse();
+        frame.FocusStops.Should().ContainSingle(stop => stop.Path == link.Path,
+            "Tab reaches every interactive control");
+        frame.LinkRegions.Should().ContainSingle(region => region.Path == link.Path)
+            .Which.Destination.Should().Be("/home",
+                "following it is the REGION's half — a stop is suppressed inside a composite");
+        host.ActivatePath(link.Path).Should().BeTrue();
+        followed.Should().Be("/home");
+    }
+
+    /// <summary>
+    /// The keyboard's own half, which costs nothing extra once the stop exists: Tab LANDS and Enter
+    /// FOLLOWS, because <c>ActivateFocused</c> ends in <c>ActivatePath</c> — the same seam the
+    /// reader's double tap takes. Space too, which the handoff names beside Enter.
+    /// </summary>
+    [Theory]
+    [InlineData("Enter")]
+    [InlineData(" ")]
+    public void TabLandsOnALinkAndEnterFollowsIt(string key)
+    {
+        var page = new Column(gap: Space.S2) { Width = SizeValue.Fill };
+        page.Add(new Link("/pricing", new Text("pricing", TypeRole.Label)));
+
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 200);
+        host.RenderFrame(new DisplayListBuilder());
+        string? followed = null;
+        host.NavigationRequested = destination => followed = destination;
+
+        host.KeyDown("Tab").Should().BeTrue("a link is an interactive control, so Tab reaches it");
+        host.KeyDown(key).Should().BeTrue();
+        followed.Should().Be("/pricing");
+    }
+
+    /// <summary>
+    /// THE EMIT WALK AND THE SEMANTICS WALK AGREE ABOUT WHAT ONE LINK IS. <c>Visit(Link)</c>
+    /// announces and CONSUMES its subtree, so a paragraph inside a link is not announced — and the
+    /// emit walk has to say the same thing, or a run inside that paragraph registers a stop nothing
+    /// names. Measured before the fence went on:
+    /// <code>
+    /// STOPS            r/0 -> /outer ,  r/0/0#0 -> /inner
+    /// ANNOUNCED-LINKS  r/0
+    /// </code>
+    /// A link IS the stop for its subtree, the same shape <c>Adjustable</c> and <c>Navigable</c>
+    /// use, and for the same reason. Found by the review's SUMMARY, with no comment posted for it.
+    /// <para>Mutation: drop <c>WithoutFocusStops</c> from <c>EmitLink</c> and the counts diverge
+    /// again — two stops, one announcement.</para>
+    /// </summary>
+    [Fact]
+    public void ALinkOverALinkedRunIsOneStopAndOneAnnouncement()
+    {
+        var paragraph = new Text("", TypeRole.BodyM)
+        {
+            Spans = [new TextRun("read the "), new TextRun("guide") { Destination = "/inner" }],
+        };
+        var page = new Column(gap: Space.S2) { Width = SizeValue.Fill };
+        page.Add(new Link("/outer", paragraph));
+
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 200);
+        var frame = host.RenderFrame(new DisplayListBuilder());
+
+        var announced = host.Semantics().Where(node => node.Role == SemanticRole.Link).ToList();
+        announced.Should().ContainSingle("the outer link consumes what it wraps").Which
+            .Path.Should().Be("r/0");
+
+        frame.FocusStops.Where(stop => stop.Path.StartsWith("r/0", StringComparison.Ordinal))
+            .Should().ContainSingle("a stop the reader never names is an offer nothing performs")
+            .Which.Path.Should().Be("r/0");
+    }
+
+    /// <summary>
+    /// A COMPOSITE SUPPRESSES THE STOPS INSIDE IT, so a link's activation route cannot be its stop.
+    /// A grid is one Tab stop with a keyboard of its own — that is the whole point of
+    /// <c>WithoutFocusStops</c> — and a linked run inside one still reaches the semantics tree,
+    /// because <c>Visit(Navigable)</c> announces and DESCENDS. Resolving activate through the stop
+    /// left it announced and unfollowable: #255's own defect, one level in. Measured:
+    /// <code>
+    /// before  ANNOUNCED r/0/0/0#0 · STOPS r/0 · ACTIVATE=False
+    /// after   ANNOUNCED r/0/0/0#0 · STOPS r/0 · ACTIVATE=True -> /inner
+    /// </code>
+    /// The route is the REGION, which is not suppressed — exactly why a pressable cell inside a
+    /// grid is activatable today. Found by the review's summary; no comment was posted for it.
+    /// </summary>
+    [Fact]
+    public void ALinkedRunInsideAGridIsFollowableThoughItIsNotATabStop()
+    {
+        var cell = new Text("", TypeRole.BodyM)
+        {
+            Spans = [new TextRun("open") { Destination = "/inner" }],
+        };
+        var row = new Row(gap: 0);
+        row.Add(cell);
+        var page = new Column(gap: 0) { Width = SizeValue.Fill };
+        page.Add(new Navigable(_ => { }, [row]));
+
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 200);
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        string? followed = null;
+        host.NavigationRequested = destination => followed = destination;
+
+        var link = host.Semantics().Should().ContainSingle(node => node.Role == SemanticRole.Link)
+            .Which;
+        frame.FocusStops.Should().NotContain(stop => stop.Path == link.Path,
+            "the grid is ONE Tab stop, and the arrows move inside it");
+
+        host.ActivatePath(link.Path).Should().BeTrue(
+            "a reader that announces a link must be able to follow it, stop or no stop");
+        followed.Should().Be("/inner");
+    }
+
+    /// <summary>
+    /// An EMPTY destination is a value, not an absence: the pointer has always navigated with
+    /// whatever the region carries, and the keyboard used to land instead — it matched a
+    /// NON-EMPTY destination on the stop and fell through to the focus branch. Both routes read the
+    /// region now, so they cannot say different things about the same link.
+    /// </summary>
+    [Fact]
+    public void AnEmptyDestinationFollowsTheSameRouteOnBothHalves()
+    {
+        var page = new Column(gap: 0) { Width = SizeValue.Fill };
+        page.Add(new Link("", new Text("here", TypeRole.Label)));
+
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 200);
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        var region = frame.LinkRegions.Should().ContainSingle().Subject;
+
+        string? byPointer = null;
+        host.NavigationRequested = destination => byPointer = destination;
+        host.PressDown(region.Bounds.Center.X, region.Bounds.Center.Y);
+        host.PressUp(region.Bounds.Center.X, region.Bounds.Center.Y);
+        byPointer.Should().Be("");
+
+        string? byKeyboard = null;
+        host.NavigationRequested = destination => byKeyboard = destination;
+        host.ActivatePath(region.Path).Should().BeTrue();
+        byKeyboard.Should().Be("", "the two routes read the same region");
+    }
+
+    /// <summary>
+    /// THE TWO WALKS AGREE ABOUT WHAT ONE CONTROL IS — for every control that SWALLOWS its
+    /// subtree. Four do: each announces itself and CONSUMES what it holds, so nothing inside is
+    /// announced, and a stop that survives inside one is an offer no reader names. Three of the
+    /// four were measured wrong in turn, all with the same shape:
+    /// <code>
+    /// Link over a linked run        ANNOUNCED Link@r/0    STOPS r/0 , r/0/0#0
+    /// Pressable over a Link         ANNOUNCED Button@r/0  STOPS r/0 , r/0/0
+    /// Pressable over an Adjustable  ANNOUNCED Button@r/0  STOPS r/0 , r/0/0
+    /// </code>
+    /// Each was found by a separate review round, which is why this ENUMERATES rather than naming
+    /// the shape that happened to be reported: the next control to swallow its subtree is caught by
+    /// a case here instead of a fifth round. The inner control varies too, because the two stops
+    /// arrive by different reasoning — a link's is a stop with no region of its own, a composite's
+    /// is a REPLACEMENT for the stops under it — and the second of those spent a release exempt
+    /// from suppression for that reason. The trees are nonsense on purpose (the web calls nested
+    /// interactive elements invalid); what matters is that the two walks say the same thing.
+    /// <para>
+    /// Mutation: descend from any of the four with <c>s.Input</c> instead of
+    /// <c>s.Input.WithoutFocusStops()</c>, or let <c>InputSink.Add(FocusStop)</c> bypass
+    /// suppression the way <c>AddComposite</c> used to, and that control's case fails alone.
+    /// </para>
+    /// </summary>
+    [Theory]
+    [InlineData("Pressable", "Link")]
+    [InlineData("Pressable", "Adjustable")]
+    [InlineData("Link", "Link")]
+    [InlineData("Link", "Adjustable")]
+    [InlineData("Adjustable", "Link")]
+    [InlineData("Adjustable", "Adjustable")]
+    [InlineData("Navigable", "Link")]
+    [InlineData("Navigable", "Adjustable")]
+    public void AControlThatSwallowsItsSubtreeIsOneStopAndOneAnnouncement(string outer, string inner)
+    {
+        var page = new Column(gap: Space.S2) { Width = SizeValue.Fill };
+        page.Add(Control(outer, Control(inner, new Text("go", TypeRole.Label))));
+
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 200);
+        var frame = host.RenderFrame(new DisplayListBuilder());
+
+        frame.FocusStops.Where(stop => stop.Path.StartsWith("r/0", StringComparison.Ordinal))
+            .Should().ContainSingle($"a {outer} replaces the stops inside it rather than adding to "
+                                    + $"them, and the {inner} it holds is one of those")
+            .Which.Path.Should().Be("r/0");
+
+        host.Semantics().Select(node => node.Path).Should().Contain("r/0",
+            "and the one stop it keeps is the one a reader names — a stop nothing announces is an "
+            + "offer nothing performs");
+    }
+
+    /// <summary>One of the four controls that swallow their subtree, wrapped around a child.</summary>
+    private static VisualNode Control(string kind, VisualNode child) => kind switch
+    {
+        "Pressable" => new Pressable(child, () => { }),
+        "Link" => new Link($"/{kind.ToLowerInvariant()}", child),
+        "Adjustable" => new Adjustable(child, _ => { }) { Label = "Budget" },
+        "Navigable" => Grid(child),
+        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "not one of the four"),
+    };
+
+    /// <summary>One row, one cell, holding whatever the case wants inside a grid.</summary>
+    private static Navigable Grid(VisualNode cell)
+    {
+        var row = new Row(gap: 0);
+        row.Add(cell);
+        return new Navigable(_ => { }, [row]) { Label = "Weeks" };
     }
 }

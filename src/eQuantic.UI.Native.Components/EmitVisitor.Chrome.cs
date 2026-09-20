@@ -120,16 +120,26 @@ internal sealed partial class EmitVisitor
         if (s.Press.PendingFocusRing)
         {
             s.Press.PendingFocusRing = false;
-            var radii = box.Style.CornerRadius;
-            s.Builder.StrokeRRect(
-                new RRect(s.Node.Bounds.Inflate(1), new CornerRadii(
-                    radii.TopLeft + 1, radii.TopRight + 1, radii.BottomRight + 1, radii.BottomLeft + 1)),
-                2, Paint.Solid(s.Theme.Surface.Resolve(s.Mode)));
-            s.Builder.StrokeRRect(
-                new RRect(s.Node.Bounds.Inflate(3), new CornerRadii(
-                    radii.TopLeft + 3, radii.TopRight + 3, radii.BottomRight + 3, radii.BottomLeft + 3)),
-                2, Paint.Solid(s.Theme.FocusRing.Resolve(s.Mode)));
+            FocusRing(s, s.Node.Bounds, box.Style.CornerRadius);
         }
+    }
+
+    /// <summary>
+    /// The focus ring of spec §01, from ONE place: 2dp of Surface then 2dp of FocusRing outside the
+    /// control, each following its radius. The Box arm draws it for every control that has a box;
+    /// a <see cref="Link"/> has none — it is words — and would otherwise leave the ring pending for
+    /// whatever box the tree emitted next, which is a ring drawn around the wrong control.
+    /// </summary>
+    private static void FocusRing(in EmitState s, Rect bounds, CornerRadii radii)
+    {
+        s.Builder.StrokeRRect(
+            new RRect(bounds.Inflate(1), new CornerRadii(
+                radii.TopLeft + 1, radii.TopRight + 1, radii.BottomRight + 1, radii.BottomLeft + 1)),
+            2, Paint.Solid(s.Theme.Surface.Resolve(s.Mode)));
+        s.Builder.StrokeRRect(
+            new RRect(bounds.Inflate(3), new CornerRadii(
+                radii.TopLeft + 3, radii.TopRight + 3, radii.BottomRight + 3, radii.BottomLeft + 3)),
+            2, Paint.Solid(s.Theme.FocusRing.Resolve(s.Mode)));
     }
 
     private void EmitFlexBackground(FlexNode flex, EmitState s)

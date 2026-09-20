@@ -13,6 +13,16 @@ internal sealed partial class EmitVisitor
     private void EmitPressable(Pressable pressable, EmitState s)
     {
         s.Input.Add(new HitRegion(ExpandHitRect(s.Node.Bounds, s.Press.Density), pressable, s.Node.Path ?? ""));
+
+        // A PRESSABLE IS THE STOP FOR ITS SUBTREE, exactly as a link, an Adjustable and a Navigable
+        // are, and for the reason all four share: `Visit(Pressable)` announces and CONSUMES, so
+        // anything inside it is not announced — and a stop nothing names is an offer nothing
+        // performs. Measured on a Link inside a Pressable: announced `Button@r/0`, stops `r/0` AND
+        // `r/0/0`. A TextEntry inside one had the same shape before any of this, and takes the same
+        // answer; the tree is nonsense either way (the web calls nested interactive elements
+        // invalid), and what matters is that the two walks agree about what one control is.
+        foreach (var child in s.Node)
+            Emit(s with { Node = child, Input = s.Input.WithoutFocusStops() });
     }
 
     // Draws its subtree AS IF it were in these states. Nothing is tracked and no handler
@@ -67,7 +77,7 @@ internal sealed partial class EmitVisitor
     // and neither of them answers to the arrows.
     private void EmitAdjustable(Adjustable adjustable, EmitState s)
     {
-        s.Input.AddComposite(new FocusStop(s.Node.Path ?? "", null, null, s.Node.Bounds, adjustable));
+        s.Input.Add(new FocusStop(s.Node.Path ?? "", null, null, s.Node.Bounds, adjustable));
         foreach (var child in s.Node)
             Emit(s with { Node = child, Input = s.Input.WithoutFocusStops() });
     }
@@ -80,7 +90,7 @@ internal sealed partial class EmitVisitor
     /// </summary>
     private void EmitNavigable(Navigable navigable, EmitState s)
     {
-        s.Input.AddComposite(new FocusStop(s.Node.Path ?? "", null, null, s.Node.Bounds, Grid: navigable));
+        s.Input.Add(new FocusStop(s.Node.Path ?? "", null, null, s.Node.Bounds, Grid: navigable));
         foreach (var child in s.Node)
             Emit(s with { Node = child, Input = s.Input.WithoutFocusStops() });
     }
@@ -96,9 +106,31 @@ internal sealed partial class EmitVisitor
     {
         // Navigation surface: pure semantics — the child paints; a tap that no pressable claims
         // resolves to this region through the host's navigation seam.
-        s.Input.Add(new LinkRegion(s.Node.Bounds, link.Destination));
+        var path = s.Node.Path ?? "";
+        s.Input.Add(new LinkRegion(s.Node.Bounds, link.Destination, path));
+
+        // "Tab reaches every interactive control" (handoff, Foundations · Keyboard conventions), and
+        // a link is one — the web gets the stop and the activate from <a href> for nothing, and
+        // Photon announced a link it could then reach by neither (#255). The stop is the TAB half
+        // only; following it is the REGION's, which is what survives a composite's suppression.
+        s.Input.Add(new FocusStop(path, null, null, s.Node.Bounds));
+
+        // The ring the Box arm draws for a focused control, drawn here because a link is words and
+        // has no box of its own. Radius zero: the ring follows the text's own rectangle.
+        if (s.Press.PendingFocusRing)
+        {
+            s.Press.PendingFocusRing = false;
+            FocusRing(s, s.Node.Bounds, default);
+        }
+
+        // A LINK IS THE STOP FOR ITS SUBTREE, which the semantics walk already says by CONSUMING it
+        // (Visit(Link) announces and stops). Without this the emit walk disagreed with the walk
+        // beside it: a Link over a paragraph holding its own linked run registered two stops and
+        // announced one, so Tab landed on an inner run no reader names — the empty offer #256 spent
+        // two rounds removing, one level down. Measured: stops `r/0`, `r/0/0#0`; announced `r/0`.
+        // The same shape as Adjustable and Navigable, for the same reason.
         foreach (var child in s.Node)
-            Emit(s with { Node = child });
+            Emit(s with { Node = child, Input = s.Input.WithoutFocusStops() });
     }
 
     private void EmitDrag(EmitState s, string dragPath)

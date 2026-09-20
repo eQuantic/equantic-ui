@@ -155,7 +155,9 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
     public Nothing Visit(Drawing node, EmitState s) { EmitDrawing(node, s); Descend(s); return Nothing.Value; }
     public Nothing Visit(Canvas node, EmitState s) { EmitCanvas(node, s); Descend(s); return Nothing.Value; }
     public Nothing Visit(Spinner node, EmitState s) { EmitSpinnerNode(node, s); Descend(s); return Nothing.Value; }
-    public Nothing Visit(Pressable node, EmitState s) { EmitPressable(node, s); Descend(s); return Nothing.Value; }
+    // EmitPressable descends ITSELF, like the other three controls that are one stop for what
+    // they hold — the sink it descends with is part of the decision, so it cannot live here.
+    public Nothing Visit(Pressable node, EmitState s) { EmitPressable(node, s); return Nothing.Value; }
     public Nothing Visit(Hoverable node, EmitState s) { EmitHoverable(node, s); Descend(s); return Nothing.Value; }
     public Nothing Visit(Shortcut node, EmitState s) { EmitShortcut(node, s); Descend(s); return Nothing.Value; }
 

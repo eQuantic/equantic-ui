@@ -46,8 +46,15 @@ public readonly record struct DragRegion(Rect Bounds, string Path, VisualNode No
 /// a node: a linked run inside a sentence is a rectangle the layout computed and a string, and the
 /// destination was the only thing the host ever asked the node for.
 /// </para>
+/// <para>
+/// The <paramref name="Path"/> is what the KEYBOARD and a screen reader name it by, and it is the
+/// node's own where there is a node. A linked run has none, so <see cref="RichTextRuns"/> gives it
+/// one — the paragraph's path with the link's index after a <c>#</c> — and the region, the focus
+/// stop and the semantic node all carry that same string (#255). A link that wraps registers one
+/// region per line under ONE path: the pointer needs both rectangles, the keyboard needs one stop.
+/// </para>
 /// </summary>
-public readonly record struct LinkRegion(Rect Bounds, string Destination);
+public readonly record struct LinkRegion(Rect Bounds, string Destination, string Path);
 
 /// <summary>Spec S8: a keyboard binding that is live because its subtree is on screen — the host
 /// dispatches a key press to the LAST registered match (the dialog on top wins the chord).</summary>
@@ -84,6 +91,11 @@ public readonly record struct CodeRegion(Rect Bounds, CodeSurface Surface, strin
 /// wants the opposite — Tab reaches the field below the fold and the view scrolls to it. Applying
 /// the pointer's rule here made the seven fields under a 200dp viewport unreachable without a
 /// mouse, with the tab order quietly looping over the five that showed.
+/// </para>
+/// <para>
+/// A LINK registers one of these too, so Tab reaches it — but what FOLLOWING it takes lives on
+/// <see cref="LinkRegion"/> rather than here. A stop is suppressed inside a composite and a region
+/// is not, and a link inside a grid still has to be followable by the reader that announces it.
 /// </para>
 /// </summary>
 public readonly record struct FocusStop(string Path, Pressable? Pressable, TextEntry? Entry, Rect Bounds,
@@ -274,9 +286,7 @@ public static class PhotonRealizer
         var layout = LayoutEngine.Layout(root, viewportWidth, viewportHeight, context,
             rootStretch: StretchKind.Block);
 
-        var hits = new List<HitRegion>();
-        var hovers = new List<HoverRegion>();
-        var scrolls = new List<ScrollRegion>();
+        var regions = new FrameRegions();
         var motion = new MotionScope(timeMs, reducedMotion)
         {
             Presences = presences,
@@ -293,16 +303,7 @@ public static class PhotonRealizer
             IconCache = iconCache,
         };
         var overlays = new List<Overlay>();
-        var dragRegions = new List<DragRegion>();
-        var links = new List<LinkRegion>();
-        var shortcuts = new List<ShortcutBinding>();
-        var texts = new List<TextRegion>();
-        var stops = new List<FocusStop>();
-        var codes = new List<CodeRegion>();
-        var sheets = new List<SheetRegion>();
-        var cursors = new List<CursorRegion>();
-        var canvases = new List<CanvasRegion>();
-        var input = new InputSink(hits, hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes, sheets, cursors, canvases);
+        var input = new InputSink(regions);
         EmitVisitor.Shared.Emit(new EmitState(layout, input, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredPaths) { ScrollOffset = scrollOffset, MarkedText = markedText, Surface = new Rect(0, 0, viewportWidth, viewportHeight), InView = inViewStore },
             theme, mode, builder, context.ScrollMeta!, motion, overlays));
 
@@ -359,11 +360,12 @@ public static class PhotonRealizer
             }
         }
         context.Instances?.EndPass();
-        return new RealizeResult(layout, hits,
+        return new RealizeResult(layout, regions.Hits,
             motion.Active || transitions is { AnyActive: true } || presences is { AnyActive: true }
                 || drags is { AnyActive: true },
-            hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes, overlayRoots,
-            realizedLayers, sheets, cursors, canvases);
+            regions.Hovers, regions.Scrolls, regions.Drags, regions.Links, regions.Shortcuts,
+            regions.Texts, regions.Stops, regions.Codes, overlayRoots,
+            realizedLayers, regions.Sheets, regions.Cursors, regions.Canvases);
     }
 
 
