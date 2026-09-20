@@ -128,6 +128,45 @@ public class ShadowedRuntimeMembersTests
     }
 
     /// <summary>
+    /// THE SHARPEST CASE, and the one first excluded as impossible: a leading underscore lowers
+    /// UNCHANGED (`IdentifierStrategy` returns `this._name` for it), and `_`-prefixed is how
+    /// component state is written all over this repository. So the runtime's own
+    /// `_mounted`, `_renderManager`, `_instances`, `_scheduleRender` and the rest are names a C#
+    /// field reaches exactly — and what a collision corrupts there is the LIFECYCLE, silently: the
+    /// component stops mounting, or renders twice, or never releases.
+    /// <para>
+    /// The fixture excluded every `_` name on the reasoning that no C# member lowers to one, which
+    /// is the opposite of true.
+    /// </para>
+    /// </summary>
+    [Theory]
+    [InlineData("_mounted")]
+    [InlineData("_renderManager")]
+    [InlineData("_instances")]
+    [InlineData("_scheduleRender")]
+    public void TheRuntimesOwnPrivateState_IsReachableByAFieldAndRefused(string member)
+    {
+        var result = Compile($"public class C : StatelessComponent {{ private int {member} = 0; "
+                             + $"  public override IComponent Build(RenderContext c) => new Text({member}.ToString()); }}");
+
+        result.Errors.Should().ContainSingle().Which.Code.Should().Be("EQ2011");
+        result.Errors[0].Message.Should().Contain($"this.{member}");
+    }
+
+    /// <summary>
+    /// And ORDINARY `_`-prefixed state is untouched — `_count`, `_series`, `_hidden` are how this
+    /// repository's own components are written, and a guard that refused the idiom would be
+    /// unshippable. Only the names the runtime actually uses are refused.
+    /// </summary>
+    [Fact]
+    public void OrdinaryUnderscoreState_IsNotRefused()
+    {
+        Compile("public class C : StatelessComponent { private int _count = 0; private bool _hidden = false; "
+                + "  public override IComponent Build(RenderContext c) => new Text(_count.ToString()); }")
+            .Errors.Should().NotContain(error => error.Code == "EQ2011");
+    }
+
+    /// <summary>
     /// An ordinary component compiles. The cheapest way for a guard like this to go wrong is to be
     /// too wide, and a green suite would not say so — every other test here asks it to fire.
     /// </summary>
@@ -154,7 +193,11 @@ public class ShadowedRuntimeMembersTests
             "an empty fixture is a guard that refuses nothing, and it would pass every test above "
             + "that asks for a rename");
         ShadowedRuntimeMembers.All.Should().Contain(["render", "setState", "children"]);
-        ShadowedRuntimeMembers.All.Should().NotContain(name => name.StartsWith("_", StringComparison.Ordinal),
-            "the runtime's internals are spelled with a leading underscore and no C# member lowers to one");
+        // This case used to assert the OPPOSITE — that no `_` name is in the list, "because no C#
+        // member lowers to one". `IdentifierStrategy` lowers a leading underscore unchanged, so
+        // every one of them is reachable by a C# field, and a test asserting they were absent was
+        // pinning the hole rather than the guard.
+        ShadowedRuntimeMembers.All.Should().Contain(["_mounted", "_renderManager", "_instances"],
+            "a leading underscore lowers unchanged, and what these corrupt is the lifecycle");
     }
 }

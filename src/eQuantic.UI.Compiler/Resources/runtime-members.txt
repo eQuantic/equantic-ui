@@ -1,3 +1,11 @@
+_instances
+_invalidationHook
+_lifecycleMounted
+_mounted
+_renderManager
+_renderScheduled
+_scheduleRender
+_sharedStateful
 build
 children
 constructor

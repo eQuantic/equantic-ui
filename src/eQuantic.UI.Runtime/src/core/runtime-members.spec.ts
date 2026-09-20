@@ -27,11 +27,15 @@ const FIXTURE = resolve(
 /** Every instance member a component inherits: the prototype chain's methods and accessors, plus
  * the own keys a fresh instance carries.
  *
- * `constructor` STAYS. It looks like plumbing rather than a member, but `Constructor` is a legal
- * C# name and the emitter lowers it like any other — `this.constructor = constructor` — over the
- * instance's own class. The runtime reads `target.constructor.$hydration` to adopt server state and
- * `this.constructor.name` when a render fails, so the component would hydrate as nothing and report
- * a failure it cannot name. Only `_`-prefixed internals are left out: no C# member lowers to one. */
+ * NOTHING is left out. `constructor` looks like plumbing rather than a member, but `Constructor` is
+ * a legal C# name and the emitter lowers it like any other — `this.constructor = constructor` — over
+ * the instance's own class, which the runtime reads `$hydration` and `name` from.
+ *
+ * The `_`-prefixed internals stay for a sharper reason: `IdentifierStrategy` lowers a leading
+ * underscore UNCHANGED (`_count` → `this._count`), and `_`-prefixed is how component state is
+ * written all over this repository. So `_mounted`, `_renderManager`, `_instances` and the rest are
+ * names a C# field reaches exactly, and the one it would corrupt is the lifecycle. They were
+ * excluded here on the reasoning that no C# member lowers to one, which is the opposite of true. */
 function membersOf(ctor: new () => object): Set<string> {
   const found = new Set<string>();
   const instance = new ctor();
@@ -43,7 +47,6 @@ function membersOf(ctor: new () => object): Set<string> {
   ) {
     for (const key of Object.getOwnPropertyNames(proto)) found.add(key);
   }
-  for (const key of [...found]) if (key.startsWith('_')) found.delete(key);
   return found;
 }
 

@@ -56,9 +56,11 @@ public static class ShadowedRuntimeMembers
     public static IReadOnlyCollection<string> All => Names;
 
     /// <summary>
-    /// Every member of <paramref name="component"/> that would land on a name the runtime uses.
-    /// A <c>_</c>-prefixed C# field is never one: the fixture excludes the runtime's own internals,
-    /// which are the only members spelled that way.
+    /// Every member of <paramref name="component"/> that would land on a name the runtime uses —
+    /// including the <c>_</c>-prefixed ones, which are the sharpest case rather than an exception.
+    /// A leading underscore lowers UNCHANGED (<c>_count</c> → <c>this._count</c>) and is how state
+    /// is written all over this repository, so <c>_mounted</c> or <c>_renderManager</c> is a field
+    /// a component can reach by accident and the thing it corrupts is the lifecycle.
     /// </summary>
     public static List<CompilationError> Check(ComponentDefinition component)
     {
