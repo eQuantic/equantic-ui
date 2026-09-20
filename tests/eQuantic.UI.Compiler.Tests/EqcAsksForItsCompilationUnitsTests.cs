@@ -41,9 +41,23 @@ public class EqcAsksForItsCompilationUnitsTests
     /// literal in the same call — <c>GetFiles</c>, <c>EnumerateFiles</c>, a <c>SearchOption</c> away
     /// from the walk that shipped. The pattern deliberately does not try to tell a "safe" walk from
     /// an unsafe one: the rule is that eqc does not enumerate its own inputs at all.
+    /// <para>
+    /// Run over the WHOLE file rather than line by line, because a line is not a unit of C#. The
+    /// same walk with its arguments one per line — which is what a formatter does to the call the
+    /// moment a <c>SearchOption</c> joins it — matched nothing at all while this read
+    /// <c>ReadAllLines</c>: measured, the pair went 2 of 2 GREEN with that walk sitting in
+    /// <c>Program.cs</c>, which is the defect this pin exists to catch, passing the pin. The line
+    /// number a failure prints is computed from the match instead (<see cref="LineOf"/>).
+    /// </para>
     /// </summary>
     private static readonly Regex Enumerates = new(
         @"(GetFiles|EnumerateFiles)\s*\([^)]*""\*\.cs""", RegexOptions.Compiled);
+
+    /// <summary>Collapses a match that spans lines onto the one line a failure message shows.</summary>
+    private static readonly Regex Whitespace = new(@"\s+", RegexOptions.Compiled);
+
+    /// <summary>The 1-based line a match starts on, so a failure names somewhere to open.</summary>
+    private static int LineOf(string text, int index) => text.AsSpan(0, index).Count('\n') + 1;
 
     [Fact]
     public void TheCliNeverEnumeratesSourceFilesItself()
@@ -62,10 +76,10 @@ public class EqcAsksForItsCompilationUnitsTests
                 continue;
             }
 
-            var lines = File.ReadAllLines(file);
-            for (var i = 0; i < lines.Length; i++)
-                if (Enumerates.IsMatch(lines[i]))
-                    offenders.Add($"{Path.GetFileName(file)}:{i + 1}  {lines[i].Trim()}");
+            var text = File.ReadAllText(file);
+            foreach (Match match in Enumerates.Matches(text))
+                offenders.Add($"{Path.GetFileName(file)}:{LineOf(text, match.Index)}  "
+                              + Whitespace.Replace(match.Value, " ").Trim());
         }
 
         offenders.Should().BeEmpty(

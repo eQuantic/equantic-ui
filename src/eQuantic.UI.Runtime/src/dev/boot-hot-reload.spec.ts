@@ -16,9 +16,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 describe('the boot only reaches for hot reload when a developer is watching', () => {
   const marker = '__eq_hmr__';
   let opened: string[];
+  let askedFor: string[];
 
   beforeEach(() => {
     opened = [];
+    askedFor = [];
     // A stub rather than happy-dom's own: the assertion is about the URL a boot ASKS FOR, and the
     // environment provides no EventSource at all — so without this the gate would look kept by a
     // boot that never had the chance to open anything.
@@ -31,6 +33,14 @@ describe('the boot only reaches for hot reload when a developer is watching', ()
       public close(): void {}
     };
     sessionStorage.setItem(marker, JSON.stringify({ url: location.href, state: {} }));
+    // Every READ is recorded, not just the removal. Leaving the marker in place is what a boot
+    // that skipped the replay looks like — and also what a boot that read it and found nothing to
+    // do looks like, so the removal alone pins only half the contract.
+    const read = sessionStorage.getItem.bind(sessionStorage);
+    vi.spyOn(sessionStorage, 'getItem').mockImplementation((key: string) => {
+      askedFor.push(key);
+      return read(key);
+    });
     // The boot reports a missing root and returns, which is the early exit this test wants; the
     // spy keeps that expected line out of the run's output.
     vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -52,15 +62,21 @@ describe('the boot only reaches for hot reload when a developer is watching', ()
 
   it('a production boot opens no stream and does not even read the marker', async () => {
     await bootAsDev(false);
+    // Snapshot BEFORE this test reaches for the marker itself — the assertion is about what the
+    // boot asked for.
+    const duringBoot = [...askedFor];
 
     expect(opened).toEqual([]);
+    expect(duringBoot).not.toContain(marker);
     expect(sessionStorage.getItem(marker)).not.toBeNull();
   });
 
-  it('a development boot opens exactly one, and consumes the marker', async () => {
+  it('a development boot opens exactly one, reads the marker and consumes it', async () => {
     await bootAsDev(true);
+    const duringBoot = [...askedFor];
 
     expect(opened).toEqual(['/_equantic/hmr']);
+    expect(duringBoot).toContain(marker);
     expect(sessionStorage.getItem(marker)).toBeNull();
   });
 });
