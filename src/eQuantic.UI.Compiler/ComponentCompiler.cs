@@ -403,6 +403,17 @@ public class ComponentCompiler
                 return result;
             }
 
+            // A member that would land on a name the runtime's component already uses is refused
+            // HERE rather than in the branch below: that one validates client LOGIC and returns
+            // early for a stateless component, and #245's StatTile is one.
+            var shadowed = Services.ShadowedRuntimeMembers.Check(component);
+            if (shadowed.Count > 0)
+            {
+                result.Success = false;
+                result.Errors.AddRange(shadowed);
+                return result;
+            }
+
             // Semantic Analysis
             SemanticModel? semanticModel = null;
             if (component.SyntaxTree != null)

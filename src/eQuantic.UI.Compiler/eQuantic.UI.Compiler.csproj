@@ -37,4 +37,11 @@
              cannot reference each other, and a rule that drifts here moves constructor arguments. -->
         <Compile Include="../Shared/CapabilityRule.cs" Link="Shared/CapabilityRule.cs" />
     </ItemGroup>
+
+  <ItemGroup>
+    <!-- The members a component already has, generated from the live runtime by
+         core/runtime-members.spec.ts. eqc refuses a C# member that would shadow one (EQ2011), and
+         the list has to travel with the CLI — which ships as tools/net10.0/eqc.dll. -->
+    <EmbeddedResource Include="Resources/runtime-members.txt" />
+  </ItemGroup>
 </Project>
