@@ -2,14 +2,18 @@
  * eQuantic.UI Runtime - Core types and interfaces
  */
 
+/**
+ * What a component IS to this runtime: a subtree it can render, and the children it holds.
+ *
+ * It used to declare nine DOM fields beside those — id, className, style, styleClass, the two
+ * attribute bags — mirrored on the base class and read by `buildAttributes`, which nothing called.
+ * Every component carried them, so every one of those names was a collision waiting for a C#
+ * parameter to be spelled the same (#245): a primary-constructor parameter lowers to a field, and
+ * a field silently overwrote the runtime's own. A page shows nothing different and a value is
+ * gone. They are deleted rather than fenced — the DOM escape hatch (`HtmlElement`) builds its
+ * attributes through `htmlNode` and read none of them.
+ */
 export interface IComponent {
-
-  id?: string;
-  className?: string;
-  style?: Record<string, string>;
-  styleClass?: StyleClass;
-  dataAttributes?: Record<string, string>;
-  ariaAttributes?: Record<string, string>;
   children: IComponent[];
   render(): HtmlNode;
 }
@@ -86,15 +90,6 @@ export type ServiceProvider = {
  */
 
 export abstract class Component implements IComponent {
-  id?: string;
-  className?: string;
-  style?: Record<string, string>;
-  styleClass?: StyleClass;
-  title?: string;
-  hidden?: boolean;
-  tabIndex?: number;
-  dataAttributes?: Record<string, string>;
-  ariaAttributes?: Record<string, string>;
   children: IComponent[] = [];
 
   constructor(props?: any) {
@@ -103,110 +98,17 @@ export abstract class Component implements IComponent {
     }
   }
 
-  // Common Events
-  onClick?: Action;
-  onDoubleClick?: Action;
-  onFocus?: Action;
-  onBlur?: Action;
-  onMouseEnter?: Action<any>;
-  onMouseLeave?: Action<any>;
-  onMouseDown?: Action<any>;
-  onMouseUp?: Action<any>;
-  onKeyDown?: Action<any>;
-  onKeyUp?: Action<any>;
-  onKeyPress?: Action<any>;
-  onChange?: Action<any>;
-  onInput?: Action<any>;
-  // A transpiled component may DECLARE one of these with the null its C# signature carries — the
-  // transpiled world produces null wherever C# produced null — so the base accepts null too.
-  onSubmit?: Action<any> | null;
-
   abstract render(): HtmlNode;
 
-  protected buildAttributes(): Record<string, string | undefined> {
-    const attrs: Record<string, string | undefined> = {};
-
-    if (this.id) attrs['id'] = this.id;
-    if (this.title) attrs['title'] = this.title;
-    if (this.hidden) attrs['hidden'] = 'true';
-    if (this.tabIndex !== undefined) attrs['tabindex'] = this.tabIndex.toString();
-
-    // Build className from className + styleClass
-    const classNames: string[] = [];
-    if (this.className) classNames.push(this.className);
-    if (this.styleClass) classNames.push(this.styleClass.generatedClassName);
-    if (classNames.length > 0) attrs['class'] = classNames.join(' ');
-
-    // Style
-    if (this.style) {
-      attrs['style'] = Object.entries(this.style)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join('; ');
-    }
-
-    // Data attributes
-    if (this.dataAttributes) {
-      for (const [key, value] of Object.entries(this.dataAttributes)) {
-        attrs[`data-${key}`] = value;
-      }
-    }
-
-    // ARIA attributes
-    if (this.ariaAttributes) {
-      for (const [key, value] of Object.entries(this.ariaAttributes)) {
-        attrs[`aria-${key}`] = value;
-      }
-    }
-
-    return attrs;
-  }
-
-  protected buildEvents(): Record<string, EventHandler> {
-    const events: Record<string, EventHandler> = {};
-
-    // Dynamic discovery of events (all props starting with 'on')
-    for (const prop of Object.keys(this)) {
-      if (prop.startsWith('on') && prop.length > 2) {
-        // e.g. onClick -> click, onMouseEnter -> mouseenter — with the DOM's own spelling where
-        // lowercasing alone is wrong (C# twin: HtmlElement.EventNameMap).
-        const lowered = prop.substring(2).toLowerCase();
-        const eventName = EVENT_NAME_EXCEPTIONS[lowered] ?? lowered;
-
-        const handler = (this as any)[prop];
-        if (handler && typeof handler === 'function') {
-          events[eventName] = handler as EventHandler;
-        }
-      }
-    }
-
-    // Merge explicit custom events (already keyed by DOM event name). Composite components such as
-    // Button forward their resolved handler set to a child element via `customEvents`; without this
-    // merge the child's render would rebuild events from its own (absent) on* props and silently drop
-    // the handler. Mirrors HtmlElement.BuildEvents() in C# (eQuantic.UI.Core).
-    const custom = (this as Record<string, unknown>).customEvents as
-      | Record<string, EventHandler>
-      | undefined;
-    if (custom) {
-      for (const [eventName, handler] of Object.entries(custom)) {
-        if (handler && typeof handler === 'function') {
-          events[eventName] = handler;
-        }
-      }
-    }
-
-    return events;
-  }
 }
 
-type Action<T = void> = (args: T) => void;
-
-/** Where the DOM's event name is not the property name lowercased: the one divergence in the C#
- * `HtmlElement.EventNameMap` is double-click, which the DOM spells `dblclick` — a listener
- * registered as "doubleclick" attaches fine and fires never. */
-const EVENT_NAME_EXCEPTIONS: Record<string, string> = {
-  doubleclick: 'dblclick',
-};
-
+/**
+ * The DOM escape hatch's base. A STUB on purpose: the C# `HtmlElement` carries sixty-odd typed DOM
+ * properties, and this side never mirrored them — it builds attributes through `htmlNode` and an
+ * untyped bag, so what a subclass needs it declares (see `DynamicElement`). What it used to have
+ * was the nine the COMPONENT base happened to declare, inherited by accident rather than by
+ * design, and paid for by every component in the tree (#245).
+ */
 export abstract class HtmlElement extends Component {
   protected get htmlNode() {
     return {

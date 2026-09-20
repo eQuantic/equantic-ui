@@ -24,8 +24,11 @@ export class DynamicElement extends HtmlElement {
   tagName = 'div';
   innerText?: string;
   customAttributes?: Record<string, string>;
-  // className/onClick/children come typed from the HtmlElement base; the config narrows
-  // structurally at the Object.assign boundary — render() below only ever needs `render()`.
+  /** An ELEMENT's class attribute, declared here rather than inherited: the base carried a DOM
+   * surface every component paid for, and this is the one reader it had (#245). */
+  className?: string;
+  /** The one event this hatch forwards, for the same reason. */
+  onClick?: EventHandler;
 
   constructor(config?: DynamicElementConfig) {
     super();
