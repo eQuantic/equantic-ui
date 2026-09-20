@@ -98,12 +98,23 @@ internal sealed class LiveRegionAnnouncer
             if (text.Length == 0) continue;               // emptied, not said
             if (_spokeAtMs.TryGetValue(mark.Path, out var last) && timeMs - last < QuietMs) continue;
             _spokeAtMs[mark.Path] = timeMs;
+            if (_pending.Count == MaxPending) _pending.RemoveAt(0);
             _pending.Add(new LiveAnnouncement(mark.Path, mark.Label, text, mark.Urgency));
         }
 
         Forget(marks);
         _seenAFrame = true;
     }
+
+    /// <summary>
+    /// How many announcements may wait to be drained. A BOUND rather than a growing list, because
+    /// `PhotonHost` is shared by every shell and only the macOS one drains today: iOS and Android
+    /// run the same host with no bridge wired, so an unbounded queue would grow for the life of the
+    /// app on exactly the two targets that cannot yet use it. When the bound is reached the OLDEST
+    /// goes — an announcement is an event whose worth expires, and the same reasoning already
+    /// decides what a region says when its quiet window opens: the current state, not the backlog.
+    /// </summary>
+    private const int MaxPending = 32;
 
     /// <summary>
     /// Everything queued since the last drain, and the queue is emptied. DRAINED rather than read:
@@ -135,10 +146,18 @@ internal sealed class LiveRegionAnnouncer
     /// Drops what this frame no longer holds. Without it a long-lived app accumulates a row per
     /// path that ever carried a live region — a list whose rows are toasts is unbounded, and a
     /// leak that only shows up after an hour is the kind nobody attributes to the right feature.
+    /// <para>
+    /// It used to open with <c>if (_said.Count == marks.Count) return;</c>, which is CORRECT only
+    /// while every mark in a frame has a distinct path: the loop above writes each current path
+    /// into <c>_said</c>, so equal counts mean nothing stale — unless two marks share one. Paths
+    /// are positional and were measured distinct, so nothing reachable broke. It is gone anyway,
+    /// because it bought a skipped scan over a handful of keys and cost a correctness argument that
+    /// rested on an invariant stated nowhere; if that invariant ever failed, what it would produce
+    /// is a stale entry that announces nothing, silently.
+    /// </para>
     /// </summary>
     private void Forget(IReadOnlyList<LiveRegionMark> marks)
     {
-        if (_said.Count == marks.Count) return;
         foreach (var path in _said.Keys.ToArray())
         {
             var held = false;

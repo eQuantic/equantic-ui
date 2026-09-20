@@ -46,6 +46,14 @@ internal static partial class PhotonAnnouncements
     internal static void Post(IntPtr window, IReadOnlyList<LiveAnnouncement> announcements)
     {
         if (window == IntPtr.Zero || announcements.Count == 0) return;
+        var notification = Symbol("NSAccessibilityAnnouncementRequestedNotification");
+        var announcementKey = Symbol("NSAccessibilityAnnouncementKey");
+        var priorityKey = Symbol("NSAccessibilityPriorityKey");
+        // Nothing rather than something wrong. A notification posted with a key AppKit does not
+        // read SUCCEEDS and says nothing, which is indistinguishable from working — so if the
+        // framework did not give up its own names, this bridge does not guess at them.
+        if (notification == IntPtr.Zero || announcementKey == IntPtr.Zero || priorityKey == IntPtr.Zero)
+            return;
         for (var i = 0; i < announcements.Count; i++)
         {
             var announcement = announcements[i];
@@ -58,21 +66,49 @@ internal static partial class PhotonAnnouncements
                 : $"{announcement.Label}: {announcement.Text}";
 
             var info = Send(objc_getClass("NSMutableDictionary"), Sel("dictionary"));
-            SendVoid(info, Sel("setObject:forKey:"), NSString(spoken), NSString(AnnouncementKey));
+            SendVoid(info, Sel("setObject:forKey:"), NSString(spoken), announcementKey);
             SendVoid(info, Sel("setObject:forKey:"),
                 Send(objc_getClass("NSNumber"), Sel("numberWithLong:"), PriorityOf(announcement.Urgency)),
-                NSString(PriorityKey));
-            PostNotificationWithUserInfo(window, NSString(AnnouncementRequested), info);
+                priorityKey);
+            PostNotificationWithUserInfo(window, notification, info);
         }
     }
 
-    // The string VALUES behind AppKit's exported symbols. Read as constants rather than
-    // dlsym'd from the framework because these three are documented, stable and have never
-    // moved — and a bridge that failed to resolve a symbol would announce nothing, silently,
-    // which is the one failure mode this whole feature exists to avoid.
-    private const string AnnouncementRequested = "AXAnnouncementRequested";
-    private const string AnnouncementKey = "AXAnnouncementKey";
-    private const string PriorityKey = "AXPriority";
+    /// <summary>
+    /// APPKIT'S OWN STRINGS, read from the framework rather than written here. The first version
+    /// spelled them as literals — `AXAnnouncementKey`, `AXAnnouncementRequested`, `AXPriority` —
+    /// with a comment arguing that a literal is safer than a symbol lookup because a failed lookup
+    /// would announce nothing silently. Review pointed out that the key literal was wrong, and that
+    /// argument is what made the mistake possible: a WRONG literal also announces nothing silently,
+    /// and unlike a failed lookup there is nothing that can notice.
+    /// <para>
+    /// So the values come from the exported symbols, which cannot be wrong by construction, and a
+    /// lookup that fails posts NOTHING rather than a payload under a key AppKit does not read —
+    /// loud in the only way available here, since a notification with the wrong key succeeds.
+    /// </para>
+    /// <para>
+    /// An exported `NSString * const` is a POINTER-SIZED SLOT holding the object, so the symbol's
+    /// address must be dereferenced once; using it directly would pass the slot as if it were the
+    /// string.
+    /// </para>
+    /// </summary>
+    private static IntPtr Symbol(string name)
+    {
+        if (_appKit == IntPtr.Zero)
+            _appKit = DlOpen("/System/Library/Frameworks/AppKit.framework/AppKit", RtldLazy);
+        if (_appKit == IntPtr.Zero) return IntPtr.Zero;
+        var slot = DlSym(_appKit, name);
+        return slot == IntPtr.Zero ? IntPtr.Zero : Marshal.ReadIntPtr(slot);
+    }
+
+    private const int RtldLazy = 1;
+    private static IntPtr _appKit;
+
+    [LibraryImport("/usr/lib/libSystem.dylib", EntryPoint = "dlopen", StringMarshalling = StringMarshalling.Utf8)]
+    private static partial IntPtr DlOpen(string path, int mode);
+
+    [LibraryImport("/usr/lib/libSystem.dylib", EntryPoint = "dlsym", StringMarshalling = StringMarshalling.Utf8)]
+    private static partial IntPtr DlSym(IntPtr handle, string symbol);
 
     [LibraryImport("/System/Library/Frameworks/AppKit.framework/AppKit",
         EntryPoint = "NSAccessibilityPostNotificationWithUserInfo")]

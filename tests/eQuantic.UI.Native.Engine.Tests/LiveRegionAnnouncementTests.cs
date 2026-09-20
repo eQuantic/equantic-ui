@@ -224,6 +224,85 @@ public class LiveRegionAnnouncementTests
         for (var frame = 0; frame < 10; frame++) Frame(host, frame * 16.7f).Should().BeEmpty();
     }
 
+    /// <summary>
+    /// ONE REGION REPLACED BY ANOTHER, with the count never moving. Distinct from the
+    /// leave-and-return case beside it, where the tree holds none for a frame: here it always holds
+    /// exactly one, and only the path changes.
+    /// <para>
+    /// NO MUTATION PROVES THIS ONE, said plainly rather than implied. It was written for a review
+    /// finding that a <c>_said.Count == marks.Count</c> shortcut in <c>Forget</c> would strand the
+    /// departed path — and it passed before the shortcut was removed, because the loop writes the
+    /// ARRIVING path into <c>_said</c> before <c>Forget</c> runs, so the counts differ exactly when
+    /// there is something to forget. The shortcut went anyway (it bought a skipped scan over a
+    /// handful of keys and cost an unstated "paths are distinct" invariant), and this case stays
+    /// because it pins behaviour nothing else does — not because it caught anything.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void ARegionSwappedForAnotherIsAnnouncedOnItsReturn()
+    {
+        var root = new Swappable();
+        var host = Host(root);
+        Frame(host, 0);
+
+        root.Which = "b";                       // one region leaves, one arrives — count stays 1
+        Frame(host, 2000).Should().ContainSingle().Which.Text.Should().Be("b");
+
+        root.Which = "a";                       // the first one returns, saying what it said before
+        Frame(host, 4000).Should().ContainSingle(
+            "it left and came back, so it is a new arrival — and a count that did not move is not "
+            + "evidence that the set did not")
+            .Which.Text.Should().Be("a");
+    }
+
+    /// <summary>Two regions at different paths; which one is present swaps, and the count does not.</summary>
+    private sealed class Swappable : StatefulComponent
+    {
+        public string Which { get; set; } = "a";
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column(gap: 0);
+            if (Which == "a") column.Add(new LiveRegion(new Text("a", TypeRole.BodyM)) { Label = "A" });
+            else column.Add(new Text("spacer", TypeRole.BodyM));
+            if (Which == "b") column.Add(new LiveRegion(new Text("b", TypeRole.BodyM)) { Label = "B" });
+            return column;
+        }
+    }
+
+    /// <summary>
+    /// THE QUEUE IS BOUNDED, because a shell that never drains must not grow for the life of the
+    /// app. `PhotonHost` is shared by every target and only the macOS bridge drains today — iOS and
+    /// Android run the same host with no bridge wired, so an unbounded queue would leak on exactly
+    /// the two platforms that cannot yet use the feature.
+    /// <para>
+    /// The OLDEST goes when the bound is reached, which is the same judgement the quiet window
+    /// already makes: an announcement is an event whose worth expires, and what a reader wants is
+    /// the latest state rather than the backlog. Asserted by never draining — the shape of the
+    /// shells this is about.
+    /// </para>
+    /// <para>Mutation: drop the `RemoveAt(0)` bound and the queue grows past it, failing here.</para>
+    /// </summary>
+    [Fact]
+    public void ThePendingQueueIsBounded_ForTheShellsThatNeverDrainIt()
+    {
+        var root = new Mutable("0");
+        var host = Host(root);
+        host.RenderFrame(new DisplayListBuilder(), 0);
+
+        // 200 changes, each past the quiet window so every one queues, and NOTHING is drained.
+        for (var step = 1; step <= 200; step++)
+        {
+            root.Text = $"{step}";
+            host.RenderFrame(new DisplayListBuilder(), step * (LiveRegionAnnouncerQuietMs + 1));
+        }
+
+        var drained = host.TakeAnnouncements();
+        drained.Should().HaveCount(32, "the queue holds a bound, not a history");
+        drained[^1].Text.Should().Be("200", "and what survives is the newest — the state a reader "
+            + "would want if it could only hear one");
+    }
+
     private const float LiveRegionAnnouncerQuietMs = 1000f;
 
     /// <summary>A region whose text a test can change between frames.</summary>
