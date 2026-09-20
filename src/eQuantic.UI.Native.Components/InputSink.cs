@@ -56,6 +56,18 @@ internal sealed class InputSink(
     /// </summary>
     public void AddComposite(FocusStop stop) => stops.Add(stop);
 
+    /// <summary>
+    /// A stop that belongs to no region of its own — a LINK's. Every other stop is registered by the
+    /// region that implies it, one for one; a link is the one shape where the two counts differ,
+    /// because it is reached per RECTANGLE by the pointer (both lines of a wrapped link) and once by
+    /// the keyboard. Suppressed inside a composite like any other, which is why it is not
+    /// <see cref="AddComposite"/>.
+    /// </summary>
+    public void Add(FocusStop stop)
+    {
+        if (!suppressFocusStops) stops.Add(stop);
+    }
+
     public void Add(HitRegion region)
     {
         // A control with nothing to DO is not somewhere Tab should ever land — disabled, or a

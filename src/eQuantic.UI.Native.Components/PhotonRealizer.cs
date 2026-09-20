@@ -46,8 +46,15 @@ public readonly record struct DragRegion(Rect Bounds, string Path, VisualNode No
 /// a node: a linked run inside a sentence is a rectangle the layout computed and a string, and the
 /// destination was the only thing the host ever asked the node for.
 /// </para>
+/// <para>
+/// The <paramref name="Path"/> is what the KEYBOARD and a screen reader name it by, and it is the
+/// node's own where there is a node. A linked run has none, so <see cref="RichTextRuns"/> gives it
+/// one — the paragraph's path with the link's index after a <c>#</c> — and the region, the focus
+/// stop and the semantic node all carry that same string (#255). A link that wraps registers one
+/// region per line under ONE path: the pointer needs both rectangles, the keyboard needs one stop.
+/// </para>
 /// </summary>
-public readonly record struct LinkRegion(Rect Bounds, string Destination);
+public readonly record struct LinkRegion(Rect Bounds, string Destination, string Path);
 
 /// <summary>Spec S8: a keyboard binding that is live because its subtree is on screen — the host
 /// dispatches a key press to the LAST registered match (the dialog on top wins the chord).</summary>
@@ -85,10 +92,16 @@ public readonly record struct CodeRegion(Rect Bounds, CodeSurface Surface, strin
 /// the pointer's rule here made the seven fields under a 200dp viewport unreachable without a
 /// mouse, with the tab order quietly looping over the five that showed.
 /// </para>
+/// <para>
+/// A stop whose <c>Destination</c> is set is a LINK, and it is FOLLOWED rather than landed on. The
+/// destination is a string rather than the <see cref="Link"/> node for the reason
+/// <see cref="LinkRegion"/> gives: the other shape this route serves — a linked run inside a
+/// sentence — has no node to carry, and the destination was all the host ever wanted.
+/// </para>
 /// </summary>
 public readonly record struct FocusStop(string Path, Pressable? Pressable, TextEntry? Entry, Rect Bounds,
     Adjustable? Adjustable = null, CodeSurface? Code = null, Navigable? Grid = null,
-    SheetSurface? Sheet = null);
+    SheetSurface? Sheet = null, string? Destination = null);
 
 /// <summary>The realized frame: the laid-out tree (absolute bounds) and the interactive hit regions.</summary>
 public sealed class RealizeResult

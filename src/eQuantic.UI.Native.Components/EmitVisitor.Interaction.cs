@@ -96,7 +96,24 @@ internal sealed partial class EmitVisitor
     {
         // Navigation surface: pure semantics — the child paints; a tap that no pressable claims
         // resolves to this region through the host's navigation seam.
-        s.Input.Add(new LinkRegion(s.Node.Bounds, link.Destination));
+        var path = s.Node.Path ?? "";
+        s.Input.Add(new LinkRegion(s.Node.Bounds, link.Destination, path));
+
+        // "Tab reaches every interactive control" (handoff, Foundations · Keyboard conventions), and
+        // a link is one — the web gets the stop and the activate from <a href> for nothing, and
+        // Photon announced a link it could then reach by neither (#255). The stop carries the
+        // DESTINATION rather than this node, because the OTHER shape this route serves has no node:
+        // see LinkRegion.
+        s.Input.Add(new FocusStop(path, null, null, s.Node.Bounds, Destination: link.Destination));
+
+        // The ring the Box arm draws for a focused control, drawn here because a link is words and
+        // has no box of its own. Radius zero: the ring follows the text's own rectangle.
+        if (s.Press.PendingFocusRing)
+        {
+            s.Press.PendingFocusRing = false;
+            FocusRing(s, s.Node.Bounds, default);
+        }
+
         foreach (var child in s.Node)
             Emit(s with { Node = child });
     }

@@ -1204,6 +1204,15 @@ public sealed class PhotonHost
             // announces as a CodeField and carries a stop of its own — the same shape of mistake as
             // the catch-all this file's NativeRole was written to end.
             if (stops[i].Path != path) continue;
+            // A LINK is FOLLOWED, never landed on: that is what a reader's double tap means, what
+            // Enter and Space mean through ActivateFocused, and what a tap already meant through
+            // ResolveLink — three routes, one seam. Asked by what the stop IS, like the two below.
+            if (stops[i].Destination is { Length: > 0 } destination)
+            {
+                if (_navigationRequested is null) return false;
+                _navigationRequested(destination);
+                return true;
+            }
             if (stops[i].Pressable is not null || stops[i].Adjustable is not null) continue;
             Land(stops[i]);
             // ARRIVING and ENTERING are the same thing for a text field and two different things

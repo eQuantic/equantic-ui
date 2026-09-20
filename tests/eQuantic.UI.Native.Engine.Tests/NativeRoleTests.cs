@@ -239,28 +239,63 @@ public class NativeRoleTests
     }
 
     /// <summary>
-    /// The one control this cannot yet be said of, pinned so the day it changes somebody is told.
-    /// A <see cref="Link"/> IS announced — it has a role, a name and a place in reading order — and
-    /// it is reachable by neither Tab nor a screen reader's activate: <c>LinkRegion</c> carries a
-    /// destination and no path, deliberately (a linked run inside a sentence is a rectangle and a
-    /// string, not a node), so there is nothing for either route to name. Closing it means deciding
-    /// what identity a linked RUN has, which is an input-route change and not this table's (#255).
+    /// WHAT THAT PIN SAID WAS MISSING, closed (#255). A <see cref="Link"/> was announced — a role, a
+    /// name, a place in reading order — and then reachable by neither Tab nor a screen reader's
+    /// activate: it sat in no <c>FocusStops</c> entry, and <c>ActivatePath</c> found no region at its
+    /// path. The web gets both from <c>&lt;a href&gt;</c> for nothing, so this was a write-once
+    /// promise only one realizer kept.
+    /// <para>
+    /// The rule is the handoff's, not this test's: "Tab reaches every interactive control"
+    /// (Foundations · Keyboard conventions), with activation on Space/Enter/double-tap.
+    /// </para>
+    /// <para>
+    /// Mutation: drop the <c>FocusStop</c> from <c>EmitLink</c> and both halves fail — the stop
+    /// assertion by name, and the activate because <c>ActivatePath</c> resolves links through it.
+    /// </para>
     /// </summary>
     [Fact]
-    public void ALinkIsAnnouncedAndReachedByNeitherTabNorActivate()
+    public void ALinkIsATabStopAndActivateFollowsIt()
     {
         var page = new Column(gap: Space.S2) { Width = SizeValue.Fill };
         page.Add(new Link("/home", new Text("home", TypeRole.Label)));
 
         var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 200);
         var frame = host.RenderFrame(new DisplayListBuilder());
+        string? followed = null;
+        host.NavigationRequested = destination => followed = destination;
 
         var link = host.Semantics().Should().ContainSingle(node => node.Role == SemanticRole.Link)
             .Which;
         NativeRole.Of(SemanticRole.Link).Activatable.Should().BeTrue(
             "every platform announces a link as something you follow");
 
-        frame.FocusStops.Should().NotContain(stop => stop.Path == link.Path);
-        host.ActivatePath(link.Path).Should().BeFalse();
+        frame.FocusStops.Should().ContainSingle(stop => stop.Path == link.Path)
+            .Which.Destination.Should().Be("/home",
+                "the stop carries what following it needs, since the other shape has no node");
+        host.ActivatePath(link.Path).Should().BeTrue();
+        followed.Should().Be("/home");
+    }
+
+    /// <summary>
+    /// The keyboard's own half, which costs nothing extra once the stop exists: Tab LANDS and Enter
+    /// FOLLOWS, because <c>ActivateFocused</c> ends in <c>ActivatePath</c> — the same seam the
+    /// reader's double tap takes. Space too, which the handoff names beside Enter.
+    /// </summary>
+    [Theory]
+    [InlineData("Enter")]
+    [InlineData(" ")]
+    public void TabLandsOnALinkAndEnterFollowsIt(string key)
+    {
+        var page = new Column(gap: Space.S2) { Width = SizeValue.Fill };
+        page.Add(new Link("/pricing", new Text("pricing", TypeRole.Label)));
+
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 200);
+        host.RenderFrame(new DisplayListBuilder());
+        string? followed = null;
+        host.NavigationRequested = destination => followed = destination;
+
+        host.KeyDown("Tab").Should().BeTrue("a link is an interactive control, so Tab reaches it");
+        host.KeyDown(key).Should().BeTrue();
+        followed.Should().Be("/pricing");
     }
 }

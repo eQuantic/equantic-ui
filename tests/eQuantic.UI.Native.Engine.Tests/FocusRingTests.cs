@@ -87,6 +87,41 @@ public class FocusRingTests
         host.Focused.Should().NotBeNull("the button still holds focus — Enter after a click must work");
     }
 
+    /// <summary>
+    /// A LINK is words, not a box — and the ring is drawn by the first Box under the focused
+    /// control. So the moment a link became focusable (#255), the ring it never claimed would have
+    /// been taken by whatever box the tree emitted NEXT: a ring around the button below, while the
+    /// keyboard sat on the link above it. The link arm draws its own and clears the pending flag.
+    /// <para>Mutation: delete that arm and the ring moves to the button, failing both halves.</para>
+    /// </summary>
+    [Fact]
+    public void AFocusedLinkRingsItselfAndNotTheBoxAfterIt()
+    {
+        var page = new Column(gap: Space.S2) { Width = SizeValue.Fill };
+        page.Add(new Link("/home", new Text("home", TypeRole.Label)));
+        page.Add(new Button("Save", onPressed: () => { }));
+
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 300, 120);
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        var link = frame.FocusStops.Single(stop => stop.Destination is not null);
+        var button = frame.FocusStops.Single(stop => stop.Pressable is not null);
+
+        host.KeyDown("Tab").Should().BeTrue();
+        var strokes = Paint(host).Where(command => command.StrokeWidth > 0).ToArray();
+
+        strokes.Should().Contain(command => Rings(command.Shape, link.Bounds),
+            "a keyboard user has nothing but the ring to tell them where they are");
+        strokes.Should().NotContain(command => Rings(command.Shape, button.Bounds),
+            "the ring belongs to what Tab landed on, not to the next control that happens to have a box");
+    }
+
+    /// <summary>A stroke that sits OUTSIDE a control, centred on it: the §01 ring rather than the
+    /// control's own border, which shares its rectangle exactly.</summary>
+    private static bool Rings(RRect shape, Rect control) =>
+        MathF.Abs(shape.Rect.Center.X - control.Center.X) < 0.5f
+        && MathF.Abs(shape.Rect.Center.Y - control.Center.Y) < 0.5f
+        && shape.Rect.Width > control.Width;
+
     [Fact]
     public void FocusedFrame_Golden()
     {

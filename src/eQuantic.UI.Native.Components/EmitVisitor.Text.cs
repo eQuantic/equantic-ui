@@ -13,17 +13,20 @@ internal sealed partial class EmitVisitor
     private void EmitTextNode(Text text, EmitState s)
     {
         EmitText(s.Node, text, s.Theme, s.Mode, s.Builder, s.Motion);
-        // A LINKED RUN is a navigation surface of its own: the layout knows which pixels
-        // the words cover, and nothing else does on a target that draws its own glyphs.
-        // Registered per fragment, so a link that wraps is pressable on both its lines.
-        if (s.Node.TextRuns is { Count: > 0 } linked)
-            foreach (var fragment in linked)
-                if (fragment.Destination is { Length: > 0 } destination)
-                    s.Input.Add(new LinkRegion(
-                        new Rect(s.Node.Bounds.X + fragment.X + RunShift(s.Node, text, fragment),
-                            s.Node.Bounds.Y + fragment.Y,
-                            fragment.Width, s.Node.Text?.LineHeight ?? s.Node.Bounds.Height),
-                        destination));
+        // A LINKED RUN is a navigation surface of its own: the layout knows which pixels the words
+        // cover, and nothing else does on a target that draws its own glyphs. The POINTER registers
+        // one region per piece, so a link that wraps is pressable on both its lines; the KEYBOARD
+        // gets one stop for the link, under the identity RichTextRuns gives it (#255).
+        foreach (var link in RichTextRuns.LinksOf(s.Node, text))
+        {
+            foreach (var rect in link.Rects)
+                s.Input.Add(new LinkRegion(rect, link.Destination, link.Path));
+            s.Input.Add(new FocusStop(link.Path, null, null, link.Bounds, Destination: link.Destination));
+
+            // Focused by PATH alone: a run is not a node, so nothing up the dispatch could have
+            // recognised it and set the pending ring.
+            if (s.Press.FocusedPath == link.Path) FocusRing(s, link.Bounds, default);
+        }
     }
 
     // Spec B9 fence: the entry renders the W4 one-line placeholder bar — value in
@@ -48,20 +51,6 @@ internal sealed partial class EmitVisitor
     /// <summary>How close to the right edge the caret may ride before the text slides: enough to
     /// see the caret itself plus a sliver of what comes next.</summary>
     private const float CaretFollowMargin = 8f;
-
-    /// <summary>
-    /// How far a rich piece slides for its LINE's alignment. Asked by the draw and by the pressable
-    /// REGION, from one function on purpose: a link that moves on screen and not in the hit test is
-    /// a link that stops working, and this repo has already shipped a canvas that drew perfectly and
-    /// answered no pointer.
-    /// </summary>
-    private static float RunShift(LayoutNode node, Text text, TextFragment fragment)
-    {
-        var lines = node.Text?.Lines;
-        return lines is not null && fragment.Line < lines.Count
-            ? text.Align.Offset(node.Bounds.Width, lines[fragment.Line].Width)
-            : 0f;
-    }
 
     /// <summary>
     /// W4: REAL text when the platform service is present — one A8 raster per block (cached by
@@ -100,7 +89,7 @@ internal sealed partial class EmitVisitor
                     float.PositiveInfinity, 1, motion.RenderScale, TextAlignment.Start);
                 if (raster is null) continue;
                 var rect = new Rect(
-                    node.Bounds.X + fragment.X + RunShift(node, text, fragment),
+                    node.Bounds.X + fragment.X + RichTextRuns.Shift(node, text, fragment),
                     node.Bounds.Y + fragment.Y - raster.PadTop / motion.RenderScale,
                     raster.Texture.Width / motion.RenderScale,
                     raster.Texture.Height / motion.RenderScale);
