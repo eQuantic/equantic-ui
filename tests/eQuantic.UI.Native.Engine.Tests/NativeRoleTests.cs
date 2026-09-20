@@ -406,35 +406,70 @@ public class NativeRoleTests
     }
 
     /// <summary>
-    /// THE SAME AGREEMENT, ONE LEVEL UP: a <c>Pressable</c> announces <see cref="SemanticRole.Button"/>
-    /// and CONSUMES what it holds, so a Link inside one is not announced — and the emit walk has to
-    /// say so too, or that link keeps a Tab stop nothing names. Measured before the fence went on:
+    /// THE TWO WALKS AGREE ABOUT WHAT ONE CONTROL IS — for every control that SWALLOWS its
+    /// subtree. Four do: each announces itself and CONSUMES what it holds, so nothing inside is
+    /// announced, and a stop that survives inside one is an offer no reader names. Three of the
+    /// four were measured wrong in turn, all with the same shape:
     /// <code>
-    /// ANNOUNCED  Button@r/0
-    /// STOPS      r/0 , r/0/0
+    /// Link over a linked run        ANNOUNCED Link@r/0    STOPS r/0 , r/0/0#0
+    /// Pressable over a Link         ANNOUNCED Button@r/0  STOPS r/0 , r/0/0
+    /// Pressable over an Adjustable  ANNOUNCED Button@r/0  STOPS r/0 , r/0/0
     /// </code>
-    /// The mirror of <see cref="ALinkOverALinkedRunIsOneStopAndOneAnnouncement"/>, and introduced by
-    /// the same fix: a link became a stop, so every control that swallows its subtree had to be one
-    /// too. Four now are — Pressable, Link, Adjustable, Navigable — for the one reason a composite
-    /// REPLACES the stops inside it rather than adding to them.
-    /// <para>Mutation: descend from <c>EmitPressable</c> with <c>s.Input</c> instead of
-    /// <c>s.Input.WithoutFocusStops()</c> and the counts diverge — two stops, one announcement.</para>
+    /// Each was found by a separate review round, which is why this ENUMERATES rather than naming
+    /// the shape that happened to be reported: the next control to swallow its subtree is caught by
+    /// a case here instead of a fifth round. The inner control varies too, because the two stops
+    /// arrive by different reasoning — a link's is a stop with no region of its own, a composite's
+    /// is a REPLACEMENT for the stops under it — and the second of those spent a release exempt
+    /// from suppression for that reason. The trees are nonsense on purpose (the web calls nested
+    /// interactive elements invalid); what matters is that the two walks say the same thing.
+    /// <para>
+    /// Mutation: descend from any of the four with <c>s.Input</c> instead of
+    /// <c>s.Input.WithoutFocusStops()</c>, or let <c>InputSink.Add(FocusStop)</c> bypass
+    /// suppression the way <c>AddComposite</c> used to, and that control's case fails alone.
+    /// </para>
     /// </summary>
-    [Fact]
-    public void APressableOverALinkIsOneStopAndOneAnnouncement()
+    [Theory]
+    [InlineData("Pressable", "Link")]
+    [InlineData("Pressable", "Adjustable")]
+    [InlineData("Link", "Link")]
+    [InlineData("Link", "Adjustable")]
+    [InlineData("Adjustable", "Link")]
+    [InlineData("Adjustable", "Adjustable")]
+    [InlineData("Navigable", "Link")]
+    [InlineData("Navigable", "Adjustable")]
+    public void AControlThatSwallowsItsSubtreeIsOneStopAndOneAnnouncement(string outer, string inner)
     {
         var page = new Column(gap: Space.S2) { Width = SizeValue.Fill };
-        page.Add(new Pressable(new Link("/inner", new Text("go", TypeRole.Label)), () => { }));
+        page.Add(Control(outer, Control(inner, new Text("go", TypeRole.Label))));
 
         var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 200);
         var frame = host.RenderFrame(new DisplayListBuilder());
 
-        host.Semantics().Where(node => node.Path.StartsWith("r/0", StringComparison.Ordinal))
-            .Should().ContainSingle("the button consumes what it wraps")
-            .Which.Role.Should().Be(SemanticRole.Button);
-
         frame.FocusStops.Where(stop => stop.Path.StartsWith("r/0", StringComparison.Ordinal))
-            .Should().ContainSingle("a stop the reader never names is an offer nothing performs")
+            .Should().ContainSingle($"a {outer} replaces the stops inside it rather than adding to "
+                                    + $"them, and the {inner} it holds is one of those")
             .Which.Path.Should().Be("r/0");
+
+        host.Semantics().Select(node => node.Path).Should().Contain("r/0",
+            "and the one stop it keeps is the one a reader names — a stop nothing announces is an "
+            + "offer nothing performs");
+    }
+
+    /// <summary>One of the four controls that swallow their subtree, wrapped around a child.</summary>
+    private static VisualNode Control(string kind, VisualNode child) => kind switch
+    {
+        "Pressable" => new Pressable(child, () => { }),
+        "Link" => new Link($"/{kind.ToLowerInvariant()}", child),
+        "Adjustable" => new Adjustable(child, _ => { }) { Label = "Budget" },
+        "Navigable" => Grid(child),
+        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "not one of the four"),
+    };
+
+    /// <summary>One row, one cell, holding whatever the case wants inside a grid.</summary>
+    private static Navigable Grid(VisualNode cell)
+    {
+        var row = new Row(gap: 0);
+        row.Add(cell);
+        return new Navigable(_ => { }, [row]) { Label = "Weeks" };
     }
 }

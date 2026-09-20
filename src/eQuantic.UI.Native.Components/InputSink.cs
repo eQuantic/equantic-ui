@@ -37,19 +37,21 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
     public InputSink WithoutFocusStops() => new(regions, Clip, suppressFocusStops: true);
 
     /// <summary>
-    /// A COMPOSITE's own stop — never suppressed, because it is the replacement for the stops inside
-    /// it rather than one more of them. An Adjustable registers one and so does a Navigable: both
-    /// are one Tab stop with a keyboard of their own, and both suppress what is underneath
-    /// (<see cref="WithoutFocusStops"/>) in the same breath.
-    /// </summary>
-    public void AddComposite(FocusStop stop) => regions.Stops.Add(stop);
-
-    /// <summary>
-    /// A stop that belongs to no region of its own — a LINK's. Every other stop is registered by the
-    /// region that implies it, one for one; a link is the one shape where the two counts differ,
-    /// because it is reached per RECTANGLE by the pointer (both lines of a wrapped link) and once by
-    /// the keyboard. Suppressed inside a composite like any other, which is why it is not
-    /// <see cref="AddComposite"/>.
+    /// A stop that belongs to no region of its own: a COMPOSITE's (an Adjustable, a Navigable — one
+    /// Tab stop with a keyboard of its own) or a LINK's. Every other stop is registered by the
+    /// region that implies it, one for one; these two are where the counts differ — a link is
+    /// reached per RECTANGLE by the pointer (both lines of a wrapped one) and once by the keyboard,
+    /// and a composite replaces the stops inside it rather than adding to them.
+    /// <para>
+    /// SUPPRESSED like every other, and a composite's is no exception — which it used to be, on the
+    /// reasoning that a replacement cannot be suppressed. That is true of a composite's OWN
+    /// suppression and of nothing else: it registers here through the sink it was handed and only
+    /// then descends with <see cref="WithoutFocusStops"/>, so the bypass never bought the case it
+    /// was written for. What it bought was the defect this PR removed twice already, once more:
+    /// an Adjustable inside a Pressable announced <c>Button@r/0</c> and stopped at <c>r/0</c> AND
+    /// <c>r/0/0</c> — a Tab stop no reader names, because the Pressable consumed the subtree in
+    /// the semantics walk.
+    /// </para>
     /// </summary>
     public void Add(FocusStop stop)
     {

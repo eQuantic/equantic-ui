@@ -78,7 +78,11 @@ internal static class RichTextRuns
     {
         if (node.TextRuns is not { Count: > 0 } fragments) return [];
 
-        var links = new List<Link>();
+        // NOTHING is allocated for a paragraph with no linked run, which is nearly every paragraph
+        // with runs at all — styled text is common, linked text is not, and this walk is on the
+        // per-frame emit path (the semantics walk asks for it too, but only when a platform reader
+        // does). The list is born on the first link instead of on the first FRAGMENT.
+        List<Link>? links = null;
         var path = node.Path ?? "";
         for (var i = 0; i < fragments.Count;)
         {
@@ -89,20 +93,24 @@ internal static class RichTextRuns
 
             var bounds = RectOf(node, text, fragments[i]);
             var words = fragments[i].Content;
-            var rects = new List<Rect> { bounds };
+            // Exactly sized: the run of adjacent fragments is already known, and an unwrapped link
+            // — one fragment — is the common case a growing list charges two allocations for.
+            var rects = new Rect[last - i + 1];
+            rects[0] = bounds;
             for (var next = i + 1; next <= last; next++)
             {
                 var rect = RectOf(node, text, fragments[next]);
-                rects.Add(rect);
+                rects[next - i] = rect;
                 words += fragments[next].Content;
                 // The FIRST line only — see the Bounds parameter for what unioning all of them costs.
                 if (fragments[next].Line == fragments[i].Line) bounds = Union(bounds, rect);
             }
 
+            links ??= [];
             links.Add(new Link($"{path}#{links.Count}", destination, bounds, words, rects));
             i = last + 1;
         }
-        return links;
+        return links ?? (IReadOnlyList<Link>)[];
     }
 
     private static Rect Union(Rect a, Rect b)

@@ -77,7 +77,7 @@ internal sealed partial class EmitVisitor
     // and neither of them answers to the arrows.
     private void EmitAdjustable(Adjustable adjustable, EmitState s)
     {
-        s.Input.AddComposite(new FocusStop(s.Node.Path ?? "", null, null, s.Node.Bounds, adjustable));
+        s.Input.Add(new FocusStop(s.Node.Path ?? "", null, null, s.Node.Bounds, adjustable));
         foreach (var child in s.Node)
             Emit(s with { Node = child, Input = s.Input.WithoutFocusStops() });
     }
@@ -90,7 +90,7 @@ internal sealed partial class EmitVisitor
     /// </summary>
     private void EmitNavigable(Navigable navigable, EmitState s)
     {
-        s.Input.AddComposite(new FocusStop(s.Node.Path ?? "", null, null, s.Node.Bounds, Grid: navigable));
+        s.Input.Add(new FocusStop(s.Node.Path ?? "", null, null, s.Node.Bounds, Grid: navigable));
         foreach (var child in s.Node)
             Emit(s with { Node = child, Input = s.Input.WithoutFocusStops() });
     }
