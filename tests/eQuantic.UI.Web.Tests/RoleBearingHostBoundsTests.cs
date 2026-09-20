@@ -1,3 +1,4 @@
+using eQuantic.UI.Components;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
 
@@ -24,13 +25,10 @@ namespace eQuantic.UI.Web.Tests;
 /// </para>
 ///
 /// <para>
-/// <b><c>SheetSurface</c> is the third instance and is deliberately NOT here.</b> It carries
-/// <c>role="grid"</c> and a tab stop over a bare block div, so it has this defect too — and a wider
-/// one: it forwards neither the child's fill nor its cap, so it is absent from
-/// <see cref="WrapperLayoutTransparencyTests"/> as well. Giving it the bounds rule means giving it
-/// the width contract first, which changes a Spreadsheet's layout rather than only its
-/// announcement. Named here rather than waved through, and filed; a hole a sweep does not mention
-/// is how a rule quietly stops being one.
+/// <c>SheetSurface</c> was the third instance and was named here as absent, because giving it the
+/// bounds rule meant giving it the width contract first — which changes a Spreadsheet's layout
+/// rather than only its announcement. It has both now (#241) and is in the roster below, where
+/// naming it as a hole was always meant to lead.
 /// </para>
 /// </summary>
 public class RoleBearingHostBoundsTests
@@ -52,6 +50,11 @@ public class RoleBearingHostBoundsTests
         // the same rule applies for the same reason — written down when the node was added rather
         // than found on a page later, which is what the two above cost.
         { "LiveRegion", new LiveRegion(HugTrack()) { Label = "Upload status" }, new LiveRegion(FillTrack()) },
+        // A grid's host is a TAB STOP as well as an announcement, so its box is also what the
+        // browser draws the focus ring on — the one place this rule is visible to someone who
+        // is not using a reader at all.
+        { "SheetSurface", new SheetSurface(HugTrack(), new SheetController()) { Label = "Budget" },
+            new SheetSurface(FillTrack(), new SheetController()) },
     };
 
     [Theory]
@@ -71,5 +74,40 @@ public class RoleBearingHostBoundsTests
             + "child's own 100% would resolve against a shrink-to-fit box and collapse");
         fillHost.Attributes.GetValueOrDefault("style", "").Should().NotContain("fit-content",
             "the two are exclusive — a host that said both would be deciding nothing");
+    }
+
+    /// <summary>
+    /// THE STEP THE OTHER TWO DID NOT NEED. <c>Progress</c> and <c>Adjustable</c> are handed a
+    /// FILLING track by every component that uses them, so the rule changed their announcement and
+    /// nothing a user could see. A <see cref="Spreadsheet"/>'s window of cells HUGS, so this one
+    /// moves a real page — which is why #241 asked for it to be measured rather than assumed.
+    /// <para>
+    /// Measured on the real component, both ways:
+    /// <code>
+    /// before  pointer-events: auto; outline: none; user-select: none
+    /// after   width: fit-content; pointer-events: auto; outline: none; user-select: none
+    /// </code>
+    /// The host stops stretching to its container and becomes the grid's own box — the box a
+    /// reader outlines, and the one the browser draws this tab stop's focus ring on.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void ARealSpreadsheetsGridHostIsTheGridsOwnBox()
+    {
+        var grid = Find(Render(new Spreadsheet(new SheetController())), "grid");
+
+        grid.Should().NotBeNull("the component announces its window of cells as a grid");
+        grid!.Attributes.GetValueOrDefault("style", "").Should().Contain("width: fit-content",
+            "the cells size themselves, so the host that names them has to size itself the same way");
+    }
+
+    /// <summary>The first element carrying <paramref name="role"/>, depth first — the page's own
+    /// order, which is the order a reader walks.</summary>
+    private static HtmlNode? Find(HtmlNode node, string role)
+    {
+        if (node.Attributes.GetValueOrDefault("role") == role) return node;
+        foreach (var child in node.Children)
+            if (Find(child, role) is { } found) return found;
+        return null;
     }
 }

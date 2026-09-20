@@ -107,10 +107,24 @@ internal sealed partial class WebLoweringVisitor
         };
         if (sheet.Label is { Length: > 0 } label) attributes["aria-label"] = label;
 
+        var sheetFills = Fills(sheet.Child);
+        var sheetCap = CapsAt(sheet.Child);
         var element = new RealizedElement("div")
         {
             Style = new HtmlStyle
             {
+                // FIT-CONTENT, not nothing: this host CARRIES THE ROLE, so its box is the bounds a
+                // reader outlines for touch exploration and the browser draws the focus ring on —
+                // and this one is a tab stop, so that ring is visible. A bare block div stretches to
+                // the container while the sheet keeps its own size, and the two stop describing the
+                // same thing; on Photon `MeasureWrapper` gives the wrapper exactly the child's
+                // bounds. The third instance of #239's rule, and the one that needed the width
+                // contract below before it could be stated at all (#241).
+                Width = sheetFills.Width ? "100%" : "fit-content",
+                // The child's cap comes THROUGH: a wrapper that takes the width and drops the
+                // maximum is the half-contract that made the Link diverge once already.
+                MaxWidth = Size(sheetCap),
+                Height = sheetFills.Height ? "100%" : null,
                 PointerEvents = "auto",
                 Outline = "none",
                 UserSelect = "none",
