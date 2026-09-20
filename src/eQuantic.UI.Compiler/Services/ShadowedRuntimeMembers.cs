@@ -177,6 +177,18 @@ public static class ShadowedRuntimeMembers
         foreach (var method in component.Methods.Where(m => !m.IsStatic && !m.IsOverride))
             Collides(method.Name, "method");
 
+        // A SERVER ACTION reaches the emission by a different door and so has to be checked by its
+        // own name. `ParseMethods` skips it deliberately — its body runs on the server and
+        // transpiling it would ship a DbContext to the browser — and the emitter then writes an RPC
+        // stub from `ServerActions` instead. So the method is absent from the list above and present
+        // in the output, which is the one combination that gets past a members-only check.
+        // Measured: `[ServerAction] public async Task Mount()` on a stateful component emitted
+        // `async mount() { return await getServerActionsClient().invoke('Panel/Mount', []) }` over
+        // the runtime's `mount(container)`, with no diagnostic — the component never mounts, and
+        // every render of it is a round trip to the server instead.
+        foreach (var action in component.ServerActions)
+            Collides(action.MethodName, "server action");
+
         return errors;
 
         void Collides(string name, string kind)
@@ -184,7 +196,12 @@ public static class ShadowedRuntimeMembers
             var lowered = name.ToCamelCase();
             if (!MembersFor(component, model).Contains(lowered)) return;
             // What the emission LOOKS like, which is the half a reader cannot see from the C#.
-            var emitted = kind == "method" ? $"{lowered}()" : $"this.{lowered}";
+            var emitted = kind switch
+            {
+                "method" => $"{lowered}()",
+                "server action" => $"async {lowered}()",
+                _ => $"this.{lowered}",
+            };
             errors.Add(new CompilationError
             {
                 Code = "EQ2011",
@@ -195,7 +212,10 @@ public static class ShadowedRuntimeMembers
                     + $"in the browser. Rename it (`{Suggest(name)}`, say)."
                     + (kind == "method"
                         ? " An `override` is exempt: replacing a base member is what one is for."
-                        : string.Empty),
+                        : kind == "server action"
+                            ? " The RPC stub the emitter writes for it lands on the same key, so the"
+                              + " `[ServerAction]` attribute is no shelter."
+                            : string.Empty),
                 SourcePath = component.SourcePath ?? string.Empty,
             });
         }

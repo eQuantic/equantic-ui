@@ -34,7 +34,8 @@ namespace eQuantic.UI.Compiler.Tests;
 public class ShadowedRuntimeMembersTests
 {
     private const string Header =
-        "using System; using eQuantic.UI.Primitives; using eQuantic.UI.Web.Components; namespace App; ";
+        "using System; using System.Threading.Tasks; using eQuantic.UI.Primitives; "
+        + "using eQuantic.UI.Web.Components; namespace App; ";
 
     private static CompilationResult Compile(string body) =>
         new ComponentCompiler().CompileSource(Header + body).Single();
@@ -74,6 +75,40 @@ public class ShadowedRuntimeMembersTests
         Compile($"public class C(string {member}) : StatelessComponent {{ "
                 + "  public override IComponent Build(RenderContext c) => new Text(\"hi\"); }")
             .Errors.Should().NotContain(error => error.Code == "EQ2011");
+    }
+
+    /// <summary>
+    /// A SERVER ACTION REACHES THE EMISSION BY A DIFFERENT DOOR. `ParseMethods` skips it on
+    /// purpose — its body runs on the server, and transpiling that shipped a `DbContext` to the
+    /// browser — and the emitter writes an RPC stub from `ServerActions` instead. Absent from the
+    /// member lists, present in the output: the one combination a members-only check cannot see.
+    /// Measured, with no diagnostic at all:
+    /// <code>
+    /// export class Panel extends StatefulComponent {
+    ///     async mount() { return await getServerActionsClient().invoke('Panel/Mount', []) }
+    /// }
+    /// </code>
+    /// over the runtime's <c>mount(container)</c> — so the component never mounts, and what
+    /// replaced its lifecycle is a round trip to the server.
+    /// <para>
+    /// Stateful, because that is where it bites: only the stateful arm calls
+    /// <c>ParseServerActions</c>, so a <c>[ServerAction]</c> on a stateless component is parsed by
+    /// neither path and emits no stub to collide with.
+    /// </para>
+    /// <para>Mutation: drop the `ServerActions` loop and this fails alone.</para>
+    /// </summary>
+    [Theory]
+    [InlineData("Mount")]
+    [InlineData("SetState")]
+    public void AServerAction_IsRefusedTheNamesItsStubWouldReplace(string member)
+    {
+        new ComponentCompiler().CompileSource(Header
+                + $"public class Panel : StatefulComponent {{ [ServerAction] public async Task {member}() "
+                + "{ await Task.Delay(1); } "
+                + "  public override VisualNode Build(ComponentContext c) => new Text(\"hi\"); }")
+            .Single(r => r.ComponentName == "Panel").Errors
+            .Should().Contain(error => error.Code == "EQ2011",
+                "the attribute keeps the BODY on the server; the stub still lands on the same key");
     }
 
     /// <summary>
