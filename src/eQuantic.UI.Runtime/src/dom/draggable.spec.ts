@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { installDraggableController, resetDraggableController } from './draggable';
 
 /**
@@ -158,5 +158,31 @@ describe('draggable controller', () => {
     surface.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
     expect(clicks).toBe(1);
+  });
+
+  /**
+   * The gesture schedules ONE thing for later: removing the click guard fifty milliseconds after
+   * the finger lifts. A page cannot lose its `document` inside that window, and a torn-down test
+   * environment can. Vitest removed ours while the timer was pending, the callback read a global
+   * that no longer existed, and a run in which all 134 files had passed failed on
+   * `document is not defined` — a red CI on a green tree. The timer holds the document it
+   * registered on, so what it cleans up cannot go missing under it.
+   */
+  it('the click guard it scheduled still cleans up after the environment is gone', () => {
+    vi.useFakeTimers();
+    const doc = globalThis.document;
+    try {
+      down(100, 100);
+      move(80, 100);
+      up(80, 100);
+
+      // What a test environment's teardown does to the global, reproduced.
+      Object.defineProperty(globalThis, 'document', { value: undefined, configurable: true });
+
+      expect(() => vi.advanceTimersByTime(60)).not.toThrow();
+    } finally {
+      Object.defineProperty(globalThis, 'document', { value: doc, configurable: true });
+      vi.useRealTimers();
+    }
   });
 });

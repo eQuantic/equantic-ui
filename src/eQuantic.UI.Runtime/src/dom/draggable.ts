@@ -99,8 +99,16 @@ function onPointerDown(down: Event): void {
 
     // An activated drag swallows the click the browser fires after pointerup — a row's own buttons
     // must not receive a tap that was really a swipe.
-    document.addEventListener('click', squashClick, { capture: true, once: true });
-    setTimeout(() => document.removeEventListener('click', squashClick, { capture: true }), 50);
+    //
+    // The timer holds the DOCUMENT it registered on rather than reading the global when it fires,
+    // and the difference is the fifty milliseconds between the two. A page cannot lose `document`
+    // in that window, but a torn-down environment can: the suite's own teardown removed the global
+    // while this was pending, the callback threw `document is not defined` where nothing could
+    // catch it, and vitest failed a run in which all 134 files had passed. Deferred cleanup carries
+    // what it cleans up.
+    const host = document;
+    host.addEventListener('click', squashClick, { capture: true, once: true });
+    setTimeout(() => host.removeEventListener('click', squashClick, { capture: true }), 50);
 
     // Report, then let the RE-RENDER place it: the caller's new RestOffset is the truth about where
     // this belongs, and gliding to a guess here would fight the frame that follows.
