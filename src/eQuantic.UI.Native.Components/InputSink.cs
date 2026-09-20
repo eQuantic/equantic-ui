@@ -79,7 +79,24 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
 
     public void Add(DragRegion region) { if (Visible(region.Bounds)) regions.Drags.Add(region); }
 
-    public void Add(LinkRegion region) { if (Visible(region.Bounds)) regions.Links.Add(region); }
+    /// <summary>
+    /// A link is registered WHEREVER it is, clipped to what shows — the one region that is not
+    /// dropped when it scrolls out of sight.
+    /// <para>
+    /// Following a link is not a pointer act. The keyboard and a reader's activate both find it by
+    /// PATH (<c>PhotonHost.ActivatePath</c>), and a focus stop deliberately survives being scrolled
+    /// away — so a region dropped off-screen made activate return TRUE and navigate nowhere:
+    /// 20 stops, 5 regions, and the reader's activate on the twentieth silently did nothing.
+    /// </para>
+    /// <para>
+    /// The RECTANGLE still obeys the clip, which is what keeps the pointer honest: a link entirely
+    /// outside intersects to zero area, and <c>Rect.Contains</c> is false for every point of a rect
+    /// whose left edge is its right one. That is the same trade <see cref="Clipped(HitRegion)"/>
+    /// makes for a half-scrolled row, taken one step further because the identity has to outlive
+    /// the visibility.
+    /// </para>
+    /// </summary>
+    public void Add(LinkRegion region) => regions.Links.Add(Clipped(region));
 
     public void Add(TextRegion region)
     {
@@ -123,6 +140,10 @@ internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool
     /// <summary>A region straddling the clip edge keeps only the part on screen — the half-scrolled
     /// row takes a tap on the half you can see, and none on the half you cannot.</summary>
     private HitRegion Clipped(HitRegion region) =>
+        Clip is { } clip ? region with { Bounds = Intersect(clip, region.Bounds) } : region;
+
+    /// <inheritdoc cref="Clipped(HitRegion)"/>
+    private LinkRegion Clipped(LinkRegion region) =>
         Clip is { } clip ? region with { Bounds = Intersect(clip, region.Bounds) } : region;
 
     private static Rect Intersect(Rect a, Rect b)
