@@ -24,11 +24,8 @@ export class DynamicElement extends HtmlElement {
   tagName = 'div';
   innerText?: string;
   customAttributes?: Record<string, string>;
-  /** An ELEMENT's class attribute, declared here rather than inherited: the base carried a DOM
-   * surface every component paid for, and this is the one reader it had (#245). */
-  className?: string;
-  /** The one event this hatch forwards, for the same reason. */
-  onClick?: EventHandler;
+  // className/onClick/children come typed from the HtmlElement base, which is where the DOM
+  // surface lives — a component carries none of it (#245).
 
   constructor(config?: DynamicElementConfig) {
     super();

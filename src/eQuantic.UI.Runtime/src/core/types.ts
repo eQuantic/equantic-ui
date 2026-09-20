@@ -102,14 +102,136 @@ export abstract class Component implements IComponent {
 
 }
 
+type Action<T = void> = (args: T) => void;
+
+/** Where the DOM's event name is not the property name lowercased: the one divergence in the C#
+ * `HtmlElement.EventNameMap` is double-click, which the DOM spells `dblclick` — a listener
+ * registered as "doubleclick" attaches fine and fires never. */
+const EVENT_NAME_EXCEPTIONS: Record<string, string> = {
+  doubleclick: 'dblclick',
+};
+
 /**
- * The DOM escape hatch's base. A STUB on purpose: the C# `HtmlElement` carries sixty-odd typed DOM
- * properties, and this side never mirrored them — it builds attributes through `htmlNode` and an
- * untyped bag, so what a subclass needs it declares (see `DynamicElement`). What it used to have
- * was the nine the COMPONENT base happened to declare, inherited by accident rather than by
- * design, and paid for by every component in the tree (#245).
+ * The DOM escape hatch's base, and the home of the DOM surface.
+ *
+ * These nine properties, the fourteen `on*` handlers and the two builders that read them used to
+ * sit on `Component`, where every component in the tree paid for them: a C# member of the same name
+ * lowers to the same key and overwrites silently (#245). They are not a component's, and they never
+ * were — the C# side puts them exactly here (`Web/Dom/HtmlElement`), which is the shape this file
+ * should have mirrored from the start.
+ *
+ * They are not dead either, which is the correction: nothing in the RUNTIME calls
+ * `buildAttributes`, but a consumer's own `class MyTag : HtmlElement` does, and eqc lowers
+ * `BuildAttributes()` to `this.buildAttributes()`. Deleting them broke the escape hatch for exactly
+ * the code it exists to serve.
  */
 export abstract class HtmlElement extends Component {
+  // DECLARE, not a field: a subclass's field declarations run AFTER `super()`, so defining these
+  // here would overwrite whatever `Component`'s constructor just took from `props` — measured, it
+  // turned `buildEvents()` into `{}`. They were plain declarations while they sat on `Component`,
+  // where the constructor runs after that class's own initialisers; one class down, the order
+  // reverses. `declare` emits nothing and keeps the types.
+  declare id?: string;
+  declare className?: string;
+  declare style?: Record<string, string>;
+  declare styleClass?: StyleClass;
+  declare title?: string;
+  declare hidden?: boolean;
+  declare tabIndex?: number;
+  declare dataAttributes?: Record<string, string>;
+  declare ariaAttributes?: Record<string, string>;
+  // Common Events
+  declare onClick?: Action;
+  declare onDoubleClick?: Action;
+  declare onFocus?: Action;
+  declare onBlur?: Action;
+  declare onMouseEnter?: Action<any>;
+  declare onMouseLeave?: Action<any>;
+  declare onMouseDown?: Action<any>;
+  declare onMouseUp?: Action<any>;
+  declare onKeyDown?: Action<any>;
+  declare onKeyUp?: Action<any>;
+  declare onKeyPress?: Action<any>;
+  declare onChange?: Action<any>;
+  declare onInput?: Action<any>;
+  // A transpiled component may DECLARE one of these with the null its C# signature carries — the
+  // transpiled world produces null wherever C# produced null — so the base accepts null too.
+  declare onSubmit?: Action<any> | null;
+
+  protected buildAttributes(): Record<string, string | undefined> {
+    const attrs: Record<string, string | undefined> = {};
+
+    if (this.id) attrs['id'] = this.id;
+    if (this.title) attrs['title'] = this.title;
+    if (this.hidden) attrs['hidden'] = 'true';
+    if (this.tabIndex !== undefined) attrs['tabindex'] = this.tabIndex.toString();
+
+    // Build className from className + styleClass
+    const classNames: string[] = [];
+    if (this.className) classNames.push(this.className);
+    if (this.styleClass) classNames.push(this.styleClass.generatedClassName);
+    if (classNames.length > 0) attrs['class'] = classNames.join(' ');
+
+    // Style
+    if (this.style) {
+      attrs['style'] = Object.entries(this.style)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join('; ');
+    }
+
+    // Data attributes
+    if (this.dataAttributes) {
+      for (const [key, value] of Object.entries(this.dataAttributes)) {
+        attrs[`data-${key}`] = value;
+      }
+    }
+
+    // ARIA attributes
+    if (this.ariaAttributes) {
+      for (const [key, value] of Object.entries(this.ariaAttributes)) {
+        attrs[`aria-${key}`] = value;
+      }
+    }
+
+    return attrs;
+  }
+
+  protected buildEvents(): Record<string, EventHandler> {
+    const events: Record<string, EventHandler> = {};
+
+    // Dynamic discovery of events (all props starting with 'on')
+    for (const prop of Object.keys(this)) {
+      if (prop.startsWith('on') && prop.length > 2) {
+        // e.g. onClick -> click, onMouseEnter -> mouseenter — with the DOM's own spelling where
+        // lowercasing alone is wrong (C# twin: HtmlElement.EventNameMap).
+        const lowered = prop.substring(2).toLowerCase();
+        const eventName = EVENT_NAME_EXCEPTIONS[lowered] ?? lowered;
+
+        const handler = (this as any)[prop];
+        if (handler && typeof handler === 'function') {
+          events[eventName] = handler as EventHandler;
+        }
+      }
+    }
+
+    // Merge explicit custom events (already keyed by DOM event name). Composite components such as
+    // Button forward their resolved handler set to a child element via `customEvents`; without this
+    // merge the child's render would rebuild events from its own (absent) on* props and silently drop
+    // the handler. Mirrors HtmlElement.BuildEvents() in C# (eQuantic.UI.Core).
+    const custom = (this as Record<string, unknown>).customEvents as
+      | Record<string, EventHandler>
+      | undefined;
+    if (custom) {
+      for (const [eventName, handler] of Object.entries(custom)) {
+        if (handler && typeof handler === 'function') {
+          events[eventName] = handler;
+        }
+      }
+    }
+
+    return events;
+  }
+
   protected get htmlNode() {
     return {
       text: (content: string) => {
