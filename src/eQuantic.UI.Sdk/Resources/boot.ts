@@ -69,24 +69,32 @@ export async function boot(): Promise<void> {
 
   // Phase 3 hot reload replay: state captured just before the HMR reload re-enters through the
   // ORDINARY SSR-hydration mechanic (window.__INITIAL_STATE__ + hydrateValue) — zero new paths.
-  try {
-    const saved = sessionStorage.getItem('__eq_hmr__');
-    if (saved) {
-      sessionStorage.removeItem('__eq_hmr__');
-      hmrReplay = true;
-      const parsed = JSON.parse(saved) as { url: string; state: Record<string, unknown> };
-      if (parsed.url === location.href) {
-        (window as unknown as { __INITIAL_STATE__?: object }).__INITIAL_STATE__ = {
-          ...((window as unknown as { __INITIAL_STATE__?: object }).__INITIAL_STATE__ ?? {}),
-          ...parsed.state,
-        };
+  //
+  // BOTH HALVES OF HOT RELOAD ASK isDev(), like every other developer facility in this file. They
+  // did not, and a production page paid for it on every load: a request to /_equantic/hmr that the
+  // server maps only in development, so a 404 in the console of every shipped app (#240), plus a
+  // sessionStorage marker read on a page that can never have written one.
+  if (isDev()) {
+    try {
+      const saved = sessionStorage.getItem('__eq_hmr__');
+      if (saved) {
+        sessionStorage.removeItem('__eq_hmr__');
+        hmrReplay = true;
+        const parsed = JSON.parse(saved) as { url: string; state: Record<string, unknown> };
+        if (parsed.url === location.href) {
+          (window as unknown as { __INITIAL_STATE__?: object }).__INITIAL_STATE__ = {
+            ...((window as unknown as { __INITIAL_STATE__?: object }).__INITIAL_STATE__ ?? {}),
+            ...parsed.state,
+          };
+        }
       }
+    } catch {
+      /* best effort */
     }
-  } catch {
-    /* best effort */
+
+    initHotReload();
   }
 
-  initHotReload();
   // The Next.js-style error modal, in the only language the developer wrote: an uncaught error's
   // JS stack walks back through the two source maps to the C# file and line, code frame included.
   if (isDev()) installErrorOverlay();
