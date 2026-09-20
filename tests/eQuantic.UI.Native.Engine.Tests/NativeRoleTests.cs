@@ -404,4 +404,37 @@ public class NativeRoleTests
         host.ActivatePath(region.Path).Should().BeTrue();
         byKeyboard.Should().Be("", "the two routes read the same region");
     }
+
+    /// <summary>
+    /// THE SAME AGREEMENT, ONE LEVEL UP: a <c>Pressable</c> announces <see cref="SemanticRole.Button"/>
+    /// and CONSUMES what it holds, so a Link inside one is not announced — and the emit walk has to
+    /// say so too, or that link keeps a Tab stop nothing names. Measured before the fence went on:
+    /// <code>
+    /// ANNOUNCED  Button@r/0
+    /// STOPS      r/0 , r/0/0
+    /// </code>
+    /// The mirror of <see cref="ALinkOverALinkedRunIsOneStopAndOneAnnouncement"/>, and introduced by
+    /// the same fix: a link became a stop, so every control that swallows its subtree had to be one
+    /// too. Four now are — Pressable, Link, Adjustable, Navigable — for the one reason a composite
+    /// REPLACES the stops inside it rather than adding to them.
+    /// <para>Mutation: descend from <c>EmitPressable</c> with <c>s.Input</c> instead of
+    /// <c>s.Input.WithoutFocusStops()</c> and the counts diverge — two stops, one announcement.</para>
+    /// </summary>
+    [Fact]
+    public void APressableOverALinkIsOneStopAndOneAnnouncement()
+    {
+        var page = new Column(gap: Space.S2) { Width = SizeValue.Fill };
+        page.Add(new Pressable(new Link("/inner", new Text("go", TypeRole.Label)), () => { }));
+
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 400, 200);
+        var frame = host.RenderFrame(new DisplayListBuilder());
+
+        host.Semantics().Where(node => node.Path.StartsWith("r/0", StringComparison.Ordinal))
+            .Should().ContainSingle("the button consumes what it wraps")
+            .Which.Role.Should().Be(SemanticRole.Button);
+
+        frame.FocusStops.Where(stop => stop.Path.StartsWith("r/0", StringComparison.Ordinal))
+            .Should().ContainSingle("a stop the reader never names is an offer nothing performs")
+            .Which.Path.Should().Be("r/0");
+    }
 }

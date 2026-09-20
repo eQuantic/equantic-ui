@@ -13,6 +13,16 @@ internal sealed partial class EmitVisitor
     private void EmitPressable(Pressable pressable, EmitState s)
     {
         s.Input.Add(new HitRegion(ExpandHitRect(s.Node.Bounds, s.Press.Density), pressable, s.Node.Path ?? ""));
+
+        // A PRESSABLE IS THE STOP FOR ITS SUBTREE, exactly as a link, an Adjustable and a Navigable
+        // are, and for the reason all four share: `Visit(Pressable)` announces and CONSUMES, so
+        // anything inside it is not announced — and a stop nothing names is an offer nothing
+        // performs. Measured on a Link inside a Pressable: announced `Button@r/0`, stops `r/0` AND
+        // `r/0/0`. A TextEntry inside one had the same shape before any of this, and takes the same
+        // answer; the tree is nonsense either way (the web calls nested interactive elements
+        // invalid), and what matters is that the two walks agree about what one control is.
+        foreach (var child in s.Node)
+            Emit(s with { Node = child, Input = s.Input.WithoutFocusStops() });
     }
 
     // Draws its subtree AS IF it were in these states. Nothing is tracked and no handler

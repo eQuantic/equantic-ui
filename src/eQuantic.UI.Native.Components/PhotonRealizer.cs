@@ -286,9 +286,7 @@ public static class PhotonRealizer
         var layout = LayoutEngine.Layout(root, viewportWidth, viewportHeight, context,
             rootStretch: StretchKind.Block);
 
-        var hits = new List<HitRegion>();
-        var hovers = new List<HoverRegion>();
-        var scrolls = new List<ScrollRegion>();
+        var regions = new FrameRegions();
         var motion = new MotionScope(timeMs, reducedMotion)
         {
             Presences = presences,
@@ -305,16 +303,7 @@ public static class PhotonRealizer
             IconCache = iconCache,
         };
         var overlays = new List<Overlay>();
-        var dragRegions = new List<DragRegion>();
-        var links = new List<LinkRegion>();
-        var shortcuts = new List<ShortcutBinding>();
-        var texts = new List<TextRegion>();
-        var stops = new List<FocusStop>();
-        var codes = new List<CodeRegion>();
-        var sheets = new List<SheetRegion>();
-        var cursors = new List<CursorRegion>();
-        var canvases = new List<CanvasRegion>();
-        var input = new InputSink(hits, hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes, sheets, cursors, canvases);
+        var input = new InputSink(regions);
         EmitVisitor.Shared.Emit(new EmitState(layout, input, new PressScope(pressed, focused, hovered, pressedPath, focusedPath, textPath, caretIndex, caretVisible, selectionStart, selectionEnd, density, hoveredPaths) { ScrollOffset = scrollOffset, MarkedText = markedText, Surface = new Rect(0, 0, viewportWidth, viewportHeight), InView = inViewStore },
             theme, mode, builder, context.ScrollMeta!, motion, overlays));
 
@@ -371,11 +360,12 @@ public static class PhotonRealizer
             }
         }
         context.Instances?.EndPass();
-        return new RealizeResult(layout, hits,
+        return new RealizeResult(layout, regions.Hits,
             motion.Active || transitions is { AnyActive: true } || presences is { AnyActive: true }
                 || drags is { AnyActive: true },
-            hovers, scrolls, dragRegions, links, shortcuts, texts, stops, codes, overlayRoots,
-            realizedLayers, sheets, cursors, canvases);
+            regions.Hovers, regions.Scrolls, regions.Drags, regions.Links, regions.Shortcuts,
+            regions.Texts, regions.Stops, regions.Codes, overlayRoots,
+            realizedLayers, regions.Sheets, regions.Cursors, regions.Canvases);
     }
 
 

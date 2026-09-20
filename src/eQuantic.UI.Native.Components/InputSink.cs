@@ -15,24 +15,12 @@ namespace eQuantic.UI.Native.Components;
 /// <para>
 /// Carrying the clip HERE rather than beside the lists is what makes it structural — a region can
 /// only be added through this sink, and this sink cannot add one it would not show. <see cref="Under"/>
-/// returns the sink for a nested clip; the lists are shared, only the rectangle narrows.
+/// returns the sink for a nested clip; the lists are shared (<see cref="FrameRegions"/>), only the
+/// rectangle narrows. A VALUE for that reason: narrowing happens at every clipping Box and every
+/// composite control, so the scoping has to be free.
 /// </para>
 /// </summary>
-internal sealed class InputSink(
-    List<HitRegion> hits,
-    List<HoverRegion> hovers,
-    List<ScrollRegion> scrolls,
-    List<DragRegion> drags,
-    List<LinkRegion> links,
-    List<ShortcutBinding> shortcuts,
-    List<TextRegion> texts,
-    List<FocusStop> stops,
-    List<CodeRegion> codes,
-    List<SheetRegion> sheets,
-    List<CursorRegion> cursors,
-    List<CanvasRegion> canvases,
-    Rect? clip = null,
-    bool suppressFocusStops = false)
+internal readonly struct InputSink(FrameRegions regions, Rect? clip = null, bool suppressFocusStops = false)
 {
     /// <summary>The visible rectangle, or null at the top level where nothing is clipped.</summary>
     public Rect? Clip { get; } = clip;
@@ -40,13 +28,13 @@ internal sealed class InputSink(
     /// <summary>The same sink, narrowed to a nested clip. Clips INTERSECT: a scroll view inside a
     /// scroll view shows only what both agree on, and so does its input.</summary>
     public InputSink Under(Rect rect) =>
-        new(hits, hovers, scrolls, drags, links, shortcuts, texts, stops, codes, sheets, cursors, canvases,
-            Clip is { } outer ? Intersect(outer, rect) : rect, suppressFocusStops);
+        new(regions, Clip is { } outer ? Intersect(outer, rect) : rect, suppressFocusStops);
 
-    /// <summary>The same sink, with Tab stops suppressed — an Adjustable IS the stop for its whole
-    /// subtree, and the pressables inside it stay pointer-only.</summary>
-    public InputSink WithoutFocusStops() =>
-        new(hits, hovers, scrolls, drags, links, shortcuts, texts, stops, codes, sheets, cursors, canvases, Clip, suppressFocusStops: true);
+    /// <summary>
+    /// The same sink, with Tab stops suppressed — a control that is ONE stop for what it holds
+    /// descends with this, so the controls inside it stay pointer-only.
+    /// </summary>
+    public InputSink WithoutFocusStops() => new(regions, Clip, suppressFocusStops: true);
 
     /// <summary>
     /// A COMPOSITE's own stop — never suppressed, because it is the replacement for the stops inside
@@ -54,7 +42,7 @@ internal sealed class InputSink(
     /// are one Tab stop with a keyboard of their own, and both suppress what is underneath
     /// (<see cref="WithoutFocusStops"/>) in the same breath.
     /// </summary>
-    public void AddComposite(FocusStop stop) => stops.Add(stop);
+    public void AddComposite(FocusStop stop) => regions.Stops.Add(stop);
 
     /// <summary>
     /// A stop that belongs to no region of its own — a LINK's. Every other stop is registered by the
@@ -65,7 +53,7 @@ internal sealed class InputSink(
     /// </summary>
     public void Add(FocusStop stop)
     {
-        if (!suppressFocusStops) stops.Add(stop);
+        if (!suppressFocusStops) regions.Stops.Add(stop);
     }
 
     public void Add(HitRegion region)
@@ -74,42 +62,42 @@ internal sealed class InputSink(
         // handler-less pressable that only exists as another control's visual. Scrolled out of
         // sight is NOT the same thing: see FocusStop.
         if (!suppressFocusStops && !region.Node.Disabled && region.Node.OnPressed is not null)
-            stops.Add(new FocusStop(region.Path, region.Node, null, region.Bounds));
+            regions.Stops.Add(new FocusStop(region.Path, region.Node, null, region.Bounds));
         if (!Visible(region.Bounds)) return;
-        hits.Add(Clipped(region));
+        regions.Hits.Add(Clipped(region));
     }
 
-    public void Add(HoverRegion region) { if (Visible(region.Bounds)) hovers.Add(region); }
+    public void Add(HoverRegion region) { if (Visible(region.Bounds)) regions.Hovers.Add(region); }
 
-    public void Add(CursorRegion region) { if (Visible(region.Bounds)) cursors.Add(region); }
+    public void Add(CursorRegion region) { if (Visible(region.Bounds)) regions.Cursors.Add(region); }
 
-    public void Add(CanvasRegion region) { if (Visible(region.Bounds)) canvases.Add(region); }
+    public void Add(CanvasRegion region) { if (Visible(region.Bounds)) regions.Canvases.Add(region); }
 
-    public void Add(ScrollRegion region) { if (Visible(region.Bounds)) scrolls.Add(region); }
+    public void Add(ScrollRegion region) { if (Visible(region.Bounds)) regions.Scrolls.Add(region); }
 
-    public void Add(DragRegion region) { if (Visible(region.Bounds)) drags.Add(region); }
+    public void Add(DragRegion region) { if (Visible(region.Bounds)) regions.Drags.Add(region); }
 
-    public void Add(LinkRegion region) { if (Visible(region.Bounds)) links.Add(region); }
+    public void Add(LinkRegion region) { if (Visible(region.Bounds)) regions.Links.Add(region); }
 
     public void Add(TextRegion region)
     {
         if (!suppressFocusStops && !region.Entry.Disabled)
-            stops.Add(new FocusStop(region.Path, null, region.Entry, region.Bounds));
+            regions.Stops.Add(new FocusStop(region.Path, null, region.Entry, region.Bounds));
         if (!Visible(region.Bounds)) return;
-        texts.Add(region);
+        regions.Texts.Add(region);
     }
 
     public void Add(CodeRegion region)
     {
         if (!suppressFocusStops)
-            stops.Add(new FocusStop(region.Path, null, null, region.Bounds, null, region.Surface));
+            regions.Stops.Add(new FocusStop(region.Path, null, null, region.Bounds, null, region.Surface));
         if (!Visible(region.Bounds)) return;
-        codes.Add(region);
+        regions.Codes.Add(region);
     }
 
     /// <summary>A chord is not a place — being on screen is the whole subscription (spec S8), and a
     /// clip has nothing to say about it.</summary>
-    public void Add(ShortcutBinding binding) => shortcuts.Add(binding);
+    public void Add(ShortcutBinding binding) => regions.Shortcuts.Add(binding);
 
     public void Add(SheetRegion region)
     {
@@ -118,9 +106,9 @@ internal sealed class InputSink(
         // ELIMINATION — which is how a Navigable stop, added later and also carrying neither, fell
         // through a branch meant for editing surfaces and put a calendar into text mode.
         if (!suppressFocusStops)
-            stops.Add(new FocusStop(region.Path, null, null, region.Bounds, Sheet: region.Surface));
+            regions.Stops.Add(new FocusStop(region.Path, null, null, region.Bounds, Sheet: region.Surface));
         if (!Visible(region.Bounds)) return;
-        sheets.Add(region);
+        regions.Sheets.Add(region);
     }
 
     /// <summary>Whether any of the region survives the clip. A region entirely outside it is drawn
