@@ -113,14 +113,25 @@ public class EqcAsksForItsCompilationUnitsTests
     /// And it DOES ask: the guard above would also pass on a CLI that read no sources at all, which
     /// is a green nobody earned. Measured together, the pair says the walk is gone AND the function
     /// that replaced it is the one being called.
+    /// <para>
+    /// An INVOCATION, for the reason its twin above parses: <c>Contains("GetCompilationUnits")</c>
+    /// over the text was already satisfied by the two sentences of comment sitting above the call,
+    /// so deleting the call and keeping the prose left this half green. A guard that a comment can
+    /// satisfy is prose checking prose.
+    /// </para>
     /// </summary>
     [Fact]
     public void AndItAsksTheHelperInstead()
     {
         var program = Path.Combine(RepoRoot(), "src", "eQuantic.Build", "Program.cs");
+        var unit = CSharpSyntaxTree
+            .ParseText(File.ReadAllText(program), ParseDefaults.Options)
+            .GetRoot();
 
-        File.ReadAllText(program).Should().Contain("GetCompilationUnits",
-            "the CLI builds its compile list from the same function the semantic model is built "
-            + "from — that agreement IS the fix #250 made");
+        unit.DescendantNodes().OfType<InvocationExpressionSyntax>()
+            .Select(call => MethodName(call.Expression))
+            .Should().Contain("GetCompilationUnits",
+                "the CLI builds its compile list from the same function the semantic model is built "
+                + "from — that agreement IS the fix #250 made");
     }
 }
