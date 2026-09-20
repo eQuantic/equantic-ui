@@ -121,8 +121,14 @@ internal sealed class PhotonAccessibility : AccessibilityNodeProvider
         // honest mapping: Android's own indeterminate ProgressBar reports no position either.
         if (node.Range is { } range)
         {
-            info.RangeInfo = AccessibilityNodeInfo.RangeInfo.Obtain(
-                AccessibilityNodeInfo.RangeInfo.RangeTypeFloat, range.Min, range.Max, range.Now);
+            // `SetRangeInfo` is a METHOD, not a property: `RangeInfo` names the nested TYPE, so
+            // `info.RangeInfo = …` is a type reference through an expression (CS0572/CS0118). And
+            // the type comes from the `RangeType` enum rather than the obsolete
+            // `RangeInfo.RangeTypeFloat` constant. Both read off the binding rather than guessed:
+            //   AccessibilityNodeInfo.RangeInfo.Obtain(RangeType, Single, Single, Single) -> RangeInfo
+            //   AccessibilityNodeInfo.SetRangeInfo(RangeInfo) -> Void
+            info.SetRangeInfo(AccessibilityNodeInfo.RangeInfo.Obtain(
+                RangeType.Float, range.Min, range.Max, range.Now));
         }
 
         // The check's state, in the platform's own words — announced in the USER's language, which
