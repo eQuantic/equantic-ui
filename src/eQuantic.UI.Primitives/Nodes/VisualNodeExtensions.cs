@@ -1,6 +1,16 @@
 namespace eQuantic.UI.Primitives;
 
-/// <summary>Composition every layer reaches for, expressed on the node itself.</summary>
+/// <summary>
+/// Composition every layer reaches for, expressed on the node itself.
+/// <para>
+/// [RuntimeProvided] because JavaScript has no extension methods: <c>node.Centered()</c> lowers to
+/// <c>VisualNodeExtensions.centered(node)</c>, so the runtime has to EXPORT a home under this exact
+/// name (<c>shared/visual-node-extensions.ts</c>) — which is the attribute's own contract. Without
+/// it the call keeps the reduced form, because this namespace also holds types the runtime
+/// deliberately does not export and a home that is not there fails the module at load.
+/// </para>
+/// </summary>
+[RuntimeProvided]
 public static class VisualNodeExtensions
 {
     /// <summary>

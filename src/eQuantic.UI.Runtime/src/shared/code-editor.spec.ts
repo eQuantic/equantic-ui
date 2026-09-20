@@ -291,8 +291,10 @@ describe('components centre like nodes', () => {
     // A Row, which the vocabulary types as a VisualNode — so this reads the two fields a Row
     // carries and the base does not; going through `unknown` is the honest way to say "the
     // concrete node, not the base".
+    // No cast on the ARGUMENT: a component is a legal receiver in C# and has to be one here,
+    // and `as never` would hide exactly the mismatch this case exists to catch.
     const centred = VisualNodeExtensions.centered(
-      new Card(new Text('hi') as never) as never,
+      new Card(new Text('hi') as never),
     ) as unknown as {
       nodeKind: string;
       children: unknown[];

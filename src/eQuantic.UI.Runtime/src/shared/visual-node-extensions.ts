@@ -1,5 +1,16 @@
+import type { Component } from '../core/types';
 import { SizeValue } from './value-types';
 import { Row, type VisualNode } from './vocabulary';
+
+/**
+ * WHAT C# CALLS A VisualNode. In C# `UiComponent : VisualNode`, so `Card(…).Centered()` compiles
+ * and a component is a legal child — but the runtime's `Component` is a separate class that carries
+ * no `nodeKind`, so TypeScript does not consider it one. Taking only `VisualNode` here made
+ * `VisualNodeExtensions.centered(new Card(…))` fail tsc in the module eqc emits for a page, which
+ * is the very call #245 is about. The instance mirror this replaced lived on BOTH classes for
+ * exactly this reason.
+ */
+type Centerable = VisualNode | Component;
 
 /** Anything a child can be added to — what C# constrains with `where T : FlexNode`. */
 type Container = VisualNode & { add(child: never): void };
@@ -23,7 +34,7 @@ export class VisualNodeExtensions {
    * centring needs SLACK, so the wrapper fills both axes and then centres — the whole rule, in
    * one place, instead of four lines repeated wherever a glyph would otherwise sit in a corner.
    */
-  static centered(node: VisualNode): VisualNode {
+  static centered(node: Centerable): VisualNode {
     const row = new Row(0, {
       width: SizeValue.fill,
       height: SizeValue.fill,
@@ -35,7 +46,7 @@ export class VisualNodeExtensions {
   }
 
   /** Add a child and hand the container back — the fluent form of `add`. */
-  static with<T extends Container>(node: T, child: VisualNode): T {
+  static with<T extends Container>(node: T, child: Centerable): T {
     node.add(child as never);
     return node;
   }

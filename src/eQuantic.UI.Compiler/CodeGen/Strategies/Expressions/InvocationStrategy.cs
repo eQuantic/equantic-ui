@@ -178,26 +178,43 @@ public class InvocationStrategy : IExpressionIrStrategy
             // their dedicated strategies run at higher priority.
             if (symbol is { IsExtensionMethod: true, ReducedFrom: not null, ContainingType: not null })
             {
-                // An extension over the RUNTIME VOCABULARY goes home too. It used to survive as a
-                // reduced form, on the reasoning that the runtime carries the behaviour as an
-                // INSTANCE method — which was true because the runtime mirrored it there for this
-                // lowering, and the mirror is what made `centered` a member of every component.
-                // A primary-constructor parameter of that name then shadowed it, and the page
-                // failed only in the browser (#245). The runtime exports the static home now, and
-                // RegisterIntroduced below routes it to the runtime's import like any other
-                // runtime-provided type.
+                // An extension over the RUNTIME VOCABULARY goes home too — but only when the runtime
+                // SAYS it provides the home, which is what [RuntimeProvided] declares and what its
+                // own doc requires ("the TS export must carry the SAME name"). `Centered` used to
+                // survive as a reduced form on the reasoning that the runtime carries the behaviour
+                // as an instance method; it did, because the runtime mirrored it there FOR this
+                // lowering, and that mirror is what made `centered` a member of every component for
+                // a primary-constructor parameter to shadow (#245).
+                //
+                // The namespace alone is not enough to decide it. `eQuantic.UI.Primitives` routes
+                // to the runtime IMPLICITLY, and the namespace holds types the runtime deliberately
+                // does not export — `CurveEvaluator` among them, the cubic-bezier solver a page
+                // never asks for because a web transition is a CSS timing function. Sending its
+                // `Ease` home would import a name the bundle has no export for, which fails the
+                // whole module at load rather than at the call. So a home without the attribute
+                // keeps the reduced form it always had.
+                var declaredHere = symbol.ContainingType.Locations.Any(location => location.IsInSource);
 
                 // An extension declared OUTSIDE this compilation has no module to go home to:
                 // emitting `MemoryExtensions.startsWith(...)` names a class the bundle never
                 // contains, and the failure surfaces as a bare "is not defined" in the browser.
-                if (!symbol.ContainingType.Locations.Any(location => location.IsInSource)
-                    && !IsFrameworkProvided(symbol.ContainingType))
+                // This stays FIRST: it is the verdict `BclSurfaceAuditTests` records for the BCL's
+                // own extensions, and reordering it around the clause below silently turned
+                // `Enumerable.Index` and `Enumerable.Shuffle` from fenced into emitted. Measured.
+                if (!declaredHere && !IsFrameworkProvided(symbol.ContainingType))
                 {
                     context.Report(invocation, ConversionSeverity.Error, "EQ2004",
                         $"'{symbol.ContainingType.ToDisplayString()}.{symbol.Name}' is an extension "
                         + "method with no JavaScript translation — the class that declares it is not "
                         + "part of this compilation, so nothing emits it. Use an instance member, or "
                         + "add a strategy for it.");
+                }
+                // A FRAMEWORK home the runtime does not declare it provides keeps the reduced form
+                // it always had — see the paragraph above for why the namespace cannot decide it.
+                else if (!declaredHere && !symbol.ContainingType.GetAttributes()
+                             .Any(a => a.AttributeClass?.Name == "RuntimeProvidedAttribute"))
+                {
+                    return JsExpr.Call(JsExpr.Member(callerIr, methodName.ToCamelCase()), argIrs);
                 }
                 // The declaring class never appears in the SOURCE (the call is reduced), so the
                 // syntax-walking import collector can't see it — register the name we introduced,

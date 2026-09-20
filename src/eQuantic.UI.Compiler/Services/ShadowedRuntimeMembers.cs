@@ -28,9 +28,12 @@ namespace eQuantic.UI.Compiler.Services;
 /// </para>
 ///
 /// <para>
-/// Only members that lower to a FIELD are checked. A C# <c>Build</c> method is meant to override
-/// the runtime's <c>build</c> — that is how a component is written — and overriding is not
-/// shadowing.
+/// What is exempt is an <c>override</c>, not a method. A C# <c>Build</c> is meant to replace the
+/// runtime's <c>build</c> — that is how a component is written — but a plain
+/// <c>public void Mount() { }</c> overrides nothing and still emits <c>mount()</c> over the
+/// runtime's <c>mount(container)</c>, so the component never mounts and nothing says why.
+/// Measured: that is the emission, and the first version of this guard let it through while a
+/// test of its own asserted it should.
 /// </para>
 /// </summary>
 public static class ShadowedRuntimeMembers
@@ -74,25 +77,34 @@ public static class ShadowedRuntimeMembers
         foreach (var field in component.ComponentFields.Where(f => !f.IsStatic))
             Collides(field.Name, "field");
 
+        foreach (var method in component.Methods.Where(m => !m.IsStatic && !m.IsOverride))
+            Collides(method.Name, "method");
+
         return errors;
 
         void Collides(string name, string kind)
         {
             var lowered = name.ToCamelCase();
             if (!Names.Contains(lowered)) return;
+            // What the emission LOOKS like, which is the half a reader cannot see from the C#.
+            var emitted = kind == "method" ? $"{lowered}()" : $"this.{lowered}";
             errors.Add(new CompilationError
             {
                 Code = "EQ2011",
                 Message =
-                    $"'{component.Name}.{name}' ({kind}) lowers to `this.{lowered}`, and a component "
+                    $"'{component.Name}.{name}' ({kind}) lowers to `{emitted}`, and a component "
                     + $"already has `{lowered}`. C# keeps a {kind} and a runtime member apart; "
-                    + "JavaScript does not, so the assignment would replace it and the page would "
-                    + $"fail only in the browser. Rename it — `{Suggest(name)}` is free.",
+                    + "JavaScript does not, so this would replace it and the page would fail only "
+                    + $"in the browser. Rename it (`{Suggest(name)}`, say)."
+                    + (kind == "method"
+                        ? " An `override` is exempt: replacing a base member is what one is for."
+                        : string.Empty),
                 SourcePath = component.SourcePath ?? string.Empty,
             });
         }
     }
 
-    /// <summary>A name the runtime does not use, built from the one that collided.</summary>
-    private static string Suggest(string name) => name.EndsWith('s') ? $"{name}Value" : $"{name}s";
+    /// <summary>A shape for the rename, not a promise: the runtime uses no `…Value` name, and
+    /// pluralising `children` into `childrens` read worse than it helped.</summary>
+    private static string Suggest(string name) => $"{name}Value";
 }

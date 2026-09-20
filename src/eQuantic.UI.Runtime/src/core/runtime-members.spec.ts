@@ -25,8 +25,13 @@ const FIXTURE = resolve(
 );
 
 /** Every instance member a component inherits: the prototype chain's methods and accessors, plus
- * the own keys a fresh instance carries. Constructors and `_`-prefixed internals are left out —
- * no C# member lowers to either. */
+ * the own keys a fresh instance carries.
+ *
+ * `constructor` STAYS. It looks like plumbing rather than a member, but `Constructor` is a legal
+ * C# name and the emitter lowers it like any other — `this.constructor = constructor` — over the
+ * instance's own class. The runtime reads `target.constructor.$hydration` to adopt server state and
+ * `this.constructor.name` when a render fails, so the component would hydrate as nothing and report
+ * a failure it cannot name. Only `_`-prefixed internals are left out: no C# member lowers to one. */
 function membersOf(ctor: new () => object): Set<string> {
   const found = new Set<string>();
   const instance = new ctor();
@@ -38,13 +43,16 @@ function membersOf(ctor: new () => object): Set<string> {
   ) {
     for (const key of Object.getOwnPropertyNames(proto)) found.add(key);
   }
-  found.delete('constructor');
   for (const key of [...found]) if (key.startsWith('_')) found.delete(key);
   return found;
 }
 
 describe('the members a component already has', () => {
   it('are what the compiler refuses to let a C# member shadow', () => {
+    // `build` is NOT filtered out of the result. Every component declares one, and it is an
+    // OVERRIDE — which the compiler exempts by the `override` keyword, not by a name missing from
+    // this list. Filtering it here would make the fixture lie about the runtime AND leave that
+    // exemption with nothing to exercise it: removing it from the guard broke no test at all.
     class Stateless extends StatelessComponent {
       build(): never {
         throw new Error('never built');
@@ -67,9 +75,7 @@ describe('the members a component already has', () => {
         ...membersOf(Stateful as never),
         ...membersOf(Bare as never),
       ]),
-    ]
-      .filter((name) => name !== 'build')
-      .sort();
+    ].sort();
 
     const written = `${members.join('\n')}\n`;
     if (process.env.EQ_UPDATE_RUNTIME_MEMBERS === '1') {

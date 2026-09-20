@@ -45,7 +45,8 @@ public class ShadowedRuntimeMembersTests
         result.Success.Should().BeFalse();
         result.Errors.Should().ContainSingle().Which.Code.Should().Be("EQ2011");
         result.Errors[0].Message.Should().Contain($"this.{member}",
-            "a diagnostic that names only the C# side leaves the reader to work out what it hit");
+            "a diagnostic that names only the C# side leaves the reader to work out what it hit — "
+            + "the emission is the half they cannot see");
     }
 
     /// <summary>A PROPERTY and a FIELD lower to the same key a parameter does, so they are refused
@@ -63,17 +64,67 @@ public class ShadowedRuntimeMembersTests
     }
 
     /// <summary>
-    /// And OVERRIDING is not shadowing. A component's `Build` is meant to replace the runtime's
-    /// `build` — that is how one is written — so a method is never refused. Without this case the
-    /// rule above would refuse every component in the tree, which is a guard nobody could ship.
+    /// AN OVERRIDE is exempt, not a method. A component's `Build` is meant to replace the runtime's
+    /// `build` — that is how one is written — and refusing it would refuse every component in the
+    /// tree.
     /// </summary>
     [Fact]
-    public void AMethodIsNeverRefused_BecauseOverridingIsTheWholePoint()
+    public void AnOverrideIsExempt_BecauseReplacingABaseMemberIsWhatOneIsFor()
     {
+        // `OnMount` is the case that makes the exemption mean something: it is `protected virtual`
+        // on `UiComponent`, a component overrides it to do work on mount, and `onMount` is in the
+        // runtime's member list — so without the exemption the guard would refuse the hook the
+        // framework exists to offer. (`Build` does NOT exercise it: the parser routes it away from
+        // `Methods` entirely, so refusing every method there breaks no test — measured.)
         Compile("public class C : StatelessComponent { "
-                + "  public void Mount() { } "
+                + "  protected override void OnMount() { } "
                 + "  public override IComponent Build(RenderContext c) => new Text(\"hi\"); }")
             .Errors.Should().NotContain(error => error.Code == "EQ2011");
+    }
+
+    /// <summary>
+    /// AND A PLAIN METHOD IS NOT. `public void Mount()` overrides nothing on the component bases —
+    /// it is a new method that happens to be spelled like one the runtime has — and the emission
+    /// does not know the difference:
+    /// <code>
+    /// export class C extends StatelessComponent {
+    ///     build(_context: BuildContext) { return new Text('hi'); }
+    ///     mount() {}
+    /// }
+    /// </code>
+    /// `mount()` REPLACES the runtime's `mount(container)`, so the component never mounts and
+    /// nothing says why. The first version of this guard skipped methods entirely, and a test of
+    /// its own asserted that `Mount` should be allowed — measured, and it was asserting the defect.
+    /// </summary>
+    [Fact]
+    public void AMethodThatOverridesNothingIsRefused_LikeAnyOtherMember()
+    {
+        var result = Compile("public class C : StatelessComponent { "
+                             + "  public void Mount() { } "
+                             + "  public override IComponent Build(RenderContext c) => new Text(\"hi\"); }");
+
+        result.Errors.Should().ContainSingle().Which.Code.Should().Be("EQ2011");
+        result.Errors[0].Message.Should().Contain("mount()",
+            "a method lowers to a method, and the message shows the shape that collided");
+        result.Errors[0].Message.Should().Contain("override",
+            "the fix is a rename OR an override, and a diagnostic that names only the rename hides "
+            + "half of it");
+    }
+
+    /// <summary>
+    /// `Constructor` is a legal C# name and lowers like any other member — `this.constructor =
+    /// constructor`, over the instance's own class. The runtime reads `target.constructor.$hydration`
+    /// to adopt server state and `this.constructor.name` when a render fails, so a component that
+    /// took the name would hydrate as nothing and report a failure it could not name. It looks like
+    /// plumbing rather than a member, which is exactly why the fixture keeps it.
+    /// </summary>
+    [Fact]
+    public void EvenConstructor_WhichLooksLikePlumbingAndIsAMember()
+    {
+        var result = Compile("public class C(string constructor) : StatelessComponent { "
+                             + "  public override IComponent Build(RenderContext c) => new Text(constructor); }");
+
+        result.Errors.Should().ContainSingle().Which.Code.Should().Be("EQ2011");
     }
 
     /// <summary>

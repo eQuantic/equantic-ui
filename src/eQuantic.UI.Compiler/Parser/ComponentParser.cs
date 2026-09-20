@@ -587,6 +587,7 @@ public class ComponentParser
                 TypeParameters = method.TypeParameterList?.Parameters.Select(p => p.Identifier.Text).ToList() ?? new List<string>(),
                 Body = method.Body?.ToString() ?? method.ExpressionBody?.Expression.ToString() ?? "",
                 IsStatic = method.Modifiers.Any(SyntaxKind.StaticKeyword),
+                IsOverride = method.Modifiers.Any(SyntaxKind.OverrideKeyword),
                 SyntaxNode = method
             };
             

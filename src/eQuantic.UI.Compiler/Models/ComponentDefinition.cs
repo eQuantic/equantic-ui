@@ -231,6 +231,14 @@ public class MethodDefinition
     /// <summary>A <c>static</c> helper belongs to the CLASS — call sites are qualified with the class
     /// name (<c>Users.initials(…)</c>), so emitting it on the prototype would break them at runtime.</summary>
     public bool IsStatic { get; set; }
+
+    /// <summary>
+    /// An <c>override</c> — the author REPLACING a base member on purpose, which is how a component
+    /// is written (<c>Build</c>). Everything else that lands on a runtime member's name replaces it
+    /// by accident, and the two are indistinguishable once emitted: a plain <c>void Mount()</c>
+    /// becomes <c>mount()</c> over the runtime's own, so the component never mounts (EQ2011).
+    /// </summary>
+    public bool IsOverride { get; set; }
     public Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax? SyntaxNode { get; set; }
     /// <summary>The body block — works for constructors too (whose declaration isn't a
     /// <see cref="Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax"/>), so the emitter can transpile and run a ctor's body.</summary>

@@ -2049,6 +2049,13 @@ public class TypeScriptEmitter
         if (semanticModel != null)
             Services.RuntimeProvidedTypeScanner.Collect(cls, semanticModel, runtimeProvided,
                 referencedEnums, appTypes: null, hostOnly: hostOnlyInSignatures);
+        // Names the CONVERSION introduced that the runtime provides — a reduced extension call sent
+        // home (`VisualNodeExtensions.centered(node)`). The scanner above walks SYNTAX, and the home
+        // appears in none: the call is written on the receiver. `UsedAppTypes` is merged below for
+        // the app-declared half of exactly this; this is the runtime-provided half, and without it a
+        // helper emitted the qualified call with no import and died on "is not defined" at load.
+        // Measured on `public static VisualNode Boxed() => new Text("x").Centered();`.
+        runtimeProvided.UnionWith(_converter.UsedRuntimeTypes);
         // A TYPE POSITION is the seventh way to name a host-only symbol and the one no expression
         // strategy can reach: `public Matrix2D Placement { get; init; }` on a component compiled,
         // emitted `import { Matrix2D } from "@equantic/runtime"`, and took the page down at
