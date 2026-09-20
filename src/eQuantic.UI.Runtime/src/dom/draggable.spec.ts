@@ -170,18 +170,20 @@ describe('draggable controller', () => {
    */
   it('the click guard it scheduled still cleans up after the environment is gone', () => {
     vi.useFakeTimers();
-    const doc = globalThis.document;
     try {
       down(100, 100);
       move(80, 100);
       up(80, 100);
 
-      // What a test environment's teardown does to the global, reproduced.
-      Object.defineProperty(globalThis, 'document', { value: undefined, configurable: true });
+      // What a test environment's teardown does to the global, reproduced. Through `stubGlobal`
+      // rather than by hand: it is what restores the ORIGINAL descriptor, and putting the value
+      // back with `defineProperty` would leave every later spec a `document` that is writable and
+      // enumerable when the environment's own was neither.
+      vi.stubGlobal('document', undefined);
 
       expect(() => vi.advanceTimersByTime(60)).not.toThrow();
     } finally {
-      Object.defineProperty(globalThis, 'document', { value: doc, configurable: true });
+      vi.unstubAllGlobals();
       vi.useRealTimers();
     }
   });
