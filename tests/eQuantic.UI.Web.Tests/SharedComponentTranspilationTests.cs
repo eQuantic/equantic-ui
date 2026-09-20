@@ -333,6 +333,50 @@ public class SharedComponentTranspilationTests
     }
 
     /// <summary>
+    /// The same question one module kind over: a RECORD whose method centres a node. A record is
+    /// emitted by its own emitter with its own import block, so "the component path merges it" says
+    /// nothing about this one.
+    /// </summary>
+    private const string RecordCentresSource = """
+        using eQuantic.UI.Primitives;
+
+        namespace App;
+
+        public record Card(string Title)
+        {
+            public VisualNode Boxed() => new Text(Title).Centered();
+        }
+        """;
+
+    /// <summary>
+    /// AND THE RECORD PATH IS ITS OWN IMPORT BLOCK. `RecordTypeEmitter.EmitModule` builds its
+    /// imports from a SYNTAX scan, and a reduced extension call names its home in no syntax — so
+    /// the third module kind repeated the second one's bug. Measured, before the fix:
+    /// <code>
+    /// import { $eq, Text } from "@equantic/runtime";
+    /// export class Card { … boxed() { return VisualNodeExtensions.centered(new Text(this.title)); } }
+    /// </code>
+    /// A qualified call to a name the module never imports, which fails at LOAD rather than at the
+    /// call — so a page holding one such record renders nothing at all.
+    /// <para>Mutation: drop the `UsedRuntimeTypes` union from the record path and the import goes
+    /// with it, while the call stays.</para>
+    /// </summary>
+    [Fact]
+    public void ARecord_ImportsTheExtensionHomeItCalls()
+    {
+        var path = Path.Combine(RepoRoot(), "tests", "eQuantic.UI.Web.Tests", "Fixtures", "Card.cs");
+        var compiler = new ComponentCompiler { SymbolsAreAuthoritative = false };
+        compiler.SetProjectCompilation(BindingCompilation(RecordCentresSource, path));
+
+        var record = compiler.CompileSource(RecordCentresSource, path)
+            .Single(result => result.ComponentName == "Card").TypeScript;
+
+        record.Should().Contain("VisualNodeExtensions.centered(", "the extension goes home here too");
+        record.Should().MatchRegex(@"import \{[^}]*\bVisualNodeExtensions\b[^}]*\} from ""@equantic/runtime""",
+            "and a record module that names a home it does not import dies at load, like any other");
+    }
+
+    /// <summary>
     /// A Primitives extension whose home the runtime does NOT provide. `CurveEvaluator` is the
     /// cubic-bezier solver behind `Curve`; on the web a transition IS a CSS timing function, so the
     /// browser evaluates the curve and the runtime exports no twin.

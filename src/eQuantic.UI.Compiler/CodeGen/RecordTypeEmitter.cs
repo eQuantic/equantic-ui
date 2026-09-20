@@ -112,6 +112,14 @@ public class RecordTypeEmitter
         runtimeProvided.Remove(type.Identifier.Text);
 
         var body = Emit(type, tsTypeDeclarations);
+        // Names the CONVERSION introduced, which is why this reads AFTER `Emit`: a reduced extension
+        // call sent home (`VisualNodeExtensions.centered(node)`) is written on the RECEIVER, so the
+        // home's name appears in no syntax the scanner above walks. The component and static-helper
+        // paths merge the same two sets for the same reason; this one did not, and measured on
+        // `public VisualNode Boxed() => new Text(Title).Centered();` it emitted
+        // `import { $eq, Text }` beside `VisualNodeExtensions.centered(...)` — a qualified call to a
+        // name the module never imports, which fails at LOAD rather than at the call.
+        runtimeProvided.UnionWith(_converter.UsedRuntimeTypes);
         // A vocabulary enum member is annotated with its UNION, a name that exists only in the
         // emitted TypeScript — the scanner above walks C# syntax and could never have seen it.
         TypeScriptEmitter.SeedEnumUnions(body, ModelFor(type)?.Compilation, runtimeProvided);
@@ -137,6 +145,12 @@ public class RecordTypeEmitter
         {
             var specReferences = new HashSet<string>();
             HydrationSpec.Members(symbol, specReferences);
+            // The APP-declared half of the same thing: an extension home the app itself owns is its
+            // own module, and the call names it without ever mentioning it in the C#.
+            foreach (var introduced in _converter.UsedAppTypes)
+                if (System.Text.RegularExpressions.Regex.IsMatch(body,
+                        $@"(?<![\w$]){System.Text.RegularExpressions.Regex.Escape(introduced)}(?![\w$])"))
+                    specReferences.Add(introduced);
             specReferences.Remove(type.Identifier.Text);
             if (baseName != null) specReferences.Remove(baseName);
             foreach (var reference in specReferences.OrderBy(n => n, StringComparer.Ordinal))

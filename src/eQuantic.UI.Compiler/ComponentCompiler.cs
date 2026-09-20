@@ -406,7 +406,13 @@ public class ComponentCompiler
             // A member that would land on a name the runtime's component already uses is refused
             // HERE rather than in the branch below: that one validates client LOGIC and returns
             // early for a stateless component, and #245's StatTile is one.
-            var shadowed = Services.ShadowedRuntimeMembers.Check(component);
+            // The MODEL is handed over so the guard can walk the base chain: an app's own base
+            // (`class Child : MyStatelessBase`) is ordinary, and the runtime members it inherits are
+            // exactly what a declared NAME cannot answer.
+            var shadowedModel = component.SyntaxTree != null
+                ? _semanticModelProvider.GetSemanticModel(component.SyntaxTree)
+                : null;
+            var shadowed = Services.ShadowedRuntimeMembers.Check(component, shadowedModel);
             if (shadowed.Count > 0)
             {
                 result.Success = false;

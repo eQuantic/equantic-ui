@@ -6,7 +6,7 @@
  * — the hydration-parity pair the cross-pinned suites guarantee.
  */
 
-import { Component } from '../core/types';
+import { HtmlElement } from '../core/types';
 import type { HtmlNode } from '../core/types';
 import type { ComponentChild, VisualNodeValue } from './nodes';
 import { ComponentInstanceStore, enterPass, exitPass } from './instance-store';
@@ -14,7 +14,19 @@ import { lowerVisualNode } from './lowering';
 import { ambientLoweringContext } from './photon-context';
 import type { AppTheme } from './value-types';
 
-export class VisualNodeComponent extends Component {
+/**
+ * Extends `HtmlElement`, not `Component`, because the C# type does (`VisualNodeComponent :
+ * HtmlElement`). While the DOM surface sat on `Component` the two agreed by accident; moving it
+ * down one class (#245) broke the twin, and TypeScript said so exactly:
+ *
+ *     TS2739: Type 'VisualNodeComponent' is missing the following properties from type
+ *             'HtmlElement': buildAttributes, buildEvents, htmlNode
+ *
+ * which is what a Core page composing `const el: HtmlElement = new VisualNodeComponent(...)` would
+ * have hit — valid C# whose emitted module no longer type-checks. The twin mirrors the C#
+ * hierarchy now, so the agreement is structural rather than incidental.
+ */
+export class VisualNodeComponent extends HtmlElement {
   private readonly node: VisualNodeValue | ComponentChild;
   private readonly theme?: AppTheme;
   private readonly _instances = new ComponentInstanceStore();

@@ -22,9 +22,13 @@ namespace eQuantic.UI.Compiler.Tests;
 ///
 /// <para>
 /// Two things make this a guard rather than a list. It refuses what the RUNTIME has, read from the
-/// live prototype chain (<c>core/runtime-members.spec.ts</c>) into a fixture the compiler embeds;
-/// and the set shrank from 46 to 17 first, because the half that shadowed silently — nine DOM
-/// fields and fourteen handlers nothing read — was deleted rather than diagnosed.
+/// live prototype chains (<c>core/runtime-members.spec.ts</c>) into a fixture the compiler embeds,
+/// keyed by BASE — <c>Component</c> 3, <c>HtmlElement</c> 6, <c>StatelessComponent</c> 16,
+/// <c>StatefulComponent</c> 27. And the set shrank first, because the half that shadowed silently
+/// was MOVED rather than diagnosed: the nine DOM properties and fourteen handlers went down to
+/// <c>HtmlElement</c> as <c>declare</c>d types, which emit nothing, so they leave the prototype
+/// chain altogether; only the two builders they feed are still real members, and they are on
+/// <c>HtmlElement</c> where a component never sees them.
 /// </para>
 /// </summary>
 public class ShadowedRuntimeMembersTests
@@ -70,6 +74,58 @@ public class ShadowedRuntimeMembersTests
         Compile($"public class C(string {member}) : StatelessComponent {{ "
                 + "  public override IComponent Build(RenderContext c) => new Text(\"hi\"); }")
             .Errors.Should().NotContain(error => error.Code == "EQ2011");
+    }
+
+    /// <summary>
+    /// AND THE CHAIN DECIDES, not the declared name. An app's own base is ordinary, and matching
+    /// only the four names the fixture keys sent every one of them to the bare <c>Component</c>
+    /// floor — three names, none of them the lifecycle. Measured, that emitted with no diagnostic
+    /// at all:
+    /// <code>
+    /// export class Child extends MyStatelessBase {
+    ///     hydrate() {}
+    ///     mount() {}
+    /// }
+    /// </code>
+    /// replacing the two <c>MyStatelessBase</c> inherited, so the component silently never mounts
+    /// and never hydrates. Two levels of app base, because one would not have shown that the walk
+    /// RECURSES rather than looking once.
+    /// <para>Mutation: drop the chain walk and both cases fail; the direct-base cases do not.</para>
+    /// </summary>
+    [Theory]
+    [InlineData("Hydrate", "hydrate")]
+    [InlineData("Mount", "mount")]
+    public void AComponentOverAnAppBase_IsRefusedWhatTheChainInherits(string member, string lowered)
+    {
+        var results = new ComponentCompiler().CompileSource(Header
+            + "public abstract class MyStatelessBase : StatelessComponent { "
+            + "  public override IComponent Build(RenderContext c) => new Text(\"base\"); } "
+            + "public abstract class Middle : MyStatelessBase { } "
+            + $"public class Child : Middle {{ public void {member}() {{ }} }}");
+
+        results.Single(r => r.ComponentName == "Child").Errors
+            .Should().Contain(error => error.Code == "EQ2011" && error.Message.Contains($"`{lowered}"),
+                "the base chain is what a component inherits, and the declared name is only its "
+                + "first link");
+    }
+
+    /// <summary>
+    /// The chain keeps the BRANCH, which is the half a walk could have flattened. An app base over
+    /// <c>HtmlElement</c> inherits the DOM builders and does NOT inherit <c>mount</c> — so
+    /// refusing <c>Mount</c> here would be round five's too-broad bug arriving by a new road.
+    /// </summary>
+    [Fact]
+    public void AnAppBaseOverTheEscapeHatch_KeepsItsSurfaceAndNoOther()
+    {
+        var results = new ComponentCompiler().CompileSource(Header
+            + "public abstract class MyElementBase : HtmlElement { } "
+            + "public class Tag : MyElementBase { public void BuildEvents() { } public void Mount() { } }");
+
+        var errors = results.Single(r => r.ComponentName == "Tag").Errors;
+        errors.Should().Contain(e => e.Code == "EQ2011" && e.Message.Contains("`buildEvents"),
+            "an HtmlElement has the builders, at any depth below it");
+        errors.Should().NotContain(e => e.Code == "EQ2011" && e.Message.Contains("`mount("),
+            "and it does not have `mount` — a walk that pooled the branches would refuse it");
     }
 
     /// <summary>A PROPERTY and a FIELD lower to the same key a parameter does, so they are refused
