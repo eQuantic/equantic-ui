@@ -37,6 +37,14 @@ const fillTrack = () => ({
 const styleOf = (node: unknown): string =>
   effectiveStyle(node as { attributes: Record<string, string | undefined> });
 
+// A controller stands in for the real one: the lowering only CLOSES OVER it (cell arithmetic on a
+// press), so a document of one cell is enough to lower the host and read its box.
+const sheetController = () =>
+  ({
+    document: { rows: 1, cols: 1, colWidth: () => 10, rowHeight: () => 10 },
+    selection: { topRow: 0, leftCol: 0, bottomRow: 0, rightCol: 0 },
+  }) as unknown as never;
+
 describe('a role-bearing host has the bounds of what it names', () => {
   for (const [name, wrap] of [
     ['progress', (child: unknown) => ({ nodeKind: 'progress', child, label: 'Uploading' })],
@@ -44,6 +52,10 @@ describe('a role-bearing host has the bounds of what it names', () => {
     // A live region's box is what a reader outlines when it announces the change inside it, so the
     // same rule applies for the same reason.
     ['liveRegion', (child: unknown) => ({ nodeKind: 'liveRegion', child, label: 'Upload status' })],
+    // A grid's host is a TAB STOP as well as an announcement, so its box is also what the
+    // browser draws the focus ring on (#241).
+    ['sheetSurface', (child: unknown) =>
+      ({ nodeKind: 'sheetSurface', child, controller: sheetController(), label: 'Budget' })],
   ] as const) {
     it(`${name} hugs a hug child and fills a fill child`, () => {
       const hug = lowerVisualNode(wrap(hugTrack()) as unknown as VisualNodeValue, ctx);

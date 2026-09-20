@@ -1136,13 +1136,25 @@ function lowerSheetSurface(
   path: string,
 ): HtmlNode {
   const child = lowerNode(node.child, context, horizontalAxis, path + '/0');
+  const fill = fills(node.child);
+  const cap = capsAt(node.child);
   // user-select off: a drag on the grid EXTENDS the sheet selection — the browser's native text
   // sweep would paint blue over the cells and fight the band.
   const view = element(
     'div',
-    // A sheet surface takes the pointer for its own cell hit-testing, so it declares itself a
-    // target — `none` inherits from any transparent row above it.
-    { 'pointer-events': 'auto', outline: 'none', 'user-select': 'none', '-webkit-user-select': 'none' },
+    {
+      // FIT-CONTENT, not nothing (C# twin: LowerSheetSurface) — this host carries role="grid" and
+      // a tabindex, so its box is what a reader outlines and what the focus ring is drawn on.
+      width: fill.width ? '100%' : 'fit-content',
+      'max-width': sizeValue(cap),
+      height: fill.height ? '100%' : undefined,
+      // A sheet surface takes the pointer for its own cell hit-testing, so it declares itself a
+      // target — `none` inherits from any transparent row above it.
+      'pointer-events': 'auto',
+      outline: 'none',
+      'user-select': 'none',
+      '-webkit-user-select': 'none',
+    },
     child ? [child] : [],
   );
   view.attributes['tabindex'] = '0';

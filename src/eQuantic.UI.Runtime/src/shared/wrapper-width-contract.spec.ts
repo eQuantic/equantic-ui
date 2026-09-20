@@ -29,6 +29,14 @@ const capped = () => ({
 const styleOf = (node: unknown): string =>
   effectiveStyle(node as { attributes: Record<string, string | undefined> });
 
+// A controller stands in for the real one: the lowering only CLOSES OVER it (cell arithmetic on a
+// press), so a document of one cell is enough to lower the host and read its box.
+const sheetController = () =>
+  ({
+    document: { rows: 1, cols: 1, colWidth: () => 10, rowHeight: () => 10 },
+    selection: { topRow: 0, leftCol: 0, bottomRow: 0, rightCol: 0 },
+  }) as unknown as never;
+
 describe('a wrapper carries the whole width contract', () => {
   for (const [name, wrap] of [
     ['pressable', (child: unknown) => ({ nodeKind: 'pressable', child, onPressed: () => {} })],
@@ -36,6 +44,8 @@ describe('a wrapper carries the whole width contract', () => {
     ['link', (child: unknown) => ({ nodeKind: 'link', child, destination: '/somewhere' })],
     ['adjustable', (child: unknown) => ({ nodeKind: 'adjustable', child, onAdjust: () => {} })],
     ['progress', (child: unknown) => ({ nodeKind: 'progress', child })],
+    // The third role-bearing host, which forwarded neither half until #241.
+    ['sheetSurface', (child: unknown) => ({ nodeKind: 'sheetSurface', child, controller: sheetController() })],
   ] as const) {
     it(`${name} passes the cap through with the fill`, () => {
       const lowered = lowerVisualNode(wrap(capped()) as unknown as VisualNodeValue, ctx);
