@@ -1,5 +1,8 @@
-using System.Text.RegularExpressions;
+using eQuantic.UI.Compiler.Services;
 using FluentAssertions;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace eQuantic.UI.Compiler.Tests;
 
@@ -37,27 +40,38 @@ public class EqcAsksForItsCompilationUnitsTests
         Path.GetFullPath(Path.Combine(Path.GetDirectoryName(sourcePath)!, "..", ".."));
 
     /// <summary>
-    /// Any enumeration of <c>.cs</c> files, in either spelling and whether or not the pattern is a
-    /// literal in the same call — <c>GetFiles</c>, <c>EnumerateFiles</c>, a <c>SearchOption</c> away
-    /// from the walk that shipped. The pattern deliberately does not try to tell a "safe" walk from
-    /// an unsafe one: the rule is that eqc does not enumerate its own inputs at all.
+    /// Any enumeration of <c>.cs</c> files, in either spelling and wherever the pattern sits in the
+    /// call — <c>GetFiles</c>, <c>EnumerateFiles</c>, a <c>SearchOption</c> away from the walk that
+    /// shipped. It deliberately does not try to tell a "safe" walk from an unsafe one: the rule is
+    /// that eqc does not enumerate its own inputs at all.
     /// <para>
-    /// Run over the WHOLE file rather than line by line, because a line is not a unit of C#. The
-    /// same walk with its arguments one per line — which is what a formatter does to the call the
-    /// moment a <c>SearchOption</c> joins it — matched nothing at all while this read
-    /// <c>ReadAllLines</c>: measured, the pair went 2 of 2 GREEN with that walk sitting in
-    /// <c>Program.cs</c>, which is the defect this pin exists to catch, passing the pin. The line
-    /// number a failure prints is computed from the match instead (<see cref="LineOf"/>).
+    /// READ AS C#, by the parser eqc itself reads with (<see cref="ParseDefaults.Options"/>), and
+    /// not as text. A regex over the source was the first shape, and it was wrong twice over, both
+    /// measured. Line by line it could not see the same walk with its arguments one per line — the
+    /// pair went 2 of 2 GREEN with that walk sitting in <c>Program.cs</c>, which is the defect this
+    /// exists to catch, passing the pin. Over the whole file it still stopped at the first close
+    /// parenthesis, so a computed root — <c>GetFiles(Path.Combine(root, "src"), "*.cs", …)</c>, an
+    /// ordinary way to write it — walked straight past. A syntax tree has neither hole, and it
+    /// cannot be satisfied by the pattern sitting in a comment or a string either.
     /// </para>
     /// </summary>
-    private static readonly Regex Enumerates = new(
-        @"(GetFiles|EnumerateFiles)\s*\([^)]*""\*\.cs""", RegexOptions.Compiled);
+    private static bool Enumerates(InvocationExpressionSyntax call) =>
+        MethodName(call.Expression) is "GetFiles" or "EnumerateFiles"
+        && call.ArgumentList.Arguments.Any(argument =>
+            argument.Expression is LiteralExpressionSyntax { Token.ValueText: "*.cs" });
 
-    /// <summary>Collapses a match that spans lines onto the one line a failure message shows.</summary>
-    private static readonly Regex Whitespace = new(@"\s+", RegexOptions.Compiled);
+    /// <summary>The method a call names, however the call reached it.</summary>
+    private static string MethodName(ExpressionSyntax callee) => callee switch
+    {
+        MemberAccessExpressionSyntax member => member.Name.Identifier.ValueText,
+        MemberBindingExpressionSyntax binding => binding.Name.Identifier.ValueText,
+        SimpleNameSyntax name => name.Identifier.ValueText,
+        _ => "",
+    };
 
-    /// <summary>The 1-based line a match starts on, so a failure names somewhere to open.</summary>
-    private static int LineOf(string text, int index) => text.AsSpan(0, index).Count('\n') + 1;
+    /// <summary>A call that spans lines, on the one line a failure message shows.</summary>
+    private static string OneLine(SyntaxNode call) =>
+        string.Join(' ', call.ToString().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 
     [Fact]
     public void TheCliNeverEnumeratesSourceFilesItself()
@@ -76,10 +90,15 @@ public class EqcAsksForItsCompilationUnitsTests
                 continue;
             }
 
-            var text = File.ReadAllText(file);
-            foreach (Match match in Enumerates.Matches(text))
-                offenders.Add($"{Path.GetFileName(file)}:{LineOf(text, match.Index)}  "
-                              + Whitespace.Replace(match.Value, " ").Trim());
+            var unit = CSharpSyntaxTree
+                .ParseText(File.ReadAllText(file), ParseDefaults.Options)
+                .GetRoot();
+            foreach (var call in unit.DescendantNodes().OfType<InvocationExpressionSyntax>())
+            {
+                if (!Enumerates(call)) continue;
+                var line = call.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
+                offenders.Add($"{Path.GetFileName(file)}:{line}  {OneLine(call)}");
+            }
         }
 
         offenders.Should().BeEmpty(
