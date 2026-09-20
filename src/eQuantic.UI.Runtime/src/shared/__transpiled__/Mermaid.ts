@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, CodeBlock, ColorToken, CornerRadii, EdgeInsets, IconGlyph, MermaidArrowhead, MermaidLayout, MermaidParser, MermaidPlacedNode, Positioned, ScrollView, SizeValue, Stack, StatelessComponent, Text, Vector } from "@equantic/runtime";
+import { Box, BoxStyle, BuildContext, CodeBlock, ColorToken, CornerRadii, EdgeInsets, IconGlyph, MermaidArrowhead, MermaidLayout, MermaidParser, MermaidPlacedNode, Positioned, ScrollView, SizeValue, Stack, StatelessComponent, Text, Vector, VisualNodeExtensions } from "@equantic/runtime";
 
 export class Mermaid extends StatelessComponent {
     static headSize: number = 9;
@@ -34,7 +34,7 @@ export class Mermaid extends StatelessComponent {
         let node = placed.node;
         if (node.shape === 'diamond') return Mermaid.diamondView(placed, theme);
         let radius = (() => { const _s = node.shape; if (_s === 'circle') return placed.h / 2; if (_s === 'rounded') return placed.h / 2; return 6; })();
-        return new Box(new BoxStyle({ width: placed.w, height: placed.h, background: theme.surface, borderColor: theme.borderStrong, borderWidth: 1, cornerRadius: new CornerRadii(radius), padding: EdgeInsets.symmetric(8, 0) }), new Text(node.label, 'label', theme.textPrimary, 2, 'center').centered());
+        return new Box(new BoxStyle({ width: placed.w, height: placed.h, background: theme.surface, borderColor: theme.borderStrong, borderWidth: 1, cornerRadius: new CornerRadii(radius), padding: EdgeInsets.symmetric(8, 0) }), VisualNodeExtensions.centered(new Text(node.label, 'label', theme.textPrimary, 2, 'center')));
     }
 
     static diamondView(placed: MermaidPlacedNode, theme: any) {
@@ -43,7 +43,7 @@ export class Mermaid extends StatelessComponent {
         let stack = new Stack('topStart', { width: side, height: side });
         stack.add(new Vector(rhombus, side, theme.borderStrong));
         stack.add(new Positioned(new Vector(rhombus, side - 6, theme.surface), 3, null, null, 3));
-        stack.add(new Box(new BoxStyle({ width: side, height: side }), new Text(placed.node.label, 'labelSmall', theme.textPrimary, 2, 'center').centered()));
+        stack.add(new Box(new BoxStyle({ width: side, height: side }), VisualNodeExtensions.centered(new Text(placed.node.label, 'labelSmall', theme.textPrimary, 2, 'center'))));
         return stack;
     }
 

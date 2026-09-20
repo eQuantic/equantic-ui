@@ -1,4 +1,4 @@
-import { Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, IconsValue, MainAlignValue, NavItem, Pressable, SizeValue, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
+import { Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, IconsValue, MainAlignValue, NavItem, Pressable, SizeValue, StatelessComponent, Text, TypeStyle, VisualNodeExtensions } from "../runtime-exports";
 
 export class NavigationRail extends StatelessComponent {
     declare $items: NavItem[];
@@ -42,7 +42,7 @@ export class NavigationRail extends StatelessComponent {
             let tint = isActive ? primary.onSubtle : theme.textMuted;
             let icon = new Icon(glyph, 20, tint);
             let iconNode = item.badgeCount > 0 ? Badge.over(icon, item.badgeCount) : icon;
-            let pill = new Box(new BoxStyle({ width: 52, height: 30, background: isActive ? primary.subtle : null, cornerRadius: new CornerRadii(theme.shape('full')) }), iconNode.centered());
+            let pill = new Box(new BoxStyle({ width: 52, height: 30, background: isActive ? primary.subtle : null, cornerRadius: new CornerRadii(theme.shape('full')) }), VisualNodeExtensions.centered(iconNode));
             let column = new Column(2, 'start', 'stretch', false, null, null, { width: SizeValue.fill, height: 56, main: 'center', cross: 'center' });
             column.add(pill);
             column.add(new Text(item.label, 'caption', tint, 1, 'start', false, false, null, 0, { styleOverride: isActive ? new TypeStyle(12, 16, 'bold', 0, Math.fround(1.3)) : null }));

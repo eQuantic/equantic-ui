@@ -11,7 +11,6 @@
 import type { AnchorPlacementValue, ComponentChild, ICanvasPainter, NavigableMoveValue } from './nodes';
 import type { NodeKind } from './node-kinds.generated';
 import type { HtmlNode } from '../core/types';
-import { setCenterWrapper } from '../core/types';
 import { iconPaths } from './icons.generated';
 import type {
   BoxStyleValue,
@@ -65,20 +64,6 @@ export abstract class VisualNode {
   /** Parity with the web `Component` contract (`getVirtualNode`), so hosts treat nodes uniformly. */
   getVirtualNode(): HtmlNode {
     return this.render();
-  }
-  /**
-   * C# twin of `VisualNodeExtensions.Centered()` — this node in the MIDDLE of whatever contains it.
-   * A Box has no alignment of its own, and centring needs slack, so the wrapper fills both axes.
-   */
-  centered(): VisualNode {
-    const row = new Row(0, {
-      width: SizeValue.fill,
-      height: SizeValue.fill,
-      main: 'center',
-      cross: 'center',
-    });
-    row.add(this);
-    return row;
   }
 }
 
@@ -1857,17 +1842,3 @@ export class Spacer extends VisualNode {
     return spacer;
   }
 }
-
-// A COMPONENT centres like any other node: in C# `Centered()` is an extension on VisualNode and a
-// component is one, so the same call has to mean the same thing here. The vocabulary hands the
-// core the wrapper's shape at import time rather than being imported by it (no evaluation cycle).
-setCenterWrapper((child) => {
-  const row = new Row(0, {
-    width: SizeValue.fill,
-    height: SizeValue.fill,
-    main: 'center',
-    cross: 'center',
-  });
-  row.add(child as never);
-  return row;
-});

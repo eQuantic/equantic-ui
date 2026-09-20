@@ -1,4 +1,4 @@
-import { Adjustable, Box, BoxStyle, BuildContext, Column, CornerRadii, Pressable, Row, SizeValue, Sizing, StatelessComponent, Text, VisualNode } from "@equantic/runtime";
+import { Adjustable, Box, BoxStyle, BuildContext, Column, CornerRadii, Pressable, Row, SizeValue, Sizing, StatelessComponent, Text, VisualNode, VisualNodeExtensions } from "@equantic/runtime";
 
 export class RadioGroup extends StatelessComponent {
     declare options: string[];
@@ -29,7 +29,7 @@ export class RadioGroup extends StatelessComponent {
         for (let i = 0; i < this.options.length; i++) {
             let isSelected = i === this.selected;
             let index = i;
-            let circleContent = isSelected ? new Box(new BoxStyle({ width: Sizing.radioDot(context.density), height: Sizing.radioDot(context.density), background: primary.base, cornerRadius: new CornerRadii(theme.shape('full')) })).centered() : null;
+            let circleContent = isSelected ? VisualNodeExtensions.centered(new Box(new BoxStyle({ width: Sizing.radioDot(context.density), height: Sizing.radioDot(context.density), background: primary.base, cornerRadius: new CornerRadii(theme.shape('full')) }))) : null;
             let circle = new Box(new BoxStyle({ width: Sizing.selectionBox(context.density), height: Sizing.selectionBox(context.density), cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: 2, borderColor: isSelected ? primary.base : theme.borderStrong }), circleContent);
             let row = new Row(12, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: 44 });
             row.add(circle);

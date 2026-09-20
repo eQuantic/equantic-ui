@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, CornerRadii, Icon, Pressable, SizeVariantValue, Sizing, StatelessComponent, StyleDiff } from "@equantic/runtime";
+import { Box, BoxStyle, BuildContext, CornerRadii, Icon, Pressable, SizeVariantValue, Sizing, StatelessComponent, StyleDiff, VisualNodeExtensions } from "@equantic/runtime";
 
 export class IconButton extends StatelessComponent {
     declare glyph: Icon;
@@ -44,7 +44,7 @@ export class IconButton extends StatelessComponent {
         }
         let filledGlyph: any; 
         let glyph = (this.selected && (filledGlyph = this.selectedGlyph) != null ? filledGlyph : this.glyph).glyph;
-        let content = new Icon(glyph, iconSize, tint).centered();
+        let content = VisualNodeExtensions.centered(new Icon(glyph, iconSize, tint));
         let pressedFill = (() => { const _s = this.kind; if (_s === 'filled') return primary.pressed; if (_s === 'tonal') return primary.pressed.withOpacity(Math.fround(0.24)); return theme.surfaceSubtle; })();
         let hoverFill = (() => { const _s = this.kind; if (_s === 'filled') return primary.hover; if (_s === 'tonal') return primary.subtle.midpointWith(primary.pressed.withOpacity(Math.fround(0.24))); return theme.surfaceSubtle; })();
         let box = new Box(new BoxStyle({ width: side, height: side, background: fill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: this.kind === 'outline' ? 1 : 0, borderColor: theme.borderStrong, hover: this.disabled ? null : new StyleDiff({ background: hoverFill }) }), content);

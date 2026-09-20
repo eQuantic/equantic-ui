@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Positioned, Stack, StatelessComponent, Text, TypeStyle, VariantValue, VisualNode } from "@equantic/runtime";
+import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Positioned, Stack, StatelessComponent, Text, TypeStyle, VariantValue, VisualNode, VisualNodeExtensions } from "@equantic/runtime";
 
 export class Badge extends StatelessComponent {
     declare count: number;
@@ -34,7 +34,7 @@ export class Badge extends StatelessComponent {
         }
         let label = this.count > this.max ? `${this.max}+` : `${this.count}`;
         let text = new Text(label, 'caption', textColor, 1, 'start', false, false, null, 0, { styleOverride: new TypeStyle(10, 12, 'bold', 0, Math.fround(1.3)) });
-        let content = text.centered();
+        let content = VisualNodeExtensions.centered(text);
         return new Box(new BoxStyle({ height: this.ring ? 20 : 16, minWidth: this.ring ? 20 : 16, padding: EdgeInsets.symmetric(4, 0), background: fill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: this.ring ? 2 : 0, borderColor: theme.surface }), content);
     }
 

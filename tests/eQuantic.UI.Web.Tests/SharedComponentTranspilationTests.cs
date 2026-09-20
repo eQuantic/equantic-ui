@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using eQuantic.UI.Compiler;
 using FluentAssertions;
 using Microsoft.CodeAnalysis;
@@ -244,6 +245,44 @@ public class SharedComponentTranspilationTests
         emitted.Should().ContainSingle(result => result.ComponentName == "PretendHelper");
         emitted.Single().Success.Should().BeTrue(
             string.Join("; ", emitted.Single().Errors.Select(error => error.Message)));
+    }
+
+    /// <summary>
+    /// AN EXTENSION GOES HOME, and an extension over the runtime VOCABULARY is no exception. JS has
+    /// none, so <c>node.Centered()</c> lowers to <c>VisualNodeExtensions.centered(node)</c> with the
+    /// receiver first — the shape every other reduced call already took.
+    /// <para>
+    /// It used to survive as a reduced call, on the reasoning that the runtime carries the
+    /// behaviour as an instance method. It did, because the runtime mirrored it there for this
+    /// lowering — on <c>VisualNode</c> AND on <c>Component</c>, with a <c>setCenterWrapper</c> seam
+    /// between them to break the import cycle that arrangement created. Three artefacts, and the
+    /// collision in #245: <c>class StatTile(string label, bool centered = false)</c> lowered its
+    /// captured parameter to a field of that name, the field shadowed the method, and the page
+    /// failed only in the browser — <c>statTile(...).centered is not a function</c>.
+    /// </para>
+    /// <para>
+    /// Asked HERE because this is the pipeline where symbols bind. The same question asked of
+    /// <c>ComponentCompiler.CompileSource</c> with no project compilation answers
+    /// <c>.centered()</c> under either lowering — measured, which is why the coverage test that
+    /// used to ask it there is gone rather than inverted.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void AnExtensionOverTheRuntimeVocabulary_GoesHomeToItsStatic()
+    {
+        var modules = TranspileSharedComponents();
+
+        var home = modules.Where(module => module.Value.Contains("VisualNodeExtensions.centered(",
+            StringComparison.Ordinal)).Select(module => module.Key).ToList();
+        home.Should().NotBeEmpty("the shared library centres nodes in a dozen places");
+
+        var reduced = modules
+            .Where(module => Regex.IsMatch(module.Value, @"(?<!VisualNodeExtensions)\.centered\("))
+            .Select(module => module.Key)
+            .ToList();
+        reduced.Should().BeEmpty(
+            "an instance `centered()` is a member every component carries, and a component's own "
+            + "primary-constructor parameter named `centered` shadows it (#245)");
     }
 
     [Fact]

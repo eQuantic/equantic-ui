@@ -275,16 +275,25 @@ describe('code editor (the component, end to end)', () => {
  * A COMPONENT centres like any other node. In C# `Centered()` is an extension on VisualNode, and
  * a component is one — so `Card(…).Centered()` compiled there and called nothing here: the page
  * mounted with "centered is not a function" and the frame went blank.
+ *
+ * The answer was an instance method mirrored on `Component` AND on `VisualNode`, and it cost the
+ * collision in #245: a component written `class StatTile(string label, bool centered = false)`
+ * lowered its captured parameter to a field of that name, which shadowed the method, and the page
+ * failed only in the browser again. The extension lowers to its STATIC home now, which a field
+ * cannot shadow — so what this case pins is the same behaviour reached the way JavaScript reaches
+ * it.
  */
 describe('components centre like nodes', () => {
-  it('a component exposes centered() the way the vocabulary does', async () => {
+  it('a component centres through the extension home, as any node does', async () => {
     const { Card } = await import('./components/Card');
     const { Text } = await import('./vocabulary');
+    const { VisualNodeExtensions } = await import('./visual-node-extensions');
     // A Row, which the vocabulary types as a VisualNode — so this reads the two fields a Row
-    // carries and the base does not. The cast used to be free because `centered()` answered
-    // `unknown`; it now answers VisualNode, and going through `unknown` is the honest way to say
-    // "the concrete node, not the base".
-    const centred = new Card(new Text('hi') as never).centered() as unknown as {
+    // carries and the base does not; going through `unknown` is the honest way to say "the
+    // concrete node, not the base".
+    const centred = VisualNodeExtensions.centered(
+      new Card(new Text('hi') as never) as never,
+    ) as unknown as {
       nodeKind: string;
       children: unknown[];
     };
@@ -297,10 +306,9 @@ describe('components centre like nodes', () => {
 
     // A TYPE-level pin, and the assertion below is almost beside the point: what this case guards
     // is that the LINE COMPILES. In C# `UiComponent` derives from `VisualNode`, so eqc emits
-    // `let x: VisualNode = new SomeComponent()` verbatim — and until `centered()` stopped
-    // answering `unknown`, which is assignable to nothing, that emission did not typecheck. The
-    // failure comes from `tsc`, never from a run, which is why it went unnoticed until the first
-    // component was assigned to one.
+    // `let x: VisualNode = new SomeComponent()` verbatim, and that emission has to typecheck here.
+    // The failure comes from `tsc`, never from a run, which is why it went unnoticed until the
+    // first component was assigned to one.
     const node: VisualNode = new TimePicker();
     expect(node.nodeKind).toBe('component');
   });

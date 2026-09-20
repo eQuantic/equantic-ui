@@ -173,6 +173,7 @@ export {
   Draggable,
   SafeArea,
 } from './shared/vocabulary';
+export { VisualNodeExtensions } from './shared/visual-node-extensions';
 export {
   Color,
   ColorToken,

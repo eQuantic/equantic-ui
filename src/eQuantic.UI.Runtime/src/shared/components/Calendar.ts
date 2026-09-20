@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CalendarNames, Column, CornerRadii, DateOnly, Flexible, Icon, IconButton, Navigable, NavigableMoveValue, Pressable, Row, SdkStrings, SizeValue, Spacer, StatefulComponent, StyleDiff, Text, UiComponent } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CalendarNames, Column, CornerRadii, DateOnly, Flexible, Icon, IconButton, Navigable, NavigableMoveValue, Pressable, Row, SdkStrings, SizeValue, Spacer, StatefulComponent, StyleDiff, Text, UiComponent, VisualNodeExtensions } from "../runtime-exports";
 
 export class Calendar extends StatefulComponent {
     _month: DateOnly;
@@ -38,7 +38,7 @@ export class Calendar extends StatefulComponent {
         let names = CalendarNames.dayNamesShort;
         let dayRow = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill });
         for (let column = 0; column < 7; column++) {
-            dayRow.add(new Box(new BoxStyle({ width: SizeValue.fixed(Calendar.cellSize), height: SizeValue.fixed(Calendar.headerHeight) }), new Text(names[(first + column) % 7], 'caption', theme.textMuted, 1).centered()));
+            dayRow.add(new Box(new BoxStyle({ width: SizeValue.fixed(Calendar.cellSize), height: SizeValue.fixed(Calendar.headerHeight) }), VisualNodeExtensions.centered(new Text(names[(first + column) % 7], 'caption', theme.textMuted, 1))));
         }
         let rows = [dayRow];
         let start = Calendar.gridStart(this._month, first);
@@ -81,7 +81,7 @@ export class Calendar extends StatefulComponent {
         let reachable = this.inRange(day);
         let primary = theme.colors('primary');
         let numeral = new Text(String(day.day), 'bodyM', selected ? primary.onBase : isToday ? primary.base : theme.textPrimary, 1);
-        let cell = new Box(new BoxStyle({ width: size, height: size, cornerRadius: new CornerRadii(Calendar.cellSize / 2), background: selected ? primary.base : null, borderWidth: !selected && isToday ? 1.5 : 0, borderColor: primary.base, opacity: reachable ? null : theme.disabledOpacity, hover: reachable && !selected ? new StyleDiff({ background: theme.surfaceSubtle }) : null }), numeral.centered());
+        let cell = new Box(new BoxStyle({ width: size, height: size, cornerRadius: new CornerRadii(Calendar.cellSize / 2), background: selected ? primary.base : null, borderWidth: !selected && isToday ? 1.5 : 0, borderColor: primary.base, opacity: reachable ? null : theme.disabledOpacity, hover: reachable && !selected ? new StyleDiff({ background: theme.surfaceSubtle }) : null }), VisualNodeExtensions.centered(numeral));
         if (!reachable) return cell;
         return new Pressable(cell, () => this.choose(day), { role: 'gridCell', selected: selected, label: isToday ? `${Calendar.spoken(day)}, ${SdkStrings.today}` : Calendar.spoken(day) });
     }

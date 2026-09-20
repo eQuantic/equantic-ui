@@ -31,6 +31,12 @@ import { Point, Rect } from './value-types';
  * attribute is the build saying no. Measured before the change: a page naming `Matrix2D` emitted
  * `import { Matrix2D } from "@equantic/runtime"` and would have died at hydration.
  */
+// `VisualNodeExtensions` left this list in #245, and for the opposite reason to the ones below: it
+// is EXPORTED now. JavaScript has no extension methods, so `node.Centered()` has to lower to
+// `VisualNodeExtensions.centered(node)` — and while the runtime instead mirrored `centered()` as an
+// instance method on `VisualNode` and on `Component`, that method was a member every component
+// carried, which a primary-constructor parameter of the same name shadowed. The page failed only in
+// the browser. A static home cannot be shadowed by a field.
 const NO_TWIN_OWED = new Set([
   // Never in a page bundle: host and server plumbing, or an abstract base.
   'AbsentMotionSensor',
@@ -44,7 +50,6 @@ const NO_TWIN_OWED = new Set([
   // that rule. It waited a release behind `SingleChildNode` because fencing a SHIPPED type refuses
   // code that compiled yesterday — so the radius was measured first, and nothing outside the
   // framework's own machinery names it.
-  'VisualNodeExtensions',
   // BUILD TIME ONLY: reading a `.svg` and normalizing its path data happens where FILES exist,
   // and the browser has none. What crosses is the DRAWING those produce — VectorDrawing and its
   // shapes are exported; the reader, the normalizer and its geometry are not.

@@ -1,4 +1,4 @@
-import { Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, Flexible, Icon, IconsValue, NavItem, Pressable, Row, SizeValue, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
+import { Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, Flexible, Icon, IconsValue, NavItem, Pressable, Row, SizeValue, StatelessComponent, Text, TypeStyle, VisualNodeExtensions } from "../runtime-exports";
 
 export class BottomNavigation extends StatelessComponent {
     declare $items: NavItem[];
@@ -39,7 +39,7 @@ export class BottomNavigation extends StatelessComponent {
             let tint = isActive ? primary.onSubtle : theme.textMuted;
             let icon = new Icon(glyph, 24, tint);
             let iconNode = item.badgeCount > 0 ? Badge.over(icon, item.badgeCount) : icon;
-            let pillContent = iconNode.centered();
+            let pillContent = VisualNodeExtensions.centered(iconNode);
             let pill = new Box(new BoxStyle({ width: 56, height: 26, background: isActive ? primary.subtle : null, cornerRadius: new CornerRadii(theme.shape('full')) }), pillContent);
             let column = new Column(2, 'start', 'stretch', false, null, null, { height: SizeValue.fill, main: 'center', cross: 'center' });
             column.add(pill);

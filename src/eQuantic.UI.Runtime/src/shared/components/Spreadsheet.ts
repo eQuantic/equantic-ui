@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CellRef, Column, Draggable, EdgeInsets, Flexible, Positioned, Pressable, Row, ScrollView, SdkStrings, SheetAxisValue, SheetController, SheetDocument, SheetSurface, SizeValue, Spacer, Stack, StatefulComponent, Text, UiComponent } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CellRef, Column, Draggable, EdgeInsets, Flexible, Positioned, Pressable, Row, ScrollView, SdkStrings, SheetAxisValue, SheetController, SheetDocument, SheetSurface, SizeValue, Spacer, Stack, StatefulComponent, Text, UiComponent, VisualNodeExtensions } from "../runtime-exports";
 
 export class Spreadsheet extends StatefulComponent {
     _offset: number = 0;
@@ -107,7 +107,7 @@ export class Spreadsheet extends StatefulComponent {
     }
 
     static headerCell(label: string, width: number, height: number, theme: any, selected: boolean = false, onPressed: (() => void) | null = null) {
-        let cell = new Box(new BoxStyle({ width: SizeValue.fixed(width), height: SizeValue.fixed(height), background: selected ? theme.surfaceHighlight : theme.surfaceSubtle, borderColor: theme.border, borderWidth: 0.5 }), new Text(label, 'caption', selected ? theme.textPrimary : theme.textMuted, 1).centered());
+        let cell = new Box(new BoxStyle({ width: SizeValue.fixed(width), height: SizeValue.fixed(height), background: selected ? theme.surfaceHighlight : theme.surfaceSubtle, borderColor: theme.border, borderWidth: 0.5 }), VisualNodeExtensions.centered(new Text(label, 'caption', selected ? theme.textPrimary : theme.textMuted, 1)));
         return onPressed == null ? cell : new Pressable(cell, onPressed);
     }
 

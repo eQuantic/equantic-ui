@@ -178,12 +178,14 @@ public class InvocationStrategy : IExpressionIrStrategy
             // their dedicated strategies run at higher priority.
             if (symbol is { IsExtensionMethod: true, ReducedFrom: not null, ContainingType: not null })
             {
-                // An extension over the RUNTIME VOCABULARY has no module to go home to — the
-                // hand-written twin carries the behaviour as an instance method, so the reduced
-                // form survives as a reduced form. Importing the C#-side static class would ask
-                // for a file the runtime never emits.
-                if (IsRuntimeVocabulary(symbol.ContainingType))
-                    return JsExpr.Call(JsExpr.Member(callerIr, methodName.ToCamelCase()), argIrs);
+                // An extension over the RUNTIME VOCABULARY goes home too. It used to survive as a
+                // reduced form, on the reasoning that the runtime carries the behaviour as an
+                // INSTANCE method — which was true because the runtime mirrored it there for this
+                // lowering, and the mirror is what made `centered` a member of every component.
+                // A primary-constructor parameter of that name then shadowed it, and the page
+                // failed only in the browser (#245). The runtime exports the static home now, and
+                // RegisterIntroduced below routes it to the runtime's import like any other
+                // runtime-provided type.
 
                 // An extension declared OUTSIDE this compilation has no module to go home to:
                 // emitting `MemoryExtensions.startsWith(...)` names a class the bundle never
@@ -198,8 +200,9 @@ public class InvocationStrategy : IExpressionIrStrategy
                         + "add a strategy for it.");
                 }
                 // The declaring class never appears in the SOURCE (the call is reduced), so the
-                // syntax-walking import collector can't see it — register the name we introduced.
-                context.UsedAppTypes.Add(symbol.ContainingType.Name);
+                // syntax-walking import collector can't see it — register the name we introduced,
+                // in the bucket its namespace decides (runtime-provided or app-level).
+                symbol.ContainingType.RegisterIntroduced(context);
                 var receiverFirst = string.IsNullOrEmpty(args) ? caller : $"{caller}, {args}";
                 return JsExpr.Callish($"{symbol.ContainingType.Name}.{methodName.ToCamelCase()}({receiverFirst})");
             }
@@ -423,11 +426,5 @@ public class InvocationStrategy : IExpressionIrStrategy
     /// Types the RUNTIME provides a hand-written twin for — the shared vocabulary. Same rule the
     /// object-creation and <c>with</c> paths use.
     /// </summary>
-    private static bool IsRuntimeVocabulary(ITypeSymbol type)
-    {
-        var ns = type.ContainingNamespace?.ToDisplayString() ?? string.Empty;
-        return ns == "eQuantic.UI.Primitives" || ns.StartsWith("eQuantic.UI.Primitives.");
-    }
-
     public int Priority => 1; // Lowest priority (fallback)
 }

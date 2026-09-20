@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, Row, SizeValue, Spacer, StatelessComponent, Text, TypeStyle } from "@equantic/runtime";
+import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, Row, SizeValue, Spacer, StatelessComponent, Text, TypeStyle, VisualNodeExtensions } from "@equantic/runtime";
 
 export class EmptyState extends StatelessComponent {
     declare icon: Icon;
@@ -20,7 +20,7 @@ export class EmptyState extends StatelessComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let wellContent = new Icon(this.icon.glyph, 32, theme.textMuted).centered();
+        let wellContent = VisualNodeExtensions.centered(new Icon(this.icon.glyph, 32, theme.textMuted));
         let well = new Box(new BoxStyle({ width: 64, height: 64, background: theme.surfaceSubtle, cornerRadius: new CornerRadii(theme.shape('full')) }), wellContent);
         let column = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill, cross: 'center', padding: EdgeInsets.symmetric(16, 48) });
         column.add(well);

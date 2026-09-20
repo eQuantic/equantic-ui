@@ -360,21 +360,6 @@ public class AuthoringCoverageTests
     }
 
     [Fact]
-    public void ExtensionOverTheRuntimeVocabulary_StaysAReducedCall()
-    {
-        // `node.Centered()` lives in Primitives, so the RUNTIME twin carries it as an instance
-        // method. Sending it home to a `VisualNodeExtensions` module would import a file the
-        // runtime never emits — the page then dies on a missing module at hydration.
-        var src = "public class C : StatelessComponent { " +
-                  "  public override IComponent Build(RenderContext c) => " +
-                  "    new Box(new BoxStyle(), new Text(\"hi\").Centered()); }";
-        var ts = TsOfResolved("C", src);
-
-        ts.Should().Contain(".centered()");
-        ts.Should().NotContain("VisualNodeExtensions");
-    }
-
-    [Fact]
     public void ExtensionOverAnAppType_StillGoesHomeToItsModule()
     {
         // The other half of the rule: an extension the APP declares has a module, and the reduced

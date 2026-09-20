@@ -100,6 +100,7 @@ export { FaceName, Point, Rect, Size, Transform2D } from './value-types';
 // A page placing a WebFrame names this to say WHICH form its content is; same implicit promise.
 export { WebContent } from './value-types';
 export { GridPattern, InFlow, InView, RadialGradient, Simulated } from './vocabulary';
+export { VisualNodeExtensions } from './visual-node-extensions';
 // The Primitives VALUE types a page can name — same implicit promise, see primitive-values.ts.
 export {
   GeoLocation,
