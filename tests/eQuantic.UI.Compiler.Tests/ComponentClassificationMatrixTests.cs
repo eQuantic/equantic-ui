@@ -286,4 +286,53 @@ public class ComponentClassificationMatrixTests
             $"[{baseId}] emits a member naming Text and imports no Text — the module cannot load.\n\n" +
             $"imports:\n{imports}\n\nfull twin:\n{twin}");
     }
+
+    /// <summary>
+    /// A component that declares NO Build over a base that has one: the twin must emit no
+    /// <c>build</c> at all, so JavaScript's own prototype chain answers.
+    ///
+    /// <para>
+    /// THIS IS A DEFECT THE COLLAPSE ITSELF CREATED, kept as a cell because it is the fourth
+    /// instance of the same shape rather than a detail of the refactor. The emitter falls back to
+    /// <c>throw new Error('Build method not implemented')</c> when a component has no Build — honest
+    /// over an abstract framework base, and a REGRESSION over an app-owned one, where it overrides a
+    /// working inherited build with a throw. The old fourth arm hid this by marking such a class
+    /// primitive; collapsing the arms routed it down the component path and the stub appeared.
+    /// </para>
+    ///
+    /// <para>
+    /// The A/B: with <c>BuildComesFromTheBase</c> forced false, this cell emits the throwing build
+    /// and fails here alone — the rest of the matrix declares its own Build and never reaches the
+    /// fallback.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void AComponentThatInheritsItsBuild_OverridesItWithNothing()
+    {
+        const string source = """
+            using eQuantic.UI.Primitives;
+
+            public abstract class OneBase : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext context) => new Text("base");
+            }
+
+            public sealed class Probe : OneBase
+            {
+                private string _carried = "c";
+                private string Label() => _carried;
+            }
+            """;
+        var twin = new ComponentCompiler().CompileSource(source, "Probe.cs")
+            .First(r => r.ComponentName == "Probe").TypeScript;
+
+        Assert.False(twin.Contains("Build method not implemented", StringComparison.Ordinal),
+            $"Probe inherits a working build from OneBase and the twin overrides it with a throw:\n\n{twin}");
+        Assert.False(twin.Contains("build(", StringComparison.Ordinal),
+            $"Probe declares no Build, so its twin must declare none either:\n\n{twin}");
+
+        // …and it still carries its own members, which is the rest of this matrix's point.
+        Assert.Contains("_carried", twin, StringComparison.Ordinal);
+        Assert.Contains("label(", twin, StringComparison.Ordinal);
+    }
 }

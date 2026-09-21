@@ -575,10 +575,16 @@ public class TypeScriptEmitter
                     // The body converts straight to IR: a block as itself, an expression-bodied Build
                     // (`IComponent Build(ctx) => new Box {…};`) as a return, and nothing as the fallback.
                     _converter.SetCurrentClass(component.Name);
-                    var (buildBody, buildSource) = BuildBody(component.BuildMethodNode,
-                        JsStatement.Raw("throw new Error('Build method not implemented');"));
-                    c.Member(JsClassMember.Method("", "build", "", Param(buildParamName, "BuildContext"), "", buildBody),
-                        bodySource: buildSource);
+                    // NOTHING AT ALL when the base supplies it. The fallback below is the honest
+                    // stub over an abstract framework base, where no build exists to inherit; over
+                    // an app-owned base it would OVERRIDE a working one with a throw.
+                    if (!component.BuildComesFromTheBase)
+                    {
+                        var (buildBody, buildSource) = BuildBody(component.BuildMethodNode,
+                            JsStatement.Raw("throw new Error('Build method not implemented');"));
+                        c.Member(JsClassMember.Method("", "build", "", Param(buildParamName, "BuildContext"), "", buildBody),
+                            bodySource: buildSource);
+                    }
 
                     // Emit helper methods
                     foreach (var method in component.Methods)

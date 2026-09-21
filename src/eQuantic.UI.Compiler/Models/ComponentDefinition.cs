@@ -82,6 +82,21 @@ public class ComponentDefinition
     /// Base class name
     /// </summary>
     public string? BaseClassName { get; set; }
+
+    /// <summary>
+    /// True when this component declares no <c>Build</c> of its own AND the base it is written over
+    /// is ANOTHER COMPONENT that supplies one — so the twin must emit no <c>build</c> at all and let
+    /// JavaScript's own prototype chain answer.
+    ///
+    /// <para>
+    /// The emitter otherwise falls back to <c>throw new Error('Build method not implemented')</c>,
+    /// which is the honest stub over an abstract framework base and a REGRESSION over an app-owned
+    /// one: it overrides a working inherited <c>build</c> with a throw, so a component that renders
+    /// today would die at first render. Measured while collapsing the parser's classification arms —
+    /// the old fourth arm hid this by marking such a class primitive instead.
+    /// </para>
+    /// </summary>
+    public bool BuildComesFromTheBase { get; set; }
     
     /// <summary>
     /// Source file path

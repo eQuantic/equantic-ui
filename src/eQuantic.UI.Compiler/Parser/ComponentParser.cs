@@ -372,6 +372,15 @@ public class ComponentParser
                     definition.BuildMethodNode = buildMethod;
                 }
 
+                // A component with no Build of its own over an APP-OWNED base inherits one. The
+                // written name is the right question here and deliberately so: it is the same name
+                // the emitter puts after `extends`, so this asks whether that `extends` target is a
+                // module that carries a build — not what the chain ultimately reaches.
+                definition.BuildComesFromTheBase = buildMethod is null
+                    && BaseName(classDecl) is { } writtenBase
+                    && writtenBase is not ("StatefulComponent" or "StatelessComponent"
+                        or "HtmlElement" or "ComponentState");
+
                 ParseConstructors(classDecl, definition);
                 ParseMethods(classDecl, definition);
                 ParseComponentFields(classDecl, definition);
