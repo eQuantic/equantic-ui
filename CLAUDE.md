@@ -141,6 +141,14 @@ belongs in a chat reply, never in a commit message, a PR title or body, a code c
 else pushed here. Naming the TOOLING in prose is a different thing and stays allowed — this file's
 own first line does it.
 
+**And a job now compares, because reading it back is not enough.** Three squash messages reached
+main carrying the scaffolding of whatever composed them, five days apart, while this rule was
+already written — `scripts/check-commit-messages.sh`, run by the `commit-messages` job, is what
+notices the fourth. It reads commit messages only, so a pull request BODY may still describe these
+shapes; a commit about the guard itself describes them instead of quoting them, the same way this
+section uses placeholders. On a squash the message is composed at MERGE time, so the job on `main`
+reports AFTER the fact: that red run is the notice, and the message on main cannot be taken back.
+
 ## Pull Requests (main is protected)
 
 **CRITICAL — never push to `main`.** A repository ruleset enforces `pull_request` and

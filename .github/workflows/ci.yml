@@ -18,6 +18,31 @@ on:
         default: ""
 
 jobs:
+  # A commit message says something about the change and nothing about what composed it. Three
+  # squash messages on main ended with the scaffolding of the tool that wrote them before anything
+  # compared, so this compares. On a pull request it reads the branch's commits, which is
+  # prevention; on a push to main it reads what was actually squashed, which is the only place that
+  # message exists — and by then the merge has happened, so the job going red IS the report.
+  commit-messages:
+    runs-on: ubuntu-latest
+    steps:
+      # Full history: the guard refuses to walk a range it cannot resolve rather than report a
+      # clean sweep of nothing.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: The guard still discriminates
+        run: ./scripts/check-commit-messages.sh --self-test
+
+      - name: No commit message carries what a tool left behind
+        # Through the environment rather than interpolated into the command: a ref is data, and
+        # `${{ }}` substitution happens before the shell ever sees it.
+        env:
+          EQ_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          EQ_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: ./scripts/check-commit-messages.sh --range "$EQ_BASE" "$EQ_HEAD"
+
   # Build TypeScript Runtime once (platform-agnostic)
   build-runtime:
     runs-on: ubuntu-latest
