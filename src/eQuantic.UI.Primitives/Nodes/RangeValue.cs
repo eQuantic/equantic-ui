@@ -3,15 +3,15 @@ using System.Globalization;
 namespace eQuantic.UI.Primitives;
 
 /// <summary>
-/// WHERE a value sits between two ends, and the words to say it in — the quartet ARIA gives every
-/// RANGE node: <c>aria-valuenow</c>, <c>aria-valuemin</c>, <c>aria-valuemax</c> and
-/// <c>aria-valuetext</c>.
+/// WHERE a value sits between two ends — the NUMBER trio ARIA gives every RANGE node:
+/// <c>aria-valuenow</c>, <c>aria-valuemin</c>, <c>aria-valuemax</c>. The fourth of that family,
+/// <c>aria-valuetext</c>, is deliberately NOT here: the last paragraph says where it went.
 ///
 /// <para>
 /// It is named for what it IS rather than for the first node that wanted it. This arrived as
 /// <c>AdjustableValue</c> with <see cref="Adjustable"/>, and the second node to need it —
 /// <see cref="Progress"/> — is not adjustable at all: a progress bar reports, it does not move.
-/// The quartet is the same one either way, so one type carries it and neither node's name is
+/// The trio is the same one either way, so one type carries it and neither node's name is
 /// stamped on the other's.
 /// </para>
 ///

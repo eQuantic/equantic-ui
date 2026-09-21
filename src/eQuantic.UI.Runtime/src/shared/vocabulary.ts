@@ -1206,11 +1206,12 @@ export class Image extends VisualNode {
 }
 
 /**
- * Mirror of the C# `RangeValue`: WHERE A RANGE NODE'S VALUE SITS — the trio ARIA calls
- * `aria-valuenow` / `aria-valuemin` / `aria-valuemax`, plus the words to say it in.
+ * Mirror of the C# `RangeValue`: WHERE A RANGE NODE'S VALUE SITS — the NUMBER trio ARIA calls
+ * `aria-valuenow` / `aria-valuemin` / `aria-valuemax`. The fourth of that family, `aria-valuetext`,
+ * is deliberately NOT here: `number` below says where it went.
  *
  * Named for the SHAPE rather than the first node that needed it. `Adjustable` baptised it and
- * `Progress` uses the same quartet, because ARIA gives it to every range node — slider, progressbar,
+ * `Progress` uses the same trio, because ARIA gives it to every range node — slider, progressbar,
  * meter — and a progress bar is not adjustable: it reports, and nothing can move it.
  *
  * One type rather than three fields on the node, because the three are only meaningful together:
