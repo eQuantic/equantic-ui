@@ -247,6 +247,35 @@ public class ComponentCompiler
                         + "them yet — combine the members into a single declaration.",
                 });
             }
+
+            // A [ServerAction] on an ABSTRACT component cannot be addressed, and the failure is
+            // silent on both sides of the wire. ServerActionRegistry.ScanAssembly skips abstract
+            // types and registers every action it finds — inherited ones included — under the
+            // CONCRETE component's name, so the server serves `Tile/Load`. eqc emits the stub in
+            // the module that declares it, which is the base's, so the client invokes
+            // `CardBase/Load`. Nothing serves that id and the page gets "action not found".
+            //
+            // An alias would not fix it: the descriptor carries the component TYPE to invoke on,
+            // and two children inheriting one action give the base's id two answers. Which owner an
+            // inherited action has is a decision, not a patch, so eqc refuses the shape instead of
+            // emitting a stub that resolves to nothing.
+            if (component.IsAbstract && component.ServerActions.Count > 0)
+            {
+                result.Success = false;
+                result.Errors.Add(new CompilationError
+                {
+                    Code = "EQ2012",
+                    SourcePath = component.SourcePath,
+                    Message = $"'{component.Name}' is abstract and declares "
+                        + $"{component.ServerActions.Count} [ServerAction] "
+                        + $"({string.Join(", ", component.ServerActions.Select(a => a.MethodName))}). "
+                        + "The server registers an action under the name of the CONCRETE component "
+                        + "that carries it and skips abstract types, so a stub emitted here would "
+                        + "invoke an id nothing serves. Declare the action on the concrete "
+                        + "component instead.",
+                });
+            }
+
             yield return result;
         }
     }

@@ -1,4 +1,6 @@
 using eQuantic.UI.Compiler;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
 
 namespace eQuantic.UI.Compiler.Tests;
@@ -377,5 +379,194 @@ public class ComponentClassificationMatrixTests
 
         Assert.Contains("frame(", baseTwin, StringComparison.Ordinal);
         Assert.Contains("this.frame(", childTwin, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// A <c>[ServerAction]</c> on an ABSTRACT component is refused (EQ2012), and this is the one
+    /// place where making the stateless path parse server actions had to be FENCED rather than
+    /// simply enabled.
+    ///
+    /// <para>
+    /// The two sides disagree about who owns an inherited action, and both are silent about it.
+    /// <c>ServerActionRegistry.ScanAssembly</c> skips abstract types and walks inherited methods,
+    /// registering each under the CONCRETE component's name, so the server serves <c>Tile/Load</c>.
+    /// eqc emits a stub in the module that DECLARES the method, which is the base's, so the client
+    /// invokes <c>CardBase/Load</c>. Measured end to end before the fence: the emitted base module
+    /// carried `invoke('CardBase/Load', [])` and nothing serves that id.
+    /// </para>
+    ///
+    /// <para>
+    /// An alias would not settle it — the descriptor carries the component TYPE to invoke on, so two
+    /// children inheriting one action give the base's id two answers. That is a decision about
+    /// ownership, not a patch, so the shape is refused rather than half-supported.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void AServerActionOnAnAbstractComponent_IsRefused()
+    {
+        const string source = """
+            using eQuantic.UI.Primitives;
+
+            public abstract class CardBase : StatelessComponent
+            {
+                protected string Frame(string s) => s;
+
+                [ServerAction]
+                public async Task<string> Load() { await Task.Delay(1); return "x"; }
+            }
+
+            public sealed class Tile : CardBase
+            {
+                public override VisualNode Build(ComponentContext context) => new Text(Frame("x"));
+            }
+            """;
+        var all = new ComponentCompiler().CompileSource(source, "Tile.cs");
+        var baseResult = all.First(r => r.ComponentName == "CardBase");
+
+        Assert.False(baseResult.Success);
+        Assert.Contains(baseResult.Errors, e => e.Code == "EQ2012");
+
+        // The concrete component is untouched: #269 is a [ServerAction] on a CONCRETE stateless
+        // component, and fencing the abstract case must not take that back.
+        var concrete = new ComponentCompiler().CompileSource("""
+            using eQuantic.UI.Primitives;
+
+            public sealed class Solo : StatelessComponent
+            {
+                [ServerAction]
+                public async Task<string> Load() { await Task.Delay(1); return "x"; }
+
+                public override VisualNode Build(ComponentContext context) => new Text("t");
+            }
+            """, "Solo.cs").First(r => r.ComponentName == "Solo");
+
+        Assert.True(concrete.Success);
+        Assert.Contains("invoke('Solo/Load'", concrete.TypeScript, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The PRIMITIVE path, which the member matrix deliberately cannot cover: an
+    /// <c>HtmlElement</c> transcribes a DOM tag, has no Build and no server actions, and parses
+    /// through <c>ParsePrimitiveClass</c> instead of the member parsers. It is the one arm the
+    /// collapse KEPT, so it needs the regression case the matrix's shapes cannot give it — without
+    /// this, a break in the resolved-<c>HtmlElement</c> branch passes the whole guard.
+    /// </summary>
+    [Fact]
+    public void AnHtmlElementStillTakesThePrimitivePath()
+    {
+        const string source = """
+            using eQuantic.UI.Primitives;
+            using eQuantic.UI.Web;
+
+            public sealed class MyTag : HtmlElement
+            {
+                public string Href { get; set; } = "";
+            }
+            """;
+        var twin = new ComponentCompiler().CompileSource(source, "MyTag.cs")
+            .First(r => r.ComponentName == "MyTag").TypeScript;
+
+        Assert.Contains("extends HtmlElement", twin, StringComparison.Ordinal);
+        Assert.Contains("render()", twin, StringComparison.Ordinal);
+        Assert.Contains("href", twin, StringComparison.Ordinal);
+
+        // The primitive path has no Build, so it must not acquire the component path's stub.
+        Assert.DoesNotContain("Build method not implemented", twin, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// <c>IsStateful</c> follows the RESOLVED base, asserted through the one thing it actually
+    /// changes.
+    ///
+    /// <para>
+    /// The matrix's member cells cannot see it: stateful and stateless emit identical bodies, and
+    /// the <c>extends</c> clause beside them comes from <c>BaseClassName</c> — the WRITTEN name —
+    /// not from <c>IsStateful</c>. So a guard that asserted the emitted runtime base would pin the
+    /// written name and pass with <c>IsStateful</c> stuck at false, which is the trap this whole
+    /// file keeps falling into.
+    /// </para>
+    ///
+    /// <para>
+    /// What it really gates is <c>SemanticValidator</c>: the client/server boundary is enforced for
+    /// STATEFUL components only. Measured — a component over a base that ultimately extends
+    /// <c>StatefulComponent</c> is refused EQ2112 for touching <c>System.IO</c>, and on main, where
+    /// the fourth arm hardcoded <c>IsStateful = false</c>, the same component was waved through.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void TheClientBoundaryFollowsTheResolvedBase()
+    {
+        const string source = """
+            using eQuantic.UI.Primitives;
+
+            namespace Demo;
+
+            public abstract class StatefulBase : StatefulComponent { }
+
+            public sealed class Probe : StatefulBase
+            {
+                private string Read() => System.IO.File.ReadAllText("x");
+                public override VisualNode Build(ComponentContext context) => new Text(Read());
+            }
+            """;
+        var tree = CSharpSyntaxTree.ParseText(source, path: "Probe.cs");
+        var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+            .Split(Path.PathSeparator)
+            .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
+            .Append(MetadataReference.CreateFromFile(typeof(Primitives.VisualNode).Assembly.Location));
+        var compilation = CSharpCompilation.Create("BoundaryProbe", [tree], references,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(compilation);
+        var result = compiler.CompileSource(source, "Probe.cs").First(r => r.ComponentName == "Probe");
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Errors, e => e.Code == "EQ2112");
+    }
+
+    /// <summary>
+    /// The abstract base's OTHER member kinds, which the helper cell above does not reach and which
+    /// review caught: the emitter's "has anything worth emitting" test counted methods only, so a
+    /// base carrying just a property or just a constructor was still emitted empty.
+    ///
+    /// <para>
+    /// Each measured on its own. A PROPERTY costs more than it looks — an auto-property's default is
+    /// applied in the generated constructor, so dropping it does not merely omit a declaration, it
+    /// hands a child that supplies no value <c>undefined</c> where the C# says <c>"c"</c>. A
+    /// CONSTRUCTOR takes its body and its parameters with it.
+    /// </para>
+    ///
+    /// <para>
+    /// A FIELD is deliberately not in here: measured, it was never lost — fields are emitted by the
+    /// branch above this condition and survived even before any of this. Asserting one would have
+    /// passed either way and read like coverage.
+    /// </para>
+    /// </summary>
+    [Theory]
+    [InlineData("property", "public string Caption { get; set; } = \"c\";", "caption")]
+    [InlineData("computed-property", "protected string Label => \"l\";", "label")]
+    [InlineData("constructor", "protected CardBase(string seed) { }", "constructor(")]
+    public void AnAbstractBaseKeepsItsOtherMembersToo(string kind, string declaration, string must)
+    {
+        var source = $$"""
+            using eQuantic.UI.Primitives;
+
+            public abstract class CardBase : StatelessComponent
+            {
+                {{declaration}}
+            }
+
+            public sealed class Tile : CardBase
+            {
+                public override VisualNode Build(ComponentContext context) => new Text("x");
+            }
+            """;
+        var twin = new ComponentCompiler().CompileSource(source, "Tile.cs")
+            .First(r => r.ComponentName == "CardBase").TypeScript;
+
+        Assert.True(twin.Contains(must, StringComparison.Ordinal),
+            $"an abstract base carrying only a {kind} was emitted without it:\n\n{twin}");
     }
 }

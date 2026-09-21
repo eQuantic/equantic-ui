@@ -440,15 +440,23 @@ public class TypeScriptEmitter
                 // MEMBERS for its subclasses to inherit. Only a pure-abstract class with neither
                 // emits nothing here.
                 //
-                // The `|| Methods.Count > 0` is the half the condition was missing while the comment
-                // above it already claimed it. An app-owned base is normally written exactly this
-                // way — `abstract class CardBase : StatelessComponent` holding shared helpers and no
-                // Build — and its helpers were dropped, so a subclass that called one built clean
-                // and died at first render on `this.frame is not a function`. That is #268's failure
-                // reached one level up: the child keeps its members now, and the base it calls into
-                // has to keep its own or the pattern still does not work.
+                // The member counts are the half the condition was missing while the comment above
+                // it already claimed them. An app-owned base is normally written exactly this way —
+                // `abstract class CardBase : StatelessComponent` holding what a family of screens
+                // shares and no Build — and everything it held was dropped, so a subclass that
+                // called one built clean and died at first render on `this.frame is not a
+                // function`. That is #268's failure reached one level up: the child keeps its
+                // members now, and the base it calls into has to keep its own.
+                //
+                // ALL THREE COLLECTIONS, each measured on an abstract base carrying only that one
+                // kind: a METHOD and a CONSTRUCTOR were dropped whole, and so was a PROPERTY —
+                // which costs more than it looks, since an auto-property's default is applied in
+                // the constructor, so a child that supplies no value silently got `undefined`
+                // instead of the declared default. FIELDS are not in the list because they are not
+                // lost: they come from the branch above and survived even before this.
                 else if (!component.IsAbstract || component.BuildMethodNode != null
-                    || component.Methods.Count > 0)
+                    || component.Methods.Count > 0 || component.Properties.Count > 0
+                    || component.Constructors.Count > 0)
                 {
                     // Computed/get-set/static properties become real TS members (auto-props flow through
                     // the base Object.assign(props) instead).
