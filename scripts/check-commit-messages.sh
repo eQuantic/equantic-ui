@@ -48,22 +48,28 @@ set -uo pipefail
 NAMED='</?(commit_message|invoke|function_calls|antml:[a-zA-Z_]+)>|<(invoke|parameter)[[:space:]]+name=|🤖 Generated with|[Cc]o-[Aa]uthored-[Bb]y:[^\n]*noreply@anthropic\.com'
 
 # Prints every offending line of one message, prefixed by its line number. Empty output means clean.
+# Every grep here is fed by a HERESTRING and never by a pipe, and that is load-bearing rather than
+# style. Under `pipefail`, `printf ... | grep -q` fails when grep exits on its first match and
+# printf takes a SIGPIPE writing the rest — so a counterpart that EXISTS reads as missing, and the
+# guard flags a balanced tag. Measured: a 267 KB message with a balanced pair near the top, refused
+# by the pipe form and accepted by this one. Below the pipe buffer, roughly 64 KB, printf finishes
+# first and the bug hides, which is why `good_large_balanced_xml` is deliberately larger than that.
 scan_message() {
     local message="$1"
     {
-        printf '%s\n' "$message" | /usr/bin/grep -nE "$NAMED"
+        /usr/bin/grep -nE "$NAMED" <<<"$message"
 
         # Rule 1. A tag alone on a line is an offence only when its counterpart is missing from the
-        # message: `</x>` with no `<x` before it, or `<x>` with no `</x>` after it.
+        # message: a closer with no opener anywhere, or an opener with no closer.
         local n=0 line name
         while IFS= read -r line; do
             n=$((n + 1))
             if [[ $line =~ ^[[:space:]]*\</([a-zA-Z][^\ \>/]*)\>[[:space:]]*$ ]]; then
                 name="${BASH_REMATCH[1]}"
-                printf '%s\n' "$message" | /usr/bin/grep -qE "<${name}[ >]" || printf '%s:%s\n' "$n" "$line"
+                /usr/bin/grep -qE "<${name}[ >]" <<<"$message" || printf '%s:%s\n' "$n" "$line"
             elif [[ $line =~ ^[[:space:]]*\<([a-zA-Z][^\ \>/]*)\>[[:space:]]*$ ]]; then
                 name="${BASH_REMATCH[1]}"
-                printf '%s\n' "$message" | /usr/bin/grep -qE "</${name}>" || printf '%s:%s\n' "$n" "$line"
+                /usr/bin/grep -qE "</${name}>" <<<"$message" || printf '%s:%s\n' "$n" "$line"
             fi
         done <<<"$message"
     } | sort -t: -k1,1n -u
@@ -129,10 +135,24 @@ Co-Authored-By: A Contributor <person@example.com>'
 runs the guard
 </step>'
 
+    # Bigger than the pipe buffer, with the balanced pair at the TOP so a reader of the counterpart
+    # check would match early and stop. That combination is the only one that shows the SIGPIPE
+    # bug, and a fixture of ordinary size passes whether or not the bug is there.
+    local line='a line of ordinary prose that says something about the change' i big=''
+    for i in 1 2 3 4 5 6 7 8 9 10 11 12; do big="$big$big$line
+"; done
+    local good_large_balanced_xml='🔧 chore: a body longer than a pipe buffer
+
+<step>
+runs the guard
+</step>
+
+'"$big"
+
     local errors=0
     local name expected hits
     for name in bad_tag_only bad_glued bad_signature bad_unknown_scaffolding \
-        good_xml good_prose good_human_coauthor good_unindented_xml; do
+        good_xml good_prose good_human_coauthor good_unindented_xml good_large_balanced_xml; do
         case "$name" in bad_*) expected=dirty ;; *) expected=clean ;; esac
         hits=$(scan_message "${!name}")
         if [ -n "$hits" ] && [ "$expected" = clean ]; then
@@ -148,7 +168,7 @@ runs the guard
         printf '\nThe guard no longer discriminates. Fix it before trusting a green run.\n'
         return 1
     fi
-    printf 'self-test: 8 fixtures, 4 refused and 4 accepted, as expected\n'
+    printf 'self-test: 9 fixtures, 4 refused and 5 accepted, as expected\n'
     return 0
 }
 
