@@ -248,6 +248,41 @@ public class ComponentParser
             }
         }
 
+        // WHICH framework base a component reaches, asked ONCE and answered the same way detection
+        // answered "is this a component at all". Classification used to compare the WRITTEN base
+        // name against three literals and keep a fourth arm for everything else, so a component
+        // over an app-owned base was classified by a name the walk had already seen past — #268,
+        // #269 and #245 are that one disagreement reached three ways.
+        var writtenBaseByName = new Dictionary<string, string?>(StringComparer.Ordinal);
+        foreach (var c in classes) writtenBaseByName[c.Identifier.Text] = BaseName(c);
+
+        ComponentBaseKind ResolveBaseKind(ClassDeclarationSyntax c)
+        {
+            if (model?.GetDeclaredSymbol(c) is INamedTypeSymbol symbol)
+            {
+                var resolved = symbol.ResolveComponentBase();
+                if (resolved != ComponentBaseKind.None) return resolved;
+            }
+
+            // No model, or a model that cannot bind the base — the same condition the detection
+            // heuristic above exists for. Walk what the FILE says instead, which reaches an
+            // in-file app base exactly as the transitive closure just did.
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            var name = BaseName(c);
+            while (name is not null && seen.Add(name))
+            {
+                switch (name)
+                {
+                    case "StatefulComponent": return ComponentBaseKind.StatefulComponent;
+                    case "StatelessComponent": return ComponentBaseKind.StatelessComponent;
+                    case "HtmlElement": return ComponentBaseKind.HtmlElement;
+                    case "ComponentState": return ComponentBaseKind.ComponentState;
+                }
+                name = writtenBaseByName.TryGetValue(name, out var next) ? next : null;
+            }
+            return ComponentBaseKind.None;
+        }
+
         var stateNames = new HashSet<string>();
 
         // A PLAIN class — not a component, not static, not a state class — is a model the developer
@@ -287,11 +322,13 @@ public class ComponentParser
 
         foreach (var classDecl in classes)
         {
-            var baseType = classDecl.BaseList?.Types.FirstOrDefault()?.Type.ToString();
-            var hasBuildOrRender = classDecl.Members.OfType<MethodDeclarationSyntax>()
-                .Any(m => IsBuildEntryPoint(m, "Render", "Build"));
-
             if (!componentNames.Contains(classDecl.Identifier.Text)) continue;
+
+            // The WRITTEN base, which is what the emitter puts after `extends` and what the relative
+            // import beside it names. Never the resolved one: a component over `CardBase` must keep
+            // saying `extends CardBase`.
+            var baseType = classDecl.BaseList?.Types.FirstOrDefault()?.Type.ToString();
+            var resolvedBase = ResolveBaseKind(classDecl);
 
             var definition = new ComponentDefinition
             {
@@ -300,84 +337,44 @@ public class ComponentParser
                 SyntaxTree = tree,
                 Namespace = ns ?? "",
                 TypeParameters = classDecl.TypeParameterList?.Parameters.Select(p => p.Identifier.Text).ToList() ?? new List<string>(),
-                IsAbstract = classDecl.Modifiers.Any(SyntaxKind.AbstractKeyword)
+                IsAbstract = classDecl.Modifiers.Any(SyntaxKind.AbstractKeyword),
+                BaseClassName = baseType,
             };
 
-            if (baseType == "StatefulComponent")
+            if (resolvedBase == ComponentBaseKind.HtmlElement)
             {
-                // The stateful shape: state lives on the component itself and SetState rebuilds
-                // directly. Structurally it parses like a stateless component (Build + ctors +
-                // methods + fields on the class).
-                definition.IsStateful = true;
-                definition.BaseClassName = "StatefulComponent";
-                ParsePageAttributes(classDecl, definition);
-                ParseServerActions(classDecl, definition);
-
-                var sharedBuild = classDecl.DescendantNodes()
-                    .OfType<MethodDeclarationSyntax>()
-                    .FirstOrDefault(m => IsBuildEntryPoint(m, "Build"));
-                if (sharedBuild != null)
-                {
-                    definition.BuildMethodNode = sharedBuild;
-                }
-
-                ParseConstructors(classDecl, definition);
-                ParseMethods(classDecl, definition);
-                ParseComponentFields(classDecl, definition);
-            }
-            else if (baseType == "StatelessComponent")
-            {
-                definition.IsStateful = false;
-                definition.BaseClassName = baseType;
-                ParsePageAttributes(classDecl, definition);
-
-                // Parse Build method for stateless component
-                var buildMethod = classDecl.DescendantNodes()
-                    .OfType<MethodDeclarationSyntax>()
-                    .FirstOrDefault(m => IsBuildEntryPoint(m, "Build"));
-
-                if (buildMethod != null)
-                {
-                    definition.BuildMethodNode = buildMethod;
-                }
-
-                // Parse constructors (for components with positional args like Text, Heading)
-                ParseConstructors(classDecl, definition);
-
-                // Parse other helper methods
-                ParseMethods(classDecl, definition);
-
-                // Capture static/instance data fields declared on the component
-                ParseComponentFields(classDecl, definition);
-            }
-            else if (baseType == "HtmlElement")
-            {
+                // The primitive path, unchanged: an HtmlElement transcribes a DOM tag and has no
+                // Build, no page route and no server actions to find.
                 definition.IsPrimitive = true;
                 definition.IsStateful = false;
-                definition.BaseClassName = baseType;
                 ParsePrimitiveClass(classDecl, definition);
             }
             else
             {
-                // Component that extends another component (not directly StatelessComponent/HtmlElement)
-                // Check if it has its own Build method
-                definition.IsStateful = false;
-                definition.BaseClassName = baseType;
+                // THE COMPONENT PATH, AND IT RUNS EVERY MEMBER PARSER. What a component carries into
+                // its twin cannot depend on the name of the base it was written over: the three arms
+                // this replaced each kept their own list and all three disagreed — the stateless one
+                // never looked for server actions (#269), and the one for an app-owned base parsed
+                // only Build, dropping every constructor, field, property and method (#268).
+                definition.IsStateful = resolvedBase == ComponentBaseKind.StatefulComponent;
 
+                ParsePageAttributes(classDecl, definition);
+                ParseServerActions(classDecl, definition);
+
+                // `Members`, not `DescendantNodes`: the two arms disagreed here too, and
+                // DescendantNodes reaches INTO a nested class, so a component whose nested type
+                // happens to declare a Build would have had that one taken for its own.
                 var buildMethod = classDecl.Members
                     .OfType<MethodDeclarationSyntax>()
                     .FirstOrDefault(m => IsBuildEntryPoint(m, "Build"));
-
                 if (buildMethod != null)
                 {
                     definition.BuildMethodNode = buildMethod;
                 }
-                else
-                {
-                    // No Build method, treat as primitive (extends another component without overriding)
-                    definition.IsPrimitive = true;
-                    ParseMethods(classDecl, definition);
-                }
+
+                ParseConstructors(classDecl, definition);
+                ParseMethods(classDecl, definition);
+                ParseComponentFields(classDecl, definition);
             }
 
             CollectRuntimeProvidedTypes(classDecl, definition);

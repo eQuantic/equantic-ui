@@ -31,25 +31,44 @@ public static class TypeSymbolExtensions
         // Int64/UInt64 (long) and Decimal are intentionally excluded — handled by their own branches.
     };
 
-    /// <summary>The framework base types a UI component / state class derives from. Kept tiny and
-    /// principled (the actual abstract bases the framework defines) — intermediate user/library bases
-    /// are reached by walking the chain, not by naming them.</summary>
-    private static readonly string[] ComponentBaseNames =
-        { "StatefulComponent", "StatelessComponent", "HtmlElement", "ComponentState" };
+    /// <summary>
+    /// WHICH framework base the type reaches by walking its chain, or <see cref="ComponentBaseKind.None"/>.
+    ///
+    /// <para>
+    /// The four names are the abstract bases the framework defines, and they are matched here and
+    /// nowhere else. An intermediate base the app or a library wrote is reached BY THE WALK — naming
+    /// one would be the brittleness this replaces.
+    /// </para>
+    ///
+    /// <para>
+    /// The BOOLEAN questions below answer from this rather than walking again, so there is one
+    /// traversal and one list. That matters beyond tidiness: the parser used to ask a chain walk
+    /// whether a class was a component and then decide WHAT to parse from the written base name, and
+    /// the two answers disagreed for every component over an app-owned base.
+    /// </para>
+    /// </summary>
+    public static ComponentBaseKind ResolveComponentBase(this ITypeSymbol? type)
+    {
+        for (var t = type; t != null; t = t.BaseType)
+        {
+            switch (t.Name)
+            {
+                case "StatefulComponent": return ComponentBaseKind.StatefulComponent;
+                case "StatelessComponent": return ComponentBaseKind.StatelessComponent;
+                case "HtmlElement": return ComponentBaseKind.HtmlElement;
+                case "ComponentState": return ComponentBaseKind.ComponentState;
+            }
+        }
+        return ComponentBaseKind.None;
+    }
 
     /// <summary>
     /// True when the type derives (transitively) from a framework component/state base. Walking the base
     /// chain recognises a component that extends another user or library component without enumerating
     /// every intermediate base — replacing brittle direct-base-name matching.
     /// </summary>
-    public static bool IsUiComponent(this ITypeSymbol? type)
-    {
-        for (var t = type; t != null; t = t.BaseType)
-        {
-            if (System.Array.IndexOf(ComponentBaseNames, t.Name) >= 0) return true;
-        }
-        return false;
-    }
+    public static bool IsUiComponent(this ITypeSymbol? type) =>
+        type.ResolveComponentBase() != ComponentBaseKind.None;
 
     /// <summary>
     /// True when the type is a NODE — anything that ends up in the built tree, which is everything
@@ -77,14 +96,8 @@ public static class TypeSymbolExtensions
     /// also be emitted as a standalone component module (which produced a broken duplicate carrying only
     /// <c>build()</c>). This is a strict subset of <see cref="IsUiComponent"/>.
     /// </summary>
-    public static bool IsComponentState(this ITypeSymbol? type)
-    {
-        for (var t = type; t != null; t = t.BaseType)
-        {
-            if (t.Name == "ComponentState") return true;
-        }
-        return false;
-    }
+    public static bool IsComponentState(this ITypeSymbol? type) =>
+        type.ResolveComponentBase() == ComponentBaseKind.ComponentState;
 
     /// <summary>
     /// True when the type is an enum annotated with <c>[Flags]</c>. Such enums are designed to be
