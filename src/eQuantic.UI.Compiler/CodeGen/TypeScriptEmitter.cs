@@ -436,9 +436,19 @@ public class TypeScriptEmitter
                         EmitMethod(method, c, component, component.Name);
                     }
                 }
-                // A concrete component, OR an abstract base that still defines a concrete Build/members for
-                // its subclasses to inherit (a pure-abstract class with no Build emits nothing here).
-                else if (!component.IsAbstract || component.BuildMethodNode != null)
+                // A concrete component, OR an abstract base that still defines a concrete Build or
+                // MEMBERS for its subclasses to inherit. Only a pure-abstract class with neither
+                // emits nothing here.
+                //
+                // The `|| Methods.Count > 0` is the half the condition was missing while the comment
+                // above it already claimed it. An app-owned base is normally written exactly this
+                // way — `abstract class CardBase : StatelessComponent` holding shared helpers and no
+                // Build — and its helpers were dropped, so a subclass that called one built clean
+                // and died at first render on `this.frame is not a function`. That is #268's failure
+                // reached one level up: the child keeps its members now, and the base it calls into
+                // has to keep its own or the pattern still does not work.
+                else if (!component.IsAbstract || component.BuildMethodNode != null
+                    || component.Methods.Count > 0)
                 {
                     // Computed/get-set/static properties become real TS members (auto-props flow through
                     // the base Object.assign(props) instead).

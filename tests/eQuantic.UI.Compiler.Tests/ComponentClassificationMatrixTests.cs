@@ -335,4 +335,47 @@ public class ComponentClassificationMatrixTests
         Assert.Contains("_carried", twin, StringComparison.Ordinal);
         Assert.Contains("label(", twin, StringComparison.Ordinal);
     }
+
+    /// <summary>
+    /// The base's own members, which is this failure one level up and the reason the consumer path
+    /// still died after the arms were collapsed.
+    ///
+    /// <para>
+    /// An app-owned base is normally written as <c>abstract class CardBase : StatelessComponent</c>
+    /// holding shared helpers and NO Build — there is nothing for it to build. The emitter's
+    /// condition for "has anything worth emitting" tested only for a Build, while the comment above
+    /// it already claimed it tested for members too, so the helpers were dropped and a subclass
+    /// calling one died on `this.frame is not a function`.
+    /// </para>
+    ///
+    /// <para>
+    /// PRE-EXISTING, and measured as such: the same probe emits the same empty base against main's
+    /// compiler, so the collapse neither caused it nor exposed it. It is here because #272's own
+    /// done-criteria include a component over an app-owned base that renders — and without this the
+    /// child keeps its members and still calls into a base that has none.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void AnAbstractBaseKeepsTheHelpersItsSubclassesCall()
+    {
+        const string source = """
+            using eQuantic.UI.Primitives;
+
+            public abstract class CardBase : StatelessComponent
+            {
+                protected string Frame(string inner) => "[" + inner + "]";
+            }
+
+            public sealed class Probe : CardBase
+            {
+                public override VisualNode Build(ComponentContext context) => new Text(Frame("x"));
+            }
+            """;
+        var all = new ComponentCompiler().CompileSource(source, "Probe.cs");
+        var baseTwin = all.First(r => r.ComponentName == "CardBase").TypeScript;
+        var childTwin = all.First(r => r.ComponentName == "Probe").TypeScript;
+
+        Assert.Contains("frame(", baseTwin, StringComparison.Ordinal);
+        Assert.Contains("this.frame(", childTwin, StringComparison.Ordinal);
+    }
 }
