@@ -11,7 +11,7 @@
  *   class string per element; only custom-property tails stay inline.
  */
 
-import { adoptServerStateFor, nextComponentKey, withNestedWalk } from '../core/component';
+import { adoptServerStateFor, nextComponentKey } from '../core/component';
 import { assertNever } from '../utils/assert-never';
 import { round as dotnetRound } from '../utils/dotnet-math';
 import { PINNED_MARKER } from './markers';
@@ -335,9 +335,12 @@ function lowerNodeKind(
   // which is the truth about these objects, rather than for a case the union does not have.
   const foreign = node as { nodeKind?: string; render?: () => HtmlNode };
   if (foreign.nodeKind === undefined) {
-    // INSIDE THE WALK, not starting one: this render is the same method a page root calls, and it
-    // would otherwise restart the component count from here down.
-    return typeof foreign.render === 'function' ? withNestedWalk(() => foreign.render!()) : null;
+    // Nothing to say about the walk here. This render is the same method a page root calls, and
+    // `runComponentWalk` reads the depth for itself: inside a walk it joins rather than restarting
+    // the count, and with nothing in progress it opens one and claims its own key. Suppressing it
+    // from this side silenced the second case — a component reached with no walk above it never
+    // adopted anything.
+    return typeof foreign.render === 'function' ? foreign.render() : null;
   }
 
   switch (node.nodeKind) {

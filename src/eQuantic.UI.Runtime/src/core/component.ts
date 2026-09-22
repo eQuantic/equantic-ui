@@ -77,13 +77,26 @@ export function resetComponentKeys(): void {
  * means a disagreement leaves the component with its own defaults — a missing value rather than a
  * wrong one.
  */
+const alreadyAdopted = new WeakSet<object>();
+
 export function adoptServerStateFor(target: object, key: string): boolean {
   if (typeof window === 'undefined') return false;
+
+  // ONCE PER INSTANCE, and the payload staying is exactly why this is needed. The lowering resolves
+  // a stateful child against the instance store and gets the SAME object back on every pass, so
+  // every re-render of anything above it wrote the server's original fields over whatever the
+  // reader had changed — a filter that reset itself each time the page redrew. A fresh instance is
+  // a different object and still restores. The root has said this since the first version, as
+  // `adopt: !this._mounted`; this is the same rule for everything below it.
+  if (alreadyAdopted.has(target)) return false;
+
   const w = window as unknown as {
     __INITIAL_STATE__?: Record<string, Record<string, unknown>>;
   };
   const payload = w.__INITIAL_STATE__?.[key];
   if (!payload) return false;
+
+  alreadyAdopted.add(target);
   return applyServerFields(target, payload);
 }
 
@@ -99,35 +112,44 @@ export function adoptServerStateFor(target: object, key: string): boolean {
  * `adopt` is false once the root is mounted: the payload is the first render's answer, and applying
  * it again would undo whatever the page has done since.
  */
-let nestedRenders = 0;
+let walkDepth = 0;
 
 /**
- * Runs a NESTED render — a component that renders itself from inside a walk already in progress —
- * without letting it restart the count.
+ * THE WALK HAS A LIFETIME, which is why this takes the render rather than marking its start.
  *
- * A web component composed in an abstract tree carries no `nodeKind` and renders itself, and that
- * `render()` is the same one a page root calls. Left alone it reset the ordinal map mid-walk, so
- * everything after it started from `#0` again: with two same-type prefetching children, both would
- * claim `Type#0` and the second would be handed the first one's data. Not a missing value — the
- * WRONG one, which is the failure this key was given a type name to prevent.
+ * `render()` is one method, and everything reaches it: a page root, a component a `build()`
+ * returned, a web component composed in an abstract tree that carries no `nodeKind` and renders
+ * itself. Whether a call is the root of a walk or a step inside one is not a property of the
+ * component — it is a property of WHEN it is called — so the only honest answer is to bracket the
+ * render and read the depth.
+ *
+ * Two failures came from guessing instead, one in each direction. A nested render treated as a root
+ * restarted the count mid-walk, so two same-type prefetching children both claimed `Type#0` and the
+ * second was handed the first one's data. Then a flag that suppressed every nested-looking render
+ * silenced the case where nothing was in progress at all, and a component that legitimately opens a
+ * walk never claimed its own key. A depth answers both, and it answers them by construction rather
+ * than by a rule someone has to remember at each new call site.
+ *
+ * `adopt` is false once the root is mounted: the payload is the first render's answer, and applying
+ * it again would undo whatever the page has done since.
  */
-export function withNestedWalk<T>(run: () => T): T {
-  nestedRenders++;
+export function runComponentWalk<T>(root: object, adopt: boolean, run: () => T): T {
+  // A render INSIDE a walk joins it. It claims its key through whichever path reached it, and the
+  // count it would have restarted belongs to the root above it.
+  if (walkDepth === 0) {
+    resetComponentKeys();
+    // The root CONSUMES `#0` even when it is not adopting — it is the first component the server
+    // expanded — or everything under it shifts by one on exactly the renders where adoption is off.
+    const rootKey = nextComponentKey((root.constructor as { name?: string }).name ?? '');
+    if (adopt) adoptServerStateFor(root, rootKey);
+  }
+
+  walkDepth++;
   try {
     return run();
   } finally {
-    nestedRenders--;
+    walkDepth--;
   }
-}
-
-export function beginComponentWalk(root: object, adopt: boolean): void {
-  // A nested render JOINS the walk in progress. It claims its own key through whichever path
-  // reached it, and the count it would have restarted belongs to the root above it.
-  if (nestedRenders > 0) return;
-
-  resetComponentKeys();
-  const rootKey = nextComponentKey((root.constructor as { name?: string }).name ?? '');
-  if (adopt) adoptServerStateFor(root, rootKey);
 }
 
 function applyServerFields(target: object, payload: Record<string, unknown>): boolean {
@@ -184,23 +206,28 @@ export abstract class StatelessComponent extends Component {
       measureText: measurePhotonText,
       monoAdvance: photonMonoAdvance,
     };
-    beginComponentWalk(this, !this._mounted);
-    // Reconciler pass (W6): a stateless page IS re-renderable — build is pure and the instance
-    // store retains nested shared stateful across passes — so those children invalidate by
-    // re-rendering this page, exactly like a stateful host. (The old "no invalidator" fence made
-    // every stateful child of a stateless page render-once: the site's mega menu opened its state
-    // and nothing on screen ever changed.)
-    enterPass(this._instances, () => this._scheduleRender());
-    try {
-      const component = reconcileBuildRoot(this.build(context)) as Component;
-      return component.render();
-    } catch (error) {
-      // A PAGE has no parent to contain it. Its own throw used to leave the root unwritten, which
-      // is the white screen the boundary exists to end.
-      return renderComponentFailure(this.constructor.name, error);
-    } finally {
-      exitPass();
-    }
+    // AROUND THE WHOLE RENDER, because what `build()` returns is rendered through this same method:
+    // outside the walk that child would restart the count and claim `#0` for itself, which for a
+    // component that builds another of its own type gave every level of a recursive tree the ROOT's
+    // data.
+    return runComponentWalk(this, !this._mounted, () => {
+      // Reconciler pass (W6): a stateless page IS re-renderable — build is pure and the instance
+      // store retains nested shared stateful across passes — so those children invalidate by
+      // re-rendering this page, exactly like a stateful host. (The old "no invalidator" fence made
+      // every stateful child of a stateless page render-once: the site's mega menu opened its state
+      // and nothing on screen ever changed.)
+      enterPass(this._instances, () => this._scheduleRender());
+      try {
+        const component = reconcileBuildRoot(this.build(context)) as Component;
+        return component.render();
+      } catch (error) {
+        // A PAGE has no parent to contain it. Its own throw used to leave the root unwritten, which
+        // is the white screen the boundary exists to end.
+        return renderComponentFailure(this.constructor.name, error);
+      } finally {
+        exitPass();
+      }
+    });
   }
 
   _scheduleRender(): void {
@@ -383,18 +410,20 @@ export abstract class StatefulComponent extends Component {
       measureText: measurePhotonText,
       monoAdvance: photonMonoAdvance,
     };
-    beginComponentWalk(this, !this._mounted);
-    // Reconciler pass (W6 slice 2): as a page root this component persists by itself; its store
-    // retains the nested shared stateful its build creates. When hosted inside another page's
-    // render this JOINS the outer pass instead (the host page owns retention).
-    enterPass(this._instances, () => this._scheduleRender());
-    try {
-      return (reconcileBuildRoot(this.build(context)) as Component).render();
-    } catch (error) {
-      return renderComponentFailure(this.constructor.name, error);
-    } finally {
-      exitPass();
-    }
+    // AROUND THE WHOLE RENDER, for the reason the stateless root states.
+    return runComponentWalk(this, !this._mounted, () => {
+      // Reconciler pass (W6 slice 2): as a page root this component persists by itself; its store
+      // retains the nested shared stateful its build creates. When hosted inside another page's
+      // render this JOINS the outer pass instead (the host page owns retention).
+      enterPass(this._instances, () => this._scheduleRender());
+      try {
+        return (reconcileBuildRoot(this.build(context)) as Component).render();
+      } catch (error) {
+        return renderComponentFailure(this.constructor.name, error);
+      } finally {
+        exitPass();
+      }
+    });
   }
 
   mount(container: HTMLElement): void {

@@ -311,12 +311,18 @@ public class ServerRenderingService : IServerRenderingService
                         }
                     }
                 }
-                else if (metadataSource is Primitives.UiComponent)
+                else
                 {
                     // A navigation produces no markup, so there is no drawing to discover through —
                     // the walk has to expand on its own. It still costs only the pages that have
                     // something to find, because a navigation is answering with state in the first
                     // place.
+                    //
+                    // WHATEVER THE ROOT IS. This used to run for a write-once root alone, so an
+                    // escape-hatch page composing a loader was asked on a full load and never on a
+                    // navigation: the reader saw the number, clicked away, came back, and the second
+                    // visit showed the default. The root's own kind decides how the ROOT is asked —
+                    // directly, above — and says nothing about what it composes.
                     navigationPayload = await PrefetchTreeAsync(component, prefetched, asked, context);
                 }
 

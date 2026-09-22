@@ -670,6 +670,57 @@ public class TreePrefetchTests
             => eQuantic.UI.Web.HtmlNode.Text($"Downloads: {_downloads}");
     }
 
+    /// <summary>An escape-hatch root that COMPOSES a write-once component which loads its own data.</summary>
+    private sealed class CoreRootComposingAPrefetcher : eQuantic.UI.Web.HtmlElement
+    {
+        public CoreRootComposingAPrefetcher()
+            => AddChild(new eQuantic.UI.Web.VisualNodeComponent(new StatsHeader()));
+
+        public override eQuantic.UI.Web.HtmlNode Render()
+            => new() { Tag = "div", Children = Children.Select(child => child.Render()).ToList() };
+    }
+
+    /// <summary>
+    /// A NAVIGATION ANSWERS WITH THE SAME DATA A FULL LOAD DREW, on an escape-hatch page too.
+    ///
+    /// <para>
+    /// The drawing discovers by drawing, so a full load found the composed component. A navigation
+    /// draws nothing and has to expand on its own — and that expansion was reached only for a
+    /// write-once root, so a Core page's composed loaders were asked on a full load and never on a
+    /// navigation. The reader would see the number, click away, come back, and the second visit
+    /// would show the default: the same revert, arriving only on the second visit.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public async Task ANavigationToAnEscapeHatchPage_CarriesWhatItsComponentsLoad()
+    {
+        var counts = new Counts();
+        var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder();
+        builder.Services.AddSingleton<ICounts>(counts);
+        builder.Services.AddUI(o => o.ScanAssembly(typeof(TreePrefetchTests).Assembly));
+        await using var app = builder.Build();
+        app.MapPage<CoreRootComposingAPrefetcher>("/tree-prefetch-core-composed");
+
+        var service = app.Services.GetRequiredService<IServerRenderingService>();
+
+        var drawn = await service.RenderPageAsync(nameof(CoreRootComposingAPrefetcher),
+            new DefaultHttpContext { RequestServices = app.Services });
+        drawn.Success.Should().BeTrue(drawn.Error);
+        drawn.Html.Should().Contain("Downloads: 675617", "a full load draws what the component loaded");
+
+        var navigated = await service.PreparePageAsync(nameof(CoreRootComposingAPrefetcher),
+            new DefaultHttpContext { RequestServices = app.Services });
+
+        navigated.Success.Should().BeTrue(navigated.Error);
+        navigated.SerializedState.Should().NotBeNull(
+            $"a navigation answers with state or the page rebuilds from defaults; payload was: "
+            + navigated.SerializedState);
+        using var payload = JsonDocument.Parse(navigated.SerializedState!);
+        payload.RootElement.TryGetProperty($"{nameof(StatsHeader)}#0", out var fields)
+            .Should().BeTrue($"payload was: {navigated.SerializedState}");
+        fields.GetProperty("_downloads").GetString().Should().Be("675617");
+    }
+
     /// <summary>
     /// AN ESCAPE-HATCH PAGE SHIPS WHAT IT LOADED, like every other page that loads something.
     ///

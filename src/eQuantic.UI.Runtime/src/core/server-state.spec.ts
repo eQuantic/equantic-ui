@@ -1,11 +1,12 @@
 import { describe, it, expect, afterEach, beforeEach } from 'vitest';
 import {
   adoptServerStateFor,
-  beginComponentWalk,
   nextComponentKey,
   resetComponentKeys,
-  withNestedWalk,
+  runComponentWalk,
 } from './component';
+import { lowerVisualNode } from '../shared/lowering';
+import type { VisualNodeValue } from '../shared/nodes';
 
 interface Payload {
   __INITIAL_STATE__?: Record<string, Record<string, unknown>>;
@@ -45,7 +46,7 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     const page = new HomePage();
     win.__INITIAL_STATE__ = { 'HomePage#0': { _downloads: 675617, _packages: 24 } };
 
-    beginComponentWalk(page, true);
+    runComponentWalk(page, true, () => undefined);
 
     expect(page._downloads).toBe(675617);
     expect(page._packages).toBe(24);
@@ -76,7 +77,7 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
       'StatsHeader#0': { _count: 2 },
     };
 
-    beginComponentWalk(page, true);
+    runComponentWalk(page, true, () => undefined);
 
     expect(win.__INITIAL_STATE__?.['StatsHeader#0']).toEqual({ _count: 2 });
   });
@@ -120,7 +121,7 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     const page = new Downloads();
     win.__INITIAL_STATE__ = { 'Downloads#0': { _downloads: '675617' } };
 
-    beginComponentWalk(page, true);
+    runComponentWalk(page, true, () => undefined);
 
     expect(page._downloads).toBe(675617);
   });
@@ -148,7 +149,7 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
       },
     };
 
-    beginComponentWalk(page, true);
+    runComponentWalk(page, true, () => undefined);
 
     expect(String(page._total)).toBe('10.50');
     expect(page._count).toBe(9007199254740993n);
@@ -164,7 +165,7 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     const page = new Page() as Page & Record<string, unknown>;
     win.__INITIAL_STATE__ = { 'Page#0': { _downloads: 2, _stale: 'from another page' } };
 
-    beginComponentWalk(page, true);
+    runComponentWalk(page, true, () => undefined);
 
     expect(page._downloads).toBe(2);
     expect('_stale' in page).toBe(false);
@@ -172,7 +173,7 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
 
   it('is a no-op without a payload', () => {
     const page = new HomePage();
-    beginComponentWalk(page, true);
+    runComponentWalk(page, true, () => undefined);
     expect(page._downloads).toBe(627000);
   });
 
@@ -192,14 +193,14 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     const page = new HomePage();
 
     // first render: the root claims #0 and the header gets StatsHeader#0
-    beginComponentWalk(page, true);
+    runComponentWalk(page, true, () => undefined);
     const first = new StatsHeader();
     adoptServerStateFor(first, nextComponentKey('StatsHeader'));
     expect(first._count).toBe(42);
 
     // second render: the root is mounted and does NOT adopt, but must still consume #0 or
     // everything under it shifts by one.
-    beginComponentWalk(page, false);
+    runComponentWalk(page, false, () => undefined);
     const second = new StatsHeader();
     adoptServerStateFor(second, nextComponentKey('StatsHeader'));
     expect(second._count).toBe(42);
@@ -209,8 +210,81 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     class HomePage2 {
       _x = 0;
     }
-    beginComponentWalk(new HomePage2(), false);
+    runComponentWalk(new HomePage2(), false, () => undefined);
     expect(nextComponentKey('HomePage2')).toBe('HomePage2#1');
+  });
+
+  it('a BUILD ROOT joins the walk instead of claiming the root key again', () => {
+    // Both root render methods call `component.render()` on what `build()` returned, and that
+    // render() is this same entry point. Outside the walk it restarted the count and claimed `#0` —
+    // so a component that builds another of its OWN type handed the child the ROOT's entry. The
+    // server never named that child at all, which makes the old answer a WRONG value where the
+    // right one is no value.
+    class TreeNode {
+      _label = 'default';
+    }
+    win.__INITIAL_STATE__ = { 'TreeNode#0': { _label: 'the root' } };
+
+    const outer = new TreeNode();
+    const inner = new TreeNode();
+
+    runComponentWalk(outer, true, () => runComponentWalk(inner, true, () => undefined));
+
+    expect(outer._label).toBe('the root');
+    expect(inner._label).toBe('default');
+  });
+
+  it('adopts ONCE per instance, so a retained component keeps what it has done since', () => {
+    // The lowering resolves a stateful child against the instance store and gets the SAME object
+    // back on every pass, while the payload is deliberately kept for the life of the document. So
+    // every re-render of the parent wrote the server's original fields over whatever the reader had
+    // changed: a filter reset itself each time anything above it redrew. The root already adopts
+    // only while unmounted; this is the same rule for everything below it.
+    class Filter {
+      _query = '';
+    }
+    win.__INITIAL_STATE__ = { 'Filter#0': { _query: 'server' } };
+
+    const retained = new Filter();
+    expect(adoptServerStateFor(retained, nextComponentKey('Filter'))).toBe(true);
+    expect(retained._query).toBe('server');
+
+    retained._query = 'what the reader typed';
+
+    resetComponentKeys();
+    expect(adoptServerStateFor(retained, nextComponentKey('Filter'))).toBe(false);
+    expect(retained._query).toBe('what the reader typed');
+  });
+
+  it('a FOREIGN render with nothing in progress opens its own walk', () => {
+    // The lowering's mixing seam hands a web component its own render(). That call used to be
+    // wrapped in a "this is nested" marker, which is right while a walk is running and wrong when
+    // none is: a component reached with nothing above it then claimed no key and adopted nothing,
+    // although the server had named it. Depth answers both without the call site deciding.
+    class Widget {
+      _text = 'default';
+    }
+    win.__INITIAL_STATE__ = { 'Widget#0': { _text: 'from the server' } };
+
+    const widget = new Widget();
+    const foreign = {
+      render: () =>
+        runComponentWalk(widget, true, () => ({
+          tag: 'aside',
+          attributes: {},
+          events: {},
+          children: [],
+        })),
+    } as unknown as VisualNodeValue;
+
+    lowerVisualNode(foreign, {
+      textPrimary: {
+        light: { r: 0, g: 0, b: 0, a: 255 },
+        dark: { r: 255, g: 255, b: 255, a: 255 },
+      },
+    });
+
+    expect(widget._text).toBe('from the server');
   });
 
   it('a NESTED render joins the walk instead of restarting it', () => {
@@ -228,16 +302,17 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     };
 
     const page = new HomePage();
-    beginComponentWalk(page, true);
-
     const first = new StatsHeader();
-    adoptServerStateFor(first, nextComponentKey('StatsHeader'));
-
-    // the foreign-render seam: something nested calls the root's own entry point
-    withNestedWalk(() => beginComponentWalk(new HomePage(), false));
-
     const second = new StatsHeader();
-    adoptServerStateFor(second, nextComponentKey('StatsHeader'));
+
+    runComponentWalk(page, true, () => {
+      adoptServerStateFor(first, nextComponentKey('StatsHeader'));
+
+      // the foreign-render seam: something nested calls the root's own entry point
+      runComponentWalk(new HomePage(), false, () => undefined);
+
+      adoptServerStateFor(second, nextComponentKey('StatsHeader'));
+    });
 
     expect(first._count).toBe(10);
     expect(second._count).toBe(20);
