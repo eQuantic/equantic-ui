@@ -11,7 +11,12 @@
  *   class string per element; only custom-property tails stay inline.
  */
 
-import { adoptServerStateFor, nextComponentKey, renderNamedComponent } from '../core/component';
+import {
+  adoptServerStateFor,
+  nextComponentKey,
+  renderNamedComponent,
+  runLoweringWalk,
+} from '../core/component';
 import { assertNever } from '../utils/assert-never';
 import { round as dotnetRound } from '../utils/dotnet-math';
 import { PINNED_MARKER } from './markers';
@@ -143,13 +148,18 @@ export function lowerVisualNode(node: VisualNodeValue, context: LoweringContext)
   // Inside a reconciler pass each lowered root takes a unique, order-stable prefix so several
   // bridges on one page cannot collide on identity paths; outside a pass paths are inert.
   const rootPath = getActivePass()?.store.nextRootPath() ?? 'r';
-  return (
-    lowerNode(node, context, null, rootPath) ?? {
-      tag: 'span',
-      attributes: {},
-      events: {},
-      children: [],
-    }
+  // THE SERVER-DATA WALK, around the whole tree: inside a page render this joins the one the root
+  // opened, and standing alone — a Core page's bridge to a write-once subtree reaches here with no
+  // root render of its own — it opens one, so the components below are named from `#0` on every
+  // render rather than counting on from the last.
+  return runLoweringWalk(
+    () =>
+      lowerNode(node, context, null, rootPath) ?? {
+        tag: 'span',
+        attributes: {},
+        events: {},
+        children: [],
+      },
   );
 }
 

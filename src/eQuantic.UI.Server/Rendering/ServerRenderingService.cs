@@ -452,9 +452,13 @@ public class ServerRenderingService : IServerRenderingService
     {
         var wire = new Dictionary<string, IReadOnlyDictionary<string, object?>>(StringComparer.Ordinal);
 
+        // The LAST round's tree, which is the one the client will build — the filter below reads it.
+        Web.ComponentExpansionScope? settled = null;
+
         for (var round = 0; round < MaxPrefetchRounds; round++)
         {
             var scope = new Web.ComponentExpansionScope { Restore = loaded };
+            settled = scope;
             Expand(component, scope);
 
             var pending = scope.Expanded
@@ -488,6 +492,20 @@ public class ServerRenderingService : IServerRenderingService
                 // the payload from later.
                 loaded[pair.Key] = Web.ComponentExpansionScope.WhatLoaded(pair.Value, asBuilt);
                 wire[pair.Key] = Snapshot(pair.Value);
+            }
+        }
+
+        // THE TREE IT ENDED WITH, not every component a round passed through. A drawing reads its
+        // payload off the instances that drew, so a component discovered in one round and gone from
+        // the next is left out by construction; the walk here keeps what it loads as it goes, so it
+        // has to drop the same ones itself or the two paths answer differently for one page. The
+        // client cannot tell a stale key from a live one — it has no identity check of its own —
+        // so it would hand that state to whatever landed on the name.
+        if (settled is not null)
+        {
+            foreach (var stale in wire.Keys.Where(key => !settled.Expanded.ContainsKey(key)).ToList())
+            {
+                wire.Remove(stale);
             }
         }
 

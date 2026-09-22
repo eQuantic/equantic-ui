@@ -403,6 +403,55 @@ public class TreePrefetchTests
             + "nothing to re-load");
     }
 
+    /// <summary>Its own prefetch decides that the header is not shown after all.</summary>
+    [Page("/tree-prefetch-dropped")]
+    private sealed class PageThatDropsItsHeader : Primitives.StatelessComponent, IServerPrefetch
+    {
+        private bool _show = true;
+
+        [ServerOnly]
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            _show = false;
+            return Task.CompletedTask;
+        }
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column(gap: Space.S2);
+            if (_show) column.Add(new StatsHeader());
+            column.Add(new Text("body", TypeRole.BodyM));
+            return column;
+        }
+    }
+
+    /// <summary>
+    /// A NAVIGATION SHIPS THE TREE IT ENDED WITH, not every component a round passed through.
+    ///
+    /// <para>
+    /// A drawing reads its payload off the instances that drew, so a component discovered in one
+    /// round and gone from the next has nothing on the page for its state to belong to and is left
+    /// out. The navigation walk kept what it loaded as it went and returned all of it, so the two
+    /// paths disagreed about the same page: the entry stayed, and the client's own walk — which has
+    /// no way to tell a stale key from a live one — would hand it to whatever landed on that name.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public async Task ANavigationCarriesNoEntryForAComponentTheDataDropped()
+    {
+        var context = RequestWith(out _);
+
+        var result = await CreateService().PreparePageAsync(nameof(PageThatDropsItsHeader), context);
+
+        result.Success.Should().BeTrue(result.Error);
+        if (result.SerializedState is null) return;
+
+        using var payload = JsonDocument.Parse(result.SerializedState);
+        payload.RootElement.TryGetProperty($"{nameof(StatsHeader)}#0", out _).Should().BeFalse(
+            "the header is not on the page the navigation answers with; payload was: "
+            + result.SerializedState);
+    }
+
     /// <summary>A row that knows WHICH row it is, and loads for that one.</summary>
     private sealed class Row : Primitives.StatelessComponent, IServerPrefetch
     {

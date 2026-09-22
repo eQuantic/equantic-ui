@@ -145,6 +145,26 @@ let walkDepth = 0;
  * `adopt` is false once the root is mounted: the payload is the first render's answer, and applying
  * it again would undo whatever the page has done since.
  */
+export function runLoweringWalk<T>(run: () => T): T {
+  // ONE LIFETIME FOR ONE LOWERING. Every lowering goes through `lowerVisualNode`, so this is where
+  // an outermost one restarts the count — a Core page's bridge to a write-once subtree reaches the
+  // lowering directly, with no `runComponentWalk` of its own, and nothing else would restart it:
+  // the same child was named `Type#0` on one render and `Type#1` on the next, so every render after
+  // the first left it with its defaults.
+  //
+  // Here rather than at the seam below, and that is the whole reason it is a separate function:
+  // resetting per named component would restart the count between two SIBLINGS, and both would
+  // claim `#0`.
+  if (walkDepth === 0) resetComponentKeys();
+
+  walkDepth++;
+  try {
+    return run();
+  } finally {
+    walkDepth--;
+  }
+}
+
 export function renderNamedComponent<T>(component: object, run: () => T): T {
   // NAMED HERE, because the lowering is what reached it. A write-once StatelessComponent twin
   // carries no `nodeKind` — only StatefulComponent declares one — so it arrives at the mixing seam

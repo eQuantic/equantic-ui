@@ -332,6 +332,41 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     expect(widget._text).toBe('from the server');
   });
 
+  it('restarts the count for an OUTERMOST bridge render too, not only a page root', () => {
+    // A Core page composes a write-once subtree through a VisualNodeComponent, whose render() goes
+    // straight to the lowering — no `runComponentWalk` of its own. When that bridge render is the
+    // outermost thing happening, nothing restarted the count, so the SAME child was named Type#0 on
+    // one render and Type#1 on the next: the payload names the first, and every render after the
+    // first reverted the component to its defaults.
+    class Widget {
+      _text = 'default';
+      render() {
+        return runComponentWalk(this, true, () => ({
+          tag: 'aside',
+          attributes: {},
+          events: {},
+          children: [],
+        }));
+      }
+    }
+    win.__INITIAL_STATE__ = { 'Widget#0': { _text: 'from the server' } };
+
+    const context = {
+      textPrimary: {
+        light: { r: 0, g: 0, b: 0, a: 255 },
+        dark: { r: 255, g: 255, b: 255, a: 255 },
+      },
+    };
+
+    const first = new Widget();
+    lowerVisualNode(first as unknown as VisualNodeValue, context);
+    expect(first._text).toBe('from the server');
+
+    const second = new Widget();
+    lowerVisualNode(second as unknown as VisualNodeValue, context);
+    expect(second._text).toBe('from the server');
+  });
+
   it('a NESTED render joins the walk instead of restarting it', () => {
     // A web component composed in an abstract tree carries no nodeKind and renders itself — and
     // that render() is the same method a page root calls. Left alone it reset the count mid-walk,
