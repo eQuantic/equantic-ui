@@ -3,23 +3,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace eQuantic.UI.Images.Tests;
 
-[Collection("ImageState")]
-public class ImageExtensionsTests : IDisposable
+public class ImageExtensionsTests
 {
-    public ImageExtensionsTests()
-    {
-        ImageOptimizationState.IsEnabled = false;
-        ImageOptimizationState.DefaultQuality = 75;
-    }
-
-    public void Dispose()
-    {
-        ImageOptimizationState.IsEnabled = false;
-        ImageOptimizationState.DefaultQuality = 75;
-        ImageOptimizationState.DeviceSizes = [640, 750, 828, 1080, 1200, 1920, 2048, 3840];
-        ImageOptimizationState.ImageSizes = [32, 48, 64, 96, 128, 256, 384];
-    }
-
     [Fact]
     public void AddImageOptimization_RegistersAllServices()
     {

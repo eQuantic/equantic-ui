@@ -65,13 +65,8 @@ public static class ImageExtensions
 
     private static void ConfigureImageOptimization(IEndpointRouteBuilder endpoints, ImageOptimizationOptions options)
     {
-        // Map the image optimization endpoint
+        // The endpoint IS the feature: it reads ImageOptimizationOptions from the request's
+        // services on every call, so there is nothing to publish to a static beside it.
         endpoints.MapGet("/_equantic/image", ImageOptimizationMiddleware.HandleAsync);
-
-        // Set global state so the Image component knows optimization is available
-        ImageOptimizationState.IsEnabled = true;
-        ImageOptimizationState.DefaultQuality = options.DefaultQuality;
-        ImageOptimizationState.DeviceSizes = options.DeviceSizes;
-        ImageOptimizationState.ImageSizes = options.ImageSizes;
     }
 }
