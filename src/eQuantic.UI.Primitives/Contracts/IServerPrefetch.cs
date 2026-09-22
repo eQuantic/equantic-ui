@@ -1,15 +1,32 @@
 namespace eQuantic.UI.Primitives;
 
 /// <summary>
-/// SERVER DATA for the first render: a page (or any component the page composes) declares the data
-/// it needs, the SSR pipeline awaits it BEFORE building the tree, and the values the prefetch stores
-/// travel to the browser so hydration sees exactly what the server rendered — the markup carries
-/// real numbers for crawlers and the client never flashes an empty state.
+/// SERVER DATA for the first render: a page — or any component the page composes — declares the
+/// data it needs, the SSR pipeline awaits it BEFORE drawing the tree, and the values the prefetch
+/// stores travel to the browser so hydration sees exactly what the server rendered — the markup
+/// carries real numbers for crawlers and the client never flashes an empty state.
+/// <para>
+/// ANY COMPONENT, and that sentence used to be a promise the pipeline did not keep. Only the root of
+/// the route was asked and only its fields travelled, so a header composed into every route drew the
+/// right value during SSR and blanked the moment hydration rebuilt it — `curl` returned perfect
+/// HTML and only a browser showed the loss. The traversal below is what makes the sentence true.
+/// </para>
+/// <para>
+/// HOW IT REACHES YOU: the tree is expanded once to find out who wants data, every prefetch is
+/// awaited together, and the drawing expands again with the values restored. The round repeats while
+/// it keeps finding components it has not asked — a page that loads a list and then composes one
+/// component per row creates prefetchers that did not exist when the first round looked. The payload
+/// names each component <c>Type#ordinal</c> in that expansion order, and the client counts the same
+/// way as it builds, so each component is handed back its own fields. A tree that somehow differs
+/// between the two sides leaves a component with its DEFAULTS rather than another component's data:
+/// the type in the key has to match before anything is written.
+/// </para>
 /// <para>
 /// The implementation is SERVER-ONLY: mark it <c>[ServerOnly]</c> so the transpiler omits it from
 /// the client bundle, and it may use the whole server surface (HttpClient, EF, the request's
-/// services). Store results in ordinary FIELDS — those are what the hydration payload carries, keyed
-/// by field name, into the identical fields of the transpiled twin.
+/// services). Store results in ordinary FIELDS — those are what the hydration payload carries, by
+/// field name within the component's entry, into the identical fields of the transpiled twin. A
+/// field declared on a BASE class travels too, private ones included.
 /// </para>
 /// <example>
 /// <code>

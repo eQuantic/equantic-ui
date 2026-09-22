@@ -200,9 +200,18 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context)
     /// card). `ExpandContained` rather than `BuildContained` because the expansion RECURSES here,
     /// and a component that builds itself would otherwise walk back in forever.
     /// </summary>
-    public HtmlElement? Visit(UiComponent component, bool? horizontalAxis) =>
-        component.ExpandContained(_context, (Visitor: this, Axis: horizontalAxis),
+    public HtmlElement? Visit(UiComponent component, bool? horizontalAxis)
+    {
+        // NAMED BEFORE IT BUILDS, and the order is the whole mechanism: ExpandContained runs
+        // Build on the next line, so anything a previous discovery round loaded for this component
+        // has to be back on it by now or the build reads the empty defaults again. Null outside an
+        // SSR expansion, which is every other caller — the web realizer is also the email one's and
+        // the design host's, and neither prefetches.
+        ComponentExpansionScope.Ambient?.Enter(component);
+
+        return component.ExpandContained(_context, (Visitor: this, Axis: horizontalAxis),
             static (built, state) => state.Visitor.Lower(built, state.Axis));
+    }
 
     // ---- what more than one family reaches ---------------------------------------------
 

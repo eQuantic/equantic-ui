@@ -86,7 +86,10 @@ public class ClientNavigationStateTests
 
         payload.TryGetProperty("state", out var state).Should().BeTrue(
             "without it the page renders the empty state it shows while data loads, forever");
-        state.GetProperty("Loaded").GetString().Should().Be("from the server");
+        // KEYED BY COMPONENT since a component the page composes may prefetch too — a flat map
+        // could not say which one a field belongs to. The page is the first component expanded.
+        state.GetProperty($"{nameof(ProbePage)}#0").GetProperty("Loaded").GetString()
+            .Should().Be("from the server");
     }
 
     [Fact]

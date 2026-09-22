@@ -133,7 +133,8 @@ public class ServedDocumentContractTests
         payload.Success.Should().BeTrue("the page prefetches, so the document must carry its state");
 
         var state = JsonDocument.Parse(payload.Groups[1].Value).RootElement;
-        var downloads = state.GetProperty("Downloads");
+        // KEYED BY COMPONENT (see the navigation test for why); the page is the first expanded.
+        var downloads = state.GetProperty($"{nameof(ContractPage)}#0").GetProperty("Downloads");
 
         downloads.ValueKind.Should().Be(JsonValueKind.String,
             "a long crosses as text — as a JSON number it lands in a bigint slot, and past 2^53 it "

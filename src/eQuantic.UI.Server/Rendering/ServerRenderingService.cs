@@ -147,12 +147,123 @@ public class ServerRenderingService : IServerRenderingService
 
             try
             {
-                // SERVER DATA FIRST (IServerPrefetch): load before the tree is built, with the REQUEST's
-                // services, so the markup carries real values (crawlers see them) and the hydration
-                // payload below hands the client the same ones.
-                if (metadataSource is Primitives.IServerPrefetch prefetch)
+                // SERVER DATA (IServerPrefetch) for EVERY component in the tree, not just the root.
+                // The root used to be the only one asked, while the contract said any component the
+                // page composes may declare server data — so a header composed into every route drew
+                // the right value during SSR and blanked the moment hydration rebuilt it from a
+                // payload that never carried the field.
+                //
+                // THE DRAWING IS ROUND ZERO, and that is a measurement rather than a preference. For
+                // a write-once page the components do not exist until the realizer builds them, so
+                // discovery needs an expansion — and doing it BEFORE the drawing cost every page 20%
+                // of its SSR time, prefetch or not: a page declaring no server data at all paid for a
+                // walk that could only ever find nothing. Drawing first means such a page renders
+                // exactly once, as it always did, and only a page that actually loads something draws
+                // again.
+                var prefetched = new Dictionary<string, IReadOnlyDictionary<string, object?>>(StringComparer.Ordinal);
+                var asked = new HashSet<string>(StringComparer.Ordinal);
+
+                // A CORE page is an IComponent tree, not a write-once one, so it never passes through
+                // the realizer's component visit and the walk below would find nothing to ask. Its
+                // root is asked directly, which is what the pipeline did for every page before this.
+                if (metadataSource is not Primitives.UiComponent && metadataSource is Primitives.IServerPrefetch coreRoot)
                 {
-                    await prefetch.PrefetchAsync(context.RequestServices, context.RequestAborted);
+                    await coreRoot.PrefetchAsync(context.RequestServices, context.RequestAborted);
+                    prefetched[$"{metadataSource.GetType().Name}#0"] = Snapshot(metadataSource);
+                }
+
+                // THE DRAWING, and everything that only the drawing needs. A client navigation asks
+                // for none of it: the browser already has the component and builds the tree itself,
+                // so markup rendered here would be markup thrown away — a whole tree build, plus its
+                // assets and its atomic rules, per navigation.
+                var assets = new AssetCollection();
+                var html = string.Empty;
+                // Out here with the html and the paint servers, and for the same reason: the
+                // payload is built past the end of the drawing block, from the components that drew.
+                Web.ComponentExpansionScope? renderScope = null;
+                // Declared out here for the same reason the html is: a page that did not draw has
+                // no paint servers to declare, and the result is built past the end of this block.
+                string? vectorDefs = null;
+                if (draw)
+                {
+                    // The loop repeats because the SET of components can depend on the data: what a
+                    // page composes after loading a list is not knowable before loading it. It ends
+                    // the moment a round finds no component it has not already asked, which for a
+                    // page with no prefetch at all is the first one.
+                    for (var round = 0; round < MaxPrefetchRounds; round++)
+                    {
+                        assets = new AssetCollection();
+                        vectorDefs = null;
+                        CollectAssets(component, assets, context.RequestServices, new HashSet<Type>());
+
+                        // Render with an AMBIENT style sink armed (STYLE-SEMANTICS-PLAN §2): every
+                        // write-once bridge in the tree — top-level page or composed inside a Core
+                        // component — collects its atomic rules into this one per-page set.
+                        var styles = new Web.StyleSink();
+                        Web.StyleSink.Ambient = styles;
+                        // The same shape, for the same reason, one layer over: every gradient the page
+                        // paints with, declared ONCE for the document instead of once per drawing.
+                        var gradients = new Web.GradientSink();
+                        Web.GradientSink.Ambient = gradients;
+                        // Armed the same way and for the same reason: a component that throws is
+                        // contained to its own subtree instead of turning this request into a 500.
+                        // Development quotes the exception in the panel; production says only that a
+                        // section is missing, and either way the failure reaches the log.
+                        Primitives.ComponentBoundary.Diagnostics = IsDevelopment(context);
+                        Primitives.ComponentBoundary.Report = (failed, error) => _logger.LogError(error,
+                            "Component {Component} failed to render and was contained", failed.GetType().Name);
+                        // NAMES every component as the realizer expands it, and hands back what an
+                        // earlier round loaded for it — before its Build runs, or the build reads the
+                        // defaults again and the round was wasted.
+                        renderScope = new Web.ComponentExpansionScope { Restore = prefetched };
+                        Web.ComponentExpansionScope.Ambient = renderScope;
+                        try
+                        {
+                            html = RenderComponent(component);
+                        }
+                        finally
+                        {
+                            Web.ComponentExpansionScope.Ambient = null;
+                            Web.StyleSink.Ambient = null;
+                            Web.GradientSink.Ambient = null;
+                            Primitives.ComponentBoundary.Report = null;
+                        }
+
+                        // Inject exactly the rules this markup references, so hydration matches by class
+                        // identity. The id lets the client registry adopt them instead of re-inserting.
+                        if (!styles.IsEmpty)
+                        {
+                            assets.Add(new InlineStyleAsset(styles.Css, "eq-atomic"));
+                        }
+
+                        // The page's own paint servers, rendered the same way the page was.
+                        if (!gradients.IsEmpty) vectorDefs = RenderComponent(gradients.Container());
+
+                        var pending = renderScope.Expanded
+                            .Where(pair => pair.Value is Primitives.IServerPrefetch && asked.Add(pair.Key))
+                            .ToList();
+
+                        // THE MARKUP THIS ROUND PRODUCED IS THE ANSWER when nothing new asked for
+                        // data — which is every page that declares none, on its first pass.
+                        if (pending.Count == 0) break;
+
+                        // TOGETHER, not one after another. Each prefetch is a round trip the page is
+                        // already waiting on, and they do not depend on each other within a round —
+                        // one that depends on another's data is the case the NEXT round exists for.
+                        await Task.WhenAll(pending.Select(pair =>
+                            ((Primitives.IServerPrefetch)pair.Value).PrefetchAsync(
+                                context.RequestServices, context.RequestAborted)));
+
+                        foreach (var pair in pending) prefetched[pair.Key] = Snapshot(pair.Value);
+                    }
+                }
+                else if (metadataSource is Primitives.UiComponent)
+                {
+                    // A navigation produces no markup, so there is no drawing to discover through —
+                    // the walk has to expand on its own. It still costs only the pages that have
+                    // something to find, because a navigation is answering with state in the first
+                    // place.
+                    prefetched = await PrefetchTreeAsync(component, prefetched, asked, context);
                 }
 
                 // THEN metadata, and the order is the whole point. ConfigureMetadata used to run first,
@@ -170,64 +281,22 @@ public class ServerRenderingService : IServerRenderingService
                     metadataHandler.ConfigureMetadata(new SeoBuilder(metadata));
                 }
 
-                // THE DRAWING, and everything that only the drawing needs. A client navigation asks
-                // for none of it: the browser already has the component and builds the tree itself,
-                // so markup rendered here would be markup thrown away — a whole tree build, plus its
-                // assets and its atomic rules, per navigation.
-                var assets = new AssetCollection();
-                var html = string.Empty;
-                // Declared out here for the same reason the html is: a page that did not draw has
-                // no paint servers to declare, and the result is built past the end of this block.
-                string? vectorDefs = null;
-                if (draw)
-                {
-                    CollectAssets(component, assets, context.RequestServices, new HashSet<Type>());
-
-                    // Render with an AMBIENT style sink armed (STYLE-SEMANTICS-PLAN §2): every
-                    // write-once bridge in the tree — top-level page or composed inside a Core
-                    // component — collects its atomic rules into this one per-page set.
-                    var styles = new Web.StyleSink();
-                    Web.StyleSink.Ambient = styles;
-                    // The same shape, for the same reason, one layer over: every gradient the page
-                    // paints with, declared ONCE for the document instead of once per drawing.
-                    var gradients = new Web.GradientSink();
-                    Web.GradientSink.Ambient = gradients;
-                    // Armed the same way and for the same reason: a component that throws is
-                    // contained to its own subtree instead of turning this request into a 500.
-                    // Development quotes the exception in the panel; production says only that a
-                    // section is missing, and either way the failure reaches the log.
-                    Primitives.ComponentBoundary.Diagnostics = IsDevelopment(context);
-                    Primitives.ComponentBoundary.Report = (failed, error) => _logger.LogError(error,
-                        "Component {Component} failed to render and was contained", failed.GetType().Name);
-                    try
-                    {
-                        html = RenderComponent(component);
-                    }
-                    finally
-                    {
-                        Web.StyleSink.Ambient = null;
-                        Web.GradientSink.Ambient = null;
-                        Primitives.ComponentBoundary.Report = null;
-                    }
-
-                    // Inject exactly the rules this markup references, so hydration matches by class
-                    // identity. The id lets the client registry adopt them instead of re-inserting.
-                    if (!styles.IsEmpty)
-                    {
-                        assets.Add(new InlineStyleAsset(styles.Css, "eq-atomic"));
-                    }
-
-                    // The page's own paint servers, rendered the same way the page was.
-                    if (!gradients.IsEmpty) vectorDefs = RenderComponent(gradients.Container());
-                }
-
                 // Serialize state for hydration. A write-once page carries its state in its OWN
                 // fields (there is no separate state object), and the transpiled twin declares the
                 // same field names — so the payload crosses by name.
+                // EVERY component that prefetched, read off the instances that actually DREW —
+                // renderScope holds those, so the payload cannot disagree with the markup beside it.
                 string? serializedState = null;
-                if (component is Web.VisualNodeComponent writeOnce && writeOnce.Node is Primitives.IServerPrefetch)
+                if (prefetched.Count > 0)
                 {
-                    serializedState = SerializeState(writeOnce.Node);
+                    var payload = new Dictionary<string, IReadOnlyDictionary<string, object?>>(StringComparer.Ordinal);
+                    foreach (var key in prefetched.Keys)
+                    {
+                        payload[key] = renderScope is not null && renderScope.Expanded.TryGetValue(key, out var drew)
+                            ? Snapshot(drew)
+                            : prefetched[key];
+                    }
+                    serializedState = SerializeState(payload);
                 }
 
                 _logger.LogDebug("SSR completed for page: {PageType}, HTML length: {Length}",
@@ -262,6 +331,89 @@ public class ServerRenderingService : IServerRenderingService
     }
 
     /// <inheritdoc />
+    /// <summary>
+    /// How many times the tree may be expanded looking for new prefetchers. Two is the ordinary
+    /// answer — one round finds them, the next confirms nothing new appeared — and more than two
+    /// only happens when a component EXISTS because of what another one loaded, which is the case
+    /// a single round cannot see: a page that loads a list and then composes one component per row,
+    /// each declaring its own server data. The cap is what stops a tree that keeps growing from
+    /// holding a request open; past it the page draws with what it has rather than failing, because
+    /// a missing value is recoverable and a hung request is not.
+    /// </summary>
+    private const int MaxPrefetchRounds = 5;
+
+    /// <summary>
+    /// Loads the server data for EVERY <see cref="Primitives.IServerPrefetch"/> the page expands,
+    /// and returns it keyed by component so the render below — and the client after it — can hand
+    /// each value back to the component it belongs to.
+    ///
+    /// <para>
+    /// It costs an expansion, and the reason is structural rather than lazy: for a write-once page
+    /// the component tree does not exist until the realizer builds it, and the realizer is
+    /// synchronous while a prefetch is not. So the tree is expanded to find out WHO wants data, the
+    /// loads are awaited together, and the render below expands again with the values restored. The
+    /// discovery expansion builds no HTML and no string — it stops at the realized element.
+    /// </para>
+    ///
+    /// <para>
+    /// The loop repeats because the SET of components can depend on the data: what a page composes
+    /// after loading a list is not knowable before loading it. It ends the moment a round finds no
+    /// component it has not already asked.
+    /// </para>
+    /// </summary>
+    private async Task<Dictionary<string, IReadOnlyDictionary<string, object?>>> PrefetchTreeAsync(
+        IComponent component,
+        Dictionary<string, IReadOnlyDictionary<string, object?>> loaded,
+        HashSet<string> asked,
+        HttpContext context)
+    {
+        for (var round = 0; round < MaxPrefetchRounds; round++)
+        {
+            var scope = new Web.ComponentExpansionScope { Restore = loaded };
+            Expand(component, scope);
+
+            var pending = scope.Expanded
+                .Where(pair => pair.Value is Primitives.IServerPrefetch && asked.Add(pair.Key))
+                .ToList();
+
+            if (pending.Count == 0) break;
+
+            // TOGETHER, not one after another. Each prefetch is a round trip the page is already
+            // waiting on, and they do not depend on each other within a round — one that depends on
+            // another's data is the case the NEXT round exists for.
+            await Task.WhenAll(pending.Select(pair =>
+                ((Primitives.IServerPrefetch)pair.Value).PrefetchAsync(
+                    context.RequestServices, context.RequestAborted)));
+
+            foreach (var pair in pending) loaded[pair.Key] = Snapshot(pair.Value);
+        }
+
+        return loaded;
+    }
+
+    /// <summary>
+    /// One discovery expansion: builds the tree and throws the result away, with its own style and
+    /// gradient sinks so nothing it collects reaches the page the request actually serves.
+    /// </summary>
+    private static void Expand(IComponent component, Web.ComponentExpansionScope scope)
+    {
+        var styles = Web.StyleSink.Ambient;
+        var gradients = Web.GradientSink.Ambient;
+        Web.StyleSink.Ambient = new Web.StyleSink();
+        Web.GradientSink.Ambient = new Web.GradientSink();
+        Web.ComponentExpansionScope.Ambient = scope;
+        try
+        {
+            component.Render();
+        }
+        finally
+        {
+            Web.ComponentExpansionScope.Ambient = null;
+            Web.StyleSink.Ambient = styles;
+            Web.GradientSink.Ambient = gradients;
+        }
+    }
+
     public string RenderComponent(IComponent component)
     {
         ArgumentNullException.ThrowIfNull(component);
@@ -408,18 +560,23 @@ public class ServerRenderingService : IServerRenderingService
     /// <summary>
     /// Serializes component state to JSON for client-side hydration.
     /// </summary>
-    private string? SerializeState(object state)
+    /// <summary>
+    /// ONE component's fields as the payload carries them — and as the discovery loop restores them
+    /// onto the next round's fresh instance, which is the same question asked twice.
+    /// </summary>
+    private IReadOnlyDictionary<string, object?> Snapshot(object state)
     {
         try
         {
             // Use reflection to extract all fields (including private) into a dictionary
             var stateDict = new Dictionary<string, object?>();
-            var stateType = state.GetType();
 
-            // Current implementation skips backing fields for auto-properties (they start with <)
-            // We need to include them to preserve state during hydration
-            var flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
-            var fields = state.GetType().GetFields(flags);
+            // ITS BASES INCLUDED. GetFields alone does not return a base type's PRIVATE fields, so
+            // a page keeping its loaded value in a private field on a base class had it dropped
+            // from the payload in silence — the value drew and then vanished on hydration, the same
+            // symptom the dependency guard below describes. Unreachable until a component over an
+            // app-owned base became usable at all; reachable now, so it is fixed here.
+            var fields = Web.ComponentExpansionScope.FieldsOf(state.GetType());
             
             foreach (var field in fields)
             {
@@ -510,8 +667,35 @@ public class ServerRenderingService : IServerRenderingService
                 }
             }
 
-            var json = System.Text.Json.JsonSerializer.Serialize(stateDict, options);
-            _logger.LogInformation($"[SSR Hydration] Serialized state: {json}");
+            return stateDict;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to read state for hydration");
+            return new Dictionary<string, object?>();
+        }
+    }
+
+    /// <summary>
+    /// The hydration payload: a field map PER COMPONENT, keyed the way the realizer named each one.
+    ///
+    /// <para>
+    /// It used to be one flat map, because only the root could prefetch and only the root's fields
+    /// travelled. Now that any component the page composes may declare server data, a flat map
+    /// cannot say which component a field belongs to — two components holding a field of the same
+    /// name would overwrite each other, silently and in whichever order reflection happened to
+    /// return them.
+    /// </para>
+    /// </summary>
+    private string? SerializeState(IReadOnlyDictionary<string, IReadOnlyDictionary<string, object?>> byComponent)
+    {
+        if (byComponent.Count == 0) return null;
+
+        try
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(
+                byComponent, eQuantic.UI.Server.Json.EqJson.Options);
+            _logger.LogDebug("[SSR Hydration] Serialized state for {Count} component(s)", byComponent.Count);
             return json;
         }
         catch (Exception ex)
