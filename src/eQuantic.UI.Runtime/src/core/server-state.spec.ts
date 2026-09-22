@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, beforeEach } from 'vitest';
-import { adoptServerState, adoptServerStateFor, nextComponentKey, resetComponentKeys } from './component';
+import { adoptServerStateFor, beginComponentWalk, nextComponentKey, resetComponentKeys } from './component';
 
 interface Payload {
   __INITIAL_STATE__?: Record<string, Record<string, unknown>>;
@@ -39,7 +39,7 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     const page = new HomePage();
     win.__INITIAL_STATE__ = { 'HomePage#0': { _downloads: 675617, _packages: 24 } };
 
-    adoptServerState(page);
+    beginComponentWalk(page, true);
 
     expect(page._downloads).toBe(675617);
     expect(page._packages).toBe(24);
@@ -54,7 +54,7 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
       'StatsHeader#0': { _count: 2 },
     };
 
-    adoptServerState(page);
+    beginComponentWalk(page, true);
 
     expect(win.__INITIAL_STATE__?.['StatsHeader#0']).toEqual({ _count: 2 });
   });
@@ -98,7 +98,7 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     const page = new Downloads();
     win.__INITIAL_STATE__ = { 'Downloads#0': { _downloads: '675617' } };
 
-    adoptServerState(page);
+    beginComponentWalk(page, true);
 
     expect(page._downloads).toBe(675617);
   });
@@ -126,7 +126,7 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
       },
     };
 
-    adoptServerState(page);
+    beginComponentWalk(page, true);
 
     expect(String(page._total)).toBe('10.50');
     expect(page._count).toBe(9007199254740993n);
@@ -142,7 +142,7 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     const page = new Page() as Page & Record<string, unknown>;
     win.__INITIAL_STATE__ = { 'Page#0': { _downloads: 2, _stale: 'from another page' } };
 
-    adoptServerState(page);
+    beginComponentWalk(page, true);
 
     expect(page._downloads).toBe(2);
     expect('_stale' in page).toBe(false);
@@ -150,7 +150,44 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
 
   it('is a no-op without a payload', () => {
     const page = new HomePage();
-    adoptServerState(page);
+    beginComponentWalk(page, true);
     expect(page._downloads).toBe(627000);
+  });
+
+  it('restarts the count on EVERY root render, not only the first', () => {
+    // The count lives across renders. A root that re-rendered without restarting it handed the
+    // components below Type#1, Type#2, … — keys the payload does not name — so a composed
+    // component silently reverted to its defaults on the second pass. Only stateful children are
+    // retained between renders; a composed stateless one is rebuilt, so it asks for a key again.
+    class StatsHeader {
+      _count = 0;
+    }
+    win.__INITIAL_STATE__ = {
+      'HomePage#0': { _downloads: 1 },
+      'StatsHeader#0': { _count: 42 },
+    };
+
+    const page = new HomePage();
+
+    // first render: the root claims #0 and the header gets StatsHeader#0
+    beginComponentWalk(page, true);
+    const first = new StatsHeader();
+    adoptServerStateFor(first, nextComponentKey('StatsHeader'));
+    expect(first._count).toBe(42);
+
+    // second render: the root is mounted and does NOT adopt, but must still consume #0 or
+    // everything under it shifts by one.
+    beginComponentWalk(page, false);
+    const second = new StatsHeader();
+    adoptServerStateFor(second, nextComponentKey('StatsHeader'));
+    expect(second._count).toBe(42);
+  });
+
+  it('consumes the root key even when it is not adopting, so the walk below does not shift', () => {
+    class HomePage2 {
+      _x = 0;
+    }
+    beginComponentWalk(new HomePage2(), false);
+    expect(nextComponentKey('HomePage2')).toBe('HomePage2#1');
   });
 });

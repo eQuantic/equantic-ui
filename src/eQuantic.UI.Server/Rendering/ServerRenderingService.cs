@@ -176,6 +176,10 @@ public class ServerRenderingService : IServerRenderingService
                 // for none of it: the browser already has the component and builds the tree itself,
                 // so markup rendered here would be markup thrown away — a whole tree build, plus its
                 // assets and its atomic rules, per navigation.
+                // The wire form of what a NAVIGATION loaded. A drawing reads its payload off the
+                // instances that drew; a navigation has none, so the walk keeps it as it goes.
+                Dictionary<string, IReadOnlyDictionary<string, object?>>? navigationPayload = null;
+
                 var assets = new AssetCollection();
                 var html = string.Empty;
                 // Out here with the html and the paint servers, and for the same reason: the
@@ -247,14 +251,41 @@ public class ServerRenderingService : IServerRenderingService
                         // data — which is every page that declares none, on its first pass.
                         if (pending.Count == 0) break;
 
-                        // TOGETHER, not one after another. Each prefetch is a round trip the page is
-                        // already waiting on, and they do not depend on each other within a round —
-                        // one that depends on another's data is the case the NEXT round exists for.
-                        await Task.WhenAll(pending.Select(pair =>
-                            ((Primitives.IServerPrefetch)pair.Value).PrefetchAsync(
-                                context.RequestServices, context.RequestAborted)));
+                        // NOT THIS ROUND, because nothing would draw what it loads. The loop renders
+                        // at the TOP, so awaiting on the last allowed pass would store values the
+                        // markup never shows and the payload would disagree with the page beside it.
+                        // Stopping here serves the defaults in BOTH, which is a visibly incomplete
+                        // page rather than a page whose words and state contradict each other.
+                        if (round == MaxPrefetchRounds - 1)
+                        {
+                            _logger.LogWarning(
+                                "[SSR Prefetch] Stopped at {Rounds} rounds with {Count} component(s) still "
+                                + "asking for data; they render their defaults. A prefetch chain this deep "
+                                + "usually means a component loads what another one had to load first.",
+                                MaxPrefetchRounds, pending.Count);
+                            break;
+                        }
 
-                        foreach (var pair in pending) prefetched[pair.Key] = Snapshot(pair.Value);
+                        // ONE AT A TIME. They were started together at first, which is faster and
+                        // wrong: every prefetch is handed the REQUEST's service provider, so two
+                        // components resolving the same scoped dependency — an EF DbContext being
+                        // the ordinary case — would use one instance concurrently, which EF refuses
+                        // by design. A page that worked would fail for a reason its author could not
+                        // see. Parallelism here is worth having only behind a contract that says
+                        // prefetch dependencies are safe for concurrent use, and there is no such
+                        // contract today.
+                        foreach (var pair in pending)
+                        {
+                            await ((Primitives.IServerPrefetch)pair.Value).PrefetchAsync(
+                                context.RequestServices, context.RequestAborted);
+                        }
+
+                        // THE CLR VALUES, not the wire ones: this is restored onto the fresh
+                        // instances the next expansion creates, and the payload's normalization
+                        // (enums to strings, backing fields to property names, nulls dropped) would
+                        // make every one of those unassignable.
+                        foreach (var pair in pending)
+                            prefetched[pair.Key] = Web.ComponentExpansionScope.Capture(pair.Value);
                     }
                 }
                 else if (metadataSource is Primitives.UiComponent)
@@ -263,7 +294,7 @@ public class ServerRenderingService : IServerRenderingService
                     // the walk has to expand on its own. It still costs only the pages that have
                     // something to find, because a navigation is answering with state in the first
                     // place.
-                    prefetched = await PrefetchTreeAsync(component, prefetched, asked, context);
+                    navigationPayload = await PrefetchTreeAsync(component, prefetched, asked, context);
                 }
 
                 // THEN metadata, and the order is the whole point. ConfigureMetadata used to run first,
@@ -287,14 +318,26 @@ public class ServerRenderingService : IServerRenderingService
                 // EVERY component that prefetched, read off the instances that actually DREW —
                 // renderScope holds those, so the payload cannot disagree with the markup beside it.
                 string? serializedState = null;
-                if (prefetched.Count > 0)
+                if (asked.Count > 0)
                 {
                     var payload = new Dictionary<string, IReadOnlyDictionary<string, object?>>(StringComparer.Ordinal);
-                    foreach (var key in prefetched.Keys)
+                    foreach (var key in asked)
                     {
-                        payload[key] = renderScope is not null && renderScope.Expanded.TryGetValue(key, out var drew)
-                            ? Snapshot(drew)
-                            : prefetched[key];
+                        // OFF THE INSTANCE THAT DREW, or not at all. A component discovered in an
+                        // earlier round but absent from the final tree has nothing on the page for
+                        // its state to belong to, and shipping it would hand the client a key its
+                        // own walk never reaches.
+                        if (renderScope is not null && renderScope.Expanded.TryGetValue(key, out var drew))
+                        {
+                            payload[key] = Snapshot(drew);
+                        }
+                        else if (navigationPayload is not null
+                            && navigationPayload.TryGetValue(key, out var loaded))
+                        {
+                            // A navigation draws nothing, so there is no rendered instance to read —
+                            // the walk kept the wire form of each component as it loaded.
+                            payload[key] = loaded;
+                        }
                     }
                     serializedState = SerializeState(payload);
                 }
@@ -367,6 +410,8 @@ public class ServerRenderingService : IServerRenderingService
         HashSet<string> asked,
         HttpContext context)
     {
+        var wire = new Dictionary<string, IReadOnlyDictionary<string, object?>>(StringComparer.Ordinal);
+
         for (var round = 0; round < MaxPrefetchRounds; round++)
         {
             var scope = new Web.ComponentExpansionScope { Restore = loaded };
@@ -378,17 +423,35 @@ public class ServerRenderingService : IServerRenderingService
 
             if (pending.Count == 0) break;
 
-            // TOGETHER, not one after another. Each prefetch is a round trip the page is already
-            // waiting on, and they do not depend on each other within a round — one that depends on
-            // another's data is the case the NEXT round exists for.
-            await Task.WhenAll(pending.Select(pair =>
-                ((Primitives.IServerPrefetch)pair.Value).PrefetchAsync(
-                    context.RequestServices, context.RequestAborted)));
+            if (round == MaxPrefetchRounds - 1)
+            {
+                _logger.LogWarning(
+                    "[SSR Prefetch] Stopped at {Rounds} rounds with {Count} component(s) still asking "
+                    + "for data; the navigation carries their defaults.", MaxPrefetchRounds, pending.Count);
+                break;
+            }
 
-            foreach (var pair in pending) loaded[pair.Key] = Snapshot(pair.Value);
+            // ONE AT A TIME, for the reason the drawing loop states: they share the REQUEST's
+            // service provider, and two components resolving one scoped dependency would use it
+            // concurrently.
+            foreach (var pair in pending)
+            {
+                await ((Primitives.IServerPrefetch)pair.Value).PrefetchAsync(
+                    context.RequestServices, context.RequestAborted);
+            }
+
+            foreach (var pair in pending)
+            {
+                // TWO FORMS of the same instance, taken while it still holds what it just loaded:
+                // the CLR one to restore onto the next round's fresh instance, and the wire one for
+                // the response. A navigation draws nothing, so there is no rendered instance to read
+                // the payload from later.
+                loaded[pair.Key] = Web.ComponentExpansionScope.Capture(pair.Value);
+                wire[pair.Key] = Snapshot(pair.Value);
+            }
         }
 
-        return loaded;
+        return wire;
     }
 
     /// <summary>

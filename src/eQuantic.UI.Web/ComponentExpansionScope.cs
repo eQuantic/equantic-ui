@@ -65,6 +65,29 @@ public sealed class ComponentExpansionScope
     /// it — BEFORE its <c>Build</c> runs, which is the whole point of hooking the expansion rather
     /// than the render.
     /// </summary>
+    /// <summary>
+    /// A component's fields AS THEY ARE — raw CLR values under raw field names, nulls included.
+    ///
+    /// <para>
+    /// Deliberately NOT the payload's snapshot, and the difference cost a round. The payload is a
+    /// WIRE form: it renames an auto-property's backing field to the property, writes an enum as the
+    /// camelCase string the client expects, and drops nulls so one unwritable value cannot empty the
+    /// page. Every one of those is wrong for restoring a value onto a fresh C# instance — the
+    /// property name matches no field, the string is not assignable to the enum, and a prefetch that
+    /// CLEARED a non-null default would silently keep the default. Round-to-round restoration reads
+    /// this; only the response is normalized.
+    /// </para>
+    /// </summary>
+    public static IReadOnlyDictionary<string, object?> Capture(UiComponent component)
+    {
+        var captured = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach (var field in FieldsOf(component.GetType()))
+        {
+            captured[field.Name] = field.GetValue(component);
+        }
+        return captured;
+    }
+
     public string Enter(UiComponent component)
     {
         var typeName = component.GetType().Name;
@@ -89,6 +112,9 @@ public sealed class ComponentExpansionScope
         foreach (var field in FieldsOf(component.GetType()))
         {
             if (!fields.TryGetValue(field.Name, out var value)) continue;
+            // A null is written like any other value, because CLEARING a non-null default is
+            // something a prefetch legitimately does and skipping it would silently keep the
+            // default. The type check still stands for anything that is not null.
             if (value is not null && !field.FieldType.IsInstanceOfType(value)) continue;
             field.SetValue(component, value);
         }

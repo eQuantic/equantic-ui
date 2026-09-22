@@ -82,19 +82,22 @@ export function adoptServerStateFor(target: object, key: string): boolean {
   return applyServerFields(target, payload);
 }
 
-export function adoptServerState(target: object): void {
-  if (typeof window === 'undefined') return;
-  const w = window as unknown as {
-    __INITIAL_STATE__?: Record<string, Record<string, unknown>>;
-  };
-  if (!w.__INITIAL_STATE__) return;
-
-  // THE ROOT IS THE FIRST COMPONENT THE SERVER EXPANDED, so it claims `#0` and starts the count the
-  // lowering walk continues. Reset first: this runs once per page render, and a stale count from
-  // the previous page would shift every key on this one.
+/**
+ * Starts the walk for ONE root render: the count restarts and the root claims `#0`, which is what
+ * the server's realizer gave it.
+ *
+ * EVERY RENDER, not only the first. The count lives across renders, and a root that re-rendered
+ * without restarting it handed the components below `Type#1`, `Type#2`, … — keys the payload does
+ * not name — so a composed component silently reverted to its defaults on the second pass. The root
+ * also has to CONSUME `#0` even when it is not adopting, or everything under it shifts by one.
+ *
+ * `adopt` is false once the root is mounted: the payload is the first render's answer, and applying
+ * it again would undo whatever the page has done since.
+ */
+export function beginComponentWalk(root: object, adopt: boolean): void {
   resetComponentKeys();
-  const typeName = (target.constructor as { name?: string }).name ?? '';
-  adoptServerStateFor(target, nextComponentKey(typeName));
+  const rootKey = nextComponentKey((root.constructor as { name?: string }).name ?? '');
+  if (adopt) adoptServerStateFor(root, rootKey);
 }
 
 function applyServerFields(target: object, payload: Record<string, unknown>): boolean {
@@ -151,7 +154,7 @@ export abstract class StatelessComponent extends Component {
       measureText: measurePhotonText,
       monoAdvance: photonMonoAdvance,
     };
-    if (!this._mounted) adoptServerState(this);
+    beginComponentWalk(this, !this._mounted);
     // Reconciler pass (W6): a stateless page IS re-renderable — build is pure and the instance
     // store retains nested shared stateful across passes — so those children invalidate by
     // re-rendering this page, exactly like a stateful host. (The old "no invalidator" fence made
@@ -350,7 +353,7 @@ export abstract class StatefulComponent extends Component {
       measureText: measurePhotonText,
       monoAdvance: photonMonoAdvance,
     };
-    if (!this._mounted) adoptServerState(this);
+    beginComponentWalk(this, !this._mounted);
     // Reconciler pass (W6 slice 2): as a page root this component persists by itself; its store
     // retains the nested shared stateful its build creates. When hosted inside another page's
     // render this JOINS the outer pass instead (the host page owns retention).

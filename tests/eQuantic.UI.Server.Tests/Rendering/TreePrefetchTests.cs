@@ -250,4 +250,204 @@ public class TreePrefetchTests
             .Should().BeTrue($"the base's private field has to travel; payload was: {result.SerializedState}");
         carried.GetString().Should().Be("loaded");
     }
+
+    private enum Mode { Idle, Ready }
+
+    /// <summary>
+    /// A prefetch that sets an ENUM, an AUTO-PROPERTY and CLEARS a non-null default — the three
+    /// shapes the payload's wire form mangles.
+    /// </summary>
+    /// <summary>
+    /// COMPOSED, not the page, and that distinction is the whole test. The page instance survives
+    /// every round — the pipeline re-renders the same wrapper — so its fields still hold what its
+    /// own prefetch set and no restore is involved. A component the page BUILDS is constructed
+    /// afresh on every expansion, so it is the only one whose loaded values have to be put back.
+    /// A first version of this case used the page and passed with the restore broken.
+    /// </summary>
+    private sealed class AwkwardShapes : Primitives.StatelessComponent, IServerPrefetch
+    {
+        private Mode _mode = Mode.Idle;
+        private string? _cleared = "still here";
+        public string Loaded { get; set; } = "(not loaded)";
+
+        [ServerOnly]
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            _mode = Mode.Ready;
+            _cleared = null;
+            Loaded = "loaded";
+            return Task.CompletedTask;
+        }
+
+        public override VisualNode Build(ComponentContext context) =>
+            new Text($"{_mode}|{_cleared ?? "cleared"}|{Loaded}", TypeRole.Heading);
+    }
+
+    [Page("/tree-prefetch-shapes")]
+    private sealed class PageWithAwkwardShapes : Primitives.StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column(gap: Space.S2);
+            column.Add(new AwkwardShapes());
+            return column;
+        }
+    }
+
+    /// <summary>
+    /// What a prefetch loaded survives into the DRAWING, whatever shape it is in.
+    ///
+    /// <para>
+    /// Every prefetch goes through a restore, because the drawing is the discovery round: the first
+    /// pass finds the component, the load happens, and the SECOND pass draws with the values put
+    /// back onto a fresh instance. So the restore is not a multi-round edge case — it is on the path
+    /// of every page that prefetches at all.
+    /// </para>
+    ///
+    /// <para>
+    /// The restore used to read the PAYLOAD's snapshot, which is a wire form: an enum written as its
+    /// camelCase string is not assignable to the enum field, an auto-property's backing field is
+    /// renamed to the property so it matches no field at all, and a null is dropped so CLEARING a
+    /// default silently kept it. Three ways for a page to draw the value it had before it loaded
+    /// anything. The restore reads a CLR capture now; only the response is normalized.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public async Task WhatThePrefetchLoaded_SurvivesIntoTheDrawing_WhateverShapeItIs()
+    {
+        var context = RequestWith(out _);
+
+        var result = await CreateService().RenderPageAsync(nameof(PageWithAwkwardShapes), context);
+
+        result.Success.Should().BeTrue(result.Error);
+        result.Html.Should().Contain("Ready", "an enum survives the restore");
+        result.Html.Should().Contain("cleared", "a prefetch that CLEARS a default must not get it back");
+        result.Html.Should().Contain("loaded", "an auto-property survives the restore");
+    }
+
+    private static readonly List<string> Order = [];
+
+    private sealed class SlowLoader : Primitives.StatelessComponent, IServerPrefetch
+    {
+        private readonly string _name;
+        private string _value = "(not loaded)";
+
+        public SlowLoader(string name) => _name = name;
+
+        [ServerOnly]
+        public async Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            lock (Order) Order.Add($"enter:{_name}");
+            await Task.Delay(30, cancellationToken);
+            lock (Order) Order.Add($"leave:{_name}");
+            _value = _name;
+        }
+
+        public override VisualNode Build(ComponentContext context) => new Text(_value, TypeRole.BodyM);
+    }
+
+    [Page("/tree-prefetch-order")]
+    private sealed class PageWithTwoLoaders : Primitives.StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column(gap: Space.S2);
+            column.Add(new SlowLoader("a"));
+            column.Add(new SlowLoader("b"));
+            return column;
+        }
+    }
+
+    /// <summary>
+    /// Two prefetches in one round run ONE AT A TIME.
+    ///
+    /// <para>
+    /// They were started together at first, which is faster and wrong: every prefetch is handed the
+    /// REQUEST's service provider, so two components resolving the same scoped dependency — an EF
+    /// DbContext being the ordinary case — would use one instance concurrently, which EF refuses by
+    /// design. A page that worked would fail for a reason its author could not see, and the fix
+    /// would be to stop composing two loaders rather than anything about their code.
+    /// </para>
+    ///
+    /// <para>
+    /// The order proves it rather than a timer: interleaved entries mean they overlapped.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public async Task TwoPrefetchesInOneRound_DoNotShareTheRequestScopeConcurrently()
+    {
+        lock (Order) Order.Clear();
+        var context = RequestWith(out _);
+
+        var result = await CreateService().RenderPageAsync(nameof(PageWithTwoLoaders), context);
+
+        result.Success.Should().BeTrue(result.Error);
+        string[] sequential = ["enter:a", "leave:a", "enter:b", "leave:b"];
+        Order.Should().Equal(sequential,
+            "an interleaved order means both held the request's scoped services at once");
+    }
+
+    /// <summary>A link that loads, then composes the next one — a chain deeper than the cap.</summary>
+    private sealed class ChainLink(int depth) : Primitives.StatelessComponent, IServerPrefetch
+    {
+        private readonly int _depth = depth;
+        private string _value = "pending";
+
+        [ServerOnly]
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            _value = "loaded";
+            return Task.CompletedTask;
+        }
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column(gap: Space.S1);
+            column.Add(new Text($"link{_depth}:{_value}", TypeRole.BodyM));
+            // The NEXT link exists only once this one has loaded, so each level costs a round.
+            if (_value == "loaded" && _depth < 12) column.Add(new ChainLink(_depth + 1));
+            return column;
+        }
+    }
+
+    [Page("/tree-prefetch-chain")]
+    private sealed class PageWithADeepChain : Primitives.StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) => new ChainLink(0);
+    }
+
+    /// <summary>
+    /// A chain deeper than the cap stops, and the MARKUP AND THE PAYLOAD STILL AGREE.
+    ///
+    /// <para>
+    /// The loop draws at the top, so awaiting on the last allowed pass would load values nothing
+    /// ever draws: the page would serve a link reading "pending" while the payload told the client
+    /// it was "loaded", and hydration would swap the text a moment after the page appeared — the
+    /// very symptom this whole change exists to remove, reintroduced at the boundary. It stops
+    /// before that await, so both say "pending" and the page is visibly incomplete instead of
+    /// self-contradictory.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public async Task AChainDeeperThanTheCap_ServesMarkupAndStateThatAgree()
+    {
+        var context = RequestWith(out _);
+
+        var result = await CreateService().RenderPageAsync(nameof(PageWithADeepChain), context);
+
+        result.Success.Should().BeTrue(result.Error);
+        result.Html.Should().Contain("link0:loaded", "the cap stops a chain, it does not break the page");
+        result.SerializedState.Should().NotBeNull();
+
+        using var payload = JsonDocument.Parse(result.SerializedState!);
+        foreach (var entry in payload.RootElement.EnumerateObject())
+        {
+            if (!entry.Value.TryGetProperty("_value", out var value)) continue;
+            var depth = entry.Name.Split('#')[1];
+            var says = value.GetString();
+            result.Html.Should().Contain($"link{depth}:{says}",
+                $"the payload says {entry.Name} is '{says}', so the markup beside it must say the "
+                + "same — a page whose words and state disagree is the defect this change removes");
+        }
+    }
 }

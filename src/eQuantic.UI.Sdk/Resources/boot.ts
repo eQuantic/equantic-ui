@@ -481,13 +481,18 @@ async function fetchPageState(url?: string): Promise<PageStatePayload | null> {
  * the SSR-rendered tags of the FIRST page be replaced rather than duplicated.
  */
 function applyPageState(payload: PageStatePayload | null): void {
-  if (!payload) return;
-
-  if (payload.state && typeof payload.state === 'object') {
-    (
-      window as unknown as { __INITIAL_STATE__?: Record<string, Record<string, unknown>> }
-    ).__INITIAL_STATE__ = payload.state as Record<string, Record<string, unknown>>;
+  // REPLACED, INCLUDING WITH NOTHING. The payload used to be deleted by whoever read it, so a
+  // navigation to a page that prefetches nothing simply found none. It is per-component now and
+  // nobody consumes it, so leaving the previous page's entries in place would let A → B → A hydrate
+  // A from state the server never sent for that visit.
+  const w = window as unknown as { __INITIAL_STATE__?: Record<string, Record<string, unknown>> };
+  if (payload?.state && typeof payload.state === 'object') {
+    w.__INITIAL_STATE__ = payload.state as Record<string, Record<string, unknown>>;
+  } else {
+    delete w.__INITIAL_STATE__;
   }
+
+  if (!payload) return;
   if (typeof payload.title === 'string' && payload.title.length > 0) {
     document.title = payload.title;
   }
