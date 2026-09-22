@@ -1,4 +1,4 @@
-namespace eQuantic.UI.Primitives;
+namespace eQuantic.UI.Native.Hosting;
 
 /// <summary>
 /// Declares that this app uses a device capability, and WHY.

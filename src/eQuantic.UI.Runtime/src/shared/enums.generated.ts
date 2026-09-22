@@ -18,11 +18,6 @@ export type AnchorPanelRoleValue = 'none' | 'menu' | 'listbox' | 'dialog';
 export type AnchorPlacementValue =
   'bottomStart' | 'bottomEnd' | 'topStart' | 'topEnd' | 'bottomCenter' | 'topCenter';
 
-export type AppCategoryValue =
-  'none' | 'utilities' | 'developerTools' | 'productivity' | 'business' | 'finance'
-  | 'graphicsDesign' | 'photography' | 'music' | 'video' | 'education' | 'socialNetworking' | 'news'
-  | 'reference' | 'healthcareFitness' | 'games';
-
 export type AuditVerdictValue = 'pass' | 'relief' | 'fail';
 
 export type BiometricResultValue =
@@ -93,8 +88,6 @@ export type NetworkKindValue = 'none' | 'wifi' | 'cellular' | 'wired' | 'other';
 
 export type PermissionStateValue =
   'notDetermined' | 'granted' | 'denied' | 'limited' | 'unavailable';
-
-export type PhotonBundleValueKindValue = 'text' | 'flag' | 'urlScheme';
 
 export type PointerCursorValue =
   'default' | 'pointer' | 'text' | 'notAllowed' | 'crosshair' | 'colResize' | 'rowResize';

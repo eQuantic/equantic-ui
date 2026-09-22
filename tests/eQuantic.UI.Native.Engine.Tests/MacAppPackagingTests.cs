@@ -1,6 +1,7 @@
 using eQuantic.UI.Build;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
+using eQuantic.UI.Native.Hosting;
 
 // THIS assembly is the fixture, like the entitlements test beside it: the reader works off a
 // compiled PE file, so declaring here means the test reads exactly what an app's build would.

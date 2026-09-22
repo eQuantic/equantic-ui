@@ -2,6 +2,7 @@ using System.Diagnostics;
 using eQuantic.UI.Build;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
+using eQuantic.UI.Native.Hosting;
 
 // THIS assembly is the fixture: the reader works off a compiled PE file, so declaring the
 // attributes here means the test reads exactly what an app's build would.

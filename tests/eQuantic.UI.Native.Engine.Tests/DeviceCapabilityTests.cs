@@ -1,6 +1,7 @@
 using eQuantic.UI.Primitives;
 using FluentAssertions;
 using Xunit;
+using eQuantic.UI.Native.Hosting;
 
 namespace eQuantic.UI.Native.Engine.Tests;
 

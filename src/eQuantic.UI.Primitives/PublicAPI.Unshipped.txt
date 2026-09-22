@@ -102,3 +102,45 @@ static eQuantic.UI.Primitives.WebContent.Url(string! address) -> eQuantic.UI.Pri
 static eQuantic.UI.Primitives.WebContent.Document(string! markup) -> eQuantic.UI.Primitives.WebContent
 eQuantic.UI.Primitives.WebFrame.WebFrame(eQuantic.UI.Primitives.WebContent content, string! title) -> void
 eQuantic.UI.Primitives.WebFrame.Content.get -> eQuantic.UI.Primitives.WebContent
+*REMOVED*eQuantic.UI.Primitives.PhotonBundleKeyAttribute
+*REMOVED*eQuantic.UI.Primitives.PhotonBundleKeyAttribute.Key.get -> string!
+*REMOVED*eQuantic.UI.Primitives.PhotonBundleKeyAttribute.Kind.get -> eQuantic.UI.Primitives.PhotonBundleValueKind
+*REMOVED*eQuantic.UI.Primitives.PhotonBundleKeyAttribute.PhotonBundleKeyAttribute(string! key, string! value, eQuantic.UI.Primitives.PhotonBundleValueKind kind) -> void
+*REMOVED*eQuantic.UI.Primitives.PhotonBundleKeyAttribute.Value.get -> string!
+*REMOVED*eQuantic.UI.Primitives.PhotonBundleValueKind
+*REMOVED*eQuantic.UI.Primitives.PhotonBundleValueKind.Flag = 1 -> eQuantic.UI.Primitives.PhotonBundleValueKind
+*REMOVED*eQuantic.UI.Primitives.PhotonBundleValueKind.Text = 0 -> eQuantic.UI.Primitives.PhotonBundleValueKind
+*REMOVED*eQuantic.UI.Primitives.PhotonBundleValueKind.UrlScheme = 2 -> eQuantic.UI.Primitives.PhotonBundleValueKind
+*REMOVED*eQuantic.UI.Primitives.PhotonCapabilityAttribute
+*REMOVED*eQuantic.UI.Primitives.PhotonCapabilityAttribute.Capability.get -> string!
+*REMOVED*eQuantic.UI.Primitives.PhotonCapabilityAttribute.PhotonCapabilityAttribute(string! capability, string! reason) -> void
+*REMOVED*eQuantic.UI.Primitives.PhotonCapabilityAttribute.Reason.get -> string!
+*REMOVED*eQuantic.UI.Primitives.PhotonEntitlementAttribute
+*REMOVED*eQuantic.UI.Primitives.PhotonEntitlementAttribute.Entitlement.get -> string!
+*REMOVED*eQuantic.UI.Primitives.PhotonEntitlementAttribute.PhotonEntitlementAttribute(string! entitlement) -> void
+*REMOVED*eQuantic.UI.Primitives.PhotonEntitlements
+*REMOVED*eQuantic.UI.Primitives.AppCategory
+*REMOVED*eQuantic.UI.Primitives.AppCategory.Business = 4 -> eQuantic.UI.Primitives.AppCategory
+*REMOVED*eQuantic.UI.Primitives.AppCategory.DeveloperTools = 2 -> eQuantic.UI.Primitives.AppCategory
+*REMOVED*eQuantic.UI.Primitives.AppCategory.Education = 10 -> eQuantic.UI.Primitives.AppCategory
+*REMOVED*eQuantic.UI.Primitives.AppCategory.Finance = 5 -> eQuantic.UI.Primitives.AppCategory
+*REMOVED*eQuantic.UI.Primitives.AppCategory.Games = 15 -> eQuantic.UI.Primitives.AppCategory
+*REMOVED*eQuantic.UI.Primitives.AppCategory.GraphicsDesign = 6 -> eQuantic.UI.Primitives.AppCategory
+*REMOVED*eQuantic.UI.Primitives.AppCategory.HealthcareFitness = 14 -> eQuantic.UI.Primitives.AppCategory
+*REMOVED*eQuantic.UI.Primitives.AppCategory.Music = 8 -> eQuantic.UI.Primitives.AppCategory
+*REMOVED*eQuantic.UI.Primitives.AppCategory.News = 12 -> eQuantic.UI.Primitives.AppCategory
+*REMOVED*eQuantic.UI.Primitives.AppCategory.None = 0 -> eQuantic.UI.Primitives.AppCategory
+*REMOVED*eQuantic.UI.Primitives.AppCategory.Photography = 7 -> eQuantic.UI.Primitives.AppCategory
+*REMOVED*eQuantic.UI.Primitives.AppCategory.Productivity = 3 -> eQuantic.UI.Primitives.AppCategory
+*REMOVED*eQuantic.UI.Primitives.AppCategory.Reference = 13 -> eQuantic.UI.Primitives.AppCategory
+*REMOVED*eQuantic.UI.Primitives.AppCategory.SocialNetworking = 11 -> eQuantic.UI.Primitives.AppCategory
+*REMOVED*eQuantic.UI.Primitives.AppCategory.Utilities = 1 -> eQuantic.UI.Primitives.AppCategory
+*REMOVED*eQuantic.UI.Primitives.AppCategory.Video = 9 -> eQuantic.UI.Primitives.AppCategory
+*REMOVED*static eQuantic.UI.Primitives.PhotonEntitlements.IsHardenedRuntimeException(string! entitlement) -> bool
+*REMOVED*const eQuantic.UI.Primitives.PhotonEntitlements.AllowJit = "com.apple.security.cs.allow-jit" -> string!
+*REMOVED*const eQuantic.UI.Primitives.PhotonEntitlements.AllowUnsignedExecutableMemory = "com.apple.security.cs.allow-unsigned-executable-memory" -> string!
+*REMOVED*const eQuantic.UI.Primitives.PhotonEntitlements.AppSandbox = "com.apple.security.app-sandbox" -> string!
+*REMOVED*const eQuantic.UI.Primitives.PhotonEntitlements.DisableLibraryValidation = "com.apple.security.cs.disable-library-validation" -> string!
+*REMOVED*const eQuantic.UI.Primitives.PhotonEntitlements.HardenedRuntimePrefix = "com.apple.security.cs." -> string!
+*REMOVED*const eQuantic.UI.Primitives.PhotonEntitlements.NetworkClient = "com.apple.security.network.client" -> string!
+*REMOVED*const eQuantic.UI.Primitives.PhotonEntitlements.UserSelectedFiles = "com.apple.security.files.user-selected.read-write" -> string!

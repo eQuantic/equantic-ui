@@ -107,8 +107,6 @@ src/eQuantic.UI.Primitives/Devices/ILocation.cs  2  not looked at yet
 src/eQuantic.UI.Primitives/Devices/IMotionSensor.cs  4  not looked at yet
 src/eQuantic.UI.Primitives/Devices/INetworkStatus.cs  3  not looked at yet
 src/eQuantic.UI.Primitives/Devices/IUiDispatcher.cs  2  not looked at yet
-src/eQuantic.UI.Primitives/Devices/PhotonBundleKeyAttribute.cs  3  not looked at yet
-src/eQuantic.UI.Primitives/Devices/PhotonEntitlementAttribute.cs  2  not looked at yet
 src/eQuantic.UI.Primitives/Forms/FormController.cs  2  not looked at yet
 src/eQuantic.UI.Primitives/Forms/FormModel.cs  3  not looked at yet
 src/eQuantic.UI.Primitives/Geometry/Geometry.cs  5  not looked at yet

@@ -64,10 +64,6 @@ const NO_TWIN_OWED = new Set([
   // asks for IConsent-style capabilities by name, and the browser's IUiDispatcher (registered in
   // register.ts) reports itself already on the only thread there is.
   'UiDispatcher',
-  // BUILD TIME ONLY, and macOS at that: the keys a signed .app declares to the operating system.
-  // Read off the compiled assembly by the SDK's signing step; they never exist at run time, on any
-  // target — a browser has no code signature to carry them.
-  'PhotonEntitlements',
   // HOST CONFIGURATION, composed in Program.cs and consulted by the native shells: which URL
   // schemes IWorkspace.OpenUrl hands to the operating system. A page names the capability
   // (IWorkspace, an interface, resolved by name); the policy is what the shell behind it applies,

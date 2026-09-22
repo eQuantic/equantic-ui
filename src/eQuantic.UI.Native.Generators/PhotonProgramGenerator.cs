@@ -205,7 +205,7 @@ public sealed class PhotonProgramGenerator : IIncrementalGenerator
             file.AppendLine("// these off the compiled assembly and writes the entitlements file codesign is handed —");
             file.AppendLine("// and adds what the .NET runtime itself needs, which is never the app author's to know.");
             foreach (var key in entitled)
-                file.AppendLine($"[assembly: global::eQuantic.UI.Primitives.PhotonEntitlement({Quote(key)})]");
+                file.AppendLine($"[assembly: global::eQuantic.UI.Native.Hosting.PhotonEntitlement({Quote(key)})]");
             context.AddSource("PhotonEntitlements.g.cs", file.ToString());
         }
 
@@ -253,15 +253,15 @@ public sealed class PhotonProgramGenerator : IIncrementalGenerator
             foreach (var key in Sorted(byKey.Keys))
             {
                 var fact = byKey[key];
-                manifest.AppendLine($"[assembly: global::eQuantic.UI.Primitives.PhotonBundleKey("
+                manifest.AppendLine($"[assembly: global::eQuantic.UI.Native.Hosting.PhotonBundleKey("
                     + $"{Quote(key)}, {Quote(fact.Value)}, "
-                    + $"global::eQuantic.UI.Primitives.PhotonBundleValueKind.{fact.Kind})]");
+                    + $"global::eQuantic.UI.Native.Hosting.PhotonBundleValueKind.{fact.Kind})]");
             }
             foreach (var scheme in schemes)
             {
-                manifest.AppendLine($"[assembly: global::eQuantic.UI.Primitives.PhotonBundleKey("
+                manifest.AppendLine($"[assembly: global::eQuantic.UI.Native.Hosting.PhotonBundleKey("
                     + $"\"\", {Quote(scheme)}, "
-                    + "global::eQuantic.UI.Primitives.PhotonBundleValueKind.UrlScheme)]");
+                    + "global::eQuantic.UI.Native.Hosting.PhotonBundleValueKind.UrlScheme)]");
             }
             context.AddSource("PhotonBundle.g.cs", manifest.ToString());
         }
@@ -293,7 +293,7 @@ public sealed class PhotonProgramGenerator : IIncrementalGenerator
             caps.AppendLine("// the app said what it needs once, fluently, on the builder.");
             foreach (var declaration in declared.Values)
             {
-                caps.AppendLine($"[assembly: global::eQuantic.UI.Primitives.PhotonCapability("
+                caps.AppendLine($"[assembly: global::eQuantic.UI.Native.Hosting.PhotonCapability("
                     + $"{Quote(declaration.Capability)}, {Quote(declaration.Reason)})]");
             }
 

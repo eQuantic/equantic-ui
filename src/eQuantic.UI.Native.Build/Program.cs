@@ -6,6 +6,7 @@ using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine;
 using eQuantic.UI.Native.Engine.Reference;
 using eQuantic.UI.Native.Framework;
+using eQuantic.UI.Native.Hosting;
 using eQuantic.UI.Primitives;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
