@@ -14,7 +14,6 @@ now, and the page says so.
 | File | What it is |
 |---|---|
 | `tokens.json` | The NORMATIVE token export — colors, space, radius, shape, type roles, elevation, motion, icon, touch, control metrics, variants. Machine-readable on purpose: it is what the implementation is pinned against. |
-| `Tokens.handoff.cs` | The design system's own C# view of the tokens, as exported. Not compiled; kept for comparison. |
 | `Photon Design System.dc.html` | The design system page. |
 | `Photon DS - Foundations / Phase A / Phase B / Phase C.dc.html` | The sections, as the system was split. |
 | `Photon Handoff.dc.html` | The handoff page — the per-component blocks the fidelity audit reads. |

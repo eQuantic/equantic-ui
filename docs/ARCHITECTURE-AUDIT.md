@@ -362,9 +362,10 @@ down. What cannot stand is the current answer, which is neither. Edgar's call.
 
 - ~~`Styles/ButtonStyles.cs`~~ — gone. It was a tuple view of seven `Sizing` rungs plus
   `MinWidth`; the Button reads the rungs directly and the number is `Sizing.ButtonMinWidth`.
-- `Theme/PaletteAudit.cs` — 346 lines of WCAG arithmetic that validates a `DataPalette`. Used by
-  `DataPalette.Default` and by tests; shipped in every browser bundle and every AOT image. → tests,
-  or an analyzer.
+- ~~`Theme/PaletteAudit.cs`~~ — moved to `tests/eQuantic.UI.Web.Tests` beside `DataPaletteTests`, its
+  only reader (#128): 346 lines of WCAG arithmetic no app needs at run time, which every browser
+  bundle and every AOT image carried. Test time rather than an analyzer, because the palette the SDK
+  ships is the only one it can check ahead of time — a custom one is built at run time.
 - the six `Photon*` types in `Devices/` — `PhotonCapabilityAttribute`, `PhotonEntitlementAttribute`,
   `PhotonBundleKeyAttribute`, `PhotonEntitlements`, `PhotonBundleValueKind` (and `PhotonTheme`, which
   is the design system's default and stays). The attributes are read by `Native.Build` and one shell
@@ -687,8 +688,9 @@ removed, and what it found for the next one:
   `COMPILER-IMPLEMENTATION-GUIDE`) totalled some 4,100 lines around a Tailwind adapter the index itself
   said was removed. `ClassBuilder` (230) is different: CLAUDE.md names it as the DOM escape hatch's
   class utility, so it stays unless that changes. Everything else here is the adapter's shadow. The
-  four documents were retired into `LEDGER.md` on 2026-09-15; the code is
-  [#214](https://github.com/eQuantic/equantic-ui/issues/214).
+  four documents were retired into `LEDGER.md` on 2026-09-15, and the code went on 2026-09-22 (#214),
+  measured first: `ComponentDefinition.StyleUsages` was read and never written, so `CssEmitter` never
+  emitted a rule, and a `StyleClass` on an `HtmlElement` added a class name no stylesheet defined.
 - **Two plans referenced a roadmap that is not in `docs/`.** `IMPLEMENTATION-PLAN.md` and
   `PHASE-2-CLIENT-ROUTER-PLAN.md` (untouched since 2026-06-10, both marked complete in their own
   status lines) pointed at `ROADMAP.md`, which is at the repository root (with a twin page in the
@@ -696,11 +698,11 @@ removed, and what it found for the next one:
   are history, and history is git's — both were retired into `LEDGER.md` on 2026-09-15 with the three other
   finished plans (Track D, the pickers, the visual editor), and what each still owed became an
   issue.
-- **`docs/design/Tokens.handoff.cs` is a third voice.** The README keeps it "for comparison"; no test
-  reads it, it compiles into nothing, and the day the handoff moved here it disagreed with
-  `tokens.json` beside it about the Link variant. `tokens.json` is pinned; this is not.
-- **`Web/Dom/IComponent.cs`** carries a `<summary>` for ARIA attributes that summarises nothing and a
-  duplicated `<summary>Child components</summary>` — prose rot in the escape hatch's root interface.
+- ~~**`docs/design/Tokens.handoff.cs` is a third voice.**~~ Gone (#214), with the handoff's three
+  links to it; `tokens.json` is the one voice, pinned.
+- ~~**`Web/Dom/IComponent.cs`** carries a `<summary>` for ARIA attributes that summarises nothing and a
+  duplicated `<summary>Child components</summary>`~~ — rewritten (#214); the interface now says it is
+  the escape hatch's element contract.
 - **`Navigator.Go(string href)`** — section 4.
 - **The wiki's Architecture page** still shows `Sdk="eQuantic.UI.Sdk/1.0.0"`, `net9.0`, a
   `manifest.json` step, "Code splitting", and `/_equantic/pages/Counter.js` — a pipeline CLAUDE.md's
@@ -796,7 +798,7 @@ makes the rest safe.
    `PositionedOf` reads a measured `LayoutNode`, both of which live in `Native.Framework`, which
    `Primitives` cannot reference. They collapsed onto the shape and stayed in the engine.
    — M, done ([#162](https://github.com/eQuantic/equantic-ui/issues/162))
-5. **The Primitives diet**: ~~`ButtonStyles` → `Components`~~ (it is gone instead); `PaletteAudit` → tests or an analyzer;
+5. **The Primitives diet**: ~~`ButtonStyles` → `Components`~~ (it is gone instead); ~~`PaletteAudit` → tests~~ (#128);
    `Photon*` attributes → `Native.Hosting`; `Navigator.Go(href)` → `destination`; `Nodes/` holds
    nodes. And Edgar's decision on the editor models (Flutter: controllers in `widgets`). — S, plus a
    decision
@@ -807,9 +809,9 @@ makes the rest safe.
    made). Done for CoreText (#123, #136), already true of Android and the web; `TruncationContractTests`
    holds the contract over every measurer it can host. Open: DirectWrite (`SetTrimming`, needs a
    Windows box), asserted as withholding until then. — S — three of four targets
-8. **The adapter's shadow**: the compile-time evaluator, `CssEmitter`, `StyleClass`, the four
-   documents; `Tokens.handoff.cs`; the two finished June plans; `IComponent.cs` prose. — S, after
-   Edgar confirms `ClassBuilder` stays the escape hatch
+8. ~~**The adapter's shadow**~~ done (#214): the compile-time evaluator, `CssEmitter`, `StyleClass`
+   (both sides), the four documents and the two June plans (#216), `Tokens.handoff.cs`, the
+   `IComponent.cs` prose. `ClassBuilder` stays, as the escape hatch's class utility. — S
 9. **One transpiled set** in the runtime. — S
 10. **Generate the vocabulary twins with eqc**: measure what stops it, close that, then `vocabulary.ts`,
    `value-types.ts`, `instance-store.ts` and `component-boundary.ts` become emitted. — L

@@ -418,6 +418,12 @@ record of a release, the wiki's Upgrading page is the distillate.
   never mounted, has its client half: `EscapeHatchPage` hosts it through the stateless page's own
   machinery, as one walk whose bridges continue the page's count
   ([#279](https://github.com/eQuantic/equantic-ui/issues/279), [#282](https://github.com/eQuantic/equantic-ui/issues/282)).
+- **2026-09-22 · What ships serves the app**: the compile-time evaluator, its strategy and attribute,
+  `CssEmitter` and `StyleClass` leave the tree ([#214](https://github.com/eQuantic/equantic-ui/issues/214)) —
+  measured first, `StyleUsages` was read and never written, so the emitter never produced a rule and a
+  `StyleClass` on an escape-hatch element named a class no stylesheet defined; the framework has one
+  styling engine, and now nothing says otherwise. `PaletteAudit` moves from Primitives into the tests
+  that are its only reader, out of every bundle and AOT image ([#128](https://github.com/eQuantic/equantic-ui/issues/128)).
 
 ## Retired documents
 
