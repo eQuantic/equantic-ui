@@ -10,6 +10,7 @@
  * The Marketplace requires PNG, at least 128x128, and prohibits SVG. That rule is checked HERE, where
  * it can still stop the build, rather than by an upload that fails after a tag has been pushed.
  */
+import { spawnSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -48,10 +49,16 @@ copyFileSync(source, target);
 // wwwroot at all: its components are the same write-once C#, but nothing in its build produces the
 // web runtime the preview mounts them with. Without this copy, a native project's preview dies on
 // "runtime.js is missing" — an instruction no amount of building can satisfy.
+//
+// That bundle is a BUILD OUTPUT of the Server project and is never committed (#273), so it is built
+// here, from the tree being packaged, by the same target that builds it for the Server — never copied
+// from whatever a previous build happened to leave behind.
+const server = resolve(extension, '../../src/eQuantic.UI.Server/eQuantic.UI.Server.csproj');
 const runtimeSource = resolve(extension, '../../src/eQuantic.UI.Server/wwwroot/runtime.js');
 const runtimeDir = join(extension, 'runtime');
-if (!existsSync(runtimeSource)) {
-  console.error(`prepare-assets: ${runtimeSource} is not there — build src/eQuantic.UI.Server once.`);
+const bundled = spawnSync('dotnet', ['msbuild', server, '-t:BundleRuntime', '-nologo', '-v:quiet'], { stdio: 'inherit' });
+if (bundled.error || bundled.status !== 0 || !existsSync(runtimeSource)) {
+  console.error(`prepare-assets: bundling the runtime through ${server} failed — ${bundled.error?.message ?? `exit ${bundled.status}`}.`);
   process.exit(1);
 }
 mkdirSync(runtimeDir, { recursive: true });

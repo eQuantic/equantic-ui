@@ -55,6 +55,10 @@ coverage/
 !tests/**/Coverage/**
 
 **/wwwroot/_equantic/*
+# The runtime the Server serves at @equantic/runtime is a BUILD OUTPUT: BundleRuntime writes it from
+# eQuantic.UI.Sdk/Resources/boot.ts before every build of the Server. Committed, it lagged the runtime's
+# source twice without anything noticing (#273); untracked, it cannot.
+src/eQuantic.UI.Server/wwwroot/runtime.js
 # Embedded bun: only the .zip is tracked; the extracted binary is produced at build time.
 src/eQuantic.UI.Runtime.*/tools/bun/bun-darwin
 src/eQuantic.UI.Runtime.*/tools/bun/bun-linux

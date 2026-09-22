@@ -17,6 +17,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- wwwroot/runtime.js is a BUILD OUTPUT, never a committed file: BundleRuntime below writes it
+         from ../eQuantic.UI.Sdk/Resources/boot.ts before every build, and it is embedded from there.
+         It used to be committed too, and a runtime change that did not happen to rebuild this project
+         shipped a Server serving the previous runtime (#273). An explicit Include is an item whether or
+         not the file exists at evaluation, so a clean clone builds; the compiler reads it after the
+         bundle is written. -->
     <None Remove="wwwroot/runtime.js" />
     <EmbeddedResource Include="wwwroot/runtime.js">
       <LogicalName>eQuantic.UI.Server.runtime.js</LogicalName>
@@ -86,6 +92,8 @@
     <Message Text="Using Bun from: $(_BunPath)" Importance="high" />
   </Target>
 
+  <!-- No Inputs/Outputs on purpose: the bundle's inputs are the whole runtime source tree, which a
+       list here would drift from. It runs on every build and costs about a second. -->
   <Target Name="BundleRuntime" BeforeTargets="BeforeBuild" DependsOnTargets="ResolveBunForServer">
     <Message Text="Bundling eQuantic UI Runtime..." Importance="high" />
     <MakeDir Directories="wwwroot" />
