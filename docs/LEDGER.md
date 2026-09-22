@@ -387,7 +387,9 @@ record of a release, the wiki's Upgrading page is the distillate.
   (one type per file, no member survives to keep an old shape alive, the PR is not optional). Reviewed
   against the briefs: no slice departed from the plan without measuring first, and three departures
   corrected the plan. What the review found owed: four diagnostics on the docs page and none on the
-  wiki ([#283](https://github.com/eQuantic/equantic-ui/issues/283)), two findings the slices called
+  wiki at review time — two of them, and the components-over-your-own-base section, landed the same
+  day in wiki commit 17b7c3d; `EQ2011` and `EQ2012` remain
+  ([#283](https://github.com/eQuantic/equantic-ui/issues/283)) — two findings the slices called
   "worth an issue" that had none ([#284](https://github.com/eQuantic/equantic-ui/issues/284),
   [#285](https://github.com/eQuantic/equantic-ui/issues/285)), seven issues on the board with no type
   and no parent (typed, parented; the SSR-to-client seam is [#282](https://github.com/eQuantic/equantic-ui/issues/282)),
