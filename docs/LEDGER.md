@@ -410,6 +410,14 @@ record of a release, the wiki's Upgrading page is the distillate.
   `boot.ts` before every Server build, which it always was; the copy in git was the one that lagged the
   runtime's source twice ([#273](https://github.com/eQuantic/equantic-ui/issues/273)). The VS Code
   extension bundles it through the same target instead of copying a leftover.
+- **2026-09-22 · One identity and one mount at the SSR seam**: a component's hydration key is its CLR
+  full name on both sides — `ComponentIdentity.Of` on the server, `static $typeId` written by eqc on
+  the twin — so two `Row`s from different namespaces are two types to the check that makes a drift safe,
+  and the key no longer depends on the bundler leaving class names alone
+  ([#278](https://github.com/eQuantic/equantic-ui/issues/278)). An escape-hatch page, served by SSR and
+  never mounted, has its client half: `EscapeHatchPage` hosts it through the stateless page's own
+  machinery, as one walk whose bridges continue the page's count
+  ([#279](https://github.com/eQuantic/equantic-ui/issues/279), [#282](https://github.com/eQuantic/equantic-ui/issues/282)).
 
 ## Retired documents
 
