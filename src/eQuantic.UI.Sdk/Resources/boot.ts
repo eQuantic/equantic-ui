@@ -80,7 +80,10 @@ export async function boot(): Promise<void> {
       if (saved) {
         sessionStorage.removeItem('__eq_hmr__');
         hmrReplay = true;
-        const parsed = JSON.parse(saved) as { url: string; state: Record<string, unknown> };
+        const parsed = JSON.parse(saved) as {
+          url: string;
+          state: Record<string, Record<string, unknown>>;
+        };
         if (parsed.url === location.href) {
           (window as unknown as { __INITIAL_STATE__?: object }).__INITIAL_STATE__ = {
             ...((window as unknown as { __INITIAL_STATE__?: object }).__INITIAL_STATE__ ?? {}),
@@ -481,8 +484,9 @@ function applyPageState(payload: PageStatePayload | null): void {
   if (!payload) return;
 
   if (payload.state && typeof payload.state === 'object') {
-    (window as unknown as { __INITIAL_STATE__?: Record<string, unknown> }).__INITIAL_STATE__ =
-      payload.state;
+    (
+      window as unknown as { __INITIAL_STATE__?: Record<string, Record<string, unknown>> }
+    ).__INITIAL_STATE__ = payload.state as Record<string, Record<string, unknown>>;
   }
   if (typeof payload.title === 'string' && payload.title.length > 0) {
     document.title = payload.title;
@@ -660,7 +664,14 @@ function initHotReload(): void {
         /* reload without state rather than not at all */
       }
       try {
-        sessionStorage.setItem('__eq_hmr__', JSON.stringify({ url: location.href, state: data }));
+        // UNDER THE ROOT'S KEY, because __INITIAL_STATE__ is keyed by component now: any component
+        // the page composes may declare server data, so a flat map cannot say whose field is whose.
+        // The captured bag is the root page's, and the root is the first component expanded — `#0`.
+        const rootKey = `${(currentComponent as { constructor?: { name?: string } } | null)?.constructor?.name ?? ''}#0`;
+        sessionStorage.setItem(
+          '__eq_hmr__',
+          JSON.stringify({ url: location.href, state: { [rootKey]: data } }),
+        );
       } catch {
         /* private mode etc. — the reload still shows the new code, only via hydration */
       }

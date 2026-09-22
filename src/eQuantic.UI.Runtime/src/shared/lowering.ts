@@ -11,6 +11,7 @@
  *   class string per element; only custom-property tails stay inline.
  */
 
+import { adoptServerStateFor, nextComponentKey } from '../core/component';
 import { assertNever } from '../utils/assert-never';
 import { round as dotnetRound } from '../utils/dotnet-math';
 import { PINNED_MARKER } from './markers';
@@ -444,6 +445,16 @@ function lowerNodeKind(
       const resolved = (
         pass ? pass.store.reconcile(path, node, pass.invalidator) : node
       ) as ComponentNode;
+      // SERVER DATA FOR THIS COMPONENT, before it builds — the twin of the C# realizer naming each
+      // component as it expands it. A component the page composes may declare IServerPrefetch, and
+      // what the server loaded for it arrives keyed by the same `Type#ordinal` both sides count. It
+      // has to land before `build`, or the build reads the field defaults and the value the server
+      // drew blanks in front of the reader.
+      adoptServerStateFor(
+        resolved,
+        nextComponentKey((resolved as { constructor?: { name?: string } }).constructor?.name ?? ''),
+      );
+
       // The BOUNDARY (C# ComponentBoundary twin): a component's throw costs its own subtree and
       // nothing else. Without this the mount threw, nothing reached the root, and the page was white.
       let built: unknown;

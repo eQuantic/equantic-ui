@@ -1,37 +1,102 @@
-import { describe, it, expect, afterEach } from 'vitest';
-import { adoptServerState } from './component';
+import { describe, it, expect, afterEach, beforeEach } from 'vitest';
+import { adoptServerState, adoptServerStateFor, nextComponentKey, resetComponentKeys } from './component';
 
 interface Payload {
-  __INITIAL_STATE__?: Record<string, unknown>;
+  __INITIAL_STATE__?: Record<string, Record<string, unknown>>;
 }
 
 const win = window as unknown as Payload;
 
 /**
- * SERVER DATA (the C# `IServerPrefetch` twin): the fields the server's prefetch filled cross by
- * FIELD NAME and land before the page's first render, so the client starts from what the server
- * already wrote as HTML instead of flashing the field defaults.
+ * SERVER DATA (the C# `IServerPrefetch` twin): the fields the server's prefetch filled land before
+ * the first render, so the client starts from what the server already wrote as HTML instead of
+ * flashing the field defaults.
+ *
+ * KEYED BY COMPONENT, which is the change these cases carry. Only the root of a route used to
+ * prefetch and the payload was one flat field map; now any component the page composes may declare
+ * server data, so the payload says WHICH component each map belongs to — `Type#ordinal` in
+ * depth-first expansion order, counted identically by the C# realizer and by the lowering walk here.
+ *
+ * The type half of the key is the safety: if the two sides ever expand different trees, an ordinal
+ * alone would hand a component whatever sat at that number.
  */
 describe('server-state adoption (C# IServerPrefetch twin)', () => {
-  afterEach(() => {
-    delete win.__INITIAL_STATE__;
+  beforeEach(() => {
+    resetComponentKeys();
   });
 
-  it('adopts declared fields and consumes the payload', () => {
-    const page = { _downloads: 627000, _packages: 23 };
-    win.__INITIAL_STATE__ = { _downloads: 675617, _packages: 24 };
+  afterEach(() => {
+    delete win.__INITIAL_STATE__;
+    resetComponentKeys();
+  });
+
+  class HomePage {
+    _downloads = 627000;
+    _packages = 23;
+  }
+
+  it('adopts the fields under the ROOT key, which is the first component expanded', () => {
+    const page = new HomePage();
+    win.__INITIAL_STATE__ = { 'HomePage#0': { _downloads: 675617, _packages: 24 } };
 
     adoptServerState(page);
 
     expect(page._downloads).toBe(675617);
     expect(page._packages).toBe(24);
-    expect(win.__INITIAL_STATE__).toBeUndefined();
+  });
+
+  it('does NOT consume the payload, because other components still have to read theirs', () => {
+    // The flat payload was a single-render handoff to ONE owner and was deleted once read. A page
+    // composing three prefetchers would have had the first one swallow the other two's entries.
+    const page = new HomePage();
+    win.__INITIAL_STATE__ = {
+      'HomePage#0': { _downloads: 1 },
+      'StatsHeader#0': { _count: 2 },
+    };
+
+    adoptServerState(page);
+
+    expect(win.__INITIAL_STATE__?.['StatsHeader#0']).toEqual({ _count: 2 });
+  });
+
+  it('gives each component its own entry, and two of a type are told apart by the ordinal', () => {
+    class StatsHeader {
+      _count = 0;
+    }
+    win.__INITIAL_STATE__ = {
+      'StatsHeader#0': { _count: 10 },
+      'StatsHeader#1': { _count: 20 },
+    };
+
+    const first = new StatsHeader();
+    const second = new StatsHeader();
+    adoptServerStateFor(first, nextComponentKey('StatsHeader'));
+    adoptServerStateFor(second, nextComponentKey('StatsHeader'));
+
+    expect(first._count).toBe(10);
+    expect(second._count).toBe(20);
+  });
+
+  it('leaves a component alone when the key names a different type — a drift is a missing value', () => {
+    class StatsHeader {
+      _count = 7;
+    }
+    win.__INITIAL_STATE__ = { 'SomethingElse#0': { _count: 99 } };
+
+    const header = new StatsHeader();
+    const applied = adoptServerStateFor(header, nextComponentKey('StatsHeader'));
+
+    expect(applied).toBe(false);
+    expect(header._count).toBe(7);
   });
 
   it('coerces a long that crossed as a string back to the field type', () => {
     // EqJson writes Int64 as a string so values beyond 2^53 survive the wire.
-    const page = { _downloads: 627000 };
-    win.__INITIAL_STATE__ = { _downloads: '675617' };
+    class Downloads {
+      _downloads = 627000;
+    }
+    const page = new Downloads();
+    win.__INITIAL_STATE__ = { 'Downloads#0': { _downloads: '675617' } };
 
     adoptServerState(page);
 
@@ -53,10 +118,12 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     }
     const page = new WalletPage();
     win.__INITIAL_STATE__ = {
-      _total: '10.50',
-      _count: '9007199254740993',
-      _todos: [{ id: '1', title: 'a' }],
-      _label: 'x',
+      'WalletPage#0': {
+        _total: '10.50',
+        _count: '9007199254740993',
+        _todos: [{ id: '1', title: 'a' }],
+        _label: 'x',
+      },
     };
 
     adoptServerState(page);
@@ -69,8 +136,11 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
   });
 
   it('ignores keys the component does not declare', () => {
-    const page = { _downloads: 1 } as Record<string, unknown>;
-    win.__INITIAL_STATE__ = { _downloads: 2, _stale: 'from another page' };
+    class Page {
+      _downloads = 1;
+    }
+    const page = new Page() as Page & Record<string, unknown>;
+    win.__INITIAL_STATE__ = { 'Page#0': { _downloads: 2, _stale: 'from another page' } };
 
     adoptServerState(page);
 
@@ -78,19 +148,8 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     expect('_stale' in page).toBe(false);
   });
 
-  it('LEAVES a payload that matched nothing — its real owner has not rendered yet', () => {
-    // A Core page reads the payload from its own state object; a shared component rendering first
-    // must not swallow it.
-    const unrelated = { _other: 0 };
-    win.__INITIAL_STATE__ = { _downloads: 675617 };
-
-    adoptServerState(unrelated);
-
-    expect(win.__INITIAL_STATE__).toEqual({ _downloads: 675617 });
-  });
-
   it('is a no-op without a payload', () => {
-    const page = { _downloads: 627000 };
+    const page = new HomePage();
     adoptServerState(page);
     expect(page._downloads).toBe(627000);
   });

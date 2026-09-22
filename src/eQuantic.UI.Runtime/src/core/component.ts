@@ -38,11 +38,66 @@ import { scheduleRenderFlush } from './render-scheduler';
  *
  * Shared by both write-once page bases (stateless and stateful pages prefetch identically).
  */
+const componentOrdinals = new Map<string, number>();
+
+/**
+ * The name the server gave this component: `Type#ordinal` in depth-first expansion order.
+ *
+ * BOTH SIDES COUNT, and that is the whole identity mechanism. The client does not receive
+ * components — it re-runs `build()` and constructs fresh ones — so the payload has to say which
+ * component each field map belongs to. The server names them as the realizer expands them
+ * (`ComponentExpansionScope`), and the same walk here produces the same names.
+ *
+ * The type name comes from `constructor.name`, which survives because neither bundler passes
+ * `--minify-identifiers` (only `--minify-syntax --minify-whitespace`). Adding it would rename the
+ * classes and every key would stop matching — quietly, since a key that matches nothing leaves the
+ * component with its own defaults. Pinned by `server-state.spec.ts`.
+ */
+export function nextComponentKey(typeName: string): string {
+  const seen = componentOrdinals.get(typeName) ?? 0;
+  componentOrdinals.set(typeName, seen + 1);
+  return `${typeName}#${seen}`;
+}
+
+/** Starts a fresh count — one render is one walk, and the numbering restarts with it. */
+export function resetComponentKeys(): void {
+  componentOrdinals.clear();
+}
+
+/**
+ * Hands a component the fields the server loaded FOR IT, by key. Returns whether anything landed.
+ *
+ * The type half of the key is what makes a drift safe: if the two sides ever expand different
+ * trees, the ordinal alone would hand a component whatever sat at that number. Matching on the type
+ * means a disagreement leaves the component with its own defaults — a missing value rather than a
+ * wrong one.
+ */
+export function adoptServerStateFor(target: object, key: string): boolean {
+  if (typeof window === 'undefined') return false;
+  const w = window as unknown as {
+    __INITIAL_STATE__?: Record<string, Record<string, unknown>>;
+  };
+  const payload = w.__INITIAL_STATE__?.[key];
+  if (!payload) return false;
+  return applyServerFields(target, payload);
+}
+
 export function adoptServerState(target: object): void {
   if (typeof window === 'undefined') return;
-  const w = window as unknown as { __INITIAL_STATE__?: Record<string, unknown> };
-  const payload = w.__INITIAL_STATE__;
-  if (!payload) return;
+  const w = window as unknown as {
+    __INITIAL_STATE__?: Record<string, Record<string, unknown>>;
+  };
+  if (!w.__INITIAL_STATE__) return;
+
+  // THE ROOT IS THE FIRST COMPONENT THE SERVER EXPANDED, so it claims `#0` and starts the count the
+  // lowering walk continues. Reset first: this runs once per page render, and a stale count from
+  // the previous page would shift every key on this one.
+  resetComponentKeys();
+  const typeName = (target.constructor as { name?: string }).name ?? '';
+  adoptServerStateFor(target, nextComponentKey(typeName));
+}
+
+function applyServerFields(target: object, payload: Record<string, unknown>): boolean {
   const self = target as Record<string, unknown>;
   // The class's TYPED boundary: the compiler emits `static $hydration` naming every field whose
   // wire form differs from its runtime type. A spec'd field is coerced by what it IS; the rest
@@ -57,9 +112,10 @@ export function adoptServerState(target: object): void {
     self[key] = spec !== undefined ? hydrate(payload[key], spec) : hydrateValue(self[key], payload[key]);
     adopted = true;
   }
-  // Leave the payload for its real owner when nothing here matched — a Core page reads it from its
-  // own state object, and a shared component rendering first must not swallow it.
-  if (adopted) delete w.__INITIAL_STATE__;
+  // NOT DELETED once read, which the flat payload did: it was a single-render handoff to one owner,
+  // and there is now one entry per component. A page composing three prefetchers would have had the
+  // first one swallow the whole payload for the other two.
+  return adopted;
 }
 
 export abstract class StatelessComponent extends Component {
