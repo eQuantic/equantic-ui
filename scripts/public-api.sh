@@ -121,21 +121,31 @@ retire_missing_entries() {
 # named, and their surfaces come from CI instead. Every other failure is a failure: it is reported
 # with the build's own last words and `update` exits non-zero rather than declaring a surface it
 # never saw.
-UNBUILDABLE_HERE='error (NETSDK1147|NETSDK1178|NETSDK1100|XA5300)'
+# THE ONLY ERRORS A FAILED BUILD MAY CARRY. RS0016 and RS0017 are the two this script reads, so a
+# build reporting them did the job it was asked to do. The four platform codes say this HOST cannot
+# build that target at all — Shell.iOS wants the iOS workload, Shell.Android the Android SDK — and
+# their surfaces come from CI instead.
+#
+# EVERY code must be on this list, not merely one of them: "contains an RS00 error" was the first
+# attempt and it let RS0026, RS0027, RS0041 — real analyzer findings that neither parser reads —
+# stand in for a build that did its job, and a compile error riding beside an RS0016 would have
+# gone the same way.
+EXPECTED_ERROR='^(RS0016|RS0017|NETSDK1147|NETSDK1178|NETSDK1100|XA5300)$'
 UNEXPLAINED="$(mktemp)"
 trap 'rm -f "$UNEXPLAINED"' EXIT
 
 # stdout stays the build output, because that is what both parsers read. An unexplained failure
 # goes to a file instead, so noticing one cannot disturb what they see.
 rebuild_all() {
-    local csproj output status
+    local csproj output status unexpected
     for csproj in $(projects); do
         output="$(dotnet build "$csproj" -t:Rebuild --nologo -v quiet 2>&1)" && status=0 || status=$?
         printf '%s\n' "$output"
-
         [ "$status" -eq 0 ] && continue
-        printf '%s' "$output" | grep -qE 'error RS00[0-9]+' && continue
-        printf '%s' "$output" | grep -qE "$UNBUILDABLE_HERE" && continue
+
+        unexpected="$(printf '%s' "$output" | grep -oE 'error [A-Z]+[0-9]+' | sed 's/^error //' \
+            | sort -u | grep -vE "$EXPECTED_ERROR" || true)"
+        [ -z "$unexpected" ] && continue
 
         {
             printf '%s\n' "${csproj#"$ROOT"/}"
@@ -152,7 +162,8 @@ report_unexplained_failures() {
     echo "These projects did not build, and not for a reason this host explains:" >&2
     sort -u "$UNEXPLAINED" >&2
     echo >&2
-    echo "The analyzer never ran on them, so their API is undeclared rather than unchanged." >&2
+    echo "Their public API is undeclared rather than unchanged: either the analyzer never ran," >&2
+    echo "or it said something this script does not read. Neither is an unchanged surface." >&2
     echo "Fix the build and run update again." >&2
     return 1
 }
