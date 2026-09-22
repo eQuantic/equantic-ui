@@ -403,7 +403,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   six packs shipped displaced, found by the eQuantic.Auth pages ([#320](https://github.com/eQuantic/equantic-ui/issues/320)).
   Each element is joined with its first moveto absolute; the source is pinned to one
   iconify/icon-sets commit so a regeneration takes nothing it did not ask for; the twelve packs are
-  regenerated, nine of them into the trimmable property form #74 gave the other three; and
+  regenerated, eight of them into the trimmable property form the other four already had (#74); and
   `IconPackGeometryTests` holds every glyph of every marker-found pack to the seam rule and to its box.
 
 ## Retired documents
