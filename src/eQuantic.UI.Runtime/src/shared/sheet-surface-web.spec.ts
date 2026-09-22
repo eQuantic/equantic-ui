@@ -9,9 +9,9 @@ import { describe, expect, it } from 'vitest';
 import { lowerVisualNode, type LoweringContext } from './lowering';
 import { effectiveStyle } from './style-atomizer';
 import { photonTheme } from './design-system.generated';
-import { SheetController } from './__transpiled__/SheetController';
-import { CellRef } from './__transpiled__/CellRef';
-import { SheetRange } from './__transpiled__/SheetRange';
+import { SheetController } from './components/SheetController';
+import { CellRef } from './components/CellRef';
+import { SheetRange } from './components/SheetRange';
 import type { HtmlNode } from '../core/types';
 
 type Handler = (event: Event) => void;

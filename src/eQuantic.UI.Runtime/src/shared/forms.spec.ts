@@ -10,8 +10,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { FormController } from './__transpiled__/FormController';
-import { Rules } from './__transpiled__/Rules';
+import { FormController } from './components/FormController';
+import { Rules } from './components/Rules';
 
 const signUp = () => {
   const form = new FormController();

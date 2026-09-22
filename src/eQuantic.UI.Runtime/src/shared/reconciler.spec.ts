@@ -1,6 +1,6 @@
 /**
  * The positional reconciler's web mirror, executed end to end (plan W6 slice 2 — the browser twin of
- * the native ReconcilerTests): `__transpiled__/NestedHost|NestedChild.ts` are REAL eqc output for a
+ * the native ReconcilerTests): `__fixtures__/NestedHost|NestedChild.ts` are REAL eqc output for a
  * stateful child nested inside a stateful host. The host's SetState rebuilds its tree with a FRESH
  * child every pass; the per-page instance store must return the RETAINED child (state survives) while
  * the transpiled `adoptConfig` carries the fresh configuration over — and the child's own SetState
@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest';
 import { StatefulComponent } from '../core/component';
 import { ComponentInstanceStore } from './instance-store';
 import { Column, Pressable, Text } from './vocabulary';
-import { NestedHost } from './__transpiled__/NestedHost';
+import { NestedHost } from './__fixtures__/NestedHost';
 
 const nextFrame = () =>
   new Promise<void>((resolve) =>

@@ -1,5 +1,5 @@
 /**
- * The write-once proof on web, EXECUTED: the fixtures in `__transpiled__/` are the REAL eqc output
+ * The write-once proof on web, EXECUTED: the modules in `components/` are the REAL eqc output
  * for `eQuantic.UI.Components` (pinned byte-for-byte by SharedComponentTranspilationTests on
  * the C# side). Here they run against the runtime vocabulary + the generated theme, and the DOM they
  * produce is asserted against the SAME values the C# WebRealizer tests pin — one C# source, compiled
@@ -9,8 +9,8 @@
 import { effectiveStyle } from './style-atomizer';
 import { describe, expect, it } from 'vitest';
 import type { HtmlNode } from '../core/types';
-import { Button } from './__transpiled__/Button';
-import { Card } from './__transpiled__/Card';
+import { Button } from './components/Button';
+import { Card } from './components/Card';
 import { Column, Text } from './vocabulary';
 
 describe('transpiled shared Button (real eqc output)', () => {

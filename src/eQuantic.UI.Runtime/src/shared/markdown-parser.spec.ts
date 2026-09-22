@@ -7,9 +7,9 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { MarkdownParser } from './__transpiled__/MarkdownParser';
-import type { MarkdownBlock } from './__transpiled__/MarkdownBlock';
-import type { MarkdownRun } from './__transpiled__/MarkdownRun';
+import { MarkdownParser } from './components/MarkdownParser';
+import type { MarkdownBlock } from './components/MarkdownBlock';
+import type { MarkdownRun } from './components/MarkdownRun';
 
 // Backticks live inside the document, so it is written as lines — the C# twin does the same.
 const FIXTURE = [

@@ -10,10 +10,11 @@ namespace eQuantic.UI.Web.Tests;
 /// <summary>
 /// Transpiles the REAL shared component sources (<c>eQuantic.UI.Components</c>) with the real
 /// compiler — the same pipeline an app build runs — and pins the emitted modules committed at
-/// <c>src/eQuantic.UI.Runtime/src/shared/__transpiled__/</c>, where the runtime's vitest suite
-/// EXECUTES them against the vocabulary classes and the generated theme (the write-once proof on
-/// web: C# source → eqc → JS → the same DOM the C# WebRealizer produces). Refresh the fixtures with
-/// <c>EQ_UPDATE_TRANSPILED=1</c> after compiler or component changes.
+/// <c>src/eQuantic.UI.Runtime/src/shared/components/</c>, where the runtime's vitest suite EXECUTES
+/// them against the vocabulary classes and the generated theme (the write-once proof on web: C#
+/// source → eqc → JS → the same DOM the C# WebRealizer produces). The three app-shaped fixtures sit
+/// in <c>shared/__fixtures__/</c> instead, keeping the package import that is the thing they prove.
+/// Refresh both with <c>EQ_UPDATE_TRANSPILED=1</c> after compiler or component changes.
 /// </summary>
 public class SharedComponentTranspilationTests
 {
@@ -445,14 +446,24 @@ public class SharedComponentTranspilationTests
     public void SharedComponents_TranspiledFixtures_MatchCommittedModules()
     {
         var modules = TranspileSharedComponents();
-        var fixtureDir = Path.Combine(RepoRoot(), "src", "eQuantic.UI.Runtime", "src", "shared", "__transpiled__");
 
-        // Two generated copies of the same pin:
-        // - __transpiled__/<N>.ts — the exact per-app emission (imports "@equantic/runtime"), executed
-        //   by the parity specs. Names carry NO suffix so relative imports between fixtures resolve.
-        // - components/<N>.ts (library components only) — the SAME bytes with the import source
-        //   rewritten to the internal aggregator, EMBEDDED in the runtime and re-exported from its
-        //   index (the shared library is runtime-provided; apps import { Button } from the runtime).
+        // ONE committed copy per module, and which one it is follows from what the module IS.
+        //
+        // - components/<N>.ts — every LIBRARY component, embedded in the runtime and re-exported
+        //   from its index, with the import source rewritten to the internal aggregator. This set
+        //   has to be on disk whatever else is true: the bundle imports it.
+        // - __fixtures__/<N>.ts — the three app-shaped FIXTURES, keeping "@equantic/runtime",
+        //   because what they exist to prove IS the per-app emission. Names carry no suffix so the
+        //   relative imports between them resolve.
+        //
+        // There used to be a second copy of every library component under __transpiled__/, keeping
+        // the package specifier for the specs to execute. It added no assertion: `Embedded` is a
+        // pure rewrite, so one copy determines the other, and vitest ALIASES "@equantic/runtime" to
+        // src/index.ts — the very distinction the second copy carried is erased by the config that
+        // makes it runnable, and importing through the alias pulled the barrel (and the other copy)
+        // back in as a cycle. The specs import components/ directly now, and ~8,000 generated lines
+        // left the repository.
+        var fixtureDir = Path.Combine(RepoRoot(), "src", "eQuantic.UI.Runtime", "src", "shared", "__fixtures__");
         var embeddedDir = Path.Combine(RepoRoot(), "src", "eQuantic.UI.Runtime", "src", "shared", "components");
         string Embedded(string typeScript) =>
             typeScript.Replace("from \"@equantic/runtime\"", "from \"../runtime-exports\"");
@@ -476,9 +487,10 @@ public class SharedComponentTranspilationTests
             Directory.CreateDirectory(embeddedDir);
             foreach (var (name, typeScript) in modules)
             {
-                File.WriteAllText(Path.Combine(fixtureDir, $"{name}.ts"), typeScript);
                 if (embeddedNames.Contains(name))
                     File.WriteAllText(Path.Combine(embeddedDir, $"{name}.ts"), Embedded(typeScript));
+                else
+                    File.WriteAllText(Path.Combine(fixtureDir, $"{name}.ts"), typeScript);
             }
             File.WriteAllText(barrelPath, barrel);
             return;
@@ -490,18 +502,27 @@ public class SharedComponentTranspilationTests
 
         foreach (var (name, typeScript) in modules)
         {
-            var path = Path.Combine(fixtureDir, $"{name}.ts");
+            var isLibrary = embeddedNames.Contains(name);
+            var path = Path.Combine(isLibrary ? embeddedDir : fixtureDir, $"{name}.ts");
+            var expected = isLibrary ? Embedded(typeScript) : typeScript;
+
             File.Exists(path).Should().BeTrue(
                 $"the runtime executes the transpiled {name} in vitest — generate once with EQ_UPDATE_TRANSPILED=1");
-            File.ReadAllText(path).Should().Be(typeScript,
+            File.ReadAllText(path).Should().Be(expected,
                 $"the committed transpiled {name} must be regenerated (EQ_UPDATE_TRANSPILED=1) after compiler/component changes");
-
-            if (embeddedNames.Contains(name))
-            {
-                File.ReadAllText(Path.Combine(embeddedDir, $"{name}.ts")).Should().Be(Embedded(typeScript),
-                    $"the runtime-embedded {name} must match the pinned emission (EQ_UPDATE_TRANSPILED=1 regenerates both)");
-            }
         }
+
+        // Nothing but the barrel and the modules: a file left behind by a component that was renamed
+        // or removed would go on being executed by a spec that still imports it, and the comparison
+        // above cannot see a file it never looks for.
+        var stray = Directory.GetFiles(embeddedDir, "*.ts")
+            .Select(Path.GetFileNameWithoutExtension)
+            .Where(name => name != "index" && !embeddedNames.Contains(name!))
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+        string.Join(", ", stray!).Should().BeEmpty(
+            "these modules are in shared/components and the library no longer declares them — delete "
+            + "them, or the runtime keeps embedding a component nothing produces");
     }
 
     [Fact]

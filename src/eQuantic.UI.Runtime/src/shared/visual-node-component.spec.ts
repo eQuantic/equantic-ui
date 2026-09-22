@@ -1,6 +1,6 @@
 import { effectiveStyle } from './style-atomizer';
 import { afterEach, describe, expect, it } from 'vitest';
-import { Card } from './__transpiled__/Card';
+import { Card } from './components/Card';
 import { photonTheme } from './design-system.generated';
 import { getPhotonTheme, setPhotonTheme } from './photon-context';
 import { ColorToken } from './value-types';

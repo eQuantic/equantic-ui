@@ -2,10 +2,10 @@
 
 import { effectiveStyle } from './style-atomizer';
 import { describe, expect, it } from 'vitest';
-import { Badge } from './__transpiled__/Badge';
-import { Chip } from './__transpiled__/Chip';
-import { Divider } from './__transpiled__/Divider';
-import { ProgressBar } from './__transpiled__/ProgressBar';
+import { Badge } from './components/Badge';
+import { Chip } from './components/Chip';
+import { Divider } from './components/Divider';
+import { ProgressBar } from './components/ProgressBar';
 
 describe('wave-1 transpiled components (real eqc output)', () => {
   it('Badge clamps past max and uses the Destructive pair', () => {

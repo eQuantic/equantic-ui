@@ -9,8 +9,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { configureServices, resetServiceProvider } from '../core/service-provider';
-import { CultureOption } from './__transpiled__/CultureOption';
-import { CultureSwitcher } from './__transpiled__/CultureSwitcher';
+import { CultureOption } from './components/CultureOption';
+import { CultureSwitcher } from './components/CultureSwitcher';
 
 const nextFrame = () =>
   new Promise<void>((resolve) =>

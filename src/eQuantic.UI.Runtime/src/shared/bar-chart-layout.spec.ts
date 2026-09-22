@@ -7,12 +7,12 @@
  */
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { BarChartLayout } from './__transpiled__/BarChartLayout';
-import { CategoryAxis } from './__transpiled__/CategoryAxis';
-import { ChartSeries } from './__transpiled__/ChartSeries';
-import { ValueAxis } from './__transpiled__/ValueAxis';
-import { ValueScale } from './__transpiled__/ValueScale';
-import type { BarChartGeometry } from './__transpiled__/BarChartGeometry';
+import { BarChartLayout } from './components/BarChartLayout';
+import { CategoryAxis } from './components/CategoryAxis';
+import { ChartSeries } from './components/ChartSeries';
+import { ValueAxis } from './components/ValueAxis';
+import { ValueScale } from './components/ValueScale';
+import type { BarChartGeometry } from './components/BarChartGeometry';
 
 // Resolved from the package root (vitest's cwd) — import.meta.url is http-schemed under the
 // happy-dom environment, so a URL-relative read has no file to open.

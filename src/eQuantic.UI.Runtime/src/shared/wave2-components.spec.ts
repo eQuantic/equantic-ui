@@ -2,13 +2,13 @@
 
 import { effectiveStyle } from './style-atomizer';
 import { describe, expect, it } from 'vitest';
-import { Checkbox } from './__transpiled__/Checkbox';
+import { Checkbox } from './components/Checkbox';
 import { Icon } from './vocabulary';
-import { IconButton } from './__transpiled__/IconButton';
-import { List } from './__transpiled__/List';
-import { ListItem } from './__transpiled__/ListItem';
-import { Switch } from './__transpiled__/Switch';
-import { Tabs } from './__transpiled__/Tabs';
+import { IconButton } from './components/IconButton';
+import { List } from './components/List';
+import { ListItem } from './components/ListItem';
+import { Switch } from './components/Switch';
+import { Tabs } from './components/Tabs';
 
 describe('wave-2 transpiled components (real eqc output)', () => {
   it('Checkbox toggles through the row-level pressable', () => {

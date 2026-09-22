@@ -1,5 +1,5 @@
 /**
- * The STATEFUL write-once proof, executed: `__transpiled__/SharedCounter.ts` is the real eqc output
+ * The STATEFUL write-once proof, executed: `__fixtures__/SharedCounter.ts` is the real eqc output
  * for the same authoring shape the native CounterAppTests component uses (fields + SetState + Build,
  * composing the shared Button with a named argument). Here the full web loop runs — mount to real
  * (happy-dom) DOM, click the lowered button, `setState` schedules a rAF re-render — and the DOM
@@ -8,7 +8,7 @@
 
 import { effectiveStyle } from './style-atomizer';
 import { describe, expect, it } from 'vitest';
-import { SharedCounter } from './__transpiled__/SharedCounter';
+import { SharedCounter } from './__fixtures__/SharedCounter';
 
 const nextFrame = () =>
   new Promise<void>((resolve) =>

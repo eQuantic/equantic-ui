@@ -1,3 +1,0 @@
-import { $eq } from "@equantic/runtime";
-
-export class Crumb { declare label: string; declare destination: string | null; constructor(label: any = null, destination: any = null) { this.label = label; this.destination = destination; } equals(o: unknown) { return o instanceof Crumb && $eq.equals(this.label, o.label) && $eq.equals(this.destination, o.destination); } with(patch: any) { return new Crumb(('label' in patch ? patch.label : this.label), ('destination' in patch ? patch.destination : this.destination)); } toString() { return `Crumb { Label = ${this.label}, Destination = ${this.destination} }`; } }

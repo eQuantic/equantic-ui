@@ -9,9 +9,9 @@
 
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { MermaidParser } from './__transpiled__/MermaidParser';
-import { MermaidLayout } from './__transpiled__/MermaidLayout';
-import type { MermaidScene } from './__transpiled__/MermaidScene';
+import { MermaidParser } from './components/MermaidParser';
+import { MermaidLayout } from './components/MermaidLayout';
+import type { MermaidScene } from './components/MermaidScene';
 
 // Resolved from the package root (vitest's cwd) — import.meta.url is http-schemed under the
 // happy-dom environment, so a URL-relative read has no file to open.

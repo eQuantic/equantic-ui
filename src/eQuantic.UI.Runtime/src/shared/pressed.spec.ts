@@ -1,6 +1,6 @@
 import { effectiveStyle } from './style-atomizer';
 import { describe, expect, it } from 'vitest';
-import { Button } from './__transpiled__/Button';
+import { Button } from './components/Button';
 
 describe('pressed state (interaction slice 1) client lowering', () => {
   it('the transpiled Button carries the class and the cross-pinned custom property', () => {
