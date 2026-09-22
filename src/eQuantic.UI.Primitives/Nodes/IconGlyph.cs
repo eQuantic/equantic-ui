@@ -20,7 +20,31 @@ public readonly record struct IconGlyph(
     string Path,
     IconGlyphStyle Style = IconGlyphStyle.Fill,
     string ViewBox = "0 0 24 24",
-    float StrokeWidth = 2);
+    float StrokeWidth = 2)
+{
+    /// <summary>
+    /// A CURATED glyph is a glyph, so <c>Icon(Icons.Search)</c> needs no second constructor to say
+    /// so. <see cref="Icon"/> had one per family and they differed only in their first parameter,
+    /// which is the shape the repo's no-overloads rule exists to remove — and the TypeScript twin
+    /// had already collapsed them into one, resolving a curated name inside the constructor.
+    ///
+    /// <para>
+    /// WHAT THIS CONVERSION DOES NOT CROSS, measured rather than assumed: eqc emits a user-defined
+    /// conversion only for a type THIS compilation declares (<c>UserDefinedOperators.IsInSource</c>),
+    /// so a curated glyph reaches the twin the way it always did — the enum lowers to its camelCase
+    /// name and the value passes through, <c>UI.icon('search')</c>. That runs correctly, because the
+    /// hand-written <c>Icon</c> twin takes <c>string | IconGlyph</c> and resolves a name itself; what
+    /// it no longer matches is the GENERATED factory's annotation, which now reads
+    /// <c>glyph: IconGlyph</c> where it used to read <c>IconsValue</c>. Nothing type-checks that
+    /// annotation — an app's emitted TypeScript is bundled by the embedded bun, which does not — so
+    /// the cost today is a generated signature that describes its own argument wrongly rather than a
+    /// build that fails or a page that misbehaves. Closing it properly means emitting the conversion
+    /// for a vocabulary type, which is a transpiler change with the <c>SizeValue</c> and
+    /// <c>Index</c> pass-through rule to keep intact, and is not in this change.
+    /// </para>
+    /// </summary>
+    public static implicit operator IconGlyph(Icons glyph) => CuratedIcons.Resolve(glyph);
+}
 
 /// <summary>The curated glyph set behind the <see cref="Icons"/> enum (spec A10) — 24×24 single-path
 /// alpha masks. The web registry and the generated TS catalog both derive from HERE.</summary>

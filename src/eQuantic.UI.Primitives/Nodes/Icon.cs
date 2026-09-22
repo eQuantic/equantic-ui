@@ -125,13 +125,12 @@ public sealed class Icon : VisualNode
 {
     public sealed override string NodeKind => "icon";
 
-    /// <summary>A curated glyph (spec A10) — resolves through <see cref="CuratedIcons"/>.</summary>
-    public Icon(Icons glyph, float size = 24, ColorToken? color = null, string? label = null)
-        : this(CuratedIcons.Resolve(glyph), size, color, label)
-    {
-    }
-
-    /// <summary>Any pack glyph (write-once icon packs are catalogs of <see cref="IconGlyph"/>).</summary>
+    /// <summary>
+    /// Any glyph: a pack's (write-once icon packs are catalogs of <see cref="IconGlyph"/>) or a
+    /// curated one, which converts implicitly — <c>Icon(Icons.Search)</c> reads the same and binds
+    /// here. There were two constructors differing only in that first parameter, which is the shape
+    /// the no-overloads rule removes, and the TypeScript twin already had one.
+    /// </summary>
     public Icon(IconGlyph glyph, float size = 24, ColorToken? color = null, string? label = null)
     {
         if (size is not (16 or 20 or 24 or 32))

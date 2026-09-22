@@ -18,7 +18,7 @@ public sealed class EmptyState : StatelessComponent
     }
 
     /// <summary>The icon, as a NODE rather than a curated enum member — <c>Icon(Icons.Inbox)</c> or
-    /// <c>Glyph(MaterialSymbolsIcons.FolderOffRounded)</c>, so a pack's 16,284 glyphs are reachable
+    /// <c>Icon(MaterialSymbolsIcons.FolderOffRounded)</c>, so a pack's 16,284 glyphs are reachable
     /// here and not only the design system's own set. Its SIZE and COLOR are this component's to
     /// decide (a 48dp muted well), so only the glyph travels.</summary>
     public Icon Icon { get; init; }

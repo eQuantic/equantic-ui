@@ -48,12 +48,18 @@ public class UiFactoryConformanceTests
     /// FINDS these: any type whose static factory sits behind a mirrored name needs one of
     /// these, and <see cref="AStaticFactoryBehindAMirroredName_HasANamedFactory"/> fails until
     /// it gets one.</item>
-    /// <item><c>Glyph</c> — an icon PACK's glyph. <c>Icon</c> already mirrors the curated-enum
-    /// constructor, and there are no overloads here, so the second constructor (the one every
-    /// icon package feeds) had no way in at all until this.</item>
     /// </list>
+    ///
+    /// <para>
+    /// The list SHRANK once, and how is worth keeping: <c>Glyph</c> was here for an icon PACK's
+    /// glyph, because <c>Icon</c> mirrored the curated-enum constructor and this surface has no
+    /// overloads. The hole was one layer down — <c>Icon</c> having a constructor per glyph family —
+    /// and a curated glyph converting to an <c>IconGlyph</c> implicitly closed it, so the mirrored
+    /// name reaches both spellings and the exception had nothing left to do. An entry leaves here
+    /// by the shape it names going away, never by being waved through.
+    /// </para>
     /// </summary>
-    private static readonly HashSet<string> NamedFactories = new() { "Gap", "DotBadge", "Glyph" };
+    private static readonly HashSet<string> NamedFactories = new() { "Gap", "DotBadge" };
 
     private static MethodInfo[] FactoriesOf(Type surface) =>
         AllFactoriesOf(surface).Where(method => !NamedFactories.Contains(method.Name)).ToArray();

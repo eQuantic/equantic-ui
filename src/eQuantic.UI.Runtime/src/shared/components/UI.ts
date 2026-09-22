@@ -61,11 +61,7 @@ export class UI {
         return new Link(destination, child, { label: label, current: current });
     }
 
-    static glyph(glyph: IconGlyph, size: number = 24, color: ColorToken | null = null, label: string | null = null) {
-        return new Icon(glyph, size, color, label);
-    }
-
-    static icon(glyph: IconsValue, size: number = 24, color: ColorToken | null = null, label: string | null = null) {
+    static icon(glyph: IconGlyph, size: number = 24, color: ColorToken | null = null, label: string | null = null) {
         return new Icon(glyph, size, color, label);
     }
 

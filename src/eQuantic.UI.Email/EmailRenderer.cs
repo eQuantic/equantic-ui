@@ -22,22 +22,24 @@ public static class EmailRenderer
     private const int BodyWidth = 600;
 
     /// <summary>
-    /// The ROOT expansion, and it enters the boundary like every other one — held open across the
-    /// realization below it, so the depth a nested component sees counts this one too.
+    /// The message for a tree — or for a COMPONENT, which is a tree with one expansion left in it.
+    ///
     /// <para>
-    /// It was left outside at first, on the reasoning that the visitors bound everything after it so
-    /// a cycle could not escape. True, and not the point: a <c>Build</c> outside the seam is a
-    /// second place the rule lives, and it showed up as a test that could not tell whether the
-    /// counter had been restored — the component it rendered afterwards was expanded here, without
-    /// ever asking.
+    /// There were two of these, and which one ran depended on the STATIC type of the argument: a
+    /// component held in a <c>VisualNode</c> variable took this path while the same object passed
+    /// directly took the other. That is the shape an overload resolution question is made of, so
+    /// the two were measured against each other before one was kept — identical HTML, identical
+    /// plain text, and identical at BOTH edges of the component bound, a chain of 64 rendering and
+    /// one of 65 throwing either way.
+    /// </para>
+    ///
+    /// <para>
+    /// The reason they agreed is that the visitor enters the boundary for the root component just
+    /// as it does for every component below it. The other overload opened that scope itself and
+    /// then called <c>Build</c>, which is the same count reached by a second road: the root
+    /// expansion counts itself here too, and <c>ComponentCycleTests</c> is what says so.
     /// </para>
     /// </summary>
-    public static EmailMessage Render(UiComponent component, IAppTheme theme, string? preheader = null)
-    {
-        using var _ = ComponentBoundary.Enter(component);
-        return Render(component.Build(new ComponentContext(theme)), theme, preheader);
-    }
-
     public static EmailMessage Render(VisualNode tree, IAppTheme theme, string? preheader = null)
     {
         var body = EmailRealizer.Lower(tree, theme);

@@ -38,7 +38,7 @@ public sealed class IconButton : StatelessComponent
     ///
     /// <para>
     /// So the convenience lives one level down, in the GLYPH factories, which is the authoring path
-    /// anyway: `Icon(Icons.Close)` for a curated glyph and `Glyph(LucideIcons.Power)` for a pack's,
+    /// anyway: `Icon(Icons.Close)` for a curated glyph and `Icon(LucideIcons.Power)` for a pack's,
     /// each producing the node this takes — `IconButton(Icon(Icons.Close), "Close")`. There is no
     /// per-pack button factory, and an earlier draft of this comment named one that never existed.
     /// </para>
@@ -53,7 +53,7 @@ public sealed class IconButton : StatelessComponent
         OnPressed = onPressed;
     }
 
-    /// <summary>The glyph, as a NODE — <c>Icon(Icons.Close)</c> or <c>Glyph(LucideIcons.Power)</c>,
+    /// <summary>The glyph, as a NODE — <c>Icon(Icons.Close)</c> or <c>Icon(LucideIcons.Power)</c>,
     /// so any pack serves. Size and color are the button's (the §07 whitelist by Kind), so only the
     /// glyph travels.</summary>
     public Icon Glyph { get; init; }

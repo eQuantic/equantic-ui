@@ -111,6 +111,14 @@ public class CodeWriter
     /// Opens a scope: writes <paramref name="opener"/>, indents, and closes with
     /// <paramref name="closer"/> when the returned handle is disposed. A null closer is a scope that
     /// only indents — a JSON member's value, a plist key's body.
+    ///
+    /// <para>
+    /// ONE shape, and a lone string means ONE thing. There was a second overload taking a line
+    /// BEFORE the opener, which made <c>BeginScope("class Foo")</c> bind the OPENER rather than the
+    /// line — a reader's guess, and the compiler's answer was the other one. It had a single call
+    /// site, and what it did there was <c>AppendLine</c> followed by this, so the sugar is written
+    /// out where it is used rather than named twice here.
+    /// </para>
     /// </summary>
     public IDisposable BeginScope(string opener = "{", string? closer = "}")
     {
@@ -118,13 +126,6 @@ public class CodeWriter
         _closers.Push(closer);
         IndentLevel++;
         return _tracker;
-    }
-
-    /// <summary>Same, with a line written BEFORE the opener — <c>class Foo</c> then <c>{</c>.</summary>
-    public IDisposable BeginScope(string line, string opener, string? closer)
-    {
-        AppendLine(line);
-        return BeginScope(opener, closer);
     }
 
     /// <summary>

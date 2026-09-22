@@ -17,7 +17,7 @@ namespace EQuanticNativeApp;
 public sealed class AppShell : StatefulComponent
 {
     // The curated Icons enum is small on purpose — add an icon package (Lucide, Heroicons, Tabler)
-    // and reach the rest with Glyph(...).
+    // and reach the rest with Icon(...) too — a pack glyph converts like a curated one.
     private static readonly NavItem[] Destinations =
     [
         new(Icons.Notifications, "Activity"),

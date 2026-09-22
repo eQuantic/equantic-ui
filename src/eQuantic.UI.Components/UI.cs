@@ -173,17 +173,17 @@ public static class UI
         };
 
     /// <summary>
-    /// A PACK glyph — what an icon package's catalog hands out (<c>MaterialSymbolsIcons.Home</c>,
-    /// <c>LucideIcons.Check</c>). Named rather than mirrored because <c>Icon</c> is already the
-    /// curated-enum factory and this surface has no overloads: without a name of its own, a pack
-    /// glyph is unreachable in any file importing the surface, which is exactly the hole
-    /// <c>Gap</c> and <c>DotBadge</c> fill for their types.
+    /// A glyph on the §07 size whitelist (16/20/24/32) — curated (<c>Icon(Icons.Close)</c>) or a
+    /// pack's (<c>Icon(LucideIcons.Search)</c>), which is one factory because it is one constructor.
+    /// <para>
+    /// There was a second name, <c>Glyph</c>, and its own comment said why: <c>Icon</c> was the
+    /// CURATED-enum factory, this surface has no overloads, and a pack glyph had nowhere else to go.
+    /// The hole was in <see cref="eQuantic.UI.Primitives.Icon"/> having one constructor per family;
+    /// with a curated glyph converting to an <c>IconGlyph</c> implicitly, both spellings reach the
+    /// factory named after the type, which is the rule the extra name was working around.
+    /// </para>
     /// </summary>
-    public static Icon Glyph(IconGlyph glyph, float size = 24, ColorToken? color = null, string? label = null) =>
-        new Icon(glyph, size, color, label);
-
-    /// <summary>A curated glyph (spec A10) on the §07 size whitelist (16/20/24/32).</summary>
-    public static Icon Icon(Icons glyph, float size = 24, ColorToken? color = null, string? label = null) =>
+    public static Icon Icon(IconGlyph glyph, float size = 24, ColorToken? color = null, string? label = null) =>
         new Icon(glyph, size, color, label);
 
     /// <summary>A vector shape at any size — an icon freed of the size whitelist, and of the
@@ -581,7 +581,7 @@ public static class UI
     /// Takes the glyph as a NODE, and mirrors the constructor exactly, because both rules that
     /// govern this surface point the same way: a transpiled component gets ONE JS constructor, and
     /// a factory mirrors its constructor parameter-for-parameter so named arguments carry between
-    /// the two forms. `Icon(Icons.Close)` and `Glyph(LucideIcons.Search)` are how a glyph becomes
+    /// the two forms. `Icon(Icons.Close)` and `Icon(LucideIcons.Search)` are how a glyph becomes
     /// one, which is the same shape every other node uses.
     /// </para>
     /// </summary>

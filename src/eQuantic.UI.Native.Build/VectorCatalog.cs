@@ -78,7 +78,8 @@ public static class VectorCatalog
         code.AppendLine();
         code.AppendLine("/// <summary>The app's vector artwork, read from its <c>Assets</c> folder at build time.");
         code.AppendLine("/// Draw one with <c>Drawing(Vectors.Name, width)</c>.</summary>");
-        using (code.BeginScope("public static class Vectors", "{", "}"))
+        code.AppendLine("public static class Vectors");
+        using (code.BeginScope())
         {
             foreach (var (member, source, drawing) in drawings)
             {

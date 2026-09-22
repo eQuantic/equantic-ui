@@ -170,7 +170,7 @@ public class IconSourceTests
     {
         // Both factories already existed and both make an Icon; what changed is that the component
         // now takes the NODE, so neither source is privileged.
-        var fromPack = Rendered(EmptyState(Glyph(PackGlyph), "Nothing installed"));
+        var fromPack = Rendered(EmptyState(Icon(PackGlyph), "Nothing installed"));
         var fromCurated = Rendered(EmptyState(Icon(Icons.Info), "Nothing installed"));
 
         fromPack.Any(n => n.Attributes.TryGetValue("d", out var d) && d == PackGlyph.Path)
@@ -182,7 +182,7 @@ public class IconSourceTests
     [Fact]
     public void IconButton_TakesAPackGlyph_Too()
     {
-        var rendered = Rendered(IconButton(Glyph(PackGlyph), "Disable at login"));
+        var rendered = Rendered(IconButton(Icon(PackGlyph), "Disable at login"));
 
         rendered.Any(n => n.Attributes.TryGetValue("d", out var d) && d == PackGlyph.Path)
             .Should().BeTrue();
