@@ -2,3 +2,103 @@
 eQuantic.UI.Web.ComponentIdentity
 static eQuantic.UI.Web.ComponentIdentity.Key(System.Type! type, int ordinal) -> string!
 static eQuantic.UI.Web.ComponentIdentity.Of(System.Type! type) -> string!
+*REMOVED*eQuantic.UI.Web.HtmlElement.StyleClass.get -> eQuantic.UI.Web.Styling.StyleClass?
+*REMOVED*eQuantic.UI.Web.HtmlElement.StyleClass.set -> void
+*REMOVED*eQuantic.UI.Web.HtmlElement.StyleClasses.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Web.Styling.StyleClass!>?
+*REMOVED*eQuantic.UI.Web.HtmlElement.StyleClasses.set -> void
+*REMOVED*eQuantic.UI.Web.IComponent.StyleClass.get -> eQuantic.UI.Web.Styling.StyleClass?
+*REMOVED*eQuantic.UI.Web.IComponent.StyleClass.set -> void
+*REMOVED*eQuantic.UI.Web.IComponent.StyleClasses.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Web.Styling.StyleClass!>?
+*REMOVED*eQuantic.UI.Web.IComponent.StyleClasses.set -> void
+*REMOVED*eQuantic.UI.Web.Styling.Breakpoint
+*REMOVED*eQuantic.UI.Web.Styling.Breakpoint.Breakpoint() -> void
+*REMOVED*eQuantic.UI.Web.Styling.Breakpoint.MaxWidth.get -> int
+*REMOVED*eQuantic.UI.Web.Styling.Breakpoint.MaxWidth.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.CompileTimeEvaluateAttribute
+*REMOVED*eQuantic.UI.Web.Styling.CompileTimeEvaluateAttribute.CompileTimeEvaluateAttribute() -> void
+*REMOVED*eQuantic.UI.Web.Styling.CompileTimeEvaluateAttribute.FallbackBehavior.get -> string!
+*REMOVED*eQuantic.UI.Web.Styling.CompileTimeEvaluateAttribute.FallbackBehavior.set -> void
+*REMOVED*eQuantic.UI.Web.Styling.CompileTimeEvaluateAttribute.WarnOnEvaluationFailure.get -> bool
+*REMOVED*eQuantic.UI.Web.Styling.CompileTimeEvaluateAttribute.WarnOnEvaluationFailure.set -> void
+*REMOVED*eQuantic.UI.Web.Styling.Spacing
+*REMOVED*eQuantic.UI.Web.Styling.Spacing.Bottom.get -> int?
+*REMOVED*eQuantic.UI.Web.Styling.Spacing.Bottom.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.Spacing.Left.get -> int?
+*REMOVED*eQuantic.UI.Web.Styling.Spacing.Left.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.Spacing.Right.get -> int?
+*REMOVED*eQuantic.UI.Web.Styling.Spacing.Right.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.Spacing.Spacing() -> void
+*REMOVED*eQuantic.UI.Web.Styling.Spacing.ToCssValue() -> string!
+*REMOVED*eQuantic.UI.Web.Styling.Spacing.Top.get -> int?
+*REMOVED*eQuantic.UI.Web.Styling.Spacing.Top.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Active.get -> eQuantic.UI.Web.Styling.StyleClass?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Active.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.AlignItems.get -> string?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.AlignItems.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Background.get -> string?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Background.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.BackgroundColor.get -> string?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.BackgroundColor.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Border.get -> string?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Border.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.BorderColor.get -> string?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.BorderColor.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.BorderRadius.get -> int?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.BorderRadius.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.BoxShadow.get -> string?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.BoxShadow.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Color.get -> string?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Color.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Cursor.get -> string?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Cursor.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Disabled.get -> eQuantic.UI.Web.Styling.StyleClass?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Disabled.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Display.get -> string?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Display.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Extend(eQuantic.UI.Web.Styling.StyleClass! overrides) -> eQuantic.UI.Web.Styling.StyleClass!
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.FlexDirection.get -> string?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.FlexDirection.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Focus.get -> eQuantic.UI.Web.Styling.StyleClass?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Focus.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.FontSize.get -> string?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.FontSize.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.FontWeight.get -> string?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.FontWeight.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Gap.get -> string?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Gap.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.GeneratedClassName.get -> string!
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Height.get -> string?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Height.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Hover.get -> eQuantic.UI.Web.Styling.StyleClass?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Hover.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.JustifyContent.get -> string?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.JustifyContent.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Margin.get -> eQuantic.UI.Web.Styling.Spacing?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Margin.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.MaxWidth.get -> string?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.MaxWidth.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Media.get -> System.Collections.Generic.Dictionary<eQuantic.UI.Web.Styling.Breakpoint!, eQuantic.UI.Web.Styling.StyleClass!>?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Media.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.MinHeight.get -> string?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.MinHeight.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Padding.get -> eQuantic.UI.Web.Styling.Spacing?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Padding.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Position.get -> string?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Position.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.StyleClass() -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.TextAlign.get -> string?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.TextAlign.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.ToCss() -> string!
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Transition.get -> string?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Transition.init -> void
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Width.get -> string?
+*REMOVED*eQuantic.UI.Web.Styling.StyleClass.Width.init -> void
+*REMOVED*static eQuantic.UI.Web.Styling.Spacing.All(int value) -> eQuantic.UI.Web.Styling.Spacing!
+*REMOVED*static eQuantic.UI.Web.Styling.Spacing.Horizontal(int value) -> eQuantic.UI.Web.Styling.Spacing!
+*REMOVED*static eQuantic.UI.Web.Styling.Spacing.Symmetric(int vertical = 0, int horizontal = 0) -> eQuantic.UI.Web.Styling.Spacing!
+*REMOVED*static eQuantic.UI.Web.Styling.Spacing.Vertical(int value) -> eQuantic.UI.Web.Styling.Spacing!
+*REMOVED*static readonly eQuantic.UI.Web.Styling.Breakpoint.Desktop -> eQuantic.UI.Web.Styling.Breakpoint!
+*REMOVED*static readonly eQuantic.UI.Web.Styling.Breakpoint.Mobile -> eQuantic.UI.Web.Styling.Breakpoint!
+*REMOVED*static readonly eQuantic.UI.Web.Styling.Breakpoint.Tablet -> eQuantic.UI.Web.Styling.Breakpoint!
+*REMOVED*static readonly eQuantic.UI.Web.Styling.Breakpoint.Wide -> eQuantic.UI.Web.Styling.Breakpoint!

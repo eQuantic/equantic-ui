@@ -29,10 +29,6 @@ export interface HtmlNode {
 
 export type EventHandler = (...args: unknown[]) => void;
 
-export interface StyleClass {
-  generatedClassName: string;
-}
-
 export interface RenderContext {
   // `T = any`, deliberately: eqc erases the C# type argument (a capability resolves by interface
   // NAME at runtime), so a string-keyed lookup infers nothing and would land on `{}` — making
@@ -134,7 +130,6 @@ export abstract class HtmlElement extends Component {
   declare id?: string;
   declare className?: string;
   declare style?: Record<string, string>;
-  declare styleClass?: StyleClass;
   declare title?: string;
   declare hidden?: boolean;
   declare tabIndex?: number;
@@ -166,10 +161,8 @@ export abstract class HtmlElement extends Component {
     if (this.hidden) attrs['hidden'] = 'true';
     if (this.tabIndex !== undefined) attrs['tabindex'] = this.tabIndex.toString();
 
-    // Build className from className + styleClass
     const classNames: string[] = [];
     if (this.className) classNames.push(this.className);
-    if (this.styleClass) classNames.push(this.styleClass.generatedClassName);
     if (classNames.length > 0) attrs['class'] = classNames.join(' ');
 
     // Style

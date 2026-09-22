@@ -71,10 +71,6 @@ public class ComponentDefinition
     /// </summary>
     public Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax? BuildMethodNode { get; set; }
     
-    /// <summary>
-    /// StyleClass usages found in the component
-    /// </summary>
-    public List<StyleClassUsage> StyleUsages { get; set; } = new();
 
     /// <summary>
     /// Indicates if this is a primitive HTML component (inherits from HtmlElement)
@@ -337,12 +333,3 @@ public class ParameterDefinition
 }
 
 
-/// <summary>
-/// Represents a StyleClass usage
-/// </summary>
-public class StyleClassUsage
-{
-    public string FullName { get; set; } = string.Empty; // e.g., "AppStyles.Button"
-    public string ClassName { get; set; } = string.Empty;
-    public string PropertyPath { get; set; } = string.Empty;
-}

@@ -1,3 +1,98 @@
 #nullable enable
 eQuantic.UI.Compiler.Models.ComponentDefinition.TypeIdentity.get -> string!
 eQuantic.UI.Compiler.Models.ComponentDefinition.TypeIdentity.set -> void
+*REMOVED*eQuantic.UI.Compiler.Analysis.CompileTimeEvaluator
+*REMOVED*eQuantic.UI.Compiler.Analysis.CompileTimeEvaluator.ClearCache() -> void
+*REMOVED*eQuantic.UI.Compiler.Analysis.CompileTimeEvaluator.CompileTimeEvaluator(Microsoft.CodeAnalysis.SemanticModel! semanticModel) -> void
+*REMOVED*eQuantic.UI.Compiler.Analysis.CompileTimeEvaluator.GetCacheStats() -> (int CachedCount, int TypesCached)
+*REMOVED*eQuantic.UI.Compiler.Analysis.CompileTimeEvaluator.IsCached(string! expressionText) -> bool
+*REMOVED*eQuantic.UI.Compiler.Analysis.CompileTimeEvaluator.TryEvaluate(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax! expression) -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.CssEmitter
+*REMOVED*eQuantic.UI.Compiler.CodeGen.CssEmitter.CssEmitter() -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.CssEmitter.Emit(System.Collections.Generic.IEnumerable<eQuantic.UI.Compiler.Models.StyleClassUsage!>! usages) -> string!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.CssEmitter.EmitStyleClass(string! className, eQuantic.UI.Compiler.CodeGen.StyleClassProperties! properties) -> string!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.CompileTimeEvaluateConfig
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.CompileTimeEvaluateConfig.CompileTimeEvaluateConfig() -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.CompileTimeEvaluateConfig.FallbackBehavior.get -> string!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.CompileTimeEvaluateConfig.FallbackBehavior.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.CompileTimeEvaluateConfig.WarnOnFailure.get -> bool
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.CompileTimeEvaluateConfig.WarnOnFailure.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.CompileTimeEvaluatedExpressionStrategy
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.CompileTimeEvaluatedExpressionStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.CompileTimeEvaluatedExpressionStrategy.CompileTimeEvaluatedExpressionStrategy() -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.CompileTimeEvaluatedExpressionStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Expressions.CompileTimeEvaluatedExpressionStrategy.Priority.get -> int
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Active.get -> eQuantic.UI.Compiler.CodeGen.StyleClassProperties?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Active.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.AlignItems.get -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.AlignItems.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Background.get -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Background.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.BackgroundColor.get -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.BackgroundColor.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Border.get -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Border.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.BorderColor.get -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.BorderColor.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.BorderRadius.get -> int?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.BorderRadius.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.BoxShadow.get -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.BoxShadow.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Color.get -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Color.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Cursor.get -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Cursor.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Disabled.get -> eQuantic.UI.Compiler.CodeGen.StyleClassProperties?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Disabled.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Display.get -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Display.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.FlexDirection.get -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.FlexDirection.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Focus.get -> eQuantic.UI.Compiler.CodeGen.StyleClassProperties?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Focus.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.FontSize.get -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.FontSize.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.FontWeight.get -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.FontWeight.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Gap.get -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Gap.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Height.get -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Height.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Hover.get -> eQuantic.UI.Compiler.CodeGen.StyleClassProperties?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Hover.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.JustifyContent.get -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.JustifyContent.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Margin.get -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Margin.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.MaxWidth.get -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.MaxWidth.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.MediaQueries.get -> System.Collections.Generic.Dictionary<int, eQuantic.UI.Compiler.CodeGen.StyleClassProperties!>?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.MediaQueries.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.MinHeight.get -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.MinHeight.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Padding.get -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Padding.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Position.get -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Position.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.StyleClassProperties() -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.TextAlign.get -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.TextAlign.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Transform.get -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Transform.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Transition.get -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Transition.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Width.get -> string?
+*REMOVED*eQuantic.UI.Compiler.CodeGen.StyleClassProperties.Width.set -> void
+*REMOVED*eQuantic.UI.Compiler.CompilationResult.Css.get -> string?
+*REMOVED*eQuantic.UI.Compiler.CompilationResult.Css.set -> void
+*REMOVED*eQuantic.UI.Compiler.Models.ComponentDefinition.StyleUsages.get -> System.Collections.Generic.List<eQuantic.UI.Compiler.Models.StyleClassUsage!>!
+*REMOVED*eQuantic.UI.Compiler.Models.ComponentDefinition.StyleUsages.set -> void
+*REMOVED*eQuantic.UI.Compiler.Models.StyleClassUsage
+*REMOVED*eQuantic.UI.Compiler.Models.StyleClassUsage.ClassName.get -> string!
+*REMOVED*eQuantic.UI.Compiler.Models.StyleClassUsage.ClassName.set -> void
+*REMOVED*eQuantic.UI.Compiler.Models.StyleClassUsage.FullName.get -> string!
+*REMOVED*eQuantic.UI.Compiler.Models.StyleClassUsage.FullName.set -> void
+*REMOVED*eQuantic.UI.Compiler.Models.StyleClassUsage.PropertyPath.get -> string!
+*REMOVED*eQuantic.UI.Compiler.Models.StyleClassUsage.PropertyPath.set -> void
+*REMOVED*eQuantic.UI.Compiler.Models.StyleClassUsage.StyleClassUsage() -> void

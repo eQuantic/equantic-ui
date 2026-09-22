@@ -1,4 +1,3 @@
-using eQuantic.UI.Web.Styling;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,12 +21,6 @@ public abstract class HtmlElement : IComponent
 
     /// <inheritdoc />
     public HtmlStyle? Style { get; set; }
-
-    /// <inheritdoc />
-    public StyleClass? StyleClass { get; set; }
-
-    /// <inheritdoc />
-    public IReadOnlyList<StyleClass>? StyleClasses { get; set; }
 
     /// <summary>
     /// Title attribute (tooltip)
@@ -342,17 +335,8 @@ public abstract class HtmlElement : IComponent
         if (Hidden == true) attrs["hidden"] = "true";
         if (TabIndex.HasValue) attrs["tabindex"] = TabIndex.Value.ToString();
 
-        // Build className from ClassName + StyleClass(es)
         var classNames = new List<string>();
         if (!string.IsNullOrEmpty(ClassName)) classNames.Add(ClassName);
-        if (StyleClass != null) classNames.Add(StyleClass.GeneratedClassName);
-        if (StyleClasses != null)
-        {
-            foreach (var sc in StyleClasses)
-            {
-                classNames.Add(sc.GeneratedClassName);
-            }
-        }
         
         // Inline styles
         if (Style != null) attrs["style"] = Style.ToCssString();

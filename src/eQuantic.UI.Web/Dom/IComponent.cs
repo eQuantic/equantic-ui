@@ -1,10 +1,12 @@
-using eQuantic.UI.Web.Styling;
 using System.Collections.Generic;
 
 namespace eQuantic.UI.Web;
 
 /// <summary>
-/// Base interface for all UI components - Composite Pattern
+/// The ESCAPE HATCH's element contract: a DOM element written by hand — its id, classes, inline
+/// style, attributes and handlers, and the children it composes. Write-once components do not
+/// implement it; they are <see cref="Primitives.UiComponent"/>s, realized per target. An app reaches
+/// for this only for markup the vocabulary does not express, with a stated reason.
 /// </summary>
 public interface IComponent
 {
@@ -24,29 +26,12 @@ public interface IComponent
     HtmlStyle? Style { get; set; }
 
     /// <summary>
-    /// Compiled StyleClass for reusable styles
-    /// </summary>
-    StyleClass? StyleClass { get; set; }
-
-    /// <summary>
-    /// Multiple StyleClasses to combine
-    /// </summary>
-    IReadOnlyList<StyleClass>? StyleClasses { get; set; }
-
-    /// <summary>
     /// Data attributes (data-*)
     /// </summary>
     Dictionary<string, string>? DataAttributes { get; set; }
 
     /// <summary>
-    /// ARIA attributes for accessibility will now be strongly-typed on HtmlElement
-    /// </summary>
-
-    /// <summary>
-    /// Child components - Composite Pattern
-    /// </summary>
-    /// <summary>
-    /// Child components - Composite Pattern
+    /// The elements this one composes, in document order.
     /// </summary>
     IList<IComponent> Children { get; }
 

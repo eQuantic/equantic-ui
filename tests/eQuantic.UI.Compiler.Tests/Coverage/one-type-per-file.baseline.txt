@@ -25,7 +25,6 @@ src/eQuantic.UI.Charts/BarChartLayout.cs  3  not looked at yet
 src/eQuantic.UI.Charts/ValueScale.cs  2  not looked at yet
 src/eQuantic.UI.Codegen/CodeWriter.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/ConversionDiagnostic.cs  2  not looked at yet
-src/eQuantic.UI.Compiler/CodeGen/CssEmitter.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Extensions/TypeDeclarationExtensions.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Ir/JsClass.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Ir/JsClassMember.cs  6  closed hierarchy
@@ -35,9 +34,8 @@ src/eQuantic.UI.Compiler/CodeGen/Ir/JsPrecedence.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Ir/JsStatement.cs  20  closed hierarchy
 src/eQuantic.UI.Compiler/CodeGen/Ir/JsStatementWriter.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/AssignmentExpressionStrategy.cs  2  not looked at yet
-src/eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/CompileTimeEvaluatedExpressionStrategy.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/ComponentCompiler.cs  3  not looked at yet
-src/eQuantic.UI.Compiler/Models/ComponentDefinition.cs  8  not looked at yet
+src/eQuantic.UI.Compiler/Models/ComponentDefinition.cs  7  not looked at yet
 src/eQuantic.UI.Compiler/Services/EmittedTwins.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/Services/FormatSubset.cs  2  not looked at yet
 src/eQuantic.UI.Compiler/Services/ResourceClasses.cs  2  not looked at yet
@@ -124,7 +122,6 @@ src/eQuantic.UI.Primitives/Sheet/SheetModel.cs  2  not looked at yet
 src/eQuantic.UI.Primitives/Theme/ColorToken.cs  3  not looked at yet
 src/eQuantic.UI.Primitives/Theme/DataPalette.cs  3  not looked at yet
 src/eQuantic.UI.Primitives/Theme/IAppTheme.cs  4  not looked at yet
-src/eQuantic.UI.Primitives/Theme/PaletteAudit.cs  5  not looked at yet
 src/eQuantic.UI.Primitives/Theme/Tokens.cs  11  not looked at yet
 src/eQuantic.UI.Primitives/Theme/Typography.cs  3  not looked at yet
 src/eQuantic.UI.Primitives/Vector/VectorDrawing.cs  6  not looked at yet
@@ -145,5 +142,4 @@ src/eQuantic.UI.Web/Dom/CssEnums.cs  8  not looked at yet
 src/eQuantic.UI.Web/Dom/EventArgs.cs  3  not looked at yet
 src/eQuantic.UI.Web/StyleAtomizer.cs  7  not looked at yet
 src/eQuantic.UI.Web/Styling/ClassBuilder.cs  2  not looked at yet
-src/eQuantic.UI.Web/Styling/StyleClass.cs  3  not looked at yet
 src/eQuantic.UI.Web/TokenCss.cs  2  not looked at yet

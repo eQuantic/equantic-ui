@@ -10,7 +10,6 @@ CharMethodStrategy
 CheckedExpressionStrategy
 CollectionExpressionStrategy
 CollectionMaterializationStrategy
-CompileTimeEvaluatedExpressionStrategy
 ConditionalAccessStrategy
 ConsoleStrategy
 ContainsStrategy

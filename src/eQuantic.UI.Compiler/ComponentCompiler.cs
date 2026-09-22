@@ -14,7 +14,6 @@ public class ComponentCompiler
 {
     private readonly ComponentParser _parser;
     private readonly TypeScriptEmitter _tsEmitter;
-    private readonly CssEmitter _cssEmitter;
     private readonly SemanticModelProvider _semanticModelProvider;
     private readonly SourceMapGenerator _sourceMapGenerator;
 
@@ -120,7 +119,6 @@ public class ComponentCompiler
         _parser = new ComponentParser();
         _parser.SetSemanticModelProvider(_semanticModelProvider);
         _tsEmitter = new TypeScriptEmitter();
-        _cssEmitter = new CssEmitter();
         _sourceMapGenerator = new SourceMapGenerator();
     }
 
@@ -494,12 +492,6 @@ public class ComponentCompiler
             // JavaScript generation is now handled by Bun in the build pipeline
             // result.JavaScript is empty here, but will be populated by Bun output later if needed
             
-            // Generate CSS from StyleClass usages
-            if (component.StyleUsages.Count > 0)
-            {
-                result.Css = _cssEmitter.Emit(component.StyleUsages);
-            }
-
             
             result.Success = true;
         }
@@ -606,12 +598,6 @@ public class ComponentCompiler
                     // But we are currently writing TypeScript/Source as 'JavaScript' property in some places?
                     // result.JavaScript is empty in Compile() though.
                 }
-
-                if (!string.IsNullOrEmpty(result.Css))
-                {
-                    var cssPath = Path.Combine(outputDir, $"{result.ComponentName}.css");
-                    File.WriteAllText(cssPath, result.Css);
-                }
             }
             else
             {
@@ -642,7 +628,6 @@ public class CompilationResult
     public string TypeScript { get; set; } = string.Empty;
     public string JavaScript { get; set; } = string.Empty;
     public string? SourceMap { get; set; }
-    public string? Css { get; set; }
     public List<CompilationError> Errors { get; set; } = new();
     public List<CompilationError> Warnings { get; set; } = new();
 }
