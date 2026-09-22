@@ -11,7 +11,7 @@
  *   class string per element; only custom-property tails stay inline.
  */
 
-import { adoptServerStateFor, nextComponentKey } from '../core/component';
+import { adoptServerStateFor, nextComponentKey, renderNamedComponent } from '../core/component';
 import { assertNever } from '../utils/assert-never';
 import { round as dotnetRound } from '../utils/dotnet-math';
 import { PINNED_MARKER } from './markers';
@@ -335,12 +335,13 @@ function lowerNodeKind(
   // which is the truth about these objects, rather than for a case the union does not have.
   const foreign = node as { nodeKind?: string; render?: () => HtmlNode };
   if (foreign.nodeKind === undefined) {
-    // Nothing to say about the walk here. This render is the same method a page root calls, and
-    // `runComponentWalk` reads the depth for itself: inside a walk it joins rather than restarting
-    // the count, and with nothing in progress it opens one and claims its own key. Suppressing it
-    // from this side silenced the second case — a component reached with no walk above it never
-    // adopted anything.
-    return typeof foreign.render === 'function' ? foreign.render() : null;
+    // NAMED LIKE A `component` NODE, because that is what most of these are: a write-once
+    // StatelessComponent twin declares no `nodeKind` (only StatefulComponent does), so it arrives
+    // here rather than in the switch — while the C# realizer entered it like any other UiComponent
+    // and consumed an ordinal for it. The seam consumes the same one.
+    return typeof foreign.render === 'function'
+      ? renderNamedComponent(foreign, () => foreign.render!())
+      : null;
   }
 
   switch (node.nodeKind) {

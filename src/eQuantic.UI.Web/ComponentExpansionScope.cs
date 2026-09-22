@@ -31,6 +31,17 @@ namespace eQuantic.UI.Web;
 /// at that number; carrying the type means the client can refuse a key whose type disagrees and
 /// leave the component with its own defaults, which is a missing value rather than a wrong one.
 /// </para>
+///
+/// <para>
+/// It is the SIMPLE name, and that bounds the guarantee rather than the protocol. Two components
+/// named <c>Row</c> from different namespaces count on one ordinal and both sides count it the
+/// same way, so an agreeing pair of trees is keyed correctly either way — what a collision costs
+/// is the refusal above, which is the net for a drift that should not happen in the first place.
+/// Inside one app the generator already reports it (EQ3102, for the factory surface); an app type
+/// colliding with a framework one is unreported, and an exact identity needs a stable id emitted
+/// for every component by the transpiler and read by both sides — which moves the key format for
+/// every component, so it is issue #278 rather than a line here.
+/// </para>
 /// </summary>
 public sealed class ComponentExpansionScope
 {
@@ -170,6 +181,14 @@ public sealed class ComponentExpansionScope
     }
 
     /// <summary>
+    /// Where the field walk stops: the base a component inherits FROM rather than one it is. Both
+    /// are named rather than inferred from an assembly, because a component the framework ships
+    /// (a shared component, a chart) declares state of its own that has to travel like anyone's.
+    /// </summary>
+    private static bool IsFrameworkBase(Type type) =>
+        type == typeof(object) || type == typeof(UiComponent) || type == typeof(HtmlElement);
+
+    /// <summary>
     /// Whether two values of this field can be compared here at all. A value type or a string can:
     /// equal values mean nothing happened to it. Anything else cannot — a prefetch doing
     /// <c>_items.AddRange(await …)</c> leaves the same reference holding different contents, and no
@@ -206,16 +225,30 @@ public sealed class ComponentExpansionScope
     }
 
     /// <summary>
-    /// Every instance field a type holds, ITS BASES INCLUDED. <c>GetFields</c> alone does not return
-    /// a base type's PRIVATE fields, so a page that kept its loaded value in a private field on a
-    /// base class would have had it silently dropped — measured, and the second half of the defect
-    /// this change fixes. The derived declaration wins when a name is shadowed, which is the order
-    /// C# itself resolves.
+    /// Every instance field a component DECLARES, its own bases included, stopping at the
+    /// framework's.
+    ///
+    /// <para>
+    /// The bases matter because <c>GetFields</c> alone does not return a base type's PRIVATE fields,
+    /// so a page keeping its loaded value in a private field on a base class had it silently dropped
+    /// — measured, and the second half of the defect this change fixes. The derived declaration wins
+    /// when a name is shadowed, which is the order C# itself resolves.
+    /// </para>
+    ///
+    /// <para>
+    /// The STOP matters just as much, and it was missing. Walking all the way to <c>object</c> swept
+    /// in the base's own machinery: a Core page shipped roughly a hundred and eighty
+    /// <c>HtmlElement</c> attribute slots and, worse, <c>_children</c> — the component GRAPH — into
+    /// the hydration payload, and a write-once component shipped the six layout properties
+    /// <c>VisualNode</c> declares. None of that is state the client rebuilds from a payload: it
+    /// constructs the element itself and its own <c>Build</c> sets those. Restoring them would be
+    /// the constructor-argument defect again, one layer down.
+    /// </para>
     /// </summary>
     public static IEnumerable<FieldInfo> FieldsOf(Type type)
     {
         var seen = new HashSet<string>(StringComparer.Ordinal);
-        for (var current = type; current is not null && current != typeof(object); current = current.BaseType)
+        for (var current = type; current is not null && !IsFrameworkBase(current); current = current.BaseType)
         {
             foreach (var field in current.GetFields(
                 BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly))

@@ -759,5 +759,12 @@ public class TreePrefetchTests
         // A STRING on the wire: EqJson writes Int64 that way so values past 2^53 survive into the
         // client's BigInt-backed `long`, which is the Server Action protocol's spelling too.
         fields.GetProperty("_downloads").GetString().Should().Be("675617");
+
+        // AND NOTHING ELSE. The field walk reads base classes so an app's own base can hold the
+        // loaded value, and it used to run all the way to `object` — which for an escape-hatch root
+        // swept in every `HtmlElement` attribute slot and, worse, `_children`: the component GRAPH,
+        // in the hydration payload. None of it is state the client rebuilds from a payload.
+        fields.EnumerateObject().Select(field => field.Name).Should().Equal(["_downloads"],
+            $"a component ships what it DECLARES; payload was: {result.SerializedState}");
     }
 }

@@ -256,28 +256,73 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     expect(retained._query).toBe('what the reader typed');
   });
 
-  it('a FOREIGN render with nothing in progress opens its own walk', () => {
-    // The lowering's mixing seam hands a web component its own render(). That call used to be
-    // wrapped in a "this is nested" marker, which is right while a walk is running and wrong when
-    // none is: a component reached with nothing above it then claimed no key and adopted nothing,
-    // although the server had named it. Depth answers both without the call site deciding.
+  it('NAMES a component the lowering renders, because the server named it too', () => {
+    // A write-once StatelessComponent twin carries NO `nodeKind` — only StatefulComponent declares
+    // one — so the lowering reaches it through the mixing seam and calls its render(). The C#
+    // realizer meanwhile ENTERS it like any other UiComponent and consumes an ordinal for it. The
+    // seam has to consume the same one: the lowering names what it renders, exactly as it does for
+    // a `component` node, and the render inside is then a step in the walk rather than the start of
+    // one.
+    class StatsHeader {
+      _count = 0;
+      render() {
+        // what a real StatelessComponent.render() does around its build
+        return runComponentWalk(this, true, () => ({
+          tag: 'div',
+          attributes: {},
+          events: {},
+          children: [],
+        }));
+      }
+    }
+    class Footer {
+      _note = '';
+    }
+    win.__INITIAL_STATE__ = {
+      'HomePage#0': { _downloads: 1 },
+      'StatsHeader#0': { _count: 10 },
+      'Footer#0': { _note: 'mine' },
+    };
+
+    const page = new HomePage();
+    const header = new StatsHeader();
+    const footer = new Footer();
+
+    runComponentWalk(page, true, () => {
+      lowerVisualNode(header as unknown as VisualNodeValue, {
+        textPrimary: {
+          light: { r: 0, g: 0, b: 0, a: 255 },
+          dark: { r: 255, g: 255, b: 255, a: 255 },
+        },
+      });
+      adoptServerStateFor(footer, nextComponentKey('Footer'));
+    });
+
+    expect(header._count).toBe(10);
+    // ONE ordinal, not two: the seam names it and the render inside does not name it again.
+    expect(footer._note).toBe('mine');
+  });
+
+  it('names a component the seam reaches with NOTHING in progress either', () => {
+    // The same rule as the case below, at the other end of the range: whether a walk is running is
+    // a fact about the caller, and the component's key is a fact about the component. An earlier
+    // version read the first as the second — it suppressed every render the seam reached — and a
+    // component with nothing above it then adopted nothing at all.
     class Widget {
       _text = 'default';
-    }
-    win.__INITIAL_STATE__ = { 'Widget#0': { _text: 'from the server' } };
-
-    const widget = new Widget();
-    const foreign = {
-      render: () =>
-        runComponentWalk(widget, true, () => ({
+      render() {
+        return runComponentWalk(this, true, () => ({
           tag: 'aside',
           attributes: {},
           events: {},
           children: [],
-        })),
-    } as unknown as VisualNodeValue;
+        }));
+      }
+    }
+    win.__INITIAL_STATE__ = { 'Widget#0': { _text: 'from the server' } };
 
-    lowerVisualNode(foreign, {
+    const widget = new Widget();
+    lowerVisualNode(widget as unknown as VisualNodeValue, {
       textPrimary: {
         light: { r: 0, g: 0, b: 0, a: 255 },
         dark: { r: 255, g: 255, b: 255, a: 255 },

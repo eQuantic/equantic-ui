@@ -76,6 +76,11 @@ export function resetComponentKeys(): void {
  * trees, the ordinal alone would hand a component whatever sat at that number. Matching on the type
  * means a disagreement leaves the component with its own defaults — a missing value rather than a
  * wrong one.
+ *
+ * It is `constructor.name`, the SIMPLE name, so two components called `Row` from different
+ * namespaces share the refusal as well as the ordinal. Both sides still count them identically, so
+ * trees that agree are keyed correctly; what a collision costs is the net, not the protocol. The
+ * C# side says the same at `ComponentExpansionScope`.
  */
 const alreadyAdopted = new WeakSet<object>();
 
@@ -111,6 +116,13 @@ export function adoptServerStateFor(target: object, key: string): boolean {
  *
  * `adopt` is false once the root is mounted: the payload is the first render's answer, and applying
  * it again would undo whatever the page has done since.
+ *
+ * ONLY THE OUTERMOST CALL NAMES ITS ROOT, and the reason is what the server names. The realizer
+ * enters every component the page COMPOSES, and the lowering claims those keys itself — for a
+ * `component` node, for a Stack child, and at the mixing seam through `renderNamedComponent`. What
+ * reaches this function from inside a walk is a build ROOT, the component a `build()` returned,
+ * which the server never named: naming it here would consume an ordinal nothing on the other side
+ * consumed.
  */
 let walkDepth = 0;
 
@@ -133,6 +145,24 @@ let walkDepth = 0;
  * `adopt` is false once the root is mounted: the payload is the first render's answer, and applying
  * it again would undo whatever the page has done since.
  */
+export function renderNamedComponent<T>(component: object, run: () => T): T {
+  // NAMED HERE, because the lowering is what reached it. A write-once StatelessComponent twin
+  // carries no `nodeKind` — only StatefulComponent declares one — so it arrives at the mixing seam
+  // and renders itself, while the C# realizer ENTERS it like any other UiComponent and consumes an
+  // ordinal. Leaving the seam silent consumed none, so every composed component kept its defaults
+  // and every ordinal after it was shifted: the exact case this change exists for.
+  adoptServerStateFor(component, nextComponentKey((component.constructor as { name?: string }).name ?? ''));
+
+  // And its own render() must not name it a SECOND time. The depth says so — one component, one
+  // ordinal — which is the same sentence from the other side.
+  walkDepth++;
+  try {
+    return run();
+  } finally {
+    walkDepth--;
+  }
+}
+
 export function runComponentWalk<T>(root: object, adopt: boolean, run: () => T): T {
   // A render INSIDE a walk joins it. It claims its key through whichever path reached it, and the
   // count it would have restarted belongs to the root above it.
