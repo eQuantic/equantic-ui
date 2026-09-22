@@ -1,1 +1,27 @@
 #nullable enable
+eQuantic.UI.Native.Shell.Android.AndroidCapabilities
+eQuantic.UI.Native.Shell.Android.AndroidCapabilities.AndroidCapabilities() -> void
+eQuantic.UI.Native.Shell.Android.AndroidCapabilities.Register(Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> void
+eQuantic.UI.Native.Shell.Android.AndroidIconRasterizer
+eQuantic.UI.Native.Shell.Android.AndroidIconRasterizer.AndroidIconRasterizer() -> void
+eQuantic.UI.Native.Shell.Android.AndroidIconRasterizer.Rasterize(eQuantic.UI.Primitives.IconGlyph glyph, float widthDp, float heightDp, float scale) -> eQuantic.UI.Native.Framework.TextRaster?
+eQuantic.UI.Native.Shell.Android.AndroidPhotonRunner
+eQuantic.UI.Native.Shell.Android.AndroidPhotonRunner.AndroidPhotonRunner() -> void
+eQuantic.UI.Native.Shell.Android.AndroidPhotonRunner.Run(eQuantic.UI.Native.Hosting.PhotonApplication! app) -> void
+eQuantic.UI.Native.Shell.Android.AndroidTextService
+eQuantic.UI.Native.Shell.Android.AndroidTextService.AndroidTextService() -> void
+eQuantic.UI.Native.Shell.Android.AndroidTextService.Measure(string! content, eQuantic.UI.Primitives.TypeStyle style, float typeScale, float maxWidth, int maxLines) -> eQuantic.UI.Native.Framework.TextMeasurement!
+eQuantic.UI.Native.Shell.Android.AndroidTextService.Rasterize(string! content, eQuantic.UI.Primitives.TypeStyle style, float typeScale, float maxWidth, int maxLines, float scale, eQuantic.UI.Primitives.TextAlignment align) -> eQuantic.UI.Native.Framework.TextRaster?
+eQuantic.UI.Native.Shell.Android.PhotonActivity
+eQuantic.UI.Native.Shell.Android.PhotonActivity.DoFrame(long frameTimeNanos) -> void
+eQuantic.UI.Native.Shell.Android.PhotonActivity.FramesPresented.get -> int
+eQuantic.UI.Native.Shell.Android.PhotonActivity.PhotonActivity() -> void
+eQuantic.UI.Native.Shell.Android.PhotonActivity.SurfaceChanged(Android.Views.ISurfaceHolder! holder, Android.Graphics.Format format, int width, int height) -> void
+eQuantic.UI.Native.Shell.Android.PhotonActivity.SurfaceCreated(Android.Views.ISurfaceHolder! holder) -> void
+eQuantic.UI.Native.Shell.Android.PhotonActivity.SurfaceDestroyed(Android.Views.ISurfaceHolder! holder) -> void
+eQuantic.UI.Native.Shell.Android.Resource
+eQuantic.UI.Native.Shell.Android.Resource.Resource() -> void
+override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnActivityResult(int requestCode, Android.App.Result resultCode, Android.Content.Intent? data) -> void
+override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnCreate(Android.OS.Bundle? savedInstanceState) -> void
+override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnRequestPermissionsResult(int requestCode, string![]! permissions, Android.Content.PM.Permission[]! grantResults) -> void
+override eQuantic.UI.Native.Shell.Android.PhotonActivity.OnTouchEvent(Android.Views.MotionEvent? e) -> bool
