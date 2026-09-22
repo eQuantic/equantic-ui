@@ -33,8 +33,23 @@
       been evaluated. So the twelve that ship content rather than a library — the two generators,
       the runtime and its six bun packages, the two SDKs, the templates — are out by what they
       already say about themselves, and a new package is covered the day it is written.
+
+      AND UNDER src/, which is the half those two properties cannot say. This file governs the
+      whole repository, so without it the condition also caught five projects that ship nothing
+      and only leave the properties at their SDK defaults: the three samples, the AOT harness and
+      tools/AuthoringProbe. They stayed quiet by accident — the analyzer says nothing until a
+      PublicAPI file exists — and the day one appeared they would have failed a build that
+      `scripts/public-api.sh` cannot fix, because its own project set is src/*/[!.]*.csproj.
+      TWO DEFINITIONS OF ONE SET IS THE BUG; this makes them the same set by construction.
     -->
-    <ItemGroup Condition="'$(IsPackable)' != 'false' AND '$(IncludeBuildOutput)' != 'false'">
+    <PropertyGroup>
+        <_EqPackageSourceRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)src'))</_EqPackageSourceRoot>
+        <_EqProjectDirectory>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)'))</_EqProjectDirectory>
+        <_EqDeclaresPublicApi>false</_EqDeclaresPublicApi>
+        <_EqDeclaresPublicApi Condition="'$(IsPackable)' != 'false' AND '$(IncludeBuildOutput)' != 'false' AND $(_EqProjectDirectory.StartsWith('$(_EqPackageSourceRoot)'))">true</_EqDeclaresPublicApi>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(_EqDeclaresPublicApi)' == 'true'">
         <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="5.6.0"
                           PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
         <AdditionalFiles Include="PublicAPI.Shipped.txt" />

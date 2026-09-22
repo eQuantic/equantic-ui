@@ -112,14 +112,49 @@ retire_missing_entries() {
     echo "  $retired entries retired"
 }
 
-# Every project rebuilt, one at a time rather than the solution at once: the solution stops at the
-# first project this machine cannot build — a shell needing a mobile SDK — and the analyzer then
-# runs for nothing after it. Per project, that one fails and the other thirty-seven still report.
+# THE MACHINE CANNOT BUILD IT, or the build is broken — and `|| true` said neither. A project whose
+# restore or compile dies before the analyzer runs emits no RS diagnostic at all, so both parsers
+# read silence and `update` reported success over an API change nobody declared.
+#
+# The one legitimate silence is a target this HOST cannot build: Shell.iOS wants the iOS workload
+# (NETSDK1178) and Shell.Android the Android SDK (XA5300), and neither exists off macOS. Those are
+# named, and their surfaces come from CI instead. Every other failure is a failure: it is reported
+# with the build's own last words and `update` exits non-zero rather than declaring a surface it
+# never saw.
+UNBUILDABLE_HERE='error (NETSDK1147|NETSDK1178|NETSDK1100|XA5300)'
+UNEXPLAINED="$(mktemp)"
+trap 'rm -f "$UNEXPLAINED"' EXIT
+
+# stdout stays the build output, because that is what both parsers read. An unexplained failure
+# goes to a file instead, so noticing one cannot disturb what they see.
 rebuild_all() {
-    local csproj
+    local csproj output status
     for csproj in $(projects); do
-        dotnet build "$csproj" -t:Rebuild --nologo -v quiet 2>&1 || true
+        output="$(dotnet build "$csproj" -t:Rebuild --nologo -v quiet 2>&1)" && status=0 || status=$?
+        printf '%s\n' "$output"
+
+        [ "$status" -eq 0 ] && continue
+        printf '%s' "$output" | grep -qE 'error RS00[0-9]+' && continue
+        printf '%s' "$output" | grep -qE "$UNBUILDABLE_HERE" && continue
+
+        {
+            printf '%s\n' "${csproj#"$ROOT"/}"
+            printf '%s' "$output" | grep -oE 'error [A-Z]+[0-9]+.*' | sort -u | head -3 | sed 's/^/      /'
+        } >> "$UNEXPLAINED"
     done
+}
+
+# Named once, read after each round: a project reported here was never analysed, so whatever its
+# public surface did this run is undeclared and unnoticed.
+report_unexplained_failures() {
+    [ -s "$UNEXPLAINED" ] || return 0
+    echo >&2
+    echo "These projects did not build, and not for a reason this host explains:" >&2
+    sort -u "$UNEXPLAINED" >&2
+    echo >&2
+    echo "The analyzer never ran on them, so their API is undeclared rather than unchanged." >&2
+    echo "Fix the build and run update again." >&2
+    return 1
 }
 
 # A DERIVED PROJECT WITH NO DECLARATION FILES is a new project, and the analyzer's answer to it is
@@ -147,6 +182,7 @@ ensure_declaration_files() {
 # running it again.
 update() {
     local round=0 retired declared
+    : > "$UNEXPLAINED"
     ensure_declaration_files
     while :; do
         round=$((round + 1))
@@ -161,18 +197,34 @@ update() {
         esac
         [ "$round" -lt 8 ] || { echo "Stopped at $round rounds — something is not settling." >&2; return 1; }
     done
+    report_unexplained_failures || return 1
     echo "Declared what changed. Read the diff before committing it — that IS the API review."
 }
 
 # THE RELEASE STEP: what was unshipped has now shipped. A `*REMOVED*` pair cancels — the retired
 # entry leaves Shipped and the marker leaves Unshipped — and everything else moves across.
 ship() {
-    local csproj dir shipped unshipped
+    local csproj dir shipped unshipped missing=""
+    for csproj in $(projects); do
+        dir="$(dirname "$csproj")"
+        [ -f "$dir/PublicAPI.Shipped.txt" ] && [ -f "$dir/PublicAPI.Unshipped.txt" ] \
+            || missing="$missing${missing:+$'\n'}  ${dir#"$ROOT"/}"
+    done
+    # A RELEASE MAY NOT SKIP A PROJECT. `update` creates the pair for a project that has none, so a
+    # pair still missing here means update was never run since that project was added — and the
+    # release would otherwise fold every other project and exit 0, silently leaving one assembly's
+    # whole surface out of the notes. That is the failure this file exists to make impossible.
+    if [ -n "$missing" ]; then
+        echo "No declared API for:" >&2
+        printf '%s\n' "$missing" >&2
+        echo "Run ./scripts/public-api.sh update first: a release cannot leave a project's surface undeclared." >&2
+        return 1
+    fi
+
     for csproj in $(projects); do
         dir="$(dirname "$csproj")"
         shipped="$dir/PublicAPI.Shipped.txt"
         unshipped="$dir/PublicAPI.Unshipped.txt"
-        [ -f "$shipped" ] && [ -f "$unshipped" ] || continue
 
         python3 - "$shipped" "$unshipped" <<'PY'
 import sys
