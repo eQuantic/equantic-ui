@@ -280,6 +280,14 @@ public class TypeScriptEmitter
         
         _builder.Class(component.Name, baseClass, c =>
             {
+                // WHO THIS IS at the seam with the server: the CLR full name, as a string the compiler
+                // wrote. The runtime keys the component's hydration state by it, and the server keys by
+                // the same name (ComponentIdentity.Of). It was `constructor.name` — the simple name,
+                // shared by every `Row` in every namespace, and alive only while no bundler minified
+                // identifiers (#278).
+                if (component.TypeIdentity.Length > 0)
+                    c.Field("$typeId", null, $"'{component.TypeIdentity.Replace("\\", "\\\\").Replace("'", "\\'")}'", null, isStatic: true);
+
                 // Component-level fields (static data / consts / instance fields), emitted at the top of
                 // the class. Skipped for primitives' INSTANCE fields, whose base ctor sets every prop via
                 // Object.assign — an uninitialised instance field would clobber that after super(); a static

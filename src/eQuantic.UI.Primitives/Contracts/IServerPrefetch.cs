@@ -23,9 +23,9 @@ namespace eQuantic.UI.Primitives;
 /// The payload names each component <c>Type#ordinal</c> in that expansion order, and the client
 /// counts the same way as it builds, so each component is handed back its own fields. A tree that
 /// somehow differs between the two sides leaves a component with its DEFAULTS rather than another
-/// component's data: the type in the key has to match before anything is written — by simple name,
-/// so two components called <c>Row</c> from different namespaces share that refusal as well as
-/// their ordinal. A component the
+/// component's data: the type in the key has to match before anything is written, and it is the
+/// type's full name, so two components called <c>Row</c> from different namespaces are two types.
+/// A component the
 /// DATA replaced — your page loads, and composes a different row at the same position — is
 /// recognised as a different component and asked for its own data rather than handed the previous
 /// one's, as long as what distinguishes the two is a field this can compare: a string, a number, an

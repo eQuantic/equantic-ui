@@ -1,1 +1,3 @@
 #nullable enable
+eQuantic.UI.Compiler.Models.ComponentDefinition.TypeIdentity.get -> string!
+eQuantic.UI.Compiler.Models.ComponentDefinition.TypeIdentity.set -> void

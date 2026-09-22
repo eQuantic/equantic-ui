@@ -23,6 +23,8 @@ import {
   setCultureInvalidator,
   type CalendarCatalog,
 } from '../../eQuantic.UI.Runtime/src/utils/culture';
+import { EscapeHatchPage, componentIdentity } from '../../eQuantic.UI.Runtime/src/core/component';
+import { Component } from '../../eQuantic.UI.Runtime/src/core/types';
 
 // --- Constants ---
 const APP_ROOT_ID = 'app';
@@ -31,7 +33,6 @@ const MODULE_PATH_PREFIX = '/_equantic/';
 // --- Types ---
 interface MountableComponent {
   mount?(root: HTMLElement): void;
-  render?(root: HTMLElement): void;
   getVirtualNode?(): HtmlNode;
   /** Hydrate SSR markup and take ownership of the tree (so SPA-nav diffs can use getCurrentTree). */
   hydrate?(root: HTMLElement): void;
@@ -44,6 +45,22 @@ interface MountableComponent {
 }
 
 // --- Helpers ---
+
+/**
+ * Every page mounts through ONE door. A write-once page is a component and mounts itself. A page
+ * written as DOM — an escape-hatch `HtmlElement`, routed with `MapPage<T>` — is hosted by
+ * `EscapeHatchPage`, which gives it the hydrate, mount and reconcile every component page has. It
+ * used to fall through to a `render()` that takes no container and attaches nothing: SSR drew the
+ * page, and the browser left it frozen, with no handler and no client-side navigation (#279).
+ */
+function asPage(instance: object): MountableComponent {
+  const page = instance as MountableComponent;
+  if (typeof page.mount === 'function' || typeof page.hydrate === 'function' || typeof page.mountReconcile === 'function') {
+    return page;
+  }
+  return instance instanceof Component ? (new EscapeHatchPage(instance) as unknown as MountableComponent) : page;
+}
+
 function isDev(): boolean {
   return typeof window !== 'undefined' && window.__EQ_DEV__ === true;
 }
@@ -285,8 +302,6 @@ function mountComponent(root: HTMLElement, component: MountableComponent, pageNa
   root.innerHTML = '';
   if (typeof component.mount === 'function') {
     component.mount(root);
-  } else if (typeof component.render === 'function') {
-    component.render(root);
   } else {
     renderMountError(root, pageName);
   }
@@ -330,7 +345,7 @@ async function loadAndMountPage(
     return;
   }
 
-  const component = new ComponentClass();
+  const component = asPage(new ComponentClass());
 
   // Hydration: attach events to existing SSR HTML. Prefer the component's own hydrate() so its render
   // manager owns the tree — that lets the first SPA navigation away diff against it (getCurrentTree) and
@@ -399,7 +414,7 @@ async function navigateToPage(
     applyPageState(payload);
 
     const previous = currentComponent;
-    const next = new ComponentClass() as MountableComponent;
+    const next = asPage(new ComponentClass());
 
     if (typeof next.mountReconcile === 'function') {
       // Diff the new page against the outgoing tree (captured now, so it reflects any state the outgoing
@@ -659,8 +674,12 @@ function initHotReload(): void {
       // write-once page (which keeps no _state bag) hydrating old HTML after the reload —
       // the pixels never changed, and the whole feature read as broken.
       const data: Record<string, unknown> = {};
+      // The PAGE, not its host: an escape-hatch page is mounted through EscapeHatchPage, and what it
+      // holds — and the key it is named by — are the hosted page's own.
+      const pageRoot: object | null =
+        currentComponent instanceof EscapeHatchPage ? currentComponent.page : currentComponent;
       try {
-        const holder = currentComponent as unknown as { _state?: Record<string, unknown> } | null;
+        const holder = pageRoot as unknown as { _state?: Record<string, unknown> } | null;
         const state = holder?._state;
         if (state) {
           for (const key of Object.keys(state)) {
@@ -676,8 +695,9 @@ function initHotReload(): void {
       try {
         // UNDER THE ROOT'S KEY, because __INITIAL_STATE__ is keyed by component now: any component
         // the page composes may declare server data, so a flat map cannot say whose field is whose.
-        // The captured bag is the root page's, and the root is the first component expanded — `#0`.
-        const rootKey = `${(currentComponent as { constructor?: { name?: string } } | null)?.constructor?.name ?? ''}#0`;
+        // The captured bag is the root page's, and the root is the first component expanded — `#0` —
+        // named by its identity, the same one the walk reads (#278).
+        const rootKey = `${pageRoot ? componentIdentity(pageRoot) : ''}#0`;
         sessionStorage.setItem(
           '__eq_hmr__',
           JSON.stringify({ url: location.href, state: { [rootKey]: data } }),

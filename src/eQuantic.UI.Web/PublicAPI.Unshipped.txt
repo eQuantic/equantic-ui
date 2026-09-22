@@ -1,1 +1,4 @@
 #nullable enable
+eQuantic.UI.Web.ComponentIdentity
+static eQuantic.UI.Web.ComponentIdentity.Key(System.Type! type, int ordinal) -> string!
+static eQuantic.UI.Web.ComponentIdentity.Of(System.Type! type) -> string!

@@ -178,7 +178,7 @@ public class ServerRenderingService : IServerRenderingService
                     // server and then hydrating from its defaults was the one page shape that never
                     // needed this walk and was the only one left reverting. Its ordinal is 0 by
                     // construction — the root is the first component either side names.
-                    coreRootKey = $"{metadataSource.GetType().Name}#0";
+                    coreRootKey = Web.ComponentIdentity.Key(metadataSource.GetType(), 0);
                     asked.Add(coreRootKey);
                     await coreRoot.PrefetchAsync(context.RequestServices, context.RequestAborted);
                 }

@@ -16,6 +16,14 @@ public class ComponentDefinition
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
+    /// The component's IDENTITY at the seam with the server: the CLR full name of its definition
+    /// (<c>MyApp.Pages.Row</c>, <c>Outer+Inner</c>, <c>Grid`1</c>), exactly what
+    /// <c>eQuantic.UI.Web.ComponentIdentity.Of</c> answers for the same type at runtime. Emitted as
+    /// <c>static $typeId</c>; the runtime keys a component's hydration state by it (#278).
+    /// </summary>
+    public string TypeIdentity { get; set; } = string.Empty;
+
+    /// <summary>
     /// Generic type parameters
     /// </summary>
     public List<string> TypeParameters { get; set; } = new();

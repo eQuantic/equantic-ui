@@ -53,15 +53,26 @@ const componentOrdinals = new Map<string, number>();
  * component each field map belongs to. The server names them as the realizer expands them
  * (`ComponentExpansionScope`), and the same walk here produces the same names.
  *
- * The type name comes from `constructor.name`, which survives because neither bundler passes
- * `--minify-identifiers` (only `--minify-syntax --minify-whitespace`). Adding it would rename the
- * classes and every key would stop matching — quietly, since a key that matches nothing leaves the
- * component with its own defaults. Pinned by `server-state.spec.ts`.
+ * The type half is the component's IDENTITY — the CLR full name eqc writes onto every component
+ * class as `static $typeId`, and the server's `ComponentIdentity.Of` answers for the same type. It
+ * was `constructor.name`: the simple name, shared by every `Row` in every namespace, and alive only
+ * while neither bundler passed `--minify-identifiers` (#278). A string the compiler wrote survives
+ * any bundler. Pinned by `server-state.spec.ts`.
  */
 export function nextComponentKey(typeName: string): string {
   const seen = componentOrdinals.get(typeName) ?? 0;
   componentOrdinals.set(typeName, seen + 1);
   return `${typeName}#${seen}`;
+}
+
+/**
+ * The identity a component instance travels under: its class's `static $typeId`, which eqc emits on
+ * every component it transpiles. A class without one — a hand-written twin, a test's fixture — falls
+ * back to its own name, which is what every key was before the identity existed.
+ */
+export function componentIdentity(instance: object): string {
+  const type = instance.constructor as { $typeId?: string; name?: string };
+  return type.$typeId ?? type.name ?? '';
 }
 
 /** Starts a fresh count — one render is one walk, and the numbering restarts with it. */
@@ -75,12 +86,8 @@ export function resetComponentKeys(): void {
  * The type half of the key is what makes a drift safe: if the two sides ever expand different
  * trees, the ordinal alone would hand a component whatever sat at that number. Matching on the type
  * means a disagreement leaves the component with its own defaults — a missing value rather than a
- * wrong one.
- *
- * It is `constructor.name`, the SIMPLE name, so two components called `Row` from different
- * namespaces share the refusal as well as the ordinal. Both sides still count them identically, so
- * trees that agree are keyed correctly; what a collision costs is the net, not the protocol. The
- * C# side says the same at `ComponentExpansionScope`.
+ * wrong one. The type is the full identity (`componentIdentity`), so two components called `Row`
+ * from different namespaces are two types to that check, as they are to the compiler.
  */
 const alreadyAdopted = new WeakSet<object>();
 
@@ -134,14 +141,9 @@ let walkDepth = 0;
  * that makes this its own function: restarting per component would restart the count between two
  * SIBLINGS and hand both of them `#0`.
  *
- * WHAT THIS CANNOT SEE is a page whose render is not a component's. The server counts one page
- * render, and two sibling bridges inside one of those continue one count; here they would be two
- * outermost lowerings and each would restart. It needs a Core page rendering in the browser, and
- * there is no such thing today — `mount`, `hydrate` and `mountReconcile` are declared on
- * `StatelessComponent` and `StatefulComponent` only, so an escape-hatch page (an `HtmlElement`)
- * is served by SSR and never mounted by the boot script. Inside a write-once page the bridges are
- * already nested in the root's own walk and share its count, which is why this is a gap in the
- * client half of that page shape rather than in the count: issue #279.
+ * An escape-hatch page renders inside ONE component walk too (`EscapeHatchPage`), so the bridges
+ * it holds are nested lowerings that continue its count, exactly as the server counts one page
+ * render across all of them (#279).
  */
 export function runLoweringWalk<T>(run: () => T): T {
   if (walkDepth === 0) resetComponentKeys();
@@ -176,7 +178,7 @@ export function runComponentWalk<T>(root: object, adopt: boolean, run: () => T):
   // `HtmlElement` and never arrives here — so a component that took no ordinal here would shift
   // every one after it. Not adopting is a separate question: the payload is the first render's
   // answer, and applying it again would undo whatever the page has done since.
-  const key = nextComponentKey((root.constructor as { name?: string }).name ?? '');
+  const key = nextComponentKey(componentIdentity(root));
   if (adopt) adoptServerStateFor(root, key);
 
   walkDepth++;
@@ -245,7 +247,8 @@ export abstract class StatelessComponent extends Component {
     // outside the walk that child would restart the count and claim `#0` for itself, which for a
     // component that builds another of its own type gave every level of a recursive tree the ROOT's
     // data.
-    return runComponentWalk(this, !this._mounted, () => {
+    const root = walkRoots.get(this) ?? this;
+    return runComponentWalk(root, !this._mounted, () => {
       // Reconciler pass (W6): a stateless page IS re-renderable — build is pure and the instance
       // store retains nested shared stateful across passes — so those children invalidate by
       // re-rendering this page, exactly like a stateful host. (The old "no invalidator" fence made
@@ -258,7 +261,7 @@ export abstract class StatelessComponent extends Component {
       } catch (error) {
         // A PAGE has no parent to contain it. Its own throw used to leave the root unwritten, which
         // is the white screen the boundary exists to end.
-        return renderComponentFailure(this.constructor.name, error);
+        return renderComponentFailure(root.constructor.name, error);
       } finally {
         exitPass();
       }
@@ -337,6 +340,39 @@ export abstract class StatelessComponent extends Component {
 
   getVirtualNode(): HtmlNode {
     return this.render();
+  }
+}
+
+/**
+ * The component a page hands the walk as ITS root, when the page is not the component rendering.
+ * Kept off the class so no member name joins the list a C# component may not shadow (EQ2011).
+ */
+const walkRoots = new WeakMap<object, object>();
+
+/**
+ * The client half of an ESCAPE-HATCH page: a page written as DOM (`Web.IComponent`, routed with
+ * `MapPage<T>`) rather than as a write-once component.
+ *
+ * SSR has always drawn such a page, run its prefetch and shipped its state; the browser did nothing
+ * with it. The boot script mounts through `mount`, `hydrate` or `mountReconcile`, declared on the
+ * two component bases only, so a transpiled `HtmlElement` page fell through to a `render()` that
+ * attaches nothing — no hydration, no handlers, no client-side navigation to or from it (#279).
+ *
+ * It is hosted here by a stateless page whose build IS the element, so it hydrates, mounts,
+ * reconciles and disposes through exactly the code every other page uses. The walk's root is the
+ * element itself: it takes the key the server reserved for it and adopts the state the server
+ * shipped for it, and every write-once bridge it holds is a nested lowering that continues the
+ * page's one count — the count the server keeps across the whole page render.
+ */
+export class EscapeHatchPage extends StatelessComponent {
+  /** The page this hosts — what the walk names, and what hot reload captures. */
+  constructor(readonly page: Component) {
+    super();
+    walkRoots.set(this, page);
+  }
+
+  build(): Component {
+    return this.page;
   }
 }
 

@@ -1336,7 +1336,10 @@ export class PreviewPanel {
       // see is the script INSIDE the string; scripts/verify-webview.mjs is what reads that, and
       // its own header names the stray backtick as the first thing it exists to catch.)
       const carried = mountedClass === payload.className ? captureState() : null;
-      if (carried) window.__INITIAL_STATE__ = { [payload.className + '#0']: carried };
+      // Named by the identity eqc writes on the class (static $typeId), which is what the walk keys
+      // by since #278; the export name is only the fallback for a module older than that.
+      const identity = (Component.$typeId || payload.className) + '#0';
+      if (carried) window.__INITIAL_STATE__ = { [identity]: carried };
 
       app.replaceChildren();
       mountedInstance = new Component();

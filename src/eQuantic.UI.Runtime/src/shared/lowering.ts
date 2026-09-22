@@ -11,7 +11,7 @@
  *   class string per element; only custom-property tails stay inline.
  */
 
-import { adoptServerStateFor, nextComponentKey, runLoweringWalk } from '../core/component';
+import { adoptServerStateFor, componentIdentity, nextComponentKey, runLoweringWalk } from '../core/component';
 import { assertNever } from '../utils/assert-never';
 import { round as dotnetRound } from '../utils/dotnet-math';
 import { PINNED_MARKER } from './markers';
@@ -462,7 +462,7 @@ function lowerNodeKind(
       // drew blanks in front of the reader.
       adoptServerStateFor(
         resolved,
-        nextComponentKey((resolved as { constructor?: { name?: string } }).constructor?.name ?? ''),
+        nextComponentKey(componentIdentity(resolved as object)),
       );
 
       // The BOUNDARY (C# ComponentBoundary twin): a component's throw costs its own subtree and
@@ -3262,7 +3262,7 @@ function resolveStackChild(
     // the key the server just wrote for it, and the two walks would count differently from here on.
     adoptServerStateFor(
       resolved,
-      nextComponentKey((resolved as { constructor?: { name?: string } }).constructor?.name ?? ''),
+      nextComponentKey(componentIdentity(resolved as object)),
     );
 
     try {

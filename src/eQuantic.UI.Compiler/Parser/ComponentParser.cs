@@ -333,6 +333,7 @@ public class ComponentParser
             var definition = new ComponentDefinition
             {
                 Name = classDecl.Identifier.Text,
+                TypeIdentity = ClrIdentity(classDecl),
                 SourcePath = sourcePath,
                 SyntaxTree = tree,
                 Namespace = ns ?? "",
@@ -796,4 +797,29 @@ public class ComponentParser
         }
     }
     
+
+    /// <summary>
+    /// The CLR full name of a type DEFINITION, read off its syntax: the namespaces it sits in, its
+    /// containing types joined by <c>+</c>, and a generic definition's arity after a backtick —
+    /// what <c>Type.FullName</c> says for the same class at runtime, which is the identity the server
+    /// keys a component's state by (<c>ComponentIdentity.Of</c>). Syntax rather than the semantic
+    /// model because the fallback path has no model, and the answer must not depend on having one.
+    /// </summary>
+    internal static string ClrIdentity(TypeDeclarationSyntax declaration)
+    {
+        static string Own(TypeDeclarationSyntax type) =>
+            type.TypeParameterList is { Parameters.Count: > 0 } parameters
+                ? $"{type.Identifier.Text}`{parameters.Parameters.Count}"
+                : type.Identifier.Text;
+
+        var name = Own(declaration);
+        for (var parent = declaration.Parent; parent is TypeDeclarationSyntax outer; parent = parent.Parent)
+            name = $"{Own(outer)}+{name}";
+
+        var ns = string.Join(".", declaration.Ancestors()
+            .OfType<BaseNamespaceDeclarationSyntax>()
+            .Reverse()
+            .Select(n => n.Name.ToString()));
+        return ns.Length == 0 ? name : $"{ns}.{name}";
+    }
 }

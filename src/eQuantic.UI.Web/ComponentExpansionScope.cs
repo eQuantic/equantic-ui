@@ -33,14 +33,11 @@ namespace eQuantic.UI.Web;
 /// </para>
 ///
 /// <para>
-/// It is the SIMPLE name, and that bounds the guarantee rather than the protocol. Two components
-/// named <c>Row</c> from different namespaces count on one ordinal and both sides count it the
-/// same way, so an agreeing pair of trees is keyed correctly either way — what a collision costs
-/// is the refusal above, which is the net for a drift that should not happen in the first place.
-/// Inside one app the generator already reports it (EQ3102, for the factory surface); an app type
-/// colliding with a framework one is unreported, and an exact identity needs a stable id emitted
-/// for every component by the transpiler and read by both sides — which moves the key format for
-/// every component, so it is issue #278 rather than a line here.
+/// The type is the FULL identity, <see cref="ComponentIdentity.Of"/> — the CLR full name of the
+/// definition — and eqc writes the same string onto each twin as <c>static $typeId</c>, so two
+/// components called <c>Row</c> from different namespaces are two types to that refusal and two
+/// counts, as they are to the compiler. It was the simple name until #278, which left the refusal
+/// blind to exactly the collision it exists for.
 /// </para>
 /// </summary>
 public sealed class ComponentExpansionScope
@@ -85,7 +82,7 @@ public sealed class ComponentExpansionScope
     /// <para>
     /// An escape-hatch root is asked directly — it never passes through the realizer's component
     /// visit — so its key is built by hand while this count starts empty. A component sharing the
-    /// root's simple name then claimed the same one, and the pipeline's asked set read it as
+    /// root's type then claimed the same one, and the pipeline's asked set read it as
     /// already handled: that component's prefetch never ran and its state never shipped, with the
     /// payload under that name belonging to the root. The two sides agree on the wrong thing, so
     /// the type check has nothing to refuse.
@@ -133,7 +130,7 @@ public sealed class ComponentExpansionScope
     /// </summary>
     public string Enter(UiComponent component)
     {
-        var typeName = component.GetType().Name;
+        var typeName = ComponentIdentity.Of(component.GetType());
         var ordinal = _ordinals.TryGetValue(typeName, out var seen) ? seen : 0;
         var key = $"{typeName}#{ordinal}";
 
