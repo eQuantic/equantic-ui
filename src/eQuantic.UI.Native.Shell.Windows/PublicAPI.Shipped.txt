@@ -1,0 +1,82 @@
+#nullable enable
+eQuantic.UI.Native.Shell.Windows.Graphics.Direct2DIconRasterizer
+eQuantic.UI.Native.Shell.Windows.Graphics.Direct2DIconRasterizer.Direct2DIconRasterizer() -> void
+eQuantic.UI.Native.Shell.Windows.Graphics.Direct2DIconRasterizer.Dispose() -> void
+eQuantic.UI.Native.Shell.Windows.Graphics.Direct2DIconRasterizer.Rasterize(eQuantic.UI.Primitives.IconGlyph glyph, float widthDp, float heightDp, float scale) -> eQuantic.UI.Native.Framework.TextRaster?
+eQuantic.UI.Native.Shell.Windows.Graphics.DirectWriteTextService
+eQuantic.UI.Native.Shell.Windows.Graphics.DirectWriteTextService.DirectWriteTextService() -> void
+eQuantic.UI.Native.Shell.Windows.Graphics.DirectWriteTextService.Dispose() -> void
+eQuantic.UI.Native.Shell.Windows.Graphics.DirectWriteTextService.Measure(string! content, eQuantic.UI.Primitives.TypeStyle style, float typeScale, float maxWidth, int maxLines) -> eQuantic.UI.Native.Framework.TextMeasurement!
+eQuantic.UI.Native.Shell.Windows.Graphics.DirectWriteTextService.MonoFamily.get -> string!
+eQuantic.UI.Native.Shell.Windows.Graphics.DirectWriteTextService.Rasterize(string! content, eQuantic.UI.Primitives.TypeStyle style, float typeScale, float maxWidth, int maxLines, float scale, eQuantic.UI.Primitives.TextAlignment align) -> eQuantic.UI.Native.Framework.TextRaster?
+eQuantic.UI.Native.Shell.Windows.Graphics.DirectWriteTextService.TextFamily.get -> string!
+eQuantic.UI.Native.Shell.Windows.Graphics.WicImageLoader
+eQuantic.UI.Native.Shell.Windows.Graphics.WicImageLoader.Decode(byte[]! encoded) -> eQuantic.UI.Native.Framework.RgbaImage?
+eQuantic.UI.Native.Shell.Windows.Graphics.WicImageLoader.Dispose() -> void
+eQuantic.UI.Native.Shell.Windows.Graphics.WicImageLoader.Load(string! source) -> eQuantic.UI.Native.Framework.RgbaImage?
+eQuantic.UI.Native.Shell.Windows.Graphics.WicImageLoader.WicImageLoader() -> void
+eQuantic.UI.Native.Shell.Windows.PhotonWindow
+eQuantic.UI.Native.Shell.Windows.PhotonWindow.AveragePresentMs.get -> double
+eQuantic.UI.Native.Shell.Windows.PhotonWindow.FramesPresented.get -> int
+eQuantic.UI.Native.Shell.Windows.PhotonWindow.OnCopyData.get -> System.Action<string!>?
+eQuantic.UI.Native.Shell.Windows.PhotonWindow.OnCopyData.set -> void
+eQuantic.UI.Native.Shell.Windows.PhotonWindow.PhotonWindow(string! className, string! title, float width = 800, float height = 600, eQuantic.UI.Primitives.WindowChrome chrome = eQuantic.UI.Primitives.WindowChrome.Standard, bool resizable = true, float minWidth = 0, float minHeight = 0, bool smoothScroll = true) -> void
+eQuantic.UI.Native.Shell.Windows.PhotonWindow.PresenterName.get -> string!
+eQuantic.UI.Native.Shell.Windows.PhotonWindow.Run(eQuantic.UI.Primitives.VisualNode! root, eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ThemeMode mode, int maxFrames = 0, eQuantic.UI.Native.Hosting.PhotonThemeController? themeController = null, eQuantic.UI.Native.Hosting.PhotonCultureController? cultureController = null, bool followSystemTheme = false) -> void
+eQuantic.UI.Native.Shell.Windows.WindowsAppStorage
+eQuantic.UI.Native.Shell.Windows.WindowsAppStorage.Get(string! key) -> string?
+eQuantic.UI.Native.Shell.Windows.WindowsAppStorage.Remove(string! key) -> void
+eQuantic.UI.Native.Shell.Windows.WindowsAppStorage.Set(string! key, string! value) -> void
+eQuantic.UI.Native.Shell.Windows.WindowsAppStorage.WindowsAppStorage() -> void
+eQuantic.UI.Native.Shell.Windows.WindowsAppStorage.WindowsAppStorage(string! keyPath) -> void
+eQuantic.UI.Native.Shell.Windows.WindowsCapabilities
+eQuantic.UI.Native.Shell.Windows.WindowsCapabilities.Register(Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> void
+eQuantic.UI.Native.Shell.Windows.WindowsCapabilities.WindowsCapabilities() -> void
+eQuantic.UI.Native.Shell.Windows.WindowsClipboard
+eQuantic.UI.Native.Shell.Windows.WindowsClipboard.Read() -> string?
+eQuantic.UI.Native.Shell.Windows.WindowsClipboard.WindowsClipboard() -> void
+eQuantic.UI.Native.Shell.Windows.WindowsClipboard.Write(string! text) -> void
+eQuantic.UI.Native.Shell.Windows.WindowsDeepLinks
+eQuantic.UI.Native.Shell.Windows.WindowsFileDialogs
+eQuantic.UI.Native.Shell.Windows.WindowsFileDialogs.PickFile(string? title, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.FileFilter!>? filters, string? startIn) -> System.Threading.Tasks.Task<string?>!
+eQuantic.UI.Native.Shell.Windows.WindowsFileDialogs.PickFiles(string? title, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.FileFilter!>? filters, string? startIn) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string!>!>!
+eQuantic.UI.Native.Shell.Windows.WindowsFileDialogs.PickFolder(string? title, string? startIn) -> System.Threading.Tasks.Task<string?>!
+eQuantic.UI.Native.Shell.Windows.WindowsFileDialogs.PickSavePath(string? suggestedName, string? title, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.FileFilter!>? filters, string? startIn) -> System.Threading.Tasks.Task<string?>!
+eQuantic.UI.Native.Shell.Windows.WindowsFileDialogs.WindowsFileDialogs() -> void
+eQuantic.UI.Native.Shell.Windows.WindowsKeys
+eQuantic.UI.Native.Shell.Windows.WindowsLocale
+eQuantic.UI.Native.Shell.Windows.WindowsNetworkStatus
+eQuantic.UI.Native.Shell.Windows.WindowsNetworkStatus.Current.get -> eQuantic.UI.Primitives.NetworkState
+eQuantic.UI.Native.Shell.Windows.WindowsNetworkStatus.Dispose() -> void
+eQuantic.UI.Native.Shell.Windows.WindowsNetworkStatus.Subscribe(System.Action<eQuantic.UI.Primitives.NetworkState>! onChanged) -> System.IDisposable!
+eQuantic.UI.Native.Shell.Windows.WindowsNetworkStatus.WindowsNetworkStatus() -> void
+eQuantic.UI.Native.Shell.Windows.WindowsPhotonRunner
+eQuantic.UI.Native.Shell.Windows.WindowsPhotonRunner.Run(eQuantic.UI.Native.Hosting.PhotonApplication! app) -> void
+eQuantic.UI.Native.Shell.Windows.WindowsPhotonRunner.WindowsPhotonRunner() -> void
+eQuantic.UI.Native.Shell.Windows.WindowsSecretStore
+eQuantic.UI.Native.Shell.Windows.WindowsSecretStore.Get(string! key) -> string?
+eQuantic.UI.Native.Shell.Windows.WindowsSecretStore.Remove(string! key) -> void
+eQuantic.UI.Native.Shell.Windows.WindowsSecretStore.Set(string! key, string! value) -> void
+eQuantic.UI.Native.Shell.Windows.WindowsSecretStore.WindowsSecretStore() -> void
+eQuantic.UI.Native.Shell.Windows.WindowsSecretStore.WindowsSecretStore(string! directory) -> void
+eQuantic.UI.Native.Shell.Windows.WindowsTheme
+eQuantic.UI.Native.Shell.Windows.WindowsWorkspace
+eQuantic.UI.Native.Shell.Windows.WindowsWorkspace.CanOpen(System.Uri! url) -> bool
+eQuantic.UI.Native.Shell.Windows.WindowsWorkspace.OpenFile(string! path) -> bool
+eQuantic.UI.Native.Shell.Windows.WindowsWorkspace.OpenUrl(System.Uri! url) -> bool
+eQuantic.UI.Native.Shell.Windows.WindowsWorkspace.Reveal(string! path) -> bool
+eQuantic.UI.Native.Shell.Windows.WindowsWorkspace.WindowsWorkspace(eQuantic.UI.Primitives.OpenUrlPolicy! policy, Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Native.Shell.Windows.WindowsWorkspace!>! logger) -> void
+static eQuantic.UI.Native.Shell.Windows.WindowsDeepLinks.DeclaredSchemes(eQuantic.UI.Native.Hosting.PhotonApplication! app) -> System.Collections.Generic.IReadOnlyList<string!>!
+static eQuantic.UI.Native.Shell.Windows.WindowsDeepLinks.ForwardToRunningInstance(string! className, System.Uri! url) -> bool
+static eQuantic.UI.Native.Shell.Windows.WindowsDeepLinks.Install(eQuantic.UI.Native.Hosting.PhotonApplication? app = null) -> eQuantic.UI.Primitives.DeepLinkRelay!
+static eQuantic.UI.Native.Shell.Windows.WindowsDeepLinks.LaunchUrl(eQuantic.UI.Native.Hosting.PhotonApplication! app) -> System.Uri?
+static eQuantic.UI.Native.Shell.Windows.WindowsDeepLinks.RegisterScheme(string! scheme) -> void
+static eQuantic.UI.Native.Shell.Windows.WindowsDeepLinks.WindowClassName(eQuantic.UI.Native.Hosting.PhotonApplication! app) -> string!
+static eQuantic.UI.Native.Shell.Windows.WindowsKeys.Modifiers() -> eQuantic.UI.Primitives.KeyModifiers
+static eQuantic.UI.Native.Shell.Windows.WindowsKeys.NameOf(uint virtualKey) -> string!
+static eQuantic.UI.Native.Shell.Windows.WindowsKeys.TypedText(char character, eQuantic.UI.Primitives.KeyModifiers modifiers) -> string!
+static eQuantic.UI.Native.Shell.Windows.WindowsKeys.WheelTravel(int wheelDelta, uint linesPerNotch) -> float
+static eQuantic.UI.Native.Shell.Windows.WindowsLocale.Resolve() -> (System.Globalization.CultureInfo! Ui, System.Globalization.CultureInfo! Format)
+static eQuantic.UI.Native.Shell.Windows.WindowsTheme.ApplyToTitleBar(nint hwnd, eQuantic.UI.Primitives.ThemeMode mode) -> void
+static eQuantic.UI.Native.Shell.Windows.WindowsTheme.IsColorSetChange(nint lParam) -> bool
+static eQuantic.UI.Native.Shell.Windows.WindowsTheme.SystemMode() -> eQuantic.UI.Primitives.ThemeMode

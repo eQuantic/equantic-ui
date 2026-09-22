@@ -1,0 +1,19 @@
+#nullable enable
+eQuantic.UI.Gtm.GtmExtensions
+eQuantic.UI.Gtm.GtmOptions
+eQuantic.UI.Gtm.GtmOptions.DataLayerName.get -> string!
+eQuantic.UI.Gtm.GtmOptions.DataLayerName.set -> void
+eQuantic.UI.Gtm.GtmOptions.EnvironmentAuth.get -> string?
+eQuantic.UI.Gtm.GtmOptions.EnvironmentAuth.set -> void
+eQuantic.UI.Gtm.GtmOptions.EnvironmentPreview.get -> string?
+eQuantic.UI.Gtm.GtmOptions.EnvironmentPreview.set -> void
+eQuantic.UI.Gtm.GtmOptions.GtmOptions() -> void
+eQuantic.UI.Gtm.GtmOptions.RequireConsent.get -> bool
+eQuantic.UI.Gtm.GtmOptions.RequireConsent.set -> void
+eQuantic.UI.Gtm.GtmOptions.TrackSpaPageViews.get -> bool
+eQuantic.UI.Gtm.GtmOptions.TrackSpaPageViews.set -> void
+eQuantic.UI.Gtm.GtmOptions.WithConsent() -> eQuantic.UI.Gtm.GtmOptions!
+eQuantic.UI.Gtm.GtmOptions.WithDataLayerName(string! name) -> eQuantic.UI.Gtm.GtmOptions!
+eQuantic.UI.Gtm.GtmOptions.WithEnvironment(string! auth, string! preview) -> eQuantic.UI.Gtm.GtmOptions!
+eQuantic.UI.Gtm.GtmOptions.WithoutSpaPageViews() -> eQuantic.UI.Gtm.GtmOptions!
+static eQuantic.UI.Gtm.GtmExtensions.UseGtm(this eQuantic.UI.Server.UIOptions! options, string! containerId, System.Action<eQuantic.UI.Gtm.GtmOptions!>? configure = null) -> eQuantic.UI.Server.UIOptions!

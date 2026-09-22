@@ -1,0 +1,26 @@
+#nullable enable
+eQuantic.UI.Lottie.LottiePlayer
+eQuantic.UI.Lottie.LottiePlayer.Autoplay.get -> bool
+eQuantic.UI.Lottie.LottiePlayer.Autoplay.set -> void
+eQuantic.UI.Lottie.LottiePlayer.Background.get -> string!
+eQuantic.UI.Lottie.LottiePlayer.Background.set -> void
+eQuantic.UI.Lottie.LottiePlayer.ConfigureAssets(eQuantic.UI.Server.Assets.AssetBuilder! assets) -> void
+eQuantic.UI.Lottie.LottiePlayer.Controls.get -> bool
+eQuantic.UI.Lottie.LottiePlayer.Controls.set -> void
+eQuantic.UI.Lottie.LottiePlayer.Height.get -> string?
+eQuantic.UI.Lottie.LottiePlayer.Height.set -> void
+eQuantic.UI.Lottie.LottiePlayer.Loop.get -> bool
+eQuantic.UI.Lottie.LottiePlayer.Loop.set -> void
+eQuantic.UI.Lottie.LottiePlayer.LottiePlayer() -> void
+eQuantic.UI.Lottie.LottiePlayer.Speed.get -> double
+eQuantic.UI.Lottie.LottiePlayer.Speed.set -> void
+eQuantic.UI.Lottie.LottiePlayer.Src.get -> string!
+eQuantic.UI.Lottie.LottiePlayer.Src.set -> void
+eQuantic.UI.Lottie.LottiePlayer.Version.get -> string!
+eQuantic.UI.Lottie.LottiePlayer.Version.set -> void
+eQuantic.UI.Lottie.LottiePlayer.Width.get -> string?
+eQuantic.UI.Lottie.LottiePlayer.Width.set -> void
+eQuantic.UI.Lottie.LottieServiceExtensions
+override eQuantic.UI.Lottie.LottiePlayer.Render() -> eQuantic.UI.Web.HtmlNode!
+static eQuantic.UI.Lottie.LottieServiceExtensions.AddLottie(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static eQuantic.UI.Lottie.LottieServiceExtensions.UseLottie(this eQuantic.UI.Server.UIOptions! options) -> eQuantic.UI.Server.UIOptions!

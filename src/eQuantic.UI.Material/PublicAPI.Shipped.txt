@@ -1,0 +1,22 @@
+#nullable enable
+eQuantic.UI.Material.MaterialTheme
+eQuantic.UI.Material.MaterialTheme.Background.get -> eQuantic.UI.Primitives.ColorToken
+eQuantic.UI.Material.MaterialTheme.Border.get -> eQuantic.UI.Primitives.ColorToken
+eQuantic.UI.Material.MaterialTheme.BorderStrong.get -> eQuantic.UI.Primitives.ColorToken
+eQuantic.UI.Material.MaterialTheme.Colors(eQuantic.UI.Primitives.Variant variant) -> eQuantic.UI.Primitives.VariantColors
+eQuantic.UI.Material.MaterialTheme.DisabledOpacity.get -> float
+eQuantic.UI.Material.MaterialTheme.Elevation(int level) -> eQuantic.UI.Primitives.ShadowSpec
+eQuantic.UI.Material.MaterialTheme.FocusRing.get -> eQuantic.UI.Primitives.ColorToken
+eQuantic.UI.Material.MaterialTheme.LinkColor.get -> eQuantic.UI.Primitives.ColorToken
+eQuantic.UI.Material.MaterialTheme.Scrim.get -> eQuantic.UI.Primitives.ColorToken
+eQuantic.UI.Material.MaterialTheme.Shape(eQuantic.UI.Primitives.ShapeScale scale) -> float
+eQuantic.UI.Material.MaterialTheme.Surface.get -> eQuantic.UI.Primitives.ColorToken
+eQuantic.UI.Material.MaterialTheme.SurfaceHighlight.get -> eQuantic.UI.Primitives.ColorToken
+eQuantic.UI.Material.MaterialTheme.SurfaceSubtle.get -> eQuantic.UI.Primitives.ColorToken
+eQuantic.UI.Material.MaterialTheme.TextInverse.get -> eQuantic.UI.Primitives.ColorToken
+eQuantic.UI.Material.MaterialTheme.TextMuted.get -> eQuantic.UI.Primitives.ColorToken
+eQuantic.UI.Material.MaterialTheme.TextPrimary.get -> eQuantic.UI.Primitives.ColorToken
+eQuantic.UI.Material.MaterialTheme.TextSecondary.get -> eQuantic.UI.Primitives.ColorToken
+eQuantic.UI.Material.MaterialTheme.Type(eQuantic.UI.Primitives.TypeRole role) -> eQuantic.UI.Primitives.TypeStyle
+static eQuantic.UI.Material.MaterialTheme.FromSeed(eQuantic.UI.Primitives.Color seed) -> eQuantic.UI.Material.MaterialTheme!
+static readonly eQuantic.UI.Material.MaterialTheme.Instance -> eQuantic.UI.Material.MaterialTheme!

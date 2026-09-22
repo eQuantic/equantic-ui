@@ -1,0 +1,137 @@
+#nullable enable
+const eQuantic.UI.Charts.ChartJs.ChartColors.Blue = "rgba(54, 162, 235, 0.5)" -> string!
+const eQuantic.UI.Charts.ChartJs.ChartColors.Green = "rgba(75, 192, 192, 0.5)" -> string!
+const eQuantic.UI.Charts.ChartJs.ChartColors.Grey = "rgba(201, 203, 207, 0.5)" -> string!
+const eQuantic.UI.Charts.ChartJs.ChartColors.Orange = "rgba(255, 159, 64, 0.5)" -> string!
+const eQuantic.UI.Charts.ChartJs.ChartColors.Purple = "rgba(153, 102, 255, 0.5)" -> string!
+const eQuantic.UI.Charts.ChartJs.ChartColors.Red = "rgba(255, 99, 132, 0.5)" -> string!
+const eQuantic.UI.Charts.ChartJs.ChartColors.Yellow = "rgba(255, 205, 86, 0.5)" -> string!
+eQuantic.UI.Charts.ChartData<T>
+eQuantic.UI.Charts.ChartData<T>.ChartData() -> void
+eQuantic.UI.Charts.ChartData<T>.Datasets.get -> System.Collections.Generic.List<eQuantic.UI.Charts.Dataset<T>!>!
+eQuantic.UI.Charts.ChartData<T>.Datasets.set -> void
+eQuantic.UI.Charts.ChartData<T>.Labels.get -> System.Collections.Generic.List<string!>!
+eQuantic.UI.Charts.ChartData<T>.Labels.set -> void
+eQuantic.UI.Charts.ChartJs.BarChart<T>
+eQuantic.UI.Charts.ChartJs.BarChart<T>.BarChart() -> void
+eQuantic.UI.Charts.ChartJs.ChartColors
+eQuantic.UI.Charts.ChartJs.ChartJs<T>
+eQuantic.UI.Charts.ChartJs.ChartJs<T>.ChartJs() -> void
+eQuantic.UI.Charts.ChartJs.ChartJs<T>.Data.get -> eQuantic.UI.Charts.ChartData<T>!
+eQuantic.UI.Charts.ChartJs.ChartJs<T>.Data.set -> void
+eQuantic.UI.Charts.ChartJs.ChartJs<T>.Height.get -> string?
+eQuantic.UI.Charts.ChartJs.ChartJs<T>.Height.set -> void
+eQuantic.UI.Charts.ChartJs.ChartJs<T>.Options.get -> eQuantic.UI.Charts.ChartJs.Models.ChartJsOptions!
+eQuantic.UI.Charts.ChartJs.ChartJs<T>.Options.set -> void
+eQuantic.UI.Charts.ChartJs.ChartJs<T>.Responsive.get -> bool
+eQuantic.UI.Charts.ChartJs.ChartJs<T>.Responsive.set -> void
+eQuantic.UI.Charts.ChartJs.ChartJs<T>.Title.get -> string?
+eQuantic.UI.Charts.ChartJs.ChartJs<T>.Title.set -> void
+eQuantic.UI.Charts.ChartJs.ChartJs<T>.Type.get -> string!
+eQuantic.UI.Charts.ChartJs.ChartJs<T>.Type.set -> void
+eQuantic.UI.Charts.ChartJs.ChartJs<T>.Width.get -> string?
+eQuantic.UI.Charts.ChartJs.ChartJs<T>.Width.set -> void
+eQuantic.UI.Charts.ChartJs.ChartJsScripts
+eQuantic.UI.Charts.ChartJs.ChartJsScripts.ChartJsScripts() -> void
+eQuantic.UI.Charts.ChartJs.ChartJsScripts.Version.get -> string!
+eQuantic.UI.Charts.ChartJs.ChartJsScripts.Version.set -> void
+eQuantic.UI.Charts.ChartJs.ChartJsServiceExtensions
+eQuantic.UI.Charts.ChartJs.DoughnutChart<T>
+eQuantic.UI.Charts.ChartJs.DoughnutChart<T>.DoughnutChart() -> void
+eQuantic.UI.Charts.ChartJs.IChart
+eQuantic.UI.Charts.ChartJs.IChart.Responsive.get -> bool
+eQuantic.UI.Charts.ChartJs.IChart.Responsive.set -> void
+eQuantic.UI.Charts.ChartJs.IChart.Title.get -> string?
+eQuantic.UI.Charts.ChartJs.IChart.Title.set -> void
+eQuantic.UI.Charts.ChartJs.LineChart<T>
+eQuantic.UI.Charts.ChartJs.LineChart<T>.LineChart() -> void
+eQuantic.UI.Charts.ChartJs.Models.ChartJsDataset<T>
+eQuantic.UI.Charts.ChartJs.Models.ChartJsDataset<T>.BackgroundColor.get -> string?
+eQuantic.UI.Charts.ChartJs.Models.ChartJsDataset<T>.BackgroundColor.set -> void
+eQuantic.UI.Charts.ChartJs.Models.ChartJsDataset<T>.BorderColor.get -> string?
+eQuantic.UI.Charts.ChartJs.Models.ChartJsDataset<T>.BorderColor.set -> void
+eQuantic.UI.Charts.ChartJs.Models.ChartJsDataset<T>.BorderWidth.get -> double?
+eQuantic.UI.Charts.ChartJs.Models.ChartJsDataset<T>.BorderWidth.set -> void
+eQuantic.UI.Charts.ChartJs.Models.ChartJsDataset<T>.ChartJsDataset() -> void
+eQuantic.UI.Charts.ChartJs.Models.ChartJsDataset<T>.Fill.get -> bool?
+eQuantic.UI.Charts.ChartJs.Models.ChartJsDataset<T>.Fill.set -> void
+eQuantic.UI.Charts.ChartJs.Models.ChartJsDataset<T>.Tension.get -> double?
+eQuantic.UI.Charts.ChartJs.Models.ChartJsDataset<T>.Tension.set -> void
+eQuantic.UI.Charts.ChartJs.Models.ChartJsDataset<T>.Type.get -> string?
+eQuantic.UI.Charts.ChartJs.Models.ChartJsDataset<T>.Type.set -> void
+eQuantic.UI.Charts.ChartJs.Models.ChartJsOptions
+eQuantic.UI.Charts.ChartJs.Models.ChartJsOptions.ChartJsOptions() -> void
+eQuantic.UI.Charts.ChartJs.Models.ChartJsOptions.MaintainAspectRatio.get -> bool
+eQuantic.UI.Charts.ChartJs.Models.ChartJsOptions.MaintainAspectRatio.set -> void
+eQuantic.UI.Charts.ChartJs.Models.ChartJsOptions.Plugins.get -> eQuantic.UI.Charts.ChartJs.Models.PluginsOptions!
+eQuantic.UI.Charts.ChartJs.Models.ChartJsOptions.Plugins.set -> void
+eQuantic.UI.Charts.ChartJs.Models.ChartJsOptions.Responsive.get -> bool
+eQuantic.UI.Charts.ChartJs.Models.ChartJsOptions.Responsive.set -> void
+eQuantic.UI.Charts.ChartJs.Models.ChartJsOptions.Scales.get -> eQuantic.UI.Charts.ChartJs.Models.ScalesOptions!
+eQuantic.UI.Charts.ChartJs.Models.ChartJsOptions.Scales.set -> void
+eQuantic.UI.Charts.ChartJs.Models.GridOptions
+eQuantic.UI.Charts.ChartJs.Models.GridOptions.Color.get -> string?
+eQuantic.UI.Charts.ChartJs.Models.GridOptions.Color.set -> void
+eQuantic.UI.Charts.ChartJs.Models.GridOptions.Display.get -> bool
+eQuantic.UI.Charts.ChartJs.Models.GridOptions.Display.set -> void
+eQuantic.UI.Charts.ChartJs.Models.GridOptions.GridOptions() -> void
+eQuantic.UI.Charts.ChartJs.Models.LegendOptions
+eQuantic.UI.Charts.ChartJs.Models.LegendOptions.Display.get -> bool
+eQuantic.UI.Charts.ChartJs.Models.LegendOptions.Display.set -> void
+eQuantic.UI.Charts.ChartJs.Models.LegendOptions.LegendOptions() -> void
+eQuantic.UI.Charts.ChartJs.Models.LegendOptions.Position.get -> string!
+eQuantic.UI.Charts.ChartJs.Models.LegendOptions.Position.set -> void
+eQuantic.UI.Charts.ChartJs.Models.PluginsOptions
+eQuantic.UI.Charts.ChartJs.Models.PluginsOptions.Legend.get -> eQuantic.UI.Charts.ChartJs.Models.LegendOptions!
+eQuantic.UI.Charts.ChartJs.Models.PluginsOptions.Legend.set -> void
+eQuantic.UI.Charts.ChartJs.Models.PluginsOptions.PluginsOptions() -> void
+eQuantic.UI.Charts.ChartJs.Models.PluginsOptions.Title.get -> eQuantic.UI.Charts.ChartJs.Models.TitleOptions!
+eQuantic.UI.Charts.ChartJs.Models.PluginsOptions.Title.set -> void
+eQuantic.UI.Charts.ChartJs.Models.PluginsOptions.Tooltip.get -> eQuantic.UI.Charts.ChartJs.Models.TooltipOptions!
+eQuantic.UI.Charts.ChartJs.Models.PluginsOptions.Tooltip.set -> void
+eQuantic.UI.Charts.ChartJs.Models.ScaleOptions
+eQuantic.UI.Charts.ChartJs.Models.ScaleOptions.Display.get -> bool
+eQuantic.UI.Charts.ChartJs.Models.ScaleOptions.Display.set -> void
+eQuantic.UI.Charts.ChartJs.Models.ScaleOptions.Grid.get -> eQuantic.UI.Charts.ChartJs.Models.GridOptions!
+eQuantic.UI.Charts.ChartJs.Models.ScaleOptions.Grid.set -> void
+eQuantic.UI.Charts.ChartJs.Models.ScaleOptions.ScaleOptions() -> void
+eQuantic.UI.Charts.ChartJs.Models.ScaleOptions.Title.get -> eQuantic.UI.Charts.ChartJs.Models.TitleOptions!
+eQuantic.UI.Charts.ChartJs.Models.ScaleOptions.Title.set -> void
+eQuantic.UI.Charts.ChartJs.Models.ScaleOptions.Type.get -> string!
+eQuantic.UI.Charts.ChartJs.Models.ScaleOptions.Type.set -> void
+eQuantic.UI.Charts.ChartJs.Models.ScalesOptions
+eQuantic.UI.Charts.ChartJs.Models.ScalesOptions.ScalesOptions() -> void
+eQuantic.UI.Charts.ChartJs.Models.ScalesOptions.X.get -> eQuantic.UI.Charts.ChartJs.Models.ScaleOptions?
+eQuantic.UI.Charts.ChartJs.Models.ScalesOptions.X.set -> void
+eQuantic.UI.Charts.ChartJs.Models.ScalesOptions.Y.get -> eQuantic.UI.Charts.ChartJs.Models.ScaleOptions?
+eQuantic.UI.Charts.ChartJs.Models.ScalesOptions.Y.set -> void
+eQuantic.UI.Charts.ChartJs.Models.TitleOptions
+eQuantic.UI.Charts.ChartJs.Models.TitleOptions.Display.get -> bool
+eQuantic.UI.Charts.ChartJs.Models.TitleOptions.Display.set -> void
+eQuantic.UI.Charts.ChartJs.Models.TitleOptions.Text.get -> string?
+eQuantic.UI.Charts.ChartJs.Models.TitleOptions.Text.set -> void
+eQuantic.UI.Charts.ChartJs.Models.TitleOptions.TitleOptions() -> void
+eQuantic.UI.Charts.ChartJs.Models.TooltipOptions
+eQuantic.UI.Charts.ChartJs.Models.TooltipOptions.Enabled.get -> bool
+eQuantic.UI.Charts.ChartJs.Models.TooltipOptions.Enabled.set -> void
+eQuantic.UI.Charts.ChartJs.Models.TooltipOptions.Intersect.get -> bool
+eQuantic.UI.Charts.ChartJs.Models.TooltipOptions.Intersect.set -> void
+eQuantic.UI.Charts.ChartJs.Models.TooltipOptions.Mode.get -> string!
+eQuantic.UI.Charts.ChartJs.Models.TooltipOptions.Mode.set -> void
+eQuantic.UI.Charts.ChartJs.Models.TooltipOptions.TooltipOptions() -> void
+eQuantic.UI.Charts.ChartJs.PieChart<T>
+eQuantic.UI.Charts.ChartJs.PieChart<T>.PieChart() -> void
+eQuantic.UI.Charts.ChartJs.RadarChart<T>
+eQuantic.UI.Charts.ChartJs.RadarChart<T>.RadarChart() -> void
+eQuantic.UI.Charts.Dataset<T>
+eQuantic.UI.Charts.Dataset<T>.Data.get -> System.Collections.Generic.List<T>!
+eQuantic.UI.Charts.Dataset<T>.Data.set -> void
+eQuantic.UI.Charts.Dataset<T>.Dataset() -> void
+eQuantic.UI.Charts.Dataset<T>.Label.get -> string?
+eQuantic.UI.Charts.Dataset<T>.Label.set -> void
+override eQuantic.UI.Charts.ChartJs.ChartJs<T>.Render() -> eQuantic.UI.Web.HtmlNode!
+override eQuantic.UI.Charts.ChartJs.ChartJsScripts.Render() -> eQuantic.UI.Web.HtmlNode!
+static eQuantic.UI.Charts.ChartJs.ChartColors.WithOpacity(string! color, double opacity) -> string!
+static eQuantic.UI.Charts.ChartJs.ChartJsServiceExtensions.AddChartJs(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static eQuantic.UI.Charts.ChartJs.ChartJsServiceExtensions.UseChartJs(this eQuantic.UI.Server.UIOptions! options, string? version = null) -> eQuantic.UI.Server.UIOptions!
+static eQuantic.UI.Charts.ChartJs.ChartJsServiceExtensions.UseChartJs(this Microsoft.AspNetCore.Builder.WebApplication! app, string? version = null) -> Microsoft.AspNetCore.Builder.WebApplication!

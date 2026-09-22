@@ -1,0 +1,398 @@
+#nullable enable
+abstract eQuantic.UI.Server.Metadata.MetaTag.Key.get -> string!
+abstract eQuantic.UI.Server.Metadata.MetaTag.Render() -> string!
+const eQuantic.UI.Server.ConsentCookie.Name = "eq-consent" -> string!
+const eQuantic.UI.Server.CultureRouteConstraint.Name = "culture" -> string!
+const eQuantic.UI.Server.ThemeCookie.Name = "eq-theme" -> string!
+eQuantic.UI.Server.AlternateRequest
+eQuantic.UI.Server.AlternateRequest.AlternateRequest() -> void
+eQuantic.UI.Server.AlternateRequest.AlternateRequest(string! Culture, Microsoft.AspNetCore.Http.HttpRequest! Request) -> void
+eQuantic.UI.Server.AlternateRequest.Culture.get -> string!
+eQuantic.UI.Server.AlternateRequest.Culture.init -> void
+eQuantic.UI.Server.AlternateRequest.Deconstruct(out string! Culture, out Microsoft.AspNetCore.Http.HttpRequest! Request) -> void
+eQuantic.UI.Server.AlternateRequest.Equals(eQuantic.UI.Server.AlternateRequest other) -> bool
+eQuantic.UI.Server.AlternateRequest.Request.get -> Microsoft.AspNetCore.Http.HttpRequest!
+eQuantic.UI.Server.AlternateRequest.Request.init -> void
+eQuantic.UI.Server.AlternateUrls
+eQuantic.UI.Server.Assets.AssetBuilder
+eQuantic.UI.Server.Assets.AssetBuilder.AddInlineScript(string! content, string? id = null) -> eQuantic.UI.Server.Assets.AssetBuilder!
+eQuantic.UI.Server.Assets.AssetBuilder.AddInlineStyle(string! content, string? id = null) -> eQuantic.UI.Server.Assets.AssetBuilder!
+eQuantic.UI.Server.Assets.AssetBuilder.AddScript(string! src, bool defer = true, string? id = null) -> eQuantic.UI.Server.Assets.AssetBuilder!
+eQuantic.UI.Server.Assets.AssetBuilder.AddStylesheet(string! href, string? id = null) -> eQuantic.UI.Server.Assets.AssetBuilder!
+eQuantic.UI.Server.Assets.AssetBuilder.AssetBuilder(eQuantic.UI.Server.Assets.AssetCollection! collection) -> void
+eQuantic.UI.Server.Assets.AssetCollection
+eQuantic.UI.Server.Assets.AssetCollection.Add(eQuantic.UI.Server.Assets.IAsset! asset) -> void
+eQuantic.UI.Server.Assets.AssetCollection.AssetCollection() -> void
+eQuantic.UI.Server.Assets.AssetCollection.Assets.get -> System.Collections.Generic.IEnumerable<eQuantic.UI.Server.Assets.IAsset!>!
+eQuantic.UI.Server.Assets.AssetCollection.HasAssets.get -> bool
+eQuantic.UI.Server.Assets.AssetCollection.RenderTags() -> System.Collections.Generic.IEnumerable<string!>!
+eQuantic.UI.Server.Assets.IAsset
+eQuantic.UI.Server.Assets.IAsset.Id.get -> string?
+eQuantic.UI.Server.Assets.IAsset.Key.get -> string!
+eQuantic.UI.Server.Assets.IAsset.Render() -> string!
+eQuantic.UI.Server.Assets.IComponentAssetProvider<TComponent>
+eQuantic.UI.Server.Assets.IComponentAssetProvider<TComponent>.ConfigureAssets(eQuantic.UI.Server.Assets.AssetBuilder! assets) -> void
+eQuantic.UI.Server.Assets.InlineScriptAsset
+eQuantic.UI.Server.Assets.InlineScriptAsset.Content.get -> string!
+eQuantic.UI.Server.Assets.InlineScriptAsset.Content.init -> void
+eQuantic.UI.Server.Assets.InlineScriptAsset.Deconstruct(out string! Content, out string? Id) -> void
+eQuantic.UI.Server.Assets.InlineScriptAsset.Id.get -> string?
+eQuantic.UI.Server.Assets.InlineScriptAsset.Id.init -> void
+eQuantic.UI.Server.Assets.InlineScriptAsset.InlineScriptAsset(eQuantic.UI.Server.Assets.InlineScriptAsset! original) -> void
+eQuantic.UI.Server.Assets.InlineScriptAsset.InlineScriptAsset(string! Content, string? Id = null) -> void
+eQuantic.UI.Server.Assets.InlineScriptAsset.Key.get -> string!
+eQuantic.UI.Server.Assets.InlineScriptAsset.Render() -> string!
+eQuantic.UI.Server.Assets.InlineStyleAsset
+eQuantic.UI.Server.Assets.InlineStyleAsset.Content.get -> string!
+eQuantic.UI.Server.Assets.InlineStyleAsset.Content.init -> void
+eQuantic.UI.Server.Assets.InlineStyleAsset.Deconstruct(out string! Content, out string? Id) -> void
+eQuantic.UI.Server.Assets.InlineStyleAsset.Id.get -> string?
+eQuantic.UI.Server.Assets.InlineStyleAsset.Id.init -> void
+eQuantic.UI.Server.Assets.InlineStyleAsset.InlineStyleAsset(eQuantic.UI.Server.Assets.InlineStyleAsset! original) -> void
+eQuantic.UI.Server.Assets.InlineStyleAsset.InlineStyleAsset(string! Content, string? Id = null) -> void
+eQuantic.UI.Server.Assets.InlineStyleAsset.Key.get -> string!
+eQuantic.UI.Server.Assets.InlineStyleAsset.Render() -> string!
+eQuantic.UI.Server.Assets.IRequireAssets
+eQuantic.UI.Server.Assets.IRequireAssets.ConfigureAssets(eQuantic.UI.Server.Assets.AssetBuilder! assets) -> void
+eQuantic.UI.Server.Assets.ScriptAsset
+eQuantic.UI.Server.Assets.ScriptAsset.Deconstruct(out string! Src, out bool Defer, out string? Id) -> void
+eQuantic.UI.Server.Assets.ScriptAsset.Defer.get -> bool
+eQuantic.UI.Server.Assets.ScriptAsset.Defer.init -> void
+eQuantic.UI.Server.Assets.ScriptAsset.Id.get -> string?
+eQuantic.UI.Server.Assets.ScriptAsset.Id.init -> void
+eQuantic.UI.Server.Assets.ScriptAsset.Key.get -> string!
+eQuantic.UI.Server.Assets.ScriptAsset.Render() -> string!
+eQuantic.UI.Server.Assets.ScriptAsset.ScriptAsset(eQuantic.UI.Server.Assets.ScriptAsset! original) -> void
+eQuantic.UI.Server.Assets.ScriptAsset.ScriptAsset(string! Src, bool Defer = true, string? Id = null) -> void
+eQuantic.UI.Server.Assets.ScriptAsset.Src.get -> string!
+eQuantic.UI.Server.Assets.ScriptAsset.Src.init -> void
+eQuantic.UI.Server.Assets.StylesheetAsset
+eQuantic.UI.Server.Assets.StylesheetAsset.Deconstruct(out string! Href, out string? Id) -> void
+eQuantic.UI.Server.Assets.StylesheetAsset.Href.get -> string!
+eQuantic.UI.Server.Assets.StylesheetAsset.Href.init -> void
+eQuantic.UI.Server.Assets.StylesheetAsset.Id.get -> string?
+eQuantic.UI.Server.Assets.StylesheetAsset.Id.init -> void
+eQuantic.UI.Server.Assets.StylesheetAsset.Key.get -> string!
+eQuantic.UI.Server.Assets.StylesheetAsset.Render() -> string!
+eQuantic.UI.Server.Assets.StylesheetAsset.StylesheetAsset(eQuantic.UI.Server.Assets.StylesheetAsset! original) -> void
+eQuantic.UI.Server.Assets.StylesheetAsset.StylesheetAsset(string! Href, string? Id = null) -> void
+eQuantic.UI.Server.Authorization.IServerActionAuthorizationService
+eQuantic.UI.Server.Authorization.IServerActionAuthorizationService.AuthorizeAsync(Microsoft.AspNetCore.Http.HttpContext! context, eQuantic.UI.Server.ServerActionDescriptor! descriptor) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult!>!
+eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult
+eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult.FailureReason.get -> string?
+eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult.IsForbidden.get -> bool
+eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult.IsUnauthenticated.get -> bool
+eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult.Succeeded.get -> bool
+eQuantic.UI.Server.Authorization.ServerActionAuthorizationService
+eQuantic.UI.Server.Authorization.ServerActionAuthorizationService.AuthorizeAsync(Microsoft.AspNetCore.Http.HttpContext! context, eQuantic.UI.Server.ServerActionDescriptor! descriptor) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult!>!
+eQuantic.UI.Server.Authorization.ServerActionAuthorizationService.ServerActionAuthorizationService(System.IServiceProvider! serviceProvider, Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Server.Authorization.ServerActionAuthorizationService!>! logger) -> void
+eQuantic.UI.Server.ConsentCookie
+eQuantic.UI.Server.CultureRouteConstraint
+eQuantic.UI.Server.CultureRouteConstraint.CultureRouteConstraint(eQuantic.UI.Server.UIOptions! options) -> void
+eQuantic.UI.Server.CultureRouteConstraint.Match(Microsoft.AspNetCore.Http.HttpContext? httpContext, Microsoft.AspNetCore.Routing.IRouter? route, string! routeKey, Microsoft.AspNetCore.Routing.RouteValueDictionary! values, Microsoft.AspNetCore.Routing.RouteDirection routeDirection) -> bool
+eQuantic.UI.Server.CultureRouteExtensions
+eQuantic.UI.Server.CultureRouteMap
+eQuantic.UI.Server.CultureRouteMap.<Clone>$() -> eQuantic.UI.Server.CultureRouteMap!
+eQuantic.UI.Server.CultureRouteMap.All.get -> System.Collections.Generic.IReadOnlyList<string!>!
+eQuantic.UI.Server.CultureRouteMap.CultureRouteMap(string! Default, System.Collections.Generic.IReadOnlyList<string!>! Prefixed) -> void
+eQuantic.UI.Server.CultureRouteMap.Deconstruct(out string! Default, out System.Collections.Generic.IReadOnlyList<string!>! Prefixed) -> void
+eQuantic.UI.Server.CultureRouteMap.Default.get -> string!
+eQuantic.UI.Server.CultureRouteMap.Default.init -> void
+eQuantic.UI.Server.CultureRouteMap.Equals(eQuantic.UI.Server.CultureRouteMap? other) -> bool
+eQuantic.UI.Server.CultureRouteMap.IsDefault(string! culture) -> bool
+eQuantic.UI.Server.CultureRouteMap.PathFor(string! culture, string! path) -> string!
+eQuantic.UI.Server.CultureRouteMap.Prefixed.get -> System.Collections.Generic.IReadOnlyList<string!>!
+eQuantic.UI.Server.CultureRouteMap.Prefixed.init -> void
+eQuantic.UI.Server.CultureRouteMap.SegmentFor(string! culture) -> string!
+eQuantic.UI.Server.CultureRouteMap.Split(string! path) -> (string! Culture, string! Path)
+eQuantic.UI.Server.HotReload.HotReloadService
+eQuantic.UI.Server.HotReload.HotReloadService.Dispose() -> void
+eQuantic.UI.Server.HotReload.HotReloadService.HandleClient(Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task!
+eQuantic.UI.Server.HotReload.HotReloadService.HotReloadService(string! contentRoot) -> void
+eQuantic.UI.Server.HotReload.HotReloadService.Start() -> void
+eQuantic.UI.Server.HtmlShellOptions
+eQuantic.UI.Server.HtmlShellOptions.AddDescription(string! description) -> eQuantic.UI.Server.HtmlShellOptions!
+eQuantic.UI.Server.HtmlShellOptions.AddHeadTag(eQuantic.UI.Server.HtmlTag! tag) -> eQuantic.UI.Server.HtmlShellOptions!
+eQuantic.UI.Server.HtmlShellOptions.AddHeadTag(string! rawHtml) -> eQuantic.UI.Server.HtmlShellOptions!
+eQuantic.UI.Server.HtmlShellOptions.AddPreconnect(System.Uri! origin, bool crossOrigin = false) -> eQuantic.UI.Server.HtmlShellOptions!
+eQuantic.UI.Server.HtmlShellOptions.AddScript(System.Uri! src, bool defer = true) -> eQuantic.UI.Server.HtmlShellOptions!
+eQuantic.UI.Server.HtmlShellOptions.AddStylesheet(System.Uri! href) -> eQuantic.UI.Server.HtmlShellOptions!
+eQuantic.UI.Server.HtmlShellOptions.BaseStyles.get -> string!
+eQuantic.UI.Server.HtmlShellOptions.BaseStyles.set -> void
+eQuantic.UI.Server.HtmlShellOptions.ConfigureMetadata(System.Action<eQuantic.UI.Server.Metadata.SeoBuilder!>! configure) -> eQuantic.UI.Server.HtmlShellOptions!
+eQuantic.UI.Server.HtmlShellOptions.DefaultMetadata.get -> eQuantic.UI.Server.Metadata.MetadataCollection!
+eQuantic.UI.Server.HtmlShellOptions.HeadTags.get -> System.Collections.Generic.List<string!>!
+eQuantic.UI.Server.HtmlShellOptions.HtmlClass.get -> string!
+eQuantic.UI.Server.HtmlShellOptions.HtmlClass.set -> void
+eQuantic.UI.Server.HtmlShellOptions.HtmlShellOptions() -> void
+eQuantic.UI.Server.HtmlShellOptions.SetBaseStyles(string! styles) -> eQuantic.UI.Server.HtmlShellOptions!
+eQuantic.UI.Server.HtmlShellOptions.SetHtmlClass(string! htmlClass) -> eQuantic.UI.Server.HtmlShellOptions!
+eQuantic.UI.Server.HtmlShellOptions.SetTitle(string! title) -> eQuantic.UI.Server.HtmlShellOptions!
+eQuantic.UI.Server.HtmlShellOptions.Title.get -> string!
+eQuantic.UI.Server.HtmlShellOptions.Title.set -> void
+eQuantic.UI.Server.HtmlTag
+eQuantic.UI.Server.HtmlTag.Attr(string! name, string? value = null) -> eQuantic.UI.Server.HtmlTag!
+eQuantic.UI.Server.HtmlTag.Attributes.get -> System.Collections.Generic.Dictionary<string!, string?>!
+eQuantic.UI.Server.HtmlTag.Attributes.init -> void
+eQuantic.UI.Server.HtmlTag.Content.get -> string?
+eQuantic.UI.Server.HtmlTag.Content.init -> void
+eQuantic.UI.Server.HtmlTag.HtmlTag(string! tagName) -> void
+eQuantic.UI.Server.HtmlTag.Render() -> string!
+eQuantic.UI.Server.HtmlTag.TagName.get -> string!
+eQuantic.UI.Server.HtmlTag.TagName.init -> void
+eQuantic.UI.Server.HtmlTemplateEngine
+eQuantic.UI.Server.HtmlTemplateEngine.HtmlTemplateEngine(string! template) -> void
+eQuantic.UI.Server.HtmlTemplateEngine.Render(System.Action<eQuantic.UI.Server.TemplateContext!>! configure) -> string!
+eQuantic.UI.Server.HtmlTemplateEngine.Render(System.Action<System.Collections.Generic.Dictionary<string!, string!>!>! configure) -> string!
+eQuantic.UI.Server.HtmlTemplateEngine.Render(System.Collections.Generic.Dictionary<string!, string!>! variables, System.Collections.Generic.Dictionary<string!, bool>? conditions = null) -> string!
+eQuantic.UI.Server.Hubs.ServerActionHub
+eQuantic.UI.Server.Hubs.ServerActionHub.ServerActionHub() -> void
+eQuantic.UI.Server.IServerActionRegistry
+eQuantic.UI.Server.IServerActionRegistry.GetAction(string! actionId) -> eQuantic.UI.Server.ServerActionDescriptor?
+eQuantic.UI.Server.IServerActionRegistry.GetAllActions() -> System.Collections.Generic.IEnumerable<eQuantic.UI.Server.ServerActionDescriptor!>!
+eQuantic.UI.Server.IServerActionRegistry.RegisterAction(string! actionId, eQuantic.UI.Server.ServerActionDescriptor! descriptor) -> void
+eQuantic.UI.Server.IServerActionRegistry.ScanAssembly(System.Reflection.Assembly! assembly) -> void
+eQuantic.UI.Server.Json.EqJson
+eQuantic.UI.Server.Metadata.IHandleMetadata
+eQuantic.UI.Server.Metadata.IHandleMetadata.ConfigureMetadata(eQuantic.UI.Server.Metadata.SeoBuilder! seo) -> void
+eQuantic.UI.Server.Metadata.IMetaTag
+eQuantic.UI.Server.Metadata.IMetaTag.Key.get -> string!
+eQuantic.UI.Server.Metadata.IMetaTag.Render() -> string!
+eQuantic.UI.Server.Metadata.LinkTag
+eQuantic.UI.Server.Metadata.LinkTag.Href.get -> string!
+eQuantic.UI.Server.Metadata.LinkTag.Hreflang.get -> string?
+eQuantic.UI.Server.Metadata.LinkTag.LinkTag(string! rel, string! href, string? type = null, string? hreflang = null) -> void
+eQuantic.UI.Server.Metadata.LinkTag.Rel.get -> string!
+eQuantic.UI.Server.Metadata.LinkTag.Type.get -> string?
+eQuantic.UI.Server.Metadata.MetadataCollection
+eQuantic.UI.Server.Metadata.MetadataCollection.Add(eQuantic.UI.Server.Metadata.IMetaTag! tag) -> void
+eQuantic.UI.Server.Metadata.MetadataCollection.AddOrUpdate(eQuantic.UI.Server.Metadata.IMetaTag! tag) -> void
+eQuantic.UI.Server.Metadata.MetadataCollection.MetadataCollection() -> void
+eQuantic.UI.Server.Metadata.MetadataCollection.RenderTags() -> string!
+eQuantic.UI.Server.Metadata.MetadataCollection.Tags.get -> System.Collections.Generic.IEnumerable<eQuantic.UI.Server.Metadata.IMetaTag!>!
+eQuantic.UI.Server.Metadata.MetadataCollection.Title.get -> string?
+eQuantic.UI.Server.Metadata.MetadataCollection.Title.set -> void
+eQuantic.UI.Server.Metadata.MetaTag
+eQuantic.UI.Server.Metadata.MetaTag.MetaTag() -> void
+eQuantic.UI.Server.Metadata.NameMetaTag
+eQuantic.UI.Server.Metadata.NameMetaTag.Content.get -> string!
+eQuantic.UI.Server.Metadata.NameMetaTag.Name.get -> string!
+eQuantic.UI.Server.Metadata.NameMetaTag.NameMetaTag(string! name, string! content) -> void
+eQuantic.UI.Server.Metadata.PropertyMetaTag
+eQuantic.UI.Server.Metadata.PropertyMetaTag.Content.get -> string!
+eQuantic.UI.Server.Metadata.PropertyMetaTag.Property.get -> string!
+eQuantic.UI.Server.Metadata.PropertyMetaTag.PropertyMetaTag(string! property, string! content) -> void
+eQuantic.UI.Server.Metadata.SeoBuilder
+eQuantic.UI.Server.Metadata.SeoBuilder.Alternate(string! hreflang, string! url) -> eQuantic.UI.Server.Metadata.SeoBuilder!
+eQuantic.UI.Server.Metadata.SeoBuilder.AlternateDefault(string! url) -> eQuantic.UI.Server.Metadata.SeoBuilder!
+eQuantic.UI.Server.Metadata.SeoBuilder.Canonical(string! url) -> eQuantic.UI.Server.Metadata.SeoBuilder!
+eQuantic.UI.Server.Metadata.SeoBuilder.Description(string! description) -> eQuantic.UI.Server.Metadata.SeoBuilder!
+eQuantic.UI.Server.Metadata.SeoBuilder.Image(string! url, string? alt = null) -> eQuantic.UI.Server.Metadata.SeoBuilder!
+eQuantic.UI.Server.Metadata.SeoBuilder.Keywords(params string![]! keywords) -> eQuantic.UI.Server.Metadata.SeoBuilder!
+eQuantic.UI.Server.Metadata.SeoBuilder.OpenGraph(string! property, string! content) -> eQuantic.UI.Server.Metadata.SeoBuilder!
+eQuantic.UI.Server.Metadata.SeoBuilder.Robots(bool index = true, bool follow = true) -> eQuantic.UI.Server.Metadata.SeoBuilder!
+eQuantic.UI.Server.Metadata.SeoBuilder.SeoBuilder(eQuantic.UI.Server.Metadata.MetadataCollection! collection) -> void
+eQuantic.UI.Server.Metadata.SeoBuilder.Title(string! title) -> eQuantic.UI.Server.Metadata.SeoBuilder!
+eQuantic.UI.Server.Metadata.SeoBuilder.Twitter(string! name, string! content) -> eQuantic.UI.Server.Metadata.SeoBuilder!
+eQuantic.UI.Server.Rendering.IServerRenderingService
+eQuantic.UI.Server.Rendering.IServerRenderingService.IsSsrEnabled(string! pageTypeName) -> bool
+eQuantic.UI.Server.Rendering.IServerRenderingService.PreparePageAsync(string! pageTypeName, Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Rendering.ServerRenderResult!>!
+eQuantic.UI.Server.Rendering.IServerRenderingService.RenderComponent(eQuantic.UI.Web.IComponent! component) -> string!
+eQuantic.UI.Server.Rendering.IServerRenderingService.RenderPageAsync(string! pageTypeName, Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Rendering.ServerRenderResult!>!
+eQuantic.UI.Server.Rendering.ServerRenderingService
+eQuantic.UI.Server.Rendering.ServerRenderingService.IsSsrEnabled(string! pageTypeName) -> bool
+eQuantic.UI.Server.Rendering.ServerRenderingService.PreparePageAsync(string! pageTypeName, Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Rendering.ServerRenderResult!>!
+eQuantic.UI.Server.Rendering.ServerRenderingService.RenderComponent(eQuantic.UI.Web.IComponent! component) -> string!
+eQuantic.UI.Server.Rendering.ServerRenderingService.RenderPageAsync(string! pageTypeName, Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Rendering.ServerRenderResult!>!
+eQuantic.UI.Server.Rendering.ServerRenderingService.ServerRenderingService(System.IServiceProvider! serviceProvider, eQuantic.UI.Server.UIOptions! options, Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Server.Rendering.ServerRenderingService!>! logger) -> void
+eQuantic.UI.Server.Rendering.ServerRenderResult
+eQuantic.UI.Server.Rendering.ServerRenderResult.Assets.get -> eQuantic.UI.Server.Assets.AssetCollection?
+eQuantic.UI.Server.Rendering.ServerRenderResult.Error.get -> string?
+eQuantic.UI.Server.Rendering.ServerRenderResult.Html.get -> string?
+eQuantic.UI.Server.Rendering.ServerRenderResult.Metadata.get -> eQuantic.UI.Server.Metadata.MetadataCollection?
+eQuantic.UI.Server.Rendering.ServerRenderResult.SerializedState.get -> string?
+eQuantic.UI.Server.Rendering.ServerRenderResult.StatusCode.get -> int
+eQuantic.UI.Server.Rendering.ServerRenderResult.Success.get -> bool
+eQuantic.UI.Server.Rendering.ServerRenderResult.VectorDefs.get -> string?
+eQuantic.UI.Server.ScriptEndpointExtensions
+eQuantic.UI.Server.ServerActionDescriptor
+eQuantic.UI.Server.ServerActionDescriptor.ActionId.get -> string!
+eQuantic.UI.Server.ServerActionDescriptor.ActionId.set -> void
+eQuantic.UI.Server.ServerActionDescriptor.ComponentType.get -> System.Type!
+eQuantic.UI.Server.ServerActionDescriptor.ComponentType.set -> void
+eQuantic.UI.Server.ServerActionDescriptor.IsAsync.get -> bool
+eQuantic.UI.Server.ServerActionDescriptor.IsAsync.set -> void
+eQuantic.UI.Server.ServerActionDescriptor.Method.get -> System.Reflection.MethodInfo!
+eQuantic.UI.Server.ServerActionDescriptor.Method.set -> void
+eQuantic.UI.Server.ServerActionDescriptor.ParameterTypes.get -> System.Type![]!
+eQuantic.UI.Server.ServerActionDescriptor.ParameterTypes.set -> void
+eQuantic.UI.Server.ServerActionDescriptor.ServerActionDescriptor() -> void
+eQuantic.UI.Server.ServerActionRegistry
+eQuantic.UI.Server.ServerActionRegistry.GetAction(string! actionId) -> eQuantic.UI.Server.ServerActionDescriptor?
+eQuantic.UI.Server.ServerActionRegistry.GetAllActions() -> System.Collections.Generic.IEnumerable<eQuantic.UI.Server.ServerActionDescriptor!>!
+eQuantic.UI.Server.ServerActionRegistry.RegisterAction(string! actionId, eQuantic.UI.Server.ServerActionDescriptor! descriptor) -> void
+eQuantic.UI.Server.ServerActionRegistry.ScanAssembly(System.Reflection.Assembly! assembly) -> void
+eQuantic.UI.Server.ServerActionRegistry.ServerActionRegistry() -> void
+eQuantic.UI.Server.ServerActionRequest
+eQuantic.UI.Server.ServerActionRequest.ActionId.get -> string!
+eQuantic.UI.Server.ServerActionRequest.ActionId.set -> void
+eQuantic.UI.Server.ServerActionRequest.Arguments.get -> System.Text.Json.JsonElement[]?
+eQuantic.UI.Server.ServerActionRequest.Arguments.set -> void
+eQuantic.UI.Server.ServerActionRequest.ServerActionRequest() -> void
+eQuantic.UI.Server.ServerActionsMiddleware
+eQuantic.UI.Server.ServerActionsMiddleware.InvokeAsync(Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task!
+eQuantic.UI.Server.ServerActionsMiddleware.ServerActionsMiddleware(Microsoft.AspNetCore.Http.RequestDelegate! next, eQuantic.UI.Server.IServerActionRegistry! registry, System.IServiceProvider! serviceProvider, eQuantic.UI.Server.Authorization.IServerActionAuthorizationService! authorizationService, eQuantic.UI.Server.UIOptions! options, Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Server.ServerActionsMiddleware!>! logger) -> void
+eQuantic.UI.Server.SsrConsent
+eQuantic.UI.Server.SsrConsent.Deny() -> void
+eQuantic.UI.Server.SsrConsent.Grant() -> void
+eQuantic.UI.Server.SsrConsent.SsrConsent(Microsoft.AspNetCore.Http.IHttpContextAccessor? requests = null) -> void
+eQuantic.UI.Server.SsrConsent.State.get -> eQuantic.UI.Primitives.ConsentState
+eQuantic.UI.Server.SsrCultureController
+eQuantic.UI.Server.SsrCultureController.Apply(string! uiCulture, string? formatCulture = null) -> void
+eQuantic.UI.Server.SsrCultureController.FormatCulture.get -> string!
+eQuantic.UI.Server.SsrCultureController.SsrCultureController() -> void
+eQuantic.UI.Server.SsrCultureController.UICulture.get -> string!
+eQuantic.UI.Server.SsrThemeController
+eQuantic.UI.Server.SsrThemeController.Apply(eQuantic.UI.Primitives.ThemeMode mode) -> void
+eQuantic.UI.Server.SsrThemeController.Mode.get -> eQuantic.UI.Primitives.ThemeMode
+eQuantic.UI.Server.SsrThemeController.SsrThemeController(Microsoft.AspNetCore.Http.IHttpContextAccessor? requests = null, eQuantic.UI.Primitives.ThemeMode? declared = null) -> void
+eQuantic.UI.Server.SsrUiDispatcher
+eQuantic.UI.Server.SsrUiDispatcher.IsOnUiThread.get -> bool
+eQuantic.UI.Server.SsrUiDispatcher.Post(System.Action! work) -> void
+eQuantic.UI.Server.SsrUiDispatcher.SsrUiDispatcher() -> void
+eQuantic.UI.Server.TemplateContext
+eQuantic.UI.Server.TemplateContext.Conditions.get -> System.Collections.Generic.Dictionary<string!, bool>!
+eQuantic.UI.Server.TemplateContext.Disable(string! conditionName) -> eQuantic.UI.Server.TemplateContext!
+eQuantic.UI.Server.TemplateContext.Enable(string! conditionName) -> eQuantic.UI.Server.TemplateContext!
+eQuantic.UI.Server.TemplateContext.Set(string! key, string! value) -> eQuantic.UI.Server.TemplateContext!
+eQuantic.UI.Server.TemplateContext.SetIf(bool condition, string! key, string! value) -> eQuantic.UI.Server.TemplateContext!
+eQuantic.UI.Server.TemplateContext.SetOrEmpty(string! key, string? value) -> eQuantic.UI.Server.TemplateContext!
+eQuantic.UI.Server.TemplateContext.TemplateContext() -> void
+eQuantic.UI.Server.TemplateContext.this[string! key].get -> string!
+eQuantic.UI.Server.TemplateContext.this[string! key].set -> void
+eQuantic.UI.Server.TemplateContext.Variables.get -> System.Collections.Generic.Dictionary<string!, string!>!
+eQuantic.UI.Server.TemplateContext.When(string! conditionName, bool value) -> eQuantic.UI.Server.TemplateContext!
+eQuantic.UI.Server.TemplateVariablesExtensions
+eQuantic.UI.Server.ThemeCookie
+eQuantic.UI.Server.ThemeCookieOptions
+eQuantic.UI.Server.ThemeCookieOptions.Days.get -> int
+eQuantic.UI.Server.ThemeCookieOptions.Days.init -> void
+eQuantic.UI.Server.ThemeCookieOptions.Name.get -> string!
+eQuantic.UI.Server.ThemeCookieOptions.Name.init -> void
+eQuantic.UI.Server.ThemeCookieOptions.ThemeCookieOptions() -> void
+eQuantic.UI.Server.UIExtensions
+eQuantic.UI.Server.UIOptions
+eQuantic.UI.Server.UIOptions.AllowedDeserializationAssemblies.get -> System.Collections.Generic.HashSet<System.Reflection.Assembly!>!
+eQuantic.UI.Server.UIOptions.AlternateCultures.get -> System.Collections.Generic.IReadOnlyList<string!>?
+eQuantic.UI.Server.UIOptions.AlternateUrl.get -> System.Func<eQuantic.UI.Server.AlternateRequest, string?>?
+eQuantic.UI.Server.UIOptions.ConfigureHtmlShell(System.Action<eQuantic.UI.Server.HtmlShellOptions!>! configure) -> eQuantic.UI.Server.UIOptions!
+eQuantic.UI.Server.UIOptions.CultureRoutes.get -> eQuantic.UI.Server.CultureRouteMap?
+eQuantic.UI.Server.UIOptions.DeclaredRoutes.get -> System.Collections.Generic.IReadOnlyList<(string! Pattern, System.Type! Page, string? Title)>!
+eQuantic.UI.Server.UIOptions.DisablePoweredByHeader.get -> bool
+eQuantic.UI.Server.UIOptions.DisablePoweredByHeader.set -> void
+eQuantic.UI.Server.UIOptions.EnableSsr.get -> bool
+eQuantic.UI.Server.UIOptions.EnableSsr.set -> void
+eQuantic.UI.Server.UIOptions.HotReload.get -> bool?
+eQuantic.UI.Server.UIOptions.HotReload.set -> void
+eQuantic.UI.Server.UIOptions.HtmlShell.get -> eQuantic.UI.Server.HtmlShellOptions!
+eQuantic.UI.Server.UIOptions.RegisterEndpoints(System.Action<Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!>! configuration) -> eQuantic.UI.Server.UIOptions!
+eQuantic.UI.Server.UIOptions.RegisterServices(System.Action<Microsoft.Extensions.DependencyInjection.IServiceCollection!>! registration) -> eQuantic.UI.Server.UIOptions!
+eQuantic.UI.Server.UIOptions.ScanAssembly(System.Reflection.Assembly! assembly) -> eQuantic.UI.Server.UIOptions!
+eQuantic.UI.Server.UIOptions.UIOptions() -> void
+eQuantic.UI.Server.UIOptions.UseAlternateLinks(System.Func<eQuantic.UI.Server.AlternateRequest, string?>! url, params string![]! cultures) -> eQuantic.UI.Server.UIOptions!
+eQuantic.UI.Server.UIOptions.UseCultureRoutes(params string![]! cultures) -> eQuantic.UI.Server.UIOptions!
+eQuantic.UI.Server.UIOptions.UseInitialThemeMode(eQuantic.UI.Primitives.ThemeMode mode) -> eQuantic.UI.Server.UIOptions!
+eQuantic.UI.Server.UIOptions.UseTheme(eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Server.UIOptions!
+eQuantic.UI.Server.UIOptions.UseThemeCookie(string! name = "eq-theme", int days = 365) -> eQuantic.UI.Server.UIOptions!
+eQuantic.UI.Server.UIOptions.WithAssetProvider<TProvider>() -> eQuantic.UI.Server.UIOptions!
+eQuantic.UI.Server.UIOptions.WithoutPoweredByHeader() -> eQuantic.UI.Server.UIOptions!
+eQuantic.UI.Server.UIOptions.WithoutThemeCookie() -> eQuantic.UI.Server.UIOptions!
+eQuantic.UI.Server.UIOptions.WithSsr(bool enabled = true) -> eQuantic.UI.Server.UIOptions!
+override eQuantic.UI.Server.AlternateRequest.GetHashCode() -> int
+override eQuantic.UI.Server.Assets.InlineScriptAsset.Equals(object? obj) -> bool
+override eQuantic.UI.Server.Assets.InlineScriptAsset.GetHashCode() -> int
+override eQuantic.UI.Server.Assets.InlineScriptAsset.ToString() -> string!
+override eQuantic.UI.Server.Assets.InlineStyleAsset.Equals(object? obj) -> bool
+override eQuantic.UI.Server.Assets.InlineStyleAsset.GetHashCode() -> int
+override eQuantic.UI.Server.Assets.InlineStyleAsset.ToString() -> string!
+override eQuantic.UI.Server.Assets.ScriptAsset.Equals(object? obj) -> bool
+override eQuantic.UI.Server.Assets.ScriptAsset.GetHashCode() -> int
+override eQuantic.UI.Server.Assets.ScriptAsset.ToString() -> string!
+override eQuantic.UI.Server.Assets.StylesheetAsset.Equals(object? obj) -> bool
+override eQuantic.UI.Server.Assets.StylesheetAsset.GetHashCode() -> int
+override eQuantic.UI.Server.Assets.StylesheetAsset.ToString() -> string!
+override eQuantic.UI.Server.CultureRouteMap.Equals(object? obj) -> bool
+override eQuantic.UI.Server.CultureRouteMap.GetHashCode() -> int
+override eQuantic.UI.Server.CultureRouteMap.ToString() -> string!
+override eQuantic.UI.Server.HtmlTag.ToString() -> string!
+override eQuantic.UI.Server.Metadata.LinkTag.Key.get -> string!
+override eQuantic.UI.Server.Metadata.LinkTag.Render() -> string!
+override eQuantic.UI.Server.Metadata.NameMetaTag.Key.get -> string!
+override eQuantic.UI.Server.Metadata.NameMetaTag.Render() -> string!
+override eQuantic.UI.Server.Metadata.PropertyMetaTag.Key.get -> string!
+override eQuantic.UI.Server.Metadata.PropertyMetaTag.Render() -> string!
+static eQuantic.UI.Server.AlternateRequest.operator !=(eQuantic.UI.Server.AlternateRequest left, eQuantic.UI.Server.AlternateRequest right) -> bool
+static eQuantic.UI.Server.AlternateRequest.operator ==(eQuantic.UI.Server.AlternateRequest left, eQuantic.UI.Server.AlternateRequest right) -> bool
+static eQuantic.UI.Server.AlternateUrls.Absolute(Microsoft.AspNetCore.Http.HttpRequest! request, string! pathOrUrl) -> string!
+static eQuantic.UI.Server.AlternateUrls.PathPrefix(System.Collections.Generic.IEnumerable<string!>? cultures = null, string? defaultCulture = null) -> System.Func<eQuantic.UI.Server.AlternateRequest, string?>!
+static eQuantic.UI.Server.AlternateUrls.QueryString(string! name = "culture") -> System.Func<eQuantic.UI.Server.AlternateRequest, string?>!
+static eQuantic.UI.Server.Assets.InlineScriptAsset.operator !=(eQuantic.UI.Server.Assets.InlineScriptAsset? left, eQuantic.UI.Server.Assets.InlineScriptAsset? right) -> bool
+static eQuantic.UI.Server.Assets.InlineScriptAsset.operator ==(eQuantic.UI.Server.Assets.InlineScriptAsset? left, eQuantic.UI.Server.Assets.InlineScriptAsset? right) -> bool
+static eQuantic.UI.Server.Assets.InlineStyleAsset.operator !=(eQuantic.UI.Server.Assets.InlineStyleAsset? left, eQuantic.UI.Server.Assets.InlineStyleAsset? right) -> bool
+static eQuantic.UI.Server.Assets.InlineStyleAsset.operator ==(eQuantic.UI.Server.Assets.InlineStyleAsset? left, eQuantic.UI.Server.Assets.InlineStyleAsset? right) -> bool
+static eQuantic.UI.Server.Assets.ScriptAsset.operator !=(eQuantic.UI.Server.Assets.ScriptAsset? left, eQuantic.UI.Server.Assets.ScriptAsset? right) -> bool
+static eQuantic.UI.Server.Assets.ScriptAsset.operator ==(eQuantic.UI.Server.Assets.ScriptAsset? left, eQuantic.UI.Server.Assets.ScriptAsset? right) -> bool
+static eQuantic.UI.Server.Assets.StylesheetAsset.operator !=(eQuantic.UI.Server.Assets.StylesheetAsset? left, eQuantic.UI.Server.Assets.StylesheetAsset? right) -> bool
+static eQuantic.UI.Server.Assets.StylesheetAsset.operator ==(eQuantic.UI.Server.Assets.StylesheetAsset? left, eQuantic.UI.Server.Assets.StylesheetAsset? right) -> bool
+static eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult.Forbidden(string! reason) -> eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult!
+static eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult.PolicyFailed(string! policyName) -> eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult!
+static eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult.RolesFailed(string! requiredRoles) -> eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult!
+static eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult.Success() -> eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult!
+static eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult.Unauthenticated() -> eQuantic.UI.Server.Authorization.ServerActionAuthorizationResult!
+static eQuantic.UI.Server.ConsentCookie.Resolve(Microsoft.AspNetCore.Http.HttpContext? context) -> eQuantic.UI.Primitives.ConsentState
+static eQuantic.UI.Server.CultureRouteExtensions.UseCultureRoutes(this Microsoft.AspNetCore.Builder.RequestLocalizationOptions! options, params string![]! cultures) -> Microsoft.AspNetCore.Builder.RequestLocalizationOptions!
+static eQuantic.UI.Server.CultureRouteMap.From(System.Collections.Generic.IReadOnlyList<string!>! cultures) -> eQuantic.UI.Server.CultureRouteMap!
+static eQuantic.UI.Server.CultureRouteMap.operator !=(eQuantic.UI.Server.CultureRouteMap? left, eQuantic.UI.Server.CultureRouteMap? right) -> bool
+static eQuantic.UI.Server.CultureRouteMap.operator ==(eQuantic.UI.Server.CultureRouteMap? left, eQuantic.UI.Server.CultureRouteMap? right) -> bool
+static eQuantic.UI.Server.HtmlTag.InlineScript(string! body, bool defer = true) -> eQuantic.UI.Server.HtmlTag!
+static eQuantic.UI.Server.HtmlTag.Link(string! rel, string! href) -> eQuantic.UI.Server.HtmlTag!
+static eQuantic.UI.Server.HtmlTag.Meta(string! name, string! content) -> eQuantic.UI.Server.HtmlTag!
+static eQuantic.UI.Server.HtmlTag.Script(string! src, bool defer = true) -> eQuantic.UI.Server.HtmlTag!
+static eQuantic.UI.Server.HtmlTemplateEngine.ClearCache() -> void
+static eQuantic.UI.Server.HtmlTemplateEngine.FromResource(string! resourceName, System.Reflection.Assembly? assembly = null) -> eQuantic.UI.Server.HtmlTemplateEngine!
+static eQuantic.UI.Server.Json.EqJson.Configure(System.Text.Json.JsonSerializerOptions! options) -> void
+static eQuantic.UI.Server.Json.EqJson.Create(System.Text.Json.JsonNamingPolicy? namingPolicy = null) -> System.Text.Json.JsonSerializerOptions!
+static eQuantic.UI.Server.Rendering.ServerRenderResult.Fail(string! error) -> eQuantic.UI.Server.Rendering.ServerRenderResult!
+static eQuantic.UI.Server.Rendering.ServerRenderResult.NotAvailable() -> eQuantic.UI.Server.Rendering.ServerRenderResult!
+static eQuantic.UI.Server.Rendering.ServerRenderResult.Ok(string! html, eQuantic.UI.Server.Metadata.MetadataCollection? metadata = null, string? serializedState = null, eQuantic.UI.Server.Assets.AssetCollection? assets = null, int statusCode = 200, string? vectorDefs = null) -> eQuantic.UI.Server.Rendering.ServerRenderResult!
+static eQuantic.UI.Server.ScriptEndpointExtensions.MapScriptJs(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! path, System.Func<Microsoft.AspNetCore.Http.HttpContext!, string!>! scriptGenerator) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static eQuantic.UI.Server.ScriptEndpointExtensions.MapScriptJs(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! path, System.Func<string!>! scriptGenerator) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static eQuantic.UI.Server.TemplateVariablesExtensions.Set(this System.Collections.Generic.Dictionary<string!, string!>! variables, string! key, string! value) -> System.Collections.Generic.Dictionary<string!, string!>!
+static eQuantic.UI.Server.TemplateVariablesExtensions.SetIf(this System.Collections.Generic.Dictionary<string!, string!>! variables, bool condition, string! key, string! value) -> System.Collections.Generic.Dictionary<string!, string!>!
+static eQuantic.UI.Server.TemplateVariablesExtensions.SetOrEmpty(this System.Collections.Generic.Dictionary<string!, string!>! variables, string! key, string? value) -> System.Collections.Generic.Dictionary<string!, string!>!
+static eQuantic.UI.Server.ThemeCookie.Resolve(Microsoft.AspNetCore.Http.HttpContext? context, eQuantic.UI.Primitives.ThemeMode? declared, string? cookieName = null) -> eQuantic.UI.Primitives.ThemeMode?
+static eQuantic.UI.Server.UIExtensions.AddUI(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<eQuantic.UI.Server.UIOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static eQuantic.UI.Server.UIExtensions.MapPage<TPage>(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! route, string? title = null) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static eQuantic.UI.Server.UIExtensions.MapPages(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static eQuantic.UI.Server.UIExtensions.MapUI(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static eQuantic.UI.Server.UIExtensions.UseServerActions(this Microsoft.AspNetCore.Builder.IApplicationBuilder! app) -> Microsoft.AspNetCore.Builder.IApplicationBuilder!
+static readonly eQuantic.UI.Server.Json.EqJson.Options -> System.Text.Json.JsonSerializerOptions!
+static readonly eQuantic.UI.Server.UIExtensions.BuildId -> string!
+virtual eQuantic.UI.Server.Assets.InlineScriptAsset.<Clone>$() -> eQuantic.UI.Server.Assets.InlineScriptAsset!
+virtual eQuantic.UI.Server.Assets.InlineScriptAsset.EqualityContract.get -> System.Type!
+virtual eQuantic.UI.Server.Assets.InlineScriptAsset.Equals(eQuantic.UI.Server.Assets.InlineScriptAsset? other) -> bool
+virtual eQuantic.UI.Server.Assets.InlineScriptAsset.PrintMembers(System.Text.StringBuilder! builder) -> bool
+virtual eQuantic.UI.Server.Assets.InlineStyleAsset.<Clone>$() -> eQuantic.UI.Server.Assets.InlineStyleAsset!
+virtual eQuantic.UI.Server.Assets.InlineStyleAsset.EqualityContract.get -> System.Type!
+virtual eQuantic.UI.Server.Assets.InlineStyleAsset.Equals(eQuantic.UI.Server.Assets.InlineStyleAsset? other) -> bool
+virtual eQuantic.UI.Server.Assets.InlineStyleAsset.PrintMembers(System.Text.StringBuilder! builder) -> bool
+virtual eQuantic.UI.Server.Assets.ScriptAsset.<Clone>$() -> eQuantic.UI.Server.Assets.ScriptAsset!
+virtual eQuantic.UI.Server.Assets.ScriptAsset.EqualityContract.get -> System.Type!
+virtual eQuantic.UI.Server.Assets.ScriptAsset.Equals(eQuantic.UI.Server.Assets.ScriptAsset? other) -> bool
+virtual eQuantic.UI.Server.Assets.ScriptAsset.PrintMembers(System.Text.StringBuilder! builder) -> bool
+virtual eQuantic.UI.Server.Assets.StylesheetAsset.<Clone>$() -> eQuantic.UI.Server.Assets.StylesheetAsset!
+virtual eQuantic.UI.Server.Assets.StylesheetAsset.EqualityContract.get -> System.Type!
+virtual eQuantic.UI.Server.Assets.StylesheetAsset.Equals(eQuantic.UI.Server.Assets.StylesheetAsset? other) -> bool
+virtual eQuantic.UI.Server.Assets.StylesheetAsset.PrintMembers(System.Text.StringBuilder! builder) -> bool
+~override eQuantic.UI.Server.AlternateRequest.Equals(object obj) -> bool
+~override eQuantic.UI.Server.AlternateRequest.ToString() -> string

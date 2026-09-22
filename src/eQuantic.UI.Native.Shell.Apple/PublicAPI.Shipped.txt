@@ -1,0 +1,134 @@
+#nullable enable
+eQuantic.UI.Native.Shell.Apple.AppleAppearance
+eQuantic.UI.Native.Shell.Apple.AppleAppStorage
+eQuantic.UI.Native.Shell.Apple.AppleAppStorage.AppleAppStorage() -> void
+eQuantic.UI.Native.Shell.Apple.AppleAppStorage.Get(string! key) -> string?
+eQuantic.UI.Native.Shell.Apple.AppleAppStorage.Remove(string! key) -> void
+eQuantic.UI.Native.Shell.Apple.AppleAppStorage.Set(string! key, string! value) -> void
+eQuantic.UI.Native.Shell.Apple.AppleBiometry
+eQuantic.UI.Native.Shell.Apple.AppleCamera
+eQuantic.UI.Native.Shell.Apple.AppleCamera.AppleCamera() -> void
+eQuantic.UI.Native.Shell.Apple.AppleCamera.IsAvailable.get -> bool
+eQuantic.UI.Native.Shell.Apple.AppleCamera.Permission.get -> eQuantic.UI.Primitives.PermissionState
+eQuantic.UI.Native.Shell.Apple.AppleCamera.StartPreviewAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<eQuantic.UI.Primitives.ICameraSession?>
+eQuantic.UI.Native.Shell.Apple.AppleCameraSession
+eQuantic.UI.Native.Shell.Apple.AppleCameraSession.AppleCameraSession() -> void
+eQuantic.UI.Native.Shell.Apple.AppleCameraSession.Capture() -> eQuantic.UI.Primitives.ImageData?
+eQuantic.UI.Native.Shell.Apple.AppleCameraSession.Dispose() -> void
+eQuantic.UI.Native.Shell.Apple.AppleCameraSession.FrameBytes.get -> byte[]?
+eQuantic.UI.Native.Shell.Apple.AppleCameraSession.FrameHeight.get -> int
+eQuantic.UI.Native.Shell.Apple.AppleCameraSession.FrameVersion.get -> int
+eQuantic.UI.Native.Shell.Apple.AppleCameraSession.FrameWidth.get -> int
+eQuantic.UI.Native.Shell.Apple.AppleCameraSession.Id.get -> string!
+eQuantic.UI.Native.Shell.Apple.AppleDeepLinks
+eQuantic.UI.Native.Shell.Apple.AppleLocale
+eQuantic.UI.Native.Shell.Apple.AppleLocation
+eQuantic.UI.Native.Shell.Apple.AppleLocation.AppleLocation() -> void
+eQuantic.UI.Native.Shell.Apple.AppleLocation.GetCurrentAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<eQuantic.UI.Primitives.GeoLocation?>
+eQuantic.UI.Native.Shell.Apple.AppleLocation.IsAvailable.get -> bool
+eQuantic.UI.Native.Shell.Apple.AppleLocation.Permission.get -> eQuantic.UI.Primitives.PermissionState
+eQuantic.UI.Native.Shell.Apple.AppleLocation.Subscribe(System.Action<eQuantic.UI.Primitives.GeoLocation>! onChanged) -> System.IDisposable!
+eQuantic.UI.Native.Shell.Apple.AppleMotionSensor
+eQuantic.UI.Native.Shell.Apple.AppleMotionSensor.AppleMotionSensor() -> void
+eQuantic.UI.Native.Shell.Apple.AppleMotionSensor.IsAvailable.get -> bool
+eQuantic.UI.Native.Shell.Apple.AppleMotionSensor.Subscribe(System.Action<eQuantic.UI.Primitives.MotionReading>! onReading) -> System.IDisposable!
+eQuantic.UI.Native.Shell.Apple.AppleNetworkStatus
+eQuantic.UI.Native.Shell.Apple.AppleNetworkStatus.AppleNetworkStatus() -> void
+eQuantic.UI.Native.Shell.Apple.AppleNetworkStatus.Current.get -> eQuantic.UI.Primitives.NetworkState
+eQuantic.UI.Native.Shell.Apple.AppleNetworkStatus.Subscribe(System.Action<eQuantic.UI.Primitives.NetworkState>! onChanged) -> System.IDisposable!
+eQuantic.UI.Native.Shell.Apple.AppleSecretStore
+eQuantic.UI.Native.Shell.Apple.AppleSecretStore.AppleSecretStore() -> void
+eQuantic.UI.Native.Shell.Apple.AppleSecretStore.Get(string! key) -> string?
+eQuantic.UI.Native.Shell.Apple.AppleSecretStore.Remove(string! key) -> void
+eQuantic.UI.Native.Shell.Apple.AppleSecretStore.Set(string! key, string! value) -> void
+eQuantic.UI.Native.Shell.Apple.Bmp
+eQuantic.UI.Native.Shell.Apple.CGPoint
+eQuantic.UI.Native.Shell.Apple.CGPoint.CGPoint() -> void
+eQuantic.UI.Native.Shell.Apple.CGPoint.X -> double
+eQuantic.UI.Native.Shell.Apple.CGPoint.Y -> double
+eQuantic.UI.Native.Shell.Apple.CGRect
+eQuantic.UI.Native.Shell.Apple.CGRect.CGRect() -> void
+eQuantic.UI.Native.Shell.Apple.CGRect.CGRect(double x, double y, double width, double height) -> void
+eQuantic.UI.Native.Shell.Apple.CGRect.Height -> double
+eQuantic.UI.Native.Shell.Apple.CGRect.Width -> double
+eQuantic.UI.Native.Shell.Apple.CGRect.X -> double
+eQuantic.UI.Native.Shell.Apple.CGRect.Y -> double
+eQuantic.UI.Native.Shell.Apple.CGSize
+eQuantic.UI.Native.Shell.Apple.CGSize.CGSize() -> void
+eQuantic.UI.Native.Shell.Apple.CGSize.CGSize(double width, double height) -> void
+eQuantic.UI.Native.Shell.Apple.CGSize.Height -> double
+eQuantic.UI.Native.Shell.Apple.CGSize.Width -> double
+eQuantic.UI.Native.Shell.Apple.CoreGraphicsIconRasterizer
+eQuantic.UI.Native.Shell.Apple.CoreGraphicsIconRasterizer.CoreGraphicsIconRasterizer() -> void
+eQuantic.UI.Native.Shell.Apple.CoreGraphicsIconRasterizer.Rasterize(eQuantic.UI.Primitives.IconGlyph glyph, float widthDp, float heightDp, float scale) -> eQuantic.UI.Native.Framework.TextRaster?
+eQuantic.UI.Native.Shell.Apple.CoreGraphicsImageLoader
+eQuantic.UI.Native.Shell.Apple.CoreGraphicsImageLoader.CoreGraphicsImageLoader() -> void
+eQuantic.UI.Native.Shell.Apple.CoreGraphicsImageLoader.Load(string! source) -> eQuantic.UI.Native.Framework.RgbaImage?
+eQuantic.UI.Native.Shell.Apple.CoreTextService
+eQuantic.UI.Native.Shell.Apple.CoreTextService.CoreTextService() -> void
+eQuantic.UI.Native.Shell.Apple.CoreTextService.Measure(string! content, eQuantic.UI.Primitives.TypeStyle style, float typeScale, float maxWidth, int maxLines) -> eQuantic.UI.Native.Framework.TextMeasurement!
+eQuantic.UI.Native.Shell.Apple.CoreTextService.Rasterize(string! content, eQuantic.UI.Primitives.TypeStyle style, float typeScale, float maxWidth, int maxLines, float scale, eQuantic.UI.Primitives.TextAlignment align) -> eQuantic.UI.Native.Framework.TextRaster?
+eQuantic.UI.Native.Shell.Apple.NSRange
+eQuantic.UI.Native.Shell.Apple.NSRange.Length -> nuint
+eQuantic.UI.Native.Shell.Apple.NSRange.Location -> nuint
+eQuantic.UI.Native.Shell.Apple.NSRange.NSRange() -> void
+eQuantic.UI.Native.Shell.Apple.NSRange.NSRange(nuint location, nuint length) -> void
+eQuantic.UI.Native.Shell.Apple.ObjC
+eQuantic.UI.Native.Shell.Apple.ObjCBlock
+eQuantic.UI.Native.Shell.Apple.ObjCBlock.Dispose() -> void
+eQuantic.UI.Native.Shell.Apple.ObjCBlock.Handle.get -> nint
+eQuantic.UI.Native.Shell.Apple.ObjCBlock.ObjCBlock(System.Delegate! callback) -> void
+static eQuantic.UI.Native.Shell.Apple.AppleAppearance.Resolve() -> eQuantic.UI.Primitives.ThemeMode?
+static eQuantic.UI.Native.Shell.Apple.AppleBiometry.AuthenticateAsync(string! reason, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<eQuantic.UI.Primitives.BiometricResult>!
+static eQuantic.UI.Native.Shell.Apple.AppleBiometry.IsAvailable() -> bool
+static eQuantic.UI.Native.Shell.Apple.AppleDeepLinks.Install() -> eQuantic.UI.Primitives.DeepLinkRelay!
+static eQuantic.UI.Native.Shell.Apple.AppleLocale.Resolve() -> (System.Globalization.CultureInfo! Ui, System.Globalization.CultureInfo! Format)
+static eQuantic.UI.Native.Shell.Apple.Bmp.Encode(byte[]! rgba, int width, int height) -> byte[]!
+static eQuantic.UI.Native.Shell.Apple.NSRange.NotFound.get -> eQuantic.UI.Native.Shell.Apple.NSRange
+static eQuantic.UI.Native.Shell.Apple.ObjC.class_addMethod(nint cls, nint name, nint implementation, string! types) -> bool
+static eQuantic.UI.Native.Shell.Apple.ObjC.class_addProtocol(nint cls, nint protocol) -> bool
+static eQuantic.UI.Native.Shell.Apple.ObjC.FromNSString(nint value) -> string?
+static eQuantic.UI.Native.Shell.Apple.ObjC.NSString(string! value) -> nint
+static eQuantic.UI.Native.Shell.Apple.ObjC.objc_allocateClassPair(nint superclass, string! name, nuint extraBytes) -> nint
+static eQuantic.UI.Native.Shell.Apple.ObjC.objc_getClass(string! name) -> nint
+static eQuantic.UI.Native.Shell.Apple.ObjC.objc_getProtocol(string! name) -> nint
+static eQuantic.UI.Native.Shell.Apple.ObjC.Sel(string! name) -> nint
+static eQuantic.UI.Native.Shell.Apple.ObjC.sel_registerName(string! name) -> nint
+static eQuantic.UI.Native.Shell.Apple.ObjC.Send(nint receiver, nint selector, eQuantic.UI.Native.Shell.Apple.CGRect rect, ulong styleMask, ulong backing, bool defer) -> nint
+static eQuantic.UI.Native.Shell.Apple.ObjC.Send(nint receiver, nint selector, ulong mask, nint untilDate, nint mode, bool dequeue) -> nint
+static eQuantic.UI.Native.Shell.Apple.ObjC.SendBool(nint receiver, nint selector) -> bool
+static eQuantic.UI.Native.Shell.Apple.ObjC.SendBool(nint receiver, nint selector, long arg1, nint arg2) -> bool
+static eQuantic.UI.Native.Shell.Apple.ObjC.SendBool(nint receiver, nint selector, nint arg1) -> bool
+static eQuantic.UI.Native.Shell.Apple.ObjC.SendVoid(nint receiver, nint selector, bool arg1) -> void
+static eQuantic.UI.Native.Shell.Apple.ObjC.StringArray(System.Collections.Generic.IReadOnlyList<string!>! values) -> nint
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.class_getInstanceMethod(nint cls, nint name) -> nint
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.method_getImplementation(nint method) -> nint
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.objc_registerClassPair(nint cls) -> void
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.sel_getName(nint selector) -> nint
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.Send(nint receiver, nint selector) -> nint
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.Send(nint receiver, nint selector, double arg1) -> nint
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.Send(nint receiver, nint selector, eQuantic.UI.Native.Shell.Apple.CGRect rect, ulong options, nint owner, nint userInfo) -> nint
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.Send(nint receiver, nint selector, long arg1) -> nint
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.Send(nint receiver, nint selector, nint arg1) -> nint
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.Send(nint receiver, nint selector, nint arg1, nint arg2) -> nint
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.Send(nint receiver, nint selector, nuint arg1) -> nint
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.Send(nint receiver, nint selector, uint keyword) -> nint
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendDouble(nint receiver, nint selector) -> double
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendLong(nint receiver, nint selector) -> long
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendPoint(nint receiver, nint selector) -> eQuantic.UI.Native.Shell.Apple.CGPoint
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendRect(nint receiver, nint selector) -> eQuantic.UI.Native.Shell.Apple.CGRect
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendRect(nint receiver, nint selector, eQuantic.UI.Native.Shell.Apple.CGRect rect) -> eQuantic.UI.Native.Shell.Apple.CGRect
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendRect(nint receiver, nint selector, eQuantic.UI.Native.Shell.Apple.CGRect rect, nint arg2) -> eQuantic.UI.Native.Shell.Apple.CGRect
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendULong(nint receiver, nint selector) -> ulong
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendUShort(nint receiver, nint selector) -> ushort
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendVoid(nint receiver, nint selector) -> void
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendVoid(nint receiver, nint selector, double arg1) -> void
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendVoid(nint receiver, nint selector, eQuantic.UI.Native.Shell.Apple.CGRect rect) -> void
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendVoid(nint receiver, nint selector, eQuantic.UI.Native.Shell.Apple.CGSize size) -> void
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendVoid(nint receiver, nint selector, long arg1, nint arg2, nint arg3) -> void
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendVoid(nint receiver, nint selector, nint arg1) -> void
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendVoid(nint receiver, nint selector, nint arg1, eQuantic.UI.Native.Shell.Apple.NSRange range) -> void
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendVoid(nint receiver, nint selector, nint arg1, eQuantic.UI.Native.Shell.Apple.NSRange range1, eQuantic.UI.Native.Shell.Apple.NSRange range2) -> void
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendVoid(nint receiver, nint selector, nint arg1, nint arg2) -> void
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendVoid(nint receiver, nint selector, nint handler, nint handlerSelector, uint eventClass, uint eventId) -> void
+static extern eQuantic.UI.Native.Shell.Apple.ObjC.SendVoid(nint receiver, nint selector, ulong arg1) -> void

@@ -1,0 +1,7 @@
+#nullable enable
+*REMOVED*static eQuantic.UI.Charts.ChartsUI.CategoryAxis(System.Collections.Generic.IReadOnlyList<string!>! categories, string? title = null) -> eQuantic.UI.Charts.CategoryAxis!
+*REMOVED*static eQuantic.UI.Charts.ChartsUI.ChartSeries(string! name, System.Collections.Generic.IReadOnlyList<double>! values, int slot = -1) -> eQuantic.UI.Charts.ChartSeries!
+*REMOVED*static eQuantic.UI.Charts.ChartsUI.ValueAxis(string? title = null, double? min = null, double? max = null, string! format = "N0", int ticks = 5) -> eQuantic.UI.Charts.ValueAxis!
+static eQuantic.UI.Charts.ChartsUI.ChartSeries(string! Name, System.Collections.Generic.IReadOnlyList<double>! Values, int Slot = -1) -> eQuantic.UI.Charts.ChartSeries!
+static eQuantic.UI.Charts.ChartsUI.CategoryAxis(System.Collections.Generic.IReadOnlyList<string!>! Categories, string? Title = null) -> eQuantic.UI.Charts.CategoryAxis!
+static eQuantic.UI.Charts.ChartsUI.ValueAxis(string? Title = null, double? Min = null, double? Max = null, string! Format = "N0", int Ticks = 5) -> eQuantic.UI.Charts.ValueAxis!

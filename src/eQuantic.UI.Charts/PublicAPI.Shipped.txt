@@ -1,0 +1,148 @@
+#nullable enable
+const eQuantic.UI.Charts.BarChart.CategoryAxisWidth = 96 -> float
+const eQuantic.UI.Charts.BarChart.DefaultPlotHeight = 240 -> float
+const eQuantic.UI.Charts.BarChart.MinValueAxisWidth = 48 -> float
+const eQuantic.UI.Charts.BarChartLayout.DataEndRadius = 4 -> float
+const eQuantic.UI.Charts.BarChartLayout.Gap = 2 -> float
+const eQuantic.UI.Charts.BarChartLayout.HitSlack = 4 -> float
+const eQuantic.UI.Charts.BarChartLayout.MaxThickness = 24 -> float
+eQuantic.UI.Charts.BarChart
+eQuantic.UI.Charts.BarChart.BarChart(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Charts.ChartSeries!>! series, eQuantic.UI.Charts.CategoryAxis! categories, eQuantic.UI.Charts.ValueAxis? values = null, eQuantic.UI.Charts.BarLayout layout = eQuantic.UI.Charts.BarLayout.Grouped, eQuantic.UI.Charts.ChartOrientation orientation = eQuantic.UI.Charts.ChartOrientation.Vertical, string? title = null, string? subtitle = null, float plotHeight = 240) -> void
+eQuantic.UI.Charts.BarChartGeometry
+eQuantic.UI.Charts.BarChartGeometry.<Clone>$() -> eQuantic.UI.Charts.BarChartGeometry!
+eQuantic.UI.Charts.BarChartGeometry.BarChartGeometry(float Width, float Height, eQuantic.UI.Charts.ChartOrientation Orientation, eQuantic.UI.Charts.ValueTicks! Ticks, float Baseline, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Charts.BarRect!>! Bars) -> void
+eQuantic.UI.Charts.BarChartGeometry.Bars.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Charts.BarRect!>!
+eQuantic.UI.Charts.BarChartGeometry.Bars.init -> void
+eQuantic.UI.Charts.BarChartGeometry.Baseline.get -> float
+eQuantic.UI.Charts.BarChartGeometry.Baseline.init -> void
+eQuantic.UI.Charts.BarChartGeometry.Deconstruct(out float Width, out float Height, out eQuantic.UI.Charts.ChartOrientation Orientation, out eQuantic.UI.Charts.ValueTicks! Ticks, out float Baseline, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Charts.BarRect!>! Bars) -> void
+eQuantic.UI.Charts.BarChartGeometry.Equals(eQuantic.UI.Charts.BarChartGeometry? other) -> bool
+eQuantic.UI.Charts.BarChartGeometry.Height.get -> float
+eQuantic.UI.Charts.BarChartGeometry.Height.init -> void
+eQuantic.UI.Charts.BarChartGeometry.Orientation.get -> eQuantic.UI.Charts.ChartOrientation
+eQuantic.UI.Charts.BarChartGeometry.Orientation.init -> void
+eQuantic.UI.Charts.BarChartGeometry.TickPosition(int index) -> float
+eQuantic.UI.Charts.BarChartGeometry.Ticks.get -> eQuantic.UI.Charts.ValueTicks!
+eQuantic.UI.Charts.BarChartGeometry.Ticks.init -> void
+eQuantic.UI.Charts.BarChartGeometry.Width.get -> float
+eQuantic.UI.Charts.BarChartGeometry.Width.init -> void
+eQuantic.UI.Charts.BarChartLayout
+eQuantic.UI.Charts.BarLayout
+eQuantic.UI.Charts.BarLayout.Grouped = 0 -> eQuantic.UI.Charts.BarLayout
+eQuantic.UI.Charts.BarLayout.Stacked = 1 -> eQuantic.UI.Charts.BarLayout
+eQuantic.UI.Charts.BarRect
+eQuantic.UI.Charts.BarRect.<Clone>$() -> eQuantic.UI.Charts.BarRect!
+eQuantic.UI.Charts.BarRect.BarRect(int Category, int Series, eQuantic.UI.Primitives.Rect Box, bool Negative, bool DataEnd) -> void
+eQuantic.UI.Charts.BarRect.Box.get -> eQuantic.UI.Primitives.Rect
+eQuantic.UI.Charts.BarRect.Box.init -> void
+eQuantic.UI.Charts.BarRect.Category.get -> int
+eQuantic.UI.Charts.BarRect.Category.init -> void
+eQuantic.UI.Charts.BarRect.DataEnd.get -> bool
+eQuantic.UI.Charts.BarRect.DataEnd.init -> void
+eQuantic.UI.Charts.BarRect.Deconstruct(out int Category, out int Series, out eQuantic.UI.Primitives.Rect Box, out bool Negative, out bool DataEnd) -> void
+eQuantic.UI.Charts.BarRect.Equals(eQuantic.UI.Charts.BarRect? other) -> bool
+eQuantic.UI.Charts.BarRect.Negative.get -> bool
+eQuantic.UI.Charts.BarRect.Negative.init -> void
+eQuantic.UI.Charts.BarRect.Series.get -> int
+eQuantic.UI.Charts.BarRect.Series.init -> void
+eQuantic.UI.Charts.CategoryAxis
+eQuantic.UI.Charts.CategoryAxis.<Clone>$() -> eQuantic.UI.Charts.CategoryAxis!
+eQuantic.UI.Charts.CategoryAxis.Categories.get -> System.Collections.Generic.IReadOnlyList<string!>!
+eQuantic.UI.Charts.CategoryAxis.Categories.init -> void
+eQuantic.UI.Charts.CategoryAxis.CategoryAxis(System.Collections.Generic.IReadOnlyList<string!>! Categories, string? Title = null) -> void
+eQuantic.UI.Charts.CategoryAxis.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Categories, out string? Title) -> void
+eQuantic.UI.Charts.CategoryAxis.Equals(eQuantic.UI.Charts.CategoryAxis? other) -> bool
+eQuantic.UI.Charts.CategoryAxis.Title.get -> string?
+eQuantic.UI.Charts.CategoryAxis.Title.init -> void
+eQuantic.UI.Charts.ChartOrientation
+eQuantic.UI.Charts.ChartOrientation.Horizontal = 1 -> eQuantic.UI.Charts.ChartOrientation
+eQuantic.UI.Charts.ChartOrientation.Vertical = 0 -> eQuantic.UI.Charts.ChartOrientation
+eQuantic.UI.Charts.ChartSeries
+eQuantic.UI.Charts.ChartSeries.<Clone>$() -> eQuantic.UI.Charts.ChartSeries!
+eQuantic.UI.Charts.ChartSeries.At(int category) -> double
+eQuantic.UI.Charts.ChartSeries.ChartSeries(string! Name, System.Collections.Generic.IReadOnlyList<double>! Values, int Slot = -1) -> void
+eQuantic.UI.Charts.ChartSeries.Deconstruct(out string! Name, out System.Collections.Generic.IReadOnlyList<double>! Values, out int Slot) -> void
+eQuantic.UI.Charts.ChartSeries.Equals(eQuantic.UI.Charts.ChartSeries? other) -> bool
+eQuantic.UI.Charts.ChartSeries.Name.get -> string!
+eQuantic.UI.Charts.ChartSeries.Name.init -> void
+eQuantic.UI.Charts.ChartSeries.Slot.get -> int
+eQuantic.UI.Charts.ChartSeries.Slot.init -> void
+eQuantic.UI.Charts.ChartSeries.SlotAt(int position) -> int
+eQuantic.UI.Charts.ChartSeries.Values.get -> System.Collections.Generic.IReadOnlyList<double>!
+eQuantic.UI.Charts.ChartSeries.Values.init -> void
+eQuantic.UI.Charts.ChartsUI
+eQuantic.UI.Charts.ValueAxis
+eQuantic.UI.Charts.ValueAxis.<Clone>$() -> eQuantic.UI.Charts.ValueAxis!
+eQuantic.UI.Charts.ValueAxis.Deconstruct(out string? Title, out double? Min, out double? Max, out string! Format, out int Ticks) -> void
+eQuantic.UI.Charts.ValueAxis.Equals(eQuantic.UI.Charts.ValueAxis? other) -> bool
+eQuantic.UI.Charts.ValueAxis.Format.get -> string!
+eQuantic.UI.Charts.ValueAxis.Format.init -> void
+eQuantic.UI.Charts.ValueAxis.Label(double value) -> string!
+eQuantic.UI.Charts.ValueAxis.Max.get -> double?
+eQuantic.UI.Charts.ValueAxis.Max.init -> void
+eQuantic.UI.Charts.ValueAxis.Min.get -> double?
+eQuantic.UI.Charts.ValueAxis.Min.init -> void
+eQuantic.UI.Charts.ValueAxis.Ticks.get -> int
+eQuantic.UI.Charts.ValueAxis.Ticks.init -> void
+eQuantic.UI.Charts.ValueAxis.Title.get -> string?
+eQuantic.UI.Charts.ValueAxis.Title.init -> void
+eQuantic.UI.Charts.ValueAxis.ValueAxis(string? Title = null, double? Min = null, double? Max = null, string! Format = "N0", int Ticks = 5) -> void
+eQuantic.UI.Charts.ValueScale
+eQuantic.UI.Charts.ValueTicks
+eQuantic.UI.Charts.ValueTicks.<Clone>$() -> eQuantic.UI.Charts.ValueTicks!
+eQuantic.UI.Charts.ValueTicks.At(int index) -> double
+eQuantic.UI.Charts.ValueTicks.Count.get -> int
+eQuantic.UI.Charts.ValueTicks.Deconstruct(out double Min, out double Max, out double Step) -> void
+eQuantic.UI.Charts.ValueTicks.Equals(eQuantic.UI.Charts.ValueTicks? other) -> bool
+eQuantic.UI.Charts.ValueTicks.Max.get -> double
+eQuantic.UI.Charts.ValueTicks.Max.init -> void
+eQuantic.UI.Charts.ValueTicks.Min.get -> double
+eQuantic.UI.Charts.ValueTicks.Min.init -> void
+eQuantic.UI.Charts.ValueTicks.Span.get -> double
+eQuantic.UI.Charts.ValueTicks.Step.get -> double
+eQuantic.UI.Charts.ValueTicks.Step.init -> void
+eQuantic.UI.Charts.ValueTicks.ValueTicks(double Min, double Max, double Step) -> void
+override eQuantic.UI.Charts.BarChart.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
+override eQuantic.UI.Charts.BarChart.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Charts.BarChartGeometry.Equals(object? obj) -> bool
+override eQuantic.UI.Charts.BarChartGeometry.GetHashCode() -> int
+override eQuantic.UI.Charts.BarChartGeometry.ToString() -> string!
+override eQuantic.UI.Charts.BarRect.Equals(object? obj) -> bool
+override eQuantic.UI.Charts.BarRect.GetHashCode() -> int
+override eQuantic.UI.Charts.BarRect.ToString() -> string!
+override eQuantic.UI.Charts.CategoryAxis.Equals(object? obj) -> bool
+override eQuantic.UI.Charts.CategoryAxis.GetHashCode() -> int
+override eQuantic.UI.Charts.CategoryAxis.ToString() -> string!
+override eQuantic.UI.Charts.ChartSeries.Equals(object? obj) -> bool
+override eQuantic.UI.Charts.ChartSeries.GetHashCode() -> int
+override eQuantic.UI.Charts.ChartSeries.ToString() -> string!
+override eQuantic.UI.Charts.ValueAxis.Equals(object? obj) -> bool
+override eQuantic.UI.Charts.ValueAxis.GetHashCode() -> int
+override eQuantic.UI.Charts.ValueAxis.ToString() -> string!
+override eQuantic.UI.Charts.ValueTicks.Equals(object? obj) -> bool
+override eQuantic.UI.Charts.ValueTicks.GetHashCode() -> int
+override eQuantic.UI.Charts.ValueTicks.ToString() -> string!
+static eQuantic.UI.Charts.BarChart.Table(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Charts.ChartSeries!>! series, eQuantic.UI.Charts.CategoryAxis! categories, eQuantic.UI.Charts.ValueAxis! values, eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Components.DataTable!
+static eQuantic.UI.Charts.BarChart.ValueBandWidth(eQuantic.UI.Charts.ValueAxis! axis, eQuantic.UI.Charts.ValueTicks! ticks) -> float
+static eQuantic.UI.Charts.BarChartGeometry.operator !=(eQuantic.UI.Charts.BarChartGeometry? left, eQuantic.UI.Charts.BarChartGeometry? right) -> bool
+static eQuantic.UI.Charts.BarChartGeometry.operator ==(eQuantic.UI.Charts.BarChartGeometry? left, eQuantic.UI.Charts.BarChartGeometry? right) -> bool
+static eQuantic.UI.Charts.BarChartLayout.HitTest(eQuantic.UI.Charts.BarChartGeometry! geometry, float x, float y) -> int
+static eQuantic.UI.Charts.BarChartLayout.Solve(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Charts.ChartSeries!>! series, System.Collections.Generic.IReadOnlyList<bool>! visible, int categoryCount, eQuantic.UI.Charts.BarLayout layout, eQuantic.UI.Charts.ChartOrientation orientation, eQuantic.UI.Charts.ValueAxis! axis, float width, float height) -> eQuantic.UI.Charts.BarChartGeometry!
+static eQuantic.UI.Charts.BarChartLayout.TickOffset(eQuantic.UI.Charts.ValueTicks! ticks, int index, float across) -> float
+static eQuantic.UI.Charts.BarChartLayout.Ticks(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Charts.ChartSeries!>! series, System.Collections.Generic.IReadOnlyList<bool>! visible, int categoryCount, eQuantic.UI.Charts.BarLayout layout, eQuantic.UI.Charts.ValueAxis! axis) -> eQuantic.UI.Charts.ValueTicks!
+static eQuantic.UI.Charts.BarRect.operator !=(eQuantic.UI.Charts.BarRect? left, eQuantic.UI.Charts.BarRect? right) -> bool
+static eQuantic.UI.Charts.BarRect.operator ==(eQuantic.UI.Charts.BarRect? left, eQuantic.UI.Charts.BarRect? right) -> bool
+static eQuantic.UI.Charts.CategoryAxis.operator !=(eQuantic.UI.Charts.CategoryAxis? left, eQuantic.UI.Charts.CategoryAxis? right) -> bool
+static eQuantic.UI.Charts.CategoryAxis.operator ==(eQuantic.UI.Charts.CategoryAxis? left, eQuantic.UI.Charts.CategoryAxis? right) -> bool
+static eQuantic.UI.Charts.ChartSeries.operator !=(eQuantic.UI.Charts.ChartSeries? left, eQuantic.UI.Charts.ChartSeries? right) -> bool
+static eQuantic.UI.Charts.ChartSeries.operator ==(eQuantic.UI.Charts.ChartSeries? left, eQuantic.UI.Charts.ChartSeries? right) -> bool
+static eQuantic.UI.Charts.ChartsUI.BarChart(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Charts.ChartSeries!>! series, eQuantic.UI.Charts.CategoryAxis! categories, eQuantic.UI.Charts.ValueAxis? values = null, eQuantic.UI.Charts.BarLayout layout = eQuantic.UI.Charts.BarLayout.Grouped, eQuantic.UI.Charts.ChartOrientation orientation = eQuantic.UI.Charts.ChartOrientation.Vertical, string? title = null, string? subtitle = null, float plotHeight = 240) -> eQuantic.UI.Charts.BarChart!
+static eQuantic.UI.Charts.ChartsUI.CategoryAxis(System.Collections.Generic.IReadOnlyList<string!>! categories, string? title = null) -> eQuantic.UI.Charts.CategoryAxis!
+static eQuantic.UI.Charts.ChartsUI.ChartSeries(string! name, System.Collections.Generic.IReadOnlyList<double>! values, int slot = -1) -> eQuantic.UI.Charts.ChartSeries!
+static eQuantic.UI.Charts.ChartsUI.ValueAxis(string? title = null, double? min = null, double? max = null, string! format = "N0", int ticks = 5) -> eQuantic.UI.Charts.ValueAxis!
+static eQuantic.UI.Charts.ValueAxis.operator !=(eQuantic.UI.Charts.ValueAxis? left, eQuantic.UI.Charts.ValueAxis? right) -> bool
+static eQuantic.UI.Charts.ValueAxis.operator ==(eQuantic.UI.Charts.ValueAxis? left, eQuantic.UI.Charts.ValueAxis? right) -> bool
+static eQuantic.UI.Charts.ValueScale.Fixed(double min, double max, int ticks) -> eQuantic.UI.Charts.ValueTicks!
+static eQuantic.UI.Charts.ValueScale.Nice(double low, double high, int target) -> eQuantic.UI.Charts.ValueTicks!
+static eQuantic.UI.Charts.ValueTicks.operator !=(eQuantic.UI.Charts.ValueTicks? left, eQuantic.UI.Charts.ValueTicks? right) -> bool
+static eQuantic.UI.Charts.ValueTicks.operator ==(eQuantic.UI.Charts.ValueTicks? left, eQuantic.UI.Charts.ValueTicks? right) -> bool

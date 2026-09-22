@@ -1,0 +1,127 @@
+#nullable enable
+const eQuantic.UI.Native.Hosting.PhotonOptions.SectionName = "Photon" -> string!
+eQuantic.UI.Native.Hosting.IPhotonCapabilities
+eQuantic.UI.Native.Hosting.IPhotonCapabilities.Register(Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> void
+eQuantic.UI.Native.Hosting.IPhotonRunner
+eQuantic.UI.Native.Hosting.IPhotonRunner.Run(eQuantic.UI.Native.Hosting.PhotonApplication! app) -> void
+eQuantic.UI.Native.Hosting.PhotonApplication
+eQuantic.UI.Native.Hosting.PhotonApplication.Args.get -> string![]!
+eQuantic.UI.Native.Hosting.PhotonApplication.Configuration.get -> Microsoft.Extensions.Configuration.IConfiguration!
+eQuantic.UI.Native.Hosting.PhotonApplication.Options.get -> eQuantic.UI.Native.Hosting.PhotonOptions!
+eQuantic.UI.Native.Hosting.PhotonApplication.Root.get -> System.Func<eQuantic.UI.Primitives.VisualNode!>!
+eQuantic.UI.Native.Hosting.PhotonApplication.Run() -> void
+eQuantic.UI.Native.Hosting.PhotonApplication.Run(System.Func<eQuantic.UI.Primitives.VisualNode!>! root) -> void
+eQuantic.UI.Native.Hosting.PhotonApplication.Run<TRoot>() -> void
+eQuantic.UI.Native.Hosting.PhotonApplication.Services.get -> System.IServiceProvider!
+eQuantic.UI.Native.Hosting.PhotonApplication.UseRoot(System.Func<eQuantic.UI.Primitives.VisualNode!>! root) -> eQuantic.UI.Native.Hosting.PhotonApplication!
+eQuantic.UI.Native.Hosting.PhotonApplication.UseRoot<TRoot>() -> eQuantic.UI.Native.Hosting.PhotonApplication!
+eQuantic.UI.Native.Hosting.PhotonApplicationBuilder
+eQuantic.UI.Native.Hosting.PhotonApplicationBuilder.Args.get -> string![]!
+eQuantic.UI.Native.Hosting.PhotonApplicationBuilder.Build() -> eQuantic.UI.Native.Hosting.PhotonApplication!
+eQuantic.UI.Native.Hosting.PhotonApplicationBuilder.Bundle.get -> eQuantic.UI.Native.Hosting.PhotonBundleBuilder!
+eQuantic.UI.Native.Hosting.PhotonApplicationBuilder.Capabilities.get -> eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder!
+eQuantic.UI.Native.Hosting.PhotonApplicationBuilder.Configuration.get -> Microsoft.Extensions.Configuration.IConfigurationManager!
+eQuantic.UI.Native.Hosting.PhotonApplicationBuilder.Configure(System.Action<eQuantic.UI.Native.Hosting.PhotonOptions!>! configure) -> eQuantic.UI.Native.Hosting.PhotonApplicationBuilder!
+eQuantic.UI.Native.Hosting.PhotonApplicationBuilder.Entitlements.get -> eQuantic.UI.Native.Hosting.PhotonEntitlementsBuilder!
+eQuantic.UI.Native.Hosting.PhotonApplicationBuilder.Environment.get -> Microsoft.Extensions.Hosting.IHostEnvironment!
+eQuantic.UI.Native.Hosting.PhotonApplicationBuilder.Logging.get -> Microsoft.Extensions.Logging.ILoggingBuilder!
+eQuantic.UI.Native.Hosting.PhotonApplicationBuilder.Services.get -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+eQuantic.UI.Native.Hosting.PhotonApplicationBuilder.UseTheme(eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Native.Hosting.PhotonApplicationBuilder!
+eQuantic.UI.Native.Hosting.PhotonApplicationBuilder.Workspace.get -> eQuantic.UI.Native.Hosting.PhotonWorkspaceBuilder!
+eQuantic.UI.Native.Hosting.PhotonBundleBuilder
+eQuantic.UI.Native.Hosting.PhotonBundleBuilder.Agent() -> eQuantic.UI.Native.Hosting.PhotonBundleBuilder!
+eQuantic.UI.Native.Hosting.PhotonBundleBuilder.Category(eQuantic.UI.Primitives.AppCategory category) -> eQuantic.UI.Native.Hosting.PhotonBundleBuilder!
+eQuantic.UI.Native.Hosting.PhotonBundleBuilder.Copyright(string! notice) -> eQuantic.UI.Native.Hosting.PhotonBundleBuilder!
+eQuantic.UI.Native.Hosting.PhotonBundleBuilder.Declared.get -> System.Collections.Generic.IReadOnlyDictionary<string!, (string! Value, eQuantic.UI.Primitives.PhotonBundleValueKind Kind)>!
+eQuantic.UI.Native.Hosting.PhotonBundleBuilder.Flag(string! key, bool value) -> eQuantic.UI.Native.Hosting.PhotonBundleBuilder!
+eQuantic.UI.Native.Hosting.PhotonBundleBuilder.Key(string! key, string! value) -> eQuantic.UI.Native.Hosting.PhotonBundleBuilder!
+eQuantic.UI.Native.Hosting.PhotonBundleBuilder.MinimumSystemVersion(string! version) -> eQuantic.UI.Native.Hosting.PhotonBundleBuilder!
+eQuantic.UI.Native.Hosting.PhotonBundleBuilder.PhotonBundleBuilder() -> void
+eQuantic.UI.Native.Hosting.PhotonBundleBuilder.UrlScheme(string! scheme) -> eQuantic.UI.Native.Hosting.PhotonBundleBuilder!
+eQuantic.UI.Native.Hosting.PhotonBundleBuilder.UrlSchemes.get -> System.Collections.Generic.IReadOnlyList<string!>!
+eQuantic.UI.Native.Hosting.PhotonCapabilitiesAttribute
+eQuantic.UI.Native.Hosting.PhotonCapabilitiesAttribute.PhotonCapabilitiesAttribute(System.Type! providerType) -> void
+eQuantic.UI.Native.Hosting.PhotonCapabilitiesAttribute.ProviderType.get -> System.Type!
+eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder
+eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder.Declared.get -> System.Collections.Generic.IReadOnlyDictionary<eQuantic.UI.Primitives.DeviceCapability, string!>!
+eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder.PhotonCapabilitiesBuilder() -> void
+eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder.Use(eQuantic.UI.Primitives.DeviceCapability capability, string! reason) -> eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder!
+eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder.UseBiometrics(string! reason) -> eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder!
+eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder.UseCamera(string! reason) -> eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder!
+eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder.UseContacts(string! reason) -> eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder!
+eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder.UseLocation(string! reason) -> eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder!
+eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder.UseMicrophone(string! reason) -> eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder!
+eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder.UseMotion(string! reason) -> eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder!
+eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder.UseNetworkStatus() -> eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder!
+eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder.UseNotifications(string! reason) -> eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder!
+eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder.UsePhotoLibrary(string! reason) -> eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder!
+eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder.UsePhotoLibraryAdd(string! reason) -> eQuantic.UI.Native.Hosting.PhotonCapabilitiesBuilder!
+eQuantic.UI.Native.Hosting.PhotonClock
+eQuantic.UI.Native.Hosting.PhotonClock.Every(System.TimeSpan interval, System.Action! onTick) -> System.IDisposable!
+eQuantic.UI.Native.Hosting.PhotonClock.PhotonClock() -> void
+eQuantic.UI.Native.Hosting.PhotonCultureController
+eQuantic.UI.Native.Hosting.PhotonCultureController.Apply(System.Globalization.CultureInfo! uiCulture, System.Globalization.CultureInfo? formatCulture = null) -> void
+eQuantic.UI.Native.Hosting.PhotonCultureController.Attach(System.Action! repaint) -> void
+eQuantic.UI.Native.Hosting.PhotonCultureController.FormatCulture.get -> System.Globalization.CultureInfo!
+eQuantic.UI.Native.Hosting.PhotonCultureController.PhotonCultureController() -> void
+eQuantic.UI.Native.Hosting.PhotonCultureController.UICulture.get -> System.Globalization.CultureInfo!
+eQuantic.UI.Native.Hosting.PhotonEntitlementsBuilder
+eQuantic.UI.Native.Hosting.PhotonEntitlementsBuilder.Declared.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
+eQuantic.UI.Native.Hosting.PhotonEntitlementsBuilder.PhotonEntitlementsBuilder() -> void
+eQuantic.UI.Native.Hosting.PhotonEntitlementsBuilder.Require(string! entitlement) -> eQuantic.UI.Native.Hosting.PhotonEntitlementsBuilder!
+eQuantic.UI.Native.Hosting.PhotonEntitlementsBuilder.RequireAppSandbox() -> eQuantic.UI.Native.Hosting.PhotonEntitlementsBuilder!
+eQuantic.UI.Native.Hosting.PhotonEntitlementsBuilder.RequireForeignLibraries() -> eQuantic.UI.Native.Hosting.PhotonEntitlementsBuilder!
+eQuantic.UI.Native.Hosting.PhotonEntitlementsBuilder.RequireJit() -> eQuantic.UI.Native.Hosting.PhotonEntitlementsBuilder!
+eQuantic.UI.Native.Hosting.PhotonEntitlementsBuilder.RequireNetworkClient() -> eQuantic.UI.Native.Hosting.PhotonEntitlementsBuilder!
+eQuantic.UI.Native.Hosting.PhotonEntitlementsBuilder.RequireUnsignedExecutableMemory() -> eQuantic.UI.Native.Hosting.PhotonEntitlementsBuilder!
+eQuantic.UI.Native.Hosting.PhotonEntitlementsBuilder.RequireUserSelectedFiles() -> eQuantic.UI.Native.Hosting.PhotonEntitlementsBuilder!
+eQuantic.UI.Native.Hosting.PhotonOptions
+eQuantic.UI.Native.Hosting.PhotonOptions.Chrome.get -> eQuantic.UI.Primitives.WindowChrome
+eQuantic.UI.Native.Hosting.PhotonOptions.Chrome.set -> void
+eQuantic.UI.Native.Hosting.PhotonOptions.Declared.get -> System.Collections.Generic.IReadOnlyDictionary<eQuantic.UI.Primitives.DeviceCapability, string!>!
+eQuantic.UI.Native.Hosting.PhotonOptions.Declared.set -> void
+eQuantic.UI.Native.Hosting.PhotonOptions.Height.get -> float
+eQuantic.UI.Native.Hosting.PhotonOptions.Height.set -> void
+eQuantic.UI.Native.Hosting.PhotonOptions.MaxFrames.get -> int
+eQuantic.UI.Native.Hosting.PhotonOptions.MaxFrames.set -> void
+eQuantic.UI.Native.Hosting.PhotonOptions.MinHeight.get -> float
+eQuantic.UI.Native.Hosting.PhotonOptions.MinHeight.set -> void
+eQuantic.UI.Native.Hosting.PhotonOptions.MinWidth.get -> float
+eQuantic.UI.Native.Hosting.PhotonOptions.MinWidth.set -> void
+eQuantic.UI.Native.Hosting.PhotonOptions.Mode.get -> eQuantic.UI.Primitives.ThemeMode?
+eQuantic.UI.Native.Hosting.PhotonOptions.Mode.set -> void
+eQuantic.UI.Native.Hosting.PhotonOptions.PhotonOptions() -> void
+eQuantic.UI.Native.Hosting.PhotonOptions.Resizable.get -> bool
+eQuantic.UI.Native.Hosting.PhotonOptions.Resizable.set -> void
+eQuantic.UI.Native.Hosting.PhotonOptions.ScreenshotPath.get -> string?
+eQuantic.UI.Native.Hosting.PhotonOptions.ScreenshotPath.set -> void
+eQuantic.UI.Native.Hosting.PhotonOptions.SmoothScroll.get -> bool
+eQuantic.UI.Native.Hosting.PhotonOptions.SmoothScroll.set -> void
+eQuantic.UI.Native.Hosting.PhotonOptions.StrictRender.get -> bool
+eQuantic.UI.Native.Hosting.PhotonOptions.StrictRender.set -> void
+eQuantic.UI.Native.Hosting.PhotonOptions.Theme.get -> eQuantic.UI.Primitives.IAppTheme!
+eQuantic.UI.Native.Hosting.PhotonOptions.Theme.set -> void
+eQuantic.UI.Native.Hosting.PhotonOptions.Title.get -> string!
+eQuantic.UI.Native.Hosting.PhotonOptions.Title.set -> void
+eQuantic.UI.Native.Hosting.PhotonOptions.Width.get -> float
+eQuantic.UI.Native.Hosting.PhotonOptions.Width.set -> void
+eQuantic.UI.Native.Hosting.PhotonRunnerAttribute
+eQuantic.UI.Native.Hosting.PhotonRunnerAttribute.PhotonRunnerAttribute(System.Type! runnerType) -> void
+eQuantic.UI.Native.Hosting.PhotonRunnerAttribute.RunnerType.get -> System.Type!
+eQuantic.UI.Native.Hosting.PhotonThemeController
+eQuantic.UI.Native.Hosting.PhotonThemeController.Apply(eQuantic.UI.Primitives.ThemeMode mode) -> void
+eQuantic.UI.Native.Hosting.PhotonThemeController.Attach(eQuantic.UI.Primitives.ThemeMode initial, System.Action<eQuantic.UI.Primitives.ThemeMode>! sink) -> void
+eQuantic.UI.Native.Hosting.PhotonThemeController.Mode.get -> eQuantic.UI.Primitives.ThemeMode
+eQuantic.UI.Native.Hosting.PhotonThemeController.PhotonThemeController() -> void
+eQuantic.UI.Native.Hosting.PhotonWorkspaceBuilder
+eQuantic.UI.Native.Hosting.PhotonWorkspaceBuilder.Declared.get -> eQuantic.UI.Primitives.OpenUrlPolicy!
+eQuantic.UI.Native.Hosting.PhotonWorkspaceBuilder.Opens(string! scheme) -> eQuantic.UI.Native.Hosting.PhotonWorkspaceBuilder!
+eQuantic.UI.Native.Hosting.PhotonWorkspaceBuilder.OpensMail() -> eQuantic.UI.Native.Hosting.PhotonWorkspaceBuilder!
+eQuantic.UI.Native.Hosting.PhotonWorkspaceBuilder.OpensMessages() -> eQuantic.UI.Native.Hosting.PhotonWorkspaceBuilder!
+eQuantic.UI.Native.Hosting.PhotonWorkspaceBuilder.OpensPhone() -> eQuantic.UI.Native.Hosting.PhotonWorkspaceBuilder!
+eQuantic.UI.Native.Hosting.PhotonWorkspaceBuilder.PhotonWorkspaceBuilder() -> void
+static eQuantic.UI.Native.Hosting.PhotonApplication.Create(string![]? args = null) -> eQuantic.UI.Native.Hosting.PhotonApplication!
+static eQuantic.UI.Native.Hosting.PhotonApplication.CreateBuilder(string![]? args = null) -> eQuantic.UI.Native.Hosting.PhotonApplicationBuilder!
+static eQuantic.UI.Native.Hosting.PhotonApplication.Program.get -> System.Func<string![]!, eQuantic.UI.Native.Hosting.PhotonApplication!>?
+static eQuantic.UI.Native.Hosting.PhotonApplication.Program.set -> void
+static eQuantic.UI.Native.Hosting.PhotonCultureController.ApplyToProcess(System.Globalization.CultureInfo! uiCulture, System.Globalization.CultureInfo! formatCulture) -> void

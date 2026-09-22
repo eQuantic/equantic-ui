@@ -1,0 +1,865 @@
+#nullable enable
+abstract eQuantic.UI.Web.HtmlElement.Render() -> eQuantic.UI.Web.HtmlNode!
+const eQuantic.UI.Web.GradientSink.ContainerId = "eq-vectors" -> string!
+const eQuantic.UI.Web.TokenCss.MonoFallback = "ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace" -> string!
+const eQuantic.UI.Web.TokenCss.MonoStack = "var(--eq-font-mono, ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace)" -> string!
+const eQuantic.UI.Web.TokenCss.SansStack = "var(--eq-font-family, system-ui, -apple-system, sans-serif)" -> string!
+eQuantic.UI.Web.AdaptiveGates
+eQuantic.UI.Web.AlignItem
+eQuantic.UI.Web.AlignItem.Baseline = 4 -> eQuantic.UI.Web.AlignItem
+eQuantic.UI.Web.AlignItem.Center = 1 -> eQuantic.UI.Web.AlignItem
+eQuantic.UI.Web.AlignItem.End = 6 -> eQuantic.UI.Web.AlignItem
+eQuantic.UI.Web.AlignItem.FlexEnd = 3 -> eQuantic.UI.Web.AlignItem
+eQuantic.UI.Web.AlignItem.FlexStart = 2 -> eQuantic.UI.Web.AlignItem
+eQuantic.UI.Web.AlignItem.Start = 5 -> eQuantic.UI.Web.AlignItem
+eQuantic.UI.Web.AlignItem.Stretch = 0 -> eQuantic.UI.Web.AlignItem
+eQuantic.UI.Web.ChangeEventArgs
+eQuantic.UI.Web.ChangeEventArgs.ChangeEventArgs() -> void
+eQuantic.UI.Web.ChangeEventArgs.Value.get -> string!
+eQuantic.UI.Web.ChangeEventArgs.Value.init -> void
+eQuantic.UI.Web.Display
+eQuantic.UI.Web.Display.Block = 0 -> eQuantic.UI.Web.Display
+eQuantic.UI.Web.Display.Contents = 7 -> eQuantic.UI.Web.Display
+eQuantic.UI.Web.Display.Flex = 3 -> eQuantic.UI.Web.Display
+eQuantic.UI.Web.Display.Grid = 5 -> eQuantic.UI.Web.Display
+eQuantic.UI.Web.Display.Inline = 1 -> eQuantic.UI.Web.Display
+eQuantic.UI.Web.Display.InlineBlock = 2 -> eQuantic.UI.Web.Display
+eQuantic.UI.Web.Display.InlineFlex = 4 -> eQuantic.UI.Web.Display
+eQuantic.UI.Web.Display.InlineGrid = 6 -> eQuantic.UI.Web.Display
+eQuantic.UI.Web.Display.None = 9 -> eQuantic.UI.Web.Display
+eQuantic.UI.Web.Display.WebkitBox = 8 -> eQuantic.UI.Web.Display
+eQuantic.UI.Web.DynamicElement
+eQuantic.UI.Web.DynamicElement.CustomAttributes.get -> System.Collections.Generic.Dictionary<string!, string!>?
+eQuantic.UI.Web.DynamicElement.CustomAttributes.set -> void
+eQuantic.UI.Web.DynamicElement.DynamicElement() -> void
+eQuantic.UI.Web.DynamicElement.InnerText.get -> string?
+eQuantic.UI.Web.DynamicElement.InnerText.set -> void
+eQuantic.UI.Web.DynamicElement.TagName.get -> string!
+eQuantic.UI.Web.DynamicElement.TagName.set -> void
+eQuantic.UI.Web.FlexDirection
+eQuantic.UI.Web.FlexDirection.Column = 1 -> eQuantic.UI.Web.FlexDirection
+eQuantic.UI.Web.FlexDirection.ColumnReverse = 3 -> eQuantic.UI.Web.FlexDirection
+eQuantic.UI.Web.FlexDirection.Row = 0 -> eQuantic.UI.Web.FlexDirection
+eQuantic.UI.Web.FlexDirection.RowReverse = 2 -> eQuantic.UI.Web.FlexDirection
+eQuantic.UI.Web.FlexWrap
+eQuantic.UI.Web.FlexWrap.NoWrap = 0 -> eQuantic.UI.Web.FlexWrap
+eQuantic.UI.Web.FlexWrap.Wrap = 1 -> eQuantic.UI.Web.FlexWrap
+eQuantic.UI.Web.FlexWrap.WrapReverse = 2 -> eQuantic.UI.Web.FlexWrap
+eQuantic.UI.Web.GradientSink
+eQuantic.UI.Web.GradientSink.Add(string! id, eQuantic.UI.Primitives.VectorPaint paint) -> void
+eQuantic.UI.Web.GradientSink.Container() -> eQuantic.UI.Web.HtmlElement!
+eQuantic.UI.Web.GradientSink.GradientSink() -> void
+eQuantic.UI.Web.GradientSink.IsEmpty.get -> bool
+eQuantic.UI.Web.GridFlow
+eQuantic.UI.Web.GridFlow.Column = 1 -> eQuantic.UI.Web.GridFlow
+eQuantic.UI.Web.GridFlow.ColumnDense = 3 -> eQuantic.UI.Web.GridFlow
+eQuantic.UI.Web.GridFlow.Row = 0 -> eQuantic.UI.Web.GridFlow
+eQuantic.UI.Web.GridFlow.RowDense = 2 -> eQuantic.UI.Web.GridFlow
+eQuantic.UI.Web.HtmlElement
+eQuantic.UI.Web.HtmlElement.Accept.get -> string?
+eQuantic.UI.Web.HtmlElement.Accept.set -> void
+eQuantic.UI.Web.HtmlElement.AccessKey.get -> string?
+eQuantic.UI.Web.HtmlElement.AccessKey.set -> void
+eQuantic.UI.Web.HtmlElement.Action.get -> string?
+eQuantic.UI.Web.HtmlElement.Action.set -> void
+eQuantic.UI.Web.HtmlElement.Alt.get -> string?
+eQuantic.UI.Web.HtmlElement.Alt.set -> void
+eQuantic.UI.Web.HtmlElement.AriaActiveDescendant.get -> string?
+eQuantic.UI.Web.HtmlElement.AriaActiveDescendant.set -> void
+eQuantic.UI.Web.HtmlElement.AriaAtomic.get -> bool?
+eQuantic.UI.Web.HtmlElement.AriaAtomic.set -> void
+eQuantic.UI.Web.HtmlElement.AriaBusy.get -> bool?
+eQuantic.UI.Web.HtmlElement.AriaBusy.set -> void
+eQuantic.UI.Web.HtmlElement.AriaChecked.get -> string?
+eQuantic.UI.Web.HtmlElement.AriaChecked.set -> void
+eQuantic.UI.Web.HtmlElement.AriaColCount.get -> int?
+eQuantic.UI.Web.HtmlElement.AriaColCount.set -> void
+eQuantic.UI.Web.HtmlElement.AriaColIndex.get -> int?
+eQuantic.UI.Web.HtmlElement.AriaColIndex.set -> void
+eQuantic.UI.Web.HtmlElement.AriaColSpan.get -> int?
+eQuantic.UI.Web.HtmlElement.AriaColSpan.set -> void
+eQuantic.UI.Web.HtmlElement.AriaControls.get -> string?
+eQuantic.UI.Web.HtmlElement.AriaControls.set -> void
+eQuantic.UI.Web.HtmlElement.AriaCurrent.get -> string?
+eQuantic.UI.Web.HtmlElement.AriaCurrent.set -> void
+eQuantic.UI.Web.HtmlElement.AriaDescribedBy.get -> string?
+eQuantic.UI.Web.HtmlElement.AriaDescribedBy.set -> void
+eQuantic.UI.Web.HtmlElement.AriaDetails.get -> string?
+eQuantic.UI.Web.HtmlElement.AriaDetails.set -> void
+eQuantic.UI.Web.HtmlElement.AriaDisabled.get -> bool?
+eQuantic.UI.Web.HtmlElement.AriaDisabled.set -> void
+eQuantic.UI.Web.HtmlElement.AriaErrorMessage.get -> string?
+eQuantic.UI.Web.HtmlElement.AriaErrorMessage.set -> void
+eQuantic.UI.Web.HtmlElement.AriaExpanded.get -> bool?
+eQuantic.UI.Web.HtmlElement.AriaExpanded.set -> void
+eQuantic.UI.Web.HtmlElement.AriaFlowTo.get -> string?
+eQuantic.UI.Web.HtmlElement.AriaFlowTo.set -> void
+eQuantic.UI.Web.HtmlElement.AriaHasPopup.get -> string?
+eQuantic.UI.Web.HtmlElement.AriaHasPopup.set -> void
+eQuantic.UI.Web.HtmlElement.AriaHidden.get -> bool?
+eQuantic.UI.Web.HtmlElement.AriaHidden.set -> void
+eQuantic.UI.Web.HtmlElement.AriaInvalid.get -> string?
+eQuantic.UI.Web.HtmlElement.AriaInvalid.set -> void
+eQuantic.UI.Web.HtmlElement.AriaKeyShortcuts.get -> string?
+eQuantic.UI.Web.HtmlElement.AriaKeyShortcuts.set -> void
+eQuantic.UI.Web.HtmlElement.AriaLabel.get -> string?
+eQuantic.UI.Web.HtmlElement.AriaLabel.set -> void
+eQuantic.UI.Web.HtmlElement.AriaLabelledBy.get -> string?
+eQuantic.UI.Web.HtmlElement.AriaLabelledBy.set -> void
+eQuantic.UI.Web.HtmlElement.AriaLevel.get -> int?
+eQuantic.UI.Web.HtmlElement.AriaLevel.set -> void
+eQuantic.UI.Web.HtmlElement.AriaLive.get -> string?
+eQuantic.UI.Web.HtmlElement.AriaLive.set -> void
+eQuantic.UI.Web.HtmlElement.AriaModal.get -> bool?
+eQuantic.UI.Web.HtmlElement.AriaModal.set -> void
+eQuantic.UI.Web.HtmlElement.AriaMultiline.get -> bool?
+eQuantic.UI.Web.HtmlElement.AriaMultiline.set -> void
+eQuantic.UI.Web.HtmlElement.AriaMultiSelectable.get -> bool?
+eQuantic.UI.Web.HtmlElement.AriaMultiSelectable.set -> void
+eQuantic.UI.Web.HtmlElement.AriaOrientation.get -> string?
+eQuantic.UI.Web.HtmlElement.AriaOrientation.set -> void
+eQuantic.UI.Web.HtmlElement.AriaOwns.get -> string?
+eQuantic.UI.Web.HtmlElement.AriaOwns.set -> void
+eQuantic.UI.Web.HtmlElement.AriaPlaceholder.get -> string?
+eQuantic.UI.Web.HtmlElement.AriaPlaceholder.set -> void
+eQuantic.UI.Web.HtmlElement.AriaPosInSet.get -> int?
+eQuantic.UI.Web.HtmlElement.AriaPosInSet.set -> void
+eQuantic.UI.Web.HtmlElement.AriaPressed.get -> string?
+eQuantic.UI.Web.HtmlElement.AriaPressed.set -> void
+eQuantic.UI.Web.HtmlElement.AriaReadOnly.get -> bool?
+eQuantic.UI.Web.HtmlElement.AriaReadOnly.set -> void
+eQuantic.UI.Web.HtmlElement.AriaRelevant.get -> string?
+eQuantic.UI.Web.HtmlElement.AriaRelevant.set -> void
+eQuantic.UI.Web.HtmlElement.AriaRequired.get -> bool?
+eQuantic.UI.Web.HtmlElement.AriaRequired.set -> void
+eQuantic.UI.Web.HtmlElement.AriaRoleDescription.get -> string?
+eQuantic.UI.Web.HtmlElement.AriaRoleDescription.set -> void
+eQuantic.UI.Web.HtmlElement.AriaRowCount.get -> int?
+eQuantic.UI.Web.HtmlElement.AriaRowCount.set -> void
+eQuantic.UI.Web.HtmlElement.AriaRowIndex.get -> int?
+eQuantic.UI.Web.HtmlElement.AriaRowIndex.set -> void
+eQuantic.UI.Web.HtmlElement.AriaRowSpan.get -> int?
+eQuantic.UI.Web.HtmlElement.AriaRowSpan.set -> void
+eQuantic.UI.Web.HtmlElement.AriaSelected.get -> bool?
+eQuantic.UI.Web.HtmlElement.AriaSelected.set -> void
+eQuantic.UI.Web.HtmlElement.AriaSetSize.get -> int?
+eQuantic.UI.Web.HtmlElement.AriaSetSize.set -> void
+eQuantic.UI.Web.HtmlElement.AriaSort.get -> string?
+eQuantic.UI.Web.HtmlElement.AriaSort.set -> void
+eQuantic.UI.Web.HtmlElement.AriaValueMax.get -> double?
+eQuantic.UI.Web.HtmlElement.AriaValueMax.set -> void
+eQuantic.UI.Web.HtmlElement.AriaValueMin.get -> double?
+eQuantic.UI.Web.HtmlElement.AriaValueMin.set -> void
+eQuantic.UI.Web.HtmlElement.AriaValueNow.get -> double?
+eQuantic.UI.Web.HtmlElement.AriaValueNow.set -> void
+eQuantic.UI.Web.HtmlElement.AriaValueText.get -> string?
+eQuantic.UI.Web.HtmlElement.AriaValueText.set -> void
+eQuantic.UI.Web.HtmlElement.Async.get -> bool?
+eQuantic.UI.Web.HtmlElement.Async.set -> void
+eQuantic.UI.Web.HtmlElement.Autocapitalize.get -> string?
+eQuantic.UI.Web.HtmlElement.Autocapitalize.set -> void
+eQuantic.UI.Web.HtmlElement.Autocomplete.get -> string?
+eQuantic.UI.Web.HtmlElement.Autocomplete.set -> void
+eQuantic.UI.Web.HtmlElement.Autofocus.get -> bool?
+eQuantic.UI.Web.HtmlElement.Autofocus.set -> void
+eQuantic.UI.Web.HtmlElement.Autoplay.get -> bool?
+eQuantic.UI.Web.HtmlElement.Autoplay.set -> void
+eQuantic.UI.Web.HtmlElement.BuildAttributes() -> System.Collections.Generic.Dictionary<string!, string?>!
+eQuantic.UI.Web.HtmlElement.BuildEvents() -> System.Collections.Generic.Dictionary<string!, System.Delegate!>!
+eQuantic.UI.Web.HtmlElement.Checked.get -> bool?
+eQuantic.UI.Web.HtmlElement.Checked.set -> void
+eQuantic.UI.Web.HtmlElement.Children.get -> System.Collections.Generic.IList<eQuantic.UI.Web.IComponent!>!
+eQuantic.UI.Web.HtmlElement.Cite.get -> string?
+eQuantic.UI.Web.HtmlElement.Cite.set -> void
+eQuantic.UI.Web.HtmlElement.ClassName.get -> string?
+eQuantic.UI.Web.HtmlElement.ClassName.set -> void
+eQuantic.UI.Web.HtmlElement.Cols.get -> int?
+eQuantic.UI.Web.HtmlElement.Cols.set -> void
+eQuantic.UI.Web.HtmlElement.ColSpan.get -> int?
+eQuantic.UI.Web.HtmlElement.ColSpan.set -> void
+eQuantic.UI.Web.HtmlElement.ContentEditable.get -> string?
+eQuantic.UI.Web.HtmlElement.ContentEditable.set -> void
+eQuantic.UI.Web.HtmlElement.Controls.get -> bool?
+eQuantic.UI.Web.HtmlElement.Controls.set -> void
+eQuantic.UI.Web.HtmlElement.Coords.get -> string?
+eQuantic.UI.Web.HtmlElement.Coords.set -> void
+eQuantic.UI.Web.HtmlElement.CopyHtmlAttributesTo(eQuantic.UI.Web.HtmlElement! target) -> void
+eQuantic.UI.Web.HtmlElement.CustomEvents.get -> System.Collections.Generic.Dictionary<string!, System.Delegate!>!
+eQuantic.UI.Web.HtmlElement.CustomEvents.set -> void
+eQuantic.UI.Web.HtmlElement.Data.get -> string?
+eQuantic.UI.Web.HtmlElement.Data.set -> void
+eQuantic.UI.Web.HtmlElement.DataAttributes.get -> System.Collections.Generic.Dictionary<string!, string!>?
+eQuantic.UI.Web.HtmlElement.DataAttributes.set -> void
+eQuantic.UI.Web.HtmlElement.Datetime.get -> string?
+eQuantic.UI.Web.HtmlElement.Datetime.set -> void
+eQuantic.UI.Web.HtmlElement.Decoding.get -> string?
+eQuantic.UI.Web.HtmlElement.Decoding.set -> void
+eQuantic.UI.Web.HtmlElement.Default.get -> bool?
+eQuantic.UI.Web.HtmlElement.Default.set -> void
+eQuantic.UI.Web.HtmlElement.Defer.get -> bool?
+eQuantic.UI.Web.HtmlElement.Defer.set -> void
+eQuantic.UI.Web.HtmlElement.Dir.get -> string?
+eQuantic.UI.Web.HtmlElement.Dir.set -> void
+eQuantic.UI.Web.HtmlElement.Disabled.get -> bool?
+eQuantic.UI.Web.HtmlElement.Disabled.set -> void
+eQuantic.UI.Web.HtmlElement.Download.get -> string?
+eQuantic.UI.Web.HtmlElement.Download.set -> void
+eQuantic.UI.Web.HtmlElement.Draggable.get -> bool?
+eQuantic.UI.Web.HtmlElement.Draggable.set -> void
+eQuantic.UI.Web.HtmlElement.Enctype.get -> string?
+eQuantic.UI.Web.HtmlElement.Enctype.set -> void
+eQuantic.UI.Web.HtmlElement.EnterKeyHint.get -> string?
+eQuantic.UI.Web.HtmlElement.EnterKeyHint.set -> void
+eQuantic.UI.Web.HtmlElement.FetchPriority.get -> string?
+eQuantic.UI.Web.HtmlElement.FetchPriority.set -> void
+eQuantic.UI.Web.HtmlElement.For.get -> string?
+eQuantic.UI.Web.HtmlElement.For.set -> void
+eQuantic.UI.Web.HtmlElement.Form.get -> string?
+eQuantic.UI.Web.HtmlElement.Form.set -> void
+eQuantic.UI.Web.HtmlElement.FormAction.get -> string?
+eQuantic.UI.Web.HtmlElement.FormAction.set -> void
+eQuantic.UI.Web.HtmlElement.Headers.get -> string?
+eQuantic.UI.Web.HtmlElement.Headers.set -> void
+eQuantic.UI.Web.HtmlElement.Height.get -> string?
+eQuantic.UI.Web.HtmlElement.Height.set -> void
+eQuantic.UI.Web.HtmlElement.Hidden.get -> bool?
+eQuantic.UI.Web.HtmlElement.Hidden.set -> void
+eQuantic.UI.Web.HtmlElement.High.get -> double?
+eQuantic.UI.Web.HtmlElement.High.set -> void
+eQuantic.UI.Web.HtmlElement.Href.get -> string?
+eQuantic.UI.Web.HtmlElement.Href.set -> void
+eQuantic.UI.Web.HtmlElement.Hreflang.get -> string?
+eQuantic.UI.Web.HtmlElement.Hreflang.set -> void
+eQuantic.UI.Web.HtmlElement.HtmlElement() -> void
+eQuantic.UI.Web.HtmlElement.Id.get -> string?
+eQuantic.UI.Web.HtmlElement.Id.set -> void
+eQuantic.UI.Web.HtmlElement.InnerHtml.get -> string?
+eQuantic.UI.Web.HtmlElement.InnerHtml.set -> void
+eQuantic.UI.Web.HtmlElement.InputMode.get -> string?
+eQuantic.UI.Web.HtmlElement.InputMode.set -> void
+eQuantic.UI.Web.HtmlElement.Integrity.get -> string?
+eQuantic.UI.Web.HtmlElement.Integrity.set -> void
+eQuantic.UI.Web.HtmlElement.IsMap.get -> bool?
+eQuantic.UI.Web.HtmlElement.IsMap.set -> void
+eQuantic.UI.Web.HtmlElement.Key.get -> string?
+eQuantic.UI.Web.HtmlElement.Key.set -> void
+eQuantic.UI.Web.HtmlElement.Kind.get -> string?
+eQuantic.UI.Web.HtmlElement.Kind.set -> void
+eQuantic.UI.Web.HtmlElement.Label.get -> string?
+eQuantic.UI.Web.HtmlElement.Label.set -> void
+eQuantic.UI.Web.HtmlElement.Lang.get -> string?
+eQuantic.UI.Web.HtmlElement.Lang.set -> void
+eQuantic.UI.Web.HtmlElement.List.get -> string?
+eQuantic.UI.Web.HtmlElement.List.set -> void
+eQuantic.UI.Web.HtmlElement.Loading.get -> string?
+eQuantic.UI.Web.HtmlElement.Loading.set -> void
+eQuantic.UI.Web.HtmlElement.Loop.get -> bool?
+eQuantic.UI.Web.HtmlElement.Loop.set -> void
+eQuantic.UI.Web.HtmlElement.Low.get -> double?
+eQuantic.UI.Web.HtmlElement.Low.set -> void
+eQuantic.UI.Web.HtmlElement.Max.get -> double?
+eQuantic.UI.Web.HtmlElement.Max.set -> void
+eQuantic.UI.Web.HtmlElement.MaxLength.get -> int?
+eQuantic.UI.Web.HtmlElement.MaxLength.set -> void
+eQuantic.UI.Web.HtmlElement.Media.get -> string?
+eQuantic.UI.Web.HtmlElement.Media.set -> void
+eQuantic.UI.Web.HtmlElement.Method.get -> string?
+eQuantic.UI.Web.HtmlElement.Method.set -> void
+eQuantic.UI.Web.HtmlElement.Min.get -> double?
+eQuantic.UI.Web.HtmlElement.Min.set -> void
+eQuantic.UI.Web.HtmlElement.MinLength.get -> int?
+eQuantic.UI.Web.HtmlElement.MinLength.set -> void
+eQuantic.UI.Web.HtmlElement.Multiple.get -> bool?
+eQuantic.UI.Web.HtmlElement.Multiple.set -> void
+eQuantic.UI.Web.HtmlElement.Muted.get -> bool?
+eQuantic.UI.Web.HtmlElement.Muted.set -> void
+eQuantic.UI.Web.HtmlElement.Name.get -> string?
+eQuantic.UI.Web.HtmlElement.Name.set -> void
+eQuantic.UI.Web.HtmlElement.NoValidate.get -> bool?
+eQuantic.UI.Web.HtmlElement.NoValidate.set -> void
+eQuantic.UI.Web.HtmlElement.OnBlur.get -> System.Action?
+eQuantic.UI.Web.HtmlElement.OnBlur.set -> void
+eQuantic.UI.Web.HtmlElement.OnClick.get -> System.Action?
+eQuantic.UI.Web.HtmlElement.OnClick.set -> void
+eQuantic.UI.Web.HtmlElement.OnClientClick.get -> string?
+eQuantic.UI.Web.HtmlElement.OnClientClick.set -> void
+eQuantic.UI.Web.HtmlElement.OnDoubleClick.get -> System.Action?
+eQuantic.UI.Web.HtmlElement.OnDoubleClick.set -> void
+eQuantic.UI.Web.HtmlElement.OnFocus.get -> System.Action?
+eQuantic.UI.Web.HtmlElement.OnFocus.set -> void
+eQuantic.UI.Web.HtmlElement.OnKeyDown.get -> System.Action<eQuantic.UI.Web.KeyboardEventArgs!>?
+eQuantic.UI.Web.HtmlElement.OnKeyDown.set -> void
+eQuantic.UI.Web.HtmlElement.OnKeyUp.get -> System.Action<eQuantic.UI.Web.KeyboardEventArgs!>?
+eQuantic.UI.Web.HtmlElement.OnKeyUp.set -> void
+eQuantic.UI.Web.HtmlElement.OnLoad.get -> string?
+eQuantic.UI.Web.HtmlElement.OnLoad.set -> void
+eQuantic.UI.Web.HtmlElement.OnMouseDown.get -> System.Action<eQuantic.UI.Web.MouseEventArgs!>?
+eQuantic.UI.Web.HtmlElement.OnMouseDown.set -> void
+eQuantic.UI.Web.HtmlElement.OnMouseEnter.get -> System.Action<eQuantic.UI.Web.MouseEventArgs!>?
+eQuantic.UI.Web.HtmlElement.OnMouseEnter.set -> void
+eQuantic.UI.Web.HtmlElement.OnMouseLeave.get -> System.Action<eQuantic.UI.Web.MouseEventArgs!>?
+eQuantic.UI.Web.HtmlElement.OnMouseLeave.set -> void
+eQuantic.UI.Web.HtmlElement.OnMouseUp.get -> System.Action<eQuantic.UI.Web.MouseEventArgs!>?
+eQuantic.UI.Web.HtmlElement.OnMouseUp.set -> void
+eQuantic.UI.Web.HtmlElement.OnSubmit.get -> System.Action?
+eQuantic.UI.Web.HtmlElement.OnSubmit.set -> void
+eQuantic.UI.Web.HtmlElement.Open.get -> bool?
+eQuantic.UI.Web.HtmlElement.Open.set -> void
+eQuantic.UI.Web.HtmlElement.Optimum.get -> double?
+eQuantic.UI.Web.HtmlElement.Optimum.set -> void
+eQuantic.UI.Web.HtmlElement.Pattern.get -> string?
+eQuantic.UI.Web.HtmlElement.Pattern.set -> void
+eQuantic.UI.Web.HtmlElement.Placeholder.get -> string?
+eQuantic.UI.Web.HtmlElement.Placeholder.set -> void
+eQuantic.UI.Web.HtmlElement.Popover.get -> string?
+eQuantic.UI.Web.HtmlElement.Popover.set -> void
+eQuantic.UI.Web.HtmlElement.Poster.get -> string?
+eQuantic.UI.Web.HtmlElement.Poster.set -> void
+eQuantic.UI.Web.HtmlElement.Preload.get -> string?
+eQuantic.UI.Web.HtmlElement.Preload.set -> void
+eQuantic.UI.Web.HtmlElement.ReadOnly.get -> bool?
+eQuantic.UI.Web.HtmlElement.ReadOnly.set -> void
+eQuantic.UI.Web.HtmlElement.Rel.get -> string?
+eQuantic.UI.Web.HtmlElement.Rel.set -> void
+eQuantic.UI.Web.HtmlElement.Required.get -> bool?
+eQuantic.UI.Web.HtmlElement.Required.set -> void
+eQuantic.UI.Web.HtmlElement.Reversed.get -> bool?
+eQuantic.UI.Web.HtmlElement.Reversed.set -> void
+eQuantic.UI.Web.HtmlElement.Role.get -> string?
+eQuantic.UI.Web.HtmlElement.Role.set -> void
+eQuantic.UI.Web.HtmlElement.Rows.get -> int?
+eQuantic.UI.Web.HtmlElement.Rows.set -> void
+eQuantic.UI.Web.HtmlElement.RowSpan.get -> int?
+eQuantic.UI.Web.HtmlElement.RowSpan.set -> void
+eQuantic.UI.Web.HtmlElement.Sandbox.get -> string?
+eQuantic.UI.Web.HtmlElement.Sandbox.set -> void
+eQuantic.UI.Web.HtmlElement.Scope.get -> string?
+eQuantic.UI.Web.HtmlElement.Scope.set -> void
+eQuantic.UI.Web.HtmlElement.Selected.get -> bool?
+eQuantic.UI.Web.HtmlElement.Selected.set -> void
+eQuantic.UI.Web.HtmlElement.Shape.get -> string?
+eQuantic.UI.Web.HtmlElement.Shape.set -> void
+eQuantic.UI.Web.HtmlElement.Size.get -> int?
+eQuantic.UI.Web.HtmlElement.Size.set -> void
+eQuantic.UI.Web.HtmlElement.Sizes.get -> string?
+eQuantic.UI.Web.HtmlElement.Sizes.set -> void
+eQuantic.UI.Web.HtmlElement.Span.get -> int?
+eQuantic.UI.Web.HtmlElement.Span.set -> void
+eQuantic.UI.Web.HtmlElement.Spellcheck.get -> bool?
+eQuantic.UI.Web.HtmlElement.Spellcheck.set -> void
+eQuantic.UI.Web.HtmlElement.Src.get -> string?
+eQuantic.UI.Web.HtmlElement.Src.set -> void
+eQuantic.UI.Web.HtmlElement.Srcdoc.get -> string?
+eQuantic.UI.Web.HtmlElement.Srcdoc.set -> void
+eQuantic.UI.Web.HtmlElement.Srclang.get -> string?
+eQuantic.UI.Web.HtmlElement.Srclang.set -> void
+eQuantic.UI.Web.HtmlElement.Srcset.get -> string?
+eQuantic.UI.Web.HtmlElement.Srcset.set -> void
+eQuantic.UI.Web.HtmlElement.Start.get -> int?
+eQuantic.UI.Web.HtmlElement.Start.set -> void
+eQuantic.UI.Web.HtmlElement.Step.get -> double?
+eQuantic.UI.Web.HtmlElement.Step.set -> void
+eQuantic.UI.Web.HtmlElement.Style.get -> eQuantic.UI.Web.HtmlStyle?
+eQuantic.UI.Web.HtmlElement.Style.set -> void
+eQuantic.UI.Web.HtmlElement.StyleClass.get -> eQuantic.UI.Web.Styling.StyleClass?
+eQuantic.UI.Web.HtmlElement.StyleClass.set -> void
+eQuantic.UI.Web.HtmlElement.StyleClasses.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Web.Styling.StyleClass!>?
+eQuantic.UI.Web.HtmlElement.StyleClasses.set -> void
+eQuantic.UI.Web.HtmlElement.TabIndex.get -> int?
+eQuantic.UI.Web.HtmlElement.TabIndex.set -> void
+eQuantic.UI.Web.HtmlElement.Target.get -> string?
+eQuantic.UI.Web.HtmlElement.Target.set -> void
+eQuantic.UI.Web.HtmlElement.Title.get -> string?
+eQuantic.UI.Web.HtmlElement.Title.set -> void
+eQuantic.UI.Web.HtmlElement.Translate.get -> bool?
+eQuantic.UI.Web.HtmlElement.Translate.set -> void
+eQuantic.UI.Web.HtmlElement.Type.get -> string?
+eQuantic.UI.Web.HtmlElement.Type.set -> void
+eQuantic.UI.Web.HtmlElement.Usemap.get -> string?
+eQuantic.UI.Web.HtmlElement.Usemap.set -> void
+eQuantic.UI.Web.HtmlElement.Value.get -> string?
+eQuantic.UI.Web.HtmlElement.Value.set -> void
+eQuantic.UI.Web.HtmlElement.Width.get -> string?
+eQuantic.UI.Web.HtmlElement.Width.set -> void
+eQuantic.UI.Web.HtmlElement.Wrap.get -> string?
+eQuantic.UI.Web.HtmlElement.Wrap.set -> void
+eQuantic.UI.Web.HtmlNode
+eQuantic.UI.Web.HtmlNode.Attributes.get -> System.Collections.Generic.Dictionary<string!, string?>!
+eQuantic.UI.Web.HtmlNode.Attributes.init -> void
+eQuantic.UI.Web.HtmlNode.Children.get -> System.Collections.Generic.List<eQuantic.UI.Web.HtmlNode!>!
+eQuantic.UI.Web.HtmlNode.Children.init -> void
+eQuantic.UI.Web.HtmlNode.Events.get -> System.Collections.Generic.Dictionary<string!, System.Delegate!>!
+eQuantic.UI.Web.HtmlNode.Events.init -> void
+eQuantic.UI.Web.HtmlNode.HtmlNode() -> void
+eQuantic.UI.Web.HtmlNode.Key.get -> string?
+eQuantic.UI.Web.HtmlNode.Key.set -> void
+eQuantic.UI.Web.HtmlNode.Tag.get -> string!
+eQuantic.UI.Web.HtmlNode.Tag.init -> void
+eQuantic.UI.Web.HtmlNode.TextContent.get -> string?
+eQuantic.UI.Web.HtmlNode.TextContent.init -> void
+eQuantic.UI.Web.HtmlRenderer
+eQuantic.UI.Web.HtmlStyle
+eQuantic.UI.Web.HtmlStyle.AlignContent.get -> eQuantic.UI.Web.AlignItem?
+eQuantic.UI.Web.HtmlStyle.AlignContent.set -> void
+eQuantic.UI.Web.HtmlStyle.AlignItems.get -> eQuantic.UI.Web.AlignItem?
+eQuantic.UI.Web.HtmlStyle.AlignItems.set -> void
+eQuantic.UI.Web.HtmlStyle.AlignSelf.get -> string?
+eQuantic.UI.Web.HtmlStyle.AlignSelf.set -> void
+eQuantic.UI.Web.HtmlStyle.Animation.get -> string?
+eQuantic.UI.Web.HtmlStyle.Animation.set -> void
+eQuantic.UI.Web.HtmlStyle.AnimationDelay.get -> string?
+eQuantic.UI.Web.HtmlStyle.AnimationDelay.set -> void
+eQuantic.UI.Web.HtmlStyle.AspectRatio.get -> string?
+eQuantic.UI.Web.HtmlStyle.AspectRatio.set -> void
+eQuantic.UI.Web.HtmlStyle.BackdropFilter.get -> string?
+eQuantic.UI.Web.HtmlStyle.BackdropFilter.set -> void
+eQuantic.UI.Web.HtmlStyle.Background.get -> string?
+eQuantic.UI.Web.HtmlStyle.Background.set -> void
+eQuantic.UI.Web.HtmlStyle.BackgroundClip.get -> string?
+eQuantic.UI.Web.HtmlStyle.BackgroundClip.set -> void
+eQuantic.UI.Web.HtmlStyle.BackgroundColor.get -> string?
+eQuantic.UI.Web.HtmlStyle.BackgroundColor.set -> void
+eQuantic.UI.Web.HtmlStyle.BackgroundImage.get -> string?
+eQuantic.UI.Web.HtmlStyle.BackgroundImage.set -> void
+eQuantic.UI.Web.HtmlStyle.BackgroundPosition.get -> string?
+eQuantic.UI.Web.HtmlStyle.BackgroundPosition.set -> void
+eQuantic.UI.Web.HtmlStyle.BackgroundSize.get -> string?
+eQuantic.UI.Web.HtmlStyle.BackgroundSize.set -> void
+eQuantic.UI.Web.HtmlStyle.Border.get -> string?
+eQuantic.UI.Web.HtmlStyle.Border.set -> void
+eQuantic.UI.Web.HtmlStyle.BorderColor.get -> string?
+eQuantic.UI.Web.HtmlStyle.BorderColor.set -> void
+eQuantic.UI.Web.HtmlStyle.BorderRadius.get -> string?
+eQuantic.UI.Web.HtmlStyle.BorderRadius.set -> void
+eQuantic.UI.Web.HtmlStyle.BorderStyle.get -> string?
+eQuantic.UI.Web.HtmlStyle.BorderStyle.set -> void
+eQuantic.UI.Web.HtmlStyle.BorderWidth.get -> string?
+eQuantic.UI.Web.HtmlStyle.BorderWidth.set -> void
+eQuantic.UI.Web.HtmlStyle.Bottom.get -> string?
+eQuantic.UI.Web.HtmlStyle.Bottom.set -> void
+eQuantic.UI.Web.HtmlStyle.BoxShadow.get -> string?
+eQuantic.UI.Web.HtmlStyle.BoxShadow.set -> void
+eQuantic.UI.Web.HtmlStyle.BoxSizing.get -> string?
+eQuantic.UI.Web.HtmlStyle.BoxSizing.set -> void
+eQuantic.UI.Web.HtmlStyle.Color.get -> string?
+eQuantic.UI.Web.HtmlStyle.Color.set -> void
+eQuantic.UI.Web.HtmlStyle.Cursor.get -> string?
+eQuantic.UI.Web.HtmlStyle.Cursor.set -> void
+eQuantic.UI.Web.HtmlStyle.CustomProperties.get -> System.Collections.Generic.Dictionary<string!, string!>?
+eQuantic.UI.Web.HtmlStyle.CustomProperties.set -> void
+eQuantic.UI.Web.HtmlStyle.Display.get -> eQuantic.UI.Web.Display?
+eQuantic.UI.Web.HtmlStyle.Display.set -> void
+eQuantic.UI.Web.HtmlStyle.EnumerateDeclarations() -> System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string!, string!>>!
+eQuantic.UI.Web.HtmlStyle.Filter.get -> string?
+eQuantic.UI.Web.HtmlStyle.Filter.set -> void
+eQuantic.UI.Web.HtmlStyle.Flex.get -> string?
+eQuantic.UI.Web.HtmlStyle.Flex.set -> void
+eQuantic.UI.Web.HtmlStyle.FlexDirection.get -> eQuantic.UI.Web.FlexDirection?
+eQuantic.UI.Web.HtmlStyle.FlexDirection.set -> void
+eQuantic.UI.Web.HtmlStyle.FlexGrow.get -> string?
+eQuantic.UI.Web.HtmlStyle.FlexGrow.set -> void
+eQuantic.UI.Web.HtmlStyle.FlexShrink.get -> string?
+eQuantic.UI.Web.HtmlStyle.FlexShrink.set -> void
+eQuantic.UI.Web.HtmlStyle.FlexWrap.get -> eQuantic.UI.Web.FlexWrap?
+eQuantic.UI.Web.HtmlStyle.FlexWrap.set -> void
+eQuantic.UI.Web.HtmlStyle.FontFamily.get -> string?
+eQuantic.UI.Web.HtmlStyle.FontFamily.set -> void
+eQuantic.UI.Web.HtmlStyle.FontSize.get -> string?
+eQuantic.UI.Web.HtmlStyle.FontSize.set -> void
+eQuantic.UI.Web.HtmlStyle.FontStyle.get -> string?
+eQuantic.UI.Web.HtmlStyle.FontStyle.set -> void
+eQuantic.UI.Web.HtmlStyle.FontVariantNumeric.get -> string?
+eQuantic.UI.Web.HtmlStyle.FontVariantNumeric.set -> void
+eQuantic.UI.Web.HtmlStyle.FontWeight.get -> string?
+eQuantic.UI.Web.HtmlStyle.FontWeight.set -> void
+eQuantic.UI.Web.HtmlStyle.Gap.get -> string?
+eQuantic.UI.Web.HtmlStyle.Gap.set -> void
+eQuantic.UI.Web.HtmlStyle.GridArea.get -> string?
+eQuantic.UI.Web.HtmlStyle.GridArea.set -> void
+eQuantic.UI.Web.HtmlStyle.GridAutoFlow.get -> eQuantic.UI.Web.GridFlow?
+eQuantic.UI.Web.HtmlStyle.GridAutoFlow.set -> void
+eQuantic.UI.Web.HtmlStyle.GridColumn.get -> string?
+eQuantic.UI.Web.HtmlStyle.GridColumn.set -> void
+eQuantic.UI.Web.HtmlStyle.GridRow.get -> string?
+eQuantic.UI.Web.HtmlStyle.GridRow.set -> void
+eQuantic.UI.Web.HtmlStyle.GridTemplateColumns.get -> string?
+eQuantic.UI.Web.HtmlStyle.GridTemplateColumns.set -> void
+eQuantic.UI.Web.HtmlStyle.GridTemplateRows.get -> string?
+eQuantic.UI.Web.HtmlStyle.GridTemplateRows.set -> void
+eQuantic.UI.Web.HtmlStyle.Height.get -> string?
+eQuantic.UI.Web.HtmlStyle.Height.set -> void
+eQuantic.UI.Web.HtmlStyle.HtmlStyle() -> void
+eQuantic.UI.Web.HtmlStyle.JustifyContent.get -> eQuantic.UI.Web.JustifyContent?
+eQuantic.UI.Web.HtmlStyle.JustifyContent.set -> void
+eQuantic.UI.Web.HtmlStyle.JustifyItems.get -> eQuantic.UI.Web.JustifyContent?
+eQuantic.UI.Web.HtmlStyle.JustifyItems.set -> void
+eQuantic.UI.Web.HtmlStyle.Left.get -> string?
+eQuantic.UI.Web.HtmlStyle.Left.set -> void
+eQuantic.UI.Web.HtmlStyle.LetterSpacing.get -> string?
+eQuantic.UI.Web.HtmlStyle.LetterSpacing.set -> void
+eQuantic.UI.Web.HtmlStyle.LineHeight.get -> string?
+eQuantic.UI.Web.HtmlStyle.LineHeight.set -> void
+eQuantic.UI.Web.HtmlStyle.Margin.get -> string?
+eQuantic.UI.Web.HtmlStyle.Margin.set -> void
+eQuantic.UI.Web.HtmlStyle.MarginBottom.get -> string?
+eQuantic.UI.Web.HtmlStyle.MarginBottom.set -> void
+eQuantic.UI.Web.HtmlStyle.MarginLeft.get -> string?
+eQuantic.UI.Web.HtmlStyle.MarginLeft.set -> void
+eQuantic.UI.Web.HtmlStyle.MarginRight.get -> string?
+eQuantic.UI.Web.HtmlStyle.MarginRight.set -> void
+eQuantic.UI.Web.HtmlStyle.MarginTop.get -> string?
+eQuantic.UI.Web.HtmlStyle.MarginTop.set -> void
+eQuantic.UI.Web.HtmlStyle.MaxHeight.get -> string?
+eQuantic.UI.Web.HtmlStyle.MaxHeight.set -> void
+eQuantic.UI.Web.HtmlStyle.MaxWidth.get -> string?
+eQuantic.UI.Web.HtmlStyle.MaxWidth.set -> void
+eQuantic.UI.Web.HtmlStyle.MinHeight.get -> string?
+eQuantic.UI.Web.HtmlStyle.MinHeight.set -> void
+eQuantic.UI.Web.HtmlStyle.MinWidth.get -> string?
+eQuantic.UI.Web.HtmlStyle.MinWidth.set -> void
+eQuantic.UI.Web.HtmlStyle.ObjectFit.get -> string?
+eQuantic.UI.Web.HtmlStyle.ObjectFit.set -> void
+eQuantic.UI.Web.HtmlStyle.ObjectPosition.get -> string?
+eQuantic.UI.Web.HtmlStyle.ObjectPosition.set -> void
+eQuantic.UI.Web.HtmlStyle.Opacity.get -> string?
+eQuantic.UI.Web.HtmlStyle.Opacity.set -> void
+eQuantic.UI.Web.HtmlStyle.Outline.get -> string?
+eQuantic.UI.Web.HtmlStyle.Outline.set -> void
+eQuantic.UI.Web.HtmlStyle.Overflow.get -> string?
+eQuantic.UI.Web.HtmlStyle.Overflow.set -> void
+eQuantic.UI.Web.HtmlStyle.OverflowX.get -> string?
+eQuantic.UI.Web.HtmlStyle.OverflowX.set -> void
+eQuantic.UI.Web.HtmlStyle.OverflowY.get -> string?
+eQuantic.UI.Web.HtmlStyle.OverflowY.set -> void
+eQuantic.UI.Web.HtmlStyle.Padding.get -> string?
+eQuantic.UI.Web.HtmlStyle.Padding.set -> void
+eQuantic.UI.Web.HtmlStyle.PaddingBottom.get -> string?
+eQuantic.UI.Web.HtmlStyle.PaddingBottom.set -> void
+eQuantic.UI.Web.HtmlStyle.PaddingLeft.get -> string?
+eQuantic.UI.Web.HtmlStyle.PaddingLeft.set -> void
+eQuantic.UI.Web.HtmlStyle.PaddingRight.get -> string?
+eQuantic.UI.Web.HtmlStyle.PaddingRight.set -> void
+eQuantic.UI.Web.HtmlStyle.PaddingTop.get -> string?
+eQuantic.UI.Web.HtmlStyle.PaddingTop.set -> void
+eQuantic.UI.Web.HtmlStyle.PlaceItems.get -> string?
+eQuantic.UI.Web.HtmlStyle.PlaceItems.set -> void
+eQuantic.UI.Web.HtmlStyle.PointerEvents.get -> string?
+eQuantic.UI.Web.HtmlStyle.PointerEvents.set -> void
+eQuantic.UI.Web.HtmlStyle.Position.get -> eQuantic.UI.Web.Position?
+eQuantic.UI.Web.HtmlStyle.Position.set -> void
+eQuantic.UI.Web.HtmlStyle.Resize.get -> string?
+eQuantic.UI.Web.HtmlStyle.Resize.set -> void
+eQuantic.UI.Web.HtmlStyle.Right.get -> string?
+eQuantic.UI.Web.HtmlStyle.Right.set -> void
+eQuantic.UI.Web.HtmlStyle.ScrollMarginTop.get -> string?
+eQuantic.UI.Web.HtmlStyle.ScrollMarginTop.set -> void
+eQuantic.UI.Web.HtmlStyle.TextAlign.get -> eQuantic.UI.Web.TextAlign?
+eQuantic.UI.Web.HtmlStyle.TextAlign.set -> void
+eQuantic.UI.Web.HtmlStyle.TextDecoration.get -> string?
+eQuantic.UI.Web.HtmlStyle.TextDecoration.set -> void
+eQuantic.UI.Web.HtmlStyle.TextOverflow.get -> string?
+eQuantic.UI.Web.HtmlStyle.TextOverflow.set -> void
+eQuantic.UI.Web.HtmlStyle.TextTransform.get -> string?
+eQuantic.UI.Web.HtmlStyle.TextTransform.set -> void
+eQuantic.UI.Web.HtmlStyle.ToCssString() -> string!
+eQuantic.UI.Web.HtmlStyle.Top.get -> string?
+eQuantic.UI.Web.HtmlStyle.Top.set -> void
+eQuantic.UI.Web.HtmlStyle.Transform.get -> string?
+eQuantic.UI.Web.HtmlStyle.Transform.set -> void
+eQuantic.UI.Web.HtmlStyle.Transition.get -> string?
+eQuantic.UI.Web.HtmlStyle.Transition.set -> void
+eQuantic.UI.Web.HtmlStyle.UserSelect.get -> string?
+eQuantic.UI.Web.HtmlStyle.UserSelect.set -> void
+eQuantic.UI.Web.HtmlStyle.Visibility.get -> string?
+eQuantic.UI.Web.HtmlStyle.Visibility.set -> void
+eQuantic.UI.Web.HtmlStyle.WebkitBoxOrient.get -> string?
+eQuantic.UI.Web.HtmlStyle.WebkitBoxOrient.set -> void
+eQuantic.UI.Web.HtmlStyle.WebkitLineClamp.get -> string?
+eQuantic.UI.Web.HtmlStyle.WebkitLineClamp.set -> void
+eQuantic.UI.Web.HtmlStyle.WebkitTextFillColor.get -> string?
+eQuantic.UI.Web.HtmlStyle.WebkitTextFillColor.set -> void
+eQuantic.UI.Web.HtmlStyle.WhiteSpace.get -> string?
+eQuantic.UI.Web.HtmlStyle.WhiteSpace.set -> void
+eQuantic.UI.Web.HtmlStyle.Width.get -> string?
+eQuantic.UI.Web.HtmlStyle.Width.set -> void
+eQuantic.UI.Web.HtmlStyle.ZIndex.get -> string?
+eQuantic.UI.Web.HtmlStyle.ZIndex.set -> void
+eQuantic.UI.Web.IAdaptiveGated
+eQuantic.UI.Web.IAdaptiveGated.AdaptiveGate.get -> string?
+eQuantic.UI.Web.IComponent
+eQuantic.UI.Web.IComponent.AddChild(eQuantic.UI.Web.IComponent! child) -> void
+eQuantic.UI.Web.IComponent.Children.get -> System.Collections.Generic.IList<eQuantic.UI.Web.IComponent!>!
+eQuantic.UI.Web.IComponent.ClassName.get -> string?
+eQuantic.UI.Web.IComponent.ClassName.set -> void
+eQuantic.UI.Web.IComponent.DataAttributes.get -> System.Collections.Generic.Dictionary<string!, string!>?
+eQuantic.UI.Web.IComponent.DataAttributes.set -> void
+eQuantic.UI.Web.IComponent.Id.get -> string?
+eQuantic.UI.Web.IComponent.Id.set -> void
+eQuantic.UI.Web.IComponent.RemoveChild(eQuantic.UI.Web.IComponent! child) -> void
+eQuantic.UI.Web.IComponent.Render() -> eQuantic.UI.Web.HtmlNode!
+eQuantic.UI.Web.IComponent.Style.get -> eQuantic.UI.Web.HtmlStyle?
+eQuantic.UI.Web.IComponent.Style.set -> void
+eQuantic.UI.Web.IComponent.StyleClass.get -> eQuantic.UI.Web.Styling.StyleClass?
+eQuantic.UI.Web.IComponent.StyleClass.set -> void
+eQuantic.UI.Web.IComponent.StyleClasses.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Web.Styling.StyleClass!>?
+eQuantic.UI.Web.IComponent.StyleClasses.set -> void
+eQuantic.UI.Web.IconRegistry
+eQuantic.UI.Web.IPseudoStyled
+eQuantic.UI.Web.IPseudoStyled.PseudoDeclarations.get -> System.Collections.Generic.List<(string! Pseudo, string! Prop, string! Value)>!
+eQuantic.UI.Web.IScrolledStyled
+eQuantic.UI.Web.IScrolledStyled.ScrolledDeclarations.get -> System.Collections.Generic.List<(string! Prop, string! Value)>!
+eQuantic.UI.Web.JustifyContent
+eQuantic.UI.Web.JustifyContent.Center = 2 -> eQuantic.UI.Web.JustifyContent
+eQuantic.UI.Web.JustifyContent.End = 7 -> eQuantic.UI.Web.JustifyContent
+eQuantic.UI.Web.JustifyContent.FlexEnd = 1 -> eQuantic.UI.Web.JustifyContent
+eQuantic.UI.Web.JustifyContent.FlexStart = 0 -> eQuantic.UI.Web.JustifyContent
+eQuantic.UI.Web.JustifyContent.Left = 8 -> eQuantic.UI.Web.JustifyContent
+eQuantic.UI.Web.JustifyContent.Right = 9 -> eQuantic.UI.Web.JustifyContent
+eQuantic.UI.Web.JustifyContent.SpaceAround = 4 -> eQuantic.UI.Web.JustifyContent
+eQuantic.UI.Web.JustifyContent.SpaceBetween = 3 -> eQuantic.UI.Web.JustifyContent
+eQuantic.UI.Web.JustifyContent.SpaceEvenly = 5 -> eQuantic.UI.Web.JustifyContent
+eQuantic.UI.Web.JustifyContent.Start = 6 -> eQuantic.UI.Web.JustifyContent
+eQuantic.UI.Web.KeyboardEventArgs
+eQuantic.UI.Web.KeyboardEventArgs.AltKey.get -> bool
+eQuantic.UI.Web.KeyboardEventArgs.AltKey.init -> void
+eQuantic.UI.Web.KeyboardEventArgs.Code.get -> string!
+eQuantic.UI.Web.KeyboardEventArgs.Code.init -> void
+eQuantic.UI.Web.KeyboardEventArgs.CtrlKey.get -> bool
+eQuantic.UI.Web.KeyboardEventArgs.CtrlKey.init -> void
+eQuantic.UI.Web.KeyboardEventArgs.Key.get -> string!
+eQuantic.UI.Web.KeyboardEventArgs.Key.init -> void
+eQuantic.UI.Web.KeyboardEventArgs.KeyboardEventArgs() -> void
+eQuantic.UI.Web.KeyboardEventArgs.MetaKey.get -> bool
+eQuantic.UI.Web.KeyboardEventArgs.MetaKey.init -> void
+eQuantic.UI.Web.KeyboardEventArgs.Repeat.get -> bool
+eQuantic.UI.Web.KeyboardEventArgs.Repeat.init -> void
+eQuantic.UI.Web.KeyboardEventArgs.ShiftKey.get -> bool
+eQuantic.UI.Web.KeyboardEventArgs.ShiftKey.init -> void
+eQuantic.UI.Web.MouseEventArgs
+eQuantic.UI.Web.MouseEventArgs.AltKey.get -> bool
+eQuantic.UI.Web.MouseEventArgs.AltKey.init -> void
+eQuantic.UI.Web.MouseEventArgs.Button.get -> int
+eQuantic.UI.Web.MouseEventArgs.Button.init -> void
+eQuantic.UI.Web.MouseEventArgs.ClientX.get -> double
+eQuantic.UI.Web.MouseEventArgs.ClientX.init -> void
+eQuantic.UI.Web.MouseEventArgs.ClientY.get -> double
+eQuantic.UI.Web.MouseEventArgs.ClientY.init -> void
+eQuantic.UI.Web.MouseEventArgs.CtrlKey.get -> bool
+eQuantic.UI.Web.MouseEventArgs.CtrlKey.init -> void
+eQuantic.UI.Web.MouseEventArgs.MetaKey.get -> bool
+eQuantic.UI.Web.MouseEventArgs.MetaKey.init -> void
+eQuantic.UI.Web.MouseEventArgs.MouseEventArgs() -> void
+eQuantic.UI.Web.MouseEventArgs.PageX.get -> double
+eQuantic.UI.Web.MouseEventArgs.PageX.init -> void
+eQuantic.UI.Web.MouseEventArgs.PageY.get -> double
+eQuantic.UI.Web.MouseEventArgs.PageY.init -> void
+eQuantic.UI.Web.MouseEventArgs.ShiftKey.get -> bool
+eQuantic.UI.Web.MouseEventArgs.ShiftKey.init -> void
+eQuantic.UI.Web.PhotonCssGenerator
+eQuantic.UI.Web.Position
+eQuantic.UI.Web.Position.Absolute = 2 -> eQuantic.UI.Web.Position
+eQuantic.UI.Web.Position.Fixed = 3 -> eQuantic.UI.Web.Position
+eQuantic.UI.Web.Position.Relative = 1 -> eQuantic.UI.Web.Position
+eQuantic.UI.Web.Position.Static = 0 -> eQuantic.UI.Web.Position
+eQuantic.UI.Web.Position.Sticky = 4 -> eQuantic.UI.Web.Position
+eQuantic.UI.Web.RenderContext
+eQuantic.UI.Web.RenderContext.GetService<T>() -> T?
+eQuantic.UI.Web.RenderContext.RenderContext() -> void
+eQuantic.UI.Web.RenderContext.Route.get -> eQuantic.UI.Primitives.RouteValues!
+eQuantic.UI.Web.StyleAtomizer
+eQuantic.UI.Web.StyleSink
+eQuantic.UI.Web.StyleSink.AddAdaptiveGate(string! gate) -> void
+eQuantic.UI.Web.StyleSink.ClassFor(string! property, string! value) -> string!
+eQuantic.UI.Web.StyleSink.ClassFor(string! property, string! value, string? pseudo) -> string!
+eQuantic.UI.Web.StyleSink.ClassForScrolled(string! property, string! value) -> string!
+eQuantic.UI.Web.StyleSink.Css.get -> string!
+eQuantic.UI.Web.StyleSink.IsEmpty.get -> bool
+eQuantic.UI.Web.StyleSink.StyleSink() -> void
+eQuantic.UI.Web.Styling.Breakpoint
+eQuantic.UI.Web.Styling.Breakpoint.Breakpoint() -> void
+eQuantic.UI.Web.Styling.Breakpoint.MaxWidth.get -> int
+eQuantic.UI.Web.Styling.Breakpoint.MaxWidth.init -> void
+eQuantic.UI.Web.Styling.ClassBuilder
+eQuantic.UI.Web.Styling.ClassBuilder.Active(params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
+eQuantic.UI.Web.Styling.ClassBuilder.Add(params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
+eQuantic.UI.Web.Styling.ClassBuilder.After(params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
+eQuantic.UI.Web.Styling.ClassBuilder.Before(params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
+eQuantic.UI.Web.Styling.ClassBuilder.Build() -> string!
+eQuantic.UI.Web.Styling.ClassBuilder.ClassBuilder() -> void
+eQuantic.UI.Web.Styling.ClassBuilder.Dark(params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
+eQuantic.UI.Web.Styling.ClassBuilder.Disabled(params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
+eQuantic.UI.Web.Styling.ClassBuilder.Even(params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
+eQuantic.UI.Web.Styling.ClassBuilder.First(params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
+eQuantic.UI.Web.Styling.ClassBuilder.Focus(params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
+eQuantic.UI.Web.Styling.ClassBuilder.FocusWithin(params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
+eQuantic.UI.Web.Styling.ClassBuilder.GroupHover(params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
+eQuantic.UI.Web.Styling.ClassBuilder.Hover(params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
+eQuantic.UI.Web.Styling.ClassBuilder.Last(params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
+eQuantic.UI.Web.Styling.ClassBuilder.Lg(params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
+eQuantic.UI.Web.Styling.ClassBuilder.Md(params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
+eQuantic.UI.Web.Styling.ClassBuilder.Odd(params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
+eQuantic.UI.Web.Styling.ClassBuilder.Placeholder(params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
+eQuantic.UI.Web.Styling.ClassBuilder.Sm(params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
+eQuantic.UI.Web.Styling.ClassBuilder.Visited(params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
+eQuantic.UI.Web.Styling.ClassBuilder.When(bool condition, params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
+eQuantic.UI.Web.Styling.ClassBuilder.WithPrefix(string! prefix, params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
+eQuantic.UI.Web.Styling.ClassBuilder.Xl(params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
+eQuantic.UI.Web.Styling.ClassBuilder.Xl2(params string?[]! classes) -> eQuantic.UI.Web.Styling.ClassBuilder!
+eQuantic.UI.Web.Styling.ClassBuilderExtensions
+eQuantic.UI.Web.Styling.CompileTimeEvaluateAttribute
+eQuantic.UI.Web.Styling.CompileTimeEvaluateAttribute.CompileTimeEvaluateAttribute() -> void
+eQuantic.UI.Web.Styling.CompileTimeEvaluateAttribute.FallbackBehavior.get -> string!
+eQuantic.UI.Web.Styling.CompileTimeEvaluateAttribute.FallbackBehavior.set -> void
+eQuantic.UI.Web.Styling.CompileTimeEvaluateAttribute.WarnOnEvaluationFailure.get -> bool
+eQuantic.UI.Web.Styling.CompileTimeEvaluateAttribute.WarnOnEvaluationFailure.set -> void
+eQuantic.UI.Web.Styling.Spacing
+eQuantic.UI.Web.Styling.Spacing.Bottom.get -> int?
+eQuantic.UI.Web.Styling.Spacing.Bottom.init -> void
+eQuantic.UI.Web.Styling.Spacing.Left.get -> int?
+eQuantic.UI.Web.Styling.Spacing.Left.init -> void
+eQuantic.UI.Web.Styling.Spacing.Right.get -> int?
+eQuantic.UI.Web.Styling.Spacing.Right.init -> void
+eQuantic.UI.Web.Styling.Spacing.Spacing() -> void
+eQuantic.UI.Web.Styling.Spacing.ToCssValue() -> string!
+eQuantic.UI.Web.Styling.Spacing.Top.get -> int?
+eQuantic.UI.Web.Styling.Spacing.Top.init -> void
+eQuantic.UI.Web.Styling.StyleClass
+eQuantic.UI.Web.Styling.StyleClass.Active.get -> eQuantic.UI.Web.Styling.StyleClass?
+eQuantic.UI.Web.Styling.StyleClass.Active.init -> void
+eQuantic.UI.Web.Styling.StyleClass.AlignItems.get -> string?
+eQuantic.UI.Web.Styling.StyleClass.AlignItems.init -> void
+eQuantic.UI.Web.Styling.StyleClass.Background.get -> string?
+eQuantic.UI.Web.Styling.StyleClass.Background.init -> void
+eQuantic.UI.Web.Styling.StyleClass.BackgroundColor.get -> string?
+eQuantic.UI.Web.Styling.StyleClass.BackgroundColor.init -> void
+eQuantic.UI.Web.Styling.StyleClass.Border.get -> string?
+eQuantic.UI.Web.Styling.StyleClass.Border.init -> void
+eQuantic.UI.Web.Styling.StyleClass.BorderColor.get -> string?
+eQuantic.UI.Web.Styling.StyleClass.BorderColor.init -> void
+eQuantic.UI.Web.Styling.StyleClass.BorderRadius.get -> int?
+eQuantic.UI.Web.Styling.StyleClass.BorderRadius.init -> void
+eQuantic.UI.Web.Styling.StyleClass.BoxShadow.get -> string?
+eQuantic.UI.Web.Styling.StyleClass.BoxShadow.init -> void
+eQuantic.UI.Web.Styling.StyleClass.Color.get -> string?
+eQuantic.UI.Web.Styling.StyleClass.Color.init -> void
+eQuantic.UI.Web.Styling.StyleClass.Cursor.get -> string?
+eQuantic.UI.Web.Styling.StyleClass.Cursor.init -> void
+eQuantic.UI.Web.Styling.StyleClass.Disabled.get -> eQuantic.UI.Web.Styling.StyleClass?
+eQuantic.UI.Web.Styling.StyleClass.Disabled.init -> void
+eQuantic.UI.Web.Styling.StyleClass.Display.get -> string?
+eQuantic.UI.Web.Styling.StyleClass.Display.init -> void
+eQuantic.UI.Web.Styling.StyleClass.Extend(eQuantic.UI.Web.Styling.StyleClass! overrides) -> eQuantic.UI.Web.Styling.StyleClass!
+eQuantic.UI.Web.Styling.StyleClass.FlexDirection.get -> string?
+eQuantic.UI.Web.Styling.StyleClass.FlexDirection.init -> void
+eQuantic.UI.Web.Styling.StyleClass.Focus.get -> eQuantic.UI.Web.Styling.StyleClass?
+eQuantic.UI.Web.Styling.StyleClass.Focus.init -> void
+eQuantic.UI.Web.Styling.StyleClass.FontSize.get -> string?
+eQuantic.UI.Web.Styling.StyleClass.FontSize.init -> void
+eQuantic.UI.Web.Styling.StyleClass.FontWeight.get -> string?
+eQuantic.UI.Web.Styling.StyleClass.FontWeight.init -> void
+eQuantic.UI.Web.Styling.StyleClass.Gap.get -> string?
+eQuantic.UI.Web.Styling.StyleClass.Gap.init -> void
+eQuantic.UI.Web.Styling.StyleClass.GeneratedClassName.get -> string!
+eQuantic.UI.Web.Styling.StyleClass.Height.get -> string?
+eQuantic.UI.Web.Styling.StyleClass.Height.init -> void
+eQuantic.UI.Web.Styling.StyleClass.Hover.get -> eQuantic.UI.Web.Styling.StyleClass?
+eQuantic.UI.Web.Styling.StyleClass.Hover.init -> void
+eQuantic.UI.Web.Styling.StyleClass.JustifyContent.get -> string?
+eQuantic.UI.Web.Styling.StyleClass.JustifyContent.init -> void
+eQuantic.UI.Web.Styling.StyleClass.Margin.get -> eQuantic.UI.Web.Styling.Spacing?
+eQuantic.UI.Web.Styling.StyleClass.Margin.init -> void
+eQuantic.UI.Web.Styling.StyleClass.MaxWidth.get -> string?
+eQuantic.UI.Web.Styling.StyleClass.MaxWidth.init -> void
+eQuantic.UI.Web.Styling.StyleClass.Media.get -> System.Collections.Generic.Dictionary<eQuantic.UI.Web.Styling.Breakpoint!, eQuantic.UI.Web.Styling.StyleClass!>?
+eQuantic.UI.Web.Styling.StyleClass.Media.init -> void
+eQuantic.UI.Web.Styling.StyleClass.MinHeight.get -> string?
+eQuantic.UI.Web.Styling.StyleClass.MinHeight.init -> void
+eQuantic.UI.Web.Styling.StyleClass.Padding.get -> eQuantic.UI.Web.Styling.Spacing?
+eQuantic.UI.Web.Styling.StyleClass.Padding.init -> void
+eQuantic.UI.Web.Styling.StyleClass.Position.get -> string?
+eQuantic.UI.Web.Styling.StyleClass.Position.init -> void
+eQuantic.UI.Web.Styling.StyleClass.StyleClass() -> void
+eQuantic.UI.Web.Styling.StyleClass.TextAlign.get -> string?
+eQuantic.UI.Web.Styling.StyleClass.TextAlign.init -> void
+eQuantic.UI.Web.Styling.StyleClass.ToCss() -> string!
+eQuantic.UI.Web.Styling.StyleClass.Transition.get -> string?
+eQuantic.UI.Web.Styling.StyleClass.Transition.init -> void
+eQuantic.UI.Web.Styling.StyleClass.Width.get -> string?
+eQuantic.UI.Web.Styling.StyleClass.Width.init -> void
+eQuantic.UI.Web.TextAlign
+eQuantic.UI.Web.TextAlign.Center = 2 -> eQuantic.UI.Web.TextAlign
+eQuantic.UI.Web.TextAlign.End = 5 -> eQuantic.UI.Web.TextAlign
+eQuantic.UI.Web.TextAlign.Justify = 3 -> eQuantic.UI.Web.TextAlign
+eQuantic.UI.Web.TextAlign.Left = 0 -> eQuantic.UI.Web.TextAlign
+eQuantic.UI.Web.TextAlign.Right = 1 -> eQuantic.UI.Web.TextAlign
+eQuantic.UI.Web.TextAlign.Start = 4 -> eQuantic.UI.Web.TextAlign
+eQuantic.UI.Web.ThemeBridge
+eQuantic.UI.Web.ThemeVarMap
+eQuantic.UI.Web.ThemeVarMap.Rewrite(string! value) -> string!
+eQuantic.UI.Web.ThemeVarMap.ThemeVarMap() -> void
+eQuantic.UI.Web.TokenCss
+eQuantic.UI.Web.VisualNodeComponent
+eQuantic.UI.Web.VisualNodeComponent.Node.get -> eQuantic.UI.Primitives.VisualNode!
+eQuantic.UI.Web.VisualNodeComponent.Styles.get -> eQuantic.UI.Web.StyleSink!
+eQuantic.UI.Web.VisualNodeComponent.VisualNodeComponent(eQuantic.UI.Primitives.VisualNode! node, eQuantic.UI.Primitives.IAppTheme? theme = null, float typeScale = 1) -> void
+eQuantic.UI.Web.WebRealizer
+override eQuantic.UI.Web.DynamicElement.Render() -> eQuantic.UI.Web.HtmlNode!
+override eQuantic.UI.Web.Styling.ClassBuilder.ToString() -> string!
+override eQuantic.UI.Web.VisualNodeComponent.Render() -> eQuantic.UI.Web.HtmlNode!
+readonly eQuantic.UI.Web.HtmlElement._children -> System.Collections.Generic.List<eQuantic.UI.Web.IComponent!>!
+static eQuantic.UI.Web.AdaptiveGates.CompactUntil(float until) -> string!
+static eQuantic.UI.Web.AdaptiveGates.Css(string! gate) -> string!
+static eQuantic.UI.Web.AdaptiveGates.ExpandedFrom(float from) -> string!
+static eQuantic.UI.Web.AdaptiveGates.MediumFrom(float from, float until) -> string!
+static eQuantic.UI.Web.GradientSink.Ambient.get -> eQuantic.UI.Web.GradientSink?
+static eQuantic.UI.Web.GradientSink.Ambient.set -> void
+static eQuantic.UI.Web.HtmlNode.Text(string! content) -> eQuantic.UI.Web.HtmlNode!
+static eQuantic.UI.Web.HtmlRenderer.RenderNode(eQuantic.UI.Web.HtmlNode! node) -> string!
+static eQuantic.UI.Web.HtmlRenderer.RenderNodePretty(eQuantic.UI.Web.HtmlNode! node, int indent = 0) -> string!
+static eQuantic.UI.Web.HtmlRenderer.RenderToString(eQuantic.UI.Web.IComponent! component) -> string!
+static eQuantic.UI.Web.IconRegistry.Path(eQuantic.UI.Primitives.Icons glyph) -> string!
+static eQuantic.UI.Web.PhotonCssGenerator.Generate(eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ThemeMode? mode = null) -> string!
+static eQuantic.UI.Web.RenderContext.LinkPolicy.get -> System.Func<string!, string!>?
+static eQuantic.UI.Web.RenderContext.ResolveDestination(string! destination) -> string!
+static eQuantic.UI.Web.RenderContext.SetLinkPolicy(System.Func<string!, string!>? policy) -> void
+static eQuantic.UI.Web.StyleAtomizer.Atomize(eQuantic.UI.Web.HtmlStyle! style, eQuantic.UI.Web.ThemeVarMap! vars, eQuantic.UI.Web.StyleSink! sink) -> string!
+static eQuantic.UI.Web.StyleAtomizer.AtomizeTree(eQuantic.UI.Web.HtmlElement! element, eQuantic.UI.Web.ThemeVarMap! vars, eQuantic.UI.Web.StyleSink! sink) -> void
+static eQuantic.UI.Web.StyleSink.Ambient.get -> eQuantic.UI.Web.StyleSink?
+static eQuantic.UI.Web.StyleSink.Ambient.set -> void
+static eQuantic.UI.Web.Styling.ClassBuilder.Create() -> eQuantic.UI.Web.Styling.ClassBuilder!
+static eQuantic.UI.Web.Styling.ClassBuilder.Create(params string?[]! initialClasses) -> eQuantic.UI.Web.Styling.ClassBuilder!
+static eQuantic.UI.Web.Styling.ClassBuilder.implicit operator string!(eQuantic.UI.Web.Styling.ClassBuilder! builder) -> string!
+static eQuantic.UI.Web.Styling.ClassBuilderExtensions.JoinClasses(params string?[]! classes) -> string!
+static eQuantic.UI.Web.Styling.ClassBuilderExtensions.WhenClass(bool condition, string? className, string? fallback = null) -> string?
+static eQuantic.UI.Web.Styling.Spacing.All(int value) -> eQuantic.UI.Web.Styling.Spacing!
+static eQuantic.UI.Web.Styling.Spacing.Horizontal(int value) -> eQuantic.UI.Web.Styling.Spacing!
+static eQuantic.UI.Web.Styling.Spacing.Symmetric(int vertical = 0, int horizontal = 0) -> eQuantic.UI.Web.Styling.Spacing!
+static eQuantic.UI.Web.Styling.Spacing.Vertical(int value) -> eQuantic.UI.Web.Styling.Spacing!
+static eQuantic.UI.Web.ThemeBridge.SerializeJson(eQuantic.UI.Primitives.IAppTheme! theme) -> string!
+static eQuantic.UI.Web.ThemeVarMap.For(eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Web.ThemeVarMap!
+static eQuantic.UI.Web.TokenCss.Bezier(eQuantic.UI.Primitives.Curve curve) -> string!
+static eQuantic.UI.Web.TokenCss.Cursor(eQuantic.UI.Primitives.PointerCursor cursor) -> string!
+static eQuantic.UI.Web.TokenCss.Face(string! family, bool mono) -> string!
+static eQuantic.UI.Web.TokenCss.Glow(eQuantic.UI.Primitives.RadialGradient glow) -> string!
+static eQuantic.UI.Web.TokenCss.Gradient(eQuantic.UI.Primitives.LinearGradient gradient) -> string!
+static eQuantic.UI.Web.TokenCss.GridPattern(eQuantic.UI.Primitives.GridPattern pattern) -> string!
+static eQuantic.UI.Web.TokenCss.GridPatternSize(eQuantic.UI.Primitives.GridPattern pattern) -> string!
+static eQuantic.UI.Web.TokenCss.Hex(eQuantic.UI.Primitives.Color color) -> string!
+static eQuantic.UI.Web.TokenCss.Number(float value) -> string!
+static eQuantic.UI.Web.TokenCss.Padding(eQuantic.UI.Primitives.EdgeInsets insets) -> string!
+static eQuantic.UI.Web.TokenCss.Percent(float fraction) -> string!
+static eQuantic.UI.Web.TokenCss.Px(float dp) -> string!
+static eQuantic.UI.Web.TokenCss.Radius(eQuantic.UI.Primitives.CornerRadii radii) -> string!
+static eQuantic.UI.Web.TokenCss.Shadow(eQuantic.UI.Primitives.ShadowSpec spec) -> string!
+static eQuantic.UI.Web.TokenCss.Transform(eQuantic.UI.Primitives.Transform2D transform) -> string?
+static eQuantic.UI.Web.TokenCss.Transition(eQuantic.UI.Primitives.TransitionSpec spec) -> string!
+static eQuantic.UI.Web.TokenCss.Value(eQuantic.UI.Primitives.ColorToken token) -> string!
+static eQuantic.UI.Web.WebRealizer.GradientId(eQuantic.UI.Primitives.VectorGradient run) -> string!
+static eQuantic.UI.Web.WebRealizer.Lower(eQuantic.UI.Primitives.VisualNode! node, eQuantic.UI.Primitives.IAppTheme! theme, float typeScale = 1) -> eQuantic.UI.Web.HtmlElement!
+static eQuantic.UI.Web.WebRealizer.Lower(eQuantic.UI.Primitives.VisualNode! node, eQuantic.UI.Primitives.IAppTheme! theme, float typeScale, eQuantic.UI.Web.StyleSink? styles) -> eQuantic.UI.Web.HtmlElement!
+static readonly eQuantic.UI.Web.Styling.Breakpoint.Desktop -> eQuantic.UI.Web.Styling.Breakpoint!
+static readonly eQuantic.UI.Web.Styling.Breakpoint.Mobile -> eQuantic.UI.Web.Styling.Breakpoint!
+static readonly eQuantic.UI.Web.Styling.Breakpoint.Tablet -> eQuantic.UI.Web.Styling.Breakpoint!
+static readonly eQuantic.UI.Web.Styling.Breakpoint.Wide -> eQuantic.UI.Web.Styling.Breakpoint!
+virtual eQuantic.UI.Web.HtmlElement.AddChild(eQuantic.UI.Web.IComponent! child) -> void
+virtual eQuantic.UI.Web.HtmlElement.RemoveChild(eQuantic.UI.Web.IComponent! child) -> void

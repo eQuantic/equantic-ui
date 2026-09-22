@@ -1,0 +1,38 @@
+#nullable enable
+eQuantic.UI.Codegen.CodeWriter
+eQuantic.UI.Codegen.CodeWriter.Append(string! text) -> eQuantic.UI.Codegen.CodeWriter!
+eQuantic.UI.Codegen.CodeWriter.AppendLine() -> eQuantic.UI.Codegen.CodeWriter!
+eQuantic.UI.Codegen.CodeWriter.AppendLine(string! line) -> eQuantic.UI.Codegen.CodeWriter!
+eQuantic.UI.Codegen.CodeWriter.BeginBlock(string! lineEndingInOpener, string! closer = "}") -> System.IDisposable!
+eQuantic.UI.Codegen.CodeWriter.BeginScope(string! line, string! opener, string? closer) -> System.IDisposable!
+eQuantic.UI.Codegen.CodeWriter.BeginScope(string! opener = "{", string? closer = "}") -> System.IDisposable!
+eQuantic.UI.Codegen.CodeWriter.CodeWriter(int indentLevel = 0, eQuantic.UI.Codegen.IndentationType indentationType = eQuantic.UI.Codegen.IndentationType.Spaces) -> void
+eQuantic.UI.Codegen.CodeWriter.CurrentLine.get -> int
+eQuantic.UI.Codegen.CodeWriter.EndLine() -> eQuantic.UI.Codegen.CodeWriter!
+eQuantic.UI.Codegen.CodeWriter.EndScope() -> void
+eQuantic.UI.Codegen.CodeWriter.IndentationType.get -> eQuantic.UI.Codegen.IndentationType
+eQuantic.UI.Codegen.CodeWriter.IndentLevel.get -> int
+eQuantic.UI.Codegen.CodeWriter.IndentLevel.set -> void
+eQuantic.UI.Codegen.CodeWriter.SetIndentationType(eQuantic.UI.Codegen.IndentationType indentationType) -> void
+eQuantic.UI.Codegen.CodeWriter.StartLine() -> eQuantic.UI.Codegen.CodeWriter!
+eQuantic.UI.Codegen.IndentationType
+eQuantic.UI.Codegen.IndentationType.Spaces = 0 -> eQuantic.UI.Codegen.IndentationType
+eQuantic.UI.Codegen.IndentationType.Tabs = 1 -> eQuantic.UI.Codegen.IndentationType
+eQuantic.UI.Codegen.JsonWriter
+eQuantic.UI.Codegen.JsonWriter.Array(string! name, System.Action<eQuantic.UI.Codegen.JsonWriter!>! body) -> eQuantic.UI.Codegen.JsonWriter!
+eQuantic.UI.Codegen.JsonWriter.Element(System.Action<eQuantic.UI.Codegen.JsonWriter!>! body) -> eQuantic.UI.Codegen.JsonWriter!
+eQuantic.UI.Codegen.JsonWriter.JsonWriter() -> void
+eQuantic.UI.Codegen.JsonWriter.Number(string! name, long value) -> eQuantic.UI.Codegen.JsonWriter!
+eQuantic.UI.Codegen.JsonWriter.Object(string! name, System.Action<eQuantic.UI.Codegen.JsonWriter!>! body) -> eQuantic.UI.Codegen.JsonWriter!
+eQuantic.UI.Codegen.JsonWriter.String(string! name, string! value) -> eQuantic.UI.Codegen.JsonWriter!
+eQuantic.UI.Codegen.PropertyListWriter
+eQuantic.UI.Codegen.PropertyListWriter.Bool(string! key, bool value) -> eQuantic.UI.Codegen.PropertyListWriter!
+eQuantic.UI.Codegen.PropertyListWriter.Dictionary(string! key, System.Action<eQuantic.UI.Codegen.PropertyListWriter!>! body) -> eQuantic.UI.Codegen.PropertyListWriter!
+eQuantic.UI.Codegen.PropertyListWriter.DictionaryArray(string! key, params System.Action<eQuantic.UI.Codegen.PropertyListWriter!>![]! entries) -> eQuantic.UI.Codegen.PropertyListWriter!
+eQuantic.UI.Codegen.PropertyListWriter.EmptyDictionary(string! key) -> eQuantic.UI.Codegen.PropertyListWriter!
+eQuantic.UI.Codegen.PropertyListWriter.PropertyListWriter() -> void
+eQuantic.UI.Codegen.PropertyListWriter.String(string! key, string! value) -> eQuantic.UI.Codegen.PropertyListWriter!
+eQuantic.UI.Codegen.PropertyListWriter.StringArray(string! key, params string![]! values) -> eQuantic.UI.Codegen.PropertyListWriter!
+override eQuantic.UI.Codegen.CodeWriter.ToString() -> string!
+static eQuantic.UI.Codegen.JsonWriter.Document(System.Action<eQuantic.UI.Codegen.JsonWriter!>! body) -> string!
+static eQuantic.UI.Codegen.PropertyListWriter.Document(System.Action<eQuantic.UI.Codegen.PropertyListWriter!>! body) -> string!

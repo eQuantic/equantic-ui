@@ -1,0 +1,16 @@
+#nullable enable
+eQuantic.UI.Native.Engine.Reference.ReferenceBackend
+eQuantic.UI.Native.Engine.Reference.ReferenceBackend.CreateSurface(int width, int height) -> eQuantic.UI.Native.Engine.IRenderSurface!
+eQuantic.UI.Native.Engine.Reference.ReferenceBackend.Dispose() -> void
+eQuantic.UI.Native.Engine.Reference.ReferenceBackend.Kind.get -> eQuantic.UI.Native.Engine.RenderBackendKind
+eQuantic.UI.Native.Engine.Reference.ReferenceBackend.MaxDegreeOfParallelism.get -> int
+eQuantic.UI.Native.Engine.Reference.ReferenceBackend.MaxDegreeOfParallelism.init -> void
+eQuantic.UI.Native.Engine.Reference.ReferenceBackend.ReferenceBackend() -> void
+eQuantic.UI.Native.Engine.Reference.ReferenceBackend.Render(eQuantic.UI.Native.Engine.DisplayList! displayList, eQuantic.UI.Native.Engine.IRenderSurface! surface) -> void
+eQuantic.UI.Native.Engine.Reference.ReferenceSurface
+eQuantic.UI.Native.Engine.Reference.ReferenceSurface.Dispose() -> void
+eQuantic.UI.Native.Engine.Reference.ReferenceSurface.Height.get -> int
+eQuantic.UI.Native.Engine.Reference.ReferenceSurface.ReadPixelsPremultipliedSrgb(System.Span<byte> destinationRgba) -> void
+eQuantic.UI.Native.Engine.Reference.ReferenceSurface.ReadPixelsSrgb(System.Span<byte> destinationRgba) -> void
+eQuantic.UI.Native.Engine.Reference.ReferenceSurface.ReferenceSurface(int width, int height) -> void
+eQuantic.UI.Native.Engine.Reference.ReferenceSurface.Width.get -> int

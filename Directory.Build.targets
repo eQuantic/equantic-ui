@@ -17,6 +17,31 @@
     </PropertyGroup>
 
     <!--
+      THE PUBLIC API IS DECLARED, so a break fails the pull request that makes it (#242).
+
+      Every public symbol of a shipping assembly is written down in PublicAPI.Shipped.txt, and a
+      change that is not declared fails the build: RS0016 names a signature that appeared, RS0017
+      one that went. With TreatWarningsAsErrors on since #126, that is a failure rather than a
+      note. The release notes' list of breaks then comes from the build — the *REMOVED* lines of a
+      release and the diff of the Shipped files between two tags — instead of from a signature
+      diff someone remembers to run. Twice it was not: .54 shipped three real breaks unlisted,
+      and .55 had to have the tool rebuilt because it lived in a scratchpad that was gone.
+
+      DERIVED, never listed. A project ships an assembly when it packs and includes its build
+      output, which is the same pair of properties the exemption above reads, and for the same
+      reason it is read HERE: both are set in each project's body, after Directory.Build.props has
+      been evaluated. So the twelve that ship content rather than a library — the two generators,
+      the runtime and its six bun packages, the two SDKs, the templates — are out by what they
+      already say about themselves, and a new package is covered the day it is written.
+    -->
+    <ItemGroup Condition="'$(IsPackable)' != 'false' AND '$(IncludeBuildOutput)' != 'false'">
+        <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="5.6.0"
+                          PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
+        <AdditionalFiles Include="PublicAPI.Shipped.txt" />
+        <AdditionalFiles Include="PublicAPI.Unshipped.txt" />
+    </ItemGroup>
+
+    <!--
       Development helper target: clears NuGet cache for eQuantic packages
       Usage: dotnet msbuild -t:ClearEQuanticCache
     -->

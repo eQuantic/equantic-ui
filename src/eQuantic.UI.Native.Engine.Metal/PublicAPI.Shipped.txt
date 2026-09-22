@@ -1,0 +1,28 @@
+#nullable enable
+const eQuantic.UI.Native.Engine.Metal.MetalBackend.PixelFormatBgra8UnormSrgb = 81 -> ulong
+eQuantic.UI.Native.Engine.Metal.MetalBackend
+eQuantic.UI.Native.Engine.Metal.MetalBackend.CreateSurface(int width, int height) -> eQuantic.UI.Native.Engine.IRenderSurface!
+eQuantic.UI.Native.Engine.Metal.MetalBackend.DeviceHandle.get -> nint
+eQuantic.UI.Native.Engine.Metal.MetalBackend.Dispose() -> void
+eQuantic.UI.Native.Engine.Metal.MetalBackend.Kind.get -> eQuantic.UI.Native.Engine.RenderBackendKind
+eQuantic.UI.Native.Engine.Metal.MetalBackend.MetalBackend() -> void
+eQuantic.UI.Native.Engine.Metal.MetalBackend.Render(eQuantic.UI.Native.Engine.DisplayList! displayList, eQuantic.UI.Native.Engine.IRenderSurface! surface) -> void
+eQuantic.UI.Native.Engine.Metal.MetalBackend.RenderToDrawable(eQuantic.UI.Native.Engine.DisplayList! displayList, nint drawableTexture, ulong pixelFormat, nint drawable) -> void
+eQuantic.UI.Native.Engine.Metal.MetalDevice
+eQuantic.UI.Native.Engine.Metal.MetalDevice.Begin(eQuantic.UI.Native.Engine.IRhiRenderTarget! target, eQuantic.UI.Primitives.Color clearColor) -> eQuantic.UI.Native.Engine.IRhiCommandList!
+eQuantic.UI.Native.Engine.Metal.MetalDevice.BeginDrawable(nint drawableTexture, ulong pixelFormat, nint drawable, eQuantic.UI.Primitives.Color clearColor) -> eQuantic.UI.Native.Engine.IRhiCommandList!
+eQuantic.UI.Native.Engine.Metal.MetalDevice.CreateRenderTarget(int width, int height) -> eQuantic.UI.Native.Engine.IRhiRenderTarget!
+eQuantic.UI.Native.Engine.Metal.MetalDevice.CreateTexture(eQuantic.UI.Native.Engine.TextureData! data) -> eQuantic.UI.Native.Engine.IRhiTexture!
+eQuantic.UI.Native.Engine.Metal.MetalDevice.Dispose() -> void
+eQuantic.UI.Native.Engine.Metal.MetalDevice.Handle.get -> nint
+eQuantic.UI.Native.Engine.Metal.MetalDevice.MetalDevice() -> void
+eQuantic.UI.Native.Engine.Metal.MetalRenderTarget
+eQuantic.UI.Native.Engine.Metal.MetalRenderTarget.Dispose() -> void
+eQuantic.UI.Native.Engine.Metal.MetalRenderTarget.Height.get -> int
+eQuantic.UI.Native.Engine.Metal.MetalRenderTarget.ReadPixelsSrgb(System.Span<byte> destinationRgba) -> void
+eQuantic.UI.Native.Engine.Metal.MetalRenderTarget.Width.get -> int
+eQuantic.UI.Native.Engine.Metal.MetalTexture
+eQuantic.UI.Native.Engine.Metal.MetalTexture.Dispose() -> void
+eQuantic.UI.Native.Engine.Metal.MetalTexture.Height.get -> int
+eQuantic.UI.Native.Engine.Metal.MetalTexture.Width.get -> int
+static eQuantic.UI.Native.Engine.Metal.MetalBackend.IsSupported.get -> bool

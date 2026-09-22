@@ -1,0 +1,23 @@
+#nullable enable
+eQuantic.UI.Native.Shell.MacOS.MacFileDialogs
+eQuantic.UI.Native.Shell.MacOS.MacFileDialogs.MacFileDialogs() -> void
+eQuantic.UI.Native.Shell.MacOS.MacFileDialogs.PickFile(string? title, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.FileFilter!>? filters, string? startIn) -> System.Threading.Tasks.Task<string?>!
+eQuantic.UI.Native.Shell.MacOS.MacFileDialogs.PickFiles(string? title, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.FileFilter!>? filters, string? startIn) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string!>!>!
+eQuantic.UI.Native.Shell.MacOS.MacFileDialogs.PickFolder(string? title, string? startIn) -> System.Threading.Tasks.Task<string?>!
+eQuantic.UI.Native.Shell.MacOS.MacFileDialogs.PickSavePath(string? suggestedName, string? title, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.FileFilter!>? filters, string? startIn) -> System.Threading.Tasks.Task<string?>!
+eQuantic.UI.Native.Shell.MacOS.MacOSCapabilities
+eQuantic.UI.Native.Shell.MacOS.MacOSCapabilities.MacOSCapabilities() -> void
+eQuantic.UI.Native.Shell.MacOS.MacOSCapabilities.Register(Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> void
+eQuantic.UI.Native.Shell.MacOS.MacOSPhotonRunner
+eQuantic.UI.Native.Shell.MacOS.MacOSPhotonRunner.MacOSPhotonRunner() -> void
+eQuantic.UI.Native.Shell.MacOS.MacOSPhotonRunner.Run(eQuantic.UI.Native.Hosting.PhotonApplication! app) -> void
+eQuantic.UI.Native.Shell.MacOS.MacWorkspace
+eQuantic.UI.Native.Shell.MacOS.MacWorkspace.CanOpen(System.Uri! url) -> bool
+eQuantic.UI.Native.Shell.MacOS.MacWorkspace.MacWorkspace(eQuantic.UI.Primitives.OpenUrlPolicy! policy, Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Native.Shell.MacOS.MacWorkspace!>! logger) -> void
+eQuantic.UI.Native.Shell.MacOS.MacWorkspace.OpenFile(string! path) -> bool
+eQuantic.UI.Native.Shell.MacOS.MacWorkspace.OpenUrl(System.Uri! url) -> bool
+eQuantic.UI.Native.Shell.MacOS.MacWorkspace.Reveal(string! path) -> bool
+eQuantic.UI.Native.Shell.MacOS.PhotonWindow
+eQuantic.UI.Native.Shell.MacOS.PhotonWindow.FramesPresented.get -> int
+eQuantic.UI.Native.Shell.MacOS.PhotonWindow.PhotonWindow(string! title, float width = 800, float height = 600, eQuantic.UI.Primitives.WindowChrome chrome = eQuantic.UI.Primitives.WindowChrome.Standard, bool resizable = true, float minWidth = 0, float minHeight = 0, bool smoothScroll = true) -> void
+eQuantic.UI.Native.Shell.MacOS.PhotonWindow.Run(eQuantic.UI.Primitives.VisualNode! root, eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ThemeMode mode = eQuantic.UI.Primitives.ThemeMode.Light, int maxFrames = 0, eQuantic.UI.Native.Hosting.PhotonThemeController? themeController = null, eQuantic.UI.Native.Hosting.PhotonCultureController? cultureController = null) -> void

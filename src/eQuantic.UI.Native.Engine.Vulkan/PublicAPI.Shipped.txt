@@ -1,0 +1,32 @@
+#nullable enable
+eQuantic.UI.Native.Engine.Vulkan.VulkanBackend
+eQuantic.UI.Native.Engine.Vulkan.VulkanBackend.CreateSurface(int width, int height) -> eQuantic.UI.Native.Engine.IRenderSurface!
+eQuantic.UI.Native.Engine.Vulkan.VulkanBackend.CreateSwapchain(nint nativeWindow, int width, int height) -> eQuantic.UI.Native.Engine.Vulkan.VulkanSwapchain!
+eQuantic.UI.Native.Engine.Vulkan.VulkanBackend.CreateWin32Swapchain(nint hinstance, nint hwnd, int width, int height) -> eQuantic.UI.Native.Engine.Vulkan.VulkanSwapchain!
+eQuantic.UI.Native.Engine.Vulkan.VulkanBackend.Dispose() -> void
+eQuantic.UI.Native.Engine.Vulkan.VulkanBackend.Kind.get -> eQuantic.UI.Native.Engine.RenderBackendKind
+eQuantic.UI.Native.Engine.Vulkan.VulkanBackend.Present(eQuantic.UI.Native.Engine.DisplayList! displayList, eQuantic.UI.Native.Engine.Vulkan.VulkanSwapchain! swapchain) -> bool
+eQuantic.UI.Native.Engine.Vulkan.VulkanBackend.Render(eQuantic.UI.Native.Engine.DisplayList! displayList, eQuantic.UI.Native.Engine.IRenderSurface! surface) -> void
+eQuantic.UI.Native.Engine.Vulkan.VulkanBackend.VulkanBackend() -> void
+eQuantic.UI.Native.Engine.Vulkan.VulkanDevice
+eQuantic.UI.Native.Engine.Vulkan.VulkanDevice.Begin(eQuantic.UI.Native.Engine.IRhiRenderTarget! target, eQuantic.UI.Primitives.Color clearColor) -> eQuantic.UI.Native.Engine.IRhiCommandList!
+eQuantic.UI.Native.Engine.Vulkan.VulkanDevice.CreateRenderTarget(int width, int height) -> eQuantic.UI.Native.Engine.IRhiRenderTarget!
+eQuantic.UI.Native.Engine.Vulkan.VulkanDevice.CreateTexture(eQuantic.UI.Native.Engine.TextureData! data) -> eQuantic.UI.Native.Engine.IRhiTexture!
+eQuantic.UI.Native.Engine.Vulkan.VulkanDevice.Dispose() -> void
+eQuantic.UI.Native.Engine.Vulkan.VulkanDevice.VulkanDevice() -> void
+eQuantic.UI.Native.Engine.Vulkan.VulkanRenderTarget
+eQuantic.UI.Native.Engine.Vulkan.VulkanRenderTarget.Dispose() -> void
+eQuantic.UI.Native.Engine.Vulkan.VulkanRenderTarget.Height.get -> int
+eQuantic.UI.Native.Engine.Vulkan.VulkanRenderTarget.ReadPixelsSrgb(System.Span<byte> destinationRgba) -> void
+eQuantic.UI.Native.Engine.Vulkan.VulkanRenderTarget.Width.get -> int
+eQuantic.UI.Native.Engine.Vulkan.VulkanSwapchain
+eQuantic.UI.Native.Engine.Vulkan.VulkanSwapchain.Dispose() -> void
+eQuantic.UI.Native.Engine.Vulkan.VulkanSwapchain.Height.get -> int
+eQuantic.UI.Native.Engine.Vulkan.VulkanSwapchain.Present(eQuantic.UI.Native.Engine.DisplayList! displayList, eQuantic.UI.Native.Engine.RhiRenderer! renderer) -> bool
+eQuantic.UI.Native.Engine.Vulkan.VulkanSwapchain.Resize(int width, int height) -> void
+eQuantic.UI.Native.Engine.Vulkan.VulkanSwapchain.Width.get -> int
+eQuantic.UI.Native.Engine.Vulkan.VulkanTexture
+eQuantic.UI.Native.Engine.Vulkan.VulkanTexture.Dispose() -> void
+eQuantic.UI.Native.Engine.Vulkan.VulkanTexture.Height.get -> int
+eQuantic.UI.Native.Engine.Vulkan.VulkanTexture.Width.get -> int
+static eQuantic.UI.Native.Engine.Vulkan.VulkanBackend.IsSupported.get -> bool

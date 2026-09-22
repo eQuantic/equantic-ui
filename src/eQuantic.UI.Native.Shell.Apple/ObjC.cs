@@ -60,6 +60,13 @@ public struct CGRect
 /// has a single msgSend entry point (no _stret/_fpret variants); the x64 struct-return split joins
 /// with the packaging milestone if it is ever needed.
 /// </summary>
+[System.Diagnostics.CodeAnalysis.SuppressMessage("ApiDesign", "RS0041:Public members should not use oblivious types",
+    Justification = "The declared-API analyzer reads these members through the stub "
+        + "LibraryImportGenerator writes for each [LibraryImport], and that generated file carries no "
+        + "nullable context — the project's own <Nullable>enable</Nullable> does not reach it. Ten "
+        + "symbols here, none of them annotatable from this side: the declarations below already say "
+        + "`string`, not `string?`. Scoped to this type rather than turned off anywhere, so RS0041 "
+        + "still fails a hand-written public symbol that is genuinely oblivious.")]
 public static partial class ObjC
 {
     private const string ObjCLib = "/usr/lib/libobjc.A.dylib";

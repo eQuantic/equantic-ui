@@ -1,0 +1,260 @@
+#nullable enable
+eQuantic.UI.Native.Framework.ApproximateTextMeasurer
+eQuantic.UI.Native.Framework.ApproximateTextMeasurer.ApproximateTextMeasurer() -> void
+eQuantic.UI.Native.Framework.ApproximateTextMeasurer.Measure(string! content, eQuantic.UI.Primitives.TypeStyle style, float typeScale, float maxWidth, int maxLines) -> eQuantic.UI.Native.Framework.TextMeasurement!
+eQuantic.UI.Native.Framework.AxisConstraint
+eQuantic.UI.Native.Framework.AxisConstraint.AxisConstraint() -> void
+eQuantic.UI.Native.Framework.AxisConstraint.AxisConstraint(float Max, bool Indeterminate, eQuantic.UI.Native.Framework.StretchKind Stretch) -> void
+eQuantic.UI.Native.Framework.AxisConstraint.DecidedByContent(bool indeterminate) -> eQuantic.UI.Native.Framework.AxisConstraint
+eQuantic.UI.Native.Framework.AxisConstraint.Deconstruct(out float Max, out bool Indeterminate, out eQuantic.UI.Native.Framework.StretchKind Stretch) -> void
+eQuantic.UI.Native.Framework.AxisConstraint.Equals(eQuantic.UI.Native.Framework.AxisConstraint other) -> bool
+eQuantic.UI.Native.Framework.AxisConstraint.Indeterminate.get -> bool
+eQuantic.UI.Native.Framework.AxisConstraint.Indeterminate.init -> void
+eQuantic.UI.Native.Framework.AxisConstraint.Inline() -> eQuantic.UI.Native.Framework.AxisConstraint
+eQuantic.UI.Native.Framework.AxisConstraint.IsStretched.get -> bool
+eQuantic.UI.Native.Framework.AxisConstraint.IsUnbounded.get -> bool
+eQuantic.UI.Native.Framework.AxisConstraint.Max.get -> float
+eQuantic.UI.Native.Framework.AxisConstraint.Max.init -> void
+eQuantic.UI.Native.Framework.AxisConstraint.Released() -> eQuantic.UI.Native.Framework.AxisConstraint
+eQuantic.UI.Native.Framework.AxisConstraint.Stretch.get -> eQuantic.UI.Native.Framework.StretchKind
+eQuantic.UI.Native.Framework.AxisConstraint.Stretch.init -> void
+eQuantic.UI.Native.Framework.AxisConstraint.Stretched(eQuantic.UI.Native.Framework.StretchKind kind) -> eQuantic.UI.Native.Framework.AxisConstraint
+eQuantic.UI.Native.Framework.AxisConstraint.WithMax(float max) -> eQuantic.UI.Native.Framework.AxisConstraint
+eQuantic.UI.Native.Framework.DragStore
+eQuantic.UI.Native.Framework.DragStore.AnyActive.get -> bool
+eQuantic.UI.Native.Framework.DragStore.BeginFrame() -> void
+eQuantic.UI.Native.Framework.DragStore.Drag(string! path, float offset) -> void
+eQuantic.UI.Native.Framework.DragStore.DragStore() -> void
+eQuantic.UI.Native.Framework.DragStore.Drop(string! path) -> void
+eQuantic.UI.Native.Framework.DragStore.Release(string! path, float timeMs, float restOffset = 0) -> void
+eQuantic.UI.Native.Framework.DragStore.Resolve(string! path, float timeMs, float restOffset = 0) -> float
+eQuantic.UI.Native.Framework.IIconRasterizer
+eQuantic.UI.Native.Framework.IIconRasterizer.Rasterize(eQuantic.UI.Primitives.IconGlyph glyph, float widthDp, float heightDp, float scale) -> eQuantic.UI.Native.Framework.TextRaster?
+eQuantic.UI.Native.Framework.IImageLoader
+eQuantic.UI.Native.Framework.IImageLoader.Load(string! source) -> eQuantic.UI.Native.Framework.RgbaImage?
+eQuantic.UI.Native.Framework.InViewStore
+eQuantic.UI.Native.Framework.InViewStore.Changed(string! path, bool visible) -> bool
+eQuantic.UI.Native.Framework.InViewStore.Clear() -> void
+eQuantic.UI.Native.Framework.InViewStore.InViewStore() -> void
+eQuantic.UI.Native.Framework.ITextMeasurer
+eQuantic.UI.Native.Framework.ITextMeasurer.Measure(string! content, eQuantic.UI.Primitives.TypeStyle style, float typeScale, float maxWidth, int maxLines) -> eQuantic.UI.Native.Framework.TextMeasurement!
+eQuantic.UI.Native.Framework.ITextRasterizer
+eQuantic.UI.Native.Framework.ITextRasterizer.Rasterize(string! content, eQuantic.UI.Primitives.TypeStyle style, float typeScale, float maxWidth, int maxLines, float scale, eQuantic.UI.Primitives.TextAlignment align) -> eQuantic.UI.Native.Framework.TextRaster?
+eQuantic.UI.Native.Framework.LayoutConstraints
+eQuantic.UI.Native.Framework.LayoutConstraints.DecidedByContent(bool width, bool height) -> eQuantic.UI.Native.Framework.LayoutConstraints
+eQuantic.UI.Native.Framework.LayoutConstraints.Deconstruct(out eQuantic.UI.Native.Framework.AxisConstraint Width, out eQuantic.UI.Native.Framework.AxisConstraint Height) -> void
+eQuantic.UI.Native.Framework.LayoutConstraints.Equals(eQuantic.UI.Native.Framework.LayoutConstraints other) -> bool
+eQuantic.UI.Native.Framework.LayoutConstraints.ForChild(float maxWidth, float maxHeight) -> eQuantic.UI.Native.Framework.LayoutConstraints
+eQuantic.UI.Native.Framework.LayoutConstraints.Height.get -> eQuantic.UI.Native.Framework.AxisConstraint
+eQuantic.UI.Native.Framework.LayoutConstraints.Height.init -> void
+eQuantic.UI.Native.Framework.LayoutConstraints.Inline() -> eQuantic.UI.Native.Framework.LayoutConstraints
+eQuantic.UI.Native.Framework.LayoutConstraints.LayoutConstraints() -> void
+eQuantic.UI.Native.Framework.LayoutConstraints.LayoutConstraints(eQuantic.UI.Native.Framework.AxisConstraint Width, eQuantic.UI.Native.Framework.AxisConstraint Height) -> void
+eQuantic.UI.Native.Framework.LayoutConstraints.MaxHeight.get -> float
+eQuantic.UI.Native.Framework.LayoutConstraints.MaxWidth.get -> float
+eQuantic.UI.Native.Framework.LayoutConstraints.Released() -> eQuantic.UI.Native.Framework.LayoutConstraints
+eQuantic.UI.Native.Framework.LayoutConstraints.Stretched(eQuantic.UI.Native.Framework.StretchKind width, eQuantic.UI.Native.Framework.StretchKind height) -> eQuantic.UI.Native.Framework.LayoutConstraints
+eQuantic.UI.Native.Framework.LayoutConstraints.Truncated() -> eQuantic.UI.Native.Framework.LayoutConstraints
+eQuantic.UI.Native.Framework.LayoutConstraints.Truncating.get -> bool
+eQuantic.UI.Native.Framework.LayoutConstraints.Truncating.init -> void
+eQuantic.UI.Native.Framework.LayoutConstraints.Width.get -> eQuantic.UI.Native.Framework.AxisConstraint
+eQuantic.UI.Native.Framework.LayoutConstraints.Width.init -> void
+eQuantic.UI.Native.Framework.LayoutConstraints.WithMax(float maxWidth, float maxHeight) -> eQuantic.UI.Native.Framework.LayoutConstraints
+eQuantic.UI.Native.Framework.LayoutConstraints.WithMaxHeight(float maxHeight) -> eQuantic.UI.Native.Framework.LayoutConstraints
+eQuantic.UI.Native.Framework.LayoutConstraints.WithMaxWidth(float maxWidth) -> eQuantic.UI.Native.Framework.LayoutConstraints
+eQuantic.UI.Native.Framework.LayoutContext
+eQuantic.UI.Native.Framework.LayoutContext.Components.get -> eQuantic.UI.Primitives.ComponentContext!
+eQuantic.UI.Native.Framework.LayoutContext.Density.get -> eQuantic.UI.Primitives.Density
+eQuantic.UI.Native.Framework.LayoutContext.Drags.get -> eQuantic.UI.Native.Framework.DragStore?
+eQuantic.UI.Native.Framework.LayoutContext.Drags.init -> void
+eQuantic.UI.Native.Framework.LayoutContext.Instances.get -> eQuantic.UI.Primitives.ComponentInstanceStore?
+eQuantic.UI.Native.Framework.LayoutContext.Instances.init -> void
+eQuantic.UI.Native.Framework.LayoutContext.LayoutContext(eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Native.Framework.ITextMeasurer! measurer, float typeScale = 1, eQuantic.UI.Primitives.Density density = eQuantic.UI.Primitives.Density.Comfortable) -> void
+eQuantic.UI.Native.Framework.LayoutContext.Measurer.get -> eQuantic.UI.Native.Framework.ITextMeasurer!
+eQuantic.UI.Native.Framework.LayoutContext.PathCache.get -> System.Collections.Generic.Dictionary<(string! Parent, int Index, string? Key), string!>?
+eQuantic.UI.Native.Framework.LayoutContext.PathCache.init -> void
+eQuantic.UI.Native.Framework.LayoutContext.Pool.get -> eQuantic.UI.Native.Framework.LayoutNodePool?
+eQuantic.UI.Native.Framework.LayoutContext.Pool.init -> void
+eQuantic.UI.Native.Framework.LayoutContext.Presences.get -> eQuantic.UI.Native.Framework.PresenceStore?
+eQuantic.UI.Native.Framework.LayoutContext.Presences.init -> void
+eQuantic.UI.Native.Framework.LayoutContext.ReducedMotion.get -> bool
+eQuantic.UI.Native.Framework.LayoutContext.ReducedMotion.init -> void
+eQuantic.UI.Native.Framework.LayoutContext.SafeAreaInsets.get -> eQuantic.UI.Primitives.EdgeInsets
+eQuantic.UI.Native.Framework.LayoutContext.SafeAreaInsets.init -> void
+eQuantic.UI.Native.Framework.LayoutContext.ScrollMeta.get -> System.Collections.Generic.Dictionary<eQuantic.UI.Primitives.ScrollView!, (string! Path, float MaxOffset)>?
+eQuantic.UI.Native.Framework.LayoutContext.ScrollMeta.init -> void
+eQuantic.UI.Native.Framework.LayoutContext.ScrollOffsets.get -> eQuantic.UI.Native.Framework.ScrollStore?
+eQuantic.UI.Native.Framework.LayoutContext.ScrollOffsets.init -> void
+eQuantic.UI.Native.Framework.LayoutContext.SizeClass.get -> eQuantic.UI.Primitives.WindowSizeClass
+eQuantic.UI.Native.Framework.LayoutContext.SizeClass.init -> void
+eQuantic.UI.Native.Framework.LayoutContext.Theme.get -> eQuantic.UI.Primitives.IAppTheme!
+eQuantic.UI.Native.Framework.LayoutContext.TimeMs.get -> float
+eQuantic.UI.Native.Framework.LayoutContext.TimeMs.init -> void
+eQuantic.UI.Native.Framework.LayoutContext.Transitions.get -> eQuantic.UI.Native.Framework.TransitionStore?
+eQuantic.UI.Native.Framework.LayoutContext.Transitions.init -> void
+eQuantic.UI.Native.Framework.LayoutContext.TypeScale.get -> float
+eQuantic.UI.Native.Framework.LayoutContext.WindowControlsInsets.get -> eQuantic.UI.Primitives.EdgeInsets
+eQuantic.UI.Native.Framework.LayoutContext.WindowControlsInsets.init -> void
+eQuantic.UI.Native.Framework.LayoutEngine
+eQuantic.UI.Native.Framework.LayoutNode
+eQuantic.UI.Native.Framework.LayoutNode.Bounds.get -> eQuantic.UI.Primitives.Rect
+eQuantic.UI.Native.Framework.LayoutNode.Children.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Framework.LayoutNode!>!
+eQuantic.UI.Native.Framework.LayoutNode.DragOffset.get -> float
+eQuantic.UI.Native.Framework.LayoutNode.DragPath.get -> string?
+eQuantic.UI.Native.Framework.LayoutNode.GetEnumerator() -> System.Collections.Generic.List<eQuantic.UI.Native.Framework.LayoutNode!>.Enumerator
+eQuantic.UI.Native.Framework.LayoutNode.LayoutNode(eQuantic.UI.Primitives.VisualNode! source) -> void
+eQuantic.UI.Native.Framework.LayoutNode.Parent.get -> eQuantic.UI.Native.Framework.LayoutNode?
+eQuantic.UI.Native.Framework.LayoutNode.Path.get -> string?
+eQuantic.UI.Native.Framework.LayoutNode.Presence.get -> float
+eQuantic.UI.Native.Framework.LayoutNode.PresencePath.get -> string?
+eQuantic.UI.Native.Framework.LayoutNode.Source.get -> eQuantic.UI.Primitives.VisualNode!
+eQuantic.UI.Native.Framework.LayoutNode.Text.get -> eQuantic.UI.Native.Framework.TextMeasurement?
+eQuantic.UI.Native.Framework.LayoutNode.TextRuns.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Framework.TextFragment>?
+eQuantic.UI.Native.Framework.LayoutNodePool
+eQuantic.UI.Native.Framework.LayoutNodePool.FreeCount.get -> int
+eQuantic.UI.Native.Framework.LayoutNodePool.LayoutNodePool() -> void
+eQuantic.UI.Native.Framework.LayoutNodePool.RecycleTree(eQuantic.UI.Native.Framework.LayoutNode! root) -> void
+eQuantic.UI.Native.Framework.MeasuredLine
+eQuantic.UI.Native.Framework.MeasuredLine.Deconstruct(out float Width, out bool Ellipsized) -> void
+eQuantic.UI.Native.Framework.MeasuredLine.Ellipsized.get -> bool
+eQuantic.UI.Native.Framework.MeasuredLine.Ellipsized.init -> void
+eQuantic.UI.Native.Framework.MeasuredLine.Equals(eQuantic.UI.Native.Framework.MeasuredLine other) -> bool
+eQuantic.UI.Native.Framework.MeasuredLine.MeasuredLine() -> void
+eQuantic.UI.Native.Framework.MeasuredLine.MeasuredLine(float Width, bool Ellipsized) -> void
+eQuantic.UI.Native.Framework.MeasuredLine.Width.get -> float
+eQuantic.UI.Native.Framework.MeasuredLine.Width.init -> void
+eQuantic.UI.Native.Framework.PresenceStore
+eQuantic.UI.Native.Framework.PresenceStore.ActiveExits(float timeMs, bool reducedMotion) -> System.Collections.Generic.List<eQuantic.UI.Native.Framework.PresenceStore.ExitFrame>!
+eQuantic.UI.Native.Framework.PresenceStore.AnyActive.get -> bool
+eQuantic.UI.Native.Framework.PresenceStore.BeginFrame() -> void
+eQuantic.UI.Native.Framework.PresenceStore.EndFrame(float timeMs) -> void
+eQuantic.UI.Native.Framework.PresenceStore.ExitFrame
+eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.Alpha.get -> float
+eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.Alpha.init -> void
+eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.Commands.get -> eQuantic.UI.Native.Engine.DrawCommand[]!
+eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.Commands.init -> void
+eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.Deconstruct(out eQuantic.UI.Native.Engine.DrawCommand[]! Commands, out float Alpha, out float Drop) -> void
+eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.Drop.get -> float
+eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.Drop.init -> void
+eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.Equals(eQuantic.UI.Native.Framework.PresenceStore.ExitFrame other) -> bool
+eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.ExitFrame() -> void
+eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.ExitFrame(eQuantic.UI.Native.Engine.DrawCommand[]! Commands, float Alpha, float Drop) -> void
+eQuantic.UI.Native.Framework.PresenceStore.PresenceStore() -> void
+eQuantic.UI.Native.Framework.PresenceStore.Progress(string! path, float timeMs, bool reducedMotion) -> float
+eQuantic.UI.Native.Framework.PresenceStore.Snapshot(string! path, eQuantic.UI.Primitives.PresenceMotion kind, eQuantic.UI.Native.Engine.DrawCommand[]! commands) -> void
+eQuantic.UI.Native.Framework.RgbaImage
+eQuantic.UI.Native.Framework.RgbaImage.<Clone>$() -> eQuantic.UI.Native.Framework.RgbaImage!
+eQuantic.UI.Native.Framework.RgbaImage.Deconstruct(out int Width, out int Height, out byte[]! Rgba) -> void
+eQuantic.UI.Native.Framework.RgbaImage.Equals(eQuantic.UI.Native.Framework.RgbaImage? other) -> bool
+eQuantic.UI.Native.Framework.RgbaImage.Height.get -> int
+eQuantic.UI.Native.Framework.RgbaImage.Height.init -> void
+eQuantic.UI.Native.Framework.RgbaImage.Rgba.get -> byte[]!
+eQuantic.UI.Native.Framework.RgbaImage.Rgba.init -> void
+eQuantic.UI.Native.Framework.RgbaImage.RgbaImage(int Width, int Height, byte[]! Rgba) -> void
+eQuantic.UI.Native.Framework.RgbaImage.Width.get -> int
+eQuantic.UI.Native.Framework.RgbaImage.Width.init -> void
+eQuantic.UI.Native.Framework.ScrollStore
+eQuantic.UI.Native.Framework.ScrollStore.Advance(float timeMs) -> bool
+eQuantic.UI.Native.Framework.ScrollStore.Fling(string! path, float velocity, float maxOffset) -> bool
+eQuantic.UI.Native.Framework.ScrollStore.Get(string! path) -> float?
+eQuantic.UI.Native.Framework.ScrollStore.ScrollBy(string! path, float delta, float maxOffset, float fallback = 0) -> bool
+eQuantic.UI.Native.Framework.ScrollStore.ScrollStore() -> void
+eQuantic.UI.Native.Framework.ScrollStore.ScrollTo(string! path, float offset, float maxOffset) -> bool
+eQuantic.UI.Native.Framework.ScrollStore.Smooth.get -> bool
+eQuantic.UI.Native.Framework.ScrollStore.Smooth.set -> void
+eQuantic.UI.Native.Framework.StretchKind
+eQuantic.UI.Native.Framework.StretchKind.Block = 2 -> eQuantic.UI.Native.Framework.StretchKind
+eQuantic.UI.Native.Framework.StretchKind.Flex = 1 -> eQuantic.UI.Native.Framework.StretchKind
+eQuantic.UI.Native.Framework.StretchKind.None = 0 -> eQuantic.UI.Native.Framework.StretchKind
+eQuantic.UI.Native.Framework.TextAlignmentExtensions
+eQuantic.UI.Native.Framework.TextFragment
+eQuantic.UI.Native.Framework.TextFragment.Color.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Native.Framework.TextFragment.Color.init -> void
+eQuantic.UI.Native.Framework.TextFragment.Content.get -> string!
+eQuantic.UI.Native.Framework.TextFragment.Content.init -> void
+eQuantic.UI.Native.Framework.TextFragment.Deconstruct(out string! Content, out eQuantic.UI.Primitives.TypeStyle Style, out float X, out float Y, out float Width, out int Line, out eQuantic.UI.Primitives.ColorToken? Color, out string? Destination) -> void
+eQuantic.UI.Native.Framework.TextFragment.Destination.get -> string?
+eQuantic.UI.Native.Framework.TextFragment.Destination.init -> void
+eQuantic.UI.Native.Framework.TextFragment.Equals(eQuantic.UI.Native.Framework.TextFragment other) -> bool
+eQuantic.UI.Native.Framework.TextFragment.Line.get -> int
+eQuantic.UI.Native.Framework.TextFragment.Line.init -> void
+eQuantic.UI.Native.Framework.TextFragment.Style.get -> eQuantic.UI.Primitives.TypeStyle
+eQuantic.UI.Native.Framework.TextFragment.Style.init -> void
+eQuantic.UI.Native.Framework.TextFragment.TextFragment() -> void
+eQuantic.UI.Native.Framework.TextFragment.TextFragment(string! Content, eQuantic.UI.Primitives.TypeStyle Style, float X, float Y, float Width, int Line, eQuantic.UI.Primitives.ColorToken? Color = null, string? Destination = null) -> void
+eQuantic.UI.Native.Framework.TextFragment.Width.get -> float
+eQuantic.UI.Native.Framework.TextFragment.Width.init -> void
+eQuantic.UI.Native.Framework.TextFragment.X.get -> float
+eQuantic.UI.Native.Framework.TextFragment.X.init -> void
+eQuantic.UI.Native.Framework.TextFragment.Y.get -> float
+eQuantic.UI.Native.Framework.TextFragment.Y.init -> void
+eQuantic.UI.Native.Framework.TextMeasurement
+eQuantic.UI.Native.Framework.TextMeasurement.Height.get -> float
+eQuantic.UI.Native.Framework.TextMeasurement.LineHeight.get -> float
+eQuantic.UI.Native.Framework.TextMeasurement.Lines.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Framework.MeasuredLine>!
+eQuantic.UI.Native.Framework.TextMeasurement.TextMeasurement(float width, float height, float lineHeight, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Framework.MeasuredLine>! lines) -> void
+eQuantic.UI.Native.Framework.TextMeasurement.Width.get -> float
+eQuantic.UI.Native.Framework.TextRaster
+eQuantic.UI.Native.Framework.TextRaster.<Clone>$() -> eQuantic.UI.Native.Framework.TextRaster!
+eQuantic.UI.Native.Framework.TextRaster.Alpha.get -> byte[]!
+eQuantic.UI.Native.Framework.TextRaster.Alpha.init -> void
+eQuantic.UI.Native.Framework.TextRaster.Deconstruct(out int Width, out int Height, out byte[]! Alpha, out int PadTop) -> void
+eQuantic.UI.Native.Framework.TextRaster.Equals(eQuantic.UI.Native.Framework.TextRaster? other) -> bool
+eQuantic.UI.Native.Framework.TextRaster.Height.get -> int
+eQuantic.UI.Native.Framework.TextRaster.Height.init -> void
+eQuantic.UI.Native.Framework.TextRaster.PadTop.get -> int
+eQuantic.UI.Native.Framework.TextRaster.PadTop.init -> void
+eQuantic.UI.Native.Framework.TextRaster.TextRaster(int Width, int Height, byte[]! Alpha, int PadTop = 0) -> void
+eQuantic.UI.Native.Framework.TextRaster.Width.get -> int
+eQuantic.UI.Native.Framework.TextRaster.Width.init -> void
+eQuantic.UI.Native.Framework.TransitionStore
+eQuantic.UI.Native.Framework.TransitionStore.AnyActive.get -> bool
+eQuantic.UI.Native.Framework.TransitionStore.BeginFrame() -> void
+eQuantic.UI.Native.Framework.TransitionStore.Resolve(string! path, float target, float timeMs, bool animate, bool reducedMotion) -> float
+eQuantic.UI.Native.Framework.TransitionStore.Resolve(string! path, float target, float timeMs, eQuantic.UI.Primitives.TransitionSpec? spec, bool reducedMotion) -> float
+eQuantic.UI.Native.Framework.TransitionStore.ResolveColor(string! path, eQuantic.UI.Primitives.Color target, float timeMs, eQuantic.UI.Primitives.TransitionSpec? spec, bool reducedMotion) -> eQuantic.UI.Primitives.Color
+eQuantic.UI.Native.Framework.TransitionStore.TransitionStore() -> void
+override eQuantic.UI.Native.Framework.AxisConstraint.GetHashCode() -> int
+override eQuantic.UI.Native.Framework.LayoutConstraints.GetHashCode() -> int
+override eQuantic.UI.Native.Framework.MeasuredLine.GetHashCode() -> int
+override eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.GetHashCode() -> int
+override eQuantic.UI.Native.Framework.RgbaImage.Equals(object? obj) -> bool
+override eQuantic.UI.Native.Framework.RgbaImage.GetHashCode() -> int
+override eQuantic.UI.Native.Framework.RgbaImage.ToString() -> string!
+override eQuantic.UI.Native.Framework.TextFragment.GetHashCode() -> int
+override eQuantic.UI.Native.Framework.TextRaster.Equals(object? obj) -> bool
+override eQuantic.UI.Native.Framework.TextRaster.GetHashCode() -> int
+override eQuantic.UI.Native.Framework.TextRaster.ToString() -> string!
+static eQuantic.UI.Native.Framework.AxisConstraint.Of(float max) -> eQuantic.UI.Native.Framework.AxisConstraint
+static eQuantic.UI.Native.Framework.AxisConstraint.operator !=(eQuantic.UI.Native.Framework.AxisConstraint left, eQuantic.UI.Native.Framework.AxisConstraint right) -> bool
+static eQuantic.UI.Native.Framework.AxisConstraint.operator ==(eQuantic.UI.Native.Framework.AxisConstraint left, eQuantic.UI.Native.Framework.AxisConstraint right) -> bool
+static eQuantic.UI.Native.Framework.LayoutConstraints.Of(float maxWidth, float maxHeight) -> eQuantic.UI.Native.Framework.LayoutConstraints
+static eQuantic.UI.Native.Framework.LayoutConstraints.operator !=(eQuantic.UI.Native.Framework.LayoutConstraints left, eQuantic.UI.Native.Framework.LayoutConstraints right) -> bool
+static eQuantic.UI.Native.Framework.LayoutConstraints.operator ==(eQuantic.UI.Native.Framework.LayoutConstraints left, eQuantic.UI.Native.Framework.LayoutConstraints right) -> bool
+static eQuantic.UI.Native.Framework.LayoutEngine.Layout(eQuantic.UI.Primitives.VisualNode! root, float viewportWidth, float viewportHeight, eQuantic.UI.Native.Framework.LayoutContext! context, string! rootPath = "r", eQuantic.UI.Native.Framework.StretchKind rootStretch = eQuantic.UI.Native.Framework.StretchKind.None) -> eQuantic.UI.Native.Framework.LayoutNode!
+static eQuantic.UI.Native.Framework.MeasuredLine.operator !=(eQuantic.UI.Native.Framework.MeasuredLine left, eQuantic.UI.Native.Framework.MeasuredLine right) -> bool
+static eQuantic.UI.Native.Framework.MeasuredLine.operator ==(eQuantic.UI.Native.Framework.MeasuredLine left, eQuantic.UI.Native.Framework.MeasuredLine right) -> bool
+static eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.operator !=(eQuantic.UI.Native.Framework.PresenceStore.ExitFrame left, eQuantic.UI.Native.Framework.PresenceStore.ExitFrame right) -> bool
+static eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.operator ==(eQuantic.UI.Native.Framework.PresenceStore.ExitFrame left, eQuantic.UI.Native.Framework.PresenceStore.ExitFrame right) -> bool
+static eQuantic.UI.Native.Framework.RgbaImage.operator !=(eQuantic.UI.Native.Framework.RgbaImage? left, eQuantic.UI.Native.Framework.RgbaImage? right) -> bool
+static eQuantic.UI.Native.Framework.RgbaImage.operator ==(eQuantic.UI.Native.Framework.RgbaImage? left, eQuantic.UI.Native.Framework.RgbaImage? right) -> bool
+static eQuantic.UI.Native.Framework.TextAlignmentExtensions.BlockWidth(this eQuantic.UI.Primitives.TextAlignment align, float contentWidth, float boxWidth) -> float
+static eQuantic.UI.Native.Framework.TextAlignmentExtensions.Offset(this eQuantic.UI.Primitives.TextAlignment align, float blockWidth, float lineWidth) -> float
+static eQuantic.UI.Native.Framework.TextFragment.operator !=(eQuantic.UI.Native.Framework.TextFragment left, eQuantic.UI.Native.Framework.TextFragment right) -> bool
+static eQuantic.UI.Native.Framework.TextFragment.operator ==(eQuantic.UI.Native.Framework.TextFragment left, eQuantic.UI.Native.Framework.TextFragment right) -> bool
+static eQuantic.UI.Native.Framework.TextRaster.operator !=(eQuantic.UI.Native.Framework.TextRaster? left, eQuantic.UI.Native.Framework.TextRaster? right) -> bool
+static eQuantic.UI.Native.Framework.TextRaster.operator ==(eQuantic.UI.Native.Framework.TextRaster? left, eQuantic.UI.Native.Framework.TextRaster? right) -> bool
+static eQuantic.UI.Native.Framework.TransitionStore.Only(eQuantic.UI.Primitives.TransitionSpec? spec, eQuantic.UI.Primitives.StyleChannels channel) -> eQuantic.UI.Primitives.TransitionSpec?
+static readonly eQuantic.UI.Native.Framework.ApproximateTextMeasurer.Instance -> eQuantic.UI.Native.Framework.ApproximateTextMeasurer!
+static readonly eQuantic.UI.Native.Framework.AxisConstraint.Unbounded -> eQuantic.UI.Native.Framework.AxisConstraint
+static readonly eQuantic.UI.Native.Framework.LayoutConstraints.Unbounded -> eQuantic.UI.Native.Framework.LayoutConstraints
+~override eQuantic.UI.Native.Framework.AxisConstraint.Equals(object obj) -> bool
+~override eQuantic.UI.Native.Framework.AxisConstraint.ToString() -> string
+~override eQuantic.UI.Native.Framework.LayoutConstraints.Equals(object obj) -> bool
+~override eQuantic.UI.Native.Framework.LayoutConstraints.ToString() -> string
+~override eQuantic.UI.Native.Framework.MeasuredLine.Equals(object obj) -> bool
+~override eQuantic.UI.Native.Framework.MeasuredLine.ToString() -> string
+~override eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.Equals(object obj) -> bool
+~override eQuantic.UI.Native.Framework.PresenceStore.ExitFrame.ToString() -> string
+~override eQuantic.UI.Native.Framework.TextFragment.Equals(object obj) -> bool
+~override eQuantic.UI.Native.Framework.TextFragment.ToString() -> string

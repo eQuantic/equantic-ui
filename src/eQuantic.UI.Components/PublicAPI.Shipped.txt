@@ -1,0 +1,1289 @@
+#nullable enable
+const eQuantic.UI.Components.DataTable.RowHeight = 52 -> float
+const eQuantic.UI.Components.PageIndicator.MaxDots = 8 -> int
+const eQuantic.UI.Components.Pagination.AlwaysShow = 7 -> int
+const eQuantic.UI.Components.Pagination.Window = 1 -> int
+const eQuantic.UI.Components.PullToRefresh.Threshold = 64 -> float
+const eQuantic.UI.Components.Spreadsheet.FillHandle = 7 -> float
+const eQuantic.UI.Components.Spreadsheet.Grip = 6 -> float
+const eQuantic.UI.Components.Spreadsheet.HeaderHeight = 26 -> float
+const eQuantic.UI.Components.Spreadsheet.HeaderWidth = 44 -> float
+const eQuantic.UI.Components.Spreadsheet.MinColWidth = 24 -> float
+const eQuantic.UI.Components.Spreadsheet.MinRowHeight = 14 -> float
+const eQuantic.UI.Components.SwipeableRow.ActionWidth = 96 -> float
+eQuantic.UI.Components.Accordion
+eQuantic.UI.Components.Accordion.Accordion(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.AccordionItem!>! items, int openIndex = -1) -> void
+eQuantic.UI.Components.Accordion.Items.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.AccordionItem!>!
+eQuantic.UI.Components.Accordion.Multiple.get -> bool
+eQuantic.UI.Components.Accordion.Multiple.init -> void
+eQuantic.UI.Components.AccordionItem
+eQuantic.UI.Components.AccordionItem.<Clone>$() -> eQuantic.UI.Components.AccordionItem!
+eQuantic.UI.Components.AccordionItem.AccordionItem(string! Title) -> void
+eQuantic.UI.Components.AccordionItem.Content.get -> eQuantic.UI.Primitives.VisualNode?
+eQuantic.UI.Components.AccordionItem.Content.init -> void
+eQuantic.UI.Components.AccordionItem.Deconstruct(out string! Title) -> void
+eQuantic.UI.Components.AccordionItem.Equals(eQuantic.UI.Components.AccordionItem? other) -> bool
+eQuantic.UI.Components.AccordionItem.Title.get -> string!
+eQuantic.UI.Components.AccordionItem.Title.init -> void
+eQuantic.UI.Components.AppBar
+eQuantic.UI.Components.AppBar.Actions.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.IconButton!>?
+eQuantic.UI.Components.AppBar.Actions.init -> void
+eQuantic.UI.Components.AppBar.AppBar(string! title) -> void
+eQuantic.UI.Components.AppBar.Leading.get -> eQuantic.UI.Primitives.VisualNode?
+eQuantic.UI.Components.AppBar.Leading.init -> void
+eQuantic.UI.Components.AppBar.Scrolled.get -> bool
+eQuantic.UI.Components.AppBar.Scrolled.init -> void
+eQuantic.UI.Components.AppBar.Title.get -> string!
+eQuantic.UI.Components.AppBar.Title.init -> void
+eQuantic.UI.Components.Avatar
+eQuantic.UI.Components.Avatar.Avatar(string! initials, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Medium, string? name = null) -> void
+eQuantic.UI.Components.Avatar.ImageSource.get -> string?
+eQuantic.UI.Components.Avatar.ImageSource.init -> void
+eQuantic.UI.Components.Avatar.Initials.get -> string!
+eQuantic.UI.Components.Avatar.Initials.init -> void
+eQuantic.UI.Components.Avatar.Name.get -> string?
+eQuantic.UI.Components.Avatar.Name.init -> void
+eQuantic.UI.Components.Avatar.Size.get -> eQuantic.UI.Primitives.SizeVariant
+eQuantic.UI.Components.Avatar.Size.init -> void
+eQuantic.UI.Components.Avatar.Status.get -> eQuantic.UI.Components.PresenceStatus
+eQuantic.UI.Components.Avatar.Status.init -> void
+eQuantic.UI.Components.Badge
+eQuantic.UI.Components.Badge.Badge(int count = 0, int max = 99, eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Destructive) -> void
+eQuantic.UI.Components.Badge.Count.get -> int
+eQuantic.UI.Components.Badge.Count.init -> void
+eQuantic.UI.Components.Badge.Dot.get -> bool
+eQuantic.UI.Components.Badge.Dot.init -> void
+eQuantic.UI.Components.Badge.Max.get -> int
+eQuantic.UI.Components.Badge.Max.init -> void
+eQuantic.UI.Components.Badge.Neutral.get -> bool
+eQuantic.UI.Components.Badge.Neutral.init -> void
+eQuantic.UI.Components.Badge.Ring.get -> bool
+eQuantic.UI.Components.Badge.Ring.init -> void
+eQuantic.UI.Components.Badge.Variant.get -> eQuantic.UI.Primitives.Variant
+eQuantic.UI.Components.Badge.Variant.init -> void
+eQuantic.UI.Components.Banner
+eQuantic.UI.Components.Banner.Banner(eQuantic.UI.Primitives.Variant status, string! title, string? body = null) -> void
+eQuantic.UI.Components.Banner.Body.get -> string?
+eQuantic.UI.Components.Banner.Body.init -> void
+eQuantic.UI.Components.Banner.OnDismiss.get -> System.Action?
+eQuantic.UI.Components.Banner.OnDismiss.init -> void
+eQuantic.UI.Components.Banner.PrimaryAction.get -> eQuantic.UI.Components.Button?
+eQuantic.UI.Components.Banner.PrimaryAction.init -> void
+eQuantic.UI.Components.Banner.SecondaryAction.get -> eQuantic.UI.Components.Button?
+eQuantic.UI.Components.Banner.SecondaryAction.init -> void
+eQuantic.UI.Components.Banner.Status.get -> eQuantic.UI.Primitives.Variant
+eQuantic.UI.Components.Banner.Status.init -> void
+eQuantic.UI.Components.Banner.Title.get -> string!
+eQuantic.UI.Components.Banner.Title.init -> void
+eQuantic.UI.Components.BottomNavigation
+eQuantic.UI.Components.BottomNavigation.BottomNavigation(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.NavItem!>! items, int selected, System.Action<int>? onSelect = null) -> void
+eQuantic.UI.Components.BottomNavigation.Items.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.NavItem!>!
+eQuantic.UI.Components.BottomNavigation.Items.init -> void
+eQuantic.UI.Components.BottomNavigation.OnSelect.get -> System.Action<int>?
+eQuantic.UI.Components.BottomNavigation.OnSelect.init -> void
+eQuantic.UI.Components.BottomNavigation.Selected.get -> int
+eQuantic.UI.Components.BottomNavigation.Selected.init -> void
+eQuantic.UI.Components.BottomSheet
+eQuantic.UI.Components.BottomSheet.BottomSheet(eQuantic.UI.Primitives.VisualNode! content, System.Action? onDismiss = null, bool dismissible = true) -> void
+eQuantic.UI.Components.BottomSheet.Content.get -> eQuantic.UI.Primitives.VisualNode!
+eQuantic.UI.Components.BottomSheet.Content.init -> void
+eQuantic.UI.Components.BottomSheet.Dismissible.get -> bool
+eQuantic.UI.Components.BottomSheet.Dismissible.init -> void
+eQuantic.UI.Components.BottomSheet.OnDismiss.get -> System.Action?
+eQuantic.UI.Components.BottomSheet.OnDismiss.init -> void
+eQuantic.UI.Components.Breadcrumb
+eQuantic.UI.Components.Breadcrumb.Breadcrumb(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.Crumb!>! crumbs) -> void
+eQuantic.UI.Components.Breadcrumb.Crumbs.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.Crumb!>!
+eQuantic.UI.Components.Breadcrumb.Crumbs.init -> void
+eQuantic.UI.Components.Button
+eQuantic.UI.Components.Button.Button(string! label, eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Primary, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Medium, System.Action? onPressed = null) -> void
+eQuantic.UI.Components.Button.Disabled.get -> bool
+eQuantic.UI.Components.Button.Disabled.init -> void
+eQuantic.UI.Components.Button.Expand.get -> bool
+eQuantic.UI.Components.Button.Expand.init -> void
+eQuantic.UI.Components.Button.InitialFocus.get -> bool
+eQuantic.UI.Components.Button.InitialFocus.init -> void
+eQuantic.UI.Components.Button.Label.get -> string!
+eQuantic.UI.Components.Button.Label.init -> void
+eQuantic.UI.Components.Button.Leading.get -> eQuantic.UI.Primitives.IconGlyph?
+eQuantic.UI.Components.Button.Leading.init -> void
+eQuantic.UI.Components.Button.Loading.get -> bool
+eQuantic.UI.Components.Button.Loading.init -> void
+eQuantic.UI.Components.Button.OnPressed.get -> System.Action?
+eQuantic.UI.Components.Button.OnPressed.init -> void
+eQuantic.UI.Components.Button.Size.get -> eQuantic.UI.Primitives.SizeVariant
+eQuantic.UI.Components.Button.Size.init -> void
+eQuantic.UI.Components.Button.Variant.get -> eQuantic.UI.Primitives.Variant
+eQuantic.UI.Components.Button.Variant.init -> void
+eQuantic.UI.Components.Calendar
+eQuantic.UI.Components.Calendar.Calendar(System.DateOnly? selected = null, System.Action<System.DateOnly>? onChanged = null, System.DateOnly? min = null, System.DateOnly? max = null) -> void
+eQuantic.UI.Components.Calendar.Label.get -> string?
+eQuantic.UI.Components.Calendar.Label.init -> void
+eQuantic.UI.Components.Calendar.Max.get -> System.DateOnly?
+eQuantic.UI.Components.Calendar.Min.get -> System.DateOnly?
+eQuantic.UI.Components.Calendar.OnChanged.get -> System.Action<System.DateOnly>?
+eQuantic.UI.Components.Calendar.Selected.get -> System.DateOnly?
+eQuantic.UI.Components.Card
+eQuantic.UI.Components.Card.Card(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Components.CardKind kind = eQuantic.UI.Components.CardKind.Elevated) -> void
+eQuantic.UI.Components.Card.Child.get -> eQuantic.UI.Primitives.VisualNode!
+eQuantic.UI.Components.Card.Child.init -> void
+eQuantic.UI.Components.Card.Kind.get -> eQuantic.UI.Components.CardKind
+eQuantic.UI.Components.Card.Kind.init -> void
+eQuantic.UI.Components.Card.Padding.get -> eQuantic.UI.Primitives.EdgeInsets
+eQuantic.UI.Components.Card.Padding.init -> void
+eQuantic.UI.Components.Card.Width.get -> eQuantic.UI.Primitives.SizeValue
+eQuantic.UI.Components.Card.Width.init -> void
+eQuantic.UI.Components.CardKind
+eQuantic.UI.Components.CardKind.Elevated = 0 -> eQuantic.UI.Components.CardKind
+eQuantic.UI.Components.CardKind.Filled = 2 -> eQuantic.UI.Components.CardKind
+eQuantic.UI.Components.CardKind.Outlined = 1 -> eQuantic.UI.Components.CardKind
+eQuantic.UI.Components.Checkbox
+eQuantic.UI.Components.Checkbox.Checkbox(bool checked, System.Action? onChanged = null, string? label = null) -> void
+eQuantic.UI.Components.Checkbox.Checked.get -> bool
+eQuantic.UI.Components.Checkbox.Checked.init -> void
+eQuantic.UI.Components.Checkbox.Disabled.get -> bool
+eQuantic.UI.Components.Checkbox.Disabled.init -> void
+eQuantic.UI.Components.Checkbox.Error.get -> bool
+eQuantic.UI.Components.Checkbox.Error.init -> void
+eQuantic.UI.Components.Checkbox.Indeterminate.get -> bool
+eQuantic.UI.Components.Checkbox.Indeterminate.init -> void
+eQuantic.UI.Components.Checkbox.Label.get -> string?
+eQuantic.UI.Components.Checkbox.Label.init -> void
+eQuantic.UI.Components.Checkbox.OnChanged.get -> System.Action?
+eQuantic.UI.Components.Checkbox.OnChanged.init -> void
+eQuantic.UI.Components.Chip
+eQuantic.UI.Components.Chip.Chip(string! label, eQuantic.UI.Components.ChipKind kind = eQuantic.UI.Components.ChipKind.Filter, bool selected = false, System.Action? onPressed = null, System.Action? onRemove = null) -> void
+eQuantic.UI.Components.Chip.Kind.get -> eQuantic.UI.Components.ChipKind
+eQuantic.UI.Components.Chip.Kind.init -> void
+eQuantic.UI.Components.Chip.Label.get -> string!
+eQuantic.UI.Components.Chip.Label.init -> void
+eQuantic.UI.Components.Chip.OnPressed.get -> System.Action?
+eQuantic.UI.Components.Chip.OnPressed.init -> void
+eQuantic.UI.Components.Chip.OnRemove.get -> System.Action?
+eQuantic.UI.Components.Chip.OnRemove.init -> void
+eQuantic.UI.Components.Chip.Selected.get -> bool
+eQuantic.UI.Components.Chip.Selected.init -> void
+eQuantic.UI.Components.Chip.Variant.get -> eQuantic.UI.Primitives.Variant
+eQuantic.UI.Components.Chip.Variant.init -> void
+eQuantic.UI.Components.ChipKind
+eQuantic.UI.Components.ChipKind.Filter = 0 -> eQuantic.UI.Components.ChipKind
+eQuantic.UI.Components.ChipKind.Input = 1 -> eQuantic.UI.Components.ChipKind
+eQuantic.UI.Components.ChipKind.Tag = 2 -> eQuantic.UI.Components.ChipKind
+eQuantic.UI.Components.CodeBlock
+eQuantic.UI.Components.CodeBlock.ActiveLine.get -> int?
+eQuantic.UI.Components.CodeBlock.ActiveLine.init -> void
+eQuantic.UI.Components.CodeBlock.Caption.get -> string?
+eQuantic.UI.Components.CodeBlock.Caption.init -> void
+eQuantic.UI.Components.CodeBlock.CodeBlock(string! code, string? language = null) -> void
+eQuantic.UI.Components.CodeBlock.CodeMetrics
+eQuantic.UI.Components.CodeBlock.CodeMetrics.CodeMetrics() -> void
+eQuantic.UI.Components.CodeBlock.CodeMetrics.CodeMetrics(eQuantic.UI.Primitives.TypeStyle Style, float LineHeight, float ColumnWidth, float GutterWidth) -> void
+eQuantic.UI.Components.CodeBlock.CodeMetrics.ColumnWidth.get -> float
+eQuantic.UI.Components.CodeBlock.CodeMetrics.ColumnWidth.init -> void
+eQuantic.UI.Components.CodeBlock.CodeMetrics.ContentLeft.get -> float
+eQuantic.UI.Components.CodeBlock.CodeMetrics.ContentTop.get -> float
+eQuantic.UI.Components.CodeBlock.CodeMetrics.Deconstruct(out eQuantic.UI.Primitives.TypeStyle Style, out float LineHeight, out float ColumnWidth, out float GutterWidth) -> void
+eQuantic.UI.Components.CodeBlock.CodeMetrics.Equals(eQuantic.UI.Components.CodeBlock.CodeMetrics other) -> bool
+eQuantic.UI.Components.CodeBlock.CodeMetrics.GutterWidth.get -> float
+eQuantic.UI.Components.CodeBlock.CodeMetrics.GutterWidth.init -> void
+eQuantic.UI.Components.CodeBlock.CodeMetrics.LineHeight.get -> float
+eQuantic.UI.Components.CodeBlock.CodeMetrics.LineHeight.init -> void
+eQuantic.UI.Components.CodeBlock.CodeMetrics.Style.get -> eQuantic.UI.Primitives.TypeStyle
+eQuantic.UI.Components.CodeBlock.CodeMetrics.Style.init -> void
+eQuantic.UI.Components.CodeBlock.Decorations.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.CodeDecoration!>!
+eQuantic.UI.Components.CodeBlock.Decorations.init -> void
+eQuantic.UI.Components.CodeBlock.Document.get -> eQuantic.UI.Primitives.CodeDocument!
+eQuantic.UI.Components.CodeBlock.Document.init -> void
+eQuantic.UI.Components.CodeBlock.FirstLineNumber.get -> int
+eQuantic.UI.Components.CodeBlock.FirstLineNumber.init -> void
+eQuantic.UI.Components.CodeBlock.Gutter(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+eQuantic.UI.Components.CodeBlock.GutterMarkers.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.CodeGutterMarker!>!
+eQuantic.UI.Components.CodeBlock.GutterMarkers.init -> void
+eQuantic.UI.Components.CodeBlock.Highlighter.get -> eQuantic.UI.Primitives.CodeHighlighter?
+eQuantic.UI.Components.CodeBlock.Highlighter.init -> void
+eQuantic.UI.Components.CodeBlock.Inverse.get -> bool
+eQuantic.UI.Components.CodeBlock.Inverse.init -> void
+eQuantic.UI.Components.CodeBlock.Language.get -> eQuantic.UI.Primitives.ICodeLanguage!
+eQuantic.UI.Components.CodeBlock.Language.init -> void
+eQuantic.UI.Components.CodeBlock.MaxHeight.get -> float
+eQuantic.UI.Components.CodeBlock.MaxHeight.init -> void
+eQuantic.UI.Components.CodeBlock.Metrics.get -> eQuantic.UI.Components.CodeBlock.CodeMetrics?
+eQuantic.UI.Components.CodeBlock.Metrics.init -> void
+eQuantic.UI.Components.CodeBlock.OnCopy.get -> System.Action?
+eQuantic.UI.Components.CodeBlock.OnCopy.init -> void
+eQuantic.UI.Components.CodeBlock.OnGutterPressed.get -> System.Action<int>?
+eQuantic.UI.Components.CodeBlock.OnGutterPressed.init -> void
+eQuantic.UI.Components.CodeBlock.OnScrolled.get -> System.Action<float>?
+eQuantic.UI.Components.CodeBlock.OnScrolled.init -> void
+eQuantic.UI.Components.CodeBlock.OnViewportChanged.get -> System.Action<float>?
+eQuantic.UI.Components.CodeBlock.OnViewportChanged.init -> void
+eQuantic.UI.Components.CodeBlock.ShowLineNumbers.get -> bool
+eQuantic.UI.Components.CodeBlock.ShowLineNumbers.init -> void
+eQuantic.UI.Components.CodeBlock.Size.get -> eQuantic.UI.Primitives.SizeVariant
+eQuantic.UI.Components.CodeBlock.Size.init -> void
+eQuantic.UI.Components.CodeBlock.Standalone.get -> bool
+eQuantic.UI.Components.CodeBlock.Standalone.init -> void
+eQuantic.UI.Components.CodeBlock.ViewportHeight.get -> float
+eQuantic.UI.Components.CodeBlock.ViewportHeight.init -> void
+eQuantic.UI.Components.CodeBlock.ViewportOffset.get -> float
+eQuantic.UI.Components.CodeBlock.ViewportOffset.init -> void
+eQuantic.UI.Components.CodeBlock.ViewportWidth.get -> float
+eQuantic.UI.Components.CodeBlock.ViewportWidth.init -> void
+eQuantic.UI.Components.CodeEditor
+eQuantic.UI.Components.CodeEditor.Autofocus.get -> bool
+eQuantic.UI.Components.CodeEditor.Autofocus.set -> void
+eQuantic.UI.Components.CodeEditor.Caption.get -> string?
+eQuantic.UI.Components.CodeEditor.Caption.set -> void
+eQuantic.UI.Components.CodeEditor.CodeEditor(string! code = "", string? language = null) -> void
+eQuantic.UI.Components.CodeEditor.Decorations.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.CodeDecoration!>!
+eQuantic.UI.Components.CodeEditor.Decorations.set -> void
+eQuantic.UI.Components.CodeEditor.Editor.get -> eQuantic.UI.Primitives.CodeEditorController!
+eQuantic.UI.Components.CodeEditor.FirstLineNumber.get -> int
+eQuantic.UI.Components.CodeEditor.FirstLineNumber.set -> void
+eQuantic.UI.Components.CodeEditor.GutterMarkers.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.CodeGutterMarker!>!
+eQuantic.UI.Components.CodeEditor.GutterMarkers.set -> void
+eQuantic.UI.Components.CodeEditor.InitialCode.get -> string!
+eQuantic.UI.Components.CodeEditor.InitialCode.init -> void
+eQuantic.UI.Components.CodeEditor.Inverse.get -> bool
+eQuantic.UI.Components.CodeEditor.Inverse.set -> void
+eQuantic.UI.Components.CodeEditor.LanguageName.get -> string?
+eQuantic.UI.Components.CodeEditor.LanguageName.set -> void
+eQuantic.UI.Components.CodeEditor.MatchBrackets.get -> bool
+eQuantic.UI.Components.CodeEditor.MatchBrackets.set -> void
+eQuantic.UI.Components.CodeEditor.MaxHeight.get -> float
+eQuantic.UI.Components.CodeEditor.MaxHeight.set -> void
+eQuantic.UI.Components.CodeEditor.OnChanged.get -> System.Action<string!>?
+eQuantic.UI.Components.CodeEditor.OnChanged.set -> void
+eQuantic.UI.Components.CodeEditor.OnGutterPressed.get -> System.Action<int>?
+eQuantic.UI.Components.CodeEditor.OnGutterPressed.set -> void
+eQuantic.UI.Components.CodeEditor.OnSelectionChanged.get -> System.Action<eQuantic.UI.Primitives.CodeRange>?
+eQuantic.UI.Components.CodeEditor.OnSelectionChanged.set -> void
+eQuantic.UI.Components.CodeEditor.ReadOnly.get -> bool
+eQuantic.UI.Components.CodeEditor.ReadOnly.set -> void
+eQuantic.UI.Components.CodeEditor.Search.get -> string?
+eQuantic.UI.Components.CodeEditor.Search.set -> void
+eQuantic.UI.Components.CodeEditor.SearchMatchCase.get -> bool
+eQuantic.UI.Components.CodeEditor.SearchMatchCase.set -> void
+eQuantic.UI.Components.CodeEditor.ShowLineNumbers.get -> bool
+eQuantic.UI.Components.CodeEditor.ShowLineNumbers.set -> void
+eQuantic.UI.Components.CodeEditor.Size.get -> eQuantic.UI.Primitives.SizeVariant
+eQuantic.UI.Components.CodeEditor.Size.set -> void
+eQuantic.UI.Components.CookieConsent
+eQuantic.UI.Components.CookieConsent.AcceptLabel.get -> string?
+eQuantic.UI.Components.CookieConsent.AcceptLabel.init -> void
+eQuantic.UI.Components.CookieConsent.Body.get -> string?
+eQuantic.UI.Components.CookieConsent.Body.init -> void
+eQuantic.UI.Components.CookieConsent.CookieConsent(string? policyHref = null) -> void
+eQuantic.UI.Components.CookieConsent.PolicyHref.get -> string?
+eQuantic.UI.Components.CookieConsent.PolicyHref.init -> void
+eQuantic.UI.Components.CookieConsent.PolicyLabel.get -> string?
+eQuantic.UI.Components.CookieConsent.PolicyLabel.init -> void
+eQuantic.UI.Components.CookieConsent.RejectLabel.get -> string?
+eQuantic.UI.Components.CookieConsent.RejectLabel.init -> void
+eQuantic.UI.Components.CookieConsent.Title.get -> string?
+eQuantic.UI.Components.CookieConsent.Title.init -> void
+eQuantic.UI.Components.Crumb
+eQuantic.UI.Components.Crumb.<Clone>$() -> eQuantic.UI.Components.Crumb!
+eQuantic.UI.Components.Crumb.Crumb(string! Label, string? Destination = null) -> void
+eQuantic.UI.Components.Crumb.Deconstruct(out string! Label, out string? Destination) -> void
+eQuantic.UI.Components.Crumb.Destination.get -> string?
+eQuantic.UI.Components.Crumb.Destination.init -> void
+eQuantic.UI.Components.Crumb.Equals(eQuantic.UI.Components.Crumb? other) -> bool
+eQuantic.UI.Components.Crumb.Label.get -> string!
+eQuantic.UI.Components.Crumb.Label.init -> void
+eQuantic.UI.Components.CultureOption
+eQuantic.UI.Components.CultureOption.<Clone>$() -> eQuantic.UI.Components.CultureOption!
+eQuantic.UI.Components.CultureOption.CultureOption(string! Name, string! Label) -> void
+eQuantic.UI.Components.CultureOption.Deconstruct(out string! Name, out string! Label) -> void
+eQuantic.UI.Components.CultureOption.Equals(eQuantic.UI.Components.CultureOption? other) -> bool
+eQuantic.UI.Components.CultureOption.Flag.get -> string?
+eQuantic.UI.Components.CultureOption.Flag.init -> void
+eQuantic.UI.Components.CultureOption.Label.get -> string!
+eQuantic.UI.Components.CultureOption.Label.init -> void
+eQuantic.UI.Components.CultureOption.Name.get -> string!
+eQuantic.UI.Components.CultureOption.Name.init -> void
+eQuantic.UI.Components.CultureOption.Short.get -> string?
+eQuantic.UI.Components.CultureOption.Short.init -> void
+eQuantic.UI.Components.CultureSwitcher
+eQuantic.UI.Components.CultureSwitcher.CultureSwitcher(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.CultureOption!>! options) -> void
+eQuantic.UI.Components.CultureSwitcher.Icon.get -> eQuantic.UI.Primitives.IconGlyph?
+eQuantic.UI.Components.CultureSwitcher.Icon.init -> void
+eQuantic.UI.Components.CultureSwitcher.OnChanged.get -> System.Action<string!>?
+eQuantic.UI.Components.CultureSwitcher.OnChanged.init -> void
+eQuantic.UI.Components.CultureSwitcher.Options.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.CultureOption!>!
+eQuantic.UI.Components.CultureSwitcher.Options.init -> void
+eQuantic.UI.Components.CultureSwitcher.Shape.get -> eQuantic.UI.Components.CultureSwitcherShape
+eQuantic.UI.Components.CultureSwitcher.Shape.init -> void
+eQuantic.UI.Components.CultureSwitcher.Size.get -> eQuantic.UI.Primitives.SizeVariant
+eQuantic.UI.Components.CultureSwitcher.Size.init -> void
+eQuantic.UI.Components.CultureSwitcherShape
+eQuantic.UI.Components.CultureSwitcherShape.Auto = 0 -> eQuantic.UI.Components.CultureSwitcherShape
+eQuantic.UI.Components.CultureSwitcherShape.Menu = 2 -> eQuantic.UI.Components.CultureSwitcherShape
+eQuantic.UI.Components.CultureSwitcherShape.Segments = 1 -> eQuantic.UI.Components.CultureSwitcherShape
+eQuantic.UI.Components.DataColumn
+eQuantic.UI.Components.DataColumn.<Clone>$() -> eQuantic.UI.Components.DataColumn!
+eQuantic.UI.Components.DataColumn.Align.get -> eQuantic.UI.Primitives.TextAlignment
+eQuantic.UI.Components.DataColumn.Align.init -> void
+eQuantic.UI.Components.DataColumn.DataColumn(string! Header, eQuantic.UI.Primitives.GridTrack Track, eQuantic.UI.Primitives.TextAlignment Align = eQuantic.UI.Primitives.TextAlignment.Start, bool Sortable = false) -> void
+eQuantic.UI.Components.DataColumn.Deconstruct(out string! Header, out eQuantic.UI.Primitives.GridTrack Track, out eQuantic.UI.Primitives.TextAlignment Align, out bool Sortable) -> void
+eQuantic.UI.Components.DataColumn.Equals(eQuantic.UI.Components.DataColumn? other) -> bool
+eQuantic.UI.Components.DataColumn.Header.get -> string!
+eQuantic.UI.Components.DataColumn.Header.init -> void
+eQuantic.UI.Components.DataColumn.Sortable.get -> bool
+eQuantic.UI.Components.DataColumn.Sortable.init -> void
+eQuantic.UI.Components.DataColumn.Track.get -> eQuantic.UI.Primitives.GridTrack
+eQuantic.UI.Components.DataColumn.Track.init -> void
+eQuantic.UI.Components.DataRow
+eQuantic.UI.Components.DataRow.<Clone>$() -> eQuantic.UI.Components.DataRow!
+eQuantic.UI.Components.DataRow.Cells.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.VisualNode!>!
+eQuantic.UI.Components.DataRow.Cells.init -> void
+eQuantic.UI.Components.DataRow.DataRow(string! Key, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.VisualNode!>! Cells) -> void
+eQuantic.UI.Components.DataRow.Deconstruct(out string! Key, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.VisualNode!>! Cells) -> void
+eQuantic.UI.Components.DataRow.Equals(eQuantic.UI.Components.DataRow? other) -> bool
+eQuantic.UI.Components.DataRow.Key.get -> string!
+eQuantic.UI.Components.DataRow.Key.init -> void
+eQuantic.UI.Components.DataTable
+eQuantic.UI.Components.DataTable.Columns.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.DataColumn!>!
+eQuantic.UI.Components.DataTable.Columns.init -> void
+eQuantic.UI.Components.DataTable.DataTable(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.DataColumn!>! columns, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.DataRow!>! rows) -> void
+eQuantic.UI.Components.DataTable.Empty.get -> eQuantic.UI.Primitives.VisualNode?
+eQuantic.UI.Components.DataTable.Empty.init -> void
+eQuantic.UI.Components.DataTable.OnRowPressed.get -> System.Action<eQuantic.UI.Components.DataRow!>?
+eQuantic.UI.Components.DataTable.OnRowPressed.init -> void
+eQuantic.UI.Components.DataTable.OnSort.get -> System.Action<int>?
+eQuantic.UI.Components.DataTable.OnSort.init -> void
+eQuantic.UI.Components.DataTable.OnToggleAll.get -> System.Action?
+eQuantic.UI.Components.DataTable.OnToggleAll.init -> void
+eQuantic.UI.Components.DataTable.OnToggleRow.get -> System.Action<eQuantic.UI.Components.DataRow!>?
+eQuantic.UI.Components.DataTable.OnToggleRow.init -> void
+eQuantic.UI.Components.DataTable.PendingRows.get -> int
+eQuantic.UI.Components.DataTable.PendingRows.init -> void
+eQuantic.UI.Components.DataTable.Rows.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.DataRow!>!
+eQuantic.UI.Components.DataTable.Rows.init -> void
+eQuantic.UI.Components.DataTable.Selection.get -> System.Collections.Generic.IReadOnlyCollection<string!>?
+eQuantic.UI.Components.DataTable.Selection.init -> void
+eQuantic.UI.Components.DataTable.SortColumn.get -> int
+eQuantic.UI.Components.DataTable.SortColumn.init -> void
+eQuantic.UI.Components.DataTable.SortDirection.get -> eQuantic.UI.Components.SortDirection
+eQuantic.UI.Components.DataTable.SortDirection.init -> void
+eQuantic.UI.Components.DatePicker
+eQuantic.UI.Components.DatePicker.DatePicker(System.DateOnly? selected = null, System.Action<System.DateOnly>? onChanged = null, System.DateOnly? min = null, System.DateOnly? max = null, string! label = "") -> void
+eQuantic.UI.Components.DatePicker.Disabled.get -> bool
+eQuantic.UI.Components.DatePicker.Disabled.init -> void
+eQuantic.UI.Components.DatePicker.Label.get -> string!
+eQuantic.UI.Components.DatePicker.Max.get -> System.DateOnly?
+eQuantic.UI.Components.DatePicker.Min.get -> System.DateOnly?
+eQuantic.UI.Components.DatePicker.OnChanged.get -> System.Action<System.DateOnly>?
+eQuantic.UI.Components.DatePicker.Selected.get -> System.DateOnly?
+eQuantic.UI.Components.DateTimePicker
+eQuantic.UI.Components.DateTimePicker.DateLabel.get -> string!
+eQuantic.UI.Components.DateTimePicker.DateTimePicker(System.DateTime? selected = null, System.Action<System.DateTime>? onChanged = null, System.DateTime? min = null, System.DateTime? max = null, int stepMinutes = 30, string! dateLabel = "", string! timeLabel = "") -> void
+eQuantic.UI.Components.DateTimePicker.Disabled.get -> bool
+eQuantic.UI.Components.DateTimePicker.Disabled.init -> void
+eQuantic.UI.Components.DateTimePicker.Max.get -> System.DateTime?
+eQuantic.UI.Components.DateTimePicker.Min.get -> System.DateTime?
+eQuantic.UI.Components.DateTimePicker.OnChanged.get -> System.Action<System.DateTime>?
+eQuantic.UI.Components.DateTimePicker.Selected.get -> System.DateTime?
+eQuantic.UI.Components.DateTimePicker.StepMinutes.get -> int
+eQuantic.UI.Components.DateTimePicker.TimeLabel.get -> string!
+eQuantic.UI.Components.Dialog
+eQuantic.UI.Components.Dialog.Actions.get -> eQuantic.UI.Components.DialogAction![]!
+eQuantic.UI.Components.Dialog.Actions.init -> void
+eQuantic.UI.Components.Dialog.Body.get -> string!
+eQuantic.UI.Components.Dialog.Body.init -> void
+eQuantic.UI.Components.Dialog.Dialog(string! title, string! body, eQuantic.UI.Components.DialogAction![]! actions, bool dismissible = false, System.Action? onDismiss = null) -> void
+eQuantic.UI.Components.Dialog.Dismissible.get -> bool
+eQuantic.UI.Components.Dialog.Dismissible.init -> void
+eQuantic.UI.Components.Dialog.OnDismiss.get -> System.Action?
+eQuantic.UI.Components.Dialog.OnDismiss.init -> void
+eQuantic.UI.Components.Dialog.Title.get -> string!
+eQuantic.UI.Components.Dialog.Title.init -> void
+eQuantic.UI.Components.DialogAction
+eQuantic.UI.Components.DialogAction.<Clone>$() -> eQuantic.UI.Components.DialogAction!
+eQuantic.UI.Components.DialogAction.Deconstruct(out string! Label, out System.Action? OnPressed, out eQuantic.UI.Primitives.Variant Variant) -> void
+eQuantic.UI.Components.DialogAction.DialogAction(string! Label, System.Action? OnPressed = null, eQuantic.UI.Primitives.Variant Variant = eQuantic.UI.Primitives.Variant.Primary) -> void
+eQuantic.UI.Components.DialogAction.Equals(eQuantic.UI.Components.DialogAction? other) -> bool
+eQuantic.UI.Components.DialogAction.Label.get -> string!
+eQuantic.UI.Components.DialogAction.Label.init -> void
+eQuantic.UI.Components.DialogAction.OnPressed.get -> System.Action?
+eQuantic.UI.Components.DialogAction.OnPressed.init -> void
+eQuantic.UI.Components.DialogAction.Variant.get -> eQuantic.UI.Primitives.Variant
+eQuantic.UI.Components.DialogAction.Variant.init -> void
+eQuantic.UI.Components.Divider
+eQuantic.UI.Components.Divider.Axis.get -> eQuantic.UI.Components.DividerAxis
+eQuantic.UI.Components.Divider.Axis.init -> void
+eQuantic.UI.Components.Divider.Divider(eQuantic.UI.Components.DividerInset inset = eQuantic.UI.Components.DividerInset.None, eQuantic.UI.Components.DividerAxis axis = eQuantic.UI.Components.DividerAxis.Horizontal) -> void
+eQuantic.UI.Components.Divider.Inset.get -> eQuantic.UI.Components.DividerInset
+eQuantic.UI.Components.Divider.Inset.init -> void
+eQuantic.UI.Components.Divider.LeadingInset.get -> float?
+eQuantic.UI.Components.Divider.LeadingInset.init -> void
+eQuantic.UI.Components.DividerAxis
+eQuantic.UI.Components.DividerAxis.Horizontal = 0 -> eQuantic.UI.Components.DividerAxis
+eQuantic.UI.Components.DividerAxis.Vertical = 1 -> eQuantic.UI.Components.DividerAxis
+eQuantic.UI.Components.DividerInset
+eQuantic.UI.Components.DividerInset.Leading = 1 -> eQuantic.UI.Components.DividerInset
+eQuantic.UI.Components.DividerInset.Middle = 2 -> eQuantic.UI.Components.DividerInset
+eQuantic.UI.Components.DividerInset.None = 0 -> eQuantic.UI.Components.DividerInset
+eQuantic.UI.Components.Drawer
+eQuantic.UI.Components.Drawer.Content.get -> eQuantic.UI.Primitives.VisualNode!
+eQuantic.UI.Components.Drawer.Content.init -> void
+eQuantic.UI.Components.Drawer.Drawer(eQuantic.UI.Primitives.VisualNode! content, bool open, System.Action? onDismiss = null) -> void
+eQuantic.UI.Components.Drawer.Edge.get -> eQuantic.UI.Components.DrawerEdge
+eQuantic.UI.Components.Drawer.Edge.init -> void
+eQuantic.UI.Components.Drawer.OnDismiss.get -> System.Action?
+eQuantic.UI.Components.Drawer.OnDismiss.init -> void
+eQuantic.UI.Components.Drawer.Open.get -> bool
+eQuantic.UI.Components.Drawer.Open.init -> void
+eQuantic.UI.Components.Drawer.Width.get -> float
+eQuantic.UI.Components.Drawer.Width.init -> void
+eQuantic.UI.Components.DrawerEdge
+eQuantic.UI.Components.DrawerEdge.End = 1 -> eQuantic.UI.Components.DrawerEdge
+eQuantic.UI.Components.DrawerEdge.Start = 0 -> eQuantic.UI.Components.DrawerEdge
+eQuantic.UI.Components.EmptyState
+eQuantic.UI.Components.EmptyState.Action.get -> eQuantic.UI.Components.Button?
+eQuantic.UI.Components.EmptyState.Action.init -> void
+eQuantic.UI.Components.EmptyState.Body.get -> string?
+eQuantic.UI.Components.EmptyState.Body.init -> void
+eQuantic.UI.Components.EmptyState.EmptyState(eQuantic.UI.Primitives.Icon! icon, string! title, string? body = null) -> void
+eQuantic.UI.Components.EmptyState.Icon.get -> eQuantic.UI.Primitives.Icon!
+eQuantic.UI.Components.EmptyState.Icon.init -> void
+eQuantic.UI.Components.EmptyState.SecondaryAction.get -> eQuantic.UI.Components.Button?
+eQuantic.UI.Components.EmptyState.SecondaryAction.init -> void
+eQuantic.UI.Components.EmptyState.Title.get -> string!
+eQuantic.UI.Components.EmptyState.Title.init -> void
+eQuantic.UI.Components.FormInput
+eQuantic.UI.Components.FormInput.Autofocus.get -> bool
+eQuantic.UI.Components.FormInput.Autofocus.init -> void
+eQuantic.UI.Components.FormInput.Disabled.get -> bool
+eQuantic.UI.Components.FormInput.Disabled.init -> void
+eQuantic.UI.Components.FormInput.Form.get -> eQuantic.UI.Primitives.FormController!
+eQuantic.UI.Components.FormInput.Form.init -> void
+eQuantic.UI.Components.FormInput.FormInput(eQuantic.UI.Primitives.FormController! form, string! name, string! label = "", string? placeholder = null, string? helper = null, eQuantic.UI.Primitives.Icons? leading = null, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Large) -> void
+eQuantic.UI.Components.FormInput.Helper.get -> string?
+eQuantic.UI.Components.FormInput.Helper.init -> void
+eQuantic.UI.Components.FormInput.Label.get -> string!
+eQuantic.UI.Components.FormInput.Label.init -> void
+eQuantic.UI.Components.FormInput.Leading.get -> eQuantic.UI.Primitives.Icons?
+eQuantic.UI.Components.FormInput.Leading.init -> void
+eQuantic.UI.Components.FormInput.Name.get -> string!
+eQuantic.UI.Components.FormInput.Name.init -> void
+eQuantic.UI.Components.FormInput.Obscure.get -> bool
+eQuantic.UI.Components.FormInput.Obscure.init -> void
+eQuantic.UI.Components.FormInput.Placeholder.get -> string?
+eQuantic.UI.Components.FormInput.Placeholder.init -> void
+eQuantic.UI.Components.FormInput.Size.get -> eQuantic.UI.Primitives.SizeVariant
+eQuantic.UI.Components.FormInput.Size.init -> void
+eQuantic.UI.Components.FormSubmit
+eQuantic.UI.Components.FormSubmit.Form.get -> eQuantic.UI.Primitives.FormController!
+eQuantic.UI.Components.FormSubmit.Form.init -> void
+eQuantic.UI.Components.FormSubmit.FormSubmit(eQuantic.UI.Primitives.FormController! form, string! label, System.Func<System.Threading.Tasks.Task!>! onSubmit, eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Primary, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Medium) -> void
+eQuantic.UI.Components.FormSubmit.Label.get -> string!
+eQuantic.UI.Components.FormSubmit.Label.init -> void
+eQuantic.UI.Components.FormSubmit.OnSubmit.get -> System.Func<System.Threading.Tasks.Task!>!
+eQuantic.UI.Components.FormSubmit.OnSubmit.init -> void
+eQuantic.UI.Components.FormSubmit.Size.get -> eQuantic.UI.Primitives.SizeVariant
+eQuantic.UI.Components.FormSubmit.Size.init -> void
+eQuantic.UI.Components.FormSubmit.Variant.get -> eQuantic.UI.Primitives.Variant
+eQuantic.UI.Components.FormSubmit.Variant.init -> void
+eQuantic.UI.Components.FormSubmit.Wide.get -> bool
+eQuantic.UI.Components.FormSubmit.Wide.init -> void
+eQuantic.UI.Components.IconButton
+eQuantic.UI.Components.IconButton.Disabled.get -> bool
+eQuantic.UI.Components.IconButton.Disabled.init -> void
+eQuantic.UI.Components.IconButton.Glyph.get -> eQuantic.UI.Primitives.Icon!
+eQuantic.UI.Components.IconButton.Glyph.init -> void
+eQuantic.UI.Components.IconButton.IconButton(eQuantic.UI.Primitives.Icon! glyph, string! label, eQuantic.UI.Components.IconButtonKind kind = eQuantic.UI.Components.IconButtonKind.Standard, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Medium, System.Action? onPressed = null) -> void
+eQuantic.UI.Components.IconButton.Kind.get -> eQuantic.UI.Components.IconButtonKind
+eQuantic.UI.Components.IconButton.Kind.init -> void
+eQuantic.UI.Components.IconButton.Label.get -> string!
+eQuantic.UI.Components.IconButton.Label.init -> void
+eQuantic.UI.Components.IconButton.OnPressed.get -> System.Action?
+eQuantic.UI.Components.IconButton.OnPressed.init -> void
+eQuantic.UI.Components.IconButton.Selected.get -> bool
+eQuantic.UI.Components.IconButton.Selected.init -> void
+eQuantic.UI.Components.IconButton.SelectedGlyph.get -> eQuantic.UI.Primitives.Icon?
+eQuantic.UI.Components.IconButton.SelectedGlyph.init -> void
+eQuantic.UI.Components.IconButton.Size.get -> eQuantic.UI.Primitives.SizeVariant
+eQuantic.UI.Components.IconButton.Size.init -> void
+eQuantic.UI.Components.IconButtonKind
+eQuantic.UI.Components.IconButtonKind.Filled = 2 -> eQuantic.UI.Components.IconButtonKind
+eQuantic.UI.Components.IconButtonKind.Outline = 3 -> eQuantic.UI.Components.IconButtonKind
+eQuantic.UI.Components.IconButtonKind.Standard = 0 -> eQuantic.UI.Components.IconButtonKind
+eQuantic.UI.Components.IconButtonKind.Tonal = 1 -> eQuantic.UI.Components.IconButtonKind
+eQuantic.UI.Components.List
+eQuantic.UI.Components.List.Dividers.get -> bool
+eQuantic.UI.Components.List.Dividers.init -> void
+eQuantic.UI.Components.List.Items.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.ListItem!>!
+eQuantic.UI.Components.List.Items.init -> void
+eQuantic.UI.Components.List.List(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.ListItem!>! items, bool dividers = true) -> void
+eQuantic.UI.Components.ListDetail
+eQuantic.UI.Components.ListDetail.Detail.get -> eQuantic.UI.Primitives.VisualNode?
+eQuantic.UI.Components.ListDetail.Detail.init -> void
+eQuantic.UI.Components.ListDetail.List.get -> eQuantic.UI.Primitives.VisualNode!
+eQuantic.UI.Components.ListDetail.List.init -> void
+eQuantic.UI.Components.ListDetail.ListDetail(eQuantic.UI.Primitives.VisualNode! list, eQuantic.UI.Primitives.VisualNode? detail = null, System.Action? onBack = null) -> void
+eQuantic.UI.Components.ListDetail.ListTitle.get -> string?
+eQuantic.UI.Components.ListDetail.ListTitle.init -> void
+eQuantic.UI.Components.ListDetail.ListWidth.get -> float
+eQuantic.UI.Components.ListDetail.ListWidth.init -> void
+eQuantic.UI.Components.ListDetail.OnBack.get -> System.Action?
+eQuantic.UI.Components.ListDetail.OnBack.init -> void
+eQuantic.UI.Components.ListDetail.Placeholder.get -> eQuantic.UI.Primitives.VisualNode?
+eQuantic.UI.Components.ListDetail.Placeholder.init -> void
+eQuantic.UI.Components.ListDetail.Title.get -> string?
+eQuantic.UI.Components.ListDetail.Title.init -> void
+eQuantic.UI.Components.ListDetail.TwoPaneFrom.get -> float
+eQuantic.UI.Components.ListDetail.TwoPaneFrom.init -> void
+eQuantic.UI.Components.ListItem
+eQuantic.UI.Components.ListItem.Disabled.get -> bool
+eQuantic.UI.Components.ListItem.Disabled.init -> void
+eQuantic.UI.Components.ListItem.Leading.get -> eQuantic.UI.Primitives.VisualNode?
+eQuantic.UI.Components.ListItem.Leading.init -> void
+eQuantic.UI.Components.ListItem.LeadingWidth.get -> float
+eQuantic.UI.Components.ListItem.LeadingWidth.init -> void
+eQuantic.UI.Components.ListItem.ListItem(string! title, string? subtitle = null, System.Action? onPressed = null) -> void
+eQuantic.UI.Components.ListItem.OnPressed.get -> System.Action?
+eQuantic.UI.Components.ListItem.OnPressed.init -> void
+eQuantic.UI.Components.ListItem.Selected.get -> bool
+eQuantic.UI.Components.ListItem.Selected.init -> void
+eQuantic.UI.Components.ListItem.Subtitle.get -> string?
+eQuantic.UI.Components.ListItem.Subtitle.init -> void
+eQuantic.UI.Components.ListItem.SubtitleLines.get -> int
+eQuantic.UI.Components.ListItem.SubtitleLines.init -> void
+eQuantic.UI.Components.ListItem.Title.get -> string!
+eQuantic.UI.Components.ListItem.Title.init -> void
+eQuantic.UI.Components.ListItem.Trailing.get -> eQuantic.UI.Primitives.VisualNode?
+eQuantic.UI.Components.ListItem.Trailing.init -> void
+eQuantic.UI.Components.ListView
+eQuantic.UI.Components.ListView.Count.get -> int
+eQuantic.UI.Components.ListView.Height.get -> eQuantic.UI.Primitives.SizeValue
+eQuantic.UI.Components.ListView.Height.init -> void
+eQuantic.UI.Components.ListView.ItemBuilder.get -> System.Func<int, eQuantic.UI.Primitives.VisualNode!>!
+eQuantic.UI.Components.ListView.ItemExtent.get -> float
+eQuantic.UI.Components.ListView.ListView(int count, float itemExtent, System.Func<int, eQuantic.UI.Primitives.VisualNode!>! itemBuilder) -> void
+eQuantic.UI.Components.ListView.Overscan.get -> int
+eQuantic.UI.Components.ListView.Overscan.init -> void
+eQuantic.UI.Components.ListView.Width.get -> eQuantic.UI.Primitives.SizeValue
+eQuantic.UI.Components.ListView.Width.init -> void
+eQuantic.UI.Components.Markdown
+eQuantic.UI.Components.Markdown.Markdown(string! source) -> void
+eQuantic.UI.Components.Markdown.Source.get -> string!
+eQuantic.UI.Components.Markdown.Source.init -> void
+eQuantic.UI.Components.Markdown.Style.get -> eQuantic.UI.Components.MarkdownStyle?
+eQuantic.UI.Components.Markdown.Style.init -> void
+eQuantic.UI.Components.MarkdownBlock
+eQuantic.UI.Components.MarkdownBlock.Head.get -> System.Collections.Generic.List<eQuantic.UI.Components.MarkdownCell!>!
+eQuantic.UI.Components.MarkdownBlock.Head.set -> void
+eQuantic.UI.Components.MarkdownBlock.Id.get -> string!
+eQuantic.UI.Components.MarkdownBlock.Id.set -> void
+eQuantic.UI.Components.MarkdownBlock.Items.get -> System.Collections.Generic.List<eQuantic.UI.Components.MarkdownListItem!>!
+eQuantic.UI.Components.MarkdownBlock.Items.set -> void
+eQuantic.UI.Components.MarkdownBlock.Kind.get -> eQuantic.UI.Components.MarkdownBlockKind
+eQuantic.UI.Components.MarkdownBlock.Kind.set -> void
+eQuantic.UI.Components.MarkdownBlock.Lang.get -> string!
+eQuantic.UI.Components.MarkdownBlock.Lang.set -> void
+eQuantic.UI.Components.MarkdownBlock.Level.get -> int
+eQuantic.UI.Components.MarkdownBlock.Level.set -> void
+eQuantic.UI.Components.MarkdownBlock.MarkdownBlock() -> void
+eQuantic.UI.Components.MarkdownBlock.Raw.get -> string!
+eQuantic.UI.Components.MarkdownBlock.Raw.set -> void
+eQuantic.UI.Components.MarkdownBlock.Rows.get -> System.Collections.Generic.List<eQuantic.UI.Components.MarkdownRow!>!
+eQuantic.UI.Components.MarkdownBlock.Rows.set -> void
+eQuantic.UI.Components.MarkdownBlock.Runs.get -> System.Collections.Generic.List<eQuantic.UI.Components.MarkdownRun!>!
+eQuantic.UI.Components.MarkdownBlock.Runs.set -> void
+eQuantic.UI.Components.MarkdownBlock.Text.get -> string!
+eQuantic.UI.Components.MarkdownBlock.Text.set -> void
+eQuantic.UI.Components.MarkdownBlockKind
+eQuantic.UI.Components.MarkdownBlockKind.Code = 3 -> eQuantic.UI.Components.MarkdownBlockKind
+eQuantic.UI.Components.MarkdownBlockKind.Heading = 1 -> eQuantic.UI.Components.MarkdownBlockKind
+eQuantic.UI.Components.MarkdownBlockKind.List = 2 -> eQuantic.UI.Components.MarkdownBlockKind
+eQuantic.UI.Components.MarkdownBlockKind.Paragraph = 0 -> eQuantic.UI.Components.MarkdownBlockKind
+eQuantic.UI.Components.MarkdownBlockKind.Quote = 4 -> eQuantic.UI.Components.MarkdownBlockKind
+eQuantic.UI.Components.MarkdownBlockKind.Rule = 6 -> eQuantic.UI.Components.MarkdownBlockKind
+eQuantic.UI.Components.MarkdownBlockKind.Table = 5 -> eQuantic.UI.Components.MarkdownBlockKind
+eQuantic.UI.Components.MarkdownCell
+eQuantic.UI.Components.MarkdownCell.MarkdownCell() -> void
+eQuantic.UI.Components.MarkdownCell.Runs.get -> System.Collections.Generic.List<eQuantic.UI.Components.MarkdownRun!>!
+eQuantic.UI.Components.MarkdownCell.Runs.set -> void
+eQuantic.UI.Components.MarkdownListItem
+eQuantic.UI.Components.MarkdownListItem.Depth.get -> int
+eQuantic.UI.Components.MarkdownListItem.Depth.set -> void
+eQuantic.UI.Components.MarkdownListItem.MarkdownListItem() -> void
+eQuantic.UI.Components.MarkdownListItem.Marker.get -> string!
+eQuantic.UI.Components.MarkdownListItem.Marker.set -> void
+eQuantic.UI.Components.MarkdownListItem.Runs.get -> System.Collections.Generic.List<eQuantic.UI.Components.MarkdownRun!>!
+eQuantic.UI.Components.MarkdownListItem.Runs.set -> void
+eQuantic.UI.Components.MarkdownParser
+eQuantic.UI.Components.MarkdownRow
+eQuantic.UI.Components.MarkdownRow.Cells.get -> System.Collections.Generic.List<eQuantic.UI.Components.MarkdownCell!>!
+eQuantic.UI.Components.MarkdownRow.Cells.set -> void
+eQuantic.UI.Components.MarkdownRow.MarkdownRow() -> void
+eQuantic.UI.Components.MarkdownRun
+eQuantic.UI.Components.MarkdownRun.Bold.get -> bool
+eQuantic.UI.Components.MarkdownRun.Bold.set -> void
+eQuantic.UI.Components.MarkdownRun.Code.get -> bool
+eQuantic.UI.Components.MarkdownRun.Code.set -> void
+eQuantic.UI.Components.MarkdownRun.Href.get -> string!
+eQuantic.UI.Components.MarkdownRun.Href.set -> void
+eQuantic.UI.Components.MarkdownRun.IsLink.get -> bool
+eQuantic.UI.Components.MarkdownRun.Italic.get -> bool
+eQuantic.UI.Components.MarkdownRun.Italic.set -> void
+eQuantic.UI.Components.MarkdownRun.MarkdownRun() -> void
+eQuantic.UI.Components.MarkdownRun.Text.get -> string!
+eQuantic.UI.Components.MarkdownRun.Text.set -> void
+eQuantic.UI.Components.MarkdownStyle
+eQuantic.UI.Components.MarkdownStyle.BlockGap.get -> float
+eQuantic.UI.Components.MarkdownStyle.BlockGap.init -> void
+eQuantic.UI.Components.MarkdownStyle.Body.get -> eQuantic.UI.Primitives.TypeRole
+eQuantic.UI.Components.MarkdownStyle.Body.init -> void
+eQuantic.UI.Components.MarkdownStyle.CodeInverse.get -> bool
+eQuantic.UI.Components.MarkdownStyle.CodeInverse.init -> void
+eQuantic.UI.Components.MarkdownStyle.CodeLineNumbers.get -> bool
+eQuantic.UI.Components.MarkdownStyle.CodeLineNumbers.init -> void
+eQuantic.UI.Components.MarkdownStyle.Heading1.get -> eQuantic.UI.Primitives.TypeRole
+eQuantic.UI.Components.MarkdownStyle.Heading1.init -> void
+eQuantic.UI.Components.MarkdownStyle.Heading2.get -> eQuantic.UI.Primitives.TypeRole
+eQuantic.UI.Components.MarkdownStyle.Heading2.init -> void
+eQuantic.UI.Components.MarkdownStyle.Heading3.get -> eQuantic.UI.Primitives.TypeRole
+eQuantic.UI.Components.MarkdownStyle.Heading3.init -> void
+eQuantic.UI.Components.MarkdownStyle.Heading4.get -> eQuantic.UI.Primitives.TypeRole
+eQuantic.UI.Components.MarkdownStyle.Heading4.init -> void
+eQuantic.UI.Components.MarkdownStyle.MarkdownStyle() -> void
+eQuantic.UI.Components.Menu
+eQuantic.UI.Components.Menu.Items.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.MenuItem!>!
+eQuantic.UI.Components.Menu.Menu(eQuantic.UI.Primitives.VisualNode! trigger, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.MenuItem!>! items, System.Action<int>? onSelect = null) -> void
+eQuantic.UI.Components.Menu.OnSelect.get -> System.Action<int>?
+eQuantic.UI.Components.Menu.Placement.get -> eQuantic.UI.Primitives.AnchorPlacement
+eQuantic.UI.Components.Menu.Placement.init -> void
+eQuantic.UI.Components.Menu.Trigger.get -> eQuantic.UI.Primitives.VisualNode!
+eQuantic.UI.Components.MenuItem
+eQuantic.UI.Components.MenuItem.<Clone>$() -> eQuantic.UI.Components.MenuItem!
+eQuantic.UI.Components.MenuItem.Deconstruct(out string! Label) -> void
+eQuantic.UI.Components.MenuItem.Destructive.get -> bool
+eQuantic.UI.Components.MenuItem.Destructive.init -> void
+eQuantic.UI.Components.MenuItem.Disabled.get -> bool
+eQuantic.UI.Components.MenuItem.Disabled.init -> void
+eQuantic.UI.Components.MenuItem.Equals(eQuantic.UI.Components.MenuItem? other) -> bool
+eQuantic.UI.Components.MenuItem.Icon.get -> eQuantic.UI.Primitives.Icons?
+eQuantic.UI.Components.MenuItem.Icon.init -> void
+eQuantic.UI.Components.MenuItem.Label.get -> string!
+eQuantic.UI.Components.MenuItem.Label.init -> void
+eQuantic.UI.Components.MenuItem.MenuItem(string! Label) -> void
+eQuantic.UI.Components.Mermaid
+eQuantic.UI.Components.Mermaid.Mermaid(string! source) -> void
+eQuantic.UI.Components.Mermaid.Source.get -> string!
+eQuantic.UI.Components.Mermaid.Source.init -> void
+eQuantic.UI.Components.MermaidArrowhead
+eQuantic.UI.Components.MermaidArrowhead.Direction.get -> int
+eQuantic.UI.Components.MermaidArrowhead.Direction.set -> void
+eQuantic.UI.Components.MermaidArrowhead.MermaidArrowhead() -> void
+eQuantic.UI.Components.MermaidArrowhead.X.get -> float
+eQuantic.UI.Components.MermaidArrowhead.X.set -> void
+eQuantic.UI.Components.MermaidArrowhead.Y.get -> float
+eQuantic.UI.Components.MermaidArrowhead.Y.set -> void
+eQuantic.UI.Components.MermaidCurve
+eQuantic.UI.Components.MermaidCurve.H.get -> float
+eQuantic.UI.Components.MermaidCurve.H.set -> void
+eQuantic.UI.Components.MermaidCurve.MermaidCurve() -> void
+eQuantic.UI.Components.MermaidCurve.Path.get -> string!
+eQuantic.UI.Components.MermaidCurve.Path.set -> void
+eQuantic.UI.Components.MermaidCurve.ViewBox.get -> string!
+eQuantic.UI.Components.MermaidCurve.ViewBox.set -> void
+eQuantic.UI.Components.MermaidCurve.W.get -> float
+eQuantic.UI.Components.MermaidCurve.W.set -> void
+eQuantic.UI.Components.MermaidCurve.X.get -> float
+eQuantic.UI.Components.MermaidCurve.X.set -> void
+eQuantic.UI.Components.MermaidCurve.Y.get -> float
+eQuantic.UI.Components.MermaidCurve.Y.set -> void
+eQuantic.UI.Components.MermaidEdge
+eQuantic.UI.Components.MermaidEdge.Arrow.get -> bool
+eQuantic.UI.Components.MermaidEdge.Arrow.set -> void
+eQuantic.UI.Components.MermaidEdge.From.get -> string!
+eQuantic.UI.Components.MermaidEdge.From.set -> void
+eQuantic.UI.Components.MermaidEdge.Label.get -> string!
+eQuantic.UI.Components.MermaidEdge.Label.set -> void
+eQuantic.UI.Components.MermaidEdge.MermaidEdge() -> void
+eQuantic.UI.Components.MermaidEdge.To.get -> string!
+eQuantic.UI.Components.MermaidEdge.To.set -> void
+eQuantic.UI.Components.MermaidGraph
+eQuantic.UI.Components.MermaidGraph.Edges.get -> System.Collections.Generic.List<eQuantic.UI.Components.MermaidEdge!>!
+eQuantic.UI.Components.MermaidGraph.Edges.set -> void
+eQuantic.UI.Components.MermaidGraph.Kind.get -> eQuantic.UI.Components.MermaidKind
+eQuantic.UI.Components.MermaidGraph.Kind.set -> void
+eQuantic.UI.Components.MermaidGraph.MermaidGraph() -> void
+eQuantic.UI.Components.MermaidGraph.Messages.get -> System.Collections.Generic.List<eQuantic.UI.Components.MermaidMessage!>!
+eQuantic.UI.Components.MermaidGraph.Messages.set -> void
+eQuantic.UI.Components.MermaidGraph.Nodes.get -> System.Collections.Generic.List<eQuantic.UI.Components.MermaidNode!>!
+eQuantic.UI.Components.MermaidGraph.Nodes.set -> void
+eQuantic.UI.Components.MermaidGraph.Vertical.get -> bool
+eQuantic.UI.Components.MermaidGraph.Vertical.set -> void
+eQuantic.UI.Components.MermaidKind
+eQuantic.UI.Components.MermaidKind.Flowchart = 0 -> eQuantic.UI.Components.MermaidKind
+eQuantic.UI.Components.MermaidKind.Sequence = 1 -> eQuantic.UI.Components.MermaidKind
+eQuantic.UI.Components.MermaidLabel
+eQuantic.UI.Components.MermaidLabel.MermaidLabel() -> void
+eQuantic.UI.Components.MermaidLabel.Text.get -> string!
+eQuantic.UI.Components.MermaidLabel.Text.set -> void
+eQuantic.UI.Components.MermaidLabel.X.get -> float
+eQuantic.UI.Components.MermaidLabel.X.set -> void
+eQuantic.UI.Components.MermaidLabel.Y.get -> float
+eQuantic.UI.Components.MermaidLabel.Y.set -> void
+eQuantic.UI.Components.MermaidLayout
+eQuantic.UI.Components.MermaidMessage
+eQuantic.UI.Components.MermaidMessage.Dashed.get -> bool
+eQuantic.UI.Components.MermaidMessage.Dashed.set -> void
+eQuantic.UI.Components.MermaidMessage.From.get -> string!
+eQuantic.UI.Components.MermaidMessage.From.set -> void
+eQuantic.UI.Components.MermaidMessage.Label.get -> string!
+eQuantic.UI.Components.MermaidMessage.Label.set -> void
+eQuantic.UI.Components.MermaidMessage.MermaidMessage() -> void
+eQuantic.UI.Components.MermaidMessage.To.get -> string!
+eQuantic.UI.Components.MermaidMessage.To.set -> void
+eQuantic.UI.Components.MermaidNode
+eQuantic.UI.Components.MermaidNode.Id.get -> string!
+eQuantic.UI.Components.MermaidNode.Id.set -> void
+eQuantic.UI.Components.MermaidNode.Label.get -> string!
+eQuantic.UI.Components.MermaidNode.Label.set -> void
+eQuantic.UI.Components.MermaidNode.MermaidNode() -> void
+eQuantic.UI.Components.MermaidNode.Shape.get -> eQuantic.UI.Components.MermaidShape
+eQuantic.UI.Components.MermaidNode.Shape.set -> void
+eQuantic.UI.Components.MermaidParser
+eQuantic.UI.Components.MermaidPlacedNode
+eQuantic.UI.Components.MermaidPlacedNode.H.get -> float
+eQuantic.UI.Components.MermaidPlacedNode.H.set -> void
+eQuantic.UI.Components.MermaidPlacedNode.MermaidPlacedNode() -> void
+eQuantic.UI.Components.MermaidPlacedNode.Node.get -> eQuantic.UI.Components.MermaidNode!
+eQuantic.UI.Components.MermaidPlacedNode.Node.set -> void
+eQuantic.UI.Components.MermaidPlacedNode.W.get -> float
+eQuantic.UI.Components.MermaidPlacedNode.W.set -> void
+eQuantic.UI.Components.MermaidPlacedNode.X.get -> float
+eQuantic.UI.Components.MermaidPlacedNode.X.set -> void
+eQuantic.UI.Components.MermaidPlacedNode.Y.get -> float
+eQuantic.UI.Components.MermaidPlacedNode.Y.set -> void
+eQuantic.UI.Components.MermaidScene
+eQuantic.UI.Components.MermaidScene.Arrows.get -> System.Collections.Generic.List<eQuantic.UI.Components.MermaidArrowhead!>!
+eQuantic.UI.Components.MermaidScene.Arrows.set -> void
+eQuantic.UI.Components.MermaidScene.Curves.get -> System.Collections.Generic.List<eQuantic.UI.Components.MermaidCurve!>!
+eQuantic.UI.Components.MermaidScene.Curves.set -> void
+eQuantic.UI.Components.MermaidScene.Height.get -> float
+eQuantic.UI.Components.MermaidScene.Height.set -> void
+eQuantic.UI.Components.MermaidScene.Labels.get -> System.Collections.Generic.List<eQuantic.UI.Components.MermaidLabel!>!
+eQuantic.UI.Components.MermaidScene.Labels.set -> void
+eQuantic.UI.Components.MermaidScene.MermaidScene() -> void
+eQuantic.UI.Components.MermaidScene.Nodes.get -> System.Collections.Generic.List<eQuantic.UI.Components.MermaidPlacedNode!>!
+eQuantic.UI.Components.MermaidScene.Nodes.set -> void
+eQuantic.UI.Components.MermaidScene.Segments.get -> System.Collections.Generic.List<eQuantic.UI.Components.MermaidSegment!>!
+eQuantic.UI.Components.MermaidScene.Segments.set -> void
+eQuantic.UI.Components.MermaidScene.Width.get -> float
+eQuantic.UI.Components.MermaidScene.Width.set -> void
+eQuantic.UI.Components.MermaidSegment
+eQuantic.UI.Components.MermaidSegment.H.get -> float
+eQuantic.UI.Components.MermaidSegment.H.set -> void
+eQuantic.UI.Components.MermaidSegment.MermaidSegment() -> void
+eQuantic.UI.Components.MermaidSegment.W.get -> float
+eQuantic.UI.Components.MermaidSegment.W.set -> void
+eQuantic.UI.Components.MermaidSegment.X.get -> float
+eQuantic.UI.Components.MermaidSegment.X.set -> void
+eQuantic.UI.Components.MermaidSegment.Y.get -> float
+eQuantic.UI.Components.MermaidSegment.Y.set -> void
+eQuantic.UI.Components.MermaidShape
+eQuantic.UI.Components.MermaidShape.Circle = 2 -> eQuantic.UI.Components.MermaidShape
+eQuantic.UI.Components.MermaidShape.Diamond = 3 -> eQuantic.UI.Components.MermaidShape
+eQuantic.UI.Components.MermaidShape.Rect = 0 -> eQuantic.UI.Components.MermaidShape
+eQuantic.UI.Components.MermaidShape.Rounded = 1 -> eQuantic.UI.Components.MermaidShape
+eQuantic.UI.Components.NavigationRail
+eQuantic.UI.Components.NavigationRail.Alignment.get -> eQuantic.UI.Primitives.MainAlign
+eQuantic.UI.Components.NavigationRail.Alignment.init -> void
+eQuantic.UI.Components.NavigationRail.Items.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.NavItem!>!
+eQuantic.UI.Components.NavigationRail.Items.init -> void
+eQuantic.UI.Components.NavigationRail.Leading.get -> eQuantic.UI.Primitives.VisualNode?
+eQuantic.UI.Components.NavigationRail.Leading.init -> void
+eQuantic.UI.Components.NavigationRail.NavigationRail(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.NavItem!>! items, int selected, System.Action<int>? onSelect = null) -> void
+eQuantic.UI.Components.NavigationRail.OnSelect.get -> System.Action<int>?
+eQuantic.UI.Components.NavigationRail.OnSelect.init -> void
+eQuantic.UI.Components.NavigationRail.Selected.get -> int
+eQuantic.UI.Components.NavigationRail.Selected.init -> void
+eQuantic.UI.Components.NavItem
+eQuantic.UI.Components.NavItem.<Clone>$() -> eQuantic.UI.Components.NavItem!
+eQuantic.UI.Components.NavItem.BadgeCount.get -> int
+eQuantic.UI.Components.NavItem.BadgeCount.init -> void
+eQuantic.UI.Components.NavItem.Deconstruct(out eQuantic.UI.Primitives.Icons Icon, out string! Label, out eQuantic.UI.Primitives.Icons? SelectedIcon) -> void
+eQuantic.UI.Components.NavItem.Equals(eQuantic.UI.Components.NavItem? other) -> bool
+eQuantic.UI.Components.NavItem.Icon.get -> eQuantic.UI.Primitives.Icons
+eQuantic.UI.Components.NavItem.Icon.init -> void
+eQuantic.UI.Components.NavItem.Label.get -> string!
+eQuantic.UI.Components.NavItem.Label.init -> void
+eQuantic.UI.Components.NavItem.NavItem(eQuantic.UI.Primitives.Icons Icon, string! Label, eQuantic.UI.Primitives.Icons? SelectedIcon = null) -> void
+eQuantic.UI.Components.NavItem.SelectedIcon.get -> eQuantic.UI.Primitives.Icons?
+eQuantic.UI.Components.NavItem.SelectedIcon.init -> void
+eQuantic.UI.Components.PageIndicator
+eQuantic.UI.Components.PageIndicator.Count.get -> int
+eQuantic.UI.Components.PageIndicator.Count.init -> void
+eQuantic.UI.Components.PageIndicator.CurrentIndex.get -> int
+eQuantic.UI.Components.PageIndicator.CurrentIndex.init -> void
+eQuantic.UI.Components.PageIndicator.OnSelected.get -> System.Action<int>?
+eQuantic.UI.Components.PageIndicator.OnSelected.init -> void
+eQuantic.UI.Components.PageIndicator.PageIndicator(int count, int currentIndex, System.Action<int>? onSelected = null) -> void
+eQuantic.UI.Components.PageIndicator.Variant.get -> eQuantic.UI.Primitives.Variant
+eQuantic.UI.Components.PageIndicator.Variant.init -> void
+eQuantic.UI.Components.Pagination
+eQuantic.UI.Components.Pagination.CurrentPage.get -> int
+eQuantic.UI.Components.Pagination.CurrentPage.init -> void
+eQuantic.UI.Components.Pagination.OnChanged.get -> System.Action<int>?
+eQuantic.UI.Components.Pagination.OnChanged.init -> void
+eQuantic.UI.Components.Pagination.PageCount.get -> int
+eQuantic.UI.Components.Pagination.PageCount.init -> void
+eQuantic.UI.Components.Pagination.Pagination(int pageCount, int currentPage, System.Action<int>? onChanged = null) -> void
+eQuantic.UI.Components.Popover
+eQuantic.UI.Components.Popover.Content.get -> eQuantic.UI.Primitives.VisualNode!
+eQuantic.UI.Components.Popover.Content.init -> void
+eQuantic.UI.Components.Popover.OnDismiss.get -> System.Action?
+eQuantic.UI.Components.Popover.OnDismiss.init -> void
+eQuantic.UI.Components.Popover.Open.get -> bool
+eQuantic.UI.Components.Popover.Open.init -> void
+eQuantic.UI.Components.Popover.Placement.get -> eQuantic.UI.Primitives.AnchorPlacement
+eQuantic.UI.Components.Popover.Placement.init -> void
+eQuantic.UI.Components.Popover.Popover(eQuantic.UI.Primitives.VisualNode! trigger, eQuantic.UI.Primitives.VisualNode! content, bool open, System.Action? onDismiss = null) -> void
+eQuantic.UI.Components.Popover.Trigger.get -> eQuantic.UI.Primitives.VisualNode!
+eQuantic.UI.Components.Popover.Trigger.init -> void
+eQuantic.UI.Components.PresenceStatus
+eQuantic.UI.Components.PresenceStatus.None = 0 -> eQuantic.UI.Components.PresenceStatus
+eQuantic.UI.Components.PresenceStatus.Offline = 2 -> eQuantic.UI.Components.PresenceStatus
+eQuantic.UI.Components.PresenceStatus.Online = 1 -> eQuantic.UI.Components.PresenceStatus
+eQuantic.UI.Components.ProgressBar
+eQuantic.UI.Components.ProgressBar.ProgressBar(float? value = null, eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Primary) -> void
+eQuantic.UI.Components.ProgressBar.Prominent.get -> bool
+eQuantic.UI.Components.ProgressBar.Prominent.init -> void
+eQuantic.UI.Components.ProgressBar.Value.get -> float?
+eQuantic.UI.Components.ProgressBar.Variant.get -> eQuantic.UI.Primitives.Variant
+eQuantic.UI.Components.PullToRefresh
+eQuantic.UI.Components.PullToRefresh.Child.get -> eQuantic.UI.Primitives.VisualNode!
+eQuantic.UI.Components.PullToRefresh.Child.init -> void
+eQuantic.UI.Components.PullToRefresh.OnRefresh.get -> System.Action?
+eQuantic.UI.Components.PullToRefresh.OnRefresh.init -> void
+eQuantic.UI.Components.PullToRefresh.PullToRefresh(eQuantic.UI.Primitives.VisualNode! child, System.Action? onRefresh = null) -> void
+eQuantic.UI.Components.PullToRefresh.Refreshing.get -> bool
+eQuantic.UI.Components.PullToRefresh.Refreshing.init -> void
+eQuantic.UI.Components.RadioGroup
+eQuantic.UI.Components.RadioGroup.Disabled.get -> bool
+eQuantic.UI.Components.RadioGroup.Disabled.init -> void
+eQuantic.UI.Components.RadioGroup.Label.get -> string?
+eQuantic.UI.Components.RadioGroup.Label.init -> void
+eQuantic.UI.Components.RadioGroup.OnChanged.get -> System.Action<int>?
+eQuantic.UI.Components.RadioGroup.OnChanged.init -> void
+eQuantic.UI.Components.RadioGroup.Options.get -> System.Collections.Generic.IReadOnlyList<string!>!
+eQuantic.UI.Components.RadioGroup.Options.init -> void
+eQuantic.UI.Components.RadioGroup.RadioGroup(System.Collections.Generic.IReadOnlyList<string!>! options, int selected, System.Action<int>? onChanged = null, string? label = null) -> void
+eQuantic.UI.Components.RadioGroup.Selected.get -> int
+eQuantic.UI.Components.RadioGroup.Selected.init -> void
+eQuantic.UI.Components.SdkStrings
+eQuantic.UI.Components.SearchField
+eQuantic.UI.Components.SearchField.OnChanged.get -> System.Action<string!>?
+eQuantic.UI.Components.SearchField.OnChanged.init -> void
+eQuantic.UI.Components.SearchField.OnSubmit.get -> System.Action?
+eQuantic.UI.Components.SearchField.OnSubmit.init -> void
+eQuantic.UI.Components.SearchField.Placeholder.get -> string!
+eQuantic.UI.Components.SearchField.Placeholder.init -> void
+eQuantic.UI.Components.SearchField.Query.get -> string!
+eQuantic.UI.Components.SearchField.Query.init -> void
+eQuantic.UI.Components.SearchField.SearchField(string! query, System.Action<string!>? onChanged = null, string? placeholder = null, System.Action? onSubmit = null) -> void
+eQuantic.UI.Components.SegmentedControl
+eQuantic.UI.Components.SegmentedControl.Disabled.get -> bool
+eQuantic.UI.Components.SegmentedControl.Disabled.init -> void
+eQuantic.UI.Components.SegmentedControl.OnChanged.get -> System.Action<int>?
+eQuantic.UI.Components.SegmentedControl.OnChanged.init -> void
+eQuantic.UI.Components.SegmentedControl.SegmentedControl(System.Collections.Generic.IReadOnlyList<string!>! segments, int selectedIndex, System.Action<int>? onChanged = null) -> void
+eQuantic.UI.Components.SegmentedControl.Segments.get -> System.Collections.Generic.IReadOnlyList<string!>!
+eQuantic.UI.Components.SegmentedControl.Segments.init -> void
+eQuantic.UI.Components.SegmentedControl.SelectedIndex.get -> int
+eQuantic.UI.Components.SegmentedControl.SelectedIndex.init -> void
+eQuantic.UI.Components.SegmentedControl.Size.get -> eQuantic.UI.Primitives.SizeVariant
+eQuantic.UI.Components.SegmentedControl.Size.init -> void
+eQuantic.UI.Components.SegmentedControl.Stretch.get -> bool
+eQuantic.UI.Components.SegmentedControl.Stretch.init -> void
+eQuantic.UI.Components.Select
+eQuantic.UI.Components.Select.Disabled.get -> bool
+eQuantic.UI.Components.Select.Disabled.init -> void
+eQuantic.UI.Components.Select.OnChanged.get -> System.Action<int>?
+eQuantic.UI.Components.Select.Options.get -> System.Collections.Generic.IReadOnlyList<string!>!
+eQuantic.UI.Components.Select.Placeholder.get -> string?
+eQuantic.UI.Components.Select.Select(System.Collections.Generic.IReadOnlyList<string!>! options, int selectedIndex = -1, System.Action<int>? onChanged = null, string? placeholder = null) -> void
+eQuantic.UI.Components.Select.SelectedIndex.get -> int
+eQuantic.UI.Components.Skeleton
+eQuantic.UI.Components.Skeleton.Height.get -> float
+eQuantic.UI.Components.Skeleton.Height.init -> void
+eQuantic.UI.Components.Skeleton.Shape.get -> eQuantic.UI.Components.SkeletonShape
+eQuantic.UI.Components.Skeleton.Shape.init -> void
+eQuantic.UI.Components.Skeleton.Skeleton(eQuantic.UI.Components.SkeletonShape shape, float width, float height = 0) -> void
+eQuantic.UI.Components.Skeleton.Width.get -> float
+eQuantic.UI.Components.Skeleton.Width.init -> void
+eQuantic.UI.Components.SkeletonShape
+eQuantic.UI.Components.SkeletonShape.Block = 2 -> eQuantic.UI.Components.SkeletonShape
+eQuantic.UI.Components.SkeletonShape.Circle = 1 -> eQuantic.UI.Components.SkeletonShape
+eQuantic.UI.Components.SkeletonShape.Line = 0 -> eQuantic.UI.Components.SkeletonShape
+eQuantic.UI.Components.Slider
+eQuantic.UI.Components.Slider.Disabled.get -> bool
+eQuantic.UI.Components.Slider.Disabled.init -> void
+eQuantic.UI.Components.Slider.Label.get -> string!
+eQuantic.UI.Components.Slider.Label.init -> void
+eQuantic.UI.Components.Slider.Max.get -> float
+eQuantic.UI.Components.Slider.Max.init -> void
+eQuantic.UI.Components.Slider.Min.get -> float
+eQuantic.UI.Components.Slider.Min.init -> void
+eQuantic.UI.Components.Slider.OnChanged.get -> System.Action<float>?
+eQuantic.UI.Components.Slider.OnChanged.init -> void
+eQuantic.UI.Components.Slider.Slider(float value, System.Action<float>? onChanged = null) -> void
+eQuantic.UI.Components.Slider.Step.get -> float
+eQuantic.UI.Components.Slider.Step.init -> void
+eQuantic.UI.Components.Slider.Value.get -> float
+eQuantic.UI.Components.Slider.Value.init -> void
+eQuantic.UI.Components.Slider.ValueText.get -> string?
+eQuantic.UI.Components.Slider.ValueText.init -> void
+eQuantic.UI.Components.Slider.Variant.get -> eQuantic.UI.Primitives.Variant
+eQuantic.UI.Components.Slider.Variant.init -> void
+eQuantic.UI.Components.SortDirection
+eQuantic.UI.Components.SortDirection.Ascending = 1 -> eQuantic.UI.Components.SortDirection
+eQuantic.UI.Components.SortDirection.Descending = 2 -> eQuantic.UI.Components.SortDirection
+eQuantic.UI.Components.SortDirection.None = 0 -> eQuantic.UI.Components.SortDirection
+eQuantic.UI.Components.Spreadsheet
+eQuantic.UI.Components.Spreadsheet.Controller.get -> eQuantic.UI.Primitives.SheetController!
+eQuantic.UI.Components.Spreadsheet.Height.get -> eQuantic.UI.Primitives.SizeValue
+eQuantic.UI.Components.Spreadsheet.Height.init -> void
+eQuantic.UI.Components.Spreadsheet.Overscan.get -> int
+eQuantic.UI.Components.Spreadsheet.Overscan.init -> void
+eQuantic.UI.Components.Spreadsheet.Spreadsheet(eQuantic.UI.Primitives.SheetController! controller) -> void
+eQuantic.UI.Components.Spreadsheet.Width.get -> eQuantic.UI.Primitives.SizeValue
+eQuantic.UI.Components.Spreadsheet.Width.init -> void
+eQuantic.UI.Components.Stepper
+eQuantic.UI.Components.Stepper.Disabled.get -> bool
+eQuantic.UI.Components.Stepper.Disabled.init -> void
+eQuantic.UI.Components.Stepper.Label.get -> string!
+eQuantic.UI.Components.Stepper.Label.init -> void
+eQuantic.UI.Components.Stepper.Max.get -> int
+eQuantic.UI.Components.Stepper.Max.init -> void
+eQuantic.UI.Components.Stepper.Min.get -> int
+eQuantic.UI.Components.Stepper.Min.init -> void
+eQuantic.UI.Components.Stepper.OnChanged.get -> System.Action<int>?
+eQuantic.UI.Components.Stepper.OnChanged.init -> void
+eQuantic.UI.Components.Stepper.Size.get -> eQuantic.UI.Primitives.SizeVariant
+eQuantic.UI.Components.Stepper.Size.init -> void
+eQuantic.UI.Components.Stepper.Step.get -> int
+eQuantic.UI.Components.Stepper.Step.init -> void
+eQuantic.UI.Components.Stepper.Stepper(int value, System.Action<int>? onChanged = null) -> void
+eQuantic.UI.Components.Stepper.Suffix.get -> string!
+eQuantic.UI.Components.Stepper.Suffix.init -> void
+eQuantic.UI.Components.Stepper.Value.get -> int
+eQuantic.UI.Components.Stepper.Value.init -> void
+eQuantic.UI.Components.SwipeableRow
+eQuantic.UI.Components.SwipeableRow.ActionIcon.get -> eQuantic.UI.Primitives.Icons
+eQuantic.UI.Components.SwipeableRow.ActionIcon.init -> void
+eQuantic.UI.Components.SwipeableRow.ActionLabel.get -> string!
+eQuantic.UI.Components.SwipeableRow.ActionLabel.init -> void
+eQuantic.UI.Components.SwipeableRow.ActionVariant.get -> eQuantic.UI.Primitives.Variant
+eQuantic.UI.Components.SwipeableRow.ActionVariant.init -> void
+eQuantic.UI.Components.SwipeableRow.Child.get -> eQuantic.UI.Primitives.VisualNode!
+eQuantic.UI.Components.SwipeableRow.Child.init -> void
+eQuantic.UI.Components.SwipeableRow.OnAction.get -> System.Action?
+eQuantic.UI.Components.SwipeableRow.OnAction.init -> void
+eQuantic.UI.Components.SwipeableRow.OnOpenChanged.get -> System.Action<bool>?
+eQuantic.UI.Components.SwipeableRow.OnOpenChanged.init -> void
+eQuantic.UI.Components.SwipeableRow.Open.get -> bool
+eQuantic.UI.Components.SwipeableRow.Open.init -> void
+eQuantic.UI.Components.SwipeableRow.SwipeableRow(eQuantic.UI.Primitives.VisualNode! child, string! actionLabel, eQuantic.UI.Primitives.Icons actionIcon, System.Action? onAction = null) -> void
+eQuantic.UI.Components.Switch
+eQuantic.UI.Components.Switch.Disabled.get -> bool
+eQuantic.UI.Components.Switch.Disabled.init -> void
+eQuantic.UI.Components.Switch.Label.get -> string?
+eQuantic.UI.Components.Switch.Label.init -> void
+eQuantic.UI.Components.Switch.On.get -> bool
+eQuantic.UI.Components.Switch.On.init -> void
+eQuantic.UI.Components.Switch.OnChanged.get -> System.Action?
+eQuantic.UI.Components.Switch.OnChanged.init -> void
+eQuantic.UI.Components.Switch.Switch(bool on, System.Action? onChanged = null) -> void
+eQuantic.UI.Components.Table
+eQuantic.UI.Components.Table.Columns.get -> System.Collections.Generic.IReadOnlyList<string!>!
+eQuantic.UI.Components.Table.Columns.init -> void
+eQuantic.UI.Components.Table.Rows.get -> System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<string!>!>!
+eQuantic.UI.Components.Table.Rows.init -> void
+eQuantic.UI.Components.Table.Table(System.Collections.Generic.IReadOnlyList<string!>! columns, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<string!>!>! rows) -> void
+eQuantic.UI.Components.Tabs
+eQuantic.UI.Components.Tabs.Labels.get -> System.Collections.Generic.IReadOnlyList<string!>!
+eQuantic.UI.Components.Tabs.Labels.init -> void
+eQuantic.UI.Components.Tabs.OnSelect.get -> System.Action<int>?
+eQuantic.UI.Components.Tabs.OnSelect.init -> void
+eQuantic.UI.Components.Tabs.Selected.get -> int
+eQuantic.UI.Components.Tabs.Selected.init -> void
+eQuantic.UI.Components.Tabs.Tabs(System.Collections.Generic.IReadOnlyList<string!>! labels, int selected, System.Action<int>? onSelect = null) -> void
+eQuantic.UI.Components.TextInput
+eQuantic.UI.Components.TextInput.Autofocus.get -> bool
+eQuantic.UI.Components.TextInput.Autofocus.init -> void
+eQuantic.UI.Components.TextInput.Disabled.get -> bool
+eQuantic.UI.Components.TextInput.Disabled.init -> void
+eQuantic.UI.Components.TextInput.Error.get -> string?
+eQuantic.UI.Components.TextInput.Helper.get -> string?
+eQuantic.UI.Components.TextInput.Label.get -> string!
+eQuantic.UI.Components.TextInput.Leading.get -> eQuantic.UI.Primitives.Icons?
+eQuantic.UI.Components.TextInput.Obscure.get -> bool
+eQuantic.UI.Components.TextInput.Obscure.init -> void
+eQuantic.UI.Components.TextInput.OnChanged.get -> System.Action<string!>?
+eQuantic.UI.Components.TextInput.OnFocusChanged.get -> System.Action<bool>?
+eQuantic.UI.Components.TextInput.OnFocusChanged.init -> void
+eQuantic.UI.Components.TextInput.Placeholder.get -> string?
+eQuantic.UI.Components.TextInput.Size.get -> eQuantic.UI.Primitives.SizeVariant
+eQuantic.UI.Components.TextInput.TextInput(string! value, System.Action<string!>? onChanged = null, string! label = "", string? placeholder = null, string? helper = null, string? error = null, eQuantic.UI.Primitives.Icons? leading = null, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Large, eQuantic.UI.Primitives.VisualNode? trailing = null) -> void
+eQuantic.UI.Components.TextInput.Trailing.get -> eQuantic.UI.Primitives.VisualNode?
+eQuantic.UI.Components.TextInput.Value.get -> string!
+eQuantic.UI.Components.TimePicker
+eQuantic.UI.Components.TimePicker.Disabled.get -> bool
+eQuantic.UI.Components.TimePicker.Disabled.init -> void
+eQuantic.UI.Components.TimePicker.Label.get -> string!
+eQuantic.UI.Components.TimePicker.Max.get -> System.TimeOnly?
+eQuantic.UI.Components.TimePicker.Min.get -> System.TimeOnly?
+eQuantic.UI.Components.TimePicker.OnChanged.get -> System.Action<System.TimeOnly>?
+eQuantic.UI.Components.TimePicker.Selected.get -> System.TimeOnly?
+eQuantic.UI.Components.TimePicker.StepMinutes.get -> int
+eQuantic.UI.Components.TimePicker.TimePicker(System.TimeOnly? selected = null, System.Action<System.TimeOnly>? onChanged = null, int stepMinutes = 30, System.TimeOnly? min = null, System.TimeOnly? max = null, string! label = "") -> void
+eQuantic.UI.Components.Toast
+eQuantic.UI.Components.Toast.ActionLabel.get -> string?
+eQuantic.UI.Components.Toast.ActionLabel.init -> void
+eQuantic.UI.Components.Toast.Message.get -> string!
+eQuantic.UI.Components.Toast.Message.init -> void
+eQuantic.UI.Components.Toast.OnAction.get -> System.Action?
+eQuantic.UI.Components.Toast.OnAction.init -> void
+eQuantic.UI.Components.Toast.Status.get -> eQuantic.UI.Primitives.Variant
+eQuantic.UI.Components.Toast.Status.init -> void
+eQuantic.UI.Components.Toast.Toast(string! message, eQuantic.UI.Primitives.Variant status = eQuantic.UI.Primitives.Variant.Info, string? actionLabel = null, System.Action? onAction = null) -> void
+eQuantic.UI.Components.Tooltip
+eQuantic.UI.Components.Tooltip.Child.get -> eQuantic.UI.Primitives.VisualNode!
+eQuantic.UI.Components.Tooltip.Child.init -> void
+eQuantic.UI.Components.Tooltip.Placement.get -> eQuantic.UI.Primitives.AnchorPlacement
+eQuantic.UI.Components.Tooltip.Placement.init -> void
+eQuantic.UI.Components.Tooltip.Text.get -> string!
+eQuantic.UI.Components.Tooltip.Text.init -> void
+eQuantic.UI.Components.Tooltip.Tooltip(eQuantic.UI.Primitives.VisualNode! child, string! text) -> void
+eQuantic.UI.Components.UI
+override eQuantic.UI.Components.Accordion.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
+override eQuantic.UI.Components.Accordion.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.AccordionItem.Equals(object? obj) -> bool
+override eQuantic.UI.Components.AccordionItem.GetHashCode() -> int
+override eQuantic.UI.Components.AccordionItem.ToString() -> string!
+override eQuantic.UI.Components.AppBar.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.Avatar.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.Badge.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.Banner.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.BottomNavigation.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.BottomSheet.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.Breadcrumb.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.Button.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.Calendar.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
+override eQuantic.UI.Components.Calendar.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.Card.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.Checkbox.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.Chip.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.CodeBlock.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.CodeBlock.CodeMetrics.GetHashCode() -> int
+override eQuantic.UI.Components.CodeEditor.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
+override eQuantic.UI.Components.CodeEditor.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.CookieConsent.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.Crumb.Equals(object? obj) -> bool
+override eQuantic.UI.Components.Crumb.GetHashCode() -> int
+override eQuantic.UI.Components.Crumb.ToString() -> string!
+override eQuantic.UI.Components.CultureOption.Equals(object? obj) -> bool
+override eQuantic.UI.Components.CultureOption.GetHashCode() -> int
+override eQuantic.UI.Components.CultureOption.ToString() -> string!
+override eQuantic.UI.Components.CultureSwitcher.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.DataColumn.Equals(object? obj) -> bool
+override eQuantic.UI.Components.DataColumn.GetHashCode() -> int
+override eQuantic.UI.Components.DataColumn.ToString() -> string!
+override eQuantic.UI.Components.DataRow.Equals(object? obj) -> bool
+override eQuantic.UI.Components.DataRow.GetHashCode() -> int
+override eQuantic.UI.Components.DataRow.ToString() -> string!
+override eQuantic.UI.Components.DataTable.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.DatePicker.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
+override eQuantic.UI.Components.DatePicker.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.DateTimePicker.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
+override eQuantic.UI.Components.DateTimePicker.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.Dialog.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.DialogAction.Equals(object? obj) -> bool
+override eQuantic.UI.Components.DialogAction.GetHashCode() -> int
+override eQuantic.UI.Components.DialogAction.ToString() -> string!
+override eQuantic.UI.Components.Divider.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.Drawer.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.EmptyState.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.FormInput.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.FormSubmit.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.IconButton.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.List.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.ListDetail.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.ListItem.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.ListView.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
+override eQuantic.UI.Components.ListView.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.Markdown.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.Menu.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
+override eQuantic.UI.Components.Menu.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.MenuItem.Equals(object? obj) -> bool
+override eQuantic.UI.Components.MenuItem.GetHashCode() -> int
+override eQuantic.UI.Components.MenuItem.ToString() -> string!
+override eQuantic.UI.Components.Mermaid.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.NavigationRail.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.NavItem.Equals(object? obj) -> bool
+override eQuantic.UI.Components.NavItem.GetHashCode() -> int
+override eQuantic.UI.Components.NavItem.ToString() -> string!
+override eQuantic.UI.Components.PageIndicator.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.Pagination.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.Popover.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.ProgressBar.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
+override eQuantic.UI.Components.ProgressBar.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.PullToRefresh.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.RadioGroup.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.SearchField.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.SegmentedControl.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.Select.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
+override eQuantic.UI.Components.Select.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.Skeleton.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.Slider.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.Spreadsheet.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
+override eQuantic.UI.Components.Spreadsheet.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.Stepper.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.SwipeableRow.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.Switch.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.Table.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.Tabs.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.TextInput.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
+override eQuantic.UI.Components.TextInput.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.TimePicker.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
+override eQuantic.UI.Components.TimePicker.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.Toast.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+override eQuantic.UI.Components.Tooltip.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+static eQuantic.UI.Components.AccordionItem.operator !=(eQuantic.UI.Components.AccordionItem? left, eQuantic.UI.Components.AccordionItem? right) -> bool
+static eQuantic.UI.Components.AccordionItem.operator ==(eQuantic.UI.Components.AccordionItem? left, eQuantic.UI.Components.AccordionItem? right) -> bool
+static eQuantic.UI.Components.Badge.AsDot(eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Destructive) -> eQuantic.UI.Components.Badge!
+static eQuantic.UI.Components.CodeBlock.CodeMetrics.operator !=(eQuantic.UI.Components.CodeBlock.CodeMetrics left, eQuantic.UI.Components.CodeBlock.CodeMetrics right) -> bool
+static eQuantic.UI.Components.CodeBlock.CodeMetrics.operator ==(eQuantic.UI.Components.CodeBlock.CodeMetrics left, eQuantic.UI.Components.CodeBlock.CodeMetrics right) -> bool
+static eQuantic.UI.Components.CodeBlock.InkFor(bool inverse, eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Primitives.ColorToken
+static eQuantic.UI.Components.CodeBlock.MetricsFor(eQuantic.UI.Primitives.ComponentContext! context, eQuantic.UI.Primitives.SizeVariant size, bool showLineNumbers, int lastLineNumber) -> eQuantic.UI.Components.CodeBlock.CodeMetrics
+static eQuantic.UI.Components.CodeBlock.Of(eQuantic.UI.Primitives.CodeDocument! document, eQuantic.UI.Primitives.ICodeLanguage! language) -> eQuantic.UI.Components.CodeBlock!
+static eQuantic.UI.Components.CodeBlock.SelectionFor(bool inverse, eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Primitives.ColorToken
+static eQuantic.UI.Components.CodeBlock.SurfaceFor(bool inverse, eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Primitives.ColorToken
+static eQuantic.UI.Components.Crumb.operator !=(eQuantic.UI.Components.Crumb? left, eQuantic.UI.Components.Crumb? right) -> bool
+static eQuantic.UI.Components.Crumb.operator ==(eQuantic.UI.Components.Crumb? left, eQuantic.UI.Components.Crumb? right) -> bool
+static eQuantic.UI.Components.CultureOption.operator !=(eQuantic.UI.Components.CultureOption? left, eQuantic.UI.Components.CultureOption? right) -> bool
+static eQuantic.UI.Components.CultureOption.operator ==(eQuantic.UI.Components.CultureOption? left, eQuantic.UI.Components.CultureOption? right) -> bool
+static eQuantic.UI.Components.DataColumn.operator !=(eQuantic.UI.Components.DataColumn? left, eQuantic.UI.Components.DataColumn? right) -> bool
+static eQuantic.UI.Components.DataColumn.operator ==(eQuantic.UI.Components.DataColumn? left, eQuantic.UI.Components.DataColumn? right) -> bool
+static eQuantic.UI.Components.DataRow.operator !=(eQuantic.UI.Components.DataRow? left, eQuantic.UI.Components.DataRow? right) -> bool
+static eQuantic.UI.Components.DataRow.operator ==(eQuantic.UI.Components.DataRow? left, eQuantic.UI.Components.DataRow? right) -> bool
+static eQuantic.UI.Components.DialogAction.operator !=(eQuantic.UI.Components.DialogAction? left, eQuantic.UI.Components.DialogAction? right) -> bool
+static eQuantic.UI.Components.DialogAction.operator ==(eQuantic.UI.Components.DialogAction? left, eQuantic.UI.Components.DialogAction? right) -> bool
+static eQuantic.UI.Components.MarkdownParser.Inline(string! text) -> System.Collections.Generic.List<eQuantic.UI.Components.MarkdownRun!>!
+static eQuantic.UI.Components.MarkdownParser.Parse(string! source) -> System.Collections.Generic.List<eQuantic.UI.Components.MarkdownBlock!>!
+static eQuantic.UI.Components.MarkdownParser.Slug(string! text) -> string!
+static eQuantic.UI.Components.MarkdownParser.Strip(string! text) -> string!
+static eQuantic.UI.Components.MenuItem.operator !=(eQuantic.UI.Components.MenuItem? left, eQuantic.UI.Components.MenuItem? right) -> bool
+static eQuantic.UI.Components.MenuItem.operator ==(eQuantic.UI.Components.MenuItem? left, eQuantic.UI.Components.MenuItem? right) -> bool
+static eQuantic.UI.Components.MermaidLayout.Solve(eQuantic.UI.Components.MermaidGraph! graph) -> eQuantic.UI.Components.MermaidScene!
+static eQuantic.UI.Components.MermaidParser.Parse(string! source) -> eQuantic.UI.Components.MermaidGraph?
+static eQuantic.UI.Components.NavItem.operator !=(eQuantic.UI.Components.NavItem? left, eQuantic.UI.Components.NavItem? right) -> bool
+static eQuantic.UI.Components.NavItem.operator ==(eQuantic.UI.Components.NavItem? left, eQuantic.UI.Components.NavItem? right) -> bool
+static eQuantic.UI.Components.Pagination.Pages(int pageCount, int currentPage) -> int[]!
+static eQuantic.UI.Components.SdkStrings.AcceptCookies.get -> string!
+static eQuantic.UI.Components.SdkStrings.Back.get -> string!
+static eQuantic.UI.Components.SdkStrings.ChooseDate.get -> string!
+static eQuantic.UI.Components.SdkStrings.ChooseTime.get -> string!
+static eQuantic.UI.Components.SdkStrings.ClearSearch.get -> string!
+static eQuantic.UI.Components.SdkStrings.CookieConsentBody.get -> string!
+static eQuantic.UI.Components.SdkStrings.CookieConsentTitle.get -> string!
+static eQuantic.UI.Components.SdkStrings.DateFormatHint.get -> string!
+static eQuantic.UI.Components.SdkStrings.DateFormatLetters.get -> string!
+static eQuantic.UI.Components.SdkStrings.Dismiss.get -> string!
+static eQuantic.UI.Components.SdkStrings.Find.get -> string!
+static eQuantic.UI.Components.SdkStrings.NextMatch.get -> string!
+static eQuantic.UI.Components.SdkStrings.NextMonth.get -> string!
+static eQuantic.UI.Components.SdkStrings.NothingSelected.get -> string!
+static eQuantic.UI.Components.SdkStrings.PreviousMatch.get -> string!
+static eQuantic.UI.Components.SdkStrings.PreviousMonth.get -> string!
+static eQuantic.UI.Components.SdkStrings.PrivacyPolicy.get -> string!
+static eQuantic.UI.Components.SdkStrings.RejectCookies.get -> string!
+static eQuantic.UI.Components.SdkStrings.Remove.get -> string!
+static eQuantic.UI.Components.SdkStrings.SearchPlaceholder.get -> string!
+static eQuantic.UI.Components.SdkStrings.ShowAsChart.get -> string!
+static eQuantic.UI.Components.SdkStrings.ShowAsTable.get -> string!
+static eQuantic.UI.Components.SdkStrings.Spreadsheet.get -> string!
+static eQuantic.UI.Components.SdkStrings.Today.get -> string!
+static eQuantic.UI.Components.Spreadsheet.ColumnName(int col) -> string!
+static eQuantic.UI.Components.UI.AdaptiveNode(eQuantic.UI.Primitives.VisualNode! compact, eQuantic.UI.Primitives.VisualNode? medium = null, eQuantic.UI.Primitives.VisualNode? expanded = null) -> eQuantic.UI.Primitives.AdaptiveNode!
+static eQuantic.UI.Components.UI.Adjustable(eQuantic.UI.Primitives.VisualNode! child, System.Action<int>! onAdjust, eQuantic.UI.Primitives.AdjustableValue? value = null, eQuantic.UI.Primitives.AdjustableRole role = eQuantic.UI.Primitives.AdjustableRole.Slider) -> eQuantic.UI.Primitives.Adjustable!
+static eQuantic.UI.Components.UI.Anchored(eQuantic.UI.Primitives.VisualNode! anchor, eQuantic.UI.Primitives.VisualNode! panel) -> eQuantic.UI.Primitives.Anchored!
+static eQuantic.UI.Components.UI.AppBar(string! title) -> eQuantic.UI.Components.AppBar!
+static eQuantic.UI.Components.UI.Avatar(string! initials, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Medium, string? name = null) -> eQuantic.UI.Components.Avatar!
+static eQuantic.UI.Components.UI.Badge(int count = 0, int max = 99, eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Destructive) -> eQuantic.UI.Components.Badge!
+static eQuantic.UI.Components.UI.Banner(eQuantic.UI.Primitives.Variant status, string! title, string? body = null) -> eQuantic.UI.Components.Banner!
+static eQuantic.UI.Components.UI.BottomNavigation(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.NavItem!>! items, int selected, System.Action<int>? onSelect = null) -> eQuantic.UI.Components.BottomNavigation!
+static eQuantic.UI.Components.UI.Box(eQuantic.UI.Primitives.BoxStyle style = default(eQuantic.UI.Primitives.BoxStyle), eQuantic.UI.Primitives.VisualNode? child = null) -> eQuantic.UI.Primitives.Box!
+static eQuantic.UI.Components.UI.Button(string! label, eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Primary, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Medium, System.Action? onPressed = null) -> eQuantic.UI.Components.Button!
+static eQuantic.UI.Components.UI.Calendar(System.DateOnly? selected = null, System.Action<System.DateOnly>? onChanged = null, System.DateOnly? min = null, System.DateOnly? max = null) -> eQuantic.UI.Components.Calendar!
+static eQuantic.UI.Components.UI.Canvas(System.Action<eQuantic.UI.Primitives.ICanvasPainter!>! draw, eQuantic.UI.Primitives.SizeValue width = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.SizeValue height = default(eQuantic.UI.Primitives.SizeValue), System.Action<eQuantic.UI.Primitives.CanvasPointer>? onPointerDown = null, System.Action<eQuantic.UI.Primitives.CanvasPointer>? onPointerMove = null, System.Action<eQuantic.UI.Primitives.CanvasPointer>? onPointerUp = null, System.Action? onPointerLeave = null, string? label = null) -> eQuantic.UI.Primitives.Canvas!
+static eQuantic.UI.Components.UI.Card(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Components.CardKind kind = eQuantic.UI.Components.CardKind.Elevated) -> eQuantic.UI.Components.Card!
+static eQuantic.UI.Components.UI.Checkbox(bool checked, System.Action? onChanged = null, string? label = null, bool disabled = false) -> eQuantic.UI.Components.Checkbox!
+static eQuantic.UI.Components.UI.Chip(string! label, eQuantic.UI.Components.ChipKind kind = eQuantic.UI.Components.ChipKind.Filter, bool selected = false, System.Action? onPressed = null, System.Action? onRemove = null) -> eQuantic.UI.Components.Chip!
+static eQuantic.UI.Components.UI.Column(float gap = 0, eQuantic.UI.Primitives.MainAlign main = eQuantic.UI.Primitives.MainAlign.Start, eQuantic.UI.Primitives.CrossAlign cross = eQuantic.UI.Primitives.CrossAlign.Stretch, bool wrap = false, float? runGap = null, eQuantic.UI.Primitives.EdgeInsets? padding = null, eQuantic.UI.Primitives.SizeValue width = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.SizeValue height = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.VisualNode![]? children = null) -> eQuantic.UI.Primitives.Column!
+static eQuantic.UI.Components.UI.CookieConsent(string? policyHref = null) -> eQuantic.UI.Components.CookieConsent!
+static eQuantic.UI.Components.UI.CultureSwitcher(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.CultureOption!>! options) -> eQuantic.UI.Components.CultureSwitcher!
+static eQuantic.UI.Components.UI.DatePicker(System.DateOnly? selected = null, System.Action<System.DateOnly>? onChanged = null, System.DateOnly? min = null, System.DateOnly? max = null, string! label = "") -> eQuantic.UI.Components.DatePicker!
+static eQuantic.UI.Components.UI.DateTimePicker(System.DateTime? selected = null, System.Action<System.DateTime>? onChanged = null, System.DateTime? min = null, System.DateTime? max = null, int stepMinutes = 30, string! dateLabel = "", string! timeLabel = "") -> eQuantic.UI.Components.DateTimePicker!
+static eQuantic.UI.Components.UI.Dialog(string! title, string! body, eQuantic.UI.Components.DialogAction![]! actions, bool dismissible = false, System.Action? onDismiss = null) -> eQuantic.UI.Components.Dialog!
+static eQuantic.UI.Components.UI.Divider(eQuantic.UI.Components.DividerInset inset = eQuantic.UI.Components.DividerInset.None, eQuantic.UI.Components.DividerAxis axis = eQuantic.UI.Components.DividerAxis.Horizontal) -> eQuantic.UI.Components.Divider!
+static eQuantic.UI.Components.UI.DotBadge(eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Destructive) -> eQuantic.UI.Components.Badge!
+static eQuantic.UI.Components.UI.DragDismiss(eQuantic.UI.Primitives.VisualNode! child, System.Action? onDismiss = null) -> eQuantic.UI.Primitives.DragDismiss!
+static eQuantic.UI.Components.UI.Draggable(eQuantic.UI.Primitives.VisualNode! child, System.Action<float>? onReleased = null) -> eQuantic.UI.Primitives.Draggable!
+static eQuantic.UI.Components.UI.Drawer(eQuantic.UI.Primitives.VisualNode! content, bool open, System.Action? onDismiss = null) -> eQuantic.UI.Components.Drawer!
+static eQuantic.UI.Components.UI.Drawing(eQuantic.UI.Primitives.VectorDrawing! artwork, float width, float height = 0, eQuantic.UI.Primitives.ColorToken? tint = null, string? label = null) -> eQuantic.UI.Primitives.Drawing!
+static eQuantic.UI.Components.UI.EmptyState(eQuantic.UI.Primitives.Icon! icon, string! title, string? body = null) -> eQuantic.UI.Components.EmptyState!
+static eQuantic.UI.Components.UI.Flexible(eQuantic.UI.Primitives.VisualNode! child, int flex = 1, float basis = 0, int shrink = 1) -> eQuantic.UI.Primitives.Flexible!
+static eQuantic.UI.Components.UI.Gap(float dp) -> eQuantic.UI.Primitives.Spacer!
+static eQuantic.UI.Components.UI.Glyph(eQuantic.UI.Primitives.IconGlyph glyph, float size = 24, eQuantic.UI.Primitives.ColorToken? color = null, string? label = null) -> eQuantic.UI.Primitives.Icon!
+static eQuantic.UI.Components.UI.Grid(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.GridTrack>! columns, float gap = 0, float? rowGap = null, eQuantic.UI.Primitives.SizeValue width = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.SizeValue height = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.VisualNode![]? children = null) -> eQuantic.UI.Primitives.Grid!
+static eQuantic.UI.Components.UI.Hoverable(eQuantic.UI.Primitives.VisualNode! child, System.Action<bool>! onChanged) -> eQuantic.UI.Primitives.Hoverable!
+static eQuantic.UI.Components.UI.Icon(eQuantic.UI.Primitives.Icons glyph, float size = 24, eQuantic.UI.Primitives.ColorToken? color = null, string? label = null) -> eQuantic.UI.Primitives.Icon!
+static eQuantic.UI.Components.UI.IconButton(eQuantic.UI.Primitives.Icon! glyph, string! label, eQuantic.UI.Components.IconButtonKind kind = eQuantic.UI.Components.IconButtonKind.Standard, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Medium, System.Action? onPressed = null) -> eQuantic.UI.Components.IconButton!
+static eQuantic.UI.Components.UI.Image(string! source, float width, float height, eQuantic.UI.Primitives.ImageFit fit = eQuantic.UI.Primitives.ImageFit.Cover, string! label = "") -> eQuantic.UI.Primitives.Image!
+static eQuantic.UI.Components.UI.InFlow(eQuantic.UI.Primitives.VisualNode! child) -> eQuantic.UI.Primitives.InFlow!
+static eQuantic.UI.Components.UI.InView(eQuantic.UI.Primitives.VisualNode! child, System.Action<bool>! onChanged) -> eQuantic.UI.Primitives.InView!
+static eQuantic.UI.Components.UI.Link(string! destination, eQuantic.UI.Primitives.VisualNode! child, string? label = null, bool current = false) -> eQuantic.UI.Primitives.Link!
+static eQuantic.UI.Components.UI.ListDetail(eQuantic.UI.Primitives.VisualNode! list, eQuantic.UI.Primitives.VisualNode? detail = null, System.Action? onBack = null) -> eQuantic.UI.Components.ListDetail!
+static eQuantic.UI.Components.UI.ListItem(string! title, string? subtitle = null, System.Action? onPressed = null) -> eQuantic.UI.Components.ListItem!
+static eQuantic.UI.Components.UI.ListView(int count, float itemExtent, System.Func<int, eQuantic.UI.Primitives.VisualNode!>! itemBuilder, eQuantic.UI.Primitives.SizeValue width = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.SizeValue height = default(eQuantic.UI.Primitives.SizeValue)) -> eQuantic.UI.Components.ListView!
+static eQuantic.UI.Components.UI.Markdown(string! source) -> eQuantic.UI.Components.Markdown!
+static eQuantic.UI.Components.UI.Mermaid(string! source) -> eQuantic.UI.Components.Mermaid!
+static eQuantic.UI.Components.UI.NavigationRail(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.NavItem!>! items, int selected, System.Action<int>? onSelect = null) -> eQuantic.UI.Components.NavigationRail!
+static eQuantic.UI.Components.UI.Overlay(eQuantic.UI.Primitives.VisualNode! child) -> eQuantic.UI.Primitives.Overlay!
+static eQuantic.UI.Components.UI.Pinned(eQuantic.UI.Primitives.VisualNode! child, float offset = 0) -> eQuantic.UI.Primitives.Pinned!
+static eQuantic.UI.Components.UI.Positioned(eQuantic.UI.Primitives.VisualNode! child, float? top = null, float? end = null, float? bottom = null, float? start = null) -> eQuantic.UI.Primitives.Positioned!
+static eQuantic.UI.Components.UI.Presence(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.PresenceMotion enter = eQuantic.UI.Primitives.PresenceMotion.Fade) -> eQuantic.UI.Primitives.Presence!
+static eQuantic.UI.Components.UI.Pressable(eQuantic.UI.Primitives.VisualNode! child, System.Action? onPressed = null, string? label = null, bool? selected = null, bool disabled = false, eQuantic.UI.Primitives.ColorToken? pressedBackground = null, bool? expanded = null, eQuantic.UI.Primitives.PressableRole role = eQuantic.UI.Primitives.PressableRole.Button) -> eQuantic.UI.Primitives.Pressable!
+static eQuantic.UI.Components.UI.ProgressBar(float? value = null, eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Primary) -> eQuantic.UI.Components.ProgressBar!
+static eQuantic.UI.Components.UI.Row(float gap = 0, eQuantic.UI.Primitives.MainAlign main = eQuantic.UI.Primitives.MainAlign.Start, eQuantic.UI.Primitives.CrossAlign cross = eQuantic.UI.Primitives.CrossAlign.Center, bool wrap = false, float? runGap = null, eQuantic.UI.Primitives.EdgeInsets? padding = null, eQuantic.UI.Primitives.SizeValue width = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.SizeValue height = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.VisualNode![]? children = null) -> eQuantic.UI.Primitives.Row!
+static eQuantic.UI.Components.UI.SafeArea(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.SafeEdges edges = eQuantic.UI.Primitives.SafeEdges.All) -> eQuantic.UI.Primitives.SafeArea!
+static eQuantic.UI.Components.UI.ScrollView(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.ScrollAxis axis = eQuantic.UI.Primitives.ScrollAxis.Vertical, eQuantic.UI.Primitives.SizeValue width = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.SizeValue height = default(eQuantic.UI.Primitives.SizeValue)) -> eQuantic.UI.Primitives.ScrollView!
+static eQuantic.UI.Components.UI.SearchField(string! query, System.Action<string!>? onChanged = null, string? placeholder = null, System.Action? onSubmit = null) -> eQuantic.UI.Components.SearchField!
+static eQuantic.UI.Components.UI.SegmentedControl(System.Collections.Generic.IReadOnlyList<string!>! segments, int selectedIndex, System.Action<int>? onChanged = null, bool stretch = true) -> eQuantic.UI.Components.SegmentedControl!
+static eQuantic.UI.Components.UI.Select(System.Collections.Generic.IReadOnlyList<string!>! options, int selectedIndex = -1, System.Action<int>? onChanged = null, string? placeholder = null) -> eQuantic.UI.Components.Select!
+static eQuantic.UI.Components.UI.Shortcut(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.KeyChord chord, System.Action! onPressed) -> eQuantic.UI.Primitives.Shortcut!
+static eQuantic.UI.Components.UI.Simulated(eQuantic.UI.Primitives.SimulatedState state, eQuantic.UI.Primitives.VisualNode! child) -> eQuantic.UI.Primitives.Simulated!
+static eQuantic.UI.Components.UI.Skeleton(eQuantic.UI.Components.SkeletonShape shape, float width, float height = 0) -> eQuantic.UI.Components.Skeleton!
+static eQuantic.UI.Components.UI.Slider(float value, System.Action<float>? onChanged = null, float min = 0, float max = 1, float step = 0, string! label = "", string? valueText = null, bool disabled = false, eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Primary) -> eQuantic.UI.Components.Slider!
+static eQuantic.UI.Components.UI.Spacer(int flex = 1) -> eQuantic.UI.Primitives.Spacer!
+static eQuantic.UI.Components.UI.Spinner(float size = 20, eQuantic.UI.Primitives.ColorToken? color = null) -> eQuantic.UI.Primitives.Spinner!
+static eQuantic.UI.Components.UI.Stack(eQuantic.UI.Primitives.Alignment align = eQuantic.UI.Primitives.Alignment.TopStart, eQuantic.UI.Primitives.SizeValue width = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.SizeValue height = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.VisualNode![]? children = null) -> eQuantic.UI.Primitives.Stack!
+static eQuantic.UI.Components.UI.Stepper(int value, System.Action<int>? onChanged = null) -> eQuantic.UI.Components.Stepper!
+static eQuantic.UI.Components.UI.Switch(bool on, System.Action? onChanged = null, string? label = null, bool disabled = false) -> eQuantic.UI.Components.Switch!
+static eQuantic.UI.Components.UI.Tabs(System.Collections.Generic.IReadOnlyList<string!>! labels, int selected, System.Action<int>? onSelect = null) -> eQuantic.UI.Components.Tabs!
+static eQuantic.UI.Components.UI.Text(string! content, eQuantic.UI.Primitives.TypeRole role = eQuantic.UI.Primitives.TypeRole.BodyL, eQuantic.UI.Primitives.ColorToken? color = null, int maxLines = 0, eQuantic.UI.Primitives.TextAlignment align = eQuantic.UI.Primitives.TextAlignment.Start, bool mono = false, bool tabular = false, eQuantic.UI.Primitives.TypeStyle? styleOverride = null, int headingLevel = 0) -> eQuantic.UI.Primitives.Text!
+static eQuantic.UI.Components.UI.TextEntry(string! value, System.Action<string!>? onChanged = null, string? label = null, string? placeholder = null, bool disabled = false, bool obscure = false) -> eQuantic.UI.Primitives.TextEntry!
+static eQuantic.UI.Components.UI.TextInput(string! value, System.Action<string!>? onChanged = null, string! label = "", string? placeholder = null, string? helper = null, string? error = null, eQuantic.UI.Primitives.Icons? leading = null, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Large, eQuantic.UI.Primitives.VisualNode? trailing = null) -> eQuantic.UI.Components.TextInput!
+static eQuantic.UI.Components.UI.TimePicker(System.TimeOnly? selected = null, System.Action<System.TimeOnly>? onChanged = null, int stepMinutes = 30, System.TimeOnly? min = null, System.TimeOnly? max = null, string! label = "") -> eQuantic.UI.Components.TimePicker!
+static eQuantic.UI.Components.UI.Toast(string! message, eQuantic.UI.Primitives.Variant status = eQuantic.UI.Primitives.Variant.Info, string? actionLabel = null, System.Action? onAction = null) -> eQuantic.UI.Components.Toast!
+static eQuantic.UI.Components.UI.Tooltip(eQuantic.UI.Primitives.VisualNode! child, string! text) -> eQuantic.UI.Components.Tooltip!
+static eQuantic.UI.Components.UI.Vector(eQuantic.UI.Primitives.IconGlyph glyph, float size, eQuantic.UI.Primitives.ColorToken? color = null, string? label = null, float height = 0) -> eQuantic.UI.Primitives.Vector!
+~override eQuantic.UI.Components.CodeBlock.CodeMetrics.Equals(object obj) -> bool
+~override eQuantic.UI.Components.CodeBlock.CodeMetrics.ToString() -> string

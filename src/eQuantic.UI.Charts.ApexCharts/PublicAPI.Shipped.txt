@@ -1,0 +1,108 @@
+#nullable enable
+eQuantic.UI.Charts.ApexCharts.ApexChart<T>
+eQuantic.UI.Charts.ApexCharts.ApexChart<T>.ApexChart() -> void
+eQuantic.UI.Charts.ApexCharts.ApexChart<T>.Options.get -> eQuantic.UI.Charts.ApexCharts.Models.ApexOptions!
+eQuantic.UI.Charts.ApexCharts.ApexChart<T>.Options.set -> void
+eQuantic.UI.Charts.ApexCharts.ApexChart<T>.Responsive.get -> bool
+eQuantic.UI.Charts.ApexCharts.ApexChart<T>.Responsive.set -> void
+eQuantic.UI.Charts.ApexCharts.ApexChart<T>.Series.get -> System.Collections.Generic.List<eQuantic.UI.Charts.ApexCharts.Models.ApexSeries<T>!>!
+eQuantic.UI.Charts.ApexCharts.ApexChart<T>.Series.set -> void
+eQuantic.UI.Charts.ApexCharts.ApexChart<T>.Title.get -> string?
+eQuantic.UI.Charts.ApexCharts.ApexChart<T>.Title.set -> void
+eQuantic.UI.Charts.ApexCharts.ApexChartsScripts
+eQuantic.UI.Charts.ApexCharts.ApexChartsScripts.ApexChartsScripts() -> void
+eQuantic.UI.Charts.ApexCharts.ApexChartsScripts.Version.get -> string!
+eQuantic.UI.Charts.ApexCharts.ApexChartsScripts.Version.set -> void
+eQuantic.UI.Charts.ApexCharts.ApexChartsServiceExtensions
+eQuantic.UI.Charts.ApexCharts.IChart
+eQuantic.UI.Charts.ApexCharts.IChart.Responsive.get -> bool
+eQuantic.UI.Charts.ApexCharts.IChart.Responsive.set -> void
+eQuantic.UI.Charts.ApexCharts.IChart.Title.get -> string?
+eQuantic.UI.Charts.ApexCharts.IChart.Title.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.AnimationsOptions
+eQuantic.UI.Charts.ApexCharts.Models.AnimationsOptions.AnimationsOptions() -> void
+eQuantic.UI.Charts.ApexCharts.Models.AnimationsOptions.Enabled.get -> bool
+eQuantic.UI.Charts.ApexCharts.Models.AnimationsOptions.Enabled.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.ApexOptions
+eQuantic.UI.Charts.ApexCharts.Models.ApexOptions.ApexOptions() -> void
+eQuantic.UI.Charts.ApexCharts.Models.ApexOptions.Chart.get -> eQuantic.UI.Charts.ApexCharts.Models.ChartOptions!
+eQuantic.UI.Charts.ApexCharts.Models.ApexOptions.Chart.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.ApexOptions.Colors.get -> System.Collections.Generic.List<string!>?
+eQuantic.UI.Charts.ApexCharts.Models.ApexOptions.Colors.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.ApexOptions.DataLabels.get -> eQuantic.UI.Charts.ApexCharts.Models.DataLabelsOptions!
+eQuantic.UI.Charts.ApexCharts.Models.ApexOptions.DataLabels.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.ApexOptions.Labels.get -> System.Collections.Generic.List<string!>?
+eQuantic.UI.Charts.ApexCharts.Models.ApexOptions.Labels.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.ApexOptions.Legend.get -> eQuantic.UI.Charts.ApexCharts.Models.LegendOptions!
+eQuantic.UI.Charts.ApexCharts.Models.ApexOptions.Legend.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.ApexOptions.Stroke.get -> eQuantic.UI.Charts.ApexCharts.Models.StrokeOptions!
+eQuantic.UI.Charts.ApexCharts.Models.ApexOptions.Stroke.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.ApexOptions.Title.get -> eQuantic.UI.Charts.ApexCharts.Models.TitleOptions!
+eQuantic.UI.Charts.ApexCharts.Models.ApexOptions.Title.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.ApexOptions.XAxis.get -> eQuantic.UI.Charts.ApexCharts.Models.XAxisOptions!
+eQuantic.UI.Charts.ApexCharts.Models.ApexOptions.XAxis.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.ApexOptions.YAxis.get -> System.Collections.Generic.List<eQuantic.UI.Charts.ApexCharts.Models.YAxisOptions!>!
+eQuantic.UI.Charts.ApexCharts.Models.ApexOptions.YAxis.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.ApexSeries<T>
+eQuantic.UI.Charts.ApexCharts.Models.ApexSeries<T>.ApexSeries() -> void
+eQuantic.UI.Charts.ApexCharts.Models.ApexSeries<T>.Data.get -> System.Collections.Generic.List<T>!
+eQuantic.UI.Charts.ApexCharts.Models.ApexSeries<T>.Data.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.ApexSeries<T>.Name.get -> string?
+eQuantic.UI.Charts.ApexCharts.Models.ApexSeries<T>.Name.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.ChartOptions
+eQuantic.UI.Charts.ApexCharts.Models.ChartOptions.Animations.get -> eQuantic.UI.Charts.ApexCharts.Models.AnimationsOptions!
+eQuantic.UI.Charts.ApexCharts.Models.ChartOptions.Animations.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.ChartOptions.ChartOptions() -> void
+eQuantic.UI.Charts.ApexCharts.Models.ChartOptions.Height.get -> string?
+eQuantic.UI.Charts.ApexCharts.Models.ChartOptions.Height.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.ChartOptions.Toolbar.get -> eQuantic.UI.Charts.ApexCharts.Models.ToolbarOptions!
+eQuantic.UI.Charts.ApexCharts.Models.ChartOptions.Toolbar.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.ChartOptions.Type.get -> string!
+eQuantic.UI.Charts.ApexCharts.Models.ChartOptions.Type.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.ChartOptions.Width.get -> string?
+eQuantic.UI.Charts.ApexCharts.Models.ChartOptions.Width.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.DataLabelsOptions
+eQuantic.UI.Charts.ApexCharts.Models.DataLabelsOptions.DataLabelsOptions() -> void
+eQuantic.UI.Charts.ApexCharts.Models.DataLabelsOptions.Enabled.get -> bool
+eQuantic.UI.Charts.ApexCharts.Models.DataLabelsOptions.Enabled.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.LegendOptions
+eQuantic.UI.Charts.ApexCharts.Models.LegendOptions.LegendOptions() -> void
+eQuantic.UI.Charts.ApexCharts.Models.LegendOptions.Position.get -> string!
+eQuantic.UI.Charts.ApexCharts.Models.LegendOptions.Position.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.LegendOptions.Show.get -> bool
+eQuantic.UI.Charts.ApexCharts.Models.LegendOptions.Show.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.StrokeOptions
+eQuantic.UI.Charts.ApexCharts.Models.StrokeOptions.Curve.get -> string!
+eQuantic.UI.Charts.ApexCharts.Models.StrokeOptions.Curve.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.StrokeOptions.StrokeOptions() -> void
+eQuantic.UI.Charts.ApexCharts.Models.StrokeOptions.Width.get -> double
+eQuantic.UI.Charts.ApexCharts.Models.StrokeOptions.Width.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.TitleOptions
+eQuantic.UI.Charts.ApexCharts.Models.TitleOptions.Align.get -> string!
+eQuantic.UI.Charts.ApexCharts.Models.TitleOptions.Align.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.TitleOptions.Text.get -> string?
+eQuantic.UI.Charts.ApexCharts.Models.TitleOptions.Text.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.TitleOptions.TitleOptions() -> void
+eQuantic.UI.Charts.ApexCharts.Models.ToolbarOptions
+eQuantic.UI.Charts.ApexCharts.Models.ToolbarOptions.Show.get -> bool
+eQuantic.UI.Charts.ApexCharts.Models.ToolbarOptions.Show.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.ToolbarOptions.ToolbarOptions() -> void
+eQuantic.UI.Charts.ApexCharts.Models.XAxisOptions
+eQuantic.UI.Charts.ApexCharts.Models.XAxisOptions.Categories.get -> System.Collections.Generic.List<string!>?
+eQuantic.UI.Charts.ApexCharts.Models.XAxisOptions.Categories.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.XAxisOptions.Title.get -> eQuantic.UI.Charts.ApexCharts.Models.TitleOptions!
+eQuantic.UI.Charts.ApexCharts.Models.XAxisOptions.Title.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.XAxisOptions.Type.get -> string!
+eQuantic.UI.Charts.ApexCharts.Models.XAxisOptions.Type.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.XAxisOptions.XAxisOptions() -> void
+eQuantic.UI.Charts.ApexCharts.Models.YAxisOptions
+eQuantic.UI.Charts.ApexCharts.Models.YAxisOptions.Show.get -> bool
+eQuantic.UI.Charts.ApexCharts.Models.YAxisOptions.Show.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.YAxisOptions.Title.get -> eQuantic.UI.Charts.ApexCharts.Models.TitleOptions!
+eQuantic.UI.Charts.ApexCharts.Models.YAxisOptions.Title.set -> void
+eQuantic.UI.Charts.ApexCharts.Models.YAxisOptions.YAxisOptions() -> void
+override eQuantic.UI.Charts.ApexCharts.ApexChart<T>.Render() -> eQuantic.UI.Web.HtmlNode!
+override eQuantic.UI.Charts.ApexCharts.ApexChartsScripts.Render() -> eQuantic.UI.Web.HtmlNode!
+static eQuantic.UI.Charts.ApexCharts.ApexChartsServiceExtensions.AddApexCharts(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static eQuantic.UI.Charts.ApexCharts.ApexChartsServiceExtensions.UseApexCharts(this eQuantic.UI.Server.UIOptions! options, string? version = null) -> eQuantic.UI.Server.UIOptions!
+static eQuantic.UI.Charts.ApexCharts.ApexChartsServiceExtensions.UseApexCharts(this Microsoft.AspNetCore.Builder.WebApplication! app, string? version = null) -> Microsoft.AspNetCore.Builder.WebApplication!

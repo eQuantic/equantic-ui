@@ -1,0 +1,20 @@
+#nullable enable
+eQuantic.UI.Email.EmailMessage
+eQuantic.UI.Email.EmailMessage.<Clone>$() -> eQuantic.UI.Email.EmailMessage!
+eQuantic.UI.Email.EmailMessage.Deconstruct(out string! Html, out string! PlainText) -> void
+eQuantic.UI.Email.EmailMessage.EmailMessage(string! Html, string! PlainText) -> void
+eQuantic.UI.Email.EmailMessage.Equals(eQuantic.UI.Email.EmailMessage? other) -> bool
+eQuantic.UI.Email.EmailMessage.Html.get -> string!
+eQuantic.UI.Email.EmailMessage.Html.init -> void
+eQuantic.UI.Email.EmailMessage.PlainText.get -> string!
+eQuantic.UI.Email.EmailMessage.PlainText.init -> void
+eQuantic.UI.Email.EmailRealizer
+eQuantic.UI.Email.EmailRenderer
+override eQuantic.UI.Email.EmailMessage.Equals(object? obj) -> bool
+override eQuantic.UI.Email.EmailMessage.GetHashCode() -> int
+override eQuantic.UI.Email.EmailMessage.ToString() -> string!
+static eQuantic.UI.Email.EmailMessage.operator !=(eQuantic.UI.Email.EmailMessage? left, eQuantic.UI.Email.EmailMessage? right) -> bool
+static eQuantic.UI.Email.EmailMessage.operator ==(eQuantic.UI.Email.EmailMessage? left, eQuantic.UI.Email.EmailMessage? right) -> bool
+static eQuantic.UI.Email.EmailRealizer.Lower(eQuantic.UI.Primitives.VisualNode! node, eQuantic.UI.Primitives.IAppTheme! theme) -> string!
+static eQuantic.UI.Email.EmailRenderer.Render(eQuantic.UI.Primitives.UiComponent! component, eQuantic.UI.Primitives.IAppTheme! theme, string? preheader = null) -> eQuantic.UI.Email.EmailMessage!
+static eQuantic.UI.Email.EmailRenderer.Render(eQuantic.UI.Primitives.VisualNode! tree, eQuantic.UI.Primitives.IAppTheme! theme, string? preheader = null) -> eQuantic.UI.Email.EmailMessage!

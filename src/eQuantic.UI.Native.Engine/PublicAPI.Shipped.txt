@@ -1,0 +1,224 @@
+#nullable enable
+const eQuantic.UI.Native.Engine.RhiRenderer.ColorSlot = 1 -> int
+const eQuantic.UI.Native.Engine.RhiRenderer.CoverageSlot = 0 -> int
+eQuantic.UI.Native.Engine.Blur
+eQuantic.UI.Native.Engine.BlurImage
+eQuantic.UI.Native.Engine.BlurImage.BlurImage(int width, int height) -> void
+eQuantic.UI.Native.Engine.BlurImage.Height.get -> int
+eQuantic.UI.Native.Engine.BlurImage.PremultipliedSrgb.get -> byte[]!
+eQuantic.UI.Native.Engine.BlurImage.Width.get -> int
+eQuantic.UI.Native.Engine.ColorSpace
+eQuantic.UI.Native.Engine.DataUri
+eQuantic.UI.Native.Engine.DisplayList
+eQuantic.UI.Native.Engine.DisplayList.Commands.get -> System.ReadOnlySpan<eQuantic.UI.Native.Engine.DrawCommand>
+eQuantic.UI.Native.Engine.DisplayList.Count.get -> int
+eQuantic.UI.Native.Engine.DisplayList.Textures.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Native.Engine.TextureData!>!
+eQuantic.UI.Native.Engine.DisplayListBuilder
+eQuantic.UI.Native.Engine.DisplayListBuilder.BackdropBlur(in eQuantic.UI.Primitives.RRect shape, float radius) -> void
+eQuantic.UI.Native.Engine.DisplayListBuilder.Build() -> eQuantic.UI.Native.Engine.DisplayList!
+eQuantic.UI.Native.Engine.DisplayListBuilder.Clear(eQuantic.UI.Primitives.Color color) -> void
+eQuantic.UI.Native.Engine.DisplayListBuilder.CommandCount.get -> int
+eQuantic.UI.Native.Engine.DisplayListBuilder.CommandsFrom(int start) -> eQuantic.UI.Native.Engine.DrawCommand[]!
+eQuantic.UI.Native.Engine.DisplayListBuilder.DisplayListBuilder() -> void
+eQuantic.UI.Native.Engine.DisplayListBuilder.FillAnnularSector(eQuantic.UI.Primitives.Point center, float innerRadius, float outerRadius, float startAngle, float endAngle, in eQuantic.UI.Native.Engine.Paint paint, float rounding = 0) -> void
+eQuantic.UI.Native.Engine.DisplayListBuilder.FillCircle(eQuantic.UI.Primitives.Point center, float radius, in eQuantic.UI.Native.Engine.Paint paint) -> void
+eQuantic.UI.Native.Engine.DisplayListBuilder.FillRect(eQuantic.UI.Primitives.Rect rect, in eQuantic.UI.Native.Engine.Paint paint) -> void
+eQuantic.UI.Native.Engine.DisplayListBuilder.FillRRect(in eQuantic.UI.Primitives.RRect shape, in eQuantic.UI.Native.Engine.Paint paint) -> void
+eQuantic.UI.Native.Engine.DisplayListBuilder.Pop() -> void
+eQuantic.UI.Native.Engine.DisplayListBuilder.PopClip() -> void
+eQuantic.UI.Native.Engine.DisplayListBuilder.PopLayer() -> void
+eQuantic.UI.Native.Engine.DisplayListBuilder.PushClip(in eQuantic.UI.Primitives.RRect shape) -> void
+eQuantic.UI.Native.Engine.DisplayListBuilder.PushLayer(float alpha) -> void
+eQuantic.UI.Native.Engine.DisplayListBuilder.PushTransform(in eQuantic.UI.Primitives.Matrix2D transform) -> void
+eQuantic.UI.Native.Engine.DisplayListBuilder.RegisterTexture(eQuantic.UI.Native.Engine.TextureData! texture) -> int
+eQuantic.UI.Native.Engine.DisplayListBuilder.Replay(in eQuantic.UI.Native.Engine.DrawCommand command, in eQuantic.UI.Primitives.Matrix2D offset) -> void
+eQuantic.UI.Native.Engine.DisplayListBuilder.Reset() -> void
+eQuantic.UI.Native.Engine.DisplayListBuilder.ShadowRRect(in eQuantic.UI.Primitives.RRect shape, float offsetY, float blur, float spread, eQuantic.UI.Primitives.Color color) -> void
+eQuantic.UI.Native.Engine.DisplayListBuilder.StrokeRRect(in eQuantic.UI.Primitives.RRect shape, float strokeWidth, in eQuantic.UI.Native.Engine.Paint paint) -> void
+eQuantic.UI.Native.Engine.DisplayListBuilder.Texture(in eQuantic.UI.Primitives.Rect rect, eQuantic.UI.Primitives.Color tint, eQuantic.UI.Native.Engine.TextureData! texture) -> void
+eQuantic.UI.Native.Engine.DisplayListBuilder.Texture(in eQuantic.UI.Primitives.Rect rect, in eQuantic.UI.Native.Engine.Paint tint, eQuantic.UI.Native.Engine.TextureData! texture) -> void
+eQuantic.UI.Native.Engine.DrawCommand
+eQuantic.UI.Native.Engine.DrawCommand.Clip.get -> eQuantic.UI.Primitives.RRect?
+eQuantic.UI.Native.Engine.DrawCommand.Clip.init -> void
+eQuantic.UI.Native.Engine.DrawCommand.DrawCommand() -> void
+eQuantic.UI.Native.Engine.DrawCommand.Equals(eQuantic.UI.Native.Engine.DrawCommand other) -> bool
+eQuantic.UI.Native.Engine.DrawCommand.Kind.get -> eQuantic.UI.Native.Engine.DrawCommandKind
+eQuantic.UI.Native.Engine.DrawCommand.Kind.init -> void
+eQuantic.UI.Native.Engine.DrawCommand.Paint.get -> eQuantic.UI.Native.Engine.Paint
+eQuantic.UI.Native.Engine.DrawCommand.Paint.init -> void
+eQuantic.UI.Native.Engine.DrawCommand.Shape.get -> eQuantic.UI.Primitives.RRect
+eQuantic.UI.Native.Engine.DrawCommand.Shape.init -> void
+eQuantic.UI.Native.Engine.DrawCommand.StrokeWidth.get -> float
+eQuantic.UI.Native.Engine.DrawCommand.StrokeWidth.init -> void
+eQuantic.UI.Native.Engine.DrawCommand.TextureId.get -> int
+eQuantic.UI.Native.Engine.DrawCommand.TextureId.init -> void
+eQuantic.UI.Native.Engine.DrawCommand.Transform.get -> eQuantic.UI.Primitives.Matrix2D
+eQuantic.UI.Native.Engine.DrawCommand.Transform.init -> void
+eQuantic.UI.Native.Engine.DrawCommandKind
+eQuantic.UI.Native.Engine.DrawCommandKind.BackdropBlur = 7 -> eQuantic.UI.Native.Engine.DrawCommandKind
+eQuantic.UI.Native.Engine.DrawCommandKind.BeginLayer = 4 -> eQuantic.UI.Native.Engine.DrawCommandKind
+eQuantic.UI.Native.Engine.DrawCommandKind.Clear = 0 -> eQuantic.UI.Native.Engine.DrawCommandKind
+eQuantic.UI.Native.Engine.DrawCommandKind.EndLayer = 5 -> eQuantic.UI.Native.Engine.DrawCommandKind
+eQuantic.UI.Native.Engine.DrawCommandKind.FillAnnularSector = 8 -> eQuantic.UI.Native.Engine.DrawCommandKind
+eQuantic.UI.Native.Engine.DrawCommandKind.FillRRect = 1 -> eQuantic.UI.Native.Engine.DrawCommandKind
+eQuantic.UI.Native.Engine.DrawCommandKind.ShadowRRect = 3 -> eQuantic.UI.Native.Engine.DrawCommandKind
+eQuantic.UI.Native.Engine.DrawCommandKind.StrokeRRect = 2 -> eQuantic.UI.Native.Engine.DrawCommandKind
+eQuantic.UI.Native.Engine.DrawCommandKind.Texture = 6 -> eQuantic.UI.Native.Engine.DrawCommandKind
+eQuantic.UI.Native.Engine.DrawUniforms
+eQuantic.UI.Native.Engine.DrawUniforms.ClipRadii -> eQuantic.UI.Native.Engine.Float4
+eQuantic.UI.Native.Engine.DrawUniforms.ClipRect -> eQuantic.UI.Native.Engine.Float4
+eQuantic.UI.Native.Engine.DrawUniforms.ColorA -> eQuantic.UI.Native.Engine.Float4
+eQuantic.UI.Native.Engine.DrawUniforms.ColorB -> eQuantic.UI.Native.Engine.Float4
+eQuantic.UI.Native.Engine.DrawUniforms.DrawUniforms() -> void
+eQuantic.UI.Native.Engine.DrawUniforms.Flags -> eQuantic.UI.Native.Engine.Float4
+eQuantic.UI.Native.Engine.DrawUniforms.Gradient -> eQuantic.UI.Native.Engine.Float4
+eQuantic.UI.Native.Engine.DrawUniforms.Inv0 -> eQuantic.UI.Native.Engine.Float4
+eQuantic.UI.Native.Engine.DrawUniforms.Inv1 -> eQuantic.UI.Native.Engine.Float4
+eQuantic.UI.Native.Engine.DrawUniforms.Radii -> eQuantic.UI.Native.Engine.Float4
+eQuantic.UI.Native.Engine.DrawUniforms.Rect -> eQuantic.UI.Native.Engine.Float4
+eQuantic.UI.Native.Engine.Float4
+eQuantic.UI.Native.Engine.Float4.Float4() -> void
+eQuantic.UI.Native.Engine.Float4.Float4(float x, float y, float z, float w) -> void
+eQuantic.UI.Native.Engine.Float4.W -> float
+eQuantic.UI.Native.Engine.Float4.X -> float
+eQuantic.UI.Native.Engine.Float4.Y -> float
+eQuantic.UI.Native.Engine.Float4.Z -> float
+eQuantic.UI.Native.Engine.ImageHeader
+eQuantic.UI.Native.Engine.IRenderBackend
+eQuantic.UI.Native.Engine.IRenderBackend.CreateSurface(int width, int height) -> eQuantic.UI.Native.Engine.IRenderSurface!
+eQuantic.UI.Native.Engine.IRenderBackend.Kind.get -> eQuantic.UI.Native.Engine.RenderBackendKind
+eQuantic.UI.Native.Engine.IRenderBackend.Render(eQuantic.UI.Native.Engine.DisplayList! displayList, eQuantic.UI.Native.Engine.IRenderSurface! surface) -> void
+eQuantic.UI.Native.Engine.IRenderSurface
+eQuantic.UI.Native.Engine.IRenderSurface.Height.get -> int
+eQuantic.UI.Native.Engine.IRenderSurface.ReadPixelsSrgb(System.Span<byte> destinationRgba) -> void
+eQuantic.UI.Native.Engine.IRenderSurface.Width.get -> int
+eQuantic.UI.Native.Engine.IRhiCommandList
+eQuantic.UI.Native.Engine.IRhiCommandList.BindTexture(int slot, eQuantic.UI.Native.Engine.IRhiTexture! texture, eQuantic.UI.Native.Engine.RhiFilter filter = eQuantic.UI.Native.Engine.RhiFilter.Nearest) -> void
+eQuantic.UI.Native.Engine.IRhiCommandList.Draw(in eQuantic.UI.Native.Engine.DrawUniforms uniforms) -> void
+eQuantic.UI.Native.Engine.IRhiCommandList.SetPipeline(eQuantic.UI.Native.Engine.RhiPipelineKind kind) -> void
+eQuantic.UI.Native.Engine.IRhiCommandList.Submit(bool waitUntilCompleted) -> void
+eQuantic.UI.Native.Engine.IRhiDevice
+eQuantic.UI.Native.Engine.IRhiDevice.Begin(eQuantic.UI.Native.Engine.IRhiRenderTarget! target, eQuantic.UI.Primitives.Color clearColor) -> eQuantic.UI.Native.Engine.IRhiCommandList!
+eQuantic.UI.Native.Engine.IRhiDevice.CreateRenderTarget(int width, int height) -> eQuantic.UI.Native.Engine.IRhiRenderTarget!
+eQuantic.UI.Native.Engine.IRhiDevice.CreateTexture(eQuantic.UI.Native.Engine.TextureData! data) -> eQuantic.UI.Native.Engine.IRhiTexture!
+eQuantic.UI.Native.Engine.IRhiRenderTarget
+eQuantic.UI.Native.Engine.IRhiRenderTarget.ReadPixelsSrgb(System.Span<byte> destinationRgba) -> void
+eQuantic.UI.Native.Engine.IRhiTexture
+eQuantic.UI.Native.Engine.IRhiTexture.Height.get -> int
+eQuantic.UI.Native.Engine.IRhiTexture.Width.get -> int
+eQuantic.UI.Native.Engine.LinearColor
+eQuantic.UI.Native.Engine.LinearColor.A.get -> float
+eQuantic.UI.Native.Engine.LinearColor.A.init -> void
+eQuantic.UI.Native.Engine.LinearColor.B.get -> float
+eQuantic.UI.Native.Engine.LinearColor.B.init -> void
+eQuantic.UI.Native.Engine.LinearColor.Deconstruct(out float R, out float G, out float B, out float A) -> void
+eQuantic.UI.Native.Engine.LinearColor.Equals(eQuantic.UI.Native.Engine.LinearColor other) -> bool
+eQuantic.UI.Native.Engine.LinearColor.G.get -> float
+eQuantic.UI.Native.Engine.LinearColor.G.init -> void
+eQuantic.UI.Native.Engine.LinearColor.LinearColor() -> void
+eQuantic.UI.Native.Engine.LinearColor.LinearColor(float R, float G, float B, float A) -> void
+eQuantic.UI.Native.Engine.LinearColor.Over(eQuantic.UI.Native.Engine.LinearColor dst) -> eQuantic.UI.Native.Engine.LinearColor
+eQuantic.UI.Native.Engine.LinearColor.R.get -> float
+eQuantic.UI.Native.Engine.LinearColor.R.init -> void
+eQuantic.UI.Native.Engine.Paint
+eQuantic.UI.Native.Engine.Paint.AlphaFactorAt(eQuantic.UI.Primitives.Point local) -> float
+eQuantic.UI.Native.Engine.Paint.Color.get -> eQuantic.UI.Primitives.Color
+eQuantic.UI.Native.Engine.Paint.Color.init -> void
+eQuantic.UI.Native.Engine.Paint.ColorAt(eQuantic.UI.Primitives.Point local) -> eQuantic.UI.Primitives.Color
+eQuantic.UI.Native.Engine.Paint.EndColor.get -> eQuantic.UI.Primitives.Color
+eQuantic.UI.Native.Engine.Paint.EndColor.init -> void
+eQuantic.UI.Native.Engine.Paint.Equals(eQuantic.UI.Native.Engine.Paint other) -> bool
+eQuantic.UI.Native.Engine.Paint.GradientEnd.get -> eQuantic.UI.Primitives.Point
+eQuantic.UI.Native.Engine.Paint.GradientEnd.init -> void
+eQuantic.UI.Native.Engine.Paint.GradientStart.get -> eQuantic.UI.Primitives.Point
+eQuantic.UI.Native.Engine.Paint.GradientStart.init -> void
+eQuantic.UI.Native.Engine.Paint.Kind.get -> eQuantic.UI.Native.Engine.PaintKind
+eQuantic.UI.Native.Engine.Paint.Kind.init -> void
+eQuantic.UI.Native.Engine.Paint.Paint() -> void
+eQuantic.UI.Native.Engine.PaintKind
+eQuantic.UI.Native.Engine.PaintKind.LinearGradient = 1 -> eQuantic.UI.Native.Engine.PaintKind
+eQuantic.UI.Native.Engine.PaintKind.RadialGradient = 2 -> eQuantic.UI.Native.Engine.PaintKind
+eQuantic.UI.Native.Engine.PaintKind.Solid = 0 -> eQuantic.UI.Native.Engine.PaintKind
+eQuantic.UI.Native.Engine.PipelineCache
+eQuantic.UI.Native.Engine.PngCodec
+eQuantic.UI.Native.Engine.RenderBackendKind
+eQuantic.UI.Native.Engine.RenderBackendKind.Metal = 1 -> eQuantic.UI.Native.Engine.RenderBackendKind
+eQuantic.UI.Native.Engine.RenderBackendKind.Reference = 0 -> eQuantic.UI.Native.Engine.RenderBackendKind
+eQuantic.UI.Native.Engine.RenderBackendKind.Vulkan = 2 -> eQuantic.UI.Native.Engine.RenderBackendKind
+eQuantic.UI.Native.Engine.RhiFilter
+eQuantic.UI.Native.Engine.RhiFilter.Linear = 1 -> eQuantic.UI.Native.Engine.RhiFilter
+eQuantic.UI.Native.Engine.RhiFilter.Nearest = 0 -> eQuantic.UI.Native.Engine.RhiFilter
+eQuantic.UI.Native.Engine.RhiPipelineKind
+eQuantic.UI.Native.Engine.RhiPipelineKind.BlurDown = 4 -> eQuantic.UI.Native.Engine.RhiPipelineKind
+eQuantic.UI.Native.Engine.RhiPipelineKind.BlurUp = 5 -> eQuantic.UI.Native.Engine.RhiPipelineKind
+eQuantic.UI.Native.Engine.RhiPipelineKind.LayerComposite = 3 -> eQuantic.UI.Native.Engine.RhiPipelineKind
+eQuantic.UI.Native.Engine.RhiPipelineKind.Sdf = 0 -> eQuantic.UI.Native.Engine.RhiPipelineKind
+eQuantic.UI.Native.Engine.RhiPipelineKind.TexturedA8 = 1 -> eQuantic.UI.Native.Engine.RhiPipelineKind
+eQuantic.UI.Native.Engine.RhiPipelineKind.TexturedRgba = 2 -> eQuantic.UI.Native.Engine.RhiPipelineKind
+eQuantic.UI.Native.Engine.RhiReadback
+eQuantic.UI.Native.Engine.RhiRenderer
+eQuantic.UI.Native.Engine.RhiRenderer.Blur(eQuantic.UI.Native.Engine.IRhiRenderTarget! source, float radius) -> eQuantic.UI.Native.Engine.IRhiRenderTarget!
+eQuantic.UI.Native.Engine.RhiRenderer.Dispose() -> void
+eQuantic.UI.Native.Engine.RhiRenderer.Encode(eQuantic.UI.Native.Engine.DisplayList! displayList, eQuantic.UI.Native.Engine.IRhiCommandList! commands) -> void
+eQuantic.UI.Native.Engine.RhiRenderer.Encode(eQuantic.UI.Native.Engine.DisplayList! displayList, eQuantic.UI.Native.Engine.IRhiCommandList! commands, object? layersHandle) -> void
+eQuantic.UI.Native.Engine.RhiRenderer.Render(eQuantic.UI.Native.Engine.DisplayList! displayList, eQuantic.UI.Native.Engine.IRhiRenderTarget! target) -> void
+eQuantic.UI.Native.Engine.RhiRenderer.RhiRenderer(eQuantic.UI.Native.Engine.IRhiDevice! device) -> void
+eQuantic.UI.Native.Engine.RhiSurface
+eQuantic.UI.Native.Engine.RhiSurface.Dispose() -> void
+eQuantic.UI.Native.Engine.RhiSurface.Height.get -> int
+eQuantic.UI.Native.Engine.RhiSurface.ReadPixelsSrgb(System.Span<byte> destinationRgba) -> void
+eQuantic.UI.Native.Engine.RhiSurface.RhiSurface(eQuantic.UI.Native.Engine.IRhiRenderTarget! target) -> void
+eQuantic.UI.Native.Engine.RhiSurface.Target.get -> eQuantic.UI.Native.Engine.IRhiRenderTarget!
+eQuantic.UI.Native.Engine.RhiSurface.Width.get -> int
+eQuantic.UI.Native.Engine.Sdf
+eQuantic.UI.Native.Engine.TextureData
+eQuantic.UI.Native.Engine.TextureData.Alpha.get -> byte[]!
+eQuantic.UI.Native.Engine.TextureData.Format.get -> eQuantic.UI.Native.Engine.TextureFormat
+eQuantic.UI.Native.Engine.TextureData.Height.get -> int
+eQuantic.UI.Native.Engine.TextureData.TextureData(int width, int height, byte[]! alpha) -> void
+eQuantic.UI.Native.Engine.TextureData.Version.get -> int
+eQuantic.UI.Native.Engine.TextureData.Version.set -> void
+eQuantic.UI.Native.Engine.TextureData.Width.get -> int
+eQuantic.UI.Native.Engine.TextureFormat
+eQuantic.UI.Native.Engine.TextureFormat.A8 = 0 -> eQuantic.UI.Native.Engine.TextureFormat
+eQuantic.UI.Native.Engine.TextureFormat.Rgba8 = 1 -> eQuantic.UI.Native.Engine.TextureFormat
+override eQuantic.UI.Native.Engine.DrawCommand.GetHashCode() -> int
+override eQuantic.UI.Native.Engine.LinearColor.GetHashCode() -> int
+override eQuantic.UI.Native.Engine.Paint.GetHashCode() -> int
+static eQuantic.UI.Native.Engine.Blur.Apply(eQuantic.UI.Native.Engine.BlurImage! source, float radius) -> eQuantic.UI.Native.Engine.BlurImage!
+static eQuantic.UI.Native.Engine.Blur.Downsample(eQuantic.UI.Native.Engine.BlurImage! source) -> eQuantic.UI.Native.Engine.BlurImage!
+static eQuantic.UI.Native.Engine.Blur.Levels(float radius) -> int
+static eQuantic.UI.Native.Engine.Blur.Upsample(eQuantic.UI.Native.Engine.BlurImage! source, int destinationWidth, int destinationHeight) -> eQuantic.UI.Native.Engine.BlurImage!
+static eQuantic.UI.Native.Engine.ColorSpace.LinearToSrgb(float value) -> byte
+static eQuantic.UI.Native.Engine.ColorSpace.SrgbToLinear(byte value) -> float
+static eQuantic.UI.Native.Engine.ColorSpace.ToPremultipliedLinear(eQuantic.UI.Primitives.Color color, float alphaScale = 1) -> eQuantic.UI.Native.Engine.LinearColor
+static eQuantic.UI.Native.Engine.DataUri.TryDecode(string! source, out byte[]? bytes) -> bool
+static eQuantic.UI.Native.Engine.DrawCommand.operator !=(eQuantic.UI.Native.Engine.DrawCommand left, eQuantic.UI.Native.Engine.DrawCommand right) -> bool
+static eQuantic.UI.Native.Engine.DrawCommand.operator ==(eQuantic.UI.Native.Engine.DrawCommand left, eQuantic.UI.Native.Engine.DrawCommand right) -> bool
+static eQuantic.UI.Native.Engine.DrawUniforms.TryBuild(in eQuantic.UI.Native.Engine.DrawCommand command, out eQuantic.UI.Native.Engine.DrawUniforms uniforms) -> bool
+static eQuantic.UI.Native.Engine.ImageHeader.Measure(System.ReadOnlySpan<byte> bytes) -> (int Width, int Height)
+static eQuantic.UI.Native.Engine.LinearColor.operator !=(eQuantic.UI.Native.Engine.LinearColor left, eQuantic.UI.Native.Engine.LinearColor right) -> bool
+static eQuantic.UI.Native.Engine.LinearColor.operator ==(eQuantic.UI.Native.Engine.LinearColor left, eQuantic.UI.Native.Engine.LinearColor right) -> bool
+static eQuantic.UI.Native.Engine.Paint.Linear(eQuantic.UI.Primitives.Point start, eQuantic.UI.Primitives.Point end, eQuantic.UI.Primitives.Color from, eQuantic.UI.Primitives.Color to) -> eQuantic.UI.Native.Engine.Paint
+static eQuantic.UI.Native.Engine.Paint.operator !=(eQuantic.UI.Native.Engine.Paint left, eQuantic.UI.Native.Engine.Paint right) -> bool
+static eQuantic.UI.Native.Engine.Paint.operator ==(eQuantic.UI.Native.Engine.Paint left, eQuantic.UI.Native.Engine.Paint right) -> bool
+static eQuantic.UI.Native.Engine.Paint.Radial(eQuantic.UI.Primitives.Point center, float radiusX, float radiusY, eQuantic.UI.Primitives.Color from, eQuantic.UI.Primitives.Color to) -> eQuantic.UI.Native.Engine.Paint
+static eQuantic.UI.Native.Engine.Paint.Solid(eQuantic.UI.Primitives.Color color) -> eQuantic.UI.Native.Engine.Paint
+static eQuantic.UI.Native.Engine.PipelineCache.TryGetFile(string! prefix, System.ReadOnlySpan<byte> shaderBytes, string! extension, out string! path) -> bool
+static eQuantic.UI.Native.Engine.PngCodec.Decode(System.ReadOnlySpan<byte> png) -> (int Width, int Height, byte[]! Rgba)
+static eQuantic.UI.Native.Engine.PngCodec.Encode(int width, int height, System.ReadOnlySpan<byte> rgba) -> byte[]!
+static eQuantic.UI.Native.Engine.RhiReadback.UnpremultiplySrgb(System.ReadOnlySpan<byte> premultipliedRgba, System.Span<byte> destinationRgba) -> void
+static eQuantic.UI.Native.Engine.RhiRenderer.ClearColorOf(eQuantic.UI.Native.Engine.DisplayList! displayList) -> eQuantic.UI.Primitives.Color
+static eQuantic.UI.Native.Engine.Sdf.AnnularSector(eQuantic.UI.Primitives.Point p, float innerRadius, float outerRadius, float startAngle, float endAngle, float rounding) -> float
+static eQuantic.UI.Native.Engine.Sdf.Coverage(float deviceDistance) -> float
+static eQuantic.UI.Native.Engine.Sdf.RoundedRect(eQuantic.UI.Primitives.Point p, eQuantic.UI.Primitives.Size halfSize, eQuantic.UI.Primitives.CornerRadii radii) -> float
+static eQuantic.UI.Native.Engine.Sdf.ShadowCoverage(float deviceDistance, float deviceBlur) -> float
+static eQuantic.UI.Native.Engine.Sdf.Stroke(float distance, float strokeWidth) -> float
+static eQuantic.UI.Native.Engine.TextureData.Rgba(int width, int height, byte[]! rgba) -> eQuantic.UI.Native.Engine.TextureData!
+static readonly eQuantic.UI.Native.Engine.LinearColor.Transparent -> eQuantic.UI.Native.Engine.LinearColor
+~override eQuantic.UI.Native.Engine.DrawCommand.Equals(object obj) -> bool
+~override eQuantic.UI.Native.Engine.DrawCommand.ToString() -> string
+~override eQuantic.UI.Native.Engine.LinearColor.Equals(object obj) -> bool
+~override eQuantic.UI.Native.Engine.LinearColor.ToString() -> string
+~override eQuantic.UI.Native.Engine.Paint.Equals(object obj) -> bool
+~override eQuantic.UI.Native.Engine.Paint.ToString() -> string

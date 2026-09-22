@@ -20,3 +20,4 @@ trim_trailing_whitespace = false
 
 [*.{ts,tsx,js,jsx}]
 indent_size = 2
+

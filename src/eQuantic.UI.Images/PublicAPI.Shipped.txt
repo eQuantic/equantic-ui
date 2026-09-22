@@ -1,0 +1,50 @@
+#nullable enable
+eQuantic.UI.Images.BlurPlaceholderGenerator
+eQuantic.UI.Images.BlurPlaceholderGenerator.BlurPlaceholderGenerator() -> void
+eQuantic.UI.Images.BlurPlaceholderGenerator.GenerateAsync(System.IO.Stream! source) -> System.Threading.Tasks.Task<string!>!
+eQuantic.UI.Images.BlurPlaceholderGenerator.GenerateFromFileAsync(string! filePath) -> System.Threading.Tasks.Task<string!>!
+eQuantic.UI.Images.ImageCache
+eQuantic.UI.Images.ImageCache.Dispose() -> void
+eQuantic.UI.Images.ImageCache.GetAsync(string! url, int width, int quality, string! format) -> System.Threading.Tasks.Task<byte[]?>!
+eQuantic.UI.Images.ImageCache.GetOrCreateAsync(string! url, int width, int quality, string! format, System.Func<System.Threading.Tasks.Task<byte[]!>!>! factory) -> System.Threading.Tasks.Task<byte[]!>!
+eQuantic.UI.Images.ImageCache.ImageCache(eQuantic.UI.Images.ImageOptimizationOptions! options, Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Images.ImageCache!>? logger = null) -> void
+eQuantic.UI.Images.ImageCache.SetAsync(string! url, int width, int quality, string! format, byte[]! data) -> System.Threading.Tasks.Task!
+eQuantic.UI.Images.ImageExtensions
+eQuantic.UI.Images.ImageOptimizationMiddleware
+eQuantic.UI.Images.ImageOptimizationOptions
+eQuantic.UI.Images.ImageOptimizationOptions.AllowedWidths.get -> int[]!
+eQuantic.UI.Images.ImageOptimizationOptions.CacheDirectory.get -> string!
+eQuantic.UI.Images.ImageOptimizationOptions.CacheDirectory.set -> void
+eQuantic.UI.Images.ImageOptimizationOptions.CacheTtlSeconds.get -> int
+eQuantic.UI.Images.ImageOptimizationOptions.CacheTtlSeconds.set -> void
+eQuantic.UI.Images.ImageOptimizationOptions.DefaultQuality.get -> int
+eQuantic.UI.Images.ImageOptimizationOptions.DefaultQuality.set -> void
+eQuantic.UI.Images.ImageOptimizationOptions.DeviceSizes.get -> int[]!
+eQuantic.UI.Images.ImageOptimizationOptions.DeviceSizes.set -> void
+eQuantic.UI.Images.ImageOptimizationOptions.Formats.get -> string![]!
+eQuantic.UI.Images.ImageOptimizationOptions.Formats.set -> void
+eQuantic.UI.Images.ImageOptimizationOptions.ImageOptimizationOptions() -> void
+eQuantic.UI.Images.ImageOptimizationOptions.ImageSizes.get -> int[]!
+eQuantic.UI.Images.ImageOptimizationOptions.ImageSizes.set -> void
+eQuantic.UI.Images.ImageOptimizationOptions.MaxSourceSize.get -> long
+eQuantic.UI.Images.ImageOptimizationOptions.MaxSourceSize.set -> void
+eQuantic.UI.Images.ImageOptimizationOptions.Validate() -> void
+eQuantic.UI.Images.ImageOptimizationState
+eQuantic.UI.Images.ImageOptimizer
+eQuantic.UI.Images.ImageOptimizer.GetDimensionsAsync(System.IO.Stream! source) -> System.Threading.Tasks.Task<(int Width, int Height)>!
+eQuantic.UI.Images.ImageOptimizer.ImageOptimizer() -> void
+eQuantic.UI.Images.ImageOptimizer.OptimizeAsync(System.IO.Stream! source, int width, int quality, string! outputFormat) -> System.Threading.Tasks.Task<byte[]!>!
+static eQuantic.UI.Images.ImageExtensions.AddImageOptimization(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<eQuantic.UI.Images.ImageOptimizationOptions!>? configure = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static eQuantic.UI.Images.ImageExtensions.UseImageOptimization(this eQuantic.UI.Server.UIOptions! options, System.Action<eQuantic.UI.Images.ImageOptimizationOptions!>? configure = null) -> eQuantic.UI.Server.UIOptions!
+static eQuantic.UI.Images.ImageExtensions.UseImageOptimization(this Microsoft.AspNetCore.Builder.WebApplication! app) -> Microsoft.AspNetCore.Builder.WebApplication!
+static eQuantic.UI.Images.ImageOptimizationMiddleware.HandleAsync(Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task!
+static eQuantic.UI.Images.ImageOptimizationState.AllowedWidths.get -> int[]!
+static eQuantic.UI.Images.ImageOptimizationState.DefaultQuality.get -> int
+static eQuantic.UI.Images.ImageOptimizationState.DefaultQuality.set -> void
+static eQuantic.UI.Images.ImageOptimizationState.DeviceSizes.get -> int[]!
+static eQuantic.UI.Images.ImageOptimizationState.DeviceSizes.set -> void
+static eQuantic.UI.Images.ImageOptimizationState.ImageSizes.get -> int[]!
+static eQuantic.UI.Images.ImageOptimizationState.ImageSizes.set -> void
+static eQuantic.UI.Images.ImageOptimizationState.IsEnabled.get -> bool
+static eQuantic.UI.Images.ImageOptimizationState.IsEnabled.set -> void
+static eQuantic.UI.Images.ImageOptimizationState.SnapToAllowed(int width) -> int
