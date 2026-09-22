@@ -8,12 +8,24 @@
  * package references ONLY eQuantic.UI.Primitives — the same catalog serves the web realizer
  * (inline SVG) and the native glyph atlas (W4) once it lands.
  *
- * Usage: node scripts/generate-icons.mjs [prefix …]   (no args = all sets)
+ * Usage, from the repository root, with the embedded bun the Runtime project extracts (no Node):
+ *
+ *     src/eQuantic.UI.Runtime.<Os><Arch>/tools/bun/bun-<os> scripts/generate-icons.mjs [prefix …]
+ *
+ * (no prefix = all sets). The source is PINNED: every set is read from one commit of
+ * iconify/icon-sets, so the same command regenerates the same bytes on any machine on any day.
+ * Taking newer icons is a change of that commit and nothing else, and the regenerated diff is its
+ * review.
  */
 import fs from 'fs';
 import path from 'path';
 
-const ICONIFY_JSON_URL = (prefix) => `https://raw.githubusercontent.com/iconify/icon-sets/master/json/${prefix}.json`;
+// The one commit of iconify/icon-sets every pack is generated from. The generator used to read
+// `master`, so a regeneration for any reason — a fix to this script included — also took whatever
+// upstream had changed that day, and nothing could say which glyph moved because of which.
+const ICON_SETS_REF = '110101808e076a0e3b55a74051331eb9ffc53746';
+const ICONIFY_JSON_URL = (prefix) =>
+    `https://raw.githubusercontent.com/iconify/icon-sets/${ICON_SETS_REF}/json/${prefix}.json`;
 
 // ---- SVG body parsing (regular machine output — a tag scanner is sufficient) ---------------------
 
@@ -102,6 +114,40 @@ function shapeToPath(node) {
 
 const DRAWABLE = new Set(['path', 'circle', 'ellipse', 'rect', 'line', 'polyline', 'polygon']);
 
+// ---- joining an icon's elements into one path ---------------------------------------------------
+
+// An IconGlyph is ONE path, and most icons are several elements. Inside its own element a path's
+// first moveto is relative to the ORIGIN; joined after another element, a relative `m` is read
+// relative to where that element ENDED. Lucide's circle-check is a circle and `m9 12l2 2l4-4`:
+// joined, the tick started at (11,24), on the bottom edge of the box, so the circle drew and the
+// tick did not — in 761+ glyphs across the packs (#320). Every element is therefore joined in the
+// one form that means the same thing standing alone and after another: its first moveto absolute.
+const COMMAND = /[MmZzLlHhVvCcSsQqTtAa]/;
+const NUMBER = /[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/y;
+
+function absoluteStart(d) {
+    // Whitespace before a command letter carries nothing. Dropping it leaves the JOIN as the only
+    // place a command follows a space, which is what lets a test read every seam out of the output.
+    const s = d.trim().replace(/[\s,]+(?=[MmZzLlHhVvCcSsQqTtAa])/g, '');
+    if (s[0] !== 'm') return s;
+    let i = 1;
+    const read = () => {
+        while (i < s.length && /[\s,]/.test(s[i])) i++;
+        NUMBER.lastIndex = i;
+        const m = NUMBER.exec(s);
+        if (!m) throw new Error(`a moveto without two coordinates: ${d}`);
+        i = NUMBER.lastIndex;
+        return m[0];
+    };
+    const x = read();
+    const y = read();
+    const rest = s.slice(i).replace(/^[\s,]+/, '');
+    // Coordinate pairs after a moveto are IMPLICIT linetos in the moveto's own case — relative
+    // ones here. Once the moveto is absolute they must be named, or they would turn absolute too.
+    const implicit = rest.length > 0 && !COMMAND.test(rest[0]);
+    return `M${x} ${y}${implicit ? 'l' : ''}${rest}`;
+}
+
 /**
  * Flattens an icon's node tree to { path, style, strokeWidth } — group presentation attributes
  * inherit down; invisible bounding shapes drop. Returns null (with a reason) when the icon uses
@@ -147,8 +193,12 @@ function flattenIcon(nodes) {
     const strokes = drawn.filter((p) => p.stroke);
     if (strokes.length > 0 && strokes.length < drawn.length) return { error: 'mixed fill+stroke' };
 
+    const joined = drawn.map((p) => absoluteStart(p.d)).join(' ');
+    // The seam's signature is a relative moveto right after the space the join puts between two
+    // elements. It cannot be produced above; this is what says so if an edit ever makes it possible.
+    if (/\sm/.test(joined)) throw new Error(`a relative moveto at an element seam: ${joined}`);
     return {
-        path: drawn.map((p) => p.d).join(' '),
+        path: joined,
         style: strokes.length > 0 ? 'Stroke' : 'Fill',
         strokeWidth: strokes.length > 0 ? strokes[0].strokeWidth : 2,
     };
@@ -181,6 +231,11 @@ async function generate(prefix, projectName, className, outputDir) {
     const baseName = className.replace(/icons$/i, '');
     const iconsClassName = `${baseName}Icons`;
     const setLabel = iconData.info?.name ?? baseName;
+    // The set JSON carries no version, only when it last changed: that date, with the pinned commit,
+    // is what a reader needs to know which upstream drawing a glyph is.
+    const setDate = Number.isFinite(iconData.lastModified)
+        ? ` (last modified ${new Date(iconData.lastModified * 1000).toISOString().slice(0, 10)})`
+        : '';
 
     const lines = [];
     const skipped = new Map();
@@ -219,10 +274,10 @@ namespace eQuantic.UI.${className};
 
 /// <summary>
 /// ${setLabel} icon catalog on the WRITE-ONCE architecture: every glyph is target-neutral
-/// <see cref="IconGlyph"/> data — the web realizer emits inline SVG, the native glyph atlas (W4)
-/// rasterizes the same data. Use with the Icon node: <c>new Icon(${iconsClassName}.SomeGlyph,
-/// IconSize.Md)</c>. GENERATED by scripts/generate-icons.mjs from the Iconify '${prefix}' set —
-/// do not edit by hand.
+/// <see cref="IconGlyph"/> data — the web realizer emits inline SVG and Photon rasterizes the same
+/// data. Use it with the Icon factory: <c>Icon(${iconsClassName}.SomeGlyph)</c>. GENERATED by
+/// scripts/generate-icons.mjs from the Iconify '${prefix}' set${setDate} at
+/// iconify/icon-sets@${ICON_SETS_REF.slice(0, 12)} — do not edit by hand.
 /// </summary>
 public static class ${iconsClassName}
 {
