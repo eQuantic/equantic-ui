@@ -42,6 +42,10 @@
 # --self-test runs both rules against fixtures of every shape, including the ones that must PASS.
 # CI runs it on every push, so the day a pattern stops matching is the day CI says so, rather than
 # the day someone next reads a commit.
+#
+# --file reads a message that is not a commit yet, which is the only moment anything can be stopped.
+# A squash message is composed at MERGE time and handed to `gh pr merge --body-file`; on a push to
+# main these same rules run again and can then only report, because main's history is not rewritten.
 
 set -uo pipefail
 
@@ -178,6 +182,25 @@ case "${1:---help}" in
     self_test
     exit $?
     ;;
+--file)
+    # A message BEFORE it becomes a commit. The three leaks this guard was written for were squash
+    # bodies composed at merge time and passed straight to `gh pr merge --body-file`, so the only
+    # moment a check could have stopped one is between writing that file and merging with it. On a
+    # push to main the same rules run again and can only report.
+    path="${2:-}"
+    if [ -z "$path" ] || [ ! -f "$path" ]; then
+        printf 'usage: check-commit-messages.sh --file <path to a message>\n' >&2
+        exit 2
+    fi
+    hits=$(scan_message "$(cat "$path")")
+    if [ -n "$hits" ]; then
+        report "$path" "$hits"
+        printf '\nDo not merge with this file. Delete those lines first.\n'
+        exit 1
+    fi
+    printf '%s is clean\n' "$path"
+    exit 0
+    ;;
 --range)
     # A..B, as a push event or a pull request gives it. An empty or unresolvable A (a new branch, a
     # tag push, the first push to a repository) means there is no range to walk, so the head commit
@@ -234,7 +257,8 @@ EOF
 *)
     cat <<'EOF'
 usage:
-  check-commit-messages.sh --self-test          run the rules against their fixtures
+  check-commit-messages.sh --self-test            run the rules against their fixtures
+  check-commit-messages.sh --file <path>          scan a message BEFORE it becomes a commit
   check-commit-messages.sh --range <base> [head]  scan every commit message in base..head
 EOF
     exit 2

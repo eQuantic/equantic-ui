@@ -1,4 +1,4 @@
-# eQuantic.UI Native — Proprietary GPU Engine Plan (codename: "Photon")
+# eQuantic.UI Native — Proprietary GPU Engine Plan ("Photon")
 
 > Track N of `ROADMAP.md` (a parallel track, independent of web Phases 3–7). Same shape as the
 > retired client-router plan (`docs/LEDGER.md`): why → decisions → architecture → workstreams →
@@ -312,7 +312,13 @@ Bun and the JS bundling chain, the TypeScript runtime.
 
 ## Open questions (tracked decisions, not surprises)
 
-1. Engine codename/branding — "Photon" is a placeholder; decide before public docs.
+1. Engine codename/branding — **answered (2026-09-22): the name is Photon, and the engine
+   shipped under it.** Measured on that date: 29 files declare a public `Photon*` type
+   (`PhotonApp`, `PhotonApplicationBuilder`, `PhotonEntitlements`, `PhotonTheme`…), one project
+   is named for it (`eQuantic.UI.Design.Photon`), the README names it seven times and the native
+   template scaffolds against it. A placeholder is a name nobody has spent yet; this one is in
+   the public surface, so changing it is a break to be migrated rather than a decision still
+   open.
 2. GPU binding strategy — Silk.NET vs owned slim bindings (M0 spike decides; owning is preferred).
    **Metal side answered (2026-07-04):** the spike drives the whole pipeline through ~100 lines of
    typed `objc_msgSend` P/Invoke (`LibraryImport`, one extern per call shape — the arm64 ABI needs

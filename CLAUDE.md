@@ -141,13 +141,27 @@ belongs in a chat reply, never in a commit message, a PR title or body, a code c
 else pushed here. Naming the TOOLING in prose is a different thing and stays allowed — this file's
 own first line does it.
 
-**And a job now compares, because reading it back is not enough.** Three squash messages reached
-main carrying the scaffolding of whatever composed them, five days apart, while this rule was
-already written — `scripts/check-commit-messages.sh`, run by the `commit-messages` job, is what
-notices the fourth. It reads commit messages only, so a pull request BODY may still describe these
-shapes; a commit about the guard itself describes them instead of quoting them, the same way this
-section uses placeholders. On a squash the message is composed at MERGE time, so the job on `main`
-reports AFTER the fact: that red run is the notice, and the message on main cannot be taken back.
+**And a job now compares, because reading it back is not enough.** Five squash messages reached
+main carrying the scaffolding of whatever composed them, while this rule was already written —
+`scripts/check-commit-messages.sh`, run by the `commit-messages` job, is what notices the sixth. It
+reads commit messages only, so a pull request BODY may still describe these shapes; a commit about
+the guard itself describes them instead of quoting them, the same way this section uses
+placeholders.
+
+**Where they come from, measured: the merge, not the branch.** All five had clean pull request
+bodies and clean branch commits — the `commit-messages` job passed on the pull requests that
+produced the last two — and the scaffolding was in the `--body` composed at merge time, the one
+artefact nobody re-reads. So two things changed. The repository's squash default is now the pull
+request's own TITLE and BODY, which you have already read back at step 2, so merging without
+composing anything produces a message that was reviewed. And when you do compose one, it goes in a
+FILE that the guard reads before the merge:
+
+```bash
+./scripts/check-commit-messages.sh --file <the message file>
+```
+
+That is the only moment anything can be stopped. On `main` the same rules run again and can only
+report: the merge has happened, and a message there cannot be taken back.
 
 ## Pull Requests (main is protected)
 
@@ -186,7 +200,11 @@ The flow:
    `gh pr merge` only says "the base branch policy prohibits the merge" when one is open. Resolving
    is GraphQL-only: read `pullRequest.reviewThreads` for the unresolved id, then
    `resolveReviewThread`. Copilot is not requested on open — it arrives on its own a few minutes
-   later, and asking for it fails, so wait rather than retry.
+   later, and asking for it fails, so wait rather than retry. **Merge WITHOUT composing a message**:
+   the repository's squash default is the pull request's title and body, which step 2 already made
+   you read. If you compose one anyway, write it to a file and run
+   `./scripts/check-commit-messages.sh --file` on that file first — five squash messages reached
+   main carrying their composer's scaffolding, and every one of them came from this step.
 5. **Cutting a version is OPTIONAL** and separate. Merging a PR does not imply a release. Bump and
    tag only when Edgar asks — see **Version Management** below for what a bump touches.
 
