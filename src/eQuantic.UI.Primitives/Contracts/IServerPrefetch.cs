@@ -12,14 +12,23 @@ namespace eQuantic.UI.Primitives;
 /// HTML and only a browser showed the loss. The traversal below is what makes the sentence true.
 /// </para>
 /// <para>
-/// HOW IT REACHES YOU: the tree is expanded once to find out who wants data, every prefetch is
-/// awaited together, and the drawing expands again with the values restored. The round repeats while
-/// it keeps finding components it has not asked — a page that loads a list and then composes one
-/// component per row creates prefetchers that did not exist when the first round looked. The payload
-/// names each component <c>Type#ordinal</c> in that expansion order, and the client counts the same
-/// way as it builds, so each component is handed back its own fields. A tree that somehow differs
-/// between the two sides leaves a component with its DEFAULTS rather than another component's data:
-/// the type in the key has to match before anything is written.
+/// HOW IT REACHES YOU: the drawing is the discovery — it names every component it expands — and the
+/// prefetches it found are then awaited ONE AT A TIME, because they are all handed the request's
+/// service provider and a scoped dependency (an EF DbContext, the ordinary case) is not safe for two
+/// of them at once. The drawing runs again with the values restored, and repeats while it keeps
+/// finding components it has not asked: a page that loads a list and then composes one component per
+/// row creates prefetchers that did not exist when the first round looked.
+/// </para>
+/// <para>
+/// The payload names each component <c>Type#ordinal</c> in that expansion order, and the client
+/// counts the same way as it builds, so each component is handed back its own fields. A tree that
+/// somehow differs between the two sides leaves a component with its DEFAULTS rather than another
+/// component's data: the type in the key has to match before anything is written. A component the
+/// DATA replaced — your page loads, and composes a different row at the same position — is
+/// recognised as a different component and asked for its own data rather than handed the previous
+/// one's, as long as what distinguishes the two is a field this can compare: a string, a number, an
+/// enum, any value type. Two rows told apart only by an object you pass them cannot be distinguished
+/// here, so give such a component something comparable if its position is data-driven.
 /// </para>
 /// <para>
 /// The implementation is SERVER-ONLY: mark it <c>[ServerOnly]</c> so the transpiler omits it from

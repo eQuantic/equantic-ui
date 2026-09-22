@@ -51,6 +51,22 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     expect(page._packages).toBe(24);
   });
 
+  it('adopts a CLEARED field, because null is a value the prefetch loaded', () => {
+    // The wire snapshot used to drop nulls, so a prefetch that CLEARS a non-null default wrote
+    // nothing the client could read: the server drew the cleared value, the payload said nothing,
+    // and hydration left the default the constructor set — the page reverting a moment after it
+    // appeared, for the one value that is indistinguishable from absence. The server sends it now
+    // and this is the side that has to write it.
+    class Banner {
+      _message: string | null = 'still here';
+    }
+    const banner = new Banner();
+    win.__INITIAL_STATE__ = { 'Banner#0': { _message: null } };
+
+    expect(adoptServerStateFor(banner, nextComponentKey('Banner'))).toBe(true);
+    expect(banner._message).toBeNull();
+  });
+
   it('does NOT consume the payload, because other components still have to read theirs', () => {
     // The flat payload was a single-render handoff to ONE owner and was deleted once read. A page
     // composing three prefetchers would have had the first one swallow the other two's entries.

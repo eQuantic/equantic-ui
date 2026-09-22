@@ -333,6 +333,155 @@ public class TreePrefetchTests
             + "stricter type check, not a defect that was ever measured here");
     }
 
+    /// <summary>
+    /// A CLEARED DEFAULT IS A LOADED VALUE, and the payload has to say so.
+    ///
+    /// <para>
+    /// The wire snapshot dropped null fields, so a prefetch that CLEARS a non-null default wrote
+    /// nothing the client could read. The server drew the cleared value, the payload omitted the
+    /// field, and hydration left the component holding the default its own constructor set — the
+    /// page reverting a moment after it appeared, which is the whole failure this change removes,
+    /// arriving as the one value that is indistinguishable from absence.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public async Task APrefetchThatClearsADefault_SaysSoInThePayload()
+    {
+        var context = RequestWith(out _);
+
+        var result = await CreateService().RenderPageAsync(nameof(PageWithAwkwardShapes), context);
+
+        result.Success.Should().BeTrue(result.Error);
+        result.SerializedState.Should().NotBeNull();
+
+        using var payload = JsonDocument.Parse(result.SerializedState!);
+        payload.RootElement.TryGetProperty($"{nameof(AwkwardShapes)}#0", out var fields)
+            .Should().BeTrue($"payload was: {result.SerializedState}");
+        fields.TryGetProperty("_cleared", out var cleared).Should().BeTrue(
+            "the field the prefetch CLEARED has to travel; payload was: " + result.SerializedState);
+        cleared.ValueKind.Should().Be(JsonValueKind.Null,
+            "a cleared value is null on the wire, not a missing key the client reads as 'keep yours'");
+    }
+
+    /// <summary>A page that loads its OWN data — the ordinary shape, and the root of every round.</summary>
+    [Page("/tree-prefetch-root")]
+    private sealed class PageThatLoadsItsOwnData : Primitives.StatelessComponent, IServerPrefetch
+    {
+        private long _total = -1;
+
+        [ServerOnly]
+        public async Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+            => _total = await services.GetRequiredService<ICounts>().GetAsync(cancellationToken);
+
+        public override VisualNode Build(ComponentContext context) =>
+            new Text($"total:{_total}", TypeRole.Heading);
+    }
+
+    /// <summary>
+    /// A PAGE ROOT IS ASKED ONCE, and the reason it needs saying is that the root is the one
+    /// component the rounds do not rebuild.
+    ///
+    /// <para>
+    /// Every other component is constructed afresh each round, so a key whose component no longer
+    /// matches how the loader was built means the data replaced it. The root does not match either
+    /// — its OWN prefetch is what changed its fields — and reading that as a replacement asked it
+    /// again on every round: one extra query per page, for the most ordinary page there is. It is
+    /// recognised by reference instead, which is exact.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public async Task APageThatLoadsItsOwnData_IsAskedOnce()
+    {
+        var context = RequestWith(out var counts);
+
+        var result = await CreateService().RenderPageAsync(nameof(PageThatLoadsItsOwnData), context);
+
+        result.Success.Should().BeTrue(result.Error);
+        result.Html.Should().Contain("total:675617");
+        counts.Calls.Should().Be(1,
+            "the root is the same instance every round, so it has nothing to be handed back and "
+            + "nothing to re-load");
+    }
+
+    /// <summary>A row that knows WHICH row it is, and loads for that one.</summary>
+    private sealed class Row : Primitives.StatelessComponent, IServerPrefetch
+    {
+        private readonly string _name;
+        private string _value = "(not loaded)";
+
+        public Row(string name) => _name = name;
+
+        [ServerOnly]
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            _value = $"{_name}-loaded";
+            return Task.CompletedTask;
+        }
+
+        public override VisualNode Build(ComponentContext context) =>
+            new Text($"row:{_name}:{_value}", TypeRole.BodyM);
+    }
+
+    /// <summary>Its own prefetch decides WHICH row it composes, so the row changes between rounds.</summary>
+    [Page("/tree-prefetch-swap")]
+    private sealed class PageThatSwapsItsRow : Primitives.StatelessComponent, IServerPrefetch
+    {
+        private string _which = "a";
+
+        [ServerOnly]
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            _which = "b";
+            return Task.CompletedTask;
+        }
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column(gap: Space.S2);
+            column.Add(new Row(_which));
+            return column;
+        }
+    }
+
+    /// <summary>
+    /// A COMPONENT THE DATA REPLACED IS ITS OWN COMPONENT — it keeps what its constructor was given
+    /// and loads what belongs to it, rather than inheriting the state of the one it replaced.
+    ///
+    /// <para>
+    /// The restore used to write EVERY captured field onto the next round's instance, so this page
+    /// drew <c>row:a:a-loaded</c> on a request whose own prefetch had already chosen row <c>b</c>:
+    /// the constructor argument was overwritten by the round before it, and the value shown belonged
+    /// to a row that was no longer on the page. A wrong value, not a missing one — the failure the
+    /// key carries a type name to prevent, arriving from inside one type.
+    /// </para>
+    ///
+    /// <para>
+    /// Two rules together produce the right answer. Only what a prefetch WROTE is carried, so a
+    /// constructor argument is never overwritten; and a component whose comparable fields no longer
+    /// match how the loader was built is recognised as a different component, so nothing is restored
+    /// onto it and it is asked for its own data.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public async Task ARowTheDataReplaced_IsItsOwnRow()
+    {
+        var context = RequestWith(out _);
+
+        var result = await CreateService().RenderPageAsync(nameof(PageThatSwapsItsRow), context);
+
+        result.Success.Should().BeTrue(result.Error);
+        result.Html.Should().Contain("row:b:b-loaded",
+            "the page's own prefetch chose row b, so the page draws row b with row b's data");
+        result.Html.Should().NotContain("a-loaded",
+            "what the replaced row loaded belongs to a row that is no longer on the page");
+
+        result.SerializedState.Should().NotBeNull();
+        using var payload = JsonDocument.Parse(result.SerializedState!);
+        payload.RootElement.GetProperty($"{nameof(Row)}#0").GetProperty("_value").GetString()
+            .Should().Be("b-loaded", "the payload is read off the instance that drew, so it says "
+                + "what the markup beside it says");
+    }
+
     private static readonly List<string> Order = [];
 
     private sealed class SlowLoader : Primitives.StatelessComponent, IServerPrefetch
@@ -497,5 +646,67 @@ public class TreePrefetchTests
         result.Success.Should().BeTrue(result.Error);
         counts.Calls.Should().BeGreaterThan(0, "a Stack is a container, not a place data stops arriving");
         result.Html.Should().Contain("Downloads: 675617");
+    }
+
+    /// <summary>
+    /// A page written as an ESCAPE-HATCH element rather than a write-once component. It is a
+    /// <c>Web.IComponent</c>, so it never passes through the realizer's component visit and the
+    /// traversal would find nothing to ask — the pipeline asks its root directly instead.
+    /// <para>
+    /// It reaches the SSR index through <c>MapPage&lt;T&gt;</c>: the attribute scan admits only
+    /// <c>UiComponent</c>s, while <c>MapPage</c> accepts either. That is the one door this shape
+    /// comes through, so the test comes through it too.
+    /// </para>
+    /// </summary>
+    private sealed class CoreRootPage : eQuantic.UI.Web.HtmlElement, IServerPrefetch
+    {
+        private long _downloads = -1;
+
+        [ServerOnly]
+        public async Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+            => _downloads = await services.GetRequiredService<ICounts>().GetAsync(cancellationToken);
+
+        public override eQuantic.UI.Web.HtmlNode Render()
+            => eQuantic.UI.Web.HtmlNode.Text($"Downloads: {_downloads}");
+    }
+
+    /// <summary>
+    /// AN ESCAPE-HATCH PAGE SHIPS WHAT IT LOADED, like every other page that loads something.
+    ///
+    /// <para>
+    /// Its root is asked directly and its markup was always right — but the key it loaded under
+    /// never joined the asked set, and the asked set is what decides whether the response carries a
+    /// payload at all. So the one page shape that never needed the traversal was the one shape that
+    /// hydrated from its defaults: the number drew and then reverted, which is the exact failure
+    /// this change exists to remove, arriving by the other door.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public async Task AnEscapeHatchPage_ShipsWhatItLoaded()
+    {
+        var counts = new Counts();
+        var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder();
+        builder.Services.AddSingleton<ICounts>(counts);
+        builder.Services.AddUI(o => o.ScanAssembly(typeof(TreePrefetchTests).Assembly));
+        await using var app = builder.Build();
+        app.MapPage<CoreRootPage>("/tree-prefetch-core");
+
+        var service = app.Services.GetRequiredService<IServerRenderingService>();
+        var context = new DefaultHttpContext { RequestServices = app.Services };
+
+        var result = await service.RenderPageAsync(nameof(CoreRootPage), context);
+
+        result.Success.Should().BeTrue(result.Error);
+        result.Html.Should().Contain("Downloads: 675617");
+        counts.Calls.Should().Be(1, "the root is asked once, directly");
+
+        result.SerializedState.Should().NotBeNull(
+            "a root that prefetched has state the client cannot rebuild for itself");
+        using var payload = JsonDocument.Parse(result.SerializedState!);
+        payload.RootElement.TryGetProperty($"{nameof(CoreRootPage)}#0", out var fields)
+            .Should().BeTrue($"the root's own key carries its fields; payload was: {result.SerializedState}");
+        // A STRING on the wire: EqJson writes Int64 that way so values past 2^53 survive into the
+        // client's BigInt-backed `long`, which is the Server Action protocol's spelling too.
+        fields.GetProperty("_downloads").GetString().Should().Be("675617");
     }
 }

@@ -31,10 +31,15 @@ import { scheduleRenderFlush } from './render-scheduler';
  */
 /**
  * SERVER DATA (the C# `IServerPrefetch` twin): the fields the server's prefetch filled arrive as
- * `window.__INITIAL_STATE__`, keyed by the SAME field names the page declares, and land BEFORE its
- * first render — so the client's first tree is the one the server already wrote as HTML and
- * hydration matches instead of flashing the field defaults. Consumed once: the payload is a
- * single-render handoff, not a store.
+ * `window.__INITIAL_STATE__` — one field map PER COMPONENT, under the name the server's realizer
+ * gave it (`Type#ordinal`), each landing BEFORE that component builds, so the client's first tree is
+ * the one the server already wrote as HTML and hydration matches instead of flashing the field
+ * defaults. Inside a component's entry the keys are the field names it declares.
+ *
+ * NOT consumed once, which the flat single-owner payload was: it stays for the life of the document
+ * because the walk below runs on EVERY render of the root, and a page composing three prefetchers
+ * would otherwise have had the first one swallow the payload for the other two. What stops it being
+ * re-applied is the root adopting only while unmounted, not the entry going away.
  *
  * Shared by both write-once page bases (stateless and stateful pages prefetch identically).
  */

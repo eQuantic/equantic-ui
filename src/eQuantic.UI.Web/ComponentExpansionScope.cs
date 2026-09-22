@@ -38,6 +38,7 @@ public sealed class ComponentExpansionScope
 
     private readonly Dictionary<string, int> _ordinals = new(StringComparer.Ordinal);
     private readonly Dictionary<string, UiComponent> _expanded = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _replaced = new(StringComparer.Ordinal);
 
     /// <summary>
     /// The render-scoped ambient scope, armed by the SSR pipeline around an expansion and null
@@ -51,20 +52,22 @@ public sealed class ComponentExpansionScope
         set => Current.Value = value;
     }
 
-    /// <summary>State to APPLY as each component is reached, keyed as above. The server's discovery
-    /// loop fills this from the previous round, because a rebuild constructs new instances and the
-    /// values a prefetch loaded live on the old ones.</summary>
-    public IReadOnlyDictionary<string, IReadOnlyDictionary<string, object?>> Restore { get; init; }
-        = new Dictionary<string, IReadOnlyDictionary<string, object?>>(StringComparer.Ordinal);
+    /// <summary>What each key LOADED in an earlier round, to be put back as that component is
+    /// reached again. The server's discovery loop fills this, because a rebuild constructs new
+    /// instances and the values a prefetch loaded live on the old ones.</summary>
+    public IReadOnlyDictionary<string, LoadedComponentState> Restore { get; init; }
+        = new Dictionary<string, LoadedComponentState>(StringComparer.Ordinal);
 
     /// <summary>Every component reached this round, in expansion order.</summary>
     public IReadOnlyDictionary<string, UiComponent> Expanded => _expanded;
 
     /// <summary>
-    /// Names a component the realizer is about to expand and restores anything already loaded for
-    /// it — BEFORE its <c>Build</c> runs, which is the whole point of hooking the expansion rather
-    /// than the render.
+    /// Keys whose component this round is NOT the one that loaded under them — a data-driven page
+    /// replaced it. What loaded belongs to nobody, so nothing was restored and the caller asks the
+    /// new component for its own data instead of drawing another one's.
     /// </summary>
+    public IReadOnlySet<string> Replaced => _replaced;
+
     /// <summary>
     /// A component's fields AS THEY ARE — raw CLR values under raw field names, nulls included.
     ///
@@ -88,6 +91,11 @@ public sealed class ComponentExpansionScope
         return captured;
     }
 
+    /// <summary>
+    /// Names a component the realizer is about to expand and restores anything already loaded for
+    /// it — BEFORE its <c>Build</c> runs, which is the whole point of hooking the expansion rather
+    /// than the render.
+    /// </summary>
     public string Enter(UiComponent component)
     {
         var typeName = component.GetType().Name;
@@ -97,9 +105,79 @@ public sealed class ComponentExpansionScope
         var key = $"{typeName}#{ordinal}";
         _expanded[key] = component;
 
-        if (Restore.TryGetValue(key, out var fields)) Apply(component, fields);
+        if (!Restore.TryGetValue(key, out var loaded)) return key;
+
+        // THE VERY INSTANCE that loaded. A page root is the same object every round — it already
+        // holds what it loaded, and writing the values back would undo anything it has done since.
+        // Recognising it by reference is also what stops it being read as a replacement below: its
+        // fields no longer match how it was built, because its own prefetch changed them.
+        if (ReferenceEquals(loaded.Loaded, component)) return key;
+
+        // A DIFFERENT COMPONENT ON THE SAME KEY. What loaded belongs to the one that is gone, so
+        // none of it is written here; the caller asks this one for its own data instead.
+        if (!IsAsBuilt(loaded.AsBuilt, component))
+        {
+            _replaced.Add(key);
+            return key;
+        }
+
+        Apply(component, loaded.Fields);
         return key;
     }
+
+    /// <summary>
+    /// WHAT A PREFETCH LOADED, and how to recognise the component that loaded it.
+    ///
+    /// <para>
+    /// Carrying only the DELTA — the fields the prefetch changed — was the first answer to a
+    /// constructor argument being overwritten, and it is not in this method because it turned out
+    /// to change nothing: a component whose comparable fields still match how the loader was built
+    /// has, by definition, the same values in them, so writing them back is a no-op. The identity
+    /// check below is what actually fixes it, and a mechanism that pins to no test is worse than
+    /// none. Measured: with the delta removed the whole suite still passes.
+    /// </para>
+    /// </summary>
+    /// <param name="component">The component, as its prefetch left it.</param>
+    /// <param name="asBuilt">Its <see cref="Capture"/> from before the prefetch ran.</param>
+    public static LoadedComponentState WhatLoaded(
+        UiComponent component, IReadOnlyDictionary<string, object?> asBuilt)
+    {
+        var identity = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach (var field in FieldsOf(component.GetType()))
+        {
+            if (!IsComparable(field)) continue;
+            if (asBuilt.TryGetValue(field.Name, out var before)) identity[field.Name] = before;
+        }
+
+        return new LoadedComponentState(component, identity, Capture(component));
+    }
+
+    /// <summary>
+    /// Whether this component still looks the way the one that loaded under its key looked when it
+    /// was built. Only the comparable fields are read; a component whose arguments are all opaque
+    /// cannot be told apart here, and is restored as before.
+    /// </summary>
+    private static bool IsAsBuilt(IReadOnlyDictionary<string, object?> asBuilt, UiComponent component)
+    {
+        foreach (var field in FieldsOf(component.GetType()))
+        {
+            if (!IsComparable(field)) continue;
+            if (!asBuilt.TryGetValue(field.Name, out var before)) continue;
+            if (!Equals(before, field.GetValue(component))) return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Whether two values of this field can be compared here at all. A value type or a string can:
+    /// equal values mean nothing happened to it. Anything else cannot — a prefetch doing
+    /// <c>_items.AddRange(await …)</c> leaves the same reference holding different contents, and no
+    /// comparison here tells that apart from a field it never touched. Those are always written
+    /// back, which is what this scope did for every field before the delta existed.
+    /// </summary>
+    private static bool IsComparable(FieldInfo field) =>
+        field.FieldType.IsValueType || field.FieldType == typeof(string);
 
     /// <summary>
     /// Writes a field map back onto a component. By NAME against the declared fields of the type

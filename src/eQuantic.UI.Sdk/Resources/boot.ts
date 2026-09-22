@@ -85,10 +85,10 @@ export async function boot(): Promise<void> {
           state: Record<string, Record<string, unknown>>;
         };
         if (parsed.url === location.href) {
-          (window as unknown as { __INITIAL_STATE__?: object }).__INITIAL_STATE__ = {
-            ...((window as unknown as { __INITIAL_STATE__?: object }).__INITIAL_STATE__ ?? {}),
-            ...parsed.state,
+          const w = window as unknown as {
+            __INITIAL_STATE__?: Record<string, Record<string, unknown>>;
           };
+          w.__INITIAL_STATE__ = { ...(w.__INITIAL_STATE__ ?? {}), ...parsed.state };
         }
       }
     } catch {
@@ -424,7 +424,12 @@ async function navigateToPage(
 interface PageStatePayload {
   title?: string;
   head?: string;
-  state?: Record<string, unknown>;
+  /**
+   * One field map PER COMPONENT, under the name the server's realizer gave it (`Type#ordinal`).
+   * It was a flat field map while only a page root could prefetch; the extra level is what lets
+   * two components holding a field of the same name keep their own values.
+   */
+  state?: Record<string, Record<string, unknown>>;
 }
 
 /**
@@ -487,7 +492,7 @@ function applyPageState(payload: PageStatePayload | null): void {
   // A from state the server never sent for that visit.
   const w = window as unknown as { __INITIAL_STATE__?: Record<string, Record<string, unknown>> };
   if (payload?.state && typeof payload.state === 'object') {
-    w.__INITIAL_STATE__ = payload.state as Record<string, Record<string, unknown>>;
+    w.__INITIAL_STATE__ = payload.state;
   } else {
     delete w.__INITIAL_STATE__;
   }

@@ -160,16 +160,27 @@ public class ServerRenderingService : IServerRenderingService
                 // walk that could only ever find nothing. Drawing first means such a page renders
                 // exactly once, as it always did, and only a page that actually loads something draws
                 // again.
-                var prefetched = new Dictionary<string, IReadOnlyDictionary<string, object?>>(StringComparer.Ordinal);
+                var prefetched = new Dictionary<string, Web.LoadedComponentState>(StringComparer.Ordinal);
                 var asked = new HashSet<string>(StringComparer.Ordinal);
 
                 // A CORE page is an IComponent tree, not a write-once one, so it never passes through
                 // the realizer's component visit and the walk below would find nothing to ask. Its
                 // root is asked directly, which is what the pipeline did for every page before this.
-                if (metadataSource is not Primitives.UiComponent && metadataSource is Primitives.IServerPrefetch coreRoot)
+                // It reaches the index only through MapPage<T>: the attribute scan admits write-once
+                // pages alone, while MapPage accepts either.
+                Primitives.IServerPrefetch? coreRoot = null;
+                string? coreRootKey = null;
+                if (metadataSource is not Primitives.UiComponent && metadataSource is Primitives.IServerPrefetch root)
                 {
+                    coreRoot = root;
+                    // ITS KEY JOINS THE ASKED SET, or the page ships no payload at all: `asked` is
+                    // what decides whether a response carries state, so a Core root loading on the
+                    // server and then hydrating from its defaults was the one page shape that never
+                    // needed this walk and was the only one left reverting. Its ordinal is 0 by
+                    // construction — the root is the first component either side names.
+                    coreRootKey = $"{metadataSource.GetType().Name}#0";
+                    asked.Add(coreRootKey);
                     await coreRoot.PrefetchAsync(context.RequestServices, context.RequestAborted);
-                    prefetched[$"{metadataSource.GetType().Name}#0"] = Snapshot(metadataSource);
                 }
 
                 // THE DRAWING, and everything that only the drawing needs. A client navigation asks
@@ -243,8 +254,14 @@ public class ServerRenderingService : IServerRenderingService
                         // The page's own paint servers, rendered the same way the page was.
                         if (!gradients.IsEmpty) vectorDefs = RenderComponent(gradients.Container());
 
+                        // ASKED ONCE, except where the key now names a DIFFERENT component: a page
+                        // whose own data chooses what it composes can put another row at the same
+                        // key, and what loaded there belongs to the row that is gone. The scope
+                        // refuses that restore, so the new one is asked for its own data rather
+                        // than drawing someone else's.
                         var pending = renderScope.Expanded
-                            .Where(pair => pair.Value is Primitives.IServerPrefetch && asked.Add(pair.Key))
+                            .Where(pair => pair.Value is Primitives.IServerPrefetch
+                                && (asked.Add(pair.Key) || renderScope.Replaced.Contains(pair.Key)))
                             .ToList();
 
                         // THE MARKUP THIS ROUND PRODUCED IS THE ANSWER when nothing new asked for
@@ -260,9 +277,12 @@ public class ServerRenderingService : IServerRenderingService
                         {
                             _logger.LogWarning(
                                 "[SSR Prefetch] Stopped at {Rounds} rounds with {Count} component(s) still "
-                                + "asking for data; they render their defaults. A prefetch chain this deep "
-                                + "usually means a component loads what another one had to load first.",
-                                MaxPrefetchRounds, pending.Count);
+                                + "asking for data ({Replaced} of them replaced rather than new); they "
+                                + "render their defaults. A chain this deep usually means a component "
+                                + "loads what another one had to load first — or, when components keep "
+                                + "being replaced, that one of them differs every time it is built.",
+                                MaxPrefetchRounds, pending.Count,
+                                pending.Count(p => renderScope.Replaced.Contains(p.Key)));
                             break;
                         }
 
@@ -276,16 +296,19 @@ public class ServerRenderingService : IServerRenderingService
                         // contract today.
                         foreach (var pair in pending)
                         {
+                            // BEFORE and after, because what travels is the DELTA. Writing every
+                            // field back onto the next round's instance overwrote what its own
+                            // constructor had just been given.
+                            var asBuilt = Web.ComponentExpansionScope.Capture(pair.Value);
                             await ((Primitives.IServerPrefetch)pair.Value).PrefetchAsync(
                                 context.RequestServices, context.RequestAborted);
+                            // THE CLR VALUES, not the wire ones: this is restored onto the fresh
+                            // instances the next expansion creates, and the payload's normalization
+                            // (enums to strings, backing fields to property names) would make every
+                            // one of those unassignable.
+                            prefetched[pair.Key] =
+                                Web.ComponentExpansionScope.WhatLoaded(pair.Value, asBuilt);
                         }
-
-                        // THE CLR VALUES, not the wire ones: this is restored onto the fresh
-                        // instances the next expansion creates, and the payload's normalization
-                        // (enums to strings, backing fields to property names, nulls dropped) would
-                        // make every one of those unassignable.
-                        foreach (var pair in pending)
-                            prefetched[pair.Key] = Web.ComponentExpansionScope.Capture(pair.Value);
                     }
                 }
                 else if (metadataSource is Primitives.UiComponent)
@@ -327,7 +350,15 @@ public class ServerRenderingService : IServerRenderingService
                         // earlier round but absent from the final tree has nothing on the page for
                         // its state to belong to, and shipping it would hand the client a key its
                         // own walk never reaches.
-                        if (renderScope is not null && renderScope.Expanded.TryGetValue(key, out var drew))
+                        if (key == coreRootKey && coreRoot is not null)
+                        {
+                            // A Core root is in no scope's Expanded — it never passes through the
+                            // realizer's component visit — but it IS the instance that drew: the
+                            // pipeline renders that object and never rebuilds it. Read here rather
+                            // than beside the load, so what ships is the state the markup left.
+                            payload[key] = Snapshot(coreRoot);
+                        }
+                        else if (renderScope is not null && renderScope.Expanded.TryGetValue(key, out var drew))
                         {
                             payload[key] = Snapshot(drew);
                         }
@@ -379,9 +410,11 @@ public class ServerRenderingService : IServerRenderingService
     /// answer — one round finds them, the next confirms nothing new appeared — and more than two
     /// only happens when a component EXISTS because of what another one loaded, which is the case
     /// a single round cannot see: a page that loads a list and then composes one component per row,
-    /// each declaring its own server data. The cap is what stops a tree that keeps growing from
-    /// holding a request open; past it the page draws with what it has rather than failing, because
-    /// a missing value is recoverable and a hung request is not.
+    /// each declaring its own server data. A component the data REPLACED costs one more, since what
+    /// loaded under its key belonged to the one it replaced and it has to be asked for its own. The
+    /// cap is what stops a tree that keeps growing from holding a request open; past it the page
+    /// draws with what it has rather than failing, because a missing value is recoverable and a
+    /// hung request is not.
     /// </summary>
     private const int MaxPrefetchRounds = 5;
 
@@ -394,8 +427,9 @@ public class ServerRenderingService : IServerRenderingService
     /// It costs an expansion, and the reason is structural rather than lazy: for a write-once page
     /// the component tree does not exist until the realizer builds it, and the realizer is
     /// synchronous while a prefetch is not. So the tree is expanded to find out WHO wants data, the
-    /// loads are awaited together, and the render below expands again with the values restored. The
-    /// discovery expansion builds no HTML and no string — it stops at the realized element.
+    /// loads are awaited ONE AT A TIME (they share the request's service provider — the loop below
+    /// says why), and the next expansion runs with the values restored. The discovery expansion
+    /// builds no HTML and no string — it stops at the realized element.
     /// </para>
     ///
     /// <para>
@@ -406,7 +440,7 @@ public class ServerRenderingService : IServerRenderingService
     /// </summary>
     private async Task<Dictionary<string, IReadOnlyDictionary<string, object?>>> PrefetchTreeAsync(
         IComponent component,
-        Dictionary<string, IReadOnlyDictionary<string, object?>> loaded,
+        Dictionary<string, Web.LoadedComponentState> loaded,
         HashSet<string> asked,
         HttpContext context)
     {
@@ -418,7 +452,8 @@ public class ServerRenderingService : IServerRenderingService
             Expand(component, scope);
 
             var pending = scope.Expanded
-                .Where(pair => pair.Value is Primitives.IServerPrefetch && asked.Add(pair.Key))
+                .Where(pair => pair.Value is Primitives.IServerPrefetch
+                    && (asked.Add(pair.Key) || scope.Replaced.Contains(pair.Key)))
                 .ToList();
 
             if (pending.Count == 0) break;
@@ -436,17 +471,16 @@ public class ServerRenderingService : IServerRenderingService
             // concurrently.
             foreach (var pair in pending)
             {
+                // BEFORE and after, because what travels is the DELTA — the drawing loop says why.
+                var asBuilt = Web.ComponentExpansionScope.Capture(pair.Value);
                 await ((Primitives.IServerPrefetch)pair.Value).PrefetchAsync(
                     context.RequestServices, context.RequestAborted);
-            }
 
-            foreach (var pair in pending)
-            {
                 // TWO FORMS of the same instance, taken while it still holds what it just loaded:
                 // the CLR one to restore onto the next round's fresh instance, and the wire one for
                 // the response. A navigation draws nothing, so there is no rendered instance to read
                 // the payload from later.
-                loaded[pair.Key] = Web.ComponentExpansionScope.Capture(pair.Value);
+                loaded[pair.Key] = Web.ComponentExpansionScope.WhatLoaded(pair.Value, asBuilt);
                 wire[pair.Key] = Snapshot(pair.Value);
             }
         }
@@ -677,29 +711,45 @@ public class ServerRenderingService : IServerRenderingService
 
                 var value = field.GetValue(state);
 
-                // Skip null values and functions
-                if (value != null && !value.GetType().IsSubclassOf(typeof(Delegate)))
+                // A HANDLER NEVER TRAVELS — the client builds its own. Read off the FIELD's type as
+                // well as the value's, because a value says nothing about its type when it is null,
+                // and a null ships now.
+                if (typeof(Delegate).IsAssignableFrom(field.FieldType) || value is Delegate)
                 {
-                    // Convert enums to lowercase string (matching JS compilation)
-                    if (value.GetType().IsEnum)
-                    {
-                        var enumName = value.ToString() ?? "";
-                        _logger.LogDebug("[SSR Enum] Converting enum {FieldName}: {Value} -> '{EnumName}'", fieldName, value, enumName);
+                    continue;
+                }
 
-                        if (!string.IsNullOrEmpty(enumName))
-                        {
-                            var jsEnumValue = char.ToLowerInvariant(enumName[0]) + enumName.Substring(1);
-                            stateDict[fieldName] = jsEnumValue;
-                        }
-                        else
-                        {
-                            stateDict[fieldName] = "0";
-                        }
+                // A NULL SHIPS, and this is the line that used to drop it. Omitting the field made
+                // CLEARING a non-null default indistinguishable from loading nothing at all: the
+                // server drew the cleared value, the payload said nothing, and the client kept the
+                // default it was constructed with — the page reverting in front of the reader a
+                // moment after it appeared, which is the failure this walk exists to remove wearing
+                // the one shape that looks like absence.
+                if (value is null)
+                {
+                    stateDict[fieldName] = null;
+                    continue;
+                }
+
+                // Convert enums to lowercase string (matching JS compilation)
+                if (value.GetType().IsEnum)
+                {
+                    var enumName = value.ToString() ?? "";
+                    _logger.LogDebug("[SSR Enum] Converting enum {FieldName}: {Value} -> '{EnumName}'", fieldName, value, enumName);
+
+                    if (!string.IsNullOrEmpty(enumName))
+                    {
+                        var jsEnumValue = char.ToLowerInvariant(enumName[0]) + enumName.Substring(1);
+                        stateDict[fieldName] = jsEnumValue;
                     }
                     else
                     {
-                        stateDict[fieldName] = value;
+                        stateDict[fieldName] = "0";
                     }
+                }
+                else
+                {
+                    stateDict[fieldName] = value;
                 }
             }
 
