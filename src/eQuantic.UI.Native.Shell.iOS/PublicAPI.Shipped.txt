@@ -32,5 +32,5 @@ override eQuantic.UI.Native.Shell.iOS.PhotonViewController.TouchesMoved(Foundati
 override eQuantic.UI.Native.Shell.iOS.PhotonViewController.TraitCollectionDidChange(UIKit.UITraitCollection? previous) -> void
 override eQuantic.UI.Native.Shell.iOS.PhotonViewController.ViewDidLayoutSubviews() -> void
 override eQuantic.UI.Native.Shell.iOS.PhotonViewController.ViewDidLoad() -> void
-static eQuantic.UI.Native.Shell.iOS.PhotonApp.Run(string![]! args, System.Func\u003ceQuantic.UI.Primitives.VisualNode!>! root, eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ThemeMode? forcedMode = null, int maxFrames = 0, bool smoothScroll = true) -> void
+static eQuantic.UI.Native.Shell.iOS.PhotonApp.Run(string![]! args, System.Func<eQuantic.UI.Primitives.VisualNode!>! root, eQuantic.UI.Primitives.IAppTheme! theme, eQuantic.UI.Primitives.ThemeMode? forcedMode = null, int maxFrames = 0, bool smoothScroll = true) -> void
 static eQuantic.UI.Native.Shell.iOS.PhotonView.GetLayerClass() -> ObjCRuntime.Class!
