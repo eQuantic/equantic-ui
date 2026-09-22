@@ -40,8 +40,13 @@ The names are the Iconify ones in PascalCase, so `material-symbols:play-arrow-ro
 
 ## Regenerating
 
-The catalog has exactly one writer — never hand-edit `MaterialSymbolsIcons.cs`:
+The catalog has exactly one writer — never hand-edit `MaterialSymbolsIcons.cs`. From the
+repository root, with the bun the Runtime package embeds (no Node; `bun-linux` on Linux,
+`bun.exe` on Windows — the generator's header names all three):
 
 ```bash
-node scripts/generate-icons.mjs material-symbols
+src/eQuantic.UI.Runtime.OsxArm64/tools/bun/bun-darwin scripts/generate-icons.mjs material-symbols
 ```
+
+The source is pinned to one commit of `iconify/icon-sets` (`ICON_SETS_REF` in the script), so the
+command regenerates the same bytes anywhere; taking newer icons is a change of that commit.
