@@ -107,13 +107,13 @@ static readonly eQuantic.UI.FontAwesome6Regular.FontAwesome6RegularIcons.HandBac
 static readonly eQuantic.UI.FontAwesome6Regular.FontAwesome6RegularIcons.HandLizard -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.FontAwesome6Regular.FontAwesome6RegularIcons.HandPeace -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.FontAwesome6Regular.FontAwesome6RegularIcons.HandPointDown -> eQuantic.UI.Primitives.IconGlyph
-static readonly eQuantic.UI.FontAwesome6Regular.FontAwesome6RegularIcons.HandPointer -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.FontAwesome6Regular.FontAwesome6RegularIcons.HandPointLeft -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.FontAwesome6Regular.FontAwesome6RegularIcons.HandPointRight -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.FontAwesome6Regular.FontAwesome6RegularIcons.HandPointUp -> eQuantic.UI.Primitives.IconGlyph
+static readonly eQuantic.UI.FontAwesome6Regular.FontAwesome6RegularIcons.HandPointer -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.FontAwesome6Regular.FontAwesome6RegularIcons.HandScissors -> eQuantic.UI.Primitives.IconGlyph
-static readonly eQuantic.UI.FontAwesome6Regular.FontAwesome6RegularIcons.Handshake -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.FontAwesome6Regular.FontAwesome6RegularIcons.HandSpock -> eQuantic.UI.Primitives.IconGlyph
+static readonly eQuantic.UI.FontAwesome6Regular.FontAwesome6RegularIcons.Handshake -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.FontAwesome6Regular.FontAwesome6RegularIcons.HardDrive -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.FontAwesome6Regular.FontAwesome6RegularIcons.Heart -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.FontAwesome6Regular.FontAwesome6RegularIcons.Hospital -> eQuantic.UI.Primitives.IconGlyph

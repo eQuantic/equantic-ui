@@ -32,6 +32,8 @@ eQuantic.UI.Server.Assets.IAsset.Key.get -> string!
 eQuantic.UI.Server.Assets.IAsset.Render() -> string!
 eQuantic.UI.Server.Assets.IComponentAssetProvider<TComponent>
 eQuantic.UI.Server.Assets.IComponentAssetProvider<TComponent>.ConfigureAssets(eQuantic.UI.Server.Assets.AssetBuilder! assets) -> void
+eQuantic.UI.Server.Assets.IRequireAssets
+eQuantic.UI.Server.Assets.IRequireAssets.ConfigureAssets(eQuantic.UI.Server.Assets.AssetBuilder! assets) -> void
 eQuantic.UI.Server.Assets.InlineScriptAsset
 eQuantic.UI.Server.Assets.InlineScriptAsset.Content.get -> string!
 eQuantic.UI.Server.Assets.InlineScriptAsset.Content.init -> void
@@ -52,8 +54,6 @@ eQuantic.UI.Server.Assets.InlineStyleAsset.InlineStyleAsset(eQuantic.UI.Server.A
 eQuantic.UI.Server.Assets.InlineStyleAsset.InlineStyleAsset(string! Content, string? Id = null) -> void
 eQuantic.UI.Server.Assets.InlineStyleAsset.Key.get -> string!
 eQuantic.UI.Server.Assets.InlineStyleAsset.Render() -> string!
-eQuantic.UI.Server.Assets.IRequireAssets
-eQuantic.UI.Server.Assets.IRequireAssets.ConfigureAssets(eQuantic.UI.Server.Assets.AssetBuilder! assets) -> void
 eQuantic.UI.Server.Assets.ScriptAsset
 eQuantic.UI.Server.Assets.ScriptAsset.Deconstruct(out string! Src, out bool Defer, out string? Id) -> void
 eQuantic.UI.Server.Assets.ScriptAsset.Defer.get -> bool
@@ -142,8 +142,8 @@ eQuantic.UI.Server.HtmlTag.TagName.get -> string!
 eQuantic.UI.Server.HtmlTag.TagName.init -> void
 eQuantic.UI.Server.HtmlTemplateEngine
 eQuantic.UI.Server.HtmlTemplateEngine.HtmlTemplateEngine(string! template) -> void
-eQuantic.UI.Server.HtmlTemplateEngine.Render(System.Action<eQuantic.UI.Server.TemplateContext!>! configure) -> string!
 eQuantic.UI.Server.HtmlTemplateEngine.Render(System.Action<System.Collections.Generic.Dictionary<string!, string!>!>! configure) -> string!
+eQuantic.UI.Server.HtmlTemplateEngine.Render(System.Action<eQuantic.UI.Server.TemplateContext!>! configure) -> string!
 eQuantic.UI.Server.HtmlTemplateEngine.Render(System.Collections.Generic.Dictionary<string!, string!>! variables, System.Collections.Generic.Dictionary<string!, bool>? conditions = null) -> string!
 eQuantic.UI.Server.Hubs.ServerActionHub
 eQuantic.UI.Server.Hubs.ServerActionHub.ServerActionHub() -> void
@@ -164,6 +164,8 @@ eQuantic.UI.Server.Metadata.LinkTag.Hreflang.get -> string?
 eQuantic.UI.Server.Metadata.LinkTag.LinkTag(string! rel, string! href, string? type = null, string? hreflang = null) -> void
 eQuantic.UI.Server.Metadata.LinkTag.Rel.get -> string!
 eQuantic.UI.Server.Metadata.LinkTag.Type.get -> string?
+eQuantic.UI.Server.Metadata.MetaTag
+eQuantic.UI.Server.Metadata.MetaTag.MetaTag() -> void
 eQuantic.UI.Server.Metadata.MetadataCollection
 eQuantic.UI.Server.Metadata.MetadataCollection.Add(eQuantic.UI.Server.Metadata.IMetaTag! tag) -> void
 eQuantic.UI.Server.Metadata.MetadataCollection.AddOrUpdate(eQuantic.UI.Server.Metadata.IMetaTag! tag) -> void
@@ -172,8 +174,6 @@ eQuantic.UI.Server.Metadata.MetadataCollection.RenderTags() -> string!
 eQuantic.UI.Server.Metadata.MetadataCollection.Tags.get -> System.Collections.Generic.IEnumerable<eQuantic.UI.Server.Metadata.IMetaTag!>!
 eQuantic.UI.Server.Metadata.MetadataCollection.Title.get -> string?
 eQuantic.UI.Server.Metadata.MetadataCollection.Title.set -> void
-eQuantic.UI.Server.Metadata.MetaTag
-eQuantic.UI.Server.Metadata.MetaTag.MetaTag() -> void
 eQuantic.UI.Server.Metadata.NameMetaTag
 eQuantic.UI.Server.Metadata.NameMetaTag.Content.get -> string!
 eQuantic.UI.Server.Metadata.NameMetaTag.Name.get -> string!
@@ -199,12 +199,6 @@ eQuantic.UI.Server.Rendering.IServerRenderingService.IsSsrEnabled(string! pageTy
 eQuantic.UI.Server.Rendering.IServerRenderingService.PreparePageAsync(string! pageTypeName, Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Rendering.ServerRenderResult!>!
 eQuantic.UI.Server.Rendering.IServerRenderingService.RenderComponent(eQuantic.UI.Web.IComponent! component) -> string!
 eQuantic.UI.Server.Rendering.IServerRenderingService.RenderPageAsync(string! pageTypeName, Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Rendering.ServerRenderResult!>!
-eQuantic.UI.Server.Rendering.ServerRenderingService
-eQuantic.UI.Server.Rendering.ServerRenderingService.IsSsrEnabled(string! pageTypeName) -> bool
-eQuantic.UI.Server.Rendering.ServerRenderingService.PreparePageAsync(string! pageTypeName, Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Rendering.ServerRenderResult!>!
-eQuantic.UI.Server.Rendering.ServerRenderingService.RenderComponent(eQuantic.UI.Web.IComponent! component) -> string!
-eQuantic.UI.Server.Rendering.ServerRenderingService.RenderPageAsync(string! pageTypeName, Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Rendering.ServerRenderResult!>!
-eQuantic.UI.Server.Rendering.ServerRenderingService.ServerRenderingService(System.IServiceProvider! serviceProvider, eQuantic.UI.Server.UIOptions! options, Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Server.Rendering.ServerRenderingService!>! logger) -> void
 eQuantic.UI.Server.Rendering.ServerRenderResult
 eQuantic.UI.Server.Rendering.ServerRenderResult.Assets.get -> eQuantic.UI.Server.Assets.AssetCollection?
 eQuantic.UI.Server.Rendering.ServerRenderResult.Error.get -> string?
@@ -214,6 +208,12 @@ eQuantic.UI.Server.Rendering.ServerRenderResult.SerializedState.get -> string?
 eQuantic.UI.Server.Rendering.ServerRenderResult.StatusCode.get -> int
 eQuantic.UI.Server.Rendering.ServerRenderResult.Success.get -> bool
 eQuantic.UI.Server.Rendering.ServerRenderResult.VectorDefs.get -> string?
+eQuantic.UI.Server.Rendering.ServerRenderingService
+eQuantic.UI.Server.Rendering.ServerRenderingService.IsSsrEnabled(string! pageTypeName) -> bool
+eQuantic.UI.Server.Rendering.ServerRenderingService.PreparePageAsync(string! pageTypeName, Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Rendering.ServerRenderResult!>!
+eQuantic.UI.Server.Rendering.ServerRenderingService.RenderComponent(eQuantic.UI.Web.IComponent! component) -> string!
+eQuantic.UI.Server.Rendering.ServerRenderingService.RenderPageAsync(string! pageTypeName, Microsoft.AspNetCore.Http.HttpContext! context) -> System.Threading.Tasks.Task<eQuantic.UI.Server.Rendering.ServerRenderResult!>!
+eQuantic.UI.Server.Rendering.ServerRenderingService.ServerRenderingService(System.IServiceProvider! serviceProvider, eQuantic.UI.Server.UIOptions! options, Microsoft.Extensions.Logging.ILogger<eQuantic.UI.Server.Rendering.ServerRenderingService!>! logger) -> void
 eQuantic.UI.Server.ScriptEndpointExtensions
 eQuantic.UI.Server.ServerActionDescriptor
 eQuantic.UI.Server.ServerActionDescriptor.ActionId.get -> string!
@@ -268,10 +268,10 @@ eQuantic.UI.Server.TemplateContext.Set(string! key, string! value) -> eQuantic.U
 eQuantic.UI.Server.TemplateContext.SetIf(bool condition, string! key, string! value) -> eQuantic.UI.Server.TemplateContext!
 eQuantic.UI.Server.TemplateContext.SetOrEmpty(string! key, string? value) -> eQuantic.UI.Server.TemplateContext!
 eQuantic.UI.Server.TemplateContext.TemplateContext() -> void
-eQuantic.UI.Server.TemplateContext.this[string! key].get -> string!
-eQuantic.UI.Server.TemplateContext.this[string! key].set -> void
 eQuantic.UI.Server.TemplateContext.Variables.get -> System.Collections.Generic.Dictionary<string!, string!>!
 eQuantic.UI.Server.TemplateContext.When(string! conditionName, bool value) -> eQuantic.UI.Server.TemplateContext!
+eQuantic.UI.Server.TemplateContext.this[string! key].get -> string!
+eQuantic.UI.Server.TemplateContext.this[string! key].set -> void
 eQuantic.UI.Server.TemplateVariablesExtensions
 eQuantic.UI.Server.ThemeCookie
 eQuantic.UI.Server.ThemeCookieOptions
@@ -305,9 +305,9 @@ eQuantic.UI.Server.UIOptions.UseInitialThemeMode(eQuantic.UI.Primitives.ThemeMod
 eQuantic.UI.Server.UIOptions.UseTheme(eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Server.UIOptions!
 eQuantic.UI.Server.UIOptions.UseThemeCookie(string! name = "eq-theme", int days = 365) -> eQuantic.UI.Server.UIOptions!
 eQuantic.UI.Server.UIOptions.WithAssetProvider<TProvider>() -> eQuantic.UI.Server.UIOptions!
+eQuantic.UI.Server.UIOptions.WithSsr(bool enabled = true) -> eQuantic.UI.Server.UIOptions!
 eQuantic.UI.Server.UIOptions.WithoutPoweredByHeader() -> eQuantic.UI.Server.UIOptions!
 eQuantic.UI.Server.UIOptions.WithoutThemeCookie() -> eQuantic.UI.Server.UIOptions!
-eQuantic.UI.Server.UIOptions.WithSsr(bool enabled = true) -> eQuantic.UI.Server.UIOptions!
 override eQuantic.UI.Server.AlternateRequest.GetHashCode() -> int
 override eQuantic.UI.Server.Assets.InlineScriptAsset.Equals(object? obj) -> bool
 override eQuantic.UI.Server.Assets.InlineScriptAsset.GetHashCode() -> int

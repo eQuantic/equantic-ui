@@ -10,9 +10,9 @@ eQuantic.UI.Codegen.CodeWriter.CodeWriter(int indentLevel = 0, eQuantic.UI.Codeg
 eQuantic.UI.Codegen.CodeWriter.CurrentLine.get -> int
 eQuantic.UI.Codegen.CodeWriter.EndLine() -> eQuantic.UI.Codegen.CodeWriter!
 eQuantic.UI.Codegen.CodeWriter.EndScope() -> void
-eQuantic.UI.Codegen.CodeWriter.IndentationType.get -> eQuantic.UI.Codegen.IndentationType
 eQuantic.UI.Codegen.CodeWriter.IndentLevel.get -> int
 eQuantic.UI.Codegen.CodeWriter.IndentLevel.set -> void
+eQuantic.UI.Codegen.CodeWriter.IndentationType.get -> eQuantic.UI.Codegen.IndentationType
 eQuantic.UI.Codegen.CodeWriter.SetIndentationType(eQuantic.UI.Codegen.IndentationType indentationType) -> void
 eQuantic.UI.Codegen.CodeWriter.StartLine() -> eQuantic.UI.Codegen.CodeWriter!
 eQuantic.UI.Codegen.IndentationType

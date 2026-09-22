@@ -791,18 +791,6 @@ eQuantic.UI.Components.MermaidShape.Circle = 2 -> eQuantic.UI.Components.Mermaid
 eQuantic.UI.Components.MermaidShape.Diamond = 3 -> eQuantic.UI.Components.MermaidShape
 eQuantic.UI.Components.MermaidShape.Rect = 0 -> eQuantic.UI.Components.MermaidShape
 eQuantic.UI.Components.MermaidShape.Rounded = 1 -> eQuantic.UI.Components.MermaidShape
-eQuantic.UI.Components.NavigationRail
-eQuantic.UI.Components.NavigationRail.Alignment.get -> eQuantic.UI.Primitives.MainAlign
-eQuantic.UI.Components.NavigationRail.Alignment.init -> void
-eQuantic.UI.Components.NavigationRail.Items.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.NavItem!>!
-eQuantic.UI.Components.NavigationRail.Items.init -> void
-eQuantic.UI.Components.NavigationRail.Leading.get -> eQuantic.UI.Primitives.VisualNode?
-eQuantic.UI.Components.NavigationRail.Leading.init -> void
-eQuantic.UI.Components.NavigationRail.NavigationRail(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.NavItem!>! items, int selected, System.Action<int>? onSelect = null) -> void
-eQuantic.UI.Components.NavigationRail.OnSelect.get -> System.Action<int>?
-eQuantic.UI.Components.NavigationRail.OnSelect.init -> void
-eQuantic.UI.Components.NavigationRail.Selected.get -> int
-eQuantic.UI.Components.NavigationRail.Selected.init -> void
 eQuantic.UI.Components.NavItem
 eQuantic.UI.Components.NavItem.<Clone>$() -> eQuantic.UI.Components.NavItem!
 eQuantic.UI.Components.NavItem.BadgeCount.get -> int
@@ -816,6 +804,18 @@ eQuantic.UI.Components.NavItem.Label.init -> void
 eQuantic.UI.Components.NavItem.NavItem(eQuantic.UI.Primitives.Icons Icon, string! Label, eQuantic.UI.Primitives.Icons? SelectedIcon = null) -> void
 eQuantic.UI.Components.NavItem.SelectedIcon.get -> eQuantic.UI.Primitives.Icons?
 eQuantic.UI.Components.NavItem.SelectedIcon.init -> void
+eQuantic.UI.Components.NavigationRail
+eQuantic.UI.Components.NavigationRail.Alignment.get -> eQuantic.UI.Primitives.MainAlign
+eQuantic.UI.Components.NavigationRail.Alignment.init -> void
+eQuantic.UI.Components.NavigationRail.Items.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.NavItem!>!
+eQuantic.UI.Components.NavigationRail.Items.init -> void
+eQuantic.UI.Components.NavigationRail.Leading.get -> eQuantic.UI.Primitives.VisualNode?
+eQuantic.UI.Components.NavigationRail.Leading.init -> void
+eQuantic.UI.Components.NavigationRail.NavigationRail(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.NavItem!>! items, int selected, System.Action<int>? onSelect = null) -> void
+eQuantic.UI.Components.NavigationRail.OnSelect.get -> System.Action<int>?
+eQuantic.UI.Components.NavigationRail.OnSelect.init -> void
+eQuantic.UI.Components.NavigationRail.Selected.get -> int
+eQuantic.UI.Components.NavigationRail.Selected.init -> void
 eQuantic.UI.Components.PageIndicator
 eQuantic.UI.Components.PageIndicator.Count.get -> int
 eQuantic.UI.Components.PageIndicator.Count.init -> void
@@ -1125,10 +1125,10 @@ override eQuantic.UI.Components.MenuItem.Equals(object? obj) -> bool
 override eQuantic.UI.Components.MenuItem.GetHashCode() -> int
 override eQuantic.UI.Components.MenuItem.ToString() -> string!
 override eQuantic.UI.Components.Mermaid.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
-override eQuantic.UI.Components.NavigationRail.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
 override eQuantic.UI.Components.NavItem.Equals(object? obj) -> bool
 override eQuantic.UI.Components.NavItem.GetHashCode() -> int
 override eQuantic.UI.Components.NavItem.ToString() -> string!
+override eQuantic.UI.Components.NavigationRail.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
 override eQuantic.UI.Components.PageIndicator.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
 override eQuantic.UI.Components.Pagination.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
 override eQuantic.UI.Components.Popover.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!

@@ -112,10 +112,10 @@ eQuantic.UI.Web.HtmlElement.AriaLive.get -> string?
 eQuantic.UI.Web.HtmlElement.AriaLive.set -> void
 eQuantic.UI.Web.HtmlElement.AriaModal.get -> bool?
 eQuantic.UI.Web.HtmlElement.AriaModal.set -> void
-eQuantic.UI.Web.HtmlElement.AriaMultiline.get -> bool?
-eQuantic.UI.Web.HtmlElement.AriaMultiline.set -> void
 eQuantic.UI.Web.HtmlElement.AriaMultiSelectable.get -> bool?
 eQuantic.UI.Web.HtmlElement.AriaMultiSelectable.set -> void
+eQuantic.UI.Web.HtmlElement.AriaMultiline.get -> bool?
+eQuantic.UI.Web.HtmlElement.AriaMultiline.set -> void
 eQuantic.UI.Web.HtmlElement.AriaOrientation.get -> string?
 eQuantic.UI.Web.HtmlElement.AriaOrientation.set -> void
 eQuantic.UI.Web.HtmlElement.AriaOwns.get -> string?
@@ -173,10 +173,10 @@ eQuantic.UI.Web.HtmlElement.Cite.get -> string?
 eQuantic.UI.Web.HtmlElement.Cite.set -> void
 eQuantic.UI.Web.HtmlElement.ClassName.get -> string?
 eQuantic.UI.Web.HtmlElement.ClassName.set -> void
-eQuantic.UI.Web.HtmlElement.Cols.get -> int?
-eQuantic.UI.Web.HtmlElement.Cols.set -> void
 eQuantic.UI.Web.HtmlElement.ColSpan.get -> int?
 eQuantic.UI.Web.HtmlElement.ColSpan.set -> void
+eQuantic.UI.Web.HtmlElement.Cols.get -> int?
+eQuantic.UI.Web.HtmlElement.Cols.set -> void
 eQuantic.UI.Web.HtmlElement.ContentEditable.get -> string?
 eQuantic.UI.Web.HtmlElement.ContentEditable.set -> void
 eQuantic.UI.Web.HtmlElement.Controls.get -> bool?
@@ -327,10 +327,10 @@ eQuantic.UI.Web.HtmlElement.Reversed.get -> bool?
 eQuantic.UI.Web.HtmlElement.Reversed.set -> void
 eQuantic.UI.Web.HtmlElement.Role.get -> string?
 eQuantic.UI.Web.HtmlElement.Role.set -> void
-eQuantic.UI.Web.HtmlElement.Rows.get -> int?
-eQuantic.UI.Web.HtmlElement.Rows.set -> void
 eQuantic.UI.Web.HtmlElement.RowSpan.get -> int?
 eQuantic.UI.Web.HtmlElement.RowSpan.set -> void
+eQuantic.UI.Web.HtmlElement.Rows.get -> int?
+eQuantic.UI.Web.HtmlElement.Rows.set -> void
 eQuantic.UI.Web.HtmlElement.Sandbox.get -> string?
 eQuantic.UI.Web.HtmlElement.Sandbox.set -> void
 eQuantic.UI.Web.HtmlElement.Scope.get -> string?
@@ -603,11 +603,11 @@ eQuantic.UI.Web.IComponent.StyleClass.get -> eQuantic.UI.Web.Styling.StyleClass?
 eQuantic.UI.Web.IComponent.StyleClass.set -> void
 eQuantic.UI.Web.IComponent.StyleClasses.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Web.Styling.StyleClass!>?
 eQuantic.UI.Web.IComponent.StyleClasses.set -> void
-eQuantic.UI.Web.IconRegistry
 eQuantic.UI.Web.IPseudoStyled
 eQuantic.UI.Web.IPseudoStyled.PseudoDeclarations.get -> System.Collections.Generic.List<(string! Pseudo, string! Prop, string! Value)>!
 eQuantic.UI.Web.IScrolledStyled
 eQuantic.UI.Web.IScrolledStyled.ScrolledDeclarations.get -> System.Collections.Generic.List<(string! Prop, string! Value)>!
+eQuantic.UI.Web.IconRegistry
 eQuantic.UI.Web.JustifyContent
 eQuantic.UI.Web.JustifyContent.Center = 2 -> eQuantic.UI.Web.JustifyContent
 eQuantic.UI.Web.JustifyContent.End = 7 -> eQuantic.UI.Web.JustifyContent

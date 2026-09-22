@@ -59,8 +59,8 @@ static readonly eQuantic.UI.RadixIcons.RadixIcons.CaretSort -> eQuantic.UI.Primi
 static readonly eQuantic.UI.RadixIcons.RadixIcons.CaretUp -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.ChatBubble -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.Check -> eQuantic.UI.Primitives.IconGlyph
-static readonly eQuantic.UI.RadixIcons.RadixIcons.Checkbox -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.CheckCircled -> eQuantic.UI.Primitives.IconGlyph
+static readonly eQuantic.UI.RadixIcons.RadixIcons.Checkbox -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.ChevronDown -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.ChevronLeft -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.ChevronRight -> eQuantic.UI.Primitives.IconGlyph
@@ -73,8 +73,8 @@ static readonly eQuantic.UI.RadixIcons.RadixIcons.Clock -> eQuantic.UI.Primitive
 static readonly eQuantic.UI.RadixIcons.RadixIcons.Code -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.CodesandboxLogo -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.ColorWheel -> eQuantic.UI.Primitives.IconGlyph
-static readonly eQuantic.UI.RadixIcons.RadixIcons.Columns -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.ColumnSpacing -> eQuantic.UI.Primitives.IconGlyph
+static readonly eQuantic.UI.RadixIcons.RadixIcons.Columns -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.Commit -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.Component1 -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.Component2 -> eQuantic.UI.Primitives.IconGlyph
@@ -87,9 +87,9 @@ static readonly eQuantic.UI.RadixIcons.RadixIcons.Cookie -> eQuantic.UI.Primitiv
 static readonly eQuantic.UI.RadixIcons.RadixIcons.Copy -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.CornerBottomLeft -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.CornerBottomRight -> eQuantic.UI.Primitives.IconGlyph
-static readonly eQuantic.UI.RadixIcons.RadixIcons.Corners -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.CornerTopLeft -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.CornerTopRight -> eQuantic.UI.Primitives.IconGlyph
+static readonly eQuantic.UI.RadixIcons.RadixIcons.Corners -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.CountdownTimer -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.CounterClockwiseClock -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.Crop -> eQuantic.UI.Primitives.IconGlyph
@@ -197,9 +197,9 @@ static readonly eQuantic.UI.RadixIcons.RadixIcons.Link1 -> eQuantic.UI.Primitive
 static readonly eQuantic.UI.RadixIcons.RadixIcons.Link2 -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.LinkBreak1 -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.LinkBreak2 -> eQuantic.UI.Primitives.IconGlyph
-static readonly eQuantic.UI.RadixIcons.RadixIcons.LinkedinLogo -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.LinkNone1 -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.LinkNone2 -> eQuantic.UI.Primitives.IconGlyph
+static readonly eQuantic.UI.RadixIcons.RadixIcons.LinkedinLogo -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.ListBullet -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.LockClosed -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.LockOpen1 -> eQuantic.UI.Primitives.IconGlyph
@@ -250,8 +250,8 @@ static readonly eQuantic.UI.RadixIcons.RadixIcons.Reset -> eQuantic.UI.Primitive
 static readonly eQuantic.UI.RadixIcons.RadixIcons.Resume -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.Rocket -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.RotateCounterClockwise -> eQuantic.UI.Primitives.IconGlyph
-static readonly eQuantic.UI.RadixIcons.RadixIcons.Rows -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.RowSpacing -> eQuantic.UI.Primitives.IconGlyph
+static readonly eQuantic.UI.RadixIcons.RadixIcons.Rows -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.RulerHorizontal -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.RulerSquare -> eQuantic.UI.Primitives.IconGlyph
 static readonly eQuantic.UI.RadixIcons.RadixIcons.Scissors -> eQuantic.UI.Primitives.IconGlyph

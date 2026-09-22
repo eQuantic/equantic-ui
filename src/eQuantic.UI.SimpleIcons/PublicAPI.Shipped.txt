@@ -3022,8 +3022,8 @@ static eQuantic.UI.SimpleIcons.SimpleIcons.Spotlight.get -> eQuantic.UI.Primitiv
 static eQuantic.UI.SimpleIcons.SimpleIcons.Spreadshirt.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Spreaker.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Spring.get -> eQuantic.UI.Primitives.IconGlyph
-static eQuantic.UI.SimpleIcons.SimpleIcons.Springboot.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.SpringCreators.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Springboot.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Springsecurity.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Spyderide.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Sqlalchemy.get -> eQuantic.UI.Primitives.IconGlyph

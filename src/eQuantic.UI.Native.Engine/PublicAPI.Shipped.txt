@@ -22,8 +22,8 @@ eQuantic.UI.Native.Engine.DisplayListBuilder.CommandsFrom(int start) -> eQuantic
 eQuantic.UI.Native.Engine.DisplayListBuilder.DisplayListBuilder() -> void
 eQuantic.UI.Native.Engine.DisplayListBuilder.FillAnnularSector(eQuantic.UI.Primitives.Point center, float innerRadius, float outerRadius, float startAngle, float endAngle, in eQuantic.UI.Native.Engine.Paint paint, float rounding = 0) -> void
 eQuantic.UI.Native.Engine.DisplayListBuilder.FillCircle(eQuantic.UI.Primitives.Point center, float radius, in eQuantic.UI.Native.Engine.Paint paint) -> void
-eQuantic.UI.Native.Engine.DisplayListBuilder.FillRect(eQuantic.UI.Primitives.Rect rect, in eQuantic.UI.Native.Engine.Paint paint) -> void
 eQuantic.UI.Native.Engine.DisplayListBuilder.FillRRect(in eQuantic.UI.Primitives.RRect shape, in eQuantic.UI.Native.Engine.Paint paint) -> void
+eQuantic.UI.Native.Engine.DisplayListBuilder.FillRect(eQuantic.UI.Primitives.Rect rect, in eQuantic.UI.Native.Engine.Paint paint) -> void
 eQuantic.UI.Native.Engine.DisplayListBuilder.Pop() -> void
 eQuantic.UI.Native.Engine.DisplayListBuilder.PopClip() -> void
 eQuantic.UI.Native.Engine.DisplayListBuilder.PopLayer() -> void
@@ -83,7 +83,6 @@ eQuantic.UI.Native.Engine.Float4.W -> float
 eQuantic.UI.Native.Engine.Float4.X -> float
 eQuantic.UI.Native.Engine.Float4.Y -> float
 eQuantic.UI.Native.Engine.Float4.Z -> float
-eQuantic.UI.Native.Engine.ImageHeader
 eQuantic.UI.Native.Engine.IRenderBackend
 eQuantic.UI.Native.Engine.IRenderBackend.CreateSurface(int width, int height) -> eQuantic.UI.Native.Engine.IRenderSurface!
 eQuantic.UI.Native.Engine.IRenderBackend.Kind.get -> eQuantic.UI.Native.Engine.RenderBackendKind
@@ -106,6 +105,7 @@ eQuantic.UI.Native.Engine.IRhiRenderTarget.ReadPixelsSrgb(System.Span<byte> dest
 eQuantic.UI.Native.Engine.IRhiTexture
 eQuantic.UI.Native.Engine.IRhiTexture.Height.get -> int
 eQuantic.UI.Native.Engine.IRhiTexture.Width.get -> int
+eQuantic.UI.Native.Engine.ImageHeader
 eQuantic.UI.Native.Engine.LinearColor
 eQuantic.UI.Native.Engine.LinearColor.A.get -> float
 eQuantic.UI.Native.Engine.LinearColor.A.init -> void
@@ -200,10 +200,10 @@ static eQuantic.UI.Native.Engine.ImageHeader.Measure(System.ReadOnlySpan<byte> b
 static eQuantic.UI.Native.Engine.LinearColor.operator !=(eQuantic.UI.Native.Engine.LinearColor left, eQuantic.UI.Native.Engine.LinearColor right) -> bool
 static eQuantic.UI.Native.Engine.LinearColor.operator ==(eQuantic.UI.Native.Engine.LinearColor left, eQuantic.UI.Native.Engine.LinearColor right) -> bool
 static eQuantic.UI.Native.Engine.Paint.Linear(eQuantic.UI.Primitives.Point start, eQuantic.UI.Primitives.Point end, eQuantic.UI.Primitives.Color from, eQuantic.UI.Primitives.Color to) -> eQuantic.UI.Native.Engine.Paint
-static eQuantic.UI.Native.Engine.Paint.operator !=(eQuantic.UI.Native.Engine.Paint left, eQuantic.UI.Native.Engine.Paint right) -> bool
-static eQuantic.UI.Native.Engine.Paint.operator ==(eQuantic.UI.Native.Engine.Paint left, eQuantic.UI.Native.Engine.Paint right) -> bool
 static eQuantic.UI.Native.Engine.Paint.Radial(eQuantic.UI.Primitives.Point center, float radiusX, float radiusY, eQuantic.UI.Primitives.Color from, eQuantic.UI.Primitives.Color to) -> eQuantic.UI.Native.Engine.Paint
 static eQuantic.UI.Native.Engine.Paint.Solid(eQuantic.UI.Primitives.Color color) -> eQuantic.UI.Native.Engine.Paint
+static eQuantic.UI.Native.Engine.Paint.operator !=(eQuantic.UI.Native.Engine.Paint left, eQuantic.UI.Native.Engine.Paint right) -> bool
+static eQuantic.UI.Native.Engine.Paint.operator ==(eQuantic.UI.Native.Engine.Paint left, eQuantic.UI.Native.Engine.Paint right) -> bool
 static eQuantic.UI.Native.Engine.PipelineCache.TryGetFile(string! prefix, System.ReadOnlySpan<byte> shaderBytes, string! extension, out string! path) -> bool
 static eQuantic.UI.Native.Engine.PngCodec.Decode(System.ReadOnlySpan<byte> png) -> (int Width, int Height, byte[]! Rgba)
 static eQuantic.UI.Native.Engine.PngCodec.Encode(int width, int height, System.ReadOnlySpan<byte> rgba) -> byte[]!

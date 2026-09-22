@@ -47,6 +47,33 @@ eQuantic.UI.Compiler.Analysis.CompileTimeEvaluator.CompileTimeEvaluator(Microsof
 eQuantic.UI.Compiler.Analysis.CompileTimeEvaluator.GetCacheStats() -> (int CachedCount, int TypesCached)
 eQuantic.UI.Compiler.Analysis.CompileTimeEvaluator.IsCached(string! expressionText) -> bool
 eQuantic.UI.Compiler.Analysis.CompileTimeEvaluator.TryEvaluate(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax! expression) -> string?
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.CSharpToJsConverter() -> void
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.ClearDiagnostics() -> void
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.Convert(Microsoft.CodeAnalysis.SyntaxNode! node) -> string!
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.Convert(string! code) -> string!
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.ConvertBlock(Microsoft.CodeAnalysis.CSharp.Syntax.BlockSyntax! block) -> string!
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.ConvertBlockIr(Microsoft.CodeAnalysis.CSharp.Syntax.BlockSyntax! block) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.ConvertExpression(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax! expression, string? expectedType = null) -> string!
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.ConvertExpressionWithModel(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax! expression, Microsoft.CodeAnalysis.SemanticModel! model) -> string!
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.ConvertIr(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax! expression, string? expectedType = null) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.ConvertStatement(Microsoft.CodeAnalysis.CSharp.Syntax.StatementSyntax! stmt) -> string!
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.ConvertStatementIr(Microsoft.CodeAnalysis.CSharp.Syntax.StatementSyntax! stmt) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.Diagnostics.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.ConversionDiagnostic!>!
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.EmitDesignOrigins(bool enabled) -> void
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.EmitTypeAnnotations(bool enabled) -> void
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.Layout.get -> eQuantic.UI.Compiler.CodeGen.Ir.JsLayout
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.Report(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionSeverity severity, string! code, string! message) -> void
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.Reset() -> void
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.ResourceUses.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.Services.ResourceUse>!
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.SetCurrentClass(string? className) -> void
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.SetIteratorBuffer(string? buffer) -> void
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.SetSemanticModel(Microsoft.CodeAnalysis.SemanticModel? semanticModel) -> void
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.SymbolsAreAuthoritative.get -> bool
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.SymbolsAreAuthoritative.set -> void
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.UsedAppTypes.get -> System.Collections.Generic.HashSet<string!>!
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.UsedHelpers.get -> System.Collections.Generic.HashSet<string!>!
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.UsedRuntimeTypes.get -> System.Collections.Generic.HashSet<string!>!
 eQuantic.UI.Compiler.CodeGen.ConversionContext
 eQuantic.UI.Compiler.CodeGen.ConversionContext.CanGuess(Microsoft.CodeAnalysis.SyntaxNode! node) -> bool
 eQuantic.UI.Compiler.CodeGen.ConversionContext.ClearDiagnostics() -> void
@@ -103,33 +130,6 @@ eQuantic.UI.Compiler.CodeGen.ConversionDiagnostic.Severity.init -> void
 eQuantic.UI.Compiler.CodeGen.ConversionSeverity
 eQuantic.UI.Compiler.CodeGen.ConversionSeverity.Error = 1 -> eQuantic.UI.Compiler.CodeGen.ConversionSeverity
 eQuantic.UI.Compiler.CodeGen.ConversionSeverity.Warning = 0 -> eQuantic.UI.Compiler.CodeGen.ConversionSeverity
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.ClearDiagnostics() -> void
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.Convert(Microsoft.CodeAnalysis.SyntaxNode! node) -> string!
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.Convert(string! code) -> string!
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.ConvertBlock(Microsoft.CodeAnalysis.CSharp.Syntax.BlockSyntax! block) -> string!
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.ConvertBlockIr(Microsoft.CodeAnalysis.CSharp.Syntax.BlockSyntax! block) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.ConvertExpression(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax! expression, string? expectedType = null) -> string!
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.ConvertExpressionWithModel(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax! expression, Microsoft.CodeAnalysis.SemanticModel! model) -> string!
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.ConvertIr(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax! expression, string? expectedType = null) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.ConvertStatement(Microsoft.CodeAnalysis.CSharp.Syntax.StatementSyntax! stmt) -> string!
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.ConvertStatementIr(Microsoft.CodeAnalysis.CSharp.Syntax.StatementSyntax! stmt) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.CSharpToJsConverter() -> void
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.Diagnostics.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.ConversionDiagnostic!>!
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.EmitDesignOrigins(bool enabled) -> void
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.EmitTypeAnnotations(bool enabled) -> void
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.Layout.get -> eQuantic.UI.Compiler.CodeGen.Ir.JsLayout
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.Report(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionSeverity severity, string! code, string! message) -> void
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.Reset() -> void
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.ResourceUses.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.Services.ResourceUse>!
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.SetCurrentClass(string? className) -> void
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.SetIteratorBuffer(string? buffer) -> void
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.SetSemanticModel(Microsoft.CodeAnalysis.SemanticModel? semanticModel) -> void
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.SymbolsAreAuthoritative.get -> bool
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.SymbolsAreAuthoritative.set -> void
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.UsedAppTypes.get -> System.Collections.Generic.HashSet<string!>!
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.UsedHelpers.get -> System.Collections.Generic.HashSet<string!>!
-eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.UsedRuntimeTypes.get -> System.Collections.Generic.HashSet<string!>!
 eQuantic.UI.Compiler.CodeGen.CssEmitter
 eQuantic.UI.Compiler.CodeGen.CssEmitter.CssEmitter() -> void
 eQuantic.UI.Compiler.CodeGen.CssEmitter.Emit(System.Collections.Generic.IEnumerable<eQuantic.UI.Compiler.Models.StyleClassUsage!>! usages) -> string!
@@ -285,13 +285,13 @@ eQuantic.UI.Compiler.CodeGen.Ir.JsEmpty.JsEmpty() -> void
 eQuantic.UI.Compiler.CodeGen.Ir.JsExpr
 eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.JsExpr() -> void
 eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.JsExpr(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! original) -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsExprWriter
 eQuantic.UI.Compiler.CodeGen.Ir.JsExpressionStatement
 eQuantic.UI.Compiler.CodeGen.Ir.JsExpressionStatement.Deconstruct(out eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! Expr) -> void
 eQuantic.UI.Compiler.CodeGen.Ir.JsExpressionStatement.Equals(eQuantic.UI.Compiler.CodeGen.Ir.JsExpressionStatement? other) -> bool
 eQuantic.UI.Compiler.CodeGen.Ir.JsExpressionStatement.Expr.get -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 eQuantic.UI.Compiler.CodeGen.Ir.JsExpressionStatement.Expr.init -> void
 eQuantic.UI.Compiler.CodeGen.Ir.JsExpressionStatement.JsExpressionStatement(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! Expr) -> void
-eQuantic.UI.Compiler.CodeGen.Ir.JsExprWriter
 eQuantic.UI.Compiler.CodeGen.Ir.JsFieldMember
 eQuantic.UI.Compiler.CodeGen.Ir.JsFieldMember.Annotation.get -> string!
 eQuantic.UI.Compiler.CodeGen.Ir.JsFieldMember.Annotation.init -> void
@@ -468,13 +468,13 @@ eQuantic.UI.Compiler.CodeGen.Ir.JsReturn.Value.init -> void
 eQuantic.UI.Compiler.CodeGen.Ir.JsStatement
 eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.JsStatement() -> void
 eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.JsStatement(eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! original) -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsStatementWriter
 eQuantic.UI.Compiler.CodeGen.Ir.JsStatements
 eQuantic.UI.Compiler.CodeGen.Ir.JsStatements.Deconstruct(out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!>! Statements) -> void
 eQuantic.UI.Compiler.CodeGen.Ir.JsStatements.Equals(eQuantic.UI.Compiler.CodeGen.Ir.JsStatements? other) -> bool
 eQuantic.UI.Compiler.CodeGen.Ir.JsStatements.JsStatements(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!>! Statements) -> void
 eQuantic.UI.Compiler.CodeGen.Ir.JsStatements.Statements.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!>!
 eQuantic.UI.Compiler.CodeGen.Ir.JsStatements.Statements.init -> void
-eQuantic.UI.Compiler.CodeGen.Ir.JsStatementWriter
 eQuantic.UI.Compiler.CodeGen.Ir.JsSwitch
 eQuantic.UI.Compiler.CodeGen.Ir.JsSwitch.Cases.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsCase!>!
 eQuantic.UI.Compiler.CodeGen.Ir.JsSwitch.Cases.init -> void
@@ -794,6 +794,10 @@ eQuantic.UI.Compiler.CodeGen.Strategies.IConversionStrategy.Convert(Microsoft.Co
 eQuantic.UI.Compiler.CodeGen.Strategies.IConversionStrategy.Priority.get -> int
 eQuantic.UI.Compiler.CodeGen.Strategies.IExpressionIrStrategy
 eQuantic.UI.Compiler.CodeGen.Strategies.IExpressionIrStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.IStatementStrategy
+eQuantic.UI.Compiler.CodeGen.Strategies.IStatementStrategy.CanConvert(Microsoft.CodeAnalysis.CSharp.Syntax.StatementSyntax! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+eQuantic.UI.Compiler.CodeGen.Strategies.IStatementStrategy.Convert(Microsoft.CodeAnalysis.CSharp.Syntax.StatementSyntax! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
+eQuantic.UI.Compiler.CodeGen.Strategies.IStatementStrategy.Priority.get -> int
 eQuantic.UI.Compiler.CodeGen.Strategies.IntegerWidth
 eQuantic.UI.Compiler.CodeGen.Strategies.Invocation.CollectionMaterializationStrategy
 eQuantic.UI.Compiler.CodeGen.Strategies.Invocation.CollectionMaterializationStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
@@ -826,10 +830,6 @@ eQuantic.UI.Compiler.CodeGen.Strategies.Invocation.ToStringStrategy.Convert(Micr
 eQuantic.UI.Compiler.CodeGen.Strategies.Invocation.ToStringStrategy.Priority.get -> int
 eQuantic.UI.Compiler.CodeGen.Strategies.Invocation.ToStringStrategy.ToStringStrategy() -> void
 eQuantic.UI.Compiler.CodeGen.Strategies.InvocationShapeExtensions
-eQuantic.UI.Compiler.CodeGen.Strategies.IStatementStrategy
-eQuantic.UI.Compiler.CodeGen.Strategies.IStatementStrategy.CanConvert(Microsoft.CodeAnalysis.CSharp.Syntax.StatementSyntax! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
-eQuantic.UI.Compiler.CodeGen.Strategies.IStatementStrategy.Convert(Microsoft.CodeAnalysis.CSharp.Syntax.StatementSyntax! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
-eQuantic.UI.Compiler.CodeGen.Strategies.IStatementStrategy.Priority.get -> int
 eQuantic.UI.Compiler.CodeGen.Strategies.Linq.AverageStrategy
 eQuantic.UI.Compiler.CodeGen.Strategies.Linq.AverageStrategy.AverageStrategy() -> void
 eQuantic.UI.Compiler.CodeGen.Strategies.Linq.AverageStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
@@ -1940,10 +1940,10 @@ static eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember.Constructor(string! paramet
 static eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember.Field(string! modifiers, string! name, string! annotation, string? initializer = null) -> eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember.Getter(string! modifiers, string! name, string! annotation, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! body) -> eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember.Method(string! modifiers, string! name, string! typeParameters, string! parameters, string! annotation, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! body) -> eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember!
-static eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember.operator !=(eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember? left, eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember? right) -> bool
-static eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember.operator ==(eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember? left, eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember? right) -> bool
 static eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember.Raw(string! text) -> eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember.Setter(string! modifiers, string! name, string! parameter, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! body) -> eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember!
+static eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember.operator !=(eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember? left, eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember? right) -> bool
+static eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember.operator ==(eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember? left, eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember? right) -> bool
 static eQuantic.UI.Compiler.CodeGen.Ir.JsConditional.operator !=(eQuantic.UI.Compiler.CodeGen.Ir.JsConditional? left, eQuantic.UI.Compiler.CodeGen.Ir.JsConditional? right) -> bool
 static eQuantic.UI.Compiler.CodeGen.Ir.JsConditional.operator ==(eQuantic.UI.Compiler.CodeGen.Ir.JsConditional? left, eQuantic.UI.Compiler.CodeGen.Ir.JsConditional? right) -> bool
 static eQuantic.UI.Compiler.CodeGen.Ir.JsConst.operator !=(eQuantic.UI.Compiler.CodeGen.Ir.JsConst? left, eQuantic.UI.Compiler.CodeGen.Ir.JsConst? right) -> bool
@@ -1959,29 +1959,29 @@ static eQuantic.UI.Compiler.CodeGen.Ir.JsEmpty.operator ==(eQuantic.UI.Compiler.
 static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.Arrow(string! parameters, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! body, bool isAsync = false) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.ArrowBlock(string! parameters, string! block, bool isAsync = false) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.Binary(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! left, string! op, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! right) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
-static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.Call(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! target, params eQuantic.UI.Compiler.CodeGen.Ir.JsExpr![]! arguments) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.Call(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! target, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!>! arguments) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.Call(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! target, params eQuantic.UI.Compiler.CodeGen.Ir.JsExpr![]! arguments) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.Callish(string! text) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.Conditional(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! condition, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! whenTrue, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! whenFalse) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.Group(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! inner) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.Identifier(string! name) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
-static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.implicit operator eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!(string! text) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.Index(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! target, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! index) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.Literal(string! text) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.Member(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! target, string! name) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.Opaque(string! text) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
-static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.operator !=(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr? left, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr? right) -> bool
-static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.operator ==(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr? left, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr? right) -> bool
 static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.Postfix(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! operand, string! op) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.Prefix(string! op, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! operand) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
-static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.Template(string! template, params eQuantic.UI.Compiler.CodeGen.Ir.JsExpr![]! parts) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.Template(string! template, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!>! parts) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.Template(string! template, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!>! parts, bool annotate) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.Template(string! template, params eQuantic.UI.Compiler.CodeGen.Ir.JsExpr![]! parts) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.ThisMember(string! name) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
-static eQuantic.UI.Compiler.CodeGen.Ir.JsExpressionStatement.operator !=(eQuantic.UI.Compiler.CodeGen.Ir.JsExpressionStatement? left, eQuantic.UI.Compiler.CodeGen.Ir.JsExpressionStatement? right) -> bool
-static eQuantic.UI.Compiler.CodeGen.Ir.JsExpressionStatement.operator ==(eQuantic.UI.Compiler.CodeGen.Ir.JsExpressionStatement? left, eQuantic.UI.Compiler.CodeGen.Ir.JsExpressionStatement? right) -> bool
+static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.implicit operator eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!(string! text) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.operator !=(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr? left, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr? right) -> bool
+static eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.operator ==(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr? left, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr? right) -> bool
 static eQuantic.UI.Compiler.CodeGen.Ir.JsExprWriter.Write(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! expr) -> string!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsExprWriter.WriteIn(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! expr, eQuantic.UI.Compiler.CodeGen.Ir.JsPrecedence required) -> string!
+static eQuantic.UI.Compiler.CodeGen.Ir.JsExpressionStatement.operator !=(eQuantic.UI.Compiler.CodeGen.Ir.JsExpressionStatement? left, eQuantic.UI.Compiler.CodeGen.Ir.JsExpressionStatement? right) -> bool
+static eQuantic.UI.Compiler.CodeGen.Ir.JsExpressionStatement.operator ==(eQuantic.UI.Compiler.CodeGen.Ir.JsExpressionStatement? left, eQuantic.UI.Compiler.CodeGen.Ir.JsExpressionStatement? right) -> bool
 static eQuantic.UI.Compiler.CodeGen.Ir.JsFieldMember.operator !=(eQuantic.UI.Compiler.CodeGen.Ir.JsFieldMember? left, eQuantic.UI.Compiler.CodeGen.Ir.JsFieldMember? right) -> bool
 static eQuantic.UI.Compiler.CodeGen.Ir.JsFieldMember.operator ==(eQuantic.UI.Compiler.CodeGen.Ir.JsFieldMember? left, eQuantic.UI.Compiler.CodeGen.Ir.JsFieldMember? right) -> bool
 static eQuantic.UI.Compiler.CodeGen.Ir.JsGroup.operator !=(eQuantic.UI.Compiler.CodeGen.Ir.JsGroup? left, eQuantic.UI.Compiler.CodeGen.Ir.JsGroup? right) -> bool
@@ -2031,21 +2031,21 @@ static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Expression(eQuantic.UI.Compil
 static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Headed(string! head, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! body) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Hoisted(string! declarations, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! statement) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.If(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! condition, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! then, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement? otherwise) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
-static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.implicit operator eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!(string! text) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Let(string! name, string! annotation, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! initializer) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
-static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.operator !=(eQuantic.UI.Compiler.CodeGen.Ir.JsStatement? left, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement? right) -> bool
-static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.operator ==(eQuantic.UI.Compiler.CodeGen.Ir.JsStatement? left, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement? right) -> bool
 static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Raw(string! text) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Return(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr? value) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
-static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Sequence(params eQuantic.UI.Compiler.CodeGen.Ir.JsStatement![]! statements) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Sequence(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!>! statements) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
+static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Sequence(params eQuantic.UI.Compiler.CodeGen.Ir.JsStatement![]! statements) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Switch(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! subject, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsCase!>! cases) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Throw(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr? value) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.Try(eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! body, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsCatch!>! catches, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement? finally) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.While(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! condition, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! body) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
+static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.implicit operator eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!(string! text) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
+static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.operator !=(eQuantic.UI.Compiler.CodeGen.Ir.JsStatement? left, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement? right) -> bool
+static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.operator ==(eQuantic.UI.Compiler.CodeGen.Ir.JsStatement? left, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement? right) -> bool
+static eQuantic.UI.Compiler.CodeGen.Ir.JsStatementWriter.Write(eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! statement, eQuantic.UI.Compiler.CodeGen.Ir.JsLayout layout, int depth = 0) -> string!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsStatements.operator !=(eQuantic.UI.Compiler.CodeGen.Ir.JsStatements? left, eQuantic.UI.Compiler.CodeGen.Ir.JsStatements? right) -> bool
 static eQuantic.UI.Compiler.CodeGen.Ir.JsStatements.operator ==(eQuantic.UI.Compiler.CodeGen.Ir.JsStatements? left, eQuantic.UI.Compiler.CodeGen.Ir.JsStatements? right) -> bool
-static eQuantic.UI.Compiler.CodeGen.Ir.JsStatementWriter.Write(eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! statement, eQuantic.UI.Compiler.CodeGen.Ir.JsLayout layout, int depth = 0) -> string!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsSwitch.operator !=(eQuantic.UI.Compiler.CodeGen.Ir.JsSwitch? left, eQuantic.UI.Compiler.CodeGen.Ir.JsSwitch? right) -> bool
 static eQuantic.UI.Compiler.CodeGen.Ir.JsSwitch.operator ==(eQuantic.UI.Compiler.CodeGen.Ir.JsSwitch? left, eQuantic.UI.Compiler.CodeGen.Ir.JsSwitch? right) -> bool
 static eQuantic.UI.Compiler.CodeGen.Ir.JsTemplate.operator !=(eQuantic.UI.Compiler.CodeGen.Ir.JsTemplate? left, eQuantic.UI.Compiler.CodeGen.Ir.JsTemplate? right) -> bool

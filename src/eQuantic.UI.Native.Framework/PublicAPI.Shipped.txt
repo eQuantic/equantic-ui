@@ -32,14 +32,14 @@ eQuantic.UI.Native.Framework.IIconRasterizer
 eQuantic.UI.Native.Framework.IIconRasterizer.Rasterize(eQuantic.UI.Primitives.IconGlyph glyph, float widthDp, float heightDp, float scale) -> eQuantic.UI.Native.Framework.TextRaster?
 eQuantic.UI.Native.Framework.IImageLoader
 eQuantic.UI.Native.Framework.IImageLoader.Load(string! source) -> eQuantic.UI.Native.Framework.RgbaImage?
-eQuantic.UI.Native.Framework.InViewStore
-eQuantic.UI.Native.Framework.InViewStore.Changed(string! path, bool visible) -> bool
-eQuantic.UI.Native.Framework.InViewStore.Clear() -> void
-eQuantic.UI.Native.Framework.InViewStore.InViewStore() -> void
 eQuantic.UI.Native.Framework.ITextMeasurer
 eQuantic.UI.Native.Framework.ITextMeasurer.Measure(string! content, eQuantic.UI.Primitives.TypeStyle style, float typeScale, float maxWidth, int maxLines) -> eQuantic.UI.Native.Framework.TextMeasurement!
 eQuantic.UI.Native.Framework.ITextRasterizer
 eQuantic.UI.Native.Framework.ITextRasterizer.Rasterize(string! content, eQuantic.UI.Primitives.TypeStyle style, float typeScale, float maxWidth, int maxLines, float scale, eQuantic.UI.Primitives.TextAlignment align) -> eQuantic.UI.Native.Framework.TextRaster?
+eQuantic.UI.Native.Framework.InViewStore
+eQuantic.UI.Native.Framework.InViewStore.Changed(string! path, bool visible) -> bool
+eQuantic.UI.Native.Framework.InViewStore.Clear() -> void
+eQuantic.UI.Native.Framework.InViewStore.InViewStore() -> void
 eQuantic.UI.Native.Framework.LayoutConstraints
 eQuantic.UI.Native.Framework.LayoutConstraints.DecidedByContent(bool width, bool height) -> eQuantic.UI.Native.Framework.LayoutConstraints
 eQuantic.UI.Native.Framework.LayoutConstraints.Deconstruct(out eQuantic.UI.Native.Framework.AxisConstraint Width, out eQuantic.UI.Native.Framework.AxisConstraint Height) -> void

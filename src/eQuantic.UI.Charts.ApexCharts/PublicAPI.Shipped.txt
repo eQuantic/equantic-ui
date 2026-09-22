@@ -104,5 +104,5 @@ eQuantic.UI.Charts.ApexCharts.Models.YAxisOptions.YAxisOptions() -> void
 override eQuantic.UI.Charts.ApexCharts.ApexChart<T>.Render() -> eQuantic.UI.Web.HtmlNode!
 override eQuantic.UI.Charts.ApexCharts.ApexChartsScripts.Render() -> eQuantic.UI.Web.HtmlNode!
 static eQuantic.UI.Charts.ApexCharts.ApexChartsServiceExtensions.AddApexCharts(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
-static eQuantic.UI.Charts.ApexCharts.ApexChartsServiceExtensions.UseApexCharts(this eQuantic.UI.Server.UIOptions! options, string? version = null) -> eQuantic.UI.Server.UIOptions!
 static eQuantic.UI.Charts.ApexCharts.ApexChartsServiceExtensions.UseApexCharts(this Microsoft.AspNetCore.Builder.WebApplication! app, string? version = null) -> Microsoft.AspNetCore.Builder.WebApplication!
+static eQuantic.UI.Charts.ApexCharts.ApexChartsServiceExtensions.UseApexCharts(this eQuantic.UI.Server.UIOptions! options, string? version = null) -> eQuantic.UI.Server.UIOptions!

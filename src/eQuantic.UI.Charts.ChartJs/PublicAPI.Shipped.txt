@@ -133,5 +133,5 @@ override eQuantic.UI.Charts.ChartJs.ChartJs<T>.Render() -> eQuantic.UI.Web.HtmlN
 override eQuantic.UI.Charts.ChartJs.ChartJsScripts.Render() -> eQuantic.UI.Web.HtmlNode!
 static eQuantic.UI.Charts.ChartJs.ChartColors.WithOpacity(string! color, double opacity) -> string!
 static eQuantic.UI.Charts.ChartJs.ChartJsServiceExtensions.AddChartJs(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
-static eQuantic.UI.Charts.ChartJs.ChartJsServiceExtensions.UseChartJs(this eQuantic.UI.Server.UIOptions! options, string? version = null) -> eQuantic.UI.Server.UIOptions!
 static eQuantic.UI.Charts.ChartJs.ChartJsServiceExtensions.UseChartJs(this Microsoft.AspNetCore.Builder.WebApplication! app, string? version = null) -> Microsoft.AspNetCore.Builder.WebApplication!
+static eQuantic.UI.Charts.ChartJs.ChartJsServiceExtensions.UseChartJs(this eQuantic.UI.Server.UIOptions! options, string? version = null) -> eQuantic.UI.Server.UIOptions!

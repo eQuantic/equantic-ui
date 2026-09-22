@@ -129,11 +129,11 @@ eQuantic.UI.Native.Components.PhotonHost.CursorAt(float x, float y) -> eQuantic.
 eQuantic.UI.Native.Components.PhotonHost.Density.get -> eQuantic.UI.Primitives.Density
 eQuantic.UI.Native.Components.PhotonHost.Density.set -> void
 eQuantic.UI.Native.Components.PhotonHost.Focus(eQuantic.UI.Primitives.Pressable! node, string? path = null, bool visible = true) -> void
-eQuantic.UI.Native.Components.PhotonHost.Focused.get -> eQuantic.UI.Primitives.Pressable?
-eQuantic.UI.Native.Components.PhotonHost.FocusedPath.get -> string?
 eQuantic.UI.Native.Components.PhotonHost.FocusNext() -> bool
 eQuantic.UI.Native.Components.PhotonHost.FocusPrevious() -> bool
 eQuantic.UI.Native.Components.PhotonHost.FocusVisible.get -> bool
+eQuantic.UI.Native.Components.PhotonHost.Focused.get -> eQuantic.UI.Primitives.Pressable?
+eQuantic.UI.Native.Components.PhotonHost.FocusedPath.get -> string?
 eQuantic.UI.Native.Components.PhotonHost.HasMarkedText.get -> bool
 eQuantic.UI.Native.Components.PhotonHost.HasSelection.get -> bool
 eQuantic.UI.Native.Components.PhotonHost.HasTextFocus.get -> bool
@@ -159,8 +159,8 @@ eQuantic.UI.Native.Components.PhotonHost.PointerCancel(eQuantic.UI.Native.Compon
 eQuantic.UI.Native.Components.PhotonHost.PointerLeave() -> void
 eQuantic.UI.Native.Components.PhotonHost.PointerMove(float x, float y, eQuantic.UI.Native.Components.PointerKind kind = eQuantic.UI.Native.Components.PointerKind.Mouse) -> void
 eQuantic.UI.Native.Components.PhotonHost.PressDown(float x, float y, int clickCount = 1, eQuantic.UI.Primitives.KeyModifiers modifiers = eQuantic.UI.Primitives.KeyModifiers.None) -> bool
-eQuantic.UI.Native.Components.PhotonHost.Pressed.get -> eQuantic.UI.Primitives.Pressable?
 eQuantic.UI.Native.Components.PhotonHost.PressUp(float x, float y, eQuantic.UI.Native.Components.PointerKind kind = eQuantic.UI.Native.Components.PointerKind.Mouse) -> bool
+eQuantic.UI.Native.Components.PhotonHost.Pressed.get -> eQuantic.UI.Primitives.Pressable?
 eQuantic.UI.Native.Components.PhotonHost.RecycleFrames.get -> bool
 eQuantic.UI.Native.Components.PhotonHost.RecycleFrames.init -> void
 eQuantic.UI.Native.Components.PhotonHost.ReducedMotion.get -> bool
