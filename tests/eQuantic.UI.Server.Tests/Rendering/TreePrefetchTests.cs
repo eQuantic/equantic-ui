@@ -488,6 +488,139 @@ public class TreePrefetchTests
         fields.GetProperty("_downloads").GetString().Should().Be("675617");
     }
 
+    /// <summary>A pack's component, named the same as the escape-hatch page below it.</summary>
+    private static class Pack
+    {
+        internal sealed class Header : Primitives.StatelessComponent, IServerPrefetch
+        {
+            private long _downloads = -1;
+
+            [ServerOnly]
+            public async Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+                => _downloads = await services.GetRequiredService<ICounts>().GetAsync(cancellationToken);
+
+            public override VisualNode Build(ComponentContext context) =>
+                new Text($"packed: {_downloads}", TypeRole.Heading);
+        }
+    }
+
+    /// <summary>An escape-hatch page whose own type name is the one its component already uses.</summary>
+    private sealed class Header : eQuantic.UI.Web.HtmlElement, IServerPrefetch
+    {
+        private string _title = "(not loaded)";
+
+        public Header() => AddChild(new eQuantic.UI.Web.VisualNodeComponent(new Pack.Header()));
+
+        [ServerOnly]
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            _title = "loaded";
+            return Task.CompletedTask;
+        }
+
+        public override eQuantic.UI.Web.HtmlNode Render() => new()
+        {
+            Tag = "div",
+            Children = [eQuantic.UI.Web.HtmlNode.Text(_title), .. Children.Select(child => child.Render())],
+        };
+    }
+
+    /// <summary>
+    /// A ROOT ASKED OUTSIDE THE WALK STILL TAKES A NAME INSIDE IT.
+    ///
+    /// <para>
+    /// An escape-hatch root is asked directly, and its key was built by hand — <c>Type#0</c> — while
+    /// the walk that names everything it composes started from an empty count. A component sharing
+    /// the root's simple name therefore claimed the SAME key, and the asked set treated it as
+    /// already handled: its prefetch never ran and its state never shipped, while the payload under
+    /// that name belonged to the root. Not a drift the type check can refuse — the two agree.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public async Task AComponentNamedLikeTheRoot_IsStillAskedForItsOwnData()
+    {
+        var counts = new Counts();
+        var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder();
+        builder.Services.AddSingleton<ICounts>(counts);
+        builder.Services.AddUI(o => o.ScanAssembly(typeof(TreePrefetchTests).Assembly));
+        await using var app = builder.Build();
+        app.MapPage<Header>("/tree-prefetch-name-clash");
+
+        var service = app.Services.GetRequiredService<IServerRenderingService>();
+        var result = await service.RenderPageAsync(nameof(Header),
+            new DefaultHttpContext { RequestServices = app.Services });
+
+        result.Success.Should().BeTrue(result.Error);
+        counts.Calls.Should().Be(1,
+            "the composed component asks for its own data; sharing a name with the root is not an "
+            + "answer to whether it was asked");
+        result.Html.Should().Contain("packed: 675617");
+    }
+
+    /// <summary>A component whose CALLBACK is what its parent hands it, and loads its own value.</summary>
+    private sealed class Labelled : Primitives.StatelessComponent, IServerPrefetch
+    {
+        private readonly Func<string> _label;
+        private string _value = "(not loaded)";
+
+        public Labelled(Func<string> label) => _label = label;
+
+        [ServerOnly]
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            _value = "loaded";
+            return Task.CompletedTask;
+        }
+
+        public override VisualNode Build(ComponentContext context) =>
+            new Text($"{_label()}:{_value}", TypeRole.BodyM);
+    }
+
+    [Page("/tree-prefetch-callback")]
+    private sealed class PageThatSwapsACallback : Primitives.StatelessComponent, IServerPrefetch
+    {
+        private string _which = "a";
+
+        [ServerOnly]
+        public Task PrefetchAsync(IServiceProvider services, CancellationToken cancellationToken)
+        {
+            _which = "b";
+            return Task.CompletedTask;
+        }
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var which = _which;
+            var column = new Column(gap: Space.S2);
+            column.Add(new Labelled(() => which));
+            return column;
+        }
+    }
+
+    /// <summary>
+    /// A CALLBACK IS CONFIGURATION, NOT LOADED STATE, so the restore must not put an old one back.
+    ///
+    /// <para>
+    /// The wire snapshot drops a handler because the client builds its own. The round-to-round CLR
+    /// restore kept them, and that is worse than shipping one: the next round's component is handed
+    /// the PREVIOUS instance's closure, still holding what that round captured. A page whose data
+    /// decides what it passes down then draws through a callback it no longer has — and nothing
+    /// here can notice, because a delegate is not a value this can compare.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public async Task ACallbackTheParentRebuilt_IsNotReplacedByTheRoundBefore()
+    {
+        var context = RequestWith(out _);
+
+        var result = await CreateService().RenderPageAsync(nameof(PageThatSwapsACallback), context);
+
+        result.Success.Should().BeTrue(result.Error);
+        result.Html.Should().Contain("b:loaded",
+            "the page's own prefetch chose b, so the callback the component draws through is the "
+            + "one its parent just handed it");
+    }
+
     /// <summary>A row that knows WHICH row it is, and loads for that one.</summary>
     private sealed class Row : Primitives.StatelessComponent, IServerPrefetch
     {

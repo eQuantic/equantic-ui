@@ -230,7 +230,11 @@ public class ServerRenderingService : IServerRenderingService
                         // NAMES every component as the realizer expands it, and hands back what an
                         // earlier round loaded for it — before its Build runs, or the build reads the
                         // defaults again and the round was wasted.
-                        renderScope = new Web.ComponentExpansionScope { Restore = prefetched };
+                        renderScope = new Web.ComponentExpansionScope
+                        {
+                            Restore = prefetched,
+                            Reserved = coreRootKey,
+                        };
                         Web.ComponentExpansionScope.Ambient = renderScope;
                         try
                         {
@@ -323,7 +327,8 @@ public class ServerRenderingService : IServerRenderingService
                     // navigation: the reader saw the number, clicked away, came back, and the second
                     // visit showed the default. The root's own kind decides how the ROOT is asked —
                     // directly, above — and says nothing about what it composes.
-                    navigationPayload = await PrefetchTreeAsync(component, prefetched, asked, context);
+                    navigationPayload = await PrefetchTreeAsync(
+                        component, prefetched, asked, context, coreRootKey);
                 }
 
                 // THEN metadata, and the order is the whole point. ConfigureMetadata used to run first,
@@ -448,7 +453,8 @@ public class ServerRenderingService : IServerRenderingService
         IComponent component,
         Dictionary<string, Web.LoadedComponentState> loaded,
         HashSet<string> asked,
-        HttpContext context)
+        HttpContext context,
+        string? reserved)
     {
         var wire = new Dictionary<string, IReadOnlyDictionary<string, object?>>(StringComparer.Ordinal);
 
@@ -457,7 +463,7 @@ public class ServerRenderingService : IServerRenderingService
 
         for (var round = 0; round < MaxPrefetchRounds; round++)
         {
-            var scope = new Web.ComponentExpansionScope { Restore = loaded };
+            var scope = new Web.ComponentExpansionScope { Restore = loaded, Reserved = reserved };
             settled = scope;
             Expand(component, scope);
 

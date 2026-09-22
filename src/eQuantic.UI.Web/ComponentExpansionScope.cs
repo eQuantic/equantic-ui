@@ -80,6 +80,20 @@ public sealed class ComponentExpansionScope
     public IReadOnlySet<string> Replaced => _replaced;
 
     /// <summary>
+    /// A key taken OUTSIDE this walk, which the walk must not hand out again.
+    ///
+    /// <para>
+    /// An escape-hatch root is asked directly — it never passes through the realizer's component
+    /// visit — so its key is built by hand while this count starts empty. A component sharing the
+    /// root's simple name then claimed the same one, and the pipeline's asked set read it as
+    /// already handled: that component's prefetch never ran and its state never shipped, with the
+    /// payload under that name belonging to the root. The two sides agree on the wrong thing, so
+    /// the type check has nothing to refuse.
+    /// </para>
+    /// </summary>
+    public string? Reserved { get; init; }
+
+    /// <summary>
     /// A component's fields AS THEY ARE — raw CLR values under raw field names, nulls included.
     ///
     /// <para>
@@ -97,7 +111,17 @@ public sealed class ComponentExpansionScope
         var captured = new Dictionary<string, object?>(StringComparer.Ordinal);
         foreach (var field in FieldsOf(component.GetType()))
         {
-            captured[field.Name] = field.GetValue(component);
+            // A CALLBACK IS CONFIGURATION, and putting one back is worse than carrying one: the
+            // next round's component would draw through the PREVIOUS instance's closure, still
+            // holding whatever that round captured. The payload drops handlers for the matching
+            // reason — the client builds its own — and nothing here could notice the substitution,
+            // since a delegate is not a value this can compare.
+            if (typeof(Delegate).IsAssignableFrom(field.FieldType)) continue;
+
+            var value = field.GetValue(component);
+            if (value is Delegate) continue;
+
+            captured[field.Name] = value;
         }
         return captured;
     }
@@ -111,9 +135,17 @@ public sealed class ComponentExpansionScope
     {
         var typeName = component.GetType().Name;
         var ordinal = _ordinals.TryGetValue(typeName, out var seen) ? seen : 0;
-        _ordinals[typeName] = ordinal + 1;
-
         var key = $"{typeName}#{ordinal}";
+
+        // Taken before the walk began — step past it rather than hand it out twice. Only the first
+        // component of a type can reach this, since the reserved key is always that type's #0.
+        if (key == Reserved)
+        {
+            ordinal++;
+            key = $"{typeName}#{ordinal}";
+        }
+
+        _ordinals[typeName] = ordinal + 1;
         _expanded[key] = component;
 
         if (!Restore.TryGetValue(key, out var loaded)) return key;
