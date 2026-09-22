@@ -19,6 +19,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\eQuantic.UI.Compiler\eQuantic.UI.Compiler.csproj" />
+    <!-- A BUILD-ORDER EDGE, not a reference: the harness imports the runtime helpers from the bundle
+         the Server serves (src/eQuantic.UI.Server/wwwroot/runtime.js), and that bundle is a build
+         output of the Server now (#273). Building the Server first means every conformance case runs
+         against the runtime of THIS tree — it used to read whichever copy was committed, which could
+         lag the source it claimed to test. -->
+    <ProjectReference Include="..\..\src\eQuantic.UI.Server\eQuantic.UI.Server.csproj"
+                      ReferenceOutputAssembly="false" Private="false" />
   </ItemGroup>
 
 </Project>
