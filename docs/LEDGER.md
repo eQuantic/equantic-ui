@@ -405,6 +405,11 @@ record of a release, the wiki's Upgrading page is the distillate.
   iconify/icon-sets commit so a regeneration takes nothing it did not ask for; the twelve packs are
   regenerated, eight of them into the trimmable property form the other four already had (#74); and
   `IconPackGeometryTests` holds every glyph of every marker-found pack to the seam rule and to its box.
+- **2026-09-22 · The runtime the Server serves is a build output, and only that**: the committed
+  `src/eQuantic.UI.Server/wwwroot/runtime.js` is gone, ignored, and written by `BundleRuntime` from
+  `boot.ts` before every Server build, which it always was; the copy in git was the one that lagged the
+  runtime's source twice ([#273](https://github.com/eQuantic/equantic-ui/issues/273)). The VS Code
+  extension bundles it through the same target instead of copying a leftover.
 
 ## Retired documents
 

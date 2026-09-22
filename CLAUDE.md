@@ -488,7 +488,9 @@ quoted here):
    library, whose transpiled modules ship INSIDE it (`[RuntimeProvided]`); eqc routes
    `using eQuantic.UI.Components` imports there rather than emitting a per-app copy. The page reaches
    it as the bare module `@equantic/runtime` through the shell's import map, and the Server serves its
-   own embedded copy at that route
+   own embedded copy at that route. That copy is a BUILD OUTPUT: the Server's `BundleRuntime` writes
+   `wwwroot/runtime.js` from `Resources/boot.ts` before every build, and it is never committed — a
+   committed copy lagged the runtime's source twice without anything noticing (#273)
 2. **`<Component>.js` + `.js.map`** — one module per page or component, flat (a hash suffix
    disambiguates types that share a name). `boot.ts` imports the page's module dynamically on
    navigation, so per-route lazy loading falls out of the module graph — there is no `pages/` folder
