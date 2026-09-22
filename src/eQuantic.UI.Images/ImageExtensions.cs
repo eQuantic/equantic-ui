@@ -41,8 +41,11 @@ public static class ImageExtensions
     /// <returns>The web application for chaining.</returns>
     public static WebApplication UseImageOptimization(this WebApplication app)
     {
-        var options = app.Services.GetRequiredService<ImageOptimizationOptions>();
-        ConfigureImageOptimization(app, options);
+        // Resolved and dropped ON PURPOSE: this overload is the one an author can reach without
+        // having called AddImageOptimization, and a missing registration should stop the app at
+        // startup rather than answer the first image request with a 500 from inside the handler.
+        app.Services.GetRequiredService<ImageOptimizationOptions>();
+        MapImageEndpoint(app);
         return app;
     }
 
@@ -55,18 +58,15 @@ public static class ImageExtensions
         Action<ImageOptimizationOptions>? configure = null)
     {
         options.RegisterServices(services => services.AddImageOptimization(configure));
-        options.RegisterEndpoints(endpoints =>
-        {
-            var imgOptions = endpoints.ServiceProvider.GetRequiredService<ImageOptimizationOptions>();
-            ConfigureImageOptimization(endpoints, imgOptions);
-        });
+        // No lookup here: the same call registered the services a line above, so there is nothing
+        // to check and nothing to hand over.
+        options.RegisterEndpoints(MapImageEndpoint);
         return options;
     }
 
-    private static void ConfigureImageOptimization(IEndpointRouteBuilder endpoints, ImageOptimizationOptions options)
-    {
-        // The endpoint IS the feature: it reads ImageOptimizationOptions from the request's
-        // services on every call, so there is nothing to publish to a static beside it.
+    /// <summary>One owner of the route, which is the only reason this is still a method.</summary>
+    private static void MapImageEndpoint(IEndpointRouteBuilder endpoints) =>
+        // The endpoint IS the feature: the handler reads ImageOptimizationOptions from the
+        // REQUEST's services on every call, so nothing needs handing to it here.
         endpoints.MapGet("/_equantic/image", ImageOptimizationMiddleware.HandleAsync);
-    }
 }
