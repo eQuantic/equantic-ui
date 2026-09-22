@@ -137,19 +137,29 @@ trap 'rm -f "$UNEXPLAINED"' EXIT
 # stdout stays the build output, because that is what both parsers read. An unexplained failure
 # goes to a file instead, so noticing one cannot disturb what they see.
 rebuild_all() {
-    local csproj output status unexpected
+    local csproj output status codes unexpected
     for csproj in $(projects); do
         output="$(dotnet build "$csproj" -t:Rebuild --nologo -v quiet 2>&1)" && status=0 || status=$?
         printf '%s\n' "$output"
         [ "$status" -eq 0 ] && continue
 
-        unexpected="$(printf '%s' "$output" | grep -oE 'error [A-Z]+[0-9]+' | sed 's/^error //' \
-            | sort -u | grep -vE "$EXPECTED_ERROR" || true)"
-        [ -z "$unexpected" ] && continue
+        # Case-insensitively, because a diagnostic id is not always shouted: xUnit2013 is an id,
+        # and TreatWarningsAsErrors makes it fail a build like any other.
+        # `|| true` on BOTH: under `set -o pipefail` a grep that matches nothing fails the whole
+        # pipeline, and `set -e` then kills the function mid-sweep — silently, which is the one
+        # outcome this code exists to prevent. An uncoded error matches neither grep.
+        codes="$(printf '%s' "$output" | grep -oE 'error [A-Za-z]+[0-9]+' | sed 's/^error //' | sort -u || true)"
+        unexpected="$(printf '%s' "$codes" | grep -viE "$EXPECTED_ERROR" || true)"
+
+        # NO CODE AT ALL is unexplained too, and not hypothetically: an MSBuild <Error> without a
+        # Code prints "error :", which is exactly what this file's own missing-declaration check
+        # emits. A rule that classifies by code must treat what it cannot classify as unexplained,
+        # or the one failure it was written beside would be the one it waves through.
+        [ -n "$codes" ] && [ -z "$unexpected" ] && continue
 
         {
             printf '%s\n' "${csproj#"$ROOT"/}"
-            printf '%s' "$output" | grep -oE 'error [A-Z]+[0-9]+.*' | sort -u | head -3 | sed 's/^/      /'
+            printf '%s' "$output" | grep -oE 'error ([A-Za-z]+[0-9]+)?.*' | sort -u | head -3 | sed 's/^/      /'
         } >> "$UNEXPLAINED"
     done
 }

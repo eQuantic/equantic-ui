@@ -63,6 +63,24 @@
     </ItemGroup>
 
     <!--
+      AND THE FILES MUST EXIST, which the item group above cannot say. An AdditionalFiles include
+      naming a file that is not there produces no item and no complaint, and the analyzer reports
+      NOTHING at all until it has one — so a new packable project under src/ compiles green with
+      its entire public surface undeclared, and every later change to that surface goes unnoticed
+      too. The instrument that was supposed to fail would simply never have started.
+
+      It is the same hole the release step refuses at (`ship`), a whole release later. This is that
+      refusal moved to the build that creates the project, where fixing it costs one command.
+      `scripts/public-api.sh update` creates the pair before it builds anything, so it remains the
+      bootstrap and is never blocked by this.
+    -->
+    <Target Name="EqRequireDeclaredPublicApi" BeforeTargets="CoreCompile"
+            Condition="'$(_EqDeclaresPublicApi)' == 'true'">
+        <Error Condition="!Exists('$(MSBuildProjectDirectory)/PublicAPI.Shipped.txt') OR !Exists('$(MSBuildProjectDirectory)/PublicAPI.Unshipped.txt')"
+               Text="$(MSBuildProjectName) ships an assembly, so its public API must be declared — but PublicAPI.Shipped.txt and/or PublicAPI.Unshipped.txt is missing beside the project. Without both, the public API analyzer reports nothing and the whole surface would ship undeclared. Run ./scripts/public-api.sh update, then read the diff it writes: that diff is the API review." />
+    </Target>
+
+    <!--
       Development helper target: clears NuGet cache for eQuantic packages
       Usage: dotnet msbuild -t:ClearEQuanticCache
     -->
