@@ -377,6 +377,24 @@ record of a release, the wiki's Upgrading page is the distillate.
   scope removed every cycle case stayed green, because a cycle exceeds any bound whether or not one
   level was counted. Asked with a FINITE chain now, at both edges.
 
+- **2026-09-22 · The first week of the board, reviewed**: 35 pull requests merged since the ledger
+  landed, two releases ([.55](https://github.com/eQuantic/equantic-ui/releases/tag/v0.2.0-preview.55),
+  [.56](https://github.com/eQuantic/equantic-ui/releases/tag/v0.2.0-preview.56)), the dispatch epic's
+  two features closed with the compiler holding what a regex held ([#161](https://github.com/eQuantic/equantic-ui/issues/161),
+  [#162](https://github.com/eQuantic/equantic-ui/issues/162)), the public surface declared per assembly
+  ([#280](https://github.com/eQuantic/equantic-ui/pull/280), which is [#173](https://github.com/eQuantic/equantic-ui/issues/173)
+  by the mechanism .NET has), and three rules written into `CLAUDE.md` by the sessions that broke them
+  (one type per file, no member survives to keep an old shape alive, the PR is not optional). Reviewed
+  against the briefs: no slice departed from the plan without measuring first, and three departures
+  corrected the plan. What the review found owed: four diagnostics on the docs page and none on the
+  wiki ([#283](https://github.com/eQuantic/equantic-ui/issues/283)), two findings the slices called
+  "worth an issue" that had none ([#284](https://github.com/eQuantic/equantic-ui/issues/284),
+  [#285](https://github.com/eQuantic/equantic-ui/issues/285)), seven issues on the board with no type
+  and no parent (typed, parented; the SSR-to-client seam is [#282](https://github.com/eQuantic/equantic-ui/issues/282)),
+  and the roadmap's phases and tracks with no issue at all — now the epic
+  [#288](https://github.com/eQuantic/equantic-ui/issues/288) with fourteen features, plus the desktop
+  and email remainders under [#198](https://github.com/eQuantic/equantic-ui/issues/198).
+
 ## Retired documents
 
 | document | what it was | where its substance lives now |
@@ -394,28 +412,31 @@ yet become wiki pages or stories ([#204](https://github.com/eQuantic/equantic-ui
 [#207](https://github.com/eQuantic/equantic-ui/issues/207)); the four track plans in flight are
 cited by code comments and by each other.
 
-## The board, as of 2026-09-15
+## The board, as of 2026-09-22
 
 Every issue on [project #11](https://github.com/orgs/eQuantic/projects/11), by parent. The board
-is the live view; this table is the snapshot the retirement above was made against. Closed items
-are struck through.
+is the live view; this snapshot is regenerated when the hierarchy changes shape. Closed items are
+struck through. Eight epics now: the audit's four, the parity gaps, the tracks in flight, the audit
+that continues, and — since 2026-09-22 — the roadmap ahead.
 
 - [#157](https://github.com/eQuantic/equantic-ui/issues/157) One vocabulary, one door per node *(Epic)*
-  - [#161](https://github.com/eQuantic/equantic-ui/issues/161) A visitor per dispatch over the vocabulary *(Feature)*
-    - [#177](https://github.com/eQuantic/equantic-ui/issues/177) S2 · Semantics.Walk becomes SemanticsVisitor *(User Story)*
-    - [#178](https://github.com/eQuantic/equantic-ui/issues/178) S3 · EmailRealizer and WalkText become two visitors with one refusal set *(User Story)*
-    - [#179](https://github.com/eQuantic/equantic-ui/issues/179) S7 · NodeKind generated for TypeScript, assertNever in the browser's switch *(User Story)*
-    - [#180](https://github.com/eQuantic/equantic-ui/issues/180) S4 · WebRealizer.LowerNodeKind becomes WebLoweringVisitor *(User Story)*
-    - [#181](https://github.com/eQuantic/equantic-ui/issues/181) S5 · LayoutEngine.MeasureCore becomes MeasureVisitor with MeasureState *(User Story)*
-    - [#182](https://github.com/eQuantic/equantic-ui/issues/182) S6 · PhotonRealizer.EmitNode becomes EmitVisitor *(User Story)*
-    - [#183](https://github.com/eQuantic/equantic-ui/issues/183) S8 · VocabularyCoverageTests is deleted *(User Story)*
-  - [#162](https://github.com/eQuantic/equantic-ui/issues/162) Node shapes: SingleChildNode, the intrinsic questions, VisualNode.cs split *(Feature)*
+  - ~~[#161](https://github.com/eQuantic/equantic-ui/issues/161) A visitor per dispatch over the vocabulary~~ *(Feature)*
+    - ~~[#177](https://github.com/eQuantic/equantic-ui/issues/177) S2 · Semantics.Walk becomes SemanticsVisitor~~ *(User Story)*
+    - ~~[#178](https://github.com/eQuantic/equantic-ui/issues/178) S3 · EmailRealizer and WalkText become two visitors with one refusal set~~ *(User Story)*
+    - ~~[#179](https://github.com/eQuantic/equantic-ui/issues/179) S7 · NodeKind generated for TypeScript, assertNever in the browser's switch~~ *(User Story)*
+    - ~~[#180](https://github.com/eQuantic/equantic-ui/issues/180) S4 · WebRealizer.LowerNodeKind becomes WebLoweringVisitor~~ *(User Story)*
+    - ~~[#181](https://github.com/eQuantic/equantic-ui/issues/181) S5 · LayoutEngine.MeasureCore becomes MeasureVisitor with MeasureState~~ *(User Story)*
+    - ~~[#182](https://github.com/eQuantic/equantic-ui/issues/182) S6 · PhotonRealizer.EmitNode becomes EmitVisitor~~ *(User Story)*
+    - ~~[#183](https://github.com/eQuantic/equantic-ui/issues/183) S8 · VocabularyCoverageTests is deleted~~ *(User Story)*
+  - ~~[#162](https://github.com/eQuantic/equantic-ui/issues/162) Node shapes: SingleChildNode, the intrinsic questions, VisualNode.cs split~~ *(Feature)*
   - [#132](https://github.com/eQuantic/equantic-ui/issues/132) One transpiled set in the runtime, not two *(Feature)*
     - ~~[#184](https://github.com/eQuantic/equantic-ui/issues/184) Fold ButtonStyles into Button over Sizing; no generator entry, no runtime export~~ *(User Story)*
   - [#163](https://github.com/eQuantic/equantic-ui/issues/163) The vocabulary's TypeScript twins are emitted by eqc *(Feature)*
   - [#164](https://github.com/eQuantic/equantic-ui/issues/164) The transpiler's fences hold on every path *(Feature)*
     - [#146](https://github.com/eQuantic/equantic-ui/issues/146) 🐛 fix: a float that leaves a method is not rounded, so the twin keeps a double *(Bug)*
     - [#150](https://github.com/eQuantic/equantic-ui/issues/150) The no-model fallback has no route for [RuntimeProvided] types outside Primitives *(Task)*
+    - [#253](https://github.com/eQuantic/equantic-ui/issues/253) ✅ test: eqc's own module list is unguarded, and a generator's stale output survives its configuration *(Bug)*
+    - [#281](https://github.com/eQuantic/equantic-ui/issues/281) ♻️ refactor: a vocabulary type's implicit conversion should cross the seam *(Task)*
 - [#158](https://github.com/eQuantic/equantic-ui/issues/158) Primitives carries only the vocabulary *(Epic)*
   - [#165](https://github.com/eQuantic/equantic-ui/issues/165) The Primitives diet *(Feature)*
     - [#185](https://github.com/eQuantic/equantic-ui/issues/185) Decide where the Code and Sheet editor models live *(User Story)*
@@ -426,7 +447,7 @@ are struck through.
     - ~~[#131](https://github.com/eQuantic/equantic-ui/issues/131) Primitives/Nodes holds nine files that are not nodes~~ *(Task)*
     - [#133](https://github.com/eQuantic/equantic-ui/issues/133) ImageOptimizationState is written by UseImageOptimization and read by nothing *(Bug)*
   - [#166](https://github.com/eQuantic/equantic-ui/issues/166) Geometry and semantics live in the vocabulary *(Feature)*
-    - [#187](https://github.com/eQuantic/equantic-ui/issues/187) A container semantic role unmutes Navigable and Overlay on Photon *(User Story)*
+    - ~~[#187](https://github.com/eQuantic/equantic-ui/issues/187) A container semantic role unmutes Navigable and Overlay on Photon~~ *(User Story)*
   - [#167](https://github.com/eQuantic/equantic-ui/issues/167) The adapter's shadow leaves the tree *(Feature)*
     - [#214](https://github.com/eQuantic/equantic-ui/issues/214) Delete the compile-time evaluator and the documents that describe it, and the two plans that cite a roadmap that is not in docs/ *(User Story)*
 - [#159](https://github.com/eQuantic/equantic-ui/issues/159) Hosts and realizers hold what Flutter splits *(Epic)*
@@ -435,13 +456,24 @@ are struck through.
   - [#170](https://github.com/eQuantic/equantic-ui/issues/170) The truncation mark on DirectWrite *(Feature)*
   - [#171](https://github.com/eQuantic/equantic-ui/issues/171) The server writes CodeSurface *(Feature)*
   - [#172](https://github.com/eQuantic/equantic-ui/issues/172) A write-once page reaches data on both targets *(Feature)*
+  - [#282](https://github.com/eQuantic/equantic-ui/issues/282) The SSR-to-client seam: one identity, one payload, one mount *(Feature)*
+    - [#278](https://github.com/eQuantic/equantic-ui/issues/278) 🐛 fix: the hydration key names a component by its SIMPLE name, so two `Row`s share a net *(Bug)*
+    - [#279](https://github.com/eQuantic/equantic-ui/issues/279) 🐛 fix: an escape-hatch page is served but never mounted — it has no client half *(Bug)*
 - [#160](https://github.com/eQuantic/equantic-ui/issues/160) Instruments that fail, not warn *(Epic)*
-  - [#173](https://github.com/eQuantic/equantic-ui/issues/173) A public-surface baseline per shipped assembly *(Feature)*
+  - ~~[#173](https://github.com/eQuantic/equantic-ui/issues/173) A public-surface baseline per shipped assembly~~ *(Feature)*
   - [#174](https://github.com/eQuantic/equantic-ui/issues/174) Culture fixtures assert the mapping, never the host *(Feature)*
     - [#147](https://github.com/eQuantic/equantic-ui/issues/147) 🐛 fix: two pins compare the host's ICU, not this repository's code *(Task)*
     - ~~[#188](https://github.com/eQuantic/equantic-ui/issues/188) Delete the unused CultureDataFactAttribute~~ *(Task)*
   - [#175](https://github.com/eQuantic/equantic-ui/issues/175) Sizing generated from the handoff's tokens.json *(Feature)*
-  - [#176](https://github.com/eQuantic/equantic-ui/issues/176) Release notes are written from the public-surface diff *(Feature)*
+  - ~~[#176](https://github.com/eQuantic/equantic-ui/issues/176) Release notes are written from the public-surface diff~~ *(Feature)*
+  - [#217](https://github.com/eQuantic/equantic-ui/issues/217) The wiki's Diagnostics page is held to docs/DIAGNOSTICS.md by a test *(Task)*
+  - ~~[#220](https://github.com/eQuantic/equantic-ui/issues/220) One type per file, with the exceptions named rather than assumed~~ *(-)*
+  - [#273](https://github.com/eQuantic/equantic-ui/issues/273) ✅ test: nothing compares the Server's committed bundle against a fresh one, so it drifts silently *(Bug)*
+  - [#277](https://github.com/eQuantic/equantic-ui/issues/277) ✅ test: boot.ts has no navigation harness, so the SPA path's state and metadata are unpinned *(Task)*
+  - [#283](https://github.com/eQuantic/equantic-ui/issues/283) Wiki backfill: EQ2010, EQ2011, EQ2012 and EQ2111 rows, and the component-over-your-own-base section (EN + pt-BR) *(Task)*
+  - [#285](https://github.com/eQuantic/equantic-ui/issues/285) The stand-in text measurer gives every inter-word space zero width in a rich paragraph, so its goldens are narrower than any shell draws *(Bug)*
+  - [#286](https://github.com/eQuantic/equantic-ui/issues/286) Decide the headless-browser instrument: geometry and hit-testing measured in a real browser, not inferred from markup *(User Story)*
+  - [#287](https://github.com/eQuantic/equantic-ui/issues/287) Require the CI status checks in the ruleset on main *(Task)*
 - [#190](https://github.com/eQuantic/equantic-ui/issues/190) Flutter parity: the gaps that are work *(Epic)*
   - [#191](https://github.com/eQuantic/equantic-ui/issues/191) Layout protocol: LayoutBuilder, authorable constraints, custom layout delegates, a sliver contract *(Feature)*
   - [#192](https://github.com/eQuantic/equantic-ui/issues/192) State primitives: what stands where Flutter has ValueNotifier, ChangeNotifier and ListenableBuilder *(Feature)*
@@ -458,15 +490,42 @@ are struck through.
   - [#203](https://github.com/eQuantic/equantic-ui/issues/203) Style semantics: the fences to revisit when a screen demands them *(Feature)*
   - [#204](https://github.com/eQuantic/equantic-ui/issues/204) Photon engine: the open questions the plan still lists *(Feature)*
     - [#205](https://github.com/eQuantic/equantic-ui/issues/205) Strike the codename question in NATIVE-GPU-ENGINE-PLAN.md: Photon shipped under that name *(Task)*
+    - [#284](https://github.com/eQuantic/equantic-ui/issues/284) Decide the Photon frame allocation budget: an eight-layer overlay frame allocates 78.1 KB against the 74 KB ceiling *(User Story)*
   - [#206](https://github.com/eQuantic/equantic-ui/issues/206) i18n: the fences of v1 to revisit — RTL and script coverage, three-form plurals, per-page catalogs *(Feature)*
   - [#207](https://github.com/eQuantic/equantic-ui/issues/207) Handoff fidelity: verify and fix the visible deviations *(Feature)*
   - [#215](https://github.com/eQuantic/equantic-ui/issues/215) Visual editor: the click-to-select tiers (Literal, Derived, Foreign) *(Feature)*
+  - [#307](https://github.com/eQuantic/equantic-ui/issues/307) Desktop (Track W): the workstreams the plan still owes *(Feature)*
+    - [#308](https://github.com/eQuantic/equantic-ui/issues/308) W4 · The macOS desktop surface: menus, tray, notifications, and every seam behind a capability *(User Story)*
+    - [#309](https://github.com/eQuantic/equantic-ui/issues/309) W5 · The one proof packaging still owes: a notarized, stapled bundle from dotnet publish in CI, installed and relaunched by the updater *(User Story)*
+    - [#310](https://github.com/eQuantic/equantic-ui/issues/310) W6 · Windows: UI Automation over the one semantics tree *(User Story)*
+    - [#311](https://github.com/eQuantic/equantic-ui/issues/311) W6 · Linux shell — after M5, by decision *(User Story)*
+    - [#312](https://github.com/eQuantic/equantic-ui/issues/312) W7 · The developer loop on simulators and emulators: one command per target, profiles the IDEs run, redeploy-on-save *(User Story)*
+  - [#313](https://github.com/eQuantic/equantic-ui/issues/313) Email (Track M): the real-client matrix and HTML pins *(Feature)*
 - [#208](https://github.com/eQuantic/equantic-ui/issues/208) The audit continues *(Epic)*
   - [#209](https://github.com/eQuantic/equantic-ui/issues/209) Measure the compiler's internals beyond file sizes *(Task)*
   - [#210](https://github.com/eQuantic/equantic-ui/issues/210) Measure the shells' own platform code *(Task)*
   - [#211](https://github.com/eQuantic/equantic-ui/issues/211) Measure the design host's DesignSession *(Task)*
   - [#212](https://github.com/eQuantic/equantic-ui/issues/212) Measure the Server's endpoint surface *(Task)*
   - [#213](https://github.com/eQuantic/equantic-ui/issues/213) Measure the TypeScript runtime's core/ and dom/ beyond the twins *(Task)*
+- [#288](https://github.com/eQuantic/equantic-ui/issues/288) The roadmap ahead: phases and tracks not yet on the board *(Epic)*
+  - [#289](https://github.com/eQuantic/equantic-ui/issues/289) Phase 7 · Global state: signals and context beyond component-local SetState *(Feature)*
+  - [#290](https://github.com/eQuantic/equantic-ui/issues/290) Performance budgets enforced in CI: the web bundle and the Photon frame *(Feature)*
+  - [#291](https://github.com/eQuantic/equantic-ui/issues/291) Real-time server push: [ServerEvent] over SignalR *(Feature)*
+  - [#292](https://github.com/eQuantic/equantic-ui/issues/292) A typed programmatic Navigator: routes as types, not strings *(Feature)*
+  - [#293](https://github.com/eQuantic/equantic-ui/issues/293) Debugging C# in the browser: statement-level source maps and a stack-trace smoke test *(Feature)*
+  - [#294](https://github.com/eQuantic/equantic-ui/issues/294) A component test harness for app authors, and the variant matrix for every shipped component *(Feature)*
+  - [#295](https://github.com/eQuantic/equantic-ui/issues/295) Track I · CodeEditor intelligence: completions, signature help and live diagnostics *(Feature)*
+    - [#296](https://github.com/eQuantic/equantic-ui/issues/296) I1 · The completion model in Primitives: items, selection, the span a commit replaces *(User Story)*
+    - [#297](https://github.com/eQuantic/equantic-ui/issues/297) I2 · Keys and the list in Components, placed at the caret from the editor's own metrics *(User Story)*
+    - [#298](https://github.com/eQuantic/equantic-ui/issues/298) I3 · Signature help on `(`: the parameter panel over I1's plumbing and I2's placement *(User Story)*
+    - [#299](https://github.com/eQuantic/equantic-ui/issues/299) Live diagnostics: squiggles as you type, without pressing Run *(User Story)*
+  - [#300](https://github.com/eQuantic/equantic-ui/issues/300) Track F · F2 Wear OS: a round safe area, a size class below Compact, rotary input, swipe-to-dismiss *(Feature)*
+  - [#301](https://github.com/eQuantic/equantic-ui/issues/301) Track F · F3 Android TV: the leanback manifest, an overscan-safe area, the 10-foot type scale, a focus ring readable from three metres *(Feature)*
+  - [#302](https://github.com/eQuantic/equantic-ui/issues/302) Image decoding on the Android shell *(Feature)*
+  - [#303](https://github.com/eQuantic/equantic-ui/issues/303) ListView with variable item extents: incremental measurement beyond the fixed-extent v1 *(Feature)*
+  - [#304](https://github.com/eQuantic/equantic-ui/issues/304) Spreadsheet beyond v1: two-dimensional scroll, a formula engine, per-cell formatting, merges, frozen panes *(Feature)*
+  - [#305](https://github.com/eQuantic/equantic-ui/issues/305) Inline marked-text rendering in code surfaces during IME composition *(Feature)*
+  - [#306](https://github.com/eQuantic/equantic-ui/issues/306) A formal security hardening review, and CSP guidance the SDK writes for the developer *(Feature)*
 
 ## How to add an entry
 
