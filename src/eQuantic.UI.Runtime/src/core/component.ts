@@ -94,7 +94,32 @@ export function adoptServerStateFor(target: object, key: string): boolean {
  * `adopt` is false once the root is mounted: the payload is the first render's answer, and applying
  * it again would undo whatever the page has done since.
  */
+let nestedRenders = 0;
+
+/**
+ * Runs a NESTED render — a component that renders itself from inside a walk already in progress —
+ * without letting it restart the count.
+ *
+ * A web component composed in an abstract tree carries no `nodeKind` and renders itself, and that
+ * `render()` is the same one a page root calls. Left alone it reset the ordinal map mid-walk, so
+ * everything after it started from `#0` again: with two same-type prefetching children, both would
+ * claim `Type#0` and the second would be handed the first one's data. Not a missing value — the
+ * WRONG one, which is the failure this key was given a type name to prevent.
+ */
+export function withNestedWalk<T>(run: () => T): T {
+  nestedRenders++;
+  try {
+    return run();
+  } finally {
+    nestedRenders--;
+  }
+}
+
 export function beginComponentWalk(root: object, adopt: boolean): void {
+  // A nested render JOINS the walk in progress. It claims its own key through whichever path
+  // reached it, and the count it would have restarted belongs to the root above it.
+  if (nestedRenders > 0) return;
+
   resetComponentKeys();
   const rootKey = nextComponentKey((root.constructor as { name?: string }).name ?? '');
   if (adopt) adoptServerStateFor(root, rootKey);

@@ -115,6 +115,13 @@ public sealed class ComponentExpansionScope
             // A null is written like any other value, because CLEARING a non-null default is
             // something a prefetch legitimately does and skipping it would silently keep the
             // default. The type check still stands for anything that is not null.
+            //
+            // A Nullable<T> needs nothing special here, which is worth stating because it looks as
+            // though it should: GetValue really does box a non-null `long?` as a `System.Int64`,
+            // but `IsInstanceOfType` special-cases Nullable and answers True for that box.
+            // Measured — `typeof(long?).IsInstanceOfType(42L)` is True — so unwrapping the
+            // underlying type here would be a line that reads like a fix for a defect there is no
+            // evidence of.
             if (value is not null && !field.FieldType.IsInstanceOfType(value)) continue;
             field.SetValue(component, value);
         }

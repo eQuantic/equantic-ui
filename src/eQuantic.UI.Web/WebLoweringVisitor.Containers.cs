@@ -16,14 +16,25 @@ internal sealed partial class WebLoweringVisitor
     /// `Positioned` returned by one still positions. Only for the positioning decision — the node
     /// that comes back is lowered normally.
     /// </summary>
-    private VisualNode ResolveForPositioning(VisualNode child) =>
-        child is UiComponent component
-            // Through the boundary's bound rather than a hop count of this method's own: the loop
-            // it replaces stopped ITSELF spinning after eight hops and then handed a still
-            // unresolved component back, which `LowerStack` lowered straight into the same chain.
-            ? component.ExpandContained(_context, this,
-                static (built, visitor) => visitor.ResolveForPositioning(built))
-            : child;
+    private VisualNode ResolveForPositioning(VisualNode child)
+    {
+        if (child is not UiComponent component) return child;
+
+        // NAMED HERE TOO, because this is the one place a component is expanded WITHOUT the
+        // ordinary component visit: the stack has to know whether what the child builds is a
+        // `Positioned` before it can place it, so it expands the child itself and lowers the
+        // result. The server's traversal therefore did not see a prefetching component inside a
+        // Stack at all — no load, no payload entry, and no diagnosis, on a container nobody would
+        // think twice about using. Both sides skipped it identically, so nothing drifted, which is
+        // exactly why it would never have been noticed.
+        ComponentExpansionScope.Ambient?.Enter(component);
+
+        // Through the boundary's bound rather than a hop count of this method's own: the loop
+        // it replaces stopped ITSELF spinning after eight hops and then handed a still
+        // unresolved component back, which `LowerStack` lowered straight into the same chain.
+        return component.ExpandContained(_context, this,
+            static (built, visitor) => visitor.ResolveForPositioning(built));
+    }
 
     /// <summary>
     /// Spec A3 lowering: single-cell CSS grid — every NON-positioned child sits in cell 1/1

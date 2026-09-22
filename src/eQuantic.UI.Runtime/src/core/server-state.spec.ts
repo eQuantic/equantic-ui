@@ -1,5 +1,11 @@
 import { describe, it, expect, afterEach, beforeEach } from 'vitest';
-import { adoptServerStateFor, beginComponentWalk, nextComponentKey, resetComponentKeys } from './component';
+import {
+  adoptServerStateFor,
+  beginComponentWalk,
+  nextComponentKey,
+  resetComponentKeys,
+  withNestedWalk,
+} from './component';
 
 interface Payload {
   __INITIAL_STATE__?: Record<string, Record<string, unknown>>;
@@ -189,5 +195,35 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     }
     beginComponentWalk(new HomePage2(), false);
     expect(nextComponentKey('HomePage2')).toBe('HomePage2#1');
+  });
+
+  it('a NESTED render joins the walk instead of restarting it', () => {
+    // A web component composed in an abstract tree carries no nodeKind and renders itself — and
+    // that render() is the same method a page root calls. Left alone it reset the count mid-walk,
+    // so with two same-type prefetching children both claimed Type#0 and the second was handed the
+    // FIRST one's data. A wrong value, not a missing one.
+    class StatsHeader {
+      _count = 0;
+    }
+    win.__INITIAL_STATE__ = {
+      'HomePage#0': { _downloads: 1 },
+      'StatsHeader#0': { _count: 10 },
+      'StatsHeader#1': { _count: 20 },
+    };
+
+    const page = new HomePage();
+    beginComponentWalk(page, true);
+
+    const first = new StatsHeader();
+    adoptServerStateFor(first, nextComponentKey('StatsHeader'));
+
+    // the foreign-render seam: something nested calls the root's own entry point
+    withNestedWalk(() => beginComponentWalk(new HomePage(), false));
+
+    const second = new StatsHeader();
+    adoptServerStateFor(second, nextComponentKey('StatsHeader'));
+
+    expect(first._count).toBe(10);
+    expect(second._count).toBe(20);
   });
 });

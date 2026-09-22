@@ -11,7 +11,7 @@
  *   class string per element; only custom-property tails stay inline.
  */
 
-import { adoptServerStateFor, nextComponentKey } from '../core/component';
+import { adoptServerStateFor, nextComponentKey, withNestedWalk } from '../core/component';
 import { assertNever } from '../utils/assert-never';
 import { round as dotnetRound } from '../utils/dotnet-math';
 import { PINNED_MARKER } from './markers';
@@ -335,7 +335,9 @@ function lowerNodeKind(
   // which is the truth about these objects, rather than for a case the union does not have.
   const foreign = node as { nodeKind?: string; render?: () => HtmlNode };
   if (foreign.nodeKind === undefined) {
-    return typeof foreign.render === 'function' ? foreign.render() : null;
+    // INSIDE THE WALK, not starting one: this render is the same method a page root calls, and it
+    // would otherwise restart the component count from here down.
+    return typeof foreign.render === 'function' ? withNestedWalk(() => foreign.render!()) : null;
   }
 
   switch (node.nodeKind) {
@@ -3246,6 +3248,15 @@ function resolveStackChild(
     const resolved = (
       pass ? pass.store.reconcile(path, node, pass.invalidator) : node
     ) as ComponentNode;
+    // NAMED HERE TOO, matching the C# stack path. A stack resolves a component child itself — it
+    // has to know whether what the child builds is a `Positioned` before it can place it — so the
+    // ordinary component branch above never runs for it. Without this the client would not consume
+    // the key the server just wrote for it, and the two walks would count differently from here on.
+    adoptServerStateFor(
+      resolved,
+      nextComponentKey((resolved as { constructor?: { name?: string } }).constructor?.name ?? ''),
+    );
+
     try {
       node = resolved.build(context.componentContext) as VisualNodeValue;
     } catch (error) {

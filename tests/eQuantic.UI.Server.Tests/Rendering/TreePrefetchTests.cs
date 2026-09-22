@@ -268,6 +268,11 @@ public class TreePrefetchTests
     {
         private Mode _mode = Mode.Idle;
         private string? _cleared = "still here";
+        // A NULLABLE, carried here as regression cover rather than as a fix: reflection really does
+        // box a non-null long? as a System.Int64, but IsInstanceOfType special-cases Nullable and
+        // accepts it (measured). This case never failed — it exists so a stricter type check added
+        // later cannot quietly start dropping every nullable a prefetch loads.
+        private long? _count;
         public string Loaded { get; set; } = "(not loaded)";
 
         [ServerOnly]
@@ -275,12 +280,13 @@ public class TreePrefetchTests
         {
             _mode = Mode.Ready;
             _cleared = null;
+            _count = 42;
             Loaded = "loaded";
             return Task.CompletedTask;
         }
 
         public override VisualNode Build(ComponentContext context) =>
-            new Text($"{_mode}|{_cleared ?? "cleared"}|{Loaded}", TypeRole.Heading);
+            new Text($"{_mode}|{_cleared ?? "cleared"}|{Loaded}|n={_count}", TypeRole.Heading);
     }
 
     [Page("/tree-prefetch-shapes")]
@@ -323,6 +329,8 @@ public class TreePrefetchTests
         result.Html.Should().Contain("Ready", "an enum survives the restore");
         result.Html.Should().Contain("cleared", "a prefetch that CLEARS a default must not get it back");
         result.Html.Should().Contain("loaded", "an auto-property survives the restore");
+        result.Html.Should().Contain("n=42", "a nullable survives the restore — regression cover for a "
+            + "stricter type check, not a defect that was ever measured here");
     }
 
     private static readonly List<string> Order = [];
@@ -449,5 +457,45 @@ public class TreePrefetchTests
                 $"the payload says {entry.Name} is '{says}', so the markup beside it must say the "
                 + "same — a page whose words and state disagree is the defect this change removes");
         }
+    }
+
+    /// <summary>A Stack is an ordinary container, and a prefetching component sits in one.</summary>
+    [Page("/tree-prefetch-stack")]
+    private sealed class PageWithAStack : Primitives.StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context)
+        {
+            var stack = new Stack();
+            stack.Add(new StatsHeader());
+            return stack;
+        }
+    }
+
+    /// <summary>
+    /// A component inside a STACK is discovered like any other.
+    ///
+    /// <para>
+    /// The stack resolves a component child itself — <c>ResolveForPositioning</c> calls
+    /// <c>ExpandContained</c> directly, because it has to know whether what the component builds is
+    /// a <c>Positioned</c> before it can place it — so the realizer's ordinary component visit never
+    /// runs for it. The traversal therefore did not see it at all: no prefetch, no payload entry, no
+    /// diagnosis, on a container nobody would think twice about using.
+    /// </para>
+    ///
+    /// <para>
+    /// The two sides skipped it identically, so the keys stayed aligned and nothing drifted — which
+    /// is exactly why it would never have been noticed. It is a coverage hole, not a mismatch.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public async Task AComponentInsideAStack_IsDiscoveredLikeAnyOther()
+    {
+        var context = RequestWith(out var counts);
+
+        var result = await CreateService().RenderPageAsync(nameof(PageWithAStack), context);
+
+        result.Success.Should().BeTrue(result.Error);
+        counts.Calls.Should().BeGreaterThan(0, "a Stack is a container, not a place data stops arriving");
+        result.Html.Should().Contain("Downloads: 675617");
     }
 }
