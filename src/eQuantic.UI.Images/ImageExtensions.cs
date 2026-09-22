@@ -34,8 +34,8 @@ public static class ImageExtensions
     }
 
     /// <summary>
-    /// Maps the image optimization endpoint and enables global image optimization.
-    /// Call after UseStaticFiles() and before MapUI().
+    /// Maps the image optimization endpoint, and that is the whole of it — there is no global
+    /// state to switch on. Call after UseStaticFiles() and before MapUI().
     /// </summary>
     /// <param name="app">The web application.</param>
     /// <returns>The web application for chaining.</returns>
@@ -50,8 +50,8 @@ public static class ImageExtensions
     }
 
     /// <summary>
-    /// Enables server-side image optimization via UIOptions fluent API.
-    /// Registers services and the optimization endpoint mapping.
+    /// Registers the optimizer's services and maps its endpoint, through the UIOptions fluent
+    /// surface. Nothing else turns on: the endpoint reads its options per request.
     /// </summary>
     public static UIOptions UseImageOptimization(
         this UIOptions options, 
