@@ -22,6 +22,9 @@ cd "$ROOT"
 # would be a second place the rule lives, and the two would drift.
 projects() {
     for csproj in src/*/[!.]*.csproj; do
+        # An unmatched glob is the literal pattern, and every caller would then act on a path that
+        # does not exist — creating "src/*/PublicAPI.Shipped.txt" rather than reporting nothing.
+        [ -f "$csproj" ] || continue
         grep -q "<IsPackable>false</IsPackable>" "$csproj" && continue
         grep -q "<IncludeBuildOutput>false</IncludeBuildOutput>" "$csproj" && continue
         printf '%s\n' "$csproj"
@@ -119,6 +122,24 @@ rebuild_all() {
     done
 }
 
+# A DERIVED PROJECT WITH NO DECLARATION FILES is a new project, and the analyzer's answer to it is
+# RS0016 on every symbol it has — loud, but not fixable by this script, which would find no file to
+# write and skip it in silence. So the pair is created empty first: the same run that reports the
+# surface then declares it, and adding a project stays one command rather than two plus a tip.
+ensure_declaration_files() {
+    local csproj dir file created=0
+    for csproj in $(projects); do
+        dir="$(dirname "$csproj")"
+        for file in "$dir/PublicAPI.Shipped.txt" "$dir/PublicAPI.Unshipped.txt"; do
+            [ -f "$file" ] && continue
+            printf '#nullable enable\n' > "$file"
+            echo "  created ${file#"$ROOT"/}"
+            created=$((created + 1))
+        done
+    done
+    [ "$created" -eq 0 ] || echo "  $created declaration file(s) created"
+}
+
 # UNTIL IT SETTLES, because declaring a type reveals its members: the analyzer reports the TYPE
 # first and its constructors, properties and operators only once the type itself is declared.
 # Measured on this tree from the .55 surface — 111 entries, then 3, then 0 — so a single pass
@@ -126,6 +147,7 @@ rebuild_all() {
 # running it again.
 update() {
     local round=0 retired declared
+    ensure_declaration_files
     while :; do
         round=$((round + 1))
         echo "Round $round"

@@ -76,7 +76,27 @@ Three rules decide most reviews here; they are in [CLAUDE.md](CLAUDE.md) at leng
 We are in preview: **break contracts freely and leave nothing behind.** Finish the refactor, delete
 what stopped being used, and write the migration note — every breaking change goes into the release
 notes (the annotated tag's message) and the wiki's
-[Upgrading](https://github.com/eQuantic/equantic-ui/wiki/Upgrading) page.
+[Upgrading](https://github.com/eQuantic/equantic-ui/wiki/Upgrading) page, in both languages.
+
+**You do not have to remember which contracts you broke — the build does.** Every project that
+ships an assembly declares its public surface in `PublicAPI.Shipped.txt`, and
+[PublicApiAnalyzers](https://github.com/dotnet/roslyn/blob/main/src/RoslynAnalyzers/PublicApiAnalyzers/PublicApiAnalyzers.Help.md)
+fails your build when what you wrote no longer matches it: RS0016 names a signature that appeared,
+RS0017 one that went. After changing a public signature on purpose, declare it:
+
+```bash
+./scripts/public-api.sh update
+```
+
+It reads both diagnostics out of the build and writes `PublicAPI.Unshipped.txt` — an addition as
+itself, a retirement as `*REMOVED*<entry>`. **Read that diff before committing it: it is the API
+review**, and a line you did not mean to add is a public surface you did not mean to ship.
+
+At a release `./scripts/public-api.sh ship` folds Unshipped into Shipped, and the `*REMOVED*` lines
+it cancels ARE the release's list of breaks — with
+`git diff v<previous>..v<this> -- '**/PublicAPI.Shipped.txt'` as the full change of surface. The
+analyzer says what moved; the migration line is still yours to write, from what an app upgrading
+actually met.
 
 ## Commits and pull requests
 

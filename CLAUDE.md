@@ -619,6 +619,26 @@ release is Edgar's call, and a version number in the tree that nobody released i
 (Do not quote the current version here; it changes every release and a stale number in the docs is
 how a reader is misled — read `Directory.Build.props`.)
 
+**The release's list of BREAKS is not written from memory — the build already has it.** Every
+project that ships an assembly declares its public surface in `PublicAPI.Shipped.txt`, and
+`Microsoft.CodeAnalysis.PublicApiAnalyzers` fails the build of any change that is not declared:
+RS0016 names a signature that appeared, RS0017 one that went. So the third step of a release, after
+the bump and before the tag, is:
+
+```bash
+./scripts/public-api.sh ship
+```
+
+which folds each project's `PublicAPI.Unshipped.txt` into its `Shipped.txt` — an addition moves
+across, a `*REMOVED*` line cancels the entry it names. THOSE `*REMOVED*` LINES ARE THE BREAKS, and
+`git diff v<previous>..v<this> -- '**/PublicAPI.Shipped.txt'` is the whole change of surface,
+retirements and additions together. Copy them into the annotated tag's message and the wiki's
+[Upgrading](https://github.com/eQuantic/equantic-ui/wiki/Upgrading) page (both languages); write
+the migration line from what an app upgrading actually met, because the analyzer says WHAT moved
+and never what to write instead. A break missing from the notes is now a build that failed and was
+made to pass without reading the diff — `./scripts/public-api.sh update` prints
+"Read the diff before committing it — that IS the API review" for exactly that reason.
+
 ## Compiler Boundaries (Server vs Client)
 
 **Client Components (StatefulComponent/StatelessComponent):**
