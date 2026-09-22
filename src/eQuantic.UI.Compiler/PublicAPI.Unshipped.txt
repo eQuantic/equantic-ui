@@ -1,17 +1,1 @@
 #nullable enable
-eQuantic.UI.Compiler.CodeGen.ComponentBaseKind
-eQuantic.UI.Compiler.CodeGen.ComponentBaseKind.None = 0 -> eQuantic.UI.Compiler.CodeGen.ComponentBaseKind
-eQuantic.UI.Compiler.CodeGen.ComponentBaseKind.StatefulComponent = 1 -> eQuantic.UI.Compiler.CodeGen.ComponentBaseKind
-eQuantic.UI.Compiler.CodeGen.ComponentBaseKind.StatelessComponent = 2 -> eQuantic.UI.Compiler.CodeGen.ComponentBaseKind
-eQuantic.UI.Compiler.CodeGen.ComponentBaseKind.HtmlElement = 3 -> eQuantic.UI.Compiler.CodeGen.ComponentBaseKind
-eQuantic.UI.Compiler.CodeGen.ComponentBaseKind.ComponentState = 4 -> eQuantic.UI.Compiler.CodeGen.ComponentBaseKind
-static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.IsRuntimeProvided(this Microsoft.CodeAnalysis.INamedTypeSymbol! type) -> bool
-static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.ResolveComponentBase(this Microsoft.CodeAnalysis.ITypeSymbol? type) -> eQuantic.UI.Compiler.CodeGen.ComponentBaseKind
-eQuantic.UI.Compiler.Models.MethodDefinition.IsOverride.get -> bool
-eQuantic.UI.Compiler.Models.MethodDefinition.IsOverride.set -> void
-eQuantic.UI.Compiler.Models.ComponentDefinition.BuildComesFromTheBase.get -> bool
-eQuantic.UI.Compiler.Models.ComponentDefinition.BuildComesFromTheBase.set -> void
-static eQuantic.UI.Compiler.Services.ProjectCompilationHelper.GetCompilationUnits(System.Collections.Generic.IReadOnlyList<string!>! sourceDirectories, string? generatedDirectory) -> System.Collections.Generic.IEnumerable<(string! Directory, string! File, bool IsGenerated)>!
-static eQuantic.UI.Compiler.Services.ShadowedRuntimeMembers.All.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyCollection<string!>!>!
-static eQuantic.UI.Compiler.Services.ShadowedRuntimeMembers.Check(eQuantic.UI.Compiler.Models.ComponentDefinition! component, Microsoft.CodeAnalysis.SemanticModel? model = null) -> System.Collections.Generic.List<eQuantic.UI.Compiler.CompilationError!>!
-eQuantic.UI.Compiler.Services.ShadowedRuntimeMembers

@@ -1,12 +1,1 @@
 #nullable enable
-*REMOVED*eQuantic.UI.Images.ImageOptimizationState
-*REMOVED*static eQuantic.UI.Images.ImageOptimizationState.AllowedWidths.get -> int[]!
-*REMOVED*static eQuantic.UI.Images.ImageOptimizationState.DefaultQuality.get -> int
-*REMOVED*static eQuantic.UI.Images.ImageOptimizationState.DefaultQuality.set -> void
-*REMOVED*static eQuantic.UI.Images.ImageOptimizationState.DeviceSizes.get -> int[]!
-*REMOVED*static eQuantic.UI.Images.ImageOptimizationState.DeviceSizes.set -> void
-*REMOVED*static eQuantic.UI.Images.ImageOptimizationState.ImageSizes.get -> int[]!
-*REMOVED*static eQuantic.UI.Images.ImageOptimizationState.ImageSizes.set -> void
-*REMOVED*static eQuantic.UI.Images.ImageOptimizationState.IsEnabled.get -> bool
-*REMOVED*static eQuantic.UI.Images.ImageOptimizationState.IsEnabled.set -> void
-*REMOVED*static eQuantic.UI.Images.ImageOptimizationState.SnapToAllowed(int width) -> int

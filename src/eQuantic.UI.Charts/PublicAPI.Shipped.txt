@@ -137,9 +137,9 @@ static eQuantic.UI.Charts.CategoryAxis.operator ==(eQuantic.UI.Charts.CategoryAx
 static eQuantic.UI.Charts.ChartSeries.operator !=(eQuantic.UI.Charts.ChartSeries? left, eQuantic.UI.Charts.ChartSeries? right) -> bool
 static eQuantic.UI.Charts.ChartSeries.operator ==(eQuantic.UI.Charts.ChartSeries? left, eQuantic.UI.Charts.ChartSeries? right) -> bool
 static eQuantic.UI.Charts.ChartsUI.BarChart(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Charts.ChartSeries!>! series, eQuantic.UI.Charts.CategoryAxis! categories, eQuantic.UI.Charts.ValueAxis? values = null, eQuantic.UI.Charts.BarLayout layout = eQuantic.UI.Charts.BarLayout.Grouped, eQuantic.UI.Charts.ChartOrientation orientation = eQuantic.UI.Charts.ChartOrientation.Vertical, string? title = null, string? subtitle = null, float plotHeight = 240) -> eQuantic.UI.Charts.BarChart!
-static eQuantic.UI.Charts.ChartsUI.CategoryAxis(System.Collections.Generic.IReadOnlyList<string!>! categories, string? title = null) -> eQuantic.UI.Charts.CategoryAxis!
-static eQuantic.UI.Charts.ChartsUI.ChartSeries(string! name, System.Collections.Generic.IReadOnlyList<double>! values, int slot = -1) -> eQuantic.UI.Charts.ChartSeries!
-static eQuantic.UI.Charts.ChartsUI.ValueAxis(string? title = null, double? min = null, double? max = null, string! format = "N0", int ticks = 5) -> eQuantic.UI.Charts.ValueAxis!
+static eQuantic.UI.Charts.ChartsUI.CategoryAxis(System.Collections.Generic.IReadOnlyList<string!>! Categories, string? Title = null) -> eQuantic.UI.Charts.CategoryAxis!
+static eQuantic.UI.Charts.ChartsUI.ChartSeries(string! Name, System.Collections.Generic.IReadOnlyList<double>! Values, int Slot = -1) -> eQuantic.UI.Charts.ChartSeries!
+static eQuantic.UI.Charts.ChartsUI.ValueAxis(string? Title = null, double? Min = null, double? Max = null, string! Format = "N0", int Ticks = 5) -> eQuantic.UI.Charts.ValueAxis!
 static eQuantic.UI.Charts.ValueAxis.operator !=(eQuantic.UI.Charts.ValueAxis? left, eQuantic.UI.Charts.ValueAxis? right) -> bool
 static eQuantic.UI.Charts.ValueAxis.operator ==(eQuantic.UI.Charts.ValueAxis? left, eQuantic.UI.Charts.ValueAxis? right) -> bool
 static eQuantic.UI.Charts.ValueScale.Fixed(double min, double max, int ticks) -> eQuantic.UI.Charts.ValueTicks!

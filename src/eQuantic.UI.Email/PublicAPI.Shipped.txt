@@ -16,5 +16,4 @@ override eQuantic.UI.Email.EmailMessage.ToString() -> string!
 static eQuantic.UI.Email.EmailMessage.operator !=(eQuantic.UI.Email.EmailMessage? left, eQuantic.UI.Email.EmailMessage? right) -> bool
 static eQuantic.UI.Email.EmailMessage.operator ==(eQuantic.UI.Email.EmailMessage? left, eQuantic.UI.Email.EmailMessage? right) -> bool
 static eQuantic.UI.Email.EmailRealizer.Lower(eQuantic.UI.Primitives.VisualNode! node, eQuantic.UI.Primitives.IAppTheme! theme) -> string!
-static eQuantic.UI.Email.EmailRenderer.Render(eQuantic.UI.Primitives.UiComponent! component, eQuantic.UI.Primitives.IAppTheme! theme, string? preheader = null) -> eQuantic.UI.Email.EmailMessage!
 static eQuantic.UI.Email.EmailRenderer.Render(eQuantic.UI.Primitives.VisualNode! tree, eQuantic.UI.Primitives.IAppTheme! theme, string? preheader = null) -> eQuantic.UI.Email.EmailMessage!

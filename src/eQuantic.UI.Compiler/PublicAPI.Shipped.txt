@@ -74,6 +74,12 @@ eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.SymbolsAreAuthoritative.set -> 
 eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.UsedAppTypes.get -> System.Collections.Generic.HashSet<string!>!
 eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.UsedHelpers.get -> System.Collections.Generic.HashSet<string!>!
 eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.UsedRuntimeTypes.get -> System.Collections.Generic.HashSet<string!>!
+eQuantic.UI.Compiler.CodeGen.ComponentBaseKind
+eQuantic.UI.Compiler.CodeGen.ComponentBaseKind.ComponentState = 4 -> eQuantic.UI.Compiler.CodeGen.ComponentBaseKind
+eQuantic.UI.Compiler.CodeGen.ComponentBaseKind.HtmlElement = 3 -> eQuantic.UI.Compiler.CodeGen.ComponentBaseKind
+eQuantic.UI.Compiler.CodeGen.ComponentBaseKind.None = 0 -> eQuantic.UI.Compiler.CodeGen.ComponentBaseKind
+eQuantic.UI.Compiler.CodeGen.ComponentBaseKind.StatefulComponent = 1 -> eQuantic.UI.Compiler.CodeGen.ComponentBaseKind
+eQuantic.UI.Compiler.CodeGen.ComponentBaseKind.StatelessComponent = 2 -> eQuantic.UI.Compiler.CodeGen.ComponentBaseKind
 eQuantic.UI.Compiler.CodeGen.ConversionContext
 eQuantic.UI.Compiler.CodeGen.ConversionContext.CanGuess(Microsoft.CodeAnalysis.SyntaxNode! node) -> bool
 eQuantic.UI.Compiler.CodeGen.ConversionContext.ClearDiagnostics() -> void
@@ -1410,6 +1416,8 @@ eQuantic.UI.Compiler.Models.ComponentDefinition.AppTypes.get -> System.Collectio
 eQuantic.UI.Compiler.Models.ComponentDefinition.AppTypes.set -> void
 eQuantic.UI.Compiler.Models.ComponentDefinition.BaseClassName.get -> string?
 eQuantic.UI.Compiler.Models.ComponentDefinition.BaseClassName.set -> void
+eQuantic.UI.Compiler.Models.ComponentDefinition.BuildComesFromTheBase.get -> bool
+eQuantic.UI.Compiler.Models.ComponentDefinition.BuildComesFromTheBase.set -> void
 eQuantic.UI.Compiler.Models.ComponentDefinition.BuildMethodNode.get -> Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax?
 eQuantic.UI.Compiler.Models.ComponentDefinition.BuildMethodNode.set -> void
 eQuantic.UI.Compiler.Models.ComponentDefinition.ComponentDefinition() -> void
@@ -1471,6 +1479,8 @@ eQuantic.UI.Compiler.Models.MethodDefinition.BodyNode.get -> Microsoft.CodeAnaly
 eQuantic.UI.Compiler.Models.MethodDefinition.BodyNode.set -> void
 eQuantic.UI.Compiler.Models.MethodDefinition.ExpressionBodyNode.get -> Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax?
 eQuantic.UI.Compiler.Models.MethodDefinition.ExpressionBodyNode.set -> void
+eQuantic.UI.Compiler.Models.MethodDefinition.IsOverride.get -> bool
+eQuantic.UI.Compiler.Models.MethodDefinition.IsOverride.set -> void
 eQuantic.UI.Compiler.Models.MethodDefinition.IsPrimaryConstructor.get -> bool
 eQuantic.UI.Compiler.Models.MethodDefinition.IsPrimaryConstructor.set -> void
 eQuantic.UI.Compiler.Models.MethodDefinition.IsStatic.get -> bool
@@ -1635,6 +1645,7 @@ eQuantic.UI.Compiler.Services.SemanticModelProvider.SetProjectCompilation(Micros
 eQuantic.UI.Compiler.Services.SemanticValidator
 eQuantic.UI.Compiler.Services.SemanticValidator.SemanticValidator(Microsoft.CodeAnalysis.SemanticModel! semanticModel) -> void
 eQuantic.UI.Compiler.Services.SemanticValidator.Validate(eQuantic.UI.Compiler.Models.ComponentDefinition! component) -> System.Collections.Generic.List<eQuantic.UI.Compiler.CompilationError!>!
+eQuantic.UI.Compiler.Services.ShadowedRuntimeMembers
 eQuantic.UI.Compiler.Services.SourceMapGenerator
 eQuantic.UI.Compiler.Services.SourceMapGenerator.Generate(string! generatedFileName, string! sourceFileName, System.Collections.Generic.List<eQuantic.UI.Compiler.Services.TypeScriptCodeBuilder.SourceMapping>! mappings, string? sourceContent = null) -> string!
 eQuantic.UI.Compiler.Services.SourceMapGenerator.SourceMapGenerator() -> void
@@ -2108,12 +2119,14 @@ static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.IsLong(this Microsoft.C
 static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.IsNamed(this Microsoft.CodeAnalysis.ITypeSymbol? type, string! fullName) -> bool
 static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.IsNullablePrimitiveNumeric(this Microsoft.CodeAnalysis.ITypeSymbol? type) -> bool
 static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.IsNullableValue(this Microsoft.CodeAnalysis.ITypeSymbol? type) -> bool
+static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.IsRuntimeProvided(this Microsoft.CodeAnalysis.INamedTypeSymbol! type) -> bool
 static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.IsSortedDictionary(this Microsoft.CodeAnalysis.ITypeSymbol? type) -> bool
 static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.IsStructuralValueType(this Microsoft.CodeAnalysis.ITypeSymbol? type) -> bool
 static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.IsUiComponent(this Microsoft.CodeAnalysis.ITypeSymbol? type) -> bool
 static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.IsValueKeyedDictionary(this Microsoft.CodeAnalysis.ITypeSymbol? type) -> bool
 static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.IsVisualNode(this Microsoft.CodeAnalysis.ITypeSymbol? type) -> bool
 static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.RegisterIntroduced(this Microsoft.CodeAnalysis.INamedTypeSymbol! home, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> void
+static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.ResolveComponentBase(this Microsoft.CodeAnalysis.ITypeSymbol? type) -> eQuantic.UI.Compiler.CodeGen.ComponentBaseKind
 static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.SortedDictionaryFactory(this Microsoft.CodeAnalysis.ITypeSymbol? type) -> string?
 static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.TupleElementIndex(this Microsoft.CodeAnalysis.ITypeSymbol? type, string! name) -> int
 static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.UnwrapNullable(this Microsoft.CodeAnalysis.ITypeSymbol? type) -> Microsoft.CodeAnalysis.ITypeSymbol?
@@ -2124,6 +2137,7 @@ static eQuantic.UI.Compiler.ComponentCompiler.AggregatedResource.operator ==(eQu
 static eQuantic.UI.Compiler.Services.FormatSubset.Allows(string! spec) -> bool
 static eQuantic.UI.Compiler.Services.FormatSubset.Read(string! template, out string? error) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.Services.TemplateHole>?
 static eQuantic.UI.Compiler.Services.ProjectCompilationHelper.CreateCompilationFromSources(System.Collections.Generic.IEnumerable<string!>! sourceFiles, System.Collections.Generic.IEnumerable<string!>! assemblyPaths, string! assemblyName = "DynamicAssembly", bool addStandardReferences = true) -> Microsoft.CodeAnalysis.Compilation!
+static eQuantic.UI.Compiler.Services.ProjectCompilationHelper.GetCompilationUnits(System.Collections.Generic.IReadOnlyList<string!>! sourceDirectories, string? generatedDirectory) -> System.Collections.Generic.IEnumerable<(string! Directory, string! File, bool IsGenerated)>!
 static eQuantic.UI.Compiler.Services.ProjectCompilationHelper.GetCompilerGeneratedFiles(string! projectDirectory) -> System.Collections.Generic.IEnumerable<string!>!
 static eQuantic.UI.Compiler.Services.ProjectCompilationHelper.GetCompilerGeneratedFiles(string! projectDirectory, string? generatedDirectory) -> System.Collections.Generic.IEnumerable<string!>!
 static eQuantic.UI.Compiler.Services.ProjectCompilationHelper.GetGeneratedGlobalUsingsFiles(string! projectDirectory) -> System.Collections.Generic.IEnumerable<string!>!
@@ -2143,6 +2157,8 @@ static eQuantic.UI.Compiler.Services.ResxFiles.Read(string! path) -> System.Coll
 static eQuantic.UI.Compiler.Services.ResxFiles.VariantsFor(string! designerPath) -> System.Collections.Generic.IEnumerable<(string! Culture, string! Path)>!
 static eQuantic.UI.Compiler.Services.RuntimeProvidedTypeScanner.Collect(Microsoft.CodeAnalysis.SyntaxNode! root, Microsoft.CodeAnalysis.SemanticModel! model, System.Collections.Generic.ISet<string!>! runtimeProvided, System.Collections.Generic.ISet<string!>! enumTypes, System.Collections.Generic.ISet<string!>? appTypes = null, System.Collections.Generic.IDictionary<string!, Microsoft.CodeAnalysis.SyntaxNode!>? hostOnly = null) -> void
 static eQuantic.UI.Compiler.Services.RuntimeProvidedTypeScanner.IsRuntimeProvidedNamespace(string! ns) -> bool
+static eQuantic.UI.Compiler.Services.ShadowedRuntimeMembers.All.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyCollection<string!>!>!
+static eQuantic.UI.Compiler.Services.ShadowedRuntimeMembers.Check(eQuantic.UI.Compiler.Models.ComponentDefinition! component, Microsoft.CodeAnalysis.SemanticModel? model = null) -> System.Collections.Generic.List<eQuantic.UI.Compiler.CompilationError!>!
 static eQuantic.UI.Compiler.Services.TemplateHole.operator !=(eQuantic.UI.Compiler.Services.TemplateHole left, eQuantic.UI.Compiler.Services.TemplateHole right) -> bool
 static eQuantic.UI.Compiler.Services.TemplateHole.operator ==(eQuantic.UI.Compiler.Services.TemplateHole left, eQuantic.UI.Compiler.Services.TemplateHole right) -> bool
 static readonly eQuantic.UI.Compiler.CodeGen.Ir.JsExpr.This -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!

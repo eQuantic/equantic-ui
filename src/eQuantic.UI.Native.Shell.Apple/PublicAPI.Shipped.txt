@@ -132,3 +132,8 @@ static extern eQuantic.UI.Native.Shell.Apple.ObjC.class_getInstanceMethod(nint c
 static extern eQuantic.UI.Native.Shell.Apple.ObjC.method_getImplementation(nint method) -> nint
 static extern eQuantic.UI.Native.Shell.Apple.ObjC.objc_registerClassPair(nint cls) -> void
 static extern eQuantic.UI.Native.Shell.Apple.ObjC.sel_getName(nint selector) -> nint
+~static eQuantic.UI.Native.Shell.Apple.ObjC.class_addMethod(nint cls, nint name, nint implementation, string types) -> bool
+~static eQuantic.UI.Native.Shell.Apple.ObjC.objc_allocateClassPair(nint superclass, string name, nuint extraBytes) -> nint
+~static eQuantic.UI.Native.Shell.Apple.ObjC.objc_getClass(string name) -> nint
+~static eQuantic.UI.Native.Shell.Apple.ObjC.objc_getProtocol(string name) -> nint
+~static eQuantic.UI.Native.Shell.Apple.ObjC.sel_registerName(string name) -> nint

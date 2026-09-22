@@ -4,7 +4,6 @@ eQuantic.UI.Codegen.CodeWriter.Append(string! text) -> eQuantic.UI.Codegen.CodeW
 eQuantic.UI.Codegen.CodeWriter.AppendLine() -> eQuantic.UI.Codegen.CodeWriter!
 eQuantic.UI.Codegen.CodeWriter.AppendLine(string! line) -> eQuantic.UI.Codegen.CodeWriter!
 eQuantic.UI.Codegen.CodeWriter.BeginBlock(string! lineEndingInOpener, string! closer = "}") -> System.IDisposable!
-eQuantic.UI.Codegen.CodeWriter.BeginScope(string! line, string! opener, string? closer) -> System.IDisposable!
 eQuantic.UI.Codegen.CodeWriter.BeginScope(string! opener = "{", string? closer = "}") -> System.IDisposable!
 eQuantic.UI.Codegen.CodeWriter.CodeWriter(int indentLevel = 0, eQuantic.UI.Codegen.IndentationType indentationType = eQuantic.UI.Codegen.IndentationType.Spaces) -> void
 eQuantic.UI.Codegen.CodeWriter.CurrentLine.get -> int

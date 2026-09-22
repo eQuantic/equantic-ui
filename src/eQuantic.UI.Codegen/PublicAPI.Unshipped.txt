@@ -1,2 +1,1 @@
 #nullable enable
-*REMOVED*eQuantic.UI.Codegen.CodeWriter.BeginScope(string! line, string! opener, string? closer) -> System.IDisposable!

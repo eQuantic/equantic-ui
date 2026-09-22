@@ -851,10 +851,14 @@ eQuantic.UI.Components.PresenceStatus.None = 0 -> eQuantic.UI.Components.Presenc
 eQuantic.UI.Components.PresenceStatus.Offline = 2 -> eQuantic.UI.Components.PresenceStatus
 eQuantic.UI.Components.PresenceStatus.Online = 1 -> eQuantic.UI.Components.PresenceStatus
 eQuantic.UI.Components.ProgressBar
+eQuantic.UI.Components.ProgressBar.Label.get -> string!
+eQuantic.UI.Components.ProgressBar.Label.init -> void
 eQuantic.UI.Components.ProgressBar.ProgressBar(float? value = null, eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Primary) -> void
 eQuantic.UI.Components.ProgressBar.Prominent.get -> bool
 eQuantic.UI.Components.ProgressBar.Prominent.init -> void
 eQuantic.UI.Components.ProgressBar.Value.get -> float?
+eQuantic.UI.Components.ProgressBar.ValueText.get -> string?
+eQuantic.UI.Components.ProgressBar.ValueText.init -> void
 eQuantic.UI.Components.ProgressBar.Variant.get -> eQuantic.UI.Primitives.Variant
 eQuantic.UI.Components.PullToRefresh
 eQuantic.UI.Components.PullToRefresh.Child.get -> eQuantic.UI.Primitives.VisualNode!
@@ -1212,7 +1216,7 @@ static eQuantic.UI.Components.SdkStrings.Spreadsheet.get -> string!
 static eQuantic.UI.Components.SdkStrings.Today.get -> string!
 static eQuantic.UI.Components.Spreadsheet.ColumnName(int col) -> string!
 static eQuantic.UI.Components.UI.AdaptiveNode(eQuantic.UI.Primitives.VisualNode! compact, eQuantic.UI.Primitives.VisualNode? medium = null, eQuantic.UI.Primitives.VisualNode? expanded = null) -> eQuantic.UI.Primitives.AdaptiveNode!
-static eQuantic.UI.Components.UI.Adjustable(eQuantic.UI.Primitives.VisualNode! child, System.Action<int>! onAdjust, eQuantic.UI.Primitives.AdjustableValue? value = null, eQuantic.UI.Primitives.AdjustableRole role = eQuantic.UI.Primitives.AdjustableRole.Slider) -> eQuantic.UI.Primitives.Adjustable!
+static eQuantic.UI.Components.UI.Adjustable(eQuantic.UI.Primitives.VisualNode! child, System.Action<int>! onAdjust, eQuantic.UI.Primitives.RangeValue? value = null, eQuantic.UI.Primitives.AdjustableRole role = eQuantic.UI.Primitives.AdjustableRole.Slider, string? valueText = null) -> eQuantic.UI.Primitives.Adjustable!
 static eQuantic.UI.Components.UI.Anchored(eQuantic.UI.Primitives.VisualNode! anchor, eQuantic.UI.Primitives.VisualNode! panel) -> eQuantic.UI.Primitives.Anchored!
 static eQuantic.UI.Components.UI.AppBar(string! title) -> eQuantic.UI.Components.AppBar!
 static eQuantic.UI.Components.UI.Avatar(string! initials, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Medium, string? name = null) -> eQuantic.UI.Components.Avatar!
@@ -1222,10 +1226,12 @@ static eQuantic.UI.Components.UI.BottomNavigation(System.Collections.Generic.IRe
 static eQuantic.UI.Components.UI.Box(eQuantic.UI.Primitives.BoxStyle style = default(eQuantic.UI.Primitives.BoxStyle), eQuantic.UI.Primitives.VisualNode? child = null) -> eQuantic.UI.Primitives.Box!
 static eQuantic.UI.Components.UI.Button(string! label, eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Primary, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Medium, System.Action? onPressed = null) -> eQuantic.UI.Components.Button!
 static eQuantic.UI.Components.UI.Calendar(System.DateOnly? selected = null, System.Action<System.DateOnly>? onChanged = null, System.DateOnly? min = null, System.DateOnly? max = null) -> eQuantic.UI.Components.Calendar!
+static eQuantic.UI.Components.UI.CameraPreview(eQuantic.UI.Primitives.ICameraSession? session, float width, float height, eQuantic.UI.Primitives.CornerRadii cornerRadius = default(eQuantic.UI.Primitives.CornerRadii), string! label = "") -> eQuantic.UI.Primitives.CameraPreview!
 static eQuantic.UI.Components.UI.Canvas(System.Action<eQuantic.UI.Primitives.ICanvasPainter!>! draw, eQuantic.UI.Primitives.SizeValue width = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.SizeValue height = default(eQuantic.UI.Primitives.SizeValue), System.Action<eQuantic.UI.Primitives.CanvasPointer>? onPointerDown = null, System.Action<eQuantic.UI.Primitives.CanvasPointer>? onPointerMove = null, System.Action<eQuantic.UI.Primitives.CanvasPointer>? onPointerUp = null, System.Action? onPointerLeave = null, string? label = null) -> eQuantic.UI.Primitives.Canvas!
 static eQuantic.UI.Components.UI.Card(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Components.CardKind kind = eQuantic.UI.Components.CardKind.Elevated) -> eQuantic.UI.Components.Card!
 static eQuantic.UI.Components.UI.Checkbox(bool checked, System.Action? onChanged = null, string? label = null, bool disabled = false) -> eQuantic.UI.Components.Checkbox!
 static eQuantic.UI.Components.UI.Chip(string! label, eQuantic.UI.Components.ChipKind kind = eQuantic.UI.Components.ChipKind.Filter, bool selected = false, System.Action? onPressed = null, System.Action? onRemove = null) -> eQuantic.UI.Components.Chip!
+static eQuantic.UI.Components.UI.CodeSurface(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.CodeEditorController! editor, System.Action? onChanged = null, string? label = null, bool autofocus = false) -> eQuantic.UI.Primitives.CodeSurface!
 static eQuantic.UI.Components.UI.Column(float gap = 0, eQuantic.UI.Primitives.MainAlign main = eQuantic.UI.Primitives.MainAlign.Start, eQuantic.UI.Primitives.CrossAlign cross = eQuantic.UI.Primitives.CrossAlign.Stretch, bool wrap = false, float? runGap = null, eQuantic.UI.Primitives.EdgeInsets? padding = null, eQuantic.UI.Primitives.SizeValue width = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.SizeValue height = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.VisualNode![]? children = null) -> eQuantic.UI.Primitives.Column!
 static eQuantic.UI.Components.UI.CookieConsent(string? policyHref = null) -> eQuantic.UI.Components.CookieConsent!
 static eQuantic.UI.Components.UI.CultureSwitcher(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.CultureOption!>! options) -> eQuantic.UI.Components.CultureSwitcher!
@@ -1241,10 +1247,9 @@ static eQuantic.UI.Components.UI.Drawing(eQuantic.UI.Primitives.VectorDrawing! a
 static eQuantic.UI.Components.UI.EmptyState(eQuantic.UI.Primitives.Icon! icon, string! title, string? body = null) -> eQuantic.UI.Components.EmptyState!
 static eQuantic.UI.Components.UI.Flexible(eQuantic.UI.Primitives.VisualNode! child, int flex = 1, float basis = 0, int shrink = 1) -> eQuantic.UI.Primitives.Flexible!
 static eQuantic.UI.Components.UI.Gap(float dp) -> eQuantic.UI.Primitives.Spacer!
-static eQuantic.UI.Components.UI.Glyph(eQuantic.UI.Primitives.IconGlyph glyph, float size = 24, eQuantic.UI.Primitives.ColorToken? color = null, string? label = null) -> eQuantic.UI.Primitives.Icon!
 static eQuantic.UI.Components.UI.Grid(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.GridTrack>! columns, float gap = 0, float? rowGap = null, eQuantic.UI.Primitives.SizeValue width = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.SizeValue height = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.VisualNode![]? children = null) -> eQuantic.UI.Primitives.Grid!
 static eQuantic.UI.Components.UI.Hoverable(eQuantic.UI.Primitives.VisualNode! child, System.Action<bool>! onChanged) -> eQuantic.UI.Primitives.Hoverable!
-static eQuantic.UI.Components.UI.Icon(eQuantic.UI.Primitives.Icons glyph, float size = 24, eQuantic.UI.Primitives.ColorToken? color = null, string? label = null) -> eQuantic.UI.Primitives.Icon!
+static eQuantic.UI.Components.UI.Icon(eQuantic.UI.Primitives.IconGlyph glyph, float size = 24, eQuantic.UI.Primitives.ColorToken? color = null, string? label = null) -> eQuantic.UI.Primitives.Icon!
 static eQuantic.UI.Components.UI.IconButton(eQuantic.UI.Primitives.Icon! glyph, string! label, eQuantic.UI.Components.IconButtonKind kind = eQuantic.UI.Components.IconButtonKind.Standard, eQuantic.UI.Primitives.SizeVariant size = eQuantic.UI.Primitives.SizeVariant.Medium, System.Action? onPressed = null) -> eQuantic.UI.Components.IconButton!
 static eQuantic.UI.Components.UI.Image(string! source, float width, float height, eQuantic.UI.Primitives.ImageFit fit = eQuantic.UI.Primitives.ImageFit.Cover, string! label = "") -> eQuantic.UI.Primitives.Image!
 static eQuantic.UI.Components.UI.InFlow(eQuantic.UI.Primitives.VisualNode! child) -> eQuantic.UI.Primitives.InFlow!
@@ -1253,21 +1258,26 @@ static eQuantic.UI.Components.UI.Link(string! destination, eQuantic.UI.Primitive
 static eQuantic.UI.Components.UI.ListDetail(eQuantic.UI.Primitives.VisualNode! list, eQuantic.UI.Primitives.VisualNode? detail = null, System.Action? onBack = null) -> eQuantic.UI.Components.ListDetail!
 static eQuantic.UI.Components.UI.ListItem(string! title, string? subtitle = null, System.Action? onPressed = null) -> eQuantic.UI.Components.ListItem!
 static eQuantic.UI.Components.UI.ListView(int count, float itemExtent, System.Func<int, eQuantic.UI.Primitives.VisualNode!>! itemBuilder, eQuantic.UI.Primitives.SizeValue width = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.SizeValue height = default(eQuantic.UI.Primitives.SizeValue)) -> eQuantic.UI.Components.ListView!
+static eQuantic.UI.Components.UI.LiveRegion(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.LiveRegionUrgency urgency = eQuantic.UI.Primitives.LiveRegionUrgency.Polite, string! label = "") -> eQuantic.UI.Primitives.LiveRegion!
+static eQuantic.UI.Components.UI.LoopMotion(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.LoopEffect effect, float fromX, float toX, int durationMs, bool hideAtRest = false) -> eQuantic.UI.Primitives.LoopMotion!
 static eQuantic.UI.Components.UI.Markdown(string! source) -> eQuantic.UI.Components.Markdown!
 static eQuantic.UI.Components.UI.Mermaid(string! source) -> eQuantic.UI.Components.Mermaid!
+static eQuantic.UI.Components.UI.Navigable(System.Action<eQuantic.UI.Primitives.NavigableMove>! onMove, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.VisualNode!>! rows, string! label = "", eQuantic.UI.Primitives.NavigableRole role = eQuantic.UI.Primitives.NavigableRole.Grid, bool hasHeaderRow = false, (int Row, int Item)? activeCell = null) -> eQuantic.UI.Primitives.Navigable!
 static eQuantic.UI.Components.UI.NavigationRail(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Components.NavItem!>! items, int selected, System.Action<int>? onSelect = null) -> eQuantic.UI.Components.NavigationRail!
 static eQuantic.UI.Components.UI.Overlay(eQuantic.UI.Primitives.VisualNode! child) -> eQuantic.UI.Primitives.Overlay!
 static eQuantic.UI.Components.UI.Pinned(eQuantic.UI.Primitives.VisualNode! child, float offset = 0) -> eQuantic.UI.Primitives.Pinned!
 static eQuantic.UI.Components.UI.Positioned(eQuantic.UI.Primitives.VisualNode! child, float? top = null, float? end = null, float? bottom = null, float? start = null) -> eQuantic.UI.Primitives.Positioned!
 static eQuantic.UI.Components.UI.Presence(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.PresenceMotion enter = eQuantic.UI.Primitives.PresenceMotion.Fade) -> eQuantic.UI.Primitives.Presence!
 static eQuantic.UI.Components.UI.Pressable(eQuantic.UI.Primitives.VisualNode! child, System.Action? onPressed = null, string? label = null, bool? selected = null, bool disabled = false, eQuantic.UI.Primitives.ColorToken? pressedBackground = null, bool? expanded = null, eQuantic.UI.Primitives.PressableRole role = eQuantic.UI.Primitives.PressableRole.Button) -> eQuantic.UI.Primitives.Pressable!
-static eQuantic.UI.Components.UI.ProgressBar(float? value = null, eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Primary) -> eQuantic.UI.Components.ProgressBar!
+static eQuantic.UI.Components.UI.Progress(eQuantic.UI.Primitives.VisualNode! child, string! label = "", eQuantic.UI.Primitives.RangeValue? value = null, string? valueText = null) -> eQuantic.UI.Primitives.Progress!
+static eQuantic.UI.Components.UI.ProgressBar(float? value = null, eQuantic.UI.Primitives.Variant variant = eQuantic.UI.Primitives.Variant.Primary, string! label = "", string? valueText = null, bool prominent = false) -> eQuantic.UI.Components.ProgressBar!
 static eQuantic.UI.Components.UI.Row(float gap = 0, eQuantic.UI.Primitives.MainAlign main = eQuantic.UI.Primitives.MainAlign.Start, eQuantic.UI.Primitives.CrossAlign cross = eQuantic.UI.Primitives.CrossAlign.Center, bool wrap = false, float? runGap = null, eQuantic.UI.Primitives.EdgeInsets? padding = null, eQuantic.UI.Primitives.SizeValue width = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.SizeValue height = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.VisualNode![]? children = null) -> eQuantic.UI.Primitives.Row!
 static eQuantic.UI.Components.UI.SafeArea(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.SafeEdges edges = eQuantic.UI.Primitives.SafeEdges.All) -> eQuantic.UI.Primitives.SafeArea!
 static eQuantic.UI.Components.UI.ScrollView(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.ScrollAxis axis = eQuantic.UI.Primitives.ScrollAxis.Vertical, eQuantic.UI.Primitives.SizeValue width = default(eQuantic.UI.Primitives.SizeValue), eQuantic.UI.Primitives.SizeValue height = default(eQuantic.UI.Primitives.SizeValue)) -> eQuantic.UI.Primitives.ScrollView!
 static eQuantic.UI.Components.UI.SearchField(string! query, System.Action<string!>? onChanged = null, string? placeholder = null, System.Action? onSubmit = null) -> eQuantic.UI.Components.SearchField!
 static eQuantic.UI.Components.UI.SegmentedControl(System.Collections.Generic.IReadOnlyList<string!>! segments, int selectedIndex, System.Action<int>? onChanged = null, bool stretch = true) -> eQuantic.UI.Components.SegmentedControl!
 static eQuantic.UI.Components.UI.Select(System.Collections.Generic.IReadOnlyList<string!>! options, int selectedIndex = -1, System.Action<int>? onChanged = null, string? placeholder = null) -> eQuantic.UI.Components.Select!
+static eQuantic.UI.Components.UI.SheetSurface(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.SheetController! controller, System.Action? onChanged = null, string? label = null, int firstRow = 0, int firstCol = 0) -> eQuantic.UI.Primitives.SheetSurface!
 static eQuantic.UI.Components.UI.Shortcut(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.KeyChord chord, System.Action! onPressed) -> eQuantic.UI.Primitives.Shortcut!
 static eQuantic.UI.Components.UI.Simulated(eQuantic.UI.Primitives.SimulatedState state, eQuantic.UI.Primitives.VisualNode! child) -> eQuantic.UI.Primitives.Simulated!
 static eQuantic.UI.Components.UI.Skeleton(eQuantic.UI.Components.SkeletonShape shape, float width, float height = 0) -> eQuantic.UI.Components.Skeleton!
@@ -1285,5 +1295,6 @@ static eQuantic.UI.Components.UI.TimePicker(System.TimeOnly? selected = null, Sy
 static eQuantic.UI.Components.UI.Toast(string! message, eQuantic.UI.Primitives.Variant status = eQuantic.UI.Primitives.Variant.Info, string? actionLabel = null, System.Action? onAction = null) -> eQuantic.UI.Components.Toast!
 static eQuantic.UI.Components.UI.Tooltip(eQuantic.UI.Primitives.VisualNode! child, string! text) -> eQuantic.UI.Components.Tooltip!
 static eQuantic.UI.Components.UI.Vector(eQuantic.UI.Primitives.IconGlyph glyph, float size, eQuantic.UI.Primitives.ColorToken? color = null, string? label = null, float height = 0) -> eQuantic.UI.Primitives.Vector!
+static eQuantic.UI.Components.UI.WebFrame(eQuantic.UI.Primitives.WebContent content, string! title, eQuantic.UI.Primitives.WebSandbox sandbox = eQuantic.UI.Primitives.WebSandbox.Scripts, eQuantic.UI.Primitives.CornerRadii cornerRadius = default(eQuantic.UI.Primitives.CornerRadii)) -> eQuantic.UI.Primitives.WebFrame!
 ~override eQuantic.UI.Components.CodeBlock.CodeMetrics.Equals(object obj) -> bool
 ~override eQuantic.UI.Components.CodeBlock.CodeMetrics.ToString() -> string

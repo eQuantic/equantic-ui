@@ -25,13 +25,6 @@ const eQuantic.UI.Primitives.Motion.BaseMs = 200 -> int
 const eQuantic.UI.Primitives.Motion.FastMs = 100 -> int
 const eQuantic.UI.Primitives.Motion.ReducedCrossfadeMs = 120 -> int
 const eQuantic.UI.Primitives.Motion.SlowMs = 300 -> int
-const eQuantic.UI.Primitives.PhotonEntitlements.AllowJit = "com.apple.security.cs.allow-jit" -> string!
-const eQuantic.UI.Primitives.PhotonEntitlements.AllowUnsignedExecutableMemory = "com.apple.security.cs.allow-unsigned-executable-memory" -> string!
-const eQuantic.UI.Primitives.PhotonEntitlements.AppSandbox = "com.apple.security.app-sandbox" -> string!
-const eQuantic.UI.Primitives.PhotonEntitlements.DisableLibraryValidation = "com.apple.security.cs.disable-library-validation" -> string!
-const eQuantic.UI.Primitives.PhotonEntitlements.HardenedRuntimePrefix = "com.apple.security.cs." -> string!
-const eQuantic.UI.Primitives.PhotonEntitlements.NetworkClient = "com.apple.security.network.client" -> string!
-const eQuantic.UI.Primitives.PhotonEntitlements.UserSelectedFiles = "com.apple.security.files.user-selected.read-write" -> string!
 const eQuantic.UI.Primitives.Presence.SlideDistance = 16 -> float
 const eQuantic.UI.Primitives.Radius.Full = 999 -> float
 const eQuantic.UI.Primitives.Radius.Lg = 14 -> float
@@ -84,26 +77,15 @@ eQuantic.UI.Primitives.Adjustable.OnAdjust.get -> System.Action<int>!
 eQuantic.UI.Primitives.Adjustable.OnAdjust.init -> void
 eQuantic.UI.Primitives.Adjustable.Role.get -> eQuantic.UI.Primitives.AdjustableRole
 eQuantic.UI.Primitives.Adjustable.Role.init -> void
-eQuantic.UI.Primitives.Adjustable.Value.get -> eQuantic.UI.Primitives.AdjustableValue?
+eQuantic.UI.Primitives.Adjustable.Spoken.get -> string?
+eQuantic.UI.Primitives.Adjustable.Value.get -> eQuantic.UI.Primitives.RangeValue?
 eQuantic.UI.Primitives.Adjustable.Value.init -> void
+eQuantic.UI.Primitives.Adjustable.ValueText.get -> string?
+eQuantic.UI.Primitives.Adjustable.ValueText.init -> void
 eQuantic.UI.Primitives.AdjustableRole
 eQuantic.UI.Primitives.AdjustableRole.Radiogroup = 2 -> eQuantic.UI.Primitives.AdjustableRole
 eQuantic.UI.Primitives.AdjustableRole.Slider = 0 -> eQuantic.UI.Primitives.AdjustableRole
 eQuantic.UI.Primitives.AdjustableRole.Tablist = 1 -> eQuantic.UI.Primitives.AdjustableRole
-eQuantic.UI.Primitives.AdjustableValue
-eQuantic.UI.Primitives.AdjustableValue.AdjustableValue() -> void
-eQuantic.UI.Primitives.AdjustableValue.AdjustableValue(float Now, float Min, float Max) -> void
-eQuantic.UI.Primitives.AdjustableValue.Deconstruct(out float Now, out float Min, out float Max) -> void
-eQuantic.UI.Primitives.AdjustableValue.Equals(eQuantic.UI.Primitives.AdjustableValue other) -> bool
-eQuantic.UI.Primitives.AdjustableValue.Max.get -> float
-eQuantic.UI.Primitives.AdjustableValue.Max.init -> void
-eQuantic.UI.Primitives.AdjustableValue.Min.get -> float
-eQuantic.UI.Primitives.AdjustableValue.Min.init -> void
-eQuantic.UI.Primitives.AdjustableValue.Now.get -> float
-eQuantic.UI.Primitives.AdjustableValue.Now.init -> void
-eQuantic.UI.Primitives.AdjustableValue.Spoken.get -> string!
-eQuantic.UI.Primitives.AdjustableValue.Text.get -> string?
-eQuantic.UI.Primitives.AdjustableValue.Text.init -> void
 eQuantic.UI.Primitives.Alignment
 eQuantic.UI.Primitives.Alignment.BottomCenter = 7 -> eQuantic.UI.Primitives.Alignment
 eQuantic.UI.Primitives.Alignment.BottomEnd = 8 -> eQuantic.UI.Primitives.Alignment
@@ -156,23 +138,6 @@ eQuantic.UI.Primitives.Anchored.Placement.get -> eQuantic.UI.Primitives.AnchorPl
 eQuantic.UI.Primitives.Anchored.Placement.init -> void
 eQuantic.UI.Primitives.Anchored.ScrimStyle.get -> eQuantic.UI.Primitives.BoxStyle?
 eQuantic.UI.Primitives.Anchored.ScrimStyle.init -> void
-eQuantic.UI.Primitives.AppCategory
-eQuantic.UI.Primitives.AppCategory.Business = 4 -> eQuantic.UI.Primitives.AppCategory
-eQuantic.UI.Primitives.AppCategory.DeveloperTools = 2 -> eQuantic.UI.Primitives.AppCategory
-eQuantic.UI.Primitives.AppCategory.Education = 10 -> eQuantic.UI.Primitives.AppCategory
-eQuantic.UI.Primitives.AppCategory.Finance = 5 -> eQuantic.UI.Primitives.AppCategory
-eQuantic.UI.Primitives.AppCategory.Games = 15 -> eQuantic.UI.Primitives.AppCategory
-eQuantic.UI.Primitives.AppCategory.GraphicsDesign = 6 -> eQuantic.UI.Primitives.AppCategory
-eQuantic.UI.Primitives.AppCategory.HealthcareFitness = 14 -> eQuantic.UI.Primitives.AppCategory
-eQuantic.UI.Primitives.AppCategory.Music = 8 -> eQuantic.UI.Primitives.AppCategory
-eQuantic.UI.Primitives.AppCategory.News = 12 -> eQuantic.UI.Primitives.AppCategory
-eQuantic.UI.Primitives.AppCategory.None = 0 -> eQuantic.UI.Primitives.AppCategory
-eQuantic.UI.Primitives.AppCategory.Photography = 7 -> eQuantic.UI.Primitives.AppCategory
-eQuantic.UI.Primitives.AppCategory.Productivity = 3 -> eQuantic.UI.Primitives.AppCategory
-eQuantic.UI.Primitives.AppCategory.Reference = 13 -> eQuantic.UI.Primitives.AppCategory
-eQuantic.UI.Primitives.AppCategory.SocialNetworking = 11 -> eQuantic.UI.Primitives.AppCategory
-eQuantic.UI.Primitives.AppCategory.Utilities = 1 -> eQuantic.UI.Primitives.AppCategory
-eQuantic.UI.Primitives.AppCategory.Video = 9 -> eQuantic.UI.Primitives.AppCategory
 eQuantic.UI.Primitives.AuditLine
 eQuantic.UI.Primitives.AuditLine.AuditLine() -> void
 eQuantic.UI.Primitives.AuditLine.AuditLine(string! Check, eQuantic.UI.Primitives.AuditVerdict Verdict, string! Detail) -> void
@@ -1148,6 +1113,7 @@ eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Pri
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.InFlow! node, TState state) -> TResult
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.InView! node, TState state) -> TResult
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.Link! node, TState state) -> TResult
+eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.LiveRegion! node, TState state) -> TResult
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.LoopMotion! node, TState state) -> TResult
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.Navigable! node, TState state) -> TResult
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.Overlay! node, TState state) -> TResult
@@ -1155,6 +1121,7 @@ eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Pri
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.Positioned! node, TState state) -> TResult
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.Presence! node, TState state) -> TResult
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.Pressable! node, TState state) -> TResult
+eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.Progress! node, TState state) -> TResult
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.Row! node, TState state) -> TResult
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.SafeArea! node, TState state) -> TResult
 eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>.Visit(eQuantic.UI.Primitives.ScrollView! node, TState state) -> TResult
@@ -1179,7 +1146,6 @@ eQuantic.UI.Primitives.Icon.Color.get -> eQuantic.UI.Primitives.ColorToken?
 eQuantic.UI.Primitives.Icon.Color.init -> void
 eQuantic.UI.Primitives.Icon.Glyph.get -> eQuantic.UI.Primitives.IconGlyph
 eQuantic.UI.Primitives.Icon.Icon(eQuantic.UI.Primitives.IconGlyph glyph, float size = 24, eQuantic.UI.Primitives.ColorToken? color = null, string? label = null) -> void
-eQuantic.UI.Primitives.Icon.Icon(eQuantic.UI.Primitives.Icons glyph, float size = 24, eQuantic.UI.Primitives.ColorToken? color = null, string? label = null) -> void
 eQuantic.UI.Primitives.Icon.Label.get -> string?
 eQuantic.UI.Primitives.Icon.Label.init -> void
 eQuantic.UI.Primitives.Icon.Size.get -> float
@@ -1319,6 +1285,15 @@ eQuantic.UI.Primitives.Link.KeepsPosition.init -> void
 eQuantic.UI.Primitives.Link.Label.get -> string?
 eQuantic.UI.Primitives.Link.Label.init -> void
 eQuantic.UI.Primitives.Link.Link(string! destination, eQuantic.UI.Primitives.VisualNode! child) -> void
+eQuantic.UI.Primitives.LiveRegion
+eQuantic.UI.Primitives.LiveRegion.Label.get -> string!
+eQuantic.UI.Primitives.LiveRegion.Label.init -> void
+eQuantic.UI.Primitives.LiveRegion.LiveRegion(eQuantic.UI.Primitives.VisualNode! child) -> void
+eQuantic.UI.Primitives.LiveRegion.Urgency.get -> eQuantic.UI.Primitives.LiveRegionUrgency
+eQuantic.UI.Primitives.LiveRegion.Urgency.init -> void
+eQuantic.UI.Primitives.LiveRegionUrgency
+eQuantic.UI.Primitives.LiveRegionUrgency.Assertive = 1 -> eQuantic.UI.Primitives.LiveRegionUrgency
+eQuantic.UI.Primitives.LiveRegionUrgency.Polite = 0 -> eQuantic.UI.Primitives.LiveRegionUrgency
 eQuantic.UI.Primitives.LoopEffect
 eQuantic.UI.Primitives.LoopEffect.SlideX = 0 -> eQuantic.UI.Primitives.LoopEffect
 eQuantic.UI.Primitives.LoopMotion
@@ -1400,13 +1375,14 @@ eQuantic.UI.Primitives.Navigable.HasHeaderRow.get -> bool
 eQuantic.UI.Primitives.Navigable.HasHeaderRow.init -> void
 eQuantic.UI.Primitives.Navigable.Label.get -> string!
 eQuantic.UI.Primitives.Navigable.Label.init -> void
-eQuantic.UI.Primitives.Navigable.Navigable(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.VisualNode!>! rows, System.Action<eQuantic.UI.Primitives.NavigableMove>! onMove) -> void
+eQuantic.UI.Primitives.Navigable.Navigable(System.Action<eQuantic.UI.Primitives.NavigableMove>! onMove, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.VisualNode!>! rows) -> void
 eQuantic.UI.Primitives.Navigable.OnMove.get -> System.Action<eQuantic.UI.Primitives.NavigableMove>!
 eQuantic.UI.Primitives.Navigable.OnMove.init -> void
 eQuantic.UI.Primitives.Navigable.Role.get -> eQuantic.UI.Primitives.NavigableRole
 eQuantic.UI.Primitives.Navigable.Role.init -> void
 eQuantic.UI.Primitives.Navigable.Rows.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.VisualNode!>!
 eQuantic.UI.Primitives.Navigable.Rows.init -> void
+eQuantic.UI.Primitives.NavigableKeys
 eQuantic.UI.Primitives.NavigableMove
 eQuantic.UI.Primitives.NavigableMove.NextItem = 1 -> eQuantic.UI.Primitives.NavigableMove
 eQuantic.UI.Primitives.NavigableMove.NextPage = 5 -> eQuantic.UI.Primitives.NavigableMove
@@ -1474,23 +1450,6 @@ eQuantic.UI.Primitives.PermissionState.Granted = 1 -> eQuantic.UI.Primitives.Per
 eQuantic.UI.Primitives.PermissionState.Limited = 3 -> eQuantic.UI.Primitives.PermissionState
 eQuantic.UI.Primitives.PermissionState.NotDetermined = 0 -> eQuantic.UI.Primitives.PermissionState
 eQuantic.UI.Primitives.PermissionState.Unavailable = 4 -> eQuantic.UI.Primitives.PermissionState
-eQuantic.UI.Primitives.PhotonBundleKeyAttribute
-eQuantic.UI.Primitives.PhotonBundleKeyAttribute.Key.get -> string!
-eQuantic.UI.Primitives.PhotonBundleKeyAttribute.Kind.get -> eQuantic.UI.Primitives.PhotonBundleValueKind
-eQuantic.UI.Primitives.PhotonBundleKeyAttribute.PhotonBundleKeyAttribute(string! key, string! value, eQuantic.UI.Primitives.PhotonBundleValueKind kind) -> void
-eQuantic.UI.Primitives.PhotonBundleKeyAttribute.Value.get -> string!
-eQuantic.UI.Primitives.PhotonBundleValueKind
-eQuantic.UI.Primitives.PhotonBundleValueKind.Flag = 1 -> eQuantic.UI.Primitives.PhotonBundleValueKind
-eQuantic.UI.Primitives.PhotonBundleValueKind.Text = 0 -> eQuantic.UI.Primitives.PhotonBundleValueKind
-eQuantic.UI.Primitives.PhotonBundleValueKind.UrlScheme = 2 -> eQuantic.UI.Primitives.PhotonBundleValueKind
-eQuantic.UI.Primitives.PhotonCapabilityAttribute
-eQuantic.UI.Primitives.PhotonCapabilityAttribute.Capability.get -> string!
-eQuantic.UI.Primitives.PhotonCapabilityAttribute.PhotonCapabilityAttribute(string! capability, string! reason) -> void
-eQuantic.UI.Primitives.PhotonCapabilityAttribute.Reason.get -> string!
-eQuantic.UI.Primitives.PhotonEntitlementAttribute
-eQuantic.UI.Primitives.PhotonEntitlementAttribute.Entitlement.get -> string!
-eQuantic.UI.Primitives.PhotonEntitlementAttribute.PhotonEntitlementAttribute(string! entitlement) -> void
-eQuantic.UI.Primitives.PhotonEntitlements
 eQuantic.UI.Primitives.PhotonTheme
 eQuantic.UI.Primitives.PhotonTheme.Background.get -> eQuantic.UI.Primitives.ColorToken
 eQuantic.UI.Primitives.PhotonTheme.Border.get -> eQuantic.UI.Primitives.ColorToken
@@ -1593,6 +1552,15 @@ eQuantic.UI.Primitives.PressableRole.Option = 6 -> eQuantic.UI.Primitives.Pressa
 eQuantic.UI.Primitives.PressableRole.Radio = 1 -> eQuantic.UI.Primitives.PressableRole
 eQuantic.UI.Primitives.PressableRole.Switch = 3 -> eQuantic.UI.Primitives.PressableRole
 eQuantic.UI.Primitives.PressableRole.Tab = 4 -> eQuantic.UI.Primitives.PressableRole
+eQuantic.UI.Primitives.Progress
+eQuantic.UI.Primitives.Progress.Label.get -> string!
+eQuantic.UI.Primitives.Progress.Label.init -> void
+eQuantic.UI.Primitives.Progress.Progress(eQuantic.UI.Primitives.VisualNode! child) -> void
+eQuantic.UI.Primitives.Progress.Spoken.get -> string?
+eQuantic.UI.Primitives.Progress.Value.get -> eQuantic.UI.Primitives.RangeValue?
+eQuantic.UI.Primitives.Progress.Value.init -> void
+eQuantic.UI.Primitives.Progress.ValueText.get -> string?
+eQuantic.UI.Primitives.Progress.ValueText.init -> void
 eQuantic.UI.Primitives.PythonLanguage
 eQuantic.UI.Primitives.PythonLanguage.Name.get -> string!
 eQuantic.UI.Primitives.PythonLanguage.PythonLanguage() -> void
@@ -1627,6 +1595,18 @@ eQuantic.UI.Primitives.RadialGradient.RadiusY.init -> void
 eQuantic.UI.Primitives.RadialGradient.To.get -> eQuantic.UI.Primitives.ColorToken
 eQuantic.UI.Primitives.RadialGradient.To.init -> void
 eQuantic.UI.Primitives.Radius
+eQuantic.UI.Primitives.RangeValue
+eQuantic.UI.Primitives.RangeValue.Deconstruct(out float Now, out float Min, out float Max) -> void
+eQuantic.UI.Primitives.RangeValue.Equals(eQuantic.UI.Primitives.RangeValue other) -> bool
+eQuantic.UI.Primitives.RangeValue.Max.get -> float
+eQuantic.UI.Primitives.RangeValue.Max.init -> void
+eQuantic.UI.Primitives.RangeValue.Min.get -> float
+eQuantic.UI.Primitives.RangeValue.Min.init -> void
+eQuantic.UI.Primitives.RangeValue.Now.get -> float
+eQuantic.UI.Primitives.RangeValue.Now.init -> void
+eQuantic.UI.Primitives.RangeValue.Number.get -> string!
+eQuantic.UI.Primitives.RangeValue.RangeValue() -> void
+eQuantic.UI.Primitives.RangeValue.RangeValue(float Now, float Min, float Max) -> void
 eQuantic.UI.Primitives.Rect
 eQuantic.UI.Primitives.Rect.Bottom.get -> float
 eQuantic.UI.Primitives.Rect.Center.get -> eQuantic.UI.Primitives.Point
@@ -1704,7 +1684,7 @@ eQuantic.UI.Primitives.SemanticNode.Checked.get -> eQuantic.UI.Primitives.Semant
 eQuantic.UI.Primitives.SemanticNode.Checked.init -> void
 eQuantic.UI.Primitives.SemanticNode.Current.get -> bool
 eQuantic.UI.Primitives.SemanticNode.Current.init -> void
-eQuantic.UI.Primitives.SemanticNode.Deconstruct(out eQuantic.UI.Primitives.SemanticRole Role, out string! Path, out eQuantic.UI.Primitives.Rect Bounds, out string! Label, out string? Value, out bool Disabled, out eQuantic.UI.Primitives.SemanticCheck? Checked, out bool? Expanded, out bool Current, out bool? Selected, out int HeadingLevel) -> void
+eQuantic.UI.Primitives.SemanticNode.Deconstruct(out eQuantic.UI.Primitives.SemanticRole Role, out string! Path, out eQuantic.UI.Primitives.Rect Bounds, out string! Label, out string? Value, out bool Disabled, out eQuantic.UI.Primitives.SemanticCheck? Checked, out bool? Expanded, out bool Current, out bool? Selected, out int HeadingLevel, out eQuantic.UI.Primitives.LiveRegionUrgency? Live, out eQuantic.UI.Primitives.RangeValue? Range) -> void
 eQuantic.UI.Primitives.SemanticNode.Disabled.get -> bool
 eQuantic.UI.Primitives.SemanticNode.Disabled.init -> void
 eQuantic.UI.Primitives.SemanticNode.Equals(eQuantic.UI.Primitives.SemanticNode other) -> bool
@@ -1714,14 +1694,18 @@ eQuantic.UI.Primitives.SemanticNode.HeadingLevel.get -> int
 eQuantic.UI.Primitives.SemanticNode.HeadingLevel.init -> void
 eQuantic.UI.Primitives.SemanticNode.Label.get -> string!
 eQuantic.UI.Primitives.SemanticNode.Label.init -> void
+eQuantic.UI.Primitives.SemanticNode.Live.get -> eQuantic.UI.Primitives.LiveRegionUrgency?
+eQuantic.UI.Primitives.SemanticNode.Live.init -> void
 eQuantic.UI.Primitives.SemanticNode.Path.get -> string!
 eQuantic.UI.Primitives.SemanticNode.Path.init -> void
+eQuantic.UI.Primitives.SemanticNode.Range.get -> eQuantic.UI.Primitives.RangeValue?
+eQuantic.UI.Primitives.SemanticNode.Range.init -> void
 eQuantic.UI.Primitives.SemanticNode.Role.get -> eQuantic.UI.Primitives.SemanticRole
 eQuantic.UI.Primitives.SemanticNode.Role.init -> void
 eQuantic.UI.Primitives.SemanticNode.Selected.get -> bool?
 eQuantic.UI.Primitives.SemanticNode.Selected.init -> void
 eQuantic.UI.Primitives.SemanticNode.SemanticNode() -> void
-eQuantic.UI.Primitives.SemanticNode.SemanticNode(eQuantic.UI.Primitives.SemanticRole Role, string! Path, eQuantic.UI.Primitives.Rect Bounds, string! Label, string? Value, bool Disabled, eQuantic.UI.Primitives.SemanticCheck? Checked = null, bool? Expanded = null, bool Current = false, bool? Selected = null, int HeadingLevel = 0) -> void
+eQuantic.UI.Primitives.SemanticNode.SemanticNode(eQuantic.UI.Primitives.SemanticRole Role, string! Path, eQuantic.UI.Primitives.Rect Bounds, string! Label, string? Value, bool Disabled, eQuantic.UI.Primitives.SemanticCheck? Checked = null, bool? Expanded = null, bool Current = false, bool? Selected = null, int HeadingLevel = 0, eQuantic.UI.Primitives.LiveRegionUrgency? Live = null, eQuantic.UI.Primitives.RangeValue? Range = null) -> void
 eQuantic.UI.Primitives.SemanticNode.Value.get -> string?
 eQuantic.UI.Primitives.SemanticNode.Value.init -> void
 eQuantic.UI.Primitives.SemanticRole
@@ -1729,8 +1713,10 @@ eQuantic.UI.Primitives.SemanticRole.Button = 1 -> eQuantic.UI.Primitives.Semanti
 eQuantic.UI.Primitives.SemanticRole.Checkbox = 7 -> eQuantic.UI.Primitives.SemanticRole
 eQuantic.UI.Primitives.SemanticRole.CodeField = 4 -> eQuantic.UI.Primitives.SemanticRole
 eQuantic.UI.Primitives.SemanticRole.GridCell = 9 -> eQuantic.UI.Primitives.SemanticRole
+eQuantic.UI.Primitives.SemanticRole.Group = 11 -> eQuantic.UI.Primitives.SemanticRole
 eQuantic.UI.Primitives.SemanticRole.Image = 6 -> eQuantic.UI.Primitives.SemanticRole
 eQuantic.UI.Primitives.SemanticRole.Link = 2 -> eQuantic.UI.Primitives.SemanticRole
+eQuantic.UI.Primitives.SemanticRole.ProgressIndicator = 10 -> eQuantic.UI.Primitives.SemanticRole
 eQuantic.UI.Primitives.SemanticRole.Slider = 5 -> eQuantic.UI.Primitives.SemanticRole
 eQuantic.UI.Primitives.SemanticRole.StaticText = 0 -> eQuantic.UI.Primitives.SemanticRole
 eQuantic.UI.Primitives.SemanticRole.Switch = 8 -> eQuantic.UI.Primitives.SemanticRole
@@ -2170,7 +2156,6 @@ eQuantic.UI.Primitives.TypeRole.TitleSmall = 7 -> eQuantic.UI.Primitives.TypeRol
 eQuantic.UI.Primitives.TypeScriptLanguage
 eQuantic.UI.Primitives.TypeScriptLanguage.TypeScriptLanguage() -> void
 eQuantic.UI.Primitives.TypeStyle
-eQuantic.UI.Primitives.TypeStyle.Deconstruct(out float Size, out float LineHeight, out eQuantic.UI.Primitives.FontWeight Weight, out float Tracking, out float MaxScale, out bool Mono, out bool Italic) -> void
 eQuantic.UI.Primitives.TypeStyle.Deconstruct(out float Size, out float LineHeight, out eQuantic.UI.Primitives.FontWeight Weight, out float Tracking, out float MaxScale, out bool Mono, out bool Italic, out string? Family) -> void
 eQuantic.UI.Primitives.TypeStyle.Equals(eQuantic.UI.Primitives.TypeStyle other) -> bool
 eQuantic.UI.Primitives.TypeStyle.Family.get -> string?
@@ -2191,7 +2176,6 @@ eQuantic.UI.Primitives.TypeStyle.Tracking.get -> float
 eQuantic.UI.Primitives.TypeStyle.Tracking.init -> void
 eQuantic.UI.Primitives.TypeStyle.TypeStyle() -> void
 eQuantic.UI.Primitives.TypeStyle.TypeStyle(float Size, float LineHeight, eQuantic.UI.Primitives.FontWeight Weight, float Tracking, float MaxScale, bool Mono = false, bool Italic = false, string? Family = null) -> void
-eQuantic.UI.Primitives.TypeStyle.TypeStyle(float Size, float LineHeight, eQuantic.UI.Primitives.FontWeight Weight, float Tracking, float MaxScale, bool Mono, bool Italic) -> void
 eQuantic.UI.Primitives.TypeStyle.Weight.get -> eQuantic.UI.Primitives.FontWeight
 eQuantic.UI.Primitives.TypeStyle.Weight.init -> void
 eQuantic.UI.Primitives.TypeStyle.WithSize(float size) -> eQuantic.UI.Primitives.TypeStyle
@@ -2355,20 +2339,21 @@ eQuantic.UI.Primitives.VisualNode.Origin.init -> void
 eQuantic.UI.Primitives.VisualNode.OriginLabel.get -> string?
 eQuantic.UI.Primitives.VisualNode.OriginLabel.init -> void
 eQuantic.UI.Primitives.VisualNodeExtensions
+eQuantic.UI.Primitives.WebContent
+eQuantic.UI.Primitives.WebContent.Equals(eQuantic.UI.Primitives.WebContent other) -> bool
+eQuantic.UI.Primitives.WebContent.IsInline.get -> bool
+eQuantic.UI.Primitives.WebContent.Value.get -> string!
+eQuantic.UI.Primitives.WebContent.WebContent() -> void
 eQuantic.UI.Primitives.WebFrame
+eQuantic.UI.Primitives.WebFrame.Content.get -> eQuantic.UI.Primitives.WebContent
 eQuantic.UI.Primitives.WebFrame.CornerRadius.get -> eQuantic.UI.Primitives.CornerRadii
 eQuantic.UI.Primitives.WebFrame.CornerRadius.init -> void
-eQuantic.UI.Primitives.WebFrame.Document.get -> string?
-eQuantic.UI.Primitives.WebFrame.Document.init -> void
 eQuantic.UI.Primitives.WebFrame.Height.get -> eQuantic.UI.Primitives.SizeValue
 eQuantic.UI.Primitives.WebFrame.Height.init -> void
 eQuantic.UI.Primitives.WebFrame.Sandbox.get -> eQuantic.UI.Primitives.WebSandbox
 eQuantic.UI.Primitives.WebFrame.Sandbox.init -> void
-eQuantic.UI.Primitives.WebFrame.Source.get -> string?
-eQuantic.UI.Primitives.WebFrame.Source.init -> void
 eQuantic.UI.Primitives.WebFrame.Title.get -> string!
-eQuantic.UI.Primitives.WebFrame.Title.init -> void
-eQuantic.UI.Primitives.WebFrame.WebFrame() -> void
+eQuantic.UI.Primitives.WebFrame.WebFrame(eQuantic.UI.Primitives.WebContent content, string! title) -> void
 eQuantic.UI.Primitives.WebFrame.Width.get -> eQuantic.UI.Primitives.SizeValue
 eQuantic.UI.Primitives.WebFrame.Width.init -> void
 eQuantic.UI.Primitives.WebSandbox
@@ -2392,7 +2377,6 @@ eQuantic.UI.Primitives.XmlLanguage.Tokenize(string! line, int state, System.Coll
 eQuantic.UI.Primitives.XmlLanguage.XmlLanguage() -> void
 override eQuantic.UI.Primitives.AdaptiveNode.NodeKind.get -> string!
 override eQuantic.UI.Primitives.Adjustable.NodeKind.get -> string!
-override eQuantic.UI.Primitives.AdjustableValue.GetHashCode() -> int
 override eQuantic.UI.Primitives.Anchored.NodeKind.get -> string!
 override eQuantic.UI.Primitives.AuditLine.GetHashCode() -> int
 override eQuantic.UI.Primitives.AuditReport.Equals(object? obj) -> bool
@@ -2472,6 +2456,7 @@ override eQuantic.UI.Primitives.InView.NodeKind.get -> string!
 override eQuantic.UI.Primitives.KeyChord.GetHashCode() -> int
 override eQuantic.UI.Primitives.LinearGradient.GetHashCode() -> int
 override eQuantic.UI.Primitives.Link.NodeKind.get -> string!
+override eQuantic.UI.Primitives.LiveRegion.NodeKind.get -> string!
 override eQuantic.UI.Primitives.LoopMotion.NodeKind.get -> string!
 override eQuantic.UI.Primitives.Matrix2D.GetHashCode() -> int
 override eQuantic.UI.Primitives.MotionReading.GetHashCode() -> int
@@ -2484,8 +2469,10 @@ override eQuantic.UI.Primitives.Pinned.NodeKind.get -> string!
 override eQuantic.UI.Primitives.Point.GetHashCode() -> int
 override eQuantic.UI.Primitives.Presence.NodeKind.get -> string!
 override eQuantic.UI.Primitives.Pressable.NodeKind.get -> string!
+override eQuantic.UI.Primitives.Progress.NodeKind.get -> string!
 override eQuantic.UI.Primitives.RRect.GetHashCode() -> int
 override eQuantic.UI.Primitives.RadialGradient.GetHashCode() -> int
+override eQuantic.UI.Primitives.RangeValue.GetHashCode() -> int
 override eQuantic.UI.Primitives.Rect.GetHashCode() -> int
 override eQuantic.UI.Primitives.Row.Cross.get -> eQuantic.UI.Primitives.CrossAlign
 override eQuantic.UI.Primitives.Row.Cross.init -> void
@@ -2524,6 +2511,7 @@ override eQuantic.UI.Primitives.VectorPaint.GetHashCode() -> int
 override eQuantic.UI.Primitives.VectorSegment.GetHashCode() -> int
 override eQuantic.UI.Primitives.VectorShape.GetHashCode() -> int
 override eQuantic.UI.Primitives.VectorStop.GetHashCode() -> int
+override eQuantic.UI.Primitives.WebContent.GetHashCode() -> int
 override sealed eQuantic.UI.Primitives.AdaptiveNode.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
 override sealed eQuantic.UI.Primitives.Adjustable.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
 override sealed eQuantic.UI.Primitives.Anchored.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
@@ -2548,6 +2536,7 @@ override sealed eQuantic.UI.Primitives.Image.NodeKind.get -> string!
 override sealed eQuantic.UI.Primitives.InFlow.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
 override sealed eQuantic.UI.Primitives.InView.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
 override sealed eQuantic.UI.Primitives.Link.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
+override sealed eQuantic.UI.Primitives.LiveRegion.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
 override sealed eQuantic.UI.Primitives.LoopMotion.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
 override sealed eQuantic.UI.Primitives.Navigable.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
 override sealed eQuantic.UI.Primitives.Overlay.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
@@ -2556,6 +2545,7 @@ override sealed eQuantic.UI.Primitives.Positioned.Accept<TState, TResult>(eQuant
 override sealed eQuantic.UI.Primitives.Positioned.NodeKind.get -> string!
 override sealed eQuantic.UI.Primitives.Presence.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
 override sealed eQuantic.UI.Primitives.Pressable.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
+override sealed eQuantic.UI.Primitives.Progress.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
 override sealed eQuantic.UI.Primitives.Row.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
 override sealed eQuantic.UI.Primitives.SafeArea.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
 override sealed eQuantic.UI.Primitives.ScrollView.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
@@ -2575,8 +2565,6 @@ override sealed eQuantic.UI.Primitives.Vector.Accept<TState, TResult>(eQuantic.U
 override sealed eQuantic.UI.Primitives.Vector.NodeKind.get -> string!
 override sealed eQuantic.UI.Primitives.WebFrame.Accept<TState, TResult>(eQuantic.UI.Primitives.IVisualNodeVisitor<TState, TResult>! visitor, TState state) -> TResult
 override sealed eQuantic.UI.Primitives.WebFrame.NodeKind.get -> string!
-static eQuantic.UI.Primitives.AdjustableValue.operator !=(eQuantic.UI.Primitives.AdjustableValue left, eQuantic.UI.Primitives.AdjustableValue right) -> bool
-static eQuantic.UI.Primitives.AdjustableValue.operator ==(eQuantic.UI.Primitives.AdjustableValue left, eQuantic.UI.Primitives.AdjustableValue right) -> bool
 static eQuantic.UI.Primitives.AuditLine.operator !=(eQuantic.UI.Primitives.AuditLine left, eQuantic.UI.Primitives.AuditLine right) -> bool
 static eQuantic.UI.Primitives.AuditLine.operator ==(eQuantic.UI.Primitives.AuditLine left, eQuantic.UI.Primitives.AuditLine right) -> bool
 static eQuantic.UI.Primitives.AuditReport.operator !=(eQuantic.UI.Primitives.AuditReport? left, eQuantic.UI.Primitives.AuditReport? right) -> bool
@@ -2691,6 +2679,7 @@ static eQuantic.UI.Primitives.GridTrack.Flex(float weight = 1) -> eQuantic.UI.Pr
 static eQuantic.UI.Primitives.GridTrack.Repeat(int count, eQuantic.UI.Primitives.GridTrack track) -> eQuantic.UI.Primitives.GridTrack[]!
 static eQuantic.UI.Primitives.GridTrack.operator !=(eQuantic.UI.Primitives.GridTrack left, eQuantic.UI.Primitives.GridTrack right) -> bool
 static eQuantic.UI.Primitives.GridTrack.operator ==(eQuantic.UI.Primitives.GridTrack left, eQuantic.UI.Primitives.GridTrack right) -> bool
+static eQuantic.UI.Primitives.IconGlyph.implicit operator eQuantic.UI.Primitives.IconGlyph(eQuantic.UI.Primitives.Icons glyph) -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.Primitives.IconGlyph.operator !=(eQuantic.UI.Primitives.IconGlyph left, eQuantic.UI.Primitives.IconGlyph right) -> bool
 static eQuantic.UI.Primitives.IconGlyph.operator ==(eQuantic.UI.Primitives.IconGlyph left, eQuantic.UI.Primitives.IconGlyph right) -> bool
 static eQuantic.UI.Primitives.ImageData.operator !=(eQuantic.UI.Primitives.ImageData? left, eQuantic.UI.Primitives.ImageData? right) -> bool
@@ -2718,6 +2707,7 @@ static eQuantic.UI.Primitives.MotionSpec.operator !=(eQuantic.UI.Primitives.Moti
 static eQuantic.UI.Primitives.MotionSpec.operator ==(eQuantic.UI.Primitives.MotionSpec left, eQuantic.UI.Primitives.MotionSpec right) -> bool
 static eQuantic.UI.Primitives.MotionVector.operator !=(eQuantic.UI.Primitives.MotionVector left, eQuantic.UI.Primitives.MotionVector right) -> bool
 static eQuantic.UI.Primitives.MotionVector.operator ==(eQuantic.UI.Primitives.MotionVector left, eQuantic.UI.Primitives.MotionVector right) -> bool
+static eQuantic.UI.Primitives.NavigableKeys.Move(string! key, bool shift) -> eQuantic.UI.Primitives.NavigableMove?
 static eQuantic.UI.Primitives.Navigator.Go(string! destination) -> void
 static eQuantic.UI.Primitives.Navigator.Handler.get -> System.Action<string!>?
 static eQuantic.UI.Primitives.Navigator.Handler.set -> void
@@ -2732,7 +2722,6 @@ static eQuantic.UI.Primitives.PaletteAudit.Hue(eQuantic.UI.Primitives.Color colo
 static eQuantic.UI.Primitives.PaletteAudit.Oklch(eQuantic.UI.Primitives.Color color) -> (double L, double C, double H)
 static eQuantic.UI.Primitives.PaletteAudit.Ordinal(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Color>! ramp, eQuantic.UI.Primitives.ThemeMode mode, eQuantic.UI.Primitives.Color? surface = null) -> eQuantic.UI.Primitives.AuditReport!
 static eQuantic.UI.Primitives.PaletteAudit.Simulate(eQuantic.UI.Primitives.Color color, eQuantic.UI.Primitives.Cvd kind) -> eQuantic.UI.Primitives.Color
-static eQuantic.UI.Primitives.PhotonEntitlements.IsHardenedRuntimeException(string! entitlement) -> bool
 static eQuantic.UI.Primitives.Point.operator !=(eQuantic.UI.Primitives.Point left, eQuantic.UI.Primitives.Point right) -> bool
 static eQuantic.UI.Primitives.Point.operator *(eQuantic.UI.Primitives.Point a, float s) -> eQuantic.UI.Primitives.Point
 static eQuantic.UI.Primitives.Point.operator +(eQuantic.UI.Primitives.Point a, eQuantic.UI.Primitives.Point b) -> eQuantic.UI.Primitives.Point
@@ -2742,6 +2731,8 @@ static eQuantic.UI.Primitives.RRect.operator !=(eQuantic.UI.Primitives.RRect lef
 static eQuantic.UI.Primitives.RRect.operator ==(eQuantic.UI.Primitives.RRect left, eQuantic.UI.Primitives.RRect right) -> bool
 static eQuantic.UI.Primitives.RadialGradient.operator !=(eQuantic.UI.Primitives.RadialGradient left, eQuantic.UI.Primitives.RadialGradient right) -> bool
 static eQuantic.UI.Primitives.RadialGradient.operator ==(eQuantic.UI.Primitives.RadialGradient left, eQuantic.UI.Primitives.RadialGradient right) -> bool
+static eQuantic.UI.Primitives.RangeValue.operator !=(eQuantic.UI.Primitives.RangeValue left, eQuantic.UI.Primitives.RangeValue right) -> bool
+static eQuantic.UI.Primitives.RangeValue.operator ==(eQuantic.UI.Primitives.RangeValue left, eQuantic.UI.Primitives.RangeValue right) -> bool
 static eQuantic.UI.Primitives.Rect.FromLTRB(float left, float top, float right, float bottom) -> eQuantic.UI.Primitives.Rect
 static eQuantic.UI.Primitives.Rect.operator !=(eQuantic.UI.Primitives.Rect left, eQuantic.UI.Primitives.Rect right) -> bool
 static eQuantic.UI.Primitives.Rect.operator ==(eQuantic.UI.Primitives.Rect left, eQuantic.UI.Primitives.Rect right) -> bool
@@ -2840,6 +2831,10 @@ static eQuantic.UI.Primitives.VectorStop.operator ==(eQuantic.UI.Primitives.Vect
 static eQuantic.UI.Primitives.VisualNode.DesignOrigin.Stamp<T>(T! node, string! origin) -> T!
 static eQuantic.UI.Primitives.VisualNodeExtensions.Centered(this eQuantic.UI.Primitives.VisualNode! node) -> eQuantic.UI.Primitives.VisualNode!
 static eQuantic.UI.Primitives.VisualNodeExtensions.With<T>(this T! node, eQuantic.UI.Primitives.VisualNode! child) -> T!
+static eQuantic.UI.Primitives.WebContent.Document(string! markup) -> eQuantic.UI.Primitives.WebContent
+static eQuantic.UI.Primitives.WebContent.Url(string! address) -> eQuantic.UI.Primitives.WebContent
+static eQuantic.UI.Primitives.WebContent.operator !=(eQuantic.UI.Primitives.WebContent left, eQuantic.UI.Primitives.WebContent right) -> bool
+static eQuantic.UI.Primitives.WebContent.operator ==(eQuantic.UI.Primitives.WebContent left, eQuantic.UI.Primitives.WebContent right) -> bool
 static eQuantic.UI.Primitives.WindowSizeClasses.FromWidth(float dp) -> eQuantic.UI.Primitives.WindowSizeClass
 static readonly eQuantic.UI.Primitives.CodeDocument.Empty -> eQuantic.UI.Primitives.CodeDocument!
 static readonly eQuantic.UI.Primitives.CodeLanguageRules.Default -> eQuantic.UI.Primitives.CodeLanguageRules!
@@ -2889,8 +2884,6 @@ virtual eQuantic.UI.Primitives.CurlyBraceLanguage.WordKind(string! word, string!
 virtual eQuantic.UI.Primitives.StatefulComponent.OnMount() -> void
 virtual eQuantic.UI.Primitives.StatefulComponent.OnUnmount() -> void
 virtual eQuantic.UI.Primitives.UiComponent.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
-~override eQuantic.UI.Primitives.AdjustableValue.Equals(object obj) -> bool
-~override eQuantic.UI.Primitives.AdjustableValue.ToString() -> string
 ~override eQuantic.UI.Primitives.AuditLine.Equals(object obj) -> bool
 ~override eQuantic.UI.Primitives.AuditLine.ToString() -> string
 ~override eQuantic.UI.Primitives.BoxStyle.Equals(object obj) -> bool
@@ -2946,6 +2939,8 @@ virtual eQuantic.UI.Primitives.UiComponent.AdoptConfig(eQuantic.UI.Primitives.Ui
 ~override eQuantic.UI.Primitives.RRect.ToString() -> string
 ~override eQuantic.UI.Primitives.RadialGradient.Equals(object obj) -> bool
 ~override eQuantic.UI.Primitives.RadialGradient.ToString() -> string
+~override eQuantic.UI.Primitives.RangeValue.Equals(object obj) -> bool
+~override eQuantic.UI.Primitives.RangeValue.ToString() -> string
 ~override eQuantic.UI.Primitives.Rect.Equals(object obj) -> bool
 ~override eQuantic.UI.Primitives.Rect.ToString() -> string
 ~override eQuantic.UI.Primitives.SemanticNode.Equals(object obj) -> bool
@@ -2984,3 +2979,5 @@ virtual eQuantic.UI.Primitives.UiComponent.AdoptConfig(eQuantic.UI.Primitives.Ui
 ~override eQuantic.UI.Primitives.VectorShape.ToString() -> string
 ~override eQuantic.UI.Primitives.VectorStop.Equals(object obj) -> bool
 ~override eQuantic.UI.Primitives.VectorStop.ToString() -> string
+~override eQuantic.UI.Primitives.WebContent.Equals(object obj) -> bool
+~override eQuantic.UI.Primitives.WebContent.ToString() -> string

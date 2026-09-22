@@ -1,2 +1,1 @@
 #nullable enable
-*REMOVED*static eQuantic.UI.Email.EmailRenderer.Render(eQuantic.UI.Primitives.UiComponent! component, eQuantic.UI.Primitives.IAppTheme! theme, string? preheader = null) -> eQuantic.UI.Email.EmailMessage!
