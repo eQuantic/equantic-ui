@@ -1,1 +1,15 @@
 #nullable enable
+static eQuantic.UI.SimpleIcons.SimpleIcons.Godox.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Albumoftheyear.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Alphaxiv.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Kimi.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Oomol.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Simpleiconscdn.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Atomgit.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Tencenthy.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Trae.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Traxsource.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Zdotai.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Zectrix.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Zx.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Codebuddy.get -> eQuantic.UI.Primitives.IconGlyph
