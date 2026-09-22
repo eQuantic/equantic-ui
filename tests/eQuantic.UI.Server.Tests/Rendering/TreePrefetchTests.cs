@@ -452,6 +452,42 @@ public class TreePrefetchTests
             + result.SerializedState);
     }
 
+    /// <summary>A page whose Build returns a prefetching component DIRECTLY — no container.</summary>
+    [Page("/tree-prefetch-build-root")]
+    private sealed class PageWhoseBuildIsAComponent : Primitives.StatelessComponent
+    {
+        public override VisualNode Build(ComponentContext context) => new StatsHeader();
+    }
+
+    /// <summary>
+    /// A COMPONENT A BUILD RETURNS IS NAMED LIKE ANY OTHER, which is the fact the client's walk has
+    /// to agree with. The realizer enters every <c>UiComponent</c> it expands, and a component
+    /// returned straight from <c>Build</c> with no container around it is one of them.
+    ///
+    /// <para>
+    /// It is here because the client side of this was reasoned rather than measured, and reasoned
+    /// wrongly: a build root was taken for something the server never names, on the strength of the
+    /// Core case, where a page's own <c>Render</c> returns markup rather than a component. This is
+    /// the server's actual answer, so the twin has one thing to agree with instead of an argument.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public async Task AComponentABuildReturnsDirectly_IsNamedLikeAnyOther()
+    {
+        var context = RequestWith(out _);
+
+        var result = await CreateService().RenderPageAsync(nameof(PageWhoseBuildIsAComponent), context);
+
+        result.Success.Should().BeTrue(result.Error);
+        result.Html.Should().Contain("Downloads: 675617");
+        result.SerializedState.Should().NotBeNull();
+
+        using var payload = JsonDocument.Parse(result.SerializedState!);
+        payload.RootElement.TryGetProperty($"{nameof(StatsHeader)}#0", out var fields)
+            .Should().BeTrue($"payload was: {result.SerializedState}");
+        fields.GetProperty("_downloads").GetString().Should().Be("675617");
+    }
+
     /// <summary>A row that knows WHICH row it is, and loads for that one.</summary>
     private sealed class Row : Primitives.StatelessComponent, IServerPrefetch
     {

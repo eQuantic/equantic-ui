@@ -214,16 +214,23 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     expect(nextComponentKey('HomePage2')).toBe('HomePage2#1');
   });
 
-  it('a BUILD ROOT joins the walk instead of claiming the root key again', () => {
+  it('a BUILD ROOT takes the NEXT key, because the realizer entered it too', () => {
     // Both root render methods call `component.render()` on what `build()` returned, and that
-    // render() is this same entry point. Outside the walk it restarted the count and claimed `#0` —
-    // so a component that builds another of its OWN type handed the child the ROOT's entry. The
-    // server never named that child at all, which makes the old answer a WRONG value where the
-    // right one is no value.
+    // render() is this same entry point. It used to restart the count there and claim `#0`, so a
+    // component that builds another of its OWN type handed the child the ROOT's entry.
+    //
+    // The child is NAMED though, and that took measuring rather than reasoning: `Build => new
+    // StatsHeader()` with no container makes the server emit `StatsHeader#0`, because the realizer
+    // enters every UiComponent it expands and a build root is one. The C# case that says so is
+    // `AComponentABuildReturnsDirectly_IsNamedLikeAnyOther`. An earlier version of this case read
+    // the Core page — whose Render returns markup, not a component — and concluded the opposite.
     class TreeNode {
       _label = 'default';
     }
-    win.__INITIAL_STATE__ = { 'TreeNode#0': { _label: 'the root' } };
+    win.__INITIAL_STATE__ = {
+      'TreeNode#0': { _label: 'the root' },
+      'TreeNode#1': { _label: 'the child' },
+    };
 
     const outer = new TreeNode();
     const inner = new TreeNode();
@@ -231,7 +238,7 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     runComponentWalk(outer, true, () => runComponentWalk(inner, true, () => undefined));
 
     expect(outer._label).toBe('the root');
-    expect(inner._label).toBe('default');
+    expect(inner._label).toBe('the child');
   });
 
   it('adopts ONCE per instance, so a retained component keeps what it has done since', () => {

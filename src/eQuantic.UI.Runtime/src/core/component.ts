@@ -106,55 +106,44 @@ export function adoptServerStateFor(target: object, key: string): boolean {
 }
 
 /**
- * Starts the walk for ONE root render: the count restarts and the root claims `#0`, which is what
- * the server's realizer gave it.
+ * How deep in the walk this render is. Zero means nothing is in progress, so the next thing to run
+ * owns the count and restarts it.
  *
- * EVERY RENDER, not only the first. The count lives across renders, and a root that re-rendered
- * without restarting it handed the components below `Type#1`, `Type#2`, … — keys the payload does
- * not name — so a composed component silently reverted to its defaults on the second pass. The root
- * also has to CONSUME `#0` even when it is not adopting, or everything under it shifts by one.
+ * THE WALK IS BRACKETED rather than marked, and that is worth stating because three separate
+ * markers were tried first and each was a guess made at a call site. `render()` is one method and
+ * everything reaches it — a page root, the component a `build()` returned, a component the lowering
+ * met at its mixing seam — so whether a call OWNS the count is a property of when it is called,
+ * which only a bracket can answer.
  *
- * `adopt` is false once the root is mounted: the payload is the first render's answer, and applying
- * it again would undo whatever the page has done since.
- *
- * ONLY THE OUTERMOST CALL NAMES ITS ROOT, and the reason is what the server names. The realizer
- * enters every component the page COMPOSES, and the lowering claims those keys itself — for a
- * `component` node, for a Stack child, and at the mixing seam through `renderNamedComponent`. What
- * reaches this function from inside a walk is a build ROOT, the component a `build()` returned,
- * which the server never named: naming it here would consume an ordinal nothing on the other side
- * consumed.
+ * What is NOT a property of when it is called is whether the component gets a key. It always does,
+ * because the server's realizer enters every `UiComponent` it expands and these classes are that
+ * twin; a Core element transpiles to `HtmlElement` and never reaches this file. Reading one of
+ * those questions off the other is what produced the markers.
  */
 let walkDepth = 0;
 
 /**
- * THE WALK HAS A LIFETIME, which is why this takes the render rather than marking its start.
+ * Opens the walk around ONE lowering, and NAMES NOTHING: a lowering is not a component.
  *
- * `render()` is one method, and everything reaches it: a page root, a component a `build()`
- * returned, a web component composed in an abstract tree that carries no `nodeKind` and renders
- * itself. Whether a call is the root of a walk or a step inside one is not a property of the
- * component — it is a property of WHEN it is called — so the only honest answer is to bracket the
- * render and read the depth.
+ * Every lowering goes through `lowerVisualNode`, so this is where an outermost one restarts the
+ * count. A Core page's bridge to a write-once subtree reaches the lowering with no component render
+ * of its own, and nothing else would restart it — the same child was named `Type#0` on one render
+ * and `Type#1` on the next, so every render after the first left it with its defaults.
  *
- * Two failures came from guessing instead, one in each direction. A nested render treated as a root
- * restarted the count mid-walk, so two same-type prefetching children both claimed `Type#0` and the
- * second was handed the first one's data. Then a flag that suppressed every nested-looking render
- * silenced the case where nothing was in progress at all, and a component that legitimately opens a
- * walk never claimed its own key. A depth answers both, and it answers them by construction rather
- * than by a rule someone has to remember at each new call site.
+ * Around the whole lowering rather than around each component inside it, which is the difference
+ * that makes this its own function: restarting per component would restart the count between two
+ * SIBLINGS and hand both of them `#0`.
  *
- * `adopt` is false once the root is mounted: the payload is the first render's answer, and applying
- * it again would undo whatever the page has done since.
+ * WHAT THIS CANNOT SEE is a page whose render is not a component's. The server counts one page
+ * render, and two sibling bridges inside one of those continue one count; here they would be two
+ * outermost lowerings and each would restart. It needs a Core page rendering in the browser, and
+ * there is no such thing today — `mount`, `hydrate` and `mountReconcile` are declared on
+ * `StatelessComponent` and `StatefulComponent` only, so an escape-hatch page (an `HtmlElement`)
+ * is served by SSR and never mounted by the boot script. Inside a write-once page the bridges are
+ * already nested in the root's own walk and share its count, which is why this is a gap in the
+ * client half of that page shape rather than in the count: issue #279.
  */
 export function runLoweringWalk<T>(run: () => T): T {
-  // ONE LIFETIME FOR ONE LOWERING. Every lowering goes through `lowerVisualNode`, so this is where
-  // an outermost one restarts the count — a Core page's bridge to a write-once subtree reaches the
-  // lowering directly, with no `runComponentWalk` of its own, and nothing else would restart it:
-  // the same child was named `Type#0` on one render and `Type#1` on the next, so every render after
-  // the first left it with its defaults.
-  //
-  // Here rather than at the seam below, and that is the whole reason it is a separate function:
-  // resetting per named component would restart the count between two SIBLINGS, and both would
-  // claim `#0`.
   if (walkDepth === 0) resetComponentKeys();
 
   walkDepth++;
@@ -165,34 +154,30 @@ export function runLoweringWalk<T>(run: () => T): T {
   }
 }
 
-export function renderNamedComponent<T>(component: object, run: () => T): T {
-  // NAMED HERE, because the lowering is what reached it. A write-once StatelessComponent twin
-  // carries no `nodeKind` — only StatefulComponent declares one — so it arrives at the mixing seam
-  // and renders itself, while the C# realizer ENTERS it like any other UiComponent and consumes an
-  // ordinal. Leaving the seam silent consumed none, so every composed component kept its defaults
-  // and every ordinal after it was shifted: the exact case this change exists for.
-  adoptServerStateFor(component, nextComponentKey((component.constructor as { name?: string }).name ?? ''));
-
-  // And its own render() must not name it a SECOND time. The depth says so — one component, one
-  // ordinal — which is the same sentence from the other side.
-  walkDepth++;
-  try {
-    return run();
-  } finally {
-    walkDepth--;
-  }
-}
-
+/**
+ * Runs ONE component's render inside the walk: it takes its key, adopts what the server loaded for
+ * it while it is unmounted, and restarts the count first if nothing else is in progress.
+ *
+ * EVERY RENDER, not only the first. The count lives across renders, and a root that re-rendered
+ * without restarting it handed the components below `Type#1`, `Type#2`, … — keys the payload does
+ * not name — so a composed component silently reverted to its defaults on the second pass.
+ *
+ * `adopt` is false once the root is mounted: the payload is the first render's answer, and applying
+ * it again would undo whatever the page has done since. The key is taken either way, or everything
+ * after it shifts by one on exactly the renders where adoption is off.
+ */
 export function runComponentWalk<T>(root: object, adopt: boolean, run: () => T): T {
-  // A render INSIDE a walk joins it. It claims its key through whichever path reached it, and the
-  // count it would have restarted belongs to the root above it.
-  if (walkDepth === 0) {
-    resetComponentKeys();
-    // The root CONSUMES `#0` even when it is not adopting — it is the first component the server
-    // expanded — or everything under it shifts by one on exactly the renders where adoption is off.
-    const rootKey = nextComponentKey((root.constructor as { name?: string }).name ?? '');
-    if (adopt) adoptServerStateFor(root, rootKey);
-  }
+  // THE OUTERMOST RENDER RESTARTS THE COUNT, and only that one: a render inside a walk joins it,
+  // because the count it would have restarted belongs to the root above.
+  if (walkDepth === 0) resetComponentKeys();
+
+  // EVERY COMPONENT CONSUMES ITS KEY, nested or not, adopting or not. The realizer enters every
+  // `UiComponent` it expands and these classes ARE that twin — a Core element transpiles to
+  // `HtmlElement` and never arrives here — so a component that took no ordinal here would shift
+  // every one after it. Not adopting is a separate question: the payload is the first render's
+  // answer, and applying it again would undo whatever the page has done since.
+  const key = nextComponentKey((root.constructor as { name?: string }).name ?? '');
+  if (adopt) adoptServerStateFor(root, key);
 
   walkDepth++;
   try {

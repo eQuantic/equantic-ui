@@ -11,12 +11,7 @@
  *   class string per element; only custom-property tails stay inline.
  */
 
-import {
-  adoptServerStateFor,
-  nextComponentKey,
-  renderNamedComponent,
-  runLoweringWalk,
-} from '../core/component';
+import { adoptServerStateFor, nextComponentKey, runLoweringWalk } from '../core/component';
 import { assertNever } from '../utils/assert-never';
 import { round as dotnetRound } from '../utils/dotnet-math';
 import { PINNED_MARKER } from './markers';
@@ -345,13 +340,12 @@ function lowerNodeKind(
   // which is the truth about these objects, rather than for a case the union does not have.
   const foreign = node as { nodeKind?: string; render?: () => HtmlNode };
   if (foreign.nodeKind === undefined) {
-    // NAMED LIKE A `component` NODE, because that is what most of these are: a write-once
-    // StatelessComponent twin declares no `nodeKind` (only StatefulComponent does), so it arrives
-    // here rather than in the switch — while the C# realizer entered it like any other UiComponent
-    // and consumed an ordinal for it. The seam consumes the same one.
-    return typeof foreign.render === 'function'
-      ? renderNamedComponent(foreign, () => foreign.render!())
-      : null;
+    // NOTHING TO SAY ABOUT THE WALK. A write-once StatelessComponent twin declares no `nodeKind`
+    // (only StatefulComponent does) so it arrives here rather than in the switch, and its own
+    // render() takes its key — the same key the C# realizer consumed by entering it. An
+    // HtmlElement arriving here has no such render and takes none, which is right: the realizer
+    // does not enter one either.
+    return typeof foreign.render === 'function' ? foreign.render() : null;
   }
 
   switch (node.nodeKind) {
