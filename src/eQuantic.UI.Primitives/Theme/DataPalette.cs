@@ -19,7 +19,8 @@ namespace eQuantic.UI.Primitives;
 /// <para>
 /// <see cref="Default"/> is the validated reference instance of the data-visualization method the
 /// SDK adopts. A brand theme that overrides it holds the result to the same audit
-/// (<see cref="PaletteAudit"/>) — which is what makes a palette safe to change.
+/// (the palette audit in <c>tests/eQuantic.UI.Web.Tests</c>, run by <c>DataPaletteTests</c>) — which is
+/// what makes a palette safe to change.
 /// </para>
 /// </summary>
 public sealed record DataPalette

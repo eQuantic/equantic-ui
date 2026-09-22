@@ -1,11 +1,13 @@
 using System.Globalization;
 using System.Text;
 
-namespace eQuantic.UI.Primitives;
+using eQuantic.UI.Primitives;
+
+namespace eQuantic.UI.Web.Tests;
 
 /// <summary>Which colour-vision deficiency a check is simulated under. <see cref="None"/> is
 /// unsimulated (full-colour) vision.</summary>
-public enum Cvd : byte
+internal enum Cvd : byte
 {
     None = 0,
     /// <summary>Red-blind.</summary>
@@ -18,7 +20,7 @@ public enum Cvd : byte
 
 /// <summary>The three answers a check gives. <see cref="Relief"/> is legal only with a second
 /// channel doing the same work — direct labels, gaps, texture, or the table view.</summary>
-public enum AuditVerdict : byte
+internal enum AuditVerdict : byte
 {
     Pass = 0,
     Relief = 1,
@@ -26,14 +28,14 @@ public enum AuditVerdict : byte
 }
 
 /// <summary>One check of an audit: its name, its verdict, and the measurement that decided it.</summary>
-public readonly record struct AuditLine(string Check, AuditVerdict Verdict, string Detail);
+internal readonly record struct AuditLine(string Check, AuditVerdict Verdict, string Detail);
 
 /// <summary>
 /// What an audit found. <see cref="Ok"/> is "no hard failure" — a <see cref="AuditVerdict.Relief"/>
 /// line still passes, and still obligates the second channel it names. The worst measured distances
 /// are exposed as numbers so a test can pin them rather than parse a sentence.
 /// </summary>
-public sealed record AuditReport(
+internal sealed record AuditReport(
     IReadOnlyList<AuditLine> Lines,
     double WorstCvdDeltaE,
     double WorstNormalDeltaE,
@@ -68,7 +70,7 @@ public sealed record AuditReport(
 /// carry.
 /// </para>
 /// </summary>
-public static class PaletteAudit
+internal static class PaletteAudit
 {
     private const double LightBandLow = 0.43, LightBandHigh = 0.77;
     private const double DarkBandLow = 0.48, DarkBandHigh = 0.67;

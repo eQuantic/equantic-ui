@@ -1,1 +1,54 @@
 #nullable enable
+*REMOVED*eQuantic.UI.Primitives.AuditLine
+*REMOVED*eQuantic.UI.Primitives.AuditLine.AuditLine() -> void
+*REMOVED*eQuantic.UI.Primitives.AuditLine.AuditLine(string! Check, eQuantic.UI.Primitives.AuditVerdict Verdict, string! Detail) -> void
+*REMOVED*eQuantic.UI.Primitives.AuditLine.Check.get -> string!
+*REMOVED*eQuantic.UI.Primitives.AuditLine.Check.init -> void
+*REMOVED*eQuantic.UI.Primitives.AuditLine.Deconstruct(out string! Check, out eQuantic.UI.Primitives.AuditVerdict Verdict, out string! Detail) -> void
+*REMOVED*eQuantic.UI.Primitives.AuditLine.Detail.get -> string!
+*REMOVED*eQuantic.UI.Primitives.AuditLine.Detail.init -> void
+*REMOVED*eQuantic.UI.Primitives.AuditLine.Equals(eQuantic.UI.Primitives.AuditLine other) -> bool
+*REMOVED*eQuantic.UI.Primitives.AuditLine.Verdict.get -> eQuantic.UI.Primitives.AuditVerdict
+*REMOVED*eQuantic.UI.Primitives.AuditLine.Verdict.init -> void
+*REMOVED*eQuantic.UI.Primitives.AuditReport
+*REMOVED*eQuantic.UI.Primitives.AuditReport.<Clone>$() -> eQuantic.UI.Primitives.AuditReport!
+*REMOVED*eQuantic.UI.Primitives.AuditReport.AuditReport(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.AuditLine>! Lines, double WorstCvdDeltaE, double WorstNormalDeltaE, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Color>! BelowContrast) -> void
+*REMOVED*eQuantic.UI.Primitives.AuditReport.BelowContrast.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Color>!
+*REMOVED*eQuantic.UI.Primitives.AuditReport.BelowContrast.init -> void
+*REMOVED*eQuantic.UI.Primitives.AuditReport.Deconstruct(out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.AuditLine>! Lines, out double WorstCvdDeltaE, out double WorstNormalDeltaE, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Color>! BelowContrast) -> void
+*REMOVED*eQuantic.UI.Primitives.AuditReport.Equals(eQuantic.UI.Primitives.AuditReport? other) -> bool
+*REMOVED*eQuantic.UI.Primitives.AuditReport.Lines.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.AuditLine>!
+*REMOVED*eQuantic.UI.Primitives.AuditReport.Lines.init -> void
+*REMOVED*eQuantic.UI.Primitives.AuditReport.Ok.get -> bool
+*REMOVED*eQuantic.UI.Primitives.AuditReport.WorstCvdDeltaE.get -> double
+*REMOVED*eQuantic.UI.Primitives.AuditReport.WorstCvdDeltaE.init -> void
+*REMOVED*eQuantic.UI.Primitives.AuditReport.WorstNormalDeltaE.get -> double
+*REMOVED*eQuantic.UI.Primitives.AuditReport.WorstNormalDeltaE.init -> void
+*REMOVED*eQuantic.UI.Primitives.AuditVerdict
+*REMOVED*eQuantic.UI.Primitives.AuditVerdict.Fail = 2 -> eQuantic.UI.Primitives.AuditVerdict
+*REMOVED*eQuantic.UI.Primitives.AuditVerdict.Pass = 0 -> eQuantic.UI.Primitives.AuditVerdict
+*REMOVED*eQuantic.UI.Primitives.AuditVerdict.Relief = 1 -> eQuantic.UI.Primitives.AuditVerdict
+*REMOVED*eQuantic.UI.Primitives.Cvd
+*REMOVED*eQuantic.UI.Primitives.Cvd.Deutan = 2 -> eQuantic.UI.Primitives.Cvd
+*REMOVED*eQuantic.UI.Primitives.Cvd.None = 0 -> eQuantic.UI.Primitives.Cvd
+*REMOVED*eQuantic.UI.Primitives.Cvd.Protan = 1 -> eQuantic.UI.Primitives.Cvd
+*REMOVED*eQuantic.UI.Primitives.Cvd.Tritan = 3 -> eQuantic.UI.Primitives.Cvd
+*REMOVED*eQuantic.UI.Primitives.PaletteAudit
+*REMOVED*override eQuantic.UI.Primitives.AuditLine.GetHashCode() -> int
+*REMOVED*override eQuantic.UI.Primitives.AuditReport.Equals(object? obj) -> bool
+*REMOVED*override eQuantic.UI.Primitives.AuditReport.GetHashCode() -> int
+*REMOVED*override eQuantic.UI.Primitives.AuditReport.ToString() -> string!
+*REMOVED*static eQuantic.UI.Primitives.AuditLine.operator !=(eQuantic.UI.Primitives.AuditLine left, eQuantic.UI.Primitives.AuditLine right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.AuditLine.operator ==(eQuantic.UI.Primitives.AuditLine left, eQuantic.UI.Primitives.AuditLine right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.AuditReport.operator !=(eQuantic.UI.Primitives.AuditReport? left, eQuantic.UI.Primitives.AuditReport? right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.AuditReport.operator ==(eQuantic.UI.Primitives.AuditReport? left, eQuantic.UI.Primitives.AuditReport? right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.PaletteAudit.Categorical(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Color>! palette, eQuantic.UI.Primitives.ThemeMode mode, eQuantic.UI.Primitives.Color? surface = null, bool allPairs = false) -> eQuantic.UI.Primitives.AuditReport!
+*REMOVED*static eQuantic.UI.Primitives.PaletteAudit.Contrast(eQuantic.UI.Primitives.Color a, eQuantic.UI.Primitives.Color b) -> double
+*REMOVED*static eQuantic.UI.Primitives.PaletteAudit.DefaultSurface(eQuantic.UI.Primitives.ThemeMode mode) -> eQuantic.UI.Primitives.Color
+*REMOVED*static eQuantic.UI.Primitives.PaletteAudit.DeltaE(eQuantic.UI.Primitives.Color a, eQuantic.UI.Primitives.Color b, eQuantic.UI.Primitives.Cvd kind = eQuantic.UI.Primitives.Cvd.None) -> double
+*REMOVED*static eQuantic.UI.Primitives.PaletteAudit.Hue(eQuantic.UI.Primitives.Color color) -> double
+*REMOVED*static eQuantic.UI.Primitives.PaletteAudit.Oklch(eQuantic.UI.Primitives.Color color) -> (double L, double C, double H)
+*REMOVED*static eQuantic.UI.Primitives.PaletteAudit.Ordinal(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Color>! ramp, eQuantic.UI.Primitives.ThemeMode mode, eQuantic.UI.Primitives.Color? surface = null) -> eQuantic.UI.Primitives.AuditReport!
+*REMOVED*static eQuantic.UI.Primitives.PaletteAudit.Simulate(eQuantic.UI.Primitives.Color color, eQuantic.UI.Primitives.Cvd kind) -> eQuantic.UI.Primitives.Color
+*REMOVED*~override eQuantic.UI.Primitives.AuditLine.Equals(object obj) -> bool
+*REMOVED*~override eQuantic.UI.Primitives.AuditLine.ToString() -> string

@@ -31,6 +31,15 @@ namespace eQuantic.UI.Web.Tests;
 ///
 /// <para>Regenerate after an intentional append: <c>EQ_UPDATE_ENUM_VALUES=1 dotnet test
 /// tests/eQuantic.UI.Web.Tests</c>. The baseline may grow; a line that changes is the bug.</para>
+///
+/// <para>
+/// ONE removal is not the bug: an enum TYPE that leaves the assembly together with every API that
+/// takes it. No framework code is left to read its numbers, a consumer that named it fails to bind
+/// rather than misreading anything, and the public-API declaration already records it as a break
+/// (RS0017, a <c>*REMOVED*</c> line). Its lines go with a regeneration in the same pull request, and
+/// the diff shows exactly which — the palette audit's <c>Cvd</c> and <c>AuditVerdict</c> left this
+/// way when the audit moved to the tests (#128). A member leaving an enum that STAYS is never that.
+/// </para>
 /// </summary>
 public class EnumValueAbiTests
 {

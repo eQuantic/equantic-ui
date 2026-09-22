@@ -18,8 +18,6 @@ export type AnchorPanelRoleValue = 'none' | 'menu' | 'listbox' | 'dialog';
 export type AnchorPlacementValue =
   'bottomStart' | 'bottomEnd' | 'topStart' | 'topEnd' | 'bottomCenter' | 'topCenter';
 
-export type AuditVerdictValue = 'pass' | 'relief' | 'fail';
-
 export type BiometricResultValue =
   'succeeded' | 'failed' | 'cancelled' | 'fallbackRequested' | 'notEnrolled' | 'unavailable';
 
@@ -47,8 +45,6 @@ export type CodeTokenKindValue =
 export type ConsentStateValue = 'unknown' | 'granted' | 'denied';
 
 export type CrossAlignValue = 'start' | 'center' | 'end' | 'stretch';
-
-export type CvdValue = 'none' | 'protan' | 'deutan' | 'tritan';
 
 export type DensityValue = 'comfortable' | 'compact';
 
