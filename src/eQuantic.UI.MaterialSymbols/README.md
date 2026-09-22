@@ -26,13 +26,14 @@ a smaller pack (Lucide, Heroicons, Phosphor, Iconoir, Bootstrap Icons) costs les
 ```csharp
 using eQuantic.UI.MaterialSymbols;
 
-Glyph(MaterialSymbolsIcons.PlayArrowRounded)
-Glyph(MaterialSymbolsIcons.ExpandMore, size: 20)
+Icon(MaterialSymbolsIcons.PlayArrowRounded)
+Icon(MaterialSymbolsIcons.ExpandMore, size: 20)
 ```
 
-`Glyph`, not `Icon`: `Icon` is the factory for the framework's own curated set, and the declarative
-surface has no overloads. Sizes are the §07 whitelist — 16, 20, 24, 32. For a size off that list,
-`Vector(glyph, size)` draws the same paths without the icon contract.
+ONE `Icon`, whatever the glyph came from. A catalog entry here IS an `IconGlyph`, and the
+framework's own curated `Icons` converts to one, so both reach the same factory and the declarative
+surface still has no overloads. Sizes are the §07 whitelist — 16, 20, 24, 32. For a size off that
+list, `Vector(glyph, size)` draws the same paths without the icon contract.
 
 The names are the Iconify ones in PascalCase, so `material-symbols:play-arrow-rounded` is
 `PlayArrowRounded`.
