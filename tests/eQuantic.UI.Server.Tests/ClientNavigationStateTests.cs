@@ -88,7 +88,7 @@ public class ClientNavigationStateTests
             "without it the page renders the empty state it shows while data loads, forever");
         // KEYED BY COMPONENT since a component the page composes may prefetch too — a flat map
         // could not say which one a field belongs to. The page is the first component expanded.
-        state.GetProperty($"{nameof(ProbePage)}#0").GetProperty("Loaded").GetString()
+        state.GetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(ProbePage), 0)).GetProperty("Loaded").GetString()
             .Should().Be("from the server");
     }
 

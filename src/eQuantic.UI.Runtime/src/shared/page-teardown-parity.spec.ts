@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as componentModule from '../core/component';
-import { StatefulComponent, StatelessComponent } from '../core/component';
+import { EscapeHatchPage, StatefulComponent, StatelessComponent } from '../core/component';
+import { VisualNodeComponent } from './visual-node-component';
 import type { VisualNodeValue } from './nodes';
 import { Column, Text } from './vocabulary';
 
@@ -53,6 +54,10 @@ describe('every page shape releases what it retained', () => {
           return subtree();
         }
       })(),
+
+    // A page written as DOM, holding the write-once subtree through a bridge — the bridge joins the
+    // hosting page's pass, so what it retained is the page's to release (#279).
+    EscapeHatchPage: () => new EscapeHatchPage(new VisualNodeComponent(subtree())),
   };
 
   /** What the boot can mount as a page: it reconciles one in and disposes the one going out. */

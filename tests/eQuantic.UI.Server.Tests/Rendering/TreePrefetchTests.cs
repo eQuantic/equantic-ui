@@ -124,7 +124,7 @@ public class TreePrefetchTests
         // KEYED BY COMPONENT. A flat map could not say which component a field belongs to, and two
         // components holding a field of the same name would overwrite each other in whichever order
         // reflection returned them.
-        payload.RootElement.TryGetProperty($"{nameof(StatsHeader)}#0", out var header)
+        payload.RootElement.TryGetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(StatsHeader), 0), out var header)
             .Should().BeTrue($"the payload names each component; it carried: {result.SerializedState}");
         // AS A STRING, and that is the wire contract rather than a quirk: EqJson writes Int64 as
         // text so a value beyond 2^53 survives into the client's BigInt-backed `long`. Asserting a
@@ -244,7 +244,7 @@ public class TreePrefetchTests
         result.SerializedState.Should().NotBeNull();
 
         using var payload = JsonDocument.Parse(result.SerializedState!);
-        payload.RootElement.TryGetProperty($"{nameof(PageWithABaseField)}#0", out var page)
+        payload.RootElement.TryGetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(PageWithABaseField), 0), out var page)
             .Should().BeTrue($"the page prefetched; payload was: {result.SerializedState}");
         page.TryGetProperty("_carried", out var carried)
             .Should().BeTrue($"the base's private field has to travel; payload was: {result.SerializedState}");
@@ -355,7 +355,7 @@ public class TreePrefetchTests
         result.SerializedState.Should().NotBeNull();
 
         using var payload = JsonDocument.Parse(result.SerializedState!);
-        payload.RootElement.TryGetProperty($"{nameof(AwkwardShapes)}#0", out var fields)
+        payload.RootElement.TryGetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(AwkwardShapes), 0), out var fields)
             .Should().BeTrue($"payload was: {result.SerializedState}");
         fields.TryGetProperty("_cleared", out var cleared).Should().BeTrue(
             "the field the prefetch CLEARED has to travel; payload was: " + result.SerializedState);
@@ -447,7 +447,7 @@ public class TreePrefetchTests
         if (result.SerializedState is null) return;
 
         using var payload = JsonDocument.Parse(result.SerializedState);
-        payload.RootElement.TryGetProperty($"{nameof(StatsHeader)}#0", out _).Should().BeFalse(
+        payload.RootElement.TryGetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(StatsHeader), 0), out _).Should().BeFalse(
             "the header is not on the page the navigation answers with; payload was: "
             + result.SerializedState);
     }
@@ -483,7 +483,7 @@ public class TreePrefetchTests
         result.SerializedState.Should().NotBeNull();
 
         using var payload = JsonDocument.Parse(result.SerializedState!);
-        payload.RootElement.TryGetProperty($"{nameof(StatsHeader)}#0", out var fields)
+        payload.RootElement.TryGetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(StatsHeader), 0), out var fields)
             .Should().BeTrue($"payload was: {result.SerializedState}");
         fields.GetProperty("_downloads").GetString().Should().Be("675617");
     }
@@ -695,7 +695,7 @@ public class TreePrefetchTests
 
         result.SerializedState.Should().NotBeNull();
         using var payload = JsonDocument.Parse(result.SerializedState!);
-        payload.RootElement.GetProperty($"{nameof(Row)}#0").GetProperty("_value").GetString()
+        payload.RootElement.GetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(Row), 0)).GetProperty("_value").GetString()
             .Should().Be("b-loaded", "the payload is read off the instance that drew, so it says "
                 + "what the markup beside it says");
     }
@@ -934,7 +934,7 @@ public class TreePrefetchTests
             $"a navigation answers with state or the page rebuilds from defaults; payload was: "
             + navigated.SerializedState);
         using var payload = JsonDocument.Parse(navigated.SerializedState!);
-        payload.RootElement.TryGetProperty($"{nameof(StatsHeader)}#0", out var fields)
+        payload.RootElement.TryGetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(StatsHeader), 0), out var fields)
             .Should().BeTrue($"payload was: {navigated.SerializedState}");
         fields.GetProperty("_downloads").GetString().Should().Be("675617");
     }
@@ -972,7 +972,7 @@ public class TreePrefetchTests
         result.SerializedState.Should().NotBeNull(
             "a root that prefetched has state the client cannot rebuild for itself");
         using var payload = JsonDocument.Parse(result.SerializedState!);
-        payload.RootElement.TryGetProperty($"{nameof(CoreRootPage)}#0", out var fields)
+        payload.RootElement.TryGetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(CoreRootPage), 0), out var fields)
             .Should().BeTrue($"the root's own key carries its fields; payload was: {result.SerializedState}");
         // A STRING on the wire: EqJson writes Int64 that way so values past 2^53 survive into the
         // client's BigInt-backed `long`, which is the Server Action protocol's spelling too.

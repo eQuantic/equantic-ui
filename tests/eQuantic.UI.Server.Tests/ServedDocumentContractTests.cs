@@ -134,7 +134,7 @@ public class ServedDocumentContractTests
 
         var state = JsonDocument.Parse(payload.Groups[1].Value).RootElement;
         // KEYED BY COMPONENT (see the navigation test for why); the page is the first expanded.
-        var downloads = state.GetProperty($"{nameof(ContractPage)}#0").GetProperty("Downloads");
+        var downloads = state.GetProperty(eQuantic.UI.Web.ComponentIdentity.Key(typeof(ContractPage), 0)).GetProperty("Downloads");
 
         downloads.ValueKind.Should().Be(JsonValueKind.String,
             "a long crosses as text — as a JSON number it lands in a bigint slot, and past 2^53 it "
