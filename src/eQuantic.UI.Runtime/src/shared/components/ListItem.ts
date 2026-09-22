@@ -1,6 +1,7 @@
 import { Avatar, Box, BoxStyle, BuildContext, Column, EdgeInsets, Flexible, Icon, Pressable, Row, SizeValue, Sizing, StatelessComponent, StyleDiff, Text, TypeStyle, VisualNode } from "../runtime-exports";
 
 export class ListItem extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.ListItem';
     declare title: string;
     declare subtitle: any;
     declare onPressed: (() => void) | null;

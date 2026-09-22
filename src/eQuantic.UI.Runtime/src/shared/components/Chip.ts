@@ -1,6 +1,7 @@
 import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Icon, Pressable, Row, SdkStrings, SizeValue, Sizing, StatelessComponent, StyleDiff, Text, TypeStyle, VariantValue } from "../runtime-exports";
 
 export class Chip extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.Chip';
     declare label: string;
     declare kind: string;
     declare selected: boolean;

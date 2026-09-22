@@ -1,6 +1,7 @@
 import { Anchored, AnchorPlacementValue, Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, StatelessComponent, VisualNode } from "../runtime-exports";
 
 export class Popover extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.Popover';
     declare trigger: VisualNode;
     declare content: VisualNode;
     declare open: boolean;

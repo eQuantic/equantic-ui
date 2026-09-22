@@ -1,6 +1,7 @@
 import { $eq, Adjustable, Box, BoxStyle, BuildContext, ColorToken, Column, CornerRadii, Draggable, Flexible, Motion, Pressable, RangeValue, Row, SizeValue, StatelessComponent, TransitionSpec, VariantValue } from "../runtime-exports";
 
 export class Slider extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.Slider';
     static trackHeight: number = 4;
     static thumbSize: number = 24;
     static thumbBorder: number = 1;

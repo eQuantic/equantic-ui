@@ -1,6 +1,7 @@
 import { $eq, Box, BoxStyle, BuildContext, CornerRadii, Icon, Image, Positioned, SizeVariantValue, Sizing, Stack, StatelessComponent, Text, TypeStyle, VariantValue, VisualNode, VisualNodeExtensions } from "../runtime-exports";
 
 export class Avatar extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.Avatar';
     static tintPalette: VariantValue[] = ['primary', 'success', 'info', 'warning', 'destructive'];
     declare initials: string;
     declare imageSource: any;

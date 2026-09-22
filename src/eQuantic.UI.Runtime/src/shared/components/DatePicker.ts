@@ -1,6 +1,7 @@
 import { $eq, Anchored, Box, BoxStyle, BuildContext, Calendar, CornerRadii, DateOnly, EdgeInsets, Icon, KeyChord, Pressable, SdkStrings, Shortcut, StatefulComponent, TextInput, UiComponent, VisualNode } from "../runtime-exports";
 
 export class DatePicker extends StatefulComponent {
+    static $typeId = 'eQuantic.UI.Components.DatePicker';
     _open: boolean = false;
     _typing: any;
     static $hydration = { selected: 'dateOnly', min: 'dateOnly', max: 'dateOnly' };

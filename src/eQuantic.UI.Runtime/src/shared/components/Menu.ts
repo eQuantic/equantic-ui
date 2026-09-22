@@ -1,6 +1,7 @@
 import { Anchored, AnchorPlacementValue, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, KeyChord, MenuItem, Pressable, Row, Shortcut, SizeValue, Sizing, StatefulComponent, StyleDiff, Text, UiComponent, VisualNode } from "../runtime-exports";
 
 export class Menu extends StatefulComponent {
+    static $typeId = 'eQuantic.UI.Components.Menu';
     _open: boolean = false;
     _highlight: number = 0;
     declare trigger: VisualNode;

@@ -1,6 +1,7 @@
 import { $eq, AccordionItem, Box, BoxStyle, BuildContext, Column, Divider, EdgeInsets, Flexible, Icon, Pressable, Row, SizeValue, Sizing, Spacer, StatefulComponent, StyleDiff, Text, UiComponent } from "../runtime-exports";
 
 export class Accordion extends StatefulComponent {
+    static $typeId = 'eQuantic.UI.Components.Accordion';
     _openSingle: number = -1;
     _openMulti: any = new Set();
     declare items: AccordionItem[];

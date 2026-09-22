@@ -1,6 +1,7 @@
 import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, Row, SizeValue, SizeVariantValue, Sizing, StatefulComponent, Text, TextEntry, UiComponent } from "../runtime-exports";
 
 export class TextInput extends StatefulComponent {
+    static $typeId = 'eQuantic.UI.Components.TextInput';
     _focused: boolean = false;
     declare value: string;
     declare onChanged: ((string: string) => void) | null;

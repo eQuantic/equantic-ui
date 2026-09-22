@@ -1,6 +1,7 @@
 import { Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, Flexible, Icon, IconsValue, NavItem, Pressable, Row, SizeValue, StatelessComponent, Text, TypeStyle, VisualNodeExtensions } from "../runtime-exports";
 
 export class BottomNavigation extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.BottomNavigation';
     declare $items: NavItem[];
 
     get items() {

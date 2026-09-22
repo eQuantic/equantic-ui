@@ -1,6 +1,7 @@
 import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Flexible, Icon, Pressable, Row, SdkStrings, SizeValue, Sizing, StatelessComponent, StyleDiff, TextEntry, VisualNodeExtensions } from "../runtime-exports";
 
 export class SearchField extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.SearchField';
     declare query: string;
     declare onChanged: ((string: string) => void) | null;
     declare placeholder: string;

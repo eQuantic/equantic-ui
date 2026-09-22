@@ -1,6 +1,7 @@
 import { Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, IconsValue, MainAlignValue, NavItem, Pressable, SizeValue, StatelessComponent, Text, TypeStyle, VisualNodeExtensions } from "../runtime-exports";
 
 export class NavigationRail extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.NavigationRail';
     declare $items: NavItem[];
 
     get items() {

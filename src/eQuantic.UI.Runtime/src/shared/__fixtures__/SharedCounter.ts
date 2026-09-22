@@ -1,6 +1,7 @@
 import { BuildContext, Button, Column, StatefulComponent, Text } from "@equantic/runtime";
 
 export class SharedCounter extends StatefulComponent {
+    static $typeId = 'eQuantic.UI.Web.Tests.Fixtures.SharedCounter';
     _count: number = 0;
 
     build(_context: BuildContext) {

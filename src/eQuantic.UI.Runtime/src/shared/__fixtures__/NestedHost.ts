@@ -2,6 +2,7 @@ import { BuildContext, Button, Column, StatefulComponent } from "@equantic/runti
 import { NestedChild } from "./NestedChild";
 
 export class NestedHost extends StatefulComponent {
+    static $typeId = 'eQuantic.UI.Web.Tests.Fixtures.NestedHost';
     _generation: number = 0;
 
     build(_context: BuildContext) {

@@ -1,6 +1,7 @@
 import { $eq, Box, BoxStyle, BuildContext, CellRef, Column, Draggable, EdgeInsets, Flexible, Positioned, Pressable, Row, ScrollView, SdkStrings, SheetAxisValue, SheetController, SheetDocument, SheetSurface, SizeValue, Spacer, Stack, StatefulComponent, Text, UiComponent, VisualNodeExtensions } from "../runtime-exports";
 
 export class Spreadsheet extends StatefulComponent {
+    static $typeId = 'eQuantic.UI.Components.Spreadsheet';
     _offset: number = 0;
     _viewport: number = 0;
     _first: number = 0;

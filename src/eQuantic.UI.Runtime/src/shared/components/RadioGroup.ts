@@ -1,6 +1,7 @@
 import { Adjustable, Box, BoxStyle, BuildContext, Column, CornerRadii, Pressable, Row, SizeValue, Sizing, StatelessComponent, Text, VisualNode, VisualNodeExtensions } from "../runtime-exports";
 
 export class RadioGroup extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.RadioGroup';
     declare options: string[];
     declare selected: number;
     declare onChanged: any;

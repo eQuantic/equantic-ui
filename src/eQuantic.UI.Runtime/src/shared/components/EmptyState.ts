@@ -1,6 +1,7 @@
 import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, Row, SizeValue, Spacer, StatelessComponent, Text, TypeStyle, VisualNodeExtensions } from "../runtime-exports";
 
 export class EmptyState extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.EmptyState';
     declare icon: Icon;
     declare title: string;
     declare body: any;

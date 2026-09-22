@@ -1,6 +1,7 @@
 import { Box, BoxStyle, BuildContext, CodeBlock, ColorToken, CornerRadii, EdgeInsets, IconGlyph, MermaidArrowhead, MermaidLayout, MermaidParser, MermaidPlacedNode, Positioned, ScrollView, SizeValue, Stack, StatelessComponent, Text, Vector, VisualNodeExtensions } from "../runtime-exports";
 
 export class Mermaid extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.Mermaid';
     static headSize: number = 9;
     static edgeWidth: number = 2;
     declare source: string;

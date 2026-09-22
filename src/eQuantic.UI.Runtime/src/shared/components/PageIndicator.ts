@@ -1,6 +1,7 @@
 import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Motion, Pressable, Row, SizeValue, StatelessComponent, Text, TransitionSpec, VariantValue, VisualNode } from "../runtime-exports";
 
 export class PageIndicator extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.PageIndicator';
     static maxDots: number = 8;
     declare count: number;
     declare currentIndex: number;

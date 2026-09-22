@@ -1,6 +1,7 @@
 import { Box, BoxStyle, BuildContext, CodeBlock, Column, CornerRadii, Divider, EdgeInsets, Grid, GridTrack, MarkdownBlock, MarkdownParser, MarkdownRun, MarkdownStyle, Mermaid, Row, SizeValue, StatelessComponent, Text, TextRun, TypeRoleValue, TypeStyle } from "../runtime-exports";
 
 export class Markdown extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.Markdown';
     declare source: string;
     declare style: any;
 

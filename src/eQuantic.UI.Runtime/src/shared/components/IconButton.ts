@@ -1,6 +1,7 @@
 import { Box, BoxStyle, BuildContext, CornerRadii, Icon, Pressable, SizeVariantValue, Sizing, StatelessComponent, StyleDiff, VisualNodeExtensions } from "../runtime-exports";
 
 export class IconButton extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.IconButton';
     declare glyph: Icon;
     declare label: string;
     declare kind: string;

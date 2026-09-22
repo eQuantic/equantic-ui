@@ -1,6 +1,7 @@
 import { $eq, Anchored, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, KeyChord, Pressable, Row, ScrollView, SdkStrings, Shortcut, SizeValue, Sizing, Spacer, StatefulComponent, StyleDiff, Text, TimeOnly, UiComponent, VisualNode } from "../runtime-exports";
 
 export class TimePicker extends StatefulComponent {
+    static $typeId = 'eQuantic.UI.Components.TimePicker';
     _open: boolean = false;
     _highlight: number = 0;
     static panelHeight: number = 260;

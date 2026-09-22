@@ -1,6 +1,7 @@
 import { Box, BoxStyle, BuildContext, Column, Divider, EdgeInsets, Grid, GridTrack, SizeValue, StatelessComponent, StyleDiff, Text } from "../runtime-exports";
 
 export class Table extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.Table';
     declare columns: string[];
     declare rows: string[][];
 

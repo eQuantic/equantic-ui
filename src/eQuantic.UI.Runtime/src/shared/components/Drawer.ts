@@ -1,6 +1,7 @@
 import { Box, BoxStyle, BuildContext, EdgeInsets, KeyChord, Overlay, Positioned, Presence, Pressable, SdkStrings, Shortcut, SizeValue, Stack, StatelessComponent, VisualNode } from "../runtime-exports";
 
 export class Drawer extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.Drawer';
     declare content: VisualNode;
     declare open: boolean;
     declare onDismiss: (() => void) | null;

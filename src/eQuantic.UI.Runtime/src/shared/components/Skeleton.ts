@@ -1,6 +1,7 @@
 import { Box, BoxStyle, BuildContext, Color, ColorToken, CornerRadii, Flexible, LinearGradient, LoopMotion, Row, SizeValue, StatelessComponent } from "../runtime-exports";
 
 export class Skeleton extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.Skeleton';
     static shimmerDurationMs: number = 1400;
     declare shape: string;
     declare width: number;

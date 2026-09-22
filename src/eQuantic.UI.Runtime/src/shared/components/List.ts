@@ -1,6 +1,7 @@
 import { BuildContext, Column, Divider, ListItem, SizeValue, StatelessComponent } from "../runtime-exports";
 
 export class List extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.List';
     declare items: ListItem[];
     declare dividers: boolean;
 

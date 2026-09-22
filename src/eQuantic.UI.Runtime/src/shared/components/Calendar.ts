@@ -1,6 +1,7 @@
 import { $eq, Box, BoxStyle, BuildContext, CalendarNames, Column, CornerRadii, DateOnly, Flexible, Icon, IconButton, Navigable, NavigableMoveValue, Pressable, Row, SdkStrings, SizeValue, Spacer, StatefulComponent, StyleDiff, Text, UiComponent, VisualNodeExtensions } from "../runtime-exports";
 
 export class Calendar extends StatefulComponent {
+    static $typeId = 'eQuantic.UI.Components.Calendar';
     _month: DateOnly;
     _cursor: any;
     static cellSize: number = 44;

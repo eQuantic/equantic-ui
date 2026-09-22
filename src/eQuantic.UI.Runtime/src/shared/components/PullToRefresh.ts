@@ -1,6 +1,7 @@
 import { Box, BoxStyle, BuildContext, Draggable, Positioned, Row, SizeValue, Spinner, Stack, StatelessComponent, VisualNode } from "../runtime-exports";
 
 export class PullToRefresh extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.PullToRefresh';
     static threshold: number = 64;
     declare child: VisualNode;
     declare onRefresh: (() => void) | null;

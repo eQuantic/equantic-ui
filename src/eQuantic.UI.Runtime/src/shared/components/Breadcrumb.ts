@@ -1,6 +1,7 @@
 import { BuildContext, Crumb, Icon, Link, Row, StatelessComponent, Text } from "../runtime-exports";
 
 export class Breadcrumb extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.Breadcrumb';
     declare crumbs: Crumb[];
 
     constructor(crumbs?: any, props?: any) {

@@ -1,6 +1,7 @@
 import { Box, BoxStyle, BuildContext, Column, CornerRadii, DragDismiss, EdgeInsets, KeyChord, Overlay, Presence, Pressable, Row, SdkStrings, Shortcut, SizeValue, Stack, StatelessComponent, VisualNode } from "../runtime-exports";
 
 export class BottomSheet extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.BottomSheet';
     declare content: VisualNode;
     declare onDismiss: (() => void) | null;
     declare dismissible: boolean;

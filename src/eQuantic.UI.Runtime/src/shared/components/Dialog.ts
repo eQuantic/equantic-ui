@@ -1,6 +1,7 @@
 import { Box, BoxStyle, BuildContext, Button, Column, CornerRadii, DialogAction, EdgeInsets, KeyChord, Overlay, Presence, Pressable, Row, SdkStrings, Shortcut, SizeValue, Stack, StatelessComponent, Text } from "../runtime-exports";
 
 export class Dialog extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.Dialog';
     declare title: string;
     declare body: string;
     declare actions: DialogAction[];

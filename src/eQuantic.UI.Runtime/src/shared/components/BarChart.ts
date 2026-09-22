@@ -1,6 +1,7 @@
 import { BarChartLayout, Box, BoxStyle, BuildContext, Button, Canvas, CanvasPointer, CategoryAxis, ChartSeries, Column, CornerRadii, DataColumn, DataRow, DataTable, EdgeInsets, Flexible, GridTrack, Point, Positioned, Pressable, Rect, Row, SdkStrings, SizeValue, Stack, StatefulComponent, Text, UiComponent, ValueAxis, ValueTicks, VisualNode } from "../runtime-exports";
 
 export class BarChart extends StatefulComponent {
+    static $typeId = 'eQuantic.UI.Charts.BarChart';
     static minValueAxisWidth: number = 48;
     static captionCharWidth: number = 7;
     static categoryAxisWidth: number = 96;

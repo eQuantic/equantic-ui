@@ -1,6 +1,7 @@
 import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconsValue, LiveRegion, Pressable, Row, SdkStrings, SizeValue, StatelessComponent, Text, TypeStyle, VariantValue } from "../runtime-exports";
 
 export class Banner extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.Banner';
     declare status: VariantValue;
     declare title: string;
     declare body: any;

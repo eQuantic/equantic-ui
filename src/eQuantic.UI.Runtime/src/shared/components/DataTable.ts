@@ -1,6 +1,7 @@
 import { $eq, Box, BoxStyle, BuildContext, Checkbox, Column, DataColumn, DataRow, EdgeInsets, Grid, GridTrack, Icon, Motion, Pressable, Row, SizeValue, Skeleton, StatelessComponent, StyleDiff, Text, TextAlignmentValue, TransitionSpec, VisualNode } from "../runtime-exports";
 
 export class DataTable extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.DataTable';
     static rowHeight: number = 52;
     static checkboxTrack: number = 44;
     declare columns: DataColumn[];

@@ -1,6 +1,7 @@
 import { Box, BoxStyle, BuildContext, CornerRadii, Icon, IconsValue, Pressable, Row, SizeValue, SizeVariantValue, Sizing, StatelessComponent, Text } from "../runtime-exports";
 
 export class Stepper extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.Stepper';
     declare value: number;
     declare onChanged: any;
     declare min: number;

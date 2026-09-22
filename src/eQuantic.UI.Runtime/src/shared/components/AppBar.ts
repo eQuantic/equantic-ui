@@ -1,6 +1,7 @@
 import { Box, BoxStyle, BuildContext, EdgeInsets, Flexible, Row, SizeValue, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
 
 export class AppBar extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.AppBar';
     declare title: string;
     declare leading: any;
     declare $actions: any;

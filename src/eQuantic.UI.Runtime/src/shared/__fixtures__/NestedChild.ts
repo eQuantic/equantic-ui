@@ -1,6 +1,7 @@
 import { BuildContext, Button, Column, StatefulComponent, Text, UiComponent } from "@equantic/runtime";
 
 export class NestedChild extends StatefulComponent {
+    static $typeId = 'eQuantic.UI.Web.Tests.Fixtures.NestedChild';
     _count: number = 0;
     _label: string;
 

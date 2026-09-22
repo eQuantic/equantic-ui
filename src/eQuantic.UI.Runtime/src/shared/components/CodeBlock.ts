@@ -1,6 +1,7 @@
 import { $eq, Box, BoxStyle, BuildContext, CodeDecoration, CodeDecorationKindValue, CodeDocument, CodeGutterKindValue, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeMetrics, CodeTokenKindValue, Color, ColorToken, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, Positioned, Pressable, Row, ScrollView, SizeValue, SizeVariantValue, Sizing, Spacer, Stack, StatelessComponent, Text, TypeStyle, VisualNode } from "../runtime-exports";
 
 export class CodeBlock extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.CodeBlock';
     static codeSlab: ColorToken = new ColorToken(Color.fromRgba(0x10, 0x14, 0x18, 0xFF));
     static codeInk: ColorToken = new ColorToken(Color.fromRgba(0xC9, 0xD4, 0xDE, 0xFF));
     static codeInkMuted: ColorToken = new ColorToken(Color.fromRgba(0x7C, 0x8A, 0x99, 0xFF));

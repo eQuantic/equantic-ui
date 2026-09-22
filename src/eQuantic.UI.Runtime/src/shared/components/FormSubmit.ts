@@ -1,6 +1,7 @@
 import { BuildContext, Button, FormController, SizeVariantValue, StatelessComponent, VariantValue } from "../runtime-exports";
 
 export class FormSubmit extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.FormSubmit';
     declare form: FormController;
     declare label: string;
     declare onSubmit: () => void;

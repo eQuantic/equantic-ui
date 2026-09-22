@@ -1,6 +1,7 @@
 import { AdaptiveNode, AppBar, Box, BoxStyle, BuildContext, Column, Divider, EmptyState, Flexible, Icon, IconButton, Row, SdkStrings, SizeValue, StatelessComponent, VisualNode } from "../runtime-exports";
 
 export class ListDetail extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.ListDetail';
     declare list: VisualNode;
     declare detail: any;
     declare onBack: (() => void) | null;

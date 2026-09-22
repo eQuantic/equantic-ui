@@ -1,6 +1,7 @@
 import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, LiveRegion, Overlay, Presence, Pressable, Row, SizeValue, StatelessComponent, Text, VariantValue } from "../runtime-exports";
 
 export class Toast extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.Toast';
     declare message: string;
     declare status: VariantValue;
     declare actionLabel: any;

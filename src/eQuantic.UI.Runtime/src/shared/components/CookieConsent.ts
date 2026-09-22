@@ -1,6 +1,7 @@
 import { Box, BoxStyle, BuildContext, Button, Column, CornerRadii, EdgeInsets, Link, Row, SdkStrings, SizeValue, Spacer, StatefulComponent, Text } from "../runtime-exports";
 
 export class CookieConsent extends StatefulComponent {
+    static $typeId = 'eQuantic.UI.Components.CookieConsent';
     declare policyHref: any;
     declare title: any;
     declare body: any;

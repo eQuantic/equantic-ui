@@ -1,6 +1,7 @@
 import { Anchored, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, KeyChord, Pressable, Row, Shortcut, SizeValue, Sizing, Spacer, StatefulComponent, StyleDiff, Text, UiComponent, VisualNode } from "../runtime-exports";
 
 export class Select extends StatefulComponent {
+    static $typeId = 'eQuantic.UI.Components.Select';
     _open: boolean = false;
     _highlight: number = 0;
     declare options: string[];

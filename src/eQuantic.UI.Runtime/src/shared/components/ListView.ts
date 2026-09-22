@@ -1,6 +1,7 @@
 import { BuildContext, Column, ScrollView, SizeValue, Spacer, StatefulComponent, UiComponent } from "../runtime-exports";
 
 export class ListView extends StatefulComponent {
+    static $typeId = 'eQuantic.UI.Components.ListView';
     _offset: number = 0;
     _viewport: number = 0;
     _first: number = 0;

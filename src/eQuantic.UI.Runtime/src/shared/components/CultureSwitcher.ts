@@ -1,6 +1,7 @@
 import { Box, BuildContext, Button, CultureOption, Menu, MenuItem, SegmentedControl, SizeVariantValue, StatelessComponent } from "../runtime-exports";
 
 export class CultureSwitcher extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.CultureSwitcher';
     declare options: CultureOption[];
     declare size: SizeVariantValue;
     declare shape: string;

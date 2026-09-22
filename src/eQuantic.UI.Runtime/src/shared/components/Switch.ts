@@ -1,6 +1,7 @@
 import { Box, BoxStyle, BuildContext, CornerRadii, DensityValue, Draggable, Positioned, Pressable, Sizing, Stack, StatelessComponent } from "../runtime-exports";
 
 export class Switch extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.Switch';
     declare on: boolean;
     declare onChanged: (() => void) | null;
     declare disabled: boolean;

@@ -1,6 +1,7 @@
 import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Positioned, Stack, StatelessComponent, Text, TypeStyle, VariantValue, VisualNode, VisualNodeExtensions } from "../runtime-exports";
 
 export class Badge extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.Badge';
     declare count: number;
     declare max: number;
     declare variant: VariantValue;

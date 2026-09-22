@@ -1,6 +1,7 @@
 import { Box, BuildContext, FormController, SizeVariantValue, StatelessComponent, TextInput } from "../runtime-exports";
 
 export class FormInput extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.FormInput';
     declare form: FormController;
     declare name: string;
     declare label: string;

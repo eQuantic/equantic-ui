@@ -1,6 +1,7 @@
 import { Box, BoxStyle, BuildContext, Column, Draggable, Icon, IconsValue, Positioned, Pressable, SizeValue, Stack, StatelessComponent, Text, VariantValue, VisualNode } from "../runtime-exports";
 
 export class SwipeableRow extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.SwipeableRow';
     static actionWidth: number = 96;
     declare child: VisualNode;
     declare actionLabel: string;

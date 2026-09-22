@@ -1,6 +1,7 @@
 import { Box, BoxStyle, BuildContext, CornerRadii, Icon, Pressable, Row, Sizing, StatelessComponent, Text, VisualNode, VisualNodeExtensions } from "../runtime-exports";
 
 export class Checkbox extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.Checkbox';
     declare checked: boolean;
     declare onChanged: (() => void) | null;
     declare label: any;

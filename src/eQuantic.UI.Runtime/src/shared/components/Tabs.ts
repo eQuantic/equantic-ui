@@ -1,6 +1,7 @@
 import { Adjustable, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Pressable, Row, SizeValue, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
 
 export class Tabs extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.Tabs';
     declare labels: string[];
     declare selected: number;
     declare onSelect: any;

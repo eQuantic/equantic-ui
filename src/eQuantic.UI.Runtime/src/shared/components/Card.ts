@@ -1,6 +1,7 @@
 import { Box, BoxStyle, BuildContext, Color, ColorToken, CornerRadii, EdgeInsets, SizeValue, StatelessComponent, VisualNode } from "../runtime-exports";
 
 export class Card extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.Card';
     declare child: VisualNode;
     declare kind: string;
     declare padding: EdgeInsets;

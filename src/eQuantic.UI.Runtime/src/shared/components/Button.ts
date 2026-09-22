@@ -1,6 +1,7 @@
 import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Icon, Pressable, Row, SizeValue, SizeVariantValue, Sizing, Spinner, StatelessComponent, StyleDiff, Text, TypeStyle, VariantValue } from "../runtime-exports";
 
 export class Button extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.Button';
     declare label: string;
     declare variant: VariantValue;
     declare size: SizeVariantValue;

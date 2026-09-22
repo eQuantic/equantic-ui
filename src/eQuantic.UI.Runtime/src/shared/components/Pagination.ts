@@ -1,6 +1,7 @@
 import { Box, BoxStyle, BuildContext, Button, CornerRadii, Motion, Pressable, Row, SizeValue, StatelessComponent, StyleDiff, Text, TransitionSpec } from "../runtime-exports";
 
 export class Pagination extends StatelessComponent {
+    static $typeId = 'eQuantic.UI.Components.Pagination';
     static window: number = 1;
     static alwaysShow: number = 7;
     static cell: number = 30;
