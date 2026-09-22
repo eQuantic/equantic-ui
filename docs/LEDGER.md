@@ -397,6 +397,15 @@ record of a release, the wiki's Upgrading page is the distillate.
   [#288](https://github.com/eQuantic/equantic-ui/issues/288) with fourteen features, plus the desktop
   and email remainders under [#198](https://github.com/eQuantic/equantic-ui/issues/198).
 
+- **2026-09-22 · An icon's elements keep their own origin**: the pack generator joined every element
+  of an Iconify icon into one path, and an element opening with a relative moveto started where the
+  previous one ended — Lucide's `circle-check` drew its circle and not its tick, and 941 glyphs across
+  six packs shipped displaced, found by the eQuantic.Auth pages ([#320](https://github.com/eQuantic/equantic-ui/issues/320)).
+  Each element is joined with its first moveto absolute; the source is pinned to one
+  iconify/icon-sets commit so a regeneration takes nothing it did not ask for; the twelve packs are
+  regenerated, nine of them into the trimmable property form #74 gave the other three; and
+  `IconPackGeometryTests` holds every glyph of every marker-found pack to the seam rule and to its box.
+
 ## Retired documents
 
 | document | what it was | where its substance lives now |
