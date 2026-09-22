@@ -192,7 +192,17 @@ case "${1:---help}" in
         printf 'usage: check-commit-messages.sh --file <path to a message>\n' >&2
         exit 2
     fi
-    hits=$(scan_message "$(cat "$path")")
+
+    # The read is checked rather than trusted, and that is the same hole as the unresolvable head
+    # below. `scan_message "$(cat …)"` inside a substitution DISCARDS cat's status, so an unreadable
+    # or half-read file arrives as an empty string, matches nothing, and the guard says "is clean"
+    # on a message it never saw — green, having measured nothing, at the one moment it could have
+    # stopped a merge.
+    if ! message=$(cat -- "$path"); then
+        printf 'cannot read %s, so nothing was measured.\n' "$path" >&2
+        exit 1
+    fi
+    hits=$(scan_message "$message")
     if [ -n "$hits" ]; then
         report "$path" "$hits"
         printf '\nDo not merge with this file. Delete those lines first.\n'
