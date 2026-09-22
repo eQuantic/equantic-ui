@@ -24,6 +24,7 @@ import {
   photonMonoAdvance,
 } from '../shared/photon-context';
 import { renderComponentFailure } from '../shared/component-boundary';
+import { componentIdentity } from './component-identity';
 import { scheduleRenderFlush } from './render-scheduler';
 
 /**
@@ -65,15 +66,7 @@ export function nextComponentKey(typeName: string): string {
   return `${typeName}#${seen}`;
 }
 
-/**
- * The identity a component instance travels under: its class's `static $typeId`, which eqc emits on
- * every component it transpiles. A class without one — a hand-written twin, a test's fixture — falls
- * back to its own name, which is what every key was before the identity existed.
- */
-export function componentIdentity(instance: object): string {
-  const type = instance.constructor as { $typeId?: string; name?: string };
-  return type.$typeId ?? type.name ?? '';
-}
+export { componentIdentity };
 
 /** Starts a fresh count — one render is one walk, and the numbering restarts with it. */
 export function resetComponentKeys(): void {

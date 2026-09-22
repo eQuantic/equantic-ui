@@ -1,8 +1,8 @@
 /**
  * The positional reconciler's WEB mirror (plan W6, slice 2 — the exact identity contract of the C#
  * `ComponentInstanceStore`): nested SHARED-STATEFUL component instances retain identity — and
- * therefore state — across page re-renders. Identity = lowering PATH + constructor name + optional
- * key. A parent's build() constructs fresh instances every pass; a retained match ADOPTS the fresh
+ * therefore state — across page re-renders. Identity = lowering PATH + the component's identity
+ * (`componentIdentity`, the same one the server-state walk keys by) + optional key. A parent's build() constructs fresh instances every pass; a retained match ADOPTS the fresh
  * configuration through the transpiled `adoptConfig(next)` and keeps its state fields. Identity
  * mismatches drop retention (state resets).
  *
@@ -15,6 +15,7 @@
  * page cannot collide on identity paths.
  */
 
+import { componentIdentity } from '../core/component-identity';
 import { commitShortcuts } from '../dom/shortcuts';
 import { commitFocusTraps } from '../dom/focus-trap';
 import { installHoverRevealSuppression } from '../dom/hover-reveal';
@@ -95,7 +96,9 @@ export class ComponentInstanceStore {
     const candidate = fresh as SharedStatefulLike;
     if (candidate._sharedStateful !== true) return fresh;
 
-    const identity = `${path}#${(fresh as object).constructor.name}#${candidate.key ?? ''}`;
+    // The component's identity, not its class name: two classes called Row from different
+    // namespaces at one path are two components, and a retained A.Row must not become a B.Row.
+    const identity = `${path}#${componentIdentity(fresh as object)}#${candidate.key ?? ''}`;
     const retained = this.retained.get(identity);
     if (retained && retained !== candidate) {
       retained.adoptConfig?.(fresh);

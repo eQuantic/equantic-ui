@@ -4,6 +4,7 @@ import { HtmlElement, type HtmlNode } from './types';
 import type { VisualNodeValue } from '../shared/nodes';
 import { Column, Text } from '../shared/vocabulary';
 import { VisualNodeComponent } from '../shared/visual-node-component';
+import { ComponentInstanceStore } from '../shared/instance-store';
 
 interface Payload {
   __INITIAL_STATE__?: Record<string, Record<string, unknown>>;
@@ -121,15 +122,16 @@ describe('the SSR-to-client seam', () => {
     expect(root.textContent).toContain('second');
   });
 
+  const rowIn = (namespace: string) =>
+    class Row extends StatefulComponent {
+      static $typeId = `${namespace}.Row`;
+      label = 'default';
+      build(): VisualNodeValue {
+        return new Text(this.label);
+      }
+    };
+
   it('keys a component by its full identity, so two same-named types never share state', () => {
-    const rowIn = (namespace: string) =>
-      class Row extends StatefulComponent {
-        static $typeId = `${namespace}.Row`;
-        label = 'default';
-        build(): VisualNodeValue {
-          return new Text(this.label);
-        }
-      };
     const ARow = rowIn('A');
     const BRow = rowIn('B');
     expect(ARow.name).toBe(BRow.name); // the simple name cannot tell them apart
@@ -155,5 +157,27 @@ describe('the SSR-to-client seam', () => {
     const agreeing = host();
     page(ARow).mount(agreeing);
     expect(agreeing.textContent).toContain('A-state');
+  });
+
+  it('retains an instance by the same identity, so a B.Row at a path never becomes the A.Row there', () => {
+    // The OTHER place the runtime asks "is this the same component": the store that keeps a nested
+    // stateful instance, and its state, across a page's re-renders. It keyed by the class name, so
+    // after the walk had learned the full identity the store could still hand an A.Row's instance
+    // to a B.Row built at the same path.
+    const ARow = rowIn('A');
+    const BRow = rowIn('B');
+    const store = new ComponentInstanceStore();
+
+    store.beginPass();
+    const first = store.reconcile('r0/0', new ARow(), null);
+    store.endPass();
+
+    store.beginPass();
+    const fresh = new BRow();
+    const resolved = store.reconcile('r0/0', fresh, null);
+    store.endPass();
+
+    expect(first).toBeInstanceOf(ARow);
+    expect(resolved).toBe(fresh);
   });
 });
