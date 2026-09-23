@@ -601,6 +601,40 @@ jobs:
             echo "A shared chunk is what two or more modules have in common, split out by bun (eqc runs it with \`--splitting\`) and named after one of them; it loads once, with the first page that needs it. The served runtime, which every page loads first, is budgeted by \`ServedRuntimeBudgetTests\`."
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
+      # Edit, then publish: the most ordinary sequence there is, and it failed (#361). What two
+      # pages share is a chunk named by its content's hash, so changing it renames the chunk, and
+      # the old name, registered while the project evaluated, failed the publish's compression. The
+      # step changes the dashboard's console shell and publishes without building first; the chunk
+      # has to have been renamed, or the step proved nothing, and the publish has to hold exactly
+      # the chunks the build wrote.
+      - name: A publish right after a shared component changes
+        shell: bash
+        run: |
+          set -uo pipefail
+          shell=samples/DefaultUIDashboard/Screens/ConsoleShell.cs
+          dir=samples/DefaultUIDashboard/wwwroot/_equantic
+          chunks() { ls "$1" | grep -E -- '-[a-z0-9]{8}\.js$' | sort | tr '\n' ' '; }
+          before=$(chunks "$dir")
+          perl -0pi -e 's/(class ConsoleShell[^{]*\{)/$1\n    public const string CiMark = "the shared chunk changed";/' "$shell"
+          status=0
+          dotnet publish samples/DefaultUIDashboard -c Release -o republished || status=1
+          git checkout -- "$shell"
+          after=$(chunks "$dir")
+          published=$( [ -d republished/wwwroot/_equantic ] && chunks republished/wwwroot/_equantic )
+          echo "chunks before: $before"
+          echo "chunks after:  $after"
+          echo "published:     $published"
+          if [ "$status" -ne 0 ]; then
+            echo "::error::the publish after a shared component changed failed"
+          elif [ "$before" = "$after" ]; then
+            echo "::error::the change renamed no chunk, so this proves nothing about a renamed one"
+            status=1
+          elif [ "$published" != "$after" ]; then
+            echo "::error::the publish holds other chunks than the build wrote"
+            status=1
+          fi
+          exit $status
+
       # Exit 0 is not the proof. A mobile target framework exists to produce a BUNDLE, and the
       # build checks worth exercising here are precisely the ones that only run when one is
       # produced. So read the artifact back: derived from what the build wrote, never a list of
