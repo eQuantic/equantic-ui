@@ -49,6 +49,16 @@ public class BugHuntFixesTests
     }
 
     [Fact]
+    public void MathF_WithoutAModel_StillAnswersInSinglePrecision()
+    {
+        // No model binds `Total` here, so no table answers — the text fallback does, and MathF's
+        // answers are singles: its members return float, except Sign and ILogB.
+        TestHelper.ConvertExpression("MathF.Sqrt(Total)").Should().Be("Math.fround(Math.sqrt(this.total))");
+        TestHelper.ConvertExpression("MathF.Round(Total, 2)").Should().Be("$eq.math.roundSingle(this.total, 2)");
+        TestHelper.ConvertExpression("MathF.Sign(Total)").Should().Be("Math.sign(this.total)");
+    }
+
+    [Fact]
     public void ToString_WithFormat_UsesFormatHelper()
     {
         var result = TestHelper.ConvertExpression("Total.ToString(\"F2\")");

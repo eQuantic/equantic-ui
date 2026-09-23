@@ -34,7 +34,7 @@ public class MathStrategy : IExpressionIrStrategy
 
         // Fallback: check expression text
         var callerText = memberAccess.Expression.ToString();
-        return callerText is "Math" or "System.Math";
+        return callerText is "Math" or "System.Math" or "MathF" or "System.MathF";
     }
 
     public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
@@ -59,10 +59,17 @@ public class MathStrategy : IExpressionIrStrategy
             .Select(a => context.Converter.ConvertExpression(a.Expression))
             .ToList();
 
+        // Below, no table could answer — usually because no model bound the call. `MathF` still
+        // answers in SINGLE precision there: its every member but Sign and ILogB returns a float,
+        // and rounding one that is exact already (Abs, Max, …) changes nothing.
+        var single = memberAccess.Expression.ToString() is "MathF" or "System.MathF"
+            && methodName is not ("Sign" or "ILogB");
+        JsExpr Answer(JsExpr value) => single ? SinglePrecision.Round(value) : value;
+
         // Special case: Math.Clamp(val, min, max) → Math.min(Math.max(val, min), max)
         if (methodName == "Clamp" && argsList.Count >= 3)
         {
-            return JsExpr.Callish($"Math.min(Math.max({argsList[0]}, {argsList[1]}), {argsList[2]})");
+            return Answer(JsExpr.Callish($"Math.min(Math.max({argsList[0]}, {argsList[1]}), {argsList[2]})"));
         }
 
         // A DECIMAL rounds as a decimal — the number helper would round the object to NaN.
@@ -83,9 +90,10 @@ public class MathStrategy : IExpressionIrStrategy
         if (methodName == "Round" && argsList.Count >= 1)
         {
             context.UsedHelpers.Add(Eq.Import);
+            var round = single ? Eq.RoundSingle : Eq.Round;
             return JsExpr.Callish(argsList.Count >= 2
-                ? $"{Eq.Round}({argsList[0]}, {argsList[1]})"
-                : $"{Eq.Round}({argsList[0]})");
+                ? $"{round}({argsList[0]}, {argsList[1]})"
+                : $"{round}({argsList[0]})");
         }
 
         // Standard conversion: map .NET method names that differ from JS, else camelCase.
@@ -98,7 +106,7 @@ public class MathStrategy : IExpressionIrStrategy
         };
         var args = string.Join(", ", argsList);
 
-        return JsExpr.Callish($"Math.{jsMethodName}({args})");
+        return Answer(JsExpr.Callish($"Math.{jsMethodName}({args})"));
     }
 
     public int Priority => 10;
