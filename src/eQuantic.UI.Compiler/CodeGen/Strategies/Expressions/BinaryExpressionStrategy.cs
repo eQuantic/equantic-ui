@@ -69,7 +69,11 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         // operators to method calls. The operands ARE Decimals — literals construct one, a mixed
         // operand converts at the bound tree's seam (ValueFlow), a server value hydrates at the
         // typed boundary. (Null comparisons fall through to the loose-equality logic.)
+        // Not a CONCATENATION: `"v=" + amount` is text, whose decimal operand ValueFlow already
+        // turned into its string — routed here it became `'v='.add(amount)`, a method a string
+        // does not have.
         if (left != "null" && right != "null"
+            && context.SemanticHelper.GetType(binary) is not { SpecialType: SpecialType.System_String }
             && (context.SemanticHelper.GetType(binary.Left).IsDecimal()
                 || context.SemanticHelper.GetType(binary.Right).IsDecimal()))
         {
