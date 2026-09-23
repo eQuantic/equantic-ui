@@ -60,6 +60,11 @@ public class SinglePrecisionConformanceTests
     [InlineData("float.TryParse(\"0.1\", System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var g); return (double)g;")]
     [InlineData("float h = Convert.ToSingle(\"0.1\", System.Globalization.CultureInfo.InvariantCulture); return (double)h;")]
     [InlineData("double d = 0.1; float k = Convert.ToSingle(d); return (double)k;")]
+    // A 64-bit integer converts ONCE, from all 64 bits: through a double this value lands on a
+    // midpoint between two singles and then on the even one, where .NET rounds up.
+    [InlineData("long l = 4611686293305294849L; return Convert.ToSingle(l) == (float)l;")]
+    [InlineData("long l = 4611686293305294849L; return (double)Convert.ToSingle(l) / 1e18;")]
+    [InlineData("ulong u = 4611686293305294849UL; return Convert.ToSingle(u) == (float)u;")]
     // ---- a float's constants are singles ----
     [InlineData("return (double)float.Pi;")]                                                  // 3.1415927410125732
     [InlineData("return (double)MathF.PI;")]

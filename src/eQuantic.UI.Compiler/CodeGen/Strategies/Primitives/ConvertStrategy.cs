@@ -44,6 +44,14 @@ public class ConvertStrategy : IConversionStrategy
             return $"{Eq.Round}({value})";
         }
 
+        // A 64-bit integer converts to a single ONCE, from all 64 bits, as the cast does: through a
+        // double it rounds twice, and a value just above a midpoint between two singles lands on it.
+        if (name == "ToSingle" && argType?.SpecialType is SpecialType.System_Int64 or SpecialType.System_UInt64)
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            return $"{Eq.SingleFromLong}({value})";
+        }
+
         return name switch
         {
             "ToString" => $"String({value})",
