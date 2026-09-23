@@ -56,7 +56,7 @@ a{color:var(--lnk)}a:hover{color:var(--onpris)}
   </p>
   <div style="margin-top:16px;display:flex;align-items:flex-start;gap:11px;padding:13px 15px;border-radius:12px;background:var(--infs);color:var(--oninfs);max-width:660px">
     <span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1.2">info</span>
-    <span style="font-size:12.5px;line-height:1.6;flex:1">The token core already ships. <a href="tokens.json" style="color:inherit;font-weight:700">tokens.json</a> mirrors <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">eQuantic.UI.Primitives</span> value-for-value and is pinned by <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">HandoffTokenPinTests</span> and <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">DesignTokenTests</span> — the component delta is nearly closed; work starts at the <a href="#status" style="color:inherit;font-weight:700">§01 status board</a>&rsquo;s open items. Before writing any call site, read <a href="#api" style="color:inherit;font-weight:700">§3b, the API contract</a>.</span>
+    <span style="font-size:12.5px;line-height:1.6;flex:1">The token core already ships. <a href="tokens.json" style="color:inherit;font-weight:700">tokens.json</a> mirrors <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">eQuantic.UI.Primitives</span> value-for-value and is pinned by <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">HandoffTokenPinTests</span> and <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">HandoffSdkCoverageTests</span>, and its contrast is gated twice, by <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">DesignTokenTests</span> (WCAG 2) and <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">DesignTokenApcaTests</span> (APCA) — the component delta is nearly closed; work starts at the <a href="#status" style="color:inherit;font-weight:700">§01 status board</a>&rsquo;s open items. Before writing any call site, read <a href="#api" style="color:inherit;font-weight:700">§3b, the API contract</a>.</span>
   </div>
 
   <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:26px">
@@ -86,7 +86,7 @@ a{color:var(--lnk)}a:hover{color:var(--onpris)}
         <div style="flex:1;opacity:.82">
           <div style="display:flex;align-items:center;gap:8px"><span style="font-size:14.5px;font-weight:700">Token core &amp; theming</span><span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:6px;background:var(--sucs);color:var(--onsucs)">Shipped · gated</span></div>
           <div style="font-size:13px;line-height:1.6;color:var(--tx2);margin-top:3px">Every color, space value, radius, type role, elevation level and motion curve in <span style="font-family:'JetBrains Mono',monospace;font-size:12px">tokens.json</span> matches <span style="font-family:'JetBrains Mono',monospace;font-size:12px">eQuantic.UI.Primitives</span> value-for-value — treat it as a mirror of the shipped source, not as work to do.</div>
-          <div style="font-size:12px;color:var(--onsucs);background:var(--sucs);display:inline-block;padding:3px 9px;border-radius:7px;margin-top:8px;font-weight:600">Gate passed — <span style="font-family:'JetBrains Mono',monospace;font-size:12px">DesignTokenTests</span>: ≥ 4.5:1 on every OnBase/Base and OnSubtle/Subtle pair in both modes, ≥ 7.0 (AAA) for primary and secondary text</div>
+          <div style="font-size:12px;color:var(--onsucs);background:var(--sucs);display:inline-block;padding:3px 9px;border-radius:7px;margin-top:8px;font-weight:600">Gate passed — <span style="font-family:'JetBrains Mono',monospace;font-size:12px">DesignTokenTests</span>: ≥ 4.5:1 on every OnBase/Base and OnSubtle/Subtle pair in both modes, ≥ 7.0 (AAA) for primary and secondary text · <span style="font-family:'JetBrains Mono',monospace;font-size:12px">DesignTokenApcaTests</span>: Lc ≥ 75 for primary and secondary text, ≥ 60 for muted, links and every label on a fill or a Subtle, ≥ 15 for the strong border, in both modes</div>
         </div>
       </div>
       <div style="display:flex;gap:14px;padding:15px 17px;border-radius:12px;background:var(--sf);border:1px solid var(--bd)">
@@ -247,7 +247,8 @@ exists — verify against the status board (Handoff §01).
 
 Inputs:
   · tokens.json — the pinned mirror of the SHIPPED eQuantic.UI.Primitives
-    token core. Already implemented and gated by DesignTokenTests. Use the
+    token core. Already implemented, and its contrast gated twice: by
+    DesignTokenTests (WCAG 2) and DesignTokenApcaTests (APCA). Use the
     values verbatim; never invent or re-type a color, size, radius or curve.
   · Photon Design System.dc.html — the spec INDEX. The specs live in
     "Photon DS - Foundations / Phase A / Phase B / Phase C .dc.html"
