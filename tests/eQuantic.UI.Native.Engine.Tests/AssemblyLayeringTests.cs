@@ -40,8 +40,13 @@ public class AssemblyLayeringTests
         // door.
         ["eQuantic.UI.Primitives"] = [],
 
-        // Written once, against the vocabulary and nothing else.
-        ["eQuantic.UI.Components"] = ["eQuantic.UI.Primitives"],
+        // The code editing engine — what a CodeSurface's realizer drives. Written against the
+        // vocabulary alone: it knows the surface's protocol and nothing about any host.
+        ["eQuantic.UI.Code"] = ["eQuantic.UI.Primitives"],
+
+        // Written once, against the vocabulary and nothing else — plus, for the code components,
+        // the engine they are views of.
+        ["eQuantic.UI.Components"] = ["eQuantic.UI.Primitives", "eQuantic.UI.Code"],
         ["eQuantic.UI.Charts"] = ["eQuantic.UI.Primitives", "eQuantic.UI.Components"],
 
         // The realizers. Each lowers VisualNode trees; a component reaches them as the tree its

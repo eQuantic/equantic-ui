@@ -27,28 +27,19 @@ public class ServedRuntimeIsABuildOutputTests
         stream!.CopyTo(copy);
 
         copy.Length.Should().BeGreaterThan(0);
-        File.ReadAllBytes(Path.Combine(RepoRoot(), Bundle)).Should().Equal(copy.ToArray(),
+        File.ReadAllBytes(Path.Combine(Repository.Root(), Bundle)).Should().Equal(copy.ToArray(),
             "the embedded runtime is the file BundleRuntime wrote in this build, not one written by some earlier one");
     }
 
     [Fact]
     public void The_served_runtime_is_never_committed()
     {
-        var root = RepoRoot();
+        var root = Repository.Root();
 
         Git(root, $"ls-files -- {Bundle}").Should().BeEmpty(
             "the bundle is rebuilt on every Server build, and a committed copy is exactly what lagged the runtime's source (#273)");
         Git(root, $"check-ignore -- {Bundle}").Trim().Should().Be(Bundle,
             ".gitignore keeps the build's output out of a `git add .`");
-    }
-
-    private static string RepoRoot()
-    {
-        var here = new DirectoryInfo(AppContext.BaseDirectory);
-        while (here is not null && !Directory.Exists(Path.Combine(here.FullName, "src", "eQuantic.UI.Runtime")))
-            here = here.Parent;
-        here.Should().NotBeNull("the suite runs inside the repository");
-        return here!.FullName;
     }
 
     private static string Git(string root, string arguments)

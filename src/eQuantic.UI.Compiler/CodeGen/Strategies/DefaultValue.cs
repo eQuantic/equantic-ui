@@ -57,10 +57,34 @@ public static class DefaultValue
             return zero is null ? "0" : $"'{zero.Name.ToCamelCase()}'";
         }
 
-        // A nullable value type defaults to the null one; every reference type does too. Another
-        // struct has no zeroed instance on this side — null is the honest answer, and the sites
-        // that need better say so explicitly.
+        // A STRUCT's default is its zero instance, and C# never has a null one. The twin can build
+        // it when its bare constructor zeroes every component: a struct the compiler EMITS (one of
+        // the app's with a twin to build, or one from a namespace it transpiles whole), whose
+        // parameters default to their own types' zeros by this same rule, or a vocabulary struct
+        // whose hand-written twin says it does ([ZeroConstructs]). `new CodeGrid()` held a null
+        // Point on the web before this.
+        if (type is INamedTypeSymbol { TypeKind: TypeKind.Struct } structType && ZeroConstructs(structType))
+            return $"new {structType.Name}()";
+
+        // A nullable value type defaults to the null one; every reference type does too. A struct
+        // whose twin cannot zero-construct has no zeroed instance on this side — null is the honest
+        // answer there, and the sites that need better say so explicitly.
         return "null";
+    }
+
+    /// <summary>Whether the twin of <paramref name="type"/> builds its zero instance from a bare
+    /// constructor — see <see cref="Of(ITypeSymbol?)"/>.</summary>
+    private static bool ZeroConstructs(INamedTypeSymbol type)
+    {
+        if (type.IsGenericType || type.SpecialType != SpecialType.None) return false;
+        // Nullable<T> is a struct too, and its default is null — handled above, never here.
+        if (type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T) return false;
+        if (type.GetAttributes().Any(a => a.AttributeClass?.Name == "ZeroConstructsAttribute")) return true;
+        // In source, only when a twin is emitted at all: a struct the emitter refuses (an empty one)
+        // has no class, and `new Empty()` would name one nothing wrote.
+        if (type.Locations.Any(location => location.IsInSource)) return RecordTypeEmitter.EmitsTwin(type);
+        var ns = type.ContainingNamespace?.ToDisplayString() ?? "";
+        return Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(ns);
     }
 
     /// <summary>The default of the ELEMENT of a sequence-typed expression.</summary>

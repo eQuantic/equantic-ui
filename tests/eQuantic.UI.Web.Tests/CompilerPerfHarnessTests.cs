@@ -41,7 +41,7 @@ public class CompilerPerfHarnessTests(ITestOutputHelper output)
 
         var root = RepoRoot();
         var paths = Directory.GetFiles(Path.Combine(root, "src", "eQuantic.UI.Components"), "*.cs")
-            .Concat(Directory.GetFiles(Path.Combine(root, "src", "eQuantic.UI.Primitives", "Code"), "*.cs"))
+            .Concat(SharedComponentTranspilationTests.CodeEngineSources(root))
             .Concat(Directory.GetFiles(Path.Combine(root, "src", "eQuantic.UI.Primitives", "Sheet"), "*.cs"))
             .OrderBy(path => path, StringComparer.Ordinal)
             .ToList();

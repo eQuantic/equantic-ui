@@ -2,6 +2,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Text;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.Services;
 using eQuantic.UI.Compiler.CodeGen.Strategies;
 using eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
@@ -378,6 +379,11 @@ public class CSharpToJsConverter
         _context.ExpectedType = expectedType;
         var cached = _context.GetCached(expression);
         if (cached != null) return cached;
+
+        // A comparer handed to a collection has no translation WHICHEVER strategy builds the
+        // collection, so the fence stands here, where every creation passes.
+        if (expression is BaseObjectCreationExpressionSyntax creation)
+            creation.ReportUntranslatableComparer(_context);
 
         var strategy = _strategyRegistry.FindStrategy(expression, _context);
         if (strategy != null)

@@ -1,3 +1,4 @@
+using eQuantic.UI.Code;
 using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Components;
@@ -206,12 +207,13 @@ public sealed class CodeEditor : StatefulComponent
             ActiveLine = editor.Caret.Line,
         };
 
+        // THE grid, handed to the engine — the only thing that turns a position into a point. The
+        // block draws the lines on these same numbers, so the caret and the glyphs cannot disagree.
+        editor.Grid = new CodeGrid(new Point(metrics.ContentLeft, metrics.ContentTop),
+            new Size(metrics.ColumnWidth, metrics.LineHeight));
+
         VisualNode surface = new CodeSurface(block, editor)
         {
-            ContentTop = metrics.ContentTop,
-            LineHeight = metrics.LineHeight,
-            ContentLeft = metrics.ContentLeft,
-            ColumnWidth = metrics.ColumnWidth,
             Autofocus = Autofocus,
             Label = Caption ?? "Code editor",
             // The marks write with the BLOCK's ink, not the page's — see CodeBlock.InkFor.

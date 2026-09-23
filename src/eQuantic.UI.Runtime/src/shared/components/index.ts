@@ -32,6 +32,7 @@ export { CodeEdit } from './CodeEdit';
 export { CodeEditor } from './CodeEditor';
 export { CodeEditorController } from './CodeEditorController';
 export { CodeFold } from './CodeFold';
+export { CodeGrid } from './CodeGrid';
 export { CodeGutterMarker } from './CodeGutterMarker';
 export { CodeHighlighter } from './CodeHighlighter';
 export { CodeHistory } from './CodeHistory';

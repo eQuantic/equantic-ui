@@ -1,3 +1,4 @@
+using eQuantic.UI.Code;
 using eQuantic.UI.Components;
 using eQuantic.UI.Native.Framework;
 using eQuantic.UI.Primitives;
@@ -53,10 +54,10 @@ public class CodeEditorGridTests
         var block = Find<CodeBlock>(tree)!;
 
         block.Metrics.Should().NotBeNull("the editor measured once and hands the grid down");
-        block.Metrics!.Value.LineHeight.Should().Be(surface.LineHeight);
-        block.Metrics!.Value.ColumnWidth.Should().Be(surface.ColumnWidth);
-        block.Metrics!.Value.ContentLeft.Should().Be(surface.ContentLeft);
-        block.Metrics!.Value.ContentTop.Should().Be(surface.ContentTop);
+        block.Metrics!.Value.LineHeight.Should().Be(surface.Grid().Cell.Height);
+        block.Metrics!.Value.ColumnWidth.Should().Be(surface.Grid().Cell.Width);
+        block.Metrics!.Value.ContentLeft.Should().Be(surface.Grid().Origin.X);
+        block.Metrics!.Value.ContentTop.Should().Be(surface.Grid().Origin.Y);
     }
 
     [Fact]
@@ -69,8 +70,8 @@ public class CodeEditorGridTests
 
         // 13dp label → a 16dp line box (MathF.Round is to-even: 32.5 → 32) → 18; 11.5dp → 14.5 → 17.
         // Two grids, each internally whole — which is the point, not the numbers.
-        Find<CodeSurface>(comfortable)!.LineHeight.Should().Be(18);
-        Find<CodeSurface>(compact)!.LineHeight.Should().Be(17);
+        Find<CodeSurface>(comfortable)!.Grid().Cell.Height.Should().Be(18);
+        Find<CodeSurface>(compact)!.Grid().Cell.Height.Should().Be(17);
         Find<CodeBlock>(compact)!.Metrics!.Value.LineHeight.Should().Be(17);
     }
 

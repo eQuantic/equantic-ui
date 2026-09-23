@@ -1,4 +1,5 @@
 using System.Reflection;
+using eQuantic.UI.Code;
 using eQuantic.UI.Codegen;
 using eQuantic.UI.Primitives;
 
@@ -7,7 +8,8 @@ namespace eQuantic.UI.Web.Build;
 /// <summary>
 /// Generates the TypeScript module that NAMES every vocabulary enum on the other side
 /// (<c>src/shared/enums.generated.ts</c>): one string union per non-flags enum of
-/// <c>eQuantic.UI.Primitives</c>, with the camelCase member strings the transpiler emits.
+/// <c>eQuantic.UI.Primitives</c> and of the code editing engine beside it (<c>eQuantic.UI.Code</c>),
+/// with the camelCase member strings the transpiler emits.
 /// <para>
 /// The unions exist so a transpiled component can FORWARD its own enum property into a vocabulary
 /// slot. A property declared <c>string</c> is wider than a slot declared <c>MainAlignValue</c>, so
@@ -28,7 +30,8 @@ public static class EnumUnionsTsGenerator
         var ts = new CodeWriter();
         ts.AppendLine("/**");
         ts.AppendLine(" * GENERATED — do not edit. One string union per non-flags enum of the C# vocabulary");
-        ts.AppendLine(" * (eQuantic.UI.Primitives), spelled as the transpiler emits its members: camelCase strings.");
+        ts.AppendLine(" * (eQuantic.UI.Primitives and eQuantic.UI.Code), spelled as the transpiler emits its members:");
+        ts.AppendLine(" * camelCase strings.");
         ts.AppendLine(" * Regenerate: EQ_UPDATE_ENUMS_TS=1 dotnet test eQuantic.UI.Web.Tests");
         ts.AppendLine(" * (EnumUnionsTsGeneratorTests pins this file byte-for-byte against the generator).");
         ts.AppendLine(" *");
@@ -49,10 +52,15 @@ public static class EnumUnionsTsGenerator
         return ts.ToString();
     }
 
-    /// <summary>Every public non-flags enum of the vocabulary, in name order so the file is stable
-    /// whatever order reflection hands them back.</summary>
+    /// <summary>
+    /// Every public non-flags enum of the vocabulary assemblies, in name order so the file is stable
+    /// whatever order reflection hands them back. The same two the compiler routes as vocabulary
+    /// (<c>RuntimeProvidedTypeScanner.VocabularyNamespaces</c>): an enum it annotates with a union
+    /// this file does not declare is a transpiled twin that does not compile.
+    /// </summary>
     public static IEnumerable<Type> Unions() =>
-        typeof(VisualNode).Assembly.GetTypes()
+        new[] { typeof(VisualNode).Assembly, typeof(CodeEditorController).Assembly }
+            .SelectMany(assembly => assembly.GetTypes())
             .Where(type => type.IsEnum && type.IsPublic
                 && type.GetCustomAttribute<FlagsAttribute>() is null)
             .OrderBy(type => type.Name, StringComparer.Ordinal);

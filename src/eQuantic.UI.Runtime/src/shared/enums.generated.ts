@@ -1,6 +1,7 @@
 /**
  * GENERATED — do not edit. One string union per non-flags enum of the C# vocabulary
- * (eQuantic.UI.Primitives), spelled as the transpiler emits its members: camelCase strings.
+ * (eQuantic.UI.Primitives and eQuantic.UI.Code), spelled as the transpiler emits its members:
+ * camelCase strings.
  * Regenerate: EQ_UPDATE_ENUMS_TS=1 dotnet test eQuantic.UI.Web.Tests
  * (EnumUnionsTsGeneratorTests pins this file byte-for-byte against the generator).
  *
@@ -87,6 +88,8 @@ export type PermissionStateValue =
 
 export type PointerCursorValue =
   'default' | 'pointer' | 'text' | 'notAllowed' | 'crosshair' | 'colResize' | 'rowResize';
+
+export type PointerPhaseValue = 'down' | 'move' | 'up' | 'hover' | 'exit';
 
 export type PresenceMotionValue = 'fade' | 'slideUp';
 

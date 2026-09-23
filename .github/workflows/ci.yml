@@ -540,6 +540,46 @@ jobs:
           echo "Debug maps: $debug_maps. Published: $modules modules, $maps maps."
           exit $status
 
+      # What each page costs to load, on every pull request (#290). The runtime every page loads
+      # first has a budget the suite enforces (ServedRuntimeBudgetTests); a page module is the app's
+      # own code, so it is REPORTED, and the question a reviewer asks is how it moved. Read from the
+      # Release publish above, which is what ships, and a publish with no module is not a report.
+      - name: The page modules' sizes, reported
+        shell: bash
+        run: |
+          set -uo pipefail
+          dir=published/wwwroot/_equantic
+          modules=$(find "$dir" -name '*.js' ! -name runtime.js | sort)
+          if [ -z "$modules" ]; then
+            echo "::error::the publish holds no page module, so there is nothing to report"
+            exit 1
+          fi
+          {
+            echo "### Page modules: samples/DefaultUIDashboard, Release publish"
+            echo
+            echo "| module | bytes | gzip -9 |"
+            echo "|---|---:|---:|"
+            total=0
+            total_gz=0
+            count=0
+            for module in $modules; do
+              name=${module#"$dir"/}
+              raw=$(wc -c < "$module" | tr -d ' ')
+              gz=$(gzip -9 -c "$module" | wc -c | tr -d ' ')
+              total=$((total + raw))
+              total_gz=$((total_gz + gz))
+              count=$((count + 1))
+              # A C# type name has no hyphen, so one in a module's name is bun's chunk naming.
+              case "$name" in
+                *-*) echo "| \`$name\` (shared chunk) | $raw | $gz |" ;;
+                *) echo "| \`$name\` | $raw | $gz |" ;;
+              esac
+            done
+            echo "| **$count modules** | **$total** | **$total_gz** |"
+            echo
+            echo "A shared chunk is what two or more modules have in common, split out by bun (eqc runs it with \`--splitting\`) and named after one of them; it loads once, with the first page that needs it. The served runtime, which every page loads first, is budgeted by \`ServedRuntimeBudgetTests\`."
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
       # Exit 0 is not the proof. A mobile target framework exists to produce a BUNDLE, and the
       # build checks worth exercising here are precisely the ones that only run when one is
       # produced. So read the artifact back: derived from what the build wrote, never a list of

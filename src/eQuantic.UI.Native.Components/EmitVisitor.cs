@@ -147,7 +147,7 @@ internal sealed partial class EmitVisitor : IVisualNodeVisitor<EmitState, Nothin
 
     public Nothing Visit(Text node, EmitState s) { EmitTextNode(node, s); Descend(s); return Nothing.Value; }
     public Nothing Visit(TextEntry node, EmitState s) { EmitTextEntry(node, s); Descend(s); return Nothing.Value; }
-    public Nothing Visit(CodeSurface node, EmitState s) { EmitCode(node, s); Descend(s); return Nothing.Value; }
+    public Nothing Visit(CodeSurface node, EmitState s) { EmitCode(node, s); Descend(s); EmitCodeMarks(node, s); return Nothing.Value; }
     public Nothing Visit(Image node, EmitState s) { EmitImageNode(node, s); Descend(s); return Nothing.Value; }
     public Nothing Visit(CameraPreview node, EmitState s) { EmitCamera(node, s); Descend(s); return Nothing.Value; }
     public Nothing Visit(Icon node, EmitState s) { EmitIcon(node, s); Descend(s); return Nothing.Value; }

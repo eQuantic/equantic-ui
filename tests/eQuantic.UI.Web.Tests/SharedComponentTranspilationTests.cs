@@ -36,17 +36,28 @@ public class SharedComponentTranspilationTests
 
     /// <summary>
     /// Pure MODEL that the components are written against and that has no platform in it — the code
-    /// editor's document, tokenizers, and history. Hand-writing a TypeScript twin of a tokenizer is
-    /// exactly the thing this framework exists not to do, so it transpiles with everything else and
-    /// the same emission runs on both targets.
+    /// editing engine (its own assembly, every folder of it), the spreadsheet's model and the forms'.
+    /// Hand-writing a TypeScript twin of a tokenizer is exactly the thing this framework exists not
+    /// to do, so it transpiles with everything else and the same emission runs on both targets.
     /// </summary>
     private static string[] SharedModelSources() =>
-        Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Primitives", "Code"), "*.cs")
+        CodeEngineSources(RepoRoot())
             .Concat(Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Primitives", "Sheet"), "*.cs"))
             .Concat(Directory.GetFiles(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Primitives", "Forms"), "*.cs"))
             .OrderBy(path => path, StringComparer.Ordinal)
             .ToArray();
 
+
+    /// <summary>
+    /// The code editing engine's sources: the whole project directory, recursively, minus what the
+    /// build writes. Its folders (Document, Languages, Editing…) organise it for a reader; the
+    /// transpiler takes all of it, so a type added to any folder reaches the runtime without a line
+    /// here.
+    /// </summary>
+    internal static IEnumerable<string> CodeEngineSources(string root) =>
+        Directory.GetFiles(Path.Combine(root, "src", "eQuantic.UI.Code"), "*.cs", SearchOption.AllDirectories)
+            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                && !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"));
 
     /// <summary>
     /// The stateful write-once proof — the SAME authoring shape as the native CounterAppTests

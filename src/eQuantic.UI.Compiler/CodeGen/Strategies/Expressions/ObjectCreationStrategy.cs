@@ -423,7 +423,7 @@ public class ObjectCreationStrategy : IConversionStrategy
         // that takes a trailing config object — only types whose twin the compiler EMITS (RecordTypeEmitter,
         // e.g. the shared component library's NavItem) have the positional constructor this mapping needs.
         var ns = type.ContainingNamespace?.ToDisplayString() ?? string.Empty;
-        if (ns == "eQuantic.UI.Primitives" || ns.StartsWith("eQuantic.UI.Primitives."))
+        if (Services.RuntimeProvidedTypeScanner.IsVocabularyNamespace(ns))
             return new List<ValueMember>();
 
         // The primary constructor: the widest one that is not the record's synthesized copy constructor.

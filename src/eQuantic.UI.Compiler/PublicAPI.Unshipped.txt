@@ -119,3 +119,15 @@ eQuantic.UI.Compiler.ComponentCompiler.SourceMapDirectory.get -> string?
 eQuantic.UI.Compiler.ComponentCompiler.SourceMapDirectory.set -> void
 eQuantic.UI.Compiler.Services.SourceMapGenerator.Generate(string! generatedFileName, string! sourceFileName, System.Collections.Generic.List<eQuantic.UI.Compiler.Services.TypeScriptCodeBuilder.SourceMapping>! mappings, string? sourceContent = null, string! sourceRoot = "") -> string!
 *REMOVED*eQuantic.UI.Compiler.Services.SourceMapGenerator.Generate(string! generatedFileName, string! sourceFileName, System.Collections.Generic.List<eQuantic.UI.Compiler.Services.TypeScriptCodeBuilder.SourceMapping>! mappings, string? sourceContent = null) -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.LogicOr = "$eq.logic.or" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.LogicAnd = "$eq.logic.and" -> string!
+static readonly eQuantic.UI.Compiler.Services.RuntimeProvidedTypeScanner.VocabularyNamespaces -> System.Collections.Generic.IReadOnlyList<string!>!
+static eQuantic.UI.Compiler.Services.RuntimeProvidedTypeScanner.IsVocabularyNamespace(string! ns) -> bool
+static eQuantic.UI.Compiler.Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(string! ns) -> bool
+*REMOVED*eQuantic.UI.Compiler.CodeGen.RecordTypeEmitter.RecordTypeEmitter(eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter! converter) -> void
+eQuantic.UI.Compiler.CodeGen.RecordTypeEmitter.RecordTypeEmitter(eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter! converter, eQuantic.UI.Compiler.Services.ComponentDependencyResolver? modules = null) -> void
+eQuantic.UI.Compiler.Services.ComponentDependencyResolver.IsModule(string! name) -> bool
+eQuantic.UI.Compiler.CodeGen.Extensions.CollectionComparerExtensions
+static eQuantic.UI.Compiler.CodeGen.Extensions.CollectionComparerExtensions.ReportUntranslatableComparer(this Microsoft.CodeAnalysis.CSharp.Syntax.BaseObjectCreationExpressionSyntax! creation, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> void
+static eQuantic.UI.Compiler.CodeGen.RecordTypeEmitter.EmitsTwin(Microsoft.CodeAnalysis.INamedTypeSymbol! type) -> bool
+static eQuantic.UI.Compiler.Services.ComponentDependencyResolver.From(Microsoft.CodeAnalysis.Compilation! compilation) -> eQuantic.UI.Compiler.Services.ComponentDependencyResolver!

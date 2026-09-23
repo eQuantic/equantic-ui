@@ -105,6 +105,17 @@ export const origin = <T extends object>(node: T, source: string, label?: string
   return node;
 };
 
+/**
+ * C#'s NON-short-circuit logical operators on `bool`: `a | b` and `a & b` evaluate BOTH operands,
+ * in order, and answer a bool. JavaScript's `|` and `&` evaluate both too but answer a NUMBER (1 or
+ * 0) — and TypeScript refuses them on booleans — while `||` and `&&` answer a bool and SKIP the
+ * right side, so `typed |= Type(c)` written as `||` would stop typing after the first character
+ * that took. A call is the one spelling that keeps both halves: its arguments are evaluated left to
+ * right before the body runs.
+ */
+export const or = (left: boolean, right: boolean): boolean => left || right;
+export const and = (left: boolean, right: boolean): boolean => left && right;
+
 export const $eq = {
   /** A rewritten resx accessor (Track L D2): resolves against the installed culture catalog at
    * CALL time — the whole reason the compiler never inlines it. */
@@ -181,6 +192,8 @@ export const $eq = {
   },
   /** Nullable<T> lifted operators (null-propagating arithmetic, false-on-null relational). */
   nullable: { arith: liftArith, cmp: liftCmp },
+  /** `bool | bool` and `bool & bool`: both operands evaluated, a bool answered — see `or`. */
+  logic: { or, and },
   /**
    * C# multicast delegates: `+=` composes an invocation list and `-=` drops the last occurrence.
    * JavaScript has neither, and emitting `+=` literally made `null + function` a STRING.

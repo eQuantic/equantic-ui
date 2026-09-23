@@ -690,52 +690,49 @@ export interface NavigableNode extends VisualNodeValue {
 }
 
 /**
- * An EDITABLE code surface: the child draws the lines, this adds a caret, a selection and a
- * keyboard. Everything a key or a click MEANS lives in the controller, which is transpiled from the
- * same C# the native host calls — so the two surfaces cannot drift on what ⌥← does.
+ * An EDITABLE code surface: the child draws the lines, this adds the carets, the selection and a
+ * keyboard. Everything a key or a click MEANS, and where every mark goes, lives in the MODEL, which
+ * is transpiled from the same C# the native host calls — so the two surfaces cannot drift on what
+ * ⌥← does or where column 12 is.
  */
 export interface CodeSurfaceNode extends VisualNodeValue {
   nodeKind: 'codeSurface';
   child: VisualNodeValue;
-  /** The live CodeEditorController — a transpiled class, not a copy of its state. */
-  editor: CodeEditorLike;
-  contentTop: number;
-  lineHeight: number;
-  contentLeft: number;
-  columnWidth: number;
+  /** The live engine (the C# `ICodeSurfaceModel`) — a transpiled class, not a copy of its state. */
+  model: CodeSurfaceModelLike;
   onChanged?: (() => void) | null;
   label?: string | null;
   autofocus?: boolean;
-  /** The two marks' ink (C# `CodeSurface.CaretColor` / `SelectionColor`) — an editor on an inverse
+  /** The marks' ink (C# `CodeSurface.CaretColor` / `SelectionColor`) — an editor on an inverse
    * slab writes with an ink of its own, and the page theme's would vanish into the slab. */
   caretColor?: ColorTokenValue | null;
   selectionColor?: ColorTokenValue | null;
 }
 
-/** What the surface needs from the controller — the transpiled class satisfies it structurally. */
-export interface CodeEditorLike {
-  readonly selection: {
-    anchor: CodePositionLike;
-    focus: CodePositionLike;
-    isEmpty: boolean;
-    start: CodePositionLike;
-    end: CodePositionLike;
-  };
-  readonly caret: CodePositionLike;
-  readonly document: {
-    lineCount: number;
-    line(index: number): string;
-    clamp(position: CodePositionLike): CodePositionLike;
-  };
-  readOnly: boolean;
-  type(c: string): boolean;
-  selectWord(at: CodePositionLike): void;
-  selectLine(line: number): void;
+/** A rectangle the model answers, in the surface's own coordinates. */
+export interface SurfaceRectLike {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
 }
 
-export interface CodePositionLike {
-  readonly line: number;
-  readonly column: number;
+/**
+ * The C# `ICodeSurfaceModel`, member for member: what a realizer may TELL the engine and ASK it.
+ * The transpiled controller satisfies it structurally. Nothing here turns a column into pixels or
+ * decides what a click means — that is the point of the interface.
+ */
+export interface CodeSurfaceModelLike {
+  readonly selectionBands: readonly SurfaceRectLike[];
+  readonly carets: readonly SurfaceRectLike[];
+  handleKey(key: string, modifiers: number, clipboard: unknown): boolean;
+  handleText(text: string): boolean;
+  handlePointer(
+    phase: 'down' | 'move' | 'up' | 'hover' | 'exit',
+    position: { x: number; y: number },
+    modifiers: number,
+    clicks: number,
+  ): boolean;
 }
 
 /** A live camera surface — the session id names the MediaStream the runtime attaches. */

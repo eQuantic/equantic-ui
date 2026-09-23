@@ -44,13 +44,16 @@ export class CodeLanguages {
     }
 
     static register(name: string, language: any) {
-        return CodeLanguages.known[name] = language;
+        return CodeLanguages.known[CodeLanguages.keyOf(name)] = language;
     }
 
     static for(name: string | null) {
         let language: any; if ((!name || !name.trim())) return CodeLanguages.plainText;
-        let key = (_s => { const _c = '.'; let _i = 0; while (_i < _s.length && _c.includes(_s[_i])) _i++; return _s.slice(_i); })(name);
-        return (Object.prototype.hasOwnProperty.call(CodeLanguages.known, key) ? ((language = CodeLanguages.known[key]), true) : false) ? language : CodeLanguages.plainText;
+        return (Object.prototype.hasOwnProperty.call(CodeLanguages.known, CodeLanguages.keyOf(name)) ? ((language = CodeLanguages.known[CodeLanguages.keyOf(name)]), true) : false) ? language : CodeLanguages.plainText;
+    }
+
+    static keyOf(name: string) {
+        return (_s => { const _c = '.'; let _i = 0; while (_i < _s.length && _c.includes(_s[_i])) _i++; return _s.slice(_i); })(name).toLowerCase();
     }
 }
 

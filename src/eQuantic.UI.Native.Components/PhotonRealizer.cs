@@ -202,6 +202,36 @@ public sealed class RealizeResult
 /// </summary>
 public static class PhotonRealizer
 {
+    /// <summary>
+    /// The root path of each overlay layer. A path is IDENTITY and the same string every frame
+    /// (<see cref="LayoutContext.PathCache"/>), and this one was interpolated every frame instead:
+    /// a new string per layer, and a buffer rented from the shared <c>ArrayPool</c> to build it
+    /// (#290). The table grows the first time a screen opens more layers than it holds, keeping
+    /// the strings it already had, so each layer's path is built once. Hosts realize on threads of
+    /// their own, so a grown table replaces the old one whole.
+    /// </summary>
+    private static string[] _layerPaths = GrowLayerPaths([], 16);
+
+    private static string[] GrowLayerPaths(string[] held, int count)
+    {
+        var paths = new string[count];
+        Array.Copy(held, paths, held.Length);
+        for (var i = held.Length; i < count; i++)
+            paths[i] = "ov" + i.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return paths;
+    }
+
+    private static string LayerPath(int index)
+    {
+        var paths = Volatile.Read(ref _layerPaths);
+        if (index < paths.Length) return paths[index];
+        var grown = GrowLayerPaths(paths, Math.Max(index + 1, paths.Length * 2));
+        // A realizer that lost the race reads the winner's table, which holds the same strings.
+        Interlocked.CompareExchange(ref _layerPaths, grown, paths);
+        paths = Volatile.Read(ref _layerPaths);
+        return index < paths.Length ? paths[index] : grown[index];
+    }
+
     public static RealizeResult Realize(
         VisualNode root,
         float viewportWidth,
@@ -337,7 +367,7 @@ public static class PhotonRealizer
             // focus, its press state and its presence snapshots. The index stays; only the work goes.
             if (overlays[i] is { Motion: not null, Open: false }) continue;
             var overlayLayout = LayoutEngine.Layout(overlays[i].Child, viewportWidth, viewportHeight,
-                context, rootPath: $"ov{i}");
+                context, rootPath: LayerPath(i));
             overlayRoots.Add(overlayLayout);
             realizedLayers.Add(overlays[i]);
             // The UNCLIPPED sink: a layer lays out against the viewport, not inside whatever the

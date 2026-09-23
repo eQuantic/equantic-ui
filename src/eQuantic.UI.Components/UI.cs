@@ -364,21 +364,20 @@ public static class UI
         new LoopMotion(child, effect, fromX, toX, durationMs) { HideAtRest = hideAtRest };
 
     /// <summary>
-    /// An EDITABLE code surface: whatever the child draws, plus a caret, a selection and a
-    /// keyboard. The controller is a live object the composing component OWNS and keeps — it
-    /// survives the rebuild each keystroke causes, which is why it is an argument and not state
-    /// this node holds. <paramref name="onChanged"/> is how that rebuild is asked for, since the
-    /// controller mutates outside the tree.
+    /// An EDITABLE code surface: whatever the child draws, plus the carets, the selection and a
+    /// keyboard. The model is a live object the composing component OWNS and keeps — it survives
+    /// the rebuild each keystroke causes, which is why it is an argument and not state this node
+    /// holds. <paramref name="onChanged"/> is how that rebuild is asked for, since the model
+    /// mutates outside the tree.
     /// <para>
-    /// The surface's geometry (<c>ContentTop</c>, <c>LineHeight</c>, <c>ContentLeft</c>,
-    /// <c>ColumnWidth</c>) and the two mark colours stay on the initializer: they are one
-    /// component's arithmetic against its own font, not what a screen says when it places an
-    /// editor.
+    /// The grid the marks sit on belongs to the model (<c>CodeEditorController.Grid</c>), and the two
+    /// mark colours stay on the initializer: they are one component's arithmetic against its own
+    /// font and slab, not what a screen says when it places an editor.
     /// </para>
     /// </summary>
-    public static CodeSurface CodeSurface(VisualNode child, CodeEditorController editor,
+    public static CodeSurface CodeSurface(VisualNode child, ICodeSurfaceModel model,
         Action? onChanged = null, string? label = null, bool autofocus = false) =>
-        new CodeSurface(child, editor)
+        new CodeSurface(child, model)
         {
             OnChanged = onChanged,
             Label = label,

@@ -58,6 +58,12 @@ public static class Eq
     /// <summary>Lifted Nullable&lt;T&gt; relational — <c>false</c> if either operand is null.</summary>
     public const string LiftCmp = "$eq.nullable.cmp";
 
+    /// <summary>C#'s non-short-circuit <c>bool | bool</c> and <c>bool &amp; bool</c>: BOTH operands
+    /// evaluated, in order, and a bool answered. JavaScript's <c>|</c>/<c>&amp;</c> answer a number,
+    /// and <c>||</c>/<c>&amp;&amp;</c> skip the right side — neither is the C# operator.</summary>
+    public const string LogicOr = "$eq.logic.or";
+    public const string LogicAnd = "$eq.logic.and";
+
     /// <summary>C# <c>with</c> over a runtime VALUE TYPE (TypeStyle, ColorToken) — a hand-written
     /// twin has no generated <c>with</c>, and a spread would drop its prototype and its methods.</summary>
     public const string With = "$eq.withPatch";

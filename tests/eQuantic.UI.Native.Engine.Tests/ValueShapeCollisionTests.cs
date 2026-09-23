@@ -43,6 +43,7 @@ public class ValueShapeCollisionTests
     private static readonly Assembly[] Scanned =
     [
         typeof(VisualNode).Assembly,                    // Primitives — the vocabulary
+        typeof(eQuantic.UI.Code.CodeEditorController).Assembly, // Code — the code editing engine
         typeof(eQuantic.UI.Components.Button).Assembly, // the component library
         typeof(DisplayList).Assembly,                   // Native.Engine — the display list
         typeof(LayoutNode).Assembly,                    // Native.Framework — layout

@@ -71,8 +71,12 @@ Still genuinely missing (UI surface, not transpiler correctness):
   clipboard.
 
 ### 2. Performance with Bun
-Build works without Node. Missing the *measured* part: per-route bundle budgets, route-based
-code-splitting, hydration-time benchmarks, tree-shaking verification, and a perf regression gate.
+Build works without Node, and the measured part is gated (#290): the served runtime has a gzip
+budget the suite enforces (`ServedRuntimeBudgetTests`), each page module's size is reported on every
+pull request, and the Photon frame has allocation ceilings for a dense scene and for each open layer
+(`PerfHarnessTests`). Routes split by the module graph: every page is its own module, which
+`boot.ts` imports on the first navigation to it, and what two pages share is a chunk bun splits out
+once. Still missing: hydration-time benchmarks and tree-shaking verification.
 
 ### 3. Flutter-like DX
 The `Build(context)` model is genuinely Flutter-like. Missing the productivity multipliers:
@@ -160,6 +164,11 @@ The raw-HTML/CSS escape hatch (`HtmlElement`, `ClassBuilder`) stays for web-only
 - **Phase 7 — Global state** (signals/context) + performance budgets & benchmarks.
 
 ## Track I — Editor intelligence (`CodeEditor`)
+
+> **The plan now lives in [`docs/CODE-EDITOR-PLAN.md`](docs/CODE-EDITOR-PLAN.md)** (2026-09-23): the
+> editor an IDE is built on (`../equantic-code`), measured against VS Code and Rider, with the
+> defects found by driving the current one and the slices that fix and extend it. What follows is
+> the track's original framing, kept because the latency argument still holds.
 
 The framework ships a real code editor — document model, selection, history, highlighting, bracket
 matching, find, and squiggle decorations — and it is currently a good editor that cannot help you
@@ -374,7 +383,9 @@ settles. Full design and fences: wiki **[Email Rendering](https://github.com/eQu
 ## Definition of "production-ready" (per pillar)
 - **0 JS**: any unsupported C# fails the build with a clear message; conformance suite green; C#
   debuggable in the browser.
-- **Performance**: documented bundle budgets enforced in CI; code-splitting per route.
+- **Performance**: documented bundle budgets enforced in CI; code-splitting per route. Met by
+  #290 for the runtime every page loads (its budget fails the suite) and by the module graph for
+  the routes (a page's module loads on the first navigation to it).
 - **Flutter DX**: hot reload preserves state; <1s edit-to-view.
 - **Components**: every shipped component passes an a11y checklist + variant matrix tests.
 - **CSS**: at least one first-party engine ships; provider contract documented.

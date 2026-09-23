@@ -76,6 +76,23 @@ public abstract class MapBackedDictionaryStrategy : ConversionStrategyBase
                 return $"{receiver}.get({key})";
             }
 
+            case AssignmentExpressionSyntax { Left: ElementAccessExpressionSyntax la } assignment
+                when assignment.OperatorToken.Text is "|=" or "&=" or "^=" && Expressions.BoolLogic.OnBools(assignment, context):
+            {
+                // A bool's `|=`, `&=` and `^=` is the LOGICAL operator here too, as on every other
+                // target (BoolLogic): JavaScript's bitwise one stores a number in a bool slot. The
+                // receiver and the key are each evaluated once, as C# evaluates them — the
+                // template's writer binds a part it uses twice.
+                context.UsedHelpers.Add(Eq.Import);
+                var op = assignment.OperatorToken.Text[..^1];
+                return Ir.JsExpr.Template(
+                    $"{{0}}.set({{1}}, {Expressions.BoolLogic.Combine(op, "{0}.get({1})", "{2}")})",
+                    [context.Converter.ConvertIr(la.Expression),
+                     context.Converter.ConvertIr(la.ArgumentList.Arguments[0].Expression),
+                     context.Converter.ConvertIr(assignment.Right)],
+                    context.TypeAnnotations).ToString();
+            }
+
             case AssignmentExpressionSyntax { Left: ElementAccessExpressionSyntax la } assignment:
             {
                 var receiver = context.Converter.ConvertExpression(la.Expression);

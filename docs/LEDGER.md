@@ -457,6 +457,22 @@ record of a release, the wiki's Upgrading page is the distillate.
   build's maps, deleted by a Release build after being registered, failed the publish), and a
   publish takes no map whatever the setting says. CI publishes the sample and looks for a sentence
   only its server has.
+- **2026-09-23 · The code editor's engine gets an assembly of its own**: Track I became the editor
+  `../equantic-code` is built on, planned in [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) after
+  driving the current one in Chromium and through `PhotonHost` found eighteen defects. Its first
+  slice ([#359](https://github.com/eQuantic/equantic-ui/pull/359)) moves the engine out of
+  `Primitives` into `eQuantic.UI.Code` (the audit's section 4, decided with Edgar) and puts one
+  protocol, `ICodeSurfaceModel`, between it and both hosts: the grid and the pointer semantics are
+  the engine's, which gave the web drag selection, shift-click, and the double and triple click it
+  never had. Two transpiler gaps it exposed were fixed where they live (a plain class's unassigned
+  field, and `bool | bool` answering a number), and the review found more: a struct began `null`
+  where C# holds its zero (`new CodeGrid()` threw at its first read; `[ZeroConstructs]` names the
+  hand-written twins that build one), a record's module never imported the app types its body
+  named, a type pattern over the transpiled namespaces answered `!= null`, a bool compound on a
+  dictionary entry or a member stored a number or evaluated its target twice, and a comparer handed
+  to a collection's constructor vanished (`CodeLanguages.For("CSharp")` was plain text on the web;
+  EQ2007 refuses one now). Driving it by hand then found the caret missing beside every bracket
+  (defect 18, on Photon on every line) and the pointer an arrow over the code, both fixed here.
 - **2026-09-23 · The runtime ships once, inside the package that serves it**: three things wrote a
   file called the runtime, a library build by vite in CI and two bundles of `boot.ts` by bun, and the
   copy every app received was the vite one, which exports no `boot`
@@ -467,6 +483,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   SDK copies that file, and three CI checks compare the bytes instead of looking for a file. The
   `equantic.css` every app received, a base sheet no page had ever linked, is gone, and the bun
   packages are private to the build, so a library packed on the SDK no longer depends on them.
+- **2026-09-23 · The runtime and the frame have budgets that fail**: the web side measured no size
+  at all ([#290](https://github.com/eQuantic/equantic-ui/issues/290)). The runtime the Server
+  serves, which every page loads first and which carries the shared component library, is recorded
+  at 137,801 bytes gzipped, and the suite fails when it grows more than 1% or shrinks more than 5%
+  without the record moving with it. The dashboard sample's page modules are reported on every pull
+  request. On Photon, the eight-layer scene's 78.1 KB/frame sat over the dense scene's ceiling with
+  nothing deciding it: the ruler is now what one open layer adds, 506 bytes measured between 24 and
+  32 layers once each layer's root path stopped being rebuilt every frame, under a ceiling one
+  object tighter, and the harness runs alone. The definition's code-splitting per route is met by the module graph, and bun already
+  splits what pages share into chunks.
 
 ## Retired documents
 

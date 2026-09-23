@@ -118,7 +118,8 @@ move, its address does not.
 | Assembly | Lines | Files | Public types | May reference |
 |---|---|---|---|---|
 | `Primitives` — the vocabulary, the tokens, the contracts | 12,547 | 91 | 253 | nothing |
-| `Components` — the write-once library | 9,593 | 61 | 99 | Primitives |
+| `Code` — the code editing engine (moved out of `Primitives`, 2026-09-23) | 2,452 | 36 | 36 | Primitives |
+| `Components` — the write-once library | 9,593 | 61 | 99 | Primitives, Code |
 | `Charts` — the write-once charts | 839 | 5 | 12 | Primitives, Components |
 | `Web` — the SSR realizer and the DOM escape hatch | 6,449 | 22 | 39 | Primitives |
 | `Server` — the ASP.NET Core host | 4,848 | 33 | 51 | Web |
@@ -140,6 +141,12 @@ is written once and realized three times, so the realizers must be able to see i
 able to see them. That is the write-once architecture, and it is also why `Primitives` carries 253
 public types, as many as the transpiler: it is `dart:ui`, `foundation` and the vocabulary in one
 assembly. Section 4 weighs what else it carries.
+
+The `Code` row is the one edge added since the table was measured, and the other rows predate it:
+the engine left `Primitives` with its 2,300 lines and took `Components` with it as its one consumer
+(section 4 has the decision). No realizer references it — each drives a code surface through the
+vocabulary's `ICodeSurfaceModel`, which is what makes the engine a library rather than a dependency
+of every host.
 
 **The rule the table protects: a realizer never references the library it realizes.** A component
 reaches a realizer as the tree its `Build` produced, so `Web`, `Email` and `Native.Components` have
@@ -338,7 +345,7 @@ check by eye.
 | Folder | Lines | Public types | What it is |
 |---|---|---|---|
 | `Nodes/` | 3,830 | 94 | the vocabulary — and nine files that are not nodes |
-| `Code/` | 2,300 | 36 | a code editor's document, controller, history, six languages, completion, folds |
+| ~~`Code/`~~ | 2,300 | 36 | a code editor's document, controller, history, six languages, completion, folds — moved to `eQuantic.UI.Code` (#359) |
 | `Theme/` | 1,590 | 35 | tokens, `IAppTheme`, `PhotonTheme`, palettes, the WCAG audit |
 | `Devices/` | 1,408 | 39 | sixteen capability interfaces, and six `Photon*` declarations |
 | `Vector/` | 1,365 | 13 | SVG parsing and vector drawings |
@@ -346,17 +353,25 @@ check by eye.
 | `Forms/` | 438 | 5 | form model and controller |
 | `Contracts/`, `Text/`, `Layout/`, `Styles/`, root | 566 | 19 | attributes, culture seams, `EdgeInsets`/`SizeValue`, `Color` |
 
-**Twenty-seven percent of the vocabulary assembly is two editors' models.** `Code/` and `Sheet/`
-together are 3,350 lines and 48 public types, in the assembly whose stated contents are "abstract
-visual vocabulary, tokens and the contract attributes". They are here because `CodeSurface` and
-`SheetSurface` — nodes, which must be here — take a concrete `CodeEditorController` and
-`SheetController`, and because both realizers drive the same editing protocol through them
-(`CodeKeymap`, `SheetKeymap`) without being allowed to reference `Components`. *How does Flutter
+**Twenty-seven percent of the vocabulary assembly was two editors' models** when this was
+measured. `Code/` and `Sheet/` together were 3,350 lines and 48 public types, in the assembly whose
+stated contents are "abstract visual vocabulary, tokens and the contract attributes". They were here
+because `CodeSurface` and `SheetSurface` — nodes, which must be here — took a concrete
+`CodeEditorController` and `SheetController`, and because both realizers drive the same editing
+protocol through them (`CodeKeymap`, `SheetKeymap`) without being allowed to reference
+`Components`. `SheetSurface` still does; `CodeSurface` no longer does (below). *How does Flutter
 solve it?* `TextEditingController` and `EditableText` live in `widgets`, not in `rendering`; the
 widget owns the protocol and `RenderEditable` only paints. Ours could take the same road — the node
 depends on an interface stating what a realizer READS (lines, caret, selection, tokens), the
 controllers and their six languages move up — or the weight can be accepted with a reason written
 down. What cannot stand is the current answer, which is neither. Edgar's call.
+
+**Decided for the code editor (2026-09-23): the road Flutter takes.** The engine moved to an
+assembly of its own, `eQuantic.UI.Code`, between `Primitives` and `Components`; `CodeSurface`
+depends only on `ICodeSurfaceModel` — what a realizer may tell the engine (a key, text, a pointer)
+and ask it (the caret and selection rectangles) — and neither realizer references the engine.
+`CodeTokenKind` stayed, because it is a key of the theme's code palette (`IAppTheme.Code`), not a
+piece of the editor. `Sheet/` is the same question, still open (docs/CODE-EDITOR-PLAN.md).
 
 **Three more that belong a layer up or out**, each small:
 
@@ -503,8 +518,9 @@ per target. `WebRealizer` resolves `theme.Elevation(level)` six times in three p
 
 Flutter has one language, so a node exists once. Ours has two, and the SDK's stated answer to that is
 eqc: the 139 component modules embedded in `runtime.js` are TRANSPILED from the C# in `Components`
-and `Primitives` — `CodeEditorController`, `SheetController`, `FormController`, `MarkdownParser`
-among them — and byte-pinned against the live compiler. The vocabulary itself does not take that road.
+and `Charts`, the code engine's own assembly (`eQuantic.UI.Code`, `CodeEditorController` and its
+languages, since #359), and the `Sheet/` and `Forms/` folders of `Primitives` (`SheetController`,
+`FormController`) — `MarkdownParser` among them — and byte-pinned against the live compiler. The vocabulary itself does not take that road.
 
 | C# | Hand-written TypeScript twin | Kept in step by |
 |---|---|---|
