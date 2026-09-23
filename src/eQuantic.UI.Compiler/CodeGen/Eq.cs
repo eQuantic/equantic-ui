@@ -34,6 +34,9 @@ public static class Eq
     public const string RoundSingle = "$eq.math.roundSingle";
     /// <summary>A checked arithmetic result — the value, or the OverflowException C# throws.</summary>
     public const string Checked = "$eq.num.checked";
+    /// <summary>A long (a BigInt) as the single .NET's conversion answers: rounded ONCE, from all
+    /// 64 bits, never through the double.</summary>
+    public const string SingleFromLong = "$eq.num.singleFromLong";
     /// <summary>A float as text: the shortest decimal that reads back as the same single.</summary>
     public const string Single = "$eq.num.single";
     /// <summary>Substring that refuses an out-of-range index, the way .NET does.</summary>

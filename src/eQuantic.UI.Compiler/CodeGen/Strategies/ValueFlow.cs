@@ -233,11 +233,12 @@ public static class ValueFlow
         var target = to?.SpecialType ?? SpecialType.None;
         switch (target)
         {
-            // Through the double: exact below 2^53, which is every long a UI counts; past it the
-            // double rounds first and the single second, and a pattern exactly between two singles
-            // after the first rounding can land on the other one.
+            // DIRECTLY to a single, as .NET's conversion does: through the double, a long past 2^53
+            // rounds twice, and one exactly above a midpoint between two singles lands on the
+            // midpoint first and on the even single second (4611686293305294849L did).
             case SpecialType.System_Single:
-                return SinglePrecision.Round(JsExpr.Callish($"Number({text})"));
+                context.UsedHelpers.Add(Eq.Import);
+                return JsExpr.Callish($"{Eq.SingleFromLong}({JsExprWriter.Write(value)})");
             case SpecialType.System_Double:
                 return JsExpr.Callish($"Number({text})");
             case SpecialType.System_Char:

@@ -34,6 +34,11 @@ public class SinglePrecisionConformanceTests
     [InlineData("int n = 16777217; float f = n; return (double)f;")]                          // 16777216
     [InlineData("uint u = 4294967295; float f = u; return (double)f;")]                       // 4294967296
     [InlineData("long l = 16777217; float f = l; return (double)f;")]                         // 16777216
+    // A long just above a midpoint between two singles: rounding through the double lands ON the
+    // midpoint and then on the even single; .NET rounds once and goes up.
+    [InlineData("long l = 4611686293305294849L; float f = l; return ((long)(double)f).ToString();")]
+    [InlineData("long l = 4611686293305294849L; return ((long)(double)(float)l).ToString();")]
+    [InlineData("ulong u = 18446744073709551615UL; float f = u; return (double)f == 18446744073709551616.0;")]
     [InlineData("float f = 16777217; return (double)f;")]                                     // a constant settles at compile time
     [InlineData("short s = 12345; float t = 0.1f; return (double)(s * t);")]                 // a narrow width holds exactly
     // ---- increments ----

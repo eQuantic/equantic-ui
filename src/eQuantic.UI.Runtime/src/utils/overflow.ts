@@ -53,6 +53,26 @@ export function checked(
  * A C# `float` as text: the SHORTEST decimal that reads back as the same single-precision value —
  * `0.1f + 0.2f` prints "0.3", not the 0.30000001192092896 a double would show for the same bits.
  */
+/**
+ * A long (a BigInt) converted to a single the way .NET converts it: rounded ONCE, to nearest with
+ * ties to even, from all 64 bits. `Math.fround(Number(l))` rounds twice — to 53 bits and then to 24
+ * — and a value just above a midpoint between two singles lands ON the midpoint at the first step,
+ * so the second goes to the even neighbour instead of up (4611686293305294849 did). Below 2^53 the
+ * double is exact and the single rounding is the only one.
+ */
+export function singleFromLong(value: bigint): number {
+  const negative = value < 0n;
+  const magnitude = negative ? -value : value;
+  if (magnitude < 9007199254740992n) return Math.fround(Number(value));
+  const shift = BigInt(magnitude.toString(2).length - 24);
+  let mantissa = magnitude >> shift;
+  const rest = magnitude & ((1n << shift) - 1n);
+  const half = 1n << (shift - 1n);
+  if (rest > half || (rest === half && (mantissa & 1n) === 1n)) mantissa += 1n;
+  const result = Number(mantissa) * 2 ** Number(shift);
+  return negative ? -result : result;
+}
+
 export function single(value: number): string {
   if (!Number.isFinite(value)) return String(value).replace('Infinity', '∞');
   value = Math.fround(value);
