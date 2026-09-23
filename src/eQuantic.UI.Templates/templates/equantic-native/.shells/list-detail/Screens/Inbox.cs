@@ -34,8 +34,9 @@ public static class Inbox
             }),
         ]));
 
-    /// <summary>The detail pane — the same node on both shapes, because a phone and a tablet
-    /// disagree about the LAYOUT, never about what a message is.</summary>
+    /// <summary>The detail pane — the same CODE for both shapes, because a phone and a tablet
+    /// disagree about the LAYOUT, never about what a message is. Each shape calls it for its own
+    /// copy: one node in two places would be one instance mounted twice.</summary>
     public static VisualNode Detail(IAppTheme theme, int index)
     {
         var message = Items[index];

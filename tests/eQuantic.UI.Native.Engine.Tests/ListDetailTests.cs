@@ -40,7 +40,7 @@ public class ListDetailTests
     [Fact]
     public void OnAPhone_TheListIsTheScreenUntilSomethingIsChosen()
     {
-        var texts = TextsAt(new ListDetail(Inbox()) { ListTitle = "Inbox" }, width: 390);
+        var texts = TextsAt(new ListDetail(Inbox) { ListTitle = "Inbox" }, width: 390);
 
         texts.Should().Contain("Inbox").And.Contain("First message");
         texts.Should().NotContain(SdkStrings.NothingSelected,
@@ -52,7 +52,7 @@ public class ListDetailTests
     [Fact]
     public void OnAPhone_TheDetailReplacesTheList()
     {
-        var texts = TextsAt(new ListDetail(Inbox(), new Text("The message body"), onBack: () => { })
+        var texts = TextsAt(new ListDetail(Inbox, () => new Text("The message body"), onBack: () => { })
         {
             Title = "Message detail",
             ListTitle = "Inbox",
@@ -66,7 +66,7 @@ public class ListDetailTests
     [Fact]
     public void OnATablet_BothPanesAreOnScreen()
     {
-        var texts = TextsAt(new ListDetail(Inbox(), new Text("The message body"))
+        var texts = TextsAt(new ListDetail(Inbox, () => new Text("The message body"))
         {
             Title = "Message detail",
             ListTitle = "Inbox",
@@ -80,7 +80,7 @@ public class ListDetailTests
     [Fact]
     public void OnATablet_NothingChosenShowsTheEmptyState()
     {
-        var texts = TextsAt(new ListDetail(Inbox()) { ListTitle = "Inbox" }, width: 1100);
+        var texts = TextsAt(new ListDetail(Inbox) { ListTitle = "Inbox" }, width: 1100);
 
         texts.Should().Contain("First message").And.Contain(SdkStrings.NothingSelected);
     }
@@ -95,7 +95,7 @@ public class ListDetailTests
     [InlineData(840, true)]
     public void TheThresholdIsTheSpecsExpandedClass(float width, bool twoPanes)
     {
-        var texts = TextsAt(new ListDetail(Inbox(), new Text("The message body"))
+        var texts = TextsAt(new ListDetail(Inbox, () => new Text("The message body"))
         {
             Title = "Message detail",
         }, width);
@@ -109,12 +109,12 @@ public class ListDetailTests
     [Fact]
     public void TheChosenRowIsCurrentInTheSemanticsTree()
     {
-        var list = new ScrollView(new Column(gap: 0)
+        static VisualNode List() => new ScrollView(new Column(gap: 0)
         {
             new ListItem("First message") { OnPressed = () => { }, Selected = true },
             new ListItem("Second message") { OnPressed = () => { } },
         });
-        var host = new PhotonHost(new ListDetail(list, new Text("Body")), PhotonTheme.Instance,
+        var host = new PhotonHost(new ListDetail(List, () => new Text("Body")), PhotonTheme.Instance,
             ThemeMode.Light, 1100, 700);
         host.RenderFrame(new DisplayListBuilder());
 
