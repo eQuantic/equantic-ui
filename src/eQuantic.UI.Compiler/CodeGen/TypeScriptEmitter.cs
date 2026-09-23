@@ -153,7 +153,13 @@ public class TypeScriptEmitter
             .Select(field => $"{field.Key}: {field.Spec}")
             .ToList();
         if (entries.Count == 0) return;
-        c.Field("$hydration", null, $"{{ {string.Join(", ", entries)} }}", null, isStatic: true);
+        // A GETTER, never a field: the map can name a class (`_geometry: BarChartGeometry`), and a
+        // static field initializer runs when THIS class is defined — which, inside the runtime
+        // bundle's import cycles, came before the named class was, and the whole bundle failed to
+        // load on a TDZ ReferenceError. The runtime reads the map when it hydrates, after every
+        // module has loaded.
+        c.Member(JsClassMember.Getter("static ", "$hydration", "",
+            JsStatement.Raw($"return {{ {string.Join(", ", entries)} }};")));
     }
 
     /// <summary>A Build method's body as IR: its block, its expression as a return, or the

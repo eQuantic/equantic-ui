@@ -54,7 +54,11 @@ public class HydrationSpecEmissionTests
     {
         var result = Compile();
         // Every field whose wire form differs — and none of the identity ones.
-        Assert.Contains("static $hydration = { _total: 'decimal', _count: 'long', _todos: [Todo], _rates: { dict: 'decimal' } };", result);
+        // A static GETTER, read when the runtime hydrates: a field initializer naming a class runs
+        // when this class is defined, and inside the runtime bundle's import cycles that came before
+        // the named class existed (a TDZ ReferenceError that stopped the whole bundle loading).
+        Assert.Contains("static get $hydration()", result);
+        Assert.Contains("return { _total: 'decimal', _count: 'long', _todos: [Todo], _rates: { dict: 'decimal' } };", result);
         Assert.DoesNotContain("_label:", result.Substring(result.IndexOf("$hydration")));
         Assert.DoesNotContain("_clicks:", result.Substring(result.IndexOf("$hydration")));
     }
@@ -77,8 +81,8 @@ public class HydrationSpecEmissionTests
         var todo = results.Single(r => r.ComponentName == "Todo").TypeScript;
         var money = results.Single(r => r.ComponentName == "Money").TypeScript;
         // The member that hydrates, by its camelCased twin name; nested records point at the class.
-        Assert.Contains("static $hydration = { id: 'long', price: Money }", todo);
-        Assert.Contains("static $hydration = { amount: 'decimal' }", money);
+        Assert.Contains("static get $hydration() { return { id: 'long', price: Money }; }", todo);
+        Assert.Contains("static get $hydration() { return { amount: 'decimal' }; }", money);
         // The map is the only runtime mention of Money in Todo's module — the import must follow.
         Assert.Contains("import { Money } from \"./Money\";", todo);
     }

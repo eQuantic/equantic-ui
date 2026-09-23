@@ -299,7 +299,9 @@ public class RecordTypeEmitter
             // `$eq.hydrate` rebuilds a payload object on this prototype and coerces by this map.
             if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol symbol
                 && HydrationSpec.Members(symbol, new HashSet<string>()) is { } hydration)
-                sb.Append($"static $hydration = {hydration}; ");
+                // A getter, for the reason TypeScriptEmitter's map is one: a static initializer
+                // naming another class runs before an import cycle has defined it.
+                sb.Append($"static get $hydration() {{ return {hydration}; }} ");
         }
 
         // User-declared methods — a STATIC one keeps its modifier: a record's factory

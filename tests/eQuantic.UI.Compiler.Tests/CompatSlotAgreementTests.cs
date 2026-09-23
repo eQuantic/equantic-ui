@@ -53,7 +53,7 @@ public class CompatSlotAgreementTests
 
         twin.Should().MatchRegex($@"declare {slot}: {Regex.Escape(declared)}\b",
             "the declared type is what every use site compiles against");
-        twin.Should().MatchRegex($@"\$hydration = \{{[^}}]*\b{slot}: '{spec}'",
+        twin.Should().MatchRegex($@"\$hydration\(\)\s*\{{\s*return \{{[^}}]*\b{slot}: '{spec}'",
             "a payload arrives as JSON — without an entry here the wire form never becomes the runtime one");
         // A DateTime has no zero on this side to write, so there is no default to check — the
         // absence is the honest answer and the empty expectation says so.
@@ -68,7 +68,7 @@ public class CompatSlotAgreementTests
     [Fact]
     public void ADateProperty_IsInTheBoundaryToo()
     {
-        Twin().Should().MatchRegex(@"\$hydration = \{[^}]*\bsince: 'dateTime'");
+        Twin().Should().MatchRegex(@"\$hydration\(\)\s*\{\s*return \{[^}]*\bsince: 'dateTime'");
     }
 
     /// <summary>Nothing is emitted for the slots whose wire form IS their runtime form — the
@@ -76,7 +76,7 @@ public class CompatSlotAgreementTests
     [Fact]
     public void APlainSlot_IsNotInTheBoundary()
     {
-        var map = Regex.Match(Twin(), @"\$hydration = \{[^}]*\}").Value;
+        var map = Regex.Match(Twin(), @"\$hydration\(\)\s*\{\s*return \{[^}]*\}").Value;
 
         map.Should().NotContain("stars:").And.NotContain("label:");
     }
@@ -86,7 +86,7 @@ public class CompatSlotAgreementTests
     [Fact]
     public void AFieldAndAPropertyOfTheSameTypeAreBothCovered()
     {
-        var map = Regex.Match(Twin(), @"\$hydration = \{[^}]*\}").Value;
+        var map = Regex.Match(Twin(), @"\$hydration\(\)\s*\{\s*return \{[^}]*\}").Value;
 
         map.Should().Contain("_internal: 'long'").And.Contain("downloads: 'long'");
     }
@@ -112,7 +112,7 @@ public class CompatSlotAgreementTests
         var twin = new ComponentCompiler().CompileSource(source, "Tally.cs")
             .Single(result => result.ComponentName == "Tally").TypeScript;
 
-        twin.Should().Contain("$hydration = { count: 'long' }");
+        twin.Should().MatchRegex(@"\$hydration\(\)\s*\{\s*return \{ count: 'long' \}");
     }
 
     /// <summary>A [Flags] enum is a NUMBER on this side, because the bits have to combine — so its
