@@ -211,11 +211,20 @@ public static class ValueFlow
 
         // A value FLOWING INTO A DECIMAL becomes the runtime Decimal at the conversion seam — the
         // bound tree's word, at every site C# applies it — so decimal arithmetic and calls receive
-        // real Decimals and need no defensive coercion of their own.
+        // real Decimals and need no defensive coercion of their own. An integer converts exactly; a
+        // double or a float by .NET's own steps, to 15 or 7 digits (#358): through its shortest
+        // text, `(decimal)(0.1 + 0.2)` was 0.30000000000000004 where .NET's is 0.3, and 1e21 was
+        // no decimal at all.
         if (to is { SpecialType: SpecialType.System_Decimal })
         {
             context.UsedHelpers.Add(Eq.Import);
-            return JsExpr.Callish($"{Eq.Dec}({JsExprWriter.WriteIn(value, JsPrecedence.Call)})");
+            var into = fromSpecial switch
+            {
+                SpecialType.System_Double => Eq.DecFromDouble,
+                SpecialType.System_Single => Eq.DecFromSingle,
+                _ => Eq.Dec,
+            };
+            return JsExpr.Callish($"{into}({JsExprWriter.WriteIn(value, JsPrecedence.Call)})");
         }
 
         return fromSpecial is SpecialType.System_Int64 or SpecialType.System_UInt64

@@ -28,10 +28,27 @@ public class NumberStrategyTests
     }
 
     [Fact]
-    public void DecimalParse_MapsToParseFloat()
+    public void DecimalParse_IsTheRuntimesReader()
     {
+        // A decimal read from text is a Decimal, rounded as .NET's parser rounds it (#358): the
+        // double parseFloat made lost 0.1 on the way in and had no `add` for the next operation.
         var result = TestHelper.ConvertExpression("decimal.Parse(str)");
-        result.Should().Be("parseFloat(this.str)");
+        result.Should().Be("$eq.num.decParse(this.str)");
+    }
+
+    [Fact]
+    public void DecimalTryParse_LeavesZeroInTheOutWhenItFails()
+    {
+        var result = TestHelper.ConvertExpression("decimal.TryParse(str, out var value)");
+        result.Should().Be("((value = $eq.num.decTryParse(this.str)) !== undefined || ((value = $eq.num.dec(0)), false))");
+    }
+
+    [Fact]
+    public void IntTryParse_IntoADiscard_AssignsNothing()
+    {
+        // `_ = parseInt(…)` assigned a global nobody declared, which a module refuses at run time.
+        var result = TestHelper.ConvertExpression("int.TryParse(str, out _)");
+        result.Should().Be("(!isNaN(parseInt(this.str)))");
     }
 
     [Fact]

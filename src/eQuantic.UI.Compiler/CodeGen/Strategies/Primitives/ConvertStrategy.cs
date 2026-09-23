@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 
@@ -9,7 +10,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 /// numeric→integer, decimal, Int64 precision) are best-effort here and will move to the eq compat
 /// helper (see DOTNET-COVERAGE-PROGRAM.md).
 /// </summary>
-public class ConvertStrategy : IConversionStrategy
+public class ConvertStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
@@ -22,15 +23,62 @@ public class ConvertStrategy : IConversionStrategy
         return memberAccess.Name.Identifier.Text.StartsWith("To");
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         var name = memberAccess.Name.Identifier.Text;
         var args = invocation.ArgumentList.Arguments;
-        if (args.Count == 0) return "undefined";
+        if (args.Count == 0) return JsExpr.Identifier("undefined");
 
         var argExpr = args[0].Expression;
+        if (name == "ToDecimal") return ToDecimal(argExpr, context);
+        return JsExpr.Opaque(Converted(name, argExpr, context));
+    }
+
+    /// <summary>
+    /// <c>Convert.ToDecimal</c> by the type of what it converts (#358), which the overload C# chose
+    /// is named after: a double or a float by .NET's own conversion, to 15 or 7 digits; an integer
+    /// exactly; a bool as 1 or 0; a decimal as itself. A string parses as <c>decimal.Parse</c> reads
+    /// it, except that null is 0; that, and a value whose type the call site cannot settle (an
+    /// object, a nullable), is the runtime's to dispatch. A char and a DateTime have no conversion:
+    /// .NET throws for them after evaluating the argument, and so does this.
+    /// </summary>
+    private static JsExpr ToDecimal(ExpressionSyntax argument, ConversionContext context)
+    {
+        context.UsedHelpers.Add(Eq.Import);
+        var value = context.Converter.ConvertIr(argument);
+        var type = context.SemanticHelper.GetType(argument);
+        JsExpr Call(string helper, params JsExpr[] arguments) =>
+            JsExpr.Call(JsExpr.Identifier(helper), [value, .. arguments]);
+        if (type.IsNullableValue())
+        {
+            return type.UnwrapNullable()?.SpecialType == SpecialType.System_Single
+                ? Call(Eq.DecConvert, JsExpr.Literal("'single'"))
+                : Call(Eq.DecConvert);
+        }
+        switch (type?.SpecialType)
+        {
+            case SpecialType.System_Decimal:
+                return value;
+            case SpecialType.System_Double:
+                return Call(Eq.DecFromDouble);
+            case SpecialType.System_Single:
+                return Call(Eq.DecFromSingle);
+            case SpecialType.System_Boolean:
+                return JsExpr.Template($"{Eq.Dec}({{0}} ? 1 : 0)", [value], context.TypeAnnotations);
+            case SpecialType.System_Char or SpecialType.System_DateTime:
+                var from = type.SpecialType == SpecialType.System_Char ? "Char" : "DateTime";
+                var parameter = context.TypeAnnotations ? "(_: unknown)" : "(_)";
+                return JsExpr.Template(
+                    $"({parameter} => {{ throw new Error(\"Invalid cast from '{from}' to 'Decimal'.\"); }})({{0}})",
+                    [value], context.TypeAnnotations);
+        }
+        return type.IsIntegral() ? Call(Eq.Dec) : Call(Eq.DecConvert);
+    }
+
+    private static string Converted(string name, ExpressionSyntax argExpr, ConversionContext context)
+    {
         var value = context.Converter.ConvertExpression(argExpr);
         var argType = context.SemanticHelper.GetType(argExpr);
         var isStringArg = argType?.SpecialType == SpecialType.System_String;
@@ -59,8 +107,7 @@ public class ConvertStrategy : IConversionStrategy
                 => $"parseInt({value}, 10)", // string arg
             // A single, as every float this side produces (SinglePrecision).
             "ToSingle" => isStringArg ? $"Math.fround(parseFloat({value}))" : $"Math.fround(Number({value}))",
-            "ToDouble" or "ToDecimal"
-                => isStringArg ? $"parseFloat({value})" : $"Number({value})",
+            "ToDouble" => isStringArg ? $"parseFloat({value})" : $"Number({value})",
             "ToBoolean" => isStringArg
                 ? $"(String({value}).trim().toLowerCase() === 'true')"
                 : $"(({value}) !== 0)",

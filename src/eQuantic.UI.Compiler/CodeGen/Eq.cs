@@ -25,6 +25,18 @@ public static class Eq
     public const string Str = "$eq.str";
 
     public const string Dec = "$eq.num.dec";
+    /// <summary><c>decimal.Parse</c>: the text read by .NET's grammar, under the NumberStyles the
+    /// call names, and rounded as .NET's parser rounds it.</summary>
+    public const string DecParse = "$eq.num.decParse";
+    /// <summary><c>decimal.TryParse</c>: the value, or undefined where Parse throws for the text.</summary>
+    public const string DecTryParse = "$eq.num.decTryParse";
+    /// <summary>A double into a decimal, to 15 digits by .NET's own steps.</summary>
+    public const string DecFromDouble = "$eq.num.decFromDouble";
+    /// <summary>A float into a decimal, to 7 digits by .NET's own steps.</summary>
+    public const string DecFromSingle = "$eq.num.decFromSingle";
+    /// <summary><c>Convert.ToDecimal</c> of a value whose type the call site cannot settle: null
+    /// is 0, a string parses, a number is the double (or the single) the site names.</summary>
+    public const string DecConvert = "$eq.num.decConvert";
     public const string Long = "$eq.num.long";
     /// <summary>The typed boundary: a server value (SSR state, a Server Action result) coerced
     /// ONCE to its runtime type, by the spec the compiler computed from the C# type.</summary>

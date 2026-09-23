@@ -174,3 +174,12 @@ const eQuantic.UI.Compiler.CodeGen.Eq.IntRem = "$eq.num.intRem" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LongDiv = "$eq.num.longDiv" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LongRem = "$eq.num.longRem" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.Double = "$eq.num.double" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.DecConvert = "$eq.num.decConvert" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.DecFromDouble = "$eq.num.decFromDouble" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.DecFromSingle = "$eq.num.decFromSingle" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.DecParse = "$eq.num.decParse" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.DecTryParse = "$eq.num.decTryParse" -> string!
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.ConvertStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.NumberMethodStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.ConvertStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.NumberMethodStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
