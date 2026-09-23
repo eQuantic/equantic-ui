@@ -202,6 +202,26 @@ public sealed class RealizeResult
 /// </summary>
 public static class PhotonRealizer
 {
+    /// <summary>
+    /// The root path of each overlay layer. A path is IDENTITY and the same string every frame
+    /// (<see cref="LayoutContext.PathCache"/>), and this one was interpolated every frame instead:
+    /// a new string per layer, and a buffer rented from the shared <c>ArrayPool</c> to build it
+    /// (#290). A screen does not open more layers than the table holds; past it, the path is built.
+    /// </summary>
+    private static readonly string[] LayerPaths = BuildLayerPaths(16);
+
+    private static string[] BuildLayerPaths(int count)
+    {
+        var paths = new string[count];
+        for (var i = 0; i < count; i++)
+            paths[i] = LayerPathOf(i);
+        return paths;
+    }
+
+    private static string LayerPathOf(int index) => "ov" + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    private static string LayerPath(int index) => index < LayerPaths.Length ? LayerPaths[index] : LayerPathOf(index);
+
     public static RealizeResult Realize(
         VisualNode root,
         float viewportWidth,
@@ -337,7 +357,7 @@ public static class PhotonRealizer
             // focus, its press state and its presence snapshots. The index stays; only the work goes.
             if (overlays[i] is { Motion: not null, Open: false }) continue;
             var overlayLayout = LayoutEngine.Layout(overlays[i].Child, viewportWidth, viewportHeight,
-                context, rootPath: $"ov{i}");
+                context, rootPath: LayerPath(i));
             overlayRoots.Add(overlayLayout);
             realizedLayers.Add(overlays[i]);
             // The UNCLIPPED sink: a layer lays out against the viewport, not inside whatever the
