@@ -7,7 +7,9 @@ msbuild eQuantic.UI.Sdk EQuanticOutputPath
 msbuild eQuantic.UI.Sdk EQuanticUIVersion
 msbuild eQuantic.UI.Sdk EQuanticVectorsFile
 msbuild eQuantic.UI.Sdk EQuanticVectorsNamespace
+msbuild eQuantic.UI.Sdk EnableEQuanticUICompilation
 msbuild eQuantic.UI.Sdk EqcCliPath
+msbuild eQuantic.UI.Sdk IsEQuanticDevMode
 msbuild eQuantic.UI.Sdk.Native EQuanticAppIconSource
 msbuild eQuantic.UI.Sdk.Native EQuanticAssetsDir
 msbuild eQuantic.UI.Sdk.Native EQuanticBundleId
@@ -24,6 +26,7 @@ msbuild eQuantic.UI.Sdk.Native EQuanticNotaryTeamId
 msbuild eQuantic.UI.Sdk.Native EQuanticPackageFormat
 msbuild eQuantic.UI.Sdk.Native EQuanticSigningIdentity
 msbuild eQuantic.UI.Sdk.Native EQuanticUIVersion
+msbuild eQuantic.UI.Sdk.Native IsEQuanticDevMode
 config Photon
 template equantic-app --shell
 template equantic-app --shell=blank

@@ -26,10 +26,13 @@ public class DeveloperSurfaceContractTests
 
     private static string BaselinePath => Path.Combine(RepoRoot(), "tests", "eQuantic.UI.Web.Tests", "developer-surface.baseline.txt");
 
-    /// <summary>A developer-facing property: the SDK's own prefix, never an underscore-prefixed
+    /// <summary>A developer-facing property: one that names the SDK anywhere in it (a prefix alone
+    /// missed <c>EnableEQuanticUICompilation</c>), or eqc's own, and never an underscore-prefixed
     /// private one. Read where it is set (an element) and where it is read (a reference).</summary>
-    private static readonly Regex PropertyReference = new(@"\$\(((?:EQuantic|Eqc)[A-Za-z0-9]*)\)", RegexOptions.Compiled);
-    private static readonly Regex PropertyElement = new(@"<((?:EQuantic|Eqc)[A-Za-z0-9]*)[\s/>]", RegexOptions.Compiled);
+    private static readonly Regex PropertyReference = new(
+        @"\$\(((?:[A-Za-z0-9]*EQuantic|Eqc)[A-Za-z0-9]*)\)", RegexOptions.Compiled);
+    private static readonly Regex PropertyElement = new(
+        @"<((?:[A-Za-z0-9]*EQuantic|Eqc)[A-Za-z0-9]*)[\s/>]", RegexOptions.Compiled);
 
     /// <summary>A configuration section the source binds: a literal given to GetSection or
     /// BindConfiguration, or a SectionName constant.</summary>
