@@ -6,6 +6,11 @@
     <Nullable>enable</Nullable>
     <PackageId>eQuantic.UI.Server</PackageId>
     <Description>ASP.NET Core integration for eQuantic.UI - Server Actions and hosting.</Description>
+    <!-- The runtime this package SERVES is also the one it SHIPS as a file (tools/runtime/runtime.js),
+         which the SDK copies beside an app's modules for the tools that load them outside a server.
+         Collected by a target, after BundleRuntime has written it: a static item with an Exists
+         condition is answered at evaluation, before the bundle exists on a clean build. -->
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);CollectServedRuntime</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
 
   <ItemGroup>
@@ -94,6 +99,16 @@
 
   <!-- No Inputs/Outputs on purpose: the bundle's inputs are the whole runtime source tree, which a
        list here would drift from. It runs on every build and costs about a second. -->
+  <!-- Collects what the BUILD wrote, and never bundles again: a pack with no build would otherwise
+       write a second bundle after the compiler had embedded the first. -->
+  <Target Name="CollectServedRuntime">
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="wwwroot/runtime.js" PackagePath="tools/runtime/runtime.js" />
+    </ItemGroup>
+    <Error Condition="!Exists('wwwroot/runtime.js')"
+      Text="eQuantic.UI.Server: wwwroot/runtime.js was not produced, and the package would ship no runtime." />
+  </Target>
+
   <Target Name="BundleRuntime" BeforeTargets="BeforeBuild" DependsOnTargets="ResolveBunForServer">
     <Message Text="Bundling eQuantic UI Runtime..." Importance="high" />
     <MakeDir Directories="wwwroot" />

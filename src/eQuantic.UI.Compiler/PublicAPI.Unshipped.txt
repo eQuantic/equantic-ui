@@ -1,4 +1,11 @@
 #nullable enable
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.SetFallbackTypeReceivers(System.Collections.Generic.IReadOnlySet<string!>! staticTypes, System.Collections.Generic.IReadOnlySet<string!>! runtimeTypes) -> void
+eQuantic.UI.Compiler.CodeGen.ConversionContext.FallbackRuntimeTypes.get -> System.Collections.Generic.IReadOnlySet<string!>!
+eQuantic.UI.Compiler.CodeGen.ConversionContext.FallbackRuntimeTypes.set -> void
+eQuantic.UI.Compiler.CodeGen.ConversionContext.FallbackStaticTypes.get -> System.Collections.Generic.IReadOnlySet<string!>!
+eQuantic.UI.Compiler.CodeGen.ConversionContext.FallbackStaticTypes.set -> void
+eQuantic.UI.Compiler.CodeGen.ConversionContext.IsFallbackTypeReceiver(string! name) -> bool
+eQuantic.UI.Compiler.Services.ComponentDependencyResolver.GetRuntimeProvidedTypes() -> System.Collections.Generic.IReadOnlySet<string!>!
 eQuantic.UI.Compiler.Models.ComponentDefinition.TypeIdentity.get -> string!
 eQuantic.UI.Compiler.Models.ComponentDefinition.TypeIdentity.set -> void
 *REMOVED*eQuantic.UI.Compiler.Analysis.CompileTimeEvaluator

@@ -234,6 +234,7 @@ public class TypeScriptEmitter
     public void SetDependencyResolver(ComponentDependencyResolver resolver)
     {
         _dependencyResolver = resolver;
+        _converter.SetFallbackTypeReceivers(resolver.GetAllStaticHelpers(), resolver.GetRuntimeProvidedTypes());
     }
 
     /// <summary>The model backing the CURRENT emission — the import collector asks it for the type
@@ -848,6 +849,12 @@ public class TypeScriptEmitter
             foreach (var appType in component.AppTypes)
             {
                 if (appType == component.Name) continue;
+                if (_dependencyResolver.GetRuntimeProvidedTypes().Contains(appType))
+                {
+                    component.RuntimeProvidedTypes.Add(appType);
+                    componentTypes.Add(appType);
+                    continue;
+                }
                 if (_dependencyResolver.IsModule(appType)) componentTypes.Add(appType);
             }
         }
@@ -858,8 +865,13 @@ public class TypeScriptEmitter
         // "Row" would pull the WEB Row's dependency chain (Flex) into a page that never uses it.
         if (_dependencyResolver != null)
         {
+            var fallbackRuntime = _dependencyResolver.GetRuntimeProvidedTypes();
             var perAppSeeds = componentTypes
-                .Where(t => !component.RuntimeProvidedTypes.Contains(t.Contains('.') ? t[(t.LastIndexOf('.') + 1)..] : t))
+                .Where(t =>
+                {
+                    var simple = t.Contains('.') ? t[(t.LastIndexOf('.') + 1)..] : t;
+                    return !component.RuntimeProvidedTypes.Contains(simple) && !fallbackRuntime.Contains(simple);
+                })
                 .ToHashSet();
             var dependencies = _dependencyResolver.ResolveDependencies(perAppSeeds);
             foreach (var dep in dependencies)
@@ -871,8 +883,9 @@ public class TypeScriptEmitter
         var userComponents = new List<string>();
 
         // The user universe, discovered by scanning — components, records, helpers, plain classes
-        // (Resolvable). Consulted twice: by the standalone fallback below, and by the authoritative
+        // (IsAppModule). Consulted twice: by the standalone fallback below, and by the authoritative
         // filter at the end. No fixed lists on either path.
+        var knownRuntimeProvided = _dependencyResolver?.GetRuntimeProvidedTypes() ?? (IReadOnlySet<string>)new HashSet<string>();
 
         foreach (var type in componentTypes)
         {
@@ -925,7 +938,7 @@ public class TypeScriptEmitter
 
             // Types the runtime provides (the shared vocabulary — discovered semantically by the parser,
             // see ComponentDefinition.RuntimeProvidedTypes) import from @equantic/runtime, never ./<Type>.
-            if (component.RuntimeProvidedTypes.Contains(cleanType))
+            if (component.RuntimeProvidedTypes.Contains(cleanType) || knownRuntimeProvided.Contains(cleanType))
             {
                 coreImports.Add(cleanType);
                 continue;
@@ -942,7 +955,7 @@ public class TypeScriptEmitter
             // modules that exist nowhere.
             else if (!component.ResolvedSemantically
                      && !component.DeclaredInSource.Contains(cleanType)
-                     && !Resolvable(cleanType))
+                     && !IsAppModule(cleanType))
             {
                 coreImports.Add(cleanType);
             }
@@ -971,7 +984,7 @@ public class TypeScriptEmitter
         foreach (var userComp in userComponents.OrderBy(x => x))
         {
             if (userComp == component.Name) continue;
-            var isEmittedType = Resolvable(userComp);
+            var isEmittedType = IsAppModule(userComp);
             // When a resolver is present it is authoritative: import ONLY types we actually emit
             // (records/components it discovered). This drops references that aren't modules — primitives,
             // static-field names read as ClassName.X, helper-class names, etc. — instead of inventing a
@@ -2036,7 +2049,14 @@ public class TypeScriptEmitter
         !System.Text.RegularExpressions.Regex.IsMatch(initialiser.Trim(),
             @"^(-?\d+(\.\d+)?|'[^']*'|""[^""]*""|`[^`]*`|true|false|null|undefined|\[\]|\{\})$");
 
-    private bool Resolvable(string name) => _dependencyResolver?.IsModule(name) == true;
+    /// <summary>Whether the per-app scan knows this name became one of the app's OWN modules — the
+    /// only kind a <c>./Name</c> import may point at.</summary>
+    private bool IsAppModule(string name) => _dependencyResolver?.IsModule(name) == true;
+
+    /// <summary>Whether the per-app scan knows this name at all: one of the app's own modules, or a
+    /// type the app declares <c>[RuntimeProvided]</c>, which the runtime exports instead.</summary>
+    private bool Resolvable(string name) =>
+        IsAppModule(name) || _dependencyResolver?.GetRuntimeProvidedTypes().Contains(name) == true;
 
     public string EmitPlainClassModule(ClassDeclarationSyntax cls, SemanticModel? semanticModel) =>
         EmitClassModule(cls, semanticModel, asStatic: false);
@@ -2083,6 +2103,8 @@ public class TypeScriptEmitter
         if (semanticModel != null)
             Services.RuntimeProvidedTypeScanner.Collect(cls, semanticModel, runtimeProvided,
                 referencedEnums, appTypes: null, hostOnly: hostOnlyInSignatures);
+        else if (_dependencyResolver != null)
+            runtimeProvided.UnionWith(_dependencyResolver.GetRuntimeProvidedTypes());
         // Names the CONVERSION introduced that the runtime provides — a reduced extension call sent
         // home (`VisualNodeExtensions.centered(node)`). The scanner above walks SYNTAX, and the home
         // appears in none: the call is written on the receiver. `UsedAppTypes` is merged below for
@@ -2129,7 +2151,7 @@ public class TypeScriptEmitter
             if (string.IsNullOrEmpty(ct) || ct == name || ct == baseName
                 || ct == "HtmlNode" || NonImportableTypes.Contains(ct)) continue;
             if (runtimeProvided.Contains(ct) || referencedEnums.Contains(ct)) continue;
-            if (Resolvable(ct)) imports.Add(new JsImport([ct], $"./{ct}"));
+            if (IsAppModule(ct)) imports.Add(new JsImport([ct], $"./{ct}"));
         }
         return JsModuleWriter.Write(new JsModule(imports, builder.ToString()));
     }

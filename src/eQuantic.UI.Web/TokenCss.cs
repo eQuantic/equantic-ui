@@ -41,9 +41,9 @@ public static class TokenCss
     /// hydration.
     /// </para>
     /// </summary>
-    /// <summary>The PROPORTIONAL stack the base sheet sets on the document — the same custom
-    /// property (`equantic.css`), so a named face falls back to what the page would have used
-    /// rather than to a second opinion.</summary>
+    /// <summary>The PROPORTIONAL stack, behind <c>--eq-font-family</c>: the hook an app sets on
+    /// <c>:root</c> for its own face, as <c>--eq-font-mono</c> is for code. The SDK declares
+    /// neither, so the fallback is what a page paints with unless the app says otherwise.</summary>
     public const string SansStack = "var(--eq-font-family, system-ui, -apple-system, sans-serif)";
 
     /// <summary>The stack behind <c>--eq-font-mono</c> — named once so the variable's declaration

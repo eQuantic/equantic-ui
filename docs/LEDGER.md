@@ -466,6 +466,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   the engine's, which gave the web drag selection, shift-click, and the double and triple click it
   never had. Two transpiler gaps it exposed were fixed where they live (a plain class's unassigned
   field, and `bool | bool` answering a number).
+- **2026-09-23 · The runtime ships once, inside the package that serves it**: three things wrote a
+  file called the runtime, a library build by vite in CI and two bundles of `boot.ts` by bun, and the
+  copy every app received was the vite one, which exports no `boot`
+  ([#335](https://github.com/eQuantic/equantic-ui/issues/335)). Measured on a template app from the
+  published .57: `wwwroot/_equantic/runtime.js` was 761,837 bytes while `/_equantic/runtime.js`
+  answered 538,810, the Server's embedded bundle, because the endpoint wins over the static files. The
+  Server's `BundleRuntime` is now the one writer, the Server package ships its bytes as a file, the
+  SDK copies that file, and three CI checks compare the bytes instead of looking for a file. The
+  `equantic.css` every app received, a base sheet no page had ever linked, is gone, and the bun
+  packages are private to the build, so a library packed on the SDK no longer depends on them.
 
 ## Retired documents
 
