@@ -154,11 +154,11 @@ translation changes as data, not code.
   `string.Format(Strings.Greeting, userName)` with `"Olá, {0}!"` living in the catalog. It lowers
   to `$eq.format($eq.str("Strings","Greeting"), userName)` — a runtime implementation of .NET
   composite formatting whose specifiers are exactly the D7 subset (`{0}` plain substitution,
-  `{0:C}`, `{0:N2}`, …); alignment (`{0,10}`) is outside v1 → EQ2100. Two guards, both pinned:
-  (a) the CompileTimeEvaluator already recognizes `string.Format` as an evaluatable pattern (the
-  TW helpers prove it) — it must NEVER fire when the template is a resource accessor, because the
-  template is per-culture data resolved at call time. This is D2's rule surfacing a second way,
-  and it gets its own never-evaluate test.
+  `{0:C}`, `{0:N2}`, …); alignment (`{0,10}`) is outside v1 → EQ2100. Two guards:
+  (a) retired with the compile-time evaluator (#329). The worry was that it recognised
+  `string.Format` as evaluatable and could bake a per-culture template in at build time. No eqc
+  path evaluates `string.Format` now, so a resource template can only ever reach the runtime
+  formatter — D2's rule holds by construction rather than by a test.
   (b) at build, eqc validates the templates of EVERY culture's resx: a malformed specifier or an
   argument-arity mismatch against the neutral culture (`pt-BR` says `{2}`, neutral has only
   `{0}`/`{1}`) is **EQ2101** — caught on the build machine, not when a Brazilian visits the page.

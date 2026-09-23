@@ -118,9 +118,10 @@ public interface IAppTheme
     /// The colours a chart draws DATA with — identity, magnitude, polarity and state — as distinct
     /// from the colours the interface is drawn with. DEFAULTED to the validated reference instance
     /// (<see cref="DataPalette.Default"/>) so a theme that never thought about charts still serves
-    /// one correctly; a theme with brand ramps overrides this and nothing else, and holds the result
-    /// to the same audit (<c>DataPaletteTests</c>) — eight hues in a fixed order that clear the
-    /// colour-vision gates, which is what makes a palette safe to change.
+    /// one correctly; a theme with brand ramps overrides this and nothing else. The SDK's tests
+    /// audit the DEFAULT (<c>DataPaletteTests</c>); an override is the theme's own and nothing checks
+    /// it at run time, so eight hues in a fixed order that clear the colour-vision gates is the
+    /// contract it takes on.
     /// </summary>
     DataPalette Data => DataPalette.Default;
 

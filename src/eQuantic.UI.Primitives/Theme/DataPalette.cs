@@ -18,9 +18,10 @@ namespace eQuantic.UI.Primitives;
 /// </para>
 /// <para>
 /// <see cref="Default"/> is the validated reference instance of the data-visualization method the
-/// SDK adopts. A brand theme that overrides it holds the result to the same audit
-/// (the palette audit in <c>tests/eQuantic.UI.Web.Tests</c>, run by <c>DataPaletteTests</c>) — which is
-/// what makes a palette safe to change.
+/// SDK adopts, and the SDK's own tests hold it to the palette audit (<c>DataPaletteTests</c>) —
+/// which is what makes it safe to change. A palette a brand theme brings instead is the theme's
+/// own: it is built at run time, where nothing audits it, so the eight hues in their fixed order
+/// are the contract it takes on.
 /// </para>
 /// </summary>
 public sealed record DataPalette

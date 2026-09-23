@@ -109,12 +109,14 @@ Charts do not pick colours; they ask the theme, and the theme answers with a `Da
 
 The default instance is the validated reference palette of the data-visualization method the SDK
 adopts (eight hues that clear every colour-vision gate in both modes on the adjacent pairlist; its
-first three also all-pairs). A brand theme overrides `Data` — and holds the result to the same
-audit, which is the point: **the audit is code** (`PaletteAudit`, in Primitives): OKLab lightness
-band and chroma floor, protan/deutan separation simulated with Machado 2009, a normal-vision
-floor, contrast against the chart surface; and the ordinal checks for a ramp. The reference numbers
-the method publishes are pinned as a test, so the port cannot drift from the method and a palette
-cannot drift from the port.
+first three also all-pairs). **The audit is code** (`PaletteAudit`): OKLab lightness band and
+chroma floor, protan/deutan separation simulated with Machado 2009, a normal-vision floor, contrast
+against the chart surface; and the ordinal checks for a ramp. The reference numbers the method
+publishes are pinned as a test, so the port cannot drift from the method and the SDK's palette
+cannot drift from the port. It runs at TEST time over the palette the SDK ships (`DataPaletteTests`,
+where it has lived since #128). A brand theme that overrides `Data` builds its palette at run time,
+where nothing audits it: this plan once said a brand theme would be held to the audit, and no run
+time path ever did that. The eight hues in their fixed order are the contract such a palette takes on.
 
 The rules that follow are enforced BY CONSTRUCTION, not documented and hoped for:
 
@@ -200,8 +202,10 @@ mirrored parameter for parameter, no `new`.
   through the vocabulary (it declares no realizer of its own). It takes the name the consumers
   already reach for; the three web-only types it holds today move into the two wrappers as private
   copies for the transition (slice 1), and the wrappers are deleted in slice 5.
-- **`DataPalette` and `PaletteAudit`** — in `eQuantic.UI.Primitives.Theme`, beside `ColorToken`:
-  the palette is a theme concern, and the audit is what makes it safe to change.
+- **`DataPalette`** — in `eQuantic.UI.Primitives.Theme`, beside `ColorToken`: the palette is a
+  theme concern. **`PaletteAudit`** sat beside it until #128 moved it into the tests, its only
+  reader: the audit is what makes the SDK's palette safe to change, and it runs where that change
+  is made rather than in every bundle.
 - **Implicit in the SDK**, like `Components`: a chart is a component. Its cost is paid only where a
   page uses one (per-page bundles on the web, trimming on Photon) — the same argument that put
   Markdown and Mermaid in every app.
@@ -210,7 +214,7 @@ mirrored parameter for parameter, no `new`.
 
 | slice | delivers | exit criterion |
 |---|---|---|
-| **0** | `docs/CHARTS-PLAN.md`; `DataPalette` (+ `IAppTheme.Data`, defaulted); `PaletteAudit`; the palette's web twin (`data` on the client theme — the generated design system and the SSR bridge carry it; the audit owes none); the reference numbers pinned as tests | audit reproduces the method's published numbers to 0.1; the failing case fails |
+| **0** | `docs/CHARTS-PLAN.md`; `DataPalette` (+ `IAppTheme.Data`, defaulted); `PaletteAudit` (test-side since #128); the palette's web twin (`data` on the client theme — the generated design system and the SSR bridge carry it; the audit owes none); the reference numbers pinned as tests | audit reproduces the method's published numbers to 0.1; the failing case fails |
 | **1** | the assembly; `ChartFrame` (title, legend, axes as nodes, plot `Canvas`, table view, empty state); `BarChart` grouped/stacked/horizontal; `CategoryAxis`/`ValueAxis`; tooltip and legend interaction; the web bridge carries `Data` to the twin; layout fixture; sample screen; wiki EN + pt-BR | bar chart identical on web SSR, web client and Photon for the fixture data; Studio walk green |
 | **2** | `LineChart` (straight/step/smooth, markers, area wash, stacked area), `Sparkline`, `StatTile`, `Meter`; `TimeAxis`; crosshair | the finance page of the site can drop its hand-drawn chart |
 | **3** | `PieChart`/donut, `Gauge`/radial bar, `Heatmap`, `ScatterChart`/bubble; sequential and diverging jobs in use | |

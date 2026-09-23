@@ -46,9 +46,11 @@ zero reuse across elements ("100 cards = 100 identical style strings"); and the 
 markup instead of referenced. The token stylesheet (`--eq-*` vars, `.eq-type-*`, `.eq-elevation-*`)
 exists but layout/paint does not reference it.
 
-**Machinery we already have for the fix:** eqc compile-time evaluation (`CompileTimeEvaluator`) +
-cross-assembly constant inlining (icon glyphs prove it); `ExtractedStyles` build channel (Tailwind
-safelist rides it); the generated app stylesheet slot; immutable `record struct` styles.
+**Machinery we already have for the fix:** cross-assembly constant inlining (icon glyphs prove
+it); `ExtractedStyles` build channel (Tailwind safelist rides it); the generated app stylesheet
+slot; immutable `record struct` styles. (This line also counted eqc's compile-time evaluator. It
+never took part: the atomic engine shipped hashing at RUN time on both realizers, `StyleAtomizer`
+and `style-atomizer.ts`, and the evaluator left the tree in #329 with no caller.)
 
 ---
 
@@ -213,11 +215,12 @@ Photon has no CSS to generate — the same laws land as caches:
 
 ### The compiler's role
 
-eqc is the hinge. Static styles ride the existing `CompileTimeEvaluator` + `ExtractedStyles`
-channel: evaluation → atomic hashing → rules appended to the generated app stylesheet → the
-transpiled node carries class references. What cannot be evaluated statically stays a plain value
-and takes tier 2/3 at runtime — same semantics, graceful degradation, and the fail-on-unsupported
-rule (EQ1xxx) keeps anything untranslatable a BUILD error, never silent.
+The plan made eqc the hinge — static styles evaluated at build time, hashed, appended to the app
+stylesheet. What shipped is simpler and needs no evaluator (it left the tree in #329): both
+realizers hash the same abstract value at RUN time with the same FNV rule (`StyleAtomizer`,
+`style-atomizer.ts`), so SSR and the client name one class for one style without the compiler
+deciding anything. The fail-on-unsupported rule (EQ1xxx) still keeps anything untranslatable a
+BUILD error, never silent.
 
 ---
 

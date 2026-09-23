@@ -7,9 +7,10 @@
  *
  * The VALUES never live here: `design-system.generated.ts` emits them from the C# single source and
  * assigns `DataPalette.default`, and the SSR bridge (`theme-bridge.ts`) rehydrates a custom theme's
- * palette from the JSON the server serialized. The audit a palette is held to runs at TEST time, in
- * the .NET suite (`DataPaletteTests`) — the browser receives a palette already validated, and no app
- * ships the arithmetic that validated it (#128).
+ * palette from the JSON the server serialized. The audit runs at TEST time, in the .NET suite
+ * (`DataPaletteTests`), over the palette the SDK ships — so the default arrives validated, and no
+ * app ships the arithmetic that validated it (#128). A custom theme's palette is the app's own:
+ * nothing audits it, here or on the server.
  */
 import type { ColorToken } from './value-types';
 
