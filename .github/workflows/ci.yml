@@ -521,6 +521,42 @@ jobs:
           fi
           exit $status
 
+      # A map carries C# only in Debug, and names the project's files rather than the machine's
+      # (#352). A Release publish takes no map, and nothing it serves holds a [ServerAction]'s body:
+      # FormScreen.Register returns a message only the server has, and the published web root is
+      # searched for it. The Debug check runs first, because the Release build removes those maps.
+      - name: A Release publish carries no C#
+        shell: bash
+        run: |
+          set -uo pipefail
+          status=0
+          debug_maps=$(find samples/DefaultUIDashboard/wwwroot/_equantic -name '*.js.map' | wc -l | tr -d ' ')
+          if [ "$debug_maps" -eq 0 ]; then
+            echo "::error::the Debug build wrote no source maps, so the check below would prove nothing about them"
+            status=1
+          fi
+          if grep -rlF "$GITHUB_WORKSPACE" samples/DefaultUIDashboard/wwwroot/_equantic --include='*.map'; then
+            echo "::error::a Debug source map names the build machine's paths"
+            status=1
+          fi
+          dotnet publish samples/DefaultUIDashboard -c Release -o published || exit 1
+          maps=$(find published/wwwroot/_equantic -name '*.map*' | wc -l | tr -d ' ')
+          modules=$(find published/wwwroot/_equantic -name '*.js' | wc -l | tr -d ' ')
+          if [ "$modules" -eq 0 ]; then
+            echo "::error::the publish holds no modules at all, so it proves nothing"
+            status=1
+          fi
+          if [ "$maps" -ne 0 ]; then
+            echo "::error::the publish holds $maps source map(s)"
+            status=1
+          fi
+          if grep -rlF "That address is already registered." published/wwwroot; then
+            echo "::error::a server action's body reached the published web root"
+            status=1
+          fi
+          echo "Debug maps: $debug_maps. Published: $modules modules, $maps maps."
+          exit $status
+
       # Exit 0 is not the proof. A mobile target framework exists to produce a BUNDLE, and the
       # build checks worth exercising here are precisely the ones that only run when one is
       # produced. So read the artifact back: derived from what the build wrote, never a list of
