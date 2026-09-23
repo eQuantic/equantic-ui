@@ -312,6 +312,9 @@ targeted it never ran and is gone.
 ```
 src/
 ├── eQuantic.UI.Primitives/     # Abstract visual vocabulary, tokens and the contract attributes (zero deps)
+├── eQuantic.UI.Code/           # The code editing ENGINE: document, selection, history, languages, keymap —
+│                               # write-once, transpiled into the runtime; realizers drive it only through
+│                               # the vocabulary's ICodeSurfaceModel (docs/CODE-EDITOR-PLAN.md)
 ├── eQuantic.UI.Components/     # WRITE-ONCE component library (authored against Primitives; realized per target)
 ├── eQuantic.UI.Charts/         # WRITE-ONCE chart library (BarChart…): runtime-provided like Components, colour from IAppTheme.Data
 ├── eQuantic.UI.Web/            # WEB REALIZER + the DOM escape hatch (HtmlElement, HtmlNode, ClassBuilder)

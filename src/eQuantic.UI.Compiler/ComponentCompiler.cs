@@ -15,6 +15,9 @@ public class ComponentCompiler
     private readonly ComponentParser _parser;
     private readonly TypeScriptEmitter _tsEmitter;
     private readonly SemanticModelProvider _semanticModelProvider;
+    /// <summary>The per-app scan, when the build has one — every emission path asks it which app
+    /// types became modules, the record path included.</summary>
+    private ComponentDependencyResolver? _dependencyResolver;
     private readonly SourceMapGenerator _sourceMapGenerator;
 
     /// <summary>
@@ -236,6 +239,7 @@ public class ComponentCompiler
     /// </summary>
     public void SetDependencyResolver(ComponentDependencyResolver resolver)
     {
+        _dependencyResolver = resolver;
         _tsEmitter.SetDependencyResolver(resolver);
     }
 
@@ -425,11 +429,21 @@ public class ComponentCompiler
                 {
                     SymbolsAreAuthoritative = authoritative,
                 };
+                SemanticModel? recordModel = null;
                 if (component.SyntaxTree != null)
-                    recordConverter.SetSemanticModel(_semanticModelProvider.GetSemanticModel(component.SyntaxTree));
+                {
+                    recordModel = _semanticModelProvider.GetSemanticModel(component.SyntaxTree);
+                    recordConverter.SetSemanticModel(recordModel);
+                }
+                // The per-app scan when the build has one, and otherwise the same rules over the
+                // compilation in hand: a record compiled on its own (CompileSource, the playground)
+                // imported none of the app types its text names, so a struct member's zero
+                // (`new Cell()`) reached the module with nothing importing it.
+                var modules = _dependencyResolver
+                    ?? (recordModel is null ? null : ComponentDependencyResolver.From(recordModel.Compilation));
                 // TypeAnnotations flows here too: a record emitted as TypeScript is a parse error
                 // for a consumer that runs the module directly, and nothing upstream would notice.
-                result.TypeScript = new RecordTypeEmitter(recordConverter)
+                result.TypeScript = new RecordTypeEmitter(recordConverter, modules)
                     .EmitModule(component.ValueTypeSyntax, TypeAnnotations);
                 CollectResourceUses(recordConverter.ResourceUses);
                 result.Success = true;

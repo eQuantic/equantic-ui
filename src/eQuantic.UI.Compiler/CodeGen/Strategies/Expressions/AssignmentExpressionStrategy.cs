@@ -43,6 +43,14 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
             }
         }
 
+        // `flag |= Next()` on a bool: the logical operator, both sides evaluated, the bool written
+        // back — never JavaScript's `|=`, which stores a NUMBER. FIRST, ahead of the dictionary path
+        // below, which returns for every compound entry write and would store the number anyway.
+        // See BoolLogic.
+        if (assignment.OperatorToken.Text is "|=" or "&=" or "^="
+            && BoolLogic.LowerCompound(assignment, context) is { } logical)
+            return logical;
+
         // A COMPOUND write to a dictionary entry READS it first, and .NET throws when the key is
         // not there. Emitting `map[k] op= v` would answer undefined and walk it into the
         // arithmetic; emitting the guarded read as the TARGET does not even parse. So it is

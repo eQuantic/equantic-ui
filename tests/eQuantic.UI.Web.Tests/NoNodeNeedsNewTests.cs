@@ -1,3 +1,4 @@
+using eQuantic.UI.Code;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
 using Xunit;
@@ -52,26 +53,18 @@ public class NoNodeNeedsNewTests
     }
 
     [Fact]
-    public void CodeSurface_KeepsTheGeometryDefaultsTheConstructorGives()
+    public void CodeSurface_CarriesTheModelItWasHanded()
     {
         var editor = new CodeEditorController();
         var changed = 0;
         var made = CodeSurface(Child, editor, onChanged: () => changed++, label: "Source", autofocus: true);
 
-        made.Editor.Should().BeSameAs(editor, "the controller is a live object the caller owns");
+        made.Model.Should().BeSameAs(editor, "the model is a live object the caller owns");
         made.Label.Should().Be("Source");
         made.Autofocus.Should().BeTrue();
 
         made.OnChanged!.Invoke();
         changed.Should().Be(1);
-
-        // The geometry is deliberately NOT in the tail, so the factory must leave the node's own
-        // defaults exactly where `new` leaves them.
-        var bare = new CodeSurface(Child, editor);
-        made.LineHeight.Should().Be(bare.LineHeight);
-        made.ColumnWidth.Should().Be(bare.ColumnWidth);
-        made.ContentTop.Should().Be(bare.ContentTop);
-        made.ContentLeft.Should().Be(bare.ContentLeft);
     }
 
     [Fact]

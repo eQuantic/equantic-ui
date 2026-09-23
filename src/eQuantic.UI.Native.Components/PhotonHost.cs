@@ -710,17 +710,12 @@ public sealed class PhotonHost
     }
 
     /// <summary>
-    /// The (line, column) a point lands on. With a fixed pitch this is division, not a search — and
-    /// the column ROUNDS to the nearest boundary, so clicking the right half of a character puts the
-    /// caret after it, which is what makes clicking feel aimed rather than approximate.
+    /// A window point in the surface's OWN coordinates — the only arithmetic a host does for a code
+    /// surface. What the point MEANS (which line, which column, whether it extends the selection) is
+    /// the model's, so it is the same answer on every host.
     /// </summary>
-    private static CodePosition PositionIn(CodeRegion region, float x, float y)
-    {
-        var surface = region.Surface;
-        var line = (int)MathF.Floor((y - region.Bounds.Y - surface.ContentTop) / surface.LineHeight);
-        var column = (int)MathF.Round((x - region.Bounds.X - surface.ContentLeft) / surface.ColumnWidth);
-        return surface.Editor.Document.Clamp(new CodePosition(Math.Max(0, line), Math.Max(0, column)));
-    }
+    private static Point LocalTo(CodeRegion region, float x, float y) =>
+        new(x - region.Bounds.X, y - region.Bounds.Y);
 
     private void BeginCodeEditing(CodeRegion region)
     {
@@ -832,13 +827,11 @@ public sealed class PhotonHost
             NeedsRender = true;
             return true;
         }
-        // A code surface types through its controller, which is where auto-closing pairs, the
+        // A code surface types through its model, which is where auto-closing pairs, the
         // "step over the closer" rule and undo coalescing all live.
         if (CodeTarget is { } surface)
         {
-            var typed = false;
-            foreach (var c in text) typed |= surface.Editor.Type(c);
-            if (!typed) return false;
+            if (!surface.Model.HandleText(text)) return false;
             RestartBlink();
             surface.OnChanged?.Invoke();
             NeedsRender = true;
@@ -960,12 +953,11 @@ public sealed class PhotonHost
         for (var i = 0; i < surfaces.Count; i++)
         {
             if (surfaces[i].Path != _textPath) continue;
-            var surface = surfaces[i].Surface;
-            var caret = surface.Editor.Selection.Focus;
-            return new Rect(
-                surfaces[i].Bounds.X + surface.ContentLeft + caret.Column * surface.ColumnWidth,
-                surfaces[i].Bounds.Y + surface.ContentTop + caret.Line * surface.LineHeight,
-                2f, surface.LineHeight);
+            var carets = surfaces[i].Surface.Model.Carets;
+            if (carets.Count == 0) return null;
+            var caret = carets[0];
+            return new Rect(surfaces[i].Bounds.X + caret.X, surfaces[i].Bounds.Y + caret.Y,
+                caret.Width, caret.Height);
         }
         return null;
     }
@@ -1380,18 +1372,16 @@ public sealed class PhotonHost
             return;
         }
 
-        // The same, over a code surface: the anchor stays put and the FOCUS follows the pointer,
-        // which is exactly what CodeRange already models.
+        // The same, over a code surface — told to the model, which knows whether the press it saw
+        // is drawing a selection and moves the focus with the pointer if it is.
         if (_codeDragging && _lastFrame is not null)
         {
             var surfaces = _lastFrame.CodeRegions;
             for (var i = 0; i < surfaces.Count; i++)
             {
                 if (surfaces[i].Path != _textPath) continue;
-                var editor = surfaces[i].Surface.Editor;
-                var at = PositionIn(surfaces[i], x, y);
-                if (at.Equals(editor.Selection.Focus)) break;
-                editor.Selection = new CodeRange(editor.Selection.Anchor, at);
+                if (!surfaces[i].Surface.Model.HandlePointer(PointerPhase.Move, LocalTo(surfaces[i], x, y),
+                        KeyModifiers.None, 1)) break;
                 surfaces[i].Surface.OnChanged?.Invoke();
                 NeedsRender = true;
                 break;
@@ -1631,6 +1621,12 @@ public sealed class PhotonHost
         for (var i = fields.Count - 1; i >= 0; i--)
             if (fields[i].Bounds.Contains(point))
                 return fields[i].Entry.Disabled ? CursorShape.NotAllowed : CursorShape.Text;
+        // Code you place a caret in is a field too, and was the one kind this list forgot: the
+        // pointer stayed an arrow over an editor, where every editor shows the beam. A read-only
+        // editor still takes the caret and the selection, so it says the same.
+        var code = _lastFrame.CodeRegions;
+        for (var i = code.Count - 1; i >= 0; i--)
+            if (code[i].Bounds.Contains(point)) return CursorShape.Text;
         for (var i = links.Count - 1; i >= 0; i--)
             if (links[i].Bounds.Contains(point)) return CursorShape.Pointer;
 
@@ -1780,14 +1776,12 @@ public sealed class PhotonHost
         {
             if (!surfaces[i].Bounds.Contains(point)) continue;
             BeginCodeEditing(surfaces[i]);
-            var at = PositionIn(surfaces[i], x, y);
-            var editor = surfaces[i].Surface.Editor;
-            // Double-click: the word under the point. Triple: the line. The platform counts the
-            // clicks — its double-click interval is a system setting, not ours to guess.
-            if (clickCount >= 3) editor.SelectLine(at.Line);
-            else if (clickCount == 2) editor.SelectWord(at);
-            else editor.Selection = new CodeRange(at);
-            _codeDragging = clickCount < 2;
+            // What the press MEANS — a caret, a word, a line, a shift-extended selection — is the
+            // model's to decide. The platform counts the clicks: its double-click interval is a
+            // system setting, never ours to guess.
+            surfaces[i].Surface.Model.HandlePointer(PointerPhase.Down, LocalTo(surfaces[i], x, y),
+                modifiers, clickCount);
+            _codeDragging = true;
             RestartBlink();
             surfaces[i].Surface.OnChanged?.Invoke();
             NeedsRender = true;
@@ -1900,6 +1894,17 @@ public sealed class PhotonHost
         if (kind == PointerKind.Touch) PointerLeave();
 
         _dragSelecting = false;
+        if (_codeDragging && _lastFrame is not null)
+        {
+            var codeRegions = _lastFrame.CodeRegions;
+            for (var i = 0; i < codeRegions.Count; i++)
+            {
+                if (codeRegions[i].Path != _textPath) continue;
+                codeRegions[i].Surface.Model.HandlePointer(PointerPhase.Up, LocalTo(codeRegions[i], x, y),
+                    KeyModifiers.None, 1);
+                break;
+            }
+        }
         _codeDragging = false;
         _sheetDragging = false;
         if (_sheetFilling && _lastFrame is not null)
@@ -2130,7 +2135,7 @@ public sealed class PhotonHost
         // function the web half calls, so the two never drift on what ⌥← or ⇧Tab mean.
         if (CodeTarget is { } surface)
         {
-            if (CodeKeymap.Handle(surface.Editor, key, modifiers, Clipboard))
+            if (surface.Model.HandleKey(key, modifiers, Clipboard))
             {
                 RestartBlink();
                 surface.OnChanged?.Invoke();

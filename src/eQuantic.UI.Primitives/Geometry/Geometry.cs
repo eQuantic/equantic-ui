@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 namespace eQuantic.UI.Primitives;
 
 /// <summary>A point (or vector) in 2D space. Y grows DOWN — screen convention, used everywhere in Photon.</summary>
+[ZeroConstructs("value-types.ts: `constructor(x = 0, y = 0)`.")]
 public readonly record struct Point(float X, float Y)
 {
     public static readonly Point Zero = new(0, 0);
@@ -22,12 +23,14 @@ public readonly record struct Point(float X, float Y)
 }
 
 /// <summary>A 2D size. Negative dimensions are invalid by construction convention (not enforced per-op).</summary>
+[ZeroConstructs("value-types.ts: `constructor(width = 0, height = 0)`.")]
 public readonly record struct Size(float Width, float Height)
 {
     public static readonly Size Zero = new(0, 0);
 }
 
 /// <summary>An axis-aligned rectangle (X/Y = top-left corner; Y grows down).</summary>
+[ZeroConstructs("value-types.ts: `constructor(x = 0, y = 0, width = 0, height = 0)`.")]
 public readonly record struct Rect(float X, float Y, float Width, float Height)
 {
     public float Left => X;

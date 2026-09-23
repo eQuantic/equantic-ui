@@ -1,3 +1,4 @@
+using eQuantic.UI.Code;
 using eQuantic.UI.Components;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine;
@@ -90,7 +91,7 @@ public class CodeEditorFinishTests
         // A 1dp border strokes INSIDE the box, so the recorded rect is a dp narrower than asked.
         var outlines = builder.Build().Commands.ToArray()
             .Where(c => c.Kind == DrawCommandKind.StrokeRRect
-                && MathF.Abs(c.Shape.Rect.Width - surface.ColumnWidth) < 1.5f)
+                && MathF.Abs(c.Shape.Rect.Width - surface.Grid().Cell.Width) < 1.5f)
             .ToArray();
 
         // A wash would hide the character the mark is pointing at, which is the whole point of it.
@@ -117,9 +118,9 @@ public class CodeEditorFinishTests
         var commands = builder.Build().Commands.ToArray();
 
         var washes = commands.Where(c => c.Kind == DrawCommandKind.FillRRect
-            && MathF.Abs(c.Shape.Rect.Width - 3 * surface.ColumnWidth) < 0.5f).ToArray();
+            && MathF.Abs(c.Shape.Rect.Width - 3 * surface.Grid().Cell.Width) < 0.5f).ToArray();
         var outlines = commands.Where(c => c.Kind == DrawCommandKind.StrokeRRect
-            && MathF.Abs(c.Shape.Rect.Width - 3 * surface.ColumnWidth) < 1.5f).ToArray();
+            && MathF.Abs(c.Shape.Rect.Width - 3 * surface.Grid().Cell.Width) < 1.5f).ToArray();
 
         washes.Should().HaveCount(2, "the matches that are not the current one");
         outlines.Should().HaveCount(1, "…and the one the caret is on, so 'next' moves something visible");

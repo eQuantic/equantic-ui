@@ -46,10 +46,12 @@ public class EnumValueAbiTests
     private static string BaselinePath([CallerFilePath] string sourcePath = "") =>
         Path.Combine(Path.GetDirectoryName(sourcePath)!, "Coverage", "enum-values.baseline.txt");
 
-    /// <summary>Every public enum of the vocabulary, flags included, as
+    /// <summary>Every public enum of the vocabulary — Primitives, and the code editing engine that
+    /// left it for an assembly of its own with every value it had — flags included, as
     /// <c>Type.Member = value</c> lines ordered so the file is stable.</summary>
     private static string[] Current() =>
-        typeof(VisualNode).Assembly.GetTypes()
+        new[] { typeof(VisualNode).Assembly, typeof(eQuantic.UI.Code.CodeEditorController).Assembly }
+            .SelectMany(assembly => assembly.GetTypes())
             .Where(type => type.IsEnum && type.IsPublic)
             .OrderBy(type => type.Name, StringComparer.Ordinal)
             .SelectMany(type => Enum.GetNames(type)

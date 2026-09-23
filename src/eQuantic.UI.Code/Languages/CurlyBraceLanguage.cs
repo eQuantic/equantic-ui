@@ -1,4 +1,6 @@
-namespace eQuantic.UI.Primitives;
+using eQuantic.UI.Primitives;
+
+namespace eQuantic.UI.Code;
 
 /// <summary>
 /// The shared scanner for the C-family: C#, TypeScript, JavaScript. They differ in their keyword

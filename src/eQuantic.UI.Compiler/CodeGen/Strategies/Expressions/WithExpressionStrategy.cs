@@ -82,7 +82,7 @@ public class WithExpressionStrategy : IConversionStrategy
     private static bool IsRuntimeVocabulary(ITypeSymbol type)
     {
         var ns = type.ContainingNamespace?.ToDisplayString() ?? string.Empty;
-        return ns == "eQuantic.UI.Primitives" || ns.StartsWith("eQuantic.UI.Primitives.");
+        return Services.RuntimeProvidedTypeScanner.IsVocabularyNamespace(ns);
     }
 
     public int Priority => 10;

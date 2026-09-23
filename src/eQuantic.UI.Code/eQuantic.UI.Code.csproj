@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>eQuantic.UI.Code</PackageId>
+    <Description>The code editing engine of eQuantic.UI — the document, selections and history, the languages and their highlighter, the keymap and every editing command, written once in C# and driven by both realizers through the vocabulary's CodeSurface (see docs/CODE-EDITOR-PLAN.md).</Description>
+    <IsAotCompatible>true</IsAotCompatible>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The vocabulary ONLY. The engine is what a CodeSurface's realizer drives, so it may know the
+         surface's protocol and the vocabulary's values (a colour, a rectangle, a modifier key) and
+         nothing about any host: the same code runs in a window and, transpiled, in a browser. -->
+    <ProjectReference Include="..\eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
+  </ItemGroup>
+
+</Project>

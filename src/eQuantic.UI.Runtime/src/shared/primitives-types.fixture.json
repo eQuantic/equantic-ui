@@ -19,6 +19,7 @@
   "CodeEdit",
   "CodeEditorController",
   "CodeFold",
+  "CodeGrid",
   "CodeGutterMarker",
   "CodeHighlighter",
   "CodeHistory",

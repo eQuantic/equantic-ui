@@ -18,14 +18,33 @@ namespace eQuantic.UI.Compiler.CodeGen;
 public class RecordTypeEmitter
 {
     private readonly CSharpToJsConverter _converter;
+    private readonly Services.ComponentDependencyResolver? _modules;
 
-    public RecordTypeEmitter(CSharpToJsConverter converter) => _converter = converter;
+    /// <param name="converter">The converter the bodies go through.</param>
+    /// <param name="modules">The per-app scan, which knows which of the app's own types became
+    /// modules. Without one, no app type is imported — the rule the component and class paths hold,
+    /// so an import never names a module nobody wrote.</param>
+    public RecordTypeEmitter(CSharpToJsConverter converter, Services.ComponentDependencyResolver? modules = null)
+    {
+        _converter = converter;
+        _modules = modules;
+    }
 
     /// <summary>True for the value types this emitter handles: any record, or a struct, that exposes at
     /// least one value member (positional parameter, auto-property, or public field).</summary>
     public static bool CanEmit(TypeDeclarationSyntax type) =>
         type is RecordDeclarationSyntax or StructDeclarationSyntax
         && (type.ValueMembers().Count > 0 || HasStaticSurface(type));
+
+    /// <summary>
+    /// Whether this emitter writes a twin for <paramref name="type"/>: declared in source, by a
+    /// declaration <see cref="CanEmit"/> accepts. The rule every path that NAMES the twin asks — a
+    /// type test (<c>instanceof</c>) and a default (<c>new T()</c>) may only name a class that exists,
+    /// and an empty struct has none.
+    /// </summary>
+    public static bool EmitsTwin(INamedTypeSymbol type) =>
+        type.DeclaringSyntaxReferences.Any(reference =>
+            reference.GetSyntax() is TypeDeclarationSyntax declaration && CanEmit(declaration));
 
     /// <summary>
     /// Something the twin must carry even though the type holds no instance value: a const, a static
@@ -107,8 +126,9 @@ public class RecordTypeEmitter
         // (`InsertedRange => new CodeRange(new CodePosition(…))`) names types the positional
         // members never mention, and an unimported name is `Cannot find name 'CodePosition'`.
         var runtimeProvided = new HashSet<string> { "$eq" };
+        var appTypes = new HashSet<string>();
         if (ModelFor(type) is { } model)
-            Services.RuntimeProvidedTypeScanner.Collect(type, model, runtimeProvided, new HashSet<string>());
+            Services.RuntimeProvidedTypeScanner.Collect(type, model, runtimeProvided, new HashSet<string>(), appTypes);
         runtimeProvided.Remove(type.Identifier.Text);
 
         var body = Emit(type, tsTypeDeclarations);
@@ -126,11 +146,12 @@ public class RecordTypeEmitter
         // Only what the emitted text actually NAMES: a type mentioned in the C# and erased on the
         // way out (an interface, an enum) would otherwise import a name nothing uses, which the
         // runtime's own build rejects.
+        // Lookarounds, not `\b`: `$eq` starts with a non-word character, so a word boundary never
+        // matches it and the one import every module needs would be the first to go.
+        bool Names(string name) => System.Text.RegularExpressions.Regex.IsMatch(body,
+            $@"(?<![\w$]){System.Text.RegularExpressions.Regex.Escape(name)}(?![\w$])");
         var used = runtimeProvided
-            // Lookarounds, not `\b`: `$eq` starts with a non-word character, so a word boundary
-            // never matches it and the one import every module needs would be the first to go.
-            .Where(name => System.Text.RegularExpressions.Regex.IsMatch(body,
-                $@"(?<![\w$]){System.Text.RegularExpressions.Regex.Escape(name)}(?![\w$])"))
+            .Where(Names)
             .OrderBy(name => name, StringComparer.Ordinal)
             .ToArray();
 
@@ -148,9 +169,16 @@ public class RecordTypeEmitter
             // The APP-declared half of the same thing: an extension home the app itself owns is its
             // own module, and the call names it without ever mentioning it in the C#.
             foreach (var introduced in _converter.UsedAppTypes)
-                if (System.Text.RegularExpressions.Regex.IsMatch(body,
-                        $@"(?<![\w$]){System.Text.RegularExpressions.Regex.Escape(introduced)}(?![\w$])"))
+                if (Names(introduced))
                     specReferences.Add(introduced);
+            // And the app's own types the BODY names: a sibling record a method constructs, and a
+            // struct member's zero (`span: any = new Span2()`), which the constructor writes for a
+            // member that has no default of its own. This path imported only what the hydration map
+            // named, so both were a name the module never imported — `new Holder()` on the web threw
+            // where C# built a zeroed Span2.
+            foreach (var appType in appTypes)
+                if (_modules?.IsModule(appType) == true && Names(appType))
+                    specReferences.Add(appType);
             specReferences.Remove(type.Identifier.Text);
             if (baseName != null) specReferences.Remove(baseName);
             foreach (var reference in specReferences.OrderBy(n => n, StringComparer.Ordinal))

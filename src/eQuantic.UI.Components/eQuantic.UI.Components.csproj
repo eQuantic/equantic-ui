@@ -15,8 +15,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Primitives ONLY — a shared component that needed anything platform-specific would be a bug. -->
+    <!-- The vocabulary, and the code editing engine the code components are views of — nothing
+         platform-specific: a shared component that needed anything of a host would be a bug. -->
     <ProjectReference Include="..\eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
+    <ProjectReference Include="..\eQuantic.UI.Code\eQuantic.UI.Code.csproj" />
   </ItemGroup>
 
   <ItemGroup>

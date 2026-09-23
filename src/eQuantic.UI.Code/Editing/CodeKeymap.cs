@@ -1,4 +1,6 @@
-namespace eQuantic.UI.Primitives;
+using eQuantic.UI.Primitives;
+
+namespace eQuantic.UI.Code;
 
 /// <summary>
 /// What a KEY means to an editor — the one place both targets agree.

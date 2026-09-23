@@ -25,6 +25,8 @@
   <ItemGroup>
     <ProjectReference Include="..\eQuantic.UI.Codegen\eQuantic.UI.Codegen.csproj" />
     <ProjectReference Include="..\eQuantic.UI.Primitives\eQuantic.UI.Primitives.csproj" />
+    <!-- The code engine's enums are vocabulary enums too (EnumUnionsTsGenerator reads them). -->
+    <ProjectReference Include="..\eQuantic.UI.Code\eQuantic.UI.Code.csproj" />
     <ProjectReference Include="..\eQuantic.UI.Components\eQuantic.UI.Components.csproj" />
     <!-- IconRegistry is the single source the icon twin reads. It belongs to the realizer, which
          resolves glyphs at render time; this only borrows it. -->

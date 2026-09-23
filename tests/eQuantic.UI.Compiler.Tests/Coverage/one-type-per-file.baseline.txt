@@ -89,10 +89,6 @@ src/eQuantic.UI.Native.Shell.Windows/Devices/WindowsAppStorage.cs  2  not looked
 src/eQuantic.UI.Native.Shell.Windows/Devices/WindowsCapabilities.cs  4  not looked at yet
 src/eQuantic.UI.Native.Shell.Windows/Presenter.cs  3  not looked at yet
 src/eQuantic.UI.Native.Shell.iOS/PhotonAccessibility.cs  2  not looked at yet
-src/eQuantic.UI.Primitives/Code/CodeEditing.cs  17  not looked at yet
-src/eQuantic.UI.Primitives/Code/CodeEditorController.cs  3  not looked at yet
-src/eQuantic.UI.Primitives/Code/CodeLanguages.cs  7  not looked at yet
-src/eQuantic.UI.Primitives/Code/CodeModel.cs  5  not looked at yet
 src/eQuantic.UI.Primitives/Contracts/SemanticNode.cs  3  not looked at yet
 src/eQuantic.UI.Primitives/Devices/DeviceCapability.cs  2  not looked at yet
 src/eQuantic.UI.Primitives/Devices/IBiometrics.cs  2  not looked at yet

@@ -855,13 +855,7 @@ public class TypeScriptEmitter
                     componentTypes.Add(appType);
                     continue;
                 }
-                if (_dependencyResolver.GetAllStaticHelpers().Contains(appType)
-                    || _dependencyResolver.GetAllRecords().Contains(appType)
-                    || _dependencyResolver.GetAllPlainClasses().Contains(appType)
-                    || _dependencyResolver.GetAllComponents().Contains(appType))
-                {
-                    componentTypes.Add(appType);
-                }
+                if (_dependencyResolver.IsModule(appType)) componentTypes.Add(appType);
             }
         }
 
@@ -888,16 +882,10 @@ public class TypeScriptEmitter
 
         var userComponents = new List<string>();
 
-        // The user universe, discovered by scanning — components, records, helpers, plain classes.
-        // Consulted twice: by the standalone fallback below, and by the authoritative filter at the
-        // end. No fixed lists on either path.
-        var knownComponents = _dependencyResolver?.GetAllComponents().ToHashSet() ?? new HashSet<string>();
-        var knownRecords = _dependencyResolver?.GetAllRecords() ?? (IReadOnlySet<string>)new HashSet<string>();
-        var knownStaticHelpers = _dependencyResolver?.GetAllStaticHelpers() ?? (IReadOnlySet<string>)new HashSet<string>();
+        // The user universe, discovered by scanning — components, records, helpers, plain classes
+        // (IsAppModule). Consulted twice: by the standalone fallback below, and by the authoritative
+        // filter at the end. No fixed lists on either path.
         var knownRuntimeProvided = _dependencyResolver?.GetRuntimeProvidedTypes() ?? (IReadOnlySet<string>)new HashSet<string>();
-        var knownPlain = _dependencyResolver?.GetAllPlainClasses() ?? (IReadOnlySet<string>)new HashSet<string>();
-        bool KnownUserType(string name) => knownComponents.Contains(name) || knownRecords.Contains(name)
-                                           || knownStaticHelpers.Contains(name) || knownPlain.Contains(name);
 
         foreach (var type in componentTypes)
         {
@@ -967,7 +955,7 @@ public class TypeScriptEmitter
             // modules that exist nowhere.
             else if (!component.ResolvedSemantically
                      && !component.DeclaredInSource.Contains(cleanType)
-                     && !KnownUserType(cleanType))
+                     && !IsAppModule(cleanType))
             {
                 coreImports.Add(cleanType);
             }
@@ -996,7 +984,7 @@ public class TypeScriptEmitter
         foreach (var userComp in userComponents.OrderBy(x => x))
         {
             if (userComp == component.Name) continue;
-            var isEmittedType = KnownUserType(userComp);
+            var isEmittedType = IsAppModule(userComp);
             // When a resolver is present it is authoritative: import ONLY types we actually emit
             // (records/components it discovered). This drops references that aren't modules — primitives,
             // static-field names read as ClassName.X, helper-class names, etc. — instead of inventing a
@@ -1783,8 +1771,17 @@ public class TypeScriptEmitter
                 || field.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword)) continue;
             foreach (var variable in field.Declaration.Variables)
             {
-                if (variable.Initializer is not { } init) continue;
-                var value = _converter.ConvertExpression(init.Value, field.Declaration.Type.ToString());
+                // A field with NO initializer still has a value in C#: its type's default. Skipping
+                // it left the member `undefined` — a `bool` that was neither true nor false, which
+                // `!flag` reads as true and `flag === false` as false, and which tsc refuses to
+                // compile at all (TS2564) the moment nothing in the constructor assigns it. The
+                // component path has answered this from the type for a while (FieldDefaultTests);
+                // a plain class is the same C#.
+                var value = variable.Initializer is { } init
+                    ? _converter.ConvertExpression(init.Value, field.Declaration.Type.ToString())
+                    : ValueTypeDefault(field.Declaration.Type.ToString(), field.Declaration.Type);
+                if (value is null) continue;
+                if (value.Contains("$eq.")) _converter.UsedHelpers.Add(Eq.Import);
                 // The SAME casing the field declaration uses, or the constructor writes a second,
                 // differently-spelled member beside the one every read goes through.
                 initialisers.Append($"this.{variable.Identifier.Text.ToCamelCase()} = {value}; ");
@@ -1961,7 +1958,7 @@ public class TypeScriptEmitter
     /// <summary>The union name for a VOCABULARY enum, or null when the enum is an app's own — the
     /// one question three emission paths ask (components, plain classes, records).</summary>
     internal static string? VocabularyUnionFor(ITypeSymbol type) =>
-        type.ContainingNamespace?.ToDisplayString().StartsWith(VocabularyNamespace) == true
+        RuntimeProvidedTypeScanner.IsVocabularyNamespace(type.ContainingNamespace?.ToDisplayString() ?? "")
             ? $"{type.Name}Value"
             : null;
 
@@ -1977,7 +1974,7 @@ public class TypeScriptEmitter
                  System.Text.RegularExpressions.Regex.Matches(emitted, @"(?<![\w$])([A-Z][A-Za-z0-9]*)Value(?![\w$])"))
         {
             var name = match.Groups[1].Value;
-            if (compilation.GetTypeByMetadataName($"{VocabularyNamespace}.{name}") is { TypeKind: TypeKind.Enum })
+            if (VocabularyEnum(compilation, name) is not null)
                 runtimeProvided.Add($"{name}Value");
         }
     }
@@ -1990,8 +1987,8 @@ public class TypeScriptEmitter
     /// </summary>
     private string VocabularyEnumUnion(string name)
     {
-        var symbol = _semanticModel?.Compilation.GetTypeByMetadataName($"{VocabularyNamespace}.{name}");
-        if (symbol is not { TypeKind: TypeKind.Enum }) return "string";
+        var symbol = _semanticModel is null ? null : VocabularyEnum(_semanticModel.Compilation, name);
+        if (symbol is null) return "string";
         return IsFlags(symbol) ? "number" : Union(name);
     }
 
@@ -2003,8 +2000,17 @@ public class TypeScriptEmitter
         return $"{enumName}Value";
     }
 
-    /// <summary>The namespace whose enums the runtime mirrors as string unions.</summary>
-    private const string VocabularyNamespace = "eQuantic.UI.Primitives";
+    /// <summary>The vocabulary enum called <paramref name="name"/>, looked for in every namespace whose
+    /// enums the runtime mirrors as string unions — or null when no vocabulary declares one.</summary>
+    private static INamedTypeSymbol? VocabularyEnum(Compilation compilation, string name)
+    {
+        foreach (var ns in RuntimeProvidedTypeScanner.VocabularyNamespaces)
+        {
+            if (compilation.GetTypeByMetadataName($"{ns}.{name}") is { TypeKind: TypeKind.Enum } symbol)
+                return symbol;
+        }
+        return null;
+    }
 
     /// <summary>A [Flags] enum is a SET of members, and a set of members is a number.</summary>
     private static bool IsFlags(ITypeSymbol type) =>
@@ -2043,12 +2049,14 @@ public class TypeScriptEmitter
         !System.Text.RegularExpressions.Regex.IsMatch(initialiser.Trim(),
             @"^(-?\d+(\.\d+)?|'[^']*'|""[^""]*""|`[^`]*`|true|false|null|undefined|\[\]|\{\})$");
 
+    /// <summary>Whether the per-app scan knows this name became one of the app's OWN modules — the
+    /// only kind a <c>./Name</c> import may point at.</summary>
+    private bool IsAppModule(string name) => _dependencyResolver?.IsModule(name) == true;
+
+    /// <summary>Whether the per-app scan knows this name at all: one of the app's own modules, or a
+    /// type the app declares <c>[RuntimeProvided]</c>, which the runtime exports instead.</summary>
     private bool Resolvable(string name) =>
-        _dependencyResolver?.GetAllComponents().Contains(name) == true
-        || _dependencyResolver?.GetAllRecords().Contains(name) == true
-        || _dependencyResolver?.GetAllStaticHelpers().Contains(name) == true
-        || _dependencyResolver?.GetRuntimeProvidedTypes().Contains(name) == true
-        || _dependencyResolver?.GetAllPlainClasses().Contains(name) == true;
+        IsAppModule(name) || _dependencyResolver?.GetRuntimeProvidedTypes().Contains(name) == true;
 
     public string EmitPlainClassModule(ClassDeclarationSyntax cls, SemanticModel? semanticModel) =>
         EmitClassModule(cls, semanticModel, asStatic: false);
@@ -2130,10 +2138,6 @@ public class TypeScriptEmitter
             emitted, $@"(?<![\w$]){System.Text.RegularExpressions.Regex.Escape(referenced)}(?![\w$])"));
         core.UnionWith(runtimeProvided);
         if (core.Count > 0) imports.Add(new JsImport(core.ToList(), "@equantic/runtime"));
-        var knownComp = _dependencyResolver?.GetAllComponents().ToHashSet() ?? new HashSet<string>();
-        var knownRec = _dependencyResolver?.GetAllRecords() ?? (IReadOnlySet<string>)new HashSet<string>();
-        var knownHelp = _dependencyResolver?.GetAllStaticHelpers() ?? (IReadOnlySet<string>)new HashSet<string>();
-        var knownPlainClasses = _dependencyResolver?.GetAllPlainClasses() ?? (IReadOnlySet<string>)new HashSet<string>();
         // The base class is imported whether or not the syntax scanner noticed it: `extends` is the
         // one reference that must resolve before this module's first statement runs.
         if (baseName is not null) imports.Add(new JsImport([baseName], $"./{baseName}"));
@@ -2147,9 +2151,7 @@ public class TypeScriptEmitter
             if (string.IsNullOrEmpty(ct) || ct == name || ct == baseName
                 || ct == "HtmlNode" || NonImportableTypes.Contains(ct)) continue;
             if (runtimeProvided.Contains(ct) || referencedEnums.Contains(ct)) continue;
-            if (knownComp.Contains(ct) || knownRec.Contains(ct) || knownHelp.Contains(ct)
-                || knownPlainClasses.Contains(ct))
-                imports.Add(new JsImport([ct], $"./{ct}"));
+            if (IsAppModule(ct)) imports.Add(new JsImport([ct], $"./{ct}"));
         }
         return JsModuleWriter.Write(new JsModule(imports, builder.ToString()));
     }
