@@ -555,7 +555,8 @@ record of a release, the wiki's Upgrading page is the distillate.
   overload. A third review found a mark that begins an element taking cells (the voiced sound mark,
   two) and a word step stopping between a letter and its accent: a nonspacing or enclosing mark
   takes none now, read from `CharUnicodeInfo.GetUnicodeCategory`, which eqc translates for the
-  first time, and words step over whole elements. The served runtime grew to 144,405 bytes gzipped.
+  first time, and words step over whole elements. The served runtime grew from 143,104 bytes
+  gzipped, main's after #330, to 146,004.
 - **2026-09-23 · A publish sees the files this build wrote**: editing a component two pages share
   and publishing failed on the first run ([#361](https://github.com/eQuantic/equantic-ui/issues/361)).
   bun names a shared chunk by its content's hash, and the static web assets pipeline registered
