@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Icon, Pressable, Row, SdkStrings, SizeValue, Sizing, StatelessComponent, StyleDiff, Text, TypeStyle, VariantValue } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Icon, IconGlyph, Pressable, Row, SdkStrings, SizeValue, Sizing, StatelessComponent, StyleDiff, Text, TypeStyle, VariantValue } from "../runtime-exports";
 
 export class Chip extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Chip';
@@ -36,11 +36,11 @@ export class Chip extends StatelessComponent {
         let label = new Text(this.label, 'caption', textColor, 1, 'start', false, false, null, 0, { styleOverride: new TypeStyle(13, 16, 'semiBold', 0, Math.fround(1.3)) });
         let content = new Row(6, 'start', 'center', false, null, null, { main: 'center', height: SizeValue.fill });
         if (this.kind === 'filter' && this.selected) {
-            content.add(new Icon('check', 16, textColor));
+            content.add(new Icon(IconGlyph.fromIcons('check'), 16, textColor));
         }
         content.add(label);
         if (this.kind === 'input' && this.onRemove != null) {
-            content.add(new Pressable(new Icon('close', 20, textColor), this.onRemove, { label: SdkStrings.remove }));
+            content.add(new Pressable(new Icon(IconGlyph.fromIcons('close'), 20, textColor), this.onRemove, { label: SdkStrings.remove }));
         }
         let hoverFill = this.kind === 'filter' && this.onPressed != null ? this.selected ? primary.subtle.midpointWith(primary.base) : theme.surfaceSubtle.midpointWith(theme.border) : null;
         let box = new Box(new BoxStyle({ height: Sizing.height('small', context.density), padding: EdgeInsets.symmetric(12, 0), background: fill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: this.kind === 'filter' && this.selected ? 1 : 0, borderColor: primary.base, hover: hoverFill == null ? null : new StyleDiff({ background: hoverFill }) }), content);

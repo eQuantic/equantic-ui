@@ -1,4 +1,4 @@
-import { Anchored, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, KeyChord, Pressable, Row, Shortcut, SizeValue, Sizing, Spacer, StatefulComponent, StyleDiff, Text, UiComponent, VisualNode } from "../runtime-exports";
+import { Anchored, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, KeyChord, Pressable, Row, Shortcut, SizeValue, Sizing, Spacer, StatefulComponent, StyleDiff, Text, UiComponent, VisualNode } from "../runtime-exports";
 
 export class Select extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.Select';
@@ -31,7 +31,7 @@ export class Select extends StatefulComponent {
         let fieldRow = new Row(8, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });
         fieldRow.add(new Text(hasValue ? this.options[this.selectedIndex] : this.placeholder ?? 'Select…', 'bodyM', hasValue ? theme.textPrimary : theme.textMuted, 1));
         fieldRow.add(new Flexible(new Spacer()));
-        fieldRow.add(new Icon('chevronDown', 16, theme.textSecondary));
+        fieldRow.add(new Icon(IconGlyph.fromIcons('chevronDown'), 16, theme.textSecondary));
         let field = new Box(new BoxStyle({ height: Sizing.height('medium', context.density), width: SizeValue.fill, padding: EdgeInsets.symmetric(12, 0), background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: 1, borderColor: theme.borderStrong, opacity: this.disabled ? theme.disabledOpacity : null, hover: this.disabled ? null : new StyleDiff({ borderColor: theme.colors('primary').base }) }), fieldRow);
         let list = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         for (let i = 0; i < this.options.length; i++) {
@@ -41,7 +41,7 @@ export class Select extends StatefulComponent {
             row.add(new Text(this.options[i], 'bodyM', selected ? theme.colors('primary').onSubtle : theme.textPrimary, 1));
             if (selected) {
                 row.add(new Flexible(new Spacer()));
-                row.add(new Icon('check', 16, theme.colors('primary').onSubtle));
+                row.add(new Icon(IconGlyph.fromIcons('check'), 16, theme.colors('primary').onSubtle));
             }
             let highlighted = this._open && i === this._highlight;
             list.add(new Pressable(new Box(new BoxStyle({ height: Sizing.height('medium', context.density), padding: EdgeInsets.symmetric(12, 0), width: SizeValue.fill, background: selected ? theme.colors('primary').subtle : highlighted ? theme.surfaceSubtle : null, hover: selected ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row), () => this.choose(index), { role: 'option', selected: selected }));

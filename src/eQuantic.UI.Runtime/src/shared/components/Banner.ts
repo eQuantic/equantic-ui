@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconsValue, LiveRegion, Pressable, Row, SdkStrings, SizeValue, StatelessComponent, Text, TypeStyle, VariantValue } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, IconsValue, LiveRegion, Pressable, Row, SdkStrings, SizeValue, StatelessComponent, Text, TypeStyle, VariantValue } from "../runtime-exports";
 
 export class Banner extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Banner';
@@ -36,10 +36,10 @@ export class Banner extends StatelessComponent {
             column.add(actions);
         }
         let content = new Row(10, 'start', 'center', false, null, null, { cross: 'start' });
-        content.add(new Icon(glyph, 20, tint.onSubtle));
+        content.add(new Icon(IconGlyph.fromIcons(glyph), 20, tint.onSubtle));
         content.add(new Flexible(column));
         if (this.onDismiss != null) {
-            content.add(new Pressable(new Icon('close', 20, tint.onSubtle), this.onDismiss, { label: SdkStrings.dismiss }));
+            content.add(new Pressable(new Icon(IconGlyph.fromIcons('close'), 20, tint.onSubtle), this.onDismiss, { label: SdkStrings.dismiss }));
         }
         let surface = new Box(new BoxStyle({ width: SizeValue.fill, padding: new EdgeInsets(14, 12, 14, 12), background: tint.subtle, cornerRadius: new CornerRadii(context.theme.shape('large')) }), content);
         return new LiveRegion(surface, { urgency: (this.status === 'warning' || this.status === 'destructive') ? 'assertive' : 'polite' });

@@ -1,4 +1,4 @@
-import { $eq, AccordionItem, Box, BoxStyle, BuildContext, Column, Divider, EdgeInsets, Flexible, Icon, Pressable, Row, SizeValue, Sizing, Spacer, StatefulComponent, StyleDiff, Text, UiComponent } from "../runtime-exports";
+import { $eq, AccordionItem, Box, BoxStyle, BuildContext, Column, Divider, EdgeInsets, Flexible, Icon, IconGlyph, Pressable, Row, SizeValue, Sizing, Spacer, StatefulComponent, StyleDiff, Text, UiComponent } from "../runtime-exports";
 
 export class Accordion extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.Accordion';
@@ -26,7 +26,7 @@ export class Accordion extends StatefulComponent {
             let header = new Row(8, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });
             header.add(new Text(item.title, 'label'));
             header.add(new Flexible(new Spacer()));
-            header.add(new Icon(open ? 'chevronUp' : 'chevronDown', 16, theme.textSecondary));
+            header.add(new Icon(IconGlyph.fromIcons(open ? 'chevronUp' : 'chevronDown'), 16, theme.textSecondary));
             column.add(new Pressable(new Box(new BoxStyle({ height: Sizing.height('large'), width: SizeValue.fill, padding: EdgeInsets.symmetric(12, 0), hover: new StyleDiff({ background: theme.surfaceSubtle }) }), header), () => this.toggle(index), { expanded: open }));
             let content: any; 
             if (open && (content = item.content) != null) {

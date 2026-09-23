@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeDecoration, CodeDecorationKindValue, CodeDocument, CodeGutterKindValue, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeMetrics, CodeTokenKindValue, Color, ColorToken, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, Positioned, Pressable, Row, ScrollView, SizeValue, SizeVariantValue, Sizing, Spacer, Stack, StatelessComponent, Text, TypeStyle, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeDecoration, CodeDecorationKindValue, CodeDocument, CodeGutterKindValue, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeMetrics, CodeTokenKindValue, Color, ColorToken, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Row, ScrollView, SizeValue, SizeVariantValue, Sizing, Spacer, Stack, StatelessComponent, Text, TypeStyle, VisualNode } from "../runtime-exports";
 
 export class CodeBlock extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.CodeBlock';
@@ -99,7 +99,7 @@ export class CodeBlock extends StatelessComponent {
         }
         let copy: any; 
         if ((copy = this.onCopy) != null) {
-            corner.add(new IconButton(new Icon('copy'), 'Copy code', 'standard', 'medium', null, { size: 'small', onPressed: copy }));
+            corner.add(new IconButton(new Icon(IconGlyph.fromIcons('copy')), 'Copy code', 'standard', 'medium', null, { size: 'small', onPressed: copy }));
         }
         let layers = new Stack('topStart', { width: SizeValue.fill });
         layers.add(slab);

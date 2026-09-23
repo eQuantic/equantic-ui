@@ -1,4 +1,4 @@
-import { Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, IconsValue, MainAlignValue, NavItem, Pressable, SizeValue, StatelessComponent, Text, TypeStyle, VisualNodeExtensions } from "../runtime-exports";
+import { Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, IconGlyph, IconsValue, MainAlignValue, NavItem, Pressable, SizeValue, StatelessComponent, Text, TypeStyle, VisualNodeExtensions } from "../runtime-exports";
 
 export class NavigationRail extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.NavigationRail';
@@ -41,7 +41,7 @@ export class NavigationRail extends StatelessComponent {
             let filled: any; 
             let glyph: IconsValue = isActive && (filled = item.selectedIcon) != null ? filled : item.icon;
             let tint = isActive ? primary.onSubtle : theme.textMuted;
-            let icon = new Icon(glyph, 20, tint);
+            let icon = new Icon(IconGlyph.fromIcons(glyph), 20, tint);
             let iconNode = item.badgeCount > 0 ? Badge.over(icon, item.badgeCount) : icon;
             let pill = new Box(new BoxStyle({ width: 52, height: 30, background: isActive ? primary.subtle : null, cornerRadius: new CornerRadii(theme.shape('full')) }), VisualNodeExtensions.centered(iconNode));
             let column = new Column(2, 'start', 'stretch', false, null, null, { width: SizeValue.fill, height: 56, main: 'center', cross: 'center' });

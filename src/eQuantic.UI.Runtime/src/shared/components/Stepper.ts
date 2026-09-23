@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, CornerRadii, Icon, IconsValue, Pressable, Row, SizeValue, SizeVariantValue, Sizing, StatelessComponent, Text } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, CornerRadii, Icon, IconGlyph, IconsValue, Pressable, Row, SizeValue, SizeVariantValue, Sizing, StatelessComponent, Text } from "../runtime-exports";
 
 export class Stepper extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Stepper';
@@ -49,7 +49,7 @@ export class Stepper extends StatelessComponent {
 
     static arm(theme: any, glyph: IconsValue, height: number, enabled: boolean, onPressed: () => void, label: string) {
         let centered = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill, main: 'center', cross: 'center' });
-        centered.add(new Icon(glyph, 20, enabled ? theme.textPrimary : theme.textMuted));
+        centered.add(new Icon(IconGlyph.fromIcons(glyph), 20, enabled ? theme.textPrimary : theme.textMuted));
         let box = new Box(new BoxStyle({ width: height, height: SizeValue.fill }), centered);
         return new Pressable(box, enabled ? onPressed : null, { disabled: !enabled, label: label });
     }

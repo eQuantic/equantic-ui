@@ -1,4 +1,4 @@
-import { Anchored, AnchorPlacementValue, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, KeyChord, MenuItem, Pressable, Row, Shortcut, SizeValue, Sizing, StatefulComponent, StyleDiff, Text, UiComponent, VisualNode } from "../runtime-exports";
+import { Anchored, AnchorPlacementValue, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Icon, IconGlyph, KeyChord, MenuItem, Pressable, Row, Shortcut, SizeValue, Sizing, StatefulComponent, StyleDiff, Text, UiComponent, VisualNode } from "../runtime-exports";
 
 export class Menu extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.Menu';
@@ -29,7 +29,7 @@ export class Menu extends StatefulComponent {
             let index = i;
             let row = new Row(8, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });
             let glyph: any; 
-            if ((glyph = item.icon) != null) row.add(new Icon(glyph, 20, item.destructive ? theme.colors('destructive').base : theme.textSecondary));
+            if ((glyph = item.icon) != null) row.add(new Icon(IconGlyph.fromIcons(glyph), 20, item.destructive ? theme.colors('destructive').base : theme.textSecondary));
             row.add(new Text(item.label, 'bodyM', item.destructive ? theme.colors('destructive').base : theme.textPrimary, 1));
             let surface = new Box(new BoxStyle({ height: Sizing.height('medium', context.density), padding: EdgeInsets.symmetric(12, 0), width: SizeValue.fill, opacity: item.disabled ? theme.disabledOpacity : null, background: this._open && index === this._highlight && !item.disabled ? theme.surfaceSubtle : null, hover: item.disabled ? null : new StyleDiff({ background: theme.surfaceSubtle }) }), row);
             list.add(new Pressable(surface, item.disabled ? null : () => this.choose(index), { disabled: item.disabled, role: 'menuItem' }));

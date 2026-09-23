@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, Checkbox, Column, DataColumn, DataRow, EdgeInsets, Grid, GridTrack, Icon, Motion, Pressable, Row, SizeValue, Skeleton, StatelessComponent, StyleDiff, Text, TextAlignmentValue, TransitionSpec, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, Checkbox, Column, DataColumn, DataRow, EdgeInsets, Grid, GridTrack, Icon, IconGlyph, Motion, Pressable, Row, SizeValue, Skeleton, StatelessComponent, StyleDiff, Text, TextAlignmentValue, TransitionSpec, VisualNode } from "../runtime-exports";
 
 export class DataTable extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.DataTable';
@@ -67,7 +67,7 @@ export class DataTable extends StatelessComponent {
             let label = new Row(4, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'center', main: column.align === 'start' ? 'start' : 'end' });
             label.add(new Text(column.header.toUpperCase(), 'caption', sorted ? theme.textPrimary : theme.textMuted, 1));
             if (sorted) {
-                label.add(new Icon(this.sortDirection === 'ascending' ? 'chevronUp' : 'chevronDown', 16, theme.textPrimary));
+                label.add(new Icon(IconGlyph.fromIcons(this.sortDirection === 'ascending' ? 'chevronUp' : 'chevronDown'), 16, theme.textPrimary));
             }
             let index = i;
             grid.add(column.sortable && !(this.onSort == null) ? new Pressable(DataTable.cell(label, column.align), () => this.onSort(index), { label: `Sort by ${column.header}` }) : DataTable.cell(label, column.align));

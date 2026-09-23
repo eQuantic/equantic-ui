@@ -1,4 +1,4 @@
-import { $eq, Anchored, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, KeyChord, Pressable, Row, ScrollView, SdkStrings, Shortcut, SizeValue, Sizing, Spacer, StatefulComponent, StyleDiff, Text, TimeOnly, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, Anchored, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, KeyChord, Pressable, Row, ScrollView, SdkStrings, Shortcut, SizeValue, Sizing, Spacer, StatefulComponent, StyleDiff, Text, TimeOnly, UiComponent, VisualNode } from "../runtime-exports";
 
 export class TimePicker extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.TimePicker';
@@ -39,11 +39,11 @@ export class TimePicker extends StatefulComponent {
         let times = open ? this.slots() : [];
         let highlight = times.length > 0 ? Math.min(this._highlight, times.length - 1) : -1;
         let field = new Row(8, 'start', 'center', false, null, null, { cross: 'center', width: SizeValue.fill, height: SizeValue.fill });
-        field.add(new Icon('clock', 20, theme.textMuted));
+        field.add(new Icon(IconGlyph.fromIcons('clock'), 20, theme.textMuted));
         let value: any; 
         field.add(new Text((value = this.selected) != null ? TimePicker.format(value) : SdkStrings.chooseTime, 'bodyM', this.selected == null ? theme.textMuted : theme.textPrimary, 1));
         field.add(new Flexible(new Spacer()));
-        field.add(new Icon('chevronDown', 16, theme.textSecondary));
+        field.add(new Icon(IconGlyph.fromIcons('chevronDown'), 16, theme.textSecondary));
         let box = new Box(new BoxStyle({ height: Sizing.height('medium', context.density), width: SizeValue.fill, padding: EdgeInsets.symmetric(12, 0), background: theme.surface, cornerRadius: new CornerRadii(theme.shape('medium')), borderWidth: 1, borderColor: theme.borderStrong, opacity: this.disabled ? theme.disabledOpacity : null, hover: this.disabled ? null : new StyleDiff({ borderColor: theme.colors('primary').base }) }), field);
         let list = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         for (let i = 0; i < times.length; i++) {

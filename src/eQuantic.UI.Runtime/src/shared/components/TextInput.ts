@@ -1,4 +1,4 @@
-import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, Row, SizeValue, SizeVariantValue, Sizing, StatefulComponent, Text, TextEntry, UiComponent } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconGlyph, Row, SizeValue, SizeVariantValue, Sizing, StatefulComponent, Text, TextEntry, UiComponent } from "../runtime-exports";
 
 export class TextInput extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.TextInput';
@@ -56,7 +56,7 @@ export class TextInput extends StatefulComponent {
         let row = new Row(10, 'start', 'center', false, null, null, { height: SizeValue.fill, cross: 'center' });
         let leading: any; 
         if ((leading = this.leading) != null) {
-            row.add(new Icon(leading, 20, theme.textMuted));
+            row.add(new Icon(IconGlyph.fromIcons(leading), 20, theme.textMuted));
         }
         row.add(new Flexible(new TextEntry(this.value, this.onChanged, { placeholder: this.placeholder, label: this.label.length > 0 ? this.label : null, description: caption.length > 0 ? caption : null, invalid: hasError, disabled: this.disabled, obscure: this.obscure, autofocus: this.autofocus, onFocusChanged: (focused: boolean) => {
             this.setState(() => this._focused = focused);

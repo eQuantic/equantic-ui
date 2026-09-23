@@ -1,4 +1,4 @@
-import { Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, Flexible, Icon, IconsValue, NavItem, Pressable, Row, SizeValue, StatelessComponent, Text, TypeStyle, VisualNodeExtensions } from "../runtime-exports";
+import { Badge, Box, BoxStyle, BuildContext, Column, CornerRadii, Flexible, Icon, IconGlyph, IconsValue, NavItem, Pressable, Row, SizeValue, StatelessComponent, Text, TypeStyle, VisualNodeExtensions } from "../runtime-exports";
 
 export class BottomNavigation extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.BottomNavigation';
@@ -38,7 +38,7 @@ export class BottomNavigation extends StatelessComponent {
             let filled: any; 
             let glyph: IconsValue = isActive && (filled = item.selectedIcon) != null ? filled : item.icon;
             let tint = isActive ? primary.onSubtle : theme.textMuted;
-            let icon = new Icon(glyph, 24, tint);
+            let icon = new Icon(IconGlyph.fromIcons(glyph), 24, tint);
             let iconNode = item.badgeCount > 0 ? Badge.over(icon, item.badgeCount) : icon;
             let pillContent = VisualNodeExtensions.centered(iconNode);
             let pill = new Box(new BoxStyle({ width: 56, height: 26, background: isActive ? primary.subtle : null, cornerRadius: new CornerRadii(theme.shape('full')) }), pillContent);
