@@ -88,14 +88,6 @@ public static class ConsoleShell
     ];
 
     /// <summary>
-    /// Wraps a page in the frame. <paramref name="activeHref"/> lights one destination.
-    /// The frame is ADAPTIVE (one AdaptiveNode, two compositions): below the expanded width class
-    /// the 224dp sidebar and the wide toolbar would eat a phone whole, so the compact anatomy is a
-    /// slim bar — menu trigger, breadcrumb, search and the primary action as icons — with the SAME
-    /// sidebar riding a Drawer the page opens. Each branch builds its own nodes: a branch is a
-    /// mount, and a shared instance across branches is the bug AdaptiveNode's contract names.
-    /// </summary>
-    /// <summary>
     /// The frame for a DEMO screen: the same sidebar and breadcrumb the payments route has, minus
     /// the toolbar affordances that belong to that route.
     /// <para>
@@ -110,24 +102,36 @@ public static class ConsoleShell
         Wrap(theme, activeHref, [new Crumb("Workspace", "/"), new Crumb(title)], page,
             ShellActions.Quiet(navOpen, onToggleNav));
 
+    /// <summary>
+    /// Wraps a page in the frame. <paramref name="activeHref"/> lights one destination.
+    /// <para>
+    /// The frame ADAPTS, and only the frame does. Below the expanded width class the 224dp sidebar
+    /// and the wide toolbar would eat a phone whole, so two SLOTS change what they hold: the nav is
+    /// docked beside the page or rides a Drawer the page opens, and the toolbar is the wide one or
+    /// a slim bar with the same affordances at icon width. The page is in neither slot — it sits
+    /// once, at the same position at every width.
+    /// </para>
+    /// <para>
+    /// That placement is the contract, and both wrong ones were measured. The page used to hang in
+    /// BOTH arms of one AdaptiveNode, and the web emits every arm: one component instance mounted
+    /// twice, so a selection in the code editor drew its bands in the hidden copy as well and ⌘F
+    /// opened in both. Building the page once PER arm trades that for two worse bugs — the window
+    /// hands a chord to the binding declared LAST, which is the expanded arm's, so ⌘F on a phone
+    /// opened a find bar nobody could see; and an edit typed at one width was missing at the other,
+    /// each arm holding its own document. Outside the arms there is one mount and one position, so
+    /// what the page holds crosses the breakpoint. It is the cure AdaptiveNode's own remarks name:
+    /// put the shared subtree in the tree once and make only the varying part adaptive.
+    /// </para>
+    /// </summary>
     public static VisualNode Wrap(IAppTheme theme, string activeHref, IReadOnlyList<Crumb> crumbs,
         VisualNode page, ShellActions actions)
     {
-        return new Box(new BoxStyle
-        {
-            Width = SizeValue.Fill,
-            Height = SizeValue.Fill,
-            Background = theme.Background,
-        }, new AdaptiveNode(
-            CompactFrame(theme, activeHref, crumbs, page, actions),
-            expanded: ExpandedFrame(theme, activeHref, crumbs, page, actions)));
-    }
-
-    private static VisualNode ExpandedFrame(IAppTheme theme, string activeHref,
-        IReadOnlyList<Crumb> crumbs, VisualNode page, ShellActions actions)
-    {
         var body = new Column(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill };
-        body.Add(Toolbar(theme, crumbs, actions));
+        body.Add(new AdaptiveNode(CompactBar(theme, crumbs, actions),
+            expanded: Toolbar(theme, crumbs, actions)));
+        // One gutter at every width — the handoff's 20. The compact anatomy used to pad by 12, but
+        // padding is a property of the box that holds the page, and AdaptiveNode varies SUBTREES:
+        // a gutter per width would put the page back inside the arms.
         body.Add(new Flexible(new ScrollView(new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
@@ -140,32 +144,29 @@ public static class ConsoleShell
             Height = SizeValue.Fill,
             Cross = CrossAlign.Stretch,
         };
-        frame.Add(Sidebar(theme, activeHref, actions));
+        frame.Add(Navigation(theme, activeHref, actions));
         frame.Add(new Flexible(body, 1));
-        return frame;
-    }
 
-    private static VisualNode CompactFrame(IAppTheme theme, string activeHref,
-        IReadOnlyList<Crumb> crumbs, VisualNode page, ShellActions actions)
-    {
-        var body = new Column(gap: 0) { Width = SizeValue.Fill, Height = SizeValue.Fill };
-        body.Add(CompactBar(theme, crumbs, actions));
-        body.Add(new Flexible(new ScrollView(new Box(new BoxStyle
+        return new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
-            Padding = EdgeInsets.All(Space.S3),
-        }, page)), 1));
+            Height = SizeValue.Fill,
+            Background = theme.Background,
+        }, frame);
+    }
 
-        // The drawer is declarative like every layer: built open, removed closed. Same content
-        // the persistent sidebar shows — one nav, two homes.
+    /// <summary>
+    /// The nav's slot: one nav, two homes. Wide, it is docked beside the page. Narrow, it rides a
+    /// Drawer the page opens — which needs no layer from the frame, because an open drawer is an
+    /// Overlay laid out against the viewport and a closed one is an empty box. Each home builds its
+    /// own copy of the list, since each is a mount of its own.
+    /// </summary>
+    private static VisualNode Navigation(IAppTheme theme, string activeHref, ShellActions actions)
+    {
         var drawer = new Drawer(SidebarContent(theme, activeHref, actions),
             actions.NavOpen, actions.OnToggleNav)
         { Width = 264 };
-
-        var frame = new Stack { Width = SizeValue.Fill, Height = SizeValue.Fill };
-        frame.Add(body);
-        frame.Add(drawer);
-        return frame;
+        return new AdaptiveNode(drawer, expanded: Sidebar(theme, activeHref, actions));
     }
 
     /// <summary>The compact toolbar: everything the wide one says, at icon width — search goes

@@ -181,8 +181,8 @@ public sealed class PaymentsPage : StatefulComponent
     private VisualNode Kpis(IAppTheme theme)
     {
         // Four across only when the window can afford it — 2×2 otherwise. Each branch builds its
-        // own cards: an AdaptiveNode mounts one branch per width, and a shared node instance in
-        // two branches would be one child with two parents.
+        // own cards: the web mounts EVERY branch and shows the one the width calls for, so a shared
+        // node instance in two branches would be one child with two parents.
         return new AdaptiveNode(KpiGrid(theme, columns: 2), null, KpiGrid(theme, columns: 4))
         {
             ExpandedFrom = 1024,
