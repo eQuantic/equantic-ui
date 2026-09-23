@@ -1,4 +1,3 @@
-using System.Reflection;
 using eQuantic.Console;
 using eQuantic.UI.Components;
 using eQuantic.UI.Primitives;
@@ -41,7 +40,7 @@ public class ConsoleShellTests
     {
         var page = new Box(new BoxStyle());
 
-        var placements = Placements(Frame(page, pageActions))
+        var placements = NodePlacements.Of(Frame(page, pageActions))
             .Where(placement => ReferenceEquals(placement.Node, page))
             .ToList();
 
@@ -57,13 +56,8 @@ public class ConsoleShellTests
     [InlineData(true)]
     public void NoNodeOfTheFrameIsPlacedTwice(bool pageActions)
     {
-        var shared = Placements(Frame(new Box(new BoxStyle()), pageActions))
-            .GroupBy(placement => (object)placement.Node, ReferenceEqualityComparer.Instance)
-            .Where(group => group.Count() > 1)
-            .Select(group => string.Join(" and ", group.Select(placement => placement.Path)))
-            .ToList();
-
-        shared.Should().BeEmpty("a node belongs to ONE tree, so each arm builds its own");
+        NodePlacements.Shared(Frame(new Box(new BoxStyle()), pageActions))
+            .Should().BeEmpty("a node belongs to ONE tree, so each arm builds its own");
     }
 
     /// <summary>
@@ -95,48 +89,6 @@ public class ConsoleShellTests
         {
             Builds++;
             return new Text(Marker, TypeRole.BodyM);
-        }
-    }
-
-    // ---- the walk ------------------------------------------------------------------------------
-
-    private readonly record struct Placement(VisualNode Node, string Path, bool InArm);
-
-    /// <summary>
-    /// Every place a node is reachable from <paramref name="root"/>, WITHOUT building a component:
-    /// a component's own node-typed properties — a Drawer's content, a Menu's trigger — are exactly
-    /// how one instance gets handed to two places, so they are walked like a container's children.
-    /// Reflection rather than a list of kinds, because a list would silently stop at the first kind
-    /// the frame starts using and nobody added.
-    /// </summary>
-    private static IEnumerable<Placement> Placements(VisualNode root)
-    {
-        var pending = new Stack<Placement>();
-        pending.Push(new Placement(root, root.GetType().Name, InArm: false));
-        while (pending.Count > 0)
-        {
-            var placement = pending.Pop();
-            yield return placement;
-
-            var node = placement.Node;
-            var inArm = placement.InArm || node is AdaptiveNode;
-            foreach (var property in node.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
-            {
-                if (property.GetIndexParameters().Length > 0) continue;
-                var path = $"{placement.Path}.{property.Name}";
-                switch (property.GetValue(node))
-                {
-                    case VisualNode child:
-                        pending.Push(new Placement(child, $"{path}:{child.GetType().Name}", inArm));
-                        break;
-                    case IEnumerable<VisualNode> children:
-                        var index = 0;
-                        foreach (var child in children)
-                            pending.Push(new Placement(child,
-                                $"{path}[{index++}]:{child.GetType().Name}", inArm));
-                        break;
-                }
-            }
         }
     }
 

@@ -98,6 +98,73 @@ public class ListDetailTests
         texts.Count(text => text == "Inbox").Should().Be(2);
     }
 
+    /// <summary>
+    /// The built tree, walked through every node-typed property: no instance is reachable by two
+    /// paths, in either state. Under the AdaptiveNode two paths are two mounts on the web.
+    /// </summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NoNodeIsReachableByTwoPaths(bool chosen)
+    {
+        var built = new ListDetail(Inbox, chosen ? () => new Text("The message body") : null)
+        {
+            Title = "Message detail",
+            ListTitle = "Inbox",
+            OnBack = () => { },
+            Placeholder = new Text("Pick a message"),
+        }.BuildContained(Context());
+
+        NodePlacements.Shared(built).Should().BeEmpty("a node belongs to ONE tree, so each shape builds its own");
+    }
+
+    /// <summary>
+    /// The symptom itself, on the realizer that produced it: every stateful pane the app builds is
+    /// built — and so mounted — exactly once. With the list handed over as one node, the web built
+    /// it twice (once per shape) and the browser then kept one instance at two paths.
+    /// </summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void OnTheWeb_EveryStatefulPaneIsBuiltOnce(bool chosen)
+    {
+        var lists = new List<Probe>();
+        var details = new List<Probe>();
+
+        VisualNode NewList()
+        {
+            var probe = new Probe("the list");
+            lists.Add(probe);
+            return probe;
+        }
+
+        VisualNode NewDetail()
+        {
+            var probe = new Probe("the detail");
+            details.Add(probe);
+            return probe;
+        }
+
+        WebRealizer.Lower(new ListDetail(NewList, chosen ? NewDetail : null), Theme).Render();
+
+        lists.Concat(details).Should().OnlyContain(probe => probe.Builds == 1,
+            "each shape mounts its own instance, and mounts it once");
+        lists.Should().HaveCount(chosen ? 1 : 2,
+            "the list is in the wide shape, and in the compact one while nothing is chosen");
+        details.Should().HaveCount(chosen ? 2 : 0, "a chosen detail is a pane in both shapes");
+    }
+
+    private sealed class Probe(string marker) : StatefulComponent
+    {
+        public int Builds { get; private set; }
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            Builds++;
+            return new Text(marker, TypeRole.BodyM);
+        }
+    }
+
     /// <summary>Nothing chosen on a phone means the LIST is the screen: no detail bar, and no back
     /// affordance to a place the reader never left.</summary>
     [Fact]
