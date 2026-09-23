@@ -493,6 +493,21 @@ record of a release, the wiki's Upgrading page is the distillate.
   32 layers once each layer's root path stopped being rebuilt every frame, under a ceiling one
   object tighter, and the harness runs alone. The definition's code-splitting per route is met by the module graph, and bun already
   splits what pages share into chunks.
+- **2026-09-23 · The code editor takes input the platform's way**: slice 1a of
+  [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#PR_NUMBER](https://github.com/eQuantic/equantic-ui/pull/PR_NUMBER)).
+  The web surface read characters off `keydown`, so a dead key, an input method, AltGr on a
+  European layout, a phone's keyboard and dictation never reached the document, and ⌘V was
+  cancelled before the browser could deliver a paste. Text now arrives through a textarea held at
+  the caret, as the platform's own input, composition and clipboard events, and an input method's
+  text lives in the document underlined until it commits as one edit. The keymap learned the
+  keyboard's two traditions (Ctrl+← went to the line's start on Windows and Linux), Escape releases
+  Tab, Photon brings a moved caret into view and shows the composition it used to track unseen, and
+  the selection is drawn by the component under the text. The server's arm for the surface was built
+  and withdrawn: the server measures text as 0 and hydration keeps its markup, so the adopted editor
+  kept a 12px gutter (the plan's SSR slice, which the standalone `CodeBlock` needs too). Found on the
+  way: a nullable field with no initializer began 0, false or unassigned in its twin, and the
+  editor's accessible name was English in every language. The served runtime grew from 137,801 to
+  140,067 bytes gzipped, the price of the input path.
 
 ## Retired documents
 

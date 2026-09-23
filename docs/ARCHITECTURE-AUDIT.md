@@ -233,7 +233,7 @@ seventh by the pin the day it grew to read the web realizer.
 | `VisualNode.Key` | Documented as reconciler identity, read by neither realizer | an audit (#95) |
 | `Navigable` · `Overlay` | Open: honoured by the web, silent on Photon | still open |
 | `SheetSurface` | **Closed.** The server rendered an EMPTY `<span>` where the browser draws a spreadsheet — no case in `LowerNodeKind`, `_ => null`, from the day it shipped (d8be2bd6). `SurfaceSsrTests` keeps it; its A/B is the empty span itself | this pass — found by this pin, fixed in the same week |
-| `CodeSurface` | **Open, for a different reason than it was found for.** The empty span is understood; what blocks the arm is that the client appends a CARET to every code surface, so a server tree with only the child is one element short and the reconciler records a failed adoption. The shape has to be settled — does the server render the controller's caret, or does the client stop appending during hydration? — and settling it needs a running page | this pass |
+| `CodeSurface` | **Open, and measured on a running page.** The shape was settled by building it in the code editor's slice 1a: the server wrote the controller's carets and the input beside the child, in the client's spelling, and hydration adopted the tree. What blocks the arm is the text measurement under the child: the server has no measurer, so `MeasureText` answers 0, and a written surface carried a 12px gutter and zero-width columns. Hydration keeps the server's markup, so the client adopted that tree and kept it. The arm was withdrawn until a component that measured text without a measurer is redrawn by the client instead of adopted, which the standalone `CodeBlock` needs too (its gutter on `/markdown` has the same 0) | this pass; measured in slice 1a of [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) |
 
 ### The asymmetry it exposes, and how Flutter avoids it
 
@@ -786,11 +786,11 @@ makes the rest safe.
    parity rows with probes, the dead `Web → Components` edge, the alias comment, the A11 word.
 1. **The SSR surfaces defect** (`CodeSurface`, `SheetSurface` → empty span). ~~`SheetSurface`~~ done:
    the server writes the grid and its child, and its exemption is gone from the coverage pin — the
-   first time that list has shrunk. `CodeSurface` remains, and the question is now a SHAPE one: the
-   client appends a caret to every surface, so an arm that writes only the child hands hydration a
-   tree one element short. Either the server renders the controller's caret (it has the state) or
-   the client stops appending during hydration; the choice needs a running page to settle. — S done,
-   S remaining
+   first time that list has shrunk. `CodeSurface` remains. Its shape is settled (the server writes
+   the controller's carets and the input, built and withdrawn in the code editor's slice 1a), and a
+   running page measured what blocks it: the server measures text as 0, and hydration adopts that
+   geometry. A component that measured text without a measurer has to be redrawn by the client
+   instead of adopted, and the standalone `CodeBlock` needs the same. — S done, M remaining
 2. **Visitor over the vocabulary, generated `NodeKind` union with `assertNever` in TypeScript**
    (Flutter: abstract `performLayout`/`paint`). One file per node family per realizer, as
    `Strategies/` is per construct. Retire the regex pin when the last switch is gone. — L.
