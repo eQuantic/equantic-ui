@@ -3,12 +3,19 @@
  * base with every mark, joiner and modifier that belongs to it. `e` followed by U+0301 is one, a
  * flag is two regional indicators and one element, a family emoji is five code points and one
  * element, and CR LF is one. The transpiled `StringInfo.ParseCombiningCharacters` and
- * `GetNextTextElementLength` land here, and both sides ask their PLATFORM the same annex: .NET its
- * own tables, the browser `Intl.Segmenter`.
+ * `GetNextTextElementLength` land here, and each side asks its PLATFORM: .NET its own tables, the
+ * browser `Intl.Segmenter`.
  *
- * Where `Intl.Segmenter` is missing (Firefox before 125), the elements are approximated by the rules
- * that carry nearly all real text: marks, joiners and their next code point, emoji modifiers,
- * regional indicator pairs and CR LF stay with what comes before them.
+ * The two agree wherever they carry the same version of the annex, and part where a newer version
+ * changed a rule. .NET 10 predates the Indic conjunct rule of Unicode 15.1, so a conjunct such as
+ * KA, VIRAMA, SSA is two elements to .NET and one to a current browser, and a Backspace after it
+ * takes the SSA on Photon and the whole conjunct on the web. The conformance cases stay clear of
+ * those rules on purpose.
+ *
+ * Where the browser has no segmenter (Firefox before 125), each CODE POINT is an element: a
+ * surrogate pair is never split, and nothing is joined that the platform did not say to join. It
+ * approximated the annex before, and got Thai, Persian, decomposed Hangul, halfwidth kana and tag
+ * flags wrong in ways no test would see, since every browser the tests run in has a segmenter.
  */
 
 interface GraphemeSegmenter {
@@ -31,38 +38,22 @@ function platformSegmenter(): GraphemeSegmenter | null {
   return segmenter;
 }
 
-const MARK = /^\p{M}$/u;
-
-/** Whether the code point `current` stays in the element `previous` belongs to (the fallback). */
-function joins(previous: number, current: number, indicatorRun: number): boolean {
-  if (previous === 0x0d && current === 0x0a) return true;
-  if (current === 0x200d || previous === 0x200d) return true;
-  if (current >= 0x1f3fb && current <= 0x1f3ff) return true;
-  if (current >= 0x1f1e6 && current <= 0x1f1ff && indicatorRun % 2 === 1) return true;
-  return MARK.test(String.fromCodePoint(current));
-}
-
 /** Where each text element of `text` begins: `StringInfo.ParseCombiningCharacters`. */
 export function textElementStarts(text: string): number[] {
   const platform = platformSegmenter();
-  if (!platform) return approximateTextElementStarts(text);
+  if (!platform) return codePointStarts(text);
   const starts: number[] = [];
   for (const { index } of platform.segment(text)) starts.push(index);
   return starts;
 }
 
-/** The elements where the platform has no segmenter (see the module's comment). Exported so its
- * tests reach it on a platform that has one. */
-export function approximateTextElementStarts(text: string): number[] {
+/** Where each code point of `text` begins: the elements where the platform has no segmenter (see
+ * the module's comment). Exported so its tests reach it on a platform that has one. */
+export function codePointStarts(text: string): number[] {
   const starts: number[] = [];
-  let previous = -1;
-  let indicatorRun = 0;
   for (let index = 0; index < text.length; ) {
-    const current = text.codePointAt(index)!;
-    if (previous < 0 || !joins(previous, current, indicatorRun)) starts.push(index);
-    indicatorRun = current >= 0x1f1e6 && current <= 0x1f1ff ? indicatorRun + 1 : 0;
-    previous = current;
-    index += current > 0xffff ? 2 : 1;
+    starts.push(index);
+    index += text.codePointAt(index)! > 0xffff ? 2 : 1;
   }
   return starts;
 }
@@ -83,6 +74,5 @@ export function nextTextElementLength(text: string, index: number): number {
     for (const { segment } of platform.segment(rest)) return segment.length;
     return 0;
   }
-  const starts = approximateTextElementStarts(rest);
-  return starts.length > 1 ? starts[1] : rest.length;
+  return rest.codePointAt(0)! > 0xffff ? 2 : 1;
 }

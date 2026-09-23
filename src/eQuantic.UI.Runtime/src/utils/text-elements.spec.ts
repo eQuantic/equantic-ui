@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { approximateTextElementStarts, nextTextElementLength, textElementStarts } from './text-elements';
+import { codePointStarts, nextTextElementLength, textElementStarts } from './text-elements';
 
 /**
  * `StringInfo`'s text elements on this side. The conformance suite runs the same cases against
- * .NET; these pin what a browser WITHOUT `Intl.Segmenter` gets too, by hiding it.
+ * .NET; the last case pins what a browser WITHOUT `Intl.Segmenter` gets: code points.
  */
 describe('text elements (StringInfo)', () => {
   const cases: [string, number[]][] = [
@@ -28,7 +28,11 @@ describe('text elements (StringInfo)', () => {
     expect(() => nextTextElementLength('ab', 3)).toThrow(RangeError);
   });
 
-  it('approximates the same elements where the browser has no segmenter', () => {
-    for (const [text, starts] of cases) expect(approximateTextElementStarts(text)).toEqual(starts);
+  it('falls back to code points where the browser has no segmenter, and joins nothing', () => {
+    expect(codePointStarts('abc')).toEqual([0, 1, 2]);
+    expect(codePointStarts('e\u0301a')).toEqual([0, 1, 2]);
+    expect(codePointStarts('\u{1F600}b')).toEqual([0, 2]);
+    expect(codePointStarts('\uD83D\u0301')).toEqual([0, 1]);
+    expect(codePointStarts('')).toEqual([]);
   });
 });
