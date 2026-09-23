@@ -387,41 +387,38 @@
         </ItemGroup>
     </Target>
 
-    <!-- Copy runtime.js and CSS after component compilation -->
+    <!--
+        The runtime beside the app's modules, for the tools that load them outside a server (the VS
+        Code preview reads wwwroot/_equantic/runtime.js). A running app never reads this copy: the
+        Server answers /_equantic/runtime.js with the bundle it embeds, ahead of the static files.
+        So the copy is THAT bundle, byte for byte: from the Server package, or beside a source tree
+        from the Server project's own build output. It used to come from a separate runtime package
+        holding a library build without `boot` (#335), which no page could have started from.
+    -->
     <Target Name="CopyEQuanticRuntime" AfterTargets="CompileEQuanticUI"
         Condition="'$(EnableEQuanticUICompilation)' == 'true'">
         <PropertyGroup>
-            <!-- Runtime.js is packaged in eQuantic.UI.Runtime package -->
-            <!-- Try NuGet cache first (consumer scenario) -->
-            <_RuntimeSourcePath Condition="'$(PkgeQuantic_UI_Runtime)' != ''">$(PkgeQuantic_UI_Runtime)/tools/runtime/runtime.js</_RuntimeSourcePath>
-            <_CssSourcePath Condition="'$(PkgeQuantic_UI_Runtime)' != ''">$(PkgeQuantic_UI_Runtime)/tools/runtime/equantic.css</_CssSourcePath>
-
-            <!-- Fallback to source tree (development scenario) -->
+            <_RuntimeSourcePath Condition="'$(PkgeQuantic_UI_Server)' != ''">$(PkgeQuantic_UI_Server)/tools/runtime/runtime.js</_RuntimeSourcePath>
             <_RuntimeSourcePath
-                Condition="'$(_RuntimeSourcePath)' == '' And Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime/dist/index.js')">
-                $(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime/dist/index.js</_RuntimeSourcePath>
-            <_CssSourcePath
-                Condition="'$(_CssSourcePath)' == '' And Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime/assets/equantic.css')">
-                $(MSBuildThisFileDirectory)../../eQuantic.UI.Runtime/assets/equantic.css</_CssSourcePath>
-
+                Condition="'$(_RuntimeSourcePath)' == '' And Exists('$(MSBuildThisFileDirectory)../../eQuantic.UI.Server/wwwroot/runtime.js')">$(MSBuildThisFileDirectory)../../eQuantic.UI.Server/wwwroot/runtime.js</_RuntimeSourcePath>
             <_RuntimeDestPath>$(MSBuildProjectDirectory)/$(EQuanticOutputPath)runtime.js</_RuntimeDestPath>
-            <_CssDestPath>$(MSBuildProjectDirectory)/$(EQuanticOutputPath)equantic.css</_CssDestPath>
         </PropertyGroup>
 
         <Error
-            Text="eQuantic.UI: Runtime not found. Ensure the eQuantic.UI.Runtime package (version $(Version)) is installed. Try running 'dotnet restore --force'."
+            Text="eQuantic.UI: the served runtime was not found. It ships inside the eQuantic.UI.Server package (version $(EQuanticUIVersion)) at tools/runtime/runtime.js; try 'dotnet restore --force'."
             Condition="'$(_RuntimeSourcePath)' == '' Or !Exists('$(_RuntimeSourcePath)')" />
 
-        <Message Text="eQuantic.UI: Copying runtime.js from '$(_RuntimeSourcePath)' to output..."
-            Importance="High" />
-        <Message Text="eQuantic.UI: Copying equantic.css from '$(_CssSourcePath)' to output..."
-            Importance="High"
-            Condition="'$(_CssSourcePath)' != '' And Exists('$(_CssSourcePath)')" />
-
-        <Copy SourceFiles="$(_RuntimeSourcePath)" DestinationFiles="$(_RuntimeDestPath)" />
-        <Copy SourceFiles="$(_CssSourcePath)" DestinationFiles="$(_CssDestPath)"
-            Condition="'$(_CssSourcePath)' != '' And Exists('$(_CssSourcePath)')" />
+        <Copy SourceFiles="$(_RuntimeSourcePath)" DestinationFiles="$(_RuntimeDestPath)" SkipUnchangedFiles="true" />
+        <!-- The base stylesheet an earlier SDK copied here and no page linked (#335): a file its writer
+             stopped producing goes with it, as a generator's leftovers do, instead of being served. -->
+        <Delete Files="$(MSBuildProjectDirectory)/$(EQuanticOutputPath)equantic.css" />
     </Target>
+
+    <!-- Not a web asset either: registered while the project evaluates and then deleted by the
+         target above, it would fail the publish's compression, the way a deleted source map did. -->
+    <ItemGroup>
+        <Content Remove="$(EQuanticOutputPath)equantic.css" />
+    </ItemGroup>
 
     <!--
         The app icon, from the same source the device SDK uses: `Assets/AppIcon.png` (artwork a

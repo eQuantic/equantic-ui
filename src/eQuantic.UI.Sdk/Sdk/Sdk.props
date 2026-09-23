@@ -57,22 +57,25 @@
         <PackageReference Include="eQuantic.UI.Components" Version="$(EQuanticUIVersion)" GeneratePathProperty="true" />
         <PackageReference Include="eQuantic.UI.Charts" Version="$(EQuanticUIVersion)" GeneratePathProperty="true" />
         <PackageReference Include="eQuantic.UI.Web" Version="$(EQuanticUIVersion)" />
-        <PackageReference Include="eQuantic.UI.Server" Version="$(EQuanticUIVersion)" />
-        <PackageReference Include="eQuantic.UI.Runtime" Version="$(EQuanticUIVersion)" GeneratePathProperty="true" />
+        <!-- The Server carries the runtime it serves as a file too (tools/runtime/runtime.js). -->
+        <PackageReference Include="eQuantic.UI.Server" Version="$(EQuanticUIVersion)" GeneratePathProperty="true" />
 
         <!-- Platform-specific Bun Runtime Packages (asset-only; resolved purely via $(Pkg*)).
-             One per OS+architecture: native arm64 where available, else x64-baseline. -->
-        <PackageReference Include="eQuantic.UI.Runtime.WinArm64" Version="$(EQuanticUIVersion)" GeneratePathProperty="true"
+             One per OS+architecture: native arm64 where available, else x64-baseline. A BUILD-time
+             need, so never a dependency of a package an app packs: without PrivateAssets a library
+             built on this SDK depended on the bun of whichever machine packed it (105 MB of macOS
+             bun, measured on eQuantic.Auth.WebPages), and its dependency list changed with it. -->
+        <PackageReference Include="eQuantic.UI.Runtime.WinArm64" Version="$(EQuanticUIVersion)" GeneratePathProperty="true" PrivateAssets="all"
             Condition="$([MSBuild]::IsOSPlatform('Windows')) And '$(_EqOsArch)' == 'Arm64'" />
-        <PackageReference Include="eQuantic.UI.Runtime.Win64" Version="$(EQuanticUIVersion)" GeneratePathProperty="true"
+        <PackageReference Include="eQuantic.UI.Runtime.Win64" Version="$(EQuanticUIVersion)" GeneratePathProperty="true" PrivateAssets="all"
             Condition="$([MSBuild]::IsOSPlatform('Windows')) And '$(_EqOsArch)' != 'Arm64'" />
-        <PackageReference Include="eQuantic.UI.Runtime.LinuxArm64" Version="$(EQuanticUIVersion)" GeneratePathProperty="true"
+        <PackageReference Include="eQuantic.UI.Runtime.LinuxArm64" Version="$(EQuanticUIVersion)" GeneratePathProperty="true" PrivateAssets="all"
             Condition="$([MSBuild]::IsOSPlatform('Linux')) And '$(_EqOsArch)' == 'Arm64'" />
-        <PackageReference Include="eQuantic.UI.Runtime.Linux64" Version="$(EQuanticUIVersion)" GeneratePathProperty="true"
+        <PackageReference Include="eQuantic.UI.Runtime.Linux64" Version="$(EQuanticUIVersion)" GeneratePathProperty="true" PrivateAssets="all"
             Condition="$([MSBuild]::IsOSPlatform('Linux')) And '$(_EqOsArch)' != 'Arm64'" />
-        <PackageReference Include="eQuantic.UI.Runtime.OsxArm64" Version="$(EQuanticUIVersion)" GeneratePathProperty="true"
+        <PackageReference Include="eQuantic.UI.Runtime.OsxArm64" Version="$(EQuanticUIVersion)" GeneratePathProperty="true" PrivateAssets="all"
             Condition="$([MSBuild]::IsOSPlatform('OSX')) And '$(_EqOsArch)' == 'Arm64'" />
-        <PackageReference Include="eQuantic.UI.Runtime.Osx64" Version="$(EQuanticUIVersion)" GeneratePathProperty="true"
+        <PackageReference Include="eQuantic.UI.Runtime.Osx64" Version="$(EQuanticUIVersion)" GeneratePathProperty="true" PrivateAssets="all"
             Condition="$([MSBuild]::IsOSPlatform('OSX')) And '$(_EqOsArch)' != 'Arm64'" />
     </ItemGroup>
 
@@ -109,26 +112,31 @@
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Charts\eQuantic.UI.Charts.csproj" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Web\eQuantic.UI.Web.csproj" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Server\eQuantic.UI.Server.csproj" />
-        <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Runtime\eQuantic.UI.Runtime.csproj" />
 
         <!-- Platform-specific Bun Runtime Project References (one per OS+architecture) -->
         <ProjectReference
             Include="$(_DevRootDir)eQuantic.UI.Runtime.WinArm64\eQuantic.UI.Runtime.WinArm64.csproj"
+            PrivateAssets="all"
             Condition="$([MSBuild]::IsOSPlatform('Windows')) And '$(_EqOsArch)' == 'Arm64'" />
         <ProjectReference
             Include="$(_DevRootDir)eQuantic.UI.Runtime.Win64\eQuantic.UI.Runtime.Win64.csproj"
+            PrivateAssets="all"
             Condition="$([MSBuild]::IsOSPlatform('Windows')) And '$(_EqOsArch)' != 'Arm64'" />
         <ProjectReference
             Include="$(_DevRootDir)eQuantic.UI.Runtime.LinuxArm64\eQuantic.UI.Runtime.LinuxArm64.csproj"
+            PrivateAssets="all"
             Condition="$([MSBuild]::IsOSPlatform('Linux')) And '$(_EqOsArch)' == 'Arm64'" />
         <ProjectReference
             Include="$(_DevRootDir)eQuantic.UI.Runtime.Linux64\eQuantic.UI.Runtime.Linux64.csproj"
+            PrivateAssets="all"
             Condition="$([MSBuild]::IsOSPlatform('Linux')) And '$(_EqOsArch)' != 'Arm64'" />
         <ProjectReference
             Include="$(_DevRootDir)eQuantic.UI.Runtime.OsxArm64\eQuantic.UI.Runtime.OsxArm64.csproj"
+            PrivateAssets="all"
             Condition="$([MSBuild]::IsOSPlatform('OSX')) And '$(_EqOsArch)' == 'Arm64'" />
         <ProjectReference
             Include="$(_DevRootDir)eQuantic.UI.Runtime.Osx64\eQuantic.UI.Runtime.Osx64.csproj"
+            PrivateAssets="all"
             Condition="$([MSBuild]::IsOSPlatform('OSX')) And '$(_EqOsArch)' != 'Arm64'" />
     </ItemGroup>
 
