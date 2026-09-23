@@ -20,6 +20,10 @@ public class StructDefaultTests
         public readonly record struct Cell(int Row, int Column);
 
         public readonly record struct Grid(Point Origin, Size Pitch, Cell Home, Tone Tone, char Mark);
+
+        public struct Nothing { }
+
+        public readonly record struct Wrap(Nothing Inner, int Count);
         """;
 
     private static string Emit(string name) => TypeScriptOf(Source, "Grid.cs", name);
@@ -66,6 +70,17 @@ public class StructDefaultTests
 
         ts.Should().Contain("tone: any = 'quiet'");
         ts.Should().Contain("mark: any = '\\0'");
+    }
+
+    /// <summary>An EMPTY struct has no twin (the emitter refuses it), so `new Nothing()` would name
+    /// a class nothing wrote: its member keeps the null it always had (found in review, #359).</summary>
+    [Fact]
+    public void AStructWithNoTwinIsNeverConstructed()
+    {
+        var ts = Emit("Wrap");
+
+        ts.Should().Contain("inner: any = null");
+        ts.Should().NotContain("new Nothing()");
     }
 
     [Fact]

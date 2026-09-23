@@ -58,10 +58,11 @@ public static class DefaultValue
         }
 
         // A STRUCT's default is its zero instance, and C# never has a null one. The twin can build
-        // it when its bare constructor zeroes every component: a struct the compiler EMITS (declared
-        // in source, or in the transpiled code engine), whose parameters default to their own types'
-        // zeros by this same rule, or a vocabulary struct whose hand-written twin says it does
-        // ([ZeroConstructs]). `new CodeGrid()` held a null Point on the web before this.
+        // it when its bare constructor zeroes every component: a struct the compiler EMITS (one of
+        // the app's with a twin to build, or one from a namespace it transpiles whole), whose
+        // parameters default to their own types' zeros by this same rule, or a vocabulary struct
+        // whose hand-written twin says it does ([ZeroConstructs]). `new CodeGrid()` held a null
+        // Point on the web before this.
         if (type is INamedTypeSymbol { TypeKind: TypeKind.Struct } structType && ZeroConstructs(structType))
             return $"new {structType.Name}()";
 
@@ -79,9 +80,11 @@ public static class DefaultValue
         // Nullable<T> is a struct too, and its default is null — handled above, never here.
         if (type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T) return false;
         if (type.GetAttributes().Any(a => a.AttributeClass?.Name == "ZeroConstructsAttribute")) return true;
-        if (type.Locations.Any(location => location.IsInSource)) return true;
+        // In source, only when a twin is emitted at all: a struct the emitter refuses (an empty one)
+        // has no class, and `new Empty()` would name one nothing wrote.
+        if (type.Locations.Any(location => location.IsInSource)) return RecordTypeEmitter.EmitsTwin(type);
         var ns = type.ContainingNamespace?.ToDisplayString() ?? "";
-        return Services.RuntimeProvidedTypeScanner.IsCodeEngineNamespace(ns);
+        return Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(ns);
     }
 
     /// <summary>The default of the ELEMENT of a sequence-typed expression.</summary>

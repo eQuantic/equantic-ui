@@ -284,20 +284,19 @@ public static class PatternConverter
         if (type.TypeKind == TypeKind.Class) return true;
         return !Services.RuntimeProvidedTypeScanner.IsRuntimeProvidedNamespace(
                    type.ContainingNamespace?.ToDisplayString() ?? "")
-               && type.DeclaringSyntaxReferences.Any(reference =>
-                   reference.GetSyntax() is TypeDeclarationSyntax declaration
-                   && RecordTypeEmitter.CanEmit(declaration));
+               && RecordTypeEmitter.EmitsTwin(type);
     }
 
     /// <summary>
     /// Whether this type exists as a real class on the other side — every vocabulary node does, and
-    /// so does every class and record of the code engine, which the compiler transpiles whole. That
-    /// is what makes <c>instanceof</c> the honest test for them; anywhere else the vocabulary's twins
-    /// may be written by hand, and a type test there stays the presence check below.
+    /// so does every class and record of the code engine, the component library and the charts,
+    /// which the compiler transpiles whole. That is what makes <c>instanceof</c> the honest test for
+    /// them; anywhere else the vocabulary's twins may be written by hand, and a type test there stays
+    /// the presence check below.
     /// </summary>
     private static bool LowersToAJsClass(INamedTypeSymbol type)
     {
-        if (Services.RuntimeProvidedTypeScanner.IsCodeEngineNamespace(
+        if (Services.RuntimeProvidedTypeScanner.IsTranspiledNamespace(
                 type.ContainingNamespace?.ToDisplayString() ?? ""))
             return true;
         for (var baseType = type.BaseType; baseType != null; baseType = baseType.BaseType)

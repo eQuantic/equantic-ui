@@ -37,6 +37,16 @@ public class RecordTypeEmitter
         && (type.ValueMembers().Count > 0 || HasStaticSurface(type));
 
     /// <summary>
+    /// Whether this emitter writes a twin for <paramref name="type"/>: declared in source, by a
+    /// declaration <see cref="CanEmit"/> accepts. The rule every path that NAMES the twin asks — a
+    /// type test (<c>instanceof</c>) and a default (<c>new T()</c>) may only name a class that exists,
+    /// and an empty struct has none.
+    /// </summary>
+    public static bool EmitsTwin(INamedTypeSymbol type) =>
+        type.DeclaringSyntaxReferences.Any(reference =>
+            reference.GetSyntax() is TypeDeclarationSyntax declaration && CanEmit(declaration));
+
+    /// <summary>
     /// Something the twin must carry even though the type holds no instance value: a const, a static
     /// field, a static property, a static method. DISCOVERY is a separate question from what the
     /// record's VALUE is made of, and conflating them deleted a type outright — excluding consts

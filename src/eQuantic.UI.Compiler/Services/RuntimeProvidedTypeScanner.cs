@@ -55,14 +55,17 @@ public static class RuntimeProvidedTypeScanner
     }
 
     /// <summary>
-    /// Whether <paramref name="ns"/> is the code editing engine's — the one vocabulary namespace the
-    /// compiler TRANSPILES whole, so every class and struct in it is a real JavaScript class on the
-    /// other side, built by the rules this compiler applies (a struct zero-constructs, a class
-    /// answers <c>instanceof</c>). The visual vocabulary is not that: many of its twins are written
-    /// by hand, and a rule that holds for an emitted twin is a guess about a hand-written one.
+    /// Whether <paramref name="ns"/> is one whose twins this compiler WRITES: every runtime-provided
+    /// namespace but the visual vocabulary's own. The code engine, the component library and the
+    /// charts are transpiled whole, so each class and struct in them is a real JavaScript class built
+    /// by this compiler's rules (a struct zero-constructs, a class answers <c>instanceof</c>). The
+    /// visual vocabulary is not: many of its twins are written by hand, and a rule that holds for an
+    /// emitted twin is a guess about a hand-written one.
     /// </summary>
-    public static bool IsCodeEngineNamespace(string ns) =>
-        ns == "eQuantic.UI.Code" || ns.StartsWith("eQuantic.UI.Code.", StringComparison.Ordinal);
+    public static bool IsTranspiledNamespace(string ns) =>
+        IsRuntimeProvidedNamespace(ns)
+        && ns != "eQuantic.UI.Primitives"
+        && !ns.StartsWith("eQuantic.UI.Primitives.", StringComparison.Ordinal);
 
     public static bool IsRuntimeProvidedNamespace(string ns) =>
         IsVocabularyNamespace(ns)

@@ -41,6 +41,25 @@ public class EmittedTypePatternTests
         ts.Should().MatchRegex(@"import \{[^}]*\bCodeEditorController\b[^}]*\} from ""@equantic/runtime""");
     }
 
+    /// <summary>The component library (and the charts) are transpiled whole too, so their records
+    /// are real classes on the other side: the rule is the NAMESPACE the compiler writes the twins
+    /// of, not the engine's alone.</summary>
+    [Fact]
+    public void AComponentLibraryRecordIsTestedByInstanceof()
+    {
+        var ts = TypeScriptOf("""
+            using eQuantic.UI.Components;
+
+            public sealed class Probe
+            {
+                public string What(object value) => value is Crumb ? "crumb" : "other";
+            }
+            """, "Probe.cs", "Probe");
+
+        ts.Should().Contain("instanceof Crumb");
+        ts.Should().NotContain("value != null");
+    }
+
     [Fact]
     public void AnAppStructIsTestedByInstanceof()
     {
@@ -68,7 +87,8 @@ public class EmittedTypePatternTests
             .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
             .Select(p => (Microsoft.CodeAnalysis.MetadataReference)Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(p))
             .Append(Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location))
-            .Append(Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(typeof(eQuantic.UI.Code.CodeEditorController).Assembly.Location));
+            .Append(Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(typeof(eQuantic.UI.Code.CodeEditorController).Assembly.Location))
+            .Append(Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(typeof(eQuantic.UI.Components.Crumb).Assembly.Location));
         var compilation = Microsoft.CodeAnalysis.CSharp.CSharpCompilation.Create("Probe", [tree], references,
             new Microsoft.CodeAnalysis.CSharp.CSharpCompilationOptions(Microsoft.CodeAnalysis.OutputKind.DynamicallyLinkedLibrary,
                 nullableContextOptions: Microsoft.CodeAnalysis.NullableContextOptions.Enable));
