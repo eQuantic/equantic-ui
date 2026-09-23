@@ -2,7 +2,7 @@ import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeDecoration, CodeEditor
 
 export class CodeEditor extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.CodeEditor';
-    _editor: any;
+    _editor: any = null;
     _findOpen: boolean = false;
     _findText: string = '';
     _offset: number = 0;
@@ -54,9 +54,9 @@ export class CodeEditor extends StatefulComponent {
         editor.readOnly = this.readOnly;
         let highlighter = editor.highlighter;
         let metrics = CodeBlock.metricsFor(context, this.size, this.showLineNumbers, this.firstLineNumber + editor.document.lineCount - 1);
-        let block = new CodeBlock('', null, { document: editor.document, language: highlighter.language, decorations: this.marks(editor), showLineNumbers: this.showLineNumbers, firstLineNumber: this.firstLineNumber, standalone: false, size: this.size, inverse: this.inverse, caption: this.caption, gutterMarkers: this.gutterMarkers, onGutterPressed: this.onGutterPressed, highlighter: highlighter, metrics: metrics, viewportOffset: this._offset, viewportHeight: this._viewport, viewportWidth: this._viewportWidth, activeLine: editor.caret.line });
         editor.grid = new CodeGrid(new Point(metrics.contentLeft, metrics.contentTop), new Size(metrics.columnWidth, metrics.lineHeight));
-        let surface: VisualNode = new CodeSurface(block, editor, { autofocus: this.autofocus, label: this.caption ?? 'Code editor', caretColor: CodeBlock.inkFor(this.inverse, context.theme), selectionColor: CodeBlock.selectionFor(this.inverse, context.theme), onChanged: () => this.setState(() => {
+        let block = new CodeBlock('', null, { document: editor.document, language: highlighter.language, decorations: this.marks(editor), showLineNumbers: this.showLineNumbers, firstLineNumber: this.firstLineNumber, standalone: false, size: this.size, inverse: this.inverse, caption: this.caption, gutterMarkers: this.gutterMarkers, onGutterPressed: this.onGutterPressed, highlighter: highlighter, metrics: metrics, viewportOffset: this._offset, viewportHeight: this._viewport, viewportWidth: this._viewportWidth, activeLine: editor.caret.line, selectionBands: editor.selectionBands });
+        let surface: VisualNode = new CodeSurface(block, editor, { autofocus: this.autofocus, label: this.caption ?? SdkStrings.codeEditor, caretColor: CodeBlock.inkFor(this.inverse, context.theme), onChanged: () => this.setState(() => {
             this.onChanged?.(editor.document.text);
             this.onSelectionChanged?.(editor.selection);
         }) });
@@ -95,8 +95,10 @@ export class CodeEditor extends StatefulComponent {
 
     marks(editor: CodeEditorController) {
         let needle = this._findOpen && this._findText.length > 0 ? this._findText : this.search;
-        if (!((needle != null && needle.length > 0)) && !this.matchBrackets) return this.decorations;
+        if (!((needle != null && needle.length > 0)) && !this.matchBrackets && editor.composition == null) return this.decorations;
         let marks: CodeDecoration[] = [...this.decorations];
+        let composition: any; 
+        if ((composition = editor.composition) != null) marks.push(new CodeDecoration(composition, 'underline'));
         let search: any; 
         if (((needle != null && needle.length > 0) && (search = needle, true))) {
             let current = editor.selection;

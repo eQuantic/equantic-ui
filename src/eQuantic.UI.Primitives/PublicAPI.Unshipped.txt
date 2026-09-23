@@ -475,9 +475,7 @@ eQuantic.UI.Primitives.CodeSurface.CodeSurface(eQuantic.UI.Primitives.VisualNode
 eQuantic.UI.Primitives.CodeSurface.Model.get -> eQuantic.UI.Primitives.ICodeSurfaceModel!
 eQuantic.UI.Primitives.CodeSurface.Model.init -> void
 eQuantic.UI.Primitives.ICodeSurfaceModel
-eQuantic.UI.Primitives.ICodeSurfaceModel.SelectionBands.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Rect>!
 eQuantic.UI.Primitives.ICodeSurfaceModel.Carets.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Rect>!
-eQuantic.UI.Primitives.ICodeSurfaceModel.HandleKey(string! key, eQuantic.UI.Primitives.KeyModifiers modifiers, eQuantic.UI.Primitives.ITextClipboard? clipboard) -> bool
 eQuantic.UI.Primitives.ICodeSurfaceModel.HandleText(string! text) -> bool
 eQuantic.UI.Primitives.ICodeSurfaceModel.HandlePointer(eQuantic.UI.Primitives.PointerPhase phase, eQuantic.UI.Primitives.Point position, eQuantic.UI.Primitives.KeyModifiers modifiers, int clicks) -> bool
 eQuantic.UI.Primitives.PointerPhase
@@ -489,3 +487,15 @@ eQuantic.UI.Primitives.PointerPhase.Exit = 4 -> eQuantic.UI.Primitives.PointerPh
 eQuantic.UI.Primitives.ZeroConstructsAttribute
 eQuantic.UI.Primitives.ZeroConstructsAttribute.ZeroConstructsAttribute(string! reason) -> void
 eQuantic.UI.Primitives.ZeroConstructsAttribute.Reason.get -> string!
+*REMOVED*eQuantic.UI.Primitives.CodeSurface.SelectionColor.get -> eQuantic.UI.Primitives.ColorToken?
+*REMOVED*eQuantic.UI.Primitives.CodeSurface.SelectionColor.init -> void
+eQuantic.UI.Primitives.ICodeSurfaceModel.RevealVersion.get -> int
+eQuantic.UI.Primitives.ICodeSurfaceModel.HandleKey(string! key, eQuantic.UI.Primitives.KeyModifiers modifiers, eQuantic.UI.Primitives.KeyboardConvention convention, eQuantic.UI.Primitives.ITextClipboard? clipboard) -> bool
+eQuantic.UI.Primitives.ICodeSurfaceModel.SetComposition(string! text) -> bool
+eQuantic.UI.Primitives.ICodeSurfaceModel.CopyText() -> string!
+eQuantic.UI.Primitives.ICodeSurfaceModel.Cut() -> string!
+eQuantic.UI.Primitives.ICodeSurfaceModel.Paste(string! text) -> bool
+eQuantic.UI.Primitives.ICodeSurfaceModel.FocusChanged(bool focused) -> void
+eQuantic.UI.Primitives.KeyboardConvention
+eQuantic.UI.Primitives.KeyboardConvention.Standard = 0 -> eQuantic.UI.Primitives.KeyboardConvention
+eQuantic.UI.Primitives.KeyboardConvention.Apple = 1 -> eQuantic.UI.Primitives.KeyboardConvention

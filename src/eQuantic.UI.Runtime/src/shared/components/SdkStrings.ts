@@ -37,6 +37,10 @@ export class SdkStrings {
         return $eq.str("SdkResources", "ClearSearch");
     }
 
+    static get codeEditor(): string {
+        return $eq.str("SdkResources", "CodeEditor");
+    }
+
     static get find(): string {
         return $eq.str("SdkResources", "Find");
     }

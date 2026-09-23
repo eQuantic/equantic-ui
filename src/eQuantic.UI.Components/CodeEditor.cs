@@ -97,9 +97,13 @@ public sealed class CodeEditor : StatefulComponent
     private IReadOnlyList<CodeDecoration> Marks(CodeEditorController editor)
     {
         var needle = _findOpen && _findText.Length > 0 ? _findText : Search;
-        if (needle is not { Length: > 0 } && !MatchBrackets) return Decorations;
+        if (needle is not { Length: > 0 } && !MatchBrackets && editor.Composition is null) return Decorations;
 
         var marks = new List<CodeDecoration>(Decorations);
+        // The text an input method is still composing is IN the document, and says so: underlined,
+        // in the code's own ink, until it is committed or cancelled.
+        if (editor.Composition is { } composition)
+            marks.Add(new CodeDecoration(composition, CodeDecorationKind.Underline));
         if (needle is { Length: > 0 } search)
         {
             var current = editor.Selection;
@@ -175,6 +179,13 @@ public sealed class CodeEditor : StatefulComponent
         var metrics = CodeBlock.MetricsFor(context, Size, ShowLineNumbers,
             FirstLineNumber + editor.Document.LineCount - 1);
 
+        // THE grid, handed to the engine — the only thing that turns a position into a point. The
+        // block draws the lines on these same numbers, so the caret and the glyphs cannot disagree.
+        // BEFORE the block reads the selection's bands: read first, they were drawn on the grid of
+        // the build before, which on the first frame is the default one.
+        editor.Grid = new CodeGrid(new Point(metrics.ContentLeft, metrics.ContentTop),
+            new Size(metrics.ColumnWidth, metrics.LineHeight));
+
         // The empty-string constructor + inits, NOT the (document, language) pair as arguments:
         // the transpiled twin has one constructor whose body is the string shape, and the property
         // assignment lands after it on both sides. CodeBlock.Of is this same move, packaged.
@@ -202,23 +213,19 @@ public sealed class CodeEditor : StatefulComponent
             ViewportOffset = _offset,
             ViewportHeight = _viewport,
             ViewportWidth = _viewportWidth,
-            // The caret's line is washed while the editor holds it — the one piece of state the
-            // read-only block cannot know about.
+            // The caret's line is washed while the editor holds it, and the selection is drawn under
+            // the text — the two pieces of state the read-only block cannot know about. Both are the
+            // ENGINE's measurements, on the grid handed to it below.
             ActiveLine = editor.Caret.Line,
+            SelectionBands = editor.SelectionBands,
         };
-
-        // THE grid, handed to the engine — the only thing that turns a position into a point. The
-        // block draws the lines on these same numbers, so the caret and the glyphs cannot disagree.
-        editor.Grid = new CodeGrid(new Point(metrics.ContentLeft, metrics.ContentTop),
-            new Size(metrics.ColumnWidth, metrics.LineHeight));
 
         VisualNode surface = new CodeSurface(block, editor)
         {
             Autofocus = Autofocus,
-            Label = Caption ?? "Code editor",
-            // The marks write with the BLOCK's ink, not the page's — see CodeBlock.InkFor.
+            Label = Caption ?? SdkStrings.CodeEditor,
+            // The caret writes with the BLOCK's ink, not the page's — see CodeBlock.InkFor.
             CaretColor = CodeBlock.InkFor(Inverse, context.Theme),
-            SelectionColor = CodeBlock.SelectionFor(Inverse, context.Theme),
             // The controller mutates outside the tree, so the rebuild has to be asked for. This is
             // the seam: everything the surface does ends here, and here is where the app hears it.
             OnChanged = () => SetState(() =>

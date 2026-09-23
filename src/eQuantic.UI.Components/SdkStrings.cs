@@ -41,6 +41,9 @@ public static class SdkStrings
     public static string SearchPlaceholder => SdkResources.SearchPlaceholder;
     public static string ClearSearch => SdkResources.ClearSearch;
 
+    /// <summary>The code editor's accessible name when the app gives it no caption.</summary>
+    public static string CodeEditor => SdkResources.CodeEditor;
+
     // The code editor's find bar.
     public static string Find => SdkResources.Find;
     public static string PreviousMatch => SdkResources.PreviousMatch;

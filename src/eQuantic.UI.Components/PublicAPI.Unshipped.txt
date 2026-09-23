@@ -29,3 +29,7 @@ eQuantic.UI.Components.CodeEditor.GutterMarkers.get -> System.Collections.Generi
 eQuantic.UI.Components.CodeEditor.Decorations.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDecoration!>!
 eQuantic.UI.Components.CodeEditor.Editor.get -> eQuantic.UI.Code.CodeEditorController!
 static eQuantic.UI.Components.UI.CodeSurface(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.ICodeSurfaceModel! model, System.Action? onChanged = null, string? label = null, bool autofocus = false) -> eQuantic.UI.Primitives.CodeSurface!
+eQuantic.UI.Components.CodeBlock.SelectionBands.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Rect>!
+eQuantic.UI.Components.CodeBlock.SelectionBands.init -> void
+const eQuantic.UI.Components.CodeBlock.SelectionAlpha = 0.28 -> float
+static eQuantic.UI.Components.SdkStrings.CodeEditor.get -> string!

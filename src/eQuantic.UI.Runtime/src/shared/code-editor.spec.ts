@@ -3,9 +3,11 @@
  *
  * This is the write-once proof for the editor: the document, the tokenizers, the undo history, the
  * controller and the KEYMAP are all eqc output from the same C# the macOS host runs, and this drives
- * them the way a browser does — a keydown with modifier flags, a pointerdown with client coordinates.
- * Nothing here reimplements a single editor behaviour, which is the whole point: the moment it had
- * to, the two targets would have started to drift.
+ * them the way a browser does. The keyboard types through the surface's INPUT, a real textarea: a
+ * keydown for what the keymap claims, a `beforeinput` for the text the platform decided on, the
+ * composition events of an input method, the clipboard's own events. The pointer presses the
+ * surface. Nothing here reimplements a single editor behaviour, which is the whole point: the
+ * moment it had to, the two targets would have started to drift.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -43,35 +45,90 @@ function surfaceFor(code: string) {
   return { editor, lowered, changed: () => changes };
 }
 
-/** Fires the surface's own keydown handler the way the browser would. */
-function press(
-  lowered: HtmlNode,
-  key: string,
-  modifiers: { shift?: boolean; alt?: boolean; meta?: boolean } = {},
-) {
+/** The surface's INPUT — the textarea the keyboard types through. */
+function inputOf(lowered: HtmlNode): HtmlNode {
+  return lowered.children.find((c) => c.tag === 'textarea')!;
+}
+
+/** Fires an event on the surface's input, and answers whether it was prevented. */
+function fire(lowered: HtmlNode, type: string, event: Record<string, unknown>): boolean {
   let prevented = false;
-  const event = {
-    key,
-    shiftKey: modifiers.shift === true,
-    altKey: modifiers.alt === true,
-    metaKey: modifiers.meta === true,
-    ctrlKey: false,
+  const full = {
+    ...event,
+    target: { value: '' },
     preventDefault: () => {
       prevented = true;
     },
   };
-  (lowered.events['keydown'] as unknown as (e: unknown) => void)(event);
+  (inputOf(lowered).events[type] as unknown as (e: unknown) => void)(full);
   return prevented;
 }
 
-describe('code surface (web)', () => {
-  it('is focusable and says what it is', () => {
-    const { lowered } = surfaceFor('var x = 1;');
+/** A key the way the browser reports one to the input, and whether the editor CLAIMED it. */
+function press(
+  lowered: HtmlNode,
+  key: string,
+  modifiers: { shift?: boolean; alt?: boolean; meta?: boolean; ctrl?: boolean; composing?: boolean } = {},
+) {
+  return fire(lowered, 'keydown', {
+    key,
+    shiftKey: modifiers.shift === true,
+    altKey: modifiers.alt === true,
+    metaKey: modifiers.meta === true,
+    ctrlKey: modifiers.ctrl === true,
+    isComposing: modifiers.composing === true,
+    keyCode: modifiers.composing === true ? 229 : 0,
+  });
+}
 
-    expect(lowered.tag).toBe('div');
-    expect(lowered.attributes['tabindex']).toBe('0');
-    expect(lowered.attributes['role']).toBe('textbox');
-    expect(lowered.attributes['aria-multiline']).toBe('true');
+/** Text the platform decided the user typed — what `beforeinput` carries, never the keydown. */
+function type(lowered: HtmlNode, text: string) {
+  for (const c of text) fire(lowered, 'beforeinput', { inputType: 'insertText', data: c });
+}
+
+describe('code surface (web)', () => {
+  it('types through an input of its own, which says what it is', () => {
+    const { lowered } = surfaceFor('var x = 1;');
+    const input = inputOf(lowered);
+
+    // A real textarea: an input method opens its window at it, a phone raises its keyboard for
+    // it, and a screen reader meets a multi-line text field.
+    expect(input.tag).toBe('textarea');
+    expect(input.attributes['aria-multiline']).toBe('true');
+    // No role description: a string the runtime writes is English for every reader, and the name
+    // it announces is the app's own label, in the app's language.
+    expect(input.attributes['aria-roledescription']).toBeUndefined();
+    expect(input.attributes['spellcheck']).toBe('false');
+    // The surface around it is not a second tab stop.
+    expect(lowered.attributes['tabindex']).toBeUndefined();
+  });
+
+  it('keeps its input at the caret, so a candidate window opens where the text goes', () => {
+    const { editor, lowered } = surfaceFor('one\ntwo');
+    editor.selection = new CodeRange(new CodePosition(1, 2));
+    const redrawn = lowerVisualNode(
+      new CodeSurface(new Text('', 'labelSmall'), editor) as never,
+      { textPrimary: photonTheme.textPrimary, componentContext: { theme: photonTheme, typeScale: 1 } },
+    );
+
+    expect(inputOf(redrawn).attributes['style']).toContain(`left:${12 + 2 * COLUMN}px`);
+    expect(inputOf(redrawn).attributes['style']).toContain(`top:${12 + 1 * LINE}px`);
+    expect(lowered).toBeDefined();
+  });
+
+  // In the shared px() spelling (C# TokenCss.Px), so the day the server writes this surface it can
+  // write the same bytes: hydration keeps the server's markup, and adopts only what reads alike.
+  it('spells its caret and its input with the shared px formatter', () => {
+    const { editor } = surfaceFor('one\ntwo');
+    editor.selection = new CodeRange(new CodePosition(1, 2));
+    const node = lowerVisualNode(
+      new CodeSurface(new Text('', 'labelSmall'), editor) as never,
+      { textPrimary: photonTheme.textPrimary, componentContext: { theme: photonTheme, typeScale: 1 } },
+    );
+
+    const caret = node.children.find((c) => c.attributes['class'] === 'eq-code-caret')!;
+    expect(caret.attributes['style']).toContain('position:absolute;left:28px;top:30px;width:2px;height:18px;');
+    expect(inputOf(node).attributes['style']).toBe('left:28px;top:30px;height:18px;');
   });
 
   /**
@@ -111,27 +168,29 @@ describe('code surface (web)', () => {
     expect(lowered).toBeDefined();
   });
 
-  it('draws ONE BAND PER LINE of a selection, never one rectangle over the range', () => {
+  it('answers ONE BAND PER LINE of a selection, never one rectangle over the range', () => {
     const { editor } = surfaceFor('first line\nsecond\nthird line');
-    editor.selection = {
-      anchor: { line: 0, column: 2 },
-      focus: { line: 2, column: 3 },
-    } as never;
-
+    editor.selection = new CodeRange(new CodePosition(0, 2), new CodePosition(2, 3));
     editor.grid = new CodeGrid(new Point(0, 0), new Size(COLUMN, LINE));
+
+    // The ENGINE's answer, which the component draws in the code's own layers (see the component
+    // case below). The first starts at its column, the middle one is the whole line, and the last
+    // starts at the line's start.
+    const bands = editor.selectionBands;
+    expect(bands).toHaveLength(3);
+    expect(bands[0].x).toBe(2 * COLUMN);
+    expect(bands[2].x).toBe(0);
+  });
+
+  it('draws no selection of its own: the component draws it, under the text', () => {
+    const { editor } = surfaceFor('one\ntwo');
+    editor.selectAll();
     const node = lowerVisualNode(
       new CodeSurface(new Text('', 'labelSmall'), editor) as never,
-      {
-        textPrimary: photonTheme.textPrimary,
-        componentContext: { theme: photonTheme, typeScale: 1 },
-      },
+      { textPrimary: photonTheme.textPrimary, componentContext: { theme: photonTheme, typeScale: 1 } },
     );
 
-    const bands = node.children.filter((c) => c.attributes['class'] === 'eq-code-selection');
-    expect(bands).toHaveLength(3);
-    // The first starts at its column; the last ends at its own; the middle one is the whole line.
-    expect(bands[0].attributes['style']).toContain(`left:${2 * COLUMN}px`);
-    expect(bands[2].attributes['style']).toContain('left:0px');
+    expect(node.children.some((c) => c.attributes['class'] === 'eq-code-selection')).toBe(false);
   });
 });
 
@@ -140,10 +199,45 @@ describe('code surface keyboard (the SAME keymap the native host calls)', () => 
     const { editor, lowered } = surfaceFor('var x = ');
     editor.selection = { anchor: editor.document.end, focus: editor.document.end } as never;
 
-    press(lowered, '(');
+    type(lowered, '(');
 
     expect(editor.document.text).toBe('var x = ()');
     expect(editor.caret.column).toBe(9);
+  });
+
+  it('takes text from the input, never from the key that produced it', () => {
+    const { editor, lowered } = surfaceFor('');
+
+    // The keydown of a printable key is not the editor's: what it produces is the platform's
+    // business (a dead key, an input method, "á" from three events), and it arrives as input.
+    expect(press(lowered, 'a')).toBe(false);
+    expect(editor.document.text).toBe('');
+
+    type(lowered, 'a');
+    expect(editor.document.text).toBe('a');
+  });
+
+  // AltGr IS Ctrl+Alt on Windows, so `{ [ @` on a European layout arrived as a Ctrl chord and the
+  // old keydown path, which typed only without Ctrl, dropped them. The chord is not the editor's,
+  // and the character arrives as input like any other.
+  it('takes what AltGr types, which arrives as a Ctrl+Alt chord', () => {
+    const { editor, lowered } = surfaceFor('');
+
+    expect(press(lowered, '{', { ctrl: true, alt: true })).toBe(false);
+    type(lowered, '{');
+
+    expect(editor.document.text.startsWith('{')).toBe(true);
+  });
+
+  it("takes a soft keyboard's Enter and Backspace, which arrive as input rather than as keys", () => {
+    const { editor, lowered } = surfaceFor('ab');
+    editor.selection = new CodeRange(new CodePosition(0, 2));
+
+    fire(lowered, 'beforeinput', { inputType: 'deleteContentBackward' });
+    expect(editor.document.text).toBe('a');
+
+    fire(lowered, 'beforeinput', { inputType: 'insertLineBreak' });
+    expect(editor.document.lines).toEqual(['a', '']);
   });
 
   it('Enter keeps the indentation and steps into a block', () => {
@@ -165,7 +259,7 @@ describe('code surface keyboard (the SAME keymap the native host calls)', () => 
 
   it('undo takes back a RUN of typing, not one letter', () => {
     const { editor, lowered } = surfaceFor('');
-    for (const c of 'hello') press(lowered, c);
+    type(lowered, 'hello');
     expect(editor.document.text).toBe('hello');
 
     press(lowered, 'z', { meta: true });
@@ -194,7 +288,7 @@ describe('code surface keyboard (the SAME keymap the native host calls)', () => 
 
   it('reports every change so the component can rebuild', () => {
     const { lowered, changed } = surfaceFor('');
-    for (const c of 'abc') press(lowered, c);
+    type(lowered, 'abc');
 
     expect(changed()).toBe(3);
   });
@@ -203,6 +297,176 @@ describe('code surface keyboard (the SAME keymap the native host calls)', () => 
     const { lowered } = surfaceFor('code');
     expect(press(lowered, 'F5')).toBe(false);
     expect(press(lowered, 'Escape')).toBe(false);
+  });
+
+  // An editor TAKES Tab, and a keyboard user must still be able to leave it: Escape releases the
+  // trap, so the next Tab moves on instead of indenting, and any other key sets it again.
+  it('lets Escape release Tab, so a keyboard user can leave', () => {
+    const { editor, lowered } = surfaceFor('one');
+
+    press(lowered, 'Escape');
+    expect(press(lowered, 'Tab')).toBe(false);
+    expect(editor.document.text).toBe('one');
+
+    press(lowered, 'ArrowRight');
+    expect(press(lowered, 'Tab')).toBe(true);
+  });
+
+  it('leaves the keys an input method is using alone', () => {
+    const { editor, lowered } = surfaceFor('one');
+
+    // Enter picks a candidate while a composition is open; it must not also break the line.
+    expect(press(lowered, 'Enter', { composing: true })).toBe(false);
+    expect(editor.document.text).toBe('one');
+  });
+});
+
+/**
+ * An INPUT METHOD, the way a browser reports one: the composition grows in the document, is shown
+ * underlined, and a commit lands as ONE edit however many steps the candidate window went through.
+ */
+describe('code surface composition (an input method, through the same model)', () => {
+  it('shows the composition in the document while it grows', () => {
+    const { editor, lowered } = surfaceFor('a');
+    editor.selection = new CodeRange(new CodePosition(0, 1));
+
+    fire(lowered, 'compositionupdate', { data: 'k' });
+    fire(lowered, 'compositionupdate', { data: 'ka' });
+
+    expect(editor.document.text).toBe('aka');
+    expect(editor.composition).not.toBeNull();
+  });
+
+  it('commits as one edit, which one undo takes back', () => {
+    const { editor, lowered } = surfaceFor('a');
+    editor.selection = new CodeRange(new CodePosition(0, 1));
+
+    fire(lowered, 'compositionupdate', { data: 'k' });
+    fire(lowered, 'compositionupdate', { data: 'ka' });
+    fire(lowered, 'compositionend', { data: 'か' });
+    expect(editor.document.text).toBe('aか');
+    expect(editor.composition).toBeNull();
+
+    press(lowered, 'z', { meta: true });
+    expect(editor.document.text).toBe('a');
+  });
+
+  it('leaves the document as it was when the composition is cancelled', () => {
+    const { editor, lowered } = surfaceFor('a');
+    editor.selection = new CodeRange(new CodePosition(0, 1));
+
+    fire(lowered, 'compositionupdate', { data: 'x' });
+    fire(lowered, 'compositionend', { data: '' });
+
+    expect(editor.document.text).toBe('a');
+    expect(editor.composition).toBeNull();
+  });
+
+  /**
+   * A commit is taken ONCE. The spec's order ends a composition with compositionend and no text of
+   * its own as input, but a browser that also sends the committed text as an insertText, before
+   * compositionend or right after it, put it in twice. Found in review.
+   */
+  it('commits once when the browser also sends the committed text as input, right after', () => {
+    const { editor, lowered } = surfaceFor('a');
+    editor.selection = new CodeRange(new CodePosition(0, 1));
+
+    fire(lowered, 'compositionupdate', { data: 'か' });
+    fire(lowered, 'compositionend', { data: 'か' });
+    const echo = fire(lowered, 'beforeinput', { inputType: 'insertText', data: 'か', isComposing: false });
+
+    expect(editor.document.text).toBe('aか');
+    // Cancelled, so the input the keyboard types through stays empty.
+    expect(echo).toBe(true);
+  });
+
+  it('commits once when that input arrives before compositionend, whatever it says it is', () => {
+    for (const isComposing of [true, false]) {
+      const { editor, lowered } = surfaceFor('a');
+      editor.selection = new CodeRange(new CodePosition(0, 1));
+
+      fire(lowered, 'compositionupdate', { data: 'か' });
+      fire(lowered, 'beforeinput', { inputType: 'insertText', data: 'か', isComposing });
+      fire(lowered, 'compositionend', { data: 'か' });
+
+      expect(editor.document.text).toBe('aか');
+      expect(editor.composition).toBeNull();
+    }
+  });
+
+  it('makes the commit an undo step of its own, joined to neither side', () => {
+    const { editor, lowered } = surfaceFor('');
+
+    type(lowered, 'a');
+    fire(lowered, 'compositionupdate', { data: 'k' });
+    fire(lowered, 'compositionend', { data: 'か' });
+    type(lowered, 'b');
+
+    press(lowered, 'z', { meta: true });
+    expect(editor.document.text).toBe('aか');
+    press(lowered, 'z', { meta: true });
+    expect(editor.document.text).toBe('a');
+  });
+
+  it('takes the same text as typing when it comes on a later turn', async () => {
+    const { editor, lowered } = surfaceFor('a');
+    editor.selection = new CodeRange(new CodePosition(0, 1));
+
+    fire(lowered, 'compositionupdate', { data: 'か' });
+    fire(lowered, 'compositionend', { data: 'か' });
+    // A person cannot type inside the task that committed: the next turn is typing again.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    fire(lowered, 'beforeinput', { inputType: 'insertText', data: 'か', isComposing: false });
+
+    expect(editor.document.text).toBe('aかか');
+  });
+
+  it('starts with no composition — null, as C# starts it, never undefined', () => {
+    // A nullable field with no initializer came out UNASSIGNED in the twin, which a strict tsc
+    // refuses and `=== null` calls a value. It starts null now, on both sides.
+    expect(new CodeEditorController('x').composition).toBeNull();
+  });
+});
+
+/** The CLIPBOARD, through the browser's own copy, cut and paste events, which carry the text. */
+describe('code surface clipboard', () => {
+  const clip = (lowered: HtmlNode, type: 'copy' | 'cut' | 'paste', text = '') => {
+    let written = '';
+    fire(lowered, type, {
+      clipboardData: {
+        getData: () => text,
+        setData: (_: string, value: string) => {
+          written = value;
+        },
+      },
+    });
+    return written;
+  };
+
+  it('copies the selection, or the whole line when nothing is selected', () => {
+    const { editor, lowered } = surfaceFor('one\ntwo');
+    editor.selection = new CodeRange(new CodePosition(0, 0), new CodePosition(0, 2));
+    expect(clip(lowered, 'copy')).toBe('on');
+
+    editor.selection = new CodeRange(new CodePosition(1, 1));
+    expect(clip(lowered, 'copy')).toBe('two\n');
+  });
+
+  it('pastes a whole-line copy as a line of its own, above the caret', () => {
+    const { editor, lowered } = surfaceFor('one\ntwo');
+    editor.selection = new CodeRange(new CodePosition(0, 1));
+    const line = clip(lowered, 'copy');
+
+    editor.selection = new CodeRange(new CodePosition(1, 2));
+    clip(lowered, 'paste', line);
+
+    expect(editor.document.lines).toEqual(['one', 'one', 'two']);
+  });
+
+  it('leaves the copy keys to those events, instead of cancelling the event that carries the text', () => {
+    const { lowered } = surfaceFor('one');
+    expect(press(lowered, 'c', { meta: true })).toBe(false);
+    expect(press(lowered, 'v', { meta: true })).toBe(false);
   });
 });
 
@@ -224,12 +488,14 @@ function pointer(
     getBoundingClientRect: () => ({ left: 0, top: 0 }),
     setPointerCapture: () => {},
     releasePointerCapture: () => {},
-    focus: () => {},
+    // The press gives the keyboard to the surface's input.
+    querySelector: () => ({ focus: () => {} }),
   };
   const event = {
     clientX: x,
     clientY: y,
     currentTarget: target,
+    preventDefault: () => {},
     pointerId: 1,
     pointerType: options.pointerType ?? 'mouse',
     detail: options.detail ?? 1,
@@ -461,14 +727,13 @@ describe('components centre like nodes', () => {
  * looked correct and the screen said nothing about where you were typing.
  */
 describe('the marks are painted, not merely placed', () => {
-  const surfaceWith = (caretColor?: unknown, selectionColor?: unknown) => {
+  const surfaceWith = (caretColor?: unknown) => {
     const editor = new CodeEditorController('let x = 1;\nlet y = 2;', CodeLanguages.for('csharp'));
     editor.grid = new CodeGrid(new Point(12, 12), new Size(COLUMN, LINE));
     editor.selectAll();
     return lowerVisualNode(
       new CodeSurface(new Text('', 'labelSmall'), editor, {
         caretColor,
-        selectionColor,
       }) as never,
       {
         textPrimary: photonTheme.textPrimary,
@@ -507,17 +772,83 @@ describe('the marks are painted, not merely placed', () => {
     expect(styleOf(surfaceWith(ink), 'eq-code-caret')).toContain('background-color:#c9d4de');
   });
 
-  it('washes the selection band to 28% — the C# SelectionAlpha twin', () => {
-    const blue = {
-      light: { r: 0x00, g: 0x50, b: 0xa0, a: 255 },
-      dark: { r: 0x00, g: 0x50, b: 0xa0, a: 255 },
+});
+
+/**
+ * The SELECTION is the component's to draw, in the code's own mark layer: the active line's wash,
+ * then the matches, then the band, all under the text. Painted by the realizer on top of everything,
+ * the band sat under whatever layer the block raised and vanished with the caret beside a bracket,
+ * and on Photon the active line's opaque wash covered the band on the line you were on.
+ */
+describe('the component draws the selection, under the text', () => {
+  // Down through the NODES and into every component on the way, built the way the renderer builds
+  // it: the editor hands its block over as a component, and the marks live in the block's tree.
+  const walk = (node: unknown, context: unknown, visit: (n: Record<string, unknown>) => void): void => {
+    if (!node || typeof node !== 'object') return;
+    const n = node as Record<string, unknown> & { build?: (c: unknown) => unknown };
+    visit(n);
+    if (typeof n.build === 'function' && !('nodeKind' in n && n.nodeKind !== 'component'))
+      walk(n.build(context), context, visit);
+    if (n.child) walk(n.child, context, visit);
+    if (Array.isArray(n.children)) for (const c of n.children) walk(c, context, visit);
+  };
+
+  it('washes each band to 28% (CodeBlock.SelectionAlpha), one per line of the selection', async () => {
+    const { materializeTheme } = await import('./theme-bridge');
+    const photonData = (await import('./theme-bridge.photon.json')).default;
+    const { CodeEditor } = await import('./components/CodeEditor');
+    const theme = materializeTheme(photonData as never);
+    setPhotonTheme(theme);
+    const component = new CodeEditor('one\ntwo\nthree', 'csharp');
+    const context = {
+      theme,
+      density: 'comfortable',
+      measureText: (text: string) => text.length * 7,
+      monoAdvance: () => 7,
+    };
+    component.build(context as never);
+    component.editor.selection = new CodeRange(new CodePosition(0, 1), new CodePosition(2, 2));
+    const tree = component.build(context as never);
+
+    // 255 × 0.28 = 71.4 → 71: the band only has to be SEEN, the text is drawn over it.
+    const bands: unknown[] = [];
+    walk(tree, context, (n) => {
+      const style = n.style as { background?: { light?: { a?: number } } } | undefined;
+      if (style?.background?.light?.a === 71) bands.push(n);
+    });
+    expect(bands).toHaveLength(3);
+    setPhotonTheme(photonTheme);
+  });
+
+  // The test above builds twice, and the first build was a workaround: the block read the bands
+  // before the build handed the engine its grid, so a selection made before the first build was
+  // drawn on the default grid (at 0,0, off the code by its padding). Found in review.
+  it('draws the bands on the grid its own build measured, from the first build on', async () => {
+    const { materializeTheme } = await import('./theme-bridge');
+    const photonData = (await import('./theme-bridge.photon.json')).default;
+    const { CodeEditor } = await import('./components/CodeEditor');
+    const theme = materializeTheme(photonData as never);
+    setPhotonTheme(theme);
+    const component = new CodeEditor('one two', 'csharp');
+    component.editor.selection = new CodeRange(new CodePosition(0, 4), new CodePosition(0, 7));
+    const context = {
+      theme,
+      density: 'comfortable',
+      measureText: (text: string) => text.length * 7,
+      monoAdvance: () => 7,
     };
 
-    // 255 × 0.28 = 71.4 → 71 = 0x47. The text reads THROUGH the band; an opaque one hides the line
-    // you just selected.
-    expect(styleOf(surfaceWith(undefined, blue), 'eq-code-selection')).toContain(
-      'background-color:#0050a047',
-    );
+    const tree = component.build(context as never);
+
+    let drawn: { x: number }[] = [];
+    walk(tree, context, (n) => {
+      if (Array.isArray(n.selectionBands) && n.selectionBands.length > 0)
+        drawn = n.selectionBands as { x: number }[];
+    });
+    const grid = component.editor.grid;
+    expect(drawn).toHaveLength(1);
+    expect(drawn[0].x).toBe(grid.origin.x + 4 * grid.cell.width);
+    setPhotonTheme(photonTheme);
   });
 });
 

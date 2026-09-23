@@ -13,6 +13,7 @@ export const sdkNeutralStrings: Record<string, string> = {
   'ChooseDate': "Choose a date",
   'ChooseTime': "Choose a time",
   'ClearSearch': "Clear search",
+  'CodeEditor': "Code editor",
   'CookieConsentBody': "Analytics cookies help us understand how the site is used. Nothing is set until you accept, and declining keeps the site fully usable.",
   'CookieConsentTitle': "We use cookies",
   'DateFormatLetters': "DMY",

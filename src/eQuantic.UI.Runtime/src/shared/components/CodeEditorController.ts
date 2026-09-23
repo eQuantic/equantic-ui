@@ -1,8 +1,8 @@
-import { $eq, CodeDirectionValue, CodeDocument, CodeEdit, CodeGrid, CodeHighlighter, CodeHistory, CodeKeymap, CodeLanguageRules, CodeLanguages, CodeMotionValue, CodePosition, CodeRange, Point, PointerPhaseValue, Rect } from "../runtime-exports";
+import { $eq, CodeDirectionValue, CodeDocument, CodeEdit, CodeGrid, CodeHighlighter, CodeHistory, CodeKeymap, CodeLanguageRules, CodeLanguages, CodeMotionValue, CodePosition, CodeRange, KeyboardConventionValue, Point, PointerPhaseValue, Rect } from "../runtime-exports";
 
 export class CodeEditorController {
     constructor(text: string = '', language: any = null, props?: any) {
-        this._selection = new CodeRange(); this._desiredColumn = -1; this._dragging = false; this._document = CodeDocument.fromText(text);
+        this._selection = new CodeRange(); this._desiredColumn = -1; this._dragging = false; this._revealVersion = 0; this._composition = null; this._compositionReplaced = ''; this._compositionSelection = new CodeRange(); this._wholeLineCopy = null; this._document = CodeDocument.fromText(text);
         this._selection = new CodeRange(CodePosition.start);
         this.highlighter = new CodeHighlighter(language ?? CodeLanguages.plainText); if (props && typeof props === 'object') Object.assign(this, props);
     }
@@ -12,6 +12,11 @@ export class CodeEditorController {
     _desiredColumn: number;
     static caretWidth: number = 2;
     _dragging: boolean;
+    _revealVersion: number;
+    _composition: CodeRange | null;
+    _compositionReplaced: string;
+    _compositionSelection: CodeRange;
+    _wholeLineCopy: string | null;
 
     get document(): CodeDocument {
         return this._document;
@@ -20,8 +25,10 @@ export class CodeEditorController {
     set document(value: CodeDocument) {
         this._document = value;
         this._selection = new CodeRange(this._document.clamp(this._selection.focus));
+        this._composition = null;
         this.highlighter.invalidate();
         this.history.clear();
+        this._revealVersion++;
         this.changed?.(null);
     }
 
@@ -34,6 +41,7 @@ export class CodeEditorController {
         if ($eq.equals(next, this._selection)) return;
         this.history.break();
         this._selection = next;
+        this._revealVersion++;
         this.selectionChanged?.(next);
     }
 
@@ -49,6 +57,7 @@ export class CodeEditorController {
     }
 
     readOnly: boolean = false;
+    tabMovesFocus: boolean = false;
     grid: CodeGrid = CodeGrid.default;
 
     get selectionBands(): Rect[] {
@@ -70,6 +79,14 @@ export class CodeEditorController {
         return [this.caretRect(this.caret)];
     }
 
+    get revealVersion(): number {
+        return this._revealVersion;
+    }
+
+    get composition(): CodeRange | null {
+        return this._composition;
+    }
+
     changed: ((codeEdit: CodeEdit | null) => void) | null = null;
     selectionChanged: ((codeRange: CodeRange) => void) | null = null;
 
@@ -84,14 +101,78 @@ export class CodeEditorController {
         return this._document.clamp(new CodePosition(Math.max(0, line), Math.max(0, column)));
     }
 
-    handleKey(key: string, modifiers: number, clipboard: any) {
-        return CodeKeymap.handle(this, key, modifiers, clipboard);
+    handleKey(key: string, modifiers: number, convention: KeyboardConventionValue, clipboard: any) {
+        return CodeKeymap.handle(this, key, modifiers, convention, clipboard);
     }
 
     handleText(text: string) {
+        if (this.readOnly || text.length === 0) return false;
+        this.tabMovesFocus = false;
+        let committing = !(this._composition == null);
+        this.endComposition();
         let typed = false;
         for (const c of text) typed = $eq.logic.or(typed, this.type(c));
+        if (committing) this.history.break();
         return typed;
+    }
+
+    setComposition(text: string) {
+        if (this.readOnly) return false;
+        let current: any; 
+        if (!((current = this._composition) != null)) {
+            if (text.length === 0) return false;
+            this.history.break();
+            this._compositionSelection = this._selection;
+            let over = new CodeRange(this._document.clamp(this._selection.start), this._document.clamp(this._selection.end));
+            this._compositionReplaced = this._document.textIn(over);
+            this._composition = this.replaceUnrecorded(over, text);
+            return true;
+        }
+        if (text.length === 0) {
+            this.replaceUnrecorded(current, this._compositionReplaced);
+            this._composition = null;
+            this._selection = new CodeRange(this._document.clamp(this._compositionSelection.anchor), this._document.clamp(this._compositionSelection.focus));
+            this._revealVersion++;
+            this.selectionChanged?.(this._selection);
+            return true;
+        }
+        this._composition = this.replaceUnrecorded(current, text);
+        return true;
+    }
+
+    endComposition() {
+        let current: any; 
+        if (!((current = this._composition) != null)) return;
+        this.replaceUnrecorded(current, this._compositionReplaced);
+        this._composition = null;
+        this._selection = new CodeRange(this._document.clamp(this._compositionSelection.anchor), this._document.clamp(this._compositionSelection.focus));
+    }
+
+    replaceUnrecorded(range: CodeRange, text: string) {
+        let caret: any; let ordered = new CodeRange(this._document.clamp(range.start), this._document.clamp(range.end));
+        let removed = this._document.textIn(ordered);
+        let before = this._selection;
+        let next = ($o => (caret = $o.caret, $o.$))(this._document.replace(ordered, text));
+        let line = ordered.start.line;
+        let linesRemoved = ordered.end.line - ordered.start.line;
+        let linesInserted = caret.line - ordered.start.line;
+        this._document = next;
+        this._selection = new CodeRange(caret);
+        this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
+        this._revealVersion++;
+        this._desiredColumn = -1;
+        let edit = new CodeEdit(ordered, removed, text, before, this._selection);
+        this.changed?.(edit);
+        this.selectionChanged?.(this._selection);
+        return new CodeRange(ordered.start, caret);
+    }
+
+    focusChanged(focused: boolean) {
+        this.history.break();
+        this.tabMovesFocus = false;
+        if (focused) return;
+        if (!(this._composition == null)) this.setComposition('');
+        this._dragging = false;
     }
 
     handlePointer(phase: PointerPhaseValue, position: Point, modifiers: number, clicks: number) {
@@ -131,6 +212,7 @@ export class CodeEditorController {
         let linesInserted = caret.line - ordered.start.line;
         this._document = next;
         this._selection = new CodeRange(caret);
+        this._revealVersion++;
         let edit = new CodeEdit(ordered, removed, text, before, this._selection);
         this.history.record(edit);
         this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
@@ -219,6 +301,7 @@ export class CodeEditorController {
             let start = this.moveTo(this.caret, 'word', 'backward');
             return this.apply(new CodeRange(start, this.caret), '');
         }
+        if (motion === 'lineBoundary' && this.caret.column > 0) return this.apply(new CodeRange($eq.withPatch(this.caret, { column: 0 }), this.caret), '');
         let line = this._document.line(this.caret.line);
         let indent = this._document.indentOf(this.caret.line).length;
         if (this.caret.column > 0 && this.caret.column <= indent && this.rules.insertSpaces) {
@@ -383,7 +466,13 @@ export class CodeEditorController {
     }
 
     copyText() {
-        return this._selection.isEmpty ? this._document.line(this.caret.line) + '\n' : this._document.textIn(this._selection);
+        if (!this._selection.isEmpty) {
+            this._wholeLineCopy = null;
+            return this._document.textIn(this._selection);
+        }
+        let line = this._document.line(this.caret.line) + '\n';
+        this._wholeLineCopy = line;
+        return line;
     }
 
     cut() {
@@ -393,11 +482,29 @@ export class CodeEditorController {
         return text;
     }
 
+    paste(text: string) {
+        if (this.readOnly || text.length === 0) return false;
+        this.tabMovesFocus = false;
+        this.endComposition();
+        let normalized = CodeDocument.fromText(text).text;
+        let line: any; 
+        if (this._selection.isEmpty && (line = this._wholeLineCopy) != null && normalized === line) {
+            let caret = this.caret;
+            let lineStart = new CodePosition(caret.line, 0);
+            if (!this.apply(new CodeRange(lineStart), normalized)) return false;
+            this.selection = new CodeRange(new CodePosition(caret.line + 1, caret.column));
+            return true;
+        }
+        return this.insert(text);
+    }
+
     undo() {
         let selection: any; if (this.readOnly) return false;
+        this.endComposition();
         let next = ($o => (selection = $o.selection, $o.$))(this.history.undo(this._document));
         if (next == null) return false;
         this._document = next;
+        this._revealVersion++;
         this._selection = new CodeRange(next.clamp(selection.anchor), next.clamp(selection.focus));
         this.highlighter.invalidate();
         this.changed?.(null);
@@ -407,9 +514,11 @@ export class CodeEditorController {
 
     redo() {
         let selection: any; if (this.readOnly) return false;
+        this.endComposition();
         let next = ($o => (selection = $o.selection, $o.$))(this.history.redo(this._document));
         if (next == null) return false;
         this._document = next;
+        this._revealVersion++;
         this._selection = new CodeRange(next.clamp(selection.anchor), next.clamp(selection.focus));
         this.highlighter.invalidate();
         this.changed?.(null);

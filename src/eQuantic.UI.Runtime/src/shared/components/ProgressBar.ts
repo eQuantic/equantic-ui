@@ -8,7 +8,7 @@ export class ProgressBar extends StatefulComponent {
     _snapNext: boolean = false;
     _prominent: boolean = false;
     _label: string = '';
-    _valueText: any;
+    _valueText: any = null;
     declare value: any;
     declare variant: VariantValue;
 

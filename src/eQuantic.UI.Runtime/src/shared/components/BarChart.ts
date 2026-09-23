@@ -11,16 +11,16 @@ export class BarChart extends StatefulComponent {
     _values: ValueAxis;
     _layout: string = 'grouped';
     _orientation: string = 'vertical';
-    _title: any;
-    _subtitle: any;
+    _title: any = null;
+    _subtitle: any = null;
     _plotHeight: number = 0;
     _hidden: boolean[];
     _hover: number = -1;
     _pointerX: number = 0;
     _pointerY: number = 0;
     _table: boolean = false;
-    _geometry: any;
-    _theme: any;
+    _geometry: any = null;
+    _theme: any = null;
 
     constructor(series?: any, categories?: any, values: any = null, layout: any = 'grouped', orientation: any = 'vertical', title: any = null, subtitle: any = null, plotHeight: any = BarChart.defaultPlotHeight, props?: any) {
         super();

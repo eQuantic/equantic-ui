@@ -333,6 +333,155 @@ public class CodeEditorSurfaceTests
         host.CursorAt(code.X - 4, code.Y + 4).Should().Be(CursorShape.Default);
     }
 
+    // ---- the platform's input ---------------------------------------------------------------------
+
+    /// <summary>
+    /// An input method, through the host: the marked text is IN the document while it is composed,
+    /// and the commit lands as one edit. The host tracked a composition it never showed; the model
+    /// shows it now, underlined, where it will land.
+    /// </summary>
+    [Fact]
+    public void AnInputMethodComposesInTheDocument_AndCommitsAsOneEdit()
+    {
+        var (host, surface, bounds) = Open("ab");
+        Focus(host, surface, bounds);
+        surface.Engine().Selection = new CodeRange(new CodePosition(0, 1));
+
+        host.SetMarkedText("k");
+        host.RenderFrame(new DisplayListBuilder());
+        surface.Engine().Document.Text.Should().Be("akb");
+        surface.Engine().Composition.Should().NotBeNull();
+
+        // The marked text GROWS in place: marking is not committing, so the second one replaces
+        // the first rather than landing beside it.
+        host.SetMarkedText("ka");
+        host.RenderFrame(new DisplayListBuilder());
+        surface.Engine().Document.Text.Should().Be("akab");
+        surface.Engine().Composition.Should().NotBeNull();
+
+        // The platform's commit, through the door its input client calls.
+        host.CommitText("か");
+        host.RenderFrame(new DisplayListBuilder());
+        surface.Engine().Document.Text.Should().Be("aかb");
+        surface.Engine().Composition.Should().BeNull();
+        surface.Engine().Undo();
+        surface.Engine().Document.Text.Should().Be("ab");
+    }
+
+    /// <summary>
+    /// A composition the model refuses is one the host does not claim. A read-only editor answers
+    /// false to it, and the host kept the marked text anyway and said so, and the platform asks the
+    /// host, not the model, whether anything is marked. Found in review.
+    /// </summary>
+    [Fact]
+    public void AReadOnlyEditorMarksNothing_AndTheHostDoesNotClaimItDid()
+    {
+        var editor = new CodeEditor("ab", "csharp") { ShowLineNumbers = false, ReadOnly = true };
+        var host = new PhotonHost(editor, PhotonTheme.Instance, ThemeMode.Light, 400, 300,
+            new FixedWidthMeasurer())
+        {
+            TextRasterizer = new FixedWidthRasterizer(),
+        };
+        host.RenderFrame(new DisplayListBuilder());
+        var region = host.RenderFrame(new DisplayListBuilder()).CodeRegions.Single();
+        Focus(host, region.Surface, region.Bounds);
+
+        host.SetMarkedText("k").Should().BeFalse("the model refused it");
+        host.HasMarkedText.Should().BeFalse("the platform asks the host whether anything is marked");
+        region.Surface.Engine().Document.Text.Should().Be("ab");
+        host.SetMarkedText("").Should().BeTrue("a cancellation still clears the host's own marker");
+    }
+
+    [Fact]
+    public void LeavingTheEditorCancelsAComposition()
+    {
+        var (host, surface, bounds) = Open("ab");
+        Focus(host, surface, bounds);
+        surface.Engine().Selection = new CodeRange(new CodePosition(0, 1));
+        host.SetMarkedText("x");
+        host.RenderFrame(new DisplayListBuilder());
+
+        // A press on empty space ends editing, as in every form on every platform.
+        host.PressDown(bounds.X + 2, bounds.Y + bounds.Height + 30);
+        host.PressUp(bounds.X + 2, bounds.Y + bounds.Height + 30);
+        host.RenderFrame(new DisplayListBuilder());
+
+        surface.Engine().Document.Text.Should().Be("ab");
+        surface.Engine().Composition.Should().BeNull();
+    }
+
+    /// <summary>
+    /// A caret the keyboard moved out of the viewport is brought back into it. Arrowing past the
+    /// bottom of a code viewport on Photon left you typing somewhere you could not see; the browser
+    /// already scrolled its caret into view, and now both hosts do it for the model's reason, the
+    /// caret having MOVED.
+    /// </summary>
+    [Fact]
+    public void ACaretMovedPastTheViewportIsBroughtIntoView()
+    {
+        var code = string.Join("\n", Enumerable.Range(0, 80).Select(i => $"line {i}"));
+        var editor = new CodeEditor(code, "csharp") { ShowLineNumbers = false, MaxHeight = 120 };
+        var host = new PhotonHost(editor, PhotonTheme.Instance, ThemeMode.Light, 400, 300,
+            new FixedWidthMeasurer())
+        {
+            TextRasterizer = new FixedWidthRasterizer(),
+        };
+        host.RenderFrame(new DisplayListBuilder());
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        var region = frame.CodeRegions.Single();
+        Focus(host, region.Surface, region.Bounds);
+
+        for (var i = 0; i < 20; i++) Press(host, "ArrowDown");
+        host.RenderFrame(new DisplayListBuilder());
+        var after = host.RenderFrame(new DisplayListBuilder());
+
+        var viewport = after.ScrollRegions.First(r => r.Axis == ScrollAxis.Vertical
+            && region.Path.StartsWith(r.Path, StringComparison.Ordinal));
+        host.ScrollOffsetOf(viewport.Path).Should().BeGreaterThan(0, "the viewport followed the caret");
+
+        var code2 = after.CodeRegions.Single();
+        var caretY = code2.Bounds.Y + code2.Surface.Model.Carets[0].Y;
+        caretY.Should().BeInRange(viewport.Bounds.Y, viewport.Bounds.Y + viewport.Bounds.Height);
+    }
+
+    [Fact]
+    public void TheHostSaysWhichKeyboardTraditionItsUsersLiveIn()
+    {
+        var editor = new CodeEditor("one two three", "csharp") { ShowLineNumbers = false };
+        var host = new PhotonHost(editor, PhotonTheme.Instance, ThemeMode.Light, 400, 300,
+            new FixedWidthMeasurer())
+        {
+            TextRasterizer = new FixedWidthRasterizer(),
+            KeyboardConvention = KeyboardConvention.Standard,
+        };
+        host.RenderFrame(new DisplayListBuilder());
+        var region = host.RenderFrame(new DisplayListBuilder()).CodeRegions.Single();
+        Focus(host, region.Surface, region.Bounds);
+        region.Surface.Engine().Selection = new CodeRange(new CodePosition(0, 13));
+
+        Press(host, "ArrowLeft", KeyModifiers.Command);
+
+        region.Surface.Engine().Caret.Column.Should().Be(8, "Ctrl+← is one word back outside Apple's");
+    }
+
+    [Fact]
+    public void AnEditorWithNoCaptionIsNamedInTheLanguageOfItsInterface()
+    {
+        // The name was a literal, so a Portuguese screen reader heard "Code editor" in a window
+        // that said everything else in Portuguese.
+        var previous = System.Globalization.CultureInfo.CurrentUICulture;
+        try
+        {
+            System.Globalization.CultureInfo.CurrentUICulture =
+                System.Globalization.CultureInfo.GetCultureInfo("pt-BR");
+            Open("var x = 1;").Surface.Label.Should().Be("Editor de código");
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentUICulture = previous;
+        }
+    }
+
     private static bool Covers(Rect outer, Rect inner) =>
         outer.X <= inner.X + 0.01f && outer.Y <= inner.Y + 0.01f
         && outer.X + outer.Width >= inner.X + inner.Width - 0.01f

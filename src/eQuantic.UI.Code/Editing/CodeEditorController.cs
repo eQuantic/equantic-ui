@@ -41,8 +41,10 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         {
             _document = value;
             _selection = new CodeRange(_document.Clamp(_selection.Focus));
+            _composition = null;
             Highlighter.Invalidate();
             History.Clear();
+            _revealVersion++;
             Changed?.Invoke(null);
         }
     }
@@ -59,6 +61,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             // because a person who moved and typed did two things.
             History.Break();
             _selection = next;
+            _revealVersion++;
             SelectionChanged?.Invoke(next);
         }
     }
@@ -72,6 +75,13 @@ public sealed class CodeEditorController : ICodeSurfaceModel
 
     /// <summary>Whether edits are refused — a viewer, a diff pane, a running debugger.</summary>
     public bool ReadOnly { get; set; }
+
+    /// <summary>
+    /// Whether the next Tab LEAVES the editor instead of indenting. Escape sets it — the one way out
+    /// a keyboard user has from a surface that takes Tab — and any other key, or coming back into
+    /// the editor, clears it (see <see cref="CodeKeymap"/>).
+    /// </summary>
+    public bool TabMovesFocus { get; set; }
 
     /// <summary>
     /// Raised after every change, with the edit that caused it — null when the whole document was
@@ -104,7 +114,12 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// <summary>Whether a press that began on the surface is still drawing a selection.</summary>
     private bool _dragging;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// The selection, as one band per line it covers, in the surface's own coordinates — drawn by the
+    /// COMPONENT in the code's own layers, under the text and over the active line, so it reads the
+    /// same on every target. A single rectangle over a multi-line range would cover the indentation of
+    /// lines the range never touched, which is why these are per line.
+    /// </summary>
     public IReadOnlyList<Rect> SelectionBands
     {
         get
@@ -131,6 +146,11 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// <inheritdoc />
     public IReadOnlyList<Rect> Carets => [CaretRect(Caret)];
 
+    private int _revealVersion;
+
+    /// <inheritdoc />
+    public int RevealVersion => _revealVersion;
+
     /// <summary>Where a caret at <paramref name="position"/> is drawn, in the surface's coordinates.</summary>
     public Rect CaretRect(CodePosition position)
     {
@@ -152,15 +172,132 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     }
 
     /// <inheritdoc />
-    public bool HandleKey(string key, KeyModifiers modifiers, ITextClipboard? clipboard) =>
-        CodeKeymap.Handle(this, key, modifiers, clipboard);
+    public bool HandleKey(string key, KeyModifiers modifiers, KeyboardConvention convention,
+        ITextClipboard? clipboard) =>
+        CodeKeymap.Handle(this, key, modifiers, convention, clipboard);
 
     /// <inheritdoc />
     public bool HandleText(string text)
     {
+        if (ReadOnly || text.Length == 0) return false;
+        TabMovesFocus = false;
+        // An input method's commit REPLACES what it was composing: the composition comes out first,
+        // so the commit is one ordinary edit from the document the composition began over — one undo
+        // step, whatever the candidate window went through on the way.
+        var committing = _composition is not null;
+        EndComposition();
         var typed = false;
         foreach (var c in text) typed |= Type(c);
+        // A step of its OWN, after as well as before (SetComposition broke the run it began at):
+        // the typing that follows a commit does not join it.
+        if (committing) History.Break();
         return typed;
+    }
+
+    // ---- composition (an input method building text) -----------------------------------------
+
+    /// <summary>Where the composition in flight sits in the document, or null when there is none —
+    /// what the component underlines.</summary>
+    public CodeRange? Composition => _composition;
+
+    private CodeRange? _composition;
+
+    /// <summary>What the composition replaced when it began (the selection typed over) — put back
+    /// if it is cancelled.</summary>
+    private string _compositionReplaced = "";
+
+    /// <summary>The selection the composition began over — restored if it is cancelled.</summary>
+    private CodeRange _compositionSelection;
+
+    /// <summary>
+    /// The composition an input method is building. It lives IN the document while it grows — so
+    /// the line reflows around it, the highlighter colours it and the caret sits after it, exactly
+    /// as the committed text will — but none of its steps reaches the undo history: a commit is
+    /// recorded as one edit (<see cref="HandleText"/>), and a cancellation leaves no trace at all.
+    /// </summary>
+    public bool SetComposition(string text)
+    {
+        if (ReadOnly) return false;
+        if (_composition is not { } current)
+        {
+            if (text.Length == 0) return false;
+            // The run of typing it began at ends here, or the commit would coalesce with it and one
+            // undo would take both.
+            History.Break();
+            // Composing over a selection replaces it, as typing does.
+            _compositionSelection = _selection;
+            var over = new CodeRange(_document.Clamp(_selection.Start), _document.Clamp(_selection.End));
+            _compositionReplaced = _document.TextIn(over);
+            _composition = ReplaceUnrecorded(over, text);
+            return true;
+        }
+
+        if (text.Length == 0)
+        {
+            // Cancelled: the document goes back to what it was before the composition began.
+            ReplaceUnrecorded(current, _compositionReplaced);
+            _composition = null;
+            _selection = new CodeRange(_document.Clamp(_compositionSelection.Anchor),
+                _document.Clamp(_compositionSelection.Focus));
+            _revealVersion++;
+            SelectionChanged?.Invoke(_selection);
+            return true;
+        }
+
+        _composition = ReplaceUnrecorded(current, text);
+        return true;
+    }
+
+    /// <summary>Takes the composition out again, restoring what it replaced, so an edit can be made
+    /// from the document as it was. Nothing happens when nothing is composing.</summary>
+    private void EndComposition()
+    {
+        if (_composition is not { } current) return;
+        ReplaceUnrecorded(current, _compositionReplaced);
+        _composition = null;
+        _selection = new CodeRange(_document.Clamp(_compositionSelection.Anchor),
+            _document.Clamp(_compositionSelection.Focus));
+    }
+
+    /// <summary>
+    /// A replacement that is REAL — the document, the colours and every listener see it — but that
+    /// the undo history does not: a composition's intermediate steps. Answers the range the text
+    /// now occupies.
+    /// </summary>
+    private CodeRange ReplaceUnrecorded(CodeRange range, string text)
+    {
+        var ordered = new CodeRange(_document.Clamp(range.Start), _document.Clamp(range.End));
+        var removed = _document.TextIn(ordered);
+        var before = _selection;
+        var next = _document.Replace(ordered, text, out var caret);
+        var line = ordered.Start.Line;
+        var linesRemoved = ordered.End.Line - ordered.Start.Line;
+        var linesInserted = caret.Line - ordered.Start.Line;
+
+        _document = next;
+        _selection = new CodeRange(caret);
+        Highlighter.LineChanged(_document, line, linesInserted, linesRemoved);
+        _revealVersion++;
+        _desiredColumn = -1;
+        var edit = new CodeEdit(ordered, removed, text, before, _selection);
+        Changed?.Invoke(edit);
+        SelectionChanged?.Invoke(_selection);
+        return new CodeRange(ordered.Start, caret);
+    }
+
+    // ---- focus --------------------------------------------------------------------------------
+
+    /// <inheritdoc />
+    public void FocusChanged(bool focused)
+    {
+        // Leaving or arriving ends the typing run either way: the next character is a new step.
+        History.Break();
+        TabMovesFocus = false;
+        if (focused) return;
+        // A composition cannot survive the keyboard leaving: the platform has already dropped it,
+        // and text still underlined in the document would claim an input method nobody is using.
+        if (_composition is not null) SetComposition("");
+        _dragging = false;
     }
 
     /// <summary>
@@ -220,6 +357,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
 
         _document = next;
         _selection = new CodeRange(caret);
+        _revealVersion++;
         var edit = new CodeEdit(ordered, removed, text, before, _selection);
         History.Record(edit);
         Highlighter.LineChanged(_document, line, linesInserted, linesRemoved);
@@ -351,6 +489,11 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             var start = MoveTo(Caret, CodeMotion.Word, CodeDirection.Backward);
             return Apply(new CodeRange(start, Caret), string.Empty);
         }
+
+        // Everything left of the caret on its line (⌘⌫). At column zero there is nothing to its left
+        // on this line, so it joins the line above, as a plain Backspace would.
+        if (motion == CodeMotion.LineBoundary && Caret.Column > 0)
+            return Apply(new CodeRange(Caret with { Column = 0 }, Caret), string.Empty);
 
         var line = _document.Line(Caret.Line);
         var indent = _document.IndentOf(Caret.Line).Length;
@@ -599,9 +742,17 @@ public sealed class CodeEditorController : ICodeSurfaceModel
 
     /// <summary>What a copy puts on the clipboard: the selection, or the whole line when there is
     /// none — copying with nothing selected takes the line, in every editor worth using.</summary>
-    public string CopyText() => _selection.IsEmpty
-        ? _document.Line(Caret.Line) + "\n"
-        : _document.TextIn(_selection);
+    public string CopyText()
+    {
+        if (!_selection.IsEmpty)
+        {
+            _wholeLineCopy = null;
+            return _document.TextIn(_selection);
+        }
+        var line = _document.Line(Caret.Line) + "\n";
+        _wholeLineCopy = line;
+        return line;
+    }
 
     /// <summary>Cut is copy, then delete — and with no selection it takes the whole line.</summary>
     public string Cut()
@@ -612,14 +763,46 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         return text;
     }
 
+    /// <summary>
+    /// The LINE the last copy or cut took with nothing selected, or null. The clipboard carries text
+    /// and nothing else, so this is how a paste recognises its own whole-line copy: a line copied that
+    /// way goes back in as a line, above the caret's, never into the middle of one.
+    /// </summary>
+    private string? _wholeLineCopy;
+
+    /// <summary>
+    /// Text from the clipboard, placed the way a paste places it: over the selection, or — when it is
+    /// the whole line a copy with nothing selected just took — as a line of its own ABOVE the caret's,
+    /// with the caret staying where it was in its text. Every editor worth using pastes a copied line
+    /// that way; inserting it at the caret splits the line you were on in two.
+    /// </summary>
+    public bool Paste(string text)
+    {
+        if (ReadOnly || text.Length == 0) return false;
+        TabMovesFocus = false;
+        EndComposition();
+        var normalized = CodeDocument.FromText(text).Text;
+        if (_selection.IsEmpty && _wholeLineCopy is { } line && normalized == line)
+        {
+            var caret = Caret;
+            var lineStart = new CodePosition(caret.Line, 0);
+            if (!Apply(new CodeRange(lineStart), normalized)) return false;
+            Selection = new CodeRange(new CodePosition(caret.Line + 1, caret.Column));
+            return true;
+        }
+        return Insert(text);
+    }
+
     // ---- history ------------------------------------------------------------------------------
 
     public bool Undo()
     {
         if (ReadOnly) return false;
+        EndComposition();
         var next = History.Undo(_document, out var selection);
         if (next is null) return false;
         _document = next;
+        _revealVersion++;
         _selection = new CodeRange(next.Clamp(selection.Anchor), next.Clamp(selection.Focus));
         Highlighter.Invalidate();
         Changed?.Invoke(null);
@@ -630,9 +813,11 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     public bool Redo()
     {
         if (ReadOnly) return false;
+        EndComposition();
         var next = History.Redo(_document, out var selection);
         if (next is null) return false;
         _document = next;
+        _revealVersion++;
         _selection = new CodeRange(next.Clamp(selection.Anchor), next.Clamp(selection.Focus));
         Highlighter.Invalidate();
         Changed?.Invoke(null);

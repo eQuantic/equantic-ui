@@ -2,8 +2,8 @@ import { $eq, BuildContext, DateOnly, DatePicker, Flexible, Row, SizeValue, Stat
 
 export class DateTimePicker extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.DateTimePicker';
-    _date: any;
-    _time: any;
+    _date: any = null;
+    _time: any = null;
     static $hydration = { _date: 'dateOnly', _time: 'timeOnly', selected: 'dateTime', min: 'dateTime', max: 'dateTime' };
     declare selected: any;
     declare onChanged: any;

@@ -73,6 +73,19 @@ public sealed class CodeBlock : StatelessComponent
     /// <summary>A line to wash — the caret's line in an editor, a debugger's stop.</summary>
     public int? ActiveLine { get; init; }
 
+    /// <summary>
+    /// The selection, as the engine measured it: one band per line, in the surface's own coordinates
+    /// (<c>CodeEditorController.SelectionBands</c>). Drawn HERE, in the block's own mark layer —
+    /// under the text and over the active line — rather than by a realizer on top of everything:
+    /// painted from outside, a band sat under whatever layer the block raised (a decoration's) and
+    /// vanished the moment the caret touched a bracket.
+    /// </summary>
+    public IReadOnlyList<Rect> SelectionBands { get; init; } = [];
+
+    /// <summary>How much of the selection's ink shows — the band sits under the text, so it only has
+    /// to be seen, never read through.</summary>
+    public const float SelectionAlpha = 0.28f;
+
     /// <summary>Shown top-right, over the code — a file name, a language label.</summary>
     public string? Caption { get; init; }
 
@@ -200,22 +213,62 @@ public sealed class CodeBlock : StatelessComponent
         if (last < Document.LineCount - 1)
             lines.Add(Spacer.Fixed((Document.LineCount - 1 - last) * lineHeight));
 
-        // Decorations are RANGES, and a range is a rectangle: the same column arithmetic the caret
-        // uses. Drawn UNDER the lines, in one layer, so the code reads through them — and drawn
-        // here rather than in a realizer so a read-only block gets them too.
-        VisualNode content = lines;
-        if (Decorations.Count > 0)
+        // The slab's own padding above the first line and below the last, on the LINES rather than on
+        // the block: the mark layer beside them starts at the surface's corner, so every rectangle
+        // the engine answers — in the surface's own coordinates — lands where it says.
+        VisualNode content = new Box(new BoxStyle
         {
-            var decorated = new Stack { Width = SizeValue.Fill };
-            var marks = new Stack { Width = SizeValue.Fill };
-            foreach (var decoration in Decorations)
+            Width = SizeValue.Fill,
+            Padding = EdgeInsets.Symmetric(0, Space.S3),
+        }, lines);
+
+        var width = MathF.Max(codeWidth, ViewportWidth);
+
+        // The MARK LAYER, under the lines. Everything that marks the code without being it lives
+        // here, in one paint order, so it is the same order on every target: the active line's wash,
+        // then the matches, then the selection, then the outlines and the lines under the text. The
+        // text is painted after all of it and reads over it; only the caret, which must blink, is
+        // left to the realizer, which paints it on top.
+        var marks = new Stack { Width = SizeValue.Fill };
+        if (ActiveLine is { } activeLine && activeLine >= 0 && activeLine < Document.LineCount)
+        {
+            marks.Add(new Positioned(new Box(new BoxStyle
             {
-                foreach (var mark in Marks(decoration, metrics, theme))
-                    marks.Add(mark);
+                Width = width,
+                Height = lineHeight,
+                Background = Inverse ? CodeSlabActive : theme.Colors(Variant.Primary).Subtle,
+            }), top: metrics.ContentTop + activeLine * lineHeight, start: 0));
+        }
+        foreach (var decoration in Decorations)
+        {
+            if (decoration.Kind != CodeDecorationKind.Highlight) continue;
+            foreach (var mark in Marks(decoration, metrics, theme)) marks.Add(mark);
+        }
+        if (SelectionBands.Count > 0)
+        {
+            var band = SelectionFor(Inverse, theme).WithOpacity(SelectionAlpha);
+            foreach (var rect in SelectionBands)
+            {
+                marks.Add(new Positioned(new Box(new BoxStyle
+                {
+                    Width = rect.Width,
+                    Height = rect.Height,
+                    Background = band,
+                    CornerRadius = new CornerRadii(1),
+                }), top: rect.Y, start: rect.X));
             }
-            decorated.Add(marks);
-            decorated.Add(lines);
-            content = decorated;
+        }
+        foreach (var decoration in Decorations)
+        {
+            if (decoration.Kind == CodeDecorationKind.Highlight) continue;
+            foreach (var mark in Marks(decoration, metrics, theme)) marks.Add(mark);
+        }
+        if (marks.Children.Count > 0)
+        {
+            var layered = new Stack { Width = SizeValue.Fill };
+            layered.Add(marks);
+            layered.Add(content);
+            content = layered;
         }
 
         // A NUMBER, not a Fill: the two targets disagree about what filling means inside a sideways
@@ -225,8 +278,7 @@ public sealed class CodeBlock : StatelessComponent
         // it in one arithmetic both realizers already agree on.
         VisualNode body = new Box(new BoxStyle
         {
-            Width = SizeValue.Fixed(MathF.Max(codeWidth, ViewportWidth)),
-            Padding = EdgeInsets.Symmetric(0, Space.S3),
+            Width = SizeValue.Fixed(width),
         }, content);
 
         // Bare CONTENT, exactly as wide as the code: no slab, no viewport, no corner. An editor
@@ -403,16 +455,11 @@ public sealed class CodeBlock : StatelessComponent
 
         row.Add(new Box(new BoxStyle { Padding = EdgeInsets.Symmetric(Space.S3, 0) }, code));
 
-        // The wash is the ACTIVE line only now: a decoration is a range, drawn column-accurately
-        // over the whole block rather than as a full-width stripe on whatever line it starts on.
-        var active = ActiveLine == index;
-        if (!active) return row;
-
-        // On the INVERSE slab the theme's light-mode tokens are near-white, and a near-white wash
-        // over dark code reads as a rendering fault rather than "you are here". The slab has its
-        // own pair, one shade off itself.
-        var wash = Inverse ? CodeSlabActive : theme.Colors(Variant.Primary).Subtle;
-        return new Box(new BoxStyle { Width = SizeValue.Fill, Background = wash }, row);
+        // No wash here, not even for the active line: a row's background would paint OVER every mark
+        // under it — the selection on the line you are on first of all. The active line's wash is the
+        // first thing in the mark layer instead (see Build). On the INVERSE slab the theme's
+        // light-mode tokens are near-white, which is why the slab has its own pair for it.
+        return row;
     }
 
     /// <summary>
@@ -448,7 +495,7 @@ public sealed class CodeBlock : StatelessComponent
             if (to <= from) continue;
 
             var left = metrics.ContentLeft + from * metrics.ColumnWidth;
-            var top = line * metrics.LineHeight;
+            var top = metrics.ContentTop + line * metrics.LineHeight;
             var width = (to - from) * metrics.ColumnWidth;
 
             yield return decoration.Kind switch
@@ -475,6 +522,12 @@ public sealed class CodeBlock : StatelessComponent
                     Width = width, Height = 1, Background = color,
                 }), top: top + metrics.LineHeight / 2, start: left),
 
+                // A thin line UNDER it in the code's own ink — text an input method is composing.
+                CodeDecorationKind.Underline => new Positioned(new Box(new BoxStyle
+                {
+                    Width = width, Height = 1, Background = color,
+                }), top: top + metrics.LineHeight - 2, start: left),
+
                 _ => new Positioned(new Box(new BoxStyle
                 {
                     Width = width, Height = metrics.LineHeight, Background = color,
@@ -484,11 +537,12 @@ public sealed class CodeBlock : StatelessComponent
         }
     }
 
-    private static ColorToken DefaultColor(CodeDecorationKind kind, IAppTheme theme) => kind switch
+    private ColorToken DefaultColor(CodeDecorationKind kind, IAppTheme theme) => kind switch
     {
         CodeDecorationKind.Squiggle => theme.Colors(Variant.Destructive).Base,
         CodeDecorationKind.Outline => theme.BorderStrong,
         CodeDecorationKind.Strike => theme.TextMuted,
+        CodeDecorationKind.Underline => InkFor(Inverse, theme),
         _ => theme.Colors(Variant.Warning).Subtle,
     };
 

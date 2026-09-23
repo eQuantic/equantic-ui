@@ -23,6 +23,7 @@ export { num, tokenValue };
 import { DomCanvasPainter } from './canvas-painter';
 import { declareCanvas } from './canvas-surface';
 import { installDraggableController } from '../dom/draggable';
+import { MOUNTED_HOOK } from '../dom/reconciler';
 import { installDragDismissController } from '../dom/drag-dismiss';
 import {
   describeComponentFailure,
@@ -49,7 +50,6 @@ import type {
   BoxNode,
   BoxStyleValue,
   ColorTokenValue,
-  ColorValue,
   ComponentNode,
   CanvasNodeValue,
   DrawingNode,
@@ -159,15 +159,6 @@ export function lowerVisualNode(node: VisualNodeValue, context: LoweringContext)
 
 // ---- token → CSS value formatting (mirrors C# TokenCss) ------------------------------------------
 
-
-/** The same token at a fraction of its alpha — the C# `Color.WithOpacity` twin. */
-function withAlpha(token: ColorTokenValue, alpha: number): ColorTokenValue {
-  const fade = (color: ColorValue): ColorValue => ({
-    ...color,
-    a: dotnetRound(color.a * alpha),
-  });
-  return { light: fade(token.light), dark: fade(token.dark) };
-}
 
 
 /**
@@ -540,26 +531,31 @@ function lowerPresence(
 /** Navigation mirror: a real <a href> (the SPA router intercepts internal clicks) with UA chrome
  * neutralized by the generated .eq-link — the child owns all visuals (the Pressable contract). */
 /**
- * The editable code surface. The child renders the lines; this wraps them in a focusable box and
- * paints the marks the MODEL answers — a band per selected line and a caret per cursor — as
- * absolutely positioned children.
+ * The editable code surface. The child renders the lines and every mark under them — the active
+ * line, the matches, the selection; this wraps them, paints the one mark that blinks (the caret) on
+ * top of all of it, and holds the INPUT the keyboard types into.
  * <p>
  * Nothing about what a key or a click MEANS is decided here, and no column is turned into pixels:
  * the model (`ICodeSurfaceModel`, transpiled from the same C# the native host drives) answers both.
  * This file only turns DOM events into the arguments the model takes and paints the rectangles it
- * hands back. The arithmetic used to live here and again in the native host, and two copies of it
- * had drifted — this side could not drag a selection or shift-click at all.
+ * hands back.
+ * </p>
+ * <p>
+ * TEXT comes through a textarea at the caret, never from `keydown`. A dead key (´ then a), an input
+ * method's candidates, AltGr on a European layout, a phone's soft keyboard, dictation, the emoji
+ * picker: each delivers its text as INPUT, and a surface that read characters off `keydown` lost
+ * every one of them. So `keydown` carries only what the keymap claims as a command, and everything
+ * else is left to become the `beforeinput`, the composition or the paste it really is. The textarea
+ * holds nothing: what reaches it is taken out as an edit of the document.
  * </p>
  */
 function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path: string): HtmlNode {
   const model = node.model;
-  // ATOMISED, like every other node. It used to carry a literal style string, on the reasoning that
-  // "there is no C# twin to agree with — the web realizer has no CodeSurface arm", which made the
-  // dedup worth one element and parity worth nothing. The arm is still absent (the server has no
-  // business rendering the caret this appends, and a tree one element short is a failed adoption),
-  // but the reasoning was never a good one to leave standing: the day it gains an arm, a client
-  // string beside a server class is the hydration mismatch the atomizer exists to prevent, and
-  // that day should not also be the day someone has to remember this.
+  // ATOMISED, like every other node, although the server still writes no arm for it (the measured
+  // reason is at the C# WebLoweringVisitor.Visit(CodeSurface)): the day it does, a client string
+  // beside a server class would be the hydration mismatch the atomizer exists to prevent.
+  // `user-select: none` because a drag here extends the MODEL's selection, and the browser's own
+  // text sweep would paint over the band the component draws.
   const surface = element(
     'div',
     {
@@ -568,8 +564,6 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
       outline: 'none',
       // pre: token runs carry REAL spaces between words — HTML would collapse them.
       'white-space': 'pre',
-      // A drag here extends the MODEL's selection, and the browser's own text sweep would paint a
-      // second one over the band the component draws — the sheet surface's rule, for its reason.
       'user-select': 'none',
       '-webkit-user-select': 'none',
       // The beam, as over any field: the browser shows one over text it can select, and this text
@@ -579,65 +573,177 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     [],
   );
   prependClass(surface, 'eq-code-surface');
-  surface.attributes['tabindex'] = '0';
-  surface.attributes['role'] = 'textbox';
-  surface.attributes['aria-multiline'] = 'true';
-  if (node.label) surface.attributes['aria-label'] = node.label;
-  if (node.autofocus) surface.attributes['autofocus'] = '';
-  // The surface's identity across rebuilds — every keystroke hands over a new element, so anything
-  // that has to find it AFTER the render (see revealCaret) resolves by this, never by a reference.
+  // The surface's identity across rebuilds: anything that has to find it AFTER the render (see
+  // revealCaret) resolves by this, never by a reference.
   surface.attributes['data-eq-code'] = path;
 
   const child = lowerNode(node.child, context, null, path + '/0');
   if (child) {
-    // The child keeps its layers inside a stacking context of its OWN. A code block that carries a
-    // decoration draws it on a Stack whose layers take a z-index, and those climbed over the marks
-    // painted after the child: the caret vanished at the end of every line ending in `)`, `{` or
-    // `}`, because bracket matching decorates the pair the moment the caret touches one (defect 18,
-    // docs/CODE-EDITOR-PLAN.md).
+    // The child keeps its layers (the mark layer under the lines among them) inside a stacking
+    // context of its OWN. A code block that carries a decoration draws it on a Stack whose layers
+    // take a z-index, and those climbed over the caret painted after the child: the caret vanished
+    // at the end of every line ending in `)`, `{` or `}`, because bracket matching decorates the pair
+    // the moment the caret touches one (defect 18, docs/CODE-EDITOR-PLAN.md).
     mergeAtomicDeclaration(child, 'isolation', 'isolate');
     surface.children.push(child);
   }
 
-  // The marks, under the code: a band is translucent so the text reads through it, and a caret sits
-  // between glyphs where nothing covers it. Their ink comes from the NODE — an editor on an inverse
-  // slab writes with an ink of its own, and the page theme's would vanish into the slab.
+  // The caret, on top of everything the child drew. Its ink comes from the NODE — an editor on an
+  // inverse slab writes with an ink of its own, and the page theme's would vanish into the slab.
   const theme = getPhotonTheme();
   const caretInk = tokenValue(node.caretColor ?? theme.textPrimary);
-  const selectionInk = tokenValue(
-    withAlpha(node.selectionColor ?? theme.focusRing, SELECTION_ALPHA),
-  );
-  for (const band of model.selectionBands) {
-    surface.children.push(
-      mark(band.x, band.y, band.width, band.height, 'eq-code-selection', selectionInk, 1),
-    );
-  }
   for (const caret of model.carets) {
     surface.children.push(
       mark(caret.x, caret.y, caret.width, caret.height, 'eq-code-caret', caretInk, 0),
     );
   }
 
+  // THE INPUT, at the primary caret: an input method opens its candidate window where the text
+  // will land, and a phone raises its keyboard for it.
+  const primary = model.carets[0];
+  const input: HtmlNode = {
+    tag: 'textarea',
+    attributes: {
+      class: 'eq-code-input',
+      style: primary
+        ? `left:${px(primary.x)};top:${px(primary.y)};height:${px(primary.height)};`
+        : 'left:0;top:0;',
+      autocomplete: 'off',
+      autocorrect: 'off',
+      autocapitalize: 'off',
+      spellcheck: 'false',
+      'aria-multiline': 'true',
+    },
+    events: {},
+    children: [],
+  };
+  if (node.label) input.attributes['aria-label'] = node.label;
+  if (node.autofocus) {
+    input.attributes['autofocus'] = '';
+    // A textarea mounted after the page loaded never gets the browser's parse-time autofocus.
+    input.events[MOUNTED_HOOK] = ((element: HTMLElement) =>
+      element.focus({ preventScroll: true })) as unknown as EventHandler;
+  }
+  surface.children.push(input);
+
   if (typeof document === 'undefined') return surface; // SSR: the marks are enough
 
+  // A caret the model MOVED since the last render is brought into view — by a key, a command, a
+  // find stepping to a match. The first render of a surface moves nothing: it is where it opened.
+  const revealed = revealedVersions.get(path);
+  revealedVersions.set(path, model.revealVersion);
+  if (revealed !== undefined && revealed !== model.revealVersion) revealCaret(path);
+
   const changed = () => node.onChanged?.();
-  surface.events['keydown'] = ((event: KeyboardEvent) => {
-    const modifiers = modifiersOf(event);
-    if (model.handleKey(event.key, modifiers, webClipboard())) {
+  const convention = keyboardConvention();
+  const ime = compositionOf(model);
+
+  input.events['keydown'] = ((event: KeyboardEvent) => {
+    // An input method owns the keyboard while it composes: its keys build the composition, and
+    // Enter, Escape and the arrows belong to its candidate window, not to the document.
+    if (event.isComposing || event.keyCode === 229) return;
+    // No clipboard is handed over: the browser's own copy, cut and paste events carry the text
+    // (see below), and claiming ⌘C here would cancel the very event that brings it.
+    if (model.handleKey(event.key, modifiersOf(event), convention, null)) {
       event.preventDefault();
       changed();
-      revealCaret(path);
-      return;
     }
-    // A printable character is TEXT, not a command — and what a keystroke produces is the
-    // browser's business, which is why it arrives as a string rather than a key name.
-    if (event.key.length === 1 && !event.metaKey && !event.ctrlKey) {
-      if (model.handleText(event.key)) {
-        event.preventDefault();
-        changed();
-        revealCaret(path);
-      }
+  }) as unknown as EventHandler;
+
+  input.events['beforeinput'] = ((event: InputEvent) => {
+    switch (event.inputType) {
+      case 'insertText':
+      case 'insertReplacementText':
+        if (event.data && event.data === ime.committed) {
+          // The commit, sent again as input: it is in the document already.
+          ime.committed = null;
+          event.preventDefault();
+          return;
+        }
+        if (event.data) {
+          model.handleText(event.data);
+          // Text over an open composition REPLACES it, the platform's own rule, so this was its
+          // commit, and compositionend has nothing left to do when it comes.
+          if (ime.open) {
+            ime.open = false;
+            remember(ime, event.data);
+          }
+        }
+        break;
+      // A soft keyboard's Enter and Backspace arrive as INPUT, not as keys with names: Android
+      // reports every key as "Unidentified" and says what it did here instead.
+      case 'insertLineBreak':
+      case 'insertParagraph':
+        model.handleKey('Enter', 0, convention, null);
+        break;
+      case 'deleteContentBackward':
+        model.handleKey('Backspace', 0, convention, null);
+        break;
+      case 'deleteContentForward':
+        model.handleKey('Delete', 0, convention, null);
+        break;
+      case 'deleteWordBackward':
+        model.handleKey('Backspace', wordModifier(convention), convention, null);
+        break;
+      case 'deleteWordForward':
+        model.handleKey('Delete', wordModifier(convention), convention, null);
+        break;
+      // A composition's own steps cannot be cancelled and are not edits yet: the composition
+      // events below turn them into the model's.
+      case 'insertCompositionText':
+        return;
+      default:
+        // Anything else — a paste the paste event already took, a drop, a format — would edit the
+        // textarea into a state the document knows nothing about.
+        break;
     }
+    event.preventDefault();
+    changed();
+  }) as unknown as EventHandler;
+
+  input.events['compositionupdate'] = ((event: CompositionEvent) => {
+    ime.open = true;
+    model.setComposition(event.data ?? '');
+    changed();
+  }) as unknown as EventHandler;
+  input.events['compositionend'] = ((event: CompositionEvent) => {
+    // Committed ONCE: an insertText may have committed it already (see beforeinput).
+    if (ime.open) {
+      ime.open = false;
+      // The commit REPLACES the composition — or, with nothing to commit, it is cancelled.
+      if (event.data) {
+        model.handleText(event.data);
+        remember(ime, event.data);
+      } else model.setComposition('');
+    }
+    (event.target as HTMLTextAreaElement).value = '';
+    changed();
+  }) as unknown as EventHandler;
+
+  input.events['paste'] = ((event: ClipboardEvent) => {
+    event.preventDefault();
+    const text = event.clipboardData?.getData('text/plain');
+    if (text && model.paste(text)) changed();
+  }) as unknown as EventHandler;
+  input.events['copy'] = ((event: ClipboardEvent) => {
+    event.preventDefault();
+    event.clipboardData?.setData('text/plain', model.copyText());
+  }) as unknown as EventHandler;
+  input.events['cut'] = ((event: ClipboardEvent) => {
+    event.preventDefault();
+    event.clipboardData?.setData('text/plain', model.cut());
+    changed();
+  }) as unknown as EventHandler;
+
+  input.events['focus'] = (() => {
+    model.focusChanged(true);
+    changed();
+  }) as unknown as EventHandler;
+  input.events['blur'] = (() => {
+    // Leaving cancels a composition in the model, and closes it here with it.
+    ime.open = false;
+    model.focusChanged(false);
+    changed();
   }) as unknown as EventHandler;
 
   // The pointer's whole life goes to the model: the press, every move while it is held — which is
@@ -647,6 +753,14 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     const box = (event.currentTarget as HTMLElement).getBoundingClientRect();
     return { x: event.clientX - box.left, y: event.clientY - box.top };
   };
+  // The keyboard goes to the surface's input, WITHOUT the scroll `focus()` does by default: the
+  // surface is taller than its viewport, so the browser scrolled the page to bring its top into
+  // view on every press — measured: 78px on the first click of a double click, which put the second
+  // click on another line and selected the wrong word.
+  const focusInput = (event: MouseEvent) =>
+    ((event.currentTarget as HTMLElement).querySelector('.eq-code-input') as HTMLElement | null)?.focus(
+      { preventScroll: true },
+    );
   // THE PRESS. A mouse's press is read from `mousedown`, because that is the only event that
   // carries the platform's click count: Chrome reports `detail: 0` on every `pointerdown`, measured,
   // so a surface that counted clicks there never saw a double click — the word and the line were
@@ -659,18 +773,20 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     changed();
   };
   surface.events['pointerdown'] = ((event: PointerEvent) => {
-    const target = event.currentTarget as HTMLElement;
     pressedBy = event.pointerType || 'mouse';
-    target.setPointerCapture?.(event.pointerId);
-    // WITHOUT the scroll `focus()` does by default. The surface is taller than its viewport, so the
-    // browser scrolled the page to bring the surface's top into view on every press — measured: 78px
-    // on the first click of a double click, which put the second click on another line and selected
-    // the wrong word. A press lands where the pointer already is; nothing under it may move.
-    target.focus({ preventScroll: true });
-    if (pressedBy !== 'mouse') press(event, 1);
+    (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
+    if (pressedBy !== 'mouse') {
+      focusInput(event);
+      press(event, 1);
+    }
   }) as unknown as EventHandler;
   surface.events['mousedown'] = ((event: MouseEvent) => {
+    // Cancelled, whoever pressed: the browser's own reaction to a press is to move the focus to what
+    // was pressed — the code's text, which cannot hold it — and that took it from the input the
+    // keyboard types into, the moment it had been given.
+    event.preventDefault();
     if (pressedBy !== 'mouse') return;
+    focusInput(event);
     // The platform counts the clicks — its double-click interval is a system setting, never ours.
     press(event, event.detail > 0 ? event.detail : 1);
   }) as unknown as EventHandler;
@@ -685,6 +801,60 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   }) as unknown as EventHandler;
 
   return surface;
+}
+
+/** The reveal version each code surface was last rendered at, by path — see lowerCodeSurface. */
+const revealedVersions = new Map<string, number>();
+
+/**
+ * Where a code surface's input method stands: whether a composition is open, and the text it
+ * committed in this task. Kept by MODEL, because the model outlives every render and a closure
+ * does not.
+ * <p>
+ * A composition is committed ONCE, by whichever of two signals comes first: compositionend, or an
+ * insertText while it is open (text over marked text replaces it, the platform's own rule). The
+ * spec sends only compositionend, and a browser that also sent the committed text as input, before
+ * compositionend or right after it, had it put in twice. The commit is remembered until the next
+ * task, as long as an echo of it can come: a person cannot type inside the task that committed.
+ * </p>
+ */
+interface CompositionState {
+  open: boolean;
+  committed: string | null;
+}
+
+const compositions = new WeakMap<object, CompositionState>();
+
+function compositionOf(model: object): CompositionState {
+  let state = compositions.get(model);
+  if (!state) compositions.set(model, (state = { open: false, committed: null }));
+  return state;
+}
+
+function remember(state: CompositionState, text: string): void {
+  state.committed = text;
+  setTimeout(() => {
+    if (state.committed === text) state.committed = null;
+  }, 0);
+}
+
+/**
+ * Which keyboard tradition this browser's user lives in (the C# `KeyboardConvention`): Apple's on a
+ * Mac, an iPad or an iPhone, the standard one everywhere else. Asked of the platform the browser
+ * reports — the one fact only the host has, and the one thing a model must never guess.
+ */
+function keyboardConvention(): 'apple' | 'standard' {
+  if (typeof navigator === 'undefined') return 'standard';
+  const platform =
+    (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform ??
+    navigator.platform ??
+    '';
+  return /mac|iphone|ipad|ipod/i.test(platform) ? 'apple' : 'standard';
+}
+
+/** The modifier that makes a deletion take a word: ⌥ on Apple, Ctrl (Command there) elsewhere. */
+function wordModifier(convention: 'apple' | 'standard'): number {
+  return convention === 'apple' ? 2 : 4;
 }
 
 /**
@@ -755,9 +925,6 @@ function plainContent(text: TextNode): string {
 const PINNED_LAYER = '100';
 const FLOATING_CHROME_LAYER = '110';
 
-/** How much of the selection band shows through — the C# `EmitVisitor.SelectionAlpha` twin. */
-const SELECTION_ALPHA = 0.28;
-
 /**
  * One absolutely-positioned rectangle: a caret, or one line's band.
  *
@@ -779,30 +946,16 @@ function mark(
     tag: 'div',
     attributes: {
       class: className,
+      // px(), the spelling of every other length here (the C# TokenCss.Px twin), not a bare
+      // `${n}px`: the day the server writes this mark, hydration adopts only what reads alike.
       style:
-        `position:absolute;left:${left}px;top:${top}px;width:${width}px;height:${height}px;` +
+        `position:absolute;left:${px(left)};top:${px(top)};width:${px(width)};height:${px(height)};` +
         `background-color:${ink};` +
         (radius > 0 ? `border-radius:${radius}px;` : '') +
         'pointer-events:none;',
     },
     events: {},
     children: [],
-  };
-}
-
-/**
- * ⌘C/⌘X/⌘V inside the editor. The browser's async clipboard cannot answer a keydown in time, so
- * this is the SYNCHRONOUS half — the copy it does works, and a paste falls back to the browser's
- * own `paste` event on the surface.
- */
-let clipboardText: string | null = null;
-function webClipboard() {
-  return {
-    read: () => clipboardText,
-    write: (text: string) => {
-      clipboardText = text;
-      void navigator?.clipboard?.writeText?.(text)?.catch(() => {});
-    },
   };
 }
 

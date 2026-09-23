@@ -31,6 +31,8 @@ public class PlainClassFieldDefaultTests
             private char _last;
             private Mode _mode;
             private string? _name;
+            private int? _maybe;
+            private bool? _flagged;
             private int _seeded = 7;
 
             public bool Dragging => _dragging;
@@ -61,14 +63,28 @@ public class PlainClassFieldDefaultTests
     }
 
     [Fact]
-    public void AnInitializerStillWins_AndAReferenceStaysUnset()
+    public void AnInitializerStillWins()
     {
         var ts = Emit();
 
         ts.Should().Contain("this._seeded = 7;");
-        // A reference type's default is null, which an unassigned member already reads as — writing
-        // it would be noise, and the field is declared nullable so tsc has nothing to ask.
-        ts.Should().NotContain("this._name =");
+    }
+
+    /// <summary>
+    /// A NULLABLE starts null, whatever it wraps. This test once asserted the opposite for the
+    /// reference, on the reasoning that an unassigned member already reads as null and tsc has
+    /// nothing to ask: both were wrong. It reads as `undefined`, which `=== null` calls a value, and
+    /// a strict tsc refuses the declaration (TS2564), which is how the code editor's controller
+    /// found it. And `int?` and `bool?` began 0 and false, where C# begins them null.
+    /// </summary>
+    [Fact]
+    public void ANullableStartsNull_WhateverItWraps()
+    {
+        var ts = Emit();
+
+        ts.Should().Contain("this._name = null;");
+        ts.Should().Contain("this._maybe = null;");
+        ts.Should().Contain("this._flagged = null;");
     }
 
     [Fact]

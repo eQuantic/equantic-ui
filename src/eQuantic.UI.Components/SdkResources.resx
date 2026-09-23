@@ -30,6 +30,9 @@
   <data name="NextMatch" xml:space="preserve">
     <value>Next match</value>
   </data>
+  <data name="CodeEditor" xml:space="preserve">
+    <value>Code editor</value>
+  </data>
   <data name="Spreadsheet" xml:space="preserve">
     <value>Spreadsheet</value>
   </data>
