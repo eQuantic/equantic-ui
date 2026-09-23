@@ -140,68 +140,84 @@ public sealed class CodeLineCells
         return Math.Min(low, Count - 1);
     }
 
-    /// <summary>How many cells the element from <paramref name="start"/> to <paramref name="end"/>
-    /// takes when it begins at <paramref name="cell"/> (a tab's width depends on where it begins).</summary>
+    /// <summary>
+    /// How many cells the element from <paramref name="start"/> to <paramref name="end"/> takes when
+    /// it begins at <paramref name="cell"/> (a tab's width depends on where it begins). The width is
+    /// the CLUSTER's: a skin tone, an emoji presentation selector or a second regional indicator
+    /// makes the element an emoji, drawn two cells wide whatever its first character is alone. It was
+    /// read from the first character, so ✌🏻 took one cell and drew two.
+    /// </summary>
     private int ElementWidth(string text, int start, int end, int cell)
     {
         var first = text[start];
         if (first == '\t') return TabSize - cell % TabSize;
-        var codePoint = char.IsHighSurrogate(first) && start + 1 < end
+        // A pair, read as one code point; anything else, as the unit it is. A lone high surrogate
+        // before a mark is one element to .NET, and reading a pair from the two threw.
+        var codePoint = start + 1 < end && char.IsSurrogatePair(first, text[start + 1])
             ? char.ConvertToUtf32(first, text[start + 1])
             : (int)first;
         if (IsWide(codePoint)) return 2;
-        // An emoji presentation selector makes the element an emoji, which is drawn two cells wide.
         for (var i = start + 1; i < end; i++)
         {
-            if (text[i] == '\uFE0F') return 2;
+            var c = text[i];
+            if (c == '\uFE0F') return 2;                                  // emoji presentation
+            if (c == '\uD83C' && i + 1 < end && text[i + 1] >= '\uDFFB' && text[i + 1] <= '\uDFFF')
+                return 2;                                                 // U+1F3FB..U+1F3FF, a skin tone
         }
-        return 1;
+        if (codePoint >= 0x1F1E6 && codePoint <= 0x1F1FF && end - start >= 4) return 2;   // a flag
+        return IsZeroWidth(codePoint) ? 0 : 1;
     }
 
     /// <summary>
-    /// Whether a character takes two cells: the East Asian wide and fullwidth blocks and the emoji
-    /// blocks drawn in emoji presentation by default. Neither .NET nor JavaScript exposes the East
-    /// Asian Width property, so the blocks are named here, the way terminals and editors name them;
-    /// the block draws a wide element in a box two cells wide, so a font that disagrees by a little
-    /// cannot move the rest of the line off the grid.
+    /// Whether a character takes two cells: East Asian Wide and Fullwidth, which since Unicode 9 takes
+    /// in every emoji drawn as an emoji by default. Neither .NET nor JavaScript exposes the property,
+    /// so it is written here, as terminals and editors write it, and <c>CellWidthOracleTests</c>
+    /// compares it with the SDK's own embedded Bun (<c>Bun.stringWidth</c>) for every assigned
+    /// character: a range bridges only characters that never begin an element (unassigned, marks,
+    /// private use). The block draws a wide element in a box two cells wide, so a font that
+    /// disagrees by a little cannot move the rest of the line off the grid.
     /// </summary>
     public static bool IsWide(int codePoint) =>
-        codePoint is (>= 0x1100 and <= 0x115F)       // Hangul Jamo, leading consonants
-            or (>= 0x231A and <= 0x231B)             // watch, hourglass
-            or (>= 0x23E9 and <= 0x23EC)             // media controls
-            or 0x23F0 or 0x23F3                      // alarm clock, hourglass flowing
-            or (>= 0x25FD and <= 0x25FE)             // medium small squares
-            or (>= 0x2614 and <= 0x2615)             // umbrella with rain, hot beverage
-            or (>= 0x2648 and <= 0x2653)             // the zodiac
-            or 0x267F or 0x2693 or 0x26A1            // wheelchair, anchor, high voltage
-            or (>= 0x26AA and <= 0x26AB)             // circles
-            or (>= 0x26BD and <= 0x26BE)             // soccer ball, baseball
-            or (>= 0x26C4 and <= 0x26C5)             // snowman, sun behind cloud
-            or 0x26CE or 0x26D4 or 0x26EA            // Ophiuchus, no entry, church
-            or (>= 0x26F2 and <= 0x26F3) or 0x26F5 or 0x26FA or 0x26FD
-            or 0x2705 or (>= 0x270A and <= 0x270B) or 0x2728 or 0x274C or 0x274E
-            or (>= 0x2753 and <= 0x2755) or 0x2757 or (>= 0x2795 and <= 0x2797)
-            or 0x27B0 or 0x27BF or (>= 0x2B1B and <= 0x2B1C) or 0x2B50 or 0x2B55
-            or (>= 0x2E80 and <= 0x303E)             // CJK radicals, Kangxi, CJK symbols and punctuation
-            or (>= 0x3041 and <= 0x33FF)             // kana, Bopomofo, Hangul compatibility jamo, CJK compatibility
-            or (>= 0x3400 and <= 0x4DBF)             // CJK Unified Ideographs Extension A
-            or (>= 0x4E00 and <= 0x9FFF)             // CJK Unified Ideographs
-            or (>= 0xA000 and <= 0xA4CF)             // Yi
-            or (>= 0xA960 and <= 0xA97F)             // Hangul Jamo Extended-A
-            or (>= 0xAC00 and <= 0xD7A3)             // Hangul syllables
-            or (>= 0xF900 and <= 0xFAFF)             // CJK compatibility ideographs
-            or (>= 0xFE10 and <= 0xFE19)             // vertical forms
-            or (>= 0xFE30 and <= 0xFE6F)             // CJK compatibility forms, small form variants
-            or (>= 0xFF00 and <= 0xFF60)             // fullwidth forms
-            or (>= 0xFFE0 and <= 0xFFE6)             // fullwidth signs
-            or 0x1F004 or 0x1F0CF or 0x1F18E or (>= 0x1F191 and <= 0x1F19A)
-            or (>= 0x1F1E6 and <= 0x1F1FF)           // regional indicators: a flag is a pair of them
-            or (>= 0x1F200 and <= 0x1F251)           // enclosed ideographic supplement
-            or (>= 0x1F300 and <= 0x1F64F)           // symbols and pictographs, emoticons
-            or (>= 0x1F680 and <= 0x1F6FF)           // transport and map
-            or (>= 0x1F7E0 and <= 0x1F7EB)           // coloured circles and squares
-            or (>= 0x1F90C and <= 0x1F9FF)           // supplemental symbols and pictographs
-            or (>= 0x1FA70 and <= 0x1FAFF)           // symbols and pictographs extended-A
-            or (>= 0x20000 and <= 0x2FFFD)           // CJK Extensions B and on
-            or (>= 0x30000 and <= 0x3FFFD);          // plane 3
+        codePoint is
+        (>= 0x1100 and <= 0x115F) or (>= 0x231A and <= 0x231B) or (>= 0x2329 and <= 0x232A)
+        or (>= 0x23E9 and <= 0x23EC) or 0x23F0 or 0x23F3 or (>= 0x25FD and <= 0x25FE)
+        or (>= 0x2614 and <= 0x2615) or (>= 0x2648 and <= 0x2653) or 0x267F or 0x2693 or 0x26A1
+        or (>= 0x26AA and <= 0x26AB) or (>= 0x26BD and <= 0x26BE) or (>= 0x26C4 and <= 0x26C5)
+        or 0x26CE or 0x26D4 or 0x26EA or (>= 0x26F2 and <= 0x26F3) or 0x26F5 or 0x26FA or 0x26FD
+        or 0x2705 or (>= 0x270A and <= 0x270B) or 0x2728 or 0x274C or 0x274E
+        or (>= 0x2753 and <= 0x2755) or 0x2757 or (>= 0x2795 and <= 0x2797) or 0x27B0 or 0x27BF
+        or (>= 0x2B1B and <= 0x2B1C) or 0x2B50 or 0x2B55 or (>= 0x2E80 and <= 0x303E)
+        or (>= 0x3041 and <= 0x31E3) or (>= 0x31EF and <= 0x3247) or (>= 0x3250 and <= 0x4DBF)
+        or (>= 0x4E00 and <= 0xA4C6) or (>= 0xA960 and <= 0xA97C) or (>= 0xAC00 and <= 0xD7A3)
+        or (>= 0xF900 and <= 0xFAD9) or (>= 0xFE10 and <= 0xFE6B) or (>= 0xFF01 and <= 0xFF60)
+        or (>= 0xFFE0 and <= 0xFFE6) or (>= 0x16FE0 and <= 0x16FE3) or (>= 0x17000 and <= 0x187F7)
+        or (>= 0x18800 and <= 0x18CD5) or (>= 0x18D00 and <= 0x18D08)
+        or (>= 0x1AFF0 and <= 0x1B2FB) or 0x1F004 or 0x1F0CF or 0x1F18E
+        or (>= 0x1F191 and <= 0x1F19A) or (>= 0x1F200 and <= 0x1F320)
+        or (>= 0x1F32D and <= 0x1F335) or (>= 0x1F337 and <= 0x1F37C)
+        or (>= 0x1F37E and <= 0x1F393) or (>= 0x1F3A0 and <= 0x1F3CA)
+        or (>= 0x1F3CF and <= 0x1F3D3) or (>= 0x1F3E0 and <= 0x1F3F0) or 0x1F3F4
+        or (>= 0x1F3F8 and <= 0x1F43E) or 0x1F440 or (>= 0x1F442 and <= 0x1F4FC)
+        or (>= 0x1F4FF and <= 0x1F53D) or (>= 0x1F54B and <= 0x1F54E)
+        or (>= 0x1F550 and <= 0x1F567) or 0x1F57A or (>= 0x1F595 and <= 0x1F596) or 0x1F5A4
+        or (>= 0x1F5FB and <= 0x1F64F) or (>= 0x1F680 and <= 0x1F6C5) or 0x1F6CC
+        or (>= 0x1F6D0 and <= 0x1F6D2) or (>= 0x1F6D5 and <= 0x1F6D7)
+        or (>= 0x1F6DC and <= 0x1F6DF) or (>= 0x1F6EB and <= 0x1F6EC)
+        or (>= 0x1F6F4 and <= 0x1F6FC) or (>= 0x1F7E0 and <= 0x1F7F0)
+        or (>= 0x1F90C and <= 0x1F93A) or (>= 0x1F93C and <= 0x1F945)
+        or (>= 0x1F947 and <= 0x1F9FF) or (>= 0x1FA70 and <= 0x1FA88)
+        or (>= 0x1FA90 and <= 0x1FABD) or (>= 0x1FABF and <= 0x1FAC5)
+        or (>= 0x1FACE and <= 0x1FADB) or (>= 0x1FAE0 and <= 0x1FAE8)
+        or (>= 0x1FAF0 and <= 0x1FAF8) or (>= 0x20000 and <= 0x33479);
+
+    /// <summary>
+    /// Whether a character takes NO cell: the zero-width space and joiners, the direction marks, the
+    /// word joiner and invisible operators, the byte-order mark, the soft hyphen, and the format
+    /// characters that are drawn only as part of what follows them. Compared with the same oracle as
+    /// <see cref="IsWide"/>.
+    /// </summary>
+    public static bool IsZeroWidth(int codePoint) =>
+        codePoint is
+        0xAD or (>= 0x600 and <= 0x605) or 0x6DD or 0x70F or 0x8E2 or (>= 0x200B and <= 0x200F)
+        or (>= 0x2060 and <= 0x2064) or 0xFEFF or (>= 0xE0001 and <= 0xE007F);
 }

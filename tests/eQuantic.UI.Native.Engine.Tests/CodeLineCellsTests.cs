@@ -111,4 +111,32 @@ public class CodeLineCellsTests
         line.Previous(0).Should().Be(0);
         line.ColumnAt(3).Should().Be(0);
     }
+
+    /// <summary>
+    /// An element's width is its CLUSTER's: a skin tone or an emoji presentation selector makes it an
+    /// emoji, drawn two cells wide, whatever its first character is alone. It was read from the first
+    /// character, so ✌🏻 took one cell and drew two, and the rest of the line slid off the grid.
+    /// </summary>
+    [Theory]
+    [InlineData("\u270C\U0001F3FB!", 3)]   // ✌🏻 then !
+    [InlineData("\u270C!", 2)]              // ✌ alone is text, one cell
+    [InlineData("\u2764\uFE0F!", 3)]        // ❤️ then !
+    [InlineData("\U0001F7F0", 2)]           // 🟰, emoji 14
+    [InlineData("\u2329x", 3)]              // 〈, East Asian wide
+    [InlineData("\U0001B000", 2)]           // 𛀀, kana supplement
+    [InlineData("\U0001F321", 1)]           // 🌡 is text by default
+    [InlineData("ab\u200Bcd", 4)]           // a zero-width space takes no cell
+    [InlineData("\uFEFFx", 1)]              // nor does a byte-order mark
+    public void AnElementIsAsWideAsItsCluster(string text, int width)
+    {
+        new CodeLineCells(text, 4).Width.Should().Be(width);
+    }
+
+    /// <summary>.NET makes one element of a lone high surrogate and the mark after it, and reading a
+    /// code point from the two threw. Malformed text reaches an editor through a paste.</summary>
+    [Fact]
+    public void ALoneSurrogateBeforeAMarkIsOneCell_NotAnException()
+    {
+        new CodeLineCells("\uD83D\u0301x", 4).Width.Should().Be(2);
+    }
 }

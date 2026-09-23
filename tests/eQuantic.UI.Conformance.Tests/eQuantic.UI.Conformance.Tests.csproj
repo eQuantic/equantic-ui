@@ -19,6 +19,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\eQuantic.UI.Compiler\eQuantic.UI.Compiler.csproj" />
+    <!-- The code engine, for the one comparison that needs its C# side directly: the cell widths
+         against the oracle (CellWidthOracleTests), whose twin half comes from the served bundle. -->
+    <ProjectReference Include="..\..\src\eQuantic.UI.Code\eQuantic.UI.Code.csproj" />
     <!-- A BUILD-ORDER EDGE, not a reference: the harness imports the runtime helpers from the bundle
          the Server serves (src/eQuantic.UI.Server/wwwroot/runtime.js), and that bundle is a build
          output of the Server now (#273). Building the Server first means every conformance case runs

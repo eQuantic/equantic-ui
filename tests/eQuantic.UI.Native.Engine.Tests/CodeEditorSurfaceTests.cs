@@ -305,6 +305,71 @@ public class CodeEditorSurfaceTests
     }
 
     [Fact]
+    public void AnEmojiWithASkinToneIsDrawnInItsTwoCells()
+    {
+        var (host, surface, bounds) = Open("\u270C\U0001F3FBx");
+
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder, 0);
+        var x = builder.Build().Commands.ToArray()
+            .Where(c => c.Kind == DrawCommandKind.Texture
+                && MathF.Abs(c.Shape.Rect.Width - surface.Grid().Cell.Width) < 0.01f)
+            .OrderBy(c => c.Shape.Rect.X)
+            .Last();
+
+        x.Shape.Rect.X.Should().BeApproximately(
+            bounds.X + surface.Grid().Origin.X + 2 * surface.Grid().Cell.Width, 0.01f,
+            "the emoji's box is two cells wide, and the x after it starts where the caret after it stands");
+    }
+
+    /// <summary>
+    /// ⌘/ over three lines rewrites them in ONE edit, and the highlighter re-coloured only the first,
+    /// so the line it emptied kept a comment token longer than itself. The block threw drawing it,
+    /// and Photon's boundary put the failure panel where the editor had been.
+    /// </summary>
+    [Fact]
+    public void CommentingOutSeveralLines_LeavesTheEditorOnScreen()
+    {
+        ComponentBoundary.ClearContained();
+        var (host, surface, bounds) = Open("// a\n//\n// b");
+        Focus(host, surface, bounds);
+        surface.Engine().Selection = new CodeRange(new CodePosition(0, 0), new CodePosition(2, 4));
+
+        Press(host, "/", KeyModifiers.Command);
+
+        surface.Engine().Document.Text.Should().Be("a\n\nb");
+        ComponentBoundary.Contained.Should().BeEmpty("the editor drew the lines ⌘/ rewrote");
+    }
+
+    /// <summary>
+    /// The block draws what the TEXT says, and a token is only its colour. A token that outlived its
+    /// text (a line an edit emptied, while the highlighter still held its comment) threw when the
+    /// block went to draw it. Whatever keeps the tokens honest, the drawing does not depend on it.
+    /// </summary>
+    [Fact]
+    public void ATokenLongerThanItsLineIsDrawnAsFarAsTheLineGoes()
+    {
+        ComponentBoundary.ClearContained();
+        var stale = new CodeHighlighter(CodeLanguages.CSharp);
+        stale.TokensFor(CodeDocument.FromText("// a\n// long comment\nb"), 2);
+        var block = new CodeBlock("")
+        {
+            Document = CodeDocument.FromText("a\n\nb"),
+            Language = CodeLanguages.CSharp,
+            Highlighter = stale,
+            ShowLineNumbers = false,
+        };
+        var host = new PhotonHost(block, PhotonTheme.Instance, ThemeMode.Light, 400, 300, new FixedWidthMeasurer())
+        {
+            TextRasterizer = new FixedWidthRasterizer(),
+        };
+
+        host.RenderFrame(new DisplayListBuilder());
+
+        ComponentBoundary.Contained.Should().BeEmpty("the block drew every line, the empty one too");
+    }
+
+    [Fact]
     public void TheGlyphAfterAWideCharacterIsDrawnTwoCellsOn()
     {
         var (host, surface, bounds) = Open("\u4E2Dx");

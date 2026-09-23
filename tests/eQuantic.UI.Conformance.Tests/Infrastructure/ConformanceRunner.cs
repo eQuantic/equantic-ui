@@ -272,7 +272,7 @@ public static class ConformanceRunner
 
     /// <summary>The bundle the Server serves, which this project's build-order edge to the Server has
     /// just written from the current runtime source — never a committed copy (#273).</summary>
-    private static string? RuntimeJsUrl()
+    internal static string? RuntimeJsUrl()
     {
         var root = RepoRoot.Find();
         if (root == null) return null;
