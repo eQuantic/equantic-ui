@@ -536,6 +536,13 @@ record of a release, the wiki's Upgrading page is the distillate.
   build's compression packing the previous build's modules. eqc's folder leaves Content and is
   defined as web assets from what is on disk once its writers have run, through the pipeline's own
   hook for generated assets, and CI edits a shared component and publishes.
+- **2026-09-23 · A float is a single where it is produced**: eqc rounded a `float` only at a store,
+  arguing from what ECMA-335 permits, and RyuJIT rounds every operation — so a float-returning method
+  handed its caller a double and a bar's hit bound differed by one ULP between server and browser
+  ([#146](https://github.com/eQuantic/equantic-ui/issues/146)). Every float operation, increment,
+  wide-int conversion, constant and hydrated value now rounds where it is born; the numeric table
+  answers in single precision for the `float` home and serves `Math`/`MathF` from the same entries;
+  and `Math.Round` detects a midpoint exactly and honours every `MidpointRounding`.
 
 ## Retired documents
 

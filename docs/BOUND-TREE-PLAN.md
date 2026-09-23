@@ -58,7 +58,11 @@ value converts twice.
   `s += x` settled the target too (`r ?? '' += 't'`), which is how slice 1's first cut failed.
 - A constant folds only where the JavaScript REPRESENTATION changes (`1` → `1n`); folding `0x10`
   to `16` rewrites the author for nothing.
-- An int widening to float is exact — do not fround it (FloatStore rounds at the store).
+- ~~An int widening to float is exact — do not fround it (FloatStore rounds at the store).~~
+  Reversed by #146: an int past 2^24 is not exact as a single, RyuJIT's conversion rounds it, and a
+  store-only rule let a float-returning method hand its caller a double. A float now rounds where it
+  is PRODUCED (`SinglePrecision`); an int provably exact — a constant, a choice between two — stays
+  as written.
 - Two chars compared stay characters: JavaScript orders 1-length strings by the same code units.
 - A user-defined implicit operator passes the value through: the framework's wrappers (`SizeValue`,
   `Index`, `ColorToken`) ARE their primitive on this side. Fencing the category (EQ2010, reverted)
