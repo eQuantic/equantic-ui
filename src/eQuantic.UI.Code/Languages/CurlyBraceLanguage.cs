@@ -23,6 +23,12 @@ public abstract class CurlyBraceLanguage : ICodeLanguage
     /// <summary>Inside a multi-line string: C#'s <c>@"…"</c>, JS's <c>`…`</c>.</summary>
     protected const int StateMultilineString = 2;
 
+    /// <summary>
+    /// Inside a RAW string that opened on an earlier line: this plus the number of quotes that
+    /// opened it, which is the run that closes it (C# 11: <c>"""</c>, <c>""""</c>, …).
+    /// </summary>
+    protected const int StateRawString = 16;
+
     public abstract string Name { get; }
 
     /// <inheritdoc />
@@ -42,6 +48,10 @@ public abstract class CurlyBraceLanguage : ICodeLanguage
 
     /// <summary>Whether <c>`…`</c> opens a string that spans lines (JS template literal).</summary>
     protected virtual bool HasTemplateStrings => false;
+
+    /// <summary>Whether three or more quotes open a RAW string that ends at the same run of quotes
+    /// and may span lines (C# 11).</summary>
+    protected virtual bool HasRawStrings => false;
 
     /// <summary>Whether <c>[Attribute]</c> at the head of a line is an attribute (C#).</summary>
     protected virtual bool HasBracketAttributes => false;
@@ -64,6 +74,18 @@ public abstract class CurlyBraceLanguage : ICodeLanguage
             }
             Add(into, 0, close + 2, CodeTokenKind.Comment);
             i = close + 2;
+        }
+        else if (state >= StateRawString)
+        {
+            var quotes = state - StateRawString;
+            var end = CloseRaw(line, 0, quotes);
+            if (end < 0)
+            {
+                Add(into, 0, line.Length, CodeTokenKind.String);
+                return state;
+            }
+            Add(into, 0, end, CodeTokenKind.String);
+            i = end;
         }
         else if (state == StateMultilineString)
         {
@@ -127,6 +149,23 @@ public abstract class CurlyBraceLanguage : ICodeLanguage
                     return StateMultilineString;
                 }
                 Add(into, i, end - i, CodeTokenKind.String);
+                i = end;
+                continue;
+            }
+            if (HasRawStrings && c == '"' && QuotesAt(line, i) >= 3)
+            {
+                // Its $ or $$ belongs to it, as an interpolated string's does.
+                var start = i;
+                while (start > 0 && line[start - 1] == '$') start--;
+                if (start < i && into.Count > 0 && into[^1].Start == start) into.RemoveAt(into.Count - 1);
+                var quotes = QuotesAt(line, i);
+                var end = CloseRaw(line, i + quotes, quotes);
+                if (end < 0)
+                {
+                    Add(into, start, line.Length - start, CodeTokenKind.String);
+                    return StateRawString + quotes;
+                }
+                Add(into, start, end - start, CodeTokenKind.String);
                 i = end;
                 continue;
             }
@@ -232,6 +271,28 @@ public abstract class CurlyBraceLanguage : ICodeLanguage
         {
             if (line[i] == '\\') { i++; continue; }
             if (line[i] == quote) return i + 1;
+        }
+        return -1;
+    }
+
+    /// <summary>How many quotes run from <paramref name="index"/>.</summary>
+    private static int QuotesAt(string line, int index)
+    {
+        var count = 0;
+        while (index + count < line.Length && line[index + count] == '"') count++;
+        return count;
+    }
+
+    /// <summary>Where a raw string of <paramref name="quotes"/> quotes ends on this line, after
+    /// the run that closes it, or -1 if it goes on. A shorter run of quotes is part of its text.</summary>
+    private static int CloseRaw(string line, int from, int quotes)
+    {
+        for (var i = from; i < line.Length; i++)
+        {
+            if (line[i] != '"') continue;
+            var run = QuotesAt(line, i);
+            if (run >= quotes) return i + run;
+            i += run - 1;
         }
         return -1;
     }

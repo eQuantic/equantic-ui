@@ -135,6 +135,31 @@ public class CodeTokenizerTests
         KindAt(CodeLanguages.CSharp, "done */ var x;", 8, state).Should().Be(CodeTokenKind.Type);
     }
 
+    /// <summary>
+    /// A C# 11 RAW string is one string, quotes and all, and it runs across lines to the same run of
+    /// quotes. It was read as ordinary strings side by side, so a quote inside one ended it and the
+    /// words after it were coloured as code, and the lines of a multi-line one were coloured as code
+    /// throughout.
+    /// </summary>
+    [Fact]
+    public void CSharp_ARawStringIsOneString_QuotesInsideIt_AndAcrossLines()
+    {
+        var tokens = new List<CodeToken>();
+        var single = "var s = \"\"\"He said \"hi\" there\"\"\";";
+        CodeLanguages.CSharp.Tokenize(single, 0, tokens).Should().Be(0);
+        tokens.Should().Contain(new CodeToken(8, 24, CodeTokenKind.String), "the literal is one string");
+
+        tokens.Clear();
+        var state = CodeLanguages.CSharp.Tokenize("var t = $\"\"\"", 0, tokens);
+        state.Should().NotBe(0, "the next line starts inside the raw string");
+        KindAt(CodeLanguages.CSharp, "    if (x) { return; }", 6, state).Should().Be(CodeTokenKind.String);
+
+        tokens.Clear();
+        var closed = CodeLanguages.CSharp.Tokenize("    \"\"\"; var y;", state, tokens);
+        closed.Should().Be(0, "the same run of quotes closed it");
+        KindAt(CodeLanguages.CSharp, "    \"\"\"; var y;", 9, state).Should().Be(CodeTokenKind.Type);
+    }
+
     [Fact]
     public void CSharp_AVerbatimStringRunsAcrossLines()
     {

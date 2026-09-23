@@ -20,9 +20,9 @@ export class CodeHistory {
 
     record(edit: CodeEdit) {
         this._future.splice(0);
-        if (edit.isSimpleInsert && this._past.length > 0 && $eq.equals(edit.range.start, this._runEnd)) {
+        if (edit.typed && edit.isSimpleInsert && this._past.length > 0 && $eq.equals(edit.range.start, this._runEnd)) {
             let previous = this._past[this._past.length - 1];
-            if (previous.isSimpleInsert) {
+            if (previous.typed && !previous.insertedText.includes('\n')) {
                 this._past[this._past.length - 1] = $eq.withPatch(previous, { insertedText: previous.insertedText + edit.insertedText, selectionAfter: edit.selectionAfter });
                 this._runEnd = edit.insertedRange.end;
                 return;
@@ -30,7 +30,7 @@ export class CodeHistory {
         }
         this._past.push(edit);
         if (this._past.length > this.limit) this._past.splice(0, 1);
-        this._runEnd = edit.isSimpleInsert ? edit.insertedRange.end : new CodePosition(-1, -1);
+        this._runEnd = edit.typed && !edit.insertedText.includes('\n') ? edit.insertedRange.end : new CodePosition(-1, -1);
     }
 
     break() {

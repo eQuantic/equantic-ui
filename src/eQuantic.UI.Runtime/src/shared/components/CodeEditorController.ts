@@ -1,15 +1,16 @@
-import { $eq, CodeDirectionValue, CodeDocument, CodeEdit, CodeGrid, CodeHighlighter, CodeHistory, CodeKeymap, CodeLanguageRules, CodeLanguages, CodeMotionValue, CodePosition, CodeRange, KeyboardConventionValue, Point, PointerPhaseValue, Rect } from "../runtime-exports";
+import { $eq, CodeDirectionValue, CodeDocument, CodeEdit, CodeGrid, CodeHighlighter, CodeHistory, CodeKeymap, CodeLanguageRules, CodeLanguages, CodeLineCells, CodeMotionValue, CodePosition, CodeRange, KeyboardConventionValue, Point, PointerPhaseValue, Rect } from "../runtime-exports";
 
 export class CodeEditorController {
     constructor(text: string = '', language: any = null, props?: any) {
-        this._selection = new CodeRange(); this._desiredColumn = -1; this._dragging = false; this._revealVersion = 0; this._composition = null; this._compositionReplaced = ''; this._compositionSelection = new CodeRange(); this._wholeLineCopy = null; this._document = CodeDocument.fromText(text);
+        this._selection = new CodeRange(); this._desiredCell = -1; this._cells = {}; this._dragging = false; this._revealVersion = 0; this._composition = null; this._compositionReplaced = ''; this._compositionSelection = new CodeRange(); this._wholeLineCopy = null; this._document = CodeDocument.fromText(text);
         this._selection = new CodeRange(CodePosition.start);
         this.highlighter = new CodeHighlighter(language ?? CodeLanguages.plainText); if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     _document: CodeDocument;
     _selection: CodeRange;
-    _desiredColumn: number;
+    _desiredCell: number;
+    _cells: Record<string, any>;
     static caretWidth: number = 2;
     _dragging: boolean;
     _revealVersion: number;
@@ -67,10 +68,12 @@ export class CodeEditorController {
         let end = this._selection.end;
         for (let line = start.line; line <= end.line; line++) {
             let from = line === start.line ? start.column : 0;
-            let to = line === end.line ? end.column : this._document.line(line).length + 1;
-            if (to <= from) continue;
-            let at = this.grid.pointOf(line, from);
-            bands.push(new Rect(at.x, at.y, (to - from) * this.grid.cell.width, this.grid.cell.height));
+            let cells = this.cellsOf(line);
+            let fromCell = cells.cellOf(from);
+            let toCell = line === end.line ? cells.cellOf(end.column) : cells.width + 1;
+            if (toCell <= fromCell) continue;
+            let at = this.grid.pointOf(line, fromCell);
+            bands.push(new Rect(at.x, at.y, (toCell - fromCell) * this.grid.cell.width, this.grid.cell.height));
         }
         return bands;
     }
@@ -90,15 +93,24 @@ export class CodeEditorController {
     changed: ((codeEdit: CodeEdit | null) => void) | null = null;
     selectionChanged: ((codeRange: CodeRange) => void) | null = null;
 
+    cellsOf(line: number) {
+        let cells: any; let text = this._document.line(line);
+        let tabSize = this.rules.indentWidth;
+        if ((Object.prototype.hasOwnProperty.call(this._cells, line) ? ((cells = this._cells[line]), true) : false) && cells.text === text && cells.tabSize === tabSize) return cells;
+        cells = new CodeLineCells(text, tabSize);
+        this._cells[line] = cells;
+        return cells;
+    }
+
     caretRect(position: CodePosition) {
-        let at = this.grid.pointOf(position.line, position.column);
+        let at = this.grid.pointOf(position.line, this.cellsOf(position.line).cellOf(position.column));
         return new Rect(at.x, at.y, CodeEditorController.caretWidth, this.grid.cell.height);
     }
 
     positionAt(point: Point) {
         let line = (Math.trunc(Math.floor((point.y - this.grid.origin.y) / this.grid.cell.height)) | 0);
-        let column = (Math.trunc($eq.math.round((point.x - this.grid.origin.x) / this.grid.cell.width)) | 0);
-        return this._document.clamp(new CodePosition(Math.max(0, line), Math.max(0, column)));
+        let target = this._document.clamp(new CodePosition(Math.max(0, line), 0)).line;
+        return new CodePosition(target, this.cellsOf(target).columnAt((point.x - this.grid.origin.x) / this.grid.cell.width));
     }
 
     handleKey(key: string, modifiers: number, convention: KeyboardConventionValue, clipboard: any) {
@@ -111,7 +123,11 @@ export class CodeEditorController {
         let committing = !(this._composition == null);
         this.endComposition();
         let typed = false;
-        for (const c of text) typed = $eq.logic.or(typed, this.type(c));
+        let starts = $eq.text.textElementStarts(text);
+        for (let i = 0; i < starts.length; i++) {
+            let end = i + 1 < starts.length ? starts[i + 1] : text.length;
+            typed = $eq.logic.or(typed, end - starts[i] === 1 ? this.type(text[starts[i]]) : this.edit(this._selection, $eq.text.substring(text, starts[i], end - starts[i]), true));
+        }
         if (committing) this.history.break();
         return typed;
     }
@@ -160,8 +176,8 @@ export class CodeEditorController {
         this._selection = new CodeRange(caret);
         this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
         this._revealVersion++;
-        this._desiredColumn = -1;
-        let edit = new CodeEdit(ordered, removed, text, before, this._selection);
+        this._desiredCell = -1;
+        let edit = new CodeEdit(ordered, removed, text, before, this._selection, false);
         this.changed?.(edit);
         this.selectionChanged?.(this._selection);
         return new CodeRange(ordered.start, caret);
@@ -201,6 +217,10 @@ export class CodeEditorController {
     }
 
     apply(range: CodeRange, text: string) {
+        return this.edit(range, text, false);
+    }
+
+    edit(range: CodeRange, text: string, typed: boolean) {
         let caret: any; if (this.readOnly) return false;
         let ordered = new CodeRange(this._document.clamp(range.start), this._document.clamp(range.end));
         let removed = this._document.textIn(ordered);
@@ -213,12 +233,12 @@ export class CodeEditorController {
         this._document = next;
         this._selection = new CodeRange(caret);
         this._revealVersion++;
-        let edit = new CodeEdit(ordered, removed, text, before, this._selection);
+        let edit = new CodeEdit(ordered, removed, text, before, this._selection, typed);
         this.history.record(edit);
         this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
         this.changed?.(edit);
         this.selectionChanged?.(this._selection);
-        this._desiredColumn = -1;
+        this._desiredCell = -1;
         return true;
     }
 
@@ -233,12 +253,12 @@ export class CodeEditorController {
             for (const [open, close] of rules.brackets) {
                 if (c !== open) continue;
                 let text = this._document.textIn(this._selection);
-                return this.apply(this._selection, open + text + close);
+                return this.edit(this._selection, open + text + close, true);
             }
             for (const quote of rules.quotes) {
                 if (c !== quote) continue;
                 let text = this._document.textIn(this._selection);
-                return this.apply(this._selection, quote + text + quote);
+                return this.edit(this._selection, quote + text + quote, true);
             }
         }
         let line = this._document.line(this.caret.line);
@@ -258,7 +278,7 @@ export class CodeEditorController {
         for (const [open, close] of rules.brackets) {
             if (c !== open) continue;
             if (after === '\0' || (/^\s$/.test(after)) || rules.brackets.some((p) => p[1] === after)) {
-                if (!this.apply(this._selection, `${open}${close}`)) return false;
+                if (!this.edit(this._selection, `${open}${close}`, true)) return false;
                 this.selection = new CodeRange($eq.withPatch(this.caret, { column: this.caret.column - 1 }));
                 return true;
             }
@@ -268,12 +288,19 @@ export class CodeEditorController {
             let before = this.caret.column > 0 ? line[this.caret.column - 1] : '\0';
             if (CodeDocument.isWordChar(before) || CodeDocument.isWordChar(after)) break;
             if (after === '\0' || (/^\s$/.test(after))) {
-                if (!this.apply(this._selection, `${quote}${quote}`)) return false;
+                if (!this.edit(this._selection, `${quote}${quote}`, true)) return false;
                 this.selection = new CodeRange($eq.withPatch(this.caret, { column: this.caret.column - 1 }));
                 return true;
             }
         }
-        return this.apply(this._selection, String(c));
+        if (this._selection.isEmpty && rules.outdentOn.includes(c)) {
+            let indent = line.slice(0, this.caret.column);
+            if (indent.length > 0 && indent.trim().length === 0) {
+                let off = this.stepOff(indent);
+                return this.edit(new CodeRange(new CodePosition(this.caret.line, 0), this.caret), indent.slice(off) + c, true);
+            }
+        }
+        return this.edit(this._selection, String(c), true);
     }
 
     insertNewLine() {
@@ -348,15 +375,36 @@ export class CodeEditorController {
         let last = this._selection.end.line;
         if (last > first && this._selection.end.column === 0) last--;
         let lines: string[] = [];
+        let changes: number[] = [];
         for (let line = first; line <= last; line++) {
             let text = this._document.line(line);
-            if (add) lines.push(text.length === 0 ? text : step + text); else if (text.startsWith(step)) lines.push(text.slice(step.length)); else lines.push((_s => { const _c = ' ' + '\t'; let _i = 0; while (_i < _s.length && _c.includes(_s[_i])) _i++; return _s.slice(_i); })(text).length === text.length ? text : text.slice(1));
+            let change = add ? text.length === 0 ? 0 : step.length : this.stepOff(text);
+            lines.push(add ? change === 0 ? text : step + text : text.slice(change));
+            changes.push(change);
         }
+        let anchor = this._selection.anchor;
+        let focus = this._selection.focus;
         let range = new CodeRange(new CodePosition(first, 0), new CodePosition(last, this._document.line(last).length));
-        let anchorShift = add ? step.length : -Math.min(step.length, this._document.indentOf(first).length);
         if (!this.apply(range, lines.join('\n'))) return false;
-        this.selection = new CodeRange(new CodePosition(first, Math.max(0, this._selection.anchor.column + anchorShift)), new CodePosition(last, this._document.line(last).length));
+        this.selection = new CodeRange(CodeEditorController.shiftedBy(anchor, first, last, changes, add), CodeEditorController.shiftedBy(focus, first, last, changes, add));
         return true;
+    }
+
+    static shiftedBy(position: CodePosition, first: number, last: number, changes: number[], add: boolean) {
+        if (position.line < first || position.line > last) return position;
+        let change = changes[position.line - first];
+        return new CodePosition(position.line, add ? CodeEditorController.shifted(position.column, 0, 0, change) : CodeEditorController.shifted(position.column, 0, change, 0));
+    }
+
+    static shifted(column: number, at: number, removed: number, inserted: number) {
+        return column <= at ? column : column < at + removed ? at : column - removed + inserted;
+    }
+
+    stepOff(text: string) {
+        if (text.length > 0 && text[0] === '\t') return 1;
+        let off = 0;
+        while (off < text.length && off < this.rules.indentWidth && text[off] === ' ') off++;
+        return off;
     }
 
     toggleLineComment() {
@@ -375,24 +423,46 @@ export class CodeEditorController {
             }
         }
         let lines: string[] = [];
+        let ats: number[] = [];
+        let removals: number[] = [];
+        let insertions: number[] = [];
         for (let line = first; line <= last; line++) {
             let text = this._document.line(line);
             if (allCommented) {
                 let at = text.indexOf(marker);
                 if (at < 0) {
                     lines.push(text);
+                    ats.push(0);
+                    removals.push(0);
+                    insertions.push(0);
                     continue;
                 }
                 let after = at + marker.length;
                 if (after < text.length && text[after] === ' ') after++;
                 lines.push(text.slice(0, at) + text.slice(after));
+                ats.push(at);
+                removals.push(after - at);
+                insertions.push(0);
             } else {
                 let indent = this._document.indentOf(line);
                 lines.push(text.length === 0 ? marker + ' ' : indent + marker + ' ' + text.slice(indent.length));
+                ats.push(text.length === 0 ? 0 : indent.length);
+                removals.push(0);
+                insertions.push(marker.length + 1);
             }
         }
+        let anchor = this._selection.anchor;
+        let focus = this._selection.focus;
         let range = new CodeRange(new CodePosition(first, 0), new CodePosition(last, this._document.line(last).length));
-        return this.apply(range, lines.join('\n'));
+        if (!this.apply(range, lines.join('\n'))) return false;
+        this.selection = new CodeRange(CodeEditorController.commented(anchor, first, last, ats, removals, insertions), CodeEditorController.commented(focus, first, last, ats, removals, insertions));
+        return true;
+    }
+
+    static commented(position: CodePosition, first: number, last: number, ats: number[], removals: number[], insertions: number[]) {
+        if (position.line < first || position.line > last) return position;
+        let index = position.line - first;
+        return new CodePosition(position.line, CodeEditorController.shifted(position.column, ats[index], removals[index], insertions[index]));
     }
 
     move(motion: CodeMotionValue, direction: CodeDirectionValue, extend: boolean = false, pageLines: number = 20) {
@@ -408,29 +478,28 @@ export class CodeEditorController {
         let forward = direction === 'forward';
         switch (motion) {
             case 'character':
-                this._desiredColumn = -1;
+                this._desiredCell = -1;
                 return forward ? this._document.next(from) : this._document.previous(from);
             case 'word':
-                this._desiredColumn = -1;
+                this._desiredCell = -1;
                 return this.wordStep(from, forward);
             case 'line':
                 {
-                    if (this._desiredColumn < 0) this._desiredColumn = from.column;
+                    if (this._desiredCell < 0) this._desiredCell = this.cellsOf(from.line).cellOf(from.column);
                     let line = Math.min(Math.max(from.line + (forward ? 1 : -1), 0), this._document.lineCount - 1);
-                    let column = Math.min(this._desiredColumn, this._document.line(line).length);
-                    return new CodePosition(line, column);
+                    return new CodePosition(line, this.cellsOf(line).columnAt(this._desiredCell));
                 }
             case 'page':
                 {
-                    if (this._desiredColumn < 0) this._desiredColumn = from.column;
+                    if (this._desiredCell < 0) this._desiredCell = this.cellsOf(from.line).cellOf(from.column);
                     let line = Math.min(Math.max(from.line + (forward ? pageLines : -pageLines), 0), this._document.lineCount - 1);
-                    return new CodePosition(line, Math.min(this._desiredColumn, this._document.line(line).length));
+                    return new CodePosition(line, this.cellsOf(line).columnAt(this._desiredCell));
                 }
             case 'lineBoundary':
-                this._desiredColumn = -1;
+                this._desiredCell = -1;
                 return forward ? this._document.lineEnd(from) : this._document.lineStart(from);
             default:
-                this._desiredColumn = -1;
+                this._desiredCell = -1;
                 return forward ? this._document.end : CodePosition.start;
         }
     }

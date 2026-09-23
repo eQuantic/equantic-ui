@@ -279,6 +279,53 @@ public class CodeEditorSurfaceTests
     }
 
     /// <summary>
+    /// The code is DRAWN on the cells the caret is placed on (defect 12): a tab as the spaces up to
+    /// its stop, and a wide character in a box two cells wide. The caret after a tab stood one cell
+    /// in while the glyph after it was drawn at the stop, or wherever the font put it.
+    /// </summary>
+    [Fact]
+    public void TheGlyphAfterATabIsDrawnWhereTheCaretBeforeItStands()
+    {
+        var (host, surface, bounds) = Open("\tx");
+        Focus(host, surface, bounds);
+        surface.Engine().Selection = new CodeRange(new CodePosition(0, 1));
+
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder, 0);
+        var commands = builder.Build().Commands.ToArray();
+
+        var caret = commands.Last(c => c.Kind == DrawCommandKind.FillRRect
+            && MathF.Abs(c.Shape.Rect.Width - 2f) < 0.01f);
+        var glyph = commands.Single(c => c.Kind == DrawCommandKind.Texture
+            && MathF.Abs(c.Shape.Rect.Width - surface.Grid().Cell.Width) < 0.01f);
+        caret.Shape.Rect.X.Should().BeApproximately(
+            bounds.X + surface.Grid().Origin.X + 4 * surface.Grid().Cell.Width, 0.01f, "the tab runs to its stop");
+        glyph.Shape.Rect.X.Should().BeApproximately(caret.Shape.Rect.X, 0.01f,
+            "and the x is drawn where the caret before it stands");
+    }
+
+    [Fact]
+    public void TheGlyphAfterAWideCharacterIsDrawnTwoCellsOn()
+    {
+        var (host, surface, bounds) = Open("\u4E2Dx");
+
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder, 0);
+        var glyphs = builder.Build().Commands.ToArray()
+            .Where(c => c.Kind == DrawCommandKind.Texture
+                && MathF.Abs(c.Shape.Rect.Width - surface.Grid().Cell.Width) < 0.01f)
+            .OrderBy(c => c.Shape.Rect.X)
+            .ToArray();
+
+        glyphs.Should().HaveCount(2, "the ideograph and the x");
+        glyphs[1].Shape.Rect.X.Should().BeApproximately(
+            bounds.X + surface.Grid().Origin.X + 2 * surface.Grid().Cell.Width, 0.01f,
+            "the ideograph's box is two cells wide, whatever its glyph measures");
+        surface.Engine().CaretRect(new CodePosition(0, 1)).X.Should().BeApproximately(
+            surface.Grid().Origin.X + 2 * surface.Grid().Cell.Width, 0.01f);
+    }
+
+    /// <summary>
     /// The caret is painted AFTER the code, over everything the block drew for its line. It was
     /// painted before, and the active line's wash, opaque and always under the caret, covered it: the
     /// caret never showed on the line it was on. The web had the same defect wherever a bracket

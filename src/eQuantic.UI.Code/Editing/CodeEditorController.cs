@@ -1,3 +1,4 @@
+using System.Globalization;
 using eQuantic.UI.Primitives;
 
 namespace eQuantic.UI.Code;
@@ -97,7 +98,27 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// returns to the column you started from — losing it on the short line is the classic bug,
     /// and remembering it is why this field exists.
     /// </summary>
-    private int _desiredColumn = -1;
+    private int _desiredCell = -1;
+
+    /// <summary>The cells of the lines read lately, by line: the caret, the bands and every click
+    /// read them, several times a frame, and a line's cells change only with its text.</summary>
+    private readonly Dictionary<int, CodeLineCells> _cells = new();
+
+    /// <summary>
+    /// Where line <paramref name="line"/>'s columns land on the grid: tabs to their stops, wide
+    /// characters two cells, every text element whole (see <see cref="CodeLineCells"/>). The tab
+    /// stops are the language's indent width.
+    /// </summary>
+    public CodeLineCells CellsOf(int line)
+    {
+        var text = _document.Line(line);
+        var tabSize = Rules.IndentWidth;
+        if (_cells.TryGetValue(line, out var cells) && cells.Text == text && cells.TabSize == tabSize)
+            return cells;
+        cells = new CodeLineCells(text, tabSize);
+        _cells[line] = cells;
+        return cells;
+    }
 
     // ---- the surface: what a realizer drives and paints ---------------------------------------
 
@@ -134,10 +155,12 @@ public sealed class CodeEditorController : ICodeSurfaceModel
                 // One cell past the end of every line but the last: the band shows that the line
                 // BREAK is held too, which is what makes a selection ending at column 0 of the next
                 // line read as the whole line it is.
-                var to = line == end.Line ? end.Column : _document.Line(line).Length + 1;
-                if (to <= from) continue;
-                var at = Grid.PointOf(line, from);
-                bands.Add(new Rect(at.X, at.Y, (to - from) * Grid.Cell.Width, Grid.Cell.Height));
+                var cells = CellsOf(line);
+                var fromCell = cells.CellOf(from);
+                var toCell = line == end.Line ? cells.CellOf(end.Column) : cells.Width + 1;
+                if (toCell <= fromCell) continue;
+                var at = Grid.PointOf(line, fromCell);
+                bands.Add(new Rect(at.X, at.Y, (toCell - fromCell) * Grid.Cell.Width, Grid.Cell.Height));
             }
             return bands;
         }
@@ -154,21 +177,22 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// <summary>Where a caret at <paramref name="position"/> is drawn, in the surface's coordinates.</summary>
     public Rect CaretRect(CodePosition position)
     {
-        var at = Grid.PointOf(position.Line, position.Column);
+        var at = Grid.PointOf(position.Line, CellsOf(position.Line).CellOf(position.Column));
         return new Rect(at.X, at.Y, CaretWidth, Grid.Cell.Height);
     }
 
     /// <summary>
-    /// The (line, column) a point on the surface lands on. With a fixed pitch this is division, not a
-    /// search — and the column ROUNDS to the nearest boundary, so clicking the right half of a
-    /// character puts the caret after it, which is what makes a click feel aimed rather than
-    /// approximate. Past the end of a line it lands at the end; past the last line, on the last.
+    /// The (line, column) a point on the surface lands on: the row by division, the column through
+    /// the line's cells (<see cref="CellsOf"/>), on the nearer side of whatever the point hit. So a
+    /// click on the right half of a character, a tab or a wide character puts the caret after it,
+    /// which is what makes a click feel aimed rather than approximate, and no click lands inside a
+    /// text element. Past the end of a line it lands at the end; past the last line, on the last.
     /// </summary>
     public CodePosition PositionAt(Point point)
     {
         var line = (int)MathF.Floor((point.Y - Grid.Origin.Y) / Grid.Cell.Height);
-        var column = (int)MathF.Round((point.X - Grid.Origin.X) / Grid.Cell.Width);
-        return _document.Clamp(new CodePosition(Math.Max(0, line), Math.Max(0, column)));
+        var target = _document.Clamp(new CodePosition(Math.Max(0, line), 0)).Line;
+        return new CodePosition(target, CellsOf(target).ColumnAt((point.X - Grid.Origin.X) / Grid.Cell.Width));
     }
 
     /// <inheritdoc />
@@ -186,8 +210,18 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         // step, whatever the candidate window went through on the way.
         var committing = _composition is not null;
         EndComposition();
+        // Element by element: a character goes through Type, which pairs brackets and quotes, and
+        // an element of more than one unit (an emoji, a letter with its accent) goes in WHOLE, never
+        // a half of a surrogate pair at a time.
         var typed = false;
-        foreach (var c in text) typed |= Type(c);
+        var starts = StringInfo.ParseCombiningCharacters(text);
+        for (var i = 0; i < starts.Length; i++)
+        {
+            var end = i + 1 < starts.Length ? starts[i + 1] : text.Length;
+            typed |= end - starts[i] == 1
+                ? Type(text[starts[i]])
+                : Edit(_selection, text.Substring(starts[i], end - starts[i]), true);
+        }
         // A step of its OWN, after as well as before (SetComposition broke the run it began at):
         // the typing that follows a commit does not join it.
         if (committing) History.Break();
@@ -278,8 +312,8 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         _selection = new CodeRange(caret);
         Highlighter.LineChanged(_document, line, linesInserted, linesRemoved);
         _revealVersion++;
-        _desiredColumn = -1;
-        var edit = new CodeEdit(ordered, removed, text, before, _selection);
+        _desiredCell = -1;
+        var edit = new CodeEdit(ordered, removed, text, before, _selection, false);
         Changed?.Invoke(edit);
         SelectionChanged?.Invoke(_selection);
         return new CodeRange(ordered.Start, caret);
@@ -341,7 +375,13 @@ public sealed class CodeEditorController : ICodeSurfaceModel
 
     /// <summary>Replaces a range with text — the primitive every other edit is written in, and the
     /// one an IDE calls to apply a refactor, a formatter or a language server's edit.</summary>
-    public bool Apply(CodeRange range, string text)
+    public bool Apply(CodeRange range, string text) => Edit(range, text, false);
+
+    /// <summary>
+    /// The one door every change to the document goes through. <paramref name="typed"/> says a
+    /// person typed it, which is what lets undo join it to the run before (see <see cref="CodeEdit.Typed"/>).
+    /// </summary>
+    private bool Edit(CodeRange range, string text, bool typed)
     {
         if (ReadOnly) return false;
 
@@ -358,13 +398,13 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         _document = next;
         _selection = new CodeRange(caret);
         _revealVersion++;
-        var edit = new CodeEdit(ordered, removed, text, before, _selection);
+        var edit = new CodeEdit(ordered, removed, text, before, _selection, typed);
         History.Record(edit);
         Highlighter.LineChanged(_document, line, linesInserted, linesRemoved);
 
         Changed?.Invoke(edit);
         SelectionChanged?.Invoke(_selection);
-        _desiredColumn = -1;
+        _desiredCell = -1;
         return true;
     }
 
@@ -388,13 +428,13 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             {
                 if (c != open) continue;
                 var text = _document.TextIn(_selection);
-                return Apply(_selection, open + text + close);
+                return Edit(_selection, open + text + close, true);
             }
             foreach (var quote in rules.Quotes)
             {
                 if (c != quote) continue;
                 var text = _document.TextIn(_selection);
-                return Apply(_selection, quote + text + quote);
+                return Edit(_selection, quote + text + quote, true);
             }
         }
 
@@ -425,7 +465,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             if (c != open) continue;
             if (after == '\0' || char.IsWhiteSpace(after) || rules.Brackets.Any(p => p.Close == after))
             {
-                if (!Apply(_selection, $"{open}{close}")) return false;
+                if (!Edit(_selection, $"{open}{close}", true)) return false;
                 Selection = new CodeRange(Caret with { Column = Caret.Column - 1 });
                 return true;
             }
@@ -438,13 +478,25 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             if (CodeDocument.IsWordChar(before) || CodeDocument.IsWordChar(after)) break;
             if (after == '\0' || char.IsWhiteSpace(after))
             {
-                if (!Apply(_selection, $"{quote}{quote}")) return false;
+                if (!Edit(_selection, $"{quote}{quote}", true)) return false;
                 Selection = new CodeRange(Caret with { Column = Caret.Column - 1 });
                 return true;
             }
         }
 
-        return Apply(_selection, c.ToString());
+        // A closing bracket typed where only indentation stands before it steps back one level, to
+        // the block it closes: what the language's OutdentOn has always said, and nothing read.
+        if (_selection.IsEmpty && rules.OutdentOn.Contains(c))
+        {
+            var indent = line[..Caret.Column];
+            if (indent.Length > 0 && indent.Trim().Length == 0)
+            {
+                var off = StepOff(indent);
+                return Edit(new CodeRange(new CodePosition(Caret.Line, 0), Caret), indent[off..] + c, true);
+            }
+        }
+
+        return Edit(_selection, c.ToString(), true);
     }
 
     /// <summary>
@@ -566,24 +618,60 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         // editor uses, and the reason shift+down then Tab does not indent one line too many.
         if (last > first && _selection.End.Column == 0) last--;
 
+        // What each line gains (Tab) or loses (Shift+Tab), all of it at column 0: the selection's
+        // two ends move by their OWN line's change, which is what keeps it what it was.
         var lines = new List<string>();
+        var changes = new List<int>();
         for (var line = first; line <= last; line++)
         {
             var text = _document.Line(line);
-            if (add) lines.Add(text.Length == 0 ? text : step + text);
-            else if (text.StartsWith(step, StringComparison.Ordinal)) lines.Add(text[step.Length..]);
-            else lines.Add(text.TrimStart(' ', '\t').Length == text.Length ? text : text[1..]);
+            var change = add ? (text.Length == 0 ? 0 : step.Length) : StepOff(text);
+            lines.Add(add ? (change == 0 ? text : step + text) : text[change..]);
+            changes.Add(change);
         }
 
+        // Read BEFORE the edit: the edit leaves the caret at its end, which is what the selection
+        // used to be rebuilt from.
+        var anchor = _selection.Anchor;
+        var focus = _selection.Focus;
         var range = new CodeRange(new CodePosition(first, 0),
             new CodePosition(last, _document.Line(last).Length));
-        var anchorShift = add ? step.Length : -(int)Math.Min(step.Length, _document.IndentOf(first).Length);
         if (!Apply(range, string.Join("\n", lines))) return false;
 
-        Selection = new CodeRange(
-            new CodePosition(first, Math.Max(0, _selection.Anchor.Column + anchorShift)),
-            new CodePosition(last, _document.Line(last).Length));
+        Selection = new CodeRange(ShiftedBy(anchor, first, last, changes, add),
+            ShiftedBy(focus, first, last, changes, add));
         return true;
+    }
+
+    /// <summary>Where a selection's end goes when the lines it may be on gained or lost
+    /// <paramref name="changes"/> at column 0 (see <see cref="Shifted"/>).</summary>
+    private static CodePosition ShiftedBy(CodePosition position, int first, int last, List<int> changes,
+        bool add)
+    {
+        if (position.Line < first || position.Line > last) return position;
+        var change = changes[position.Line - first];
+        return new CodePosition(position.Line,
+            add ? Shifted(position.Column, 0, 0, change) : Shifted(position.Column, 0, change, 0));
+    }
+
+    /// <summary>
+    /// Where <paramref name="column"/> ends up after its line had <paramref name="removed"/> units
+    /// taken out at <paramref name="at"/> and <paramref name="inserted"/> put in there: before the
+    /// change it stays, inside what went it lands where that began, after it it moves with the text.
+    /// A column exactly at <paramref name="at"/> stays before what was put in, which is what keeps a
+    /// selection of whole lines whole when they are indented.
+    /// </summary>
+    private static int Shifted(int column, int at, int removed, int inserted) =>
+        column <= at ? column : column < at + removed ? at : column - removed + inserted;
+
+    /// <summary>How much of one step of indentation <paramref name="text"/> begins with: a tab is a
+    /// whole step, and a line indented by fewer spaces than a step gives up all of them.</summary>
+    private int StepOff(string text)
+    {
+        if (text.Length > 0 && text[0] == '\t') return 1;
+        var off = 0;
+        while (off < text.Length && off < Rules.IndentWidth && text[off] == ' ') off++;
+        return off;
     }
 
     /// <summary>
@@ -606,28 +694,63 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             if (!text.StartsWith(marker, StringComparison.Ordinal)) { allCommented = false; break; }
         }
 
+        // Each line's change as (where, how much went, how much came), so the selection's ends can
+        // follow their own line's markers instead of collapsing to the caret the edit leaves.
         var lines = new List<string>();
+        var ats = new List<int>();
+        var removals = new List<int>();
+        var insertions = new List<int>();
         for (var line = first; line <= last; line++)
         {
             var text = _document.Line(line);
             if (allCommented)
             {
                 var at = text.IndexOf(marker, StringComparison.Ordinal);
-                if (at < 0) { lines.Add(text); continue; }
+                if (at < 0)
+                {
+                    lines.Add(text);
+                    ats.Add(0);
+                    removals.Add(0);
+                    insertions.Add(0);
+                    continue;
+                }
                 var after = at + marker.Length;
                 if (after < text.Length && text[after] == ' ') after++;
                 lines.Add(text[..at] + text[after..]);
+                ats.Add(at);
+                removals.Add(after - at);
+                insertions.Add(0);
             }
             else
             {
                 var indent = _document.IndentOf(line);
                 lines.Add(text.Length == 0 ? marker + " " : indent + marker + " " + text[indent.Length..]);
+                ats.Add(text.Length == 0 ? 0 : indent.Length);
+                removals.Add(0);
+                insertions.Add(marker.Length + 1);
             }
         }
 
+        var anchor = _selection.Anchor;
+        var focus = _selection.Focus;
         var range = new CodeRange(new CodePosition(first, 0),
             new CodePosition(last, _document.Line(last).Length));
-        return Apply(range, string.Join("\n", lines));
+        if (!Apply(range, string.Join("\n", lines))) return false;
+
+        Selection = new CodeRange(Commented(anchor, first, last, ats, removals, insertions),
+            Commented(focus, first, last, ats, removals, insertions));
+        return true;
+    }
+
+    /// <summary>Where a selection's end goes when the lines it may be on had their markers put in
+    /// or taken out (see <see cref="Shifted"/>).</summary>
+    private static CodePosition Commented(CodePosition position, int first, int last, List<int> ats,
+        List<int> removals, List<int> insertions)
+    {
+        if (position.Line < first || position.Line > last) return position;
+        var index = position.Line - first;
+        return new CodePosition(position.Line,
+            Shifted(position.Column, ats[index], removals[index], insertions[index]));
     }
 
     // ---- movement -----------------------------------------------------------------------------
@@ -658,37 +781,37 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         switch (motion)
         {
             case CodeMotion.Character:
-                _desiredColumn = -1;
+                _desiredCell = -1;
                 return forward ? _document.Next(from) : _document.Previous(from);
 
             case CodeMotion.Word:
-                _desiredColumn = -1;
+                _desiredCell = -1;
                 return WordStep(from, forward);
 
             case CodeMotion.Line:
             {
-                // The remembered column is what makes a run of ↓ through ragged lines come back
-                // to where it started instead of collapsing to the shortest one.
-                if (_desiredColumn < 0) _desiredColumn = from.Column;
+                // The remembered CELL is what makes a run of ↓ through ragged lines come back to
+                // where it started instead of collapsing to the shortest one, and what keeps it in
+                // the same place on screen across a line indented with tabs.
+                if (_desiredCell < 0) _desiredCell = CellsOf(from.Line).CellOf(from.Column);
                 var line = Math.Clamp(from.Line + (forward ? 1 : -1), 0, _document.LineCount - 1);
-                var column = Math.Min(_desiredColumn, _document.Line(line).Length);
-                return new CodePosition(line, column);
+                return new CodePosition(line, CellsOf(line).ColumnAt(_desiredCell));
             }
 
             case CodeMotion.Page:
             {
-                if (_desiredColumn < 0) _desiredColumn = from.Column;
+                if (_desiredCell < 0) _desiredCell = CellsOf(from.Line).CellOf(from.Column);
                 var line = Math.Clamp(from.Line + (forward ? pageLines : -pageLines),
                     0, _document.LineCount - 1);
-                return new CodePosition(line, Math.Min(_desiredColumn, _document.Line(line).Length));
+                return new CodePosition(line, CellsOf(line).ColumnAt(_desiredCell));
             }
 
             case CodeMotion.LineBoundary:
-                _desiredColumn = -1;
+                _desiredCell = -1;
                 return forward ? _document.LineEnd(from) : _document.LineStart(from);
 
             default:
-                _desiredColumn = -1;
+                _desiredCell = -1;
                 return forward ? _document.End : CodePosition.Start;
         }
     }

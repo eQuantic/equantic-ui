@@ -8,6 +8,7 @@ export abstract class CurlyBraceLanguage {
     static stateNormal: number = 0;
     static stateBlockComment: number = 1;
     static stateMultilineString: number = 2;
+    static stateRawString: number = 16;
     static _punctuation: Set<string> | undefined;
 
     static get punctuation(): Set<string> {
@@ -25,6 +26,10 @@ export abstract class CurlyBraceLanguage {
     }
 
     get hasTemplateStrings(): boolean {
+        return false;
+    }
+
+    get hasRawStrings(): boolean {
         return false;
     }
 
@@ -46,6 +51,15 @@ export abstract class CurlyBraceLanguage {
             }
             CurlyBraceLanguage.add(into, 0, close + 2, 'comment');
             i = close + 2;
+        } else if (state >= CurlyBraceLanguage.stateRawString) {
+            let quotes = state - CurlyBraceLanguage.stateRawString;
+            let end = CurlyBraceLanguage.closeRaw(line, 0, quotes);
+            if (end < 0) {
+                CurlyBraceLanguage.add(into, 0, line.length, 'string');
+                return state;
+            }
+            CurlyBraceLanguage.add(into, 0, end, 'string');
+            i = end;
         } else if (state === CurlyBraceLanguage.stateMultilineString) {
             let end = this.closeMultilineString(line);
             if (end < 0) {
@@ -94,6 +108,20 @@ export abstract class CurlyBraceLanguage {
                     return CurlyBraceLanguage.stateMultilineString;
                 }
                 CurlyBraceLanguage.add(into, i, end - i, 'string');
+                i = end;
+                continue;
+            }
+            if (this.hasRawStrings && c === '"' && CurlyBraceLanguage.quotesAt(line, i) >= 3) {
+                let start = i;
+                while (start > 0 && line[start - 1] === '$') start--;
+                if (start < i && into.length > 0 && into[into.length - 1].start === start) into.splice(into.length - 1, 1);
+                let quotes = CurlyBraceLanguage.quotesAt(line, i);
+                let end = CurlyBraceLanguage.closeRaw(line, i + quotes, quotes);
+                if (end < 0) {
+                    CurlyBraceLanguage.add(into, start, line.length - start, 'string');
+                    return CurlyBraceLanguage.stateRawString + quotes;
+                }
+                CurlyBraceLanguage.add(into, start, end - start, 'string');
                 i = end;
                 continue;
             }
@@ -174,6 +202,22 @@ export abstract class CurlyBraceLanguage {
                 continue;
             }
             if (line[i] === quote) return i + 1;
+        }
+        return -1;
+    }
+
+    static quotesAt(line: string, index: number) {
+        let count = 0;
+        while (index + count < line.length && line[index + count] === '"') count++;
+        return count;
+    }
+
+    static closeRaw(line: string, from: number, quotes: number) {
+        for (let i = from; i < line.length; i++) {
+            if (line[i] !== '"') continue;
+            let run = CurlyBraceLanguage.quotesAt(line, i);
+            if (run >= quotes) return i + run;
+            i += run - 1;
         }
         return -1;
     }

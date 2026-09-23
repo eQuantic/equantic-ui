@@ -171,20 +171,25 @@ public sealed class CodeDocument
         return new CodeDocument(lines);
     }
 
-    /// <summary>The position one character BEFORE this one — which crosses a line break.</summary>
+    /// <summary>
+    /// The position one character BEFORE this one, which crosses a line break. A character is a
+    /// text element (<see cref="CodeLineCells"/>): an emoji is one step and one Backspace, where a
+    /// step of one UTF-16 unit left half of it behind.
+    /// </summary>
     public CodePosition Previous(CodePosition position)
     {
         var here = Clamp(position);
-        if (here.Column > 0) return here with { Column = here.Column - 1 };
+        if (here.Column > 0) return here with { Column = new CodeLineCells(_lines[here.Line], 1).Previous(here.Column) };
         if (here.Line == 0) return CodePosition.Start;
         return new CodePosition(here.Line - 1, _lines[here.Line - 1].Length);
     }
 
-    /// <summary>The position one character AFTER this one.</summary>
+    /// <summary>The position one character (one text element) AFTER this one.</summary>
     public CodePosition Next(CodePosition position)
     {
         var here = Clamp(position);
-        if (here.Column < _lines[here.Line].Length) return here with { Column = here.Column + 1 };
+        if (here.Column < _lines[here.Line].Length)
+            return here with { Column = new CodeLineCells(_lines[here.Line], 1).Next(here.Column) };
         if (here.Line == _lines.Count - 1) return here;
         return new CodePosition(here.Line + 1, 0);
     }
