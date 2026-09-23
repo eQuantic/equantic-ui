@@ -85,9 +85,29 @@ public class BugHuntFixesTests
     [InlineData("MathF.Round(Total, System.MidpointRounding.ToZero)", "$eq.math.roundSingleWithMode(Math.fround(this.total), 'toZero')")]
     [InlineData("Math.Round(mode: MidpointRounding.ToEven, value: Total)", "$eq.math.roundWithMode(this.total, 'toEven')")]
     [InlineData("Math.Round(Total, digits: 3)", "$eq.math.round(this.total, 3)")]
+    [InlineData("Math.Round(Total, 2, Mode)", "$eq.math.round(this.total, 2, this.mode)")]
+    [InlineData("MathF.Round(Total, 2, Mode)", "$eq.math.roundSingle(Math.fround(this.total), 2, this.mode)")]
+    [InlineData("Math.Round(Total, digits: Digits)", "$eq.math.round(this.total, this.digits)")]
+    [InlineData("Math.Round(Total, mode: Mode)", "$eq.math.roundWithMode(this.total, this.mode)")]
+    [InlineData("Math.Round(Total, Digits, mode: Mode)", "$eq.math.round(this.total, this.digits, this.mode)")]
+    [InlineData("Math.Round(Total, -1)", "$eq.math.round(this.total, -1)")]
     public void WithoutAModel_ARoundKeepsTheOverloadItWasWrittenWith(string call, string expected)
     {
         TestHelper.ConvertExpression(call).Should().Be(expected);
+    }
+
+    /// <summary>
+    /// ...and ONE argument past the value is a digit count or a mode, which only its type says:
+    /// with no model to ask, a variable in that place is a build error. Taken for the digits, a
+    /// mode variable chose the digits overload.
+    /// </summary>
+    [Theory]
+    [InlineData("Math.Round(Total, Mode)")]
+    [InlineData("Math.Round(Total, Digits)")]
+    [InlineData("MathF.Round(Total, Mode)")]
+    public void WithoutAModel_ARoundWhoseSecondArgumentCouldBeEither_IsABuildError(string call)
+    {
+        TestHelper.DiagnosticsFor(call).Should().Contain(d => d.Code == "EQ1004");
     }
 
     /// <summary>A member JavaScript's Math does not have is a BUILD error, never a guessed name:

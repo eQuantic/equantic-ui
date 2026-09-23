@@ -87,15 +87,20 @@ public class MathStrategy : IExpressionIrStrategy
 
         // Where no model can name the overload (the table above needs the bound method), a Round is
         // still .NET's rounding and never the JS Math.round, which sends halves up and ignores a
-        // digit count. The overload is read from the call as WRITTEN: a `MidpointRounding.<Mode>`
-        // argument is the mode, a named argument takes its parameter's slot, and the rest are the
-        // value and then the digits. The holes follow the slots and the parts keep their written
-        // order, which the template writer preserves when the two differ. A DECIMAL value rounds
-        // itself, since the number helper would round the object to NaN.
+        // digit count. The overload is read from the call as WRITTEN: a named argument takes its
+        // parameter's slot, and the positional ones fill what the names left in the parameters'
+        // order, the value, then the digits, then the mode. Past the value, ONE argument alone is a
+        // digit count or a mode, and only its type says which: a `MidpointRounding.<Mode>` or an
+        // integer literal says it here, and anything else is a build error rather than a guess.
+        // Taken for the digits, `Round(x, mode)`'s mode variable picked the digits overload, and
+        // `Round(x, 2, mode)` dropped it. The holes follow the slots and the parts keep their
+        // written order, which the template writer preserves when the two differ. A DECIMAL value
+        // rounds itself, since the number helper would round the object to NaN.
         if (methodName == "Round" && arguments.Count >= 1)
         {
             int? value = null, digits = null, mode = null;
             var parts = new JsExpr[arguments.Count];
+            var positional = new Queue<int>();
             for (var i = 0; i < arguments.Count; i++)
             {
                 var argument = arguments[i];
@@ -107,11 +112,33 @@ public class MathStrategy : IExpressionIrStrategy
                 {
                     case "mode": mode = i; break;
                     case "digits" or "decimals": digits = i; break;
-                    case null when modeMember is not null: mode = i; break;
-                    case null when value is null: value = i; break;
-                    case null: digits = i; break;
+                    case null: positional.Enqueue(i); break;
                     default: value = i; break;
                 }
+            }
+            if (value is null && positional.Count > 0) value = positional.Dequeue();
+            switch (positional.Count)
+            {
+                case 0:
+                    break;
+                case 1 when digits is null && mode is null:
+                    var alone = positional.Dequeue();
+                    if (ModeMember(arguments[alone].Expression) is not null) mode = alone;
+                    else if (IsIntegerLiteral(arguments[alone].Expression)) digits = alone;
+                    else return JsExpr.Opaque(context.Unhandled(node, "Math.Round, whose argument could be its digits or its mode"));
+                    break;
+                case 1 when mode is null:
+                    mode = positional.Dequeue();
+                    break;
+                case 1 when digits is null:
+                    digits = positional.Dequeue();
+                    break;
+                case 2 when digits is null && mode is null:
+                    digits = positional.Dequeue();
+                    mode = positional.Dequeue();
+                    break;
+                default:
+                    return JsExpr.Opaque(context.Unhandled(node, "Math.Round"));
             }
             var round = single ? Eq.RoundSingle : Eq.Round;
             // The value is a float's, singled as the table's arguments are; the digits and the
@@ -162,6 +189,15 @@ public class MathStrategy : IExpressionIrStrategy
     };
 
     /// <summary>The member a written <c>MidpointRounding.X</c> names, or null for anything else.</summary>
+    /// <summary>An integer written as a literal, negated or not: a digit count, which no mode is.</summary>
+    private static bool IsIntegerLiteral(ExpressionSyntax expression) => expression switch
+    {
+        LiteralExpressionSyntax { Token.Value: int } => true,
+        PrefixUnaryExpressionSyntax { OperatorToken.ValueText: "-", Operand: var operand } => IsIntegerLiteral(operand),
+        ParenthesizedExpressionSyntax { Expression: var inner } => IsIntegerLiteral(inner),
+        _ => false,
+    };
+
     /// <summary>A float argument as the single C# converts it to — an argument that already is one
     /// comes back from Math.fround unchanged, and a literal that is one is left as written.</summary>
     private static JsExpr Singled(JsExpr argument) =>
