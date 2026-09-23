@@ -159,6 +159,11 @@ public class NumericBclConformanceTests
     [InlineData("return char.IsSurrogatePair(\"a\\uD83D\\uDE00\", 1);")]         // true
     [InlineData("return char.IsSurrogatePair(\"ab\", 0);")]                      // false
     [InlineData("return char.IsSurrogatePair(\"a\\uD83D\\uDE00\", 2);")]         // false — lone low at the end
+    // The (char, char) pair: two overloads of two arguments each, and the table read both as the
+    // (string, index) one, so the web took the low half for an INDEX and answered false.
+    [InlineData("return char.IsSurrogatePair('\\uD83D', '\\uDE00');")]             // true
+    [InlineData("return char.IsSurrogatePair('\\uDE00', '\\uD83D');")]             // false: the halves swapped
+    [InlineData("return char.IsSurrogatePair('a', 'b');")]                           // false
     public void NumericBcl_MatchesDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

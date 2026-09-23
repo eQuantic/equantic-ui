@@ -40,7 +40,8 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
                 return context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol
                 {
                     IsStatic: true, ContainingType: { } home
-                } method && MethodTable(home.SpecialType, method.Name, invocation.ArgumentList.Arguments.Count) is not null;
+                } method && MethodTable(home.SpecialType, method.Name, invocation.ArgumentList.Arguments.Count,
+                    Indexed(method)) is not null;
 
             case MemberAccessExpressionSyntax access:
                 return context.SemanticHelper.GetSymbol(access) is { IsStatic: true, ContainingType: { } owner } member
@@ -67,7 +68,7 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
             .ToArray();
 
         // Templates say what they compute; the writer decides what to evaluate once.
-        var emit = MethodTable(method.ContainingType.SpecialType, method.Name, args.Length)!;
+        var emit = MethodTable(method.ContainingType.SpecialType, method.Name, args.Length, Indexed(method))!;
         if (emit.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
         return JsExpr.Template(emit, args, context.TypeAnnotations);
     }
@@ -79,8 +80,17 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
     private static bool IsFloating(SpecialType type) =>
         type is SpecialType.System_Double or SpecialType.System_Single;
 
+    /// <summary>
+    /// Whether the call is one of the (string, index) overloads, which ask about the character AT an
+    /// index. The count of arguments cannot tell: <c>char.IsSurrogatePair</c> and
+    /// <c>char.ConvertToUtf32</c> each have a (char, char) overload of the same length, and the table
+    /// read each pair as the other's.
+    /// </summary>
+    private static bool Indexed(IMethodSymbol method) =>
+        method.Parameters is [{ Type.SpecialType: SpecialType.System_String }, { Type.SpecialType: SpecialType.System_Int32 }];
+
     /// <summary>Emission template ({0}, {1}, … are the converted arguments), or null = fenced.</summary>
-    private static string? MethodTable(SpecialType home, string name, int argCount)
+    private static string? MethodTable(SpecialType home, string name, int argCount, bool indexed)
     {
         if (IsFloating(home))
         {
@@ -299,12 +309,17 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
                 "ConvertFromUtf32" when argCount == 1 => "String.fromCodePoint({0})",
                 // The surrogate pair IS the code point: concatenate the halves and read it back.
                 // Through Number(): `codePointAt` answers `number | undefined`, and a strict tsc
-                // refused every twin that handed the result on as the int it is in C#.
-                "ConvertToUtf32" when argCount == 2 => "Number(({0} + {1}).codePointAt(0))",
+                // refused every twin that handed the result on as the int it is in C#. The
+                // (string, index) overload stays fenced: .NET throws on a lone surrogate there,
+                // where codePointAt answers it, and the table read its index as the low half.
+                "ConvertToUtf32" when argCount == 2 && !indexed => "Number(({0} + {1}).codePointAt(0))",
                 // Out-of-range indexes read NaN from charCodeAt, and every comparison says no.
-                "IsSurrogatePair" when argCount == 2 =>
+                "IsSurrogatePair" when indexed =>
                     "({0}.charCodeAt({1}) >= 0xD800 && {0}.charCodeAt({1}) <= 0xDBFF"
                     + " && {0}.charCodeAt({1} + 1) >= 0xDC00 && {0}.charCodeAt({1} + 1) <= 0xDFFF)",
+                // The (char, char) pair: a high half, then a low one.
+                "IsSurrogatePair" when argCount == 2 =>
+                    "(/^[\\uD800-\\uDBFF]$/.test({0}) && /^[\\uDC00-\\uDFFF]$/.test({1}))",
                 _ => null,
             };
         }
