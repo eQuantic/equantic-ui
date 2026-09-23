@@ -76,6 +76,25 @@ public class BugHuntFixesTests
     }
 
     /// <summary>
+    /// The fallback singles every MathF argument but ScaleB's exponent and Round's digits and
+    /// mode, and that exemption is the BCL's own list, read here: MathF has no other parameter that
+    /// is not a float (it has no RootN; float does). A .NET that adds one fails this, naming it,
+    /// before the fallback rounds an int it should have left alone.
+    /// </summary>
+    [Fact]
+    public void EveryMathFParameterThatIsNotAFloat_IsOneTheFallbackLeavesAlone()
+    {
+        var notFloats = typeof(MathF).GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            .SelectMany(method => method.GetParameters()
+                .Where(parameter => parameter.ParameterType != typeof(float))
+                .Select(parameter => $"{method.Name}.{parameter.Name}"))
+            .Distinct()
+            .Order()
+            .ToArray();
+        notFloats.Should().Equal("Round.digits", "Round.mode", "ScaleB.n");
+    }
+
+    /// <summary>
     /// Without a model a Round's overload is read from the call as written: a trailing mode was
     /// dropped (ToEven in its place), and a named mode was taken for the digits.
     /// </summary>
