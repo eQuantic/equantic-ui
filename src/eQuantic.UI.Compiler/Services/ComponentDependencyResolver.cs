@@ -65,84 +65,101 @@ public class ComponentDependencyResolver
         try
         {
             var code = File.ReadAllText(filePath);
-            var tree = CSharpSyntaxTree.ParseText(code, ParseDefaults.Options, path: filePath);
-            var root = tree.GetRoot();
-
-            // Discover user value types (records/structs) — emitted as named JS classes (so references
-            // import them).
-            foreach (var valueType in root.DescendantNodes().OfType<TypeDeclarationSyntax>())
-            {
-                if (CodeGen.RecordTypeEmitter.CanEmit(valueType))
-                    _recordTypes.Add(valueType.Identifier.Text);
-            }
-
-            // Find all class declarations
-            var classes = root.DescendantNodes().OfType<ClassDeclarationSyntax>();
-
-            foreach (var classDecl in classes)
-            {
-                var className = classDecl.Identifier.Text;
-
-                // [RuntimeProvided] types already exist in @equantic/runtime. The resolver is the
-                // no-project-semantic-model fallback used to decide whether a referenced name is a
-                // per-app module, so registering one here would manufacture a dangling ./Type import.
-                if (classDecl.AttributeLists.SelectMany(list => list.Attributes)
-                    .Any(attribute => attribute.IsNamed("RuntimeProvided")))
-                {
-                    if (classDecl.Parent is not ClassDeclarationSyntax)
-                        _runtimeProvidedTypes.Add(className);
-                    continue;
-                }
-
-                // Static utility classes are emitted as their own module — register so referencers
-                // import. NESTED static classes embed in their owner's module (private scope, every
-                // section has its own `Copy`) and must never register as importable.
-                if (classDecl.Parent is not Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax
-                    && classDecl.Modifiers.Any(m => m.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)))
-                {
-                    _staticHelpers.Add(className);
-                }
-
-                // A PLAIN class is a module too — a referencing module has to import it, or the
-                // page dies with "Bucket is not defined". Components and state classes are resolved
-                // by their own paths; a nested class embeds in its owner.
-                else if (classDecl.Parent is not Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax
-                         && classDecl.Members.Count > 0
-                         && !IsComponentLike(classDecl))
-                {
-                    _plainClasses.Add(className);
-                }
-
-                // Get base type
-                var baseType = classDecl.BaseList?.Types.FirstOrDefault();
-                if (baseType != null)
-                {
-                    var baseTypeName = baseType.Type.ToString();
-
-                    // Clean generic types
-                    if (baseTypeName.Contains('<'))
-                    {
-                        baseTypeName = baseTypeName.Substring(0, baseTypeName.IndexOf('<'));
-                    }
-
-                    // Track ALL inheritance relationships for UI components
-                    // We'll filter later - this allows discovering the full dependency graph
-                    if (!string.IsNullOrEmpty(baseTypeName))
-                    {
-                        if (!_dependencyCache.ContainsKey(className))
-                        {
-                            _dependencyCache[className] = new HashSet<string>();
-                        }
-
-                        _dependencyCache[className].Add(baseTypeName);
-                    }
-                }
-            }
+            Analyze(CSharpSyntaxTree.ParseText(code, ParseDefaults.Options, path: filePath).GetRoot());
         }
         catch (Exception ex)
         {
             // Silently skip files that can't be analyzed
             Console.Error.WriteLine($"Warning: Could not analyze {Path.GetFileName(filePath)}: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// The scan of a compilation already in memory, for a compile that was handed no per-app scan
+    /// (<c>CompileSource</c>, the playground): the same rules over the compilation's own trees. A
+    /// record's module imports the app types its body names only when this answers they became
+    /// modules, and without a scan it answered for none, so a struct member's zero
+    /// (<c>new Cell()</c>) reached the module with nothing importing it.
+    /// </summary>
+    public static ComponentDependencyResolver From(Compilation compilation)
+    {
+        var resolver = new ComponentDependencyResolver();
+        foreach (var tree in compilation.SyntaxTrees) resolver.Analyze(tree.GetRoot());
+        return resolver;
+    }
+
+    /// <summary>What one source file declares, by the rules every scan applies.</summary>
+    private void Analyze(SyntaxNode root)
+    {
+        // Discover user value types (records/structs) — emitted as named JS classes (so references
+        // import them).
+        foreach (var valueType in root.DescendantNodes().OfType<TypeDeclarationSyntax>())
+        {
+            if (CodeGen.RecordTypeEmitter.CanEmit(valueType))
+                _recordTypes.Add(valueType.Identifier.Text);
+        }
+
+        // Find all class declarations
+        var classes = root.DescendantNodes().OfType<ClassDeclarationSyntax>();
+
+        foreach (var classDecl in classes)
+        {
+            var className = classDecl.Identifier.Text;
+
+            // [RuntimeProvided] types already exist in @equantic/runtime. The resolver is the
+            // no-project-semantic-model fallback used to decide whether a referenced name is a
+            // per-app module, so registering one here would manufacture a dangling ./Type import.
+            if (classDecl.AttributeLists.SelectMany(list => list.Attributes)
+                .Any(attribute => attribute.IsNamed("RuntimeProvided")))
+            {
+                if (classDecl.Parent is not ClassDeclarationSyntax)
+                    _runtimeProvidedTypes.Add(className);
+                continue;
+            }
+
+            // Static utility classes are emitted as their own module — register so referencers
+            // import. NESTED static classes embed in their owner's module (private scope, every
+            // section has its own `Copy`) and must never register as importable.
+            if (classDecl.Parent is not Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax
+                && classDecl.Modifiers.Any(m => m.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)))
+            {
+                _staticHelpers.Add(className);
+            }
+
+            // A PLAIN class is a module too — a referencing module has to import it, or the
+            // page dies with "Bucket is not defined". Components and state classes are resolved
+            // by their own paths; a nested class embeds in its owner.
+            else if (classDecl.Parent is not Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax
+                     && classDecl.Members.Count > 0
+                     && !IsComponentLike(classDecl))
+            {
+                _plainClasses.Add(className);
+            }
+
+            // Get base type
+            var baseType = classDecl.BaseList?.Types.FirstOrDefault();
+            if (baseType != null)
+            {
+                var baseTypeName = baseType.Type.ToString();
+
+                // Clean generic types
+                if (baseTypeName.Contains('<'))
+                {
+                    baseTypeName = baseTypeName.Substring(0, baseTypeName.IndexOf('<'));
+                }
+
+                // Track ALL inheritance relationships for UI components
+                // We'll filter later - this allows discovering the full dependency graph
+                if (!string.IsNullOrEmpty(baseTypeName))
+                {
+                    if (!_dependencyCache.ContainsKey(className))
+                    {
+                        _dependencyCache[className] = new HashSet<string>();
+                    }
+
+                    _dependencyCache[className].Add(baseTypeName);
+                }
+            }
         }
     }
 

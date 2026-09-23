@@ -63,6 +63,17 @@ public class StructDefaultTests
         ts.Should().Contain("home: any = new Cell()");
     }
 
+    /// <summary>The struct a zero names is IMPORTED, even compiled on its own (no per-app scan, the
+    /// playground's mode): the constructor text alone was once all this checked, and the module it
+    /// pinned threw "Cell is not defined" at its first default (found in review, #359).</summary>
+    [Fact]
+    public void TheAppStructAZeroNamesIsImported_WithoutAScan()
+    {
+        var ts = Emit("Grid");
+
+        ts.Should().Contain("import { Cell } from \"./Cell\"");
+    }
+
     [Fact]
     public void AnEnumAndACharDefaultToTheirZeros_NotToNull()
     {
