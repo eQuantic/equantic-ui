@@ -484,8 +484,9 @@ src/
 
 ### Bundle Strategy
 
-What a build actually writes under `wwwroot/_equantic/` (sizes are measured by the site's build, not
-quoted here):
+What a build actually writes under `wwwroot/_equantic/` (sizes are not quoted here: the served
+runtime's is recorded in `tests/eQuantic.UI.Server.Tests/Budgets/served-runtime.json`, which the
+suite compares, and CI reports the page modules' on every pull request):
 
 1. **runtime.js** — virtual DOM, events, state, the server-actions bridge AND the shared component
    library, whose transpiled modules ship INSIDE it (`[RuntimeProvided]`); eqc routes
@@ -495,12 +496,13 @@ quoted here):
    `wwwroot/runtime.js` from `Resources/boot.ts` before every build, and it is never committed — a
    committed copy lagged the runtime's source twice without anything noticing (#273)
 2. **`<Component>.js`**, and a **`.js.map`** only where a developer is debugging — one module per
-   page or component, flat (a hash suffix disambiguates types that share a name). The map carries
-   the C# it came from, so `EQuanticSourceMaps` is `full` in Debug and `none` everywhere else
-   (`external` writes one without the C# for an error reporter), its sources are named inside the
-   project, and a publish never takes one (#352). `boot.ts` imports the page's module dynamically on
-   navigation, so per-route lazy loading falls out of the module graph — there is no `pages/` folder
-   and no chunk splitting
+   page or component, flat. The map carries the C# it came from, so `EQuanticSourceMaps` is `full`
+   in Debug and `none` everywhere else (`external` writes one without the C# for an error reporter),
+   its sources are named inside the project, and a publish never takes one (#352). `boot.ts` imports
+   the page's module dynamically on navigation, so per-route lazy loading falls out of the module
+   graph. eqc runs bun with `--splitting`, so what two or more modules share is a chunk named after
+   one of them with a hash: `NotFoundScreen-<hash>.js` in the dashboard sample is its console
+   shell, not a second type of that name. There is no `pages/` folder
 3. **strings/`<culture>`.json** — the culture catalogs, when the app has `.resx`
 4. **icons/** — the app icon sizes and the web manifest, when an `AppIcon` is declared
 

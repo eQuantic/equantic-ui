@@ -467,6 +467,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   SDK copies that file, and three CI checks compare the bytes instead of looking for a file. The
   `equantic.css` every app received, a base sheet no page had ever linked, is gone, and the bun
   packages are private to the build, so a library packed on the SDK no longer depends on them.
+- **2026-09-23 · The runtime and the frame have budgets that fail**: the web side measured no size
+  at all ([#290](https://github.com/eQuantic/equantic-ui/issues/290)). The runtime the Server
+  serves, which every page loads first and which carries the shared component library, is recorded
+  at 137,801 bytes gzipped, and the suite fails when it grows more than 1% or shrinks more than 5%
+  without the record moving with it. The dashboard sample's page modules are reported on every pull
+  request. On Photon, the eight-layer scene's 78.1 KB/frame sat over the dense scene's ceiling with
+  nothing deciding it: the ruler is now what one open layer adds, 524 bytes once each layer's root
+  path stopped being rebuilt every frame, under a ceiling one object tighter, and the harness runs
+  alone. The definition's code-splitting per route is met by the module graph, and bun already
+  splits what pages share into chunks.
 
 ## Retired documents
 
