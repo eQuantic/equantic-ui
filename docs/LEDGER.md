@@ -493,6 +493,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   32 layers once each layer's root path stopped being rebuilt every frame, under a ceiling one
   object tighter, and the harness runs alone. The definition's code-splitting per route is met by the module graph, and bun already
   splits what pages share into chunks.
+- **2026-09-23 · The handoff's own figures and statuses are held by tests**: the design system came
+  back from Claude Design with a review against Apple's and Google's guidance
+  ([#337](https://github.com/eQuantic/equantic-ui/issues/337)). The pages called four shipped
+  things requests (DatePicker, NavigationRail, `VariantColors.Hover`, the `SemanticNode` state
+  fields) and counted 44 components where the SDK has 56. `status.json` now derives each block's
+  status from the public API, both ways; the SDK's selection, avatar and wheel values are published
+  and a token type `Tokens.cs` declares is scanned or named; a figure printed on a page is compared
+  with its token. APCA joins WCAG 2 as a second contrast gate, and 14 dark values were re-solved to
+  clear it, which moved 19 dark goldens and the web's cross-pins with them. The review's proposals
+  are issues #338 to #351.
 
 ## Retired documents
 
