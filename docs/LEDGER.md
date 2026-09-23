@@ -465,11 +465,14 @@ record of a release, the wiki's Upgrading page is the distillate.
   protocol, `ICodeSurfaceModel`, between it and both hosts: the grid and the pointer semantics are
   the engine's, which gave the web drag selection, shift-click, and the double and triple click it
   never had. Two transpiler gaps it exposed were fixed where they live (a plain class's unassigned
-  field, and `bool | bool` answering a number), and the review found four more: a struct began
-  `null` where C# holds its zero (`new CodeGrid()` threw at its first read; `[ZeroConstructs]` names
-  the hand-written twins that build one), a record's module never imported the app types its body
-  named, a type pattern over the engine answered `!= null`, and a bool compound on a dictionary
-  entry or a member stored a number or evaluated its target twice.
+  field, and `bool | bool` answering a number), and the review found more: a struct began `null`
+  where C# holds its zero (`new CodeGrid()` threw at its first read; `[ZeroConstructs]` names the
+  hand-written twins that build one), a record's module never imported the app types its body
+  named, a type pattern over the transpiled namespaces answered `!= null`, a bool compound on a
+  dictionary entry or a member stored a number or evaluated its target twice, and a comparer handed
+  to a collection's constructor vanished (`CodeLanguages.For("CSharp")` was plain text on the web;
+  EQ2007 refuses one now). Driving it by hand then found the caret missing beside every bracket
+  (defect 18, on Photon on every line) and the pointer an arrow over the code, both fixed here.
 - **2026-09-23 · The runtime ships once, inside the package that serves it**: three things wrote a
   file called the runtime, a library build by vite in CI and two bundles of `boot.ts` by bun, and the
   copy every app received was the vite one, which exports no `boot`
