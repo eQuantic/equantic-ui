@@ -56,6 +56,28 @@ public class ReadModifyWriteConformanceTests
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
 
+    /// <summary>
+    /// A dictionary ENTRY is read through the guard that throws for a missing key and written
+    /// plainly, and the value it takes follows its type's rule like any other target's. A template
+    /// of its own had returned ahead of those rules: a float entry added doubles, a decimal's `+=`
+    /// glued two texts together, a byte never wrapped and an int's `/=` kept its fraction.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var d = new Dictionary<int, float> { [0] = 0.1f }; d[0] += 0.2f; return (double)d[0];")]
+    [InlineData("var d = new Dictionary<string, decimal> { [\"a\"] = 1.5m }; d[\"a\"] += 2.25m; return d[\"a\"].ToString();")] // "3.75"
+    [InlineData("var d = new Dictionary<int, byte> { [0] = 250 }; d[0] += 10; return d[0].ToString();")]  // "4"
+    [InlineData("var d = new Dictionary<int, char> { [0] = 'a' }; d[0] += (char)1; return d[0].ToString();")] // "b"
+    [InlineData("var d = new Dictionary<int, int> { [0] = 7 }; d[0] /= 2; return d[0].ToString();")]     // "3"
+    [InlineData("var d = new Dictionary<int, float>(); try { d[5] += 1f; return \"no\"; } catch (Exception) { return \"throws\"; }")]
+    [InlineData("int n = 0; var d = new Dictionary<int, float> { [0] = 1f }; int K() { n++; return 0; } d[K()] += 0.5f; return n + \"|\" + (double)d[0];")] // "1|1.5"
+    [InlineData("var d = new Dictionary<int, int> { [0] = 1 }; var r = (d[0] += 2) * 10; return r.ToString();")] // "30"
+    [InlineData("var d = new Dictionary<int, int?> { [0] = null }; d[0] ??= 5; return d[0].ToString();")]  // "5"
+    public void ADictionaryEntry_TakesItsTypesRule(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
     /// <summary>A right-hand side that REPLACES the receiver: C# fixed the object before it ran.</summary>
     [SkippableFact]
     public void ARightHandSideThatReplacesTheReceiver_WritesTheObjectTheTargetNamedFirst()

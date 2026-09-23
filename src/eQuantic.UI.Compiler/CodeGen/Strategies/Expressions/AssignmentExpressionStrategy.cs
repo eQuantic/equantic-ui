@@ -54,18 +54,17 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         // A COMPOUND write to a dictionary entry READS it first, and .NET throws when the key is
         // not there. Emitting `map[k] op= v` would answer undefined and walk it into the
         // arithmetic; emitting the guarded read as the TARGET does not even parse. So it is
-        // lowered: read through the guard, write plainly. The template binds the receiver and the
-        // key once each, so neither is evaluated twice.
+        // lowered: read through the guard, write plainly. That is only how the ENTRY is read and
+        // written: the value it takes follows every rule below, as any compound target's does. A
+        // template of its own had returned ahead of them, so a float entry's `+=` added doubles, a
+        // decimal's glued two texts together and a byte's never wrapped.
+        (JsExpr Receiver, JsExpr Key)? entry = null;
         if (assignment.Left is ElementAccessExpressionSyntax { ArgumentList.Arguments.Count: 1 } target
             && !assignment.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression)
             && context.SemanticHelper.GetType(target.Expression).IsDictionaryLike(out _))
         {
-            context.UsedHelpers.Add(Eq.Import);
-            var compound = assignment.OperatorToken.Text[..^1];
-            return JsExpr.Template($"{{0}}[{{1}}] = {Eq.DictGet}({{0}}, {{1}}) {compound} {{2}}",
-                context.Converter.ConvertIr(target.Expression),
-                context.Converter.ConvertIr(target.ArgumentList.Arguments[0].Expression),
-                context.Converter.ConvertIr(assignment.Right));
+            entry = (context.Converter.ConvertIr(target.Expression),
+                context.Converter.ConvertIr(target.ArgumentList.Arguments[0].Expression));
         }
 
         var leftIr = context.Converter.ConvertIr(assignment.Left);
@@ -86,9 +85,11 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         // Every compound this strategy spells out as `target = next(target, value)` evaluates the
         // target once, as JavaScript's own `op=` and C# both do (ReadModifyWrite): the text names it
         // twice, so `values[i++] += x` would otherwise step `i` twice.
-        JsExpr Compound(Func<JsExpr, JsExpr, JsExpr> next) => ReadModifyWrite.Assign(
-            leftIr, [rightIr], (current, operands) => next(current, operands[0]), answerOld: false,
-            context.TypeAnnotations);
+        JsExpr Compound(Func<JsExpr, JsExpr, JsExpr> next) => entry is var (receiver, key)
+            ? EntryCompound(receiver, key, rightIr, next, context)
+            : ReadModifyWrite.Assign(
+                leftIr, [rightIr], (current, operands) => next(current, operands[0]), answerOld: false,
+                context.TypeAnnotations);
 
         // COMPOUND assignment through a USER-DEFINED operator: `m += other` is `m = Money.opAdd(m, other)`.
         if (context.SemanticHelper.GetOperation(assignment) is Microsoft.CodeAnalysis.Operations.ICompoundAssignmentOperation
@@ -156,9 +157,29 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
                 leftType, arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context));
         }
 
+        // A dictionary entry has no operator of its own to fall back on: its read is the guard.
+        if (entry is not null) return Compound((current, operand) => JsExpr.Binary(current, op[..^1], operand));
+
         // An assignment NODE: right-associative at the loosest level, so `a = b = c` chains and
         // an assignment used as an operand is fenced by whoever places it.
         return JsExpr.Binary(leftIr, op, rightIr);
+    }
+
+    /// <summary>
+    /// A compound write to a dictionary entry: the entry is read through the guard that throws for
+    /// a missing key, the rule of its type computes the next value, and the entry is written
+    /// plainly. The template binds the receiver and the key once each, so neither is evaluated
+    /// twice, and leaves the value where C# evaluates it, after the read.
+    /// </summary>
+    private static JsExpr EntryCompound(JsExpr receiver, JsExpr key, JsExpr value,
+        Func<JsExpr, JsExpr, JsExpr> next, ConversionContext context)
+    {
+        context.UsedHelpers.Add(Eq.Import);
+        var computed = next(JsExpr.Callish($"{Eq.DictGet}({{0}}, {{1}})"), JsExpr.Opaque("{2}"));
+        // Parenthesized, as a template's text must be: an assignment used as an operand
+        // (`(map[k] += 1) * 2`) would otherwise take the operator into its right side.
+        return JsExpr.Template($"({{0}}[{{1}}] = {JsExprWriter.Write(computed)})", [receiver, key, value],
+            context.TypeAnnotations);
     }
 
     public int Priority => 10;
