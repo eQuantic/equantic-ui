@@ -664,6 +664,15 @@ and never what to write instead. A break missing from the notes is now a build t
 made to pass without reading the diff — `./scripts/public-api.sh update` prints
 "Read the diff before committing it — that IS the API review" for exactly that reason.
 
+The analyzer holds C# signatures and nothing else, and the product principle puts the rest of what an
+app writes in its csproj, its appsettings and its `dotnet new` line. That surface is
+`tests/eQuantic.UI.Web.Tests/developer-surface.baseline.txt` — every `EQuantic…`/`Eqc…` property
+the two SDKs define or read, every configuration section the source binds, every template
+parameter and choice — pinned by `DeveloperSurfaceContractTests` and regenerated with
+`EQ_UPDATE_DEVELOPER_SURFACE=1`. A line that leaves it is a break an app meets as a setting silently
+ignored, so it goes in the notes beside the `*REMOVED*` lines: `git diff v<previous>..v<this> --
+tests/eQuantic.UI.Web.Tests/developer-surface.baseline.txt` is the rest of the change of surface.
+
 ## Compiler Boundaries (Server vs Client)
 
 **Client Components (StatefulComponent/StatelessComponent):**

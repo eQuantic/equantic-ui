@@ -442,6 +442,12 @@ record of a release, the wiki's Upgrading page is the distillate.
   now skips on an unchanged set of SVGs, notices a deleted one through a record of the set, and a
   skipped catalog target still adds the catalog to @(Compile), which keeps it out of the prune. The
   guard that eqc takes its file list from the one function was already #264's.
+- **2026-09-23 · The surface an app writes outside C# is pinned**: the API analyzer holds every C#
+  signature, and nothing held the SDKs' MSBuild properties, the `Photon` configuration section or the
+  template parameters, where a rename is a setting silently ignored
+  ([#322](https://github.com/eQuantic/equantic-ui/issues/322)). `DeveloperSurfaceContractTests` reads
+  all three from the source against a committed baseline, and the release reads its diff for the
+  notes beside the `*REMOVED*` lines.
 
 ## Retired documents
 
