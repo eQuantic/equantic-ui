@@ -409,7 +409,16 @@
             Condition="'$(_RuntimeSourcePath)' == '' Or !Exists('$(_RuntimeSourcePath)')" />
 
         <Copy SourceFiles="$(_RuntimeSourcePath)" DestinationFiles="$(_RuntimeDestPath)" SkipUnchangedFiles="true" />
+        <!-- The base stylesheet an earlier SDK copied here and no page linked (#335): a file its writer
+             stopped producing goes with it, as a generator's leftovers do, instead of being served. -->
+        <Delete Files="$(MSBuildProjectDirectory)/$(EQuanticOutputPath)equantic.css" />
     </Target>
+
+    <!-- Not a web asset either: registered while the project evaluates and then deleted by the
+         target above, it would fail the publish's compression, the way a deleted source map did. -->
+    <ItemGroup>
+        <Content Remove="$(EQuanticOutputPath)equantic.css" />
+    </ItemGroup>
 
     <!--
         The app icon, from the same source the device SDK uses: `Assets/AppIcon.png` (artwork a
