@@ -58,6 +58,31 @@ public class BugHuntFixesTests
         TestHelper.ConvertExpression("MathF.Sign(Total)").Should().Be("Math.sign(this.total)");
     }
 
+    /// <summary>
+    /// The fallback answers from the SAME table as a bound call, by name, on the home the class
+    /// spells. Its own guesses were `Math.copySign`, `Math.bitIncrement` and `Math.iEEERemainder`,
+    /// none of which JavaScript has, and a `Math.log(x, b)` that dropped the base.
+    /// </summary>
+    [Theory]
+    [InlineData("MathF.CopySign(Total, 2f)")]
+    [InlineData("MathF.BitIncrement(Total)")]
+    [InlineData("MathF.IEEERemainder(Total, 3f)")]
+    [InlineData("MathF.Log(Total, 2f)")]
+    [InlineData("MathF.SinCos(Total)")]
+    [InlineData("MathF.ScaleB(Total, 3)")]
+    [InlineData("Math.CopySign(Total, 2.0)")]
+    [InlineData("Math.BitIncrement(Total)")]
+    [InlineData("Math.IEEERemainder(Total, 3.0)")]
+    [InlineData("Math.Log(Total, 2.0)")]
+    [InlineData("Math.Clamp(Total, 0.0, 1.0)")]
+    public void WithoutAModel_TheMathSurface_IsAnsweredByTheTable(string call)
+    {
+        var emitted = TestHelper.ConvertExpression(call);
+        emitted.Should().NotMatchRegex(@"Math\.(copySign|bitIncrement|iEEERemainder|scaleB|sinCos)\(",
+            "JavaScript's Math has none of these");
+        emitted.Should().NotMatchRegex(@"Math\.log\([^()]*,", "Math.log takes one argument, and the base is .NET's second");
+    }
+
     [Fact]
     public void ToString_WithFormat_UsesFormatHelper()
     {

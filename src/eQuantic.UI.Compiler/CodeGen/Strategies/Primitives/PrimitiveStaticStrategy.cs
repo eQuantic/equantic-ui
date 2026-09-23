@@ -83,12 +83,28 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
     internal static string? TemplateFor(IMethodSymbol method, SpecialType home, int argCount)
     {
         if (method.Name == "Round" && IsFloating(home)) return RoundTemplate(method, home);
-        var emit = MethodTable(home, method.Name, argCount);
-        if (emit is null || home != SpecialType.System_Single || !SinglePrecision.Is(method.ReturnType)) return emit;
+        return Answered(method.Name, home, argCount, SinglePrecision.Is(method.ReturnType));
+    }
+
+    /// <summary>
+    /// The same table for a call NO MODEL bound (<c>MathStrategy</c>'s fallback), by name, on the
+    /// home the class spells: <c>Math</c> computes on doubles and <c>MathF</c> on singles. Every
+    /// <c>MathF</c> member answers a float but the three that answer an integer or a pair. Round is
+    /// settled by its overload, which only a bound method says, so it is not answered here.
+    /// </summary>
+    internal static string? TemplateByName(string name, SpecialType home, int argCount) =>
+        name == "Round"
+            ? null
+            : Answered(name, home, argCount, answersSingle: name is not ("Sign" or "ILogB" or "SinCos"));
+
+    private static string? Answered(string name, SpecialType home, int argCount, bool answersSingle)
+    {
+        var emit = MethodTable(home, name, argCount);
+        if (emit is null || home != SpecialType.System_Single || !answersSingle) return emit;
 
         // A SINGLE answer (SinglePrecision): the shared templates compute in doubles, so a member
         // whose float answer is not exact rounds once — unless its single form already says how.
-        return SingleTable(method.Name, argCount) is not null || ExactOnSingles.Contains(method.Name)
+        return SingleTable(name, argCount) is not null || ExactOnSingles.Contains(name)
             ? emit
             : $"Math.fround({emit})";
     }

@@ -59,18 +59,19 @@ public class MathStrategy : IExpressionIrStrategy
             .Select(a => context.Converter.ConvertExpression(a.Expression))
             .ToList();
 
-        // Below, no table could answer — usually because no model bound the call. `MathF` still
-        // answers in SINGLE precision there: its every member but Sign and ILogB returns a float,
-        // and rounding one that is exact already (Abs, Max, …) changes nothing.
-        var single = memberAccess.Expression.ToString() is "MathF" or "System.MathF"
-            && methodName is not ("Sign" or "ILogB");
-        JsExpr Answer(JsExpr value) => single ? SinglePrecision.Round(value) : value;
-
-        // Special case: Math.Clamp(val, min, max) → Math.min(Math.max(val, min), max)
-        if (methodName == "Clamp" && argsList.Count >= 3)
+        // Below, no model bound the call. The class still says which numbers it computes on —
+        // `MathF` on singles, `Math` on doubles — so everything but Round is answered by the SAME
+        // table, by name: a fallback of its own guessed `Math.copySign`, `Math.bitIncrement` and a
+        // `Math.log` that dropped its base, none of which JavaScript has.
+        var single = memberAccess.Expression.ToString() is "MathF" or "System.MathF";
+        var home = single ? SpecialType.System_Single : SpecialType.System_Double;
+        if (PrimitiveStaticStrategy.TemplateByName(methodName, home, arguments.Count) is { } byName)
         {
-            return Answer(JsExpr.Callish($"Math.min(Math.max({argsList[0]}, {argsList[1]}), {argsList[2]})"));
+            if (byName.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
+            var irArgs = arguments.Select(a => context.Converter.ConvertIr(a.Expression)).ToArray();
+            return JsExpr.Template(byName, irArgs, context.TypeAnnotations);
         }
+        JsExpr Answer(JsExpr value) => single ? SinglePrecision.Round(value) : value;
 
         // A DECIMAL rounds as a decimal — the number helper would round the object to NaN.
         // Half-to-even, the same MidpointRounding.ToEven the double path honours. The value IS a
