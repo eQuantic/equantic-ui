@@ -34,4 +34,12 @@
     <ProjectReference Include="..\..\src\eQuantic.UI.Material\eQuantic.UI.Material.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The dashboard's frame, compiled in rather than referenced: the sample is an app whose build
+         runs the whole SDK, and this one file is where ConsoleShellTests' rule has to hold. It
+         declares the eQuantic.Console namespace, so inside eQuantic.* a bare `Console` names it
+         rather than System.Console. -->
+    <Compile Include="..\..\samples\DefaultUIDashboard\Screens\ConsoleShell.cs" Link="Samples\ConsoleShell.cs" />
+  </ItemGroup>
+
 </Project>
