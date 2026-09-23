@@ -424,6 +424,13 @@ record of a release, the wiki's Upgrading page is the distillate.
   `StyleClass` on an escape-hatch element named a class no stylesheet defined; the framework has one
   styling engine, and now nothing says otherwise. `PaletteAudit` moves from Primitives into the tests
   that are its only reader, out of every bundle and AOT image ([#128](https://github.com/eQuantic/equantic-ui/issues/128)).
+- **2026-09-23 · A vocabulary type's conversion crosses the seam**: `Icon(Icons.Search)` lowered the
+  enum to its bare name, so the generated factory's `glyph: IconGlyph` described its argument wrongly
+  and only a constructor that guessed at strings kept it running
+  ([#281](https://github.com/eQuantic/equantic-ui/issues/281)). A vocabulary conversion now crosses as
+  a call to its twin's static (`IconGlyph.fromIcons`); `[ConversionPassesThrough]` keeps `SizeValue`
+  from a number as the number it is, and `VocabularyConversionTests` derives the whole set and fails
+  on either half left implicit.
 
 ## Retired documents
 

@@ -448,8 +448,10 @@ translation change must execute identically on both sides.
   extension indexers (`static item(receiver, …)`)
 - User-defined operators on IN-SOURCE types: binary, unary (named by arity), compound, and
   implicit/explicit conversions — the twin carries them as static methods (`Money.opAdd`,
-  `Money.fromInt`) and every site the bound tree shows calls them; framework wrappers (`SizeValue`,
-  `Index`) pass their primitive through
+  `Money.fromInt`) and every site the bound tree shows calls them. A VOCABULARY type's conversion
+  crosses the same way, to the static its runtime twin carries (`IconGlyph.fromIcons`), unless the
+  operator says its twin takes the operand as it is (`[ConversionPassesThrough]`, `SizeValue` from a
+  number); a type from outside the SDK (`Index`) passes its primitive through
 - Resource Management: `using` statements and `using var`
 - Exceptions: `try-catch-finally`
 - LINQ: Direct conversion to JS equivalents

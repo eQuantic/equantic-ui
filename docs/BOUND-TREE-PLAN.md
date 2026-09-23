@@ -62,6 +62,10 @@ value converts twice.
 - Two chars compared stay characters: JavaScript orders 1-length strings by the same code units.
 - A user-defined implicit operator passes the value through: the framework's wrappers (`SizeValue`,
   `Index`, `ColorToken`) ARE their primitive on this side. Fencing the category (EQ2010, reverted)
-  broke the site's ordinary API surface.
+  broke the site's ordinary API surface. Narrowed by #281: a VOCABULARY conversion now crosses as
+  a call to its twin's static (`IconGlyph.fromIcons`), and the one whose twin takes the operand as
+  it is says so on the operator (`[ConversionPassesThrough]`, `SizeValue` from a number) —
+  `VocabularyConversionTests` fails on a crossing conversion without its static and on a
+  pass-through without its reason.
 - `TimeSpan.FromSeconds(90)` binds .NET 9's `long` overload: the runtime twins must accept a
   bigint wherever .NET declares a long. Several only worked with literals, by accident.
