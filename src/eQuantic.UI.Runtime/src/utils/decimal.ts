@@ -1,3 +1,5 @@
+import type { MidpointRounding } from './dotnet-math';
+
 /**
  * .NET-compat `decimal` — exact base-10 arithmetic.
  *
@@ -78,21 +80,47 @@ export class Decimal {
   }
 
   /**
-   * `Math.Round(decimal[, digits])` — half-to-even, .NET's default MidpointRounding for decimals,
-   * the same rule `div` applies to its 28th digit. A value with no more digits than asked for
-   * is itself.
+   * `Math.Round(decimal[, digits][, mode])` and `decimal.Round`, as .NET's decimal has them. The
+   * default is half-to-even, the same rule `div` applies to its 28th digit; AwayFromZero moves only
+   * a half, and the three directed modes move every value (ToZero truncates, ToNegativeInfinity is
+   * a floor, ToPositiveInfinity a ceiling). A value with no more digits than asked for is itself.
    */
-  round(digits = 0): Decimal {
-    if (digits < 0) throw new Error('Rounding digits must be between 0 and 28.');
+  round(digits = 0, mode: MidpointRounding = 'toEven'): Decimal {
+    if (!Number.isInteger(digits) || digits < 0 || digits > 28) {
+      throw new RangeError('Rounding digits must be between 0 and 28.');
+    }
     if (this.scale <= digits) return this;
     const divisor = 10n ** BigInt(this.scale - digits);
-    let quotient = this.mantissa / divisor;
+    const quotient = this.mantissa / divisor;
     const remainder = this.mantissa % divisor;
-    const absRem2 = (remainder < 0n ? -remainder : remainder) * 2n;
-    if (absRem2 > divisor || (absRem2 === divisor && quotient % 2n !== 0n)) {
-      quotient += this.mantissa < 0n ? -1n : 1n;
+    if (remainder === 0n) return new Decimal(quotient, digits);
+    // BigInt division truncates, so the quotient is the value toward zero and the remainder carries
+    // the value's sign: every mode is a choice between staying and one step away from zero.
+    const away = remainder < 0n ? -1n : 1n;
+    const twice = (remainder < 0n ? -remainder : remainder) * 2n;
+    let step: boolean;
+    switch (mode) {
+      case 'toEven':
+        step = twice > divisor || (twice === divisor && quotient % 2n !== 0n);
+        break;
+      case 'awayFromZero':
+        step = twice >= divisor;
+        break;
+      case 'toZero':
+        step = false;
+        break;
+      case 'toNegativeInfinity':
+        step = remainder < 0n;
+        break;
+      case 'toPositiveInfinity':
+        step = remainder > 0n;
+        break;
+      default:
+        throw new RangeError(
+          `The value '${String(mode)}' is not valid for this usage of the type MidpointRounding.`,
+        );
     }
-    return new Decimal(quotient, digits);
+    return new Decimal(step ? quotient + away : quotient, digits);
   }
 
   private trimTrailingZeros(): Decimal {

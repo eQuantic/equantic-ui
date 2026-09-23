@@ -73,28 +73,15 @@ public class MathStrategy : IExpressionIrStrategy
         }
         JsExpr Answer(JsExpr value) => single ? SinglePrecision.Round(value) : value;
 
-        // A DECIMAL rounds as a decimal — the number helper would round the object to NaN.
-        // Half-to-even, the same MidpointRounding.ToEven the double path honours. The value IS a
-        // Decimal (typed world); it lands in receiver position, so the writer fences it.
-        if (methodName == "Round" && argsList.Count >= 1
-            && context.SemanticHelper.GetType(arguments[0].Expression).IsDecimal())
-        {
-            var receiver = JsExprWriter.WriteIn(context.Converter.ConvertIr(arguments[0].Expression), JsPrecedence.Call);
-            return JsExpr.Callish(argsList.Count >= 2
-                ? $"{receiver}.round({argsList[1]})"
-                : $"{receiver}.round()");
-        }
-
         // Where no model can name the overload (the table above needs the bound method), a Round is
         // still .NET's rounding and never the JS Math.round, which sends halves up and ignores a
         // digit count. The overload is read from the call as WRITTEN: a `MidpointRounding.<Mode>`
         // argument is the mode, a named argument takes its parameter's slot, and the rest are the
         // value and then the digits. The holes follow the slots and the parts keep their written
-        // order, which the template writer preserves when the two differ.
+        // order, which the template writer preserves when the two differ. A DECIMAL value rounds
+        // itself, since the number helper would round the object to NaN.
         if (methodName == "Round" && arguments.Count >= 1)
         {
-            context.UsedHelpers.Add(Eq.Import);
-            var round = single ? Eq.RoundSingle : Eq.Round;
             int? value = null, digits = null, mode = null;
             var parts = new JsExpr[arguments.Count];
             for (var i = 0; i < arguments.Count; i++)
@@ -114,10 +101,19 @@ public class MathStrategy : IExpressionIrStrategy
                     default: value = i; break;
                 }
             }
-            if (value is null) return JsExpr.Callish($"{round}({string.Join(", ", argsList)})");
-            var written = mode is { } m
-                ? $"{round}({{{value}}}, {(digits is { } d ? $"{{{d}}}" : "0")}, {{{m}}})"
-                : digits is { } only ? $"{round}({{{value}}}, {{{only}}})" : $"{round}({{{value}}})";
+            var round = single ? Eq.RoundSingle : Eq.Round;
+            if (value is not { } at)
+            {
+                context.UsedHelpers.Add(Eq.Import);
+                return JsExpr.Callish($"{round}({string.Join(", ", argsList)})");
+            }
+            var rest = mode is { } m
+                ? $"{(digits is { } d ? $"{{{d}}}" : "0")}, {{{m}}}"
+                : digits is { } only ? $"{{{only}}}" : "";
+            if (context.SemanticHelper.GetType(arguments[at].Expression).IsDecimal())
+                return JsExpr.Template($"{{{at}}}.round({rest})", parts, context.TypeAnnotations);
+            context.UsedHelpers.Add(Eq.Import);
+            var written = rest.Length == 0 ? $"{round}({{{at}}})" : $"{round}({{{at}}}, {rest})";
             return JsExpr.Template(written, parts, context.TypeAnnotations);
         }
 

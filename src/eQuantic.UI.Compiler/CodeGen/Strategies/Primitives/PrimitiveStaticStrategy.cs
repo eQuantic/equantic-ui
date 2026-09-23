@@ -82,7 +82,8 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
     /// </summary>
     internal static string? TemplateFor(IMethodSymbol method, SpecialType home, int argCount)
     {
-        if (method.Name == "Round" && IsFloating(home)) return RoundTemplate(method, home);
+        if (method.Name == "Round" && (IsFloating(home) || home == SpecialType.System_Decimal))
+            return RoundTemplate(method, home);
         return Answered(method.Name, home, argCount, SinglePrecision.Is(method.ReturnType));
     }
 
@@ -158,16 +159,18 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
     /// <summary>
     /// <c>Round</c> by its overload — which the argument COUNT cannot say: <c>(x, 2)</c> and
     /// <c>(x, MidpointRounding.AwayFromZero)</c> both have two. A mode crosses as its member name
-    /// (enums are names on this side), and the helper takes digits and mode in .NET's order.
+    /// (enums are names on this side), and digits and mode go in .NET's order: to the number helper
+    /// for a float or a double, and to the value itself for a decimal, which rounds as a decimal.
     /// </summary>
     private static string RoundTemplate(IMethodSymbol method, SpecialType home)
     {
-        var helper = home == SpecialType.System_Single ? Eq.RoundSingle : Eq.Round;
         var parameters = method.Parameters;
         var hasDigits = parameters.Length > 1 && parameters[1].Type.SpecialType == SpecialType.System_Int32;
         var hasMode = parameters.Length > 1 && parameters[^1].Type.TypeKind == TypeKind.Enum;
-        if (!hasMode) return hasDigits ? $"{helper}({{0}}, {{1}})" : $"{helper}({{0}})";
-        return hasDigits ? $"{helper}({{0}}, {{1}}, {{2}})" : $"{helper}({{0}}, 0, {{1}})";
+        var rest = hasMode ? (hasDigits ? "{1}, {2}" : "0, {1}") : hasDigits ? "{1}" : "";
+        if (home == SpecialType.System_Decimal) return $"{{0}}.round({rest})";
+        var helper = home == SpecialType.System_Single ? Eq.RoundSingle : Eq.Round;
+        return rest.Length == 0 ? $"{helper}({{0}})" : $"{helper}({{0}}, {rest})";
     }
 
     /// <summary>

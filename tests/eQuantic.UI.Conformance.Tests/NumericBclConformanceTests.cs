@@ -198,6 +198,18 @@ public class NumericBclConformanceTests
     [InlineData("return Math.Round(mode: MidpointRounding.AwayFromZero, value: 2.5);")] // 3
     [InlineData("return (double)float.Round(mode: MidpointRounding.AwayFromZero, x: 2.5f);")] // 3
     [InlineData("int n = 0; double F(double v) { n = n * 10 + 1; return v; } MidpointRounding M() { n = n * 10 + 2; return MidpointRounding.AwayFromZero; } var r = Math.Round(mode: M(), value: F(2.5)); return n * 10 + r;")] // 213
+    // ---- a DECIMAL rounds as a decimal, by its overload: the mode was read as a digit count ----
+    [InlineData("decimal m = 2.5m; return Math.Round(m, MidpointRounding.AwayFromZero).ToString();")]            // "3"
+    [InlineData("decimal m = -2.5m; return Math.Round(m, MidpointRounding.AwayFromZero).ToString();")]           // "-3"
+    [InlineData("decimal m = 2.345m; return Math.Round(m, 2).ToString();")]                                       // "2.34" — ToEven
+    [InlineData("decimal m = 2.345m; return Math.Round(m, 2, MidpointRounding.AwayFromZero).ToString();")]       // "2.35"
+    [InlineData("decimal m = 2.349m; return Math.Round(m, 2, MidpointRounding.ToZero).ToString();")]             // "2.34"
+    [InlineData("decimal m = -2.341m; return Math.Round(m, 2, MidpointRounding.ToNegativeInfinity).ToString();")] // "-2.35"
+    [InlineData("decimal m = 2.341m; return Math.Round(m, 2, MidpointRounding.ToPositiveInfinity).ToString();")] // "2.35"
+    [InlineData("decimal m = 2.341m; return Math.Round(m, MidpointRounding.ToPositiveInfinity).ToString();")]    // "3"
+    [InlineData("decimal m = 2.345m; return Math.Round(mode: MidpointRounding.AwayFromZero, decimals: 2, d: m).ToString();")] // "2.35"
+    [InlineData("decimal m = 2.345m; return decimal.Round(m, 2, MidpointRounding.AwayFromZero).ToString();")]    // "2.35"
+    [InlineData("decimal m = 1.20m; return Math.Round(m, 1).ToString();")]                                        // "1.2"
     // ---- Single: the float home answers in single precision ----
     [InlineData("return (double)float.Sqrt(2f);")]                               // 1.4142135381698608
     [InlineData("return (double)MathF.Sqrt(2f);")]
