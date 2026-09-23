@@ -5,10 +5,11 @@ using FluentAssertions;
 namespace eQuantic.UI.Web.Tests;
 
 /// <summary>
-/// Every Primitives type an app can NAME has a runtime export of the same name.
+/// Every vocabulary type an app can NAME — Primitives, and the code editing engine beside it — has a
+/// runtime export of the same name.
 /// <para>
-/// eqc routes the whole <c>eQuantic.UI.Primitives</c> namespace to <c>@equantic/runtime</c>
-/// implicitly — that is what makes the shared vocabulary work without an attribute on every type.
+/// eqc routes the whole <c>eQuantic.UI.Primitives</c> namespace (and <c>eQuantic.UI.Code</c>) to
+/// <c>@equantic/runtime</c> implicitly — that is what makes the shared vocabulary work without an attribute on every type.
 /// The cost is that adding a public class there silently promises an export that may not exist, and
 /// the failure lands as far from the cause as it gets: the page dies at hydration on
 /// <c>does not provide an export named 'X'</c> while SSR keeps answering 200 with correct markup,
@@ -80,8 +81,13 @@ public class PrimitivesRuntimeExportTests
     [Fact]
     public void ThePrimitivesTypeList_IsPinnedForTheRuntimeToCheck()
     {
-        var names = typeof(VisualNode).Assembly.GetTypes()
-            .Where(t => t.Namespace?.StartsWith("eQuantic.UI.Primitives", StringComparison.Ordinal) == true)
+        // The code editing engine left this namespace for an assembly of its own and is routed to
+        // the runtime exactly the same way (the compiler's VocabularyNamespaces), so the promise —
+        // and the question — covers both.
+        var names = new[] { typeof(VisualNode).Assembly, typeof(eQuantic.UI.Code.CodeEditorController).Assembly }
+            .SelectMany(assembly => assembly.GetTypes())
+            .Where(t => t.Namespace?.StartsWith("eQuantic.UI.Primitives", StringComparison.Ordinal) == true
+                || t.Namespace?.StartsWith("eQuantic.UI.Code", StringComparison.Ordinal) == true)
             .Where(NeedsExport)
             .Select(t => t.Name)
             .Distinct()

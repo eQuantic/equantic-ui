@@ -55,3 +55,434 @@
 eQuantic.UI.Primitives.ConversionPassesThroughAttribute
 eQuantic.UI.Primitives.ConversionPassesThroughAttribute.ConversionPassesThroughAttribute(string! reason) -> void
 eQuantic.UI.Primitives.ConversionPassesThroughAttribute.Reason.get -> string!
+*REMOVED*eQuantic.UI.Primitives.ICodeCompletionProvider
+*REMOVED*eQuantic.UI.Primitives.ICodeCompletionProvider.CompleteAsync(eQuantic.UI.Primitives.CodeDocument! document, eQuantic.UI.Primitives.CodePosition position, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.CodeCompletionItem!>!>!
+*REMOVED*eQuantic.UI.Primitives.ICodeCompletionProvider.TriggerCharacters.get -> System.Collections.Generic.IReadOnlyList<char>!
+*REMOVED*eQuantic.UI.Primitives.ICodeFoldProvider
+*REMOVED*eQuantic.UI.Primitives.ICodeFoldProvider.FoldsFor(eQuantic.UI.Primitives.CodeDocument! document) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.CodeFold!>!
+*REMOVED*eQuantic.UI.Primitives.ICodeHoverProvider
+*REMOVED*eQuantic.UI.Primitives.ICodeHoverProvider.HoverAsync(eQuantic.UI.Primitives.CodeDocument! document, eQuantic.UI.Primitives.CodePosition position, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<eQuantic.UI.Primitives.CodeHover?>!
+*REMOVED*eQuantic.UI.Primitives.ICodeLanguage
+*REMOVED*eQuantic.UI.Primitives.ICodeLanguage.Name.get -> string!
+*REMOVED*eQuantic.UI.Primitives.ICodeLanguage.Rules.get -> eQuantic.UI.Primitives.CodeLanguageRules!
+*REMOVED*eQuantic.UI.Primitives.ICodeLanguage.Tokenize(string! line, int state, System.Collections.Generic.List<eQuantic.UI.Primitives.CodeToken>! into) -> int
+*REMOVED*eQuantic.UI.Primitives.IndentationFoldProvider
+*REMOVED*eQuantic.UI.Primitives.IndentationFoldProvider.FoldsFor(eQuantic.UI.Primitives.CodeDocument! document) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.CodeFold!>!
+*REMOVED*eQuantic.UI.Primitives.IndentationFoldProvider.IndentationFoldProvider() -> void
+*REMOVED*eQuantic.UI.Primitives.JsonLanguage
+*REMOVED*eQuantic.UI.Primitives.JsonLanguage.JsonLanguage() -> void
+*REMOVED*eQuantic.UI.Primitives.JsonLanguage.Name.get -> string!
+*REMOVED*eQuantic.UI.Primitives.JsonLanguage.Rules.get -> eQuantic.UI.Primitives.CodeLanguageRules!
+*REMOVED*eQuantic.UI.Primitives.JsonLanguage.Tokenize(string! line, int state, System.Collections.Generic.List<eQuantic.UI.Primitives.CodeToken>! into) -> int
+*REMOVED*eQuantic.UI.Primitives.PlainTextLanguage
+*REMOVED*eQuantic.UI.Primitives.PlainTextLanguage.Name.get -> string!
+*REMOVED*eQuantic.UI.Primitives.PlainTextLanguage.PlainTextLanguage() -> void
+*REMOVED*eQuantic.UI.Primitives.PlainTextLanguage.Tokenize(string! line, int state, System.Collections.Generic.List<eQuantic.UI.Primitives.CodeToken>! into) -> int
+*REMOVED*const eQuantic.UI.Primitives.CurlyBraceLanguage.StateBlockComment = 1 -> int
+*REMOVED*eQuantic.UI.Primitives.PythonLanguage
+*REMOVED*eQuantic.UI.Primitives.PythonLanguage.Name.get -> string!
+*REMOVED*eQuantic.UI.Primitives.PythonLanguage.PythonLanguage() -> void
+*REMOVED*eQuantic.UI.Primitives.PythonLanguage.Rules.get -> eQuantic.UI.Primitives.CodeLanguageRules!
+*REMOVED*eQuantic.UI.Primitives.PythonLanguage.Tokenize(string! line, int state, System.Collections.Generic.List<eQuantic.UI.Primitives.CodeToken>! into) -> int
+*REMOVED*const eQuantic.UI.Primitives.CurlyBraceLanguage.StateMultilineString = 2 -> int
+*REMOVED*const eQuantic.UI.Primitives.CurlyBraceLanguage.StateNormal = 0 -> int
+*REMOVED*abstract eQuantic.UI.Primitives.CurlyBraceLanguage.ConstantWords.get -> System.Collections.Generic.IReadOnlySet<string!>!
+*REMOVED*eQuantic.UI.Primitives.TypeScriptLanguage
+*REMOVED*eQuantic.UI.Primitives.TypeScriptLanguage.TypeScriptLanguage() -> void
+*REMOVED*eQuantic.UI.Primitives.XmlLanguage
+*REMOVED*eQuantic.UI.Primitives.XmlLanguage.Name.get -> string!
+*REMOVED*eQuantic.UI.Primitives.XmlLanguage.Rules.get -> eQuantic.UI.Primitives.CodeLanguageRules!
+*REMOVED*eQuantic.UI.Primitives.XmlLanguage.Tokenize(string! line, int state, System.Collections.Generic.List<eQuantic.UI.Primitives.CodeToken>! into) -> int
+*REMOVED*eQuantic.UI.Primitives.XmlLanguage.XmlLanguage() -> void
+*REMOVED*override eQuantic.UI.Primitives.CSharpLanguage.Name.get -> string!
+*REMOVED*override eQuantic.UI.Primitives.CSharpLanguage.Rules.get -> eQuantic.UI.Primitives.CodeLanguageRules!
+*REMOVED*override eQuantic.UI.Primitives.CodeCompletionItem.Equals(object? obj) -> bool
+*REMOVED*override eQuantic.UI.Primitives.CodeCompletionItem.GetHashCode() -> int
+*REMOVED*override eQuantic.UI.Primitives.CodeCompletionItem.ToString() -> string!
+*REMOVED*override eQuantic.UI.Primitives.CodeDecoration.Equals(object? obj) -> bool
+*REMOVED*override eQuantic.UI.Primitives.CodeDecoration.GetHashCode() -> int
+*REMOVED*override eQuantic.UI.Primitives.CodeDecoration.ToString() -> string!
+*REMOVED*override eQuantic.UI.Primitives.CodeDiagnostic.Equals(object? obj) -> bool
+*REMOVED*override eQuantic.UI.Primitives.CodeDiagnostic.GetHashCode() -> int
+*REMOVED*override eQuantic.UI.Primitives.CodeDiagnostic.ToString() -> string!
+*REMOVED*override eQuantic.UI.Primitives.CodeEdit.Equals(object? obj) -> bool
+*REMOVED*override eQuantic.UI.Primitives.CodeEdit.GetHashCode() -> int
+*REMOVED*override eQuantic.UI.Primitives.CodeEdit.ToString() -> string!
+*REMOVED*override eQuantic.UI.Primitives.CodeFold.Equals(object? obj) -> bool
+*REMOVED*override eQuantic.UI.Primitives.CodeFold.GetHashCode() -> int
+*REMOVED*override eQuantic.UI.Primitives.CodeFold.ToString() -> string!
+*REMOVED*override eQuantic.UI.Primitives.CodeGutterMarker.Equals(object? obj) -> bool
+*REMOVED*override eQuantic.UI.Primitives.CodeGutterMarker.GetHashCode() -> int
+*REMOVED*override eQuantic.UI.Primitives.CodeGutterMarker.ToString() -> string!
+*REMOVED*override eQuantic.UI.Primitives.CodeHover.Equals(object? obj) -> bool
+*REMOVED*override eQuantic.UI.Primitives.CodeHover.GetHashCode() -> int
+*REMOVED*override eQuantic.UI.Primitives.CodeHover.ToString() -> string!
+*REMOVED*override eQuantic.UI.Primitives.CodeLanguageRules.Equals(object? obj) -> bool
+*REMOVED*override eQuantic.UI.Primitives.CodeLanguageRules.GetHashCode() -> int
+*REMOVED*override eQuantic.UI.Primitives.CodeLanguageRules.ToString() -> string!
+*REMOVED*override eQuantic.UI.Primitives.CodePosition.GetHashCode() -> int
+*REMOVED*override eQuantic.UI.Primitives.CodePosition.ToString() -> string!
+*REMOVED*override eQuantic.UI.Primitives.CodeRange.GetHashCode() -> int
+*REMOVED*override eQuantic.UI.Primitives.CodeToken.GetHashCode() -> int
+*REMOVED*override eQuantic.UI.Primitives.TypeScriptLanguage.Name.get -> string!
+*REMOVED*override eQuantic.UI.Primitives.TypeScriptLanguage.Rules.get -> eQuantic.UI.Primitives.CodeLanguageRules!
+*REMOVED*static eQuantic.UI.Primitives.CodeCompletionItem.operator !=(eQuantic.UI.Primitives.CodeCompletionItem? left, eQuantic.UI.Primitives.CodeCompletionItem? right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CodeCompletionItem.operator ==(eQuantic.UI.Primitives.CodeCompletionItem? left, eQuantic.UI.Primitives.CodeCompletionItem? right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CodeDecoration.operator !=(eQuantic.UI.Primitives.CodeDecoration? left, eQuantic.UI.Primitives.CodeDecoration? right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CodeDecoration.operator ==(eQuantic.UI.Primitives.CodeDecoration? left, eQuantic.UI.Primitives.CodeDecoration? right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CodeDiagnostic.operator !=(eQuantic.UI.Primitives.CodeDiagnostic? left, eQuantic.UI.Primitives.CodeDiagnostic? right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CodeDiagnostic.operator ==(eQuantic.UI.Primitives.CodeDiagnostic? left, eQuantic.UI.Primitives.CodeDiagnostic? right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CodeDocument.FromText(string! text) -> eQuantic.UI.Primitives.CodeDocument!
+*REMOVED*static eQuantic.UI.Primitives.CodeDocument.IsWordChar(char c) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CodeEdit.operator !=(eQuantic.UI.Primitives.CodeEdit? left, eQuantic.UI.Primitives.CodeEdit? right) -> bool
+*REMOVED*eQuantic.UI.Primitives.CSharpLanguage
+*REMOVED*static eQuantic.UI.Primitives.CodeEdit.operator ==(eQuantic.UI.Primitives.CodeEdit? left, eQuantic.UI.Primitives.CodeEdit? right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CodeFold.operator !=(eQuantic.UI.Primitives.CodeFold? left, eQuantic.UI.Primitives.CodeFold? right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CodeFold.operator ==(eQuantic.UI.Primitives.CodeFold? left, eQuantic.UI.Primitives.CodeFold? right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CodeGutterMarker.operator !=(eQuantic.UI.Primitives.CodeGutterMarker? left, eQuantic.UI.Primitives.CodeGutterMarker? right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CodeGutterMarker.operator ==(eQuantic.UI.Primitives.CodeGutterMarker? left, eQuantic.UI.Primitives.CodeGutterMarker? right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CodeHover.operator !=(eQuantic.UI.Primitives.CodeHover? left, eQuantic.UI.Primitives.CodeHover? right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CodeHover.operator ==(eQuantic.UI.Primitives.CodeHover? left, eQuantic.UI.Primitives.CodeHover? right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CodeKeymap.Handle(eQuantic.UI.Primitives.CodeEditorController! editor, string! key, eQuantic.UI.Primitives.KeyModifiers modifiers, eQuantic.UI.Primitives.ITextClipboard? clipboard = null) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CodeLanguageRules.operator !=(eQuantic.UI.Primitives.CodeLanguageRules? left, eQuantic.UI.Primitives.CodeLanguageRules? right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CodeLanguageRules.operator ==(eQuantic.UI.Primitives.CodeLanguageRules? left, eQuantic.UI.Primitives.CodeLanguageRules? right) -> bool
+*REMOVED*eQuantic.UI.Primitives.CSharpLanguage.CSharpLanguage() -> void
+*REMOVED*static eQuantic.UI.Primitives.CodeLanguages.For(string? name) -> eQuantic.UI.Primitives.ICodeLanguage!
+*REMOVED*static eQuantic.UI.Primitives.CodeLanguages.Register(string! name, eQuantic.UI.Primitives.ICodeLanguage! language) -> void
+*REMOVED*static eQuantic.UI.Primitives.CodePosition.operator !=(eQuantic.UI.Primitives.CodePosition left, eQuantic.UI.Primitives.CodePosition right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CodePosition.operator <(eQuantic.UI.Primitives.CodePosition a, eQuantic.UI.Primitives.CodePosition b) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CodePosition.operator <=(eQuantic.UI.Primitives.CodePosition a, eQuantic.UI.Primitives.CodePosition b) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CodePosition.operator ==(eQuantic.UI.Primitives.CodePosition left, eQuantic.UI.Primitives.CodePosition right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CodePosition.operator >(eQuantic.UI.Primitives.CodePosition a, eQuantic.UI.Primitives.CodePosition b) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CodePosition.operator >=(eQuantic.UI.Primitives.CodePosition a, eQuantic.UI.Primitives.CodePosition b) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CodeRange.operator !=(eQuantic.UI.Primitives.CodeRange left, eQuantic.UI.Primitives.CodeRange right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CodeRange.operator ==(eQuantic.UI.Primitives.CodeRange left, eQuantic.UI.Primitives.CodeRange right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CodeToken.operator !=(eQuantic.UI.Primitives.CodeToken left, eQuantic.UI.Primitives.CodeToken right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CodeToken.operator ==(eQuantic.UI.Primitives.CodeToken left, eQuantic.UI.Primitives.CodeToken right) -> bool
+*REMOVED*static eQuantic.UI.Primitives.CurlyBraceLanguage.NextNonSpace(string! line, int from) -> char
+*REMOVED*static eQuantic.UI.Primitives.CurlyBraceLanguage.ScanNumber(string! line, int from) -> int
+*REMOVED*static eQuantic.UI.Primitives.CurlyBraceLanguage.ScanQuoted(string! line, int from, char quote) -> int
+*REMOVED*static eQuantic.UI.Primitives.CurlyBraceLanguage.ScanVerbatim(string! line, int from) -> int
+*REMOVED*static readonly eQuantic.UI.Primitives.CodeDocument.Empty -> eQuantic.UI.Primitives.CodeDocument!
+*REMOVED*static readonly eQuantic.UI.Primitives.CodeLanguageRules.Default -> eQuantic.UI.Primitives.CodeLanguageRules!
+*REMOVED*static readonly eQuantic.UI.Primitives.CodeLanguages.CSharp -> eQuantic.UI.Primitives.ICodeLanguage!
+*REMOVED*static readonly eQuantic.UI.Primitives.CodeLanguages.Json -> eQuantic.UI.Primitives.ICodeLanguage!
+*REMOVED*static readonly eQuantic.UI.Primitives.CodeLanguages.PlainText -> eQuantic.UI.Primitives.ICodeLanguage!
+*REMOVED*static readonly eQuantic.UI.Primitives.CodeLanguages.Python -> eQuantic.UI.Primitives.ICodeLanguage!
+*REMOVED*static readonly eQuantic.UI.Primitives.CodeLanguages.TypeScript -> eQuantic.UI.Primitives.ICodeLanguage!
+*REMOVED*static readonly eQuantic.UI.Primitives.CodeLanguages.Xml -> eQuantic.UI.Primitives.ICodeLanguage!
+*REMOVED*static readonly eQuantic.UI.Primitives.CodePosition.Start -> eQuantic.UI.Primitives.CodePosition
+*REMOVED*virtual eQuantic.UI.Primitives.CurlyBraceLanguage.CloseMultilineString(string! line) -> int
+*REMOVED*virtual eQuantic.UI.Primitives.CurlyBraceLanguage.HasAtDecorators.get -> bool
+*REMOVED*virtual eQuantic.UI.Primitives.CurlyBraceLanguage.HasBracketAttributes.get -> bool
+*REMOVED*virtual eQuantic.UI.Primitives.CurlyBraceLanguage.HasTemplateStrings.get -> bool
+*REMOVED*virtual eQuantic.UI.Primitives.CurlyBraceLanguage.HasVerbatimStrings.get -> bool
+*REMOVED*virtual eQuantic.UI.Primitives.CurlyBraceLanguage.Rules.get -> eQuantic.UI.Primitives.CodeLanguageRules!
+*REMOVED*virtual eQuantic.UI.Primitives.CurlyBraceLanguage.WordKind(string! word, string! line, int afterIndex) -> eQuantic.UI.Primitives.CodeTokenKind
+*REMOVED*~override eQuantic.UI.Primitives.CodePosition.Equals(object obj) -> bool
+*REMOVED*~override eQuantic.UI.Primitives.CodeRange.Equals(object obj) -> bool
+*REMOVED*~override eQuantic.UI.Primitives.CodeRange.ToString() -> string
+*REMOVED*~override eQuantic.UI.Primitives.CodeToken.Equals(object obj) -> bool
+*REMOVED*~override eQuantic.UI.Primitives.CodeToken.ToString() -> string
+*REMOVED*abstract eQuantic.UI.Primitives.CurlyBraceLanguage.Keywords.get -> System.Collections.Generic.IReadOnlySet<string!>!
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionItem
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionItem.<Clone>$() -> eQuantic.UI.Primitives.CodeCompletionItem!
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionItem.CodeCompletionItem(string! Label, eQuantic.UI.Primitives.CodeCompletionKind Kind = eQuantic.UI.Primitives.CodeCompletionKind.Text) -> void
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionItem.Deconstruct(out string! Label, out eQuantic.UI.Primitives.CodeCompletionKind Kind) -> void
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionItem.Detail.get -> string?
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionItem.Detail.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionItem.Documentation.get -> string?
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionItem.Documentation.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionItem.Equals(eQuantic.UI.Primitives.CodeCompletionItem? other) -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionItem.InsertText.get -> string?
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionItem.InsertText.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionItem.Kind.get -> eQuantic.UI.Primitives.CodeCompletionKind
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionItem.Kind.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionItem.Label.get -> string!
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionItem.Label.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionItem.Replacing.get -> eQuantic.UI.Primitives.CodeRange?
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionItem.Replacing.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionItem.SortText.get -> string?
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionItem.SortText.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionKind
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionKind.Class = 6 -> eQuantic.UI.Primitives.CodeCompletionKind
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionKind.Constructor = 3 -> eQuantic.UI.Primitives.CodeCompletionKind
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionKind.Enum = 10 -> eQuantic.UI.Primitives.CodeCompletionKind
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionKind.Field = 4 -> eQuantic.UI.Primitives.CodeCompletionKind
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionKind.File = 13 -> eQuantic.UI.Primitives.CodeCompletionKind
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionKind.Function = 2 -> eQuantic.UI.Primitives.CodeCompletionKind
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionKind.Interface = 7 -> eQuantic.UI.Primitives.CodeCompletionKind
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionKind.Keyword = 11 -> eQuantic.UI.Primitives.CodeCompletionKind
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionKind.Method = 1 -> eQuantic.UI.Primitives.CodeCompletionKind
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionKind.Module = 8 -> eQuantic.UI.Primitives.CodeCompletionKind
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionKind.Property = 9 -> eQuantic.UI.Primitives.CodeCompletionKind
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionKind.Snippet = 12 -> eQuantic.UI.Primitives.CodeCompletionKind
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionKind.Text = 0 -> eQuantic.UI.Primitives.CodeCompletionKind
+*REMOVED*eQuantic.UI.Primitives.CodeCompletionKind.Variable = 5 -> eQuantic.UI.Primitives.CodeCompletionKind
+*REMOVED*eQuantic.UI.Primitives.CodeDecoration
+*REMOVED*eQuantic.UI.Primitives.CodeDecoration.<Clone>$() -> eQuantic.UI.Primitives.CodeDecoration!
+*REMOVED*eQuantic.UI.Primitives.CodeDecoration.CodeDecoration(eQuantic.UI.Primitives.CodeRange Range, eQuantic.UI.Primitives.CodeDecorationKind Kind = eQuantic.UI.Primitives.CodeDecorationKind.Highlight) -> void
+*REMOVED*eQuantic.UI.Primitives.CodeDecoration.Color.get -> eQuantic.UI.Primitives.ColorToken?
+*REMOVED*eQuantic.UI.Primitives.CodeDecoration.Color.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeDecoration.Deconstruct(out eQuantic.UI.Primitives.CodeRange Range, out eQuantic.UI.Primitives.CodeDecorationKind Kind) -> void
+*REMOVED*eQuantic.UI.Primitives.CodeDecoration.Equals(eQuantic.UI.Primitives.CodeDecoration? other) -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeDecoration.Kind.get -> eQuantic.UI.Primitives.CodeDecorationKind
+*REMOVED*eQuantic.UI.Primitives.CodeDecoration.Kind.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeDecoration.Range.get -> eQuantic.UI.Primitives.CodeRange
+*REMOVED*eQuantic.UI.Primitives.CodeDecoration.Range.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeDecorationKind
+*REMOVED*eQuantic.UI.Primitives.CodeDecorationKind.Highlight = 0 -> eQuantic.UI.Primitives.CodeDecorationKind
+*REMOVED*eQuantic.UI.Primitives.CodeDecorationKind.Outline = 2 -> eQuantic.UI.Primitives.CodeDecorationKind
+*REMOVED*eQuantic.UI.Primitives.CodeDecorationKind.Squiggle = 1 -> eQuantic.UI.Primitives.CodeDecorationKind
+*REMOVED*eQuantic.UI.Primitives.CodeDecorationKind.Strike = 3 -> eQuantic.UI.Primitives.CodeDecorationKind
+*REMOVED*eQuantic.UI.Primitives.CodeDiagnostic
+*REMOVED*eQuantic.UI.Primitives.CodeDiagnostic.<Clone>$() -> eQuantic.UI.Primitives.CodeDiagnostic!
+*REMOVED*eQuantic.UI.Primitives.CodeDiagnostic.Code.get -> string?
+*REMOVED*eQuantic.UI.Primitives.CodeDiagnostic.Code.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeDiagnostic.CodeDiagnostic(eQuantic.UI.Primitives.CodeRange Range, string! Message, eQuantic.UI.Primitives.CodeDiagnosticSeverity Severity = eQuantic.UI.Primitives.CodeDiagnosticSeverity.Error) -> void
+*REMOVED*eQuantic.UI.Primitives.CodeDiagnostic.Deconstruct(out eQuantic.UI.Primitives.CodeRange Range, out string! Message, out eQuantic.UI.Primitives.CodeDiagnosticSeverity Severity) -> void
+*REMOVED*eQuantic.UI.Primitives.CodeDiagnostic.Equals(eQuantic.UI.Primitives.CodeDiagnostic? other) -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeDiagnostic.Message.get -> string!
+*REMOVED*eQuantic.UI.Primitives.CodeDiagnostic.Message.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeDiagnostic.Range.get -> eQuantic.UI.Primitives.CodeRange
+*REMOVED*eQuantic.UI.Primitives.CodeDiagnostic.Range.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeDiagnostic.Severity.get -> eQuantic.UI.Primitives.CodeDiagnosticSeverity
+*REMOVED*eQuantic.UI.Primitives.CodeDiagnostic.Severity.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeDiagnostic.Source.get -> string?
+*REMOVED*eQuantic.UI.Primitives.CodeDiagnostic.Source.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeDiagnosticSeverity
+*REMOVED*eQuantic.UI.Primitives.CodeDiagnosticSeverity.Error = 3 -> eQuantic.UI.Primitives.CodeDiagnosticSeverity
+*REMOVED*eQuantic.UI.Primitives.CodeDiagnosticSeverity.Hint = 0 -> eQuantic.UI.Primitives.CodeDiagnosticSeverity
+*REMOVED*eQuantic.UI.Primitives.CodeDiagnosticSeverity.Information = 1 -> eQuantic.UI.Primitives.CodeDiagnosticSeverity
+*REMOVED*eQuantic.UI.Primitives.CodeDiagnosticSeverity.Warning = 2 -> eQuantic.UI.Primitives.CodeDiagnosticSeverity
+*REMOVED*eQuantic.UI.Primitives.CodeDirection
+*REMOVED*eQuantic.UI.Primitives.CodeDirection.Backward = 0 -> eQuantic.UI.Primitives.CodeDirection
+*REMOVED*eQuantic.UI.Primitives.CodeDirection.Forward = 1 -> eQuantic.UI.Primitives.CodeDirection
+*REMOVED*eQuantic.UI.Primitives.CodeDocument
+*REMOVED*eQuantic.UI.Primitives.CodeDocument.Clamp(eQuantic.UI.Primitives.CodePosition position) -> eQuantic.UI.Primitives.CodePosition
+*REMOVED*eQuantic.UI.Primitives.CodeDocument.End.get -> eQuantic.UI.Primitives.CodePosition
+*REMOVED*eQuantic.UI.Primitives.CodeDocument.IndentOf(int line) -> string!
+*REMOVED*eQuantic.UI.Primitives.CodeDocument.Length.get -> int
+*REMOVED*eQuantic.UI.Primitives.CodeDocument.Line(int index) -> string!
+*REMOVED*eQuantic.UI.Primitives.CodeDocument.LineCount.get -> int
+*REMOVED*eQuantic.UI.Primitives.CodeDocument.LineEnd(eQuantic.UI.Primitives.CodePosition position) -> eQuantic.UI.Primitives.CodePosition
+*REMOVED*eQuantic.UI.Primitives.CodeDocument.LineStart(eQuantic.UI.Primitives.CodePosition position) -> eQuantic.UI.Primitives.CodePosition
+*REMOVED*eQuantic.UI.Primitives.CodeDocument.Lines.get -> System.Collections.Generic.IReadOnlyList<string!>!
+*REMOVED*abstract eQuantic.UI.Primitives.CurlyBraceLanguage.Name.get -> string!
+*REMOVED*eQuantic.UI.Primitives.CodeDocument.Next(eQuantic.UI.Primitives.CodePosition position) -> eQuantic.UI.Primitives.CodePosition
+*REMOVED*eQuantic.UI.Primitives.CodeDocument.OffsetOf(eQuantic.UI.Primitives.CodePosition position) -> int
+*REMOVED*eQuantic.UI.Primitives.CodeDocument.PositionOf(int offset) -> eQuantic.UI.Primitives.CodePosition
+*REMOVED*eQuantic.UI.Primitives.CodeDocument.Previous(eQuantic.UI.Primitives.CodePosition position) -> eQuantic.UI.Primitives.CodePosition
+*REMOVED*eQuantic.UI.Primitives.CodeDocument.Replace(eQuantic.UI.Primitives.CodeRange range, string! text, out eQuantic.UI.Primitives.CodePosition caret) -> eQuantic.UI.Primitives.CodeDocument!
+*REMOVED*eQuantic.UI.Primitives.CodeDocument.Text.get -> string!
+*REMOVED*eQuantic.UI.Primitives.CodeDocument.TextIn(eQuantic.UI.Primitives.CodeRange range) -> string!
+*REMOVED*eQuantic.UI.Primitives.CodeDocument.WordAt(eQuantic.UI.Primitives.CodePosition position) -> eQuantic.UI.Primitives.CodeRange
+*REMOVED*eQuantic.UI.Primitives.CodeEdit
+*REMOVED*eQuantic.UI.Primitives.CodeEdit.<Clone>$() -> eQuantic.UI.Primitives.CodeEdit!
+*REMOVED*eQuantic.UI.Primitives.CodeEdit.CodeEdit(eQuantic.UI.Primitives.CodeRange Range, string! RemovedText, string! InsertedText, eQuantic.UI.Primitives.CodeRange SelectionBefore, eQuantic.UI.Primitives.CodeRange SelectionAfter) -> void
+*REMOVED*eQuantic.UI.Primitives.CodeEdit.Deconstruct(out eQuantic.UI.Primitives.CodeRange Range, out string! RemovedText, out string! InsertedText, out eQuantic.UI.Primitives.CodeRange SelectionBefore, out eQuantic.UI.Primitives.CodeRange SelectionAfter) -> void
+*REMOVED*eQuantic.UI.Primitives.CodeEdit.Equals(eQuantic.UI.Primitives.CodeEdit? other) -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeEdit.InsertedRange.get -> eQuantic.UI.Primitives.CodeRange
+*REMOVED*eQuantic.UI.Primitives.CodeEdit.InsertedText.get -> string!
+*REMOVED*eQuantic.UI.Primitives.CodeEdit.InsertedText.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeEdit.IsSimpleInsert.get -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeEdit.Range.get -> eQuantic.UI.Primitives.CodeRange
+*REMOVED*eQuantic.UI.Primitives.CodeEdit.Range.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeEdit.RemovedText.get -> string!
+*REMOVED*eQuantic.UI.Primitives.CodeEdit.RemovedText.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeEdit.SelectionAfter.get -> eQuantic.UI.Primitives.CodeRange
+*REMOVED*eQuantic.UI.Primitives.CodeEdit.SelectionAfter.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeEdit.SelectionBefore.get -> eQuantic.UI.Primitives.CodeRange
+*REMOVED*eQuantic.UI.Primitives.CodeEdit.SelectionBefore.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.Apply(eQuantic.UI.Primitives.CodeRange range, string! text) -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.BracketAtCaret() -> (eQuantic.UI.Primitives.CodePosition Here, eQuantic.UI.Primitives.CodePosition There)?
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.Caret.get -> eQuantic.UI.Primitives.CodePosition
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.Changed -> System.Action<eQuantic.UI.Primitives.CodeEdit?>?
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.CodeEditorController(string! text = "", eQuantic.UI.Primitives.ICodeLanguage? language = null) -> void
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.CopyText() -> string!
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.Cut() -> string!
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.DeleteBackward(eQuantic.UI.Primitives.CodeMotion motion = eQuantic.UI.Primitives.CodeMotion.Character) -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.DeleteForward(eQuantic.UI.Primitives.CodeMotion motion = eQuantic.UI.Primitives.CodeMotion.Character) -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.Document.get -> eQuantic.UI.Primitives.CodeDocument!
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.Document.set -> void
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.FindAll(string! needle, bool matchCase = false) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.CodeRange>!
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.FindNext(string! needle, bool matchCase = false, bool backward = false) -> eQuantic.UI.Primitives.CodeRange?
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.Highlighter.get -> eQuantic.UI.Primitives.CodeHighlighter!
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.History.get -> eQuantic.UI.Primitives.CodeHistory!
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.Indent() -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.Insert(string! text) -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.InsertNewLine() -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.MatchingBracket(eQuantic.UI.Primitives.CodePosition at) -> eQuantic.UI.Primitives.CodePosition?
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.Move(eQuantic.UI.Primitives.CodeMotion motion, eQuantic.UI.Primitives.CodeDirection direction, bool extend = false, int pageLines = 20) -> void
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.MoveTo(eQuantic.UI.Primitives.CodePosition from, eQuantic.UI.Primitives.CodeMotion motion, eQuantic.UI.Primitives.CodeDirection direction, int pageLines = 20) -> eQuantic.UI.Primitives.CodePosition
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.Outdent() -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.ReadOnly.get -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.ReadOnly.set -> void
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.Redo() -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.Rules.get -> eQuantic.UI.Primitives.CodeLanguageRules!
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.SelectAll() -> void
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.SelectLine(int line) -> void
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.SelectWord(eQuantic.UI.Primitives.CodePosition at) -> void
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.Selection.get -> eQuantic.UI.Primitives.CodeRange
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.Selection.set -> void
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.SelectionChanged -> System.Action<eQuantic.UI.Primitives.CodeRange>?
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.ToggleLineComment() -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.Type(char c) -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeEditorController.Undo() -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeFold
+*REMOVED*eQuantic.UI.Primitives.CodeFold.<Clone>$() -> eQuantic.UI.Primitives.CodeFold!
+*REMOVED*eQuantic.UI.Primitives.CodeFold.CodeFold(int StartLine, int EndLine) -> void
+*REMOVED*eQuantic.UI.Primitives.CodeFold.Deconstruct(out int StartLine, out int EndLine) -> void
+*REMOVED*eQuantic.UI.Primitives.CodeFold.EndLine.get -> int
+*REMOVED*eQuantic.UI.Primitives.CodeFold.EndLine.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeFold.Equals(eQuantic.UI.Primitives.CodeFold? other) -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeFold.Placeholder.get -> string?
+*REMOVED*eQuantic.UI.Primitives.CodeFold.Placeholder.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeFold.StartLine.get -> int
+*REMOVED*eQuantic.UI.Primitives.CodeFold.StartLine.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeGutterKind
+*REMOVED*eQuantic.UI.Primitives.CodeGutterKind.Added = 5 -> eQuantic.UI.Primitives.CodeGutterKind
+*REMOVED*eQuantic.UI.Primitives.CodeGutterKind.Breakpoint = 1 -> eQuantic.UI.Primitives.CodeGutterKind
+*REMOVED*eQuantic.UI.Primitives.CodeGutterKind.BreakpointDisabled = 2 -> eQuantic.UI.Primitives.CodeGutterKind
+*REMOVED*eQuantic.UI.Primitives.CodeGutterKind.CurrentStatement = 8 -> eQuantic.UI.Primitives.CodeGutterKind
+*REMOVED*eQuantic.UI.Primitives.CodeGutterKind.Error = 3 -> eQuantic.UI.Primitives.CodeGutterKind
+*REMOVED*eQuantic.UI.Primitives.CodeGutterKind.Modified = 6 -> eQuantic.UI.Primitives.CodeGutterKind
+*REMOVED*eQuantic.UI.Primitives.CodeGutterKind.None = 0 -> eQuantic.UI.Primitives.CodeGutterKind
+*REMOVED*eQuantic.UI.Primitives.CodeGutterKind.Removed = 7 -> eQuantic.UI.Primitives.CodeGutterKind
+*REMOVED*eQuantic.UI.Primitives.CodeGutterKind.Warning = 4 -> eQuantic.UI.Primitives.CodeGutterKind
+*REMOVED*eQuantic.UI.Primitives.CodeGutterMarker
+*REMOVED*eQuantic.UI.Primitives.CodeGutterMarker.<Clone>$() -> eQuantic.UI.Primitives.CodeGutterMarker!
+*REMOVED*eQuantic.UI.Primitives.CodeGutterMarker.CodeGutterMarker(int Line, eQuantic.UI.Primitives.CodeGutterKind Kind) -> void
+*REMOVED*eQuantic.UI.Primitives.CodeGutterMarker.Deconstruct(out int Line, out eQuantic.UI.Primitives.CodeGutterKind Kind) -> void
+*REMOVED*eQuantic.UI.Primitives.CodeGutterMarker.Equals(eQuantic.UI.Primitives.CodeGutterMarker? other) -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeGutterMarker.Kind.get -> eQuantic.UI.Primitives.CodeGutterKind
+*REMOVED*eQuantic.UI.Primitives.CodeGutterMarker.Kind.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeGutterMarker.Line.get -> int
+*REMOVED*eQuantic.UI.Primitives.CodeGutterMarker.Line.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeGutterMarker.Tooltip.get -> string?
+*REMOVED*eQuantic.UI.Primitives.CodeGutterMarker.Tooltip.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeHighlighter
+*REMOVED*eQuantic.UI.Primitives.CodeHighlighter.CodeHighlighter(eQuantic.UI.Primitives.ICodeLanguage! language) -> void
+*REMOVED*eQuantic.UI.Primitives.CodeHighlighter.Invalidate() -> void
+*REMOVED*eQuantic.UI.Primitives.CodeHighlighter.Language.get -> eQuantic.UI.Primitives.ICodeLanguage!
+*REMOVED*eQuantic.UI.Primitives.CodeHighlighter.LineChanged(eQuantic.UI.Primitives.CodeDocument! document, int line, int linesInserted = 0, int linesRemoved = 0) -> int
+*REMOVED*eQuantic.UI.Primitives.CodeHighlighter.TokensFor(eQuantic.UI.Primitives.CodeDocument! document, int line) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.CodeToken>!
+*REMOVED*eQuantic.UI.Primitives.CodeHighlighter.UseLanguage(eQuantic.UI.Primitives.ICodeLanguage! language) -> void
+*REMOVED*abstract eQuantic.UI.Primitives.CurlyBraceLanguage.TypeWords.get -> System.Collections.Generic.IReadOnlySet<string!>!
+*REMOVED*eQuantic.UI.Primitives.CodeHistory
+*REMOVED*eQuantic.UI.Primitives.CodeHistory.Break() -> void
+*REMOVED*eQuantic.UI.Primitives.CodeHistory.CanRedo.get -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeHistory.CanUndo.get -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeHistory.Clear() -> void
+*REMOVED*eQuantic.UI.Primitives.CodeHistory.CodeHistory() -> void
+*REMOVED*eQuantic.UI.Primitives.CodeHistory.Limit.get -> int
+*REMOVED*eQuantic.UI.Primitives.CodeHistory.Limit.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeHistory.Record(eQuantic.UI.Primitives.CodeEdit! edit) -> void
+*REMOVED*eQuantic.UI.Primitives.CodeHistory.Redo(eQuantic.UI.Primitives.CodeDocument! document, out eQuantic.UI.Primitives.CodeRange selection) -> eQuantic.UI.Primitives.CodeDocument?
+*REMOVED*eQuantic.UI.Primitives.CodeHistory.Undo(eQuantic.UI.Primitives.CodeDocument! document, out eQuantic.UI.Primitives.CodeRange selection) -> eQuantic.UI.Primitives.CodeDocument?
+*REMOVED*eQuantic.UI.Primitives.CodeHover
+*REMOVED*eQuantic.UI.Primitives.CodeHover.<Clone>$() -> eQuantic.UI.Primitives.CodeHover!
+*REMOVED*eQuantic.UI.Primitives.CodeHover.CodeHover(eQuantic.UI.Primitives.CodeRange Range, string! Text) -> void
+*REMOVED*eQuantic.UI.Primitives.CodeHover.Deconstruct(out eQuantic.UI.Primitives.CodeRange Range, out string! Text) -> void
+*REMOVED*eQuantic.UI.Primitives.CodeHover.Equals(eQuantic.UI.Primitives.CodeHover? other) -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeHover.Range.get -> eQuantic.UI.Primitives.CodeRange
+*REMOVED*eQuantic.UI.Primitives.CodeHover.Range.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeHover.Signature.get -> string?
+*REMOVED*eQuantic.UI.Primitives.CodeHover.Signature.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeHover.Text.get -> string!
+*REMOVED*eQuantic.UI.Primitives.CodeHover.Text.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeKeymap
+*REMOVED*eQuantic.UI.Primitives.CodeLanguageRules
+*REMOVED*eQuantic.UI.Primitives.CodeLanguageRules.<Clone>$() -> eQuantic.UI.Primitives.CodeLanguageRules!
+*REMOVED*eQuantic.UI.Primitives.CodeLanguageRules.BlockComment.get -> (string! Open, string! Close)?
+*REMOVED*eQuantic.UI.Primitives.CodeLanguageRules.BlockComment.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeLanguageRules.Brackets.get -> System.Collections.Generic.IReadOnlyList<(char Open, char Close)>!
+*REMOVED*eQuantic.UI.Primitives.CodeLanguageRules.Brackets.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeLanguageRules.CodeLanguageRules() -> void
+*REMOVED*eQuantic.UI.Primitives.CodeLanguageRules.Equals(eQuantic.UI.Primitives.CodeLanguageRules? other) -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeLanguageRules.IndentAfter.get -> System.Collections.Generic.IReadOnlyList<char>!
+*REMOVED*eQuantic.UI.Primitives.CodeLanguageRules.IndentAfter.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeLanguageRules.IndentWidth.get -> int
+*REMOVED*eQuantic.UI.Primitives.CodeLanguageRules.IndentWidth.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeLanguageRules.InsertSpaces.get -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeLanguageRules.InsertSpaces.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeLanguageRules.LineComment.get -> string?
+*REMOVED*eQuantic.UI.Primitives.CodeLanguageRules.LineComment.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeLanguageRules.OutdentOn.get -> System.Collections.Generic.IReadOnlyList<char>!
+*REMOVED*eQuantic.UI.Primitives.CodeLanguageRules.OutdentOn.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeLanguageRules.Quotes.get -> System.Collections.Generic.IReadOnlyList<char>!
+*REMOVED*eQuantic.UI.Primitives.CodeLanguageRules.Quotes.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeLanguages
+*REMOVED*eQuantic.UI.Primitives.CodeMotion
+*REMOVED*eQuantic.UI.Primitives.CodeMotion.Character = 0 -> eQuantic.UI.Primitives.CodeMotion
+*REMOVED*eQuantic.UI.Primitives.CodeMotion.DocumentBoundary = 4 -> eQuantic.UI.Primitives.CodeMotion
+*REMOVED*eQuantic.UI.Primitives.CodeMotion.Line = 2 -> eQuantic.UI.Primitives.CodeMotion
+*REMOVED*eQuantic.UI.Primitives.CodeMotion.LineBoundary = 3 -> eQuantic.UI.Primitives.CodeMotion
+*REMOVED*eQuantic.UI.Primitives.CodeMotion.Page = 5 -> eQuantic.UI.Primitives.CodeMotion
+*REMOVED*eQuantic.UI.Primitives.CodeMotion.Word = 1 -> eQuantic.UI.Primitives.CodeMotion
+*REMOVED*eQuantic.UI.Primitives.CodePosition
+*REMOVED*eQuantic.UI.Primitives.CodePosition.CodePosition() -> void
+*REMOVED*eQuantic.UI.Primitives.CodePosition.CodePosition(int Line, int Column) -> void
+*REMOVED*eQuantic.UI.Primitives.CodePosition.Column.get -> int
+*REMOVED*eQuantic.UI.Primitives.CodePosition.Column.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodePosition.CompareTo(eQuantic.UI.Primitives.CodePosition other) -> int
+*REMOVED*eQuantic.UI.Primitives.CodePosition.Deconstruct(out int Line, out int Column) -> void
+*REMOVED*eQuantic.UI.Primitives.CodePosition.Equals(eQuantic.UI.Primitives.CodePosition other) -> bool
+*REMOVED*eQuantic.UI.Primitives.CodePosition.Line.get -> int
+*REMOVED*eQuantic.UI.Primitives.CodePosition.Line.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeRange
+*REMOVED*eQuantic.UI.Primitives.CodeRange.Anchor.get -> eQuantic.UI.Primitives.CodePosition
+*REMOVED*eQuantic.UI.Primitives.CodeRange.Anchor.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeRange.CodeRange() -> void
+*REMOVED*eQuantic.UI.Primitives.CodeRange.CodeRange(eQuantic.UI.Primitives.CodePosition Anchor, eQuantic.UI.Primitives.CodePosition Focus) -> void
+*REMOVED*eQuantic.UI.Primitives.CodeRange.CodeRange(eQuantic.UI.Primitives.CodePosition caret) -> void
+*REMOVED*eQuantic.UI.Primitives.CodeRange.Collapsed() -> eQuantic.UI.Primitives.CodeRange
+*REMOVED*eQuantic.UI.Primitives.CodeRange.Deconstruct(out eQuantic.UI.Primitives.CodePosition Anchor, out eQuantic.UI.Primitives.CodePosition Focus) -> void
+*REMOVED*eQuantic.UI.Primitives.CodeRange.End.get -> eQuantic.UI.Primitives.CodePosition
+*REMOVED*eQuantic.UI.Primitives.CodeRange.Equals(eQuantic.UI.Primitives.CodeRange other) -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeRange.Focus.get -> eQuantic.UI.Primitives.CodePosition
+*REMOVED*eQuantic.UI.Primitives.CodeRange.Focus.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeRange.IsEmpty.get -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeRange.Start.get -> eQuantic.UI.Primitives.CodePosition
+*REMOVED*eQuantic.UI.Primitives.CodeSurface.CodeSurface(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.CodeEditorController! editor) -> void
+*REMOVED*eQuantic.UI.Primitives.CodeSurface.ColumnWidth.get -> float
+*REMOVED*eQuantic.UI.Primitives.CodeSurface.ColumnWidth.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeSurface.ContentLeft.get -> float
+*REMOVED*eQuantic.UI.Primitives.CodeSurface.ContentLeft.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeSurface.ContentTop.get -> float
+*REMOVED*eQuantic.UI.Primitives.CodeSurface.ContentTop.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeSurface.Editor.get -> eQuantic.UI.Primitives.CodeEditorController!
+*REMOVED*eQuantic.UI.Primitives.CodeSurface.Editor.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeSurface.LineHeight.get -> float
+*REMOVED*eQuantic.UI.Primitives.CodeSurface.LineHeight.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeToken
+*REMOVED*eQuantic.UI.Primitives.CodeToken.CodeToken() -> void
+*REMOVED*eQuantic.UI.Primitives.CodeToken.CodeToken(int Start, int Length, eQuantic.UI.Primitives.CodeTokenKind Kind) -> void
+*REMOVED*eQuantic.UI.Primitives.CodeToken.Deconstruct(out int Start, out int Length, out eQuantic.UI.Primitives.CodeTokenKind Kind) -> void
+*REMOVED*eQuantic.UI.Primitives.CodeToken.End.get -> int
+*REMOVED*eQuantic.UI.Primitives.CodeToken.Equals(eQuantic.UI.Primitives.CodeToken other) -> bool
+*REMOVED*eQuantic.UI.Primitives.CodeToken.Kind.get -> eQuantic.UI.Primitives.CodeTokenKind
+*REMOVED*eQuantic.UI.Primitives.CodeToken.Kind.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeToken.Length.get -> int
+*REMOVED*eQuantic.UI.Primitives.CodeToken.Length.init -> void
+*REMOVED*eQuantic.UI.Primitives.CodeToken.Start.get -> int
+*REMOVED*eQuantic.UI.Primitives.CodeToken.Start.init -> void
+*REMOVED*eQuantic.UI.Primitives.CurlyBraceLanguage
+*REMOVED*eQuantic.UI.Primitives.CurlyBraceLanguage.CurlyBraceLanguage() -> void
+*REMOVED*eQuantic.UI.Primitives.CurlyBraceLanguage.Tokenize(string! line, int state, System.Collections.Generic.List<eQuantic.UI.Primitives.CodeToken>! into) -> int
+eQuantic.UI.Primitives.CodeSurface.CodeSurface(eQuantic.UI.Primitives.VisualNode! child, eQuantic.UI.Primitives.ICodeSurfaceModel! model) -> void
+eQuantic.UI.Primitives.CodeSurface.Model.get -> eQuantic.UI.Primitives.ICodeSurfaceModel!
+eQuantic.UI.Primitives.CodeSurface.Model.init -> void
+eQuantic.UI.Primitives.ICodeSurfaceModel
+eQuantic.UI.Primitives.ICodeSurfaceModel.SelectionBands.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Rect>!
+eQuantic.UI.Primitives.ICodeSurfaceModel.Carets.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Rect>!
+eQuantic.UI.Primitives.ICodeSurfaceModel.HandleKey(string! key, eQuantic.UI.Primitives.KeyModifiers modifiers, eQuantic.UI.Primitives.ITextClipboard? clipboard) -> bool
+eQuantic.UI.Primitives.ICodeSurfaceModel.HandleText(string! text) -> bool
+eQuantic.UI.Primitives.ICodeSurfaceModel.HandlePointer(eQuantic.UI.Primitives.PointerPhase phase, eQuantic.UI.Primitives.Point position, eQuantic.UI.Primitives.KeyModifiers modifiers, int clicks) -> bool
+eQuantic.UI.Primitives.PointerPhase
+eQuantic.UI.Primitives.PointerPhase.Down = 0 -> eQuantic.UI.Primitives.PointerPhase
+eQuantic.UI.Primitives.PointerPhase.Move = 1 -> eQuantic.UI.Primitives.PointerPhase
+eQuantic.UI.Primitives.PointerPhase.Up = 2 -> eQuantic.UI.Primitives.PointerPhase
+eQuantic.UI.Primitives.PointerPhase.Hover = 3 -> eQuantic.UI.Primitives.PointerPhase
+eQuantic.UI.Primitives.PointerPhase.Exit = 4 -> eQuantic.UI.Primitives.PointerPhase

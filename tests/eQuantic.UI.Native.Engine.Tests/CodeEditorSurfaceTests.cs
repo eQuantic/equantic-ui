@@ -1,3 +1,4 @@
+using eQuantic.UI.Code;
 using eQuantic.UI.Components;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine;
@@ -81,12 +82,12 @@ public class CodeEditorSurfaceTests
         var (host, surface, bounds) = Open("var a = 1;\nvar b = 2;\nvar c = 3;");
 
         // Line 1, column 4 — dead centre of a character, so no rounding argument.
-        host.PressDown(bounds.X + surface.ContentLeft + 4 * surface.ColumnWidth,
-            bounds.Y + surface.ContentTop + 1 * surface.LineHeight + surface.LineHeight / 2);
+        host.PressDown(bounds.X + surface.Grid().Origin.X + 4 * surface.Grid().Cell.Width,
+            bounds.Y + surface.Grid().Origin.Y + 1 * surface.Grid().Cell.Height + surface.Grid().Cell.Height / 2);
         host.PressUp(bounds.X, bounds.Y);
         host.RenderFrame(new DisplayListBuilder());
 
-        surface.Editor.Caret.Should().Be(new CodePosition(1, 4));
+        surface.Engine().Caret.Should().Be(new CodePosition(1, 4));
     }
 
     [Fact]
@@ -94,25 +95,47 @@ public class CodeEditorSurfaceTests
     {
         var (host, surface, bounds) = Open("short\nlonger line here");
 
-        host.PressDown(bounds.X + surface.ContentLeft + 200, bounds.Y + surface.ContentTop + 2);
+        host.PressDown(bounds.X + surface.Grid().Origin.X + 200, bounds.Y + surface.Grid().Origin.Y + 2);
         host.PressUp(bounds.X, bounds.Y);
         host.RenderFrame(new DisplayListBuilder());
 
-        surface.Editor.Caret.Should().Be(new CodePosition(0, "short".Length));
+        surface.Engine().Caret.Should().Be(new CodePosition(0, "short".Length));
     }
 
     [Fact]
     public void DraggingDrawsASelection_AndItSurvivesTheRebuildEachFrameCauses()
     {
         var (host, surface, bounds) = Open("one two three");
-        var y = bounds.Y + surface.ContentTop + surface.LineHeight / 2;
+        var y = bounds.Y + surface.Grid().Origin.Y + surface.Grid().Cell.Height / 2;
 
-        host.PressDown(bounds.X + surface.ContentLeft, y);
-        host.PointerMove(bounds.X + surface.ContentLeft + 7 * surface.ColumnWidth, y);
+        host.PressDown(bounds.X + surface.Grid().Origin.X, y);
+        host.PointerMove(bounds.X + surface.Grid().Origin.X + 7 * surface.Grid().Cell.Width, y);
         host.RenderFrame(new DisplayListBuilder());
-        host.PressUp(bounds.X + surface.ContentLeft + 7 * surface.ColumnWidth, y);
+        host.PressUp(bounds.X + surface.Grid().Origin.X + 7 * surface.Grid().Cell.Width, y);
 
-        surface.Editor.Document.TextIn(surface.Editor.Selection).Should().Be("one two");
+        surface.Engine().Document.TextIn(surface.Engine().Selection).Should().Be("one two");
+    }
+
+    /// <summary>
+    /// Shift-click EXTENDS the selection from where it was, on this host as on the web — both hand
+    /// the press to the same model, which is the only place that decides what Shift means. The host
+    /// used to decide it itself, and set the caret whatever the modifiers said.
+    /// </summary>
+    [Fact]
+    public void ShiftClickExtendsTheSelectionFromWhereItWas()
+    {
+        var (host, surface, bounds) = Open("one two three");
+        var y = bounds.Y + surface.Grid().Origin.Y + surface.Grid().Cell.Height / 2;
+        float X(int column) => bounds.X + surface.Grid().Origin.X + column * surface.Grid().Cell.Width;
+
+        host.PressDown(X(4), y);
+        host.PressUp(X(4), y);
+        host.RenderFrame(new DisplayListBuilder());
+        host.PressDown(X(13), y, modifiers: KeyModifiers.Shift);
+        host.PressUp(X(13), y);
+        host.RenderFrame(new DisplayListBuilder());
+
+        surface.Engine().Document.TextIn(surface.Engine().Selection).Should().Be("two three");
     }
 
     // ---- typing ----------------------------------------------------------------------------------
@@ -137,7 +160,7 @@ public class CodeEditorSurfaceTests
 
         Type(host, "var x");
 
-        region.Surface.Editor.Document.Text.Should().Be("var x");
+        region.Surface.Engine().Document.Text.Should().Be("var x");
         // One per character, plus the click that put the caret there: the seam reports MOVEMENT as
         // well as change, because a status bar showing line:column needs both.
         changes.Should().HaveCount(6);
@@ -152,7 +175,7 @@ public class CodeEditorSurfaceTests
         Press(host, "End");
         Press(host, "Enter");
 
-        surface.Editor.Document.Lines.Should().Equal(["    if (x) {", "        "],
+        surface.Engine().Document.Lines.Should().Equal(["    if (x) {", "        "],
             "a block opened, so the body steps in");
     }
 
@@ -164,7 +187,7 @@ public class CodeEditorSurfaceTests
         Press(host, "a", KeyModifiers.Command);   // everything
         Press(host, "Tab");
 
-        surface.Editor.Document.Lines.Should().Equal("    one", "    two");
+        surface.Engine().Document.Lines.Should().Equal("    one", "    two");
     }
 
     [Fact]
@@ -176,10 +199,10 @@ public class CodeEditorSurfaceTests
 
         Press(host, "z", KeyModifiers.Command);
 
-        surface.Editor.Document.Text.Should().BeEmpty();
+        surface.Engine().Document.Text.Should().BeEmpty();
 
         Press(host, "z", KeyModifiers.Command | KeyModifiers.Shift);
-        surface.Editor.Document.Text.Should().Be("hello", "and redo puts it back");
+        surface.Engine().Document.Text.Should().Be("hello", "and redo puts it back");
     }
 
     [Fact]
@@ -192,7 +215,7 @@ public class CodeEditorSurfaceTests
         Press(host, "ArrowRight", KeyModifiers.Shift);
         Press(host, "ArrowRight", KeyModifiers.Shift);
 
-        surface.Editor.Document.TextIn(surface.Editor.Selection).Should().Be("cd");
+        surface.Engine().Document.TextIn(surface.Engine().Selection).Should().Be("cd");
     }
 
     [Fact]
@@ -222,7 +245,7 @@ public class CodeEditorSurfaceTests
         Type(host, "x");
         Press(host, "Enter");
 
-        region.Surface.Editor.Document.Text.Should().Be("fixed", "reading is not writing");
+        region.Surface.Engine().Document.Text.Should().Be("fixed", "reading is not writing");
         // …but the caret is there, because selecting and copying are reading.
         host.FocusedPath.Should().NotBeNull();
     }
@@ -245,14 +268,14 @@ public class CodeEditorSurfaceTests
         var caret = commands.Last(c => c.Kind == DrawCommandKind.FillRRect
             && MathF.Abs(c.Shape.Rect.Width - 2f) < 0.01f);
         caret.Shape.Rect.X.Should().BeApproximately(
-            bounds.X + surface.ContentLeft + 3 * surface.ColumnWidth, 0.01f);
-        caret.Shape.Rect.Y.Should().BeApproximately(bounds.Y + surface.ContentTop, 0.01f);
+            bounds.X + surface.Grid().Origin.X + 3 * surface.Grid().Cell.Width, 0.01f);
+        caret.Shape.Rect.Y.Should().BeApproximately(bounds.Y + surface.Grid().Origin.Y, 0.01f);
 
         var band = commands.First(c => c.Kind == DrawCommandKind.FillRRect
-            && MathF.Abs(c.Shape.Rect.Width - surface.ColumnWidth) < 0.01f
-            && MathF.Abs(c.Shape.Rect.Height - surface.LineHeight) < 0.01f);
+            && MathF.Abs(c.Shape.Rect.Width - surface.Grid().Cell.Width) < 0.01f
+            && MathF.Abs(c.Shape.Rect.Height - surface.Grid().Cell.Height) < 0.01f);
         band.Shape.Rect.X.Should().BeApproximately(
-            bounds.X + surface.ContentLeft + 2 * surface.ColumnWidth, 0.01f);
+            bounds.X + surface.Grid().Origin.X + 2 * surface.Grid().Cell.Width, 0.01f);
     }
 
     /// <summary>
@@ -272,15 +295,15 @@ public class CodeEditorSurfaceTests
         // it is not what this is about.
         var bands = builder.Build().Commands.ToArray()
             .Where(c => c.Kind == DrawCommandKind.FillRRect
-                && MathF.Abs(c.Shape.Rect.Height - surface.LineHeight) < 0.01f
-                && c.Shape.Rect.X >= bounds.X + surface.ContentLeft - 0.01f)
+                && MathF.Abs(c.Shape.Rect.Height - surface.Grid().Cell.Height) < 0.01f
+                && c.Shape.Rect.X >= bounds.X + surface.Grid().Origin.X - 0.01f)
             .ToArray();
 
         bands.Select(b => MathF.Round(b.Shape.Rect.Y)).Distinct().Should().HaveCount(3,
             "one per line of the range");
-        bands[0].Shape.Rect.Y.Should().BeApproximately(bounds.Y + surface.ContentTop, 0.01f);
+        bands[0].Shape.Rect.Y.Should().BeApproximately(bounds.Y + surface.Grid().Origin.Y, 0.01f);
         bands[2].Shape.Rect.Y.Should().BeApproximately(
-            bounds.Y + surface.ContentTop + 2 * surface.LineHeight, 0.01f);
+            bounds.Y + surface.Grid().Origin.Y + 2 * surface.Grid().Cell.Height, 0.01f);
     }
 
     /// <summary>
@@ -393,9 +416,9 @@ public class CodeEditorSurfaceTests
 
     private static void Focus(PhotonHost host, CodeSurface surface, Rect bounds)
     {
-        host.PressDown(bounds.X + surface.ContentLeft, bounds.Y + surface.ContentTop + 2);
-        host.PressUp(bounds.X + surface.ContentLeft, bounds.Y + surface.ContentTop + 2);
+        host.PressDown(bounds.X + surface.Grid().Origin.X, bounds.Y + surface.Grid().Origin.Y + 2);
+        host.PressUp(bounds.X + surface.Grid().Origin.X, bounds.Y + surface.Grid().Origin.Y + 2);
         host.RenderFrame(new DisplayListBuilder());
-        surface.Editor.Selection = new CodeRange(CodePosition.Start);
+        surface.Engine().Selection = new CodeRange(CodePosition.Start);
     }
 }

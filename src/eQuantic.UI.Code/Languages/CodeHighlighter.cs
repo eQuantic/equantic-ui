@@ -1,4 +1,4 @@
-namespace eQuantic.UI.Primitives;
+namespace eQuantic.UI.Code;
 
 /// <summary>
 /// The colours of a document, kept up to date INCREMENTALLY.

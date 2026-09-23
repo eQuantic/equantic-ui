@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeDecoration, CodeEditorController, CodeGutterMarker, CodeLanguages, CodeRange, CodeSurface, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, KeyChord, Positioned, Row, ScrollView, SdkStrings, Shortcut, SizeValue, SizeVariantValue, Stack, StatefulComponent, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeBlock, CodeDecoration, CodeEditorController, CodeGrid, CodeGutterMarker, CodeLanguages, CodeRange, CodeSurface, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, KeyChord, Point, Positioned, Row, ScrollView, SdkStrings, Shortcut, Size, SizeValue, SizeVariantValue, Stack, StatefulComponent, Text, TextEntry, UiComponent, VisualNode } from "../runtime-exports";
 
 export class CodeEditor extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.CodeEditor';
@@ -55,7 +55,8 @@ export class CodeEditor extends StatefulComponent {
         let highlighter = editor.highlighter;
         let metrics = CodeBlock.metricsFor(context, this.size, this.showLineNumbers, this.firstLineNumber + editor.document.lineCount - 1);
         let block = new CodeBlock('', null, { document: editor.document, language: highlighter.language, decorations: this.marks(editor), showLineNumbers: this.showLineNumbers, firstLineNumber: this.firstLineNumber, standalone: false, size: this.size, inverse: this.inverse, caption: this.caption, gutterMarkers: this.gutterMarkers, onGutterPressed: this.onGutterPressed, highlighter: highlighter, metrics: metrics, viewportOffset: this._offset, viewportHeight: this._viewport, viewportWidth: this._viewportWidth, activeLine: editor.caret.line });
-        let surface: VisualNode = Object.assign(new CodeSurface(block, editor), { contentTop: metrics.contentTop, lineHeight: metrics.lineHeight, contentLeft: metrics.contentLeft, columnWidth: metrics.columnWidth, autofocus: this.autofocus, label: this.caption ?? 'Code editor', caretColor: CodeBlock.inkFor(this.inverse, context.theme), selectionColor: CodeBlock.selectionFor(this.inverse, context.theme), onChanged: () => this.setState(() => {
+        editor.grid = new CodeGrid(new Point(metrics.contentLeft, metrics.contentTop), new Size(metrics.columnWidth, metrics.lineHeight));
+        let surface: VisualNode = new CodeSurface(block, editor, { autofocus: this.autofocus, label: this.caption ?? 'Code editor', caretColor: CodeBlock.inkFor(this.inverse, context.theme), selectionColor: CodeBlock.selectionFor(this.inverse, context.theme), onChanged: () => this.setState(() => {
             this.onChanged?.(editor.document.text);
             this.onSelectionChanged?.(editor.selection);
         }) });

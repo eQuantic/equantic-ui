@@ -13,7 +13,9 @@ import { photonTheme } from './design-system.generated';
 import { lowerVisualNode } from './lowering';
 import { setPhotonTheme } from './photon-context';
 import { CodeSurface, Text, type VisualNode } from './vocabulary';
+import { Point, Size } from './value-types';
 import { CodeEditorController } from './components/CodeEditorController';
+import { CodeGrid } from './components/CodeGrid';
 import { CodeLanguages } from './components/CodeLanguages';
 import { CodeDocument } from './components/CodeDocument';
 import type { HtmlNode } from '../core/types';
@@ -25,12 +27,10 @@ const COLUMN = 8;
 
 function surfaceFor(code: string) {
   const editor = new CodeEditorController(code, CodeLanguages.for('csharp'));
+  // The grid belongs to the ENGINE now: it is the only thing that turns a position into a point.
+  editor.grid = new CodeGrid(new Point(12, 12), new Size(COLUMN, LINE));
   let changes = 0;
   const node = new CodeSurface(new Text('', 'labelSmall'), editor, {
-    contentTop: 12,
-    contentLeft: 12,
-    lineHeight: LINE,
-    columnWidth: COLUMN,
     onChanged: () => changes++,
   });
   const lowered = lowerVisualNode(node as never, {
@@ -95,12 +95,7 @@ describe('code surface (web)', () => {
       focus: { line: 2, column: 4 },
     } as never;
     const node = lowerVisualNode(
-      new CodeSurface(new Text('', 'labelSmall'), redrawn.editor, {
-        contentTop: 12,
-        contentLeft: 12,
-        lineHeight: LINE,
-        columnWidth: COLUMN,
-      }) as never,
+      new CodeSurface(new Text('', 'labelSmall'), redrawn.editor) as never,
       {
         textPrimary: photonTheme.textPrimary,
         componentContext: { theme: photonTheme, typeScale: 1 },
@@ -120,13 +115,9 @@ describe('code surface (web)', () => {
       focus: { line: 2, column: 3 },
     } as never;
 
+    editor.grid = new CodeGrid(new Point(0, 0), new Size(COLUMN, LINE));
     const node = lowerVisualNode(
-      new CodeSurface(new Text('', 'labelSmall'), editor, {
-        contentTop: 0,
-        contentLeft: 0,
-        lineHeight: LINE,
-        columnWidth: COLUMN,
-      }) as never,
+      new CodeSurface(new Text('', 'labelSmall'), editor) as never,
       {
         textPrimary: photonTheme.textPrimary,
         componentContext: { theme: photonTheme, typeScale: 1 },
@@ -209,6 +200,127 @@ describe('code surface keyboard (the SAME keymap the native host calls)', () => 
     const { lowered } = surfaceFor('code');
     expect(press(lowered, 'F5')).toBe(false);
     expect(press(lowered, 'Escape')).toBe(false);
+  });
+});
+
+/**
+ * The POINTER, through the same model the native host drives. Drag selection and shift-click did
+ * not exist on this side at all: the surface set the caret on the press and listened to nothing
+ * after it, while the window drew a selection on the drag — two copies of what a click means, and
+ * one of them short. The model owns the meaning now; this only forwards the press, the moves and
+ * the release.
+ */
+function pointer(
+  lowered: HtmlNode,
+  type: 'pointerdown' | 'pointermove' | 'pointerup' | 'mousedown',
+  x: number,
+  y: number,
+  options: { detail?: number; shift?: boolean; buttons?: number; pointerType?: string } = {},
+) {
+  const target = {
+    getBoundingClientRect: () => ({ left: 0, top: 0 }),
+    setPointerCapture: () => {},
+    releasePointerCapture: () => {},
+    focus: () => {},
+  };
+  const event = {
+    clientX: x,
+    clientY: y,
+    currentTarget: target,
+    pointerId: 1,
+    pointerType: options.pointerType ?? 'mouse',
+    detail: options.detail ?? 1,
+    buttons: options.buttons ?? (type === 'pointerup' ? 0 : 1),
+    shiftKey: options.shift === true,
+    altKey: false,
+    metaKey: false,
+    ctrlKey: false,
+  };
+  (lowered.events[type] as unknown as (e: unknown) => void)(event);
+}
+
+/**
+ * A MOUSE press the way a browser delivers one: `pointerdown` first (Chrome reports `detail: 0`
+ * there, measured), then `mousedown`, which carries the platform's click count.
+ */
+function mousePress(
+  lowered: HtmlNode,
+  x: number,
+  y: number,
+  options: { clicks?: number; shift?: boolean } = {},
+) {
+  pointer(lowered, 'pointerdown', x, y, { detail: 0, shift: options.shift });
+  pointer(lowered, 'mousedown', x, y, { detail: options.clicks ?? 1, shift: options.shift });
+}
+
+/** The client point at the centre of a character cell, on the 12/12 grid `surfaceFor` sets. */
+const cell = (line: number, column: number): [number, number] => [
+  12 + column * COLUMN,
+  12 + line * LINE + LINE / 2,
+];
+
+function pressAt(
+  lowered: HtmlNode,
+  at: [number, number],
+  options: { clicks?: number; shift?: boolean } = {},
+) {
+  mousePress(lowered, at[0], at[1], options);
+}
+
+describe('code surface pointer (the SAME model the native host drives)', () => {
+  it('a press puts the caret where it was aimed', () => {
+    const { editor, lowered } = surfaceFor('one two three\nfour');
+    pressAt(lowered, cell(1, 2));
+    expect(editor.caret).toEqual({ line: 1, column: 2 });
+  });
+
+  it('a drag draws a selection from the press to the pointer', () => {
+    const { editor, lowered, changed } = surfaceFor('one two three');
+    pressAt(lowered, cell(0, 0));
+    pointer(lowered, 'pointermove', ...(cell(0, 7) as [number, number]));
+    pointer(lowered, 'pointerup', ...(cell(0, 7) as [number, number]));
+
+    expect(editor.document.textIn(editor.selection)).toBe('one two');
+    expect(changed()).toBeGreaterThanOrEqual(2);
+  });
+
+  it('a hover with nothing pressed moves nothing', () => {
+    const { editor, lowered } = surfaceFor('one two three');
+    pressAt(lowered, cell(0, 0));
+    pointer(lowered, 'pointerup', ...(cell(0, 0) as [number, number]));
+    pointer(lowered, 'pointermove', ...(cell(0, 7) as [number, number]), { buttons: 0 });
+
+    expect(editor.selection.isEmpty).toBe(true);
+  });
+
+  it('shift-click extends the selection from where it was', () => {
+    const { editor, lowered } = surfaceFor('one two three');
+    pressAt(lowered, cell(0, 4));
+    pointer(lowered, 'pointerup', ...(cell(0, 4) as [number, number]));
+    pressAt(lowered, cell(0, 13), { shift: true });
+
+    expect(editor.document.textIn(editor.selection)).toBe('two three');
+  });
+
+  it('two presses take the word, three the line — counted by the mousedown', () => {
+    const { editor, lowered } = surfaceFor('one two three\nfour');
+    pressAt(lowered, cell(0, 5), { clicks: 2 });
+    expect(editor.document.textIn(editor.selection)).toBe('two');
+
+    pressAt(lowered, cell(0, 5), { clicks: 3 });
+    expect(editor.document.textIn(editor.selection)).toBe('one two three\n');
+  });
+
+  it('a finger presses on the pointerdown, and its late compatibility mousedown is not a second press', () => {
+    const { editor, lowered } = surfaceFor('one two three');
+    pointer(lowered, 'pointerdown', ...(cell(0, 5) as [number, number]), { pointerType: 'touch', detail: 0 });
+    expect(editor.caret).toEqual({ line: 0, column: 5 });
+
+    // A browser follows a tap with emulated mouse events once the touch has ENDED; the second of
+    // them must not re-press somewhere else (and a count of 2 must not select a word).
+    pointer(lowered, 'mousedown', ...(cell(0, 1) as [number, number]), { detail: 2 });
+    expect(editor.caret).toEqual({ line: 0, column: 5 });
+    expect(editor.selection.isEmpty).toBe(true);
   });
 });
 
@@ -338,13 +450,10 @@ describe('components centre like nodes', () => {
 describe('the marks are painted, not merely placed', () => {
   const surfaceWith = (caretColor?: unknown, selectionColor?: unknown) => {
     const editor = new CodeEditorController('let x = 1;\nlet y = 2;', CodeLanguages.for('csharp'));
+    editor.grid = new CodeGrid(new Point(12, 12), new Size(COLUMN, LINE));
     editor.selectAll();
     return lowerVisualNode(
       new CodeSurface(new Text('', 'labelSmall'), editor, {
-        contentTop: 12,
-        contentLeft: 12,
-        lineHeight: LINE,
-        columnWidth: COLUMN,
         caretColor,
         selectionColor,
       }) as never,

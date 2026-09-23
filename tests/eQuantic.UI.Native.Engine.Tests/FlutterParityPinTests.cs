@@ -70,6 +70,7 @@ public class FlutterParityPinTests
     private static readonly Assembly[] Surface =
     [
         typeof(VisualNode).Assembly,                    // Primitives — the vocabulary
+        typeof(eQuantic.UI.Code.CodeEditorController).Assembly, // Code — the code editing engine
         typeof(eQuantic.UI.Components.Button).Assembly, // the component library
         typeof(LayoutNode).Assembly,                    // Native.Framework — layout
         typeof(PhotonHost).Assembly,                    // Native.Components — realizer, semantics

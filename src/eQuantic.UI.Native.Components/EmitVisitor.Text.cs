@@ -308,11 +308,13 @@ internal sealed partial class EmitVisitor
     }
 
     /// <summary>
-    /// The caret and the selection over an editable code surface. The child drew the code; these are
-    /// the two marks that say where you are in it.
+    /// The carets and the selection over an editable code surface. The child drew the code; these are
+    /// the marks that say where you are in it.
     /// <para>
-    /// No measuring: the face is monospaced, so a (line, column) IS arithmetic — which is the whole
-    /// reason a code editor can repaint a caret on every keystroke without re-laying-out anything.
+    /// Painted, never computed: the MODEL answers where every band and caret goes, in the surface's
+    /// own coordinates, and this only offsets them by where the surface landed. The arithmetic from a
+    /// (line, column) to a point used to be here and again in the web lowering, and a caret that two
+    /// hosts place separately is a caret that ends up in two places.
     /// </para>
     /// </summary>
     private static void EmitCodeSurface(LayoutNode node, CodeSurface surface, IAppTheme theme,
@@ -320,47 +322,38 @@ internal sealed partial class EmitVisitor
     {
         input.Add(new CodeRegion(node.Bounds, surface, node.Path ?? ""));
 
-        // Drawn BEFORE the child, so the code paints over both marks: a translucent band keeps the
+        // Drawn BEFORE the child, so the code paints over the marks: a translucent band keeps the
         // text legible through it, and a caret sits BETWEEN glyphs, where nothing occludes it.
         var editing = press.TextPath is { Length: > 0 } && node.Path == press.TextPath;
         if (!editing) return;
 
-        var selection = surface.Editor.Selection;
-        var left = node.Bounds.X + surface.ContentLeft;
-        var top = node.Bounds.Y + surface.ContentTop;
+        var model = surface.Model;
+        var left = node.Bounds.X;
+        var top = node.Bounds.Y;
 
-        // The selection is a BAND PER LINE — the first from its column to the end of the line, the
-        // last from the start to its column, and everything between full width. A single rectangle
-        // over a multi-line range would cover the indentation of lines the range never touched.
-        if (!selection.IsEmpty)
+        var bands = model.SelectionBands;
+        if (bands.Count > 0)
         {
             var paint = Paint.Solid((surface.SelectionColor ?? theme.FocusRing).Resolve(mode).WithOpacity(SelectionAlpha));
-            var start = selection.Start;
-            var end = selection.End;
-            for (var line = start.Line; line <= end.Line; line++)
+            for (var i = 0; i < bands.Count; i++)
             {
-                var from = line == start.Line ? start.Column : 0;
-                var lineLength = surface.Editor.Document.Line(line).Length;
-                var to = line == end.Line ? end.Column : lineLength + 1;   // +1 shows the newline
-                if (to <= from) continue;
-                builder.FillRRect(new RRect(new Rect(
-                        left + from * surface.ColumnWidth,
-                        top + line * surface.LineHeight,
-                        (to - from) * surface.ColumnWidth,
-                        surface.LineHeight),
+                var band = bands[i];
+                builder.FillRRect(new RRect(new Rect(left + band.X, top + band.Y, band.Width, band.Height),
                     new CornerRadii(1)), paint);
             }
         }
 
-        // The caret is at the FOCUS end, drawn with the selection and not instead of it: the band
-        // says which characters are held, this says which end ⇧-arrow moves.
+        // The carets sit at each selection's FOCUS end, drawn with the band and not instead of it: the
+        // band says which characters are held, a caret says which end ⇧-arrow moves.
         if (!press.CaretVisible) return;
-        var caret = selection.Focus;
-        builder.FillRRect(new RRect(new Rect(
-                left + caret.Column * surface.ColumnWidth,
-                top + caret.Line * surface.LineHeight,
-                CaretWidth, surface.LineHeight),
-            new CornerRadii(0)), Paint.Solid((surface.CaretColor ?? theme.TextPrimary).Resolve(mode)));
+        var ink = Paint.Solid((surface.CaretColor ?? theme.TextPrimary).Resolve(mode));
+        var carets = model.Carets;
+        for (var i = 0; i < carets.Count; i++)
+        {
+            var caret = carets[i];
+            builder.FillRRect(new RRect(new Rect(left + caret.X, top + caret.Y, caret.Width, caret.Height),
+                new CornerRadii(0)), ink);
+        }
     }
 
     /// <summary>The width of the first <paramref name="count"/> characters — the caret's x.</summary>

@@ -33,7 +33,6 @@ import { getActivePass } from './instance-store';
 import { getPhotonTheme, setInFlow } from './photon-context';
 import { declareInView } from './in-view';
 import { cssFontWeight, isWellFormedFace } from './value-types';
-import { CodeKeymap } from './components/CodeKeymap';
 import {
   atomizeEntries,
   atomizePseudo,
@@ -69,7 +68,6 @@ import type {
   CameraPreviewNode,
   WebFrameNode,
   CodeSurfaceNode,
-  CodePositionLike,
   ImageNode,
   GridPatternValue,
   LinearGradientValue,
@@ -542,17 +540,18 @@ function lowerPresence(
  * neutralized by the generated .eq-link — the child owns all visuals (the Pressable contract). */
 /**
  * The editable code surface. The child renders the lines; this wraps them in a focusable box and
- * paints the two marks that say where you are — a caret and a band per selected line — as absolutely
- * positioned children.
+ * paints the marks the MODEL answers — a band per selected line and a caret per cursor — as
+ * absolutely positioned children.
  * <p>
- * The keyboard goes straight to the transpiled `CodeKeymap`, the same function the native host
- * calls. Nothing about what a key MEANS is decided here: this file only turns a DOM event into the
- * arguments that function takes, and turns (line, column) into pixels — which with a monospaced
- * face is multiplication, not measurement.
+ * Nothing about what a key or a click MEANS is decided here, and no column is turned into pixels:
+ * the model (`ICodeSurfaceModel`, transpiled from the same C# the native host drives) answers both.
+ * This file only turns DOM events into the arguments the model takes and paints the rectangles it
+ * hands back. The arithmetic used to live here and again in the native host, and two copies of it
+ * had drifted — this side could not drag a selection or shift-click at all.
  * </p>
  */
 function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path: string): HtmlNode {
-  const editor = node.editor;
+  const model = node.model;
   // ATOMISED, like every other node. It used to carry a literal style string, on the reasoning that
   // "there is no C# twin to agree with — the web realizer has no CodeSurface arm", which made the
   // dedup worth one element and parity worth nothing. The arm is still absent (the server has no
@@ -592,45 +591,23 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   const selectionInk = tokenValue(
     withAlpha(node.selectionColor ?? theme.focusRing, SELECTION_ALPHA),
   );
-  const selection = editor.selection;
-  if (!selection.isEmpty) {
-    for (let line = selection.start.line; line <= selection.end.line; line++) {
-      const from = line === selection.start.line ? selection.start.column : 0;
-      const lineLength = editor.document.line(line).length;
-      const to = line === selection.end.line ? selection.end.column : lineLength + 1;
-      if (to <= from) continue;
-      surface.children.push(
-        mark(
-          node.contentLeft + from * node.columnWidth,
-          node.contentTop + line * node.lineHeight,
-          (to - from) * node.columnWidth,
-          node.lineHeight,
-          'eq-code-selection',
-          selectionInk,
-          1,
-        ),
-      );
-    }
+  for (const band of model.selectionBands) {
+    surface.children.push(
+      mark(band.x, band.y, band.width, band.height, 'eq-code-selection', selectionInk, 1),
+    );
   }
-  const caret = selection.focus;
-  surface.children.push(
-    mark(
-      node.contentLeft + caret.column * node.columnWidth,
-      node.contentTop + caret.line * node.lineHeight,
-      CARET_WIDTH,
-      node.lineHeight,
-      'eq-code-caret',
-      caretInk,
-      0,
-    ),
-  );
+  for (const caret of model.carets) {
+    surface.children.push(
+      mark(caret.x, caret.y, caret.width, caret.height, 'eq-code-caret', caretInk, 0),
+    );
+  }
 
   if (typeof document === 'undefined') return surface; // SSR: the marks are enough
 
   const changed = () => node.onChanged?.();
   surface.events['keydown'] = ((event: KeyboardEvent) => {
     const modifiers = modifiersOf(event);
-    if (handleCodeKey(editor, event.key, modifiers)) {
+    if (model.handleKey(event.key, modifiers, webClipboard())) {
       event.preventDefault();
       changed();
       revealCaret(path);
@@ -639,7 +616,7 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     // A printable character is TEXT, not a command — and what a keystroke produces is the
     // browser's business, which is why it arrives as a string rather than a key name.
     if (event.key.length === 1 && !event.metaKey && !event.ctrlKey) {
-      if (editor.type(event.key)) {
+      if (model.handleText(event.key)) {
         event.preventDefault();
         changed();
         revealCaret(path);
@@ -647,14 +624,48 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     }
   }) as unknown as EventHandler;
 
-  surface.events['pointerdown'] = ((event: PointerEvent) => {
+  // The pointer's whole life goes to the model: the press, every move while it is held — which is
+  // what draws a selection — and the release. CAPTURED on the press, so a drag that leaves the
+  // surface keeps reporting until the button comes up, the way a selection drag does everywhere.
+  const local = (event: MouseEvent) => {
     const box = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    const at = positionIn(node, event.clientX - box.left, event.clientY - box.top);
-    if (event.detail >= 3) editor.selectLine(at.line);
-    else if (event.detail === 2) editor.selectWord(at);
-    else (editor as unknown as { selection: unknown }).selection = { anchor: at, focus: at };
-    (event.currentTarget as HTMLElement).focus();
+    return { x: event.clientX - box.left, y: event.clientY - box.top };
+  };
+  // THE PRESS. A mouse's press is read from `mousedown`, because that is the only event that
+  // carries the platform's click count: Chrome reports `detail: 0` on every `pointerdown`, measured,
+  // so a surface that counted clicks there never saw a double click — the word and the line were
+  // never selectable here. A finger or a pen has no click count to lose, and its compatibility
+  // `mousedown` arrives only AFTER the touch ended, so for those the press is the `pointerdown`.
+  // The capture is taken on the `pointerdown` either way, since it names the pointer to capture.
+  let pressedBy = 'mouse';
+  const press = (event: MouseEvent, clicks: number) => {
+    model.handlePointer('down', local(event), modifiersOf(event), clicks);
     changed();
+  };
+  surface.events['pointerdown'] = ((event: PointerEvent) => {
+    const target = event.currentTarget as HTMLElement;
+    pressedBy = event.pointerType || 'mouse';
+    target.setPointerCapture?.(event.pointerId);
+    // WITHOUT the scroll `focus()` does by default. The surface is taller than its viewport, so the
+    // browser scrolled the page to bring the surface's top into view on every press — measured: 78px
+    // on the first click of a double click, which put the second click on another line and selected
+    // the wrong word. A press lands where the pointer already is; nothing under it may move.
+    target.focus({ preventScroll: true });
+    if (pressedBy !== 'mouse') press(event, 1);
+  }) as unknown as EventHandler;
+  surface.events['mousedown'] = ((event: MouseEvent) => {
+    if (pressedBy !== 'mouse') return;
+    // The platform counts the clicks — its double-click interval is a system setting, never ours.
+    press(event, event.detail > 0 ? event.detail : 1);
+  }) as unknown as EventHandler;
+  surface.events['pointermove'] = ((event: PointerEvent) => {
+    // Only a HELD pointer moves the selection; a bare hover is not a drag.
+    if ((event.buttons & 1) === 0) return;
+    if (model.handlePointer('move', local(event), modifiersOf(event), 1)) changed();
+  }) as unknown as EventHandler;
+  surface.events['pointerup'] = ((event: PointerEvent) => {
+    (event.currentTarget as HTMLElement).releasePointerCapture?.(event.pointerId);
+    if (model.handlePointer('up', local(event), modifiersOf(event), 1)) changed();
   }) as unknown as EventHandler;
 
   return surface;
@@ -728,9 +739,6 @@ function plainContent(text: TextNode): string {
 const PINNED_LAYER = '100';
 const FLOATING_CHROME_LAYER = '110';
 
-/** The caret's width in px — the C# `EmitVisitor.CaretWidth` twin. */
-const CARET_WIDTH = 2;
-
 /** How much of the selection band shows through — the C# `EmitVisitor.SelectionAlpha` twin. */
 const SELECTION_ALPHA = 0.28;
 
@@ -764,24 +772,6 @@ function mark(
     events: {},
     children: [],
   };
-}
-
-/** The (line, column) a point lands on. Division, not a search — the face is monospaced. */
-function positionIn(node: CodeSurfaceNode, x: number, y: number): CodePositionLike {
-  const line = Math.floor((y - node.contentTop) / node.lineHeight);
-  const column = Math.round((x - node.contentLeft) / node.columnWidth);
-  return node.editor.document.clamp({ line: Math.max(0, line), column: Math.max(0, column) });
-}
-
-/**
- * The transpiled keymap — the SAME function the native host calls. Imported directly: the module
- * cycle it closes (lowering → CodeKeymap → runtime-exports → components) is the benign kind,
- * because a keydown handler dereferences the binding when a key is pressed, not while the module
- * is evaluating. Reading it off a global instead looked safer and was simply dead: nothing ever
- * assigned one, so the web editor took no keys at all.
- */
-function handleCodeKey(editor: unknown, key: string, modifiers: number): boolean {
-  return CodeKeymap.handle(editor as never, key, modifiers, webClipboard());
 }
 
 /**

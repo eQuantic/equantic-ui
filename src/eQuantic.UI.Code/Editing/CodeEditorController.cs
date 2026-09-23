@@ -1,13 +1,6 @@
-namespace eQuantic.UI.Primitives;
+using eQuantic.UI.Primitives;
 
-/// <summary>How far one caret movement goes.</summary>
-public enum CodeMotion : byte
-{
-    Character = 0, Word = 1, Line = 2, LineBoundary = 3, DocumentBoundary = 4, Page = 5,
-}
-
-/// <summary>Which way it goes.</summary>
-public enum CodeDirection : byte { Backward = 0, Forward = 1 }
+namespace eQuantic.UI.Code;
 
 /// <summary>
 /// THE EDITOR, minus the pixels.
@@ -22,8 +15,13 @@ public enum CodeDirection : byte { Backward = 0, Forward = 1 }
 /// that caused it, which is what a dirty flag, a language server and a diff all subscribe to —
 /// never to keystrokes, because a paste and a refactor are edits nobody typed.
 /// </para>
+/// <para>
+/// It is also the <see cref="ICodeSurfaceModel"/> a realizer drives: the host hands it keys, text
+/// and pointers, and paints the rectangles it answers. So what a click means and where a caret is
+/// drawn are decided here, once, for every host.
+/// </para>
 /// </summary>
-public sealed class CodeEditorController
+public sealed class CodeEditorController : ICodeSurfaceModel
 {
     private CodeDocument _document;
     private CodeRange _selection;
@@ -90,6 +88,117 @@ public sealed class CodeEditorController
     /// and remembering it is why this field exists.
     /// </summary>
     private int _desiredColumn = -1;
+
+    // ---- the surface: what a realizer drives and paints ---------------------------------------
+
+    /// <summary>How wide a caret is drawn, in dp — one number for every host.</summary>
+    public const float CaretWidth = 2;
+
+    /// <summary>
+    /// The grid the code is drawn on. The composing component measures it — the face, the density,
+    /// the padding — and hands it over on every build; this is the only place that turns a position
+    /// into a point with it, and a point back into a position.
+    /// </summary>
+    public CodeGrid Grid { get; set; } = CodeGrid.Default;
+
+    /// <summary>Whether a press that began on the surface is still drawing a selection.</summary>
+    private bool _dragging;
+
+    /// <inheritdoc />
+    public IReadOnlyList<Rect> SelectionBands
+    {
+        get
+        {
+            var bands = new List<Rect>();
+            if (_selection.IsEmpty) return bands;
+            var start = _selection.Start;
+            var end = _selection.End;
+            for (var line = start.Line; line <= end.Line; line++)
+            {
+                var from = line == start.Line ? start.Column : 0;
+                // One cell past the end of every line but the last: the band shows that the line
+                // BREAK is held too, which is what makes a selection ending at column 0 of the next
+                // line read as the whole line it is.
+                var to = line == end.Line ? end.Column : _document.Line(line).Length + 1;
+                if (to <= from) continue;
+                var at = Grid.PointOf(line, from);
+                bands.Add(new Rect(at.X, at.Y, (to - from) * Grid.Cell.Width, Grid.Cell.Height));
+            }
+            return bands;
+        }
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<Rect> Carets => [CaretRect(Caret)];
+
+    /// <summary>Where a caret at <paramref name="position"/> is drawn, in the surface's coordinates.</summary>
+    public Rect CaretRect(CodePosition position)
+    {
+        var at = Grid.PointOf(position.Line, position.Column);
+        return new Rect(at.X, at.Y, CaretWidth, Grid.Cell.Height);
+    }
+
+    /// <summary>
+    /// The (line, column) a point on the surface lands on. With a fixed pitch this is division, not a
+    /// search — and the column ROUNDS to the nearest boundary, so clicking the right half of a
+    /// character puts the caret after it, which is what makes a click feel aimed rather than
+    /// approximate. Past the end of a line it lands at the end; past the last line, on the last.
+    /// </summary>
+    public CodePosition PositionAt(Point point)
+    {
+        var line = (int)MathF.Floor((point.Y - Grid.Origin.Y) / Grid.Cell.Height);
+        var column = (int)MathF.Round((point.X - Grid.Origin.X) / Grid.Cell.Width);
+        return _document.Clamp(new CodePosition(Math.Max(0, line), Math.Max(0, column)));
+    }
+
+    /// <inheritdoc />
+    public bool HandleKey(string key, KeyModifiers modifiers, ITextClipboard? clipboard) =>
+        CodeKeymap.Handle(this, key, modifiers, clipboard);
+
+    /// <inheritdoc />
+    public bool HandleText(string text)
+    {
+        var typed = false;
+        foreach (var c in text) typed |= Type(c);
+        return typed;
+    }
+
+    /// <summary>
+    /// What a pointer MEANS on a code surface, for every host: a press places the caret (Shift
+    /// extends the selection to it instead), two select the word under it, three the line; a drag
+    /// that began with a single press moves the selection's focus with the pointer while the anchor
+    /// stays where the press was. A drag after a double click keeps the word — the second press
+    /// already said what to select.
+    /// </summary>
+    public bool HandlePointer(PointerPhase phase, Point position, KeyModifiers modifiers, int clicks)
+    {
+        switch (phase)
+        {
+            case PointerPhase.Down:
+            {
+                var at = PositionAt(position);
+                if (clicks >= 3) SelectLine(at.Line);
+                else if (clicks == 2) SelectWord(at);
+                else if ((modifiers & KeyModifiers.Shift) != 0) Selection = new CodeRange(_selection.Anchor, at);
+                else Selection = new CodeRange(at);
+                _dragging = clicks < 2;
+                return true;
+            }
+            case PointerPhase.Move:
+            {
+                if (!_dragging) return false;
+                var at = PositionAt(position);
+                if (at == _selection.Focus) return false;
+                Selection = new CodeRange(_selection.Anchor, at);
+                return true;
+            }
+            case PointerPhase.Up:
+                _dragging = false;
+                return false;
+            default:
+                return false;
+        }
+    }
 
     // ---- editing ------------------------------------------------------------------------------
 

@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace eQuantic.UI.Primitives;
+namespace eQuantic.UI.Code;
 
 /// <summary>
 /// The TEXT of a code editor, kept as LINES.

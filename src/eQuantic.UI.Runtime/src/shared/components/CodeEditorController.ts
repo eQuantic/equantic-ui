@@ -1,8 +1,8 @@
-import { $eq, CodeDirectionValue, CodeDocument, CodeEdit, CodeHighlighter, CodeHistory, CodeLanguageRules, CodeLanguages, CodeMotionValue, CodePosition, CodeRange } from "../runtime-exports";
+import { $eq, CodeDirectionValue, CodeDocument, CodeEdit, CodeGrid, CodeHighlighter, CodeHistory, CodeKeymap, CodeLanguageRules, CodeLanguages, CodeMotionValue, CodePosition, CodeRange, Point, PointerPhaseValue, Rect } from "../runtime-exports";
 
 export class CodeEditorController {
     constructor(text: string = '', language: any = null, props?: any) {
-        this._desiredColumn = -1; this._document = CodeDocument.fromText(text);
+        this._desiredColumn = -1; this._dragging = false; this._document = CodeDocument.fromText(text);
         this._selection = new CodeRange(CodePosition.start);
         this.highlighter = new CodeHighlighter(language ?? CodeLanguages.plainText); if (props && typeof props === 'object') Object.assign(this, props);
     }
@@ -10,6 +10,8 @@ export class CodeEditorController {
     _document: CodeDocument;
     _selection: CodeRange;
     _desiredColumn: number;
+    static caretWidth: number = 2;
+    _dragging: boolean;
 
     get document(): CodeDocument {
         return this._document;
@@ -47,8 +49,75 @@ export class CodeEditorController {
     }
 
     readOnly: boolean = false;
+    grid: CodeGrid = CodeGrid.default;
+
+    get selectionBands(): Rect[] {
+        let bands: Rect[] = [];
+        if (this._selection.isEmpty) return bands;
+        let start = this._selection.start;
+        let end = this._selection.end;
+        for (let line = start.line; line <= end.line; line++) {
+            let from = line === start.line ? start.column : 0;
+            let to = line === end.line ? end.column : this._document.line(line).length + 1;
+            if (to <= from) continue;
+            let at = this.grid.pointOf(line, from);
+            bands.push(new Rect(at.x, at.y, (to - from) * this.grid.cell.width, this.grid.cell.height));
+        }
+        return bands;
+    }
+
+    get carets(): Rect[] {
+        return [this.caretRect(this.caret)];
+    }
+
     changed: ((codeEdit: CodeEdit | null) => void) | null = null;
     selectionChanged: ((codeRange: CodeRange) => void) | null = null;
+
+    caretRect(position: CodePosition) {
+        let at = this.grid.pointOf(position.line, position.column);
+        return new Rect(at.x, at.y, CodeEditorController.caretWidth, this.grid.cell.height);
+    }
+
+    positionAt(point: Point) {
+        let line = (Math.trunc(Math.floor((point.y - this.grid.origin.y) / this.grid.cell.height)) | 0);
+        let column = (Math.trunc($eq.math.round((point.x - this.grid.origin.x) / this.grid.cell.width)) | 0);
+        return this._document.clamp(new CodePosition(Math.max(0, line), Math.max(0, column)));
+    }
+
+    handleKey(key: string, modifiers: number, clipboard: any) {
+        return CodeKeymap.handle(this, key, modifiers, clipboard);
+    }
+
+    handleText(text: string) {
+        let typed = false;
+        for (const c of text) typed = $eq.logic.or(typed, this.type(c));
+        return typed;
+    }
+
+    handlePointer(phase: PointerPhaseValue, position: Point, modifiers: number, clicks: number) {
+        switch (phase) {
+            case 'down':
+                {
+                    let at = this.positionAt(position);
+                    if (clicks >= 3) this.selectLine(at.line); else if (clicks === 2) this.selectWord(at); else if ((modifiers & 1) !== 0) this.selection = new CodeRange(this._selection.anchor, at); else this.selection = new CodeRange(at);
+                    this._dragging = clicks < 2;
+                    return true;
+                }
+            case 'move':
+                {
+                    if (!this._dragging) return false;
+                    let at = this.positionAt(position);
+                    if ($eq.equals(at, this._selection.focus)) return false;
+                    this.selection = new CodeRange(this._selection.anchor, at);
+                    return true;
+                }
+            case 'up':
+                this._dragging = false;
+                return false;
+            default:
+                return false;
+        }
+    }
 
     apply(range: CodeRange, text: string) {
         let caret: any; if (this.readOnly) return false;
