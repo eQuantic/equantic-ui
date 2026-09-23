@@ -6,9 +6,10 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 
 /// <summary>
 /// Strategy for System.Convert.ToXxx conversions, argument-type aware where it matters.
-/// Covers the common faithful cases; semantics that need .NET-exact behavior (banker's rounding for
-/// numeric→integer, decimal, Int64 precision) are best-effort here and will move to the eq compat
-/// helper (see DOTNET-COVERAGE-PROGRAM.md).
+/// <c>ToDecimal</c> is .NET's, by the type it converts (see <see cref="ToDecimal"/>). The rest cover
+/// the common faithful cases; semantics that need .NET-exact behavior (banker's rounding for
+/// numeric→integer, Int64 precision) are best-effort here and will move to the eq compat helper
+/// (see DOTNET-COVERAGE-PROGRAM.md).
 /// </summary>
 public class ConvertStrategy : IExpressionIrStrategy
 {

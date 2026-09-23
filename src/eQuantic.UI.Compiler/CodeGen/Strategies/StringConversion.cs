@@ -40,8 +40,7 @@ public static class StringConversion
         // A fractional number, or a nullable one, reads the way .NET writes it (#336). JavaScript's
         // String() keeps fixed notation up to 1e21, drops the sign of -0, and gives a float the
         // digits of the double underneath: "v=" + 0.1f read "v=0.10000000149011612".
-        var real = type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T
-            && type is INamedTypeSymbol { TypeArguments: [var underlying] } ? underlying : type;
+        var real = type.UnwrapNullable() ?? type;
         if (real.SpecialType is SpecialType.System_Double or SpecialType.System_Single)
         {
             context.UsedHelpers.Add(Eq.Import);
