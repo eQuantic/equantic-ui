@@ -4,12 +4,21 @@ import { hydrate } from './utils/hydrate';
 import { long } from './utils/long';
 import {
   round,
+  roundSingle,
+  roundWithMode,
+  roundSingleWithMode,
   sinPi,
   cosPi,
   tanPi,
   fma,
   bitIncrement,
   bitDecrement,
+  bitIncrementSingle,
+  bitDecrementSingle,
+  ieeeRemainder,
+  logBase,
+  hypotSingle,
+  fmaSingle,
   ilogb,
   rootN,
   maxMagnitude,
@@ -28,7 +37,15 @@ import {
   trailingZeroCount64,
   log2Of64,
 } from './utils/bits';
-import { checked, dictGet, single, substring } from './utils/overflow';
+import {
+  checked,
+  dictGet,
+  divRem,
+  divRemLong,
+  single,
+  singleFromLong,
+  substring,
+} from './utils/overflow';
 import { format, parseEnum, stringFormat } from './utils/format';
 import { nextTextElementLength, textElementStarts } from './utils/text-elements';
 import { unicodeCategory } from './utils/unicode-category';
@@ -135,17 +152,27 @@ export const $eq = {
   /** The typed boundary: a server value coerced ONCE to its runtime type — see utils/hydrate. */
   hydrate,
   /** Numeric compat: exact decimal and 64-bit integer. */
-  num: { dec, long, checked, single },
+  num: { dec, long, checked, divRem, divRemLong, single, singleFromLong },
   /** Math with .NET semantics: banker's rounding, the *Pi family (exact at special angles),
-   * fused multiply-add, bit-adjacent doubles, sign-aware roots, and the min/max tie rules. */
+   * fused multiply-add, the neighbours of a double or a single, the IEEE remainder, sign-aware
+   * roots, and the min/max tie rules. */
   math: {
     round,
+    roundSingle,
+    roundWithMode,
+    roundSingleWithMode,
     sinPi,
     cosPi,
     tanPi,
     fma,
     bitIncrement,
     bitDecrement,
+    bitIncrementSingle,
+    bitDecrementSingle,
+    ieeeRemainder,
+    logBase,
+    hypotSingle,
+    fmaSingle,
     ilogb,
     rootN,
     maxMagnitude,

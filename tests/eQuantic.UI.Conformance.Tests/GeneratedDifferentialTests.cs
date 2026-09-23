@@ -299,10 +299,10 @@ public class GeneratedDifferentialTests
             _ulongs.Add("ul0");
 
             // FLOATING POINT, which the generator had never written at all. A double is IEEE754
-            // on both sides and agrees bit for bit; a FLOAT does not, unless every store rounds
-            // to single precision — the FloatStore rule. The factors are deliberately inexact
-            // (1.1f, 0.3f) so a missing round shows up as a different number and not a last-bit
-            // tie, and the values are bounded by a modulo so the observing cast stays in range.
+            // on both sides and agrees bit for bit; a FLOAT does not, unless every operation rounds
+            // to single precision — SinglePrecision. The factors are deliberately inexact (1.1f,
+            // 0.3f) so a missing round is a different number, and the values are bounded by a
+            // modulo so the observation stays inside a long.
             program.Append($"double db0 = {1 + Pick(90)}.{10 + Pick(89)}; ");
             _doubles.Add("db0");
             program.Append($"float fl0 = {1 + Pick(90)}.{10 + Pick(89)}f; ");
@@ -394,13 +394,17 @@ public class GeneratedDifferentialTests
             // A narrow integer promotes to int to be folded, which is what C# does at every use.
             foreach (var w in _narrow) program.Append($"acc = (acc * 23 + {w}) % 1000003; ");
             foreach (var u in _unsigned) program.Append($"acc = (acc * 29 + (int)({u} % 9973u)) % 1000003; ");
-            // A double and a float are observed through a SCALED TRUNCATION, never printed: the
-            // text of a floating-point number is a documented divergence and would drown this.
-            // 1024 is exact in both, so the scaling adds no error of its own.
-            foreach (var d in _doubles) program.Append($"acc = (acc * 31 + (int)({d} * 1024)) % 1000003; ");
-            foreach (var f in _floats) program.Append($"acc = (acc * 37 + (int)({f} * 1024)) % 1000003; ");
+            // A double and a float are observed EXACTLY, and never printed: the text of a
+            // floating-point number is a documented divergence and would drown this. Scaled by
+            // 2^52 — exact, a power of two — every bit of a value below 512 is a whole number, and
+            // a long carries it and prints it identically on both sides. This was a truncation to
+            // 1/1024 once, which is coarser than the last bit: the generator wrote chains of float
+            // operations for months and never saw the one rounding the twin skipped (#146).
+            program.Append("long bits = 17; ");
+            foreach (var d in _doubles) program.Append($"bits = (bits * 31L + (long)({d} * 4503599627370496.0)) % 1000000007L; ");
+            foreach (var f in _floats) program.Append($"bits = (bits * 37L + (long)((double){f} * 4503599627370496.0)) % 1000000007L; ");
             foreach (var mo in _monies) program.Append($"acc = (acc * 41 + (int){mo} % 9973) % 1000003; ");
-            var fold = new StringBuilder("return $\"{acc}");
+            var fold = new StringBuilder("return $\"{acc}|{bits}");
             foreach (var s in _strings) fold.Append($"|{{{s}}}");
             // A long and a decimal are OBSERVED as text: their runtime representations differ from
             // JavaScript's numbers, so printing them is what compares the value and not a coercion.
@@ -548,8 +552,9 @@ public class GeneratedDifferentialTests
                     };
                 }
                 case 27:
-                    // A float: every STORE rounds to single precision, including the one the
-                    // multiplication feeds. Inexact factors, so a missing round is visible.
+                    // A float: EVERY operation rounds to single precision — the multiply, the add
+                    // and the remainder, not only the store. Inexact factors, so a skipped round is
+                    // visible.
                     return $"{FloatVar()} = ({FloatVar()} * 1.1f + 0.3f) % 128.0f; ";
                 case 20:
                     return $"foreach (var pair in {MapVar()}) {{ {IntVar()} = ({IntVar()} + pair.Value + pair.Key.Length) % 9973; }} ";

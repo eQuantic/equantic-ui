@@ -54,7 +54,11 @@ public class HydrationSpecEmissionTests
     {
         var result = Compile();
         // Every field whose wire form differs — and none of the identity ones.
-        Assert.Contains("static $hydration = { _total: 'decimal', _count: 'long', _todos: [Todo], _rates: { dict: 'decimal' } };", result);
+        // A static GETTER, read when the runtime hydrates: a field initializer naming a class runs
+        // when this class is defined, and inside the runtime bundle's import cycles that came before
+        // the named class existed (a TDZ ReferenceError that stopped the whole bundle loading).
+        Assert.Contains("static get $hydration()", result);
+        Assert.Contains("return { _total: 'decimal', _count: 'long', _todos: [Todo], _rates: { dict: 'decimal' } };", result);
         Assert.DoesNotContain("_label:", result.Substring(result.IndexOf("$hydration")));
         Assert.DoesNotContain("_clicks:", result.Substring(result.IndexOf("$hydration")));
     }
@@ -77,8 +81,8 @@ public class HydrationSpecEmissionTests
         var todo = results.Single(r => r.ComponentName == "Todo").TypeScript;
         var money = results.Single(r => r.ComponentName == "Money").TypeScript;
         // The member that hydrates, by its camelCased twin name; nested records point at the class.
-        Assert.Contains("static $hydration = { id: 'long', price: Money }", todo);
-        Assert.Contains("static $hydration = { amount: 'decimal' }", money);
+        Assert.Contains("static get $hydration() { return { id: 'long', price: Money }; }", todo);
+        Assert.Contains("static get $hydration() { return { amount: 'decimal' }; }", money);
         // The map is the only runtime mention of Money in Todo's module — the import must follow.
         Assert.Contains("import { Money } from \"./Money\";", todo);
     }
@@ -91,6 +95,78 @@ public class HydrationSpecEmissionTests
         // payloads are typed by.
         var result = Compile();
         Assert.Contains("$eq.num.long(0)", result);
+    }
+
+    /// <summary>
+    /// A float crosses the wire as the shortest text that names its SINGLE, and JavaScript parses that
+    /// text as the nearest double — a different number until it is rounded back. So a float field, a
+    /// float? field and a record's float member all carry <c>'single'</c>; a double carries nothing.
+    /// </summary>
+    /// <summary>
+    /// A vocabulary value type the runtime ships crosses STRUCTURALLY, since its members are known
+    /// here, and NAMES its twin, so the payload is rebuilt on that prototype. Before `'single'` a
+    /// Rect needed no spec at all; the first structural spec it got was a plain copy, and a Rect in
+    /// a payload lost its getters and methods.
+    /// </summary>
+    [Fact]
+    public void ARuntimeValueType_IsRebuiltOnItsTwin()
+    {
+        const string source = """
+            using eQuantic.UI.Primitives;
+
+            [Page("/frame")]
+            public sealed class Frame : StatefulComponent
+            {
+                private Rect _box;
+
+                public override VisualNode Build(ComponentContext context)
+                    => new Text("x", TypeRole.BodyM, context.Theme.TextPrimary);
+            }
+            """;
+        // The vocabulary has to BIND for its members to be known, which takes the project's
+        // compilation with Primitives referenced, as eqc builds it.
+        var tree = Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(source, path: "Frame.cs");
+        var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+            .Split(Path.PathSeparator)
+            .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Select(p => (Microsoft.CodeAnalysis.MetadataReference)Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(p))
+            .Append(Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.Rect).Assembly.Location));
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(Microsoft.CodeAnalysis.CSharp.CSharpCompilation.Create("Frame", [tree], references,
+            new Microsoft.CodeAnalysis.CSharp.CSharpCompilationOptions(Microsoft.CodeAnalysis.OutputKind.DynamicallyLinkedLibrary)));
+        var results = compiler.CompileSource(source, "Frame.cs");
+        var page = results.Single(r => r.ComponentName == "Frame");
+        Assert.True(page.Success, string.Join("\n", page.Errors.Select(e => e.Message)));
+        Assert.Contains("_box: { of: Rect, members: { x: 'single', y: 'single', width: 'single', height: 'single' } }", page.TypeScript);
+    }
+
+    [Fact]
+    public void AFloat_HydratesAsASingle_AndADoubleDoesNot()
+    {
+        const string source = """
+            using eQuantic.UI.Primitives;
+
+            public sealed record Reading(float Value, double Precise);
+
+            [Page("/gauge")]
+            public sealed class Gauge : StatefulComponent
+            {
+                private float _level;
+                private float? _target;
+                private double _exact;
+                private Reading _last = new(0, 0);
+
+                public override VisualNode Build(ComponentContext context)
+                    => new Text("x", TypeRole.BodyM, context.Theme.TextPrimary);
+            }
+            """;
+        var results = new ComponentCompiler().CompileSource(source, "Gauge.cs");
+        var page = results.Single(r => r.ComponentName == "Gauge");
+        Assert.True(page.Success, string.Join("\n", page.Errors.Select(e => e.Message)));
+        Assert.Contains("return { _level: 'single', _target: 'single', _last: Reading };", page.TypeScript);
+        Assert.DoesNotContain("_exact:", page.TypeScript.Substring(page.TypeScript.IndexOf("$hydration")));
+        var reading = results.Single(r => r.ComponentName == "Reading").TypeScript;
+        Assert.Contains("static get $hydration() { return { value: 'single' }; }", reading);
     }
 
     private static string Compile()

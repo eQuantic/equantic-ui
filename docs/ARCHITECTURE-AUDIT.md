@@ -858,6 +858,18 @@ owes a measurement against the real runtime. The pin that will hold it is parked
 the fix is two: an arrow body reaches the emitter as a string while `ReturnStatementStrategy` has the
 node, so the repro is written in both shapes first, the lesson of #98.
 
+Fixed, and wider than the return seam: rounding at a return would still have been one rounding for
+`a*x - b*x`, where RyuJIT makes three. So a float is now a single where it is PRODUCED
+(`SinglePrecision`): every operation, increment and compound, a wide int on its way in, a constant,
+a hydrated value, and every float answer of the numeric table — which turned out to answer in
+doubles for the whole `float` home. Its `Math` spelling guessed a JavaScript name for what the table
+did not see: twelve functions JavaScript does not have (`Math.copySign`, `Math.scaleB`,
+`Math.bitIncrement` and nine more, each a TypeError at the call), and `Math.Log(a, newBase)`, whose
+base JavaScript's one-argument `log` dropped in silence. Both spellings now read one table. The bar
+chart's hit bounds are pinned at full precision on both sides, and the generator that had written
+chains of float operations for months without seeing this now observes every float and double
+exactly.
+
 A second one arrived the same way, from the first external contributor's issue rather than from a
 pin. #127 asks for `ButtonStyles` to move from `Primitives` to `Components`, and the issue measured
 its C# callers and nothing else. The shared transpilation (`SharedComponentTranspilationTests`) feeds

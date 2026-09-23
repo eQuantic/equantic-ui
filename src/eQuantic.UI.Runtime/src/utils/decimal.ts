@@ -1,3 +1,24 @@
+import type { MidpointRounding } from './dotnet-math';
+
+/**
+ * Whether a rounding moves the truncated quotient one step away from zero, per .NET's
+ * `MidpointRounding`: ToEven and AwayFromZero decide a half by `twice` the remainder against the
+ * divisor, and the three directed modes move every value that has a remainder.
+ */
+const STEPS: Readonly<
+  Record<
+    MidpointRounding,
+    (quotient: bigint, remainder: bigint, twice: bigint, divisor: bigint) => boolean
+  >
+> = {
+  toEven: (quotient, _remainder, twice, divisor) =>
+    twice > divisor || (twice === divisor && quotient % 2n !== 0n),
+  awayFromZero: (_quotient, _remainder, twice, divisor) => twice >= divisor,
+  toZero: () => false,
+  toNegativeInfinity: (_quotient, remainder) => remainder < 0n,
+  toPositiveInfinity: (_quotient, remainder) => remainder > 0n,
+};
+
 /**
  * .NET-compat `decimal` — exact base-10 arithmetic.
  *
@@ -78,21 +99,36 @@ export class Decimal {
   }
 
   /**
-   * `Math.Round(decimal[, digits])` — half-to-even, .NET's default MidpointRounding for decimals,
-   * the same rule `div` applies to its 28th digit. A value with no more digits than asked for
-   * is itself.
+   * `Math.Round(decimal[, digits][, mode])` and `decimal.Round`, as .NET's decimal has them. The
+   * default is half-to-even, the same rule `div` applies to its 28th digit; AwayFromZero moves only
+   * a half, and the three directed modes move every value (ToZero truncates, ToNegativeInfinity is
+   * a floor, ToPositiveInfinity a ceiling). A value with no more digits than asked for is itself.
    */
-  round(digits = 0): Decimal {
-    if (digits < 0) throw new Error('Rounding digits must be between 0 and 28.');
+  round(digits = 0, mode: MidpointRounding = 'toEven'): Decimal {
+    if (!Number.isInteger(digits) || digits < 0 || digits > 28) {
+      throw new RangeError('Rounding digits must be between 0 and 28.');
+    }
+    // The mode is checked whatever the value, as .NET checks it: a value that needs no rounding
+    // does not make a mode that is not one valid. Own keys only, or `toString` would read as a rule.
+    const steps = Object.prototype.hasOwnProperty.call(STEPS, mode) ? STEPS[mode] : undefined;
+    if (steps === undefined) {
+      throw new RangeError(
+        `The value '${String(mode)}' is not valid for this usage of the type MidpointRounding.`,
+      );
+    }
     if (this.scale <= digits) return this;
     const divisor = 10n ** BigInt(this.scale - digits);
-    let quotient = this.mantissa / divisor;
+    const quotient = this.mantissa / divisor;
     const remainder = this.mantissa % divisor;
-    const absRem2 = (remainder < 0n ? -remainder : remainder) * 2n;
-    if (absRem2 > divisor || (absRem2 === divisor && quotient % 2n !== 0n)) {
-      quotient += this.mantissa < 0n ? -1n : 1n;
-    }
-    return new Decimal(quotient, digits);
+    if (remainder === 0n) return new Decimal(quotient, digits);
+    // BigInt division truncates, so the quotient is the value toward zero and the remainder carries
+    // the value's sign: every mode is a choice between staying and one step away from zero.
+    const away = remainder < 0n ? -1n : 1n;
+    const twice = (remainder < 0n ? -remainder : remainder) * 2n;
+    return new Decimal(
+      steps(quotient, remainder, twice, divisor) ? quotient + away : quotient,
+      digits,
+    );
   }
 
   private trimTrailingZeros(): Decimal {

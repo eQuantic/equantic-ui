@@ -14,9 +14,11 @@ export class CanvasPointer {
   // The trailing config is eqc's object-initializer protocol, and every vocabulary twin accepts it
   // (a guard spec says so): the C# record struct has only positional members today, but a twin that
   // silently dropped a config would fail the day one is added, in the browser rather than the build.
+  // X and Y are floats in C#, and the runtime builds this from `clientX - left`, a double: they
+  // are stored as singles, so what C# code reads is what .NET would hold.
   constructor(x: number, y: number, pressed: boolean, modifiers = 0, config?: Record<string, unknown>) {
-    this.x = x;
-    this.y = y;
+    this.x = Math.fround(x);
+    this.y = Math.fround(y);
     this.pressed = pressed;
     this.modifiers = modifiers;
     if (config) Object.assign(this, config);
@@ -25,13 +27,15 @@ export class CanvasPointer {
   /** Radians clockwise from three o'clock — the convention `fillAnnularSector` uses, so a
    * sunburst's hit test is a comparison rather than a conversion. */
   angleFrom(centerX: number, centerY: number): number {
-    return Math.atan2(this.y - centerY, this.x - centerX);
+    // `MathF.Atan2(Y - centerY, X - centerX)`: each difference is a float, and so is the answer.
+    return Math.fround(Math.atan2(Math.fround(this.y - centerY), Math.fround(this.x - centerX)));
   }
 
   /** The other half of a polar hit test. */
   distanceFrom(centerX: number, centerY: number): number {
-    const dx = this.x - centerX;
-    const dy = this.y - centerY;
-    return Math.sqrt(dx * dx + dy * dy);
+    // `MathF.Sqrt((dx * dx) + (dy * dy))` on floats: every step is a single.
+    const dx = Math.fround(this.x - centerX);
+    const dy = Math.fround(this.y - centerY);
+    return Math.fround(Math.sqrt(Math.fround(Math.fround(dx * dx) + Math.fround(dy * dy))));
   }
 }

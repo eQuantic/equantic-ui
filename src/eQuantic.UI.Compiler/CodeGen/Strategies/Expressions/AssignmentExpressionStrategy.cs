@@ -54,18 +54,17 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         // A COMPOUND write to a dictionary entry READS it first, and .NET throws when the key is
         // not there. Emitting `map[k] op= v` would answer undefined and walk it into the
         // arithmetic; emitting the guarded read as the TARGET does not even parse. So it is
-        // lowered: read through the guard, write plainly. The template binds the receiver and the
-        // key once each, so neither is evaluated twice.
+        // lowered: read through the guard, write plainly. That is only how the ENTRY is read and
+        // written: the value it takes follows every rule below, as any compound target's does. A
+        // template of its own had returned ahead of them, so a float entry's `+=` added doubles, a
+        // decimal's glued two texts together and a byte's never wrapped.
+        (JsExpr Receiver, JsExpr Key)? entry = null;
         if (assignment.Left is ElementAccessExpressionSyntax { ArgumentList.Arguments.Count: 1 } target
             && !assignment.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression)
             && context.SemanticHelper.GetType(target.Expression).IsDictionaryLike(out _))
         {
-            context.UsedHelpers.Add(Eq.Import);
-            var compound = assignment.OperatorToken.Text[..^1];
-            return JsExpr.Template($"{{0}}[{{1}}] = {Eq.DictGet}({{0}}, {{1}}) {compound} {{2}}",
-                context.Converter.ConvertIr(target.Expression),
-                context.Converter.ConvertIr(target.ArgumentList.Arguments[0].Expression),
-                context.Converter.ConvertIr(assignment.Right));
+            entry = (context.Converter.ConvertIr(target.Expression),
+                context.Converter.ConvertIr(target.ArgumentList.Arguments[0].Expression));
         }
 
         var leftIr = context.Converter.ConvertIr(assignment.Left);
@@ -83,11 +82,21 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
             return $"let {left} {op} {right}";
         }
 
+        // Every compound this strategy spells out as `target = next(target, value)` evaluates the
+        // target once, as JavaScript's own `op=` and C# both do (ReadModifyWrite): the text names it
+        // twice, so `values[i++] += x` would otherwise step `i` twice.
+        JsExpr Compound(Func<JsExpr, JsExpr, JsExpr> next) => entry is var (receiver, key)
+            ? EntryCompound(receiver, key, rightIr, next, context)
+            : ReadModifyWrite.Assign(
+                leftIr, [rightIr], (current, operands) => next(current, operands[0]), answerOld: false,
+                context.TypeAnnotations);
+
         // COMPOUND assignment through a USER-DEFINED operator: `m += other` is `m = Money.opAdd(m, other)`.
         if (context.SemanticHelper.GetOperation(assignment) is Microsoft.CodeAnalysis.Operations.ICompoundAssignmentOperation
             { OperatorMethod: { } compoundMethod }
-            && UserDefinedOperators.Binary(compoundMethod, op[..^1], left, right) is { } compoundCall)
-            return JsExpr.Binary(leftIr, "=", compoundCall);
+            && UserDefinedOperators.Binary(compoundMethod, op[..^1], left, right) is not null)
+            return Compound((current, operand) => UserDefinedOperators.Binary(compoundMethod, op[..^1],
+                JsExprWriter.Write(current), JsExprWriter.Write(operand))!);
 
         // COMPOUND assignment on a decimal is arithmetic on the runtime Decimal — `total +=
         // amount` emitted bare concatenates their text. A running money total read
@@ -98,16 +107,11 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
             && context.SemanticHelper.GetType(assignment.Left).IsDecimal())
         {
             var method = op[0] switch { '+' => "add", '-' => "sub", '*' => "mul", _ => "div" };
-            return JsExpr.Binary(leftIr, "=",
-                JsExpr.Callish($"{JsExprWriter.WriteIn(leftIr, JsPrecedence.Call)}.{method}({right})"));
+            return Compound((current, operand) => JsExpr.Callish(
+                $"{JsExprWriter.WriteIn(current, JsPrecedence.Call)}.{method}({JsExprWriter.Write(operand)})"));
         }
 
         var leftType = context.SemanticHelper.GetType(assignment.Left);
-        var rightType = context.SemanticHelper.GetType(assignment.Right);
-
-        // A float STORED is a single: the computed double rounds at the assignment (FloatStore).
-        if (op == "=" && leftType is { SpecialType: SpecialType.System_Single })
-            rightIr = FloatStore.Settle(assignment.Right, rightIr, context);
 
         // A compound on a CHAR TARGET writes a character back: `c += 1` steps it. A char on the
         // RIGHT arrives as its code unit already — ValueFlow settles the promotion the bound tree
@@ -116,40 +120,66 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         {
             var binaryOp = op[..^1];
             if (leftType is { SpecialType: SpecialType.System_Char } && binaryOp is "+" or "-")
-                return JsExpr.Binary(leftIr, "=", JsExpr.Callish(
-                    $"String.fromCharCode({JsExprWriter.WriteIn(leftIr, JsPrecedence.Call)}.charCodeAt(0) {binaryOp} {JsExprWriter.WriteIn(rightIr, JsPrecedence.Additive)})"));
+                return Compound((current, operand) => JsExpr.Callish(
+                    $"String.fromCharCode({JsExprWriter.WriteIn(current, JsPrecedence.Call)}.charCodeAt(0) {binaryOp} {JsExprWriter.WriteIn(operand, JsPrecedence.Additive)})"));
 
             // A fixed-width target settles the compound result by its type (IntegerWidth), and a
-            // float target rounds it to single precision.
+            // float target rounds it to single precision — every one of the five, because a double
+            // on the right makes it `(float)(x op y)`, and a remainder by a double is not a single.
             if (binaryOp is "+" or "-" or "*" or "<<" && IntegerWidth.Of(leftType) is { } width)
             {
                 var arithmetic = ArithmeticContext.Of(assignment, context);
                 if (arithmetic.IsChecked || arithmetic.ExplicitUnchecked || IntegerWidth.WrapsByDefault(width))
                 {
-                    var computed = binaryOp == "*" && width.Bits == 32 && !arithmetic.IsChecked
-                        ? (JsExpr)JsExpr.Callish($"Math.imul({left}, {JsExprWriter.Write(rightIr)})")
-                        : JsExpr.Binary(leftIr, binaryOp, rightIr);
-                    return JsExpr.Binary(leftIr, "=", IntegerWidth.Settle(computed, leftType,
-                        arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context));
+                    return Compound((current, operand) => IntegerWidth.Settle(
+                        binaryOp == "*" && width.Bits == 32 && !arithmetic.IsChecked
+                            ? JsExpr.Callish($"Math.imul({JsExprWriter.Write(current)}, {JsExprWriter.Write(operand)})")
+                            : JsExpr.Binary(current, binaryOp, operand),
+                        leftType, arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context));
                 }
             }
-            if (binaryOp is "+" or "-" or "*" or "/" or "%" && leftType is { SpecialType: SpecialType.System_Single })
-                return JsExpr.Binary(leftIr, "=", FloatStore.Round(JsExpr.Binary(leftIr, binaryOp, rightIr)));
+            if (binaryOp is "+" or "-" or "*" or "/" or "%" && SinglePrecision.Is(leftType))
+                return Compound((current, operand) => SinglePrecision.Round(JsExpr.Binary(current, binaryOp, operand)));
         }
 
         // `x /= y` on integers is integer division, exactly like `x = x / y` — the compound form
         // used to reach JavaScript's `/=`, which divides as a double. NOT for a long target: its
         // BigInt `/` already truncates, and Math.trunc rejects a BigInt outright.
         // Built as IR, not as a template: a right-hand side that is a ternary (`x /= c ? 4 : 1`)
-        // has to be fenced under the `/`, and the writer is the one that knows.
-        if (op == "/=" && context.SemanticHelper.GetType(assignment.Left).IsIntegral()
-            && !context.SemanticHelper.GetType(assignment.Left).IsLong())
-            return JsExpr.Binary(leftIr, "=",
-                JsExpr.Call(JsExpr.Identifier("Math.trunc"), JsExpr.Binary(leftIr, "/", rightIr)));
+        // has to be fenced under the `/`, and the writer is the one that knows. The quotient goes
+        // back into the TARGET's width, as C#'s `x = (T)(x / y)` does: `sbyte s = -128; s /= -1`
+        // is -128, not 128.
+        if (op == "/=" && leftType.IsIntegral() && !leftType.IsLong())
+        {
+            var arithmetic = ArithmeticContext.Of(assignment, context);
+            return Compound((current, operand) => IntegerWidth.Settle(
+                JsExpr.Call(JsExpr.Identifier("Math.trunc"), JsExpr.Binary(current, "/", operand)),
+                leftType, arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context));
+        }
+
+        // A dictionary entry has no operator of its own to fall back on: its read is the guard.
+        if (entry is not null) return Compound((current, operand) => JsExpr.Binary(current, op[..^1], operand));
 
         // An assignment NODE: right-associative at the loosest level, so `a = b = c` chains and
         // an assignment used as an operand is fenced by whoever places it.
         return JsExpr.Binary(leftIr, op, rightIr);
+    }
+
+    /// <summary>
+    /// A compound write to a dictionary entry: the entry is read through the guard that throws for
+    /// a missing key, the rule of its type computes the next value, and the entry is written
+    /// plainly. The template binds the receiver and the key once each, so neither is evaluated
+    /// twice, and leaves the value where C# evaluates it, after the read.
+    /// </summary>
+    private static JsExpr EntryCompound(JsExpr receiver, JsExpr key, JsExpr value,
+        Func<JsExpr, JsExpr, JsExpr> next, ConversionContext context)
+    {
+        context.UsedHelpers.Add(Eq.Import);
+        var computed = next(JsExpr.Callish($"{Eq.DictGet}({{0}}, {{1}})"), JsExpr.Opaque("{2}"));
+        // Parenthesized, as a template's text must be: an assignment used as an operand
+        // (`(map[k] += 1) * 2`) would otherwise take the operator into its right side.
+        return JsExpr.Template($"({{0}}[{{1}}] = {JsExprWriter.Write(computed)})", [receiver, key, value],
+            context.TypeAnnotations);
     }
 
     public int Priority => 10;

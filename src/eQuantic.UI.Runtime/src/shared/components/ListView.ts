@@ -6,6 +6,11 @@ export class ListView extends StatefulComponent {
     _viewport: number = 0;
     _first: number = 0;
     _last: number = -1;
+
+    static get $hydration() {
+        return { _offset: 'single', _viewport: 'single', itemExtent: 'single', width: { of: SizeValue, members: { value: 'single' } }, height: { of: SizeValue, members: { value: 'single' } } };
+    }
+
     declare count: number;
     declare itemExtent: number;
     declare itemBuilder: any;
@@ -31,9 +36,9 @@ export class ListView extends StatefulComponent {
         let viewport = this._viewport > 0 ? this._viewport : this.viewportGuess();
         [this._first, this._last] = this.windowFor(this._offset, viewport);
         let rows = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
-        if (this._first > 0) rows.add(Spacer.fixed(this._first * this.itemExtent));
+        if (this._first > 0) rows.add(Spacer.fixed(Math.fround(Math.fround(this._first) * this.itemExtent)));
         for (let i = this._first; i <= this._last; i++) rows.add(this.itemBuilder(i));
-        if (this._last < this.count - 1) rows.add(Spacer.fixed((this.count - 1 - this._last) * this.itemExtent));
+        if (this._last < this.count - 1) rows.add(Spacer.fixed(Math.fround(Math.fround(this.count - 1 - this._last) * this.itemExtent)));
         return new ScrollView(rows, 'vertical', { width: this.width, height: this.height, onScrolled: this.onScrolled.bind(this), onViewportChanged: this.onViewportChanged.bind(this) });
     }
 
@@ -47,13 +52,13 @@ export class ListView extends StatefulComponent {
 
     windowFor(offset: number, viewport: number) {
         if (this.count === 0 || this.itemExtent <= 0) return [0, -1];
-        let first = Math.max(0, (Math.trunc(Math.floor(offset / this.itemExtent)) | 0) - this.overscan);
-        let last = Math.min(this.count - 1, (Math.trunc(Math.ceil((offset + viewport) / this.itemExtent)) | 0) + this.overscan);
+        let first = Math.max(0, (Math.trunc(Math.floor(Math.fround(offset / this.itemExtent))) | 0) - this.overscan);
+        let last = Math.min(this.count - 1, (Math.trunc(Math.ceil(Math.fround(Math.fround(offset + viewport) / this.itemExtent))) | 0) + this.overscan);
         return [first, last];
     }
 
     viewportGuess() {
-        return this.itemExtent * 12;
+        return Math.fround(this.itemExtent * 12);
     }
 
     onScrolled(offset: number) {
@@ -64,7 +69,7 @@ export class ListView extends StatefulComponent {
     }
 
     onViewportChanged(viewport: number) {
-        if (Math.abs(viewport - this._viewport) < 0.5) return;
+        if (Math.abs(Math.fround(viewport - this._viewport)) < 0.5) return;
         this.setState(() => this._viewport = viewport);
     }
 }

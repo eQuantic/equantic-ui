@@ -1037,14 +1037,14 @@ function lowerDraggable(
   if (node.onReleased) {
     const released = node.onReleased;
     child.events['eq-drag-released'] = ((ev: Event) => {
-      released((ev as CustomEvent<number>).detail ?? 0);
+      released(Math.fround((ev as CustomEvent<number>).detail ?? 0));
     }) as EventHandler;
   }
 
   if (node.onMoved) {
     const moved = node.onMoved;
     child.events['eq-drag-moved'] = ((ev: Event) => {
-      moved((ev as CustomEvent<number>).detail ?? 0);
+      moved(Math.fround((ev as CustomEvent<number>).detail ?? 0));
     }) as EventHandler;
   }
 
@@ -1520,7 +1520,9 @@ function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: s
     const onScrolled = node.onScrolled;
     view.events['scroll'] = ((event: Event) => {
       const target = event.target as HTMLElement;
-      onScrolled(horizontal ? target.scrollLeft : target.scrollTop);
+      // C# declares the offset a float, and a HiDPI scroll offset is fractional: it enters as a
+      // single, as every float-typed seam does (float-seams.spec.ts).
+      onScrolled(Math.fround(horizontal ? target.scrollLeft : target.scrollTop));
     }) as EventHandler;
   }
   if (node.onViewportChanged || node.offset) {

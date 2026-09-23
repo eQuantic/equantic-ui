@@ -105,10 +105,24 @@ public static class JsExprWriter
         for (var i = 0; i < last; i++)
             bound[i] |= !IsInlinable(parts[i]);
 
+        // …and a part left INLINE runs where its hole is, after every bound one — so the inline
+        // parts that can be observed must meet their holes in the order C# evaluates them, or two
+        // effects swap. A template that fills its slots out of argument order (a named argument
+        // placed in another parameter's hole) binds every observable part instead.
+        var inlineOrder = Hole.Matches(template.Text)
+            .Select(match => int.Parse(match.Groups[1].Value))
+            .Where(index => !bound[index] && !IsInlinable(parts[index]))
+            .ToList();
+        if (inlineOrder.Zip(inlineOrder.Skip(1)).Any(pair => pair.First > pair.Second))
+        {
+            for (var i = 0; i < parts.Count; i++) bound[i] |= !IsInlinable(parts[i]);
+            last = Array.LastIndexOf(bound, true);
+        }
+
         var body = Hole.Replace(template.Text, match =>
         {
             var index = int.Parse(match.Groups[1].Value);
-            return bound[index] ? "$" + index : Write(parts[index], JsPrecedence.Opaque, null);
+            return bound[index] ? "$" + index : Write(parts[index], PositionOf(template.Text, match), null);
         });
         if (last < 0) return body;
 
@@ -116,6 +130,24 @@ public static class JsExprWriter
         var names = string.Join(", ", indexes.Select(i => "$" + i + (template.Annotate ? ": any" : "")));
         var arguments = string.Join(", ", indexes.Select(i => Write(parts[i], JsPrecedence.Opaque, null)));
         return $"(({names}) => {body})({arguments})";
+    }
+
+    /// <summary>
+    /// How tightly the text around a hole binds the part that fills it. Between an opening bracket
+    /// or a comma and a closing bracket or a comma, the part is a whole argument or element, which
+    /// only a sequence expression could break. Anywhere else an operator or a member access touches
+    /// it, and a part that is not already call-shaped is parenthesized: the table's
+    /// <c>(({0} * Math.PI) / 180)</c> given <c>c ? a : b</c> once multiplied only <c>b</c>.
+    /// </summary>
+    private static JsPrecedence PositionOf(string text, Match hole)
+    {
+        var before = hole.Index - 1;
+        while (before >= 0 && char.IsWhiteSpace(text[before])) before--;
+        var after = hole.Index + hole.Length;
+        while (after < text.Length && char.IsWhiteSpace(text[after])) after++;
+        var opens = before >= 0 && text[before] is '(' or ',' or '[';
+        var closes = after < text.Length && text[after] is ')' or ',' or ']';
+        return opens && closes ? JsPrecedence.Assignment : JsPrecedence.Call;
     }
 
     /// <summary>A read nobody can observe happening twice: a bare name (locals and parameters

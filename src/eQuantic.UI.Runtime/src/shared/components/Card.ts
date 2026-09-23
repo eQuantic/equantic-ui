@@ -2,6 +2,11 @@ import { Box, BoxStyle, BuildContext, Color, ColorToken, CornerRadii, EdgeInsets
 
 export class Card extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Card';
+
+    static get $hydration() {
+        return { padding: { of: EdgeInsets, members: { start: 'single', top: 'single', end: 'single', bottom: 'single' } }, width: { of: SizeValue, members: { value: 'single' } } };
+    }
+
     declare child: VisualNode;
     declare kind: string;
     declare padding: EdgeInsets;

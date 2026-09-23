@@ -14,9 +14,10 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// defensively.
 /// <para>
 /// The spec language mirrors <c>utils/hydrate.ts</c>: a tag (<c>'long'</c>, <c>'decimal'</c>,
-/// <c>'dateTime'</c>…) for a compat scalar, <c>[spec]</c> for a list, <c>{ dict: spec }</c> for a
-/// dictionary's values (the twin is a plain object — its keys are strings), and a bare class NAME
-/// for an in-source record/struct, whose emitted twin carries its own <c>static $hydration</c>.
+/// <c>'single'</c>, <c>'dateTime'</c>…) for a compat scalar, <c>[spec]</c> for a list,
+/// <c>{ dict: spec }</c> for a dictionary's values (the twin is a plain object — its keys are
+/// strings), and a bare class NAME for an in-source record/struct, whose emitted twin carries its
+/// own <c>static $hydration</c>.
 /// Null means IDENTITY: the JSON value is already what the runtime computes with, and no spec is
 /// emitted at all — the common case stays clean.
 /// </para>
@@ -26,10 +27,16 @@ public static class HydrationSpec
     /// <summary>The JS spec literal for <paramref name="type"/>, or null when hydration is the
     /// identity. Record/struct names the spec references are added to <paramref name="referenced"/>
     /// so the caller can import their modules.</summary>
-    public static string? Of(ITypeSymbol? type, ISet<string> referenced) =>
-        Of(type, referenced, new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default));
+    public static string? Of(ITypeSymbol? type, ISet<string> referenced, ISet<string> runtime) =>
+        Of(type, new References(referenced, runtime), new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default));
 
-    private static string? Of(ITypeSymbol? type, ISet<string> referenced, HashSet<INamedTypeSymbol> visiting)
+    /// <summary>Where the names a spec mentions come from: <c>InSource</c> are this compilation's
+    /// own twins, sibling modules; <c>Runtime</c> are the vocabulary's, which only
+    /// <c>@equantic/runtime</c> exports. A caller that imported a runtime twin from a sibling module
+    /// emitted `import { Rect } from "./Rect"`, a module that exists nowhere.</summary>
+    private readonly record struct References(ISet<string> InSource, ISet<string> Runtime);
+
+    private static string? Of(ITypeSymbol? type, References referenced, HashSet<INamedTypeSymbol> visiting)
     {
         type = type.UnwrapNullable();
         switch (type?.SpecialType)
@@ -40,6 +47,10 @@ public static class HydrationSpec
                 return "'decimal'";
             case SpecialType.System_Int64 or SpecialType.System_UInt64:
                 return "'long'";
+            // A float arrives as the shortest text that names the SINGLE, which JavaScript parses
+            // as the nearest double — a different number until it is rounded back (SinglePrecision).
+            case SpecialType.System_Single:
+                return "'single'";
             // A string is IEnumerable<char> to the walk below, and already itself on the wire.
             case SpecialType.System_String:
                 return null;
@@ -75,9 +86,13 @@ public static class HydrationSpec
         // own `static $hydration` says which.
         if (IsEmittedValueType(named) && HasHydratableMember(named, visiting))
         {
-            referenced.Add(named.Name);
+            referenced.InSource.Add(named.Name);
             return named.Name;
         }
+
+        // A type the runtime ships no export for is fenced (EQ2010) wherever a component names it,
+        // and a map that described it would put its name, or its members', in the emitted module.
+        if (named.IsHostOnly()) return null;
 
         // A data type from a REFERENCED assembly has no twin to name — a page library's domain
         // record is the ordinary case — but the model still knows its members, so the boundary
@@ -97,7 +112,7 @@ public static class HydrationSpec
             // of the same foreign record silently got no spec at all.
             try
             {
-                return MembersSpec(named, referenced, visiting);
+                return MembersSpec(named, referenced, visiting, twin: named.IsRuntimeProvided() ? named.Name : null);
             }
             finally
             {
@@ -108,16 +123,24 @@ public static class HydrationSpec
         return null;
     }
 
-    /// <summary>The structural member map for a type with no twin, or null when no member needs
-    /// coercion. Names are camelCased exactly as EqJson writes them.</summary>
-    private static string? MembersSpec(INamedTypeSymbol named, ISet<string> referenced, HashSet<INamedTypeSymbol> visiting)
+    /// <summary>The structural member map for a type from a referenced assembly, or null when no
+    /// member needs coercion. Names are camelCased exactly as EqJson writes them. A type the
+    /// RUNTIME ships (a vocabulary value type such as <c>Rect</c>) names its twin as <c>of</c>, so
+    /// the copy is built on that prototype: a structural copy alone arrived as a plain object, and
+    /// a Rect in a payload lost its getters and methods, which is what the typed boundary replaced
+    /// when its floats started to hydrate.</summary>
+    private static string? MembersSpec(INamedTypeSymbol named, References referenced, HashSet<INamedTypeSymbol> visiting,
+        string? twin)
     {
         var entries = DataMembers(named)
             .Select(member => (member.Name, Spec: Of(member.Type, referenced, visiting)))
             .Where(member => member.Spec is not null)
             .Select(member => $"{member.Name.ToCamelCase()}: {member.Spec}")
             .ToList();
-        return entries.Count > 0 ? $"{{ members: {{ {string.Join(", ", entries)} }} }}" : null;
+        if (entries.Count == 0) return null;
+        if (twin is null) return $"{{ members: {{ {string.Join(", ", entries)} }} }}";
+        referenced.Runtime.Add(twin);
+        return $"{{ of: {twin}, members: {{ {string.Join(", ", entries)} }} }}";
     }
 
     private static bool IsPlatformNamespace(INamedTypeSymbol named)
@@ -138,7 +161,7 @@ public static class HydrationSpec
         _ => null,
     };
 
-    private static string? List(ITypeSymbol element, ISet<string> referenced, HashSet<INamedTypeSymbol> visiting) =>
+    private static string? List(ITypeSymbol element, References referenced, HashSet<INamedTypeSymbol> visiting) =>
         Of(element, referenced, visiting) is { } inner ? $"[{inner}]" : null;
 
     /// <summary>The value type of a dictionary-shaped type — itself or any interface it implements
@@ -190,16 +213,16 @@ public static class HydrationSpec
     /// <summary>Whether any data member (transitively) has a spec — see the visiting guard above.</summary>
     private static bool HasHydratableMemberOf(INamedTypeSymbol named, HashSet<INamedTypeSymbol> visiting)
     {
-        var throwaway = new HashSet<string>();
+        var throwaway = new References(new HashSet<string>(), new HashSet<string>());
         return DataMembers(named).Any(member => Of(member.Type, throwaway, visiting) is not null);
     }
 
     /// <summary>The member map for a record/struct twin — <c>{ id: 'long', price: Money }</c> with
     /// the twin's camelCased member names — or null when no member needs hydration.</summary>
-    public static string? Members(INamedTypeSymbol type, ISet<string> referenced)
+    public static string? Members(INamedTypeSymbol type, ISet<string> referenced, ISet<string> runtime)
     {
         var entries = DataMembers(type)
-            .Select(m => (m.Name, Spec: Of(m.Type, referenced)))
+            .Select(m => (m.Name, Spec: Of(m.Type, referenced, runtime)))
             .Where(m => m.Spec is not null)
             .Select(m => $"{m.Name.ToCamelCase()}: {m.Spec}")
             .ToList();

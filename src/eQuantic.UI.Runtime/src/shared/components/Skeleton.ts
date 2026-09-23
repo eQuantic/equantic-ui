@@ -3,6 +3,11 @@ import { Box, BoxStyle, BuildContext, Color, ColorToken, CornerRadii, Flexible, 
 export class Skeleton extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Skeleton';
     static shimmerDurationMs: number = 1400;
+
+    static get $hydration() {
+        return { width: 'single', height: 'single' };
+    }
+
     declare shape: string;
     declare width: number;
     declare height: number;

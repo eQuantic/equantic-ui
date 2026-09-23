@@ -47,7 +47,7 @@ export class CodeLineCells {
         for (let i = 0; i < this.count; i++) {
             let from = this._cells[i];
             let to = this._cells[i + 1];
-            if (cell < to) return Math.fround(cell - from) <= Math.fround((to - from) / 2) ? this._columns[i] : this._columns[i + 1];
+            if (cell < Math.fround(to)) return Math.fround(cell - Math.fround(from)) <= Math.fround(Math.fround(to - from) / 2) ? this._columns[i] : this._columns[i + 1];
         }
         return this.text.length;
     }

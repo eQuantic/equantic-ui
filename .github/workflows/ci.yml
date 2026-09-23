@@ -601,6 +601,56 @@ jobs:
             echo "A shared chunk is what two or more modules have in common, split out by bun (eqc runs it with \`--splitting\`) and named after one of them; it loads once, with the first page that needs it. The served runtime, which every page loads first, is budgeted by \`ServedRuntimeBudgetTests\`."
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
+      # Edit, then publish: the most ordinary sequence there is, and it failed (#361). What two
+      # pages share is a chunk named by its content's hash, so changing it renames the chunk, and
+      # the old name, registered while the project evaluated, failed the publish's compression. The
+      # step changes the dashboard's console shell and publishes without building first. A chunk of
+      # the last build has to be gone from this one, or the step proved nothing; the publish has to
+      # hold exactly the chunks this build wrote; and each module it holds has to be served
+      # compressed, from THIS build's file, in both formats a browser negotiates: the same order
+      # once compressed the previous build's modules, and a compression that ran before the assets
+      # were defined would drop every module to its raw size, neither failing anything.
+      # scripts/check-compressed-assets.cs reads the bytes of both with .NET's own streams. Then
+      # the source goes back and a --no-build publish runs, which must carry what the last build
+      # wrote: the output folder is defined by a build target, and one that compiled here would
+      # carry the chunks of the source instead.
+      - name: A publish right after a shared component changes
+        shell: bash
+        run: |
+          set -uo pipefail
+          shell=samples/DefaultUIDashboard/Screens/ConsoleShell.cs
+          dir=samples/DefaultUIDashboard/wwwroot/_equantic
+          chunks() { [ -d "$1" ] && ls "$1" | grep -E -- '-[a-z0-9]{8}\.js$' | sort; }
+          before=$(chunks "$dir")
+          perl -0pi -e 's/(class ConsoleShell[^{]*\{)/$1\n    public const string CiMark = "the shared chunk changed";/' "$shell"
+          status=0
+          dotnet publish samples/DefaultUIDashboard -c Release -o republished || status=1
+          git checkout -- "$shell"
+          after=$(chunks "$dir")
+          published=$(chunks republished/wwwroot/_equantic)
+          gone=$(comm -23 <(echo "$before") <(echo "$after"))
+          echo "chunks before: $(echo $before)"
+          echo "chunks after:  $(echo $after)"
+          echo "published:     $(echo $published)"
+          if [ "$status" -ne 0 ]; then
+            echo "::error::the publish after a shared component changed failed"
+          elif [ -z "$gone" ] || [ -z "$after" ]; then
+            echo "::error::no chunk of the last build was renamed, so this proves nothing about a renamed one"
+            status=1
+          elif [ "$published" != "$after" ]; then
+            echo "::error::the publish holds other chunks than the build wrote"
+            status=1
+          fi
+          dotnet run scripts/check-compressed-assets.cs -- republished/wwwroot/_equantic || status=1
+          dotnet publish samples/DefaultUIDashboard -c Release --no-build -o unbuilt || status=1
+          unbuilt=$(chunks unbuilt/wwwroot/_equantic)
+          echo "--no-build:    $(echo $unbuilt)"
+          if [ "$unbuilt" != "$after" ]; then
+            echo "::error::a --no-build publish holds other chunks than the last build wrote"
+            status=1
+          fi
+          exit $status
+
       # Exit 0 is not the proof. A mobile target framework exists to produce a BUNDLE, and the
       # build checks worth exercising here are precisely the ones that only run when one is
       # produced. So read the artifact back: derived from what the build wrote, never a list of

@@ -55,11 +55,16 @@ public class AverageStrategy : IConversionStrategy
             ? $"{left}.add({right})"
             : $"{left} + {right}";
         var seed = exact ? $"{Eq.Dec}(0)" : longElements ? "0n" : "0";
+        // A FLOAT average is .NET's: the sum and the division in DOUBLE, converted once at the end
+        // (`(float)Average<float, double, double>(source)`) — SinglePrecision.
+        var single = SinglePrecision.Is(context.SemanticHelper.GetType(invocation));
         string Divide(string sum) => exact
             ? $"{sum}.div({Eq.Dec}({caller}.length))"
             : longElements
                 ? $"(Number({sum}) / {caller}.length)"
-                : $"({sum} / {caller}.length)";
+                : single
+                    ? $"Math.fround({sum} / {caller}.length)"
+                    : $"({sum} / {caller}.length)";
 
         if (args.Count > 0)
         {

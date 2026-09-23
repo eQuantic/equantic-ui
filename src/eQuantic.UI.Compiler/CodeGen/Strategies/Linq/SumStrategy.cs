@@ -55,6 +55,11 @@ public class SumStrategy : IConversionStrategy
         var seed = exact ? $"{Eq.Dec}(0)" : summed.IsLong() ? "0n" : "0";
         if (exact) context.UsedHelpers.Add(Eq.Import);
 
+        // A FLOAT sum is .NET's: accumulated in a DOUBLE and converted once at the end
+        // (`(float)Sum<float, double>(source)`), so the reduce stays in doubles and only its
+        // answer rounds to the single the call returns (SinglePrecision).
+        string Settle(string total) => SinglePrecision.Is(summed) ? $"Math.fround({total})" : total;
+
         if (args.Count > 0)
         {
             // Sum(x => x.Amount) -> reduce((sum, x) => sum + x.amount, 0)
@@ -65,16 +70,16 @@ public class SumStrategy : IConversionStrategy
             {
                 var param = lambda.Parameter.Identifier.Text;
                 var body = context.Converter.ConvertExpression(lambda.Body as ExpressionSyntax ?? lambda.ExpressionBody!);
-                return $"{caller}.reduce((_sum, {param}) => {Add("_sum", body)}, {seed})";
+                return Settle($"{caller}.reduce((_sum, {param}) => {Add("_sum", body)}, {seed})");
             }
 
             // Fallback for other expression types
             var selectorConverted = context.Converter.ConvertExpression(selector);
-            return $"{caller}.reduce((_sum, _x) => {Add("_sum", $"{selectorConverted}(_x)")}, {seed})";
+            return Settle($"{caller}.reduce((_sum, _x) => {Add("_sum", $"{selectorConverted}(_x)")}, {seed})");
         }
 
         // Sum() without selector - the elements themselves.
-        return $"{caller}.reduce((_a, _b) => {Add("_a", "_b")}, {seed})";
+        return Settle($"{caller}.reduce((_a, _b) => {Add("_a", "_b")}, {seed})");
     }
 
     public int Priority => 10;

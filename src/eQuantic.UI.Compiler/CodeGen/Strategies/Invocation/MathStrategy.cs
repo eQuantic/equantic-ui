@@ -1,16 +1,20 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Ir;
+using eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 using eQuantic.UI.Compiler.Services;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Invocation;
 
 /// <summary>
-/// Strategy for Math method invocations.
-/// Handles: Math.Abs, Math.Floor, Math.Round, Math.Clamp, etc.
-/// Special case: Math.Clamp(val, min, max) → Math.min(Math.max(val, min), max)
+/// The <c>Math</c> and <c>MathF</c> surface. Both spell, on a static class, the same functions
+/// .NET 7 put on the primitives themselves — <c>Math.Sqrt(x)</c> is <c>double.Sqrt(x)</c>,
+/// <c>MathF.Sin(x)</c> is <c>float.Sin(x)</c> — so a member the numeric table names
+/// (PrimitiveStaticStrategy) is translated BY that table, with the parameter's type as its home:
+/// one table, so the two spellings cannot drift, and <c>MathF</c> answers in single precision
+/// because <c>float</c> does. What the table does not name keeps this strategy's own forms.
 /// </summary>
-public class MathStrategy : IConversionStrategy
+public class MathStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
@@ -30,45 +34,131 @@ public class MathStrategy : IConversionStrategy
 
         // Fallback: check expression text
         var callerText = memberAccess.Expression.ToString();
-        return callerText is "Math" or "System.Math";
+        return callerText is "Math" or "System.Math" or "MathF" or "System.MathF";
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         var methodName = memberAccess.Name.Identifier.Text;
-        
-        var argsList = invocation.ArgumentList.Arguments
-            .Select(a => context.Converter.ConvertExpression(a.Expression))
-            .ToList();
-        
-        // Special case: Math.Clamp(val, min, max) → Math.min(Math.max(val, min), max)
-        if (methodName == "Clamp" && argsList.Count >= 3)
+        var arguments = invocation.ArgumentList.Arguments;
+
+        // The numeric table first, by the type the overload computes on.
+        if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { Parameters.Length: > 0 } method
+            && PrimitiveStaticStrategy.TemplateFor(method, method.Parameters[0].Type.SpecialType, arguments.Count)
+                is { } template)
         {
-            return $"Math.min(Math.max({argsList[0]}, {argsList[1]}), {argsList[2]})";
+            if (template.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
+            var irArgs = arguments.Select(a => context.Converter.ConvertIr(a.Expression)).ToArray();
+            return JsExpr.Template(PrimitiveStaticStrategy.BindNamedArguments(template, invocation, method),
+                irArgs, context.TypeAnnotations);
         }
 
-        // Math.Round uses banker's rounding (MidpointRounding.ToEven) and supports a digit count —
-        // neither matches JS Math.round. Route through the runtime $eq.math.round compat helper.
-        if (methodName == "Round" && argsList.Count >= 1)
+        var argsList = arguments
+            .Select(a => context.Converter.ConvertExpression(a.Expression))
+            .ToList();
+
+        // Below, no model bound the call. The class still says which numbers it computes on —
+        // `MathF` on singles, `Math` on doubles — so everything but Round is answered by the SAME
+        // table, by name: a fallback of its own guessed `Math.copySign`, `Math.bitIncrement` and a
+        // `Math.log` that dropped its base, none of which JavaScript has.
+        var single = memberAccess.Expression.ToString() is "MathF" or "System.MathF";
+        var home = single ? SpecialType.System_Single : SpecialType.System_Double;
+        if (PrimitiveStaticStrategy.TemplateByName(methodName, home, arguments.Count) is { } byName)
         {
-            context.UsedHelpers.Add(Eq.Import);
-            // A DECIMAL rounds as a decimal — the number helper would round the object to NaN.
-            // Half-to-even, the same MidpointRounding.ToEven the double path honours. The value IS
-            // a Decimal (typed world); it lands in receiver position, so the writer fences it.
-            if (context.SemanticHelper.GetType(invocation.ArgumentList.Arguments[0].Expression).IsDecimal())
+            // A NAMED argument takes its parameter's slot, and only a bound method names the slots.
+            // In written order, `Math.Log(newBase: 2, a: x)` put the base where the value goes: with
+            // no method to ask, a named argument is a build error rather than a guessed placement.
+            var bound = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
+            if (bound is null && arguments.Any(argument => argument.NameColon is not null))
+                return JsExpr.Opaque(context.Unhandled(node, "Math"));
+            if (byName.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
+            var irArgs = arguments.Select(a => context.Converter.ConvertIr(a.Expression)).ToArray();
+            // With no model, nothing converted MathF's arguments: its parameters are floats, and
+            // an int past 2^24 is not one until C# rounds it (MathF.Sqrt(16777217) takes
+            // 16777216). ScaleB's exponent is the one int among them.
+            if (single && bound is null)
+                irArgs = irArgs.Select((argument, slot) => methodName == "ScaleB" && slot == 1 ? argument : Singled(argument)).ToArray();
+            var placed = bound is null ? byName : PrimitiveStaticStrategy.BindNamedArguments(byName, invocation, bound);
+            return JsExpr.Template(placed, irArgs, context.TypeAnnotations);
+        }
+        JsExpr Answer(JsExpr value) => single ? SinglePrecision.Round(value) : value;
+
+        // Where no model can name the overload (the table above needs the bound method), a Round is
+        // still .NET's rounding and never the JS Math.round, which sends halves up and ignores a
+        // digit count. The overload is read from the call as WRITTEN: a named argument takes its
+        // parameter's slot, and the positional ones fill what the names left in the parameters'
+        // order, the value, then the digits, then the mode. Past the value, ONE argument alone is a
+        // digit count or a mode, and only its type says which: a `MidpointRounding.<Mode>` or an
+        // integer literal says it here, and anything else is a build error rather than a guess.
+        // Taken for the digits, `Round(x, mode)`'s mode variable picked the digits overload, and
+        // `Round(x, 2, mode)` dropped it. The holes follow the slots and the parts keep their
+        // written order, which the template writer preserves when the two differ. A DECIMAL value
+        // rounds itself, since the number helper would round the object to NaN.
+        if (methodName == "Round" && arguments.Count >= 1)
+        {
+            int? value = null, digits = null, mode = null;
+            var parts = new JsExpr[arguments.Count];
+            var positional = new Queue<int>();
+            for (var i = 0; i < arguments.Count; i++)
             {
-                var receiver = JsExprWriter.WriteIn(
-                    context.Converter.ConvertIr(invocation.ArgumentList.Arguments[0].Expression),
-                    JsPrecedence.Call);
-                return argsList.Count >= 2
-                    ? $"{receiver}.round({argsList[1]})"
-                    : $"{receiver}.round()";
+                var argument = arguments[i];
+                var modeMember = ModeMember(argument.Expression);
+                parts[i] = modeMember is null
+                    ? context.Converter.ConvertIr(argument.Expression)
+                    : JsExpr.Literal("'" + modeMember.ToCamelCase() + "'");
+                switch (argument.NameColon?.Name.Identifier.ValueText)
+                {
+                    case "mode": mode = i; break;
+                    case "digits" or "decimals": digits = i; break;
+                    case null: positional.Enqueue(i); break;
+                    default: value = i; break;
+                }
             }
-            return argsList.Count >= 2
-                ? $"{Eq.Round}({argsList[0]}, {argsList[1]})"
-                : $"{Eq.Round}({argsList[0]})";
+            if (value is null && positional.Count > 0) value = positional.Dequeue();
+            switch (positional.Count)
+            {
+                case 0:
+                    break;
+                case 1 when digits is null && mode is null:
+                    var alone = positional.Dequeue();
+                    if (ModeMember(arguments[alone].Expression) is not null) mode = alone;
+                    else if (IsIntegerLiteral(arguments[alone].Expression)) digits = alone;
+                    else return JsExpr.Opaque(context.Unhandled(node, "Math.Round, whose argument could be its digits or its mode"));
+                    break;
+                case 1 when mode is null:
+                    mode = positional.Dequeue();
+                    break;
+                case 1 when digits is null:
+                    digits = positional.Dequeue();
+                    break;
+                case 2 when digits is null && mode is null:
+                    digits = positional.Dequeue();
+                    mode = positional.Dequeue();
+                    break;
+                default:
+                    return JsExpr.Opaque(context.Unhandled(node, "Math.Round"));
+            }
+            var round = single ? Eq.RoundSingle : Eq.Round;
+            // The value is a float's, singled as the table's arguments are; the digits and the
+            // mode are not floats.
+            if (single && value is { } singled) parts[singled] = Singled(parts[singled]);
+            if (value is not { } at)
+            {
+                context.UsedHelpers.Add(Eq.Import);
+                return JsExpr.Callish($"{round}({string.Join(", ", argsList)})");
+            }
+            var rest = mode is { } m
+                ? $"{(digits is { } d ? $"{{{d}}}" : "0")}, {{{m}}}"
+                : digits is { } only ? $"{{{only}}}" : "";
+            if (context.SemanticHelper.GetType(arguments[at].Expression).IsDecimal())
+                return JsExpr.Template($"{{{at}}}.round({rest})", parts, context.TypeAnnotations);
+            context.UsedHelpers.Add(Eq.Import);
+            var written = mode is { } onlyMode && digits is null
+                ? $"{(single ? Eq.RoundSingleWithMode : Eq.RoundWithMode)}({{{at}}}, {{{onlyMode}}})"
+                : rest.Length == 0 ? $"{round}({{{at}}})" : $"{round}({{{at}}}, {rest})";
+            return JsExpr.Template(written, parts, context.TypeAnnotations);
         }
 
         // Standard conversion: map .NET method names that differ from JS, else camelCase.
@@ -79,10 +169,50 @@ public class MathStrategy : IConversionStrategy
             "Ceiling" => "ceil",
             _ => methodName.ToCamelCase()
         };
+        // Only a function JavaScript's Math HAS: a name guessed past that (`Math.reciprocalEstimate`,
+        // which the table fences by construction) was a TypeError at the call, in the browser, on a
+        // build that had succeeded. It is a build error instead.
+        if (!JavaScriptMath.Contains(jsMethodName))
+            return JsExpr.Opaque(context.Unhandled(node, "Math"));
         var args = string.Join(", ", argsList);
 
-        return $"Math.{jsMethodName}({args})";
+        return Answer(JsExpr.Callish($"Math.{jsMethodName}({args})"));
     }
+
+    /// <summary>The functions JavaScript's own <c>Math</c> object has.</summary>
+    private static readonly HashSet<string> JavaScriptMath = new(StringComparer.Ordinal)
+    {
+        "abs", "acos", "acosh", "asin", "asinh", "atan", "atan2", "atanh", "cbrt", "ceil", "clz32",
+        "cos", "cosh", "exp", "expm1", "floor", "fround", "hypot", "imul", "log", "log10", "log1p",
+        "log2", "max", "min", "pow", "random", "round", "sign", "sin", "sinh", "sqrt", "tan", "tanh",
+        "trunc",
+    };
+
+    /// <summary>The member a written <c>MidpointRounding.X</c> names, or null for anything else.</summary>
+    /// <summary>An integer written as a literal, negated or not: a digit count, which no mode is.</summary>
+    private static bool IsIntegerLiteral(ExpressionSyntax expression) => expression switch
+    {
+        LiteralExpressionSyntax { Token.Value: int } => true,
+        PrefixUnaryExpressionSyntax { OperatorToken.ValueText: "-", Operand: var operand } => IsIntegerLiteral(operand),
+        ParenthesizedExpressionSyntax { Expression: var inner } => IsIntegerLiteral(inner),
+        _ => false,
+    };
+
+    /// <summary>A float argument as the single C# converts it to — an argument that already is one
+    /// comes back from Math.fround unchanged, and a literal that is one is left as written.</summary>
+    private static JsExpr Singled(JsExpr argument) =>
+        argument is JsLiteral { IsNumeric: true } literal
+        && double.TryParse(literal.Text, System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture, out var number)
+        && (double)(float)number == number
+            ? argument
+            : SinglePrecision.Round(argument);
+
+    private static string? ModeMember(ExpressionSyntax expression) =>
+        expression is MemberAccessExpressionSyntax { Expression: var type, Name: var member }
+            && type.ToString() is "MidpointRounding" or "System.MidpointRounding"
+            ? member.Identifier.ValueText
+            : null;
 
     public int Priority => 10;
 }

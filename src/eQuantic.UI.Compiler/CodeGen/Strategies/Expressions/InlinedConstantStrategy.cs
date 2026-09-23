@@ -90,9 +90,16 @@ public class InlinedConstantStrategy : IConversionStrategy
                 if (System.Math.Abs(integral) > 9007199254740991m) return false;
                 literal = integral.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 return true;
-            case double or float:
-                literal = ((IFormattable)field.ConstantValue).ToString(
-                    null, System.Globalization.CultureInfo.InvariantCulture);
+            // A FLOAT constant is written as the DOUBLE it is. Its own shortest text names the single
+            // to .NET and a different number to JavaScript: `float.E` printed as "2.7182817" is read
+            // back as 2.7182817000000001, not 2.7182817459106445 — so a design token like `0.38f`
+            // reached arithmetic already off by the difference (SinglePrecision). "R" is the
+            // shortest text that reads back as the same double, which is JavaScript's own rule.
+            case float single:
+                literal = ((double)single).ToString("R", System.Globalization.CultureInfo.InvariantCulture);
+                return true;
+            case double number:
+                literal = number.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
                 return true;
             default:
                 return false;

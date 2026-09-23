@@ -49,7 +49,9 @@ export function commitScrollViewports(): void {
     const extent = declaration.horizontal ? view.clientWidth : view.clientHeight;
     if (extent > 0 && extent !== view.__eqViewport) {
       view.__eqViewport = extent;
-      declaration.onViewportChanged?.(extent);
+      // A client extent is an integer, exact as a single, but the seam rounds like every other
+      // float-typed one rather than lean on that fact about the DOM.
+      declaration.onViewportChanged?.(Math.fround(extent));
     }
   }
   declared.clear();

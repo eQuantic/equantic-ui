@@ -60,7 +60,7 @@ export class Markdown extends StatelessComponent {
         let list = new Column(8, 'start', 'stretch', false, null, null, { width: SizeValue.fill, cross: 'start' });
         for (const item of block.items) {
             let row = new Row(10, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'start' });
-            row.add(new Box(new BoxStyle({ padding: new EdgeInsets(item.depth * 20, 0, 0, 0) }), new Text(item.marker, style.body, theme.textMuted, 1)));
+            row.add(new Box(new BoxStyle({ padding: new EdgeInsets(Math.fround(Math.fround(item.depth) * 20), 0, 0, 0) }), new Text(item.marker, style.body, theme.textMuted, 1)));
             row.add(new Box(new BoxStyle({ width: SizeValue.fill }), Markdown.paragraph(item.runs, theme, style)));
             list.add(row);
         }

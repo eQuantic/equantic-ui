@@ -1,3 +1,4 @@
+using eQuantic.UI.Compiler.CodeGen;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -110,9 +111,7 @@ public static class RuntimeProvidedTypeScanner
     {
         // A type the vocabulary declares [ServerOnly] ships no runtime export, so its NAME must not
         // reach the import list — and where it was written is what the caller needs to report it.
-        static bool IsFenced(INamedTypeSymbol type) =>
-            type.GetAttributes().Any(a => a.AttributeClass?.Name == "ServerOnlyAttribute")
-            && !type.Locations.Any(location => location.IsInSource);
+        static bool IsFenced(INamedTypeSymbol type) => type.IsHostOnly();
 
         void Fence(INamedTypeSymbol type, SyntaxNode at)
         {

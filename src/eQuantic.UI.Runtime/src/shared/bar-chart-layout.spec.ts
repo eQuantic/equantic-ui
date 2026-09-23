@@ -52,6 +52,29 @@ function dump(g: BarChartGeometry): string {
   return lines.join('\n');
 }
 
+/** A float at FULL precision — the mirror of the C# `Exact`: the number's own shortest text, which
+ * is what .NET's "R" writes for the same double. A negative zero prints as zero. */
+function exact(v: number): string {
+  return v === 0 ? '0' : String(v);
+}
+
+/** The four bounds the hit test compares a pointer against, computed as the C# dumper computes them:
+ * each a FLOAT operation on the box the twin solved, so a box that differs in its last bit is a
+ * different line (#146). */
+function hitBounds(name: string, layout: string, orientation: string, width: number, height: number): string {
+  const g = BarChartLayout.solve(SERIES, ALL, CATEGORIES.categories.length, layout, orientation, new ValueAxis(), width, height);
+  const slack = BarChartLayout.hitSlack;
+  const lines = [`== ${name} ==`];
+  for (const b of g.bars) {
+    const box = b.box;
+    lines.push(
+      `hit c${b.category} s${b.series} ${exact(Math.fround(box.left - slack))} ${exact(Math.fround(box.right + slack))}` +
+        ` ${exact(Math.fround(box.top - slack))} ${exact(Math.fround(box.bottom + slack))}`,
+    );
+  }
+  return lines.join('\n');
+}
+
 function scenario(
   name: string,
   layout: string,
@@ -99,6 +122,8 @@ describe('bar chart layout parity (C# BarChartTests cross-pin)', () => {
           250,
           100,
         ),
+        hitBounds('hit-bounds-grouped', 'grouped', 'vertical', 317, 199),
+        hitBounds('hit-bounds-stacked', 'stacked', 'horizontal', 317, 199),
       ].join('\n') + '\n';
     expect(actual).toBe(fixture);
   });

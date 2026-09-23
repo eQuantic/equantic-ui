@@ -37,7 +37,8 @@ export function checked(
     const ok = unsigned
       ? value >= 0 && value < 18446744073709551616
       : value >= -9223372036854775808 && value < 9223372036854775808;
-    if (!ok || !Number.isFinite(value)) throw new Error('Arithmetic operation resulted in an overflow.');
+    if (!ok || !Number.isFinite(value))
+      throw new Error('Arithmetic operation resulted in an overflow.');
     return value;
   }
   const [min, max] = RANGES[bits];
@@ -53,6 +54,65 @@ export function checked(
  * A C# `float` as text: the SHORTEST decimal that reads back as the same single-precision value —
  * `0.1f + 0.2f` prints "0.3", not the 0.30000001192092896 a double would show for the same bits.
  */
+/**
+ * .NET's `Math.DivRem` for an integer that is a plain number here: the truncated quotient and the
+ * remainder — or the throw .NET throws. A zero divisor is a DivideByZeroException where JavaScript
+ * would answer Infinity and NaN; `int.MinValue / -1` overflows a 32-bit int and throws; a narrower
+ * width computes in int and converts the quotient back, so `DivRem((short)-32768, (short)-1)` wraps.
+ */
+export function divRem(
+  left: number,
+  right: number,
+  bits: 8 | 16 | 32,
+  unsigned = false,
+): [number, number] {
+  if (right === 0) throw new Error('Attempted to divide by zero.');
+  if (bits === 32 && !unsigned && left === -2_147_483_648 && right === -1) {
+    throw new Error('Arithmetic operation resulted in an overflow.');
+  }
+  const quotient = Math.trunc(left / right);
+  const shift = 32 - bits;
+  // An integer has no signed zero, and `-1 / 3` and `-6 % 3` are both -0 here. `| 0` settles it on
+  // the signed widths, where both results fit an int32; an unsigned pair never produces one.
+  if (unsigned) {
+    return [bits === 32 ? quotient : quotient & ((1 << bits) - 1), left % right];
+  }
+  return [bits === 32 ? quotient | 0 : (quotient << shift) >> shift, (left % right) | 0];
+}
+
+/**
+ * The same for a long, which is a BigInt here. BigInt division already truncates, and it throws for
+ * a zero divisor, but a RangeError of its own; and `long.MinValue / -1` is exact in a BigInt, where
+ * .NET's 64-bit quotient overflows.
+ */
+export function divRemLong(left: bigint, right: bigint): [bigint, bigint] {
+  if (right === 0n) throw new Error('Attempted to divide by zero.');
+  if (left === -9_223_372_036_854_775_808n && right === -1n) {
+    throw new Error('Arithmetic operation resulted in an overflow.');
+  }
+  return [left / right, left % right];
+}
+
+/**
+ * A long (a BigInt) converted to a single the way .NET converts it: rounded ONCE, to nearest with
+ * ties to even, from all 64 bits. `Math.fround(Number(l))` rounds twice — to 53 bits and then to 24
+ * — and a value just above a midpoint between two singles lands ON the midpoint at the first step,
+ * so the second goes to the even neighbour instead of up (4611686293305294849 did). Below 2^53 the
+ * double is exact and the single rounding is the only one.
+ */
+export function singleFromLong(value: bigint): number {
+  const negative = value < 0n;
+  const magnitude = negative ? -value : value;
+  if (magnitude < 9007199254740992n) return Math.fround(Number(value));
+  const shift = BigInt(magnitude.toString(2).length - 24);
+  let mantissa = magnitude >> shift;
+  const rest = magnitude & ((1n << shift) - 1n);
+  const half = 1n << (shift - 1n);
+  if (rest > half || (rest === half && (mantissa & 1n) === 1n)) mantissa += 1n;
+  const result = Number(mantissa) * 2 ** Number(shift);
+  return negative ? -result : result;
+}
+
 export function single(value: number): string {
   if (!Number.isFinite(value)) return String(value).replace('Infinity', '∞');
   value = Math.fround(value);
@@ -73,7 +133,8 @@ export function single(value: number): string {
 export function substring(value: string, start: number, length?: number): string {
   // The three cases .NET tells apart, because which one it is says where the bug is.
   if (start < 0) throw new RangeError('startIndex cannot be less than zero.');
-  if (start > value.length) throw new RangeError('startIndex cannot be larger than length of string.');
+  if (start > value.length)
+    throw new RangeError('startIndex cannot be larger than length of string.');
   if (length === undefined) return value.slice(start);
   if (length < 0) throw new RangeError('length cannot be less than zero.');
   if (start + length > value.length) {
@@ -90,7 +151,7 @@ export function substring(value: string, start: number, length?: number): string
 export function dictGet<V>(map: Record<string, V>, key: unknown): V {
   // .NET tells an ABSENT key from a null one, and so does this: a null key is a caller mistake,
   // a missing one is a lookup that found nothing.
-  if (key === null || key === undefined) throw new Error('Value cannot be null. (Parameter \'key\')');
+  if (key === null || key === undefined) throw new Error("Value cannot be null. (Parameter 'key')");
   const property = String(key);
   if (!Object.prototype.hasOwnProperty.call(map, property)) {
     throw new Error(`The given key '${property}' was not present in the dictionary.`);

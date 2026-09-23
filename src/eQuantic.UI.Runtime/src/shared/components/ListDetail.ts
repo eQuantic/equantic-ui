@@ -2,6 +2,11 @@ import { AdaptiveNode, AppBar, Box, BoxStyle, BuildContext, Column, Divider, Emp
 
 export class ListDetail extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.ListDetail';
+
+    static get $hydration() {
+        return { listWidth: 'single', twoPaneFrom: 'single' };
+    }
+
     declare list: () => VisualNode;
     declare detail: (() => VisualNode) | null;
     declare onBack: (() => void) | null;

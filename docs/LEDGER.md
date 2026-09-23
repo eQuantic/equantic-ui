@@ -556,6 +556,24 @@ record of a release, the wiki's Upgrading page is the distillate.
   two) and a word step stopping between a letter and its accent: a nonspacing or enclosing mark
   takes none now, read from `CharUnicodeInfo.GetUnicodeCategory`, which eqc translates for the
   first time, and words step over whole elements. The served runtime grew to 144,405 bytes gzipped.
+- **2026-09-23 · A publish sees the files this build wrote**: editing a component two pages share
+  and publishing failed on the first run ([#361](https://github.com/eQuantic/equantic-ui/issues/361)).
+  bun names a shared chunk by its content's hash, and the static web assets pipeline registered
+  wwwroot's files while the project evaluated, before eqc rewrote the folder, so the renamed
+  chunk's old name reached the publish's compression with no file behind it. The same order had the
+  build's compression packing the previous build's modules. eqc's folder leaves Content and is
+  defined as web assets from what is on disk once its writers have run, through the pipeline's own
+  hook for generated assets, and CI edits a shared component and publishes.
+- **2026-09-23 · A float is a single where it is produced**: eqc rounded a `float` only at a store,
+  arguing from what ECMA-335 permits, and RyuJIT rounds every operation — so a float-returning method
+  handed its caller a double and a bar's hit bound differed by one ULP between server and browser
+  ([#146](https://github.com/eQuantic/equantic-ui/issues/146)). Every float operation, increment,
+  wide-int conversion, constant and hydrated value now rounds where it is born; the numeric table
+  answers in single precision for the `float` home and serves `Math`/`MathF` from the same entries,
+  a call no model bound included; and `Math.Round` detects a midpoint exactly and honours every
+  `MidpointRounding`. A value the browser produces (a scroll offset, a drag's travel, a pointer's
+  position) enters C# through the runtime, which now rounds it at each of the five seams C# types
+  `float`; `FloatSeamsTests` derives them by reflection and requires a spec for each.
 
 ## Retired documents
 

@@ -436,8 +436,12 @@ translation change must execute identically on both sides.
 - Expressions: Arithmetic, Logical, Ternary, Null-coalescing (`??`)
 - Fixed-width integers settle by RESULT type (`IntegerWidth`): byte/sbyte/short/ushort/uint always
   wrap, int/long wrap only under explicit `unchecked`, a `checked` context throws (read from the
-  bound tree's `IsChecked` — the first IOperation use); float results `Math.fround`, print via
-  `$eq.num.single`; `char++` steps the code unit; enum arithmetic computes on the value
+  bound tree's `IsChecked` — the first IOperation use). A `float` is a single wherever it is
+  PRODUCED (`SinglePrecision`) — every `+ - * /`, increment and compound, an int past 2^24 on its
+  way in, every float answer of the numeric table, a float constant, a hydrated value — because
+  RyuJIT rounds each operation; it prints via `$eq.num.single`. What the BROWSER produces enters
+  through the runtime, which rounds at every seam C# types `float` (`FloatSeamsTests` derives them).
+  `char++` steps the code unit; enum arithmetic computes on the value
 - Control Flow: `if`, `switch`, `for`, `foreach`, `while`
 - Modern Patterns: Recursive, Property, Positional, Relational (C# 9-12); bare-type and
   positional arms test by `instanceof` (in-source classes/records included)

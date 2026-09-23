@@ -15,6 +15,9 @@ public class DecimalConformanceTests
     [InlineData("(0.1m + 0.2m).ToString()")]   // "0.3", not 0.30000000000000004
     [InlineData("(1.1m + 2.2m).ToString()")]   // "3.3"
     [InlineData("(5m - 2.5m).ToString()")]     // "2.5"
+    // A decimal CONCATENATED into text is text: "v=" + 2.5m once emitted 'v='.add(...).
+    [InlineData("\"v=\" + 2.5m")]              // "v=2.5"
+    [InlineData("2.5m + \"|\"")]               // "2.5|"
     [InlineData("(1.5m * 2m).ToString()")]     // "3.0" (scale preserved)
     [InlineData("(10m / 4m).ToString()")]      // "2.5"
     [InlineData("(1m / 4m).ToString()")]       // "0.25"

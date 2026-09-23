@@ -68,7 +68,7 @@ export class CodeEditorController {
             let toCell = line === end.line ? cells.cellOf(end.column) : cells.width + 1;
             if (toCell <= fromCell) continue;
             let at = this.grid.pointOf(line, fromCell);
-            bands.push(new Rect(at.x, at.y, (toCell - fromCell) * this.grid.cell.width, this.grid.cell.height));
+            bands.push(new Rect(at.x, at.y, Math.fround(Math.fround(toCell - fromCell) * this.grid.cell.width), this.grid.cell.height));
         }
         return bands;
     }
@@ -127,9 +127,9 @@ export class CodeEditorController {
     }
 
     positionAt(point: Point) {
-        let line = (Math.trunc(Math.floor((point.y - this.grid.origin.y) / this.grid.cell.height)) | 0);
+        let line = (Math.trunc(Math.floor(Math.fround(Math.fround(point.y - this.grid.origin.y) / this.grid.cell.height))) | 0);
         let target = this._document.clamp(new CodePosition(Math.max(0, line), 0)).line;
-        return new CodePosition(target, this.cellsOf(target).columnAt((point.x - this.grid.origin.x) / this.grid.cell.width));
+        return new CodePosition(target, this.cellsOf(target).columnAt(Math.fround(Math.fround(point.x - this.grid.origin.x) / this.grid.cell.width)));
     }
 
     handleKey(key: string, modifiers: number, convention: KeyboardConventionValue, clipboard: any) {
@@ -355,7 +355,7 @@ export class CodeEditorController {
             let cells = this.cellsOf(this.caret.line);
             let cell = cells.cellOf(this.caret.column);
             let stop = cell % width === 0 ? cell - width : cell - cell % width;
-            return this.apply(new CodeRange($eq.withPatch(this.caret, { column: cells.columnAt(stop) }), this.caret), '');
+            return this.apply(new CodeRange($eq.withPatch(this.caret, { column: cells.columnAt(Math.fround(stop)) }), this.caret), '');
         }
         if (this.caret.column > 0 && this.caret.column < line.length) {
             let before = line[this.caret.column - 1];
@@ -509,13 +509,13 @@ export class CodeEditorController {
                 {
                     if (this._desiredCell < 0) this._desiredCell = this.cellsOf(from.line).cellOf(from.column);
                     let line = Math.min(Math.max(from.line + (forward ? 1 : -1), 0), this._document.lineCount - 1);
-                    return new CodePosition(line, this.cellsOf(line).columnAt(this._desiredCell));
+                    return new CodePosition(line, this.cellsOf(line).columnAt(Math.fround(this._desiredCell)));
                 }
             case 'page':
                 {
                     if (this._desiredCell < 0) this._desiredCell = this.cellsOf(from.line).cellOf(from.column);
                     let line = Math.min(Math.max(from.line + (forward ? pageLines : -pageLines), 0), this._document.lineCount - 1);
-                    return new CodePosition(line, this.cellsOf(line).columnAt(this._desiredCell));
+                    return new CodePosition(line, this.cellsOf(line).columnAt(Math.fround(this._desiredCell)));
                 }
             case 'lineBoundary':
                 this._desiredCell = -1;
