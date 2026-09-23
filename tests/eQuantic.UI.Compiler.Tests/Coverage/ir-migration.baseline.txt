@@ -6,7 +6,6 @@ AsExpressionStrategy
 AverageStrategy
 BooleanMethodStrategy
 CastStrategy
-CharMethodStrategy
 CheckedExpressionStrategy
 CollectionExpressionStrategy
 CollectionMaterializationStrategy

@@ -46,6 +46,11 @@ public class StringTotalityConformanceTests
     [InlineData("char.IsUpper(\"aB\", 1)")]            // true
     [InlineData("char.IsWhiteSpace(\"a b\", 1)")]      // true
     [InlineData("char.IsLetter(\"x\U0001D400\", 1)")] // true — MATHEMATICAL BOLD CAPITAL A, a pair
+    // An argument C# needs no parentheses for (a conditional) lands as a RECEIVER in JavaScript,
+    // where `c ? a : b.codePointAt(i)` reads only the false branch. The writer fences it.
+    [InlineData("char.IsLetter(\"a\".Length < 5 ? \"1a\" : \"a1\", 1)")] // true
+    [InlineData("char.ToUpper(\"a\".Length < 5 ? 'a' : 'b')")]            // "A"
+    [InlineData("char.IsAscii(\"a\".Length < 5 ? 'e' : '\u00e9')")]      // true
     public void Strings_MatchDotNet(string expression)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

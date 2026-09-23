@@ -140,3 +140,5 @@ eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.TextElementStrategy.CanConver
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.TextElementStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.TextElementStrategy.Priority.get -> int
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.TextElementStrategy.TextElementStrategy() -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CharMethodStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CharMethodStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
