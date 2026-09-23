@@ -432,6 +432,24 @@ public class CodeEditorSurfaceTests
         region.Surface.Engine().Caret.Column.Should().Be(8, "Ctrl+← is one word back outside Apple's");
     }
 
+    [Fact]
+    public void AnEditorWithNoCaptionIsNamedInTheLanguageOfItsInterface()
+    {
+        // The name was a literal, so a Portuguese screen reader heard "Code editor" in a window
+        // that said everything else in Portuguese.
+        var previous = System.Globalization.CultureInfo.CurrentUICulture;
+        try
+        {
+            System.Globalization.CultureInfo.CurrentUICulture =
+                System.Globalization.CultureInfo.GetCultureInfo("pt-BR");
+            Open("var x = 1;").Surface.Label.Should().Be("Editor de código");
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentUICulture = previous;
+        }
+    }
+
     private static bool Covers(Rect outer, Rect inner) =>
         outer.X <= inner.X + 0.01f && outer.Y <= inner.Y + 0.01f
         && outer.X + outer.Width >= inner.X + inner.Width - 0.01f

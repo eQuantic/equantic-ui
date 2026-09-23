@@ -24,3 +24,4 @@ static eQuantic.UI.Components.UI.CodeSurface(eQuantic.UI.Primitives.VisualNode! 
 eQuantic.UI.Components.CodeBlock.SelectionBands.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Rect>!
 eQuantic.UI.Components.CodeBlock.SelectionBands.init -> void
 const eQuantic.UI.Components.CodeBlock.SelectionAlpha = 0.28 -> float
+static eQuantic.UI.Components.SdkStrings.CodeEditor.get -> string!

@@ -221,7 +221,7 @@ public sealed class CodeEditor : StatefulComponent
         VisualNode surface = new CodeSurface(block, editor)
         {
             Autofocus = Autofocus,
-            Label = Caption ?? "Code editor",
+            Label = Caption ?? SdkStrings.CodeEditor,
             // The caret writes with the BLOCK's ink, not the page's — see CodeBlock.InkFor.
             CaretColor = CodeBlock.InkFor(Inverse, context.Theme),
             // The controller mutates outside the tree, so the rebuild has to be asked for. This is
