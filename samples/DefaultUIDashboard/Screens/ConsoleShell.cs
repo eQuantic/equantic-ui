@@ -75,6 +75,7 @@ public static class ConsoleShell
     [
         new(Icons.Plus, "Declarative", "/declarative"),
         new(Icons.Info, "Markdown", "/markdown"),
+        new(Icons.Copy, "Code editor", "/code"),
         new(Icons.Refresh, "Time", "/clock"),
         // Declared screens that the nav never listed: reachable only by typing the address, which
         // is the same defect as advertising a route that 404s, pointing the other way.
