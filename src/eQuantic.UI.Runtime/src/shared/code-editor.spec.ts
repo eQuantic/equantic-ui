@@ -484,6 +484,18 @@ describe('the marks are painted, not merely placed', () => {
     expect(styleOf(surfaceWith(), 'eq-code-caret')).toContain('background-color:');
   });
 
+  // A code block that carries a decoration draws it on a Stack whose layers take a z-index, and
+  // those climbed over the marks painted after the block: the caret vanished at the end of every
+  // line ending in `)`, `{` or `}`, because bracket matching decorates the pair there (defect 18).
+  // Kept in a stacking context of its own, the code paints entirely under the marks that follow it.
+  it('keeps the code in a stacking context of its own, under the marks', () => {
+    const surface = surfaceWith();
+    const code = surface.children[0];
+
+    expect(effectiveStyle(code)).toContain('isolation: isolate');
+    expect(surface.children.findIndex((c) => c.attributes['class'] === 'eq-code-caret')).toBeGreaterThan(0);
+  });
+
   it('paints the caret with the NODE ink — an inverse slab writes with its own', () => {
     const ink = {
       light: { r: 0xc9, g: 0xd4, b: 0xde, a: 255 },

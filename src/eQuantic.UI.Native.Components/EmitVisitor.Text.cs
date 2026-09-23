@@ -38,7 +38,14 @@ internal sealed partial class EmitVisitor
 
     private void EmitCode(CodeSurface surface, EmitState s)
     {
-        EmitCodeSurface(s.Node, surface, s.Theme, s.Mode, s.Builder, s.Input, s.Press, s.Motion);
+        EmitCodeSurface(s.Node, surface, s.Input);
+    }
+
+    /// <summary>The code surface's marks, painted once its child has been — see
+    /// <see cref="PaintCodeMarks"/>.</summary>
+    private void EmitCodeMarks(CodeSurface surface, EmitState s)
+    {
+        PaintCodeMarks(s.Node, surface, s.Theme, s.Mode, s.Builder, s.Press);
     }
 
     /// <summary>2dp: thin enough to sit between glyphs, thick enough to see on a scaled display.</summary>
@@ -308,8 +315,21 @@ internal sealed partial class EmitVisitor
     }
 
     /// <summary>
-    /// The carets and the selection over an editable code surface. The child drew the code; these are
-    /// the marks that say where you are in it.
+    /// An editable code surface takes the pointer and the keyboard: its region registers BEFORE its
+    /// child is emitted, under whatever the child draws on top of it.
+    /// </summary>
+    private static void EmitCodeSurface(LayoutNode node, CodeSurface surface, InputSink input) =>
+        input.Add(new CodeRegion(node.Bounds, surface, node.Path ?? ""));
+
+    /// <summary>
+    /// The carets and the selection over an editable code surface, painted AFTER its child: on top of
+    /// the code and of everything the code drew, as the web paints them.
+    /// <para>
+    /// They were painted BEFORE the child, on the reasoning that the code should paint over them, and
+    /// the child's own backgrounds did exactly that: the active line's wash is opaque, and the caret is
+    /// always on the active line, so the stripe that marks where the caret is covered it. The band is
+    /// translucent, so the text still reads through it from above.
+    /// </para>
     /// <para>
     /// Painted, never computed: the MODEL answers where every band and caret goes, in the surface's
     /// own coordinates, and this only offsets them by where the surface landed. The arithmetic from a
@@ -317,13 +337,9 @@ internal sealed partial class EmitVisitor
     /// hosts place separately is a caret that ends up in two places.
     /// </para>
     /// </summary>
-    private static void EmitCodeSurface(LayoutNode node, CodeSurface surface, IAppTheme theme,
-        ThemeMode mode, DisplayListBuilder builder, InputSink input, PressScope press, MotionScope motion)
+    private static void PaintCodeMarks(LayoutNode node, CodeSurface surface, IAppTheme theme,
+        ThemeMode mode, DisplayListBuilder builder, PressScope press)
     {
-        input.Add(new CodeRegion(node.Bounds, surface, node.Path ?? ""));
-
-        // Drawn BEFORE the child, so the code paints over the marks: a translucent band keeps the
-        // text legible through it, and a caret sits BETWEEN glyphs, where nothing occludes it.
         var editing = press.TextPath is { Length: > 0 } && node.Path == press.TextPath;
         if (!editing) return;
 

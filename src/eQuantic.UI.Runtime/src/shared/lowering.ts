@@ -585,7 +585,15 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   surface.attributes['data-eq-code'] = path;
 
   const child = lowerNode(node.child, context, null, path + '/0');
-  if (child) surface.children.push(child);
+  if (child) {
+    // The child keeps its layers inside a stacking context of its OWN. A code block that carries a
+    // decoration draws it on a Stack whose layers take a z-index, and those climbed over the marks
+    // painted after the child: the caret vanished at the end of every line ending in `)`, `{` or
+    // `}`, because bracket matching decorates the pair the moment the caret touches one (defect 18,
+    // docs/CODE-EDITOR-PLAN.md).
+    mergeAtomicDeclaration(child, 'isolation', 'isolate');
+    surface.children.push(child);
+  }
 
   // The marks, under the code: a band is translucent so the text reads through it, and a caret sits
   // between glyphs where nothing covers it. Their ink comes from the NODE — an editor on an inverse

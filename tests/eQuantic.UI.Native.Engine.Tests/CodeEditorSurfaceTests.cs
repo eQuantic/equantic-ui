@@ -279,6 +279,43 @@ public class CodeEditorSurfaceTests
     }
 
     /// <summary>
+    /// The caret is painted AFTER the code, over everything the block drew for its line. It was
+    /// painted before, and the active line's wash, opaque and always under the caret, covered it: the
+    /// caret never showed on the line it was on. The web had the same defect wherever a bracket
+    /// beside the caret raised a decoration layer over it, the end of every line ending in `)`, `{`
+    /// or `}` (defect 18, docs/CODE-EDITOR-PLAN.md).
+    /// </summary>
+    [Fact]
+    public void TheCaretIsPaintedOverEverythingTheCodeDrew()
+    {
+        var (host, surface, bounds) = Open("if (ready) {\n}");
+        Focus(host, surface, bounds);
+        Press(host, "End");
+
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder, 0);
+        var commands = builder.Build().Commands.ToArray();
+
+        var at = Array.FindLastIndex(commands, c => c.Kind == DrawCommandKind.FillRRect
+            && MathF.Abs(c.Shape.Rect.Width - 2f) < 0.01f);
+        at.Should().BeGreaterThan(-1, "a focused editor draws its caret");
+        var caret = commands[at].Shape.Rect;
+
+        // The wash that covered it is still drawn, under it, so this exercises the covering case …
+        commands.Take(at).Should().Contain(c => c.Kind == DrawCommandKind.FillRRect
+            && Covers(c.Shape.Rect, caret), "the active line's wash lies under the caret");
+        // … and nothing drawn after the caret lies over it.
+        commands.Skip(at + 1).Should().NotContain(c =>
+            (c.Kind == DrawCommandKind.FillRRect || c.Kind == DrawCommandKind.Texture)
+            && Covers(c.Shape.Rect, caret));
+    }
+
+    private static bool Covers(Rect outer, Rect inner) =>
+        outer.X <= inner.X + 0.01f && outer.Y <= inner.Y + 0.01f
+        && outer.X + outer.Width >= inner.X + inner.Width - 0.01f
+        && outer.Y + outer.Height >= inner.Y + inner.Height - 0.01f;
+
+    /// <summary>
     /// A selection across lines is a BAND PER LINE, not one rectangle: a single rectangle over the
     /// range would cover the indentation of lines the range never touched.
     /// </summary>
