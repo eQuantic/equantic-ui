@@ -1,0 +1,298 @@
+{
+  "note": "Values the design system specifies ahead of the SDK. Nothing here is pinned: when an item ships, its values move into tokens.json and HandoffTokenPinTests compares them there. status.json says which items are still requests.",
+  "springRoles": {
+    "status": "request",
+    "spec": "Foundations §06 · Spring roles",
+    "parameterization": "mass 1; stiffness = (2π ÷ response)²; damping = 4π·ζ ÷ response",
+    "settle": {
+      "is": "SpringSpec.Default (shipped type)",
+      "stiffness": 380,
+      "damping": 34,
+      "mass": 1,
+      "responseS": 0.322,
+      "dampingRatio": 0.872
+    },
+    "snap": {
+      "suggestedName": "SpringSpec.Snap",
+      "stiffness": 990,
+      "damping": 56,
+      "mass": 1,
+      "responseS": 0.2,
+      "dampingRatio": 0.89
+    },
+    "rest": {
+      "withinDp": 0.25,
+      "belowDpPerS": 5
+    }
+  },
+  "contrastMore": {
+    "status": "request",
+    "spec": "Foundations §01 · Contrast levels",
+    "method": "One APCA level up from Standard (Muted 60→75, Secondary 75→90, labels 60→75, BorderStrong 15→30), never below the WCAG 2 targets (7 / 9 / 12, 3 / 4.5, 7 for pairs). OKLCH lightness moved per token, hue kept.",
+    "light": {
+      "text.muted": "#475261",
+      "text.secondary": "#2B3441",
+      "text.primary": "#171B21",
+      "surface.border": "#8C8F94",
+      "surface.borderStrong": "#6D7178",
+      "primary.base": "#0050A0",
+      "primary.onBase": "#FFFFFF",
+      "primary.pressed": "#00427F",
+      "primary.onSubtle": "#003E7E",
+      "secondary.base": "#E9EDF2",
+      "secondary.onBase": "#3A4350",
+      "secondary.pressed": "#DCE2EA",
+      "secondary.onSubtle": "#3A4350",
+      "destructive.base": "#AE1C12",
+      "destructive.onBase": "#FFFFFF",
+      "destructive.pressed": "#891618",
+      "destructive.onSubtle": "#8F1D1D",
+      "success.base": "#276605",
+      "success.onBase": "#FFFFFF",
+      "success.pressed": "#1B4B02",
+      "success.onSubtle": "#2B5D16",
+      "warning.base": "#7B5004",
+      "warning.onBase": "#FFFFFF",
+      "warning.pressed": "#5F3E03",
+      "warning.onSubtle": "#714B01",
+      "info.base": "#01617A",
+      "info.onBase": "#FFFFFF",
+      "info.pressed": "#024A5C",
+      "info.onSubtle": "#0A5468"
+    },
+    "dark": {
+      "text.muted": "#C5D1DF",
+      "text.secondary": "#DEE9F4",
+      "text.primary": "#F2F4F7",
+      "surface.border": "#5C6571",
+      "surface.borderStrong": "#768190",
+      "primary.base": "#AED5FE",
+      "primary.onBase": "#06263F",
+      "primary.pressed": "#D0E7FE",
+      "primary.onSubtle": "#B0D5FA",
+      "secondary.base": "#242C36",
+      "secondary.onBase": "#D7DDE5",
+      "secondary.pressed": "#2E3844",
+      "secondary.onSubtle": "#D7DDE5",
+      "destructive.base": "#FEC0B9",
+      "destructive.onBase": "#3B0704",
+      "destructive.pressed": "#FEE7E5",
+      "destructive.onSubtle": "#FEC0BC",
+      "success.base": "#A3E17D",
+      "success.onBase": "#12290A",
+      "success.pressed": "#BAEE94",
+      "success.onSubtle": "#B6DC98",
+      "warning.base": "#FEC561",
+      "warning.onBase": "#2E1B02",
+      "warning.pressed": "#FFD794",
+      "warning.onSubtle": "#EECF8F",
+      "info.base": "#6DE1FC",
+      "info.onBase": "#062B33",
+      "info.pressed": "#9BECFF",
+      "info.onSubtle": "#9FDCEB"
+    }
+  },
+  "adaptiveSet": {
+    "status": "request",
+    "spec": "Foundations §11 · The rest of the adaptive set",
+    "windowClasses": {
+      "Large": {
+        "ordinal": 3,
+        "minDp": 1200
+      },
+      "ExtraLarge": {
+        "ordinal": 4,
+        "minDp": 1600
+      }
+    },
+    "adaptiveChain": "ExtraLarge → Large → Expanded → Medium → Compact",
+    "supportingPane": {
+      "suggestedName": "SupportingPane",
+      "fromClass": "Expanded",
+      "paneWidthDp": 360
+    },
+    "feed": {
+      "suggestedName": "Feed",
+      "columns": {
+        "Compact": 1,
+        "Medium": 2,
+        "Expanded": 3,
+        "Large": 4,
+        "ExtraLarge": 5
+      },
+      "gap": "Space.S4"
+    }
+  },
+  "surfaceTones": {
+    "status": "request",
+    "spec": "Foundations §05 · Tonal surfaces",
+    "mode": "dark only",
+    "lift": {
+      "E0": 0,
+      "E1": 0.02,
+      "E2": 0.03,
+      "E3": 0.04,
+      "E4": 0.04,
+      "E5": 0.04
+    },
+    "surface": {
+      "E0": "#14181E",
+      "E1": "#191D23",
+      "E2": "#1B1F25",
+      "E3-E5": "#1D2128"
+    },
+    "surfaceSubtle": {
+      "E0": "#1C232B",
+      "E1": "#212830",
+      "E2": "#232A33",
+      "E3-E5": "#262D35"
+    },
+    "capReason": "Muted text on the lifted SurfaceSubtle stays at 4.59:1; one more step is 4.46."
+  },
+  "draggedState": {
+    "status": "request",
+    "rule": "one elevation level above rest, at least Level 2; fill unchanged; scale 1.02"
+  },
+  "typeScaling": {
+    "status": "request",
+    "spec": "Foundations §02 · Type that scales like Dynamic Type",
+    "formula": "size = base × min(clamp, 1 + growth × (s − 1))",
+    "modeSwitchFrom": 1.5,
+    "roles": {
+      "display": {
+        "growth": 0.3,
+        "clamp": 1.15
+      },
+      "heading": {
+        "growth": 0.5,
+        "clamp": 1.4
+      },
+      "title": {
+        "growth": 0.8,
+        "clamp": 1.6
+      },
+      "titleSmall": {
+        "growth": 0.8,
+        "clamp": 1.6
+      },
+      "bodyL": {
+        "growth": 1,
+        "clamp": 2
+      },
+      "bodyM": {
+        "growth": 1,
+        "clamp": 2
+      },
+      "label": {
+        "growth": 1,
+        "clamp": 2
+      },
+      "caption": {
+        "growth": 1,
+        "clamp": 2
+      },
+      "labelSmall": {
+        "growth": 1,
+        "clamp": 2
+      },
+      "overline": {
+        "growth": 0.6,
+        "clamp": 1.4
+      }
+    }
+  },
+  "haptics": {
+    "status": "request",
+    "spec": "Foundations §08 · Haptics",
+    "roles": [
+      "SelectionTick",
+      "Snap",
+      "Edge",
+      "Success · Warning · Error"
+    ],
+    "suggestedService": "IHaptics"
+  },
+  "apca": {
+    "status": "adopted",
+    "decided": "2026-09-23",
+    "spec": "Foundations §01 · A second measure: APCA",
+    "floors": {
+      "primaryText": 75,
+      "secondaryText": 75,
+      "mutedText": 60,
+      "link": 60,
+      "labels": 60,
+      "borderStrong": 15,
+      "border": "exempt"
+    },
+    "darkChanges": {
+      "text.muted": [
+        "#8B95A3",
+        "#ACB7C5"
+      ],
+      "utility.linkColor": [
+        "#7CB5EE",
+        "#81BAF3"
+      ],
+      "utility.focusRing": [
+        "#7CB5EE",
+        "#81BAF3"
+      ],
+      "surface.borderStrong": [
+        "#3D4754",
+        "#4C5664"
+      ],
+      "variant.primary.base": [
+        "#5CA2E8",
+        "#76BAFF"
+      ],
+      "variant.primary.pressed": [
+        "#7CB5EE",
+        "#9BCDFF"
+      ],
+      "variant.destructive.base": [
+        "#E5645C",
+        "#FF958C"
+      ],
+      "variant.destructive.pressed": [
+        "#F28B85",
+        "#FEC0BB"
+      ],
+      "variant.success.base": [
+        "#85C05E",
+        "#89C562"
+      ],
+      "variant.success.pressed": [
+        "#9ACD74",
+        "#9FD279"
+      ],
+      "variant.info.base": [
+        "#4CC3DE",
+        "#4DC4DF"
+      ],
+      "variant.info.pressed": [
+        "#6ED0E6",
+        "#6FD1E7"
+      ],
+      "variant.link.base": [
+        "#7CB5EE",
+        "#81BAF3"
+      ],
+      "text.secondary": [
+        "#AEB7C2",
+        "#C7D1DC"
+      ]
+    },
+    "note": "Standard dark values live in tokens.json 1.5.0; the SDK follows."
+  },
+  "decisions": {
+    "compactHitTarget": "Decided 2026-09-23: pointer exception (Foundations §08).",
+    "apca": "Adopted 2026-09-23 (Foundations §01).",
+    "continuousCorners": "Decided 2026-09-23: continuous on native, circular on the web until CSS can draw it (Foundations §04)."
+  },
+  "continuousCorners": {
+    "status": "request",
+    "suggestedName": "CornerProfile { Circular, Continuous }",
+    "targets": "native only; web stays circular"
+  }
+}

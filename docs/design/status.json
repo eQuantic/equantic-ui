@@ -1,0 +1,277 @@
+{
+  "note": "What ships and what is still a REQUEST. Only items that are, or were, requests are listed; a block with no entry has shipped (Handoff §01). HandoffStatusTests checks every probe against the SDK both ways, and fails while any page still carries a shipped item's claims.",
+  "probes": "api: a line of src/<in>/PublicAPI.*.txt, matched on name boundaries · apiContains: a fragment of such a line, a tripwire for a request whose final name is not decided · sourceReference: a word in src/**/*.cs outside the listed files · null: checked by hand.",
+  "items": [
+    {
+      "id": "C3",
+      "name": "ActionSheet",
+      "status": "request",
+      "probe": {
+        "api": "eQuantic.UI.Components.ActionSheet",
+        "in": "eQuantic.UI.Components"
+      },
+      "claims": [
+        "C3 — not yet in SDK",
+        "does not ship ActionSheet yet",
+        "C3 ahead of the SDK",
+        "C3 is specified ahead of the SDK",
+        "ActionSheet&dagger;"
+      ]
+    },
+    {
+      "id": "C15",
+      "name": "DatePicker",
+      "status": "shipped",
+      "probe": {
+        "api": "eQuantic.UI.Components.DatePicker",
+        "in": "eQuantic.UI.Components"
+      },
+      "claims": [
+        "C3 · C15",
+        "C15 and C16 are specified ahead",
+        "DatePicker&dagger;",
+        "<strong style=\"color:var(--tx1)\">DatePicker</strong> (C15)",
+        "2 DatePicker (C15) — calendar"
+      ]
+    },
+    {
+      "id": "C16",
+      "name": "NavigationRail",
+      "status": "shipped",
+      "probe": {
+        "api": "eQuantic.UI.Components.NavigationRail",
+        "in": "eQuantic.UI.Components"
+      },
+      "claims": [
+        "C15 · C16",
+        "NavigationRail&dagger;",
+        "is also spec-ahead",
+        "selectedIndex: int, header: VisualNode?, onSelected: fn",
+        "sheet→popover, NavigationRail (C16)."
+      ]
+    },
+    {
+      "id": "C1-detents",
+      "name": "BottomSheet detents + scroll handoff",
+      "status": "request",
+      "probe": null,
+      "claims": [
+        "C1 ships without them",
+        "BottomSheet detents + scroll handoff (the C1 gate)"
+      ]
+    },
+    {
+      "id": "hover",
+      "name": "VariantColors.Hover, the Base→Pressed midpoint",
+      "status": "shipped",
+      "probe": {
+        "api": "eQuantic.UI.Primitives.VariantColors.Hover.get",
+        "in": "eQuantic.UI.Primitives"
+      },
+      "claims": [
+        "VariantColors hover helper",
+        "until the helper lands",
+        "Color.Lerp</span> or precomputed"
+      ]
+    },
+    {
+      "id": "semantic-state",
+      "name": "SemanticNode Selected / Checked / Expanded",
+      "status": "shipped",
+      "probe": {
+        "api": "eQuantic.UI.Primitives.SemanticNode.Selected.get",
+        "in": "eQuantic.UI.Primitives"
+      },
+      "claims": [
+        "field — <strong style=\"color:var(--onwars)\">REQUEST",
+        "fields — <strong style=\"color:var(--onwars)\">REQUEST",
+        "field: <strong style=\"color:var(--onwars)\">REQUEST",
+        "fields: <strong style=\"color:var(--onwars)\">REQUEST",
+        "state fields</strong> on SemanticNode — every table row",
+        "SemanticNode state fields + custom actions",
+        "Selected/Checked/Expanded state fields + custom actions"
+      ]
+    },
+    {
+      "id": "custom-actions",
+      "name": "Native custom accessibility actions",
+      "status": "request",
+      "probe": {
+        "apiContains": "CustomAction",
+        "in": "eQuantic.UI.Primitives"
+      },
+      "claims": [
+        "custom actions — <strong style=\"color:var(--onwars)\">REQUEST",
+        "native custom actions <strong style=\"color:var(--onwars)\">REQUEST",
+        "until SemanticNode carries custom actions",
+        "A11y custom actions on the native semantics tree (spec §10 REQUEST)"
+      ]
+    },
+    {
+      "id": "spring",
+      "name": "Velocity-taking release spring",
+      "status": "request",
+      "probe": {
+        "sourceReference": "SpringSpec",
+        "except": [
+          "src/eQuantic.UI.Primitives/Theme/Tokens.cs"
+        ]
+      },
+      "claims": [
+        "velocity spring still REQUEST",
+        "the spring is still a request",
+        "Spring BEHAVIOR remains REQUEST",
+        "spring consumption",
+        "REQUEST · spring roles",
+        "Settle spring · REQUEST",
+        "Snap spring · REQUEST"
+      ]
+    },
+    {
+      "id": "contrast-levels",
+      "name": "Contrast levels (Standard / More)",
+      "status": "request",
+      "probe": {
+        "apiContains": "ContrastLevel",
+        "in": "eQuantic.UI.Primitives"
+      },
+      "claims": [
+        "REQUEST · contrast levels"
+      ]
+    },
+    {
+      "id": "window-large",
+      "name": "Large and Extra-large window classes",
+      "status": "request",
+      "probe": {
+        "api": "eQuantic.UI.Primitives.WindowSizeClass.Large",
+        "in": "eQuantic.UI.Primitives"
+      },
+      "claims": [
+        "REQUEST · adaptive set"
+      ]
+    },
+    {
+      "id": "supporting-pane",
+      "name": "SupportingPane canonical layout",
+      "status": "request",
+      "probe": {
+        "api": "eQuantic.UI.Components.SupportingPane",
+        "in": "eQuantic.UI.Components"
+      },
+      "claims": []
+    },
+    {
+      "id": "feed",
+      "name": "Feed canonical layout",
+      "status": "request",
+      "probe": {
+        "api": "eQuantic.UI.Components.Feed",
+        "in": "eQuantic.UI.Components"
+      },
+      "claims": []
+    },
+    {
+      "id": "surface-tones",
+      "name": "Tonal surfaces in dark mode",
+      "status": "request",
+      "probe": {
+        "apiContains": "SurfaceAt",
+        "in": "eQuantic.UI.Primitives"
+      },
+      "claims": [
+        "REQUEST · tonal surfaces"
+      ]
+    },
+    {
+      "id": "dragged-state",
+      "name": "Dragged as a derived state",
+      "status": "request",
+      "probe": null,
+      "claims": []
+    },
+    {
+      "id": "type-scaling",
+      "name": "Per-role type growth",
+      "status": "request",
+      "probe": {
+        "apiContains": "TypeStyle.Growth",
+        "in": "eQuantic.UI.Primitives"
+      },
+      "claims": [
+        "REQUEST · type scaling"
+      ]
+    },
+    {
+      "id": "haptics",
+      "name": "Haptic roles",
+      "status": "request",
+      "probe": {
+        "sourceReference": "IHaptics",
+        "except": []
+      },
+      "claims": [
+        "REQUEST · haptics"
+      ]
+    },
+    {
+      "id": "semantics-parity",
+      "name": "Semantics parity across targets",
+      "status": "request",
+      "probe": null,
+      "claims": [
+        "REQUEST · semantics parity"
+      ]
+    },
+    {
+      "id": "layout-direction",
+      "name": "Layout direction and script-aware lines",
+      "status": "request",
+      "probe": {
+        "apiContains": "LayoutDirection",
+        "in": "eQuantic.UI.Primitives"
+      },
+      "claims": [
+        "REQUEST · scripts and direction"
+      ]
+    },
+    {
+      "id": "live-blocks",
+      "name": "Live blocks on the handoff pages",
+      "status": "request",
+      "probe": null,
+      "claims": [
+        "REQUEST · live blocks"
+      ]
+    },
+    {
+      "id": "apca-dark-palette",
+      "name": "APCA gate and the re-solved dark palette",
+      "status": "request",
+      "probe": null,
+      "claims": []
+    },
+    {
+      "id": "continuous-corners",
+      "name": "Continuous corner profile on native",
+      "status": "request",
+      "probe": {
+        "apiContains": "CornerProfile",
+        "in": "eQuantic.UI.Primitives"
+      },
+      "claims": [
+        "DECIDED · REQUEST · continuous corners"
+      ]
+    },
+    {
+      "id": "native-roles",
+      "name": "SemanticRole members for radio, tab, option, menu item, destination, combobox and dialog",
+      "status": "request",
+      "probe": {
+        "api": "eQuantic.UI.Primitives.SemanticRole.Tab",
+        "in": "eQuantic.UI.Primitives"
+      },
+      "claims": []
+    }
+  ]
+}
