@@ -23,33 +23,55 @@ public class StaleGeneratedFilesArePrunedTests
     private static string RepoRoot([System.Runtime.CompilerServices.CallerFilePath] string sourcePath = "") =>
         Path.GetFullPath(Path.Combine(Path.GetDirectoryName(sourcePath)!, "..", ".."));
 
-    /// <summary>The prune's two targets, exactly as <c>Sdk.targets</c> declares them.</summary>
+    /// <summary>
+    /// The prune's two targets and the vector catalog's two, exactly as <c>Sdk.targets</c> declares
+    /// them, except for the one task a test cannot carry: the catalog target starts eqicon with an
+    /// Exec, and that Exec is swapped for a writer that lists the drawings it was given.
+    /// </summary>
     private static IEnumerable<XElement> ShippedTargets()
     {
         var sdk = XDocument.Load(Path.Combine(RepoRoot(), "src", "eQuantic.UI.Sdk", "Sdk", "Sdk.targets"));
-        var names = new[] { "_EQuanticMarkCompileStart", "_EQuanticPruneStaleGeneratedFiles" };
-        var targets = sdk.Root!.Elements("Target").Where(t => names.Contains((string?)t.Attribute("Name"))).ToList();
-        targets.Should().HaveCount(2, "the test must run the targets the SDK ships, both of them");
+        var names = new[]
+        {
+            "_EQuanticMarkCompileStart", "_EQuanticPruneStaleGeneratedFiles", "_EQuanticVectorInputs", "EQuanticVectors",
+        };
+        var targets = sdk.Root!.Elements("Target")
+            .Where(t => names.Contains((string?)t.Attribute("Name")))
+            .Select(t => new XElement(t))
+            .ToList();
+        targets.Should().HaveCount(names.Length, "the test must run the targets the SDK ships, all of them");
+
+        var eqicon = targets.Single(t => (string?)t.Attribute("Name") == "EQuanticVectors").Elements("Exec").Single();
+        eqicon.ReplaceWith(new XElement("WriteLinesToFile",
+            new XAttribute("File", "$(EQuanticVectorsFile)"),
+            new XAttribute("Lines", "@(_EqVectorSource->'%(Filename)')"),
+            new XAttribute("Overwrite", "true")));
         return targets;
     }
 
     private static string Project() => new XDocument(new XElement("Project",
         new XElement("PropertyGroup",
             new XElement("EmitCompilerGeneratedFiles", "true"),
-            new XElement("CompilerGeneratedFilesOutputPath", "generated")),
+            new XElement("CompilerGeneratedFilesOutputPath", "generated"),
+            new XElement("IntermediateOutputPath", "obj/"),
+            // The catalog's settings as the SDK names them. The target's condition is an Assets
+            // folder, which only the vector tests create.
+            new XElement("EQuanticAssetsDir", "Assets"),
+            new XElement("EQuanticVectorsFile", "generated/Vectors/Vectors.g.cs"),
+            new XElement("EQuanticVectorsNamespace", "Probe"),
+            new XElement("_EqIconToolDir", "tool/")),
         new XElement("ItemGroup",
-            new XElement("IntermediateAssembly", new XAttribute("Include", "obj/probe.dll")),
-            // A compile INPUT that lives in the generated folder, as the SDK's vector catalog does.
-            new XElement("Compile", new XAttribute("Include", "generated/Vectors/Vectors.g.cs"))),
-        // Roslyn as measured: when it runs, every generated file is rewritten; when the input is
+            new XElement("IntermediateAssembly", new XAttribute("Include", "obj/probe.dll"))),
+        // Roslyn as measured: when it runs, every generated file is rewritten; when its inputs are
         // older than the assembly, the target is skipped and nothing is written.
         new XElement("Target", new XAttribute("Name", "CoreCompile"),
-            new XAttribute("Inputs", "input.cs"), new XAttribute("Outputs", "obj/probe.dll"),
+            new XAttribute("Inputs", "input.cs;@(Compile)"), new XAttribute("Outputs", "obj/probe.dll"),
             new XElement("MakeDir", new XAttribute("Directories", "obj;generated/Gen")),
             new XElement("WriteLinesToFile", new XAttribute("File", "generated/Gen/Current.g.cs"),
                 new XAttribute("Lines", "// written by this compile"), new XAttribute("Overwrite", "true")),
             new XElement("Touch", new XAttribute("Files", "obj/probe.dll"), new XAttribute("AlwaysCreate", "true"))),
-        new XElement("Target", new XAttribute("Name", "Build"), new XAttribute("DependsOnTargets", "CoreCompile")),
+        new XElement("Target", new XAttribute("Name", "BeforeCompile")),
+        new XElement("Target", new XAttribute("Name", "Build"), new XAttribute("DependsOnTargets", "BeforeCompile;CoreCompile")),
         ShippedTargets())).ToString();
 
     private static void Build(string directory)
@@ -73,9 +95,28 @@ public class StaleGeneratedFilesArePrunedTests
         Directory.CreateDirectory(Path.Combine(directory, "generated", "Vectors"));
         File.WriteAllText(Path.Combine(directory, "probe.proj"), Project());
         File.WriteAllText(Path.Combine(directory, "input.cs"), "// the app's source");
+        // The tool is one of the catalog's inputs, and an input that does not exist makes MSBuild
+        // run the target on every build: that is how the shipped one never skipped.
+        Directory.CreateDirectory(Path.Combine(directory, "tool"));
+        File.WriteAllText(Path.Combine(directory, "tool", "eqicon.dll"), "");
         try { body(directory); }
         finally { Directory.Delete(directory, recursive: true); }
     }
+
+    private static string Svg(string directory, string name)
+    {
+        var path = Path.Combine(directory, "Assets", name);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, "<svg xmlns=\"http://www.w3.org/2000/svg\"/>");
+        return path;
+    }
+
+    private static void Age(TimeSpan by, params string[] paths)
+    {
+        foreach (var path in paths) File.SetLastWriteTimeUtc(path, DateTime.UtcNow - by);
+    }
+
+    private static string Catalog(string directory) => Path.Combine(directory, "generated", "Vectors", "Vectors.g.cs");
 
     private static string Old(string path)
     {
@@ -98,19 +139,67 @@ public class StaleGeneratedFilesArePrunedTests
         });
     }
 
-    /// <summary>The SDK's own vector catalog is written into the same folder by its own target, only
-    /// when the SVGs change — so it is old whenever they have not, and it is a compile INPUT. The
-    /// first cut of the prune deleted it from a real sample and eqc then failed on `Vectors`.</summary>
+    /// <summary>
+    /// The SDK's own vector catalog lives in the same folder and is a compile INPUT, not a
+    /// generator's output, and its target is skipped whenever the SVGs did not change, which is
+    /// exactly when the catalog is old by the clock. The first cut of the prune deleted it from a
+    /// real sample and eqc then failed on `Vectors`. What keeps it is that MSBuild still runs a
+    /// skipped target's ItemGroups (output inference): the target is the only place the catalog
+    /// joins @(Compile), the second build below skips it, and the catalog survives.
+    /// </summary>
     [Fact]
-    public void AFileTheCompileTakesAsInput_IsNeverAGeneratorsLeftover()
+    public void TheVectorCatalog_SurvivesACompileThatRuns_WhileItsOwnTargetIsSkipped()
     {
         InATemporaryProject(directory =>
         {
-            var catalog = Old(Path.Combine(directory, "generated", "Vectors", "Vectors.g.cs"));
+            var mark = Svg(directory, "mark.svg");
+            Build(directory);
+            var catalog = Catalog(directory);
+            File.ReadAllText(catalog).Should().Contain("mark", "the first build writes the catalog");
+
+            // Everything the catalog is made from is older than the catalog, and the catalog is
+            // older than the next compile's start. The app's own source is new, so the compile runs.
+            Age(TimeSpan.FromHours(2), mark, Path.Combine(directory, "obj", "equantic.vectors.inputs"),
+                Path.Combine(directory, "tool", "eqicon.dll"), Path.Combine(directory, "obj", "probe.dll"));
+            var earlier = File.ReadAllText(Old(catalog));
+            var current = Old(Path.Combine(directory, "generated", "Gen", "Current.g.cs"));
+            File.SetLastWriteTimeUtc(Path.Combine(directory, "input.cs"), DateTime.UtcNow);
 
             Build(directory);
 
-            File.Exists(catalog).Should().BeTrue("the compile read it; no generator was ever going to rewrite it");
+            File.Exists(catalog).Should().BeTrue("the compile read it, and no generator was ever going to rewrite it");
+            File.ReadAllText(catalog).Should().Be(earlier,
+                "the catalog's target was skipped: nothing it is made from changed");
+            File.ReadAllText(current).Should().Contain("written by this compile",
+                "only a compile that runs rewrites it, and the prune runs after exactly those");
+        });
+    }
+
+    /// <summary>
+    /// A deleted SVG leaves every remaining one older than the catalog, so file times alone would
+    /// skip the target and keep the drawing. The record of the set is what changes, the same way
+    /// CoreCompile's own inputs cache notices a deleted source file.
+    /// </summary>
+    [Fact]
+    public void ADeletedSvg_RewritesTheCatalogWithoutIt()
+    {
+        InATemporaryProject(directory =>
+        {
+            var mark = Svg(directory, "mark.svg");
+            var gone = Svg(directory, "gone.svg");
+            Build(directory);
+            var catalog = Catalog(directory);
+            File.ReadAllText(catalog).Should().Contain("gone");
+
+            Age(TimeSpan.FromHours(2), mark, Path.Combine(directory, "obj", "equantic.vectors.inputs"),
+                Path.Combine(directory, "tool", "eqicon.dll"));
+            File.SetLastWriteTimeUtc(catalog, DateTime.UtcNow.AddHours(-1));
+            File.Delete(gone);
+
+            Build(directory);
+
+            File.ReadAllText(catalog).Should().NotContain("gone", "its SVG was deleted")
+                .And.Contain("mark");
         });
     }
 

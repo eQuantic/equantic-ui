@@ -437,8 +437,11 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#253](https://github.com/eQuantic/equantic-ui/issues/253)). Measured, a compile that runs
   rewrites every file it generates; the SDK now removes, after a compile that ran, each generated
   file older than its start that the compile did not take as input, and nothing after one that was
-  skipped. A source guard keeps eqc taking its file list from the one function the semantic model
-  is built from.
+  skipped. The vector catalog in the same folder had never skipped at all: its target's Inputs was
+  a wildcard in a plain string, which MSBuild does not expand, so eqicon started on every build. It
+  now skips on an unchanged set of SVGs, notices a deleted one through a record of the set, and a
+  skipped catalog target still adds the catalog to @(Compile), which keeps it out of the prune. The
+  guard that eqc takes its file list from the one function was already #264's.
 
 ## Retired documents
 

@@ -211,7 +211,9 @@
         whole seconds can then only skip a prune, never delete a file the compile just wrote. A file
         the compile takes as INPUT is not a generator's output and is never a candidate: the SDK's
         own vector catalog (EQuanticVectors) lives in the same folder, written only when its SVGs
-        change, and the first cut of this prune deleted it from a sample whose SVGs had not.
+        change, and the first cut of this prune deleted it from a sample whose SVGs had not. A
+        skipped EQuanticVectors still adds it to @(Compile) (see there), so it is excluded on every
+        build, not only on those that rewrote it.
     -->
     <Target Name="_EQuanticMarkCompileStart" BeforeTargets="CoreCompile"
             Condition="'$(EmitCompilerGeneratedFiles)' == 'true'">
@@ -435,16 +437,45 @@
             Text="This project generates assets with the eQuantic icon tool (the vector catalog from '$(EQuanticAssetsDir)', the app icon from '$(EQuanticAppIconSource)'), and the tool is missing at '$(_EqIconToolDir)eqicon.dll'. In a source-tree build this is a broken build graph (eQuantic.UI.Native.Build did not build first); from a package it is a broken SDK package. Neither is fixed by building twice." />
     </Target>
 
+    <!--
+        What the catalog is made from, as ITEMS. A target's Inputs expands no wildcard written in a
+        plain string: `$(EQuanticAssetsDir)/**/*.svg` named one file that never exists, MSBuild
+        logged "Input file … does not exist", and EQuanticVectors started eqicon on every build of
+        every app with an Assets folder. The record of the SET is what notices a deletion, the
+        mechanism CoreCompile's own CoreCompileInputs.cache uses: removing an SVG leaves every
+        remaining one older than the catalog, and only a list of the set changes. The namespace is
+        in the record because it changes the catalog too.
+    -->
+    <Target Name="_EQuanticVectorInputs" Condition="Exists('$(EQuanticAssetsDir)')">
+        <ItemGroup>
+            <_EqVectorSource Include="$(EQuanticAssetsDir)/**/*.svg" />
+        </ItemGroup>
+        <PropertyGroup>
+            <_EqVectorInputsFile>$(IntermediateOutputPath)equantic.vectors.inputs</_EqVectorInputsFile>
+        </PropertyGroup>
+        <WriteLinesToFile File="$(_EqVectorInputsFile)"
+            Lines="@(_EqVectorSource->'%(FullPath)');namespace=$(EQuanticVectorsNamespace)"
+            Overwrite="true" WriteOnlyWhenDifferent="true" />
+    </Target>
+
     <Target Name="EQuanticVectors" BeforeTargets="BeforeCompile;CompileEQuanticUI"
+        DependsOnTargets="_EQuanticVectorInputs"
         Condition="Exists('$(EQuanticAssetsDir)')"
-        Inputs="$(EQuanticAssetsDir)/**/*.svg" Outputs="$(EQuanticVectorsFile)">
+        Inputs="@(_EqVectorSource);$(_EqVectorInputsFile);$(_EqIconToolDir)eqicon.dll"
+        Outputs="$(EQuanticVectorsFile)">
         <Exec Command="dotnet &quot;$(_EqIconToolDir)eqicon.dll&quot; vectors --assets &quot;$(EQuanticAssetsDir)&quot; --out &quot;$(MSBuildProjectDirectory)/$(EQuanticVectorsFile)&quot; --namespace &quot;$(EQuanticVectorsNamespace)&quot;"
             StandardOutputImportance="normal" />
+        <!-- eqicon writes only when the catalog changed, so an edit that leaves it the same would
+             leave it older than its inputs, and this target would run on every build after. -->
+        <Touch Files="$(EQuanticVectorsFile)" Condition="Exists('$(EQuanticVectorsFile)')" />
 
         <!-- Added HERE, not in a file-scope ItemGroup: an `Exists` condition outside a target is
              answered while MSBuild evaluates the project, which is before this target has written
              anything. A cold build failed on `Vectors` not existing and the next one passed —
-             the shape of bug that reads as flaky and is not. -->
+             the shape of bug that reads as flaky and is not. It is added when the target is
+             SKIPPED too, because MSBuild still runs a skipped target's ItemGroups (output
+             inference): that is what keeps the catalog a compile input, and out of the stale-file
+             prune above, on every build whose SVGs did not change. -->
         <ItemGroup>
             <Compile Include="$(EQuanticVectorsFile)" Condition="Exists('$(EQuanticVectorsFile)')" />
         </ItemGroup>
