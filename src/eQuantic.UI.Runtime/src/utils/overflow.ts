@@ -54,6 +54,23 @@ export function checked(
  * `0.1f + 0.2f` prints "0.3", not the 0.30000001192092896 a double would show for the same bits.
  */
 /**
+ * .NET's `Math.DivRem` for an integer that is a plain number here: the truncated quotient and the
+ * remainder — or the throw .NET throws. A zero divisor is a DivideByZeroException where JavaScript
+ * would answer Infinity and NaN; `int.MinValue / -1` overflows a 32-bit int and throws; a narrower
+ * width computes in int and converts the quotient back, so `DivRem((short)-32768, (short)-1)` wraps.
+ */
+export function divRem(left: number, right: number, bits: 8 | 16 | 32, unsigned = false): [number, number] {
+  if (right === 0) throw new Error('Attempted to divide by zero.');
+  if (bits === 32 && !unsigned && left === -2_147_483_648 && right === -1) {
+    throw new Error('Arithmetic operation resulted in an overflow.');
+  }
+  const quotient = Math.trunc(left / right);
+  const shift = 32 - bits;
+  const wrapped = bits === 32 ? quotient : unsigned ? quotient & ((1 << bits) - 1) : (quotient << shift) >> shift;
+  return [wrapped, left % right];
+}
+
+/**
  * A long (a BigInt) converted to a single the way .NET converts it: rounded ONCE, to nearest with
  * ties to even, from all 64 bits. `Math.fround(Number(l))` rounds twice — to 53 bits and then to 24
  * — and a value just above a midpoint between two singles lands ON the midpoint at the first step,

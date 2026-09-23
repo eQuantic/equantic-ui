@@ -180,6 +180,11 @@ public class NumericBclConformanceTests
     [InlineData("return Math.Max(3L, 5L).ToString();")]                          // "5" — a long is a BigInt, which Math.max refuses
     [InlineData("return Math.BigMul(4000000000u, 4000000000u).ToString();")]     // exact past 2^53: a ulong, a BigInt
     [InlineData("var (q, r) = Math.DivRem(7u, 2u); return (q * 10 + r).ToString();")] // "31"
+    // DivRem throws where .NET throws, and a narrow quotient converts back into its width.
+    [InlineData("int zero = 0; try { var (q, r) = Math.DivRem(7, zero); return q; } catch { return -1; }")] // -1
+    [InlineData("uint zero = 0; try { var (q, r) = Math.DivRem(7u, zero); return 1; } catch { return -1; }")] // -1
+    [InlineData("int min = int.MinValue, minusOne = -1; try { var (q, r) = Math.DivRem(min, minusOne); return q; } catch { return -1; }")] // -1 — overflow
+    [InlineData("short min = short.MinValue, minusOne = -1; var (q, r) = Math.DivRem(min, minusOne); return q;")] // -32768 — wraps
     // ---- a hole beside an operator fences what fills it ----
     [InlineData("bool c = true; double a = 1, b = 2; return double.DegreesToRadians(c ? a : b);")]
     [InlineData("double a = 1, b = 2; return double.DegreesToRadians(a + b);")]

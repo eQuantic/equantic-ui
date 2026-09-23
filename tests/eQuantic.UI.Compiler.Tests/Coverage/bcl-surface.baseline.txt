@@ -1,7 +1,7 @@
 # eqc BCL surface audit — the coverage DENOMINATOR, one verdict per probed member.
 # native = a strategy mapped it to plain JS · eq = routed through a $eq compat helper
 # fenced:EQxxxx = refused with that diagnostic · invalid-probe = the probe itself doesn't compile
-# totals: eq=121 · fenced=32 · invalid-probe=6 · native=745
+# totals: eq=122 · fenced=32 · invalid-probe=6 · native=744
 native         Array.MaxLength
 native         Boolean.CompareTo(Boolean)
 native         Boolean.CompareTo(Object)
@@ -439,7 +439,7 @@ native         Int32.Clamp(Int32,Int32,Int32)
 native         Int32.CompareTo(Int32)
 native         Int32.CompareTo(Object)
 native         Int32.CopySign(Int32,Int32)
-native         Int32.DivRem(Int32,Int32)
+eq             Int32.DivRem(Int32,Int32)
 native         Int32.Equals(Int32)
 native         Int32.Equals(Object)
 native         Int32.IsEvenInteger(Int32)

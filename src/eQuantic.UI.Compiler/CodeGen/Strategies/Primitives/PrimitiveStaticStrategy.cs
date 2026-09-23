@@ -117,6 +117,19 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
         return holes.Replace(template, hole => "{" + argumentForSlot[int.Parse(hole.Groups[1].Value)] + "}");
     }
 
+    /// <summary>.NET's <c>DivRem</c> for an integer that is a plain number here, by its width: the
+    /// runtime helper throws for a zero divisor and for <c>int.MinValue / -1</c>, and converts a
+    /// narrow quotient back into its width, as the BCL's own cast does.</summary>
+    private static string DivRem(SpecialType home) => home switch
+    {
+        SpecialType.System_SByte => "$eq.num.divRem({0}, {1}, 8)",
+        SpecialType.System_Byte => "$eq.num.divRem({0}, {1}, 8, true)",
+        SpecialType.System_Int16 => "$eq.num.divRem({0}, {1}, 16)",
+        SpecialType.System_UInt16 => "$eq.num.divRem({0}, {1}, 16, true)",
+        SpecialType.System_UInt32 => "$eq.num.divRem({0}, {1}, 32, true)",
+        _ => "$eq.num.divRem({0}, {1}, 32)",
+    };
+
     /// <summary>The float members whose answer on a single IS a single, with nothing to round: a
     /// sign, a magnitude, a whole number, one of the operands.</summary>
     private static readonly HashSet<string> ExactOnSingles = new(StringComparer.Ordinal)
@@ -312,7 +325,7 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
                 "Min" when argCount == 2 => "Math.min({0}, {1})",
                 "Clamp" when argCount == 3 => "Math.min(Math.max({0}, {1}), {2})",
                 "BigMul" when argCount == 2 => $"({Eq.Long}({{0}}) * {Eq.Long}({{1}}))",
-                "DivRem" when argCount == 2 => "[Math.trunc({0} / {1}), {0} % {1}]",
+                "DivRem" when argCount == 2 => DivRem(home),
                 _ => null,
             };
         }
@@ -354,8 +367,8 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
                 "IsOddInteger" => "(Math.abs({0} % 2) === 1)",
                 // Width-agnostic: the magnitude fits every small width without wrapping.
                 "CopySign" when argCount == 2 => "({1} < 0 ? -Math.abs({0}) : Math.abs({0}))",
-                // A tuple crosses as an array; both parts of the division bind once.
-                "DivRem" when argCount == 2 => "[Math.trunc({0} / {1}), {0} % {1}]",
+                // A tuple crosses as an array, and the division throws where .NET's does (DivRem).
+                "DivRem" when argCount == 2 => DivRem(home),
                 // Ties: the larger magnitude wins; an exact tie goes to the greater value for
                 // Max and the lesser for Min — which is what max/min of the pair says.
                 "MaxMagnitude" when argCount == 2 =>
