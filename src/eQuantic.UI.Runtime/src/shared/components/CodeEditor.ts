@@ -54,8 +54,8 @@ export class CodeEditor extends StatefulComponent {
         editor.readOnly = this.readOnly;
         let highlighter = editor.highlighter;
         let metrics = CodeBlock.metricsFor(context, this.size, this.showLineNumbers, this.firstLineNumber + editor.document.lineCount - 1);
-        let block = new CodeBlock('', null, { document: editor.document, language: highlighter.language, decorations: this.marks(editor), showLineNumbers: this.showLineNumbers, firstLineNumber: this.firstLineNumber, standalone: false, size: this.size, inverse: this.inverse, caption: this.caption, gutterMarkers: this.gutterMarkers, onGutterPressed: this.onGutterPressed, highlighter: highlighter, metrics: metrics, viewportOffset: this._offset, viewportHeight: this._viewport, viewportWidth: this._viewportWidth, activeLine: editor.caret.line, selectionBands: editor.selectionBands });
         editor.grid = new CodeGrid(new Point(metrics.contentLeft, metrics.contentTop), new Size(metrics.columnWidth, metrics.lineHeight));
+        let block = new CodeBlock('', null, { document: editor.document, language: highlighter.language, decorations: this.marks(editor), showLineNumbers: this.showLineNumbers, firstLineNumber: this.firstLineNumber, standalone: false, size: this.size, inverse: this.inverse, caption: this.caption, gutterMarkers: this.gutterMarkers, onGutterPressed: this.onGutterPressed, highlighter: highlighter, metrics: metrics, viewportOffset: this._offset, viewportHeight: this._viewport, viewportWidth: this._viewportWidth, activeLine: editor.caret.line, selectionBands: editor.selectionBands });
         let surface: VisualNode = new CodeSurface(block, editor, { autofocus: this.autofocus, label: this.caption ?? SdkStrings.codeEditor, caretColor: CodeBlock.inkFor(this.inverse, context.theme), onChanged: () => this.setState(() => {
             this.onChanged?.(editor.document.text);
             this.onSelectionChanged?.(editor.selection);

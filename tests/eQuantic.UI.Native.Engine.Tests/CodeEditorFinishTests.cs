@@ -101,6 +101,34 @@ public class CodeEditorFinishTests
 
     // ---- find ------------------------------------------------------------------------------------
 
+    /// <summary>
+    /// The selection is drawn on the grid of the build that draws it. The bands were read before
+    /// the build handed the engine its grid, so a selection made before the first frame was drawn
+    /// on the default grid (at 0,0, off the code by its padding), and a change of metrics left the
+    /// bands one build behind. Found in review.
+    /// </summary>
+    [Fact]
+    public void TheSelectionIsDrawnOnTheGridOfTheBuildThatDrawsIt()
+    {
+        var editor = new CodeEditor("one two", "csharp") { ShowLineNumbers = false, MatchBrackets = false };
+        editor.Editor.Selection = new CodeRange(new CodePosition(0, 4), new CodePosition(0, 7));
+        var host = new PhotonHost(editor, PhotonTheme.Instance, ThemeMode.Light, 500, 400)
+        {
+            TextRasterizer = new FixedWidthRasterizer(),
+        };
+
+        var builder = new DisplayListBuilder();
+        var region = host.RenderFrame(builder, 0).CodeRegions.Single();
+
+        var band = CodeBlock.SelectionFor(false, PhotonTheme.Instance)
+            .WithOpacity(CodeBlock.SelectionAlpha).Resolve(ThemeMode.Light);
+        var drawn = builder.Build().Commands.ToArray()
+            .Single(c => c.Kind == DrawCommandKind.FillRRect && c.Paint.Color == band);
+        var grid = region.Surface.Grid();
+        drawn.Shape.Rect.X.Should().BeApproximately(region.Bounds.X + grid.Origin.X + 4 * grid.Cell.Width, 0.5f,
+            "the FIRST frame draws the selection on the grid its own build measured");
+    }
+
     [Fact]
     public void EveryMatchIsMarked_AndTheCurrentOneDiffers()
     {

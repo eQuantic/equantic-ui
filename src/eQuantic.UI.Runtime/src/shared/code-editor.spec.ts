@@ -819,6 +819,37 @@ describe('the component draws the selection, under the text', () => {
     expect(bands).toHaveLength(3);
     setPhotonTheme(photonTheme);
   });
+
+  // The test above builds twice, and the first build was a workaround: the block read the bands
+  // before the build handed the engine its grid, so a selection made before the first build was
+  // drawn on the default grid (at 0,0, off the code by its padding). Found in review.
+  it('draws the bands on the grid its own build measured, from the first build on', async () => {
+    const { materializeTheme } = await import('./theme-bridge');
+    const photonData = (await import('./theme-bridge.photon.json')).default;
+    const { CodeEditor } = await import('./components/CodeEditor');
+    const theme = materializeTheme(photonData as never);
+    setPhotonTheme(theme);
+    const component = new CodeEditor('one two', 'csharp');
+    component.editor.selection = new CodeRange(new CodePosition(0, 4), new CodePosition(0, 7));
+    const context = {
+      theme,
+      density: 'comfortable',
+      measureText: (text: string) => text.length * 7,
+      monoAdvance: () => 7,
+    };
+
+    const tree = component.build(context as never);
+
+    let drawn: { x: number }[] = [];
+    walk(tree, context, (n) => {
+      if (Array.isArray(n.selectionBands) && n.selectionBands.length > 0)
+        drawn = n.selectionBands as { x: number }[];
+    });
+    const grid = component.editor.grid;
+    expect(drawn).toHaveLength(1);
+    expect(drawn[0].x).toBe(grid.origin.x + 4 * grid.cell.width);
+    setPhotonTheme(photonTheme);
+  });
 });
 
 describe('the code surface goes through the atomizer, like every other node', () => {

@@ -179,6 +179,13 @@ public sealed class CodeEditor : StatefulComponent
         var metrics = CodeBlock.MetricsFor(context, Size, ShowLineNumbers,
             FirstLineNumber + editor.Document.LineCount - 1);
 
+        // THE grid, handed to the engine — the only thing that turns a position into a point. The
+        // block draws the lines on these same numbers, so the caret and the glyphs cannot disagree.
+        // BEFORE the block reads the selection's bands: read first, they were drawn on the grid of
+        // the build before, which on the first frame is the default one.
+        editor.Grid = new CodeGrid(new Point(metrics.ContentLeft, metrics.ContentTop),
+            new Size(metrics.ColumnWidth, metrics.LineHeight));
+
         // The empty-string constructor + inits, NOT the (document, language) pair as arguments:
         // the transpiled twin has one constructor whose body is the string shape, and the property
         // assignment lands after it on both sides. CodeBlock.Of is this same move, packaged.
@@ -212,11 +219,6 @@ public sealed class CodeEditor : StatefulComponent
             ActiveLine = editor.Caret.Line,
             SelectionBands = editor.SelectionBands,
         };
-
-        // THE grid, handed to the engine — the only thing that turns a position into a point. The
-        // block draws the lines on these same numbers, so the caret and the glyphs cannot disagree.
-        editor.Grid = new CodeGrid(new Point(metrics.ContentLeft, metrics.ContentTop),
-            new Size(metrics.ColumnWidth, metrics.LineHeight));
 
         VisualNode surface = new CodeSurface(block, editor)
         {

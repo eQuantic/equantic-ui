@@ -971,7 +971,9 @@ public sealed class PhotonHost
         // the platform's input client asks the host whether anything is marked.
         if (CodeTarget is { } code)
         {
-            code.Model.SetComposition(text);
+            // A composition the model refuses (a read-only editor) is not one the host may claim:
+            // the platform asks the HOST whether anything is marked. A cancellation still clears it.
+            if (!code.Model.SetComposition(text) && text.Length > 0) return false;
             code.OnChanged?.Invoke();
         }
         if (TextTarget is { } entry && !entry.Disabled)

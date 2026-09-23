@@ -368,6 +368,30 @@ public class CodeEditorSurfaceTests
         surface.Engine().Document.Text.Should().Be("ab");
     }
 
+    /// <summary>
+    /// A composition the model refuses is one the host does not claim. A read-only editor answers
+    /// false to it, and the host kept the marked text anyway and said so, and the platform asks the
+    /// host, not the model, whether anything is marked. Found in review.
+    /// </summary>
+    [Fact]
+    public void AReadOnlyEditorMarksNothing_AndTheHostDoesNotClaimItDid()
+    {
+        var editor = new CodeEditor("ab", "csharp") { ShowLineNumbers = false, ReadOnly = true };
+        var host = new PhotonHost(editor, PhotonTheme.Instance, ThemeMode.Light, 400, 300,
+            new FixedWidthMeasurer())
+        {
+            TextRasterizer = new FixedWidthRasterizer(),
+        };
+        host.RenderFrame(new DisplayListBuilder());
+        var region = host.RenderFrame(new DisplayListBuilder()).CodeRegions.Single();
+        Focus(host, region.Surface, region.Bounds);
+
+        host.SetMarkedText("k").Should().BeFalse("the model refused it");
+        host.HasMarkedText.Should().BeFalse("the platform asks the host whether anything is marked");
+        region.Surface.Engine().Document.Text.Should().Be("ab");
+        host.SetMarkedText("").Should().BeTrue("a cancellation still clears the host's own marker");
+    }
+
     [Fact]
     public void LeavingTheEditorCancelsAComposition()
     {
