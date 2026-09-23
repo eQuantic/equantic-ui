@@ -571,6 +571,9 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
       // second one over the band the component draws — the sheet surface's rule, for its reason.
       'user-select': 'none',
       '-webkit-user-select': 'none',
+      // The beam, as over any field: the browser shows one over text it can select, and this text
+      // is no longer the browser's to select, so without it the pointer stayed an arrow.
+      cursor: 'text',
     },
     [],
   );

@@ -310,6 +310,29 @@ public class CodeEditorSurfaceTests
             && Covers(c.Shape.Rect, caret));
     }
 
+    /// <summary>
+    /// The pointer is a beam over the code and an arrow over the numbers beside it, as in every
+    /// editor. It stayed an arrow over the code: the host DERIVES the pointer from the regions a
+    /// frame registers, a text field's among them, and the code's was the one kind it never asked
+    /// about (found by hand in the dashboard, #359).
+    /// </summary>
+    [Fact]
+    public void ThePointerIsABeamOverTheCode_AndAnArrowOverTheGutter()
+    {
+        var editor = new CodeEditor("var a = 1;\nvar b = 2;", "csharp") { ShowLineNumbers = true };
+        var host = new PhotonHost(editor, PhotonTheme.Instance, ThemeMode.Light, 400, 300,
+            new FixedWidthMeasurer())
+        {
+            TextRasterizer = new FixedWidthRasterizer(),
+        };
+        host.RenderFrame(new DisplayListBuilder());
+        var code = host.RenderFrame(new DisplayListBuilder()).CodeRegions.Single().Bounds;
+
+        host.CursorAt(code.X + 4, code.Y + 4).Should().Be(CursorShape.Text);
+        // The gutter sits beside the code, outside the surface: the page's own pointer.
+        host.CursorAt(code.X - 4, code.Y + 4).Should().Be(CursorShape.Default);
+    }
+
     private static bool Covers(Rect outer, Rect inner) =>
         outer.X <= inner.X + 0.01f && outer.Y <= inner.Y + 0.01f
         && outer.X + outer.Width >= inner.X + inner.Width - 0.01f

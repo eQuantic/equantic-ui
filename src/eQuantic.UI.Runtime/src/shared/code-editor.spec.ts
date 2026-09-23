@@ -543,6 +543,14 @@ describe('the code surface goes through the atomizer, like every other node', ()
 
     expect(effectiveStyle(lowered)).toContain('user-select: none');
   });
+
+  // With the text no longer the browser's to select, the pointer it shows over text went with it
+  // and stayed an arrow. The surface says beam, as a field does (found by hand in the dashboard).
+  it('shows the beam over the code, as over any field', () => {
+    const { lowered } = surfaceFor('let x = 1;');
+
+    expect(effectiveStyle(lowered)).toContain('cursor: text');
+  });
 });
 
 describe('a value the engine builds with no arguments is its zeros, as C# builds it', () => {

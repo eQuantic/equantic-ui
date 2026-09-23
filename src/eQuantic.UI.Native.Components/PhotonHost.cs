@@ -1621,6 +1621,12 @@ public sealed class PhotonHost
         for (var i = fields.Count - 1; i >= 0; i--)
             if (fields[i].Bounds.Contains(point))
                 return fields[i].Entry.Disabled ? CursorShape.NotAllowed : CursorShape.Text;
+        // Code you place a caret in is a field too, and was the one kind this list forgot: the
+        // pointer stayed an arrow over an editor, where every editor shows the beam. A read-only
+        // editor still takes the caret and the selection, so it says the same.
+        var code = _lastFrame.CodeRegions;
+        for (var i = code.Count - 1; i >= 0; i--)
+            if (code[i].Bounds.Contains(point)) return CursorShape.Text;
         for (var i = links.Count - 1; i >= 0; i--)
             if (links[i].Bounds.Contains(point)) return CursorShape.Pointer;
 
