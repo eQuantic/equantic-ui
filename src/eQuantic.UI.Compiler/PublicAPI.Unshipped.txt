@@ -100,3 +100,15 @@ static eQuantic.UI.Compiler.CodeGen.Strategies.UserDefinedOperators.Conversion(M
 static eQuantic.UI.Compiler.CodeGen.Strategies.UserDefinedOperators.ConversionCrosses(Microsoft.CodeAnalysis.IMethodSymbol! method) -> bool
 static eQuantic.UI.Compiler.CodeGen.Strategies.UserDefinedOperators.ConversionName(Microsoft.CodeAnalysis.IMethodSymbol! method) -> string!
 *REMOVED*static eQuantic.UI.Compiler.CodeGen.Strategies.UserDefinedOperators.Conversion(Microsoft.CodeAnalysis.IMethodSymbol! method, string! operand) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr?
+eQuantic.UI.Compiler.ComponentCompiler.SourceMaps.get -> eQuantic.UI.Compiler.SourceMapMode
+eQuantic.UI.Compiler.ComponentCompiler.SourceMaps.set -> void
+eQuantic.UI.Compiler.ComponentCompiler.SourceRoot.get -> string?
+eQuantic.UI.Compiler.ComponentCompiler.SourceRoot.set -> void
+eQuantic.UI.Compiler.SourceMapMode
+eQuantic.UI.Compiler.SourceMapMode.External = 1 -> eQuantic.UI.Compiler.SourceMapMode
+eQuantic.UI.Compiler.SourceMapMode.Full = 0 -> eQuantic.UI.Compiler.SourceMapMode
+eQuantic.UI.Compiler.SourceMapMode.None = 2 -> eQuantic.UI.Compiler.SourceMapMode
+eQuantic.UI.Compiler.ComponentCompiler.SourceMapDirectory.get -> string?
+eQuantic.UI.Compiler.ComponentCompiler.SourceMapDirectory.set -> void
+eQuantic.UI.Compiler.Services.SourceMapGenerator.Generate(string! generatedFileName, string! sourceFileName, System.Collections.Generic.List<eQuantic.UI.Compiler.Services.TypeScriptCodeBuilder.SourceMapping>! mappings, string? sourceContent = null, string! sourceRoot = "") -> string!
+*REMOVED*eQuantic.UI.Compiler.Services.SourceMapGenerator.Generate(string! generatedFileName, string! sourceFileName, System.Collections.Generic.List<eQuantic.UI.Compiler.Services.TypeScriptCodeBuilder.SourceMapping>! mappings, string? sourceContent = null) -> string!
