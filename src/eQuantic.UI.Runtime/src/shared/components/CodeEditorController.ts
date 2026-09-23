@@ -38,12 +38,7 @@ export class CodeEditorController {
     }
 
     set selection(value: CodeRange) {
-        let next = new CodeRange(this._document.clamp(value.anchor), this._document.clamp(value.focus));
-        if ($eq.equals(next, this._selection)) return;
-        this.history.break();
-        this._selection = next;
-        this._revealVersion++;
-        this.selectionChanged?.(next);
+        this.select(value, false);
     }
 
     get caret(): CodePosition {
@@ -92,6 +87,16 @@ export class CodeEditorController {
 
     changed: ((codeEdit: CodeEdit | null) => void) | null = null;
     selectionChanged: ((codeRange: CodeRange) => void) | null = null;
+
+    select(value: CodeRange, keepCell: boolean) {
+        if (!keepCell) this._desiredCell = -1;
+        let next = new CodeRange(this._document.clamp(value.anchor), this._document.clamp(value.focus));
+        if ($eq.equals(next, this._selection)) return;
+        this.history.break();
+        this._selection = next;
+        this._revealVersion++;
+        this.selectionChanged?.(next);
+    }
 
     cellsOf(line: number) {
         let cells: any; let text = this._document.line(line);
@@ -347,8 +352,10 @@ export class CodeEditorController {
         let indent = this._document.indentOf(this.caret.line).length;
         if (this.caret.column > 0 && this.caret.column <= indent && this.rules.insertSpaces) {
             let width = this.rules.indentWidth;
-            let back = this.caret.column % width === 0 ? width : this.caret.column % width;
-            return this.apply(new CodeRange($eq.withPatch(this.caret, { column: this.caret.column - back }), this.caret), '');
+            let cells = this.cellsOf(this.caret.line);
+            let cell = cells.cellOf(this.caret.column);
+            let stop = cell % width === 0 ? cell - width : cell - cell % width;
+            return this.apply(new CodeRange($eq.withPatch(this.caret, { column: cells.columnAt(stop) }), this.caret), '');
         }
         if (this.caret.column > 0 && this.caret.column < line.length) {
             let before = line[this.caret.column - 1];
@@ -374,7 +381,8 @@ export class CodeEditorController {
         if (this._selection.isEmpty) {
             if (!this.rules.insertSpaces) return this.apply(this._selection, '	');
             let width = this.rules.indentWidth;
-            return this.apply(this._selection, ' '.repeat(width - this.caret.column % width));
+            let cell = this.cellsOf(this.caret.line).cellOf(this.caret.column);
+            return this.apply(this._selection, ' '.repeat(width - cell % width));
         }
         return this.shiftLines(true);
     }
@@ -485,7 +493,7 @@ export class CodeEditorController {
             return;
         }
         let target = this.moveTo(this.caret, motion, direction, pageLines);
-        this.selection = extend ? $eq.withPatch(this._selection, { focus: target }) : new CodeRange(target);
+        this.select(extend ? $eq.withPatch(this._selection, { focus: target }) : new CodeRange(target), (motion === 'line' || motion === 'page'));
     }
 
     moveTo(from: CodePosition, motion: CodeMotionValue, direction: CodeDirectionValue, pageLines: number = 20) {
@@ -589,6 +597,7 @@ export class CodeEditorController {
         this._document = next;
         this._revealVersion++;
         this._selection = new CodeRange(next.clamp(selection.anchor), next.clamp(selection.focus));
+        this._desiredCell = -1;
         this.highlighter.invalidate();
         this.changed?.(null);
         this.selectionChanged?.(this._selection);
@@ -603,6 +612,7 @@ export class CodeEditorController {
         this._document = next;
         this._revealVersion++;
         this._selection = new CodeRange(next.clamp(selection.anchor), next.clamp(selection.focus));
+        this._desiredCell = -1;
         this.highlighter.invalidate();
         this.changed?.(null);
         this.selectionChanged?.(this._selection);

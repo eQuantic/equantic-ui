@@ -54,17 +54,26 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     public CodeRange Selection
     {
         get => _selection;
-        set
-        {
-            var next = new CodeRange(_document.Clamp(value.Anchor), _document.Clamp(value.Focus));
-            if (next == _selection) return;
-            // Moving the caret ENDS the typing run: the next character starts a new undo step,
-            // because a person who moved and typed did two things.
-            History.Break();
-            _selection = next;
-            _revealVersion++;
-            SelectionChanged?.Invoke(next);
-        }
+        set => Select(value, keepCell: false);
+    }
+
+    /// <summary>
+    /// Places the selection. Only a run of ↑ and ↓ keeps the cell it aims at
+    /// (<paramref name="keepCell"/>); anything else that places the caret forgets it, a click, an
+    /// undo and the app included, or ↓ after a click went back to the column the run before the
+    /// click had aimed at.
+    /// </summary>
+    private void Select(CodeRange value, bool keepCell)
+    {
+        if (!keepCell) _desiredCell = -1;
+        var next = new CodeRange(_document.Clamp(value.Anchor), _document.Clamp(value.Focus));
+        if (next == _selection) return;
+        // Moving the caret ENDS the typing run: the next character starts a new undo step,
+        // because a person who moved and typed did two things.
+        History.Break();
+        _selection = next;
+        _revealVersion++;
+        SelectionChanged?.Invoke(next);
     }
 
     /// <summary>The caret — the moving end of the selection.</summary>
@@ -576,9 +585,12 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         var indent = _document.IndentOf(Caret.Line).Length;
         if (Caret.Column > 0 && Caret.Column <= indent && Rules.InsertSpaces)
         {
+            // Back to the previous stop ON SCREEN, over a tab in the indent too.
             var width = Rules.IndentWidth;
-            var back = Caret.Column % width == 0 ? width : Caret.Column % width;
-            return Apply(new CodeRange(Caret with { Column = Caret.Column - back }, Caret), string.Empty);
+            var cells = CellsOf(Caret.Line);
+            var cell = cells.CellOf(Caret.Column);
+            var stop = cell % width == 0 ? cell - width : cell - cell % width;
+            return Apply(new CodeRange(Caret with { Column = cells.ColumnAt(stop) }, Caret), string.Empty);
         }
 
         // Deleting the opening half of an auto-inserted pair takes the closing half with it.
@@ -624,8 +636,11 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         if (_selection.IsEmpty)
         {
             if (!Rules.InsertSpaces) return Apply(_selection, "\t");
+            // The stop is ON SCREEN: counted in columns, a caret after a tab or a wide character
+            // stopped short of it or ran past it.
             var width = Rules.IndentWidth;
-            return Apply(_selection, new string(' ', width - Caret.Column % width));
+            var cell = CellsOf(Caret.Line).CellOf(Caret.Column);
+            return Apply(_selection, new string(' ', width - cell % width));
         }
         return ShiftLines(add: true);
     }
@@ -795,7 +810,8 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         }
 
         var target = MoveTo(Caret, motion, direction, pageLines);
-        Selection = extend ? _selection with { Focus = target } : new CodeRange(target);
+        Select(extend ? _selection with { Focus = target } : new CodeRange(target),
+            keepCell: motion is CodeMotion.Line or CodeMotion.Page);
     }
 
     /// <summary>Where a movement LANDS, without moving anything — an IDE computing a jump.</summary>
@@ -952,6 +968,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         _document = next;
         _revealVersion++;
         _selection = new CodeRange(next.Clamp(selection.Anchor), next.Clamp(selection.Focus));
+        _desiredCell = -1;
         Highlighter.Invalidate();
         Changed?.Invoke(null);
         SelectionChanged?.Invoke(_selection);
@@ -967,6 +984,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         _document = next;
         _revealVersion++;
         _selection = new CodeRange(next.Clamp(selection.Anchor), next.Clamp(selection.Focus));
+        _desiredCell = -1;
         Highlighter.Invalidate();
         Changed?.Invoke(null);
         SelectionChanged?.Invoke(_selection);

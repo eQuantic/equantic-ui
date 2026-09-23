@@ -128,4 +128,47 @@ public class CodeViewModelTests
         band.X.Should().Be(8);
         band.Width.Should().Be(16);
     }
+
+    /// <summary>
+    /// A run of ↓ remembers the cell it aims at, and anything else that places the caret forgets it:
+    /// a click, an undo, the app. Only an edit and a sideways move did, so ↓ after a click went back
+    /// to the column the run before the click had aimed at.
+    /// </summary>
+    [Fact]
+    public void AClickForgetsTheCellARunOfArrowsAimedAt()
+    {
+        var editor = At(string.Join("\n", Enumerable.Repeat("0123456789abc", 7)), 0, 10);
+        editor.Move(CodeMotion.Line, CodeDirection.Forward);
+        editor.Caret.Should().Be(new CodePosition(1, 10));
+
+        editor.Selection = new CodeRange(new CodePosition(5, 2));
+        editor.Move(CodeMotion.Line, CodeDirection.Forward);
+
+        editor.Caret.Should().Be(new CodePosition(6, 2));
+    }
+
+    /// <summary>Tab runs to the next stop ON SCREEN. It counted UTF-16 columns, so after a tab or a
+    /// wide character it stopped short of the stop or ran past it.</summary>
+    [Theory]
+    [InlineData("\tx", 2, 3)]        // the caret is at cell 5: three spaces to cell 8
+    [InlineData("\u540D", 1, 2)]     // 名 is two cells: two spaces to cell 4
+    public void TabRunsToTheNextStopOnScreen(string line, int column, int spaces)
+    {
+        var editor = At(line, 0, column);
+
+        editor.Indent();
+
+        editor.Document.Line(0).Should().Be(line.Insert(column, new string(' ', spaces)));
+    }
+
+    /// <summary>Backspace in an indent steps back to the previous stop on screen, over a tab too.</summary>
+    [Fact]
+    public void BackspaceInAnIndentStepsBackToTheStopOnScreen()
+    {
+        var editor = At("\t    x", 0, 5);   // a tab, then four spaces: the caret stands at cell 8
+
+        editor.DeleteBackward();
+
+        editor.Document.Line(0).Should().Be("\tx");
+    }
 }
