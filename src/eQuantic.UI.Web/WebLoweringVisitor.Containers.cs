@@ -69,7 +69,13 @@ internal sealed partial class WebLoweringVisitor
             // Positioned` missed the moment one came out of a component. It then degraded to its
             // child and joined the flow: a corner button rendered ABOVE the slab it belonged to,
             // silently, which is worse than not rendering at all.
+            var asked = _measurer.Asks;
             var child = ResolveForPositioning(raw);
+            // Counted HERE for a component this stack expanded itself, to see a Positioned through
+            // it: Visit(UiComponent) never runs for one, so a measured component in a Stack was
+            // adopted with the zeros it was built on. Counted before the resolved node lowers, so
+            // the components inside it answer for themselves.
+            var unmeasured = _measurer.Asks > asked;
             if (child is Positioned positioned)
             {
                 var lowered = Lower(positioned.Child, horizontalAxis: null);
@@ -95,6 +101,8 @@ internal sealed partial class WebLoweringVisitor
                         ZIndex = (positioned.Layer != 0 ? positioned.Layer : depth).ToString(),
                     },
                 };
+                // The ANCHOR is marked, not what it holds: its offsets came from the same Build.
+                if (unmeasured) MarkUnmeasured(anchor);
                 anchor.Children.Add(lowered);
                 element.Children.Add(anchor);
             }
@@ -102,6 +110,7 @@ internal sealed partial class WebLoweringVisitor
             {
                 var lowered = Lower(child, horizontalAxis: null);
                 if (lowered is null) continue;
+                if (unmeasured) MarkUnmeasured(lowered);
                 // The cell IS the stack's available space (the native MeasureStack contract): it
                 // stretches to the single grid cell and aligns its child via flex — so a Fill child
                 // covers the stack while a hug child sits at the Stack.Align anchor.

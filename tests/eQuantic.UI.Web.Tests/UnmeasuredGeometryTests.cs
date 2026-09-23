@@ -53,6 +53,39 @@ public class UnmeasuredGeometryTests
         }
     }
 
+    /// <summary>Positions what it measured: a Positioned whose child says how wide a cell is.</summary>
+    private sealed class PositionsWhatItMeasured : UiComponent
+    {
+        public override VisualNode Build(ComponentContext context) =>
+            new Positioned(new Text($"advance {context.MonoAdvance(context.Theme.Type(TypeRole.BodyM))}",
+                TypeRole.BodyM), top: 0, start: 0);
+    }
+
+    /// <summary>
+    /// A Stack expands its component children ITSELF, to see a Positioned through them, so the
+    /// component visit never ran for one and a measured component in a Stack was adopted. It is
+    /// counted there too now: the component's own element is marked, and for a Positioned the
+    /// anchor, whose offsets came from the same Build. Found in review.
+    /// </summary>
+    [Fact]
+    public void AComponentInAStack_IsMarkedToo_PositionedOrNot()
+    {
+        var stack = new Stack();
+        stack.Add(new AsksForAWidth());
+        stack.Add(new PositionsWhatItMeasured());
+        stack.Add(new Button("Save"));
+
+        var root = Lower(stack);
+
+        root.Attributes.Should().NotContainKey(Mark, "the stack itself measured nothing");
+        root.Children.Should().HaveCount(3);
+        root.Children[0].Children.Should().ContainSingle().Which.Attributes.Should().ContainKey(Mark,
+            "the component's element inside the stack's cell");
+        root.Children[1].Attributes.Should().ContainKey(Mark, "the positioned anchor");
+        Walk(root.Children[2]).Should().NotContain(node => node.Attributes.ContainsKey(Mark),
+            "the button asked for nothing");
+    }
+
     [Fact]
     public void ACodeBlock_IsMarkedForTheClientToDraw_AndStillCarriesItsCode()
     {
