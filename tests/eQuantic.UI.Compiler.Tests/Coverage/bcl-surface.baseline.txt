@@ -317,7 +317,7 @@ native         Double.Tan(Double)
 eq             Double.TanPi(Double)
 native         Double.Tanh(Double)
 native         Double.Tau
-native         Double.ToString()
+eq             Double.ToString()
 eq             Double.ToString(String)
 native         Double.Truncate(Double)
 native         Enumerable.Aggregate/1

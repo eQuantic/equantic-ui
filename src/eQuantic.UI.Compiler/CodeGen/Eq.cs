@@ -52,6 +52,8 @@ public static class Eq
     public const string SingleFromLong = "$eq.num.singleFromLong";
     /// <summary>A float as text: the shortest decimal that reads back as the same single.</summary>
     public const string Single = "$eq.num.single";
+    /// <summary>A double's text as .NET writes it: the shortest digits, in .NET's notation.</summary>
+    public const string Double = "$eq.num.double";
     /// <summary>Substring that refuses an out-of-range index, the way .NET does.</summary>
     public const string Substring = "$eq.text.substring";
     /// <summary>A dictionary read that throws for a key that is not there.</summary>

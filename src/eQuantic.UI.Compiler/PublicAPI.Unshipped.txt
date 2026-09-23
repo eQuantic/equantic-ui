@@ -173,3 +173,4 @@ const eQuantic.UI.Compiler.CodeGen.Eq.IntDiv = "$eq.num.intDiv" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.IntRem = "$eq.num.intRem" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LongDiv = "$eq.num.longDiv" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LongRem = "$eq.num.longRem" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.Double = "$eq.num.double" -> string!

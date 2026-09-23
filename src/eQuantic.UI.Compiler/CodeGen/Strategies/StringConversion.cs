@@ -9,8 +9,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// where JavaScript would do something else. The conversion is the same in both places, so it is
 /// decided in one: a null is the empty string (JavaScript writes <c>null</c>), a bool is
 /// <c>True</c>/<c>False</c> (JavaScript lowercases), a nullable value type follows its value or
-/// the empty string, an enum is its member NAME. Numbers, chars, longs and decimals already read
-/// the same on both sides; a string known to be non-null is left alone.
+/// the empty string, an enum is its member NAME, and a fractional number is written in .NET's
+/// notation (<c>1E+17</c>, <c>-0</c>, a float's own digits). Integers, chars, longs and decimals
+/// already read the same on both sides; a string known to be non-null is left alone.
 /// </summary>
 public static class StringConversion
 {
@@ -35,6 +36,20 @@ public static class StringConversion
                 || operand is LiteralExpressionSyntax or InterpolatedStringExpressionSyntax
                 ? converted
                 : JsExpr.Binary(converted, "??", JsExpr.Literal("''"));
+
+        // A fractional number, or a nullable one, reads the way .NET writes it (#336). JavaScript's
+        // String() keeps fixed notation up to 1e21, drops the sign of -0, and gives a float the
+        // digits of the double underneath: "v=" + 0.1f read "v=0.10000000149011612".
+        var real = type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T
+            && type is INamedTypeSymbol { TypeArguments: [var underlying] } ? underlying : type;
+        if (real.SpecialType is SpecialType.System_Double or SpecialType.System_Single)
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var printer = real.SpecialType == SpecialType.System_Single ? Eq.Single : Eq.Double;
+            return ReferenceEquals(real, type)
+                ? JsExpr.Callish($"{printer}({text})")
+                : JsExpr.Template($"({{0}} == null ? '' : {printer}({{0}}))", [converted], context.TypeAnnotations);
+        }
 
         if (!NeedsFormatting(type)) return converted;
 

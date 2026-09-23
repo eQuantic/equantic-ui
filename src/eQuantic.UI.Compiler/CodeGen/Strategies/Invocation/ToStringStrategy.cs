@@ -101,12 +101,15 @@ public class ToStringStrategy : IConversionStrategy
         }
 
         // A FLOAT prints as the shortest decimal that reads back as the same single — `0.1f + 0.2f`
-        // is "0.3", where String() of the same bits would spell the double underneath.
-        if (context.SemanticHelper.GetType(memberAccess.Expression) is { SpecialType: SpecialType.System_Single }
+        // is "0.3", where String() of the same bits would spell the double underneath — and a
+        // DOUBLE in .NET's notation, which turns scientific at 1e17 where String() waits for 1e21.
+        if (context.SemanticHelper.GetType(memberAccess.Expression) is
+                { SpecialType: SpecialType.System_Single or SpecialType.System_Double } real
             && invocation.ArgumentList.Arguments.Count == 0)
         {
             context.UsedHelpers.Add(Eq.Import);
-            return $"{Eq.Single}({context.Converter.ConvertExpression(memberAccess.Expression)})";
+            var printer = real.SpecialType == SpecialType.System_Single ? Eq.Single : Eq.Double;
+            return $"{printer}({context.Converter.ConvertExpression(memberAccess.Expression)})";
         }
 
         // An ENUM crosses as a lowercase string (`Kind.B` → 'b'), so String() hands back the WIRE
