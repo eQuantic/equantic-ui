@@ -56,18 +56,23 @@ internal static class BoolLogic
             && context.SemanticHelper.GetType(entry.Expression).IsDictionaryLike(out _))
         {
             return JsExpr.Template($"({{0}}[{{1}}] = {Combine(op, $"{Eq.DictGet}({{0}}, {{1}})", "{2}")})",
-                context.Converter.ConvertIr(entry.Expression),
-                context.Converter.ConvertIr(entry.ArgumentList.Arguments[0].Expression),
-                right);
+                [context.Converter.ConvertIr(entry.Expression),
+                 context.Converter.ConvertIr(entry.ArgumentList.Arguments[0].Expression),
+                 right],
+                context.TypeAnnotations);
         }
 
         var left = context.Converter.ConvertIr(assignment.Left);
         return left switch
         {
+            // A bound part becomes a parameter of the writer's arrow, which a type-checked module
+            // refuses untyped — hence the annotation wherever the output is TypeScript.
             JsMember member => JsExpr.Template(
-                $"({{0}}.{member.Name} = {Combine(op, $"{{0}}.{member.Name}", "{1}")})", member.Target, right),
+                $"({{0}}.{member.Name} = {Combine(op, $"{{0}}.{member.Name}", "{1}")})",
+                [member.Target, right], context.TypeAnnotations),
             JsIndex index => JsExpr.Template(
-                $"({{0}}[{{1}}] = {Combine(op, "{0}[{1}]", "{2}")})", index.Target, index.IndexExpression, right),
+                $"({{0}}[{{1}}] = {Combine(op, "{0}[{1}]", "{2}")})",
+                [index.Target, index.IndexExpression, right], context.TypeAnnotations),
             // A plain name has no receiver to evaluate twice.
             _ => JsExpr.Binary(left, "=", op == "^"
                 ? JsExpr.Binary(left, "!==", right)
@@ -75,15 +80,16 @@ internal static class BoolLogic
         };
     }
 
-    /// <summary>The logical combination of two template operands.</summary>
-    private static string Combine(string op, string left, string right) => op switch
+    /// <summary>The logical combination of two template operands — shared with the dictionaries a
+    /// runtime map backs, whose compound assignment is theirs to write.</summary>
+    internal static string Combine(string op, string left, string right) => op switch
     {
         "|" => $"{Eq.LogicOr}({left}, {right})",
         "&" => $"{Eq.LogicAnd}({left}, {right})",
         _ => $"({left} !== {right})",
     };
 
-    private static bool OnBools(SyntaxNode node, ConversionContext context)
+    internal static bool OnBools(SyntaxNode node, ConversionContext context)
     {
         var operation = context.SemanticHelper.GetOperation(node);
         return operation switch

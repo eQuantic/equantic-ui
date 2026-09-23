@@ -53,6 +53,10 @@ public class BoolLogicCompoundTargetConformanceTests
     [InlineData("int calls = 0; var box = new[] { false }; bool[] Get() { calls++; return box; } Get()[0] |= true; return (box[0] == true ? \"t\" : \"f\") + calls;")] // "t1"
     [InlineData("int calls = 0; var h = new Holder(); Holder Get() { calls++; return h; } Get().Flag |= true; return (h.Flag == true ? \"t\" : \"f\") + calls;")] // "t1"
     [InlineData("int calls = 0; var h = new Holder { Flag = true }; Holder Get() { calls++; return h; } Get().Flag ^= true; return (h.Flag ? \"t\" : \"f\") + calls;")] // "f1"
+    // A sorted dictionary is a runtime MAP, lowered by a strategy of its own that runs before the
+    // assignment's: the same bool, the same single evaluation.
+    [InlineData("var flags = new SortedDictionary<string, bool> { [\"a\"] = false }; flags[\"a\"] |= true; return flags[\"a\"] == true ? \"bool\" : \"number\";")] // "bool"
+    [InlineData("int calls = 0; var m = new SortedDictionary<string, bool> { [\"a\"] = true }; SortedDictionary<string, bool> Get() { calls++; return m; } Get()[\"a\"] ^= true; return (m[\"a\"] ? \"t\" : \"f\") + calls;")] // "f1"
     public void ACompoundOnATargetEvaluatesItOnce(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine (embedded Bun or Node) available on this machine.");
