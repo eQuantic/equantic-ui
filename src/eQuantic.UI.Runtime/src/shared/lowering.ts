@@ -35,6 +35,7 @@ import { declareInView } from './in-view';
 import { cssFontWeight, isWellFormedFace } from './value-types';
 import { CodeKeymap } from './components/CodeKeymap';
 import {
+  adaptiveGateOpen,
   atomizeEntries,
   atomizePseudo,
   atomizeScrolled,
@@ -2811,7 +2812,11 @@ function lowerAnchored(node: AnchoredNode, context: LoweringContext, path: strin
     // Declared through the same channel a Shortcut node uses, so the stacking comes for free: the
     // dispatcher runs the LAST declared match, which is the panel on top. C# twin: the Photon
     // realizer registers the identical binding while the panel is open.
-    declareShortcut({ chord: chordId({ key: 'Escape' }), handler: node.onDismiss });
+    declareShortcut({
+      chord: chordId({ key: 'Escape' }),
+      handler: node.onDismiss,
+      live: liveInEnclosingArms(),
+    });
 
     // Mega-menu dimming (C# twin): scrimStyle paints the outside-tap scrim as a full Box.
     const scrim = lowerNode(
@@ -2904,7 +2909,8 @@ function lowerShortcut(
   // C# twin: nested shortcuts share one child root, so the marker LISTS them.
   const existing = child.attributes['data-eq-shortcut'];
   child.attributes['data-eq-shortcut'] = existing ? `${existing} ${chord}` : chord;
-  if (node.onPressed) declareShortcut({ chord, handler: node.onPressed });
+  if (node.onPressed)
+    declareShortcut({ chord, handler: node.onPressed, live: liveInEnclosingArms() });
   return child;
 }
 
@@ -3476,6 +3482,23 @@ function installScrolledController(): void {
   apply();
 }
 
+/**
+ * The gates around the subtree being lowered, outermost first — empty outside every AdaptiveNode
+ * arm. Ambient for the reason InFlow is: a Shortcut can sit any number of components below the arm
+ * that hides it, and all of them lower inside this one walk.
+ */
+let enclosingGates: readonly string[] = [];
+
+/**
+ * The `live` a binding declared at this point of the walk carries: none outside an arm, and
+ * inside one the question "is every arm around it on screen", over the gates as they are HERE —
+ * the walk moves on long before any key is pressed.
+ */
+function liveInEnclosingArms(): (() => boolean) | undefined {
+  const gates = enclosingGates;
+  return gates.length === 0 ? undefined : () => gates.every(adaptiveGateOpen);
+}
+
 /** Spec S6 mirror of the C# LowerAdaptive: every declared variant gated by the fixed media rules. */
 function lowerAdaptive(node: AdaptiveNodeValue, context: LoweringContext, path: string): HtmlNode {
   if (!node.medium && !node.expanded) {
@@ -3485,7 +3508,16 @@ function lowerAdaptive(node: AdaptiveNodeValue, context: LoweringContext, path: 
   }
   const wrapper = element('div', { display: 'contents' });
   const addVariant = (variant: VisualNodeValue, gate: string, index: number) => {
-    const lowered = lowerNode(variant, context, null, `${path}/${index}`);
+    // Every declared arm is MOUNTED and only one is shown, so what an arm subscribes to has to know
+    // which gate it sits behind — Photon lays out the one arm, and nothing in the others exists.
+    const outer = enclosingGates;
+    enclosingGates = [...outer, gate];
+    let lowered: HtmlNode | null;
+    try {
+      lowered = lowerNode(variant, context, null, `${path}/${index}`);
+    } finally {
+      enclosingGates = outer;
+    }
     if (!lowered) return;
     ensureAdaptiveGate(gate);
     wrapper.children.push({
