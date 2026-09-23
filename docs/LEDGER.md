@@ -494,7 +494,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   object tighter, and the harness runs alone. The definition's code-splitting per route is met by the module graph, and bun already
   splits what pages share into chunks.
 - **2026-09-23 · The code editor takes input the platform's way**: slice 1a of
-  [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#PR_NUMBER](https://github.com/eQuantic/equantic-ui/pull/PR_NUMBER)).
+  [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#368](https://github.com/eQuantic/equantic-ui/pull/368)).
   The web surface read characters off `keydown`, so a dead key, an input method, AltGr on a
   European layout, a phone's keyboard and dictation never reached the document, and ⌘V was
   cancelled before the browser could deliver a paste. Text now arrives through a textarea held at
