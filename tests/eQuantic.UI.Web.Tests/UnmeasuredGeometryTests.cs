@@ -93,6 +93,21 @@ public class UnmeasuredGeometryTests
     }
 
     /// <summary>
+    /// The editor measures its code through the block's metrics, so it is marked too, and its
+    /// surface now WRITES: the code the server's HTML had a hole for.
+    /// </summary>
+    [Fact]
+    public void ACodeEditor_ArrivesWithItsCode_AndIsMarkedForTheClientToDraw()
+    {
+        var root = Lower(new CodeEditor("var total = 1;", "csharp"));
+
+        root.Attributes.Should().ContainKey(Mark);
+        TextOf(root).Should().Contain("var total = 1;");
+        Walk(root).Should().Contain(node => node.Tag == "textarea",
+            "the surface writes the input the client types through");
+    }
+
+    /// <summary>
     /// The CROSS-PIN: the client reads the mark by the same name the server writes it. Both are a
     /// string, and a string that drifts on one side fails nothing at all: the server would mark,
     /// the client would adopt, and the gutter would be 12px again with every suite green.

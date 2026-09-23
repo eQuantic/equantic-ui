@@ -124,24 +124,13 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context, Fontl
         LowerSheetSurface(sheet, horizontalAxis);
 
     /// <summary>
-    /// THE ONE WORD THIS REALIZER STILL DOES NOT WRITE, and now for a MEASURED reason. A code
-    /// surface's geometry is text geometry (the gutter as wide as its widest number, a column as
-    /// wide as one advance of the mono face), and the server has no measurer, so
-    /// <c>MeasureText</c> answers 0 here: an arm that wrote the surface wrote a 12px gutter and
-    /// zero-width columns. Hydration deliberately leaves the server's markup alone, so the client
-    /// ADOPTED that tree and kept it, and the editor stayed broken after every rebuild (measured on
-    /// the dashboard's /code). Answering null makes the adoption fail and the client draw the editor
-    /// with its own measurements, which is right until a component that measured text without a
-    /// measurer can say so and be redrawn by the client instead of adopted.
-    /// <para>
-    /// It returns null exactly as the old default arm did. What is new is not that null is rare —
-    /// <see cref="Visit(Spacer, bool?)"/> returns it outside a flex axis, and every wrapper
-    /// propagates a null child — but that this is the only node with NO lowering at all, the only
-    /// one that answers null for every instance, and that the answer is written where the node is
-    /// instead of in an exemption list.
-    /// </para>
+    /// An editable code surface, written the way the client builds it (see
+    /// <see cref="LowerCodeSurface"/>). It was the one node this realizer did not write at all, and
+    /// for a reason measured on a running page: its geometry is text geometry, the server has no
+    /// font to measure with, and hydration adopted the zeros it was built on. The component that
+    /// measured is now marked for the client to draw again, so the arm can write the code.
     /// </summary>
-    public HtmlElement? Visit(CodeSurface code, bool? horizontalAxis) => null;
+    public HtmlElement? Visit(CodeSurface code, bool? horizontalAxis) => LowerCodeSurface(code);
 
     // ---- graphics --------------------------------------------------------------------------------
 
