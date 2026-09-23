@@ -473,9 +473,9 @@ record of a release, the wiki's Upgrading page is the distillate.
   at 137,801 bytes gzipped, and the suite fails when it grows more than 1% or shrinks more than 5%
   without the record moving with it. The dashboard sample's page modules are reported on every pull
   request. On Photon, the eight-layer scene's 78.1 KB/frame sat over the dense scene's ceiling with
-  nothing deciding it: the ruler is now what one open layer adds, 524 bytes once each layer's root
-  path stopped being rebuilt every frame, under a ceiling one object tighter, and the harness runs
-  alone. The definition's code-splitting per route is met by the module graph, and bun already
+  nothing deciding it: the ruler is now what one open layer adds, 506 bytes measured between 24 and
+  32 layers once each layer's root path stopped being rebuilt every frame, under a ceiling one
+  object tighter, and the harness runs alone. The definition's code-splitting per route is met by the module graph, and bun already
   splits what pages share into chunks.
 
 ## Retired documents

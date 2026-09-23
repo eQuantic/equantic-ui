@@ -81,11 +81,11 @@ public class PerfHarnessTests
     /// sheet and a tooltip open. Found in review of the S5 visitor, which was built per call before
     /// it was cached on the context.
     /// </summary>
-    private static Stack OverlayHeavyScene(IAppTheme theme)
+    private static Stack OverlayHeavyScene(IAppTheme theme, int layers = OverlayLayers)
     {
         var page = new Stack();
         page.Add(DenseScene(theme));
-        for (var i = 0; i < OverlayLayers; i++)
+        for (var i = 0; i < layers; i++)
             page.Add(new Overlay(new Box(new BoxStyle
             {
                 Width = SizeValue.Fixed(240),
@@ -162,17 +162,22 @@ public class PerfHarnessTests
     /// and a tooltip open, and the eight-layer scene's 78.1 KB/frame sat over it with nothing to say
     /// whether that was a regression or the price of eight layers.
     /// <para>
-    /// The ruler is the DIFFERENCE between the two scenes over the layer count, not the eight-layer
-    /// frame. The dense part is the same tree and the same bytes in both, so what remains is exactly
-    /// what a layer adds, and a whole-frame ceiling would carry the dense ruler's drift on top of it.
-    /// Measured 2026-09-23: 75,746 bytes for the dense scene and 79,938 with eight layers, 524 bytes a
-    /// layer. It was 556 until each layer's root path came from a table: interpolating it built a new
-    /// string per layer per frame. The ceiling leaves less than the smallest object .NET allocates
-    /// (24 bytes), so one more object per layer fails here. Between them the two rulers bound the
-    /// eight-layer frame: 74 KB plus eight times this.
+    /// The ruler is the DIFFERENCE between two scenes over the layers between them, not a frame: the
+    /// dense part is the same bytes in both, so what remains is what a layer adds. The scenes have 24
+    /// and 32 layers, for two reasons measured on the way. The realizer's per-frame lists keep one
+    /// capacity from 25 to 32 items, where from 8 to 16 or from 16 to 24 they double, which is a
+    /// list's cost and not a layer's. And both are past the realizer's first table of layer paths,
+    /// where a path built every frame hid in an average over eight layers inside it.
+    /// </para>
+    /// <para>
+    /// Measured 2026-09-23: 88,347 and 92,402 bytes a frame, 506 bytes a layer. The ceiling leaves
+    /// less than the smallest object .NET allocates (24 bytes), so one more object per layer fails
+    /// here, and so does a path built past the table (538). For the record, the dense scene is 75,746
+    /// bytes and the eight-layer one 79,938, from 80,194 before each layer's root path came from a
+    /// table. Between them the two rulers bound a frame with layers open.
     /// </para>
     /// </summary>
-    private const long PooledLayerCeilingBytesPerFrame = 544;
+    private const long PooledLayerCeilingBytesPerFrame = 528;
 
     /// <summary>Managed bytes a steady frame of <paramref name="scene"/> allocates with RecycleFrames
     /// on, the way the shells run: warmed up, then averaged over the frames that follow, with one
@@ -209,11 +214,11 @@ public class PerfHarnessTests
     [Fact]
     public void AnOverlayLayer_CostsAFrameLessThanItsCeiling()
     {
-        var dense = PooledBytesPerFrame(DenseScene(PhotonTheme.Instance));
-        var layered = PooledBytesPerFrame(OverlayHeavyScene(PhotonTheme.Instance));
-        var perLayer = (layered - dense) / OverlayLayers;
+        var fewer = PooledBytesPerFrame(OverlayHeavyScene(PhotonTheme.Instance, 24));
+        var more = PooledBytesPerFrame(OverlayHeavyScene(PhotonTheme.Instance, 32));
+        var perLayer = (more - fewer) / 8;
 
-        _output.WriteLine($"pooled: {dense} bytes/frame dense, {layered} with {OverlayLayers} layers, "
+        _output.WriteLine($"pooled: {fewer} bytes/frame with 24 layers, {more} with 32, "
                           + $"{perLayer} a layer (ceiling {PooledLayerCeilingBytesPerFrame})");
         perLayer.Should().BeLessThan(PooledLayerCeilingBytesPerFrame,
             "a layer is laid out against the viewport on its own root path, so anything built per "
