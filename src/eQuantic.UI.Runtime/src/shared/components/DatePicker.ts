@@ -3,7 +3,7 @@ import { $eq, Anchored, Box, BoxStyle, BuildContext, Calendar, CornerRadii, Date
 export class DatePicker extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.DatePicker';
     _open: boolean = false;
-    _typing: any;
+    _typing: any = null;
     static $hydration = { selected: 'dateOnly', min: 'dateOnly', max: 'dateOnly' };
     declare selected: any;
     declare onChanged: any;

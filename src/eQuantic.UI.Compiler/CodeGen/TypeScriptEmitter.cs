@@ -1015,13 +1015,18 @@ public class TypeScriptEmitter
     /// </summary>
     private string? ValueTypeDefault(string csharpType, TypeSyntax? typeNode)
     {
+        // A NULLABLE starts null, whatever it wraps. `int?` and `bool?` began 0 and false here, where
+        // C# begins them null, so `_count == null` answered the opposite on the two sides; and a
+        // reference annotated `?` was left out altogether, `undefined`, which tsc refuses as never
+        // assigned (TS2564) and `=== null` reads as a value.
+        if (csharpType.EndsWith('?')) return "null";
         if (ImplicitValueTypeDefault(csharpType) is { } byName) return byName;
-        if (csharpType.EndsWith('?') || BindType(typeNode) is not { } symbol) return null;
+        if (BindType(typeNode) is not { } symbol) return null;
         var bySymbol = Strategies.DefaultValue.Of(symbol);
         return bySymbol == "null" ? null : bySymbol;
     }
 
-    private static string? ImplicitValueTypeDefault(string csharpType) => csharpType.TrimEnd('?') switch
+    private static string? ImplicitValueTypeDefault(string csharpType) => csharpType switch
     {
         "int" or "Int32" or "short" or "Int16" or "byte" or "sbyte" or "uint" or "UInt32"
             or "ushort" or "UInt16" or "float" or "Single" or "double" or "Double" => "0",

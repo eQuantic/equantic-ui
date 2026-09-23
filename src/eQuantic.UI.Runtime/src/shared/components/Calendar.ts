@@ -3,7 +3,7 @@ import { $eq, Box, BoxStyle, BuildContext, CalendarNames, Column, CornerRadii, D
 export class Calendar extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.Calendar';
     _month: DateOnly;
-    _cursor: any;
+    _cursor: any = null;
     static cellSize: number = 44;
     static headerHeight: number = 28;
     static $hydration = { _month: 'dateOnly', _cursor: 'dateOnly', selected: 'dateOnly', min: 'dateOnly', max: 'dateOnly' };
