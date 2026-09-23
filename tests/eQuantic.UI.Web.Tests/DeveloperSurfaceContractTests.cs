@@ -36,10 +36,20 @@ public class DeveloperSurfaceContractTests
     private static readonly Regex SectionBinding = new(
         @"(?:GetSection|BindConfiguration)\(\s*""([^""]+)""|SectionName\s*=\s*""([^""]+)""", RegexOptions.Compiled);
 
+    /// <summary>Every MSBuild SDK the tree ships, DERIVED rather than listed: a project with an
+    /// <c>Sdk/Sdk.props</c> is one. A third SDK is then on record the day it appears.</summary>
+    private static IReadOnlyList<string> Sdks() =>
+        Directory.EnumerateDirectories(Path.Combine(RepoRoot(), "src"))
+            .Where(project => File.Exists(Path.Combine(project, "Sdk", "Sdk.props")))
+            .Select(Path.GetFileName)
+            .OfType<string>()
+            .Order(StringComparer.Ordinal)
+            .ToList();
+
     private static IEnumerable<string> Surface()
     {
         var root = RepoRoot();
-        foreach (var sdk in new[] { "eQuantic.UI.Sdk", "eQuantic.UI.Sdk.Native" })
+        foreach (var sdk in Sdks())
         {
             var directory = Path.Combine(root, "src", sdk, "Sdk");
             var names = new SortedSet<string>(StringComparer.Ordinal);
@@ -91,8 +101,19 @@ public class DeveloperSurfaceContractTests
     public void TheSurfaceAnAppWritesOutsideCSharp_IsTheCommittedOne()
     {
         var current = Surface().ToList();
-        current.Should().Contain(line => line.StartsWith("msbuild eQuantic.UI.Sdk ", StringComparison.Ordinal),
-            "the scan must reach the SDK at all, or the comparison below holds on nothing");
+
+        // Each scan must have REACHED something before this compares or regenerates: a scan that
+        // silently stopped matching would otherwise write a baseline without that part, and every
+        // run after it would accept the part unpinned.
+        var sdks = Sdks();
+        sdks.Should().NotBeEmpty("the tree ships MSBuild SDKs, and a scan that finds none has lost its way");
+        foreach (var sdk in sdks)
+            current.Should().Contain(line => line.StartsWith($"msbuild {sdk} ", StringComparison.Ordinal),
+                $"{sdk} defines developer-facing properties, and the scan must reach them");
+        current.Should().Contain(line => line.StartsWith("config ", StringComparison.Ordinal),
+            "the source binds configuration sections, and the scan must reach them");
+        current.Should().Contain(line => line.StartsWith("template ", StringComparison.Ordinal),
+            "the templates declare parameters, and the scan must reach them");
 
         if (Environment.GetEnvironmentVariable("EQ_UPDATE_DEVELOPER_SURFACE") == "1")
         {
