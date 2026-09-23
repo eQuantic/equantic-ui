@@ -1,1 +1,3 @@
 #nullable enable
+eQuantic.UI.Native.Components.PhotonHost.KeyboardConvention.get -> eQuantic.UI.Primitives.KeyboardConvention
+eQuantic.UI.Native.Components.PhotonHost.KeyboardConvention.init -> void

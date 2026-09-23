@@ -1,10 +1,16 @@
-import { CodeEditorController, CodeMotionValue } from "../runtime-exports";
+import { CodeEditorController, KeyboardConventionValue } from "../runtime-exports";
 
 export class CodeKeymap {
-    static handle(editor: CodeEditorController, key: string, modifiers: number, clipboard: any = null) {
+    static handle(editor: CodeEditorController, key: string, modifiers: number, convention: KeyboardConventionValue, clipboard: any = null) {
         let shift = (modifiers & 1) !== 0;
         let command = (modifiers & 4) !== 0;
         let alt = (modifiers & 2) !== 0;
+        let apple = convention === 'apple';
+        if (key === 'Escape') {
+            editor.tabMovesFocus = true;
+            return false;
+        }
+        if (key !== 'Tab' && !CodeKeymap.isModifierKey(key)) editor.tabMovesFocus = false;
         if (command && key.length === 1) {
             switch (key[0].toLowerCase()) {
                 case 'a':
@@ -15,14 +21,17 @@ export class CodeKeymap {
                 case 'y':
                     return editor.redo();
                 case 'c':
-                    clipboard?.write(editor.copyText());
+                    if (clipboard == null) return false;
+                    clipboard.write(editor.copyText());
                     return true;
                 case 'x':
-                    clipboard?.write(editor.cut());
+                    if (clipboard == null) return false;
+                    clipboard.write(editor.cut());
                     return true;
                 case 'v':
+                    if (clipboard == null) return false;
                     let pasted: any; 
-                    if (((clipboard?.read() != null && clipboard?.read().length > 0) && (pasted = clipboard?.read(), true))) editor.insert(pasted);
+                    if (((clipboard.read() != null && clipboard.read().length > 0) && (pasted = clipboard.read(), true))) editor.paste(pasted);
                     return true;
                 case '/':
                     return editor.toggleLineComment();
@@ -31,19 +40,21 @@ export class CodeKeymap {
             }
         }
         if (command && (key === '/' || key === 'Slash')) return editor.toggleLineComment();
-        let motion: CodeMotionValue = alt ? 'word' : 'character';
+        let byWord = apple ? alt : command;
         switch (key) {
             case 'ArrowLeft':
-                editor.move(command ? 'lineBoundary' : motion, 'backward', shift);
+                editor.move(apple && command ? 'lineBoundary' : byWord ? 'word' : 'character', 'backward', shift);
                 return true;
             case 'ArrowRight':
-                editor.move(command ? 'lineBoundary' : motion, 'forward', shift);
+                editor.move(apple && command ? 'lineBoundary' : byWord ? 'word' : 'character', 'forward', shift);
                 return true;
             case 'ArrowUp':
-                editor.move(command ? 'documentBoundary' : 'line', 'backward', shift);
+                if (!apple && command) return false;
+                editor.move(apple && command ? 'documentBoundary' : 'line', 'backward', shift);
                 return true;
             case 'ArrowDown':
-                editor.move(command ? 'documentBoundary' : 'line', 'forward', shift);
+                if (!apple && command) return false;
+                editor.move(apple && command ? 'documentBoundary' : 'line', 'forward', shift);
                 return true;
             case 'Home':
                 editor.move(command ? 'documentBoundary' : 'lineBoundary', 'backward', shift);
@@ -62,15 +73,19 @@ export class CodeKeymap {
             case 'Enter':
                 return editor.insertNewLine();
             case 'Backspace':
-                return editor.deleteBackward(alt ? 'word' : 'character');
+                return editor.deleteBackward(apple && command ? 'lineBoundary' : byWord ? 'word' : 'character');
             case 'Delete':
-                return editor.deleteForward(alt ? 'word' : 'character');
+                return editor.deleteForward(byWord ? 'word' : 'character');
             case 'Tab':
-                if (editor.readOnly) return false;
+                if (editor.readOnly || editor.tabMovesFocus) return false;
                 return shift ? editor.outdent() : editor.indent();
             default:
                 return false;
         }
+    }
+
+    static isModifierKey(key: string) {
+        return (((((((key === 'Shift' || key === 'Control') || key === 'Alt') || key === 'Meta') || key === 'AltGraph') || key === 'CapsLock') || key === 'Fn') || key === 'OS');
     }
 }
 

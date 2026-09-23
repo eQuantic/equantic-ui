@@ -120,19 +120,21 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context)
         LowerSheetSurface(sheet, horizontalAxis);
 
     /// <summary>
-    /// THE ONE WORD THIS REALIZER STILL DOES NOT WRITE, and the reason is not "nobody noticed" — it
-    /// was that once, when `SheetSurface` sat here beside it and both lowered to an empty
-    /// <c>&lt;span&gt;</c>. The client appends a caret to every code surface and the server has no
-    /// business rendering a caret; emitting only the child would hand hydration a tree one element
-    /// short, which the reconciler records as a failed adoption. Settling the shape needs a running
-    /// page rather than a guess. <c>SurfaceSsrTests</c> holds the half that is done.
+    /// THE ONE WORD THIS REALIZER STILL DOES NOT WRITE, and now for a MEASURED reason. A code
+    /// surface's geometry is text geometry (the gutter as wide as its widest number, a column as
+    /// wide as one advance of the mono face), and the server has no measurer, so
+    /// <c>MeasureText</c> answers 0 here: an arm that wrote the surface wrote a 12px gutter and
+    /// zero-width columns. Hydration deliberately leaves the server's markup alone, so the client
+    /// ADOPTED that tree and kept it, and the editor stayed broken after every rebuild (measured on
+    /// the dashboard's /code). Answering null makes the adoption fail and the client draw the editor
+    /// with its own measurements, which is right until a component that measured text without a
+    /// measurer can say so and be redrawn by the client instead of adopted.
     /// <para>
     /// It returns null exactly as the old default arm did. What is new is not that null is rare —
     /// <see cref="Visit(Spacer, bool?)"/> returns it outside a flex axis, and every wrapper
     /// propagates a null child — but that this is the only node with NO lowering at all, the only
     /// one that answers null for every instance, and that the answer is written where the node is
-    /// instead of in an exemption list. (Review caught the overstatement in the first draft of this
-    /// comment, which claimed it was the only node that could return null.)
+    /// instead of in an exemption list.
     /// </para>
     /// </summary>
     public HtmlElement? Visit(CodeSurface code, bool? horizontalAxis) => null;

@@ -117,13 +117,19 @@ public class CodeEditorFinishTests
         host.RenderFrame(builder, 0);
         var commands = builder.Build().Commands.ToArray();
 
-        var washes = commands.Where(c => c.Kind == DrawCommandKind.FillRRect
+        var band = CodeBlock.SelectionFor(false, PhotonTheme.Instance)
+            .WithOpacity(CodeBlock.SelectionAlpha).Resolve(ThemeMode.Light);
+        var fills = commands.Where(c => c.Kind == DrawCommandKind.FillRRect
             && MathF.Abs(c.Shape.Rect.Width - 3 * surface.Grid().Cell.Width) < 0.5f).ToArray();
+        var washes = fills.Where(c => c.Paint.Color != band).ToArray();
         var outlines = commands.Where(c => c.Kind == DrawCommandKind.StrokeRRect
             && MathF.Abs(c.Shape.Rect.Width - 3 * surface.Grid().Cell.Width) < 1.5f).ToArray();
 
         washes.Should().HaveCount(2, "the matches that are not the current one");
         outlines.Should().HaveCount(1, "…and the one the caret is on, so 'next' moves something visible");
+        // The current one is SELECTED too, and a selection stays on screen when the editor does not
+        // hold the keyboard, as in every editor: the component draws it, focused or not.
+        fills.Count(c => c.Paint.Color == band).Should().Be(1, "the selection's band");
     }
 
     [Fact]

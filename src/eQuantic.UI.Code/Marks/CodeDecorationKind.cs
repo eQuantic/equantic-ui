@@ -11,4 +11,7 @@ public enum CodeDecorationKind : byte
     Outline = 2,
     /// <summary>A strike-through — deleted in a diff, or unreachable code.</summary>
     Strike = 3,
+    /// <summary>A thin line under the range in the code's own ink — the text an input method is
+    /// still composing, which is in the document but not yet committed.</summary>
+    Underline = 4,
 }

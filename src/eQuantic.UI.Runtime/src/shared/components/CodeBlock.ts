@@ -1,7 +1,8 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeDecoration, CodeDecorationKindValue, CodeDocument, CodeGutterKindValue, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeMetrics, CodeTokenKindValue, Color, ColorToken, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Row, ScrollView, SizeValue, SizeVariantValue, Sizing, Spacer, Stack, StatelessComponent, Text, TypeStyle, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeDecoration, CodeDecorationKindValue, CodeDocument, CodeGutterKindValue, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeMetrics, CodeTokenKindValue, Color, ColorToken, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SizeValue, SizeVariantValue, Sizing, Spacer, Stack, StatelessComponent, Text, TypeStyle, VisualNode } from "../runtime-exports";
 
 export class CodeBlock extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.CodeBlock';
+    static selectionAlpha: number = Math.fround(0.28);
     static codeSlab: ColorToken = new ColorToken(Color.fromRgba(0x10, 0x14, 0x18, 0xFF));
     static codeInk: ColorToken = new ColorToken(Color.fromRgba(0xC9, 0xD4, 0xDE, 0xFF));
     static codeInkMuted: ColorToken = new ColorToken(Color.fromRgba(0x7C, 0x8A, 0x99, 0xFF));
@@ -17,6 +18,7 @@ export class CodeBlock extends StatelessComponent {
     declare gutterMarkers: CodeGutterMarker[];
     declare decorations: CodeDecoration[];
     declare activeLine: any;
+    declare selectionBands: Rect[];
     declare caption: any;
     declare onCopy: (() => void) | null;
     declare onGutterPressed: any;
@@ -39,6 +41,7 @@ export class CodeBlock extends StatelessComponent {
         if (this.inverse === undefined) this.inverse = false;
         if (this.gutterMarkers === undefined) this.gutterMarkers = [];
         if (this.decorations === undefined) this.decorations = [];
+        if (this.selectionBands === undefined) this.selectionBands = [];
         if (this.viewportOffset === undefined) this.viewportOffset = 0;
         if (this.viewportHeight === undefined) this.viewportHeight = 0;
         if (this.viewportWidth === undefined) this.viewportWidth = 0;
@@ -66,18 +69,34 @@ export class CodeBlock extends StatelessComponent {
             lines.add(this.lineRow(context, highlighter, index, style, lineHeight, gutterWidth, ink, theme));
         }
         if (last < this.document.lineCount - 1) lines.add(Spacer.fixed((this.document.lineCount - 1 - last) * lineHeight));
-        let content: VisualNode = lines;
-        if (this.decorations.length > 0) {
-            let decorated = new Stack('topStart', { width: SizeValue.fill });
-            let marks = new Stack('topStart', { width: SizeValue.fill });
-            for (const decoration of this.decorations) {
-                for (const mark of this.marks(decoration, metrics, theme)) marks.add(mark);
-            }
-            decorated.add(marks);
-            decorated.add(lines);
-            content = decorated;
+        let content: VisualNode = new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(0, 12) }), lines);
+        let width = Math.max(codeWidth, this.viewportWidth);
+        let marks = new Stack('topStart', { width: SizeValue.fill });
+        let activeLine: any; 
+        if ((activeLine = this.activeLine) != null && activeLine >= 0 && activeLine < this.document.lineCount) {
+            marks.add(new Positioned(new Box(new BoxStyle({ width: width, height: lineHeight, background: this.inverse ? CodeBlock.codeSlabActive : theme.colors('primary').subtle })), metrics.contentTop + activeLine * lineHeight, null, null, 0));
         }
-        let body: VisualNode = new Box(new BoxStyle({ width: SizeValue.fixed(Math.max(codeWidth, this.viewportWidth)), padding: EdgeInsets.symmetric(0, 12) }), content);
+        for (const decoration of this.decorations) {
+            if (decoration.kind !== 'highlight') continue;
+            for (const mark of this.marks(decoration, metrics, theme)) marks.add(mark);
+        }
+        if (this.selectionBands.length > 0) {
+            let band = CodeBlock.selectionFor(this.inverse, theme).withOpacity(CodeBlock.selectionAlpha);
+            for (const rect of this.selectionBands) {
+                marks.add(new Positioned(new Box(new BoxStyle({ width: rect.width, height: rect.height, background: band, cornerRadius: new CornerRadii(1) })), rect.y, null, null, rect.x));
+            }
+        }
+        for (const decoration of this.decorations) {
+            if (decoration.kind === 'highlight') continue;
+            for (const mark of this.marks(decoration, metrics, theme)) marks.add(mark);
+        }
+        if (marks.children.length > 0) {
+            let layered = new Stack('topStart', { width: SizeValue.fill });
+            layered.add(marks);
+            layered.add(content);
+            content = layered;
+        }
+        let body: VisualNode = new Box(new BoxStyle({ width: SizeValue.fixed(width) }), content);
         if (!this.standalone) return body;
         body = new ScrollView(body, 'horizontal', { width: SizeValue.fill });
         if (this.showLineNumbers) {
@@ -156,10 +175,7 @@ export class CodeBlock extends StatelessComponent {
         if (at < text.length) code.add(CodeBlock.run(text.slice(at), ink, style));
         if (text.length === 0) code.add(CodeBlock.run(' ', ink, style));
         row.add(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(12, 0) }), code));
-        let active = this.activeLine === index;
-        if (!active) return row;
-        let wash = this.inverse ? CodeBlock.codeSlabActive : theme.colors('primary').subtle;
-        return new Box(new BoxStyle({ width: SizeValue.fill, background: wash }), row);
+        return row;
     }
 
     window(lineHeight: number) {
@@ -174,22 +190,22 @@ export class CodeBlock extends StatelessComponent {
         const _seq = [];
         let start = this.document.clamp(decoration.range.start);
         let end = this.document.clamp(decoration.range.end);
-        let color = decoration.color ?? CodeBlock.defaultColor(decoration.kind, theme);
+        let color = decoration.color ?? this.defaultColor(decoration.kind, theme);
         if (this.inverse) color = new ColorToken(color.dark, color.dark);
         for (let line = start.line; line <= end.line; line++) {
             let from = line === start.line ? start.column : 0;
             let to = line === end.line ? end.column : this.document.line(line).length;
             if (to <= from) continue;
             let left = Math.fround(metrics.contentLeft + from * metrics.columnWidth);
-            let top = Math.fround(line * metrics.lineHeight);
+            let top = Math.fround(metrics.contentTop + line * metrics.lineHeight);
             let width = Math.fround((to - from) * metrics.columnWidth);
-            _seq.push((() => { const _s = decoration.kind; if (_s === 'outline') return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, borderWidth: 1, borderColor: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); if (_s === 'squiggle') return new Positioned(new Box(new BoxStyle({ width: width, height: 2, background: color })), top + metrics.lineHeight - 2, null, null, left); if (_s === 'strike') return new Positioned(new Box(new BoxStyle({ width: width, height: 1, background: color })), top + metrics.lineHeight / 2, null, null, left); return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, background: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); })());
+            _seq.push((() => { const _s = decoration.kind; if (_s === 'outline') return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, borderWidth: 1, borderColor: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); if (_s === 'squiggle') return new Positioned(new Box(new BoxStyle({ width: width, height: 2, background: color })), top + metrics.lineHeight - 2, null, null, left); if (_s === 'strike') return new Positioned(new Box(new BoxStyle({ width: width, height: 1, background: color })), top + metrics.lineHeight / 2, null, null, left); if (_s === 'underline') return new Positioned(new Box(new BoxStyle({ width: width, height: 1, background: color })), top + metrics.lineHeight - 2, null, null, left); return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, background: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); })());
         }
         return _seq;
     }
 
-    static defaultColor(kind: CodeDecorationKindValue, theme: any) {
-        return (() => { const _s = kind; if (_s === 'squiggle') return theme.colors('destructive').base; if (_s === 'outline') return theme.borderStrong; if (_s === 'strike') return theme.textMuted; return theme.colors('warning').subtle; })();
+    defaultColor(kind: CodeDecorationKindValue, theme: any) {
+        return (() => { const _s = kind; if (_s === 'squiggle') return theme.colors('destructive').base; if (_s === 'outline') return theme.borderStrong; if (_s === 'strike') return theme.textMuted; if (_s === 'underline') return CodeBlock.inkFor(this.inverse, theme); return theme.colors('warning').subtle; })();
     }
 
     static run(content: string, color: ColorToken, style: TypeStyle) {

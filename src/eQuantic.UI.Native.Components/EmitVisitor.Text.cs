@@ -41,19 +41,15 @@ internal sealed partial class EmitVisitor
         EmitCodeSurface(s.Node, surface, s.Input);
     }
 
-    /// <summary>The code surface's marks, painted once its child has been — see
-    /// <see cref="PaintCodeMarks"/>.</summary>
-    private void EmitCodeMarks(CodeSurface surface, EmitState s)
+    /// <summary>The code surface's carets, painted once its child has been — see
+    /// <see cref="EmitCodeCarets"/>.</summary>
+    private void EmitCodeCaret(CodeSurface surface, EmitState s)
     {
-        PaintCodeMarks(s.Node, surface, s.Theme, s.Mode, s.Builder, s.Press);
+        EmitCodeCarets(s.Node, surface, s.Theme, s.Mode, s.Builder, s.Press);
     }
 
     /// <summary>2dp: thin enough to sit between glyphs, thick enough to see on a scaled display.</summary>
     private const float CaretWidth = 2f;
-
-    /// <summary>How much of the band shows through — normative for BOTH targets (the web mirror
-    /// paints the same number).</summary>
-    internal const float SelectionAlpha = 0.28f;
 
     /// <summary>How close to the right edge the caret may ride before the text slides: enough to
     /// see the caret itself plus a sliver of what comes next.</summary>
@@ -316,59 +312,42 @@ internal sealed partial class EmitVisitor
 
     /// <summary>
     /// An editable code surface takes the pointer and the keyboard: its region registers BEFORE its
-    /// child is emitted, under whatever the child draws on top of it.
+    /// child is emitted, under whatever the child draws on top of it — a button inside the code is
+    /// still a button. Nothing is painted here; the child draws the code and every mark under it.
     /// </summary>
-    private static void EmitCodeSurface(LayoutNode node, CodeSurface surface, InputSink input) =>
+    private static void EmitCodeSurface(LayoutNode node, CodeSurface surface, InputSink input)
+    {
         input.Add(new CodeRegion(node.Bounds, surface, node.Path ?? ""));
+    }
 
     /// <summary>
-    /// The carets and the selection over an editable code surface, painted AFTER its child: on top of
-    /// the code and of everything the code drew, as the web paints them.
+    /// The carets over an editable code surface, painted AFTER its child — on top of the text and of
+    /// every layer the child raised.
     /// <para>
-    /// They were painted BEFORE the child, on the reasoning that the code should paint over them, and
-    /// the child's own backgrounds did exactly that: the active line's wash is opaque, and the caret is
-    /// always on the active line, so the stripe that marks where the caret is covered it. The band is
-    /// translucent, so the text still reads through it from above.
+    /// They used to be painted BEFORE the child, on the reasoning that the code should paint over
+    /// them, and the child's own backgrounds did exactly that: the active line's wash is opaque, so
+    /// the caret — which is always on the active line — was covered by the stripe that marks where
+    /// it is. The selection is the child's to draw now, in its own mark layer under the text; the
+    /// caret is all that is left here, because it is the one mark that blinks.
     /// </para>
     /// <para>
-    /// Painted, never computed: the MODEL answers where every band and caret goes, in the surface's
-    /// own coordinates, and this only offsets them by where the surface landed. The arithmetic from a
-    /// (line, column) to a point used to be here and again in the web lowering, and a caret that two
-    /// hosts place separately is a caret that ends up in two places.
+    /// Painted, never computed: the MODEL answers where every caret goes, in the surface's own
+    /// coordinates, and this only offsets them by where the surface landed.
     /// </para>
     /// </summary>
-    private static void PaintCodeMarks(LayoutNode node, CodeSurface surface, IAppTheme theme,
+    private static void EmitCodeCarets(LayoutNode node, CodeSurface surface, IAppTheme theme,
         ThemeMode mode, DisplayListBuilder builder, PressScope press)
     {
         var editing = press.TextPath is { Length: > 0 } && node.Path == press.TextPath;
-        if (!editing) return;
+        if (!editing || !press.CaretVisible) return;
 
-        var model = surface.Model;
-        var left = node.Bounds.X;
-        var top = node.Bounds.Y;
-
-        var bands = model.SelectionBands;
-        if (bands.Count > 0)
-        {
-            var paint = Paint.Solid((surface.SelectionColor ?? theme.FocusRing).Resolve(mode).WithOpacity(SelectionAlpha));
-            for (var i = 0; i < bands.Count; i++)
-            {
-                var band = bands[i];
-                builder.FillRRect(new RRect(new Rect(left + band.X, top + band.Y, band.Width, band.Height),
-                    new CornerRadii(1)), paint);
-            }
-        }
-
-        // The carets sit at each selection's FOCUS end, drawn with the band and not instead of it: the
-        // band says which characters are held, a caret says which end ⇧-arrow moves.
-        if (!press.CaretVisible) return;
         var ink = Paint.Solid((surface.CaretColor ?? theme.TextPrimary).Resolve(mode));
-        var carets = model.Carets;
+        var carets = surface.Model.Carets;
         for (var i = 0; i < carets.Count; i++)
         {
             var caret = carets[i];
-            builder.FillRRect(new RRect(new Rect(left + caret.X, top + caret.Y, caret.Width, caret.Height),
-                new CornerRadii(0)), ink);
+            builder.FillRRect(new RRect(new Rect(node.Bounds.X + caret.X, node.Bounds.Y + caret.Y,
+                caret.Width, caret.Height), new CornerRadii(0)), ink);
         }
     }
 
