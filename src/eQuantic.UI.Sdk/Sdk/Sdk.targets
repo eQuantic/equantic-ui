@@ -14,14 +14,17 @@
     </PropertyGroup>
 
     <!--
-        eqc's maps are not web assets. The static web assets pipeline registers what it finds under
-        wwwroot while the project EVALUATES, and a Release build deletes the maps a Debug build left:
-        registered and then deleted, their compression failed the next publish. Out of Content they
-        are never registered, a debugger still reads them from disk through the static files, and
-        the publish filter below stays as the second line.
+        Everything in eqc's output folder is written by THIS build, so none of it is taken from
+        Content. The static web assets pipeline registers what it finds under wwwroot while the
+        project EVALUATES, and the build then rewrites the folder: a file registered and then
+        deleted failed the next publish's compression. It happened to the maps a Release build
+        removes (#352), and to every shared chunk bun renames when a component two pages share
+        changes (#361), in the most ordinary sequence there is: edit, then publish.
+        `_EQuanticOutputAsStaticWebAssets` below defines the folder from what is on disk once its
+        writers have run.
     -->
     <ItemGroup>
-        <Content Remove="$(EQuanticOutputPath)**/*.map" />
+        <Content Remove="$(EQuanticOutputPath)**" />
     </ItemGroup>
 
     <!--
@@ -371,10 +374,11 @@
     </Target>
 
     <!--
-        No map from eqc's output reaches a publish, whatever EQuanticSourceMaps says (#352). It
-        FILTERS what is published and never takes the output out of Content: an app that removed
-        wwwroot/_equantic/** from Content saw its second publish ship no bundles at all, with a
-        green build, because the Web SDK then published nothing a build had generated there.
+        No map from eqc's output reaches a publish, whatever EQuanticSourceMaps says (#352). The maps
+        are not among the web assets `_EQuanticOutputAsStaticWebAssets` defines, and this filter is the
+        second line. An app that removed wwwroot/_equantic/** from Content without defining it again
+        saw its second publish ship no bundles at all, with a green build: taking the folder out of
+        Content is only half of what that target does.
     -->
     <Target Name="_EQuanticKeepSourceMapsOutOfPublish" AfterTargets="ComputeResolvedFilesToPublishList">
         <PropertyGroup>
@@ -414,11 +418,45 @@
         <Delete Files="$(MSBuildProjectDirectory)/$(EQuanticOutputPath)equantic.css" />
     </Target>
 
-    <!-- Not a web asset either: registered while the project evaluates and then deleted by the
-         target above, it would fail the publish's compression, the way a deleted source map did. -->
-    <ItemGroup>
-        <Content Remove="$(EQuanticOutputPath)equantic.css" />
-    </ItemGroup>
+    <PropertyGroup>
+        <GenerateComputedBuildStaticWebAssetsDependsOn>$(GenerateComputedBuildStaticWebAssetsDependsOn);_EQuanticOutputAsStaticWebAssets</GenerateComputedBuildStaticWebAssetsDependsOn>
+    </PropertyGroup>
+
+    <!--
+        The output folder as web assets, defined from what is ON DISK once its writers have run: the
+        compiler (the modules, the chunks bun splits out, the string catalogs), the runtime's copy and
+        the app icon. This is the pipeline's own hook for assets a build generates, which runs after
+        CoreCompile and before the pipeline resolves its inputs, so the compression, the manifests and
+        the publish see this build's files and only those. The parameters are the ones the SDK's own
+        discovery of wwwroot passes, so an asset here is what that discovery would have made of the
+        file had it existed while the project evaluated. The maps stay out: a debugger reads them from
+        disk, and a publish never takes one (#352).
+    -->
+    <Target Name="_EQuanticOutputAsStaticWebAssets"
+        DependsOnTargets="CoreCompile;CompileEQuanticUI;CopyEQuanticRuntime;EQuanticWebAppIcon"
+        Condition="'$(EnableEQuanticUICompilation)' == 'true'">
+        <ItemGroup>
+            <_EqOutputFile Include="$(EQuanticOutputPath)**" Exclude="$(EQuanticOutputPath)**/*.map" />
+        </ItemGroup>
+        <DefineStaticWebAssets
+            CandidateAssets="@(_EqOutputFile)"
+            FingerprintCandidates="$(StaticWebAssetsFingerprintContent)"
+            FingerprintPatterns="@(StaticWebAssetFingerprintPattern)"
+            RelativePathPattern="wwwroot/**"
+            SourceType="Discovered"
+            SourceId="$(PackageId)"
+            ContentRoot="$(MSBuildProjectDirectory)\wwwroot\"
+            BasePath="$(StaticWebAssetBasePath)"
+            AssetMergeSource="$(StaticWebAssetMergeTarget)">
+            <Output TaskParameter="Assets" ItemName="StaticWebAsset" />
+            <Output TaskParameter="Assets" ItemName="_EqOutputStaticWebAsset" />
+        </DefineStaticWebAssets>
+        <DefineStaticWebAssetEndpoints
+            CandidateAssets="@(_EqOutputStaticWebAsset)"
+            ContentTypeMappings="@(StaticWebAssetContentTypeMapping)">
+            <Output TaskParameter="Endpoints" ItemName="StaticWebAssetEndpoint" />
+        </DefineStaticWebAssetEndpoints>
+    </Target>
 
     <!--
         The app icon, from the same source the device SDK uses: `Assets/AppIcon.png` (artwork a
