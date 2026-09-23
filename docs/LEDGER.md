@@ -457,6 +457,15 @@ record of a release, the wiki's Upgrading page is the distillate.
   build's maps, deleted by a Release build after being registered, failed the publish), and a
   publish takes no map whatever the setting says. CI publishes the sample and looks for a sentence
   only its server has.
+- **2026-09-23 · The code editor's engine gets an assembly of its own**: Track I became the editor
+  `../equantic-code` is built on, planned in [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) after
+  driving the current one in Chromium and through `PhotonHost` found eighteen defects. Its first
+  slice ([#359](https://github.com/eQuantic/equantic-ui/pull/359)) moves the engine out of
+  `Primitives` into `eQuantic.UI.Code` (the audit's section 4, decided with Edgar) and puts one
+  protocol, `ICodeSurfaceModel`, between it and both hosts: the grid and the pointer semantics are
+  the engine's, which gave the web drag selection, shift-click, and the double and triple click it
+  never had. Two transpiler gaps it exposed were fixed where they live (a plain class's unassigned
+  field, and `bool | bool` answering a number).
 
 ## Retired documents
 
