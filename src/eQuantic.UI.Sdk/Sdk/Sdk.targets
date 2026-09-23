@@ -197,13 +197,45 @@
     </Target>
 
     <!--
-        NOTE on generated sources: they are written to disk for eqc to read, and the compiler never
-        removes what a generator STOPPED producing. Renaming or dropping a generator therefore
-        leaves its last output in obj, where eqc still reads it — a phantom type, or a second copy
-        of a live one. `dotnet clean` is the cure, and it is the only one: a target that wiped the
-        directory first broke every INCREMENTAL build instead, because the compile is skipped then
-        and nothing rewrites what was deleted, leaving eqc with no generated surface at all.
+        A generated file its generator STOPS emitting stays on disk (#253). Roslyn writes the files it
+        generates on every compile and deletes none, so obj/.../generated can still hold the factory
+        surface of a component the app deleted, and eqc, which reads FILES, transpiles a type that no
+        longer exists. Measured on a sample: a compile that RUNS rewrites every generated file, the
+        unchanged ones included, so after one, a file older than the compile's start is one it did
+        not write. The prune therefore runs only when CoreCompile did, which is when the assembly is
+        newer than the start: a skipped compile rewrote nothing, and every file on disk is current.
+        That is what a target that wiped the whole directory first got wrong: the compile is skipped
+        on an incremental build, nothing rewrote what was deleted, and eqc met no generated surface
+        at all — which is why `dotnet clean` used to be the only cure. "The compile ran" compares
+        against the EXACT start, and "stale" against two seconds before it: a file system that stores
+        whole seconds can then only skip a prune, never delete a file the compile just wrote. A file
+        the compile takes as INPUT is not a generator's output and is never a candidate: the SDK's
+        own vector catalog (EQuanticVectors) lives in the same folder, written only when its SVGs
+        change, and the first cut of this prune deleted it from a sample whose SVGs had not.
     -->
+    <Target Name="_EQuanticMarkCompileStart" BeforeTargets="CoreCompile"
+            Condition="'$(EmitCompilerGeneratedFiles)' == 'true'">
+        <PropertyGroup>
+            <_EQuanticCompileStartTicks>$([System.DateTime]::UtcNow.Ticks)</_EQuanticCompileStartTicks>
+            <_EQuanticStaleBeforeTicks>$([System.DateTime]::UtcNow.AddSeconds(-2).Ticks)</_EQuanticStaleBeforeTicks>
+        </PropertyGroup>
+    </Target>
+
+    <Target Name="_EQuanticPruneStaleGeneratedFiles" AfterTargets="CoreCompile"
+            Condition="'$(EmitCompilerGeneratedFiles)' == 'true' And '$(_EQuanticCompileStartTicks)' != '' And '$(CompilerGeneratedFilesOutputPath)' != ''">
+        <PropertyGroup>
+            <_EQuanticAssemblyPath>@(IntermediateAssembly->'%(FullPath)')</_EQuanticAssemblyPath>
+            <_EQuanticCompileRan Condition="Exists('$(_EQuanticAssemblyPath)') And $([System.IO.File]::GetLastWriteTime('$(_EQuanticAssemblyPath)').ToUniversalTime().Ticks) &gt;= $(_EQuanticCompileStartTicks)">true</_EQuanticCompileRan>
+        </PropertyGroup>
+        <ItemGroup Condition="'$(_EQuanticCompileRan)' == 'true'">
+            <_EQuanticGeneratedFile Include="$(CompilerGeneratedFilesOutputPath)/**/*.cs" Exclude="@(Compile)" />
+            <_EQuanticStaleGeneratedFile Include="@(_EQuanticGeneratedFile)"
+                Condition="$([System.IO.File]::GetLastWriteTime('%(FullPath)').ToUniversalTime().Ticks) &lt; $(_EQuanticStaleBeforeTicks)" />
+        </ItemGroup>
+        <Delete Files="@(_EQuanticStaleGeneratedFile)" />
+        <Message Importance="high" Condition="'@(_EQuanticStaleGeneratedFile)' != ''"
+                 Text="eQuantic.UI: removed %(_EQuanticStaleGeneratedFile.Identity), a generated file this compile did not write." />
+    </Target>
 
     <!-- GenerateGlobalUsings must have run before eqc: eqc reads the generated GlobalUsings.g.cs
          into its own compilation (that is how the implicit factory `using static` reaches it), and
