@@ -30,6 +30,7 @@ import {
 } from './utils/bits';
 import { checked, dictGet, single, substring } from './utils/overflow';
 import { format, parseEnum, stringFormat } from './utils/format';
+import { nextTextElementLength, textElementStarts } from './utils/text-elements';
 import { str } from './utils/culture';
 import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './utils/datetime';
 import { stringBuilder } from './utils/string-builder';
@@ -164,8 +165,9 @@ export const $eq = {
     trailingZeroCount64,
     log2Of64,
   },
-  /** Text: number/string formatting and StringBuilder. */
-  text: { format, stringFormat, stringBuilder, substring },
+  /** Text: number/string formatting, StringBuilder, and StringInfo's text elements (grapheme
+   * clusters, from the platform's segmenter). */
+  text: { format, stringFormat, stringBuilder, substring, textElementStarts, nextTextElementLength },
   /** A dictionary read that fails on a missing key, the way .NET does. */
   dictGet,
   /** Date and time, tick-precise. */
