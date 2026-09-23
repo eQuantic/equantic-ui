@@ -1,4 +1,11 @@
-import { dec } from './utils/decimal';
+import {
+  dec,
+  decConvert,
+  decFromDouble,
+  decFromSingle,
+  decParse,
+  decTryParse,
+} from './utils/decimal';
 import { combineDelegate, removeDelegate } from './utils/delegates';
 import { hydrate } from './utils/hydrate';
 import { long } from './utils/long';
@@ -158,6 +165,11 @@ export const $eq = {
   /** Numeric compat: exact decimal and 64-bit integer. */
   num: {
     dec,
+    decParse,
+    decTryParse,
+    decFromDouble,
+    decFromSingle,
+    decConvert,
     long,
     checked,
     divRem,

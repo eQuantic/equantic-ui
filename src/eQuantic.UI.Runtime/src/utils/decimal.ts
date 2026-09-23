@@ -1,4 +1,24 @@
 import type { MidpointRounding } from './dotnet-math';
+import { NumberStyles, readNumber, type NumberText } from './number-grammar';
+
+/** The largest mantissa a decimal holds: 96 bits. */
+const MAX_MANTISSA = (1n << 96n) - 1n;
+/** The most digits a decimal keeps after the point. */
+const MAX_SCALE = 28;
+/** Past this many digits before the point, no decimal holds the number. */
+const PRECISION = 29;
+/** A mantissa that rounded past 96 bits, a digit shorter: 2^96 / 10, rounded up. */
+const CARRIED = 7922816251426433759354395034n;
+const OVERFLOW = 'Value was either too large or too small for a Decimal.';
+/** Every flag NumberStyles defines; a bit beyond them is not a style. */
+const DEFINED_STYLES = 2047;
+
+/**
+ * Each power of ten as the double nearest it, as .NET's `DecCalc.DoublePowers10` holds it. Read
+ * from text, because `10 ** 23` is not always that double.
+ */
+const DOUBLE_POWERS_10 = Array.from({ length: MAX_SCALE + 1 }, (_, power) => Number(`1e${power}`));
+const bits = new DataView(new ArrayBuffer(8));
 
 /**
  * Whether a rounding moves the truncated quotient one step away from zero, per .NET's
@@ -48,6 +68,56 @@ export class Decimal {
     const fracPart = match[3] || '';
     const digits = intPart + fracPart || '0';
     return new Decimal(sign * BigInt(digits), fracPart.length);
+  }
+
+  /**
+   * `decimal.Parse`: the number `text` holds under `styles`, `NumberStyles.Number` unless the call
+   * named others, rounded to what a decimal keeps. It throws what .NET throws, with its words: for
+   * a style a decimal cannot read, for no text, for text that is not a number (a FormatException)
+   * and for one no decimal holds (an OverflowException).
+   */
+  static parse(text: string | null | undefined, styles: number = NumberStyles.Number): Decimal {
+    validateStyles(styles);
+    if (text == null) throw new Error("Value cannot be null. (Parameter 's')");
+    const number = readNumber(text, styles);
+    if (number === undefined) {
+      throw new Error(`The input string '${text}' was not in a correct format.`);
+    }
+    const value = fromText(number);
+    if (value === undefined) throw new Error(OVERFLOW);
+    return value;
+  }
+
+  /**
+   * `decimal.TryParse`: the value `parse` would return, or `undefined` where it would throw for
+   * the text. A style a decimal cannot read still throws, as it does in .NET.
+   */
+  static tryParse(
+    text: string | null | undefined,
+    styles: number = NumberStyles.Number,
+  ): Decimal | undefined {
+    validateStyles(styles);
+    if (text == null) return undefined;
+    const number = readNumber(text, styles);
+    return number === undefined ? undefined : fromText(number);
+  }
+
+  /**
+   * A double converted to a decimal, as .NET converts it (`DecCalc.VarDecFromR8`): to 15
+   * significant digits, which is all a double is trusted with, so `0.1 + 0.2` becomes 0.3. The
+   * digits come from the double scaled by a power of ten in double arithmetic and rounded half to
+   * even, the same steps .NET takes; a value of 2^96 or more, an infinity or NaN is an overflow.
+   */
+  static fromDouble(value: number): Decimal {
+    bits.setFloat64(0, value);
+    return fromBinary(value, ((bits.getUint16(0) >> 4) & 0x7ff) - 1022, 15);
+  }
+
+  /** A float converted to a decimal (`DecCalc.VarDecFromR4`): the same steps, to 7 digits. */
+  static fromSingle(value: number): Decimal {
+    const single = Math.fround(value);
+    bits.setFloat32(0, single);
+    return fromBinary(single, ((bits.getUint16(0) >> 7) & 0xff) - 126, 7);
   }
 
   private static align(a: Decimal, b: Decimal): [bigint, bigint, number] {
@@ -175,6 +245,141 @@ export class Decimal {
   }
 }
 
+const ZERO = new Decimal(0n, 0);
+
+function validateStyles(styles: number): void {
+  if ((styles & ~DEFINED_STYLES) !== 0) {
+    throw new Error("An undefined NumberStyles value is being used. (Parameter 'style')");
+  }
+  if ((styles & (NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) !== 0) {
+    throw new Error(
+      "The number styles AllowHexSpecifier and AllowBinarySpecifier are not supported on floating point data types. (Parameter 'style')",
+    );
+  }
+}
+
+/**
+ * A decimal from the digits of its text, as .NET makes one (`Number.TryNumberToDecimal`), or
+ * `undefined` where no decimal holds the value. It keeps as many digits as fit, at most 28 after
+ * the point and at most a 96-bit mantissa, and rounds at the first it drops, half to even: a 5
+ * followed by nothing but zeros leaves an even mantissa as it is. A rounding that carries past 96
+ * bits costs a digit instead, so 7.92281625142643375935439503355 is 7.922816251426433759354395034.
+ * A zero keeps the scale its text wrote, up to 28, and so does a value too small to show.
+ */
+function fromText({ negative, digits, scale }: NumberText): Decimal | undefined {
+  if (digits.length === 0) return new Decimal(0n, Math.min(Math.max(-scale, 0), MAX_SCALE));
+  if (scale > PRECISION) return undefined;
+  let exponent = scale;
+  let mantissa = 0n;
+  let index = 0;
+  while (exponent > 0 || (index < digits.length && exponent > -MAX_SCALE)) {
+    const digit = index < digits.length ? BigInt(digits.charCodeAt(index) - 48) : 0n;
+    const next = mantissa * 10n + digit;
+    if (next > MAX_MANTISSA) break;
+    mantissa = next;
+    if (index < digits.length) index++;
+    exponent--;
+  }
+  const dropped = index < digits.length ? digits.charCodeAt(index) - 48 : 0;
+  const half = dropped === 5 && !/[1-9]/.test(digits.slice(index + 1));
+  if (dropped > 5 || (dropped === 5 && (!half || mantissa % 2n !== 0n))) {
+    mantissa += 1n;
+    if (mantissa > MAX_MANTISSA) {
+      mantissa = CARRIED;
+      exponent++;
+    }
+  }
+  if (exponent > 0) return undefined;
+  if (exponent <= -PRECISION) return new Decimal(0n, MAX_SCALE);
+  return new Decimal(negative ? -mantissa : mantissa, -exponent);
+}
+
+/**
+ * A binary floating-point value as a decimal of `digits` significant digits, by .NET's steps: the
+ * power of ten that brings it to that many digits is estimated from the binary `exponent` times
+ * log10(2) in 16.16 fixed point, the value is scaled by it in DOUBLE arithmetic, and the result is
+ * rounded half to even. Scaling first is what .NET does, so a value whose scaling rounds is
+ * converted from the rounded double, as it is there. The trailing zeros then go, never more than
+ * the scaling made. An exponent under -94 rounds to zero whatever the digits, and a positive zero
+ * is what .NET answers, a negative input included.
+ */
+function fromBinary(value: number, exponent: number, digits: 7 | 15): Decimal {
+  if (exponent < -94) return ZERO;
+  if (exponent > 96) throw new Error(OVERFLOW);
+  const negative = value < 0;
+  const top = digits - 1;
+  let scaled = Math.abs(value);
+  let power = top - ((exponent * 19728) >> 16);
+  if (power >= 0) {
+    if (power > MAX_SCALE) power = MAX_SCALE;
+    scaled *= DOUBLE_POWERS_10[power];
+  } else if (power !== -1 || scaled >= DOUBLE_POWERS_10[digits]) {
+    scaled /= DOUBLE_POWERS_10[-power];
+  } else {
+    power = 0;
+  }
+  if (scaled < DOUBLE_POWERS_10[top] && power < MAX_SCALE) {
+    scaled *= 10;
+    power++;
+  }
+  let whole = Math.trunc(scaled);
+  const rest = scaled - whole;
+  if (rest > 0.5 || (rest === 0.5 && whole % 2 === 1)) whole++;
+  if (whole === 0) return ZERO;
+  let mantissa = BigInt(whole);
+  if (power < 0) {
+    mantissa *= 10n ** BigInt(-power);
+    if (mantissa > MAX_MANTISSA) throw new Error(OVERFLOW);
+    return new Decimal(negative ? -mantissa : mantissa, 0);
+  }
+  let spare = Math.min(power, top);
+  while (spare > 0 && mantissa % 10n === 0n) {
+    mantissa /= 10n;
+    power--;
+    spare--;
+  }
+  return new Decimal(negative ? -mantissa : mantissa, power);
+}
+
 export function dec(value: string | number | Decimal): Decimal {
   return Decimal.from(value);
+}
+
+/** `decimal.Parse`, for the transpiler. */
+export function decParse(text: string | null | undefined, styles?: number): Decimal {
+  return Decimal.parse(text, styles);
+}
+
+/** `decimal.TryParse`, for the transpiler: the value, or `undefined` where the text is not one. */
+export function decTryParse(text: string | null | undefined, styles?: number): Decimal | undefined {
+  return Decimal.tryParse(text, styles);
+}
+
+/** `(decimal)aDouble` and `Convert.ToDecimal(aDouble)`, for the transpiler. */
+export function decFromDouble(value: number): Decimal {
+  return Decimal.fromDouble(value);
+}
+
+/** `(decimal)aFloat` and `Convert.ToDecimal(aFloat)`, for the transpiler. */
+export function decFromSingle(value: number): Decimal {
+  return Decimal.fromSingle(value);
+}
+
+/**
+ * `Convert.ToDecimal` of a value whose type the call site cannot settle, an `object` or a
+ * nullable: null is 0, where `decimal.Parse` throws; a string parses as `decimal.Parse` reads it; a
+ * Decimal is itself; a boolean is 1 or 0; a BigInt (a long) is exact; and a number is the double,
+ * or the single, that the call site says it holds. Anything else has no conversion to a decimal.
+ */
+export function decConvert(value: unknown, numbers: 'double' | 'single' = 'double'): Decimal {
+  if (value == null) return ZERO;
+  if (value instanceof Decimal) return value;
+  if (typeof value === 'string') return Decimal.parse(value);
+  if (typeof value === 'boolean') return new Decimal(value ? 1n : 0n, 0);
+  if (typeof value === 'bigint') return new Decimal(value, 0);
+  if (typeof value === 'number') {
+    return numbers === 'single' ? Decimal.fromSingle(value) : Decimal.fromDouble(value);
+  }
+  const name = (value as { constructor?: { name?: string } }).constructor?.name ?? 'Object';
+  throw new Error(`Unable to cast object of type '${name}' to type 'System.IConvertible'.`);
 }
