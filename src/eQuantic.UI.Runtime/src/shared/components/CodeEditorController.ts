@@ -365,7 +365,7 @@ export class CodeEditorController {
             let width = this.rules.indentWidth;
             let cells = this.cellsOf(this.caret.line);
             let cell = cells.cellOf(this.caret.column);
-            let stop = cell % width === 0 ? cell - width : cell - cell % width;
+            let stop = $eq.num.intRem(cell, width) === 0 ? cell - width : cell - $eq.num.intRem(cell, width);
             return this.apply(new CodeRange($eq.withPatch(this.caret, { column: cells.columnAt(Math.fround(stop)) }), this.caret), '');
         }
         if (this.caret.column > 0 && this.caret.column < line.length) {
@@ -393,7 +393,7 @@ export class CodeEditorController {
             if (!this.rules.insertSpaces) return this.apply(this._selection, '	');
             let width = this.rules.indentWidth;
             let cell = this.cellsOf(this.caret.line).cellOf(this.caret.column);
-            return this.apply(this._selection, ' '.repeat(width - cell % width));
+            return this.apply(this._selection, ' '.repeat(width - $eq.num.intRem(cell, width)));
         }
         return this.shiftLines(true);
     }

@@ -103,6 +103,10 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
                     rightIr = JsExpr.Callish($"{Eq.Long}({JsExprWriter.WriteIn(rightIr, JsPrecedence.Call)})");
                 }
             }
+            // A long's quotient and remainder throw where .NET's 64-bit division does (#333). Only a
+            // LONG result: `aLong / 2.0` enters this branch by its operand and divides doubles.
+            if (op is "/" or "%" && context.SemanticHelper.GetType(binary).IsLong())
+                return IntegerDivision.OfLongs(op, leftIr, rightIr, IntegerDivision.NeedsCheck(binary.Right, context), context);
             var longResult = JsExpr.Binary(leftIr, jsOp, rightIr);
             // A 64-bit result settles like any fixed-width one: checked throws, an explicit
             // `unchecked` wraps (BigInt does not on its own), the default keeps counting.
@@ -145,7 +149,9 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
                     // A float? result is a single where it is produced, like any float (SinglePrecision).
                     var underlying = context.SemanticHelper.GetType(binary).UnwrapNullable();
                     var body = (op is "/" or "%") && underlying.IsIntegral()
-                        ? (op == "/" ? "Math.trunc(a / b)" : "(a % b)")
+                        ? IntegerDivision.NeedsCheck(binary.Right, context)
+                            ? $"{(op == "/" ? Eq.IntDiv : Eq.IntRem)}(a, b)"
+                            : (op == "/" ? "Math.trunc(a / b)" : "(a % b)")
                         : op is not "%" && SinglePrecision.Is(underlying)
                             ? $"Math.fround(a {op} b)"
                             : $"a {op} b";
@@ -207,10 +213,13 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
 
         // C# integer division truncates toward zero; JS `/` is always float division.
         // When the result type is integral, emit Math.trunc to preserve C# semantics
-        // (7 / 2 == 3, not 3.5). Chained divisions nest correctly.
-        if (op == "/" && context.SemanticHelper.GetType(binary).IsIntegral())
+        // (7 / 2 == 3, not 3.5). Chained divisions nest correctly. A divisor that can be zero, or
+        // -1 beside int.MinValue, goes through the runtime's check, and so does a remainder's (#333).
+        if (op is "/" or "%" && context.SemanticHelper.GetType(binary).IsIntegral())
         {
-            return JsExpr.Callish($"Math.trunc({left} / {right})");
+            var check = IntegerDivision.NeedsCheck(binary.Right, context);
+            if (op == "/" && !check) return JsExpr.Callish($"Math.trunc({left} / {right})");
+            if (check) return IntegerDivision.OfNumbers(op, leftIr, rightIr, check: true, context);
         }
 
         // Convert C# operators to JS equivalents

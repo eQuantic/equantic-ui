@@ -149,11 +149,18 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         // has to be fenced under the `/`, and the writer is the one that knows. The quotient goes
         // back into the TARGET's width, as C#'s `x = (T)(x / y)` does: `sbyte s = -128; s /= -1`
         // is -128, not 128.
-        if (op == "/=" && leftType.IsIntegral() && !leftType.IsLong())
+        // `%=` joins it where the divisor could throw (#333), and so do a long's two, whose BigInt
+        // operators answer a zero divisor with a RangeError of their own and long.MinValue / -1 with
+        // a quotient no long holds. A divisor that settles it keeps JavaScript's own `%=`.
+        var divides = op is "/=" or "%=" && leftType.IsIntegral();
+        var check = divides && IntegerDivision.NeedsCheck(assignment.Right, context);
+        if (divides && leftType.IsLong() && check)
+            return Compound((current, operand) => IntegerDivision.OfLongs(op[..^1], current, operand, check: true, context));
+        if (divides && !leftType.IsLong() && (op == "/=" || check))
         {
             var arithmetic = ArithmeticContext.Of(assignment, context);
             return Compound((current, operand) => IntegerWidth.Settle(
-                JsExpr.Call(JsExpr.Identifier("Math.trunc"), JsExpr.Binary(current, "/", operand)),
+                IntegerDivision.OfNumbers(op[..^1], current, operand, check, context),
                 leftType, arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context));
         }
 

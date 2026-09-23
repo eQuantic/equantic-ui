@@ -38,6 +38,15 @@ public static class Eq
     public const string RoundSingleWithMode = "$eq.math.roundSingleWithMode";
     /// <summary>A checked arithmetic result — the value, or the OverflowException C# throws.</summary>
     public const string Checked = "$eq.num.checked";
+    /// <summary>C#'s integer <c>/</c> for a width a plain number carries: the throws .NET throws for a
+    /// zero divisor and for <c>int.MinValue / -1</c>.</summary>
+    public const string IntDiv = "$eq.num.intDiv";
+    /// <summary>C#'s integer <c>%</c>, with the same throws.</summary>
+    public const string IntRem = "$eq.num.intRem";
+    /// <summary>C#'s <c>/</c> for a long, with .NET's DivideByZeroException and OverflowException.</summary>
+    public const string LongDiv = "$eq.num.longDiv";
+    /// <summary>C#'s <c>%</c> for a long, with the same throws.</summary>
+    public const string LongRem = "$eq.num.longRem";
     /// <summary>A long (a BigInt) as the single .NET's conversion answers: rounded ONCE, from all
     /// 64 bits, never through the double.</summary>
     public const string SingleFromLong = "$eq.num.singleFromLong";
