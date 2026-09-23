@@ -138,9 +138,13 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
                 {
                     context.UsedHelpers.Add(Eq.Import);
                     // Integer division/remainder truncates toward zero in C#; preserve it inside the lift.
-                    var body = (op is "/" or "%") && context.SemanticHelper.GetType(binary).IsIntegral()
+                    // A float? result is a single where it is produced, like any float (SinglePrecision).
+                    var underlying = context.SemanticHelper.GetType(binary).UnwrapNullable();
+                    var body = (op is "/" or "%") && underlying.IsIntegral()
                         ? (op == "/" ? "Math.trunc(a / b)" : "(a % b)")
-                        : $"a {op} b";
+                        : op is not "%" && SinglePrecision.Is(underlying)
+                            ? $"Math.fround(a {op} b)"
+                            : $"a {op} b";
                     return JsExpr.Callish($"{Eq.LiftArith}({left}, {right}, (a, b) => {body})");
                 }
                 // == != fall through: strict ===/!== already match .NET nullable equality
@@ -255,15 +259,12 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
                 arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context);
         }
 
-        // A FLOAT operand of a COMPARISON is rounded to single precision where it was computed:
-        // `a + b == 0.3f` holds in C# because both sides are singles. Float arithmetic itself stays
-        // a double here — ECMA-335 lets an intermediate carry more precision, and rounds at the
-        // STORE (FloatStore: declarations, assignments) — so a layout line is not a chain of frounds.
-        if (op is "===" or "!==" or "==" or "!=" or "<" or ">" or "<=" or ">=")
-        {
-            leftIr = FloatStore.Settle(binary.Left, leftIr, context);
-            rightIr = FloatStore.Settle(binary.Right, rightIr, context);
-        }
+        // A FLOAT result is a single where it is PRODUCED (SinglePrecision): RyuJIT rounds every
+        // float operation, so `a*x - b*x` is three roundings here too, not one at a store — and a
+        // comparison, a return or an argument then receives a single with nothing left to do. A
+        // remainder of two singles is exact and stays bare.
+        if (op is "+" or "-" or "*" or "/" && SinglePrecision.Is(resultType))
+            return SinglePrecision.Round(JsExpr.Binary(leftIr, op, rightIr));
 
         // STRING CONCATENATION operands arrive converted the way C# converts them — `"a" + null`
         // is "a", `"v=" + flag` is "v=True" — because ValueFlow settles a value on its way into

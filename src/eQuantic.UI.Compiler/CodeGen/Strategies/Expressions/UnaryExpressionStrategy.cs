@@ -108,6 +108,20 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
             return assigned;
         }
 
+        // A FLOAT steps in single precision like every float operation (SinglePrecision): `0.1f`
+        // plus one is not exact, so the stored value rounds. Postfix IN VALUE POSITION answers the
+        // value before the step, which no subtraction recovers once the step has rounded — so the
+        // old value is bound once and handed back.
+        if (SinglePrecision.Is(type))
+        {
+            var target = context.Converter.ConvertIr(operandSyntax);
+            JsExpr StepFrom(JsExpr from) =>
+                JsExpr.Binary(target, "=", SinglePrecision.Round(JsExpr.Binary(from, delta, JsExpr.Literal("1"))));
+            if (node is not PostfixUnaryExpressionSyntax || !ValueUsed(node)) return StepFrom(target);
+            var old = JsExpr.Identifier("__o");
+            return JsExpr.Callish($"((__o) => ({JsExprWriter.Write(StepFrom(old))}, __o))({JsExprWriter.Write(target)})");
+        }
+
         if (IntegerWidth.Of(type) is not { } width) return null;
         var arithmetic = ArithmeticContext.Of(node, context);
         if (!(arithmetic.IsChecked || arithmetic.ExplicitUnchecked || IntegerWidth.WrapsByDefault(width))) return null;

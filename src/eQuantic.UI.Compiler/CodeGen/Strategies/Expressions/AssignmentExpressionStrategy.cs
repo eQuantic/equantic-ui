@@ -103,11 +103,6 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         }
 
         var leftType = context.SemanticHelper.GetType(assignment.Left);
-        var rightType = context.SemanticHelper.GetType(assignment.Right);
-
-        // A float STORED is a single: the computed double rounds at the assignment (FloatStore).
-        if (op == "=" && leftType is { SpecialType: SpecialType.System_Single })
-            rightIr = FloatStore.Settle(assignment.Right, rightIr, context);
 
         // A compound on a CHAR TARGET writes a character back: `c += 1` steps it. A char on the
         // RIGHT arrives as its code unit already — ValueFlow settles the promotion the bound tree
@@ -120,7 +115,8 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
                     $"String.fromCharCode({JsExprWriter.WriteIn(leftIr, JsPrecedence.Call)}.charCodeAt(0) {binaryOp} {JsExprWriter.WriteIn(rightIr, JsPrecedence.Additive)})"));
 
             // A fixed-width target settles the compound result by its type (IntegerWidth), and a
-            // float target rounds it to single precision.
+            // float target rounds it to single precision — every one of the five, because a double
+            // on the right makes it `(float)(x op y)`, and a remainder by a double is not a single.
             if (binaryOp is "+" or "-" or "*" or "<<" && IntegerWidth.Of(leftType) is { } width)
             {
                 var arithmetic = ArithmeticContext.Of(assignment, context);
@@ -133,8 +129,8 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
                         arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context));
                 }
             }
-            if (binaryOp is "+" or "-" or "*" or "/" or "%" && leftType is { SpecialType: SpecialType.System_Single })
-                return JsExpr.Binary(leftIr, "=", FloatStore.Round(JsExpr.Binary(leftIr, binaryOp, rightIr)));
+            if (binaryOp is "+" or "-" or "*" or "/" or "%" && SinglePrecision.Is(leftType))
+                return JsExpr.Binary(leftIr, "=", SinglePrecision.Round(JsExpr.Binary(leftIr, binaryOp, rightIr)));
         }
 
         // `x /= y` on integers is integer division, exactly like `x = x / y` — the compound form

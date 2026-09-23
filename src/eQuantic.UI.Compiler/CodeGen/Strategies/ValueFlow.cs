@@ -92,11 +92,21 @@ public static class ValueFlow
 
     /// <summary>An implicit conversion, by what Roslyn classified it as.</summary>
     private static JsExpr Convert(IConversionOperation conversion, ExpressionSyntax node, JsExpr translated,
-        ConversionContext context) =>
-        Apply(conversion.GetConversion(), conversion.Operand.Type, conversion.Type,
+        ConversionContext context)
+    {
+        // An int PROVABLY a single already flows into a float — or a float? — as the author wrote
+        // it: `x * 2` stays `x * 2` and `ring ? 12 : 8` stays itself (SinglePrecision). Only here,
+        // where the bound tree shows the operand: a nullable conversion carries no constant value.
+        if (SinglePrecision.Is(conversion.Type.UnwrapNullable())
+            && conversion.Operand.Type?.SpecialType is SpecialType.System_Int32 or SpecialType.System_UInt32
+            && SinglePrecision.HoldsExactly(conversion.Operand))
+            return translated;
+
+        return Apply(conversion.GetConversion(), conversion.Operand.Type, conversion.Type,
             conversion.ConstantValue.HasValue ? conversion.ConstantValue.Value : null,
             conversion.Operand.ConstantValue.HasValue ? conversion.Operand.ConstantValue.Value : null,
             translated, context, conversion.IsChecked);
+    }
 
     /// <summary>
     /// A conversion APPLIED to a translated value — the one table, usable wherever the bound tree
@@ -115,6 +125,18 @@ public static class ValueFlow
         // (0x10 is not 16 to a reader) for no gain.
         if (convertedConstant is not null && Constant(convertedConstant, to) is { } folded)
             return folded;
+
+        // An integer CONSTANT flowing into a float settles at compile time: the author's literal
+        // when the single holds it exactly — `x * 2` stays `x * 2` — and the single it rounds to
+        // otherwise. A long's literal is a BigInt here, so it always becomes the plain number.
+        if (SinglePrecision.Is(to) && convertedConstant is float single && operandConstant is not null
+            && IntegerWidth.Of(from) is not null)
+        {
+            var exact = (double)single == System.Convert.ToDouble(operandConstant, CultureInfo.InvariantCulture);
+            return exact && from is not { SpecialType: SpecialType.System_Int64 or SpecialType.System_UInt64 }
+                ? translated
+                : JsExpr.Literal(((double)single).ToString("R", CultureInfo.InvariantCulture));
+        }
 
         if (kind.IsUserDefined)
             return kind.MethodSymbol is { } method
@@ -211,8 +233,11 @@ public static class ValueFlow
         var target = to?.SpecialType ?? SpecialType.None;
         switch (target)
         {
+            // Through the double: exact below 2^53, which is every long a UI counts; past it the
+            // double rounds first and the single second, and a pattern exactly between two singles
+            // after the first rounding can land on the other one.
             case SpecialType.System_Single:
-                return FloatStore.Round(JsExpr.Callish($"Number({text})"));
+                return SinglePrecision.Round(JsExpr.Callish($"Number({text})"));
             case SpecialType.System_Double:
                 return JsExpr.Callish($"Number({text})");
             case SpecialType.System_Char:
@@ -265,12 +290,13 @@ public static class ValueFlow
                 return JsExpr.Callish(isChecked
                     ? $"String.fromCharCode({Checked(unit, (16, true), context)})"
                     : $"String.fromCharCode({JsExprWriter.WriteIn(unit, JsPrecedence.Call)})");
-            // A DOUBLE narrowing to a float genuinely loses precision, so it rounds. An INTEGER
-            // widening to one does not — every int a UI computes is exact as a single — and
-            // rounding it would put a fround around half the layout arithmetic (FloatStore: the
-            // rounding belongs at the store, not at every step).
-            case SpecialType.System_Single when from is SpecialType.System_Double:
-                return FloatStore.Round(value);
+            // A float receives a SINGLE (SinglePrecision). A double narrowing to one rounds, and so
+            // does an integer too wide for 24 bits of significand: RyuJIT's conversion rounds every
+            // int past 2^24, and a twin that kept the int would compute on a different number.
+            // The narrow widths and char hold exactly and stay bare.
+            case SpecialType.System_Single when from is SpecialType.System_Double
+                || (IntegerWidth.Of(from) is not null && !SinglePrecision.HoldsExactly(from)):
+                return SinglePrecision.Round(value);
             default:
                 if (IntegerWidth.Of(target) is not { } width) return value;
                 var whole = fractional ? Truncate(value) : value;

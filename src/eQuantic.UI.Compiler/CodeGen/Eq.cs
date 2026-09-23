@@ -30,6 +30,8 @@ public static class Eq
     /// ONCE to its runtime type, by the spec the compiler computed from the C# type.</summary>
     public const string Hydrate = "$eq.hydrate";
     public const string Round = "$eq.math.round";
+    /// <summary>MathF.Round's arithmetic: the scaling and the dividing back in single precision.</summary>
+    public const string RoundSingle = "$eq.math.roundSingle";
     /// <summary>A checked arithmetic result — the value, or the OverflowException C# throws.</summary>
     public const string Checked = "$eq.num.checked";
     /// <summary>A float as text: the shortest decimal that reads back as the same single.</summary>

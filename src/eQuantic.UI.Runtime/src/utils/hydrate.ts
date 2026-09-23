@@ -13,6 +13,9 @@ import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './dateti
  *
  * A spec says what a value IS:
  *  - a tag (`'long'`, `'decimal'`, `'dateTime'`, …) — a compat scalar, restored by its factory;
+ *    `'single'` is the one whose wire form is already a number: a C# `float` travels as the
+ *    shortest text that names IT, which JavaScript reads as the nearest DOUBLE — so it rounds back
+ *    to the single here, before any arithmetic sees the difference;
  *  - `[spec]` — a list whose every element hydrates by the inner spec;
  *  - `{ dict: spec }` — a dictionary (plain-object twin): keys stay strings, values hydrate;
  *  - a class reference — a record/struct twin: the plain JSON object is rebuilt on the class's
@@ -27,6 +30,7 @@ import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './dateti
 export type HydrationTag =
   | 'decimal'
   | 'long'
+  | 'single'
   | 'dateTime'
   | 'timeSpan'
   | 'dateOnly'
@@ -101,6 +105,8 @@ function scalar(incoming: unknown, tag: HydrationTag): unknown {
         : typeof incoming === 'string' || typeof incoming === 'number'
           ? long(incoming)
           : incoming;
+    case 'single':
+      return typeof incoming === 'number' ? Math.fround(incoming) : incoming;
     case 'dateTime':
       return typeof incoming === 'string' ? dateTime.parse(incoming) : incoming;
     case 'timeSpan':

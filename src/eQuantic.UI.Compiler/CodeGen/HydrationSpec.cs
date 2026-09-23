@@ -14,9 +14,10 @@ namespace eQuantic.UI.Compiler.CodeGen;
 /// defensively.
 /// <para>
 /// The spec language mirrors <c>utils/hydrate.ts</c>: a tag (<c>'long'</c>, <c>'decimal'</c>,
-/// <c>'dateTime'</c>…) for a compat scalar, <c>[spec]</c> for a list, <c>{ dict: spec }</c> for a
-/// dictionary's values (the twin is a plain object — its keys are strings), and a bare class NAME
-/// for an in-source record/struct, whose emitted twin carries its own <c>static $hydration</c>.
+/// <c>'single'</c>, <c>'dateTime'</c>…) for a compat scalar, <c>[spec]</c> for a list,
+/// <c>{ dict: spec }</c> for a dictionary's values (the twin is a plain object — its keys are
+/// strings), and a bare class NAME for an in-source record/struct, whose emitted twin carries its
+/// own <c>static $hydration</c>.
 /// Null means IDENTITY: the JSON value is already what the runtime computes with, and no spec is
 /// emitted at all — the common case stays clean.
 /// </para>
@@ -40,6 +41,10 @@ public static class HydrationSpec
                 return "'decimal'";
             case SpecialType.System_Int64 or SpecialType.System_UInt64:
                 return "'long'";
+            // A float arrives as the shortest text that names the SINGLE, which JavaScript parses
+            // as the nearest double — a different number until it is rounded back (SinglePrecision).
+            case SpecialType.System_Single:
+                return "'single'";
             // A string is IEnumerable<char> to the walk below, and already itself on the wire.
             case SpecialType.System_String:
                 return null;

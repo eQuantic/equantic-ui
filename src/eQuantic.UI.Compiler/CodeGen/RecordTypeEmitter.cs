@@ -181,6 +181,11 @@ public class RecordTypeEmitter
                     specReferences.Add(appType);
             specReferences.Remove(type.Identifier.Text);
             if (baseName != null) specReferences.Remove(baseName);
+            // A reference the RUNTIME provides is imported from there already, and a second import
+            // of the same name from a sibling module is a duplicate identifier. Latent until a
+            // runtime-provided record first needed a hydration spec: `BarRect`'s floats hydrate as
+            // singles, so `BarChartGeometry`'s map names it — and the runtime ships both.
+            specReferences.ExceptWith(used);
             foreach (var reference in specReferences.OrderBy(n => n, StringComparer.Ordinal))
                 imports.Append($"import {{ {reference} }} from \"./{reference}\";\n");
         }

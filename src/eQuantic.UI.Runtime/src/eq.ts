@@ -4,12 +4,19 @@ import { hydrate } from './utils/hydrate';
 import { long } from './utils/long';
 import {
   round,
+  roundSingle,
   sinPi,
   cosPi,
   tanPi,
   fma,
   bitIncrement,
   bitDecrement,
+  bitIncrementSingle,
+  bitDecrementSingle,
+  ieeeRemainder,
+  logBase,
+  hypotSingle,
+  fmaSingle,
   ilogb,
   rootN,
   maxMagnitude,
@@ -135,15 +142,23 @@ export const $eq = {
   /** Numeric compat: exact decimal and 64-bit integer. */
   num: { dec, long, checked, single },
   /** Math with .NET semantics: banker's rounding, the *Pi family (exact at special angles),
-   * fused multiply-add, bit-adjacent doubles, sign-aware roots, and the min/max tie rules. */
+   * fused multiply-add, the neighbours of a double or a single, the IEEE remainder, sign-aware
+   * roots, and the min/max tie rules. */
   math: {
     round,
+    roundSingle,
     sinPi,
     cosPi,
     tanPi,
     fma,
     bitIncrement,
     bitDecrement,
+    bitIncrementSingle,
+    bitDecrementSingle,
+    ieeeRemainder,
+    logBase,
+    hypotSingle,
+    fmaSingle,
     ilogb,
     rootN,
     maxMagnitude,

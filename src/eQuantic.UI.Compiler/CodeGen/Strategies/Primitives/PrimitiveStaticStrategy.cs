@@ -40,7 +40,7 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
                 return context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol
                 {
                     IsStatic: true, ContainingType: { } home
-                } method && MethodTable(home.SpecialType, method.Name, invocation.ArgumentList.Arguments.Count) is not null;
+                } method && TemplateFor(method, home.SpecialType, invocation.ArgumentList.Arguments.Count) is not null;
 
             case MemberAccessExpressionSyntax access:
                 return context.SemanticHelper.GetSymbol(access) is { IsStatic: true, ContainingType: { } owner } member
@@ -67,10 +67,91 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
             .ToArray();
 
         // Templates say what they compute; the writer decides what to evaluate once.
-        var emit = MethodTable(method.ContainingType.SpecialType, method.Name, args.Length)!;
+        var emit = TemplateFor(method, method.ContainingType.SpecialType, args.Length)!;
         if (emit.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
         return JsExpr.Template(emit, args, context.TypeAnnotations);
     }
+
+    /// <summary>
+    /// The emission template for a numeric member ({0}, {1}, … are the converted arguments), or
+    /// null = fenced — the table, settled by what only the bound METHOD says: which overload of
+    /// <c>Round</c> this is, and whether the answer is a single. Shared with the <c>Math</c> and
+    /// <c>MathF</c> surface (MathStrategy), which spells the same functions on another type: one
+    /// table, so <c>MathF.Sqrt</c> and <c>float.Sqrt</c> cannot drift apart.
+    /// </summary>
+    internal static string? TemplateFor(IMethodSymbol method, SpecialType home, int argCount)
+    {
+        if (method.Name == "Round" && IsFloating(home)) return RoundTemplate(method, home);
+        var emit = MethodTable(home, method.Name, argCount);
+        if (emit is null || home != SpecialType.System_Single || !SinglePrecision.Is(method.ReturnType)) return emit;
+
+        // A SINGLE answer (SinglePrecision): the shared templates compute in doubles, so a member
+        // whose float answer is not exact rounds once — unless its single form already says how.
+        return SingleTable(method.Name, argCount) is not null || ExactOnSingles.Contains(method.Name)
+            ? emit
+            : $"Math.fround({emit})";
+    }
+
+    /// <summary>The float members whose answer on a single IS a single, with nothing to round: a
+    /// sign, a magnitude, a whole number, one of the operands.</summary>
+    private static readonly HashSet<string> ExactOnSingles = new(StringComparer.Ordinal)
+    {
+        "Abs", "Max", "Min", "Clamp", "Floor", "Ceiling", "Truncate", "CopySign",
+        "MaxNative", "MinNative", "ClampNative", "MaxMagnitude", "MinMagnitude",
+        "MaxMagnitudeNumber", "MinMagnitudeNumber", "MaxNumber", "MinNumber",
+    };
+
+    /// <summary>
+    /// <c>Round</c> by its overload — which the argument COUNT cannot say: <c>(x, 2)</c> and
+    /// <c>(x, MidpointRounding.AwayFromZero)</c> both have two. A mode crosses as its member name
+    /// (enums are names on this side), and the helper takes digits and mode in .NET's order.
+    /// </summary>
+    private static string RoundTemplate(IMethodSymbol method, SpecialType home)
+    {
+        var helper = home == SpecialType.System_Single ? Eq.RoundSingle : Eq.Round;
+        var parameters = method.Parameters;
+        var hasDigits = parameters.Length > 1 && parameters[1].Type.SpecialType == SpecialType.System_Int32;
+        var hasMode = parameters.Length > 1 && parameters[^1].Type.TypeKind == TypeKind.Enum;
+        if (!hasMode) return hasDigits ? $"{helper}({{0}}, {{1}})" : $"{helper}({{0}})";
+        return hasDigits ? $"{helper}({{0}}, {{1}}, {{2}})" : $"{helper}({{0}}, 0, {{1}})";
+    }
+
+    /// <summary>
+    /// The float members whose SINGLE answer is not the double template rounded once: .NET computes
+    /// them as a sequence of float operations (<c>float.ExpM1</c> is <c>MathF.Exp(x) - 1</c>, two
+    /// roundings), a classification against the single's own range, or a step of the single's own
+    /// last bit. Each line is the float source in dotnet/runtime, transcribed.
+    /// </summary>
+    private static string? SingleTable(string name, int argCount) => name switch
+    {
+        "BitIncrement" => "$eq.math.bitIncrementSingle({0})",
+        "BitDecrement" => "$eq.math.bitDecrementSingle({0})",
+        "IsNormal" => "(Number.isFinite({0}) && {0} !== 0 && Math.abs({0}) >= 1.1754943508222875e-38)",
+        "IsSubnormal" => "({0} !== 0 && Math.abs({0}) < 1.1754943508222875e-38)",
+        "ExpM1" => "Math.fround(Math.fround(Math.exp({0})) - 1)",
+        "Exp2M1" => "Math.fround(Math.fround(Math.pow(2, {0})) - 1)",
+        "Exp10M1" => "Math.fround(Math.fround(Math.pow(10, {0})) - 1)",
+        "LogP1" => "Math.fround(Math.log(Math.fround({0} + 1)))",
+        "Log2P1" => "Math.fround(Math.log2(Math.fround({0} + 1)))",
+        "Log10P1" => "Math.fround(Math.log10(Math.fround({0} + 1)))",
+        "Log" when argCount == 2 => "$eq.math.logBase({0}, {1}, true)",
+        "AcosPi" => $"Math.fround(Math.fround(Math.acos({{0}})) / {SinglePi})",
+        "AsinPi" => $"Math.fround(Math.fround(Math.asin({{0}})) / {SinglePi})",
+        "AtanPi" => $"Math.fround(Math.fround(Math.atan({{0}})) / {SinglePi})",
+        "Atan2Pi" => $"Math.fround(Math.fround(Math.atan2({{0}}, {{1}})) / {SinglePi})",
+        "DegreesToRadians" => $"Math.fround(Math.fround({{0}} * {SinglePi}) / 180)",
+        "RadiansToDegrees" => $"Math.fround(Math.fround({{0}} * 180) / {SinglePi})",
+        "SinCos" => "[Math.fround(Math.sin({0})), Math.fround(Math.cos({0}))]",
+        "SinCosPi" => "[Math.fround($eq.math.sinPi({0})), Math.fround($eq.math.cosPi({0}))]",
+        "Hypot" => "$eq.math.hypotSingle({0}, {1})",
+        "FusedMultiplyAdd" or "MultiplyAddEstimate" => "$eq.math.fmaSingle({0}, {1}, {2})",
+        "Lerp" => "$eq.math.fmaSingle({0}, Math.fround(1 - {2}), Math.fround({1} * {2}))",
+        "Ieee754Remainder" or "IEEERemainder" => "$eq.math.ieeeRemainder({0}, {1}, true)",
+        _ => null,
+    };
+
+    /// <summary><c>float.Pi</c> as the double it is: (double)3.14159274f, not Math.PI.</summary>
+    private const string SinglePi = "3.1415927410125732";
 
     private static bool IsSmallInteger(SpecialType type) => type is SpecialType.System_Int32
         or SpecialType.System_Int16 or SpecialType.System_Byte or SpecialType.System_SByte
@@ -82,6 +163,7 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
     /// <summary>Emission template ({0}, {1}, … are the converted arguments), or null = fenced.</summary>
     private static string? MethodTable(SpecialType home, string name, int argCount)
     {
+        if (home == SpecialType.System_Single && SingleTable(name, argCount) is { } single) return single;
         if (IsFloating(home))
         {
             var shared = SharedNumeric(name, argCount);
@@ -101,28 +183,29 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
                 "Cos" => "Math.cos({0})",
                 "Cosh" => "Math.cosh({0})",
                 "Exp" => "Math.exp({0})",
-                "ExpM1" => "Math.expm1({0})",
+                // .NET's own composition, not the more precise JS primitive: ExpM1 is Exp(x) - 1.
+                "ExpM1" => "(Math.exp({0}) - 1)",
                 "Exp2" => "Math.pow(2, {0})",
                 "Exp10" => "Math.pow(10, {0})",
                 "Floor" => "Math.floor({0})",
                 "Hypot" => "Math.hypot({0}, {1})",
                 "Log" when argCount == 1 => "Math.log({0})",
-                "Log" when argCount == 2 => "(Math.log({0}) / Math.log({1}))",
+                // A base of 1, 0 or +∞ answers NaN in .NET where the quotient would answer a number.
+                "Log" when argCount == 2 => "$eq.math.logBase({0}, {1})",
                 "Log10" => "Math.log10({0})",
                 "Log2" => "Math.log2({0})",
-                "LogP1" => "Math.log1p({0})",
+                "LogP1" => "Math.log({0} + 1)",
                 "Pow" => "Math.pow({0}, {1})",
-                // Banker's rounding is .NET's default — JS Math.round is not it (see MathStrategy).
-                "Round" when argCount == 1 => $"{Eq.Round}({{0}})",
-                "Round" when argCount == 2 => $"{Eq.Round}({{0}}, {{1}})",
+                // Round is settled by its OVERLOAD, which only the bound method says (RoundTemplate).
                 "Sin" => "Math.sin({0})",
                 "Sinh" => "Math.sinh({0})",
                 "Sqrt" => "Math.sqrt({0})",
                 "Tan" => "Math.tan({0})",
                 "Tanh" => "Math.tanh({0})",
                 "Truncate" => "Math.trunc({0})",
-                "DegreesToRadians" => "({0} * (Math.PI / 180))",
-                "RadiansToDegrees" => "({0} * (180 / Math.PI))",
+                // .NET's association, which rounds differently from `x * (π / 180)`.
+                "DegreesToRadians" => "(({0} * Math.PI) / 180)",
+                "RadiansToDegrees" => "(({0} * 180) / Math.PI)",
                 // Classification predicates with faithful single-evaluation forms.
                 "IsNaN" => "Number.isNaN({0})",
                 "IsFinite" => "Number.isFinite({0})",
@@ -170,11 +253,12 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
                 // wherever the host has hardware FMA (this Mac does).
                 "FusedMultiplyAdd" => "$eq.math.fma({0}, {1}, {2})",
                 "MultiplyAddEstimate" => "$eq.math.fma({0}, {1}, {2})",
-                // .NET's IEEE remainder is DEFINED as this expression, half-to-even included —
-                // $eq.math.round is banker's already.
-                "Ieee754Remainder" => $"({{0}} - {{1}} * {Eq.Round}({{0}} / {{1}}))",
-                // The documented .NET formula, verbatim.
-                "Lerp" => "(({0} * (1 - {2})) + ({1} * {2}))",
+                // .NET's IEEE remainder, ported: from the exact `x % y`, never from x - y·round(x/y),
+                // which rounds three times and answers a different last bit.
+                "Ieee754Remainder" or "IEEERemainder" => "$eq.math.ieeeRemainder({0}, {1})",
+                // .NET's formula: MultiplyAddEstimate(v1, 1 - t, v2 * t) — fused wherever the host
+                // has FMA, which is every host this SDK runs on.
+                "Lerp" => "$eq.math.fma({0}, 1 - {2}, {1} * {2})",
                 "ScaleB" => "({0} * Math.pow(2, {1}))",
                 "RootN" => "$eq.math.rootN({0}, {1})",
                 // Native = the platform's plain comparison; no NaN promises to keep.
