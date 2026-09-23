@@ -102,3 +102,5 @@ static eQuantic.UI.Web.ComponentIdentity.Of(System.Type! type) -> string!
 *REMOVED*static readonly eQuantic.UI.Web.Styling.Breakpoint.Mobile -> eQuantic.UI.Web.Styling.Breakpoint!
 *REMOVED*static readonly eQuantic.UI.Web.Styling.Breakpoint.Tablet -> eQuantic.UI.Web.Styling.Breakpoint!
 *REMOVED*static readonly eQuantic.UI.Web.Styling.Breakpoint.Wide -> eQuantic.UI.Web.Styling.Breakpoint!
+eQuantic.UI.Web.HtmlStyle.Isolation.get -> string?
+eQuantic.UI.Web.HtmlStyle.Isolation.set -> void

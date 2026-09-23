@@ -517,6 +517,17 @@ record of a release, the wiki's Upgrading page is the distillate.
   way: a nullable field with no initializer began 0, false or unassigned in its twin, and the
   editor's accessible name was English in every language. The served runtime grew from 137,801 to
   140,267 bytes gzipped, the price of the input path.
+- **2026-09-23 · What the server could not measure, the client draws**: the code editor's SSR
+  slice ([#370](https://github.com/eQuantic/equantic-ui/pull/370)), which closes the last
+  node the server wrote nothing for. The server has no font, so a component whose geometry is text
+  geometry was built on zeros there, and hydration keeps the server's markup: every code block the
+  server sent kept a 12px gutter for as long as the page lived (the fenced code on `/markdown`), and
+  a server that wrote the editor's surface had the same zeros adopted. `WebRealizer` now hands
+  components a measurer with no fonts, which answers 0 and counts the questions, the component whose
+  own `Build` asked is marked `data-eq-unmeasured`, and hydration draws a marked subtree instead of
+  adopting it. The server writes `CodeSurface` (the code, its carets and its input), `/code`
+  hydrates whole where one missing child used to send it to a full re-render, and the block's gutter
+  is 26px where it was 12.
 
 ## Retired documents
 

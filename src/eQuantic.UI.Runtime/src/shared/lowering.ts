@@ -551,11 +551,12 @@ function lowerPresence(
  */
 function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path: string): HtmlNode {
   const model = node.model;
-  // ATOMISED, like every other node, although the server still writes no arm for it (the measured
-  // reason is at the C# WebLoweringVisitor.Visit(CodeSurface)): the day it does, a client string
-  // beside a server class would be the hydration mismatch the atomizer exists to prevent.
-  // `user-select: none` because a drag here extends the MODEL's selection, and the browser's own
-  // text sweep would paint over the band the component draws.
+  // ATOMISED, like every other node, with the SAME declarations the C# arm gives it (the web
+  // realizer's LowerCodeSurface), so the two sides write one shape. The server builds this surface
+  // on widths it cannot measure, so its component is marked and drawn again here at hydration, but
+  // a client string beside a server class would still be the mismatch the atomizer exists to
+  // prevent. `user-select: none` because a drag here extends the MODEL's selection, and the
+  // browser's own text sweep would paint over the band the component draws.
   const surface = element(
     'div',
     {
@@ -947,7 +948,7 @@ function mark(
     attributes: {
       class: className,
       // px(), the spelling of every other length here (the C# TokenCss.Px twin), not a bare
-      // `${n}px`: the day the server writes this mark, hydration adopts only what reads alike.
+      // `${n}px`: the server writes this mark with that formatter, so the two sides spell it alike.
       style:
         `position:absolute;left:${px(left)};top:${px(top)};width:${px(width)};height:${px(height)};` +
         `background-color:${ink};` +

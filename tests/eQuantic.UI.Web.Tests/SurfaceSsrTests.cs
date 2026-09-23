@@ -36,6 +36,63 @@ public class SurfaceSsrTests
     private static SheetSurface Sheet(string text) =>
         new(new Text(text, TypeRole.BodyM), new SheetController(rows: 3, cols: 3));
 
+    /// <summary>A code surface over a model with a known grid, its caret where a test puts it.</summary>
+    private static CodeSurface Code(string text, eQuantic.UI.Code.CodePosition caret)
+    {
+        var model = new eQuantic.UI.Code.CodeEditorController(text, eQuantic.UI.Code.CodeLanguages.CSharp)
+        {
+            Grid = new eQuantic.UI.Code.CodeGrid(new Point(12, 12), new Size(8, 18)),
+        };
+        model.Selection = new eQuantic.UI.Code.CodeRange(caret);
+        return new CodeSurface(new Text(text, TypeRole.BodyM), model) { Label = "Program.cs" };
+    }
+
+    /// <summary>
+    /// The code editor's surface WRITES now. It was the one node this realizer answered null for,
+    /// so the server's HTML had a hole where the editor goes: no code for a crawler, none for a
+    /// reader without JavaScript, and a flash of nothing before the client mounted. Its geometry
+    /// is a draft the client draws again (<see cref="UnmeasuredGeometryTests"/>), and its code is not.
+    /// </summary>
+    [Fact]
+    public void ACodeSurface_ArrivesWithItsCode()
+    {
+        var html = Render(Code("var x = 1;", eQuantic.UI.Code.CodePosition.Start));
+
+        html.Should().Contain("var x = 1;");
+        html.Should().Contain("eq-code-surface");
+    }
+
+    /// <summary>
+    /// …and with the same children the client builds: its caret where the MODEL puts it, and the
+    /// input the keyboard types through, at the caret, in the client's spellings (TokenCss.Px
+    /// beside its px()). The client draws the editor again rather than adopting it, so this is not
+    /// what keeps hydration whole: it is what keeps the two shapes one shape, for the day the
+    /// server can measure.
+    /// </summary>
+    [Fact]
+    public void ItsCaretAndItsInputAreWrittenWhereTheClientWritesThem()
+    {
+        var html = Render(Code("one\ntwo", new eQuantic.UI.Code.CodePosition(1, 2)));
+
+        // The grid the model was handed: 12 + 2 × 8 across, 12 + 1 × 18 down.
+        html.Should().Contain("position:absolute;left:28px;top:30px;width:2px;height:18px;");
+        html.Should().Contain("<textarea");
+        html.Should().Contain("left:28px;top:30px;height:18px;");
+        html.Should().Contain("aria-label=\"Program.cs\"");
+        html.Should().Contain("spellcheck=\"false\"");
+    }
+
+    [Fact]
+    public void ItsCodeKeepsItsLayersUnderTheCaret()
+    {
+        var sink = new StyleSink();
+        WebRealizer.Lower(Code("x", eQuantic.UI.Code.CodePosition.Start), Theme, 1f, sink)!.Render();
+
+        sink.Css.Should().Contain("isolation:isolate");
+        sink.Css.Should().Contain("cursor:text");
+        sink.Css.Should().Contain("user-select:none");
+    }
+
 
     [Fact]
     public void ASheetSurface_IsNotAnEmptySpan()
