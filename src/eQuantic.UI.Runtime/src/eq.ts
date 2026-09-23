@@ -5,6 +5,8 @@ import { long } from './utils/long';
 import {
   round,
   roundSingle,
+  roundWithMode,
+  roundSingleWithMode,
   sinPi,
   cosPi,
   tanPi,
@@ -147,6 +149,8 @@ export const $eq = {
   math: {
     round,
     roundSingle,
+    roundWithMode,
+    roundSingleWithMode,
     sinPi,
     cosPi,
     tanPi,

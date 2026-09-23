@@ -152,3 +152,5 @@ static eQuantic.UI.Compiler.CodeGen.HydrationSpec.Of(Microsoft.CodeAnalysis.ITyp
 static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.IsHostOnly(this Microsoft.CodeAnalysis.INamedTypeSymbol! type) -> bool
 *REMOVED*static eQuantic.UI.Compiler.CodeGen.HydrationSpec.Members(Microsoft.CodeAnalysis.INamedTypeSymbol! type, System.Collections.Generic.ISet<string!>! referenced) -> string?
 *REMOVED*static eQuantic.UI.Compiler.CodeGen.HydrationSpec.Of(Microsoft.CodeAnalysis.ITypeSymbol? type, System.Collections.Generic.ISet<string!>! referenced) -> string?
+const eQuantic.UI.Compiler.CodeGen.Eq.RoundSingleWithMode = "$eq.math.roundSingleWithMode" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.RoundWithMode = "$eq.math.roundWithMode" -> string!

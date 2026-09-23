@@ -169,7 +169,11 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
         var hasMode = parameters.Length > 1 && parameters[^1].Type.TypeKind == TypeKind.Enum;
         var rest = hasMode ? (hasDigits ? "{1}, {2}" : "0, {1}") : hasDigits ? "{1}" : "";
         if (home == SpecialType.System_Decimal) return $"{{0}}.round({rest})";
-        var helper = home == SpecialType.System_Single ? Eq.RoundSingle : Eq.Round;
+        var single = home == SpecialType.System_Single;
+        // The overload with a mode and no digits reads the mode before the value, where the digits
+        // overload returns a value too large to round unread: its own helper, measured on .NET.
+        if (hasMode && !hasDigits) return $"{(single ? Eq.RoundSingleWithMode : Eq.RoundWithMode)}({{0}}, {{1}})";
+        var helper = single ? Eq.RoundSingle : Eq.Round;
         return rest.Length == 0 ? $"{helper}({{0}})" : $"{helper}({{0}}, {rest})";
     }
 

@@ -49,6 +49,40 @@ export function roundSingle(value: number, digits = 0, mode: MidpointRounding = 
   return Math.fround(roundBy(Math.fround(value * power10), mode, true) / power10);
 }
 
+const MODES: ReadonlySet<string> = new Set<MidpointRounding>([
+  'toEven',
+  'awayFromZero',
+  'toZero',
+  'toNegativeInfinity',
+  'toPositiveInfinity',
+]);
+
+function requireMode(mode: MidpointRounding): void {
+  if (!MODES.has(mode)) {
+    throw new RangeError(
+      `The value '${String(mode)}' is not valid for this usage of the type MidpointRounding.`,
+    );
+  }
+}
+
+/**
+ * `Math.Round(double, MidpointRounding)`, the overload that takes a mode and no digits. .NET's reads
+ * the mode FIRST (a switch over it), so one that is not a mode throws even for a value not rounded,
+ * infinite or past 1e16. The digits overload returns such a value unread, which is what `round`
+ * does. Measured on .NET 10: `Math.Round(Infinity, (MidpointRounding)99)` throws and
+ * `Math.Round(Infinity, 2, (MidpointRounding)99)` answers Infinity.
+ */
+export function roundWithMode(value: number, mode: MidpointRounding): number {
+  requireMode(mode);
+  return round(value, 0, mode);
+}
+
+/** `MathF.Round(float, MidpointRounding)`: the same order in single precision. */
+export function roundSingleWithMode(value: number, mode: MidpointRounding): number {
+  requireMode(mode);
+  return roundSingle(value, 0, mode);
+}
+
 /**
  * A whole number by .NET's rule for each mode. AwayFromZero is .NET's managed form, transcribed:
  * add the largest value below one half, carrying the sign, and truncate — exact at every double
@@ -70,7 +104,9 @@ function roundBy(x: number, mode: MidpointRounding, single: boolean): number {
     case 'toPositiveInfinity':
       return Math.ceil(x);
     default:
-      throw new RangeError(`The value '${String(mode)}' is not valid for this usage of the type MidpointRounding.`);
+      throw new RangeError(
+        `The value '${String(mode)}' is not valid for this usage of the type MidpointRounding.`,
+      );
   }
 }
 
@@ -251,7 +287,9 @@ export function sinPi(x: number): number {
     if (fractional <= 0.25)
       return fractional !== 0.0 ? sign * sinForIntervalPiBy4(fractional * Math.PI, 0.0) : x * 0.0;
     if (fractional <= 0.5)
-      return fractional !== 0.5 ? sign * cosForIntervalPiBy4((0.5 - fractional) * Math.PI, 0.0) : sign;
+      return fractional !== 0.5
+        ? sign * cosForIntervalPiBy4((0.5 - fractional) * Math.PI, 0.0)
+        : sign;
     if (fractional <= 0.75) return sign * cosForIntervalPiBy4((fractional - 0.5) * Math.PI, 0.0);
     return sign * sinForIntervalPiBy4((1.0 - fractional) * Math.PI, 0.0);
   }
@@ -280,7 +318,9 @@ export function cosPi(x: number): number {
     if (fractional <= 0.25)
       return fractional !== 0.0 ? sign * cosForIntervalPiBy4(fractional * Math.PI, 0.0) : sign;
     if (fractional <= 0.5)
-      return fractional !== 0.5 ? sign * sinForIntervalPiBy4((0.5 - fractional) * Math.PI, 0.0) : 0.0;
+      return fractional !== 0.5
+        ? sign * sinForIntervalPiBy4((0.5 - fractional) * Math.PI, 0.0)
+        : 0.0;
     if (fractional <= 0.75) return -sign * sinForIntervalPiBy4((fractional - 0.5) * Math.PI, 0.0);
     return -sign * cosForIntervalPiBy4((1.0 - fractional) * Math.PI, 0.0);
   }
@@ -310,10 +350,12 @@ export function tanPi(x: number): number {
       return sign * (integral % 2 === 1 ? -0.0 : 0.0);
     }
     if (fractional <= 0.5) {
-      if (fractional !== 0.5) return -sign * tanForIntervalPiBy4((0.5 - fractional) * Math.PI, 0.0, true);
+      if (fractional !== 0.5)
+        return -sign * tanForIntervalPiBy4((0.5 - fractional) * Math.PI, 0.0, true);
       return sign * (integral % 2 === 1 ? -Infinity : Infinity);
     }
-    if (fractional <= 0.75) return sign * tanForIntervalPiBy4((fractional - 0.5) * Math.PI, 0.0, true);
+    if (fractional <= 0.75)
+      return sign * tanForIntervalPiBy4((fractional - 0.5) * Math.PI, 0.0, true);
     return -sign * tanForIntervalPiBy4((1.0 - fractional) * Math.PI, 0.0, false);
   }
   if (ax >= 6.103515625e-5) return tanForIntervalPiBy4(x * Math.PI, 0.0, false);
@@ -393,7 +435,9 @@ export function ieeeRemainder(x: number, y: number, single = false): number {
   const alternativeResult = f(regularMod - Math.abs(y) * (x > 0 ? 1 : x < 0 ? -1 : 0));
   if (Math.abs(alternativeResult) === Math.abs(regularMod)) {
     const divisionResult = f(x / y);
-    return Math.abs(roundHalfToEven(divisionResult)) > Math.abs(divisionResult) ? alternativeResult : regularMod;
+    return Math.abs(roundHalfToEven(divisionResult)) > Math.abs(divisionResult)
+      ? alternativeResult
+      : regularMod;
   }
   return Math.abs(alternativeResult) < Math.abs(regularMod) ? alternativeResult : regularMod;
 }

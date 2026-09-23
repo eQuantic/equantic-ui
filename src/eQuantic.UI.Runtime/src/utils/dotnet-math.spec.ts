@@ -8,6 +8,8 @@ import {
   logBase,
   round,
   roundSingle,
+  roundSingleWithMode,
+  roundWithMode,
 } from './dotnet-math';
 
 describe("round (banker's rounding, like .NET Math.Round)", () => {
@@ -62,6 +64,24 @@ describe("round (banker's rounding, like .NET Math.Round)", () => {
     expect(round(-1.5, 0, 'toNegativeInfinity')).toBe(-2);
     expect(round(1.2, 0, 'toPositiveInfinity')).toBe(2);
     expect(() => round(1, 0, 'sideways' as never)).toThrow(RangeError);
+  });
+});
+
+describe('the overload with a mode and no digits reads the mode first, as .NET does', () => {
+  it('throws for a mode that is not one, even where the value is not rounded', () => {
+    expect(() => roundWithMode(Infinity, 'sideways' as never)).toThrow(RangeError);
+    expect(() => roundWithMode(1e17, 'sideways' as never)).toThrow(RangeError);
+    expect(() => roundSingleWithMode(1e9, 'sideways' as never)).toThrow(RangeError);
+  });
+
+  it('leaves the digits overload returning such a value unread, as .NET does', () => {
+    expect(round(Infinity, 2, 'sideways' as never)).toBe(Infinity);
+    expect(roundSingle(1e9, 2, 'sideways' as never)).toBe(1e9);
+  });
+
+  it('rounds like the digits overload with no digits otherwise', () => {
+    expect(roundWithMode(2.5, 'awayFromZero')).toBe(3);
+    expect(roundSingleWithMode(2.5, 'toEven')).toBe(2);
   });
 });
 
@@ -192,7 +212,8 @@ describe('the min/max tie and NaN rules', () => {
   });
 
   it('the *Number forms ignore NaN', async () => {
-    const { maxNumber, minNumber, maxMagnitudeNumber, minMagnitudeNumber } = await import('./dotnet-math');
+    const { maxNumber, minNumber, maxMagnitudeNumber, minMagnitudeNumber } =
+      await import('./dotnet-math');
     expect(maxNumber(NaN, 3)).toBe(3);
     expect(minNumber(3, NaN)).toBe(3);
     expect(maxMagnitudeNumber(NaN, 3)).toBe(3);

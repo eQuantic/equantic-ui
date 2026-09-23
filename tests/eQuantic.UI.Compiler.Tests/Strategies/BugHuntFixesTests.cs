@@ -64,9 +64,9 @@ public class BugHuntFixesTests
     /// </summary>
     [Theory]
     [InlineData("Math.Round(Total, 2, MidpointRounding.AwayFromZero)", "$eq.math.round(this.total, 2, 'awayFromZero')")]
-    [InlineData("Math.Round(Total, MidpointRounding.AwayFromZero)", "$eq.math.round(this.total, 0, 'awayFromZero')")]
-    [InlineData("MathF.Round(Total, System.MidpointRounding.ToZero)", "$eq.math.roundSingle(this.total, 0, 'toZero')")]
-    [InlineData("Math.Round(mode: MidpointRounding.ToEven, value: Total)", "$eq.math.round(this.total, 0, 'toEven')")]
+    [InlineData("Math.Round(Total, MidpointRounding.AwayFromZero)", "$eq.math.roundWithMode(this.total, 'awayFromZero')")]
+    [InlineData("MathF.Round(Total, System.MidpointRounding.ToZero)", "$eq.math.roundSingleWithMode(this.total, 'toZero')")]
+    [InlineData("Math.Round(mode: MidpointRounding.ToEven, value: Total)", "$eq.math.roundWithMode(this.total, 'toEven')")]
     [InlineData("Math.Round(Total, digits: 3)", "$eq.math.round(this.total, 3)")]
     public void WithoutAModel_ARoundKeepsTheOverloadItWasWrittenWith(string call, string expected)
     {

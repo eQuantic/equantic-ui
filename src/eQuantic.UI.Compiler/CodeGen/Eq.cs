@@ -32,6 +32,10 @@ public static class Eq
     public const string Round = "$eq.math.round";
     /// <summary>MathF.Round's arithmetic: the scaling and the dividing back in single precision.</summary>
     public const string RoundSingle = "$eq.math.roundSingle";
+    /// <summary>Round's overload with a mode and no digits, which reads the mode before the value.</summary>
+    public const string RoundWithMode = "$eq.math.roundWithMode";
+    /// <summary>MathF.Round's overload with a mode and no digits, in single precision.</summary>
+    public const string RoundSingleWithMode = "$eq.math.roundSingleWithMode";
     /// <summary>A checked arithmetic result — the value, or the OverflowException C# throws.</summary>
     public const string Checked = "$eq.num.checked";
     /// <summary>A long (a BigInt) as the single .NET's conversion answers: rounded ONCE, from all

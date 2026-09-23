@@ -120,7 +120,9 @@ public class MathStrategy : IExpressionIrStrategy
             if (context.SemanticHelper.GetType(arguments[at].Expression).IsDecimal())
                 return JsExpr.Template($"{{{at}}}.round({rest})", parts, context.TypeAnnotations);
             context.UsedHelpers.Add(Eq.Import);
-            var written = rest.Length == 0 ? $"{round}({{{at}}})" : $"{round}({{{at}}}, {rest})";
+            var written = mode is { } onlyMode && digits is null
+                ? $"{(single ? Eq.RoundSingleWithMode : Eq.RoundWithMode)}({{{at}}}, {{{onlyMode}}})"
+                : rest.Length == 0 ? $"{round}({{{at}}})" : $"{round}({{{at}}}, {rest})";
             return JsExpr.Template(written, parts, context.TypeAnnotations);
         }
 
