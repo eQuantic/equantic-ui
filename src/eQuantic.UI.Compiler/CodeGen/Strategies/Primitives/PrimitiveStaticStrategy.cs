@@ -20,9 +20,8 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 /// conformance case per entry proves each mapping against .NET (NumericBclConformanceTests).
 /// What stays fenced is impossible BY CONSTRUCTION or deliberately out of scope:
 /// <c>Int64.BigMul</c> returns an Int128 (a type with no twin), <c>Char.GetNumericValue</c>
-/// needs the Unicode numeric-value table (data, not a function), <c>Char.GetUnicodeCategory</c>
-/// would need thirty <c>\p{…}</c> classes mapped to the enum (derivable — parked until someone
-/// needs it), <c>String.IsInterned</c> asks about an intern pool JavaScript does not have, and
+/// needs the Unicode numeric-value table (data, not a function), <c>String.IsInterned</c> asks
+/// about an intern pool JavaScript does not have, and
 /// the <c>ReciprocalEstimate</c> pair answers with the PLATFORM's hardware estimate (.NET on
 /// ARM64 uses FRECPE — there is no number this side could faithfully produce).
 /// <c>Parse</c>/<c>TryParse</c> stay with <see cref="NumberMethodStrategy"/>.

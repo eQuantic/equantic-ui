@@ -46,6 +46,9 @@ public static class Eq
     /// <summary>How many UTF-16 units the text element at an index spans:
     /// <c>StringInfo.GetNextTextElementLength</c>.</summary>
     public const string NextTextElementLength = "$eq.text.nextTextElementLength";
+    /// <summary>A character's general category, as its <c>UnicodeCategory</c> member crosses:
+    /// <c>CharUnicodeInfo.GetUnicodeCategory</c> and <c>char.GetUnicodeCategory</c>.</summary>
+    public const string UnicodeCategory = "$eq.text.unicodeCategory";
     public const string Format = "$eq.text.format";
     public const string StringFormat = "$eq.text.stringFormat";
     public const string StringBuilder = "$eq.text.stringBuilder";
