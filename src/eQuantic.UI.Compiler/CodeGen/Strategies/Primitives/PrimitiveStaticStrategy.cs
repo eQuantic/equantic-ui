@@ -421,7 +421,7 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
                 "IsEvenInteger" => "({0} % 2n === 0n)",
                 "IsOddInteger" => "({0} % 2n !== 0n)",
                 "CopySign" when argCount == 2 => "({1} < 0n ? ({0} > 0n ? -{0} : {0}) : ({0} < 0n ? -{0} : {0}))",
-                "DivRem" when argCount == 2 => "[{0} / {1}, {0} % {1}]",
+                "DivRem" when argCount == 2 => "$eq.num.divRemLong({0}, {1})",
                 "IsPow2" => "({0} > 0n && ({0} & ({0} - 1n)) === 0n)",
                 "LeadingZeroCount" => "$eq.bits.leadingZeroCount64({0})",
                 "Log2" => "$eq.bits.log2Of64({0})",

@@ -37,7 +37,8 @@ export function checked(
     const ok = unsigned
       ? value >= 0 && value < 18446744073709551616
       : value >= -9223372036854775808 && value < 9223372036854775808;
-    if (!ok || !Number.isFinite(value)) throw new Error('Arithmetic operation resulted in an overflow.');
+    if (!ok || !Number.isFinite(value))
+      throw new Error('Arithmetic operation resulted in an overflow.');
     return value;
   }
   const [min, max] = RANGES[bits];
@@ -59,7 +60,12 @@ export function checked(
  * would answer Infinity and NaN; `int.MinValue / -1` overflows a 32-bit int and throws; a narrower
  * width computes in int and converts the quotient back, so `DivRem((short)-32768, (short)-1)` wraps.
  */
-export function divRem(left: number, right: number, bits: 8 | 16 | 32, unsigned = false): [number, number] {
+export function divRem(
+  left: number,
+  right: number,
+  bits: 8 | 16 | 32,
+  unsigned = false,
+): [number, number] {
   if (right === 0) throw new Error('Attempted to divide by zero.');
   if (bits === 32 && !unsigned && left === -2_147_483_648 && right === -1) {
     throw new Error('Arithmetic operation resulted in an overflow.');
@@ -72,6 +78,19 @@ export function divRem(left: number, right: number, bits: 8 | 16 | 32, unsigned 
     return [bits === 32 ? quotient : quotient & ((1 << bits) - 1), left % right];
   }
   return [bits === 32 ? quotient | 0 : (quotient << shift) >> shift, (left % right) | 0];
+}
+
+/**
+ * The same for a long, which is a BigInt here. BigInt division already truncates, and it throws for
+ * a zero divisor, but a RangeError of its own; and `long.MinValue / -1` is exact in a BigInt, where
+ * .NET's 64-bit quotient overflows.
+ */
+export function divRemLong(left: bigint, right: bigint): [bigint, bigint] {
+  if (right === 0n) throw new Error('Attempted to divide by zero.');
+  if (left === -9_223_372_036_854_775_808n && right === -1n) {
+    throw new Error('Arithmetic operation resulted in an overflow.');
+  }
+  return [left / right, left % right];
 }
 
 /**
@@ -114,7 +133,8 @@ export function single(value: number): string {
 export function substring(value: string, start: number, length?: number): string {
   // The three cases .NET tells apart, because which one it is says where the bug is.
   if (start < 0) throw new RangeError('startIndex cannot be less than zero.');
-  if (start > value.length) throw new RangeError('startIndex cannot be larger than length of string.');
+  if (start > value.length)
+    throw new RangeError('startIndex cannot be larger than length of string.');
   if (length === undefined) return value.slice(start);
   if (length < 0) throw new RangeError('length cannot be less than zero.');
   if (start + length > value.length) {
@@ -131,7 +151,7 @@ export function substring(value: string, start: number, length?: number): string
 export function dictGet<V>(map: Record<string, V>, key: unknown): V {
   // .NET tells an ABSENT key from a null one, and so does this: a null key is a caller mistake,
   // a missing one is a lookup that found nothing.
-  if (key === null || key === undefined) throw new Error('Value cannot be null. (Parameter \'key\')');
+  if (key === null || key === undefined) throw new Error("Value cannot be null. (Parameter 'key')");
   const property = String(key);
   if (!Object.prototype.hasOwnProperty.call(map, property)) {
     throw new Error(`The given key '${property}' was not present in the dictionary.`);

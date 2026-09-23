@@ -138,6 +138,12 @@ public class NumericBclConformanceTests
     [InlineData("return long.CopySign(5L, -1L).ToString();")]                    // "-5"
     [InlineData("var (q, r) = long.DivRem(7L, 2L); return (q * 10L + r).ToString();")]   // "31"
     [InlineData("var (q, r) = long.DivRem(-9000000000L, 7L); return (q * 10L + r).ToString();")] // exact past 2^32
+    // A BigInt divides long.MinValue by -1 exactly, and throws for a zero divisor with a message of its
+    // own: both throw here as .NET's 64-bit division does, and with its words.
+    [InlineData("long min = long.MinValue, minusOne = -1; try { var (q, r) = long.DivRem(min, minusOne); return q.ToString(); } catch (Exception e) { return e.Message; }")] // overflow
+    [InlineData("long min = long.MinValue, minusOne = -1; try { var (q, r) = Math.DivRem(min, minusOne); return q.ToString(); } catch (Exception e) { return e.Message; }")] // overflow
+    [InlineData("long zero = 0; try { var (q, r) = long.DivRem(7L, zero); return q.ToString(); } catch (Exception e) { return e.Message; }")] // divide by zero
+    [InlineData("long min = long.MinValue, one = 1; var (q, r) = long.DivRem(min, one); return (q + r).ToString();")] // "-9223372036854775808"
     [InlineData("return long.IsPow2(4294967296L);")]                             // true — 2^32
     [InlineData("return long.IsPow2(0L);")]                                      // false
     [InlineData("return long.LeadingZeroCount(1L).ToString();")]                 // "63"
