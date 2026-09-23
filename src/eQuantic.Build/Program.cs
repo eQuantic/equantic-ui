@@ -304,35 +304,6 @@ static string FormatDiagnostic(eQuantic.UI.Compiler.CompilationError d, string s
     return $"{path}({line},{col}): {severity} {code}: {d.Message}";
 }
 
-// Runs the source-map merge with one JS runtime. Returns true only on a clean exit (0); returns false
-// on a launch failure OR a non-zero exit (e.g. the bun JS VM crashing on an AVX-less VM) — never throws,
-// so the caller can fall back to another runtime and the build is never broken by map merging.
-static bool TryRunMerge(string fileName, string script, string mapFile)
-{
-    try
-    {
-        using var p = new Process
-        {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = fileName,
-                Arguments = $"\"{script}\" \"{mapFile}\"",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            },
-        };
-        p.Start();
-        p.WaitForExit();
-        return p.ExitCode == 0;
-    }
-    catch
-    {
-        return false;
-    }
-}
-
 // Returns true if compilation produced errors (so the process can exit non-zero and fail the build).
 bool CompileAndBundle()
 {
@@ -512,44 +483,27 @@ bool CompileAndBundle()
                 return true;
             }
 
-            // Post-process source maps to merge C# -> TS and TS -> JS
-            var jsMapFiles = Directory.GetFiles(outputDir, "*.js.map", SearchOption.AllDirectories);
-            var scriptsDir = Path.Combine(AppContext.BaseDirectory, "Scripts");
-            var mergeMapsScript = Path.Combine(scriptsDir, "merge-maps.js");
-
-            if (sourceMaps != eQuantic.UI.Compiler.SourceMapMode.None && File.Exists(mergeMapsScript))
+            // A module's map leads to the TypeScript eqc wrote (bun), and that TypeScript's map to the
+            // C# (eqc): composed here, so a debugger lands on the C#. This was a script over an npm
+            // package that bun's auto-install fetched on a developer's first Debug build (#356).
+            if (sourceMaps != eQuantic.UI.Compiler.SourceMapMode.None)
             {
-                // Ensure dependency is installed
-                var nodeModulesDir = Path.Combine(scriptsDir, "node_modules", "@ampproject", "remapping");
-                if (!Directory.Exists(nodeModulesDir))
+                foreach (var mapFile in Directory.GetFiles(outputDir, "*.js.map", SearchOption.AllDirectories))
                 {
-                    Console.WriteLine("📦 Installing remapping dependency in SDK CLI...");
-                    var installProcess = new Process
+                    var mapDir = Path.GetDirectoryName(mapFile)!;
+                    try
                     {
-                        StartInfo = new ProcessStartInfo
+                        File.WriteAllText(mapFile, SourceMapComposer.Compose(File.ReadAllText(mapFile), source =>
                         {
-                            FileName = bunPath!,
-                            Arguments = "add @ampproject/remapping",
-                            WorkingDirectory = scriptsDir,
-                            RedirectStandardOutput = true,
-                            RedirectStandardError = true,
-                            UseShellExecute = false,
-                            CreateNoWindow = true
-                        }
-                    };
-                    installProcess.Start();
-                    installProcess.WaitForExit();
-                }
-                foreach (var mapFile in jsMapFiles)
-                {
-                    // Source-map merge is BEST-EFFORT (C#-level debugging only) — it must never fail
-                    // the build. Prefer the embedded bun (zero Node by default); if bun can't start OR
-                    // exits non-zero (e.g. the bun JS VM crashes on some VMs), fall back to a system
-                    // `node`. If neither works, warn and move on.
-                    if (!TryRunMerge(bunPath!, mergeMapsScript, mapFile) &&
-                        !TryRunMerge("node", mergeMapsScript, mapFile))
+                            var inner = Path.GetFullPath(Path.Combine(mapDir, source)) + ".map";
+                            return File.Exists(inner) ? File.ReadAllText(inner) : null;
+                        }));
+                    }
+                    catch (Exception ex) when (ex is FormatException or System.Text.Json.JsonException or IOException)
                     {
-                        Console.Error.WriteLine($"⚠️ Map merging skipped for {Path.GetFileName(mapFile)} (no working JS runtime).");
+                        // A map is a debugging aid, so one that cannot be composed stays as bun wrote
+                        // it, leading to the TypeScript, and the build says so.
+                        Console.Error.WriteLine($"⚠️ {Path.GetFileName(mapFile)} leads to the TypeScript only: {ex.Message}");
                     }
                 }
             }

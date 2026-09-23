@@ -68,10 +68,10 @@ public class SourceMapGenerator
             }
 
             // Segment: [generatedCol, srcFile, srcLine, srcCol] — all values are 0-based deltas.
-            sb.Append(Base64Vlq.Encode(m.GeneratedColumn - prevGenCol));
-            sb.Append(Base64Vlq.Encode(0 - prevSrcFile)); // Single source file for now
-            sb.Append(Base64Vlq.Encode(m.SourceLine - prevSrcLine));
-            sb.Append(Base64Vlq.Encode(m.SourceColumn - prevSrcCol));
+            Base64Vlq.Encode(sb, m.GeneratedColumn - prevGenCol);
+            Base64Vlq.Encode(sb, 0 - prevSrcFile); // Single source file for now
+            Base64Vlq.Encode(sb, m.SourceLine - prevSrcLine);
+            Base64Vlq.Encode(sb, m.SourceColumn - prevSrcCol);
 
             prevGenCol = m.GeneratedColumn;
             prevSrcLine = m.SourceLine;
@@ -81,24 +81,4 @@ public class SourceMapGenerator
         return sb.ToString();
     }
 
-    private static class Base64Vlq
-    {
-        private const string Base64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-        public static string Encode(int value)
-        {
-            var sb = new StringBuilder();
-            int vlq = value < 0 ? ((-value) << 1) | 1 : value << 1;
-
-            do
-            {
-                int digit = vlq & 0x1F;
-                vlq >>= 5;
-                if (vlq > 0) digit |= 0x20;
-                sb.Append(Base64Chars[digit]);
-            } while (vlq > 0);
-
-            return sb.ToString();
-        }
-    }
 }

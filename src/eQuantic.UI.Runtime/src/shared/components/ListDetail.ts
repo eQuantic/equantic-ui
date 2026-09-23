@@ -2,8 +2,8 @@ import { AdaptiveNode, AppBar, Box, BoxStyle, BuildContext, Column, Divider, Emp
 
 export class ListDetail extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.ListDetail';
-    declare list: VisualNode;
-    declare detail: any;
+    declare list: () => VisualNode;
+    declare detail: (() => VisualNode) | null;
     declare onBack: (() => void) | null;
     declare title: any;
     declare listTitle: any;
@@ -35,11 +35,12 @@ export class ListDetail extends StatelessComponent {
             return this.onBack == null ? null : new IconButton(new Icon(IconGlyph.fromIcons('chevronLeft')), SdkStrings.back, 'standard', 'medium', this.onBack);
         };
         let chosen: any; 
-        let compact = (chosen = this.detail) != null ? pane(this.title, chosen, back()) : pane(this.listTitle, this.list);
+        let compact = (chosen = this.detail) != null ? pane(this.title, chosen(), back()) : pane(this.listTitle, this.list());
         let wide = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: SizeValue.fill });
-        wide.add(new Box(new BoxStyle({ width: this.listWidth, height: SizeValue.fill }), pane(this.listTitle, this.list)));
+        wide.add(new Box(new BoxStyle({ width: this.listWidth, height: SizeValue.fill }), pane(this.listTitle, this.list())));
         wide.add(new Divider('none', 'vertical'));
-        wide.add(new Flexible(pane(this.title, this.detail ?? (this.placeholder ?? ListDetail.nothing()))));
+        let open: any; 
+        wide.add(new Flexible(pane(this.title, (open = this.detail) != null ? open() : this.placeholder ?? ListDetail.nothing())));
         return new AdaptiveNode(compact, null, wide, { expandedFrom: this.twoPaneFrom });
     }
 
