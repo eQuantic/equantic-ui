@@ -481,6 +481,27 @@ jobs:
           fi
           exit $status
 
+      # Composing a map installed an npm package beside eqc on the first Debug build, and bun's
+      # auto-install fetched what it imported (#356). eqc composes maps in C# now, so a package
+      # manager's files in its folder are a fetch someone put back. The Debug builds above composed
+      # every web sample's maps, and a folder with no eqc in it would prove nothing.
+      - name: No build wrote a package into eqc's folder
+        shell: bash
+        run: |
+          set -uo pipefail
+          tool=src/eQuantic.Build/bin/Debug/net10.0
+          if [ ! -f "$tool/eqc.dll" ]; then
+            echo "::error::no eqc at $tool, so this would check nothing"
+            exit 1
+          fi
+          found=$(find "$tool" \( -name node_modules -o -name package.json -o -name 'bun.lock*' \) -print)
+          if [ -n "$found" ]; then
+            echo "::error::a build wrote a package manager's files into eqc's folder:"
+            echo "$found"
+            exit 1
+          fi
+          echo "eqc's folder holds no package manager's files."
+
       # Beside a source tree the SDK copies the Server project's own bundle next to a web app's
       # modules. Each copy must be the served runtime byte for byte, derived from what the builds
       # wrote rather than listed here, and a tree where no sample wrote one is not a pass.
@@ -742,9 +763,23 @@ jobs:
             (cd "$name" && cp ../nuget.config . && dotnet build -c Release)
           done
 
+          # A DEBUG build composes source maps, and composing them wrote an npm package into the
+          # SDK's own folder in the package cache (#356). The folder is listed before and after, and
+          # the Release builds above have already restored it, so a missing folder is a failure.
+          SDK_DIR=$(find "$HOME/.nuget/packages/equantic.ui.sdk" -mindepth 1 -maxdepth 1 -type d | head -1)
+          test -n "$SDK_DIR"
+          FIRST="GateWeb$(echo "$WEB_SHELLS" | awk '{print $1}' | tr -d '-')"
+          before=$(cd "$SDK_DIR" && find . -type f | sort)
+          (cd "$FIRST" && dotnet build -c Debug)
+          after=$(cd "$SDK_DIR" && find . -type f | sort)
+          if [ "$before" != "$after" ]; then
+            echo "::error::a Debug build wrote into the SDK's package folder:"
+            diff <(echo "$before") <(echo "$after") || true
+            exit 1
+          fi
+
           # PUBLISH once, on the first shape: the runtime lands through one target for every shell,
           # so publishing each of them buys the same assertion three times over.
-          FIRST="GateWeb$(echo "$WEB_SHELLS" | awk '{print $1}' | tr -d '-')"
           (cd "$FIRST" && dotnet publish -c Release -o publish)
           # The published copy is the runtime the Server package serves, byte for byte. This was a
           # presence check, and it passed four releases while the copy was a library build with no

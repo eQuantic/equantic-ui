@@ -25,12 +25,6 @@
     <NoWarn>$(NoWarn);RSEXPERIMENTAL006</NoWarn>
   </PropertyGroup>
 
-  <ItemGroup>
-    <None Update="Scripts\merge-maps.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
 
     <ItemGroup>
         <!-- The dependency rule, shared with the other assembly rather than written twice: these two

@@ -131,3 +131,5 @@ eQuantic.UI.Compiler.CodeGen.Extensions.CollectionComparerExtensions
 static eQuantic.UI.Compiler.CodeGen.Extensions.CollectionComparerExtensions.ReportUntranslatableComparer(this Microsoft.CodeAnalysis.CSharp.Syntax.BaseObjectCreationExpressionSyntax! creation, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> void
 static eQuantic.UI.Compiler.CodeGen.RecordTypeEmitter.EmitsTwin(Microsoft.CodeAnalysis.INamedTypeSymbol! type) -> bool
 static eQuantic.UI.Compiler.Services.ComponentDependencyResolver.From(Microsoft.CodeAnalysis.Compilation! compilation) -> eQuantic.UI.Compiler.Services.ComponentDependencyResolver!
+eQuantic.UI.Compiler.Services.SourceMapComposer
+static eQuantic.UI.Compiler.Services.SourceMapComposer.Compose(string! outerMap, System.Func<string!, string?>! innerMapOf) -> string!

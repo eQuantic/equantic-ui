@@ -493,6 +493,15 @@ record of a release, the wiki's Upgrading page is the distillate.
   32 layers once each layer's root path stopped being rebuilt every frame, under a ceiling one
   object tighter, and the harness runs alone. The definition's code-splitting per route is met by the module graph, and bun already
   splits what pages share into chunks.
+- **2026-09-23 · Source maps compose without an npm package**: eqc composed each module's map
+  (JavaScript to TypeScript to C#) with a script over `@ampproject/remapping`, installed into the
+  SDK's own folder in the package cache on a consumer's first Debug build, and fetched by bun's
+  auto-install where that failed ([#356](https://github.com/eQuantic/equantic-ui/issues/356)). The
+  composition is C# now, with the script's rules: the dashboard sample's thirteen maps compose to
+  the same segments, sources and contents either way. It keeps bun's `debugId`, which the script
+  dropped although an `external` map exists to be matched by it. CI fails if a build leaves a
+  package manager's files beside eqc, and the template gate compares the SDK's package folder
+  before and after a Debug build.
 
 ## Retired documents
 
