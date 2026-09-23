@@ -114,3 +114,5 @@ eQuantic.UI.Compiler.Services.SourceMapGenerator.Generate(string! generatedFileN
 *REMOVED*eQuantic.UI.Compiler.Services.SourceMapGenerator.Generate(string! generatedFileName, string! sourceFileName, System.Collections.Generic.List<eQuantic.UI.Compiler.Services.TypeScriptCodeBuilder.SourceMapping>! mappings, string? sourceContent = null) -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LogicOr = "$eq.logic.or" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LogicAnd = "$eq.logic.and" -> string!
+static readonly eQuantic.UI.Compiler.Services.RuntimeProvidedTypeScanner.VocabularyNamespaces -> System.Collections.Generic.IReadOnlyList<string!>!
+static eQuantic.UI.Compiler.Services.RuntimeProvidedTypeScanner.IsVocabularyNamespace(string! ns) -> bool

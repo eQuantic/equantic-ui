@@ -28,9 +28,34 @@ public static class RuntimeProvidedTypeScanner
     /// </summary>
     public static readonly HashSet<string> ComponentModelMemberNames = new() { "SetState" };
 
+    /// <summary>
+    /// The namespaces eqc treats as the SHARED VOCABULARY: the runtime mirrors their types one for
+    /// one, their enums cross as string unions (<c>MainAlignValue</c>), and their records are built
+    /// and copied the vocabulary's way. The visual vocabulary itself, and the code editing engine
+    /// that moved out of it into an assembly of its own (docs/CODE-EDITOR-PLAN.md) — a component is
+    /// written against both, and a page reaches both as the runtime's own classes.
+    /// <para>
+    /// ONE list, asked by every emission path. The question used to be spelled as a string compare
+    /// against <c>"eQuantic.UI.Primitives"</c> in five places, and moving a single type out of that
+    /// namespace would have changed what four of them emitted for it without any of them failing.
+    /// </para>
+    /// </summary>
+    public static readonly IReadOnlyList<string> VocabularyNamespaces =
+        ["eQuantic.UI.Primitives", "eQuantic.UI.Code"];
+
+    /// <summary>Whether <paramref name="ns"/> is one of the <see cref="VocabularyNamespaces"/> or
+    /// nested inside one — never merely a longer name that starts the same way.</summary>
+    public static bool IsVocabularyNamespace(string ns)
+    {
+        foreach (var root in VocabularyNamespaces)
+        {
+            if (ns == root || ns.StartsWith(root + ".", StringComparison.Ordinal)) return true;
+        }
+        return false;
+    }
+
     public static bool IsRuntimeProvidedNamespace(string ns) =>
-        ns == "eQuantic.UI.Primitives"
-        || ns.StartsWith("eQuantic.UI.Primitives.")
+        IsVocabularyNamespace(ns)
         || ns == "eQuantic.UI.Components"
         || ns.StartsWith("eQuantic.UI.Components.")
         // The chart library: a second shared component library, embedded in the runtime the same way

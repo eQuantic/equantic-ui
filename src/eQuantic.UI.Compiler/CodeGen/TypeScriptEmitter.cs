@@ -1957,7 +1957,7 @@ public class TypeScriptEmitter
     /// <summary>The union name for a VOCABULARY enum, or null when the enum is an app's own — the
     /// one question three emission paths ask (components, plain classes, records).</summary>
     internal static string? VocabularyUnionFor(ITypeSymbol type) =>
-        type.ContainingNamespace?.ToDisplayString().StartsWith(VocabularyNamespace) == true
+        RuntimeProvidedTypeScanner.IsVocabularyNamespace(type.ContainingNamespace?.ToDisplayString() ?? "")
             ? $"{type.Name}Value"
             : null;
 
@@ -1973,7 +1973,7 @@ public class TypeScriptEmitter
                  System.Text.RegularExpressions.Regex.Matches(emitted, @"(?<![\w$])([A-Z][A-Za-z0-9]*)Value(?![\w$])"))
         {
             var name = match.Groups[1].Value;
-            if (compilation.GetTypeByMetadataName($"{VocabularyNamespace}.{name}") is { TypeKind: TypeKind.Enum })
+            if (VocabularyEnum(compilation, name) is not null)
                 runtimeProvided.Add($"{name}Value");
         }
     }
@@ -1986,8 +1986,8 @@ public class TypeScriptEmitter
     /// </summary>
     private string VocabularyEnumUnion(string name)
     {
-        var symbol = _semanticModel?.Compilation.GetTypeByMetadataName($"{VocabularyNamespace}.{name}");
-        if (symbol is not { TypeKind: TypeKind.Enum }) return "string";
+        var symbol = _semanticModel is null ? null : VocabularyEnum(_semanticModel.Compilation, name);
+        if (symbol is null) return "string";
         return IsFlags(symbol) ? "number" : Union(name);
     }
 
@@ -1999,8 +1999,17 @@ public class TypeScriptEmitter
         return $"{enumName}Value";
     }
 
-    /// <summary>The namespace whose enums the runtime mirrors as string unions.</summary>
-    private const string VocabularyNamespace = "eQuantic.UI.Primitives";
+    /// <summary>The vocabulary enum called <paramref name="name"/>, looked for in every namespace whose
+    /// enums the runtime mirrors as string unions — or null when no vocabulary declares one.</summary>
+    private static INamedTypeSymbol? VocabularyEnum(Compilation compilation, string name)
+    {
+        foreach (var ns in RuntimeProvidedTypeScanner.VocabularyNamespaces)
+        {
+            if (compilation.GetTypeByMetadataName($"{ns}.{name}") is { TypeKind: TypeKind.Enum } symbol)
+                return symbol;
+        }
+        return null;
+    }
 
     /// <summary>A [Flags] enum is a SET of members, and a set of members is a number.</summary>
     private static bool IsFlags(ITypeSymbol type) =>
