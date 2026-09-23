@@ -298,7 +298,9 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
                     "(($s) => { if ($s.length !== 1) throw new Error('String must be exactly one character long.'); return $s; })({0})",
                 "ConvertFromUtf32" when argCount == 1 => "String.fromCodePoint({0})",
                 // The surrogate pair IS the code point: concatenate the halves and read it back.
-                "ConvertToUtf32" when argCount == 2 => "({0} + {1}).codePointAt(0)",
+                // Through Number(): `codePointAt` answers `number | undefined`, and a strict tsc
+                // refused every twin that handed the result on as the int it is in C#.
+                "ConvertToUtf32" when argCount == 2 => "Number(({0} + {1}).codePointAt(0))",
                 // Out-of-range indexes read NaN from charCodeAt, and every comparison says no.
                 "IsSurrogatePair" when argCount == 2 =>
                     "({0}.charCodeAt({1}) >= 0xD800 && {0}.charCodeAt({1}) <= 0xDBFF"

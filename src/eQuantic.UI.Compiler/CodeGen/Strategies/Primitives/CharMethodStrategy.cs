@@ -36,7 +36,14 @@ public class CharMethodStrategy : IConversionStrategy
         var args = invocation.ArgumentList.Arguments;
         if (args.Count == 0) return "undefined";
 
-        var c = context.Converter.ConvertExpression(args[0].Expression);
+        // The (string, index) overloads classify the character AT the index, and read a surrogate
+        // pair there as the one code point it is, which is what .NET does. They were handed the
+        // STRING, so `char.IsDigit("a1", 1)` tested "a1" against a one-character pattern and every
+        // one of them answered false. The string and the index each appear once.
+        var c = args.Count == 2
+            && context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { Parameters: [{ Type.SpecialType: SpecialType.System_String }, ..] }
+            ? $"String.fromCodePoint(Number({context.Converter.ConvertExpression(args[0].Expression)}.codePointAt({context.Converter.ConvertExpression(args[1].Expression)})))"
+            : context.Converter.ConvertExpression(args[0].Expression);
 
         return name switch
         {
@@ -53,7 +60,8 @@ public class CharMethodStrategy : IConversionStrategy
             "IsSeparator" => $"(/^\\p{{Z}}$/u.test({c}))",
             "IsSymbol" => $"(/^\\p{{S}}$/u.test({c}))",
             "IsControl" => $"(/^\\p{{Cc}}$/u.test({c}))",
-            "IsAscii" => $"({c}.codePointAt(0) < 128)",
+            // Number(): `codePointAt` answers `number | undefined`, which a strict tsc will not compare.
+            "IsAscii" => $"(Number({c}.codePointAt(0)) < 128)",
             _ => $"{c}"
         };
     }
