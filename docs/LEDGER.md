@@ -529,7 +529,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   hydrates whole where one missing child used to send it to a full re-render, and the block's gutter
   is 26px where it was 12.
 - **2026-09-23 · The code editor counts what is drawn**: slice 1b of
-  [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#PR_NUMBER](https://github.com/eQuantic/equantic-ui/pull/PR_NUMBER)).
+  [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#371](https://github.com/eQuantic/equantic-ui/pull/371)).
   The engine counted one column per UTF-16 unit and placed every caret one cell per column, while
   the browser drew a tab to the next eight-column stop and a wide character across two cells: the
   caret stood beside the wrong glyph, and a Backspace on an emoji left half of its surrogate pair.
