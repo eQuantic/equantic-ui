@@ -1,5 +1,10 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Resources;
+using System.Runtime.Loader;
+using System.Xml.Linq;
+using eQuantic.UI.Primitives;
+using eQuantic.UI.Web.Tests;
 using FluentAssertions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -55,6 +60,82 @@ public class NativeTemplateShellTests
     [MemberData(nameof(Shells))]
     public void EveryShellCompiles(string shell, string[] folders)
     {
+        var errors = CompileShell(shell, folders).GetDiagnostics()
+            .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
+            .Select(diagnostic => $"{Path.GetFileName(diagnostic.Location.SourceTree?.FilePath)}"
+                + $"{diagnostic.Location.GetLineSpan().StartLinePosition}: {diagnostic.Id} {diagnostic.GetMessage()}")
+            .ToList();
+
+        errors.Should().BeEmpty($"`dotnet new equantic-native --shell {shell}` has to compile");
+    }
+
+    /// <summary>
+    /// Every shell BUILT and walked: no node is reachable by two paths, which is what "a node
+    /// belongs to ONE tree" means for a shell with an AdaptiveNode in it. Photon lays out one arm,
+    /// but these screens are write-once, and a page that serves one on the web mounts EVERY arm, so a
+    /// node placed in two is one component mounted twice. The shells build per arm (a screen, the
+    /// nav list), and ListDetail takes builders for the same reason: this is what keeps it so.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(Shells))]
+    public void EveryShellPlacesEachNodeOnce(string shell, string[] folders)
+    {
+        var context = new AssemblyLoadContext($"Shell_{shell}", isCollectible: true);
+        try
+        {
+            using var image = new MemoryStream();
+            CompileShell(shell, folders).Emit(image, manifestResources: NeutralStrings())
+                .Success.Should().BeTrue($"--shell {shell} has to emit");
+            image.Position = 0;
+            var shellType = context.LoadFromStream(image).GetType("EQuanticNativeApp.AppShell");
+            shellType.Should().NotBeNull($"--shell {shell} is a shell: Program.cs roots an AppShell");
+
+            var built = ((UiComponent)Activator.CreateInstance(shellType!)!)
+                .Build(new ComponentContext(PhotonTheme.Instance));
+
+            NodePlacements.Shared(built).Should().BeEmpty(
+                $"--shell {shell}: a node belongs to ONE tree, so each arm builds its own");
+        }
+        finally
+        {
+            context.Unload();
+        }
+    }
+
+    /// <summary>
+    /// The template's neutral <c>.resx</c> files as the manifest resources their Designer classes
+    /// read. An in-memory emit has no build to compile them, and a shell that says a word through
+    /// <c>Strings</c> — the blank one does — would otherwise fail on the missing resource rather
+    /// than on anything this test is about.
+    /// </summary>
+    private static IEnumerable<ResourceDescription> NeutralStrings() =>
+        Directory.GetFiles(Path.Combine(TemplateRoot(), "Resources"), "*.resx")
+            // Strings.resx, not Strings.pt-BR.resx: the walk runs in the neutral culture.
+            .Where(path => !Path.GetFileNameWithoutExtension(path).Contains('.'))
+            .Select(path =>
+            {
+                var bytes = ResxAsResources(path);
+                return new ResourceDescription(
+                    $"EQuanticNativeApp.Resources.{Path.GetFileNameWithoutExtension(path)}.resources",
+                    () => new MemoryStream(bytes), isPublic: true);
+            });
+
+    private static byte[] ResxAsResources(string resx)
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new ResourceWriter(stream))
+        {
+            foreach (var data in XDocument.Load(resx).Root!.Elements("data"))
+                writer.AddResource((string)data.Attribute("name")!, (string?)data.Element("value") ?? "");
+            writer.Generate();
+        }
+        return stream.ToArray();
+    }
+
+    /// <summary>A shape's sources, compiled the way the scaffolded project compiles them: the
+    /// folders template.json feeds it, the shared Resources, and the native SDK's usings.</summary>
+    private static Compilation CompileShell(string shell, string[] folders)
+    {
         var root = TemplateRoot();
         var files = folders
             .Select(folder => Path.Combine(root, ".shells", folder))
@@ -71,17 +152,9 @@ public class NativeTemplateShellTests
             .Append(CSharpSyntaxTree.ParseText(ImplicitUsings))
             .ToList();
 
-        var compilation = CSharpCompilation.Create($"Shell_{shell}", trees, References(),
+        return CSharpCompilation.Create($"Shell_{shell}", trees, References(),
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
                 nullableContextOptions: NullableContextOptions.Enable));
-
-        var errors = compilation.GetDiagnostics()
-            .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
-            .Select(diagnostic => $"{Path.GetFileName(diagnostic.Location.SourceTree?.FilePath)}"
-                + $"{diagnostic.Location.GetLineSpan().StartLinePosition}: {diagnostic.Id} {diagnostic.GetMessage()}")
-            .ToList();
-
-        errors.Should().BeEmpty($"`dotnet new equantic-native --shell {shell}` has to compile");
     }
 
     /// <summary>The choices the manifest offers and the folders on disk are the same set — a shape

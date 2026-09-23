@@ -1,5 +1,7 @@
 using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 using System.Text.RegularExpressions;
+using eQuantic.UI.Primitives;
 using FluentAssertions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -132,6 +134,87 @@ public class TemplateSourceTests
     [MemberData(nameof(WebShells))]
     public void Every_web_shell_compiles(string shell)
     {
+        var errors = CompileWebShell(shell).GetDiagnostics()
+            .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
+            .Select(diagnostic => $"{Path.GetFileName(diagnostic.Location.SourceTree?.FilePath)}"
+                + $"{diagnostic.Location.GetLineSpan().StartLinePosition}: {diagnostic.Id} {diagnostic.GetMessage()}")
+            .ToList();
+
+        errors.Should().BeEmpty($"`dotnet new equantic-app --shell {shell}` has to compile");
+    }
+
+    /// <summary>
+    /// Every web shell's FRAME, built and walked: the page it wraps is placed once, outside every
+    /// AdaptiveNode arm, and no node of the frame is reachable by two paths.
+    /// <para>
+    /// The web mounts every arm and lets CSS show one, so a node placed in two arms is one component
+    /// mounted twice. The dashboard shell did exactly that with the page and the header, so every
+    /// app scaffolded from it mounted its page twice and its language switcher twice — the shape
+    /// the console sample's frame lost in #360. Compiling proves a shell is valid C#; this proves it
+    /// is a valid FRAME, on the very sources the scaffold ships.
+    /// </para>
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(WebShells))]
+    public void Every_web_shell_places_the_page_once(string shell)
+    {
+        // A shape with no AppShell.cs composes its pages bare, so there is no frame to walk. Asked
+        // of the disk, so a shape that gains a frame is walked without anyone listing it here.
+        if (!File.Exists(Path.Combine(WebTemplateRoot(), ".shells", shell, "AppShell.cs"))) return;
+
+        var context = new AssemblyLoadContext($"WebShell_{shell}", isCollectible: true);
+        try
+        {
+            using var image = new MemoryStream();
+            CompileWebShell(shell).Emit(image).Success.Should().BeTrue($"--shell {shell} has to emit");
+            image.Position = 0;
+            var frameType = context.LoadFromStream(image).GetType("EQuanticApp.AppShell");
+            frameType.Should().NotBeNull($"--shell {shell} ships an AppShell.cs");
+
+            var page = new PageProbe();
+            var frame = (UiComponent)Activator.CreateInstance(frameType!, "/", page)!;
+            var built = frame.Build(new ComponentContext(PhotonTheme.Instance));
+
+            NodePlacements.Shared(built).Should().BeEmpty(
+                $"--shell {shell}: a node belongs to ONE tree, so each arm builds its own");
+            var placements = NodePlacements.Of(built)
+                .Where(placement => ReferenceEquals(placement.Node, page))
+                .ToList();
+            placements.Select(placement => placement.Path).Should()
+                .ContainSingle($"--shell {shell} places the page once");
+            placements[0].InArm.Should().BeFalse(
+                $"--shell {shell} puts the page at {placements[0].Path}: inside an arm it is one "
+                + "mount per arm on the web");
+
+            WebRealizer.Lower(frame, PhotonTheme.Instance).Render();
+            page.Builds.Should().Be(1,
+                $"--shell {shell}: the web lowers every arm, so a page inside them builds once per arm");
+        }
+        finally
+        {
+            context.Unload();
+        }
+    }
+
+    /// <summary>The page a shell wraps, stateful the way a real page is: it counts its builds.</summary>
+    private sealed class PageProbe : StatefulComponent
+    {
+        public int Builds { get; private set; }
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            Builds++;
+            return new Text("the page", TypeRole.BodyM);
+        }
+    }
+
+    /// <summary>
+    /// A web shell's sources compiled the way the app's build compiles them — with the factory
+    /// surface the GENERATOR writes for the app's own components, because a shell page calls
+    /// <c>AppShell(…)</c> and <c>StatTile(…)</c> and nothing else would resolve them.
+    /// </summary>
+    private static Compilation CompileWebShell(string shell)
+    {
         var root = WebTemplateRoot();
         var files = Directory.GetFiles(Path.Combine(root, ".shells", shell), "*.cs",
                 SearchOption.AllDirectories)
@@ -152,17 +235,9 @@ public class TemplateSourceTests
 
         // The app's own factories are GENERATED at build time — run the real generator, or every
         // `AppShell("/", …)` in a page reads as an undefined name.
-        var driver = CSharpGeneratorDriver.Create(new eQuantic.UI.Generators.AppFactorySurfaceGenerator())
+        CSharpGeneratorDriver.Create(new eQuantic.UI.Generators.AppFactorySurfaceGenerator())
             .RunGeneratorsAndUpdateCompilation(compilation, out var withFactories, out _);
-        _ = driver;
-
-        var errors = withFactories.GetDiagnostics()
-            .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
-            .Select(diagnostic => $"{Path.GetFileName(diagnostic.Location.SourceTree?.FilePath)}"
-                + $"{diagnostic.Location.GetLineSpan().StartLinePosition}: {diagnostic.Id} {diagnostic.GetMessage()}")
-            .ToList();
-
-        errors.Should().BeEmpty($"`dotnet new equantic-app --shell {shell}` has to compile");
+        return withFactories;
     }
 
     /// <summary>The choices the manifest offers and the folders on disk are the same set — a shape
