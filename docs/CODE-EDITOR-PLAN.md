@@ -198,7 +198,7 @@ closes the stories named beside it above.
 
 | slice | state |
 |---|---|
-| 0 | the engine in `eQuantic.UI.Code`, one type per file; `ICodeSurfaceModel`; the pointer map and the mark geometry in the engine; on the web, drag selection, shift-click, double and triple click, and a press that no longer scrolls the page (defects 5, 16, 17). Two transpiler gaps it exposed are fixed where they live: a plain class's unassigned field took no default, and `bool \| bool` emitted a number |
+| 0 | delivered by [#359](https://github.com/eQuantic/equantic-ui/pull/359): the engine in `eQuantic.UI.Code`, one type per file; `ICodeSurfaceModel`; the pointer map and the mark geometry in the engine; on the web, drag selection, shift-click, double and triple click, a press that no longer scrolls the page, and a drag that no longer starts the browser's own selection over the bands (defects 5, 16, 17). The transpiler gaps it exposed are fixed where they live: a plain class's unassigned field took no default, `bool \| bool` emitted a number and its compound forms stored one, a struct began `null` instead of its zero, a record's module missed the app types its body names, and a type pattern over the engine was a presence check |
 
 ## Fenced, on purpose
 
