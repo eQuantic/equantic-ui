@@ -12,8 +12,13 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// once, and <c>Get().Value++</c> calls <c>Get</c> once. The right-hand side is a part too, never
 /// spliced text, so nothing it contains is mistaken for a hole.
 /// <para>
-/// A target made only of plain names (<c>t</c>, <c>this.count</c>) reads the same twice, and keeps
-/// the plain <c>target = next(target)</c> it always had.
+/// A target made only of plain names (<c>t</c>, <c>a[i]</c>, <c>h.F</c>) keeps the plain
+/// <c>target = next(target)</c> it always had, and that is legal for a reason worth writing down,
+/// because a right-hand side can reassign those names: <c>a[i] += (i = 1)</c>, <c>h.F += (h =
+/// other).F</c>. JavaScript fixes an assignment's target (its receiver and its key) BEFORE the
+/// right-hand side runs, which is C#'s order, and every <c>next</c> reads the current value before
+/// its operands, left to right. So both reads name the element C# named. A <c>next</c> that read an
+/// operand first would break that, and <c>ReadModifyWriteConformanceTests</c> fails for one.
 /// </para>
 /// </summary>
 public static class ReadModifyWrite

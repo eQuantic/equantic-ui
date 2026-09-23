@@ -185,6 +185,12 @@ public class NumericBclConformanceTests
     [InlineData("uint zero = 0; try { var (q, r) = Math.DivRem(7u, zero); return 1; } catch { return -1; }")] // -1
     [InlineData("int min = int.MinValue, minusOne = -1; try { var (q, r) = Math.DivRem(min, minusOne); return q; } catch { return -1; }")] // -1 — overflow
     [InlineData("short min = short.MinValue, minusOne = -1; var (q, r) = Math.DivRem(min, minusOne); return q;")] // -32768 — wraps
+    // An integer has no signed zero: JavaScript's `-1 / 3` and `-6 % 3` are both -0, which a
+    // division by the result shows as -∞ where .NET answers +∞. The sign is returned, because an
+    // infinity is not a JSON number and the harness compares JSON.
+    [InlineData("int a = -6, b = 3; var (q, r) = Math.DivRem(a, b); return 1.0 / r > 0 ? 1 : -1;")]   // 1
+    [InlineData("int a = -1, b = 3; var (q, r) = Math.DivRem(a, b); return 1.0 / q > 0 ? 1 : -1;")]   // 1
+    [InlineData("short a = -6, b = 3; var (q, r) = Math.DivRem(a, b); return 1.0 / r > 0 ? 1 : -1;")] // 1
     // ---- a hole beside an operator fences what fills it ----
     [InlineData("bool c = true; double a = 1, b = 2; return double.DegreesToRadians(c ? a : b);")]
     [InlineData("double a = 1, b = 2; return double.DegreesToRadians(a + b);")]

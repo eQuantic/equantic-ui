@@ -40,12 +40,32 @@ public class ReadModifyWriteConformanceTests
     // ---- a Decimal steps and adds on the type ----
     [InlineData("var m = new[] { 1.5m, 2m }; int i = 0; m[i++] += 1m; return m[0].ToString() + \"|\" + i;")]
     [InlineData("decimal d = 1.5m; var old = d++; return old.ToString() + \"|\" + d;")]
-    // ---- integer division stays integral ----
+    // ---- integer division stays integral, and back in the target's width ----
     [InlineData("var n = new[] { 7, 9 }; int i = 0; n[i++] /= 2; return n[0] * 10 + i;")]
+    [InlineData("sbyte s = -128; s /= -1; return s;")]                       // -128
+    [InlineData("short h = -32768; h /= -1; return h;")]                     // -32768
+    [InlineData("try { checked { sbyte t = -128; t /= -1; return t; } } catch (OverflowException) { return 1; }")] // 1
+    // ---- a right-hand side that changes the target's index: C# fixed the element first ----
+    [InlineData("var a = new[] { 0.5f, 0.25f }; int i = 0; a[i] += (i = 1); return (double)a[0] * 100 + (double)a[1] * 10 + i;")]
+    [InlineData("var b = new byte[] { 250, 7 }; int i = 0; b[i] += (byte)(i = 1); return b[0] * 100 + b[1] * 10 + i;")]
+    [InlineData("var m = new[] { 1m, 2m }; int i = 0; m[i] += (i = 1); return m[0].ToString() + \"|\" + m[1] + \"|\" + i;")]
+    [InlineData("var n = new[] { 9, 8 }; int i = 0; n[i] /= (i = 1) + 1; return n[0] * 100 + n[1] * 10 + i;")]
     public void TheTargetIsEvaluatedOnce(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>A right-hand side that REPLACES the receiver: C# fixed the object before it ran.</summary>
+    [SkippableFact]
+    public void ARightHandSideThatReplacesTheReceiver_WritesTheObjectTheTargetNamedFirst()
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(
+            "var h = new Holder { F = 0.5f }; var other = new Holder { F = 2f }; var first = h; h.F += (h = other).F; return (double)first.F * 10 + (double)other.F;",
+            // A record, because the harness emits a prelude's records; it is a reference type, so
+            // `first` is the same object `h` named before the right-hand side replaced it.
+            "public record Holder { public float F; }");
     }
 
     [SkippableFact]

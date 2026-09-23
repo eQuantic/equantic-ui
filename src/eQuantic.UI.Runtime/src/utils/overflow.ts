@@ -66,8 +66,12 @@ export function divRem(left: number, right: number, bits: 8 | 16 | 32, unsigned 
   }
   const quotient = Math.trunc(left / right);
   const shift = 32 - bits;
-  const wrapped = bits === 32 ? quotient : unsigned ? quotient & ((1 << bits) - 1) : (quotient << shift) >> shift;
-  return [wrapped, left % right];
+  // An integer has no signed zero, and `-1 / 3` and `-6 % 3` are both -0 here. `| 0` settles it on
+  // the signed widths, where both results fit an int32; an unsigned pair never produces one.
+  if (unsigned) {
+    return [bits === 32 ? quotient : quotient & ((1 << bits) - 1), left % right];
+  }
+  return [bits === 32 ? quotient | 0 : (quotient << shift) >> shift, (left % right) | 0];
 }
 
 /**

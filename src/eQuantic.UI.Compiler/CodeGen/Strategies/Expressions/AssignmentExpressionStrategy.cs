@@ -145,11 +145,16 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         // used to reach JavaScript's `/=`, which divides as a double. NOT for a long target: its
         // BigInt `/` already truncates, and Math.trunc rejects a BigInt outright.
         // Built as IR, not as a template: a right-hand side that is a ternary (`x /= c ? 4 : 1`)
-        // has to be fenced under the `/`, and the writer is the one that knows.
-        if (op == "/=" && context.SemanticHelper.GetType(assignment.Left).IsIntegral()
-            && !context.SemanticHelper.GetType(assignment.Left).IsLong())
-            return Compound((current, operand) =>
-                JsExpr.Call(JsExpr.Identifier("Math.trunc"), JsExpr.Binary(current, "/", operand)));
+        // has to be fenced under the `/`, and the writer is the one that knows. The quotient goes
+        // back into the TARGET's width, as C#'s `x = (T)(x / y)` does: `sbyte s = -128; s /= -1`
+        // is -128, not 128.
+        if (op == "/=" && leftType.IsIntegral() && !leftType.IsLong())
+        {
+            var arithmetic = ArithmeticContext.Of(assignment, context);
+            return Compound((current, operand) => IntegerWidth.Settle(
+                JsExpr.Call(JsExpr.Identifier("Math.trunc"), JsExpr.Binary(current, "/", operand)),
+                leftType, arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context));
+        }
 
         // An assignment NODE: right-associative at the loosest level, so `a = b = c` chains and
         // an assignment used as an operand is fenced by whoever places it.
