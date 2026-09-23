@@ -1,5 +1,6 @@
 import { Decimal, dec } from './decimal';
 import { long } from './long';
+import { adoptMember } from './adopt-member';
 import {
   DateTime,
   dateTime,
@@ -90,10 +91,14 @@ export function hydrateValue(current: unknown, incoming: unknown): unknown {
   ) {
     const proto = Object.getPrototypeOf(current);
     if (proto && proto !== Object.prototype) {
-      const rebuilt = Object.create(proto) as Record<string, unknown>;
+      const rebuilt = Object.create(proto) as object;
       const witness = current as Record<string, unknown>;
       for (const key of Object.keys(incoming as Record<string, unknown>)) {
-        rebuilt[key] = hydrateValue(witness[key], (incoming as Record<string, unknown>)[key]);
+        adoptMember(
+          rebuilt,
+          key,
+          hydrateValue(witness[key], (incoming as Record<string, unknown>)[key]),
+        );
       }
       return rebuilt;
     }

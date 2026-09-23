@@ -1,5 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { hydrate, type HydrationSpec } from './hydrate';
+import { hydrateValue } from './hydrate-value';
 import { Decimal, dec } from './decimal';
 import { DateTime, TimeSpan } from './datetime';
 import { Rect } from '../shared/value-types';
@@ -118,7 +120,10 @@ describe('typed hydration', () => {
   // A vocabulary value type the RUNTIME ships (Rect) is described structurally by the compiler and
   // rebuilt on its twin: a plain copy lost `right`, `isEmpty` and every other member of the prototype.
   it('rebuilds a runtime value type on its twin, with its members coerced', () => {
-    const spec: HydrationSpec = { of: Rect, members: { x: 'single', y: 'single', width: 'single', height: 'single' } };
+    const spec: HydrationSpec = {
+      of: Rect,
+      members: { x: 'single', y: 'single', width: 'single', height: 'single' },
+    };
     const box = hydrate({ x: 0.1, y: 0.2, width: 10.1, height: 5 }, spec) as Rect;
 
     expect(box).toBeInstanceOf(Rect);
@@ -145,5 +150,61 @@ describe('a tuple', () => {
 
   it('leaves a value that is not an array alone', () => {
     expect(hydrate('nope', { tuple: ['decimal'] })).toBe('nope');
+  });
+});
+
+// The payloads as the SERVER writes them, not as a test author types them: ServerPayloadFixtureTests
+// serializes them with EqJson and pins the file. Read and parsed here, the way a page parses its
+// payload: an import goes through the bundler, and what becomes of a `__proto__` key on that path is
+// the bundler's business, not the question these cases ask.
+const wire = JSON.parse(readFileSync('src/utils/__fixtures__/server-payload.json', 'utf8')) as {
+  rect: { right: number; bottom: number; center: { x: number; y: number } };
+  balances: Record<string, string>;
+};
+
+describe('a payload the server writes', () => {
+  const rectSpec: HydrationSpec = {
+    of: Rect,
+    members: { x: 'single', y: 'single', width: 'single', height: 'single' },
+  };
+
+  // System.Text.Json writes every public property, so a Rect arrives with `right`, `center` and
+  // `isEmpty` too. The twin only has getters for those, and assigning one throws in a module.
+  it('rebuilds a Rect that arrives with its computed members, which the twin answers itself', () => {
+    const box = hydrate(wire.rect, rectSpec) as Rect;
+
+    expect(box).toBeInstanceOf(Rect);
+    expect(box.right).toBe(Math.fround(wire.rect.right));
+    expect(box.bottom).toBe(Math.fround(wire.rect.bottom));
+    expect(box.center.x).toBe(Math.fround(wire.rect.center.x));
+    expect(box.center.y).toBe(Math.fround(wire.rect.center.y));
+    expect(box.isEmpty).toBe(false);
+  });
+
+  it('rebuilds it through a twin with no spec of its own, and through the witness path', () => {
+    expect(hydrate(wire.rect, Rect)).toBeInstanceOf(Rect);
+    expect(hydrateValue(new Rect(), wire.rect)).toBeInstanceOf(Rect);
+  });
+
+  it('keeps a dictionary entry keyed __proto__ as an entry, never as a prototype', () => {
+    const balances = hydrate(wire.balances, { dict: 'long' }) as Record<string, bigint>;
+
+    expect(Object.getPrototypeOf(balances)).toBe(Object.prototype);
+    expect(Object.keys(balances)).toEqual(['__proto__', 'a']);
+    expect(Object.getOwnPropertyDescriptor(balances, '__proto__')?.value).toBe(9007199254740993n);
+  });
+
+  it('never lets a member replace the prototype of the value rebuilt from it', () => {
+    const hostile = JSON.parse('{"x":1,"__proto__":{"planted":true}}') as Record<string, unknown>;
+    const rebuilt = [
+      hydrate(hostile, rectSpec),
+      hydrate(hostile, Rect),
+      hydrateValue(new Rect(), hostile),
+    ];
+
+    for (const value of rebuilt) {
+      expect(Object.getPrototypeOf(value)).toBe(Rect.prototype);
+      expect((value as { planted?: boolean }).planted).toBeUndefined();
+    }
   });
 });
