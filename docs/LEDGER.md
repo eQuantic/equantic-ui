@@ -544,8 +544,15 @@ record of a release, the wiki's Upgrading page is the distillate.
   the whole string, and a code point read from a string reached tsc as `number | undefined`. Found
   in review: a char method spliced its argument as a receiver, so over a conditional it read one
   branch, and the bracket match walked to its pair with the caret's step, segmenting every line on
-  the way (110 ms a frame on 3000 lines, under one now that it scans). The served runtime grew to
-  143,383 bytes gzipped.
+  the way (110 ms a frame on 3000 lines, under one now that it scans). A second review of the model
+  found more: ⌘/ over three lines re-coloured only the first, so a line it emptied kept a comment
+  longer than itself and Photon's boundary replaced the editor with its failure panel; a `$` after an
+  operator was drawn twice, and `@$"""` coloured the rest of the file as a string; ✌🏻 took one cell
+  and drew two; a click kept the cell a run of ↓ had aimed at; Tab counted columns, not cells. The
+  width table was written by hand, so it is now compared, character by character and on both sides,
+  with the SDK's own Bun (`Bun.stringWidth`), which found the web twin reading every astral
+  character as one cell: eqc translated `char.IsSurrogatePair(char, char)` as the (string, index)
+  overload. The served runtime grew to 143,383 bytes gzipped.
 
 ## Retired documents
 
