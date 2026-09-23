@@ -49,11 +49,17 @@ public class HandoffStatusTests
             // A request whose final API name is not decided yet is checked by hand, and says so.
             if (!item.TryGetProperty("probe", out var probe) || probe.ValueKind == JsonValueKind.Null) continue;
 
-            var (present, what) = Probe(probe);
-            if (status == "request" && present)
-                offences.Add($"{id} has shipped ({what}). Mark it shipped in status.json and take its claims off the pages");
-            else if (status != "request" && !present)
-                offences.Add($"{id} is marked {status}, and {what} is not in the SDK");
+            var found = Probe(probe);
+            if (status == "request" && found.All)
+                offences.Add($"{id} has shipped ({found.What}). Mark it shipped in status.json and take its claims off the pages");
+            else if (status == "request" && found.Any)
+                offences.Add($"{id} has partly shipped ({found.What}, not {found.Missing}). Mark it partial");
+            else if (status == "shipped" && !found.All)
+                offences.Add($"{id} is marked shipped, and {found.Missing} is not in the SDK");
+            else if (status == "partial" && found.All)
+                offences.Add($"{id} has shipped the rest ({found.What}). Mark it shipped and take its claims off the pages");
+            else if (status == "partial" && !found.Any)
+                offences.Add($"{id} is marked partial, and none of {found.Missing} is in the SDK");
         }
 
         offences.Should().BeEmpty("status.json has to say what the SDK actually ships:" + List(offences));
@@ -85,19 +91,38 @@ public class HandoffStatusTests
 
     // ---- probes ---------------------------------------------------------------------------------
 
-    private static (bool Present, string What) Probe(JsonElement probe)
+    /// <summary>What a probe found: whether EVERY part it names is in the SDK, whether ANY is, what
+    /// was found and what was not.</summary>
+    private readonly record struct Found(bool All, bool Any, string What, string Missing)
     {
+        public static Found Single(bool present, string what) => new(present, present, what, what);
+    }
+
+    private static Found Probe(JsonElement probe)
+    {
+        // One entry, or a LIST of them when the item promises several members: the promise ships
+        // when every one does, and a list of which only some are in the SDK is partial. A single
+        // probe for "Selected / Checked / Expanded" kept the item shipped with two of the three gone.
         if (probe.TryGetProperty("api", out var api))
         {
-            var name = api.GetString()!;
-            var entry = new Regex(@"(^|[\s!?(,])" + Regex.Escape(name) + @"($|[.\s(<!?,])");
-            return (ApiLines(probe).Any(line => entry.IsMatch(line)), $"the public API entry {name}");
+            string[] names = api.ValueKind == JsonValueKind.Array
+                ? [.. api.EnumerateArray().Select(name => name.GetString()!)]
+                : [api.GetString()!];
+            var lines = ApiLines(probe).ToArray();
+            var present = names.Where(name =>
+            {
+                var entry = new Regex(@"(^|[\s!?(,])" + Regex.Escape(name) + @"($|[.\s(<!?,])");
+                return lines.Any(line => entry.IsMatch(line));
+            }).ToArray();
+            var missing = names.Except(present, StringComparer.Ordinal).ToArray();
+            return new Found(missing.Length == 0, present.Length > 0,
+                Entries(present.Length > 0 ? present : names), Entries(missing));
         }
 
         if (probe.TryGetProperty("apiContains", out var fragment))
         {
             var text = fragment.GetString()!;
-            return (ApiLines(probe).Any(line => line.Contains(text, StringComparison.Ordinal)),
+            return Found.Single(ApiLines(probe).Any(line => line.Contains(text, StringComparison.Ordinal)),
                 $"a public API entry containing {text}");
         }
 
@@ -114,12 +139,15 @@ public class HandoffStatusTests
                 .OrderBy(f => f, StringComparer.Ordinal)
                 .FirstOrDefault(f => word.IsMatch(File.ReadAllText(Path.Combine(Root, f))));
             return hit is null
-                ? (false, $"a reference to {name} in src outside {string.Join(", ", except)}")
-                : (true, $"{name} is referenced in {hit}");
+                ? Found.Single(false, $"a reference to {name} in src outside {string.Join(", ", except)}")
+                : Found.Single(true, $"{name} is referenced in {hit}");
         }
 
         throw new InvalidOperationException("a probe names api, apiContains or sourceReference");
     }
+
+    private static string Entries(IReadOnlyList<string> names) =>
+        names.Count == 1 ? $"the public API entry {names[0]}" : $"the public API entries {string.Join(", ", names)}";
 
     /// <summary>The public API files of the assembly the probe names, which list every public member
     /// by its full name. Missing files are an error in status.json, not an absence.</summary>

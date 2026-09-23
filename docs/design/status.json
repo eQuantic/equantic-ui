@@ -80,7 +80,7 @@
       "name": "SemanticNode Selected / Checked / Expanded",
       "status": "shipped",
       "probe": {
-        "api": "eQuantic.UI.Primitives.SemanticNode.Selected.get",
+        "api": ["eQuantic.UI.Primitives.SemanticNode.Selected.get", "eQuantic.UI.Primitives.SemanticNode.Checked.get", "eQuantic.UI.Primitives.SemanticNode.Expanded.get"],
         "in": "eQuantic.UI.Primitives"
       },
       "claims": [
@@ -145,7 +145,7 @@
       "name": "Large and Extra-large window classes",
       "status": "request",
       "probe": {
-        "api": "eQuantic.UI.Primitives.WindowSizeClass.Large",
+        "api": ["eQuantic.UI.Primitives.WindowSizeClass.Large", "eQuantic.UI.Primitives.WindowSizeClass.ExtraLarge"],
         "in": "eQuantic.UI.Primitives"
       },
       "claims": [
@@ -269,7 +269,7 @@
       "name": "SemanticRole members for radio, tab, option, menu item, destination, combobox and dialog",
       "status": "request",
       "probe": {
-        "api": "eQuantic.UI.Primitives.SemanticRole.Tab",
+        "api": ["eQuantic.UI.Primitives.SemanticRole.Radio", "eQuantic.UI.Primitives.SemanticRole.Tab", "eQuantic.UI.Primitives.SemanticRole.MenuItem", "eQuantic.UI.Primitives.SemanticRole.Option", "eQuantic.UI.Primitives.SemanticRole.Destination", "eQuantic.UI.Primitives.SemanticRole.ComboBox", "eQuantic.UI.Primitives.SemanticRole.Dialog"],
         "in": "eQuantic.UI.Primitives"
       },
       "claims": []
