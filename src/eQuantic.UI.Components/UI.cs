@@ -634,8 +634,9 @@ public static class UI
         new ListView(count, itemExtent, itemBuilder) { Width = width, Height = height };
 
     /// <summary>A list beside a detail on a wide window, one pane at a time on a phone (spec B4).
-    /// The titles, the wide placeholder and the threshold are init slots.</summary>
-    public static ListDetail ListDetail(VisualNode list, VisualNode? detail = null,
+    /// The panes arrive as BUILDERS, one call per shape that shows them; the titles, the wide
+    /// placeholder and the threshold are init slots.</summary>
+    public static ListDetail ListDetail(Func<VisualNode> list, Func<VisualNode>? detail = null,
         Action? onBack = null) =>
         new ListDetail(list, detail, onBack);
 

@@ -313,7 +313,7 @@ export class UI {
         return new ListView(count, itemExtent, itemBuilder, { width: width, height: height });
     }
 
-    static listDetail(list: VisualNode, detail: VisualNode | null = null, onBack: (() => void) | null = null) {
+    static listDetail(list: () => VisualNode, detail: (() => VisualNode) | null = null, onBack: (() => void) | null = null) {
         return new ListDetail(list, detail, onBack);
     }
 

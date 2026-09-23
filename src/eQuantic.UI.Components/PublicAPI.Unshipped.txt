@@ -1,1 +1,9 @@
 #nullable enable
+*REMOVED*static eQuantic.UI.Components.UI.ListDetail(eQuantic.UI.Primitives.VisualNode! list, eQuantic.UI.Primitives.VisualNode? detail = null, System.Action? onBack = null) -> eQuantic.UI.Components.ListDetail!
+*REMOVED*eQuantic.UI.Components.ListDetail.Detail.get -> eQuantic.UI.Primitives.VisualNode?
+*REMOVED*eQuantic.UI.Components.ListDetail.List.get -> eQuantic.UI.Primitives.VisualNode!
+*REMOVED*eQuantic.UI.Components.ListDetail.ListDetail(eQuantic.UI.Primitives.VisualNode! list, eQuantic.UI.Primitives.VisualNode? detail = null, System.Action? onBack = null) -> void
+eQuantic.UI.Components.ListDetail.ListDetail(System.Func<eQuantic.UI.Primitives.VisualNode!>! list, System.Func<eQuantic.UI.Primitives.VisualNode!>? detail = null, System.Action? onBack = null) -> void
+eQuantic.UI.Components.ListDetail.List.get -> System.Func<eQuantic.UI.Primitives.VisualNode!>!
+eQuantic.UI.Components.ListDetail.Detail.get -> System.Func<eQuantic.UI.Primitives.VisualNode!>?
+static eQuantic.UI.Components.UI.ListDetail(System.Func<eQuantic.UI.Primitives.VisualNode!>! list, System.Func<eQuantic.UI.Primitives.VisualNode!>? detail = null, System.Action? onBack = null) -> eQuantic.UI.Components.ListDetail!
