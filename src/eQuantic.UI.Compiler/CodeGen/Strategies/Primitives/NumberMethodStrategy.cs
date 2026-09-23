@@ -80,8 +80,8 @@ public class NumberMethodStrategy : IExpressionIrStrategy
             // deliberately, and the value they carried is the one this comment owes you.
             var outArg = args[^1];
 
-            // A discard receives nothing: `_ = …` assigned a global nobody declared, which a module
-            // refuses at run time.
+            // A discard receives nothing. Converted as a name, `_` read as a member of the
+            // component: `this._ = parseInt(…)` gave it a property nobody declared.
             if (IsDiscard(outArg, context)) return JsExpr.Callish($"(!isNaN({Parsed(input)}))");
 
             var varName = OutTarget(outArg, context);

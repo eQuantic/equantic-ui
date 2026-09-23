@@ -46,7 +46,8 @@ public class NumberStrategyTests
     [Fact]
     public void IntTryParse_IntoADiscard_AssignsNothing()
     {
-        // `_ = parseInt(…)` assigned a global nobody declared, which a module refuses at run time.
+        // Converted as a name, the discard read as a member: `this._ = parseInt(…)` gave the
+        // component a property nobody declared.
         var result = TestHelper.ConvertExpression("int.TryParse(str, out _)");
         result.Should().Be("(!isNaN(parseInt(this.str)))");
     }
