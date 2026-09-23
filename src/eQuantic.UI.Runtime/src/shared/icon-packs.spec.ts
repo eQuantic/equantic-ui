@@ -39,7 +39,8 @@ describe('icon pack glyphs (C# cross-pin)', () => {
     expect(node.attributes['viewBox']).toBe('0 0 448 512');
     expect(node.attributes['fill']).toBe('currentColor');
 
-    const curated = lower(new Icon('search', 20));
+    // A curated glyph reaches the twin through its conversion, as eqc emits it (#281).
+    const curated = lower(new Icon(IconGlyph.fromIcons('search'), 20));
     expect(curated.attributes['viewBox']).toBe('0 0 24 24');
     expect(curated.children[0].attributes['d']).toContain('M15.5 14h-.79');
   });

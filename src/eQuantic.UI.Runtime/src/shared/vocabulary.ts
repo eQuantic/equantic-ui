@@ -1035,8 +1035,6 @@ interface TransitionSpecConfig {
   easing?: readonly number[];
 }
 
-/** Mirror of the C# `TransitionSpec` record struct (spec S6): which channels glide, for how long,
- * along which bezier. `easing` is the 4-number control-point tuple the generated `Curve` exports. */
 /**
  * C# twin of `CuratedIcons` (Primitives): the curated glyph set behind the `Icons` enum. An enum
  * member lowers to its camelCase name, so resolving one is a lookup in the generated catalogue.
@@ -1047,6 +1045,8 @@ export const CuratedIcons = {
   },
 };
 
+/** Mirror of the C# `TransitionSpec` record struct (spec S6): which channels glide, for how long,
+ * along which bezier. `easing` is the 4-number control-point tuple the generated `Curve` exports. */
 export class TransitionSpec {
   channels: number;
   durationMs: number;
@@ -1461,6 +1461,13 @@ export class IconGlyph {
     this.strokeWidth = strokeWidth;
     if (config) Object.assign(this, config);
   }
+
+  /** C# `implicit operator IconGlyph(Icons glyph)` — a curated glyph IS a glyph. eqc calls this
+   * wherever the conversion applies (`Icon(Icons.Search)`), so every twin receives an `IconGlyph`
+   * and no constructor has to guess what a string was meant to be. */
+  static fromIcons(glyph: string): IconGlyph {
+    return CuratedIcons.resolve(glyph);
+  }
 }
 
 export class Icon extends VisualNode {
@@ -1471,7 +1478,7 @@ export class Icon extends VisualNode {
   label: string | null;
 
   constructor(
-    glyph: string | IconGlyph,
+    glyph: IconGlyph,
     size = 24,
     color: ColorTokenValue | null = null,
     label: string | null = null,
@@ -1481,9 +1488,9 @@ export class Icon extends VisualNode {
     if (size !== 16 && size !== 20 && size !== 24 && size !== 32) {
       throw new RangeError(`Icon size ${size} is not on the §07 whitelist (16/20/24/32).`);
     }
-    // Curated names (the transpiled `Icons` enum lowers to its camelCase member) resolve from the
-    // generated catalog; pack glyphs arrive as IconGlyph objects and pass through whole.
-    this.glyph = typeof glyph === 'string' ? new IconGlyph(glyph, iconPaths[glyph] ?? '') : glyph;
+    // A curated glyph arrives through its conversion (`IconGlyph.fromIcons`), a pack glyph as the
+    // glyph it is: either way, an IconGlyph.
+    this.glyph = glyph;
     this.size = size;
     this.color = color;
     this.label = label;

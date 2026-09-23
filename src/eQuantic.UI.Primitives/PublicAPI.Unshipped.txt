@@ -52,3 +52,6 @@
 *REMOVED*static eQuantic.UI.Primitives.PaletteAudit.Simulate(eQuantic.UI.Primitives.Color color, eQuantic.UI.Primitives.Cvd kind) -> eQuantic.UI.Primitives.Color
 *REMOVED*~override eQuantic.UI.Primitives.AuditLine.Equals(object obj) -> bool
 *REMOVED*~override eQuantic.UI.Primitives.AuditLine.ToString() -> string
+eQuantic.UI.Primitives.ConversionPassesThroughAttribute
+eQuantic.UI.Primitives.ConversionPassesThroughAttribute.ConversionPassesThroughAttribute(string! reason) -> void
+eQuantic.UI.Primitives.ConversionPassesThroughAttribute.Reason.get -> string!

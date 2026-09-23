@@ -96,3 +96,7 @@ eQuantic.UI.Compiler.Models.ComponentDefinition.TypeIdentity.set -> void
 *REMOVED*eQuantic.UI.Compiler.Models.StyleClassUsage.PropertyPath.get -> string!
 *REMOVED*eQuantic.UI.Compiler.Models.StyleClassUsage.PropertyPath.set -> void
 *REMOVED*eQuantic.UI.Compiler.Models.StyleClassUsage.StyleClassUsage() -> void
+static eQuantic.UI.Compiler.CodeGen.Strategies.UserDefinedOperators.Conversion(Microsoft.CodeAnalysis.IMethodSymbol! method, string! operand, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr?
+static eQuantic.UI.Compiler.CodeGen.Strategies.UserDefinedOperators.ConversionCrosses(Microsoft.CodeAnalysis.IMethodSymbol! method) -> bool
+static eQuantic.UI.Compiler.CodeGen.Strategies.UserDefinedOperators.ConversionName(Microsoft.CodeAnalysis.IMethodSymbol! method) -> string!
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.Strategies.UserDefinedOperators.Conversion(Microsoft.CodeAnalysis.IMethodSymbol! method, string! operand) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr?

@@ -20,7 +20,7 @@ import { photonTheme } from './design-system.generated';
 import { lowerVisualNode } from './lowering';
 import { setPhotonTheme } from './photon-context';
 import type { HtmlNode } from '../core/types';
-import { Column, GridTrack, Icon, Text } from './vocabulary';
+import { Column, GridTrack, Icon, IconGlyph, Text } from './vocabulary';
 import { Accordion } from './components/Accordion';
 import { AccordionItem } from './components/AccordionItem';
 import { Badge } from './components/Badge';
@@ -123,7 +123,7 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
     'search-field': still(new SearchField('term')),
     'text-input': still(new TextInput('value', null, 'Label')),
     'radio-group': still(new RadioGroup(['a', 'b'], 0)),
-    'empty-state': still(new EmptyState(new Icon('search'), 'Nothing here', 'Try another term')),
+    'empty-state': still(new EmptyState(new Icon(IconGlyph.fromIcons('search')), 'Nothing here', 'Try another term')),
     'menu-closed': still(new Menu(new Button('Open'), [new MenuItem('One'), new MenuItem('Two')])),
     dialog: still(
       new Dialog('Delete this?', 'It cannot be undone.', [

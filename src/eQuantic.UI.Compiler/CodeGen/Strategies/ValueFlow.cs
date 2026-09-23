@@ -118,7 +118,7 @@ public static class ValueFlow
 
         if (kind.IsUserDefined)
             return kind.MethodSymbol is { } method
-                && UserDefinedOperators.Conversion(method, JsExprWriter.Write(translated)) is { } call
+                && UserDefinedOperators.Conversion(method, JsExprWriter.Write(translated), context) is { } call
                 ? call
                 : translated;
 

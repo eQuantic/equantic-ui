@@ -81,6 +81,8 @@ public readonly record struct SizeValue(SizeKind Kind, float Value)
             + "For more than the window, ask for the size you want.");
 
     /// <summary>A bare number is an explicit size — <c>Width = 120</c>.</summary>
+    [ConversionPassesThrough("The twin's nodes normalize a number through SizeValue.from, so a size "
+        + "crosses as the number it is and every `Width = 120` stays a plain 120.")]
     public static implicit operator SizeValue(float dp) => Fixed(dp);
 }
 
