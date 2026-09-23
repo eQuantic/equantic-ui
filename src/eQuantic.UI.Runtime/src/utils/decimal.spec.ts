@@ -80,6 +80,12 @@ describe('Decimal.round — half to even', () => {
     expect(Decimal.from(value).round(digits, mode).toString()).toBe(expected);
   });
 
+  it('refuses a mode that is not one, even where nothing needs rounding, as .NET does', () => {
+    expect(() => Decimal.from('1.2').round(2, 'sideways' as never)).toThrow(RangeError);
+    expect(() => Decimal.from('1.25').round(1, 'sideways' as never)).toThrow(RangeError);
+    expect(() => Decimal.from('1.2').round(2, 'toString' as never)).toThrow(RangeError);
+  });
+
   it('refuses a digit count outside 0..28, as .NET does', () => {
     expect(() => Decimal.from('1.5').round(29)).toThrow(RangeError);
     expect(() => Decimal.from('1.5').round(-1)).toThrow(RangeError);

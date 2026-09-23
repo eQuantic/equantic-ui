@@ -1,6 +1,25 @@
 import type { MidpointRounding } from './dotnet-math';
 
 /**
+ * Whether a rounding moves the truncated quotient one step away from zero, per .NET's
+ * `MidpointRounding`: ToEven and AwayFromZero decide a half by `twice` the remainder against the
+ * divisor, and the three directed modes move every value that has a remainder.
+ */
+const STEPS: Readonly<
+  Record<
+    MidpointRounding,
+    (quotient: bigint, remainder: bigint, twice: bigint, divisor: bigint) => boolean
+  >
+> = {
+  toEven: (quotient, _remainder, twice, divisor) =>
+    twice > divisor || (twice === divisor && quotient % 2n !== 0n),
+  awayFromZero: (_quotient, _remainder, twice, divisor) => twice >= divisor,
+  toZero: () => false,
+  toNegativeInfinity: (_quotient, remainder) => remainder < 0n,
+  toPositiveInfinity: (_quotient, remainder) => remainder > 0n,
+};
+
+/**
  * .NET-compat `decimal` — exact base-10 arithmetic.
  *
  * JavaScript only has IEEE-754 doubles, so `1.1 + 2.2` is `3.3000000000000003`. .NET `decimal` is an
@@ -89,6 +108,14 @@ export class Decimal {
     if (!Number.isInteger(digits) || digits < 0 || digits > 28) {
       throw new RangeError('Rounding digits must be between 0 and 28.');
     }
+    // The mode is checked whatever the value, as .NET checks it: a value that needs no rounding
+    // does not make a mode that is not one valid. Own keys only, or `toString` would read as a rule.
+    const steps = Object.prototype.hasOwnProperty.call(STEPS, mode) ? STEPS[mode] : undefined;
+    if (steps === undefined) {
+      throw new RangeError(
+        `The value '${String(mode)}' is not valid for this usage of the type MidpointRounding.`,
+      );
+    }
     if (this.scale <= digits) return this;
     const divisor = 10n ** BigInt(this.scale - digits);
     const quotient = this.mantissa / divisor;
@@ -98,29 +125,10 @@ export class Decimal {
     // the value's sign: every mode is a choice between staying and one step away from zero.
     const away = remainder < 0n ? -1n : 1n;
     const twice = (remainder < 0n ? -remainder : remainder) * 2n;
-    let step: boolean;
-    switch (mode) {
-      case 'toEven':
-        step = twice > divisor || (twice === divisor && quotient % 2n !== 0n);
-        break;
-      case 'awayFromZero':
-        step = twice >= divisor;
-        break;
-      case 'toZero':
-        step = false;
-        break;
-      case 'toNegativeInfinity':
-        step = remainder < 0n;
-        break;
-      case 'toPositiveInfinity':
-        step = remainder > 0n;
-        break;
-      default:
-        throw new RangeError(
-          `The value '${String(mode)}' is not valid for this usage of the type MidpointRounding.`,
-        );
-    }
-    return new Decimal(step ? quotient + away : quotient, digits);
+    return new Decimal(
+      steps(quotient, remainder, twice, divisor) ? quotient + away : quotient,
+      digits,
+    );
   }
 
   private trimTrailingZeros(): Decimal {
