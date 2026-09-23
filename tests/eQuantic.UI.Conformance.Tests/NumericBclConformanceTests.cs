@@ -159,6 +159,56 @@ public class NumericBclConformanceTests
     [InlineData("return char.IsSurrogatePair(\"a\\uD83D\\uDE00\", 1);")]         // true
     [InlineData("return char.IsSurrogatePair(\"ab\", 0);")]                      // false
     [InlineData("return char.IsSurrogatePair(\"a\\uD83D\\uDE00\", 2);")]         // false — lone low at the end
+    // ---- Double: .NET's own compositions, which the precise JS primitives are NOT ----
+    [InlineData("return double.ExpM1(1e-10) * 1e10;")]                           // 1.000000082740371 — Exp(x) - 1
+    [InlineData("return double.LogP1(1e-10) * 1e10;")]                           // 1.000000082690371 — Log(x + 1)
+    [InlineData("return double.DegreesToRadians(3.0);")]                         // (x * π) / 180, not x * (π / 180)
+    [InlineData("return double.RadiansToDegrees(30.0);")]
+    [InlineData("return double.Lerp(0.1, 1.3, 0.1);")]                           // 0.22 — MultiplyAddEstimate, fused
+    [InlineData("return double.Ieee754Remainder(0.3, 0.1) * 1e17;")]             // from the exact x % y, not x - y·round(x/y)
+    [InlineData("return double.IsNaN(Math.Log(8.0, 1.0));")]                     // true — a base of 1
+    [InlineData("return double.IsNaN(Math.Log(8.0, 0.0));")]                     // true — a base of 0
+    [InlineData("return double.IsNaN(Math.Log(8.0, double.PositiveInfinity));")] // true — a base of +∞
+    [InlineData("return Math.Log(8.0, 2.0);")]                                   // 3
+    // ---- Math: the static class reaches the same table as the primitive ----
+    [InlineData("return Math.CopySign(3.0, -1.0);")]                             // -3 — JS has no Math.copySign
+    [InlineData("return Math.FusedMultiplyAdd(0.1, 0.2, 0.3);")]
+    [InlineData("return Math.BitIncrement(1.0);")]                               // 1.0000000000000002
+    [InlineData("return Math.ScaleB(3.0, 4);")]                                  // 48
+    [InlineData("return Math.ILogB(8.0);")]                                      // 3
+    [InlineData("return Math.IEEERemainder(5.0, 3.0);")]                         // -1
+    [InlineData("return Math.Max(3L, 5L).ToString();")]                          // "5" — a long is a BigInt, which Math.max refuses
+    // ---- Single: the float home answers in single precision ----
+    [InlineData("return (double)float.Sqrt(2f);")]                               // 1.4142135381698608
+    [InlineData("return (double)MathF.Sqrt(2f);")]
+    [InlineData("return (double)float.ExpM1(1e-5f) * 1e5;")]                     // MathF.Exp(x) - 1, two roundings
+    [InlineData("return (double)float.LogP1(1e-5f) * 1e5;")]                     // MathF.Log(x + 1)
+    [InlineData("return (double)float.DegreesToRadians(5f);")]                   // (x * float.Pi) / 180f
+    [InlineData("return (double)float.RadiansToDegrees(1f);")]                   // 57.2957763671875
+    [InlineData("return (double)float.Atan2Pi(1f, 1f);")]                        // 0.25
+    [InlineData("return (double)float.Lerp(0.1f, 1.3f, 0.7f);")]                 // 0.9399999976158142 — fused
+    [InlineData("return (double)float.FusedMultiplyAdd(0.1f, 0.2f, 0.3f);")]
+    // a·b + 1 lands 2^-60 ABOVE the midpoint between 1 and the next single: the double rounds onto
+    // the midpoint, and only the low half of the exact sum says which way the single goes.
+    [InlineData("float a = (1f + 1f / 4096f) / 16777216f, b = 1f - 1f / 4096f + 1f / 16777216f; return (double)MathF.FusedMultiplyAdd(a, b, 1f);")]
+    [InlineData("return (double)float.Hypot(0.1f, 0.2f);")]
+    [InlineData("return (double)float.Hypot(3f, 4f);")]                          // 5
+    [InlineData("return (double)MathF.IEEERemainder(0.3f, 0.1f) * 1e8;")]        // 0.7450580596923828 — in singles
+    [InlineData("return (double)MathF.Log(8f, 2f);")]                            // 3
+    [InlineData("return float.IsNaN(MathF.Log(8f, 1f));")]                       // true
+    [InlineData("var (s, c) = float.SinCos(0f); return (double)(s * 10 + c);")]  // 1
+    [InlineData("return float.IsSubnormal(1e-40f);")]                            // true — the SINGLE's range
+    [InlineData("return float.IsNormal(1e-40f);")]                               // false
+    [InlineData("return float.IsNormal(1f);")]                                   // true
+    [InlineData("return (double)float.BitIncrement(1f);")]                       // 1.0000001192092896 — a single's step
+    [InlineData("return (double)float.BitDecrement(1f);")]                       // 0.9999999403953552
+    [InlineData("return float.BitIncrement(0f) == float.Epsilon;")]              // true
+    [InlineData("return float.BitDecrement(0f) == -float.Epsilon;")]             // true
+    [InlineData("return (double)MathF.Round(1.2345f, 2);")]                      // 1.2300000190734863 — scaled in singles
+    [InlineData("return (double)float.Round(2.5f);")]                            // 2
+    [InlineData("return (double)MathF.Round(2.5f, MidpointRounding.AwayFromZero);")] // 3
+    [InlineData("try { return (double)MathF.Round(1f, 7); } catch { return -1.0; }")] // -1 — six digits at most
+    [InlineData("try { return Math.Round(1.0, 16); } catch { return -1.0; }")]   // -1 — fifteen for a double
     public void NumericBcl_MatchesDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
