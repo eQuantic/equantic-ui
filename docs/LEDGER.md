@@ -507,7 +507,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   kept a 12px gutter (the plan's SSR slice, which the standalone `CodeBlock` needs too). Found on the
   way: a nullable field with no initializer began 0, false or unassigned in its twin, and the
   editor's accessible name was English in every language. The served runtime grew from 137,801 to
-  140,067 bytes gzipped, the price of the input path.
+  140,267 bytes gzipped, the price of the input path.
 
 ## Retired documents
 

@@ -48,6 +48,27 @@ public class CodeCompositionTests
         editor.Document.Text.Should().Be("ab");
     }
 
+    /// <summary>
+    /// ONE edit means one step of its own, not the tail of the run it began at: typing `a` and then
+    /// committing `か` right after it had the commit coalesce with the `a`, so one undo took both,
+    /// and the typing after a commit joined it the same way. Found in review.
+    /// </summary>
+    [Fact]
+    public void ACommitIsAnUndoStepOfItsOwn_JoinedToNeitherTheTypingBeforeItNorAfter()
+    {
+        var editor = At("", 0);
+
+        editor.HandleText("a");
+        editor.SetComposition("k");
+        editor.HandleText("か");
+        editor.HandleText("b");
+
+        editor.Undo();
+        editor.Document.Text.Should().Be("aか", "the typing after a commit is a step of its own");
+        editor.Undo();
+        editor.Document.Text.Should().Be("a", "and the commit is ONE step, not the end of the run before it");
+    }
+
     [Fact]
     public void ACancellationLeavesNoTrace()
     {

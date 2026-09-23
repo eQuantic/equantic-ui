@@ -636,6 +636,7 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
 
   const changed = () => node.onChanged?.();
   const convention = keyboardConvention();
+  const ime = compositionOf(model);
 
   input.events['keydown'] = ((event: KeyboardEvent) => {
     // An input method owns the keyboard while it composes: its keys build the composition, and
@@ -653,7 +654,21 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     switch (event.inputType) {
       case 'insertText':
       case 'insertReplacementText':
-        if (event.data) model.handleText(event.data);
+        if (event.data && event.data === ime.committed) {
+          // The commit, sent again as input: it is in the document already.
+          ime.committed = null;
+          event.preventDefault();
+          return;
+        }
+        if (event.data) {
+          model.handleText(event.data);
+          // Text over an open composition REPLACES it, the platform's own rule, so this was its
+          // commit, and compositionend has nothing left to do when it comes.
+          if (ime.open) {
+            ime.open = false;
+            remember(ime, event.data);
+          }
+        }
         break;
       // A soft keyboard's Enter and Backspace arrive as INPUT, not as keys with names: Android
       // reports every key as "Unidentified" and says what it did here instead.
@@ -687,13 +702,20 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   }) as unknown as EventHandler;
 
   input.events['compositionupdate'] = ((event: CompositionEvent) => {
+    ime.open = true;
     model.setComposition(event.data ?? '');
     changed();
   }) as unknown as EventHandler;
   input.events['compositionend'] = ((event: CompositionEvent) => {
-    // The commit REPLACES the composition — or, with nothing to commit, it is cancelled.
-    if (event.data) model.handleText(event.data);
-    else model.setComposition('');
+    // Committed ONCE: an insertText may have committed it already (see beforeinput).
+    if (ime.open) {
+      ime.open = false;
+      // The commit REPLACES the composition — or, with nothing to commit, it is cancelled.
+      if (event.data) {
+        model.handleText(event.data);
+        remember(ime, event.data);
+      } else model.setComposition('');
+    }
     (event.target as HTMLTextAreaElement).value = '';
     changed();
   }) as unknown as EventHandler;
@@ -718,6 +740,8 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     changed();
   }) as unknown as EventHandler;
   input.events['blur'] = (() => {
+    // Leaving cancels a composition in the model, and closes it here with it.
+    ime.open = false;
     model.focusChanged(false);
     changed();
   }) as unknown as EventHandler;
@@ -781,6 +805,38 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
 
 /** The reveal version each code surface was last rendered at, by path — see lowerCodeSurface. */
 const revealedVersions = new Map<string, number>();
+
+/**
+ * Where a code surface's input method stands: whether a composition is open, and the text it
+ * committed in this task. Kept by MODEL, because the model outlives every render and a closure
+ * does not.
+ * <p>
+ * A composition is committed ONCE, by whichever of two signals comes first: compositionend, or an
+ * insertText while it is open (text over marked text replaces it, the platform's own rule). The
+ * spec sends only compositionend, and a browser that also sent the committed text as input, before
+ * compositionend or right after it, had it put in twice. The commit is remembered until the next
+ * task, as long as an echo of it can come: a person cannot type inside the task that committed.
+ * </p>
+ */
+interface CompositionState {
+  open: boolean;
+  committed: string | null;
+}
+
+const compositions = new WeakMap<object, CompositionState>();
+
+function compositionOf(model: object): CompositionState {
+  let state = compositions.get(model);
+  if (!state) compositions.set(model, (state = { open: false, committed: null }));
+  return state;
+}
+
+function remember(state: CompositionState, text: string): void {
+  state.committed = text;
+  setTimeout(() => {
+    if (state.committed === text) state.committed = null;
+  }, 0);
+}
 
 /**
  * Which keyboard tradition this browser's user lives in (the C# `KeyboardConvention`): Apple's on a

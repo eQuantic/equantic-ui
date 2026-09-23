@@ -362,6 +362,65 @@ describe('code surface composition (an input method, through the same model)', (
     expect(editor.composition).toBeNull();
   });
 
+  /**
+   * A commit is taken ONCE. The spec's order ends a composition with compositionend and no text of
+   * its own as input, but a browser that also sends the committed text as an insertText, before
+   * compositionend or right after it, put it in twice. Found in review.
+   */
+  it('commits once when the browser also sends the committed text as input, right after', () => {
+    const { editor, lowered } = surfaceFor('a');
+    editor.selection = new CodeRange(new CodePosition(0, 1));
+
+    fire(lowered, 'compositionupdate', { data: 'か' });
+    fire(lowered, 'compositionend', { data: 'か' });
+    const echo = fire(lowered, 'beforeinput', { inputType: 'insertText', data: 'か', isComposing: false });
+
+    expect(editor.document.text).toBe('aか');
+    // Cancelled, so the input the keyboard types through stays empty.
+    expect(echo).toBe(true);
+  });
+
+  it('commits once when that input arrives before compositionend, whatever it says it is', () => {
+    for (const isComposing of [true, false]) {
+      const { editor, lowered } = surfaceFor('a');
+      editor.selection = new CodeRange(new CodePosition(0, 1));
+
+      fire(lowered, 'compositionupdate', { data: 'か' });
+      fire(lowered, 'beforeinput', { inputType: 'insertText', data: 'か', isComposing });
+      fire(lowered, 'compositionend', { data: 'か' });
+
+      expect(editor.document.text).toBe('aか');
+      expect(editor.composition).toBeNull();
+    }
+  });
+
+  it('makes the commit an undo step of its own, joined to neither side', () => {
+    const { editor, lowered } = surfaceFor('');
+
+    type(lowered, 'a');
+    fire(lowered, 'compositionupdate', { data: 'k' });
+    fire(lowered, 'compositionend', { data: 'か' });
+    type(lowered, 'b');
+
+    press(lowered, 'z', { meta: true });
+    expect(editor.document.text).toBe('aか');
+    press(lowered, 'z', { meta: true });
+    expect(editor.document.text).toBe('a');
+  });
+
+  it('takes the same text as typing when it comes on a later turn', async () => {
+    const { editor, lowered } = surfaceFor('a');
+    editor.selection = new CodeRange(new CodePosition(0, 1));
+
+    fire(lowered, 'compositionupdate', { data: 'か' });
+    fire(lowered, 'compositionend', { data: 'か' });
+    // A person cannot type inside the task that committed: the next turn is typing again.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    fire(lowered, 'beforeinput', { inputType: 'insertText', data: 'か', isComposing: false });
+
+    expect(editor.document.text).toBe('aかか');
+  });
+
   it('starts with no composition — null, as C# starts it, never undefined', () => {
     // A nullable field with no initializer came out UNASSIGNED in the twin, which a strict tsc
     // refuses and `=== null` calls a value. It starts null now, on both sides.

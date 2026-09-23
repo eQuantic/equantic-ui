@@ -184,9 +184,13 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         // An input method's commit REPLACES what it was composing: the composition comes out first,
         // so the commit is one ordinary edit from the document the composition began over — one undo
         // step, whatever the candidate window went through on the way.
+        var committing = _composition is not null;
         EndComposition();
         var typed = false;
         foreach (var c in text) typed |= Type(c);
+        // A step of its OWN, after as well as before (SetComposition broke the run it began at):
+        // the typing that follows a commit does not join it.
+        if (committing) History.Break();
         return typed;
     }
 
@@ -217,6 +221,9 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         if (_composition is not { } current)
         {
             if (text.Length == 0) return false;
+            // The run of typing it began at ends here, or the commit would coalesce with it and one
+            // undo would take both.
+            History.Break();
             // Composing over a selection replaces it, as typing does.
             _compositionSelection = _selection;
             var over = new CodeRange(_document.Clamp(_selection.Start), _document.Clamp(_selection.End));

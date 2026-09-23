@@ -108,9 +108,11 @@ export class CodeEditorController {
     handleText(text: string) {
         if (this.readOnly || text.length === 0) return false;
         this.tabMovesFocus = false;
+        let committing = !(this._composition == null);
         this.endComposition();
         let typed = false;
         for (const c of text) typed = $eq.logic.or(typed, this.type(c));
+        if (committing) this.history.break();
         return typed;
     }
 
@@ -119,6 +121,7 @@ export class CodeEditorController {
         let current: any; 
         if (!((current = this._composition) != null)) {
             if (text.length === 0) return false;
+            this.history.break();
             this._compositionSelection = this._selection;
             let over = new CodeRange(this._document.clamp(this._selection.start), this._document.clamp(this._selection.end));
             this._compositionReplaced = this._document.textIn(over);
