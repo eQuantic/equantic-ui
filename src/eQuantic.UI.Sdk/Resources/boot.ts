@@ -274,7 +274,7 @@ async function loadPageModule(
 
   let module: Record<string, unknown>;
   try {
-    module = await import(/* @vite-ignore */ modulePath);
+    module = await import(modulePath);
   } catch (error) {
     // A missing page module and a BROKEN one are different failures that used to look identical:
     // swallowing the error rendered "404 — the resource does not exist" for a module that exists
