@@ -157,17 +157,6 @@ export function singleFromLong(value: bigint): number {
   return negative ? -result : result;
 }
 
-export function single(value: number): string {
-  if (!Number.isFinite(value)) return String(value).replace('Infinity', '∞');
-  value = Math.fround(value);
-  if (Object.is(value, -0) || value === 0) return '0';
-  for (let digits = 1; digits <= 9; digits++) {
-    const candidate = Number(value.toPrecision(digits));
-    if (Math.fround(candidate) === value) return String(candidate);
-  }
-  return String(value);
-}
-
 /**
  * Out of range is an ERROR in .NET and a shrug in JavaScript: `"ab".substring(9)` is "" and
  * `xs[9]` is undefined, where the CLR throws. A program that would stop loudly on the server keeps

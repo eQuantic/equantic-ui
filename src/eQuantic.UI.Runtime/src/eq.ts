@@ -46,10 +46,10 @@ import {
   intRem,
   longDiv,
   longRem,
-  single,
   singleFromLong,
   substring,
 } from './utils/overflow';
+import { double, single } from './utils/real-text';
 import { format, parseEnum, stringFormat } from './utils/format';
 import { nextTextElementLength, textElementStarts } from './utils/text-elements';
 import { unicodeCategory } from './utils/unicode-category';
@@ -167,6 +167,7 @@ export const $eq = {
     longDiv,
     longRem,
     single,
+    double,
     singleFromLong,
   },
   /** Math with .NET semantics: banker's rounding, the *Pi family (exact at special angles),
