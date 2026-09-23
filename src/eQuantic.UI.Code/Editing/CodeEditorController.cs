@@ -120,6 +120,31 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         return cells;
     }
 
+    /// <summary>
+    /// The position one character BEFORE this one, which crosses a line break. A character is a
+    /// text element: an emoji is one step and one Backspace, where a step of one UTF-16 unit left
+    /// half of it behind. Through the line's cached cells (<see cref="CellsOf"/>), because every
+    /// arrow and every Backspace asks, and segmenting the line anew each time is what a long line
+    /// cannot afford.
+    /// </summary>
+    private CodePosition Before(CodePosition position)
+    {
+        var here = _document.Clamp(position);
+        if (here.Column > 0) return here with { Column = CellsOf(here.Line).Previous(here.Column) };
+        if (here.Line == 0) return CodePosition.Start;
+        return new CodePosition(here.Line - 1, _document.Line(here.Line - 1).Length);
+    }
+
+    /// <summary>The position one character (one text element) AFTER this one.</summary>
+    private CodePosition After(CodePosition position)
+    {
+        var here = _document.Clamp(position);
+        if (here.Column < _document.Line(here.Line).Length)
+            return here with { Column = CellsOf(here.Line).Next(here.Column) };
+        if (here.Line == _document.LineCount - 1) return here;
+        return new CodePosition(here.Line + 1, 0);
+    }
+
     // ---- the surface: what a realizer drives and paints ---------------------------------------
 
     /// <summary>How wide a caret is drawn, in dp — one number for every host.</summary>
@@ -570,7 +595,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             }
         }
 
-        var previous = _document.Previous(Caret);
+        var previous = Before(Caret);
         return previous != Caret && Apply(new CodeRange(previous, Caret), string.Empty);
     }
 
@@ -582,7 +607,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
 
         var to = motion == CodeMotion.Word
             ? MoveTo(Caret, CodeMotion.Word, CodeDirection.Forward)
-            : _document.Next(Caret);
+            : After(Caret);
         return to != Caret && Apply(new CodeRange(Caret, to), string.Empty);
     }
 
@@ -782,7 +807,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         {
             case CodeMotion.Character:
                 _desiredCell = -1;
-                return forward ? _document.Next(from) : _document.Previous(from);
+                return forward ? After(from) : Before(from);
 
             case CodeMotion.Word:
                 _desiredCell = -1;
@@ -823,7 +848,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
 
         if (forward)
         {
-            if (here.Column >= line.Length) return _document.Next(here);
+            if (here.Column >= line.Length) return After(here);
             var i = here.Column;
             // Skip what we are on, then the whitespace after it — one press lands on the next word.
             if (CodeDocument.IsWordChar(line[i]))
@@ -835,7 +860,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             return here with { Column = i };
         }
 
-        if (here.Column == 0) return _document.Previous(here);
+        if (here.Column == 0) return Before(here);
         var back = here.Column;
         while (back > 0 && char.IsWhiteSpace(line[back - 1])) back--;
         if (back > 0 && CodeDocument.IsWordChar(line[back - 1]))
@@ -1033,27 +1058,38 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         return null;
     }
 
+    /// <summary>
+    /// The bracket that closes (or opens) the one at <paramref name="from"/>, by depth. A SCAN, not
+    /// a caret: a bracket is one code unit and never part of a surrogate pair, so the text is read
+    /// unit by unit. Stepping it the way the caret steps built every line's text elements on the
+    /// way, and this runs on every frame the caret is on a bracket, across the whole file.
+    /// </summary>
     private CodePosition? ScanForBracket(CodePosition from, char same, char other, bool forward)
     {
         var depth = 0;
-        var position = from;
+        var line = from.Line;
+        var column = from.Column;
         while (true)
         {
-            var line = _document.Line(position.Line);
-            if (position.Column < line.Length)
+            var text = _document.Line(line);
+            while (forward ? column < text.Length : column >= 0)
             {
-                var c = line[position.Column];
-                if (c == same) depth++;
-                else if (c == other)
+                if (column < text.Length)
                 {
-                    depth--;
-                    if (depth == 0) return position;
+                    var c = text[column];
+                    if (c == same) depth++;
+                    else if (c == other)
+                    {
+                        depth--;
+                        if (depth == 0) return new CodePosition(line, column);
+                    }
                 }
+                column += forward ? 1 : -1;
             }
 
-            var next = forward ? _document.Next(position) : _document.Previous(position);
-            if (next == position) return null;
-            position = next;
+            line += forward ? 1 : -1;
+            if (line < 0 || line >= _document.LineCount) return null;
+            column = forward ? 0 : _document.Line(line).Length - 1;
         }
     }
 }

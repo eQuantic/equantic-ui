@@ -35,6 +35,23 @@ public class CodeViewModelTests
         At("\u4E2Dx", 0, 1).CaretRect(new CodePosition(0, 1)).X.Should().Be(16);
     }
 
+    /// <summary>The pair is found across what the caret steps over whole: the scan reads the
+    /// text unit by unit, and a bracket is never inside a text element.</summary>
+    [Fact]
+    public void ABracketFindsItsPairAcrossTextElements()
+    {
+        const string text = "{\n  f(\"e\u0301\ud83d\ude00\u4E2D\");\n}";
+
+        var forward = At(text, 0, 1).BracketAtCaret();
+        forward!.Value.There.Should().Be(new CodePosition(2, 0));
+
+        var backward = At(text, 2, 1).BracketAtCaret();
+        backward!.Value.There.Should().Be(new CodePosition(0, 0));
+
+        var inner = At(text, 1, 4).BracketAtCaret();
+        inner!.Value.There.Should().Be(new CodePosition(1, 11), "past the accent, the emoji and the ideograph");
+    }
+
     [Fact]
     public void BackspaceTakesAWholeEmoji()
     {

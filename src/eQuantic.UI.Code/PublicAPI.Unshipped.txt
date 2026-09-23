@@ -2,8 +2,6 @@
 eQuantic.UI.Code.CodeDocument.PositionOf(int offset) -> eQuantic.UI.Code.CodePosition
 eQuantic.UI.Code.CodeDocument.TextIn(eQuantic.UI.Code.CodeRange range) -> string!
 eQuantic.UI.Code.CodeDocument.Replace(eQuantic.UI.Code.CodeRange range, string! text, out eQuantic.UI.Code.CodePosition caret) -> eQuantic.UI.Code.CodeDocument!
-eQuantic.UI.Code.CodeDocument.Previous(eQuantic.UI.Code.CodePosition position) -> eQuantic.UI.Code.CodePosition
-eQuantic.UI.Code.CodeDocument.Next(eQuantic.UI.Code.CodePosition position) -> eQuantic.UI.Code.CodePosition
 eQuantic.UI.Code.CodeDocument.LineStart(eQuantic.UI.Code.CodePosition position) -> eQuantic.UI.Code.CodePosition
 eQuantic.UI.Code.CodeDocument
 eQuantic.UI.Code.CodeDocument.LineEnd(eQuantic.UI.Code.CodePosition position) -> eQuantic.UI.Code.CodePosition

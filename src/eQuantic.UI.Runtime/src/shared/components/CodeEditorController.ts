@@ -102,6 +102,20 @@ export class CodeEditorController {
         return cells;
     }
 
+    before(position: CodePosition) {
+        let here = this._document.clamp(position);
+        if (here.column > 0) return $eq.withPatch(here, { column: this.cellsOf(here.line).previous(here.column) });
+        if (here.line === 0) return CodePosition.start;
+        return new CodePosition(here.line - 1, this._document.line(here.line - 1).length);
+    }
+
+    after(position: CodePosition) {
+        let here = this._document.clamp(position);
+        if (here.column < this._document.line(here.line).length) return $eq.withPatch(here, { column: this.cellsOf(here.line).next(here.column) });
+        if (here.line === this._document.lineCount - 1) return here;
+        return new CodePosition(here.line + 1, 0);
+    }
+
     caretRect(position: CodePosition) {
         let at = this.grid.pointOf(position.line, this.cellsOf(position.line).cellOf(position.column));
         return new Rect(at.x, at.y, CodeEditorController.caretWidth, this.grid.cell.height);
@@ -344,14 +358,14 @@ export class CodeEditorController {
                 return this.apply(new CodeRange($eq.withPatch(this.caret, { column: this.caret.column - 1 }), $eq.withPatch(this.caret, { column: this.caret.column + 1 })), '');
             }
         }
-        let previous = this._document.previous(this.caret);
+        let previous = this.before(this.caret);
         return !$eq.equals(previous, this.caret) && this.apply(new CodeRange(previous, this.caret), '');
     }
 
     deleteForward(motion: CodeMotionValue = 'character') {
         if (this.readOnly) return false;
         if (!this._selection.isEmpty) return this.apply(this._selection, '');
-        let to = motion === 'word' ? this.moveTo(this.caret, 'word', 'forward') : this._document.next(this.caret);
+        let to = motion === 'word' ? this.moveTo(this.caret, 'word', 'forward') : this.after(this.caret);
         return !$eq.equals(to, this.caret) && this.apply(new CodeRange(this.caret, to), '');
     }
 
@@ -479,7 +493,7 @@ export class CodeEditorController {
         switch (motion) {
             case 'character':
                 this._desiredCell = -1;
-                return forward ? this._document.next(from) : this._document.previous(from);
+                return forward ? this.after(from) : this.before(from);
             case 'word':
                 this._desiredCell = -1;
                 return this.wordStep(from, forward);
@@ -508,13 +522,13 @@ export class CodeEditorController {
         let here = this._document.clamp(from);
         let line = this._document.line(here.line);
         if (forward) {
-            if (here.column >= line.length) return this._document.next(here);
+            if (here.column >= line.length) return this.after(here);
             let i = here.column;
             if (CodeDocument.isWordChar(line[i])) while (i < line.length && CodeDocument.isWordChar(line[i])) i++; else if (!(/^\s$/.test(line[i]))) while (i < line.length && !CodeDocument.isWordChar(line[i]) && !(/^\s$/.test(line[i]))) i++;
             while (i < line.length && (/^\s$/.test(line[i]))) i++;
             return $eq.withPatch(here, { column: i });
         }
-        if (here.column === 0) return this._document.previous(here);
+        if (here.column === 0) return this.before(here);
         let back = here.column;
         while (back > 0 && (/^\s$/.test(line[back - 1]))) back--;
         if (back > 0 && CodeDocument.isWordChar(line[back - 1])) while (back > 0 && CodeDocument.isWordChar(line[back - 1])) back--; else while (back > 0 && !CodeDocument.isWordChar(line[back - 1]) && !(/^\s$/.test(line[back - 1]))) back--;
@@ -647,19 +661,23 @@ export class CodeEditorController {
 
     scanForBracket(from: CodePosition, same: string, other: string, forward: boolean) {
         let depth = 0;
-        let position = from;
+        let line = from.line;
+        let column = from.column;
         while (true) {
-            let line = this._document.line(position.line);
-            if (position.column < line.length) {
-                let c = line[position.column];
-                if (c === same) depth++; else if (c === other) {
-                    depth--;
-                    if (depth === 0) return position;
+            let text = this._document.line(line);
+            while (forward ? column < text.length : column >= 0) {
+                if (column < text.length) {
+                    let c = text[column];
+                    if (c === same) depth++; else if (c === other) {
+                        depth--;
+                        if (depth === 0) return new CodePosition(line, column);
+                    }
                 }
+                column += forward ? 1 : -1;
             }
-            let next = forward ? this._document.next(position) : this._document.previous(position);
-            if ($eq.equals(next, position)) return null;
-            position = next;
+            line += forward ? 1 : -1;
+            if (line < 0 || line >= this._document.lineCount) return null;
+            column = forward ? 0 : this._document.line(line).length - 1;
         }
     }
 }
