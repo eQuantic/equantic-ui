@@ -547,6 +547,9 @@ screen composes both identically.
   naming any new one.
 - eqc reads FILES, so generated sources must be on disk (`EmitCompilerGeneratedFiles`) and scoped
   to the configuration being built (`--generated`), or types arrive twice and resolve to neither.
+  eqc takes that list from `ProjectCompilationHelper.GetCompilationUnits` and walks for nothing
+  itself, and the SDK removes a generated file its generator stopped emitting after a compile that
+  RAN, never after one that was skipped (#253).
 
 ## Component Types
 

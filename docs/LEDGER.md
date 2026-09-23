@@ -431,6 +431,14 @@ record of a release, the wiki's Upgrading page is the distillate.
   a call to its twin's static (`IconGlyph.fromIcons`); `[ConversionPassesThrough]` keeps `SizeValue`
   from a number as the number it is, and `VocabularyConversionTests` derives the whole set and fails
   on either half left implicit.
+- **2026-09-23 · A generated file its generator stopped emitting goes with it**: eqc reads generated
+  sources as files, and Roslyn deletes none, so a deleted component's factory surface stayed in
+  obj/.../generated and was transpiled on the next build
+  ([#253](https://github.com/eQuantic/equantic-ui/issues/253)). Measured, a compile that runs
+  rewrites every file it generates; the SDK now removes, after a compile that ran, each generated
+  file older than its start that the compile did not take as input, and nothing after one that was
+  skipped. A source guard keeps eqc taking its file list from the one function the semantic model
+  is built from.
 
 ## Retired documents
 
