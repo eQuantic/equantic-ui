@@ -154,6 +154,18 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         // a quotient no long holds. A divisor that settles it keeps JavaScript's own `%=`.
         var divides = op is "/=" or "%=" && leftType.IsIntegral();
         var check = divides && IntegerDivision.NeedsCheck(assignment.Right, context);
+        // A NULLABLE target divides only what it holds: null in, null out, and the value's own rule
+        // and width inside the lift. `IsIntegral()` unwraps Nullable, and without the lift a null
+        // target was read as 0 (a number) or reached a BigInt helper (a TypeError).
+        if (divides && leftType.IsNullableValue())
+        {
+            var arithmetic = ArithmeticContext.Of(assignment, context);
+            var underlying = leftType.UnwrapNullable();
+            return Compound((current, operand) => IntegerDivision.Lifted(current, operand, (a, b) => underlying.IsLong()
+                ? IntegerDivision.OfLongs(op[..^1], a, b, check, context)
+                : IntegerWidth.Settle(IntegerDivision.OfNumbers(op[..^1], a, b, check, context),
+                    underlying, arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context), context));
+        }
         if (divides && leftType.IsLong() && check)
             return Compound((current, operand) => IntegerDivision.OfLongs(op[..^1], current, operand, check: true, context));
         if (divides && !leftType.IsLong() && (op == "/=" || check))

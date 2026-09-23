@@ -50,6 +50,16 @@ public class IntegerDivisionConformanceTests
     // ---- a nullable divides only what it holds ----
     [InlineData("int? a = 5, b = 0; try { return (a / b).ToString(); } catch (Exception e) { return e.Message; }")]
     [InlineData("int? a = 5, b = null; return (a / b) == null ? \"null\" : \"value\";")]                    // "null"
+    [InlineData("int? x = null; x /= 2; return x == null ? \"null\" : x.ToString();")]                  // "null", not 0
+    [InlineData("int? x = 7, y = null; x /= y; return x == null ? \"null\" : x.ToString();")]           // "null"
+    [InlineData("int? x = 7; int zero = 0; try { x /= zero; return x.ToString(); } catch (Exception e) { return e.Message; }")]
+    [InlineData("int? x = 7; x %= 3; return x.ToString();")]                                              // "1"
+    [InlineData("int? x = null; x %= 3; return x == null ? \"null\" : \"value\";")]                    // "null"
+    [InlineData("sbyte? s = sbyte.MinValue, m = -1; s /= m; return s.ToString();")]                      // "-128"
+    [InlineData("long? a = null, b = 1; var c = a / b; return c == null ? \"null\" : c.ToString();")]    // "null", not a TypeError
+    [InlineData("long? a = 7, b = 2; return (a / b).ToString();")]                                        // "3"
+    [InlineData("long? a = 7, zero = 0; try { return (a / zero).ToString(); } catch (Exception e) { return e.Message; }")]
+    [InlineData("long? x = null; x /= 2; return x == null ? \"null\" : \"value\";")]                   // "null"
     // ---- controls: what .NET divides, the twin divides ----
     [InlineData("int a = -7, b = 2; return (a / b * 10 + a % b).ToString();")]                              // "-31"
     [InlineData("int a = 10, b = 3; a /= b; return a.ToString();")]                                        // "3"

@@ -105,8 +105,15 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
             }
             // A long's quotient and remainder throw where .NET's 64-bit division does (#333). Only a
             // LONG result: `aLong / 2.0` enters this branch by its operand and divides doubles.
-            if (op is "/" or "%" && context.SemanticHelper.GetType(binary).IsLong())
-                return IntegerDivision.OfLongs(op, leftIr, rightIr, IntegerDivision.NeedsCheck(binary.Right, context), context);
+            // A nullable long divides only what it holds, through the lift every other nullable
+            // operator takes: `long.IsLong()` unwraps Nullable, so `long?` arrives here too.
+            if (op is "/" or "%" && context.SemanticHelper.GetType(binary) is var divided && divided.IsLong())
+            {
+                var check = IntegerDivision.NeedsCheck(binary.Right, context);
+                return divided.IsNullableValue()
+                    ? IntegerDivision.Lifted(leftIr, rightIr, (a, b) => IntegerDivision.OfLongs(op, a, b, check, context), context)
+                    : IntegerDivision.OfLongs(op, leftIr, rightIr, check, context);
+            }
             var longResult = JsExpr.Binary(leftIr, jsOp, rightIr);
             // A 64-bit result settles like any fixed-width one: checked throws, an explicit
             // `unchecked` wraps (BigInt does not on its own), the default keeps counting.

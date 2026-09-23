@@ -46,6 +46,20 @@ internal static class IntegerDivision
         return JsExpr.Call(JsExpr.Identifier(op == "/" ? Eq.IntDiv : Eq.IntRem), left, right);
     }
 
+    /// <summary>
+    /// A division over NULLABLE operands: null when either is, as C#'s lifted operator answers,
+    /// and <paramref name="divide"/>'s rule on the values, inside the runtime's lift. A BigInt
+    /// helper handed a null threw a TypeError, and a number's arithmetic read it as 0.
+    /// </summary>
+    public static JsExpr Lifted(JsExpr left, JsExpr right, Func<JsExpr, JsExpr, JsExpr> divide,
+        ConversionContext context)
+    {
+        context.UsedHelpers.Add(Eq.Import);
+        var body = JsExprWriter.Write(divide(JsExpr.Identifier("a"), JsExpr.Identifier("b")));
+        return JsExpr.Callish(
+            $"{Eq.LiftArith}({JsExprWriter.WriteIn(left, JsPrecedence.Assignment)}, {JsExprWriter.WriteIn(right, JsPrecedence.Assignment)}, (a, b) => {body})");
+    }
+
     /// <summary>The quotient or remainder of two longs, BigInts here: the same rule.</summary>
     public static JsExpr OfLongs(string op, JsExpr left, JsExpr right, bool check, ConversionContext context)
     {
