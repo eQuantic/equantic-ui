@@ -83,6 +83,17 @@ public class BugHuntFixesTests
         TestHelper.DiagnosticsFor("MathF.ReciprocalEstimate(Total)").Should().Contain(d => d.Code == "EQ1004");
     }
 
+    /// <summary>A NAMED argument in a call no model bound: nothing says which parameter it names,
+    /// and the arguments in written order put <c>newBase</c> where the value goes. A build error,
+    /// never a guessed placement; a bound call places it by the method's own parameters.</summary>
+    [Fact]
+    public void ANamedArgumentNoModelCanPlace_IsABuildError()
+    {
+        TestHelper.DiagnosticsFor("Math.Log(newBase: 2.0, a: Total)").Should().Contain(d => d.Code == "EQ1004");
+        TestHelper.DiagnosticsFor("Math.Log(Total, 2.0)").Should().NotContain(d => d.Code == "EQ1004",
+            "a call written in order is placed by position, which is all the table needs");
+    }
+
     /// <summary>
     /// The fallback answers from the SAME table as a bound call, by name, on the home the class
     /// spells. Its own guesses were `Math.copySign`, `Math.bitIncrement` and `Math.iEEERemainder`,

@@ -198,6 +198,10 @@ public class NumericBclConformanceTests
     [InlineData("return Math.Round(mode: MidpointRounding.AwayFromZero, value: 2.5);")] // 3
     [InlineData("return (double)float.Round(mode: MidpointRounding.AwayFromZero, x: 2.5f);")] // 3
     [InlineData("int n = 0; double F(double v) { n = n * 10 + 1; return v; } MidpointRounding M() { n = n * 10 + 2; return MidpointRounding.AwayFromZero; } var r = Math.Round(mode: M(), value: F(2.5)); return n * 10 + r;")] // 213
+    [InlineData("int x = 15; return Math.Clamp(max: 10, min: 0, value: x);")]                         // 10
+    [InlineData("long x = -5; return (int)Math.Clamp(max: 10L, min: 0L, value: x);")]                // 0
+    [InlineData("int a = 3, b = 7; return Math.Max(val2: a, val1: b) * 10 + Math.Min(val2: a, val1: b);")] // 73
+    [InlineData("double b = 2; return Math.Log(newBase: b, a: 8.0);")]                              // 3
     // ---- a DECIMAL rounds as a decimal, by its overload: the mode was read as a digit count ----
     [InlineData("decimal m = 2.5m; return Math.Round(m, MidpointRounding.AwayFromZero).ToString();")]            // "3"
     [InlineData("decimal m = -2.5m; return Math.Round(m, MidpointRounding.AwayFromZero).ToString();")]           // "-3"

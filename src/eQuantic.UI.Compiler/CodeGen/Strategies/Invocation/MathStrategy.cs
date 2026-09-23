@@ -67,9 +67,16 @@ public class MathStrategy : IExpressionIrStrategy
         var home = single ? SpecialType.System_Single : SpecialType.System_Double;
         if (PrimitiveStaticStrategy.TemplateByName(methodName, home, arguments.Count) is { } byName)
         {
+            // A NAMED argument takes its parameter's slot, and only a bound method names the slots.
+            // In written order, `Math.Log(newBase: 2, a: x)` put the base where the value goes: with
+            // no method to ask, a named argument is a build error rather than a guessed placement.
+            var bound = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
+            if (bound is null && arguments.Any(argument => argument.NameColon is not null))
+                return JsExpr.Opaque(context.Unhandled(node, "Math"));
             if (byName.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
             var irArgs = arguments.Select(a => context.Converter.ConvertIr(a.Expression)).ToArray();
-            return JsExpr.Template(byName, irArgs, context.TypeAnnotations);
+            var placed = bound is null ? byName : PrimitiveStaticStrategy.BindNamedArguments(byName, invocation, bound);
+            return JsExpr.Template(placed, irArgs, context.TypeAnnotations);
         }
         JsExpr Answer(JsExpr value) => single ? SinglePrecision.Round(value) : value;
 
