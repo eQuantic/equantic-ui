@@ -57,8 +57,8 @@
         <PackageReference Include="eQuantic.UI.Components" Version="$(EQuanticUIVersion)" GeneratePathProperty="true" />
         <PackageReference Include="eQuantic.UI.Charts" Version="$(EQuanticUIVersion)" GeneratePathProperty="true" />
         <PackageReference Include="eQuantic.UI.Web" Version="$(EQuanticUIVersion)" />
-        <PackageReference Include="eQuantic.UI.Server" Version="$(EQuanticUIVersion)" />
-        <PackageReference Include="eQuantic.UI.Runtime" Version="$(EQuanticUIVersion)" GeneratePathProperty="true" />
+        <!-- The Server carries the runtime it serves as a file too (tools/runtime/runtime.js). -->
+        <PackageReference Include="eQuantic.UI.Server" Version="$(EQuanticUIVersion)" GeneratePathProperty="true" />
 
         <!-- Platform-specific Bun Runtime Packages (asset-only; resolved purely via $(Pkg*)).
              One per OS+architecture: native arm64 where available, else x64-baseline. -->
@@ -109,7 +109,6 @@
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Charts\eQuantic.UI.Charts.csproj" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Web\eQuantic.UI.Web.csproj" />
         <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Server\eQuantic.UI.Server.csproj" />
-        <ProjectReference Include="$(_DevRootDir)eQuantic.UI.Runtime\eQuantic.UI.Runtime.csproj" />
 
         <!-- Platform-specific Bun Runtime Project References (one per OS+architecture) -->
         <ProjectReference
