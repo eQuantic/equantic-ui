@@ -2,6 +2,11 @@ import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Icon, Pressable, 
 
 export class Button extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Button';
+
+    static get $hydration() {
+        return { leading: { members: { strokeWidth: 'single' } } };
+    }
+
     declare label: string;
     declare variant: VariantValue;
     declare size: SizeVariantValue;

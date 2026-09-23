@@ -2,6 +2,11 @@ import { Box, BuildContext, Button, CultureOption, Menu, MenuItem, SegmentedCont
 
 export class CultureSwitcher extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.CultureSwitcher';
+
+    static get $hydration() {
+        return { icon: { members: { strokeWidth: 'single' } } };
+    }
+
     declare options: CultureOption[];
     declare size: SizeVariantValue;
     declare shape: string;

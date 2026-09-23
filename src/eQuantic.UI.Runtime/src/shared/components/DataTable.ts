@@ -4,6 +4,11 @@ export class DataTable extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.DataTable';
     static rowHeight: number = 52;
     static checkboxTrack: number = 44;
+
+    static get $hydration() {
+        return { columns: [DataColumn] };
+    }
+
     declare columns: DataColumn[];
     declare rows: DataRow[];
     declare sortColumn: number;

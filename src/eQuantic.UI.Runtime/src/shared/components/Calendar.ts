@@ -6,7 +6,11 @@ export class Calendar extends StatefulComponent {
     _cursor: any = null;
     static cellSize: number = 44;
     static headerHeight: number = 28;
-    static $hydration = { _month: 'dateOnly', _cursor: 'dateOnly', selected: 'dateOnly', min: 'dateOnly', max: 'dateOnly' };
+
+    static get $hydration() {
+        return { _month: 'dateOnly', _cursor: 'dateOnly', selected: 'dateOnly', min: 'dateOnly', max: 'dateOnly' };
+    }
+
     declare selected: any;
     declare onChanged: any;
     declare min: any;
@@ -82,7 +86,7 @@ export class Calendar extends StatefulComponent {
         let reachable = this.inRange(day);
         let primary = theme.colors('primary');
         let numeral = new Text(String(day.day), 'bodyM', selected ? primary.onBase : isToday ? primary.base : theme.textPrimary, 1);
-        let cell = new Box(new BoxStyle({ width: size, height: size, cornerRadius: new CornerRadii(Calendar.cellSize / 2), background: selected ? primary.base : null, borderWidth: !selected && isToday ? 1.5 : 0, borderColor: primary.base, opacity: reachable ? null : theme.disabledOpacity, hover: reachable && !selected ? new StyleDiff({ background: theme.surfaceSubtle }) : null }), VisualNodeExtensions.centered(numeral));
+        let cell = new Box(new BoxStyle({ width: size, height: size, cornerRadius: new CornerRadii(Math.fround(Calendar.cellSize / 2)), background: selected ? primary.base : null, borderWidth: !selected && isToday ? 1.5 : 0, borderColor: primary.base, opacity: reachable ? null : theme.disabledOpacity, hover: reachable && !selected ? new StyleDiff({ background: theme.surfaceSubtle }) : null }), VisualNodeExtensions.centered(numeral));
         if (!reachable) return cell;
         return new Pressable(cell, () => this.choose(day), { role: 'gridCell', selected: selected, label: isToday ? `${Calendar.spoken(day)}, ${SdkStrings.today}` : Calendar.spoken(day) });
     }

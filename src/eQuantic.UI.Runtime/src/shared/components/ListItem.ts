@@ -2,6 +2,11 @@ import { Avatar, Box, BoxStyle, BuildContext, Column, EdgeInsets, Flexible, Icon
 
 export class ListItem extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.ListItem';
+
+    static get $hydration() {
+        return { leadingWidth: 'single' };
+    }
+
     declare title: string;
     declare subtitle: any;
     declare onPressed: (() => void) | null;
@@ -17,7 +22,7 @@ export class ListItem extends StatelessComponent {
     }
 
     get contentInset() {
-        return this.leading == null ? 16 : 16 + ListItem.slotWidth(this.leading, this.leadingWidth) + 12;
+        return this.leading == null ? 16 : Math.fround(Math.fround(16 + ListItem.slotWidth(this.leading, this.leadingWidth)) + 12);
     }
 
     constructor(title?: any, subtitle: any = null, onPressed: any = null, props?: any) {

@@ -8,6 +8,11 @@ export class CodeEditor extends StatefulComponent {
     _offset: number = 0;
     _viewport: number = 0;
     _viewportWidth: number = 0;
+
+    static get $hydration() {
+        return { _offset: 'single', _viewport: 'single', _viewportWidth: 'single', maxHeight: 'single' };
+    }
+
     declare initialCode: string;
     declare languageName: any;
     declare onChanged: ((string: string) => void) | null;
@@ -61,7 +66,7 @@ export class CodeEditor extends StatefulComponent {
             this.onSelectionChanged?.(editor.selection);
         }) });
         let viewport: VisualNode = new ScrollView(surface, 'horizontal', { width: SizeValue.fill, onViewportChanged: (width: number) => {
-            if (Math.abs(width - this._viewportWidth) < 1) return;
+            if (Math.abs(Math.fround(width - this._viewportWidth)) < 1) return;
             this.setState(() => this._viewportWidth = width);
         } });
         if (this.showLineNumbers) {
@@ -72,10 +77,10 @@ export class CodeEditor extends StatefulComponent {
         }
         if (this.maxHeight > 0) {
             viewport = new Box(new BoxStyle({ width: SizeValue.fill, maxHeight: this.maxHeight }), new ScrollView(viewport, 'vertical', { width: SizeValue.fill, onScrolled: (offset: number) => {
-                if (Math.abs(offset - this._offset) < 1) return;
+                if (Math.abs(Math.fround(offset - this._offset)) < 1) return;
                 this.setState(() => this._offset = offset);
             }, onViewportChanged: (height: number) => {
-                if (Math.abs(height - this._viewport) < 1) return;
+                if (Math.abs(Math.fround(height - this._viewport)) < 1) return;
                 this.setState(() => this._viewport = height);
             } }));
         }

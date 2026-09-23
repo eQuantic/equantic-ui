@@ -2,6 +2,11 @@ import { Box, BoxStyle, BuildContext, EdgeInsets, KeyChord, Overlay, Positioned,
 
 export class Drawer extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Drawer';
+
+    static get $hydration() {
+        return { width: 'single' };
+    }
+
     declare content: VisualNode;
     declare open: boolean;
     declare onDismiss: (() => void) | null;
