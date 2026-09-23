@@ -24,6 +24,7 @@ namespace eQuantic.UI.Native.Engine.Tests;
 /// perf test teaches everyone to ignore it.
 /// </para>
 /// </summary>
+[Collection(PerfHarnessCollection.Name)]
 public class PerfHarnessTests
 {
     private readonly ITestOutputHelper _output;
@@ -70,6 +71,8 @@ public class PerfHarnessTests
         return page;
     }
 
+    private const int OverlayLayers = 8;
+
     /// <summary>
     /// The dense scene with EIGHT overlay layers on it. A frame is not one layout call: the realizer
     /// lays the page out and then each Overlay against the viewport, so anything built per call is
@@ -78,11 +81,11 @@ public class PerfHarnessTests
     /// sheet and a tooltip open. Found in review of the S5 visitor, which was built per call before
     /// it was cached on the context.
     /// </summary>
-    private static Stack OverlayHeavyScene(IAppTheme theme)
+    private static Stack OverlayHeavyScene(IAppTheme theme, int layers = OverlayLayers)
     {
         var page = new Stack();
         page.Add(DenseScene(theme));
-        for (var i = 0; i < 8; i++)
+        for (var i = 0; i < layers; i++)
             page.Add(new Overlay(new Box(new BoxStyle
             {
                 Width = SizeValue.Fixed(240),
@@ -153,10 +156,36 @@ public class PerfHarnessTests
     /// </summary>
     private const long PooledAllocationCeilingBytesPerFrame = 74 * 1024;
 
-    [Fact]
-    public void SteadyMotion_WithRecycledFrames_AllocatesFarLess()
+    /// <summary>
+    /// What an open LAYER costs a frame, with the shells' configuration (#290). <see cref="DenseScene"/>
+    /// has no overlay, so the pooled ceiling above says nothing about a screen with a menu, a sheet
+    /// and a tooltip open, and the eight-layer scene's 78.1 KB/frame sat over it with nothing to say
+    /// whether that was a regression or the price of eight layers.
+    /// <para>
+    /// The ruler is the DIFFERENCE between two scenes over the layers between them, not a frame: the
+    /// dense part is the same bytes in both, so what remains is what a layer adds. The scenes have 24
+    /// and 32 layers, for two reasons measured on the way. The realizer's per-frame lists keep one
+    /// capacity from 25 to 32 items, where from 8 to 16 or from 16 to 24 they double, which is a
+    /// list's cost and not a layer's. And both are past the realizer's first table of layer paths,
+    /// where a path built every frame hid in an average over eight layers inside it.
+    /// </para>
+    /// <para>
+    /// Measured 2026-09-23: 88,347 and 92,402 bytes a frame, 506 bytes a layer. The ceiling leaves
+    /// less than the smallest object .NET allocates (24 bytes), so one more object per layer fails
+    /// here, and so does a path built past the table (538). For the record, the dense scene is 75,746
+    /// bytes and the eight-layer one 79,938, from 80,194 before each layer's root path came from a
+    /// table. Between them the two rulers bound a frame with layers open.
+    /// </para>
+    /// </summary>
+    private const long PooledLayerCeilingBytesPerFrame = 528;
+
+    /// <summary>Managed bytes a steady frame of <paramref name="scene"/> allocates with RecycleFrames
+    /// on, the way the shells run: warmed up, then averaged over the frames that follow, with one
+    /// builder reset per frame.</summary>
+    private static long PooledBytesPerFrame(VisualNode scene)
     {
-        var host = Open(recycleFrames: true);
+        var host = Open(scene, recycleFrames: true);
+        host.LastFrame!.HasActiveMotion.Should().BeTrue("the loop strip is what makes this steady state");
         for (var frame = 0; frame < 10; frame++)
             host.RenderFrame(new DisplayListBuilder(), frame * 8f);
 
@@ -168,12 +197,32 @@ public class PerfHarnessTests
             builder.Reset();
             host.RenderFrame(builder, 80f + frame * 8f);
         }
-        var perFrame = (GC.GetAllocatedBytesForCurrentThread() - before) / measured;
+        return (GC.GetAllocatedBytesForCurrentThread() - before) / measured;
+    }
+
+    [Fact]
+    public void SteadyMotion_WithRecycledFrames_AllocatesFarLess()
+    {
+        var perFrame = PooledBytesPerFrame(DenseScene(PhotonTheme.Instance));
 
         _output.WriteLine($"pooled steady-state allocation: {perFrame / 1024.0:F1} KB/frame " +
                           $"(ceiling {PooledAllocationCeilingBytesPerFrame / 1024.0:F0} KB)");
         perFrame.Should().BeLessThan(PooledAllocationCeilingBytesPerFrame,
             "the shells run with RecycleFrames on — this is the allocation profile production sees");
+    }
+
+    [Fact]
+    public void AnOverlayLayer_CostsAFrameLessThanItsCeiling()
+    {
+        var fewer = PooledBytesPerFrame(OverlayHeavyScene(PhotonTheme.Instance, 24));
+        var more = PooledBytesPerFrame(OverlayHeavyScene(PhotonTheme.Instance, 32));
+        var perLayer = (more - fewer) / 8;
+
+        _output.WriteLine($"pooled: {fewer} bytes/frame with 24 layers, {more} with 32, "
+                          + $"{perLayer} a layer (ceiling {PooledLayerCeilingBytesPerFrame})");
+        perLayer.Should().BeLessThan(PooledLayerCeilingBytesPerFrame,
+            "a layer is laid out against the viewport on its own root path, so anything built per "
+            + "layer is built again for every menu, sheet and tooltip a screen has open");
     }
 
     [Fact]
@@ -284,7 +333,7 @@ public class PerfHarnessTests
         // (`ov<i>`), all on the one context. Nine calls, because the scene carries eight layers.
         LayoutEngine.Layout(page, 1280, 900, context);
         var overlays = page.Children.OfType<Overlay>().ToList();
-        overlays.Should().HaveCount(8, "the scene is built with eight layers, and this test counts on it");
+        overlays.Should().HaveCount(OverlayLayers, "the scene is built with eight layers, and this test counts on it");
         for (var i = 0; i < overlays.Count; i++)
             LayoutEngine.Layout(overlays[i].Child, 1280, 900, context, rootPath: $"ov{i}");
 
