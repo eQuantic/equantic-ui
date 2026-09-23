@@ -81,13 +81,20 @@ public class DesignTokenApcaTests
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", failures) + Environment.NewLine);
     }
 
-    /// <summary>A known pair, so a mistake in the formula cannot pass by making every value large.
-    /// Black on white is Lc 106.0 and white on black is Lc 107.9 (absolute) in 0.0.98G.</summary>
+    /// <summary>
+    /// Known pairs, so a mistake in the formula cannot pass by making every value large. Black and
+    /// white alone do not pin the TRANSFER curve, since 0 and 1 are the same under any of them:
+    /// APCA uses a simple 2.4 exponent where WCAG 2 uses the piecewise sRGB curve, and the grey pair
+    /// from the apca-w3 reference is what tells them apart. Under the piecewise curve it reads Lc
+    /// 60.02 and -65.46, which would let a dark pair clear a floor it does not.
+    /// </summary>
     [Fact]
     public void TheFormulaMatchesTheReferenceValues()
     {
         Lc(Color.Black, Color.White).Should().BeApproximately(106.04, 0.1);
         Lc(Color.White, Color.Black).Should().BeApproximately(107.88, 0.1);
+        Lc(Color.FromRgb(0x88, 0x88, 0x88), Color.White).Should().BeApproximately(63.056469930209424, 1e-9);
+        Lc(Color.White, Color.FromRgb(0x88, 0x88, 0x88)).Should().BeApproximately(68.54146436644962, 1e-9);
     }
 
     // ---- APCA 0.0.98G ----------------------------------------------------------------------------

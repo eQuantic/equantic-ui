@@ -29,8 +29,9 @@ public class HandoffFigureTests
     private const int Floor = 52;
 
     /// <summary>The counted figures (<c>data-figure</c>) the pages carried when this was written: the
-    /// component count on Foundations and on the design system's index.</summary>
-    private const int CountedFloor = 2;
+    /// component count on Foundations, and twice on the design system's index (its opening and its
+    /// catalog summary).</summary>
+    private const int CountedFloor = 3;
 
     private static readonly Regex TokenFigure =
         new("data-token=\"(?<path>[^\"]+)\"[^>]*>(?<text>[^<]*)<", RegexOptions.Compiled);
