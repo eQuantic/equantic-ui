@@ -21,9 +21,10 @@
         removes (#352), and to every shared chunk bun renames when a component two pages share
         changes (#361), in the most ordinary sequence there is: edit, then publish.
         `_EQuanticOutputAsStaticWebAssets` below defines the folder from what is on disk once its
-        writers have run.
+        writers have run. Both halves take the compiler's switch: with it off, no writer runs and
+        nothing defines the folder again, so its files stay what any file under wwwroot is.
     -->
-    <ItemGroup>
+    <ItemGroup Condition="'$(EnableEQuanticUICompilation)' == 'true'">
         <Content Remove="$(EQuanticOutputPath)**" />
     </ItemGroup>
 
