@@ -528,6 +528,21 @@ record of a release, the wiki's Upgrading page is the distillate.
   adopting it. The server writes `CodeSurface` (the code, its carets and its input), `/code`
   hydrates whole where one missing child used to send it to a full re-render, and the block's gutter
   is 26px where it was 12.
+- **2026-09-23 · The code editor counts what is drawn**: slice 1b of
+  [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#PR_NUMBER](https://github.com/eQuantic/equantic-ui/pull/PR_NUMBER)).
+  The engine counted one column per UTF-16 unit and placed every caret one cell per column, while
+  the browser drew a tab to the next eight-column stop and a wide character across two cells: the
+  caret stood beside the wrong glyph, and a Backspace on an emoji left half of its surrogate pair.
+  One map from a column to its cell (`CodeLineCells`) now serves the caret, the selection, the
+  click, the arrows, Backspace and the drawing, which draws a tab as spaces to its stop and a wide
+  character in a box two cells wide. Measured in Chromium, the glyph after an ideograph starts at
+  the pixel the caret before it stands on. Text elements come from the platform on both sides
+  (`StringInfo`, transpiled to `Intl.Segmenter`). The model's remaining defects went with it: Tab,
+  Shift+Tab and ⌘/ keep the selection they edit, a closing brace steps back to its block, typing
+  over a selection is one undo and a paste is its own, and C# raw strings are one string across
+  lines. Found on the way in eqc: the `(string, index)` overloads of the char classifiers tested
+  the whole string, and a code point read from a string reached tsc as `number | undefined`. The
+  served runtime grew to 143,383 bytes gzipped.
 
 ## Retired documents
 
