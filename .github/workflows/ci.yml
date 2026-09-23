@@ -604,35 +604,48 @@ jobs:
       # Edit, then publish: the most ordinary sequence there is, and it failed (#361). What two
       # pages share is a chunk named by its content's hash, so changing it renames the chunk, and
       # the old name, registered while the project evaluated, failed the publish's compression. The
-      # step changes the dashboard's console shell and publishes without building first; the chunk
-      # has to have been renamed, or the step proved nothing, and the publish has to hold exactly
-      # the chunks the build wrote.
+      # step changes the dashboard's console shell and publishes without building first. A chunk of
+      # the last build has to be gone from this one, or the step proved nothing; the publish has to
+      # hold exactly the chunks this build wrote; and each module it holds has to be served
+      # compressed, which the SDK decides from the assets this build defined. A compression that ran
+      # before them would drop every module to its raw size with nothing failing.
       - name: A publish right after a shared component changes
         shell: bash
         run: |
           set -uo pipefail
           shell=samples/DefaultUIDashboard/Screens/ConsoleShell.cs
           dir=samples/DefaultUIDashboard/wwwroot/_equantic
-          chunks() { ls "$1" | grep -E -- '-[a-z0-9]{8}\.js$' | sort | tr '\n' ' '; }
+          chunks() { [ -d "$1" ] && ls "$1" | grep -E -- '-[a-z0-9]{8}\.js$' | sort; }
           before=$(chunks "$dir")
           perl -0pi -e 's/(class ConsoleShell[^{]*\{)/$1\n    public const string CiMark = "the shared chunk changed";/' "$shell"
           status=0
           dotnet publish samples/DefaultUIDashboard -c Release -o republished || status=1
           git checkout -- "$shell"
           after=$(chunks "$dir")
-          published=$( [ -d republished/wwwroot/_equantic ] && chunks republished/wwwroot/_equantic )
-          echo "chunks before: $before"
-          echo "chunks after:  $after"
-          echo "published:     $published"
+          published=$(chunks republished/wwwroot/_equantic)
+          gone=$(comm -23 <(echo "$before") <(echo "$after"))
+          echo "chunks before: $(echo $before)"
+          echo "chunks after:  $(echo $after)"
+          echo "published:     $(echo $published)"
           if [ "$status" -ne 0 ]; then
             echo "::error::the publish after a shared component changed failed"
-          elif [ "$before" = "$after" ]; then
-            echo "::error::the change renamed no chunk, so this proves nothing about a renamed one"
+          elif [ -z "$gone" ] || [ -z "$after" ]; then
+            echo "::error::no chunk of the last build was renamed, so this proves nothing about a renamed one"
             status=1
           elif [ "$published" != "$after" ]; then
             echo "::error::the publish holds other chunks than the build wrote"
             status=1
           fi
+          modules=0
+          for module in republished/wwwroot/_equantic/*.js; do
+            [ -f "$module" ] || continue
+            modules=$((modules + 1))
+            for encoded in "$module.gz" "$module.br"; do
+              [ -s "$encoded" ] || { echo "::error::$encoded is not in the publish"; status=1; }
+            done
+          done
+          echo "modules published: $modules, each with its .gz and .br unless an error above says otherwise"
+          [ "$modules" -gt 0 ] || { echo "::error::the publish holds no module"; status=1; }
           exit $status
 
       # Exit 0 is not the proof. A mobile target framework exists to produce a BUNDLE, and the
