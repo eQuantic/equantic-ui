@@ -112,3 +112,5 @@ eQuantic.UI.Compiler.ComponentCompiler.SourceMapDirectory.get -> string?
 eQuantic.UI.Compiler.ComponentCompiler.SourceMapDirectory.set -> void
 eQuantic.UI.Compiler.Services.SourceMapGenerator.Generate(string! generatedFileName, string! sourceFileName, System.Collections.Generic.List<eQuantic.UI.Compiler.Services.TypeScriptCodeBuilder.SourceMapping>! mappings, string? sourceContent = null, string! sourceRoot = "") -> string!
 *REMOVED*eQuantic.UI.Compiler.Services.SourceMapGenerator.Generate(string! generatedFileName, string! sourceFileName, System.Collections.Generic.List<eQuantic.UI.Compiler.Services.TypeScriptCodeBuilder.SourceMapping>! mappings, string? sourceContent = null) -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.LogicOr = "$eq.logic.or" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.LogicAnd = "$eq.logic.and" -> string!

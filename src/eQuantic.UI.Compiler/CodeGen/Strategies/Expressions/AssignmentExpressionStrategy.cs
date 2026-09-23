@@ -97,6 +97,12 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         var leftType = context.SemanticHelper.GetType(assignment.Left);
         var rightType = context.SemanticHelper.GetType(assignment.Right);
 
+        // `flag |= Next()` on a bool: the logical operator, both sides evaluated, the bool written
+        // back — never JavaScript's `|=`, which stores a NUMBER. See BoolLogic.
+        if (op is "|=" or "&=" or "^="
+            && BoolLogic.Lower(assignment, op[..^1], leftIr, rightIr, context) is { } logical)
+            return JsExpr.Binary(leftIr, "=", logical);
+
         // A float STORED is a single: the computed double rounds at the assignment (FloatStore).
         if (op == "=" && leftType is { SpecialType: SpecialType.System_Single })
             rightIr = FloatStore.Settle(assignment.Right, rightIr, context);

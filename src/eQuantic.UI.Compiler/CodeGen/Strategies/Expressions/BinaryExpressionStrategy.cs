@@ -56,6 +56,11 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
             }
         }
 
+        // `|`, `&` and `^` on two BOOLS are C#'s non-short-circuit logical operators, and JavaScript
+        // has no operator that is both: its `|`/`&` answer a number, its `||`/`&&` skip the right
+        // side. See BoolLogic.
+        if (BoolLogic.Lower(binary, op, leftIr, rightIr, context) is { } logical) return logical;
+
         // CHAR ARITHMETIC moved to ValueFlow: a char promoting to a number is an implicit
         // conversion in the bound tree, so it is settled wherever C# applies it — an argument, a
         // return, an initializer — not only in a binary expression.
