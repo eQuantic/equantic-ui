@@ -552,7 +552,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   width table was written by hand, so it is now compared, character by character and on both sides,
   with the SDK's own Bun (`Bun.stringWidth`), which found the web twin reading every astral
   character as one cell: eqc translated `char.IsSurrogatePair(char, char)` as the (string, index)
-  overload. The served runtime grew to 143,383 bytes gzipped.
+  overload. A third review found a mark that begins an element taking cells (the voiced sound mark,
+  two) and a word step stopping between a letter and its accent: a nonspacing or enclosing mark
+  takes none now, read from `CharUnicodeInfo.GetUnicodeCategory`, which eqc translates for the
+  first time, and words step over whole elements. The served runtime grew to 144,405 bytes gzipped.
 
 ## Retired documents
 
