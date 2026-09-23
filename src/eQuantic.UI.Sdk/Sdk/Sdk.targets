@@ -2,6 +2,29 @@
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk.Web" />
 
     <!--
+        What a transpiled module's source map carries (#352): full in Debug (the C# inside, linked
+        from the module, for the browser's debugger), none everywhere else. A map with the C# inside
+        is the component's source, a [ServerAction]'s body included, and the output folder is a web
+        root. `external` writes a map without the C# and without the link, for an error reporter that
+        uploads maps itself. Whatever it says, a publish takes no map from eqc's output (below).
+    -->
+    <PropertyGroup>
+        <EQuanticSourceMaps Condition="'$(EQuanticSourceMaps)' == '' And '$(Configuration)' == 'Debug'">full</EQuanticSourceMaps>
+        <EQuanticSourceMaps Condition="'$(EQuanticSourceMaps)' == ''">none</EQuanticSourceMaps>
+    </PropertyGroup>
+
+    <!--
+        eqc's maps are not web assets. The static web assets pipeline registers what it finds under
+        wwwroot while the project EVALUATES, and a Release build deletes the maps a Debug build left:
+        registered and then deleted, their compression failed the next publish. Out of Content they
+        are never registered, a debugger still reads them from disk through the static files, and
+        the publish filter below stays as the second line.
+    -->
+    <ItemGroup>
+        <Content Remove="$(EQuanticOutputPath)**/*.map" />
+    </ItemGroup>
+
+    <!--
         WHOSE SOURCE, AND ON WHICH BRANCH. Dev mode swaps the packages for the tree beside the SDK,
         which for a repository OUTSIDE that tree means "whatever branch that repo happens to have
         checked out". A consumer session found this on the native side: it believed it was building
@@ -342,9 +365,26 @@
         </PropertyGroup>
 
         <Exec
-            Command="dotnet $(EqcCliPath) &quot;$(_EqcSourceDirs)&quot; $(MSBuildProjectDirectory)/$(EQuanticOutputPath) --refs &quot;$(_EqcRefsFile)&quot;$(_RefSourcesArg)$(_GeneratedArg)$(_BunArg)"
+            Command="dotnet $(EqcCliPath) &quot;$(_EqcSourceDirs)&quot; $(MSBuildProjectDirectory)/$(EQuanticOutputPath) --refs &quot;$(_EqcRefsFile)&quot;$(_RefSourcesArg)$(_GeneratedArg)$(_BunArg) --source-maps $(EQuanticSourceMaps)"
             WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true"
             StandardOutputImportance="High" />
+    </Target>
+
+    <!--
+        No map from eqc's output reaches a publish, whatever EQuanticSourceMaps says (#352). It
+        FILTERS what is published and never takes the output out of Content: an app that removed
+        wwwroot/_equantic/** from Content saw its second publish ship no bundles at all, with a
+        green build, because the Web SDK then published nothing a build had generated there.
+    -->
+    <Target Name="_EQuanticKeepSourceMapsOutOfPublish" AfterTargets="ComputeResolvedFilesToPublishList">
+        <PropertyGroup>
+            <_EqPublishedOutput>$([System.String]::Copy('$(EQuanticOutputPath)').Replace('\','/'))</_EqPublishedOutput>
+        </PropertyGroup>
+        <ItemGroup>
+            <_EqPublishedMap Include="@(ResolvedFileToPublish)"
+                Condition="'%(Extension)' == '.map' And $([System.String]::Copy('%(ResolvedFileToPublish.RelativePath)').Replace('\','/').StartsWith('$(_EqPublishedOutput)'))" />
+            <ResolvedFileToPublish Remove="@(_EqPublishedMap)" />
+        </ItemGroup>
     </Target>
 
     <!-- Copy runtime.js and CSS after component compilation -->

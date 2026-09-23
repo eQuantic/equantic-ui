@@ -4,6 +4,7 @@ msbuild eQuantic.UI.Sdk EQuanticGenerateFactorySurface
 msbuild eQuantic.UI.Sdk EQuanticImplicitComponentAliases
 msbuild eQuantic.UI.Sdk EQuanticImplicitFactoryUsing
 msbuild eQuantic.UI.Sdk EQuanticOutputPath
+msbuild eQuantic.UI.Sdk EQuanticSourceMaps
 msbuild eQuantic.UI.Sdk EQuanticUIVersion
 msbuild eQuantic.UI.Sdk EQuanticVectorsFile
 msbuild eQuantic.UI.Sdk EQuanticVectorsNamespace
