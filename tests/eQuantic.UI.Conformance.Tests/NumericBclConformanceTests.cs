@@ -170,6 +170,11 @@ public class NumericBclConformanceTests
     [InlineData("return char.IsSurrogatePair('\\uD83D', '\\uDE00');")]             // true
     [InlineData("return char.IsSurrogatePair('\\uDE00', '\\uD83D');")]             // false: the halves swapped
     [InlineData("return char.IsSurrogatePair('a', 'b');")]                           // false
+    // A classifier's (string, index) overload throws for an index outside the string, on both sides:
+    // the code point read there is not a number, and String.fromCodePoint refuses it.
+    [InlineData("try { char.IsLetter(\"a\", 5); return 1; } catch { return -1; }")]      // -1
+    [InlineData("try { char.IsLetter(\"a\", -1); return 1; } catch { return -1; }")]     // -1
+    [InlineData("try { char.IsUpper(\"aB\", 2); return 1; } catch { return -1; }")]      // -1
     // ---- Double: .NET's own compositions, which the precise JS primitives are NOT ----
     [InlineData("return double.ExpM1(1e-10) * 1e10;")]                           // 1.000000082740371 — Exp(x) - 1
     [InlineData("return double.LogP1(1e-10) * 1e10;")]                           // 1.000000082690371 — Log(x + 1)
