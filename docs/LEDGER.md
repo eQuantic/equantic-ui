@@ -528,6 +528,14 @@ record of a release, the wiki's Upgrading page is the distillate.
   adopting it. The server writes `CodeSurface` (the code, its carets and its input), `/code`
   hydrates whole where one missing child used to send it to a full re-render, and the block's gutter
   is 26px where it was 12.
+- **2026-09-23 · A publish sees the files this build wrote**: editing a component two pages share
+  and publishing failed on the first run ([#361](https://github.com/eQuantic/equantic-ui/issues/361)).
+  bun names a shared chunk by its content's hash, and the static web assets pipeline registered
+  wwwroot's files while the project evaluated, before eqc rewrote the folder, so the renamed
+  chunk's old name reached the publish's compression with no file behind it. The same order had the
+  build's compression packing the previous build's modules. eqc's folder leaves Content and is
+  defined as web assets from what is on disk once its writers have run, through the pipeline's own
+  hook for generated assets, and CI edits a shared component and publishes.
 
 ## Retired documents
 
