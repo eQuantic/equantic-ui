@@ -21,6 +21,11 @@ public class SinglePrecisionConformanceTests
     // The bar chart's edge (#146): three roundings in C#, one under the store-only rule.
     [InlineData("float across = 199f, hi = 17f / 30f, lo = 5f / 30f; return (double)(hi * across - lo * across);")]
     [InlineData("float x = 1f / 3f; return (double)(x * 3f - 1f);")]                          // 0, not 2.98e-8
+    // A Decimal reaches a float THROUGH a double in .NET as well (`(float)d == (float)(double)d`,
+    // measured): 2^62 + 2^38 + 1 is just above a midpoint between two singles, the double lands ON
+    // it, and both sides take the even one. The answer names the neighbour, because a double this
+    // large prints differently in the two JSON writers.
+    [InlineData("decimal d = 4611686293305294849m; float f = (float)d; return f == 4611686018427387904f ? \"even\" : \"other\";")] // "even"
     [InlineData("float a = 10f, b = 3f; return (double)(a / b / b);")]
     [InlineData("float a = 0.1f; bool pick = true; return (double)(pick ? a * 3f : a);")]    // a branch is a producer too
     [InlineData("float a = 0.1f, b = 0.2f; return a + b == 0.3f;")]                          // true — singles compare

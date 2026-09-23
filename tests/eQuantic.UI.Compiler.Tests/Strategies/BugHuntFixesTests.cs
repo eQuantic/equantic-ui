@@ -59,6 +59,21 @@ public class BugHuntFixesTests
     }
 
     /// <summary>
+    /// Without a model a Round's overload is read from the call as written: a trailing mode was
+    /// dropped (ToEven in its place), and a named mode was taken for the digits.
+    /// </summary>
+    [Theory]
+    [InlineData("Math.Round(Total, 2, MidpointRounding.AwayFromZero)", "$eq.math.round(this.total, 2, 'awayFromZero')")]
+    [InlineData("Math.Round(Total, MidpointRounding.AwayFromZero)", "$eq.math.round(this.total, 0, 'awayFromZero')")]
+    [InlineData("MathF.Round(Total, System.MidpointRounding.ToZero)", "$eq.math.roundSingle(this.total, 0, 'toZero')")]
+    [InlineData("Math.Round(mode: MidpointRounding.ToEven, value: Total)", "$eq.math.round(this.total, 0, 'toEven')")]
+    [InlineData("Math.Round(Total, digits: 3)", "$eq.math.round(this.total, 3)")]
+    public void WithoutAModel_ARoundKeepsTheOverloadItWasWrittenWith(string call, string expected)
+    {
+        TestHelper.ConvertExpression(call).Should().Be(expected);
+    }
+
+    /// <summary>
     /// The fallback answers from the SAME table as a bound call, by name, on the home the class
     /// spells. Its own guesses were `Math.copySign`, `Math.bitIncrement` and `Math.iEEERemainder`,
     /// none of which JavaScript has, and a `Math.log(x, b)` that dropped the base.

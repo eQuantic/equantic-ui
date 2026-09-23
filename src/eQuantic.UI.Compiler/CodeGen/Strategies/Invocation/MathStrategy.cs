@@ -86,15 +86,39 @@ public class MathStrategy : IExpressionIrStrategy
         }
 
         // Where no model can name the overload (the table above needs the bound method), a Round is
-        // still banker's rounding with an optional digit count — .NET's default, and never the JS
-        // Math.round, which sends halves up and ignores a digit count.
-        if (methodName == "Round" && argsList.Count >= 1)
+        // still .NET's rounding and never the JS Math.round, which sends halves up and ignores a
+        // digit count. The overload is read from the call as WRITTEN: a `MidpointRounding.<Mode>`
+        // argument is the mode, a named argument takes its parameter's slot, and the rest are the
+        // value and then the digits. The holes follow the slots and the parts keep their written
+        // order, which the template writer preserves when the two differ.
+        if (methodName == "Round" && arguments.Count >= 1)
         {
             context.UsedHelpers.Add(Eq.Import);
             var round = single ? Eq.RoundSingle : Eq.Round;
-            return JsExpr.Callish(argsList.Count >= 2
-                ? $"{round}({argsList[0]}, {argsList[1]})"
-                : $"{round}({argsList[0]})");
+            int? value = null, digits = null, mode = null;
+            var parts = new JsExpr[arguments.Count];
+            for (var i = 0; i < arguments.Count; i++)
+            {
+                var argument = arguments[i];
+                var modeMember = ModeMember(argument.Expression);
+                parts[i] = modeMember is null
+                    ? context.Converter.ConvertIr(argument.Expression)
+                    : JsExpr.Literal("'" + modeMember.ToCamelCase() + "'");
+                switch (argument.NameColon?.Name.Identifier.ValueText)
+                {
+                    case "mode": mode = i; break;
+                    case "digits" or "decimals": digits = i; break;
+                    case null when modeMember is not null: mode = i; break;
+                    case null when value is null: value = i; break;
+                    case null: digits = i; break;
+                    default: value = i; break;
+                }
+            }
+            if (value is null) return JsExpr.Callish($"{round}({string.Join(", ", argsList)})");
+            var written = mode is { } m
+                ? $"{round}({{{value}}}, {(digits is { } d ? $"{{{d}}}" : "0")}, {{{m}}})"
+                : digits is { } only ? $"{round}({{{value}}}, {{{only}}})" : $"{round}({{{value}}})";
+            return JsExpr.Template(written, parts, context.TypeAnnotations);
         }
 
         // Standard conversion: map .NET method names that differ from JS, else camelCase.
@@ -109,6 +133,13 @@ public class MathStrategy : IExpressionIrStrategy
 
         return Answer(JsExpr.Callish($"Math.{jsMethodName}({args})"));
     }
+
+    /// <summary>The member a written <c>MidpointRounding.X</c> names, or null for anything else.</summary>
+    private static string? ModeMember(ExpressionSyntax expression) =>
+        expression is MemberAccessExpressionSyntax { Expression: var type, Name: var member }
+            && type.ToString() is "MidpointRounding" or "System.MidpointRounding"
+            ? member.Identifier.ValueText
+            : null;
 
     public int Priority => 10;
 }
