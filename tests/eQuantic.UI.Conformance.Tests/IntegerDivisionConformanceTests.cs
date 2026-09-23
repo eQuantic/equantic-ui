@@ -45,6 +45,8 @@ public class IntegerDivisionConformanceTests
     [InlineData("int x = int.MinValue, minusOne = -1; try { x /= minusOne; return x.ToString(); } catch (Exception e) { return e.Message; }")]
     [InlineData("var xs = new[] { 10, 20 }; int i = 0, zero = 0; var threw = false; try { xs[i++] /= zero; } catch (Exception) { threw = true; } return (threw ? \"threw \" : \"no \") + i;")] // "threw 1"
     [InlineData("var xs = new[] { 10, 20 }; int i = 0, three = 3; xs[i++] %= three; return (xs[0] * 10 + i).ToString();")]          // "11"
+    [InlineData("var d = new Dictionary<int, int> { [0] = 7 }; int zero = 0; try { d[0] /= zero; return d[0].ToString(); } catch (Exception e) { return e.Message; }")]
+    [InlineData("var d = new Dictionary<int, int> { [0] = 7 }; int zero = 0; try { d[0] %= zero; return d[0].ToString(); } catch (Exception e) { return e.Message; }")]
     // ---- a nullable divides only what it holds ----
     [InlineData("int? a = 5, b = 0; try { return (a / b).ToString(); } catch (Exception e) { return e.Message; }")]
     [InlineData("int? a = 5, b = null; return (a / b) == null ? \"null\" : \"value\";")]                    // "null"
