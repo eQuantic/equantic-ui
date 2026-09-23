@@ -178,6 +178,15 @@ public class NumericBclConformanceTests
     [InlineData("return Math.ILogB(8.0);")]                                      // 3
     [InlineData("return Math.IEEERemainder(5.0, 3.0);")]                         // -1
     [InlineData("return Math.Max(3L, 5L).ToString();")]                          // "5" — a long is a BigInt, which Math.max refuses
+    [InlineData("return Math.BigMul(4000000000u, 4000000000u).ToString();")]     // exact past 2^53: a ulong, a BigInt
+    [InlineData("var (q, r) = Math.DivRem(7u, 2u); return (q * 10 + r).ToString();")] // "31"
+    // ---- a hole beside an operator fences what fills it ----
+    [InlineData("bool c = true; double a = 1, b = 2; return double.DegreesToRadians(c ? a : b);")]
+    [InlineData("double a = 1, b = 2; return double.DegreesToRadians(a + b);")]
+    // ---- a NAMED argument fills its own parameter, and arguments still run in written order ----
+    [InlineData("return Math.Round(mode: MidpointRounding.AwayFromZero, value: 2.5);")] // 3
+    [InlineData("return (double)float.Round(mode: MidpointRounding.AwayFromZero, x: 2.5f);")] // 3
+    [InlineData("int n = 0; double F(double v) { n = n * 10 + 1; return v; } MidpointRounding M() { n = n * 10 + 2; return MidpointRounding.AwayFromZero; } var r = Math.Round(mode: M(), value: F(2.5)); return n * 10 + r;")] // 213
     // ---- Single: the float home answers in single precision ----
     [InlineData("return (double)float.Sqrt(2f);")]                               // 1.4142135381698608
     [InlineData("return (double)MathF.Sqrt(2f);")]

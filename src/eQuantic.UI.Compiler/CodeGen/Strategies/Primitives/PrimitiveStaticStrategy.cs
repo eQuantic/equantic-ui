@@ -67,7 +67,8 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
             .ToArray();
 
         // Templates say what they compute; the writer decides what to evaluate once.
-        var emit = TemplateFor(method, method.ContainingType.SpecialType, args.Length)!;
+        var emit = BindNamedArguments(TemplateFor(method, method.ContainingType.SpecialType, args.Length)!,
+            invocation, method);
         if (emit.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
         return JsExpr.Template(emit, args, context.TypeAnnotations);
     }
@@ -90,6 +91,30 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
         return SingleTable(method.Name, argCount) is not null || ExactOnSingles.Contains(method.Name)
             ? emit
             : $"Math.fround({emit})";
+    }
+
+    /// <summary>
+    /// The template with each PARAMETER hole pointed at the argument that fills it. A table's holes
+    /// are parameter slots, and the arguments arrive in the order they were WRITTEN — the same
+    /// thing until one is named: <c>float.Round(mode: m, x: v)</c> put the mode in the value's slot.
+    /// The arguments stay in written order, which is the order C# evaluates them, and the writer
+    /// keeps that order when the holes no longer follow it.
+    /// </summary>
+    internal static string BindNamedArguments(string template, InvocationExpressionSyntax invocation, IMethodSymbol method)
+    {
+        var arguments = invocation.ArgumentList.Arguments;
+        if (arguments.All(argument => argument.NameColon is null)) return template;
+        var argumentForSlot = Enumerable.Repeat(-1, method.Parameters.Length).ToArray();
+        for (var i = 0; i < arguments.Count; i++)
+        {
+            var name = arguments[i].NameColon?.Name.Identifier.ValueText;
+            var slot = name is null ? i : method.Parameters.FirstOrDefault(p => p.Name == name)?.Ordinal ?? -1;
+            if (slot < 0 || slot >= argumentForSlot.Length) return template;
+            argumentForSlot[slot] = i;
+        }
+        var holes = new System.Text.RegularExpressions.Regex(@"\{(\d)\}");
+        if (holes.Matches(template).Any(hole => argumentForSlot[int.Parse(hole.Groups[1].Value)] < 0)) return template;
+        return holes.Replace(template, hole => "{" + argumentForSlot[int.Parse(hole.Groups[1].Value)] + "}");
     }
 
     /// <summary>The float members whose answer on a single IS a single, with nothing to round: a
@@ -272,6 +297,22 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
                 "MinMagnitudeNumber" => "$eq.math.minMagnitudeNumber({0}, {1})",
                 "MaxNumber" => "$eq.math.maxNumber({0}, {1})",
                 "MinNumber" => "$eq.math.minNumber({0}, {1})",
+                _ => null,
+            };
+        }
+
+        // A uint is a plain number like the small widths, but it has no sign and no Abs: only what
+        // .NET declares on it. BigMul answers a ulong, which is a BigInt here, exactly — two uints
+        // multiply past 2^53, where the double would round.
+        if (home == SpecialType.System_UInt32)
+        {
+            return name switch
+            {
+                "Max" when argCount == 2 => "Math.max({0}, {1})",
+                "Min" when argCount == 2 => "Math.min({0}, {1})",
+                "Clamp" when argCount == 3 => "Math.min(Math.max({0}, {1}), {2})",
+                "BigMul" when argCount == 2 => $"({Eq.Long}({{0}}) * {Eq.Long}({{1}}))",
+                "DivRem" when argCount == 2 => "[Math.trunc({0} / {1}), {0} % {1}]",
                 _ => null,
             };
         }

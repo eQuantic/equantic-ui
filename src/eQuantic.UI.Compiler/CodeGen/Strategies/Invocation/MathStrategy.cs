@@ -51,7 +51,8 @@ public class MathStrategy : IExpressionIrStrategy
         {
             if (template.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
             var irArgs = arguments.Select(a => context.Converter.ConvertIr(a.Expression)).ToArray();
-            return JsExpr.Template(template, irArgs, context.TypeAnnotations);
+            return JsExpr.Template(PrimitiveStaticStrategy.BindNamedArguments(template, invocation, method),
+                irArgs, context.TypeAnnotations);
         }
 
         var argsList = arguments
