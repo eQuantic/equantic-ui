@@ -328,6 +328,16 @@ describe('code surface pointer (the SAME model the native host drives)', () => {
 });
 
 describe('the tokenizers, running in the browser', () => {
+  // The registry leaned on a case-insensitive comparer the twin never had: a plain object keys
+  // exactly, so 'CSharp' coloured C# natively and plain text here. CodeLanguagesTests asks the C#
+  // side the same questions.
+  it('are found by name in any case, as the native registry finds them', () => {
+    expect(CodeLanguages.for('CSharp')).toBe(CodeLanguages.cSharp);
+    expect(CodeLanguages.for('C#')).toBe(CodeLanguages.cSharp);
+    expect(CodeLanguages.for('.CS')).toBe(CodeLanguages.cSharp);
+    expect(CodeLanguages.for('NoSuchLanguage')).toBe(CodeLanguages.plainText);
+  });
+
   it('colour C# the same way they colour it natively', () => {
     const tokens: unknown[] = [];
     CodeLanguages.cSharp.tokenize('public static string Name() => "hi";', 0, tokens as never);

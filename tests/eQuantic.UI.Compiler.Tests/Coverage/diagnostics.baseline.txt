@@ -13,7 +13,7 @@ EQ2003 eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ObjectCreationStrateg
 EQ2004 eQuantic.UI.Code/Marks/CodeDiagnostic.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/InvocationStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/RangeExpressionStrategy.cs
 EQ2005 eQuantic.UI.Compiler/CodeGen/TypeScriptEmitter.cs
 EQ2006 eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ConditionalAccessStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/InvocationStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/MemberAccessStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ObjectCreationStrategy.cs
-EQ2007 eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/CollectionExpressionStrategy.cs
+EQ2007 eQuantic.UI.Compiler/CodeGen/Extensions/CollectionComparerExtensions.cs eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/CollectionExpressionStrategy.cs
 EQ2008 eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/InitializerExpressionStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Linq/GroupByStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Linq/QueryExpressionStrategy.cs eQuantic.UI.Compiler/CodeGen/TypeScriptEmitter.cs eQuantic.UI.Compiler/ComponentCompiler.cs
 EQ2009 eQuantic.UI.Compiler/ComponentCompiler.cs
 EQ2010 eQuantic.UI.Compiler/CodeGen/Extensions/HostOnlySymbolExtensions.cs eQuantic.UI.Compiler/CodeGen/TypeScriptEmitter.cs
