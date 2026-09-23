@@ -43,8 +43,11 @@ jobs:
           EQ_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: ./scripts/check-commit-messages.sh --range "$EQ_BASE" "$EQ_HEAD"
 
-  # Build TypeScript Runtime once (platform-agnostic)
-  build-runtime:
+  # The runtime's TypeScript, proven once: the command a developer runs, through the embedded bun
+  # (bun.lock as pinned, tsc, vitest). It hands nothing on. The bundle an app runs is written by
+  # the Server's own build, in every job that builds it, and a library build of the same sources
+  # used to travel from here to the packages instead (#335).
+  test-runtime:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -54,38 +57,8 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Build Runtime TypeScript (using embedded Bun)
-        shell: bash
-        run: |
-          # Extract Bun binary if it's still zipped
-          BUN_PATH="$GITHUB_WORKSPACE/src/eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux"
-
-          if [ ! -f "$BUN_PATH" ]; then
-            echo "Extracting Bun binary..."
-            unzip -q "$GITHUB_WORKSPACE/src/eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux.zip" \
-                  -d "$GITHUB_WORKSPACE/src/eQuantic.UI.Runtime.Linux64/tools/bun/"
-            chmod +x "$BUN_PATH"
-          fi
-
-          echo "Using Bun at: $BUN_PATH"
-          ls -lh "$BUN_PATH"
-
-          cd src/eQuantic.UI.Runtime
-          "$BUN_PATH" install
-          "$BUN_PATH" x tsc && "$BUN_PATH" x vite build
-
-      - name: Test Runtime (vitest)
-        shell: bash
-        run: |
-          BUN_PATH="$GITHUB_WORKSPACE/src/eQuantic.UI.Runtime.Linux64/tools/bun/bun-linux"
-          cd src/eQuantic.UI.Runtime
-          "$BUN_PATH" x vitest run
-
-      - name: Upload Runtime Build
-        uses: actions/upload-artifact@v4
-        with:
-          name: runtime-build
-          path: src/eQuantic.UI.Runtime/dist/
+      - name: Type-check and test the runtime (embedded bun)
+        run: dotnet build src/eQuantic.UI.Runtime -t:TestRuntime
 
   # Build platform-specific runtime packages
   package-extension:
@@ -120,7 +93,7 @@ jobs:
           path: extensions/vscode/equantic-ui.vsix
 
   build-platform-runtimes:
-    needs: build-runtime
+    needs: test-runtime
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -144,12 +117,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
-
-      - name: Download Runtime Build
-        uses: actions/download-artifact@v4
-        with:
-          name: runtime-build
-          path: src/eQuantic.UI.Runtime/dist/
 
       - name: Determine Version
         id: version
@@ -198,12 +165,6 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Download Runtime Build
-        uses: actions/download-artifact@v4
-        with:
-          name: runtime-build
-          path: src/eQuantic.UI.Runtime/dist/
-
       - name: Install mobile workloads (iOS/Android shells)
         run: dotnet workload install ios android
 
@@ -248,9 +209,9 @@ jobs:
           # releases — it never reached nuget.org while the release notes announced it. Tools
           # that ride inside the SDK packages (eQuantic.Build, eQuantic.UI.Native.Build) and
           # design-time projects say IsPackable=false themselves. Left out on purpose: the
-          # per-RID runtime packs (the platform matrix packs them) and the four projects below,
+          # per-RID runtime packs (the platform matrix packs them) and the three projects below,
           # whose pack targets stage tools and must not run with --no-build.
-          SEPARATE="eQuantic.UI.Runtime eQuantic.UI.Sdk eQuantic.UI.Sdk.Native eQuantic.UI.Templates"
+          SEPARATE="eQuantic.UI.Sdk eQuantic.UI.Sdk.Native eQuantic.UI.Templates"
           PACKED=0
           for csproj in src/*/*.csproj; do
             name=$(basename "$(dirname "$csproj")")
@@ -270,12 +231,26 @@ jobs:
           # A discovery that finds nothing is a broken discovery, not an empty repository.
           [ "$PACKED" -ge 30 ] || { echo "::error::only $PACKED packable projects found under src/"; exit 1; }
 
-          # The Runtime meta-package and the SDKs pack WITHOUT --no-build: their pack targets
-          # stage tools (eqc, eQuantic.Build, eqicon) and stamp versions.
-          dotnet pack src/eQuantic.UI.Runtime/eQuantic.UI.Runtime.csproj -c Release -p:Version=$VERSION
+          # The SDKs and the templates pack WITHOUT --no-build: their pack targets stage tools (eqc,
+          # eQuantic.Build, eqicon) and stamp versions.
           dotnet pack src/eQuantic.UI.Sdk/eQuantic.UI.Sdk.csproj -c Release -p:Version=$VERSION
           dotnet pack src/eQuantic.UI.Sdk.Native/eQuantic.UI.Sdk.Native.csproj -c Release -p:Version=$VERSION
           dotnet pack src/eQuantic.UI.Templates/eQuantic.UI.Templates.csproj -c Release -p:Version=$VERSION
+
+      # The runtime the Server package ships as a FILE is the one it embeds and serves: BundleRuntime
+      # writes it once, the compiler embeds it, the pack collects it. An app's copy comes from this
+      # file, and a presence check passed four releases while that copy was a library build with no
+      # `boot` that no page could start from (#335). So the bytes are compared, and the entry point
+      # is looked for.
+      - name: The Server package ships the runtime it serves
+        shell: bash
+        run: |
+          set -euo pipefail
+          package=$(ls src/eQuantic.UI.Server/bin/Release/eQuantic.UI.Server.[0-9]*.nupkg)
+          unzip -p "$package" tools/runtime/runtime.js > packed-runtime.js
+          cmp packed-runtime.js src/eQuantic.UI.Server/wwwroot/runtime.js
+          grep -q 'function boot' packed-runtime.js
+          echo "$package ships the served runtime ($(wc -c < packed-runtime.js) bytes)."
 
       # The wiki is a SEPARATE repository, and the version-mark guard reads it from beside this
       # one. Without this the guard passes here having checked nothing, and a wrong "Since
@@ -367,7 +342,7 @@ jobs:
   # fence, and a fence is a Skip whose text names the OS and the reason — never a filter here,
   # which would hide the fact in a file nobody reads while running the tests.
   test:
-    needs: build-runtime
+    needs: test-runtime
     runs-on: ${{ matrix.os }}
     strategy:
       # Both legs always report. Cancelling one because the other failed is how a two-OS gap gets
@@ -383,13 +358,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
-
-      # The runtime bundle the Server embeds, and what several suites read back.
-      - name: Download Runtime Build
-        uses: actions/download-artifact@v4
-        with:
-          name: runtime-build
-          path: src/eQuantic.UI.Runtime/dist/
 
       # The version-mark guard asks `git tag --contains`, and a shallow checkout has no tags: it
       # would answer "unreleased" for everything and pass having checked nothing.
@@ -462,7 +430,7 @@ jobs:
   # something about anyone else's. Debug, because that is the configuration a developer runs and
   # the one `IsEQuanticDevMode` wires to project references.
   samples:
-    needs: build-runtime
+    needs: test-runtime
     # macOS is the only runner that can build every target framework the samples declare: ios and
     # android need workloads that install on a Mac, and the desktop head needs CoreGraphics.
     runs-on: macos-latest
@@ -474,14 +442,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
-
-      # Beside a source tree `runtime.js` is the Runtime project's own dist/, which the graph
-      # regenerates with the embedded bun. Taking the artifact means that work happens once.
-      - name: Download Runtime Build
-        uses: actions/download-artifact@v4
-        with:
-          name: runtime-build
-          path: src/eQuantic.UI.Runtime/dist/
 
       - name: Install mobile workloads (the samples' ios and android heads)
         run: dotnet workload install ios android
@@ -519,6 +479,29 @@ jobs:
             echo "::error::These samples failed to build:"
             printf '%s' "$failed"
           fi
+          exit $status
+
+      # Beside a source tree the SDK copies the Server project's own bundle next to a web app's
+      # modules. Each copy must be the served runtime byte for byte, derived from what the builds
+      # wrote rather than listed here, and a tree where no sample wrote one is not a pass.
+      - name: Each web sample carries the runtime it is served
+        shell: bash
+        run: |
+          set -uo pipefail
+          copies=$(find samples -name obj -prune -o -name bin -prune -o -path "*/wwwroot/_equantic/runtime.js" -print | sort)
+          if [ -z "$copies" ]; then
+            echo "::error::no sample wrote wwwroot/_equantic/runtime.js"
+            exit 1
+          fi
+          status=0
+          for copy in $copies; do
+            if cmp -s "$copy" src/eQuantic.UI.Server/wwwroot/runtime.js; then
+              echo "$copy is the served runtime."
+            else
+              echo "::error::$copy is not the runtime the Server serves"
+              status=1
+            fi
+          done
           exit $status
 
       # A map carries C# only in Debug, and names the project's files rather than the machine's
@@ -723,7 +706,12 @@ jobs:
           # so publishing each of them buys the same assertion three times over.
           FIRST="GateWeb$(echo "$WEB_SHELLS" | awk '{print $1}' | tr -d '-')"
           (cd "$FIRST" && dotnet publish -c Release -o publish)
-          test -f "$FIRST"/publish/wwwroot/_equantic/runtime.js
+          # The published copy is the runtime the Server package serves, byte for byte. This was a
+          # presence check, and it passed four releases while the copy was a library build with no
+          # `boot` (#335). ../nupkgs is the feed's POSIX path, which unzip reads on every runner.
+          unzip -p ../nupkgs/eQuantic.UI.Server.[0-9]*.nupkg tools/runtime/runtime.js > served-runtime.js
+          cmp served-runtime.js "$FIRST"/publish/wwwroot/_equantic/runtime.js
+          grep -q 'function boot' served-runtime.js
 
           if [ "$RUNNER_OS" = "macOS" ]; then
             NATIVE_SHELLS="$(shells equantic-native)"
