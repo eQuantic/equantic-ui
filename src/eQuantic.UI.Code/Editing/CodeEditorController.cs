@@ -857,10 +857,17 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         }
     }
 
+    /// <summary>
+    /// A word step, over whole TEXT ELEMENTS: an element is a word character when its first character
+    /// is, so the accent written as a mark after its letter belongs to the letter's word. It read one
+    /// unit at a time and stopped between the e of a decomposed café and its accent, a column no
+    /// caret should hold.
+    /// </summary>
     private CodePosition WordStep(CodePosition from, bool forward)
     {
         var here = _document.Clamp(from);
         var line = _document.Line(here.Line);
+        var cells = CellsOf(here.Line);
 
         if (forward)
         {
@@ -868,22 +875,24 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             var i = here.Column;
             // Skip what we are on, then the whitespace after it — one press lands on the next word.
             if (CodeDocument.IsWordChar(line[i]))
-                while (i < line.Length && CodeDocument.IsWordChar(line[i])) i++;
+                while (i < line.Length && CodeDocument.IsWordChar(line[i])) i = cells.Next(i);
             else if (!char.IsWhiteSpace(line[i]))
                 while (i < line.Length && !CodeDocument.IsWordChar(line[i])
-                       && !char.IsWhiteSpace(line[i])) i++;
-            while (i < line.Length && char.IsWhiteSpace(line[i])) i++;
+                       && !char.IsWhiteSpace(line[i])) i = cells.Next(i);
+            while (i < line.Length && char.IsWhiteSpace(line[i])) i = cells.Next(i);
             return here with { Column = i };
         }
 
         if (here.Column == 0) return Before(here);
+        // The element that ends at a column begins at Previous(column), and its first character is
+        // what it is.
         var back = here.Column;
-        while (back > 0 && char.IsWhiteSpace(line[back - 1])) back--;
-        if (back > 0 && CodeDocument.IsWordChar(line[back - 1]))
-            while (back > 0 && CodeDocument.IsWordChar(line[back - 1])) back--;
+        while (back > 0 && char.IsWhiteSpace(line[cells.Previous(back)])) back = cells.Previous(back);
+        if (back > 0 && CodeDocument.IsWordChar(line[cells.Previous(back)]))
+            while (back > 0 && CodeDocument.IsWordChar(line[cells.Previous(back)])) back = cells.Previous(back);
         else
-            while (back > 0 && !CodeDocument.IsWordChar(line[back - 1])
-                   && !char.IsWhiteSpace(line[back - 1])) back--;
+            while (back > 0 && !CodeDocument.IsWordChar(line[cells.Previous(back)])
+                   && !char.IsWhiteSpace(line[cells.Previous(back)])) back = cells.Previous(back);
         return here with { Column = back };
     }
 
@@ -892,7 +901,23 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     public void SelectAll() => Selection = new CodeRange(CodePosition.Start, _document.End);
 
     /// <summary>The word under a position — a double click.</summary>
-    public void SelectWord(CodePosition at) => Selection = _document.WordAt(at);
+    /// <summary>
+    /// The word at <paramref name="at"/> — a double click — widened to whole text elements, so the
+    /// accent written as a mark after the word's last letter is in it.
+    /// </summary>
+    public void SelectWord(CodePosition at)
+    {
+        var word = _document.WordAt(at);
+        if (word.IsEmpty)
+        {
+            Selection = word;
+            return;
+        }
+        var cells = CellsOf(word.Start.Line);
+        Selection = new CodeRange(
+            word.Start with { Column = cells.ElementAt(cells.IndexOf(word.Start.Column)).Start },
+            word.End with { Column = cells.Next(word.End.Column - 1) });
+    }
 
     /// <summary>The whole line — a triple click.</summary>
     public void SelectLine(int line)

@@ -70,6 +70,63 @@ public class CellWidthOracleTests
         count.Should().Be(0, $"every character takes the cells the oracle gives it, on both sides:{mismatches}");
     }
 
+    /// <summary>Every mark, one character per code point from U+0300: the twin's width alone, and
+    /// the kind of mark (<c>n</c> nonspacing or enclosing, <c>c</c> spacing), <c>x</c> for the rest.</summary>
+    private static string EveryMark(string runtime) => $$"""
+        import { CodeLineCells } from '{{runtime}}';
+        const combining = /^[\p{Mn}\p{Me}]$/u;
+        const spacing = /^\p{Mc}$/u;
+        const kinds = [];
+        const widths = [];
+        for (let cp = 0x300; cp <= 0x10FFFF; cp++) {
+          const s = cp >= 0xD800 && cp <= 0xDFFF ? '' : String.fromCodePoint(cp);
+          const kind = s === '' ? 'x' : combining.test(s) ? 'n' : spacing.test(s) ? 'c' : 'x';
+          kinds.push(kind);
+          widths.push(kind === 'x' ? 'x' : String(new CodeLineCells(s, 4).width));
+        }
+        console.log(kinds.join(''));
+        console.log(widths.join(''));
+        """;
+
+    /// <summary>
+    /// A MARK that begins an element (at the start of a line, or after a tab) takes the cells its
+    /// kind says, on both sides: none when it is nonspacing or enclosing, which combine with whatever
+    /// is drawn before them, and its advance when it is spacing. Bun is no oracle here, since it
+    /// counts some marks as one cell and the voiced sound mark as two, so this compares each side
+    /// with the rule, by its own platform's categories.
+    /// </summary>
+    [SkippableFact]
+    public void AMarkThatBeginsAnElementTakesTheCellsItsKindSays_OnBothSides()
+    {
+        Skip.IfNot(JsExecutor.EngineName == "bun", "The web side runs in the embedded Bun.");
+        var runtime = ConformanceRunner.RuntimeJsUrl() ?? throw new InvalidOperationException("No served runtime.js.");
+
+        var lines = JsExecutor.Run(EveryMark(runtime), timeoutMs: 180_000).Split('\n');
+        var (kinds, widths) = (lines[0].TrimEnd(), lines[1].TrimEnd());
+
+        var wrong = new StringBuilder();
+        var count = 0;
+        for (var cp = 0x300; cp <= 0x10FFFF; cp++)
+        {
+            if (cp is >= 0xD800 and <= 0xDFFF) continue;
+            var category = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(cp);
+            var dotnet = new CodeLineCells(char.ConvertFromUtf32(cp), 4).Width;
+            var dotnetRight = category switch
+            {
+                System.Globalization.UnicodeCategory.NonSpacingMark or System.Globalization.UnicodeCategory.EnclosingMark => dotnet == 0,
+                System.Globalization.UnicodeCategory.SpacingCombiningMark => dotnet > 0,
+                _ => true,
+            };
+            var kind = kinds[cp - 0x300];
+            var web = widths[cp - 0x300];
+            var webRight = kind switch { 'n' => web == '0', 'c' => web != '0', _ => true };
+            if (dotnetRight && webRight) continue;
+            if (count++ < 40) wrong.Append($"\n  U+{cp:X4} ({category}): .NET {dotnet}, the web {web}");
+        }
+
+        count.Should().Be(0, $"a mark takes the cells its kind says, on both sides:{wrong}");
+    }
+
     /// <summary>The widths that belong to a CLUSTER rather than to its first character.</summary>
     [SkippableTheory]
     [InlineData("\U0001F1E7\U0001F1F7")]                                                   // a flag

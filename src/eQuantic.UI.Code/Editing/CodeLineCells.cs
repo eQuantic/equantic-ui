@@ -156,6 +156,15 @@ public sealed class CodeLineCells
         var codePoint = start + 1 < end && char.IsSurrogatePair(first, text[start + 1])
             ? char.ConvertToUtf32(first, text[start + 1])
             : (int)first;
+        // An element that BEGINS with a mark (at the start of a line, or after a tab) has no advance
+        // of its own when the mark is nonspacing or enclosing: it combines with whatever is drawn
+        // before it. A spacing mark has one, by definition. Asked before the wide table, which takes
+        // in the marks of the blocks it spans (the voiced sound mark is East Asian Wide).
+        if (codePoint >= 0x0300)
+        {
+            var category = CharUnicodeInfo.GetUnicodeCategory(codePoint);
+            if (category is UnicodeCategory.NonSpacingMark or UnicodeCategory.EnclosingMark) return 0;
+        }
         if (IsWide(codePoint)) return 2;
         for (var i = start + 1; i < end; i++)
         {

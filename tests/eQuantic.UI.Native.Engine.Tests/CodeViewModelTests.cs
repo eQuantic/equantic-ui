@@ -171,4 +171,22 @@ public class CodeViewModelTests
 
         editor.Document.Line(0).Should().Be("\tx");
     }
+
+    /// <summary>
+    /// A word is made of text elements: an accent written as a mark after its letter belongs to the
+    /// word the letter does. ⌥→ stopped between the e of a decomposed café and its accent, a column
+    /// no caret should hold, and a double click selected the word without it.
+    /// </summary>
+    [Fact]
+    public void AWordStepsOverWholeElements()
+    {
+        const string line = "cafe\u0301 x";   // café, the accent a mark of its own, then x
+        var editor = At(line, 0, 0);
+
+        editor.MoveTo(new CodePosition(0, 0), CodeMotion.Word, CodeDirection.Forward).Column.Should().Be(6);
+        editor.MoveTo(new CodePosition(0, 6), CodeMotion.Word, CodeDirection.Backward).Column.Should().Be(0);
+
+        editor.SelectWord(new CodePosition(0, 1));
+        editor.Selection.Should().Be(new CodeRange(new CodePosition(0, 0), new CodePosition(0, 5)));
+    }
 }

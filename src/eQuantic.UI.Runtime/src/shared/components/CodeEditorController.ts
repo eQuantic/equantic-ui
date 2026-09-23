@@ -529,17 +529,18 @@ export class CodeEditorController {
     wordStep(from: CodePosition, forward: boolean) {
         let here = this._document.clamp(from);
         let line = this._document.line(here.line);
+        let cells = this.cellsOf(here.line);
         if (forward) {
             if (here.column >= line.length) return this.after(here);
             let i = here.column;
-            if (CodeDocument.isWordChar(line[i])) while (i < line.length && CodeDocument.isWordChar(line[i])) i++; else if (!(/^\s$/.test(line[i]))) while (i < line.length && !CodeDocument.isWordChar(line[i]) && !(/^\s$/.test(line[i]))) i++;
-            while (i < line.length && (/^\s$/.test(line[i]))) i++;
+            if (CodeDocument.isWordChar(line[i])) while (i < line.length && CodeDocument.isWordChar(line[i])) i = cells.next(i); else if (!(/^\s$/.test(line[i]))) while (i < line.length && !CodeDocument.isWordChar(line[i]) && !(/^\s$/.test(line[i]))) i = cells.next(i);
+            while (i < line.length && (/^\s$/.test(line[i]))) i = cells.next(i);
             return $eq.withPatch(here, { column: i });
         }
         if (here.column === 0) return this.before(here);
         let back = here.column;
-        while (back > 0 && (/^\s$/.test(line[back - 1]))) back--;
-        if (back > 0 && CodeDocument.isWordChar(line[back - 1])) while (back > 0 && CodeDocument.isWordChar(line[back - 1])) back--; else while (back > 0 && !CodeDocument.isWordChar(line[back - 1]) && !(/^\s$/.test(line[back - 1]))) back--;
+        while (back > 0 && (/^\s$/.test(line[cells.previous(back)]))) back = cells.previous(back);
+        if (back > 0 && CodeDocument.isWordChar(line[cells.previous(back)])) while (back > 0 && CodeDocument.isWordChar(line[cells.previous(back)])) back = cells.previous(back); else while (back > 0 && !CodeDocument.isWordChar(line[cells.previous(back)]) && !(/^\s$/.test(line[cells.previous(back)]))) back = cells.previous(back);
         return $eq.withPatch(here, { column: back });
     }
 
@@ -548,7 +549,13 @@ export class CodeEditorController {
     }
 
     selectWord(at: CodePosition) {
-        return this.selection = this._document.wordAt(at);
+        let word = this._document.wordAt(at);
+        if (word.isEmpty) {
+            this.selection = word;
+            return;
+        }
+        let cells = this.cellsOf(word.start.line);
+        this.selection = new CodeRange($eq.withPatch(word.start, { column: cells.elementAt(cells.indexOf(word.start.column)).start }), $eq.withPatch(word.end, { column: cells.next(word.end.column - 1) }));
     }
 
     selectLine(line: number) {

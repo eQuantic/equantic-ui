@@ -88,6 +88,10 @@ export class CodeLineCells {
         let first = text[start];
         if (first === '\t') return this.tabSize - cell % this.tabSize;
         let codePoint = start + 1 < end && (/^[\uD800-\uDBFF]$/.test(first) && /^[\uDC00-\uDFFF]$/.test(text[start + 1])) ? Number((first + text[start + 1]).codePointAt(0)) : first.charCodeAt(0);
+        if (codePoint >= 0x0300) {
+            let category = $eq.text.unicodeCategory(codePoint);
+            if ((category === 'nonSpacingMark' || category === 'enclosingMark')) return 0;
+        }
         if (CodeLineCells.isWide(codePoint)) return 2;
         for (let i = start + 1; i < end; i++) {
             let c = text[i];

@@ -139,4 +139,20 @@ public class CodeLineCellsTests
     {
         new CodeLineCells("\uD83D\u0301x", 4).Width.Should().Be(2);
     }
+
+    /// <summary>
+    /// A text element that BEGINS with a mark (at the start of a line, or after a tab) has no advance
+    /// of its own when the mark is nonspacing or enclosing: it combines with whatever is drawn before
+    /// it. A spacing mark has one, by definition. The voiced sound mark is East Asian Wide and took
+    /// two cells.
+    /// </summary>
+    [Theory]
+    [InlineData("\u3099x", 1)]      // a voiced sound mark alone, then x
+    [InlineData("\t\u0301x", 5)]   // a tab to its stop, an acute alone, then x
+    [InlineData("\u20DDx", 1)]      // an enclosing circle alone
+    [InlineData("\u0903x", 2)]      // a spacing mark has its cell
+    public void AMarkThatBeginsAnElementTakesTheCellsItsKindSays(string text, int width)
+    {
+        new CodeLineCells(text, 4).Width.Should().Be(width);
+    }
 }
