@@ -16,6 +16,14 @@ import { HtmlNode, EventHandler } from '../core/types';
  */
 export const MOUNTED_HOOK = 'eq:mounted';
 
+/**
+ * The server's mark on a subtree it laid out on widths it could not MEASURE (the C#
+ * `WebLoweringVisitor.UnmeasuredMark`, written as a data attribute): it has no fonts, so a
+ * component whose geometry is text geometry was built on zeros there. Hydration draws that subtree
+ * rather than adopting it.
+ */
+export const UNMEASURED_MARK = 'data-eq-unmeasured';
+
 function runMountHook(element: Element, handler: EventHandler): void {
   const run = () => (handler as unknown as (el: Element) => void)(element);
   // After the next FRAME, not just the next microtask: an element that appears inside a layer which
@@ -897,6 +905,17 @@ export class Reconciler {
         `Expected Element for tag '${virtualNode.tag}', found ${existingElement.nodeName}`,
       );
       result.success = false;
+      return result;
+    }
+
+    // DRAWN, not adopted: the server built this subtree on widths it could not measure. Adopting it
+    // kept those zeros for good, because nothing below this line touches the server's markup, and
+    // every code block the server sent kept a 12px gutter. Checked before the tag, because what
+    // the server wrote in there is a draft the client replaces, not a tree it has to agree with.
+    if (existingElement.hasAttribute(UNMEASURED_MARK)) {
+      existingElement.replaceWith(
+        this.createDomElement(virtualNode, existingElement.parentNode ?? undefined),
+      );
       return result;
     }
 

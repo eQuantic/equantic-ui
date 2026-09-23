@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Reconciler } from './reconciler';
+import { Reconciler, UNMEASURED_MARK } from './reconciler';
+import { RenderManager } from './renderer';
 import { HtmlNode } from '../core/types';
 
 /**
@@ -311,6 +312,101 @@ describe('Reconciler hydration', () => {
     reconciler.reconcile(container, caption(''), caption('The two values do not match.'));
 
     expect(container.querySelector('.caption')?.textContent).toBe('The two values do not match.');
+  });
+});
+
+/**
+ * What the server could not MEASURE, the client draws. The server has no font, so a component whose
+ * geometry is text geometry is built on zeros there, and the C# realizer marks it. Everything else
+ * is adopted as it always was: the mark costs the page one subtree, where a failed adoption cost it
+ * the whole tree.
+ */
+describe('hydration of a subtree the server could not measure', () => {
+  const node = (
+    tag: string,
+    attributes: Record<string, string>,
+    children: HtmlNode[] = [],
+    events: HtmlNode['events'] = {},
+  ): HtmlNode => ({ tag, attributes, events, children });
+  const text = (content: string): HtmlNode => ({
+    tag: '#text',
+    textContent: content,
+    attributes: {},
+    events: {},
+    children: [],
+  });
+
+  /** The client's page: a heading, a code block whose gutter it measured, and a line after it. */
+  const page = (gutter: string, pressed: () => void = () => {}, title = 'Ledger'): HtmlNode =>
+    node('div', { class: 'page' }, [
+      node('h1', { class: 'title' }, [text(title)]),
+      node('div', { class: 'block' }, [
+        node('div', { class: 'gutter', style: `width:${gutter}` }, [text('1')], { click: pressed }),
+      ]),
+      node('p', { class: 'after' }, [text('kept')]),
+    ]);
+
+  /** The server's page: the same, with the block built on a width of 0 and marked for it. */
+  const served = (container: HTMLElement) => {
+    container.innerHTML =
+      '<div class="page"><h1 class="title">Ledger</h1>' +
+      `<div class="block" ${UNMEASURED_MARK}=""><div class="gutter" style="width:12px">1</div></div>` +
+      '<p class="after">kept</p></div>';
+  };
+
+  it('draws it instead of adopting the zeros it was built on, and adopts everything else', () => {
+    const container = document.createElement('div');
+    served(container);
+    const title = container.querySelector('.title');
+    const after = container.querySelector('.after');
+    const draft = container.querySelector('.block');
+    let presses = 0;
+
+    const result = new Reconciler().hydrateRoot(container, page('44px', () => presses++));
+
+    expect(result.success).toBe(true);
+    expect(container.querySelector('.block')).not.toBe(draft);
+    expect(container.querySelector('.block')?.hasAttribute(UNMEASURED_MARK)).toBe(false);
+    expect((container.querySelector('.gutter') as HTMLElement).style.width).toBe('44px');
+    (container.querySelector('.gutter') as HTMLElement).click();
+    expect(presses).toBe(1);
+    // The rest of the page is the server's own elements, adopted.
+    expect(container.querySelector('.title')).toBe(title);
+    expect(container.querySelector('.after')).toBe(after);
+  });
+
+  it('draws it even where the draft does not agree with the client on its shape', () => {
+    const container = document.createElement('div');
+    // A draft with a different tag and a child fewer: a subtree the client replaces is not one it
+    // has to agree with, so this is not a failed adoption and the page is not drawn again whole.
+    container.innerHTML = `<div class="page"><span ${UNMEASURED_MARK}=""></span></div>`;
+    const root = container.firstElementChild;
+
+    const result = new Reconciler().hydrateRoot(
+      container,
+      node('div', { class: 'page' }, [node('div', { class: 'block' }, [text('drawn')])]),
+    );
+
+    expect(result.success).toBe(true);
+    expect(container.firstElementChild).toBe(root);
+    expect(container.querySelector('.block')?.textContent).toBe('drawn');
+  });
+
+  /**
+   * The bug itself: every update after hydration diffs the client's tree against the client's
+   * tree, so a gutter still holding the server's 12px is never corrected by one that changes
+   * something else. Drawn at hydration, it is the client's from the start.
+   */
+  it('holds the client geometry through updates that change something else', () => {
+    const container = document.createElement('div');
+    served(container);
+    const renderer = new RenderManager();
+
+    renderer.hydrate(page('44px'), container);
+    renderer.update(page('44px', () => {}, 'Ledger, edited'));
+
+    expect(container.querySelector('.title')?.textContent).toBe('Ledger, edited');
+    expect((container.querySelector('.gutter') as HTMLElement).style.width).toBe('44px');
   });
 });
 

@@ -8,11 +8,15 @@ namespace eQuantic.UI.Web;
 /// What DOM the server writes for each word of the vocabulary — the web realizer's dispatch, moved
 /// off a switch with a default arm and onto the visitor the compiler checks.
 /// </summary>
-internal sealed partial class WebLoweringVisitor(ComponentContext context)
+internal sealed partial class WebLoweringVisitor(ComponentContext context, FontlessMeasurer measurer)
     : IVisualNodeVisitor<bool?, HtmlElement?>
 {
     /// <summary>The theme and type scale this lowering runs against — fixed for the pass.</summary>
     private readonly ComponentContext _context = context;
+
+    /// <summary>The context's measurer, which answers 0 and counts: how <see cref="Visit(UiComponent, bool?)"/>
+    /// learns that a component was built on widths nobody measured.</summary>
+    private readonly FontlessMeasurer _measurer = measurer;
 
 
     /// <summary>
@@ -211,8 +215,30 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context)
         // the design host's, and neither prefetches.
         ComponentExpansionScope.Ambient?.Enter(component);
 
-        return component.ExpandContained(_context, (Visitor: this, Axis: horizontalAxis),
-            static (built, state) => state.Visitor.Lower(built, state.Axis));
+        return component.ExpandContained(_context, (Visitor: this, Axis: horizontalAxis, Asked: _measurer.Asks),
+            static (built, state) =>
+            {
+                // Counted BEFORE the built tree lowers: the components inside it build during that
+                // lowering, and what they ask is theirs, not this one's.
+                var unmeasured = state.Visitor._measurer.Asks > state.Asked;
+                var element = state.Visitor.Lower(built, state.Axis);
+                if (unmeasured && element is not null) MarkUnmeasured(element);
+                return element;
+            });
+    }
+
+    /// <summary>
+    /// The attribute that tells hydration this element's subtree was laid out on widths the server
+    /// could not measure, so the client DRAWS it rather than adopting it. Adoption is right for
+    /// everything else, and it is why the mark has to exist: hydration leaves the server's markup
+    /// alone, so geometry built on zeros stayed on the page after the client took over.
+    /// </summary>
+    internal const string UnmeasuredMark = "eq-unmeasured";
+
+    private static void MarkUnmeasured(HtmlElement element)
+    {
+        element.DataAttributes ??= new Dictionary<string, string>();
+        element.DataAttributes[UnmeasuredMark] = "";
     }
 
     // ---- what more than one family reaches ---------------------------------------------
