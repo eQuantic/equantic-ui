@@ -1770,8 +1770,17 @@ public class TypeScriptEmitter
                 || field.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ConstKeyword)) continue;
             foreach (var variable in field.Declaration.Variables)
             {
-                if (variable.Initializer is not { } init) continue;
-                var value = _converter.ConvertExpression(init.Value, field.Declaration.Type.ToString());
+                // A field with NO initializer still has a value in C#: its type's default. Skipping
+                // it left the member `undefined` — a `bool` that was neither true nor false, which
+                // `!flag` reads as true and `flag === false` as false, and which tsc refuses to
+                // compile at all (TS2564) the moment nothing in the constructor assigns it. The
+                // component path has answered this from the type for a while (FieldDefaultTests);
+                // a plain class is the same C#.
+                var value = variable.Initializer is { } init
+                    ? _converter.ConvertExpression(init.Value, field.Declaration.Type.ToString())
+                    : ValueTypeDefault(field.Declaration.Type.ToString(), field.Declaration.Type);
+                if (value is null) continue;
+                if (value.Contains("$eq.")) _converter.UsedHelpers.Add(Eq.Import);
                 // The SAME casing the field declaration uses, or the constructor writes a second,
                 // differently-spelled member beside the one every read goes through.
                 initialisers.Append($"this.{variable.Identifier.Text.ToCamelCase()} = {value}; ");
