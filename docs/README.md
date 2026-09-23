@@ -29,6 +29,7 @@ Plans for work that is still landing. Each names its slices and which are done.
 | [SHARED-COMPONENTS-PLAN.md](SHARED-COMPONENTS-PLAN.md) | The write-once architecture: one vocabulary, realized per target. The plan that produced the current layering. |
 | [STYLE-SEMANTICS-PLAN.md](STYLE-SEMANTICS-PLAN.md) | Track S — CSS-free authoring and the atomic style engine. |
 | [CHARTS-PLAN.md](CHARTS-PLAN.md) | The chart library, written once and drawn by both realizers. |
+| [CODE-EDITOR-PLAN.md](CODE-EDITOR-PLAN.md) | Track I — the code editor an IDE is built on: the engine, the protocol, the intelligence. |
 | [I18N-PLAN.md](I18N-PLAN.md) | Track L — localization the .NET way. |
 | [BOUND-TREE-PLAN.md](BOUND-TREE-PLAN.md) | Compiler phase 5 — translating from the bound tree. |
 | [COVERAGE-PLAN.md](COVERAGE-PLAN.md) | Compiler phase 6 — deriving the BCL mapping, with baselines that may only shrink. |

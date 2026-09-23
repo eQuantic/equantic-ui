@@ -118,7 +118,8 @@ move, its address does not.
 | Assembly | Lines | Files | Public types | May reference |
 |---|---|---|---|---|
 | `Primitives` — the vocabulary, the tokens, the contracts | 12,547 | 91 | 253 | nothing |
-| `Components` — the write-once library | 9,593 | 61 | 99 | Primitives |
+| `Code` — the code editing engine (moved out of `Primitives`, 2026-09-23) | 2,452 | 36 | 36 | Primitives |
+| `Components` — the write-once library | 9,593 | 61 | 99 | Primitives, Code |
 | `Charts` — the write-once charts | 839 | 5 | 12 | Primitives, Components |
 | `Web` — the SSR realizer and the DOM escape hatch | 6,449 | 22 | 39 | Primitives |
 | `Server` — the ASP.NET Core host | 4,848 | 33 | 51 | Web |
@@ -140,6 +141,12 @@ is written once and realized three times, so the realizers must be able to see i
 able to see them. That is the write-once architecture, and it is also why `Primitives` carries 253
 public types, as many as the transpiler: it is `dart:ui`, `foundation` and the vocabulary in one
 assembly. Section 4 weighs what else it carries.
+
+The `Code` row is the one edge added since the table was measured, and the other rows predate it:
+the engine left `Primitives` with its 2,300 lines and took `Components` with it as its one consumer
+(section 4 has the decision). No realizer references it — each drives a code surface through the
+vocabulary's `ICodeSurfaceModel`, which is what makes the engine a library rather than a dependency
+of every host.
 
 **The rule the table protects: a realizer never references the library it realizes.** A component
 reaches a realizer as the tree its `Build` produced, so `Web`, `Email` and `Native.Components` have
@@ -357,6 +364,13 @@ widget owns the protocol and `RenderEditable` only paints. Ours could take the s
 depends on an interface stating what a realizer READS (lines, caret, selection, tokens), the
 controllers and their six languages move up — or the weight can be accepted with a reason written
 down. What cannot stand is the current answer, which is neither. Edgar's call.
+
+**Decided for the code editor (2026-09-23): the road Flutter takes.** The engine moved to an
+assembly of its own, `eQuantic.UI.Code`, between `Primitives` and `Components`; `CodeSurface`
+depends only on `ICodeSurfaceModel` — what a realizer may tell the engine (a key, text, a pointer)
+and ask it (the caret and selection rectangles) — and neither realizer references the engine.
+`CodeTokenKind` stayed, because it is a key of the theme's code palette (`IAppTheme.Code`), not a
+piece of the editor. `Sheet/` is the same question, still open (docs/CODE-EDITOR-PLAN.md).
 
 **Three more that belong a layer up or out**, each small:
 

@@ -161,6 +161,11 @@ The raw-HTML/CSS escape hatch (`HtmlElement`, `ClassBuilder`) stays for web-only
 
 ## Track I — Editor intelligence (`CodeEditor`)
 
+> **The plan now lives in [`docs/CODE-EDITOR-PLAN.md`](docs/CODE-EDITOR-PLAN.md)** (2026-09-23): the
+> editor an IDE is built on (`../equantic-code`), measured against VS Code and Rider, with the
+> defects found by driving the current one and the slices that fix and extend it. What follows is
+> the track's original framing, kept because the latency argument still holds.
+
 The framework ships a real code editor — document model, selection, history, highlighting, bracket
 matching, find, and squiggle decorations — and it is currently a good editor that cannot help you
 write. The missing half is intelligence, and the piece that makes it possible is already proven:
