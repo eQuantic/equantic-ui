@@ -53,9 +53,26 @@ public class BugHuntFixesTests
     {
         // No model binds `Total` here, so no table answers — the text fallback does, and MathF's
         // answers are singles: its members return float, except Sign and ILogB.
-        TestHelper.ConvertExpression("MathF.Sqrt(Total)").Should().Be("Math.fround(Math.sqrt(this.total))");
-        TestHelper.ConvertExpression("MathF.Round(Total, 2)").Should().Be("$eq.math.roundSingle(this.total, 2)");
-        TestHelper.ConvertExpression("MathF.Sign(Total)").Should().Be("Math.sign(this.total)");
+        TestHelper.ConvertExpression("MathF.Sqrt(Total)").Should().Be("Math.fround(Math.sqrt(Math.fround(this.total)))");
+        TestHelper.ConvertExpression("MathF.Round(Total, 2)").Should().Be("$eq.math.roundSingle(Math.fround(this.total), 2)");
+        TestHelper.ConvertExpression("MathF.Sign(Total)").Should().Be("Math.sign(Math.fround(this.total))");
+    }
+
+    /// <summary>
+    /// ...and its ARGUMENTS are singles, which no model converted: MathF's parameters are floats,
+    /// and an int past 2^24 is not one until C# rounds it, so <c>MathF.Max(x, 16777217)</c>
+    /// compares against 16777216. An int parameter stays an int, and a literal that already is a
+    /// single stays as written.
+    /// </summary>
+    [Theory]
+    [InlineData("MathF.Max(Total, 16777217)", "Math.max(Math.fround(this.total), Math.fround(16777217))")]
+    [InlineData("MathF.Max(Total, 2.5f)", "Math.max(Math.fround(this.total), 2.5)")]
+    [InlineData("MathF.ScaleB(Total, 3)", "Math.fround((Math.fround(this.total) * Math.pow(2, 3)))")]
+    [InlineData("MathF.Round(Total, 2, MidpointRounding.AwayFromZero)", "$eq.math.roundSingle(Math.fround(this.total), 2, 'awayFromZero')")]
+    [InlineData("Math.Max(Total, 16777217)", "Math.max(this.total, 16777217)")]
+    public void WithoutAModel_MathF_TakesSingles(string call, string expected)
+    {
+        TestHelper.ConvertExpression(call).Should().Be(expected);
     }
 
     /// <summary>
@@ -65,7 +82,7 @@ public class BugHuntFixesTests
     [Theory]
     [InlineData("Math.Round(Total, 2, MidpointRounding.AwayFromZero)", "$eq.math.round(this.total, 2, 'awayFromZero')")]
     [InlineData("Math.Round(Total, MidpointRounding.AwayFromZero)", "$eq.math.roundWithMode(this.total, 'awayFromZero')")]
-    [InlineData("MathF.Round(Total, System.MidpointRounding.ToZero)", "$eq.math.roundSingleWithMode(this.total, 'toZero')")]
+    [InlineData("MathF.Round(Total, System.MidpointRounding.ToZero)", "$eq.math.roundSingleWithMode(Math.fround(this.total), 'toZero')")]
     [InlineData("Math.Round(mode: MidpointRounding.ToEven, value: Total)", "$eq.math.roundWithMode(this.total, 'toEven')")]
     [InlineData("Math.Round(Total, digits: 3)", "$eq.math.round(this.total, 3)")]
     public void WithoutAModel_ARoundKeepsTheOverloadItWasWrittenWith(string call, string expected)

@@ -75,6 +75,11 @@ public class MathStrategy : IExpressionIrStrategy
                 return JsExpr.Opaque(context.Unhandled(node, "Math"));
             if (byName.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
             var irArgs = arguments.Select(a => context.Converter.ConvertIr(a.Expression)).ToArray();
+            // With no model, nothing converted MathF's arguments: its parameters are floats, and
+            // an int past 2^24 is not one until C# rounds it (MathF.Sqrt(16777217) takes
+            // 16777216). ScaleB's exponent is the one int among them.
+            if (single && bound is null)
+                irArgs = irArgs.Select((argument, slot) => methodName == "ScaleB" && slot == 1 ? argument : Singled(argument)).ToArray();
             var placed = bound is null ? byName : PrimitiveStaticStrategy.BindNamedArguments(byName, invocation, bound);
             return JsExpr.Template(placed, irArgs, context.TypeAnnotations);
         }
@@ -109,6 +114,9 @@ public class MathStrategy : IExpressionIrStrategy
                 }
             }
             var round = single ? Eq.RoundSingle : Eq.Round;
+            // The value is a float's, singled as the table's arguments are; the digits and the
+            // mode are not floats.
+            if (single && value is { } singled) parts[singled] = Singled(parts[singled]);
             if (value is not { } at)
             {
                 context.UsedHelpers.Add(Eq.Import);
@@ -154,6 +162,16 @@ public class MathStrategy : IExpressionIrStrategy
     };
 
     /// <summary>The member a written <c>MidpointRounding.X</c> names, or null for anything else.</summary>
+    /// <summary>A float argument as the single C# converts it to — an argument that already is one
+    /// comes back from Math.fround unchanged, and a literal that is one is left as written.</summary>
+    private static JsExpr Singled(JsExpr argument) =>
+        argument is JsLiteral { IsNumeric: true } literal
+        && double.TryParse(literal.Text, System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture, out var number)
+        && (double)(float)number == number
+            ? argument
+            : SinglePrecision.Round(argument);
+
     private static string? ModeMember(ExpressionSyntax expression) =>
         expression is MemberAccessExpressionSyntax { Expression: var type, Name: var member }
             && type.ToString() is "MidpointRounding" or "System.MidpointRounding"
