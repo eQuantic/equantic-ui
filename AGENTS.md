@@ -231,8 +231,11 @@ quoted here):
    `using eQuantic.UI.Components` imports there rather than emitting a per-app copy. The page reaches
    it as the bare module `@equantic/runtime` through the shell's import map, and the Server serves its
    own embedded copy at that route
-2. **`<Component>.js` + `.js.map`** — one module per page or component, flat (a hash suffix
-   disambiguates types that share a name). `boot.ts` imports the page's module dynamically on
+2. **`<Component>.js`**, and a **`.js.map`** only where a developer is debugging — one module per
+   page or component, flat (a hash suffix disambiguates types that share a name). The map carries
+   the C# it came from, so `EQuanticSourceMaps` is `full` in Debug and `none` everywhere else
+   (`external` writes one without the C# for an error reporter), its sources are named inside the
+   project, and a publish never takes one (#352). `boot.ts` imports the page's module dynamically on
    navigation, so per-route lazy loading falls out of the module graph — there is no `pages/` folder
    and no chunk splitting
 3. **equantic.css** — the base styles, copied from the Runtime package beside runtime.js

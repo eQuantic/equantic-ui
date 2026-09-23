@@ -448,6 +448,15 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#322](https://github.com/eQuantic/equantic-ui/issues/322)). `DeveloperSurfaceContractTests` reads
   all three from the source against a committed baseline, and the release reads its diff for the
   notes beside the `*REMOVED*` lines.
+- **2026-09-23 · A published map carries no C#**: every module's map held its `.cs` whole and by its
+  absolute path, and the output folder is a web root, so a Release publish of the dashboard sample
+  shipped 13 maps, two of them with `[ServerAction]` bodies inside
+  ([#352](https://github.com/eQuantic/equantic-ui/issues/352), reported by the session packaging
+  eQuantic.Auth.WebPages). `EQuanticSourceMaps` is `full` in Debug and `none` everywhere else, a
+  map's sources are named inside the project, eqc's maps stay out of the static web assets (a Debug
+  build's maps, deleted by a Release build after being registered, failed the publish), and a
+  publish takes no map whatever the setting says. CI publishes the sample and looks for a sentence
+  only its server has.
 
 ## Retired documents
 

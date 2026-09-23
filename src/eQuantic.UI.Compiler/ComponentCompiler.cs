@@ -25,13 +25,46 @@ public class ComponentCompiler
     /// </summary>
     private void AttachSourceMap(CompilationResult result, Models.ComponentDefinition component)
     {
+        if (SourceMaps == SourceMapMode.None) return;
         var mappings = _tsEmitter.GetLastMappings();
         if (mappings.Any() && component.SyntaxTree != null)
         {
-            var sourceContent = component.SyntaxTree.GetText().ToString();
+            // The C# itself only where a developer is debugging, and a path that names the
+            // project's own layout rather than the build machine's.
+            var sourceContent = SourceMaps == SourceMapMode.Full ? component.SyntaxTree.GetText().ToString() : null;
             result.SourceMap = _sourceMapGenerator.Generate(
-                $"{component.Name}.ts", component.SourcePath, mappings, sourceContent);
+                $"{component.Name}.ts", SourceName(component.SourcePath), mappings, sourceContent, MapSourceRoot());
         }
+    }
+
+    /// <summary>What each module's source map carries. The SDK passes Full in Debug and None
+    /// everywhere else (<c>EQuanticSourceMaps</c>); a direct CLI run keeps Full.</summary>
+    public SourceMapMode SourceMaps { get; set; } = SourceMapMode.Full;
+
+    /// <summary>The directory a map's <c>sources</c> are named relative to: the project's. Unset,
+    /// a source is named by its file name alone, never by an absolute path.</summary>
+    public string? SourceRoot { get; set; }
+
+    /// <summary>Where the maps are written. A map's sources resolve relative to the map itself, so
+    /// its <c>sourceRoot</c> is the way from here back to <see cref="SourceRoot"/>, and a debugger
+    /// shows <c>Screens/FormScreen.cs</c> rather than the intermediate folder the map sat in.</summary>
+    public string? SourceMapDirectory { get; set; }
+
+    private string MapSourceRoot() =>
+        SourceRoot is { Length: > 0 } root && SourceMapDirectory is { Length: > 0 } maps
+            ? Path.GetRelativePath(maps, root).Replace('\\', '/').TrimEnd('/') + "/"
+            : "";
+
+    private string SourceName(string sourcePath)
+    {
+        if (string.IsNullOrEmpty(sourcePath) || !Path.IsPathRooted(sourcePath)) return sourcePath.Replace('\\', '/');
+        // A file outside the project (a package's sources in the NuGet cache) would climb out with
+        // `../`, naming the machine's layout after all: it is named by its file name instead.
+        var relative = SourceRoot is { Length: > 0 } root ? Path.GetRelativePath(root, sourcePath) : null;
+        var name = relative is null || relative.StartsWith("..", StringComparison.Ordinal) || Path.IsPathRooted(relative)
+            ? Path.GetFileName(sourcePath)
+            : relative;
+        return name.Replace('\\', '/');
     }
 
     /// <summary>Track L D3: one used resource class, aggregated across every compiled file —

@@ -10,13 +10,16 @@ namespace eQuantic.UI.Compiler.Services;
 /// </summary>
 public class SourceMapGenerator
 {
-    public string Generate(string generatedFileName, string sourceFileName, List<TypeScriptCodeBuilder.SourceMapping> mappings, string? sourceContent = null)
+    /// <summary>A v3 map from one generated file to one source. <c>sourceRoot</c> is prepended to the
+    /// source's name when it is resolved, relative to where the map itself is written: the way back
+    /// from the map to the project the source is named in.</summary>
+    public string Generate(string generatedFileName, string sourceFileName, List<TypeScriptCodeBuilder.SourceMapping> mappings, string? sourceContent = null, string sourceRoot = "")
     {
         var sb = new StringBuilder();
         sb.Append("{");
         sb.Append("\"version\": 3,");
         sb.Append($"\"file\": \"{generatedFileName}\",");
-        sb.Append($"\"sourceRoot\": \"\",");
+        sb.Append($"\"sourceRoot\": \"{EscapeJson(sourceRoot.Replace("\\", "/"))}\",");
         sb.Append($"\"sources\": [\"{sourceFileName.Replace("\\", "/")}\"],");
         
         if (sourceContent != null)

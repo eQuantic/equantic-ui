@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 
 if (args.Length < 2)
 {
-    Console.Error.WriteLine("Usage: eqc <source-dir> <output-dir> [--bun <path>] [--watch]");
+    Console.Error.WriteLine("Usage: eqc <source-dir> <output-dir> [--bun <path>] [--source-maps full|external|none] [--watch]");
     return 1;
 }
 
@@ -35,12 +35,28 @@ var refSourcesFile = args.ToList().Contains("--ref-sources") ? args[args.ToList(
 // generated tree under obj/Debug AND obj/Release, and sweeping obj would take every generated type
 // twice — which resolves to neither, while the C# build stays perfectly happy.
 var generatedDir = args.ToList().Contains("--generated") ? args[args.ToList().IndexOf("--generated") + 1].Trim() : null;
+// --source-maps full|external|none (#352): what each module's map carries. `full` links a map with
+// the C# inside it, `external` writes one without the C# and without the link, `none` writes none.
+// The SDK passes full in Debug and none everywhere else; a direct run keeps full.
+var sourceMapArg = args.ToList().Contains("--source-maps") ? args[args.ToList().IndexOf("--source-maps") + 1].Trim() : "full";
+var sourceMaps = sourceMapArg.ToLowerInvariant() switch
+{
+    "full" => eQuantic.UI.Compiler.SourceMapMode.Full,
+    "external" => eQuantic.UI.Compiler.SourceMapMode.External,
+    "none" => eQuantic.UI.Compiler.SourceMapMode.None,
+    _ => throw new ArgumentException($"--source-maps takes full, external or none, not '{sourceMapArg}'."),
+};
 
 // Determine intermediate directory based on primary source dir
 var primarySourceDir = sourceDirs[0];
 var intermediateDir = Path.Combine(primarySourceDir, "obj", "eQuantic", "ts");
 
-var compiler = new ComponentCompiler();
+var compiler = new ComponentCompiler
+{
+    SourceMaps = sourceMaps,
+    SourceRoot = Path.GetFullPath(primarySourceDir),
+    SourceMapDirectory = Path.GetFullPath(intermediateDir),
+};
 
 // Create full project compilation for better type resolution
 // This enables the compiler to resolve types defined in external files
@@ -458,7 +474,19 @@ bool CompileAndBundle()
             // common ancestor of the absolute entry paths (the repo/cwd) and nests entries under that
             // relative path (e.g. wwwroot/_equantic/samples/.../ts/Dashboard.js), which the boot — loading
             // the flat "/_equantic/<Page>.js" — then 404s on.
-            var bunArgs = $"build {string.Join(" ", entryPoints.Select(p => $"\"{p}\""))} --outdir \"{outputDir}\" --root \"{intermediateDir}\" --splitting --sourcemap --minify-syntax --minify-whitespace --target browser --external @equantic/runtime";
+            // A map this build does not write must not survive from one that did: the output folder
+            // is shared by every configuration, so a Debug build's maps would ride out with a Release
+            // publish. Every map here is eqc's own; the ones this build writes are written again.
+            if (Directory.Exists(outputDir))
+                foreach (var stale in Directory.GetFiles(outputDir, "*.js.map", SearchOption.AllDirectories))
+                    File.Delete(stale);
+            var mapArg = sourceMaps switch
+            {
+                eQuantic.UI.Compiler.SourceMapMode.Full => " --sourcemap",
+                eQuantic.UI.Compiler.SourceMapMode.External => " --sourcemap=external",
+                _ => "",
+            };
+            var bunArgs = $"build {string.Join(" ", entryPoints.Select(p => $"\"{p}\""))} --outdir \"{outputDir}\" --root \"{intermediateDir}\" --splitting{mapArg} --minify-syntax --minify-whitespace --target browser --external @equantic/runtime";
             
             var process = new Process
             {
@@ -489,7 +517,7 @@ bool CompileAndBundle()
             var scriptsDir = Path.Combine(AppContext.BaseDirectory, "Scripts");
             var mergeMapsScript = Path.Combine(scriptsDir, "merge-maps.js");
 
-            if (File.Exists(mergeMapsScript))
+            if (sourceMaps != eQuantic.UI.Compiler.SourceMapMode.None && File.Exists(mergeMapsScript))
             {
                 // Ensure dependency is installed
                 var nodeModulesDir = Path.Combine(scriptsDir, "node_modules", "@ampproject", "remapping");
