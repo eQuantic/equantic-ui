@@ -155,7 +155,10 @@ public class HandoffSdkCoverageTests
             "an entry names a type Tokens.cs no longer declares");
     }
 
-    /// <summary>Fields, properties and ordinary methods; operators and accessors are not tokens.</summary>
+    /// <summary>Fields, properties and ordinary methods; operators and accessors are not tokens. A
+    /// member is its NAME, because names are what the handoff publishes, so an overload would read
+    /// as the member already accounted for: <see cref="NoTokenMethodIsOverloaded"/> is what keeps
+    /// that from happening.</summary>
     private static IEnumerable<string> PublicMembers(Type type) =>
         type.GetMembers(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
             .Where(member => member switch
@@ -165,8 +168,33 @@ public class HandoffSdkCoverageTests
                 MethodInfo method => !method.IsSpecialName,
                 _ => false,
             })
-            .Select(member => $"{type.Name}.{member.Name}")
-            .Distinct(StringComparer.Ordinal);
+            .Select(member => $"{type.Name}.{member.Name}");
+
+    /// <summary>
+    /// The coverage contract keys a member by its name, and a second <c>Sizing.Height</c> would pass
+    /// as the one already published while carrying values nobody decided on. Keying by signature
+    /// would make the handoff publish signatures it does not otherwise need, so a token class has no
+    /// overloads instead: the rule the factory surface already follows, for the reason it gives (the
+    /// twin is JavaScript). A rung that needs another input takes a parameter with a default, which
+    /// is how <c>Sizing.Height(size, density)</c> already reads.
+    /// </summary>
+    [Fact]
+    public void NoTokenMethodIsOverloaded()
+    {
+        var overloaded = TokenTypes
+            .SelectMany(type => type.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
+                .Where(method => !method.IsSpecialName)
+                .GroupBy(method => $"{type.Name}.{method.Name}", StringComparer.Ordinal))
+            .Where(group => group.Count() > 1)
+            .Select(group => $"{group.Key} ×{group.Count()}")
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
+        overloaded.Should().BeEmpty(
+            "a token member is accounted for by its name, so an overload would ship values the handoff "
+            + "never published. Give the new input a parameter with a default, or the new rung a name of "
+            + "its own:" + List(overloaded));
+    }
 
     [Fact]
     public void EveryPublicTokenIsPublishedOrExempt()
