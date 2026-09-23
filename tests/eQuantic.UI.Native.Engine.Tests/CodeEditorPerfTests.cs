@@ -31,7 +31,7 @@ public class CodeEditorPerfTests
     public void TheBracketWalkThroughALongFile_StaysInsideTheAlarm()
     {
         var body = string.Join("\n", Enumerable.Range(0, 3000)
-            .Select(i => $"    var x{i} = compute(a, b); // é 😀 中"));
+            .Select(i => $"    var x{i} = compute(a, b); // e\u0301 \U0001F600 \u4E2D"));
         var editor = new CodeEditorController("{\n" + body + "\n}", CodeLanguages.CSharp)
         {
             Selection = new CodeRange(CodePosition.Start),
@@ -55,7 +55,7 @@ public class CodeEditorPerfTests
     [Fact]
     public void ArrowsAlongALongLine_StayInsideTheAlarm()
     {
-        var line = string.Concat(Enumerable.Repeat("abc é 😀 中 ", 250));
+        var line = string.Concat(Enumerable.Repeat("abc e\u0301 \U0001F600 \u4E2D ", 250));
         var editor = new CodeEditorController(line, CodeLanguages.CSharp);
         editor.Selection = new CodeRange(editor.Document.End);
         editor.Move(CodeMotion.Character, CodeDirection.Backward);
