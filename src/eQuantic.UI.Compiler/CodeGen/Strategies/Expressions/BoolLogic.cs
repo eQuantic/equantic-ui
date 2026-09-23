@@ -1,5 +1,7 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
@@ -34,6 +36,52 @@ internal static class BoolLogic
         context.UsedHelpers.Add(Eq.Import);
         return JsExpr.Call(JsExpr.Identifier(op == "|" ? Eq.LogicOr : Eq.LogicAnd), left, right);
     }
+
+    /// <summary>
+    /// A COMPOUND assignment on a bool — <c>|=</c>, <c>&amp;=</c>, <c>^=</c> — written back as the
+    /// logical operator, or null when it is not one. The TARGET is evaluated once, as C# evaluates it:
+    /// <c>GetState().Flag |= Next()</c> calls <c>GetState()</c> a single time, and a dictionary entry
+    /// is read through the guard that throws for a missing key (<c>$eq.dictGet</c>) with its receiver
+    /// and its key each evaluated once. The template's writer does the binding; a plain name or
+    /// <c>this</c> is simply inlined.
+    /// </summary>
+    public static JsExpr? LowerCompound(AssignmentExpressionSyntax assignment, ConversionContext context)
+    {
+        if (!OnBools(assignment, context)) return null;
+        var op = assignment.OperatorToken.Text[..^1];
+        context.UsedHelpers.Add(Eq.Import);
+        var right = context.Converter.ConvertIr(assignment.Right);
+
+        if (assignment.Left is ElementAccessExpressionSyntax { ArgumentList.Arguments.Count: 1 } entry
+            && context.SemanticHelper.GetType(entry.Expression).IsDictionaryLike(out _))
+        {
+            return JsExpr.Template($"({{0}}[{{1}}] = {Combine(op, $"{Eq.DictGet}({{0}}, {{1}})", "{2}")})",
+                context.Converter.ConvertIr(entry.Expression),
+                context.Converter.ConvertIr(entry.ArgumentList.Arguments[0].Expression),
+                right);
+        }
+
+        var left = context.Converter.ConvertIr(assignment.Left);
+        return left switch
+        {
+            JsMember member => JsExpr.Template(
+                $"({{0}}.{member.Name} = {Combine(op, $"{{0}}.{member.Name}", "{1}")})", member.Target, right),
+            JsIndex index => JsExpr.Template(
+                $"({{0}}[{{1}}] = {Combine(op, "{0}[{1}]", "{2}")})", index.Target, index.IndexExpression, right),
+            // A plain name has no receiver to evaluate twice.
+            _ => JsExpr.Binary(left, "=", op == "^"
+                ? JsExpr.Binary(left, "!==", right)
+                : JsExpr.Call(JsExpr.Identifier(op == "|" ? Eq.LogicOr : Eq.LogicAnd), left, right)),
+        };
+    }
+
+    /// <summary>The logical combination of two template operands.</summary>
+    private static string Combine(string op, string left, string right) => op switch
+    {
+        "|" => $"{Eq.LogicOr}({left}, {right})",
+        "&" => $"{Eq.LogicAnd}({left}, {right})",
+        _ => $"({left} !== {right})",
+    };
 
     private static bool OnBools(SyntaxNode node, ConversionContext context)
     {

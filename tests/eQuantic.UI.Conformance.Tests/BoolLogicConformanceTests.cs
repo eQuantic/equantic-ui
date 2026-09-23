@@ -35,3 +35,27 @@ public class BoolLogicConformanceTests
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
 }
+
+/// <summary>
+/// The compound forms on a TARGET with a receiver: a dictionary entry, an array element, a property
+/// reached through a call. C# evaluates the target once — the receiver, then the read, then the
+/// right side — and the translation has to as well, or `GetState().Flag |= Next()` calls GetState()
+/// twice. Found in review of the fix above: the dictionary path returned before the bool rule ever
+/// ran, and stored the number anyway.
+/// </summary>
+public class BoolLogicCompoundTargetConformanceTests
+{
+    private const string Holder = "public record class Holder { public bool Flag { get; set; } }";
+
+    [SkippableTheory]
+    [InlineData("var flags = new Dictionary<string, bool> { [\"a\"] = false }; flags[\"a\"] |= true; return flags[\"a\"] == true ? \"bool\" : \"number\";")] // "bool"
+    [InlineData("var flags = new Dictionary<string, bool> { [\"a\"] = true }; flags[\"a\"] &= false; flags[\"a\"] ^= true; return flags[\"a\"] ? 1 : 0;")] // 1
+    [InlineData("int calls = 0; var box = new[] { false }; bool[] Get() { calls++; return box; } Get()[0] |= true; return (box[0] == true ? \"t\" : \"f\") + calls;")] // "t1"
+    [InlineData("int calls = 0; var h = new Holder(); Holder Get() { calls++; return h; } Get().Flag |= true; return (h.Flag == true ? \"t\" : \"f\") + calls;")] // "t1"
+    [InlineData("int calls = 0; var h = new Holder { Flag = true }; Holder Get() { calls++; return h; } Get().Flag ^= true; return (h.Flag ? \"t\" : \"f\") + calls;")] // "f1"
+    public void ACompoundOnATargetEvaluatesItOnce(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine (embedded Bun or Node) available on this machine.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, Holder);
+    }
+}
