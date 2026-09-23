@@ -52,7 +52,7 @@ describe('transpiled SharedCounter (real eqc output, direct-SetState shape)', ()
     expect(buttons.length).toBe(2);
     const box = buttons[0].children[0];
     expect(effectiveStyle(box)).toContain('height: 40px');
-    expect(effectiveStyle(box)).toContain('background-color: light-dark(#0050a0, #5ca2e8)');
+    expect(effectiveStyle(box)).toContain('background-color: light-dark(#0050a0, #76baff)');
   });
 
   it('runs the transpiled generator: the yielded cells render', () => {

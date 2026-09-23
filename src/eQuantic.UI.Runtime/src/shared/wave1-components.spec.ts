@@ -11,7 +11,7 @@ describe('wave-1 transpiled components (real eqc output)', () => {
   it('Badge clamps past max and uses the Destructive pair', () => {
     const node = new Badge(120).render();
     expect(effectiveStyle(node)).toContain('height: 16px');
-    expect(effectiveStyle(node)).toContain('background-color: light-dark(#b42318, #e5645c)');
+    expect(effectiveStyle(node)).toContain('background-color: light-dark(#b42318, #ff958c)');
     expect(node.children[0].children[0].children[0].textContent).toBe('99+');
   });
 
