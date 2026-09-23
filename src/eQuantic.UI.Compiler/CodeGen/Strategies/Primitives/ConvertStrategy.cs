@@ -33,7 +33,14 @@ public class ConvertStrategy : IExpressionIrStrategy
         if (args.Count == 0) return JsExpr.Identifier("undefined");
 
         var argExpr = args[0].Expression;
-        if (name == "ToDecimal") return ToDecimal(argExpr, context);
+        if (name == "ToDecimal")
+        {
+            // The provider is left out, which is only faithful when C# evaluating it cannot be
+            // observed (see DroppedArgument).
+            if (args.Skip(1).Any(extra => !DroppedArgument.IsUnobservable(extra.Expression, context)))
+                return JsExpr.Opaque(context.Unhandled(invocation, "Convert.ToDecimal, whose format provider C# computes"));
+            return ToDecimal(argExpr, context);
+        }
         return JsExpr.Opaque(Converted(name, argExpr, context));
     }
 

@@ -131,6 +131,10 @@ public class NumberMethodStrategy : IExpressionIrStrategy
                 else if (parameter.Ordinal == 0) text = i;
                 else if (parameter.Type is { Name: "NumberStyles", ContainingNamespace: var home }
                          && home.ToDisplayString() == "System.Globalization") style = i;
+                // The provider: left out, which is only faithful when C# evaluating it cannot be
+                // observed (see DroppedArgument).
+                else if (!DroppedArgument.IsUnobservable(arguments[i].Expression, context))
+                    return JsExpr.Opaque(context.Unhandled(invocation, "decimal Parse/TryParse, whose format provider C# computes"));
             }
         }
         else if (arguments.Count == (name == "TryParse" ? 2 : 1))

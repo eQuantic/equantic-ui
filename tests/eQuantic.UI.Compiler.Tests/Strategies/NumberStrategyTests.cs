@@ -43,6 +43,29 @@ public class NumberStrategyTests
         result.Should().Be("((value = $eq.num.decTryParse(this.str)) !== undefined || ((value = $eq.num.dec(0)), false))");
     }
 
+    /// <summary>
+    /// The format provider is left out, which is faithful only when C# evaluating it cannot be
+    /// observed: a read of the BCL's own culture goes without a word, and a provider a call computes
+    /// is a build error, because C# would run the call and the twin has no CultureInfo to run it on.
+    /// </summary>
+    [Theory]
+    [InlineData("decimal.Parse(str, System.Globalization.CultureInfo.InvariantCulture)", "$eq.num.decParse(this.str)")]
+    [InlineData("Convert.ToDecimal(str, System.Globalization.CultureInfo.InvariantCulture)", "$eq.num.decConvert(this.str)")]
+    public void ADecimalConversion_LeavesOutAProviderWhoseReadCannotBeObserved(string call, string expected)
+    {
+        TestHelper.ConvertExpression(call).Should().Be(expected);
+        TestHelper.DiagnosticsFor(call).Should().NotContain(d => d.Code == "EQ1004");
+    }
+
+    [Theory]
+    [InlineData("decimal.Parse(str, System.Globalization.CultureInfo.GetCultureInfo(\"pt-BR\"))")]
+    [InlineData("decimal.TryParse(str, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.GetCultureInfo(\"pt-BR\"), out var v)")]
+    [InlineData("Convert.ToDecimal(str, System.Globalization.CultureInfo.GetCultureInfo(\"pt-BR\"))")]
+    public void ADecimalConversionWhoseProviderACallComputes_IsABuildError(string call)
+    {
+        TestHelper.DiagnosticsFor(call).Should().Contain(d => d.Code == "EQ1004");
+    }
+
     [Fact]
     public void IntTryParse_IntoADiscard_AssignsNothing()
     {
