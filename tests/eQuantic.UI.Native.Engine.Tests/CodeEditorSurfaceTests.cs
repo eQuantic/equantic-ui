@@ -352,7 +352,15 @@ public class CodeEditorSurfaceTests
         surface.Engine().Document.Text.Should().Be("akb");
         surface.Engine().Composition.Should().NotBeNull();
 
-        host.TextInput("か");
+        // The marked text GROWS in place: marking is not committing, so the second one replaces
+        // the first rather than landing beside it.
+        host.SetMarkedText("ka");
+        host.RenderFrame(new DisplayListBuilder());
+        surface.Engine().Document.Text.Should().Be("akab");
+        surface.Engine().Composition.Should().NotBeNull();
+
+        // The platform's commit, through the door its input client calls.
+        host.CommitText("か");
         host.RenderFrame(new DisplayListBuilder());
         surface.Engine().Document.Text.Should().Be("aかb");
         surface.Engine().Composition.Should().BeNull();
