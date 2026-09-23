@@ -848,13 +848,7 @@ public class TypeScriptEmitter
             foreach (var appType in component.AppTypes)
             {
                 if (appType == component.Name) continue;
-                if (_dependencyResolver.GetAllStaticHelpers().Contains(appType)
-                    || _dependencyResolver.GetAllRecords().Contains(appType)
-                    || _dependencyResolver.GetAllPlainClasses().Contains(appType)
-                    || _dependencyResolver.GetAllComponents().Contains(appType))
-                {
-                    componentTypes.Add(appType);
-                }
+                if (_dependencyResolver.IsModule(appType)) componentTypes.Add(appType);
             }
         }
 
@@ -876,15 +870,9 @@ public class TypeScriptEmitter
 
         var userComponents = new List<string>();
 
-        // The user universe, discovered by scanning — components, records, helpers, plain classes.
-        // Consulted twice: by the standalone fallback below, and by the authoritative filter at the
-        // end. No fixed lists on either path.
-        var knownComponents = _dependencyResolver?.GetAllComponents().ToHashSet() ?? new HashSet<string>();
-        var knownRecords = _dependencyResolver?.GetAllRecords() ?? (IReadOnlySet<string>)new HashSet<string>();
-        var knownStaticHelpers = _dependencyResolver?.GetAllStaticHelpers() ?? (IReadOnlySet<string>)new HashSet<string>();
-        var knownPlain = _dependencyResolver?.GetAllPlainClasses() ?? (IReadOnlySet<string>)new HashSet<string>();
-        bool KnownUserType(string name) => knownComponents.Contains(name) || knownRecords.Contains(name)
-                                           || knownStaticHelpers.Contains(name) || knownPlain.Contains(name);
+        // The user universe, discovered by scanning — components, records, helpers, plain classes
+        // (Resolvable). Consulted twice: by the standalone fallback below, and by the authoritative
+        // filter at the end. No fixed lists on either path.
 
         foreach (var type in componentTypes)
         {
@@ -954,7 +942,7 @@ public class TypeScriptEmitter
             // modules that exist nowhere.
             else if (!component.ResolvedSemantically
                      && !component.DeclaredInSource.Contains(cleanType)
-                     && !KnownUserType(cleanType))
+                     && !Resolvable(cleanType))
             {
                 coreImports.Add(cleanType);
             }
@@ -983,7 +971,7 @@ public class TypeScriptEmitter
         foreach (var userComp in userComponents.OrderBy(x => x))
         {
             if (userComp == component.Name) continue;
-            var isEmittedType = KnownUserType(userComp);
+            var isEmittedType = Resolvable(userComp);
             // When a resolver is present it is authoritative: import ONLY types we actually emit
             // (records/components it discovered). This drops references that aren't modules — primitives,
             // static-field names read as ClassName.X, helper-class names, etc. — instead of inventing a
@@ -2048,11 +2036,7 @@ public class TypeScriptEmitter
         !System.Text.RegularExpressions.Regex.IsMatch(initialiser.Trim(),
             @"^(-?\d+(\.\d+)?|'[^']*'|""[^""]*""|`[^`]*`|true|false|null|undefined|\[\]|\{\})$");
 
-    private bool Resolvable(string name) =>
-        _dependencyResolver?.GetAllComponents().Contains(name) == true
-        || _dependencyResolver?.GetAllRecords().Contains(name) == true
-        || _dependencyResolver?.GetAllStaticHelpers().Contains(name) == true
-        || _dependencyResolver?.GetAllPlainClasses().Contains(name) == true;
+    private bool Resolvable(string name) => _dependencyResolver?.IsModule(name) == true;
 
     public string EmitPlainClassModule(ClassDeclarationSyntax cls, SemanticModel? semanticModel) =>
         EmitClassModule(cls, semanticModel, asStatic: false);
@@ -2132,10 +2116,6 @@ public class TypeScriptEmitter
             emitted, $@"(?<![\w$]){System.Text.RegularExpressions.Regex.Escape(referenced)}(?![\w$])"));
         core.UnionWith(runtimeProvided);
         if (core.Count > 0) imports.Add(new JsImport(core.ToList(), "@equantic/runtime"));
-        var knownComp = _dependencyResolver?.GetAllComponents().ToHashSet() ?? new HashSet<string>();
-        var knownRec = _dependencyResolver?.GetAllRecords() ?? (IReadOnlySet<string>)new HashSet<string>();
-        var knownHelp = _dependencyResolver?.GetAllStaticHelpers() ?? (IReadOnlySet<string>)new HashSet<string>();
-        var knownPlainClasses = _dependencyResolver?.GetAllPlainClasses() ?? (IReadOnlySet<string>)new HashSet<string>();
         // The base class is imported whether or not the syntax scanner noticed it: `extends` is the
         // one reference that must resolve before this module's first statement runs.
         if (baseName is not null) imports.Add(new JsImport([baseName], $"./{baseName}"));
@@ -2149,9 +2129,7 @@ public class TypeScriptEmitter
             if (string.IsNullOrEmpty(ct) || ct == name || ct == baseName
                 || ct == "HtmlNode" || NonImportableTypes.Contains(ct)) continue;
             if (runtimeProvided.Contains(ct) || referencedEnums.Contains(ct)) continue;
-            if (knownComp.Contains(ct) || knownRec.Contains(ct) || knownHelp.Contains(ct)
-                || knownPlainClasses.Contains(ct))
-                imports.Add(new JsImport([ct], $"./{ct}"));
+            if (Resolvable(ct)) imports.Add(new JsImport([ct], $"./{ct}"));
         }
         return JsModuleWriter.Write(new JsModule(imports, builder.ToString()));
     }

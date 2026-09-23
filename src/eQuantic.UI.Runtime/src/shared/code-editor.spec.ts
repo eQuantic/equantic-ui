@@ -16,6 +16,8 @@ import { CodeSurface, Text, type VisualNode } from './vocabulary';
 import { Point, Size } from './value-types';
 import { CodeEditorController } from './components/CodeEditorController';
 import { CodeGrid } from './components/CodeGrid';
+import { CodePosition } from './components/CodePosition';
+import { CodeRange } from './components/CodeRange';
 import { CodeLanguages } from './components/CodeLanguages';
 import { CodeDocument } from './components/CodeDocument';
 import type { HtmlNode } from '../core/types';
@@ -509,5 +511,24 @@ describe('the code surface goes through the atomizer, like every other node', ()
 
     expect(lowered.attributes['style']).toBeUndefined();
     expect(lowered.attributes['class'] ?? '').toContain('eq-code-surface');
+  });
+});
+
+describe('a value the engine builds with no arguments is its zeros, as C# builds it', () => {
+  // C# `new CodeGrid()` is a zeroed Point and a zeroed Size. The twin assigned null to both, so
+  // the first pointOf on a grid built that way threw where the C# answered the origin.
+  it('a default grid answers the origin for every position', () => {
+    const grid = new CodeGrid();
+
+    expect(grid.pointOf(3, 4)).toEqual(new Point(0, 0));
+    expect(grid.origin).toEqual(Point.zero);
+    expect(grid.cell).toEqual(Size.zero);
+  });
+
+  it('a default range is empty, at the first position of the document', () => {
+    const range = new CodeRange();
+
+    expect(range.isEmpty).toBe(true);
+    expect(range.start).toEqual(new CodePosition(0, 0));
   });
 });

@@ -486,3 +486,6 @@ eQuantic.UI.Primitives.PointerPhase.Move = 1 -> eQuantic.UI.Primitives.PointerPh
 eQuantic.UI.Primitives.PointerPhase.Up = 2 -> eQuantic.UI.Primitives.PointerPhase
 eQuantic.UI.Primitives.PointerPhase.Hover = 3 -> eQuantic.UI.Primitives.PointerPhase
 eQuantic.UI.Primitives.PointerPhase.Exit = 4 -> eQuantic.UI.Primitives.PointerPhase
+eQuantic.UI.Primitives.ZeroConstructsAttribute
+eQuantic.UI.Primitives.ZeroConstructsAttribute.ZeroConstructsAttribute(string! reason) -> void
+eQuantic.UI.Primitives.ZeroConstructsAttribute.Reason.get -> string!

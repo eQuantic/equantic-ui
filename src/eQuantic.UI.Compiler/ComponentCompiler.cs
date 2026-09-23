@@ -15,6 +15,9 @@ public class ComponentCompiler
     private readonly ComponentParser _parser;
     private readonly TypeScriptEmitter _tsEmitter;
     private readonly SemanticModelProvider _semanticModelProvider;
+    /// <summary>The per-app scan, when the build has one — every emission path asks it which app
+    /// types became modules, the record path included.</summary>
+    private ComponentDependencyResolver? _dependencyResolver;
     private readonly SourceMapGenerator _sourceMapGenerator;
 
     /// <summary>
@@ -236,6 +239,7 @@ public class ComponentCompiler
     /// </summary>
     public void SetDependencyResolver(ComponentDependencyResolver resolver)
     {
+        _dependencyResolver = resolver;
         _tsEmitter.SetDependencyResolver(resolver);
     }
 
@@ -429,7 +433,7 @@ public class ComponentCompiler
                     recordConverter.SetSemanticModel(_semanticModelProvider.GetSemanticModel(component.SyntaxTree));
                 // TypeAnnotations flows here too: a record emitted as TypeScript is a parse error
                 // for a consumer that runs the module directly, and nothing upstream would notice.
-                result.TypeScript = new RecordTypeEmitter(recordConverter)
+                result.TypeScript = new RecordTypeEmitter(recordConverter, _dependencyResolver)
                     .EmitModule(component.ValueTypeSyntax, TypeAnnotations);
                 CollectResourceUses(recordConverter.ResourceUses);
                 result.Success = true;

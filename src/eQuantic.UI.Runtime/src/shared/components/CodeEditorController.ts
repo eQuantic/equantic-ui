@@ -2,7 +2,7 @@ import { $eq, CodeDirectionValue, CodeDocument, CodeEdit, CodeGrid, CodeHighligh
 
 export class CodeEditorController {
     constructor(text: string = '', language: any = null, props?: any) {
-        this._desiredColumn = -1; this._dragging = false; this._document = CodeDocument.fromText(text);
+        this._selection = new CodeRange(); this._desiredColumn = -1; this._dragging = false; this._document = CodeDocument.fromText(text);
         this._selection = new CodeRange(CodePosition.start);
         this.highlighter = new CodeHighlighter(language ?? CodeLanguages.plainText); if (props && typeof props === 'object') Object.assign(this, props);
     }

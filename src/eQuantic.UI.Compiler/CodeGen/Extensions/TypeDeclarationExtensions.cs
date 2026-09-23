@@ -40,7 +40,7 @@ public static class TypeDeclarationExtensions
                 // (and `Tag.Length` throws the moment the page hydrates).
                 var fallback = p.Default is { } declared
                     ? DefaultLiteral(declared.Value, model)
-                    : DefaultFor(p.Type);
+                    : DefaultOf(p.Type, model);
                 members.Add(new ValueMember(
                     p.Identifier.Text, p.Identifier.Text.ToCamelCase(), fallback, TsTypeFor(p.Type, model)));
             }
@@ -61,7 +61,7 @@ public static class TypeDeclarationExtensions
                     members.Add(new ValueMember(
                         prop.Identifier.Text,
                         prop.Identifier.Text.ToCamelCase(),
-                        prop.Initializer is { } init ? DefaultLiteral(init.Value, model) : DefaultFor(prop.Type),
+                        prop.Initializer is { } init ? DefaultLiteral(init.Value, model) : DefaultOf(prop.Type, model),
                         TsTypeFor(prop.Type, model)));
                     break;
 
@@ -77,7 +77,7 @@ public static class TypeDeclarationExtensions
                          && !field.Modifiers.Any(SyntaxKind.StaticKeyword)
                          && !field.Modifiers.Any(SyntaxKind.ConstKeyword):
                     foreach (var v in field.Declaration.Variables)
-                        members.Add(new ValueMember(v.Identifier.Text, v.Identifier.Text.ToCamelCase(), DefaultFor(field.Declaration.Type), TsTypeFor(field.Declaration.Type, model)));
+                        members.Add(new ValueMember(v.Identifier.Text, v.Identifier.Text.ToCamelCase(), DefaultOf(field.Declaration.Type, model), TsTypeFor(field.Declaration.Type, model)));
                     break;
             }
         }
@@ -202,6 +202,18 @@ public static class TypeDeclarationExtensions
         // constructor is what assigns, and the C# signature is the truth about what it assigns.
         return ts != "any" && raw.EndsWith("?") ? $"{ts} | null" : ts;
     }
+
+    /// <summary>
+    /// <c>default(T)</c> for a member with no default of its own, asked of the SYMBOL when there is a
+    /// model: the spelled name knows the common primitives and nothing else, so a struct-typed member
+    /// (a record's <c>Point Origin</c>), an enum or a <c>char</c> came out <c>null</c> — and a
+    /// <c>new CodeGrid()</c> on the web then held a null Point where C# holds (0, 0). Without a model
+    /// the name is all there is.
+    /// </summary>
+    internal static string DefaultOf(TypeSyntax? type, SemanticModel? model) =>
+        type is not null && model?.GetTypeInfo(type).Type is { TypeKind: not TypeKind.Error } symbol
+            ? Strategies.DefaultValue.Of(symbol)
+            : DefaultFor(type);
 
     /// <summary>JS literal for <c>default(T)</c> from the declared type syntax (name-based — the emitter
     /// runs pre-symbol). Nullable and reference types default to <c>null</c>.</summary>

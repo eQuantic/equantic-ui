@@ -216,6 +216,17 @@ public class ComponentDependencyResolver
     public IReadOnlySet<string> GetAllPlainClasses() => _plainClasses;
 
     /// <summary>
+    /// Whether the scan knows <paramref name="name"/> became a module of its own: a component, a
+    /// record or struct, a static helper or a plain class. Every emitter imports an APP type only
+    /// when this answers yes, which is what keeps an import from naming a module nobody wrote.
+    /// </summary>
+    public bool IsModule(string name) =>
+        _dependencyCache.ContainsKey(name)
+        || _recordTypes.Contains(name)
+        || _staticHelpers.Contains(name)
+        || _plainClasses.Contains(name);
+
+    /// <summary>
     /// Whether the class is (or extends) something the COMPONENT path emits. Syntactic on purpose:
     /// the resolver runs before semantics, and a component's own module is registered elsewhere.
     /// </summary>
