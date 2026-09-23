@@ -11,6 +11,13 @@ export interface ShortcutBinding {
   /** The wire chord (`command+shift+k`) — the C# WebRealizer.ChordId twin. */
   chord: string;
   handler: () => void;
+  /**
+   * Whether the subtree that declared the binding is on screen NOW; absent means always. The web
+   * mounts every arm of an AdaptiveNode and the window's width shows one, so a binding declared in
+   * another arm is mounted and invisible — where Photon never lays that arm out at all. Asked at
+   * the keypress, because a resize flips it without a render.
+   */
+  live?: () => boolean;
 }
 
 /** Bindings declared by the pass currently being lowered. */
@@ -72,11 +79,15 @@ function install(): void {
       if (active.length === 0) return;
       const spellings = candidates(event);
       let handled = false;
-      // A LIFO walk: the most recently mounted binding (the dialog on top) wins the chord.
+      // A LIFO walk: the most recently mounted binding (the dialog on top) wins the chord — among
+      // the ones on screen. A binding in a hidden arm sits the chord out, so it reaches the arm the
+      // width shows, and when no arm that binds it is shown the browser keeps the key.
       for (let i = active.length - 1; i >= 0; i--) {
-        if (!spellings.includes(active[i].chord)) continue;
+        const binding = active[i];
+        if (!spellings.includes(binding.chord)) continue;
+        if (binding.live && !binding.live()) continue;
         handled = true;
-        active[i].handler();
+        binding.handler();
         break;
       }
       if (handled) event.preventDefault();

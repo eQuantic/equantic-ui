@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { lowerVisualNode } from './lowering';
-import { resetAtomizerForTests } from './style-atomizer';
+import { adaptiveGateOpen, adaptiveGateRules, resetAtomizerForTests } from './style-atomizer';
 import { photonTheme } from './design-system.generated';
 import type { LoweringContext } from './lowering';
 import type { VisualNodeValue } from './nodes';
@@ -73,5 +73,59 @@ describe('S6 adaptive lowering (C# cross-pin)', () => {
       ctx,
     );
     expect(node.attributes['class'] ?? '').not.toContain('eq-v');
+  });
+
+  it('the rules are the C# AdaptiveGates.Css blobs, byte for byte', () => {
+    // The SAME literals S6AdaptiveRealizerTests pins on the server. The registry's cssText cannot
+    // say this — a stylesheet reformats what it is given — so the strings are read before insertion.
+    expect(adaptiveGateRules('eq-vc600').join('')).toBe(
+      '.eq-vc600{display:contents}@media (min-width: 600px){.eq-vc600{display:none}}',
+    );
+    expect(adaptiveGateRules('eq-vm600-840').join('')).toBe(
+      '.eq-vm600-840{display:none}@media (min-width: 600px) and (max-width: 839.98px){.eq-vm600-840{display:contents}}',
+    );
+    expect(adaptiveGateRules('eq-vx840').join('')).toBe(
+      '.eq-vx840{display:none}@media (min-width: 840px){.eq-vx840{display:contents}}',
+    );
+  });
+});
+
+/**
+ * Whether an arm is on screen, asked of the browser with the media condition its gate's CSS writes
+ * — the question a keyboard shortcut declared inside the arm needs answered at every keypress.
+ * Pinned at the thresholds themselves, where a range is off by one if it is off at all.
+ */
+describe('S6 which arm is on screen', () => {
+  const happyDOM = (
+    window as unknown as {
+      happyDOM: { setViewport(viewport: { width: number; height: number }): void };
+    }
+  ).happyDOM;
+  const at = (width: number) => happyDOM.setViewport({ width, height: 900 });
+
+  afterEach(() => at(1024));
+
+  it.each([
+    [599, true, false, false],
+    [600, false, true, false],
+    [839, false, true, false],
+    [840, false, false, true],
+  ])('at %ipx: compact %s, medium %s, expanded %s', (width, compact, medium, expanded) => {
+    at(width);
+    expect(adaptiveGateOpen('eq-vc600')).toBe(compact);
+    expect(adaptiveGateOpen('eq-vm600-840')).toBe(medium);
+    expect(adaptiveGateOpen('eq-vx840')).toBe(expanded);
+  });
+
+  it('an open-ended middle arm stays shown past its threshold', () => {
+    at(2000);
+    expect(adaptiveGateOpen('eq-vm600')).toBe(true);
+    at(599);
+    expect(adaptiveGateOpen('eq-vm600')).toBe(false);
+  });
+
+  it('a name that is not a gate hides nothing', () => {
+    at(700);
+    expect(adaptiveGateOpen('eq-something-else')).toBe(true);
   });
 });
