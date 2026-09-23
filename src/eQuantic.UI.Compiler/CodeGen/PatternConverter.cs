@@ -242,9 +242,11 @@ public static class PatternConverter
         // icon => …, Avatar avatar => … }` emitted `_s != null` for the Icon arm, so the FIRST arm
         // matched everything and the Avatar arm was dead code. A wrong answer with no diagnostic —
         // caught by tsc complaining about `.size` on a VisualNode, which is luck, not a net.
+        // A CLASS or a STRUCT: a record struct is a real class on the other side too (a boxed one is
+        // exactly what a type pattern over `object` meets), so the same `instanceof` is its test.
         if (context.SemanticHelper.GetSymbol(typeSyntax) is INamedTypeSymbol
             {
-                TypeKind: TypeKind.Class
+                TypeKind: TypeKind.Class or TypeKind.Struct
             } named)
         {
             if (LowersToAJsClass(named))
@@ -254,12 +256,12 @@ public static class PatternConverter
                 return $"{access} instanceof {named.Name}";
             }
 
-            // The APP's own classes and records are emitted as real JS classes too, so the honest
-            // test is the same `instanceof` — without it, `state switch { ClosedGate => …,
+            // The APP's own classes, records and structs are emitted as real JS classes too, so the
+            // honest test is the same `instanceof` — without it, `state switch { ClosedGate => …,
             // OpenGate o => … }` emitted `!= null` for every arm and the FIRST one always won.
             // Known caveat: a value that crossed the SERVER boundary as JSON is a plain object and
             // fails instanceof — pattern-match client-constructed values, not raw prefetch payloads.
-            if (named.Locations.Any(location => location.IsInSource))
+            if (IsEmittedAppType(named))
             {
                 context.UsedAppTypes.Add(named.Name);
                 return $"{access} instanceof {named.Name}";
@@ -269,10 +271,35 @@ public static class PatternConverter
         return $"{access} != null";
     }
 
-    /// <summary>Whether this class exists as a real class on the other side — every vocabulary node
-    /// does, which is what makes <c>instanceof</c> the honest test for it.</summary>
+    /// <summary>
+    /// Whether this is one of the APP's own types, whose twin the compiler emits as a class. A class
+    /// declared in source always was. A STRUCT is when it is the app's and its twin is emitted
+    /// (<see cref="RecordTypeEmitter.CanEmit"/>, the parser's own rule): a vocabulary struct declared
+    /// in source — a probe, the library's own build — still has a hand-written twin, some of them
+    /// plain objects, and <c>instanceof</c> against one is a TypeError rather than an answer.
+    /// </summary>
+    private static bool IsEmittedAppType(INamedTypeSymbol type)
+    {
+        if (!type.Locations.Any(location => location.IsInSource)) return false;
+        if (type.TypeKind == TypeKind.Class) return true;
+        return !Services.RuntimeProvidedTypeScanner.IsRuntimeProvidedNamespace(
+                   type.ContainingNamespace?.ToDisplayString() ?? "")
+               && type.DeclaringSyntaxReferences.Any(reference =>
+                   reference.GetSyntax() is TypeDeclarationSyntax declaration
+                   && RecordTypeEmitter.CanEmit(declaration));
+    }
+
+    /// <summary>
+    /// Whether this type exists as a real class on the other side — every vocabulary node does, and
+    /// so does every class and record of the code engine, which the compiler transpiles whole. That
+    /// is what makes <c>instanceof</c> the honest test for them; anywhere else the vocabulary's twins
+    /// may be written by hand, and a type test there stays the presence check below.
+    /// </summary>
     private static bool LowersToAJsClass(INamedTypeSymbol type)
     {
+        if (Services.RuntimeProvidedTypeScanner.IsCodeEngineNamespace(
+                type.ContainingNamespace?.ToDisplayString() ?? ""))
+            return true;
         for (var baseType = type.BaseType; baseType != null; baseType = baseType.BaseType)
         {
             if (baseType.Name is "VisualNode" or "UiComponent"

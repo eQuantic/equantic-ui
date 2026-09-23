@@ -54,6 +54,16 @@ public static class RuntimeProvidedTypeScanner
         return false;
     }
 
+    /// <summary>
+    /// Whether <paramref name="ns"/> is the code editing engine's — the one vocabulary namespace the
+    /// compiler TRANSPILES whole, so every class and struct in it is a real JavaScript class on the
+    /// other side, built by the rules this compiler applies (a struct zero-constructs, a class
+    /// answers <c>instanceof</c>). The visual vocabulary is not that: many of its twins are written
+    /// by hand, and a rule that holds for an emitted twin is a guess about a hand-written one.
+    /// </summary>
+    public static bool IsCodeEngineNamespace(string ns) =>
+        ns == "eQuantic.UI.Code" || ns.StartsWith("eQuantic.UI.Code.", StringComparison.Ordinal);
+
     public static bool IsRuntimeProvidedNamespace(string ns) =>
         IsVocabularyNamespace(ns)
         || ns == "eQuantic.UI.Components"

@@ -116,3 +116,4 @@ const eQuantic.UI.Compiler.CodeGen.Eq.LogicOr = "$eq.logic.or" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LogicAnd = "$eq.logic.and" -> string!
 static readonly eQuantic.UI.Compiler.Services.RuntimeProvidedTypeScanner.VocabularyNamespaces -> System.Collections.Generic.IReadOnlyList<string!>!
 static eQuantic.UI.Compiler.Services.RuntimeProvidedTypeScanner.IsVocabularyNamespace(string! ns) -> bool
+static eQuantic.UI.Compiler.Services.RuntimeProvidedTypeScanner.IsCodeEngineNamespace(string! ns) -> bool
