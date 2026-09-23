@@ -75,61 +75,44 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
 
     /// <summary>
     /// An increment that JavaScript's own would get wrong, lowered to an assignment: a CHAR steps
-    /// by code unit (`'a'++` is NaN here), a narrow width wraps, and a checked context throws —
-    /// the result type decides (IntegerWidth). Null leaves the native `++`, which is what every
-    /// loop counter wants. Prefix semantics: the expression's value is the stepped one.
+    /// by code unit (`'a'++` is NaN here), a DECIMAL steps on the type (JavaScript's `++` coerces it
+    /// through its text into a plain number), a FLOAT rounds to single precision (`0.1f + 1` is not
+    /// exact), a narrow width wraps and a checked context throws — the result type decides
+    /// (IntegerWidth). Null leaves the native `++`, which is what every loop counter wants.
+    /// The target is evaluated once and a postfix step in value position answers the value BEFORE
+    /// it, as C# does (ReadModifyWrite): `values[i++]++` steps `i` once, and `byte b = 255;
+    /// var old = b++;` is 255, not the wrapped 0.
     /// </summary>
     private static JsExpr? Step(ExpressionSyntax operandSyntax, string op, SyntaxNode node, ConversionContext context)
     {
         var type = context.SemanticHelper.GetType(operandSyntax);
         var delta = op == "++" ? "+" : "-";
-        if (type is { SpecialType: SpecialType.System_Char })
-        {
-            var target = context.Converter.ConvertIr(operandSyntax);
-            var text = JsExprWriter.WriteIn(target, JsPrecedence.Call);
-            return JsExpr.Binary(target, "=", JsExpr.Callish($"String.fromCharCode({text}.charCodeAt(0) {delta} 1)"));
-        }
+        var answerOld = node is PostfixUnaryExpressionSyntax && ValueUsed(node);
+        JsExpr Stepped(Func<JsExpr, JsExpr> next) => ReadModifyWrite.Assign(
+            context.Converter.ConvertIr(operandSyntax), [], (current, _) => next(current), answerOld,
+            context.TypeAnnotations);
 
-        // A DECIMAL steps on the type: JavaScript's own ++ coerces the Decimal through its text
-        // into a plain number, shedding the type mid-loop. Postfix IN VALUE POSITION answers the
-        // OLD value — recovered exactly (base-10 add/sub of one is exact) instead of binding a temp.
+        if (type is { SpecialType: SpecialType.System_Char })
+            return Stepped(current => JsExpr.Callish(
+                $"String.fromCharCode({JsExprWriter.WriteIn(current, JsPrecedence.Call)}.charCodeAt(0) {delta} 1)"));
+
         if (type.IsDecimal())
         {
             context.UsedHelpers.Add(Eq.Import);
-            var decimalTarget = context.Converter.ConvertIr(operandSyntax);
-            var decimalText = JsExprWriter.WriteIn(decimalTarget, JsPrecedence.Call);
             var method = op == "++" ? "add" : "sub";
-            var assigned = JsExpr.Binary(decimalTarget, "=", JsExpr.Callish($"{decimalText}.{method}({Eq.Dec}(1))"));
-            if (node is PostfixUnaryExpressionSyntax && ValueUsed(node))
-            {
-                var inverse = op == "++" ? "sub" : "add";
-                return JsExpr.Callish($"({JsExprWriter.Write(assigned)}, {decimalText}.{inverse}({Eq.Dec}(1)))");
-            }
-            return assigned;
+            return Stepped(current => JsExpr.Callish(
+                $"{JsExprWriter.WriteIn(current, JsPrecedence.Call)}.{method}({Eq.Dec}(1))"));
         }
 
-        // A FLOAT steps in single precision like every float operation (SinglePrecision): `0.1f`
-        // plus one is not exact, so the stored value rounds. Postfix IN VALUE POSITION answers the
-        // value before the step, which no subtraction recovers once the step has rounded — so the
-        // old value is bound once and handed back.
         if (SinglePrecision.Is(type))
-        {
-            var target = context.Converter.ConvertIr(operandSyntax);
-            JsExpr StepFrom(JsExpr from) =>
-                JsExpr.Binary(target, "=", SinglePrecision.Round(JsExpr.Binary(from, delta, JsExpr.Literal("1"))));
-            if (node is not PostfixUnaryExpressionSyntax || !ValueUsed(node)) return StepFrom(target);
-            var old = JsExpr.Identifier("__o");
-            return JsExpr.Callish($"((__o) => ({JsExprWriter.Write(StepFrom(old))}, __o))({JsExprWriter.Write(target)})");
-        }
+            return Stepped(current => SinglePrecision.Round(JsExpr.Binary(current, delta, JsExpr.Literal("1"))));
 
         if (IntegerWidth.Of(type) is not { } width) return null;
         var arithmetic = ArithmeticContext.Of(node, context);
         if (!(arithmetic.IsChecked || arithmetic.ExplicitUnchecked || IntegerWidth.WrapsByDefault(width))) return null;
-        var operand = context.Converter.ConvertIr(operandSyntax);
         var one = width.Bits == 64 ? JsExpr.Literal("1n") : JsExpr.Literal("1");
-        var stepped = IntegerWidth.Settle(JsExpr.Binary(operand, delta, one), type,
-            arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context);
-        return JsExpr.Binary(operand, "=", stepped);
+        return Stepped(current => IntegerWidth.Settle(JsExpr.Binary(current, delta, one), type,
+            arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context));
     }
 
     /// <summary>Whether the step's RESULT is read — false in the two places an increment is pure

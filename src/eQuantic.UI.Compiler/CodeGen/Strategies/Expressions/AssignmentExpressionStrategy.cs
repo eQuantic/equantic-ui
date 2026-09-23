@@ -83,11 +83,19 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
             return $"let {left} {op} {right}";
         }
 
+        // Every compound this strategy spells out as `target = next(target, value)` evaluates the
+        // target once, as JavaScript's own `op=` and C# both do (ReadModifyWrite): the text names it
+        // twice, so `values[i++] += x` would otherwise step `i` twice.
+        JsExpr Compound(Func<JsExpr, JsExpr, JsExpr> next) => ReadModifyWrite.Assign(
+            leftIr, [rightIr], (current, operands) => next(current, operands[0]), answerOld: false,
+            context.TypeAnnotations);
+
         // COMPOUND assignment through a USER-DEFINED operator: `m += other` is `m = Money.opAdd(m, other)`.
         if (context.SemanticHelper.GetOperation(assignment) is Microsoft.CodeAnalysis.Operations.ICompoundAssignmentOperation
             { OperatorMethod: { } compoundMethod }
-            && UserDefinedOperators.Binary(compoundMethod, op[..^1], left, right) is { } compoundCall)
-            return JsExpr.Binary(leftIr, "=", compoundCall);
+            && UserDefinedOperators.Binary(compoundMethod, op[..^1], left, right) is not null)
+            return Compound((current, operand) => UserDefinedOperators.Binary(compoundMethod, op[..^1],
+                JsExprWriter.Write(current), JsExprWriter.Write(operand))!);
 
         // COMPOUND assignment on a decimal is arithmetic on the runtime Decimal — `total +=
         // amount` emitted bare concatenates their text. A running money total read
@@ -98,8 +106,8 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
             && context.SemanticHelper.GetType(assignment.Left).IsDecimal())
         {
             var method = op[0] switch { '+' => "add", '-' => "sub", '*' => "mul", _ => "div" };
-            return JsExpr.Binary(leftIr, "=",
-                JsExpr.Callish($"{JsExprWriter.WriteIn(leftIr, JsPrecedence.Call)}.{method}({right})"));
+            return Compound((current, operand) => JsExpr.Callish(
+                $"{JsExprWriter.WriteIn(current, JsPrecedence.Call)}.{method}({JsExprWriter.Write(operand)})"));
         }
 
         var leftType = context.SemanticHelper.GetType(assignment.Left);
@@ -111,8 +119,8 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         {
             var binaryOp = op[..^1];
             if (leftType is { SpecialType: SpecialType.System_Char } && binaryOp is "+" or "-")
-                return JsExpr.Binary(leftIr, "=", JsExpr.Callish(
-                    $"String.fromCharCode({JsExprWriter.WriteIn(leftIr, JsPrecedence.Call)}.charCodeAt(0) {binaryOp} {JsExprWriter.WriteIn(rightIr, JsPrecedence.Additive)})"));
+                return Compound((current, operand) => JsExpr.Callish(
+                    $"String.fromCharCode({JsExprWriter.WriteIn(current, JsPrecedence.Call)}.charCodeAt(0) {binaryOp} {JsExprWriter.WriteIn(operand, JsPrecedence.Additive)})"));
 
             // A fixed-width target settles the compound result by its type (IntegerWidth), and a
             // float target rounds it to single precision — every one of the five, because a double
@@ -122,15 +130,15 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
                 var arithmetic = ArithmeticContext.Of(assignment, context);
                 if (arithmetic.IsChecked || arithmetic.ExplicitUnchecked || IntegerWidth.WrapsByDefault(width))
                 {
-                    var computed = binaryOp == "*" && width.Bits == 32 && !arithmetic.IsChecked
-                        ? (JsExpr)JsExpr.Callish($"Math.imul({left}, {JsExprWriter.Write(rightIr)})")
-                        : JsExpr.Binary(leftIr, binaryOp, rightIr);
-                    return JsExpr.Binary(leftIr, "=", IntegerWidth.Settle(computed, leftType,
-                        arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context));
+                    return Compound((current, operand) => IntegerWidth.Settle(
+                        binaryOp == "*" && width.Bits == 32 && !arithmetic.IsChecked
+                            ? JsExpr.Callish($"Math.imul({JsExprWriter.Write(current)}, {JsExprWriter.Write(operand)})")
+                            : JsExpr.Binary(current, binaryOp, operand),
+                        leftType, arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context));
                 }
             }
             if (binaryOp is "+" or "-" or "*" or "/" or "%" && SinglePrecision.Is(leftType))
-                return JsExpr.Binary(leftIr, "=", SinglePrecision.Round(JsExpr.Binary(leftIr, binaryOp, rightIr)));
+                return Compound((current, operand) => SinglePrecision.Round(JsExpr.Binary(current, binaryOp, operand)));
         }
 
         // `x /= y` on integers is integer division, exactly like `x = x / y` — the compound form
@@ -140,8 +148,8 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         // has to be fenced under the `/`, and the writer is the one that knows.
         if (op == "/=" && context.SemanticHelper.GetType(assignment.Left).IsIntegral()
             && !context.SemanticHelper.GetType(assignment.Left).IsLong())
-            return JsExpr.Binary(leftIr, "=",
-                JsExpr.Call(JsExpr.Identifier("Math.trunc"), JsExpr.Binary(leftIr, "/", rightIr)));
+            return Compound((current, operand) =>
+                JsExpr.Call(JsExpr.Identifier("Math.trunc"), JsExpr.Binary(current, "/", operand)));
 
         // An assignment NODE: right-associative at the loosest level, so `a = b = c` chains and
         // an assignment used as an operand is fenced by whoever places it.
