@@ -173,9 +173,10 @@ export class CodeBlock extends StatelessComponent {
         let tokens = highlighter.tokensFor(this.document, index);
         let at = 0;
         for (const token of tokens) {
-            let end = Math.min(token.end, text.length);
-            if (token.start > at) CodeBlock.addSpan(code, cells, at, token.start, ink, style, columnWidth);
-            CodeBlock.addSpan(code, cells, token.start, end, this.inverse ? CodeBlock.inverseCode(token.kind, theme) : theme.code(token.kind), style, columnWidth);
+            let start = Math.min(Math.max(token.start, at), text.length);
+            let end = Math.min(Math.max(token.end, start), text.length);
+            if (start > at) CodeBlock.addSpan(code, cells, at, start, ink, style, columnWidth);
+            CodeBlock.addSpan(code, cells, start, end, this.inverse ? CodeBlock.inverseCode(token.kind, theme) : theme.code(token.kind), style, columnWidth);
             at = end;
         }
         if (at < text.length) CodeBlock.addSpan(code, cells, at, text.length, ink, style, columnWidth);
@@ -216,6 +217,7 @@ export class CodeBlock extends StatelessComponent {
     }
 
     static addSpan(code: Row, cells: CodeLineCells, from: number, to: number, color: ColorToken, style: TypeStyle, columnWidth: number) {
+        if (to <= from) return;
         let run = '';
         for (let i = cells.indexOf(from); i < cells.count; i++) {
             let element = cells.elementAt(i);

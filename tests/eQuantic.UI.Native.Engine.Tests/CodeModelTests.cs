@@ -120,6 +120,50 @@ public class CodeTokenizerTests
         text.Start.Should().Be(8, "the $ opens the string and belongs to it");
     }
 
+    /// <summary>
+    /// A string's prefix is read AT the prefix. A `$` right after an operator joined the operator's
+    /// token (runs of one kind merge), and the string then claimed the same `$`, so the two tokens
+    /// overlapped: the block drew the `$` twice and every caret after it stood a cell off its glyph.
+    /// </summary>
+    [Theory]
+    [InlineData("f = x=>$\"\"\"{x}\"\"\";", 7)]
+    [InlineData("f = x=>$\"{x}\";", 7)]
+    [InlineData("var p = x+@$\"C:\\{dir}\\f\";", 10)]
+    [InlineData("var p = x+$@\"a\"\"b\";", 10)]
+    public void CSharp_AStringsPrefixIsItsOwn_EvenAfterAnOperator(string line, int prefix)
+    {
+        var tokens = new List<CodeToken>();
+        CodeLanguages.CSharp.Tokenize(line, 0, tokens);
+
+        for (var i = 1; i < tokens.Count; i++)
+            tokens[i].Start.Should().BeGreaterThanOrEqualTo(tokens[i - 1].End, "no two tokens share a character");
+        tokens.Single(t => t.Kind == CodeTokenKind.String).Start.Should().Be(prefix);
+    }
+
+    /// <summary>`@$"…"` and `$@"…"` are VERBATIM: a backslash is a character and `""` is a quote.</summary>
+    [Fact]
+    public void CSharp_AnInterpolatedVerbatimStringIsVerbatim()
+    {
+        var tokens = new List<CodeToken>();
+        CodeLanguages.CSharp.Tokenize("var p = @$\"C:\\\"; var q = 1;", 0, tokens);
+
+        tokens.Single(t => t.Kind == CodeTokenKind.String).End.Should().Be(15, "the string ends at its quote");
+        KindAt(CodeLanguages.CSharp, "var p = @$\"C:\\\"; var q = 1;", 17).Should().NotBe(CodeTokenKind.String,
+            "the var after it is code");
+    }
+
+    /// <summary>A raw string takes no `@`: `@$"""` opens a verbatim string whose first character is
+    /// an escaped quote, and treating it as raw coloured the rest of the file as a string.</summary>
+    [Fact]
+    public void CSharp_ARawStringTakesNoAt()
+    {
+        var first = new List<CodeToken>();
+        var state = CodeLanguages.CSharp.Tokenize("var s = @$\"\"\"{name}\"\" is here\";", 0, first);
+
+        KindAt(CodeLanguages.CSharp, "int x = 1;", 0, state).Should().NotBe(CodeTokenKind.String,
+            "the string ended on its own line");
+    }
+
     [Fact]
     public void ABlockCommentSurvivesTheLineBreak()
     {
@@ -222,6 +266,35 @@ public class CodeTokenizerTests
         CodeLanguages.For("brainfuck").Should().BeSameAs(CodeLanguages.PlainText);
         CodeLanguages.For(".cs").Should().BeSameAs(CodeLanguages.CSharp);
         CodeLanguages.For(null).Should().BeSameAs(CodeLanguages.PlainText);
+    }
+
+    /// <summary>
+    /// An edit that rewrites several lines without changing how many there are (⌘/ or Tab over a
+    /// selection) re-colours EVERY one of them. Only the first was, and the rest kept the tokens of
+    /// the text they used to hold: colours off by the indent Tab added, and a line ⌘/ emptied kept a
+    /// comment token longer than itself, which the block cannot draw.
+    /// </summary>
+    [Fact]
+    public void AnEditThatRewritesSeveralLines_RecoloursEachOfThem()
+    {
+        var editor = new CodeEditorController("// a\n//\n// b\nint x = 1;", CodeLanguages.CSharp);
+        for (var line = 0; line < 4; line++) editor.Highlighter.TokensFor(editor.Document, line);
+
+        editor.Selection = new CodeRange(new CodePosition(0, 0), new CodePosition(2, 4));
+        editor.ToggleLineComment();
+        SameAsFresh(editor);
+
+        editor.Selection = new CodeRange(new CodePosition(0, 0), new CodePosition(3, 3));
+        editor.Indent();
+        SameAsFresh(editor);
+    }
+
+    private static void SameAsFresh(CodeEditorController editor)
+    {
+        var fresh = new CodeHighlighter(editor.Highlighter.Language);
+        for (var line = 0; line < editor.Document.LineCount; line++)
+            editor.Highlighter.TokensFor(editor.Document, line).Should().Equal(
+                fresh.TokensFor(editor.Document, line), $"line {line} is coloured by what it says now");
     }
 
     /// <summary>

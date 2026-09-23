@@ -91,11 +91,26 @@ export abstract class CurlyBraceLanguage {
                     continue;
                 }
             }
-            if (this.hasVerbatimStrings && c === '@' && i + 1 < line.length && line[i + 1] === '"') {
-                let end = CurlyBraceLanguage.scanVerbatim(line, i + 2);
+            let prefixed: any; 
+            if (this.hasVerbatimStrings && (c === '$' || c === '@') && (prefixed = CurlyBraceLanguage.prefixedString(line, i)) != null) {
+                let quote = prefixed[0];
+                if (this.hasRawStrings && !prefixed[1] && CurlyBraceLanguage.quotesAt(line, quote) >= 3) {
+                    let quotes = CurlyBraceLanguage.quotesAt(line, quote);
+                    let raw = CurlyBraceLanguage.closeRaw(line, quote + quotes, quotes);
+                    if (raw < 0) {
+                        CurlyBraceLanguage.add(into, i, line.length - i, 'string');
+                        return CurlyBraceLanguage.stateRawString + quotes;
+                    }
+                    CurlyBraceLanguage.add(into, i, raw - i, 'string');
+                    i = raw;
+                    continue;
+                }
+                let end = prefixed[1] ? CurlyBraceLanguage.scanVerbatim(line, quote + 1) : CurlyBraceLanguage.scanQuoted(line, quote + 1, '"');
                 if (end < 0) {
                     CurlyBraceLanguage.add(into, i, line.length - i, 'string');
-                    return CurlyBraceLanguage.stateMultilineString;
+                    if (prefixed[1]) return CurlyBraceLanguage.stateMultilineString;
+                    i = line.length;
+                    continue;
                 }
                 CurlyBraceLanguage.add(into, i, end - i, 'string');
                 i = end;
@@ -112,25 +127,19 @@ export abstract class CurlyBraceLanguage {
                 continue;
             }
             if (this.hasRawStrings && c === '"' && CurlyBraceLanguage.quotesAt(line, i) >= 3) {
-                let start = i;
-                while (start > 0 && line[start - 1] === '$') start--;
-                if (start < i && into.length > 0 && into[into.length - 1].start === start) into.splice(into.length - 1, 1);
                 let quotes = CurlyBraceLanguage.quotesAt(line, i);
                 let end = CurlyBraceLanguage.closeRaw(line, i + quotes, quotes);
                 if (end < 0) {
-                    CurlyBraceLanguage.add(into, start, line.length - start, 'string');
+                    CurlyBraceLanguage.add(into, i, line.length - i, 'string');
                     return CurlyBraceLanguage.stateRawString + quotes;
                 }
-                CurlyBraceLanguage.add(into, start, end - start, 'string');
+                CurlyBraceLanguage.add(into, i, end - i, 'string');
                 i = end;
                 continue;
             }
             if (c === '"' || c === '\'') {
-                let start = i > 0 && line[i - 1] === '$' ? i - 1 : i;
-                if (start < i && into.length > 0 && into[into.length - 1].start === start) into.splice(into.length - 1, 1);
                 let end = CurlyBraceLanguage.scanQuoted(line, i + 1, c);
-                let length = (end < 0 ? line.length : end) - start;
-                CurlyBraceLanguage.add(into, start, length, 'string');
+                CurlyBraceLanguage.add(into, i, (end < 0 ? line.length : end) - i, 'string');
                 i = end < 0 ? line.length : end;
                 continue;
             }
@@ -184,6 +193,19 @@ export abstract class CurlyBraceLanguage {
             return i + 1;
         }
         return -1;
+    }
+
+    static prefixedString(line: string, start: number) {
+        let verbatim = false;
+        let i = start;
+        while (i < line.length && (line[i] === '$' || line[i] === '@')) {
+            if (line[i] === '@') {
+                if (verbatim) return null;
+                verbatim = true;
+            }
+            i++;
+        }
+        return i < line.length && line[i] === '"' ? [i, verbatim] : null;
     }
 
     static add(into: CodeToken[], start: number, length: number, kind: CodeTokenKindValue) {

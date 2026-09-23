@@ -448,9 +448,13 @@ public sealed class CodeBlock : StatelessComponent
         var at = 0;
         foreach (var token in tokens)
         {
-            var end = Math.Min(token.End, text.Length);
-            if (token.Start > at) AddSpan(code, cells, at, token.Start, ink, style, columnWidth);
-            AddSpan(code, cells, token.Start, end,
+            // A token is only a colour, and the TEXT says what is drawn: one that outlived its text
+            // or overlaps the one before is cut to what is left of the line, so no character is
+            // drawn twice and none past the end of its line.
+            var start = Math.Clamp(token.Start, at, text.Length);
+            var end = Math.Clamp(token.End, start, text.Length);
+            if (start > at) AddSpan(code, cells, at, start, ink, style, columnWidth);
+            AddSpan(code, cells, start, end,
                 Inverse ? InverseCode(token.Kind, theme) : theme.Code(token.Kind), style, columnWidth);
             at = end;
         }
@@ -564,6 +568,7 @@ public sealed class CodeBlock : StatelessComponent
     private static void AddSpan(Row code, CodeLineCells cells, int from, int to, ColorToken color,
         TypeStyle style, float columnWidth)
     {
+        if (to <= from) return;
         var run = "";
         for (var i = cells.IndexOf(from); i < cells.Count; i++)
         {
