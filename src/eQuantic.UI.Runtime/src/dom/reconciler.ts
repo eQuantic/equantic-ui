@@ -916,6 +916,9 @@ export class Reconciler {
       existingElement.replaceWith(
         this.createDomElement(virtualNode, existingElement.parentNode ?? undefined),
       );
+      // Its listeners are attached all the same, and the diagnostics count them as the adopted
+      // path does.
+      result.attachedListeners += Reconciler.listenersIn(virtualNode);
       return result;
     }
 
@@ -975,6 +978,13 @@ export class Reconciler {
     }
 
     return result;
+  }
+
+  /** How many listeners a virtual subtree carries, counted the way the adopted path counts them. */
+  private static listenersIn(node: HtmlNode): number {
+    let count = node.events ? Object.keys(node.events).length : 0;
+    for (const child of node.children ?? []) count += Reconciler.listenersIn(child);
+    return count;
   }
 
   /**

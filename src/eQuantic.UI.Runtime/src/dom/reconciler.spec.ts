@@ -365,6 +365,8 @@ describe('hydration of a subtree the server could not measure', () => {
     const result = new Reconciler().hydrateRoot(container, page('44px', () => presses++));
 
     expect(result.success).toBe(true);
+    // The listeners the drawn subtree carries count as attached, as the adopted ones do.
+    expect(result.attachedListeners).toBe(1);
     expect(container.querySelector('.block')).not.toBe(draft);
     expect(container.querySelector('.block')?.hasAttribute(UNMEASURED_MARK)).toBe(false);
     expect((container.querySelector('.gutter') as HTMLElement).style.width).toBe('44px');

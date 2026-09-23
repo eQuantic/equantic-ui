@@ -116,9 +116,9 @@ describe('code surface (web)', () => {
     expect(lowered).toBeDefined();
   });
 
-  // In the shared px() spelling (C# TokenCss.Px), so the day the server writes this surface it can
-  // write the same bytes: hydration keeps the server's markup, and adopts only what reads alike.
-  it('spells its caret and its input with the shared px formatter', () => {
+  // In the shared px() spelling (C# TokenCss.Px), the one the server writes the same caret and input
+  // in (SurfaceSsrTests.ItsCaretAndItsInputAreWrittenWhereTheClientWritesThem).
+  it('spells its caret and its input the way the server spells them', () => {
     const { editor } = surfaceFor('one\ntwo');
     editor.selection = new CodeRange(new CodePosition(1, 2));
     const node = lowerVisualNode(
@@ -853,13 +853,10 @@ describe('the component draws the selection, under the text', () => {
 });
 
 describe('the code surface goes through the atomizer, like every other node', () => {
-  // It carried a literal `style` string, under a comment reasoning that "there is no C# twin to
-  // agree with — the web realizer has no CodeSurface arm". That is STILL TRUE: the arm was tried
-  // and taken back out, because the client appends a caret and a server tree without one is a
-  // failed adoption. The string went anyway, because the reasoning was never worth leaving
-  // standing — the day an arm arrives, a client string beside a server class is the hydration
-  // mismatch the atomizer exists to prevent, and that day should not also be the day somebody has
-  // to remember this. Going through the shared atomizer costs nothing and removes the trap.
+  // It carried a literal `style` string, under a comment reasoning that there was no C# twin to
+  // agree with, since the web realizer had no CodeSurface arm. It has one now (the code editor's SSR
+  // slice), and a client string beside a server class would be exactly the hydration mismatch the
+  // atomizer exists to prevent. Going through the shared atomizer costs nothing and removes the trap.
   it('emits classes and no inline style', () => {
     const { lowered } = surfaceFor('let x = 1;');
 
