@@ -541,8 +541,11 @@ record of a release, the wiki's Upgrading page is the distillate.
   Shift+Tab and ⌘/ keep the selection they edit, a closing brace steps back to its block, typing
   over a selection is one undo and a paste is its own, and C# raw strings are one string across
   lines. Found on the way in eqc: the `(string, index)` overloads of the char classifiers tested
-  the whole string, and a code point read from a string reached tsc as `number | undefined`. The
-  served runtime grew to 143,383 bytes gzipped.
+  the whole string, and a code point read from a string reached tsc as `number | undefined`. Found
+  in review: a char method spliced its argument as a receiver, so over a conditional it read one
+  branch, and the bracket match walked to its pair with the caret's step, segmenting every line on
+  the way (110 ms a frame on 3000 lines, under one now that it scans). The served runtime grew to
+  143,383 bytes gzipped.
 
 ## Retired documents
 
