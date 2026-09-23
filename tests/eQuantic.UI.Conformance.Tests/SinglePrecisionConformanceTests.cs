@@ -55,6 +55,11 @@ public class SinglePrecisionConformanceTests
     [InlineData("var xs = new[] { 0.1f, 0.2f, 0.3f, 0.4f }; return (double)xs.Sum();")]      // 1
     [InlineData("var xs = new[] { 0.1f, 0.2f, 0.7f }; return (double)xs.Average();")]
     [InlineData("var xs = new[] { 1, 2, 3 }; return (double)xs.Sum(x => x * 0.1f);")]
+    // ---- a float from text or from Convert is a single ----
+    [InlineData("float f = float.Parse(\"0.1\", System.Globalization.CultureInfo.InvariantCulture); return (double)f;")] // 0.10000000149011612
+    [InlineData("float.TryParse(\"0.1\", System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var g); return (double)g;")]
+    [InlineData("float h = Convert.ToSingle(\"0.1\", System.Globalization.CultureInfo.InvariantCulture); return (double)h;")]
+    [InlineData("double d = 0.1; float k = Convert.ToSingle(d); return (double)k;")]
     // ---- a float's constants are singles ----
     [InlineData("return (double)float.Pi;")]                                                  // 3.1415927410125732
     [InlineData("return (double)MathF.PI;")]

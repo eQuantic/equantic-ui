@@ -49,7 +49,9 @@ public class ConvertStrategy : IConversionStrategy
             "ToString" => $"String({value})",
             "ToInt32" or "ToInt16" or "ToByte" or "ToSByte" or "ToUInt32" or "ToUInt16" or "ToInt64" or "ToUInt64"
                 => $"parseInt({value}, 10)", // string arg
-            "ToDouble" or "ToSingle" or "ToDecimal"
+            // A single, as every float this side produces (SinglePrecision).
+            "ToSingle" => isStringArg ? $"Math.fround(parseFloat({value}))" : $"Math.fround(Number({value}))",
+            "ToDouble" or "ToDecimal"
                 => isStringArg ? $"parseFloat({value})" : $"Number({value})",
             "ToBoolean" => isStringArg
                 ? $"(String({value}).trim().toLowerCase() === 'true')"
