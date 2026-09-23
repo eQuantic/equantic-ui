@@ -285,30 +285,50 @@ function gateNum(value: number): string {
   return `${parseFloat(value.toFixed(4))}`;
 }
 
-/** The gate's rules, derived from its NAME (the C# AdaptiveGates.Css twin). */
-function adaptiveGateRules(gate: string): string[] {
-  if (!gate.startsWith('eq-v') || gate.length < 6) return [];
+/**
+ * WHERE a gate shows its arm, derived from its NAME: the media condition its CSS writes, and whether
+ * the arm is on screen inside that condition or outside it. The compact arm is the one that shows
+ * by default and hides from its threshold up, so its condition is the one it is hidden under.
+ */
+function gateCondition(gate: string): { media: string; shownOutside: boolean } | null {
+  if (!gate.startsWith('eq-v') || gate.length < 6) return null;
   const kind = gate[4];
   const range = gate.slice(5).split('-');
   const first = parseFloat(range[0]);
   const second = range.length > 1 ? parseFloat(range[1]) : 0;
   const below = (dp: number) => `${parseFloat((dp - 0.02).toFixed(4))}px`;
-  if (kind === 'c')
-    return [
-      `.${gate}{display:contents}`,
-      `@media (min-width: ${gateNum(first)}px){.${gate}{display:none}}`,
-    ];
+  if (kind === 'c') return { media: `(min-width: ${gateNum(first)}px)`, shownOutside: true };
   if (kind === 'm' && second > 0)
-    return [
-      `.${gate}{display:none}`,
-      `@media (min-width: ${gateNum(first)}px) and (max-width: ${below(second)}){.${gate}{display:contents}}`,
-    ];
+    return {
+      media: `(min-width: ${gateNum(first)}px) and (max-width: ${below(second)})`,
+      shownOutside: false,
+    };
   if (kind === 'm' || kind === 'x')
-    return [
-      `.${gate}{display:none}`,
-      `@media (min-width: ${gateNum(first)}px){.${gate}{display:contents}}`,
-    ];
-  return [];
+    return { media: `(min-width: ${gateNum(first)}px)`, shownOutside: false };
+  return null;
+}
+
+/** The gate's rules, derived from its NAME (the C# AdaptiveGates.Css twin: joined, the same blob). */
+export function adaptiveGateRules(gate: string): string[] {
+  const condition = gateCondition(gate);
+  if (!condition) return [];
+  return condition.shownOutside
+    ? [`.${gate}{display:contents}`, `@media ${condition.media}{.${gate}{display:none}}`]
+    : [`.${gate}{display:none}`, `@media ${condition.media}{.${gate}{display:contents}}`];
+}
+
+/**
+ * Whether the arm behind `gate` is on screen NOW. It asks the browser the same media condition the
+ * gate's CSS applies, never the layout: a geometry test would force a layout flush, and would answer
+ * "hidden" for everything outside a real browser. Without `matchMedia` nothing can hide an arm,
+ * so every arm counts as shown — which is what an environment with no CSS actually renders.
+ */
+export function adaptiveGateOpen(gate: string): boolean {
+  const condition = gateCondition(gate);
+  if (!condition || typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return true;
+  }
+  return window.matchMedia(condition.media).matches !== condition.shownOutside;
 }
 
 /** Ensure a size-class gate's rules exist in the registry (idempotent; adopted from SSR). */
