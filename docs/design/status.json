@@ -31,7 +31,8 @@
         "C15 and C16 are specified ahead",
         "DatePicker&dagger;",
         "<strong style=\"color:var(--tx1)\">DatePicker</strong> (C15)",
-        "2 DatePicker (C15) — calendar"
+        "2 DatePicker (C15) — calendar",
+        "C15 DatePicker and C16 NavigationRail are specified ahead"
       ]
     },
     {

@@ -28,6 +28,10 @@ public class HandoffFigureTests
 {
     private const int Floor = 52;
 
+    /// <summary>The counted figures (<c>data-figure</c>) the pages carried when this was written: the
+    /// component count on Foundations and on the design system's index.</summary>
+    private const int CountedFloor = 2;
+
     private static readonly Regex TokenFigure =
         new("data-token=\"(?<path>[^\"]+)\"[^>]*>(?<text>[^<]*)<", RegexOptions.Compiled);
 
@@ -80,8 +84,10 @@ public class HandoffFigureTests
         var counted = new Dictionary<string, int>(StringComparer.Ordinal) { ["components.count"] = components };
 
         var offences = new List<string>();
+        var found = 0;
         foreach (var (where, match) in Matches(CountedFigure))
         {
+            found++;
             var name = match.Groups["name"].Value;
             var text = match.Groups["text"].Value;
             if (!counted.TryGetValue(name, out var actual))
@@ -90,6 +96,9 @@ public class HandoffFigureTests
                 offences.Add($"{where}: the page shows \"{text}\" and the SDK has {actual}");
         }
 
+        found.Should().BeGreaterThanOrEqualTo(CountedFloor,
+            "the pages carried this many counted figures when the pin was written. Fewer means a marker was "
+            + "dropped, and the count it carried is a number nothing checks");
         offences.Should().BeEmpty("a counted figure has to be the count:" + List(offences));
     }
 
