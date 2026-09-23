@@ -541,8 +541,11 @@ record of a release, the wiki's Upgrading page is the distillate.
   handed its caller a double and a bar's hit bound differed by one ULP between server and browser
   ([#146](https://github.com/eQuantic/equantic-ui/issues/146)). Every float operation, increment,
   wide-int conversion, constant and hydrated value now rounds where it is born; the numeric table
-  answers in single precision for the `float` home and serves `Math`/`MathF` from the same entries;
-  and `Math.Round` detects a midpoint exactly and honours every `MidpointRounding`.
+  answers in single precision for the `float` home and serves `Math`/`MathF` from the same entries,
+  a call no model bound included; and `Math.Round` detects a midpoint exactly and honours every
+  `MidpointRounding`. A value the browser produces (a scroll offset, a drag's travel, a pointer's
+  position) enters C# through the runtime, which now rounds it at each of the five seams C# types
+  `float`; `FloatSeamsTests` derives them by reflection and requires a spec for each.
 
 ## Retired documents
 
