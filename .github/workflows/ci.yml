@@ -607,8 +607,11 @@ jobs:
       # step changes the dashboard's console shell and publishes without building first. A chunk of
       # the last build has to be gone from this one, or the step proved nothing; the publish has to
       # hold exactly the chunks this build wrote; and each module it holds has to be served
-      # compressed, which the SDK decides from the assets this build defined. A compression that ran
-      # before them would drop every module to its raw size with nothing failing.
+      # compressed, from THIS build's file: the same order once compressed the previous build's
+      # modules, and a compression that ran before the assets were defined would drop every module
+      # to its raw size, neither failing anything. Then the source goes back and a --no-build
+      # publish runs, which must carry what the last build wrote: the output folder is defined by a
+      # build target, and one that compiled here would carry the chunks of the source instead.
       - name: A publish right after a shared component changes
         shell: bash
         run: |
@@ -640,12 +643,24 @@ jobs:
           for module in republished/wwwroot/_equantic/*.js; do
             [ -f "$module" ] || continue
             modules=$((modules + 1))
-            for encoded in "$module.gz" "$module.br"; do
-              [ -s "$encoded" ] || { echo "::error::$encoded is not in the publish"; status=1; }
-            done
+            [ -s "$module.br" ] || { echo "::error::$module.br is not in the publish"; status=1; }
+            if [ ! -s "$module.gz" ]; then
+              echo "::error::$module.gz is not in the publish"
+              status=1
+            elif ! gzip -dc "$module.gz" | cmp -s - "$module"; then
+              echo "::error::$module.gz does not decompress to the module published beside it"
+              status=1
+            fi
           done
-          echo "modules published: $modules, each with its .gz and .br unless an error above says otherwise"
+          echo "modules published: $modules, each with its .br and a .gz of itself unless an error above says otherwise"
           [ "$modules" -gt 0 ] || { echo "::error::the publish holds no module"; status=1; }
+          dotnet publish samples/DefaultUIDashboard -c Release --no-build -o unbuilt || status=1
+          unbuilt=$(chunks unbuilt/wwwroot/_equantic)
+          echo "--no-build:    $(echo $unbuilt)"
+          if [ "$unbuilt" != "$after" ]; then
+            echo "::error::a --no-build publish holds other chunks than the last build wrote"
+            status=1
+          fi
           exit $status
 
       # Exit 0 is not the proof. A mobile target framework exists to produce a BUNDLE, and the
