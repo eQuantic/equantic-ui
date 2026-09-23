@@ -99,22 +99,22 @@ export function photonMonoAdvance(style: TypeStyleValue, typeScale = 1): number 
  * The font stacks the CSS uses — measuring with anything else measures the wrong text.
  *
  * These are the FALLBACKS the lowering declares inside its `var(...)`, character for character. The
- * variable itself is resolved below, because the base stylesheet DEFINES `--eq-font-family`, so the
- * fallback is what a page reaches only when the sheet is absent — and a constant that ignores the
- * variable measures a stack the page never draws with. That is what this used to do: it carried a
- * list of its own, two entries longer than any of the three the CSS side actually declares.
+ * variables themselves are resolved below, because an app may set either on `:root`, and a constant
+ * that ignores the variable measures a stack such a page never draws with. That is what this used to
+ * do: it carried a list of its own, two entries longer than any of the three the CSS side declares.
  */
 const SANS_FALLBACK = 'system-ui, -apple-system, sans-serif';
-// Character for character the fallback inside the CSS `var(...)`, quotes included. `--eq-font-mono`
-// is a hook an APP sets and the base stylesheet declares nothing, so this literal is what the page
-// normally paints with — a list of this measurer's own would be the common case, not the edge one.
+// Character for character the fallback inside the CSS `var(...)`, quotes included. `--eq-font-mono`,
+// like `--eq-font-family`, is a hook an APP sets and the SDK declares nothing, so this literal is what
+// the page normally paints with — a list of this measurer's own would be the common case, not the edge.
 const MONO_FALLBACK = "ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace";
 
 /**
  * The faces as the page will actually DRAW them. The lowering emits `var(--eq-font-family, …)` and
- * `var(--eq-font-mono, …)`, and the base stylesheet DECLARES the first, so a measurer that reads
- * only the fallback measures a stack the page never paints. A code editor places its caret from a
- * measured column advance: different face, different advance, caret beside the character.
+ * `var(--eq-font-mono, …)`, and an app that sets either paints with its own face, so a measurer that
+ * reads only the fallback measures a stack that page never paints. A code editor places its caret
+ * from a measured column advance: different face, different advance, caret beside the character.
+ * (A base stylesheet once declared the first. No page ever linked it, and it is gone: #335.)
  *
  * Resolved once and cached, like the canvas: the variable's VALUE is static CSS. (A web font that
  * loads late changes metrics without changing this string, which is the pre-existing hazard for
