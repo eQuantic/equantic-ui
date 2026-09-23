@@ -12,6 +12,7 @@ import { describe, expect, it } from 'vitest';
 import { photonTheme } from './design-system.generated';
 import { lowerVisualNode } from './lowering';
 import { setPhotonTheme } from './photon-context';
+import { effectiveStyle } from './style-atomizer';
 import { CodeSurface, Text, type VisualNode } from './vocabulary';
 import { Point, Size } from './value-types';
 import { CodeEditorController } from './components/CodeEditorController';
@@ -511,6 +512,14 @@ describe('the code surface goes through the atomizer, like every other node', ()
 
     expect(lowered.attributes['style']).toBeUndefined();
     expect(lowered.attributes['class'] ?? '').toContain('eq-code-surface');
+  });
+
+  // A drag extends the MODEL's selection. Left on, the browser swept its own highlight over the
+  // same text, which painted a second selection over the band and diverged from it.
+  it('keeps the browser from selecting the text a drag is already selecting', () => {
+    const { lowered } = surfaceFor('let x = 1;');
+
+    expect(effectiveStyle(lowered)).toContain('user-select: none');
   });
 });
 

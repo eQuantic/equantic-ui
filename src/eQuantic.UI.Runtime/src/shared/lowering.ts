@@ -567,6 +567,10 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
       outline: 'none',
       // pre: token runs carry REAL spaces between words — HTML would collapse them.
       'white-space': 'pre',
+      // A drag here extends the MODEL's selection, and the browser's own text sweep would paint a
+      // second one over the band the component draws — the sheet surface's rule, for its reason.
+      'user-select': 'none',
+      '-webkit-user-select': 'none',
     },
     [],
   );
