@@ -97,6 +97,40 @@ public class HydrationSpecEmissionTests
         Assert.Contains("$eq.num.long(0)", result);
     }
 
+    /// <summary>
+    /// A float crosses the wire as the shortest text that names its SINGLE, and JavaScript parses that
+    /// text as the nearest double — a different number until it is rounded back. So a float field, a
+    /// float? field and a record's float member all carry <c>'single'</c>; a double carries nothing.
+    /// </summary>
+    [Fact]
+    public void AFloat_HydratesAsASingle_AndADoubleDoesNot()
+    {
+        const string source = """
+            using eQuantic.UI.Primitives;
+
+            public sealed record Reading(float Value, double Precise);
+
+            [Page("/gauge")]
+            public sealed class Gauge : StatefulComponent
+            {
+                private float _level;
+                private float? _target;
+                private double _exact;
+                private Reading _last = new(0, 0);
+
+                public override VisualNode Build(ComponentContext context)
+                    => new Text("x", TypeRole.BodyM, context.Theme.TextPrimary);
+            }
+            """;
+        var results = new ComponentCompiler().CompileSource(source, "Gauge.cs");
+        var page = results.Single(r => r.ComponentName == "Gauge");
+        Assert.True(page.Success, string.Join("\n", page.Errors.Select(e => e.Message)));
+        Assert.Contains("return { _level: 'single', _target: 'single', _last: Reading };", page.TypeScript);
+        Assert.DoesNotContain("_exact:", page.TypeScript.Substring(page.TypeScript.IndexOf("$hydration")));
+        var reading = results.Single(r => r.ComponentName == "Reading").TypeScript;
+        Assert.Contains("static get $hydration() { return { value: 'single' }; }", reading);
+    }
+
     private static string Compile()
     {
         var compiler = new ComponentCompiler();

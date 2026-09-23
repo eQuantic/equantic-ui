@@ -22,6 +22,22 @@ describe('typed hydration', () => {
     expect(hydrate(parsed, 'dateTime')).toBe(parsed);
   });
 
+  it("rounds a float back to its single: the wire's shortest text names the single, JS reads a double", () => {
+    // "0.38" is what .NET writes for 0.38f; JavaScript parses it as the nearest DOUBLE.
+    expect(hydrate(0.38, 'single')).toBe(Math.fround(0.38));
+    expect(hydrate(0.38, 'single')).not.toBe(0.38);
+    // Idempotent, like every tag: a single hydrates to itself.
+    const single = Math.fround(0.1);
+    expect(hydrate(single, 'single')).toBe(single);
+    // A record member tagged `single` rounds with the rest of the map.
+    class Point {
+      x = 0;
+      static $hydration: Record<string, HydrationSpec> = { x: 'single' };
+    }
+    const point = hydrate({ x: 0.1 }, Point as never) as Point;
+    expect(point.x).toBe(Math.fround(0.1));
+  });
+
   it('lets null and undefined pass', () => {
     expect(hydrate(null, 'long')).toBeNull();
     expect(hydrate(undefined, 'decimal')).toBeUndefined();
