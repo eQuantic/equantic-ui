@@ -62,7 +62,10 @@ public class DeveloperSurfaceContractTests
         foreach (var section in sections) yield return $"config {section}";
 
         var templates = Path.Combine(root, "src", "eQuantic.UI.Templates", "templates");
-        foreach (var manifest in Directory.EnumerateFiles(templates, "template.json", SearchOption.AllDirectories).Order(StringComparer.Ordinal))
+        // The pack's stamped copy lives in the project's own obj/, beside templates/ rather than under
+        // it, but a template built in place grows one of its own — same filter as the section scan.
+        foreach (var manifest in Directory.EnumerateFiles(templates, "template.json", SearchOption.AllDirectories)
+                     .Where(IsSource).Order(StringComparer.Ordinal))
         {
             using var json = JsonDocument.Parse(File.ReadAllText(manifest));
             var shortName = json.RootElement.GetProperty("shortName").GetString();
