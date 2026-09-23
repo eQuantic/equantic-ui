@@ -19,6 +19,8 @@ public class IntegerDivisionConformanceTests
     [InlineData("int min = int.MinValue, minusOne = -1; try { return (min / minusOne).ToString(); } catch (Exception e) { return e.Message; }")]
     [InlineData("int min = int.MinValue, minusOne = -1; try { return (min % minusOne).ToString(); } catch (Exception e) { return e.Message; }")]
     [InlineData("int min = int.MinValue, minusOne = -1; try { return unchecked(min / minusOne).ToString(); } catch (Exception e) { return e.Message; }")]
+    [InlineData("int min = int.MinValue, minusOne = -1; try { return checked(min / minusOne).ToString(); } catch (Exception e) { return e.Message; }")]
+    [InlineData("int zero = 0; try { return checked(5 / zero).ToString(); } catch (Exception e) { return e.Message; }")]
     [InlineData("int min = int.MinValue; try { return (min / -1).ToString(); } catch (Exception e) { return e.Message; }")] // a constant -1 is checked too
     [InlineData("int min = int.MinValue; try { return (min % -1).ToString(); } catch (Exception e) { return e.Message; }")]
     // ---- the other widths a number carries ----
