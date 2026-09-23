@@ -43,7 +43,7 @@ export class Avatar extends StatelessComponent {
     }
 
     withStatusDot(face: VisualNode, side: number, theme: any) {
-        let dotSide = $eq.math.round(side / Math.fround(3.3));
+        let dotSide = $eq.math.roundSingle(Math.fround(side / Math.fround(3.3)));
         let dotFill = this.status === 'online' ? theme.colors('success').base : theme.textMuted;
         let dot = new Box(new BoxStyle({ width: dotSide, height: dotSide, background: dotFill, cornerRadius: new CornerRadii(theme.shape('full')), borderWidth: 2, borderColor: theme.surface }));
         let stack = new Stack();

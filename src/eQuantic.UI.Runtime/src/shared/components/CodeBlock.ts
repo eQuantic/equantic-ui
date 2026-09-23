@@ -7,6 +7,11 @@ export class CodeBlock extends StatelessComponent {
     static codeInk: ColorToken = new ColorToken(Color.fromRgba(0xC9, 0xD4, 0xDE, 0xFF));
     static codeInkMuted: ColorToken = new ColorToken(Color.fromRgba(0x7C, 0x8A, 0x99, 0xFF));
     static codeSlabActive: ColorToken = new ColorToken(Color.fromRgba(0x1B, 0x22, 0x2B, 0xFF));
+
+    static get $hydration() {
+        return { maxHeight: 'single', selectionBands: [{ of: Rect, members: { x: 'single', y: 'single', width: 'single', height: 'single' } }], metrics: CodeMetrics, viewportOffset: 'single', viewportHeight: 'single', viewportWidth: 'single' };
+    }
+
     declare document: CodeDocument;
     declare language: any;
     declare showLineNumbers: boolean;
@@ -62,19 +67,19 @@ export class CodeBlock extends StatelessComponent {
         let [first, last] = this.window(lineHeight);
         let widest = 0;
         for (let index = 0; index < this.document.lineCount; index++) widest = Math.max(widest, this.document.line(index).length);
-        let codeWidth = Math.fround(widest * metrics.columnWidth + metrics.columnWidth);
+        let codeWidth = Math.fround(Math.fround(Math.fround(widest) * metrics.columnWidth) + metrics.columnWidth);
         let lines = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
-        if (first > 0) lines.add(Spacer.fixed(first * lineHeight));
+        if (first > 0) lines.add(Spacer.fixed(Math.fround(Math.fround(first) * lineHeight)));
         for (let index = first; index <= last; index++) {
             lines.add(this.lineRow(context, highlighter, index, style, lineHeight, gutterWidth, ink, theme));
         }
-        if (last < this.document.lineCount - 1) lines.add(Spacer.fixed((this.document.lineCount - 1 - last) * lineHeight));
+        if (last < this.document.lineCount - 1) lines.add(Spacer.fixed(Math.fround(Math.fround(this.document.lineCount - 1 - last) * lineHeight)));
         let content: VisualNode = new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(0, 12) }), lines);
         let width = Math.max(codeWidth, this.viewportWidth);
         let marks = new Stack('topStart', { width: SizeValue.fill });
         let activeLine: any; 
         if ((activeLine = this.activeLine) != null && activeLine >= 0 && activeLine < this.document.lineCount) {
-            marks.add(new Positioned(new Box(new BoxStyle({ width: width, height: lineHeight, background: this.inverse ? CodeBlock.codeSlabActive : theme.colors('primary').subtle })), metrics.contentTop + activeLine * lineHeight, null, null, 0));
+            marks.add(new Positioned(new Box(new BoxStyle({ width: width, height: lineHeight, background: this.inverse ? CodeBlock.codeSlabActive : theme.colors('primary').subtle })), Math.fround(metrics.contentTop + Math.fround(Math.fround(activeLine) * lineHeight)), null, null, 0));
         }
         for (const decoration of this.decorations) {
             if (decoration.kind !== 'highlight') continue;
@@ -132,8 +137,8 @@ export class CodeBlock extends StatelessComponent {
 
     static metricsFor(context: any, size: SizeVariantValue, showLineNumbers: boolean, lastLineNumber: number) {
         let style = $eq.withPatch(TypeStyle.ofSize(Sizing.labelSize(size, context.density), 'regular'), { mono: true });
-        let gutter = Math.fround(showLineNumbers ? Math.ceil(context.measureText(String(lastLineNumber) + '0', style)) + 12 : 0);
-        return new CodeMetrics(style, $eq.math.round(style.lineHeight * Math.fround(1.15)), context.monoAdvance(style), gutter);
+        let gutter = showLineNumbers ? Math.fround(Math.ceil(context.measureText(String(lastLineNumber) + '0', style)) + 12) : 0;
+        return new CodeMetrics(style, $eq.math.roundSingle(Math.fround(style.lineHeight * Math.fround(1.15))), context.monoAdvance(style), gutter);
     }
 
     gutter(context: any) {
@@ -143,9 +148,9 @@ export class CodeBlock extends StatelessComponent {
         let [first, last] = this.window(lineHeight);
         let column = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fixed(metrics.gutterWidth) });
         column.add(Spacer.fixed(12));
-        if (first > 0) column.add(Spacer.fixed(first * lineHeight));
+        if (first > 0) column.add(Spacer.fixed(Math.fround(Math.fround(first) * lineHeight)));
         for (let index = first; index <= last; index++) column.add(this.gutterCell(index, metrics, theme));
-        if (last < this.document.lineCount - 1) column.add(Spacer.fixed((this.document.lineCount - 1 - last) * lineHeight));
+        if (last < this.document.lineCount - 1) column.add(Spacer.fixed(Math.fround(Math.fround(this.document.lineCount - 1 - last) * lineHeight)));
         return column;
     }
 
@@ -181,8 +186,8 @@ export class CodeBlock extends StatelessComponent {
     window(lineHeight: number) {
         if (this.viewportHeight <= 0 || lineHeight <= 0) return [0, this.document.lineCount - 1];
         let margin = 8;
-        let first = Math.max(0, (Math.trunc(Math.floor(this.viewportOffset / lineHeight)) | 0) - margin);
-        let visible = (Math.trunc(Math.ceil(this.viewportHeight / lineHeight)) | 0) + margin * 2;
+        let first = Math.max(0, (Math.trunc(Math.floor(Math.fround(this.viewportOffset / lineHeight))) | 0) - margin);
+        let visible = (Math.trunc(Math.ceil(Math.fround(this.viewportHeight / lineHeight))) | 0) + margin * 2;
         return [first, Math.min(this.document.lineCount - 1, first + visible)];
     }
 
@@ -196,10 +201,10 @@ export class CodeBlock extends StatelessComponent {
             let from = line === start.line ? start.column : 0;
             let to = line === end.line ? end.column : this.document.line(line).length;
             if (to <= from) continue;
-            let left = Math.fround(metrics.contentLeft + from * metrics.columnWidth);
-            let top = Math.fround(metrics.contentTop + line * metrics.lineHeight);
-            let width = Math.fround((to - from) * metrics.columnWidth);
-            _seq.push((() => { const _s = decoration.kind; if (_s === 'outline') return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, borderWidth: 1, borderColor: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); if (_s === 'squiggle') return new Positioned(new Box(new BoxStyle({ width: width, height: 2, background: color })), top + metrics.lineHeight - 2, null, null, left); if (_s === 'strike') return new Positioned(new Box(new BoxStyle({ width: width, height: 1, background: color })), top + metrics.lineHeight / 2, null, null, left); if (_s === 'underline') return new Positioned(new Box(new BoxStyle({ width: width, height: 1, background: color })), top + metrics.lineHeight - 2, null, null, left); return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, background: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); })());
+            let left = Math.fround(metrics.contentLeft + Math.fround(Math.fround(from) * metrics.columnWidth));
+            let top = Math.fround(metrics.contentTop + Math.fround(Math.fround(line) * metrics.lineHeight));
+            let width = Math.fround(Math.fround(to - from) * metrics.columnWidth);
+            _seq.push((() => { const _s = decoration.kind; if (_s === 'outline') return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, borderWidth: 1, borderColor: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); if (_s === 'squiggle') return new Positioned(new Box(new BoxStyle({ width: width, height: 2, background: color })), Math.fround(Math.fround(top + metrics.lineHeight) - 2), null, null, left); if (_s === 'strike') return new Positioned(new Box(new BoxStyle({ width: width, height: 1, background: color })), Math.fround(top + Math.fround(metrics.lineHeight / 2)), null, null, left); if (_s === 'underline') return new Positioned(new Box(new BoxStyle({ width: width, height: 1, background: color })), Math.fround(Math.fround(top + metrics.lineHeight) - 2), null, null, left); return new Positioned(new Box(new BoxStyle({ width: width, height: metrics.lineHeight, background: color, cornerRadius: new CornerRadii(2) })), top, null, null, left); })());
         }
         return _seq;
     }

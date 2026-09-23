@@ -138,6 +138,12 @@ public class NumericBclConformanceTests
     [InlineData("return long.CopySign(5L, -1L).ToString();")]                    // "-5"
     [InlineData("var (q, r) = long.DivRem(7L, 2L); return (q * 10L + r).ToString();")]   // "31"
     [InlineData("var (q, r) = long.DivRem(-9000000000L, 7L); return (q * 10L + r).ToString();")] // exact past 2^32
+    // A BigInt divides long.MinValue by -1 exactly, and throws for a zero divisor with a message of its
+    // own: both throw here as .NET's 64-bit division does, and with its words.
+    [InlineData("long min = long.MinValue, minusOne = -1; try { var (q, r) = long.DivRem(min, minusOne); return q.ToString(); } catch (Exception e) { return e.Message; }")] // overflow
+    [InlineData("long min = long.MinValue, minusOne = -1; try { var (q, r) = Math.DivRem(min, minusOne); return q.ToString(); } catch (Exception e) { return e.Message; }")] // overflow
+    [InlineData("long zero = 0; try { var (q, r) = long.DivRem(7L, zero); return q.ToString(); } catch (Exception e) { return e.Message; }")] // divide by zero
+    [InlineData("long min = long.MinValue, one = 1; var (q, r) = long.DivRem(min, one); return (q + r).ToString();")] // "-9223372036854775808"
     [InlineData("return long.IsPow2(4294967296L);")]                             // true — 2^32
     [InlineData("return long.IsPow2(0L);")]                                      // false
     [InlineData("return long.LeadingZeroCount(1L).ToString();")]                 // "63"
@@ -159,6 +165,101 @@ public class NumericBclConformanceTests
     [InlineData("return char.IsSurrogatePair(\"a\\uD83D\\uDE00\", 1);")]         // true
     [InlineData("return char.IsSurrogatePair(\"ab\", 0);")]                      // false
     [InlineData("return char.IsSurrogatePair(\"a\\uD83D\\uDE00\", 2);")]         // false — lone low at the end
+    // ---- Double: .NET's own compositions, which the precise JS primitives are NOT ----
+    [InlineData("return double.ExpM1(1e-10) * 1e10;")]                           // 1.000000082740371 — Exp(x) - 1
+    [InlineData("return double.LogP1(1e-10) * 1e10;")]                           // 1.000000082690371 — Log(x + 1)
+    [InlineData("return double.DegreesToRadians(3.0);")]                         // (x * π) / 180, not x * (π / 180)
+    [InlineData("return double.RadiansToDegrees(30.0);")]
+    [InlineData("return double.Lerp(0.1, 1.3, 0.1);")]                           // 0.22 — MultiplyAddEstimate, fused
+    [InlineData("return double.Ieee754Remainder(0.3, 0.1) * 1e17;")]             // from the exact x % y, not x - y·round(x/y)
+    [InlineData("return double.IsNaN(Math.Log(8.0, 1.0));")]                     // true — a base of 1
+    [InlineData("return double.IsNaN(Math.Log(8.0, 0.0));")]                     // true — a base of 0
+    [InlineData("return double.IsNaN(Math.Log(8.0, double.PositiveInfinity));")] // true — a base of +∞
+    [InlineData("return Math.Log(8.0, 2.0);")]                                   // 3
+    // ---- Math: the static class reaches the same table as the primitive ----
+    [InlineData("return Math.CopySign(3.0, -1.0);")]                             // -3 — JS has no Math.copySign
+    [InlineData("return Math.FusedMultiplyAdd(0.1, 0.2, 0.3);")]
+    [InlineData("return Math.BitIncrement(1.0);")]                               // 1.0000000000000002
+    [InlineData("return Math.ScaleB(3.0, 4);")]                                  // 48
+    [InlineData("return Math.ILogB(8.0);")]                                      // 3
+    [InlineData("return Math.IEEERemainder(5.0, 3.0);")]                         // -1
+    [InlineData("return Math.Max(3L, 5L).ToString();")]                          // "5" — a long is a BigInt, which Math.max refuses
+    [InlineData("return Math.BigMul(4000000000u, 4000000000u).ToString();")]     // exact past 2^53: a ulong, a BigInt
+    [InlineData("var (q, r) = Math.DivRem(7u, 2u); return (q * 10 + r).ToString();")] // "31"
+    // DivRem throws where .NET throws, and a narrow quotient converts back into its width.
+    [InlineData("int zero = 0; try { var (q, r) = Math.DivRem(7, zero); return q; } catch { return -1; }")] // -1
+    [InlineData("uint zero = 0; try { var (q, r) = Math.DivRem(7u, zero); return 1; } catch { return -1; }")] // -1
+    [InlineData("int min = int.MinValue, minusOne = -1; try { var (q, r) = Math.DivRem(min, minusOne); return q; } catch { return -1; }")] // -1 — overflow
+    [InlineData("short min = short.MinValue, minusOne = -1; var (q, r) = Math.DivRem(min, minusOne); return q;")] // -32768 — wraps
+    // An integer has no signed zero: JavaScript's `-1 / 3` and `-6 % 3` are both -0, which a
+    // division by the result shows as -∞ where .NET answers +∞. The sign is returned, because an
+    // infinity is not a JSON number and the harness compares JSON.
+    [InlineData("int a = -6, b = 3; var (q, r) = Math.DivRem(a, b); return 1.0 / r > 0 ? 1 : -1;")]   // 1
+    [InlineData("int a = -1, b = 3; var (q, r) = Math.DivRem(a, b); return 1.0 / q > 0 ? 1 : -1;")]   // 1
+    [InlineData("short a = -6, b = 3; var (q, r) = Math.DivRem(a, b); return 1.0 / r > 0 ? 1 : -1;")] // 1
+    // ---- a hole beside an operator fences what fills it ----
+    [InlineData("bool c = true; double a = 1, b = 2; return double.DegreesToRadians(c ? a : b);")]
+    [InlineData("double a = 1, b = 2; return double.DegreesToRadians(a + b);")]
+    // ---- a NAMED argument fills its own parameter, and arguments still run in written order ----
+    [InlineData("return Math.Round(mode: MidpointRounding.AwayFromZero, value: 2.5);")] // 3
+    [InlineData("return (double)float.Round(mode: MidpointRounding.AwayFromZero, x: 2.5f);")] // 3
+    [InlineData("int n = 0; double F(double v) { n = n * 10 + 1; return v; } MidpointRounding M() { n = n * 10 + 2; return MidpointRounding.AwayFromZero; } var r = Math.Round(mode: M(), value: F(2.5)); return n * 10 + r;")] // 213
+    // A mode that is not one, where the value is not rounded. The overload with a mode and no digits
+    // reads the mode first and throws; the digits overload returns such a value unread. Measured on
+    // .NET 10 for both homes.
+    [InlineData("try { Math.Round(double.PositiveInfinity, (MidpointRounding)99); return 1; } catch { return -1; }")]  // -1
+    [InlineData("try { Math.Round(1e17, (MidpointRounding)99); return 1; } catch { return -1; }")]                  // -1
+    [InlineData("try { Math.Round(1e17, 2, (MidpointRounding)99); return 1; } catch { return -1; }")]               // 1
+    [InlineData("try { MathF.Round(float.PositiveInfinity, (MidpointRounding)99); return 1; } catch { return -1; }")] // -1
+    [InlineData("try { MathF.Round(1e9f, (MidpointRounding)99); return 1; } catch { return -1; }")]                  // -1
+    [InlineData("try { MathF.Round(1e9f, 2, (MidpointRounding)99); return 1; } catch { return -1; }")]               // 1
+    [InlineData("int x = 15; return Math.Clamp(max: 10, min: 0, value: x);")]                         // 10
+    [InlineData("long x = -5; return (int)Math.Clamp(max: 10L, min: 0L, value: x);")]                // 0
+    [InlineData("int a = 3, b = 7; return Math.Max(val2: a, val1: b) * 10 + Math.Min(val2: a, val1: b);")] // 73
+    [InlineData("double b = 2; return Math.Log(newBase: b, a: 8.0);")]                              // 3
+    // ---- a DECIMAL rounds as a decimal, by its overload: the mode was read as a digit count ----
+    [InlineData("decimal m = 2.5m; return Math.Round(m, MidpointRounding.AwayFromZero).ToString();")]            // "3"
+    [InlineData("decimal m = -2.5m; return Math.Round(m, MidpointRounding.AwayFromZero).ToString();")]           // "-3"
+    [InlineData("decimal m = 2.345m; return Math.Round(m, 2).ToString();")]                                       // "2.34" — ToEven
+    [InlineData("decimal m = 2.345m; return Math.Round(m, 2, MidpointRounding.AwayFromZero).ToString();")]       // "2.35"
+    [InlineData("decimal m = 2.349m; return Math.Round(m, 2, MidpointRounding.ToZero).ToString();")]             // "2.34"
+    [InlineData("decimal m = -2.341m; return Math.Round(m, 2, MidpointRounding.ToNegativeInfinity).ToString();")] // "-2.35"
+    [InlineData("decimal m = 2.341m; return Math.Round(m, 2, MidpointRounding.ToPositiveInfinity).ToString();")] // "2.35"
+    [InlineData("decimal m = 2.341m; return Math.Round(m, MidpointRounding.ToPositiveInfinity).ToString();")]    // "3"
+    [InlineData("decimal m = 2.345m; return Math.Round(mode: MidpointRounding.AwayFromZero, decimals: 2, d: m).ToString();")] // "2.35"
+    [InlineData("decimal m = 2.345m; return decimal.Round(m, 2, MidpointRounding.AwayFromZero).ToString();")]    // "2.35"
+    [InlineData("decimal m = 1.20m; return Math.Round(m, 1).ToString();")]                                        // "1.2"
+    // ---- Single: the float home answers in single precision ----
+    [InlineData("return (double)float.Sqrt(2f);")]                               // 1.4142135381698608
+    [InlineData("return (double)MathF.Sqrt(2f);")]
+    [InlineData("return (double)float.ExpM1(1e-5f) * 1e5;")]                     // MathF.Exp(x) - 1, two roundings
+    [InlineData("return (double)float.LogP1(1e-5f) * 1e5;")]                     // MathF.Log(x + 1)
+    [InlineData("return (double)float.DegreesToRadians(5f);")]                   // (x * float.Pi) / 180f
+    [InlineData("return (double)float.RadiansToDegrees(1f);")]                   // 57.2957763671875
+    [InlineData("return (double)float.Atan2Pi(1f, 1f);")]                        // 0.25
+    [InlineData("return (double)float.Lerp(0.1f, 1.3f, 0.7f);")]                 // 0.9399999976158142 — fused
+    [InlineData("return (double)float.FusedMultiplyAdd(0.1f, 0.2f, 0.3f);")]
+    // a·b + 1 lands 2^-60 ABOVE the midpoint between 1 and the next single: the double rounds onto
+    // the midpoint, and only the low half of the exact sum says which way the single goes.
+    [InlineData("float a = (1f + 1f / 4096f) / 16777216f, b = 1f - 1f / 4096f + 1f / 16777216f; return (double)MathF.FusedMultiplyAdd(a, b, 1f);")]
+    [InlineData("return (double)float.Hypot(0.1f, 0.2f);")]
+    [InlineData("return (double)float.Hypot(3f, 4f);")]                          // 5
+    [InlineData("return (double)MathF.IEEERemainder(0.3f, 0.1f) * 1e8;")]        // 0.7450580596923828 — in singles
+    [InlineData("return (double)MathF.Log(8f, 2f);")]                            // 3
+    [InlineData("return float.IsNaN(MathF.Log(8f, 1f));")]                       // true
+    [InlineData("var (s, c) = float.SinCos(0f); return (double)(s * 10 + c);")]  // 1
+    [InlineData("return float.IsSubnormal(1e-40f);")]                            // true — the SINGLE's range
+    [InlineData("return float.IsNormal(1e-40f);")]                               // false
+    [InlineData("return float.IsNormal(1f);")]                                   // true
+    [InlineData("return (double)float.BitIncrement(1f);")]                       // 1.0000001192092896 — a single's step
+    [InlineData("return (double)float.BitDecrement(1f);")]                       // 0.9999999403953552
+    [InlineData("return float.BitIncrement(0f) == float.Epsilon;")]              // true
+    [InlineData("return float.BitDecrement(0f) == -float.Epsilon;")]             // true
+    [InlineData("return (double)MathF.Round(1.2345f, 2);")]                      // 1.2300000190734863 — scaled in singles
+    [InlineData("return (double)float.Round(2.5f);")]                            // 2
+    [InlineData("return (double)MathF.Round(2.5f, MidpointRounding.AwayFromZero);")] // 3
+    [InlineData("try { return (double)MathF.Round(1f, 7); } catch { return -1.0; }")] // -1 — six digits at most
+    [InlineData("try { return Math.Round(1.0, 16); } catch { return -1.0; }")]   // -1 — fifteen for a double
     public void NumericBcl_MatchesDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

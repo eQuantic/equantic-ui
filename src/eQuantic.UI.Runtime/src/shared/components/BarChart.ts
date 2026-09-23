@@ -1,4 +1,4 @@
-import { BarChartLayout, Box, BoxStyle, BuildContext, Button, Canvas, CanvasPointer, CategoryAxis, ChartSeries, Column, CornerRadii, DataColumn, DataRow, DataTable, EdgeInsets, Flexible, GridTrack, Point, Positioned, Pressable, Rect, Row, SdkStrings, SizeValue, Stack, StatefulComponent, Text, UiComponent, ValueAxis, ValueTicks, VisualNode } from "../runtime-exports";
+import { BarChartGeometry, BarChartLayout, Box, BoxStyle, BuildContext, Button, Canvas, CanvasPointer, CategoryAxis, ChartSeries, Column, CornerRadii, DataColumn, DataRow, DataTable, EdgeInsets, Flexible, GridTrack, Point, Positioned, Pressable, Rect, Row, SdkStrings, SizeValue, Stack, StatefulComponent, Text, UiComponent, ValueAxis, ValueTicks, VisualNode } from "../runtime-exports";
 
 export class BarChart extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Charts.BarChart';
@@ -21,6 +21,10 @@ export class BarChart extends StatefulComponent {
     _table: boolean = false;
     _geometry: any = null;
     _theme: any = null;
+
+    static get $hydration() {
+        return { _plotHeight: 'single', _pointerX: 'single', _pointerY: 'single', _geometry: BarChartGeometry };
+    }
 
     constructor(series?: any, categories?: any, values: any = null, layout: any = 'grouped', orientation: any = 'vertical', title: any = null, subtitle: any = null, plotHeight: any = BarChart.defaultPlotHeight, props?: any) {
         super();
@@ -125,7 +129,7 @@ export class BarChart extends StatefulComponent {
             let length = axis.label(ticks.at(i)).length;
             if (length > longest) longest = length;
         }
-        return Math.max(BarChart.minValueAxisWidth, longest * BarChart.captionCharWidth + 8);
+        return Math.max(BarChart.minValueAxisWidth, Math.fround(Math.fround(Math.fround(longest) * BarChart.captionCharWidth) + 8));
     }
 
     plot(context: any) {
@@ -166,8 +170,8 @@ export class BarChart extends StatefulComponent {
         let stack = new Stack('topStart', { width: SizeValue.fixed(band), height: SizeValue.fixed(this._plotHeight) });
         for (let i = 0; i < ticks.count; i++) {
             let y = Math.fround(this._plotHeight - BarChartLayout.tickOffset(ticks, i, this._plotHeight));
-            let label = new Box(new BoxStyle({ width: SizeValue.fixed(band - 4) }), new Text(this._values.label(ticks.at(i)), 'caption', theme.textMuted, 1, 'end', false, true));
-            stack.add(new Positioned(label, y - lineHeight / 2, null, null, 0));
+            let label = new Box(new BoxStyle({ width: SizeValue.fixed(Math.fround(band - 4)) }), new Text(this._values.label(ticks.at(i)), 'caption', theme.textMuted, 1, 'end', false, true));
+            stack.add(new Positioned(label, Math.fround(y - Math.fround(lineHeight / 2)), null, null, 0));
         }
         return stack;
     }
@@ -183,12 +187,12 @@ export class BarChart extends StatefulComponent {
     categoryLabelsBeside(context: any) {
         let theme = context.theme;
         let count = this._categories.categories.length;
-        let slot = Math.fround(count === 0 ? this._plotHeight : this._plotHeight / count);
+        let slot = count === 0 ? this._plotHeight : Math.fround(this._plotHeight / Math.fround(count));
         let lineHeight = Math.fround(theme.type('caption').lineHeight * context.typeScale);
         let stack = new Stack('topStart', { width: SizeValue.fixed(BarChart.categoryAxisWidth), height: SizeValue.fixed(this._plotHeight) });
         for (let c = 0; c < count; c++) {
-            let label = new Box(new BoxStyle({ width: SizeValue.fixed(BarChart.categoryAxisWidth - 8) }), new Text(this._categories.categories[c], 'caption', theme.textMuted, 1, 'end'));
-            stack.add(new Positioned(label, c * slot + slot / 2 - lineHeight / 2, null, null, 0));
+            let label = new Box(new BoxStyle({ width: SizeValue.fixed(Math.fround(BarChart.categoryAxisWidth - 8)) }), new Text(this._categories.categories[c], 'caption', theme.textMuted, 1, 'end'));
+            stack.add(new Positioned(label, Math.fround(Math.fround(Math.fround(Math.fround(c) * slot) + Math.fround(slot / 2)) - Math.fround(lineHeight / 2)), null, null, 0));
         }
         return stack;
     }
@@ -231,14 +235,14 @@ export class BarChart extends StatefulComponent {
                 p.fillRect(b.box, color);
                 continue;
             }
-            let radius = Math.min(4, Math.min(b.box.width, b.box.height) / 2);
+            let radius = Math.min(4, Math.fround(Math.min(b.box.width, b.box.height) / 2));
             p.fillRect(b.box, color, radius);
             if (vertical) {
                 let half = Math.fround(b.box.height / 2);
-                if (b.negative) p.fillRect(new Rect(b.box.x, b.box.y, b.box.width, half), color); else p.fillRect(new Rect(b.box.x, b.box.y + half, b.box.width, half), color);
+                if (b.negative) p.fillRect(new Rect(b.box.x, b.box.y, b.box.width, half), color); else p.fillRect(new Rect(b.box.x, Math.fround(b.box.y + half), b.box.width, half), color);
             } else {
                 let half = Math.fround(b.box.width / 2);
-                if (b.negative) p.fillRect(new Rect(b.box.x + half, b.box.y, half, b.box.height), color); else p.fillRect(new Rect(b.box.x, b.box.y, half, b.box.height), color);
+                if (b.negative) p.fillRect(new Rect(Math.fround(b.box.x + half), b.box.y, half, b.box.height), color); else p.fillRect(new Rect(b.box.x, b.box.y, half, b.box.height), color);
             }
         }
     }
@@ -270,7 +274,7 @@ export class BarChart extends StatefulComponent {
         let box = new Box(new BoxStyle({ background: theme.surface, borderWidth: 1, borderColor: theme.border, cornerRadius: new CornerRadii(theme.shape('small')), padding: EdgeInsets.symmetric(8, 4) }), card);
         let left = this._pointerX < Math.fround(geometry.width / 2);
         let above = this._pointerY < Math.fround(geometry.height / 2);
-        return new Positioned(box, above ? this._pointerY + 12 : null, left ? null : geometry.width - this._pointerX + 12, above ? null : geometry.height - this._pointerY + 12, left ? this._pointerX + 12 : null);
+        return new Positioned(box, above ? Math.fround(this._pointerY + 12) : null, left ? null : Math.fround(Math.fround(geometry.width - this._pointerX) + 12), above ? null : Math.fround(Math.fround(geometry.height - this._pointerY) + 12), left ? Math.fround(this._pointerX + 12) : null);
     }
 
     footer() {

@@ -13,6 +13,11 @@ export class Spreadsheet extends StatefulComponent {
     static grip: number = 6;
     static fillHandle: number = 7;
     _resizeBase: number = -1;
+
+    static get $hydration() {
+        return { _offset: 'single', _viewport: 'single', _resizeBase: 'single', width: { of: SizeValue, members: { value: 'single' } }, height: { of: SizeValue, members: { value: 'single' } } };
+    }
+
     declare controller: SheetController;
     declare width: SizeValue;
     declare height: SizeValue;
@@ -30,7 +35,7 @@ export class Spreadsheet extends StatefulComponent {
         let theme = context.theme;
         let document = this.controller.document;
         let topOfWindow = null;
-        [this._first, this._last, topOfWindow] = this.windowFor(this._offset, this._viewport > 0 ? this._viewport : Spreadsheet.headerHeight * 14);
+        [this._first, this._last, topOfWindow] = this.windowFor(this._offset, this._viewport > 0 ? this._viewport : Math.fround(Spreadsheet.headerHeight * 14));
         let headerRow = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill });
         headerRow.add(Spreadsheet.headerCell('', Spreadsheet.headerWidth, Spreadsheet.headerHeight, theme, false, () => this.setState(this.controller.selectAll.bind(this.controller))));
         for (let c = 0; c < document.cols; c++) headerRow.add(this.columnHeader(c, document, theme));
@@ -97,13 +102,13 @@ export class Spreadsheet extends StatefulComponent {
 
     onScrolled(offset: number) {
         this._offset = offset;
-        let [first, last, ] = this.windowFor(offset, this._viewport > 0 ? this._viewport : Spreadsheet.headerHeight * 14);
+        let [first, last, ] = this.windowFor(offset, this._viewport > 0 ? this._viewport : Math.fround(Spreadsheet.headerHeight * 14));
         if (first === this._first && last === this._last) return;
         this.setState(() => {});
     }
 
     onViewportChanged(viewport: number) {
-        if (Math.abs(viewport - this._viewport) < 0.5) return;
+        if (Math.abs(Math.fround(viewport - this._viewport)) < 0.5) return;
         this.setState(() => this._viewport = viewport);
     }
 
@@ -136,7 +141,7 @@ export class Spreadsheet extends StatefulComponent {
         let document = this.controller.document;
         if (this._resizeBase < 0) this._resizeBase = axis === 'cols' ? document.colWidth(index) : document.rowHeight(index);
         let floor = axis === 'cols' ? Spreadsheet.minColWidth : Spreadsheet.minRowHeight;
-        let size = Math.max(floor, this._resizeBase + delta);
+        let size = Math.max(floor, Math.fround(this._resizeBase + delta));
         this.setState(() => {
             if (axis === 'cols') document.setColWidth(index, size); else document.setRowHeight(index, size);
         });
@@ -146,7 +151,7 @@ export class Spreadsheet extends StatefulComponent {
         if (this._resizeBase < 0) return;
         let document = this.controller.document;
         let floor = axis === 'cols' ? Spreadsheet.minColWidth : Spreadsheet.minRowHeight;
-        let final = Math.max(floor, this._resizeBase + delta);
+        let final = Math.max(floor, Math.fround(this._resizeBase + delta));
         if (axis === 'cols') document.setColWidth(index, this._resizeBase); else document.setRowHeight(index, this._resizeBase);
         this._resizeBase = -1;
         this.controller.resize(axis, index, final);
@@ -170,7 +175,7 @@ export class Spreadsheet extends StatefulComponent {
             if (editingHere) {
                 let draftLine = new Row(0, 'start', 'center', false, null, null, { cross: 'center' });
                 if (value.length > 0) draftLine.add(new Text(value, 'bodyM', theme.textPrimary, 1));
-                draftLine.add(new Box(new BoxStyle({ width: SizeValue.fixed(2), height: SizeValue.fixed(document.rowHeight(row) - 8), background: theme.textPrimary })));
+                draftLine.add(new Box(new BoxStyle({ width: SizeValue.fixed(2), height: SizeValue.fixed(Math.fround(document.rowHeight(row) - 8)), background: theme.textPrimary })));
                 content = draftLine;
             } else if (value.length > 0) {
                 content = new Text(value, 'bodyM', theme.textPrimary, 1);

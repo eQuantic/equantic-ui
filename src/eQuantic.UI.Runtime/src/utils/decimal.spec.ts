@@ -60,4 +60,34 @@ describe('Decimal.round — half to even', () => {
     expect(Decimal.from('2.355').round(2).toString()).toBe('2.36');
     expect(Decimal.from('7').round(2).toString()).toBe('7');
   });
+
+  // .NET's decimal: AwayFromZero moves only a half, the directed modes move every value, and each
+  // mode is read on a negative value too, where "away" and "toward -∞" part company.
+  it.each([
+    ['2.5', 0, 'awayFromZero', '3'],
+    ['-2.5', 0, 'awayFromZero', '-3'],
+    ['2.345', 2, 'awayFromZero', '2.35'],
+    ['2.344', 2, 'awayFromZero', '2.34'],
+    ['2.349', 2, 'toZero', '2.34'],
+    ['-2.349', 2, 'toZero', '-2.34'],
+    ['-2.341', 2, 'toNegativeInfinity', '-2.35'],
+    ['2.349', 2, 'toNegativeInfinity', '2.34'],
+    ['2.341', 2, 'toPositiveInfinity', '2.35'],
+    ['-2.349', 2, 'toPositiveInfinity', '-2.34'],
+    ['2.345', 2, 'toEven', '2.34'],
+    ['2.30', 1, 'toPositiveInfinity', '2.3'],
+  ] as const)('rounds %s to %i digits %s as %s', (value, digits, mode, expected) => {
+    expect(Decimal.from(value).round(digits, mode).toString()).toBe(expected);
+  });
+
+  it('refuses a mode that is not one, even where nothing needs rounding, as .NET does', () => {
+    expect(() => Decimal.from('1.2').round(2, 'sideways' as never)).toThrow(RangeError);
+    expect(() => Decimal.from('1.25').round(1, 'sideways' as never)).toThrow(RangeError);
+    expect(() => Decimal.from('1.2').round(2, 'toString' as never)).toThrow(RangeError);
+  });
+
+  it('refuses a digit count outside 0..28, as .NET does', () => {
+    expect(() => Decimal.from('1.5').round(29)).toThrow(RangeError);
+    expect(() => Decimal.from('1.5').round(-1)).toThrow(RangeError);
+  });
 });

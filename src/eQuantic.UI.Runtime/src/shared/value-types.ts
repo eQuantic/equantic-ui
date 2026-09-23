@@ -198,8 +198,10 @@ export class Point {
   readonly y: number;
 
   constructor(x = 0, y = 0) {
-    // At STORAGE, which is where this SDK rounds: a C# `float` field holds the nearest float, so a
-    // twin holding the double a caller passed already disagrees before any arithmetic runs.
+    // At construction, because a caller can hand this twin a double no transpiled code produced —
+    // a DOM coordinate, a hand-written call — and a C# `float` field holds the nearest float.
+    // Transpiled code rounds each float where it is produced (SinglePrecision), so for it this is
+    // a no-op; for everyone else it is the difference between two answers.
     this.x = f(x);
     this.y = f(y);
   }

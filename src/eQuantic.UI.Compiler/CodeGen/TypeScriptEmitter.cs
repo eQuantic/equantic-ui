@@ -117,6 +117,9 @@ public class TypeScriptEmitter
     /// type, neither of which used to produce a runtime reference. Collected here and added to the
     /// import candidates, or the module loads into "Todo is not defined".</summary>
     private readonly HashSet<string> _hydrationReferences = new();
+    /// <summary>The vocabulary twins a hydration spec names (<c>of: Rect</c>): imported from the
+    /// runtime, never from a sibling module.</summary>
+    private readonly HashSet<string> _hydrationRuntimeReferences = new();
 
     /// <summary>The runtime class a C# KEYWORD annotates as. <c>decimal</c> is the only one: every
     /// other runtime-backed type is spelled the same in both languages, so the type scan sees the
@@ -148,12 +151,18 @@ public class TypeScriptEmitter
     {
         var referenced = _hydrationReferences;
         var entries = fields
-            .Select(field => (field.Key, Spec: HydrationSpec.Of(BindType(field.Type), referenced)))
+            .Select(field => (field.Key, Spec: HydrationSpec.Of(BindType(field.Type), referenced, _hydrationRuntimeReferences)))
             .Where(field => field.Spec is not null)
             .Select(field => $"{field.Key}: {field.Spec}")
             .ToList();
         if (entries.Count == 0) return;
-        c.Field("$hydration", null, $"{{ {string.Join(", ", entries)} }}", null, isStatic: true);
+        // A GETTER, never a field: the map can name a class (`_geometry: BarChartGeometry`), and a
+        // static field initializer runs when THIS class is defined — which, inside the runtime
+        // bundle's import cycles, came before the named class was, and the whole bundle failed to
+        // load on a TDZ ReferenceError. The runtime reads the map when it hydrates, after every
+        // module has loaded.
+        c.Member(JsClassMember.Getter("static ", "$hydration", "",
+            JsStatement.Raw($"return {{ {string.Join(", ", entries)} }};")));
     }
 
     /// <summary>A Build method's body as IR: its block, its expression as a return, or the
@@ -264,6 +273,7 @@ public class TypeScriptEmitter
         // pins a syntax tree per entry and used to survive this point (see ConversionContext.Reset).
         _converter.Reset();
         _hydrationReferences.Clear();
+        _hydrationRuntimeReferences.Clear();
         _annotationReferences.Clear();
         component.UsedHelpers.Clear();
 
@@ -637,7 +647,7 @@ public class TypeScriptEmitter
                     // as a string, a Task<List<Todo>> as plain objects — hydrated ONCE here, by
                     // the spec of the C# return type, so the caller computes with runtime types.
                     var invoke = $"getServerActionsClient().invoke('{action.ActionId}', [{argsList}])";
-                    var resultSpec = HydrationSpec.Of(ActionValueType(action.SyntaxNode), _hydrationReferences);
+                    var resultSpec = HydrationSpec.Of(ActionValueType(action.SyntaxNode), _hydrationReferences, _hydrationRuntimeReferences);
                     if (resultSpec is not null) component.UsedHelpers.Add(Eq.Import);
 
                     c.Member(JsClassMember.Method("async ", action.MethodName.ToCamelCase(), "", paramsList, "", JsStatement.Block(new[]
@@ -760,6 +770,13 @@ public class TypeScriptEmitter
         // Types a HYDRATION SPEC names — see _hydrationReferences: emitted into the body, present
         // in no syntax the walks above cover.
         foreach (var t in _hydrationReferences) componentTypes.Add(t);
+        // ...and the vocabulary twins a spec names, which only the runtime exports: classified as
+        // runtime-provided, so the router sends them to @equantic/runtime instead of a ./Rect.
+        foreach (var t in _hydrationRuntimeReferences)
+        {
+            componentTypes.Add(t);
+            component.RuntimeProvidedTypes.Add(t);
+        }
         foreach (var t in _annotationReferences) componentTypes.Add(t);
 
         // Types the CONVERSION introduced into the output (extension calls reduced to

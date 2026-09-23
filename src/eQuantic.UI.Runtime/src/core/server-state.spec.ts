@@ -171,6 +171,25 @@ describe('server-state adoption (C# IServerPrefetch twin)', () => {
     expect('_stale' in page).toBe(false);
   });
 
+  it('does not take a key every object INHERITS for a field the component declares', () => {
+    class Page {
+      _downloads = 1;
+    }
+    const page = new Page();
+    // Parsed, as a page parses it: JSON keeps `__proto__` as an ordinary member.
+    win.__INITIAL_STATE__ = {
+      'Page#0': JSON.parse(
+        '{"_downloads":2,"__proto__":{"planted":true},"constructor":"x"}',
+      ) as Record<string, unknown>,
+    };
+
+    runComponentWalk(page, true, () => undefined);
+
+    expect(page._downloads).toBe(2);
+    expect(Object.getPrototypeOf(page)).toBe(Page.prototype);
+    expect(page.constructor).toBe(Page);
+  });
+
   it('is a no-op without a payload', () => {
     const page = new HomePage();
     runComponentWalk(page, true, () => undefined);

@@ -133,3 +133,24 @@ static eQuantic.UI.Compiler.CodeGen.RecordTypeEmitter.EmitsTwin(Microsoft.CodeAn
 static eQuantic.UI.Compiler.Services.ComponentDependencyResolver.From(Microsoft.CodeAnalysis.Compilation! compilation) -> eQuantic.UI.Compiler.Services.ComponentDependencyResolver!
 eQuantic.UI.Compiler.Services.SourceMapComposer
 static eQuantic.UI.Compiler.Services.SourceMapComposer.Compose(string! outerMap, System.Func<string!, string?>! innerMapOf) -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.RoundSingle = "$eq.math.roundSingle" -> string!
+eQuantic.UI.Compiler.CodeGen.Strategies.Invocation.MathStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.SinglePrecision
+static eQuantic.UI.Compiler.CodeGen.Strategies.SinglePrecision.HoldsExactly(Microsoft.CodeAnalysis.SpecialType integer) -> bool
+static eQuantic.UI.Compiler.CodeGen.Strategies.SinglePrecision.Is(Microsoft.CodeAnalysis.ITypeSymbol? type) -> bool
+static eQuantic.UI.Compiler.CodeGen.Strategies.SinglePrecision.Round(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! value) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.FloatStore
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Invocation.MathStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.Strategies.FloatStore.Round(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! value) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.Strategies.FloatStore.Settle(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax! source, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! converted, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+static eQuantic.UI.Compiler.CodeGen.Strategies.SinglePrecision.HoldsExactly(Microsoft.CodeAnalysis.IOperation! value) -> bool
+const eQuantic.UI.Compiler.CodeGen.Eq.SingleFromLong = "$eq.num.singleFromLong" -> string!
+eQuantic.UI.Compiler.CodeGen.Strategies.ReadModifyWrite
+static eQuantic.UI.Compiler.CodeGen.Strategies.ReadModifyWrite.Assign(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! target, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!>! operands, System.Func<eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!>!, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!>! next, bool answerOld, bool annotate) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+static eQuantic.UI.Compiler.CodeGen.HydrationSpec.Members(Microsoft.CodeAnalysis.INamedTypeSymbol! type, System.Collections.Generic.ISet<string!>! referenced, System.Collections.Generic.ISet<string!>! runtime) -> string?
+static eQuantic.UI.Compiler.CodeGen.HydrationSpec.Of(Microsoft.CodeAnalysis.ITypeSymbol? type, System.Collections.Generic.ISet<string!>! referenced, System.Collections.Generic.ISet<string!>! runtime) -> string?
+static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.IsHostOnly(this Microsoft.CodeAnalysis.INamedTypeSymbol! type) -> bool
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.HydrationSpec.Members(Microsoft.CodeAnalysis.INamedTypeSymbol! type, System.Collections.Generic.ISet<string!>! referenced) -> string?
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.HydrationSpec.Of(Microsoft.CodeAnalysis.ITypeSymbol? type, System.Collections.Generic.ISet<string!>! referenced) -> string?
+const eQuantic.UI.Compiler.CodeGen.Eq.RoundSingleWithMode = "$eq.math.roundSingleWithMode" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.RoundWithMode = "$eq.math.roundWithMode" -> string!

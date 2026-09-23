@@ -30,8 +30,17 @@ public static class Eq
     /// ONCE to its runtime type, by the spec the compiler computed from the C# type.</summary>
     public const string Hydrate = "$eq.hydrate";
     public const string Round = "$eq.math.round";
+    /// <summary>MathF.Round's arithmetic: the scaling and the dividing back in single precision.</summary>
+    public const string RoundSingle = "$eq.math.roundSingle";
+    /// <summary>Round's overload with a mode and no digits, which reads the mode before the value.</summary>
+    public const string RoundWithMode = "$eq.math.roundWithMode";
+    /// <summary>MathF.Round's overload with a mode and no digits, in single precision.</summary>
+    public const string RoundSingleWithMode = "$eq.math.roundSingleWithMode";
     /// <summary>A checked arithmetic result — the value, or the OverflowException C# throws.</summary>
     public const string Checked = "$eq.num.checked";
+    /// <summary>A long (a BigInt) as the single .NET's conversion answers: rounded ONCE, from all
+    /// 64 bits, never through the double.</summary>
+    public const string SingleFromLong = "$eq.num.singleFromLong";
     /// <summary>A float as text: the shortest decimal that reads back as the same single.</summary>
     public const string Single = "$eq.num.single";
     /// <summary>Substring that refuses an out-of-range index, the way .NET does.</summary>

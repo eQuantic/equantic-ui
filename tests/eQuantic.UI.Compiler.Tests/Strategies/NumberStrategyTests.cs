@@ -20,10 +20,11 @@ public class NumberStrategyTests
     }
 
     [Fact]
-    public void FloatParse_MapsToParseFloat()
+    public void FloatParse_IsASingle()
     {
+        // A float parsed from text is a single, like every float this side produces.
         var result = TestHelper.ConvertExpression("float.Parse(str)");
-        result.Should().Be("parseFloat(this.str)");
+        result.Should().Be("Math.fround(parseFloat(this.str))");
     }
 
     [Fact]

@@ -25,7 +25,7 @@ export class Mermaid extends StatelessComponent {
         for (const arrow of scene.arrows) canvas.add(Mermaid.placeArrowhead(arrow, ink));
         for (const label of scene.labels) {
             let width = MermaidLayout.labelChipWidth(label.text);
-            canvas.add(new Positioned(new Box(new BoxStyle({ padding: new EdgeInsets(6, 1, 6, 1), background: theme.background, borderColor: theme.border, borderWidth: 1, cornerRadius: new CornerRadii(6) }), new Text(label.text, 'caption', theme.textMuted, 1)), label.y - 10, null, null, label.x - width / 2));
+            canvas.add(new Positioned(new Box(new BoxStyle({ padding: new EdgeInsets(6, 1, 6, 1), background: theme.background, borderColor: theme.border, borderWidth: 1, cornerRadius: new CornerRadii(6) }), new Text(label.text, 'caption', theme.textMuted, 1)), Math.fround(label.y - 10), null, null, Math.fround(label.x - Math.fround(width / 2))));
         }
         for (const placed of scene.nodes) canvas.add(new Positioned(Mermaid.nodeView(placed, theme), placed.y, null, null, placed.x));
         return new ScrollView(canvas, 'horizontal', { width: SizeValue.fill });
@@ -34,7 +34,7 @@ export class Mermaid extends StatelessComponent {
     static nodeView(placed: MermaidPlacedNode, theme: any) {
         let node = placed.node;
         if (node.shape === 'diamond') return Mermaid.diamondView(placed, theme);
-        let radius = (() => { const _s = node.shape; if (_s === 'circle') return placed.h / 2; if (_s === 'rounded') return placed.h / 2; return 6; })();
+        let radius = (() => { const _s = node.shape; if (_s === 'circle') return Math.fround(placed.h / 2); if (_s === 'rounded') return Math.fround(placed.h / 2); return 6; })();
         return new Box(new BoxStyle({ width: placed.w, height: placed.h, background: theme.surface, borderColor: theme.borderStrong, borderWidth: 1, cornerRadius: new CornerRadii(radius), padding: EdgeInsets.symmetric(8, 0) }), VisualNodeExtensions.centered(new Text(node.label, 'label', theme.textPrimary, 2, 'center')));
     }
 
@@ -43,7 +43,7 @@ export class Mermaid extends StatelessComponent {
         let rhombus = new IconGlyph('mermaidDiamond', 'M50 0 L100 50 L50 100 L0 50 Z', 'fill', '0 0 100 100');
         let stack = new Stack('topStart', { width: side, height: side });
         stack.add(new Vector(rhombus, side, theme.borderStrong));
-        stack.add(new Positioned(new Vector(rhombus, side - 6, theme.surface), 3, null, null, 3));
+        stack.add(new Positioned(new Vector(rhombus, Math.fround(side - 6), theme.surface), 3, null, null, 3));
         stack.add(new Box(new BoxStyle({ width: side, height: side }), VisualNodeExtensions.centered(new Text(placed.node.label, 'labelSmall', theme.textPrimary, 2, 'center'))));
         return stack;
     }
@@ -56,7 +56,7 @@ export class Mermaid extends StatelessComponent {
     }
 
     static placeArrowhead(arrow: MermaidArrowhead, ink: ColorToken) {
-        let half = Math.fround((Mermaid.headSize - 1) / 2);
+        let half = Math.fround(Math.fround(Mermaid.headSize - 1) / 2);
         let top = Math.fround(arrow.y - Mermaid.headSize);
         let start = Math.fround(arrow.x - half);
         if (arrow.direction === 1) {

@@ -39,11 +39,16 @@ public class NumberMethodStrategy : IConversionStrategy
         string parsMethod = (type == "int" || type == "Int32" || type == "long" || type == "Int64") 
             ? "parseInt" 
             : "parseFloat";
+        // A float parsed from text is a single, like every other float this side produces
+        // (SinglePrecision): `parseFloat("0.1")` is the double 0.1, and .NET's float.Parse is not.
+        var parsesSingle = context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { ContainingType.SpecialType: SpecialType.System_Single }
+            || type is "float" or "Single" or "System.Single";
+        string Parsed(string input) => parsesSingle ? $"Math.fround({parsMethod}({input}))" : $"{parsMethod}({input})";
 
         if (name == "Parse")
         {
             var input = context.Converter.ConvertExpression(args[0].Expression);
-            return $"{parsMethod}({input})";
+            return Parsed(input);
         }
         
         if (name == "TryParse")
@@ -85,7 +90,7 @@ public class NumberMethodStrategy : IConversionStrategy
             // We'll trust LocalDeclarationStrategy or standard var usage handled elsewhere if verified.
             // For now, simpler: assume variable exists or is created.
             
-            return $"({varName} = {parsMethod}({input}), !isNaN({varName}))";
+            return $"({varName} = {Parsed(input)}, !isNaN({varName}))";
         }
 
         return context.Unhandled(node, "numeric Parse/TryParse");

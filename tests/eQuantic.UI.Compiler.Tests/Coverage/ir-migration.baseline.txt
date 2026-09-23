@@ -44,7 +44,6 @@ IsPatternStrategy
 LastStrategy
 ListMethodStrategy
 LookupIndexerStrategy
-MathStrategy
 MinMaxStrategy
 NameofStrategy
 NamespaceRemovalStrategy

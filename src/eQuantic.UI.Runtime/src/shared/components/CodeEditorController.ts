@@ -70,7 +70,7 @@ export class CodeEditorController {
             let to = line === end.line ? end.column : this._document.line(line).length + 1;
             if (to <= from) continue;
             let at = this.grid.pointOf(line, from);
-            bands.push(new Rect(at.x, at.y, (to - from) * this.grid.cell.width, this.grid.cell.height));
+            bands.push(new Rect(at.x, at.y, Math.fround(Math.fround(to - from) * this.grid.cell.width), this.grid.cell.height));
         }
         return bands;
     }
@@ -96,8 +96,8 @@ export class CodeEditorController {
     }
 
     positionAt(point: Point) {
-        let line = (Math.trunc(Math.floor((point.y - this.grid.origin.y) / this.grid.cell.height)) | 0);
-        let column = (Math.trunc($eq.math.round((point.x - this.grid.origin.x) / this.grid.cell.width)) | 0);
+        let line = (Math.trunc(Math.floor(Math.fround(Math.fround(point.y - this.grid.origin.y) / this.grid.cell.height))) | 0);
+        let column = (Math.trunc($eq.math.roundSingle(Math.fround(Math.fround(point.x - this.grid.origin.x) / this.grid.cell.width))) | 0);
         return this._document.clamp(new CodePosition(Math.max(0, line), Math.max(0, column)));
     }
 

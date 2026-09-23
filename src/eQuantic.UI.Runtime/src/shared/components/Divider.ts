@@ -2,6 +2,11 @@ import { Box, BoxStyle, BuildContext, EdgeInsets, SizeValue, StatelessComponent 
 
 export class Divider extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Divider';
+
+    static get $hydration() {
+        return { leadingInset: 'single' };
+    }
+
     declare inset: string;
     declare axis: string;
     declare leadingInset: any;
