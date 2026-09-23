@@ -51,10 +51,6 @@ export function checked(
 }
 
 /**
- * A C# `float` as text: the SHORTEST decimal that reads back as the same single-precision value —
- * `0.1f + 0.2f` prints "0.3", not the 0.30000001192092896 a double would show for the same bits.
- */
-/**
  * .NET's `Math.DivRem` for an integer that is a plain number here: the truncated quotient and the
  * remainder — or the throw .NET throws. A zero divisor is a DivideByZeroException where JavaScript
  * would answer Infinity and NaN; `int.MinValue / -1` overflows a 32-bit int and throws; a narrower
