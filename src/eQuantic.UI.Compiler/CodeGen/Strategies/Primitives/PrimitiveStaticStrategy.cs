@@ -502,9 +502,9 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
             "NaN" => "NaN",
             "PositiveInfinity" => "Infinity",
             "NegativeInfinity" => "-Infinity",
-            "Pi" => "Math.PI",
-            "E" => "Math.E",
-            "Tau" => "(Math.PI * 2)",
+            // No Pi, E or Tau: each is a `const`, which InlinedConstantStrategy (priority 25) writes
+            // as its exact value before this table (12) is asked, in both homes. The entries this
+            // table had for them could only ever answer the DOUBLE constants, a float's included.
             _ => null,
         },
         SpecialType.System_Int32 => name switch
