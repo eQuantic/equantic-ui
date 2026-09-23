@@ -147,3 +147,8 @@ static eQuantic.UI.Compiler.CodeGen.Strategies.SinglePrecision.HoldsExactly(Micr
 const eQuantic.UI.Compiler.CodeGen.Eq.SingleFromLong = "$eq.num.singleFromLong" -> string!
 eQuantic.UI.Compiler.CodeGen.Strategies.ReadModifyWrite
 static eQuantic.UI.Compiler.CodeGen.Strategies.ReadModifyWrite.Assign(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! target, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!>! operands, System.Func<eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!>!, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!>! next, bool answerOld, bool annotate) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+static eQuantic.UI.Compiler.CodeGen.HydrationSpec.Members(Microsoft.CodeAnalysis.INamedTypeSymbol! type, System.Collections.Generic.ISet<string!>! referenced, System.Collections.Generic.ISet<string!>! runtime) -> string?
+static eQuantic.UI.Compiler.CodeGen.HydrationSpec.Of(Microsoft.CodeAnalysis.ITypeSymbol? type, System.Collections.Generic.ISet<string!>! referenced, System.Collections.Generic.ISet<string!>! runtime) -> string?
+static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.IsHostOnly(this Microsoft.CodeAnalysis.INamedTypeSymbol! type) -> bool
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.HydrationSpec.Members(Microsoft.CodeAnalysis.INamedTypeSymbol! type, System.Collections.Generic.ISet<string!>! referenced) -> string?
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.HydrationSpec.Of(Microsoft.CodeAnalysis.ITypeSymbol? type, System.Collections.Generic.ISet<string!>! referenced) -> string?

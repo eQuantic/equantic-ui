@@ -131,6 +131,14 @@ public class RecordTypeEmitter
             Services.RuntimeProvidedTypeScanner.Collect(type, model, runtimeProvided, new HashSet<string>(), appTypes);
         runtimeProvided.Remove(type.Identifier.Text);
 
+        // What the hydration map names, split by where it comes from: this compilation's own twins
+        // are sibling modules, and the vocabulary's (`of: Rect`) join the runtime import.
+        var specReferences = new HashSet<string>();
+        var specRuntime = new HashSet<string>();
+        var declared = ModelFor(type)?.GetDeclaredSymbol(type) as INamedTypeSymbol;
+        if (declared is not null) HydrationSpec.Members(declared, specReferences, specRuntime);
+        runtimeProvided.UnionWith(specRuntime);
+
         var body = Emit(type, tsTypeDeclarations);
         // Names the CONVERSION introduced, which is why this reads AFTER `Emit`: a reduced extension
         // call sent home (`VisualNodeExtensions.centered(node)`) is written on the RECEIVER, so the
@@ -162,10 +170,8 @@ public class RecordTypeEmitter
         if (baseName != null) imports.Append($"import {{ {baseName} }} from \"./{baseName}\";\n");
         // Records the hydration map references by NAME (`price: Money`) are their own modules too;
         // the map is the only place the emitted JS names them (types erase), so import them here.
-        if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol symbol)
+        if (declared is not null)
         {
-            var specReferences = new HashSet<string>();
-            HydrationSpec.Members(symbol, specReferences);
             // The APP-declared half of the same thing: an extension home the app itself owns is its
             // own module, and the call names it without ever mentioning it in the C#.
             foreach (var introduced in _converter.UsedAppTypes)
@@ -298,7 +304,7 @@ public class RecordTypeEmitter
             // The twin's own TYPED BOUNDARY: which members hydrate off the wire, and as what —
             // `$eq.hydrate` rebuilds a payload object on this prototype and coerces by this map.
             if (ModelFor(type)?.GetDeclaredSymbol(type) is INamedTypeSymbol symbol
-                && HydrationSpec.Members(symbol, new HashSet<string>()) is { } hydration)
+                && HydrationSpec.Members(symbol, new HashSet<string>(), new HashSet<string>()) is { } hydration)
                 // A getter, for the reason TypeScriptEmitter's map is one: a static initializer
                 // naming another class runs before an import cycle has defined it.
                 sb.Append($"static get $hydration() {{ return {hydration}; }} ");

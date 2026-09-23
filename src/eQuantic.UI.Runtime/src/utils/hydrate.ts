@@ -48,7 +48,7 @@ export type HydrationSpec =
   | readonly [HydrationSpec]
   | { readonly dict: HydrationSpec }
   | { readonly tuple: readonly (HydrationSpec | null)[] }
-  | { readonly members: Readonly<Record<string, HydrationSpec>> }
+  | { readonly members: Readonly<Record<string, HydrationSpec>>; readonly of?: HydratableConstructor }
   | HydratableConstructor;
 
 /** The value coerced to what the spec says it is. Null and undefined pass through untouched. */
@@ -66,15 +66,21 @@ export function hydrate(incoming: unknown, spec: HydrationSpec): unknown {
     if (!Array.isArray(incoming)) return incoming;
     return incoming.map((element, i) => (parts[i] == null ? element : hydrate(element, parts[i]!)));
   }
-  // A type with NO twin — a domain record from a referenced assembly — coerces STRUCTURALLY: a
-  // shallow COPY of the plain object with the named members hydrated, everything else verbatim,
-  // and no prototype involved because there is none to rebuild. A copy, not a mutation: the
-  // payload object may still be read by whoever else holds it.
+  // A type from a referenced assembly coerces STRUCTURALLY: a shallow COPY of the plain object
+  // with the named members hydrated, everything else verbatim. A copy, not a mutation: the payload
+  // object may still be read by whoever else holds it. When the type is one the RUNTIME ships (a
+  // vocabulary value type such as Rect), `of` names its twin and the copy is built on that
+  // prototype; without it a Rect in a payload arrived as a plain object, and its getters and
+  // methods were gone.
   if ('members' in (spec as { members?: Readonly<Record<string, HydrationSpec>> })) {
-    const members = (spec as { members: Readonly<Record<string, HydrationSpec>> }).members;
+    const { members, of } = spec as {
+      members: Readonly<Record<string, HydrationSpec>>;
+      of?: HydratableConstructor;
+    };
     if (typeof incoming !== 'object' || Array.isArray(incoming)) return incoming;
+    if (of && incoming instanceof (of as unknown as new (...args: never[]) => object)) return incoming;
     const source = incoming as Record<string, unknown>;
-    const result: Record<string, unknown> = { ...source };
+    const result: Record<string, unknown> = of ? Object.assign(Object.create(of.prototype), source) : { ...source };
     for (const key of Object.keys(members))
       if (key in source) result[key] = hydrate(source[key], members[key]);
     return result;

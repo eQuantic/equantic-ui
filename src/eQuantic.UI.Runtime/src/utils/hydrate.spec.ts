@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { hydrate, type HydrationSpec } from './hydrate';
 import { Decimal, dec } from './decimal';
 import { DateTime, TimeSpan } from './datetime';
+import { Rect } from '../shared/value-types';
 
 describe('typed hydration', () => {
   it('restores the compat scalars from their wire strings', () => {
@@ -112,6 +113,23 @@ describe('typed hydration', () => {
     const item = hydrate({ price: { value: '3.99' }, name: 'x' }, Item) as Item;
     expect(item.price).toBeInstanceOf(Price);
     expect(item.price.value.toString()).toBe('3.99');
+  });
+
+  // A vocabulary value type the RUNTIME ships (Rect) is described structurally by the compiler and
+  // rebuilt on its twin: a plain copy lost `right`, `isEmpty` and every other member of the prototype.
+  it('rebuilds a runtime value type on its twin, with its members coerced', () => {
+    const spec: HydrationSpec = { of: Rect, members: { x: 'single', y: 'single', width: 'single', height: 'single' } };
+    const box = hydrate({ x: 0.1, y: 0.2, width: 10.1, height: 5 }, spec) as Rect;
+
+    expect(box).toBeInstanceOf(Rect);
+    expect(box.x).toBe(Math.fround(0.1));
+    expect(box.width).toBe(Math.fround(10.1));
+    expect(box.right).toBe(Math.fround(Math.fround(0.1) + Math.fround(10.1)));
+  });
+
+  it('passes a value that is already the twin straight through', () => {
+    const rect = new Rect(1, 2, 3, 4);
+    expect(hydrate(rect, { of: Rect, members: { x: 'single' } })).toBe(rect);
   });
 });
 

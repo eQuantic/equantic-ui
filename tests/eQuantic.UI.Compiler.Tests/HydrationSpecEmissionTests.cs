@@ -102,6 +102,44 @@ public class HydrationSpecEmissionTests
     /// text as the nearest double — a different number until it is rounded back. So a float field, a
     /// float? field and a record's float member all carry <c>'single'</c>; a double carries nothing.
     /// </summary>
+    /// <summary>
+    /// A vocabulary value type the runtime ships crosses STRUCTURALLY, since its members are known
+    /// here, and NAMES its twin, so the payload is rebuilt on that prototype. Before `'single'` a
+    /// Rect needed no spec at all; the first structural spec it got was a plain copy, and a Rect in
+    /// a payload lost its getters and methods.
+    /// </summary>
+    [Fact]
+    public void ARuntimeValueType_IsRebuiltOnItsTwin()
+    {
+        const string source = """
+            using eQuantic.UI.Primitives;
+
+            [Page("/frame")]
+            public sealed class Frame : StatefulComponent
+            {
+                private Rect _box;
+
+                public override VisualNode Build(ComponentContext context)
+                    => new Text("x", TypeRole.BodyM, context.Theme.TextPrimary);
+            }
+            """;
+        // The vocabulary has to BIND for its members to be known, which takes the project's
+        // compilation with Primitives referenced, as eqc builds it.
+        var tree = Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(source, path: "Frame.cs");
+        var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+            .Split(Path.PathSeparator)
+            .Where(p => p.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Select(p => (Microsoft.CodeAnalysis.MetadataReference)Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(p))
+            .Append(Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.Rect).Assembly.Location));
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(Microsoft.CodeAnalysis.CSharp.CSharpCompilation.Create("Frame", [tree], references,
+            new Microsoft.CodeAnalysis.CSharp.CSharpCompilationOptions(Microsoft.CodeAnalysis.OutputKind.DynamicallyLinkedLibrary)));
+        var results = compiler.CompileSource(source, "Frame.cs");
+        var page = results.Single(r => r.ComponentName == "Frame");
+        Assert.True(page.Success, string.Join("\n", page.Errors.Select(e => e.Message)));
+        Assert.Contains("_box: { of: Rect, members: { x: 'single', y: 'single', width: 'single', height: 'single' } }", page.TypeScript);
+    }
+
     [Fact]
     public void AFloat_HydratesAsASingle_AndADoubleDoesNot()
     {

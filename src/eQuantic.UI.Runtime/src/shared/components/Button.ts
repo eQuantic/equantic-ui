@@ -1,10 +1,10 @@
-import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Icon, Pressable, Row, SizeValue, SizeVariantValue, Sizing, Spinner, StatelessComponent, StyleDiff, Text, TypeStyle, VariantValue } from "../runtime-exports";
+import { Box, BoxStyle, BuildContext, CornerRadii, EdgeInsets, Icon, IconGlyph, Pressable, Row, SizeValue, SizeVariantValue, Sizing, Spinner, StatelessComponent, StyleDiff, Text, TypeStyle, VariantValue } from "../runtime-exports";
 
 export class Button extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Button';
 
     static get $hydration() {
-        return { leading: { members: { strokeWidth: 'single' } } };
+        return { leading: { of: IconGlyph, members: { strokeWidth: 'single' } } };
     }
 
     declare label: string;

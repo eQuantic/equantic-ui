@@ -8,7 +8,7 @@ export class ListView extends StatefulComponent {
     _last: number = -1;
 
     static get $hydration() {
-        return { _offset: 'single', _viewport: 'single', itemExtent: 'single', width: { members: { value: 'single' } }, height: { members: { value: 'single' } } };
+        return { _offset: 'single', _viewport: 'single', itemExtent: 'single', width: { of: SizeValue, members: { value: 'single' } }, height: { of: SizeValue, members: { value: 'single' } } };
     }
 
     declare count: number;

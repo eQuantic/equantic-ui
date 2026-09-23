@@ -15,7 +15,7 @@ export class Spreadsheet extends StatefulComponent {
     _resizeBase: number = -1;
 
     static get $hydration() {
-        return { _offset: 'single', _viewport: 'single', _resizeBase: 'single', width: { members: { value: 'single' } }, height: { members: { value: 'single' } } };
+        return { _offset: 'single', _viewport: 'single', _resizeBase: 'single', width: { of: SizeValue, members: { value: 'single' } }, height: { of: SizeValue, members: { value: 'single' } } };
     }
 
     declare controller: SheetController;

@@ -1,10 +1,10 @@
-import { Box, BuildContext, Button, CultureOption, Menu, MenuItem, SegmentedControl, SizeVariantValue, StatelessComponent } from "../runtime-exports";
+import { Box, BuildContext, Button, CultureOption, IconGlyph, Menu, MenuItem, SegmentedControl, SizeVariantValue, StatelessComponent } from "../runtime-exports";
 
 export class CultureSwitcher extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.CultureSwitcher';
 
     static get $hydration() {
-        return { icon: { members: { strokeWidth: 'single' } } };
+        return { icon: { of: IconGlyph, members: { strokeWidth: 'single' } } };
     }
 
     declare options: CultureOption[];
