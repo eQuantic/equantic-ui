@@ -1,7 +1,7 @@
 # eqc BCL surface audit — the coverage DENOMINATOR, one verdict per probed member.
 # native = a strategy mapped it to plain JS · eq = routed through a $eq compat helper
 # fenced:EQxxxx = refused with that diagnostic · invalid-probe = the probe itself doesn't compile
-# totals: eq=122 · fenced=32 · invalid-probe=6 · native=744
+# totals: eq=122 · fenced=36 · invalid-probe=6 · native=740
 native         Array.MaxLength
 native         Boolean.CompareTo(Boolean)
 native         Boolean.CompareTo(Object)
@@ -553,8 +553,8 @@ native         Math.Min(Byte,Byte)
 eq             Math.MinMagnitude(Double,Double)
 native         Math.PI
 native         Math.Pow(Double,Double)
-native         Math.ReciprocalEstimate(Double)
-native         Math.ReciprocalSqrtEstimate(Double)
+fenced:EQ1004  Math.ReciprocalEstimate(Double)
+fenced:EQ1004  Math.ReciprocalSqrtEstimate(Double)
 eq             Math.Round(Decimal)
 native         Math.ScaleB(Double,Int32)
 eq             Math.Sign(Decimal)
@@ -596,8 +596,8 @@ native         MathF.Min(Single,Single)
 eq             MathF.MinMagnitude(Single,Single)
 native         MathF.PI
 native         MathF.Pow(Single,Single)
-native         MathF.ReciprocalEstimate(Single)
-native         MathF.ReciprocalSqrtEstimate(Single)
+fenced:EQ1004  MathF.ReciprocalEstimate(Single)
+fenced:EQ1004  MathF.ReciprocalSqrtEstimate(Single)
 eq             MathF.Round(Single)
 native         MathF.ScaleB(Single,Int32)
 native         MathF.Sign(Single)

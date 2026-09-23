@@ -73,6 +73,16 @@ public class BugHuntFixesTests
         TestHelper.ConvertExpression(call).Should().Be(expected);
     }
 
+    /// <summary>A member JavaScript's Math does not have is a BUILD error, never a guessed name:
+    /// `Math.fround(Math.reciprocalEstimate(x))` threw at the call in the browser, and the table
+    /// fences the reciprocal estimates by construction.</summary>
+    [Fact]
+    public void AMathMemberJavaScriptHasNot_IsABuildError()
+    {
+        TestHelper.ConvertExpression("MathF.ReciprocalEstimate(Total)").Should().NotContain("Math.reciprocalEstimate");
+        TestHelper.DiagnosticsFor("MathF.ReciprocalEstimate(Total)").Should().Contain(d => d.Code == "EQ1004");
+    }
+
     /// <summary>
     /// The fallback answers from the SAME table as a bound call, by name, on the home the class
     /// spells. Its own guesses were `Math.copySign`, `Math.bitIncrement` and `Math.iEEERemainder`,

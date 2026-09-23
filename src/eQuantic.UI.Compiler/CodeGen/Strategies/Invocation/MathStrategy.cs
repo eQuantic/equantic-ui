@@ -129,10 +129,24 @@ public class MathStrategy : IExpressionIrStrategy
             "Ceiling" => "ceil",
             _ => methodName.ToCamelCase()
         };
+        // Only a function JavaScript's Math HAS: a name guessed past that (`Math.reciprocalEstimate`,
+        // which the table fences by construction) was a TypeError at the call, in the browser, on a
+        // build that had succeeded. It is a build error instead.
+        if (!JavaScriptMath.Contains(jsMethodName))
+            return JsExpr.Opaque(context.Unhandled(node, "Math"));
         var args = string.Join(", ", argsList);
 
         return Answer(JsExpr.Callish($"Math.{jsMethodName}({args})"));
     }
+
+    /// <summary>The functions JavaScript's own <c>Math</c> object has.</summary>
+    private static readonly HashSet<string> JavaScriptMath = new(StringComparer.Ordinal)
+    {
+        "abs", "acos", "acosh", "asin", "asinh", "atan", "atan2", "atanh", "cbrt", "ceil", "clz32",
+        "cos", "cosh", "exp", "expm1", "floor", "fround", "hypot", "imul", "log", "log10", "log1p",
+        "log2", "max", "min", "pow", "random", "round", "sign", "sin", "sinh", "sqrt", "tan", "tanh",
+        "trunc",
+    };
 
     /// <summary>The member a written <c>MidpointRounding.X</c> names, or null for anything else.</summary>
     private static string? ModeMember(ExpressionSyntax expression) =>
