@@ -59,9 +59,8 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         // template of its own had returned ahead of them, so a float entry's `+=` added doubles, a
         // decimal's glued two texts together and a byte's never wrapped.
         (JsExpr Receiver, JsExpr Key)? entry = null;
-        if (assignment.Left is ElementAccessExpressionSyntax { ArgumentList.Arguments.Count: 1 } target
-            && !assignment.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression)
-            && context.SemanticHelper.GetType(target.Expression).IsDictionaryLike(out _))
+        if (!assignment.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression)
+            && ReadModifyWrite.EntryOf(assignment.Left, context) is { } target)
         {
             entry = (context.Converter.ConvertIr(target.Expression),
                 context.Converter.ConvertIr(target.ArgumentList.Arguments[0].Expression));
@@ -86,10 +85,10 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         // target once, as JavaScript's own `op=` and C# both do (ReadModifyWrite): the text names it
         // twice, so `values[i++] += x` would otherwise step `i` twice.
         JsExpr Compound(Func<JsExpr, JsExpr, JsExpr> next) => entry is var (receiver, key)
-            ? EntryCompound(receiver, key, rightIr, next, context)
+            ? ReadModifyWrite.AssignEntry(
+                receiver, key, [rightIr], (current, operands) => next(current, operands[0]), answerOld: false, context)
             : ReadModifyWrite.Assign(
-                leftIr, [rightIr], (current, operands) => next(current, operands[0]), answerOld: false,
-                context.TypeAnnotations);
+                leftIr, [rightIr], (current, operands) => next(current, operands[0]), answerOld: false, context);
 
         // COMPOUND assignment through a USER-DEFINED operator: `m += other` is `m = Money.opAdd(m, other)`.
         if (context.SemanticHelper.GetOperation(assignment) is Microsoft.CodeAnalysis.Operations.ICompoundAssignmentOperation
@@ -205,23 +204,6 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
             }
         }
         return null;
-    }
-
-    /// <summary>
-    /// A compound write to a dictionary entry: the entry is read through the guard that throws for
-    /// a missing key, the rule of its type computes the next value, and the entry is written
-    /// plainly. The template binds the receiver and the key once each, so neither is evaluated
-    /// twice, and leaves the value where C# evaluates it, after the read.
-    /// </summary>
-    private static JsExpr EntryCompound(JsExpr receiver, JsExpr key, JsExpr value,
-        Func<JsExpr, JsExpr, JsExpr> next, ConversionContext context)
-    {
-        context.UsedHelpers.Add(Eq.Import);
-        var computed = next(JsExpr.Callish($"{Eq.DictGet}({{0}}, {{1}})"), JsExpr.Opaque("{2}"));
-        // Parenthesized, as a template's text must be: an assignment used as an operand
-        // (`(map[k] += 1) * 2`) would otherwise take the operator into its right side.
-        return JsExpr.Template($"({{0}}[{{1}}] = {JsExprWriter.Write(computed)})", [receiver, key, value],
-            context.TypeAnnotations);
     }
 
     public int Priority => 10;

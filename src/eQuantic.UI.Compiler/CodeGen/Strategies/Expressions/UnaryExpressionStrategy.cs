@@ -100,7 +100,9 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
     /// through its text into a plain number), a FLOAT rounds to single precision (`0.1f + 1` is not
     /// exact), a narrow width wraps and a checked context throws — the result type decides
     /// (IntegerWidth). A NULLABLE number steps its value by the same rule inside the lift, so null
-    /// stays null (#372). Null leaves the native `++`, which is what every loop counter wants.
+    /// stays null (#372). A DICTIONARY ENTRY is read first, and .NET throws for a key that is not
+    /// there, so it steps through the guard whatever its type computes. Null leaves the native
+    /// `++`, which is what every loop counter wants.
     /// The target is evaluated once and a postfix step in value position answers the value BEFORE
     /// it, as C# does (ReadModifyWrite): `values[i++]++` steps `i` once, and `byte b = 255;
     /// var old = b++;` is 255, not the wrapped 0.
@@ -110,17 +112,23 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
         var type = context.SemanticHelper.GetType(operandSyntax);
         var delta = op == "++" ? "+" : "-";
         var answerOld = node is PostfixUnaryExpressionSyntax && ValueUsed(node);
-        JsExpr Stepped(Func<JsExpr, JsExpr> next) => ReadModifyWrite.Assign(
-            context.Converter.ConvertIr(operandSyntax), [], (current, _) => next(current), answerOld,
-            context.TypeAnnotations);
+        var entry = ReadModifyWrite.EntryOf(operandSyntax, context);
+        JsExpr Stepped(Func<JsExpr, JsExpr> next) => entry is not null
+            ? ReadModifyWrite.AssignEntry(context.Converter.ConvertIr(entry.Expression),
+                context.Converter.ConvertIr(entry.ArgumentList.Arguments[0].Expression), [], (current, _) => next(current),
+                answerOld, context)
+            : ReadModifyWrite.Assign(context.Converter.ConvertIr(operandSyntax), [], (current, _) => next(current),
+                answerOld, context);
+        JsExpr Plain(ITypeSymbol number, JsExpr current) =>
+            JsExpr.Binary(current, delta, JsExpr.Literal(number.IsLong() ? "1n" : "1"));
 
         if (NullableLift.IsNullableNumber(type, out var value))
         {
-            var one = JsExpr.Literal(value.IsLong() ? "1n" : "1");
-            var rule = StepRule(value, delta, node, context) ?? (current => JsExpr.Binary(current, delta, one));
+            var rule = StepRule(value, delta, node, context) ?? (current => Plain(value, current));
             return Stepped(current => NullableLift.Unary(current, rule, context));
         }
-        return StepRule(type, delta, node, context) is { } typed ? Stepped(typed) : null;
+        if (StepRule(type, delta, node, context) is { } typed) return Stepped(typed);
+        return entry is not null && NullableLift.IsNumber(type) ? Stepped(current => Plain(type, current)) : null;
     }
 
     /// <summary>The value one step computes from the current one on <paramref name="type"/>, where

@@ -21,11 +21,16 @@ internal static class NullableLift
     public static bool IsNullableNumber(ITypeSymbol? type, [NotNullWhen(true)] out ITypeSymbol? value)
     {
         value = type.IsNullableValue() ? type.UnwrapNullable() : null;
-        return value is not null
-            && (IntegerWidth.Of(value) is not null
-                || value.SpecialType is SpecialType.System_Single or SpecialType.System_Double
-                    or SpecialType.System_Decimal or SpecialType.System_Char);
+        return IsNumber(value);
     }
+
+    /// <summary>Whether <paramref name="type"/> is one of those numbers itself: an integral width,
+    /// <c>float</c>, <c>double</c>, <c>decimal</c> or <c>char</c>.</summary>
+    public static bool IsNumber([NotNullWhen(true)] ITypeSymbol? type) =>
+        type is not null
+        && (IntegerWidth.Of(type) is not null
+            || type.SpecialType is SpecialType.System_Single or SpecialType.System_Double
+                or SpecialType.System_Decimal or SpecialType.System_Char);
 
     /// <summary>A lifted binary operator: <paramref name="rule"/> over the two values, or null when
     /// either operand is.</summary>
