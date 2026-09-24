@@ -44,7 +44,7 @@ public class SwitchStatementStrategy : IStatementStrategy
     private static JsStatement ConvertAsIfChain(SwitchStatementSyntax switchStmt, JsExpr expr, ConversionContext context)
     {
         var governingType = context.SemanticHelper.GetType(switchStmt.Expression);
-        var arms = new List<(string Condition, JsStatement Body)>();
+        var arms = new List<(string Condition, JsStatement Body, SwitchSectionSyntax Section)>();
         var hoist = new List<string>();   // distinct bound names, hoisted once for the whole chain
         var seen = new HashSet<string>();
         SwitchSectionSyntax? defaultSection = null;
@@ -89,13 +89,15 @@ public class SwitchStatementStrategy : IStatementStrategy
                 }
             }
 
-            arms.Add((string.Join(" || ", labelConditions), ConvertSectionBody(section, context)));
+            arms.Add((string.Join(" || ", labelConditions), ConvertSectionBody(section, context), section));
         }
 
         // The chain, innermost first: the default is the last else, each arm an `else if` above it.
+        // An arm's test is its section's labels, so its line maps to them (#293): the switch's own
+        // line would answer for every arm, and a `when` that throws names the case it guards.
         JsStatement? chain = defaultSection is null ? null : ConvertSectionBody(defaultSection, context);
         for (var i = arms.Count - 1; i >= 0; i--)
-            chain = JsStatement.If(JsExpr.Opaque(arms[i].Condition), arms[i].Body, chain);
+            chain = JsStatement.If(JsExpr.Opaque(arms[i].Condition), arms[i].Body, chain) with { Origin = arms[i].Section };
 
         var statements = new List<JsStatement>();
         if (hoist.Count > 0) statements.Add(JsStatement.Raw($"let {string.Join(", ", hoist)};"));

@@ -569,6 +569,8 @@ public class CSharpToJsConverter
     /// try whose finally disposes the resource — also when the body throws or returns — and
     /// several in one block nest, each disposing in reverse order of declaration. Emitted as a
     /// bare const (which is what it was for a long time), the resource was simply never disposed.
+    /// The try is the declaration's own lowering, so its lines map to it (#293): the dispose that
+    /// throws names the <c>using</c>, not the last statement of the scope above it.
     /// </summary>
     private List<JsStatement> WithUsingDeclarations(IReadOnlyList<StatementSyntax> statements, int from)
     {
@@ -589,7 +591,7 @@ public class CSharpToJsConverter
             var disposes = usingDecl.Declaration.Variables.Reverse()
                 .Select(variable => Strategies.Statements.UsingLowering.Dispose(variable.Identifier.Text.ToJsIdentifier(), isAsync))
                 .ToList();
-            result.Add(JsStatement.Try(JsStatement.Block(rest), Array.Empty<JsCatch>(), JsStatement.Block(disposes)));
+            result.Add(JsStatement.Try(JsStatement.Block(rest), Array.Empty<JsCatch>(), JsStatement.Block(disposes)) with { Origin = usingDecl });
             return result;
         }
         return result;

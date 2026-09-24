@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace eQuantic.UI.Compiler.CodeGen.Ir;
 
@@ -91,10 +92,10 @@ public static class JsStatementWriter
     private static string BracedCompact(JsStatement statement) =>
         NeedsBraces(statement) ? Compact(JsStatement.Block(((JsStatements)statement).Statements)) : Compact(statement);
 
-    private static Written BracedPretty(JsStatement statement, int depth) =>
+    private static Written BracedPretty(JsStatement statement, int depth, SyntaxNode? enclosing) =>
         NeedsBraces(statement)
-            ? Pretty(JsStatement.Block(((JsStatements)statement).Statements), depth)
-            : Pretty(statement, depth);
+            ? Pretty(JsStatement.Block(((JsStatements)statement).Statements), depth, enclosing)
+            : Pretty(statement, depth, enclosing);
 
     /// <summary>A sequence of two or more is the only shape that leaks; one or none reads the same
     /// either way, and a block already carries its own braces.</summary>
@@ -105,43 +106,57 @@ public static class JsStatementWriter
 
     private static string Indent(int depth) => string.Concat(Enumerable.Repeat(Unit, depth));
 
-    /// <summary>A statement written, with the marks of the statements in it that carry an origin,
-    /// one for this statement first when it has one and writes anything.</summary>
-    private static Written Pretty(JsStatement statement, int depth)
+    /// <summary>
+    /// A statement written, with the marks of the statements in it that carry an origin, one for
+    /// this statement first when it has one and writes anything.
+    /// <para>
+    /// A statement with no origin of its own belongs to the nearest one around it that has one. A
+    /// strategy's LOWERING — the dispose in a <c>using</c>'s finally, the <c>const</c> a pattern
+    /// switch binds its subject to — is no C# statement, but it is code one produced, and left
+    /// unmarked, a frame on its line read through the map as whatever statement was written above
+    /// it. A block or a sequence is no line to stop on, and takes a mark only when it was given one.
+    /// </para>
+    /// </summary>
+    private static Written Pretty(JsStatement statement, int depth, SyntaxNode? enclosing = null)
     {
+        var owner = statement.Origin ?? enclosing;
         var written = statement switch
         {
             JsRawStatement raw => Written.Of(raw.Text),
-            JsStatements sequence => Lines(sequence.Statements, depth),
-            JsBlock block => PrettyBlock(block, depth),
-            JsIf @if => new Text().Add($"if ({JsExprWriter.Write(@if.Condition)}) ").Add(BracedPretty(@if.Then, depth))
-                .AddIf(@if.Else is not null, () => new Text().Add(" else ").Add(BracedPretty(@if.Else!, depth)).Done()).Done(),
-            JsHeaded headed => new Text().Add($"{headed.Head} ").Add(BracedPretty(headed.Body, depth)).Done(),
-            JsTry @try => PrettyTry(@try, depth),
-            JsSwitch @switch => PrettySwitch(@switch, depth),
-            JsWhile @while => new Text().Add($"while ({JsExprWriter.Write(@while.Condition)}) ").Add(BracedPretty(@while.Body, depth)).Done(),
-            JsDoWhile doWhile => new Text().Add("do ").Add(BracedPretty(doWhile.Body, depth))
-                .Add($" while ({JsExprWriter.Write(doWhile.Condition)});").Done(),
+            JsStatements sequence => Lines(sequence.Statements, depth, owner),
+            JsBlock block => PrettyBlock(block, depth, owner),
+            JsIf @if => new Text().Add($"if ({JsExprWriter.Write(@if.Condition)}) ").Add(BracedPretty(@if.Then, depth, owner))
+                .AddIf(@if.Else is not null, () => new Text().Add(" else ").Add(BracedPretty(@if.Else!, depth, owner)).Done()).Done(),
+            JsHeaded headed => new Text().Add($"{headed.Head} ").Add(BracedPretty(headed.Body, depth, owner)).Done(),
+            JsTry @try => PrettyTry(@try, depth, owner),
+            JsSwitch @switch => PrettySwitch(@switch, depth, owner),
+            JsWhile @while => new Text().Add($"while ({JsExprWriter.Write(@while.Condition)}) ").Add(BracedPretty(@while.Body, depth, owner)).Done(),
+            // The condition runs on the loop's LAST line, which is a line of its own to stop on:
+            // it maps to the C# condition, not to the `do` the loop's first line maps to.
+            JsDoWhile doWhile => new Text().Add("do ").Add(BracedPretty(doWhile.Body, depth, owner)).Add(" ")
+                .Add(Written.Of($"while ({JsExprWriter.Write(doWhile.Condition)});")
+                    .MarkedAt(owner is DoStatementSyntax @do ? @do.Condition : owner)).Done(),
             _ => Written.Of(Compact(statement)),
         };
-        return statement.Origin is { } origin && written.Text.Length > 0 ? written.MarkedAt(origin) : written;
+        var mark = statement.Origin ?? (statement is JsBlock or JsStatements ? null : enclosing);
+        return written.Text.Length > 0 ? written.MarkedAt(mark) : written;
     }
 
-    private static Written PrettyTry(JsTry @try, int depth)
+    private static Written PrettyTry(JsTry @try, int depth, SyntaxNode? enclosing)
     {
-        var text = new Text().Add("try ").Add(Pretty(@try.Body, depth));
+        var text = new Text().Add("try ").Add(Pretty(@try.Body, depth, enclosing));
         foreach (var @catch in @try.Catches)
-            text.Add($" catch{(@catch.Binding.Length == 0 ? "" : " " + @catch.Binding)} ").Add(Pretty(@catch.Block, depth));
-        if (@try.Finally is not null) text.Add(" finally ").Add(Pretty(@try.Finally, depth));
+            text.Add($" catch{(@catch.Binding.Length == 0 ? "" : " " + @catch.Binding)} ").Add(Pretty(@catch.Block, depth, enclosing));
+        if (@try.Finally is not null) text.Add(" finally ").Add(Pretty(@try.Finally, depth, enclosing));
         return text.Done();
     }
 
     /// <summary>Statements each on their own line at this depth; an empty one takes no line.</summary>
-    private static Written Lines(IReadOnlyList<JsStatement> statements, int depth)
+    private static Written Lines(IReadOnlyList<JsStatement> statements, int depth, SyntaxNode? enclosing)
     {
         var text = new Text();
         var first = true;
-        foreach (var rendered in statements.Select(s => Pretty(s, depth)).Where(written => written.Text.Length > 0))
+        foreach (var rendered in statements.Select(s => Pretty(s, depth, enclosing)).Where(written => written.Text.Length > 0))
         {
             if (!first) text.Add("\n" + Indent(depth));
             text.Add(rendered);
@@ -151,22 +166,22 @@ public static class JsStatementWriter
     }
 
     /// <summary>Labels one level in, their statements one level further.</summary>
-    private static Written PrettySwitch(JsSwitch @switch, int depth)
+    private static Written PrettySwitch(JsSwitch @switch, int depth, SyntaxNode? enclosing)
     {
         var text = new Text().Add($"switch ({JsExprWriter.Write(@switch.Subject)}) {{");
         foreach (var @case in @switch.Cases)
         {
             foreach (var label in @case.Labels)
                 text.Add("\n" + Indent(depth + 1) + label + ":");
-            var body = Lines(@case.Body, depth + 2);
+            var body = Lines(@case.Body, depth + 2, enclosing);
             if (body.Text.Length > 0) text.Add("\n" + Indent(depth + 2)).Add(body);
         }
         return text.Add("\n" + Indent(depth) + "}").Done();
     }
 
-    private static Written PrettyBlock(JsBlock block, int depth)
+    private static Written PrettyBlock(JsBlock block, int depth, SyntaxNode? enclosing)
     {
-        var inside = Lines(block.Statements, depth + 1);
+        var inside = Lines(block.Statements, depth + 1, enclosing);
         if (inside.Text.Length == 0) return Written.Of("{}");
         return new Text().Add("{\n" + Indent(depth + 1)).Add(inside).Add("\n" + Indent(depth) + "}").Done();
     }
@@ -177,8 +192,9 @@ public static class JsStatementWriter
         public static Written Of(string text) => new(text, []);
 
         /// <summary>The same text, marked as beginning the statement <paramref name="origin"/>
-        /// came from.</summary>
-        public Written MarkedAt(SyntaxNode origin) => this with { Marks = [new JsLineMark(0, 0, origin), .. Marks] };
+        /// came from; no origin, no mark.</summary>
+        public Written MarkedAt(SyntaxNode? origin) =>
+            origin is null ? this : this with { Marks = [new JsLineMark(0, 0, origin), .. Marks] };
     }
 
     /// <summary>
