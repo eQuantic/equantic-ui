@@ -93,9 +93,9 @@ than pick for you, eqc asks.
 
 | Code | Meaning | What to do |
 |---|---|---|
-| `EQ2108` | A `CultureInfo` that is neither `InvariantCulture` nor `CurrentCulture` — only those two cross. | Format with an explicit specifier (`ToString("N2")` follows the app's culture on both targets), or convert with the invariant culture. |
+| `EQ2108` | A `CultureInfo` the browser cannot follow: formatting crosses `InvariantCulture` and `CurrentCulture`, and reading a number (`decimal.Parse`, `Convert.ToDecimal` of a string or of a value that may hold one, such as an `object`) only `InvariantCulture`. The culture is the property the provider binds to, however it is spelled: a member of another type that is also called `InvariantCulture` is refused, since it may return any culture. | Format with an explicit specifier (`ToString("N2")` follows the app's culture on both targets), or convert and read with the invariant culture. |
 | `EQ2109` | `ToString(CultureInfo.CurrentCulture)` with no specifier — the general format is outside the tested `Intl` subset. | Name the format: `ToString("N2")`, `ToString("F1")`. |
-| `EQ2110` | A fractional number converted with no culture at all: C# follows the request's culture (a comma, in `pt`) and JavaScript is always invariant. | Say which you mean. |
+| `EQ2110` | A fractional number written as text, or a number read from it (or from a value that may hold text, such as an `object`), with no culture at all: C# follows the request's culture (a comma, in `pt`) and the browser is always invariant. | Say which you mean. |
 | `EQ2111` | `GetService` with no type argument to cross — the registry is keyed by the interface NAME, and there is nothing to key on. | Call the generic overload. |
 | `EQ2113` | `ConfigureAwait` is dropped — there is one context to resume on — and dropping it would discard a NON-CONSTANT argument without evaluating it. | Pass a constant, or evaluate the expression into a local first. |
 
