@@ -242,8 +242,26 @@ public class StringStaticStrategy : IConversionStrategy
                 return context.Unhandled(node, "string.Format whose first argument no model can place");
             }
             template = args[skip].Expression;
-            written.AddRange(args.Skip(skip).Select(argument => argument.Expression));
-            values.AddRange(args.Skip(skip + 1).Select((argument, slot) => (slot, argument.Expression, false)));
+            written.Add(template);
+            var rest = args.Skip(skip + 1).Select(argument => argument.Expression).ToList();
+            // One array written in place is the params array in its normal form when the spelling
+            // proves it can be: an `object[]` or a `string[]` (covariant) creation, or a collection
+            // expression, which only the params parameter takes. Its elements are the values then.
+            // Any other array's element type is the model's to say, and a guess is a build error.
+            if (rest.Count == 1 && ProvesParamsArray(rest[0]) && ElementsOf(rest[0]) is { } spelled)
+            {
+                written.AddRange(spelled.Select(element => element.Value));
+                values.AddRange(spelled.Select(element => (0, element.Value, element.Spread)));
+            }
+            else if (rest.Count == 1 && Bare(rest[0]) is ArrayCreationExpressionSyntax or ImplicitArrayCreationExpressionSyntax)
+            {
+                return context.Unhandled(node, "string.Format over an array whose element type no model can say");
+            }
+            else
+            {
+                written.AddRange(rest);
+                values.AddRange(rest.Select((value, slot) => (slot, value, false)));
+            }
         }
 
         var function = Eq.StringFormat;
@@ -301,6 +319,20 @@ public class StringStaticStrategy : IConversionStrategy
         var call = $"{function}({string.Join(", ", holes.Prepend(Hole(template)))})";
         return JsExprWriter.Write(JsExpr.Template(call, parts, context.TypeAnnotations));
     }
+
+    /// <summary>Whether the spelling alone proves an array written in place binds as the params
+    /// array itself: an <c>object[]</c> or <c>string[]</c> creation, or a collection expression.</summary>
+    private static bool ProvesParamsArray(ExpressionSyntax argument) => Bare(argument) switch
+    {
+        CollectionExpressionSyntax => true,
+        ArrayCreationExpressionSyntax { Type.ElementType: PredefinedTypeSyntax element } =>
+            element.Keyword.Text is "object" or "string",
+        _ => false,
+    };
+
+    /// <summary>The expression parentheses name.</summary>
+    private static ExpressionSyntax Bare(ExpressionSyntax expression) =>
+        expression is ParenthesizedExpressionSyntax parenthesized ? Bare(parenthesized.Expression) : expression;
 
     /// <summary>Whether the spelling alone proves <paramref name="argument"/> is text: a string
     /// literal or an interpolated string, which no provider can be.</summary>
