@@ -41,6 +41,24 @@ public static class DefaultValue
                 return "'\\0'";
             case SpecialType.System_String or SpecialType.System_Object:
                 return "null";
+            case SpecialType.System_DateTime:
+                return $"{Eq.DateTime}.minValue()";
+        }
+
+        // The time and identity structs the runtime twins: each one's zero is what its MinValue, Zero
+        // or Empty crosses as. `new DateTime[1]` held null on the web, where C# holds 0001-01-01.
+        switch (type?.ToDisplayString())
+        {
+            case "System.TimeSpan":
+                return $"{Eq.TimeSpan}.zero";
+            case "System.DateOnly":
+                return "$eq.time.dateOnly.minValue()";
+            case "System.TimeOnly":
+                return "$eq.time.timeOnly.minValue()";
+            case "System.DateTimeOffset":
+                return $"{Eq.DateTimeOffset}.minValue()";
+            case "System.Guid":
+                return "'00000000-0000-0000-0000-000000000000'";
         }
 
         // An enum is its member NAME at runtime, so the default is the member whose value is 0.

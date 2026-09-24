@@ -14,25 +14,23 @@ public class DefaultKeywordTests
         result.Should().Be("0");
     }
 
-    [Fact]
-    public void Default_Long_ReturnsZero()
+    /// <summary>
+    /// A default is the type's own, as the semantic model gives it (#380): a long is a BigInt and a
+    /// decimal a Decimal on this side, so a plain 0 had none of their arithmetic.
+    /// </summary>
+    [Theory]
+    [InlineData("default(long)", "$eq.num.long(0)")]
+    [InlineData("default(System.Int64)", "$eq.num.long(0)")]
+    [InlineData("default(double)", "0")]
+    [InlineData("default(decimal)", "$eq.num.dec(0)")]
+    // A nullable's default is null, where the spelling read past the `?` and answered 0.
+    [InlineData("default(int?)", "null")]
+    [InlineData("default(DayOfWeek)", "'sunday'")]
+    [InlineData("default(DateTime)", "$eq.time.dateTime.minValue()")]
+    [InlineData("default(TimeSpan)", "$eq.time.timeSpan.zero")]
+    public void Default_IsTheTypesOwn(string expression, string expected)
     {
-        var result = TestHelper.ConvertExpression("default(long)");
-        result.Should().Be("0");
-    }
-
-    [Fact]
-    public void Default_Double_ReturnsZeroPointZero()
-    {
-        var result = TestHelper.ConvertExpression("default(double)");
-        result.Should().Be("0.0");
-    }
-
-    [Fact]
-    public void Default_Decimal_ReturnsZeroPointZero()
-    {
-        var result = TestHelper.ConvertExpression("default(decimal)");
-        result.Should().Be("0.0");
+        TestHelper.ConvertExpression(expression).Should().Be(expected);
     }
 
     // ============ Boolean ============
@@ -47,10 +45,12 @@ public class DefaultKeywordTests
     // ============ Char ============
 
     [Fact]
-    public void Default_Char_ReturnsEmptyString()
+    public void Default_Char_IsTheNullChar()
     {
+        // A char is a one-unit string on this side, and its default is U+0000, not the empty
+        // string: `(int)default(char)` read no unit at all.
         var result = TestHelper.ConvertExpression("default(char)");
-        result.Should().Be("''");
+        result.Should().Be("'\\0'");
     }
 
     // ============ Reference Types ============
@@ -74,7 +74,19 @@ public class DefaultKeywordTests
     [Fact]
     public void Default_Literal_ReturnsUndefined()
     {
+        // A literal with nothing to convert it to names no type.
         var result = TestHelper.ConvertExpression("default");
         result.Should().Be("undefined");
+    }
+
+    /// <summary>The literal is the default of the type C# converts it to: `int x = default` left x
+    /// undefined, and `x + 1` was NaN.</summary>
+    [Theory]
+    [InlineData("int x = default;", "let x = 0;")]
+    [InlineData("long x = default;", "let x = 0n;")]      // a constant, folded to the BigInt it is
+    [InlineData("int? x = default;", "let x = null;")]
+    public void Default_Literal_IsItsTargetsDefault(string statement, string expected)
+    {
+        TestHelper.ConvertCodeBlock(statement).Should().Contain(expected);
     }
 }

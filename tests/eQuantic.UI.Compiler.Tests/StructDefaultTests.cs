@@ -63,6 +63,41 @@ public class StructDefaultTests
         ts.Should().Contain("home: any = new Cell()");
     }
 
+    private const string DefaultsSource = """
+        using eQuantic.UI.Primitives;
+
+        public readonly record struct Cell(int Row, int Column);
+
+        public sealed record Defaults(int Seed)
+        {
+            public Cell Home() => default;
+            public Point Origin() => default;
+            public BoxStyle Style() => default;
+            public SizeValue Width() => default;
+            public SizeValue? MaybeWidth() => default;
+        }
+        """;
+
+    /// <summary>
+    /// A <c>default</c> literal is its type's zero wherever the twin can build one (#380), and where
+    /// it cannot, a hand-written vocabulary twin not marked [ZeroConstructs], it is the twin's own
+    /// default, <c>undefined</c>: the twin's constructor defaults (<c>style: BoxStyle = new
+    /// BoxStyle()</c>) and its <c>!== undefined</c> checks apply for undefined and never for null.
+    /// Only a nullable is null.
+    /// </summary>
+    [Theory]
+    [InlineData("home", "new Cell()")]
+    [InlineData("origin", "new Point()")]
+    [InlineData("style", "undefined")]
+    [InlineData("width", "undefined")]
+    [InlineData("maybeWidth", "null")]
+    public void ADefaultLiteral_IsTheZeroTheTwinCanBuild(string method, string expected)
+    {
+        var ts = TypeScriptOf(DefaultsSource, "Defaults.cs", "Defaults");
+
+        ts.Should().MatchRegex($@"{method}\(\)[^{{]*\{{\s*return {System.Text.RegularExpressions.Regex.Escape(expected)};");
+    }
+
     /// <summary>The struct a zero names is IMPORTED, even compiled on its own (no per-app scan, the
     /// playground's mode): the constructor text alone was once all this checked, and the module it
     /// pinned threw "Cell is not defined" at its first default (found in review, #359).</summary>

@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -9,7 +10,8 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// Handles:
 /// - new[] { 1, 2, 3 }      → [1, 2, 3]   (implicit)
 /// - new int[] { 1, 2, 3 }  → [1, 2, 3]   (explicit, with initializer)
-/// - new int[5]             → new Array(5).fill(0)  (sized, default-initialized)
+/// - new T[5]               → new Array(5).fill(default(T))  (sized, default-initialized), or one
+///   zero struct per element (see <see cref="Sized"/>)
 /// </summary>
 public class ArrayCreationStrategy : IConversionStrategy
 {
@@ -41,20 +43,41 @@ public class ArrayCreationStrategy : IConversionStrategy
             && sized.Type.RankSpecifiers[0].Sizes[0] is { } sizeExpr
             && sizeExpr is not OmittedArraySizeExpressionSyntax)
         {
-            var sizeJs = context.Converter.ConvertExpression(sizeExpr);
-            return $"new Array({sizeJs}).fill({DefaultFill(sized.Type.ElementType)})";
+            return Sized(sized, context.Converter.ConvertExpression(sizeExpr), context);
         }
 
         return "[]";
     }
 
-    private static string DefaultFill(TypeSyntax elementType) => elementType.ToString() switch
+    /// <summary>
+    /// A sized array, each element its type's default as the semantic model gives it (#380): the
+    /// default a field of that type starts with, a long's <c>0n</c>, a decimal's zero, a char's
+    /// <c>'\0'</c>, an enum's zero member, a struct's zero instance. The element type's SPELLING
+    /// decided before, so a long and a decimal started as a plain 0, a char, an enum and a struct as
+    /// null, and a type not written as its keyword (<c>Int64</c>) as null too. A struct's zero is an
+    /// object, and <c>fill</c> puts ONE object in every slot, so a write through one element showed
+    /// through all of them: each slot builds its own. Every other default is a value nothing
+    /// mutates, and one fills them all.
+    /// </summary>
+    private static string Sized(ArrayCreationExpressionSyntax sized, string size, ConversionContext context)
     {
-        "int" or "long" or "short" or "byte" or "sbyte" or "uint" or "ulong" or "ushort"
-            or "double" or "float" or "decimal" => "0",
-        "bool" => "false",
-        _ => "null"
-    };
+        var fill = context.SemanticHelper.GetType(sized) is IArrayTypeSymbol array
+            ? Strategies.DefaultValue.Of(array.ElementType, context)
+            : Unbound(sized.Type, context);
+        return fill.StartsWith("new ", StringComparison.Ordinal)
+            ? $"Array.from({{ length: {size} }}, () => {fill})"
+            : $"new Array({size}).fill({fill})";
+    }
+
+    /// <summary>The fill with no model to ask: an array of arrays (<c>new int[2][]</c>) holds nulls,
+    /// and anything else is what the element type's name says.</summary>
+    private static string Unbound(ArrayTypeSyntax type, ConversionContext context)
+    {
+        if (type.RankSpecifiers.Count > 1) return "null";
+        var fill = TypeDeclarationExtensions.DefaultFor(type.ElementType);
+        if (fill.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
+        return fill;
+    }
 
     public int Priority => 0;
 }

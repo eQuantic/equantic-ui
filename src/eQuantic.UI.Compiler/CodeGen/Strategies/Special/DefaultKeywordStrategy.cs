@@ -5,13 +5,13 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Special;
 
 /// <summary>
-/// Strategy for default keyword/expression.
-/// Handles:
-/// - default(int) -> 0
-/// - default(string) -> null
-/// - default(bool) -> false
-/// - default(T) -> undefined (for reference types)
-/// - default -> undefined (contextual)
+/// Strategy for the default keyword: <c>default(T)</c> and the <c>default</c> literal are T's
+/// default as the semantic model gives it (#380), the same default a field of T starts with (see
+/// <see cref="DefaultValue"/>): a long's <c>0n</c>, a decimal's zero, a char's <c>'\0'</c>, an
+/// enum's zero member, a struct's zero instance (or, where its twin cannot build one, the twin's own
+/// default), and null for a nullable or a reference. The type's SPELLING decided before, so <c>default(long)</c> was a plain 0, <c>default(int?)</c> was 0 where
+/// C# has null, and the literal was <c>undefined</c> wherever it stood: <c>int x = default</c> left
+/// x undefined, and <c>x + 1</c> was NaN.
 /// </summary>
 public class DefaultKeywordStrategy : IConversionStrategy
 {
@@ -30,66 +30,27 @@ public class DefaultKeywordStrategy : IConversionStrategy
 
     public string Convert(SyntaxNode node, ConversionContext context)
     {
-        // default(T) expression
-        if (node is DefaultExpressionSyntax defaultExpr)
+        // default(T) is T's default; the literal is the default of the type C# converts it to, the
+        // target's: a local's, a parameter's, the other arm's of a conditional.
+        var type = node is DefaultExpressionSyntax named
+            ? context.SemanticHelper.GetType(named.Type)
+            : context.SemanticHelper.GetConvertedType(node) ?? context.SemanticHelper.GetType(node);
+        if (type is not null and not { TypeKind: TypeKind.Error })
         {
-            var typeName = defaultExpr.Type.ToString();
-            return MapDefaultValue(typeName);
+            var zero = DefaultValue.Of(type, context);
+            // A struct whose twin cannot build its zero (a hand-written vocabulary twin not marked
+            // [ZeroConstructs]) gets the twin's own default, which is what `undefined` asks for: a
+            // hand-written constructor's default parameters (`style: BoxStyle = new BoxStyle()`)
+            // and its `!== undefined` checks apply for undefined and never for null, and C# has no
+            // null struct to answer with. `UI.Box(style: default)` would build a Box with no style.
+            return zero == "null" && type.IsValueType && !type.IsNullableValue() ? "undefined" : zero;
         }
 
-        // default literal (contextual)
-        return "undefined";
-    }
-
-    private string MapDefaultValue(string typeName)
-    {
-        // Remove nullable syntax
-        if (typeName.EndsWith("?"))
-            typeName = typeName[..^1];
-
-        return typeName switch
-        {
-            // Numeric types -> 0
-            "int" or "Int32" or "System.Int32" => "0",
-            "long" or "Int64" or "System.Int64" => "0",
-            "short" or "Int16" or "System.Int16" => "0",
-            "byte" or "Byte" or "System.Byte" => "0",
-            "sbyte" or "SByte" or "System.SByte" => "0",
-            "uint" or "UInt32" or "System.UInt32" => "0",
-            "ulong" or "UInt64" or "System.UInt64" => "0",
-            "ushort" or "UInt16" or "System.UInt16" => "0",
-
-            // Floating point -> 0.0
-            "float" or "Single" or "System.Single" => "0.0",
-            "double" or "Double" or "System.Double" => "0.0",
-            "decimal" or "Decimal" or "System.Decimal" => "0.0",
-
-            // Boolean -> false
-            "bool" or "Boolean" or "System.Boolean" => "false",
-
-            // Char -> '\0' (empty string in JS)
-            "char" or "Char" or "System.Char" => "''",
-
-            // Reference types and value types not explicitly handled -> null/undefined
-            _ when IsValueType(typeName) => "undefined", // struct default
-            _ => "null" // reference type default
-        };
-    }
-
-    private bool IsValueType(string typeName)
-    {
-        // Check if it's likely a struct (uppercase first letter, not in common reference type list)
-        if (string.IsNullOrEmpty(typeName))
-            return false;
-
-        var commonReferenceTypes = new[]
-        {
-            "string", "String", "System.String",
-            "object", "Object", "System.Object",
-            "Array", "List", "Dictionary", "IEnumerable"
-        };
-
-        return !commonReferenceTypes.Any(typeName.Contains);
+        // No model: default(T) is what T's name says, and the literal names nothing.
+        if (node is not DefaultExpressionSyntax spelled) return "undefined";
+        var value = TypeDeclarationExtensions.DefaultFor(spelled.Type);
+        if (value.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
+        return value;
     }
 
     public int Priority => 15; // Higher than LiteralExpressionStrategy
