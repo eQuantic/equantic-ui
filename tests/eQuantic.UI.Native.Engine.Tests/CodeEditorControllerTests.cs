@@ -343,6 +343,64 @@ public class CodeEditorControllerTests
         editor.Document.TextIn(editor.Selection).Should().Be("cd");
     }
 
+    // ---- rows ------------------------------------------------------------------------------------
+
+    /// <summary>Ten lines, "line 0" to "line 9", with lines 3 to 6 folded behind one placeholder row
+    /// (docs/CODE-EDITOR-PLAN.md, the shape, §9).</summary>
+    private static CodeEditorController Folded(CodeCollapse fold)
+    {
+        var editor = Editor(string.Join("\n", Enumerable.Range(0, 10).Select(i => $"line {i}")));
+        editor.Grid = new CodeGrid(Point.Zero, new Size(8, 18), new CodeRows(10, [], [fold]));
+        return editor;
+    }
+
+    [Fact]
+    public void AnArrowStepsOverTheLinesAFoldHides()
+    {
+        var editor = Folded(new CodeCollapse(3, 6));
+        editor.Selection = new CodeRange(new CodePosition(2, 4));
+
+        editor.Move(CodeMotion.Line, CodeDirection.Forward);
+        editor.Caret.Should().Be(new CodePosition(7, 4), "lines 3 to 6 are folded, as an editor steps over a fold");
+        editor.Move(CodeMotion.Line, CodeDirection.Backward);
+        editor.Caret.Line.Should().Be(2);
+    }
+
+    [Fact]
+    public void APageCountsTheLinesItShows()
+    {
+        var editor = Folded(new CodeCollapse(3, 6));
+        editor.Selection = new CodeRange(CodePosition.Start);
+
+        editor.Move(CodeMotion.Page, CodeDirection.Forward, pageLines: 3);
+
+        editor.Caret.Line.Should().Be(7, "a page of three from line 0 shows 1, 2 and 7");
+    }
+
+    [Fact]
+    public void AStepPastTheLastLineShown_StaysOnIt()
+    {
+        var editor = Folded(new CodeCollapse(7, 9, Placeholder: false));
+        editor.Selection = new CodeRange(new CodePosition(6, 0));
+
+        editor.Move(CodeMotion.Line, CodeDirection.Forward);
+
+        editor.Caret.Line.Should().Be(6, "every line below is folded");
+    }
+
+    [Fact]
+    public void ASelection_DrawsNoBandForTheLinesAFoldHides()
+    {
+        var editor = Folded(new CodeCollapse(3, 6));
+        editor.Selection = new CodeRange(CodePosition.Start, editor.Document.End);
+
+        var bands = editor.SelectionBandsIn(0, 9);
+
+        bands.Should().HaveCount(6, "lines 0 to 2 and 7 to 9: the folded ones have no row to draw on");
+        bands.Select(band => band.Y).Should().OnlyHaveUniqueItems("no band lies over the placeholder");
+        bands[3].Y.Should().Be(4 * 18, "line 7 is on row 4: rows 0 to 2 are its first lines, 3 the placeholder");
+    }
+
     // ---- history ---------------------------------------------------------------------------------
 
     [Fact]

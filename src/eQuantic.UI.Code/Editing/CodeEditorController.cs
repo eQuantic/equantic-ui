@@ -304,6 +304,9 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             // One cell past the end of every line but the last: the band shows that the line
             // BREAK is held too, which is what makes a selection ending at column 0 of the next
             // line read as the whole line it is.
+            // A line a fold hides has no row of its own to draw a band on: its band would lie over
+            // the placeholder that stands for it, once for every line selected under it.
+            if (Grid.Rows is { } rows && !rows.IsVisible(line)) continue;
             var cells = CellsOf(line);
             var fromCell = cells.CellOf(from);
             var toCell = line == end.Line ? cells.CellOf(end.Column) : cells.Width + 1;
@@ -962,15 +965,14 @@ public sealed class CodeEditorController : ICodeSurfaceModel
                 // where it started instead of collapsing to the shortest one, and what keeps it in
                 // the same place on screen across a line indented with tabs.
                 if (_desiredCell < 0) _desiredCell = CellsOf(from.Line).CellOf(from.Column);
-                var line = Math.Clamp(from.Line + (forward ? 1 : -1), 0, _document.LineCount - 1);
+                var line = VisibleLineFrom(from.Line, forward ? 1 : -1);
                 return new CodePosition(line, CellsOf(line).ColumnAt(_desiredCell));
             }
 
             case CodeMotion.Page:
             {
                 if (_desiredCell < 0) _desiredCell = CellsOf(from.Line).CellOf(from.Column);
-                var line = Math.Clamp(from.Line + (forward ? pageLines : -pageLines),
-                    0, _document.LineCount - 1);
+                var line = VisibleLineFrom(from.Line, forward ? pageLines : -pageLines);
                 return new CodePosition(line, CellsOf(line).ColumnAt(_desiredCell));
             }
 
@@ -982,6 +984,28 @@ public sealed class CodeEditorController : ICodeSurfaceModel
                 _desiredCell = -1;
                 return forward ? _document.End : CodePosition.Start;
         }
+    }
+
+    /// <summary>
+    /// The line <paramref name="steps"/> lines of the VIEW away from <paramref name="line"/>: lines a
+    /// fold hides are not counted and not landed on, as an editor steps over a fold, and a step past
+    /// either end stops at the last line that is drawn. With no rows every line is drawn, and a step
+    /// is a line.
+    /// </summary>
+    private int VisibleLineFrom(int line, int steps)
+    {
+        var last = _document.LineCount - 1;
+        if (Grid.Rows is not { } rows) return Math.Clamp(line + steps, 0, last);
+        var direction = steps < 0 ? -1 : 1;
+        var here = line;
+        var left = Math.Abs(steps);
+        for (var next = line + direction; left > 0 && next >= 0 && next <= last; next += direction)
+        {
+            if (!rows.IsVisible(next)) continue;
+            here = next;
+            left--;
+        }
+        return here;
     }
 
     /// <summary>
