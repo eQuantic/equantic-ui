@@ -628,7 +628,9 @@ record of a release, the wiki's Upgrading page is the distillate.
   concatenation's conversion; `string.Format` binds its arguments by the method and follows the
   formatting culture policy; the compiler tells the formatter a float's kind where it knows it, and
   boxes a float passed to `string.Format` with it. `G`, `R` and a placeholder with no specifier write
-  .NET's notation, and a placeholder aligns.
+  .NET's notation, and a placeholder aligns. From the review: a null provider formats with the current
+  culture, as .NET reads it, and a params array passed whole spreads by the form C# bound, so a
+  `string[]` or a collection expression is formatted element by element, where it was one value.
 
 - **2026-09-24 · The code editor is a component**: slice 1c of
   [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#375](https://github.com/eQuantic/equantic-ui/pull/375)).
