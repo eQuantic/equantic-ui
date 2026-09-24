@@ -17,8 +17,8 @@ export class CodeDiffLayout { declare original: CodeRows; declare modified: Code
     let [originalRuns, modifiedRuns, folds] = CodeDiffLayout.unchangedRuns(changes, originalLines, modifiedLines, context, expanded, gaps, foldLabel);
     return new CodeDiffLayout(new CodeRows(originalLines, originalGaps, originalRuns), new CodeRows(modifiedLines, removed, modifiedRuns), folds); } static addGaps(gaps: any, original: CodeFiller[], modified: CodeFiller[]) { if (gaps == null) return;
     for (const gap of gaps) {
-        original.push(new CodeFiller(gap.originalLine, 1, null, gap.header));
-        modified.push(new CodeFiller(gap.modifiedLine, 1, null, gap.header));
+        original.push(new CodeFiller(gap.originalLine, 1, -1, gap.header));
+        modified.push(new CodeFiller(gap.modifiedLine, 1, -1, gap.header));
     } } static unchangedRuns(changes: any, originalLines: number, modifiedLines: number, context: number, expanded: any, gaps: any, foldLabel: (value: number) => string | null): [CodeCollapse[], CodeCollapse[], CodeDiffFold[]] { let original: CodeCollapse[] = [];
     let modified: CodeCollapse[] = [];
     let folds: CodeDiffFold[] = [];

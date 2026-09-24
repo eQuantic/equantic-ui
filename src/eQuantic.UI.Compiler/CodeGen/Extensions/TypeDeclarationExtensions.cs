@@ -112,8 +112,35 @@ public static class TypeDeclarationExtensions
                 };
         }
 
+        // Any other CONSTANT the model folds. A declared default is a compile-time constant, and `-1`
+        // is a unary minus over a literal, which the literal table below has no row for: an optional
+        // `int SourceLine = -1` constructed as null, `null >= 0` is true in JavaScript, and a diff's
+        // gap row drew the other document's first line.
+        if (model is not null && ReferenceEquals(expression.SyntaxTree, model.SyntaxTree)
+            && model.GetConstantValue(expression) is { HasValue: true } folded
+            && ConstantLiteral(folded.Value) is { } constantText)
+            return constantText;
+
         return LiteralOf(expression);
     }
+
+    /// <summary>A folded constant as its JS literal, for the kinds a number or a string carries on the
+    /// other side. Null for a long or a decimal, whose twins are the runtime's own types.</summary>
+    private static string? ConstantLiteral(object? value) => value switch
+    {
+        null => "null",
+        string text => "'" + text.Replace("\\", "\\\\").Replace("'", "\\'") + "'",
+        char character => "'" + character.ToString().Replace("\\", "\\\\").Replace("'", "\\'") + "'",
+        bool flag => flag ? "true" : "false",
+        long or ulong or decimal => null,
+        float single when float.IsNaN(single) => "NaN",
+        double real when double.IsNaN(real) => "NaN",
+        float single when float.IsInfinity(single) => single > 0 ? "Infinity" : "-Infinity",
+        double real when double.IsInfinity(real) => real > 0 ? "Infinity" : "-Infinity",
+        float single => single.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+        double real => real.ToString("R", System.Globalization.CultureInfo.InvariantCulture),
+        _ => System.Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture),
+    };
 
     private static string LiteralOf(ExpressionSyntax expression) => expression switch
     {
@@ -124,6 +151,9 @@ public static class TypeDeclarationExtensions
         LiteralExpressionSyntax literal when literal.IsKind(SyntaxKind.NumericLiteralExpression) =>
             literal.Token.ValueText,
         LiteralExpressionSyntax literal when literal.IsKind(SyntaxKind.NullLiteralExpression) => "null",
+        // A negative number, where no model folds it: `-1` is a minus over a literal.
+        PrefixUnaryExpressionSyntax { RawKind: (int)SyntaxKind.UnaryMinusExpression, Operand: LiteralExpressionSyntax number }
+            when number.IsKind(SyntaxKind.NumericLiteralExpression) => "-" + number.Token.ValueText,
         // A char is a one-character STRING on the other side — the same thing `text[i]` gives back.
         LiteralExpressionSyntax literal when literal.IsKind(SyntaxKind.CharacterLiteralExpression) =>
             "'" + literal.Token.ValueText.Replace("\\", "\\\\").Replace("'", "\\'") + "'",

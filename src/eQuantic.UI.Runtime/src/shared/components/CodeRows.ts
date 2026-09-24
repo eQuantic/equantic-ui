@@ -85,7 +85,7 @@ export class CodeRows {
         let target = Math.min(Math.max(row, 0), this.rowCount - 1);
         let segment = this.segmentOfRow(target);
         let offset = target - this._rows[segment];
-        return (() => { const _s = this._kinds[segment]; if (_s === 'line') return new CodeRow('line', this._lines[segment] + offset); if (_s === 'filler') return new CodeRow('filler', this._lines[segment], 1, this._sources[segment] >= 0 ? this._sources[segment] + offset : -1, this._labels[segment]); return new CodeRow('placeholder', this._lines[segment], this._lineCounts[segment], null, this._labels[segment]); })();
+        return (() => { const _s = this._kinds[segment]; if (_s === 'line') return new CodeRow('line', this._lines[segment] + offset); if (_s === 'filler') return new CodeRow('filler', this._lines[segment], 1, this._sources[segment] >= 0 ? this._sources[segment] + offset : -1, this._labels[segment]); return new CodeRow('placeholder', this._lines[segment], this._lineCounts[segment], -1, this._labels[segment]); })();
     }
 
     lineAtRow(row: number) {

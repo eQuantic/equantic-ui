@@ -57,6 +57,44 @@ public class RecordPipelineTests
         imported.Should().NotContain("Layout", "a module declares its own name and never imports it");
     }
 
+    /// <summary>
+    /// A declared default is the constant C# folds, whatever expression wrote it: `-1` is a minus
+    /// over a literal, and the literal table had no row for it, so an optional `int SourceLine = -1`
+    /// constructed as null, and a named call that skipped it passed null. In JavaScript `null >= 0`
+    /// is true, and a diff's gap row drew the other document's first line.
+    /// </summary>
+    [Fact]
+    public void ADeclaredDefault_IsTheConstantCSharpFolds_AndANamedCallPassesIt()
+    {
+        var source = """
+            public readonly record struct Filler(int BeforeLine, int Rows, int SourceLine = -1, double Scale = -0.5,
+                int Mask = 1 << 3, string Tag = "a" + "b", string? Label = null);
+
+            public static class Gaps
+            {
+                public static Filler Gap(int line, string header) => new Filler(line, 1, Label: header);
+            }
+            """;
+        var tree = Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(source, path: "Probe.cs");
+        var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!).Split(Path.PathSeparator)
+            .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Select(path => (Microsoft.CodeAnalysis.MetadataReference)Microsoft.CodeAnalysis.MetadataReference.CreateFromFile(path));
+        var compilation = Microsoft.CodeAnalysis.CSharp.CSharpCompilation.Create("Probe", [tree], references,
+            new Microsoft.CodeAnalysis.CSharp.CSharpCompilationOptions(Microsoft.CodeAnalysis.OutputKind.DynamicallyLinkedLibrary));
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(compilation);
+        var results = compiler.CompileSource(source, "Probe.cs").ToList();
+
+        results.Single(result => result.ComponentName == "Filler").TypeScript.Should().Contain(
+            "constructor(beforeLine: any = 0, rows: any = 0, sourceLine: any = -1, scale: any = -0.5, mask: any = 8, tag: any = 'ab', label: any = null)");
+        results.Single(result => result.ComponentName == "Gaps").TypeScript.Should().Contain(
+            "new Filler(line, 1, -1, -0.5, 8, 'ab', header)", "a named call fills what it skips with the same constants");
+
+        // Where no model folds it, a negative number is still one.
+        new ComponentCompiler().CompileSource("public readonly record struct Row(int Line = -1);").Single().TypeScript
+            .Should().Contain("constructor(line: any = -1)");
+    }
+
     [Fact]
     public void Component_ReferencingRecord_ReactivelyImportsIt()
     {
