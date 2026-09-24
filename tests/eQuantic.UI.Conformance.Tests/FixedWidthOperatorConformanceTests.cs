@@ -52,6 +52,9 @@ public class FixedWidthOperatorConformanceTests
     [InlineData("byte b = 0; return (~b).ToString();")]                                                     // "-1": an int, control
     [InlineData("long l = 0; return (~l).ToString();")]                                                     // "-1": control
     // ---- a negation, in the context it sits in ----
+    // A uint's negation is a long: the operand converts before the minus applies. Controls.
+    [InlineData("uint u = uint.MaxValue; var y = -u; return (y + 1L).ToString();")]                         // "-4294967294"
+    [InlineData("uint? u = 5; var y = -u; return (y + 1L).ToString();")]                                     // "-4"
     [InlineData("int x = int.MinValue; try { return checked(-x).ToString(); } catch (Exception e) { return e.Message; }")]
     [InlineData("int? x = int.MinValue; try { return checked(-x).ToString(); } catch (Exception e) { return e.Message; }")]
     [InlineData("long l = long.MinValue; return unchecked(-l).ToString();")]                                // "-9223372036854775808"

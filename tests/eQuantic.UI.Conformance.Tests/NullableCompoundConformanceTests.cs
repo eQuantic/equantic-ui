@@ -115,6 +115,15 @@ public class NullableCompoundConformanceTests
     [InlineData("decimal? a = 1m, b = 1.0m; return (a == b) ? \"t\" : \"f\";")]                           // "t"
     [InlineData("int? a = int.MaxValue, b = 1; try { return checked(a + b).ToString(); } catch (Exception e) { return e.Message; }")]
     [InlineData("byte? a = 200, b = 100; return (a + b).ToString();")]                                       // "300", an int
+    // ONE nullable operand: C# converts the other to the nullable type before the lifted operator
+    // applies, so the bound operands are both nullable and the lift sees them. Controls.
+    [InlineData("long? l = null; var y = l + 1L; return y == null ? \"null\" : y.ToString();")]
+    [InlineData("long? l = null; var y = 1L + l; return y == null ? \"null\" : y.ToString();")]
+    [InlineData("long? l = null; long k = 2; var y = l * k; return y == null ? \"null\" : y.ToString();")]
+    [InlineData("decimal? m = null; var y = m + 1m; return y == null ? \"null\" : y.ToString();")]
+    [InlineData("decimal? m = 1.5m; var y = m + 1m; return y.ToString();")]                                   // "2.5"
+    [InlineData("long? l = null; return l < 7L ? \"lt\" : \"not\";")]                                          // "not"
+    [InlineData("int? x = null; var y = x & 3; return y == null ? \"null\" : y.ToString();")]
     // ---- a T into a T? is the same value ----
     [InlineData("decimal? m = 1234567890.123456789012m; return m.ToString();")]
     [InlineData("decimal d = 0.1234567890123456789m; decimal? n = d; return n.ToString();")]
