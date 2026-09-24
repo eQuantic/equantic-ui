@@ -68,7 +68,7 @@ import {
   equals as stringEquals,
   joinRange,
 } from './utils/string-statics';
-import { format, parseEnum, stringFormat } from './utils/format';
+import { asSingle, format, parseEnum, stringFormat, stringFormatInvariant } from './utils/format';
 import { nextTextElementLength, textElementStarts } from './utils/text-elements';
 import { unicodeCategory } from './utils/unicode-category';
 import { str } from './utils/culture';
@@ -243,6 +243,8 @@ export const $eq = {
   text: {
     format,
     stringFormat,
+    stringFormatInvariant,
+    asSingle,
     stringBuilder,
     substring,
     textElementStarts,

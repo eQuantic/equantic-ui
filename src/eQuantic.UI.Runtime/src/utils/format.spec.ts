@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseEnum, format, stringFormat } from './format';
+import { parseEnum, format, stringFormat, stringFormatInvariant, asSingle } from './format';
 
 describe('parseEnum', () => {
   // String enum (TypeScript style)
@@ -136,6 +136,42 @@ describe('stringFormat (string.Format)', () => {
   it('renders null/undefined args as empty string', () => {
     expect(stringFormat('[{0}]', null)).toBe('[]');
     expect(stringFormat('[{0}]', undefined)).toBe('[]');
+  });
+});
+
+describe('a number in .NET notation, a float with its own digits (#378)', () => {
+  it('writes G and R as the shortest text that reads back, in .NET notation', () => {
+    expect(format(1e21, 'G', undefined, true)).toBe('1E+21');
+    expect(format(0.1 + 0.2, 'R', undefined, true)).toBe('0.30000000000000004');
+  });
+
+  it("writes a float's own digits when it says it is one", () => {
+    const tenth = Math.fround(0.1);
+    expect(format(tenth, 'G', undefined, true, 'single')).toBe('0.1');
+    expect(format(tenth, null, 6, undefined, 'single')).toBe('   0.1');
+    expect(format(Math.fround(1e9), null, undefined, undefined, 'single')).toBe('1E+09');
+    // Without the kind the double underneath shows, which is what the kind exists to prevent.
+    expect(format(tenth, 'G', undefined, true)).toBe('0.10000000149011612');
+  });
+
+  it('aligns a null as the empty text it writes', () => {
+    expect(format(null, null, 4)).toBe('    ');
+    expect(format(undefined, null, -3)).toBe('   ');
+  });
+});
+
+describe('stringFormat, as .NET writes its placeholders', () => {
+  it('writes a number with no specifier in .NET notation, and a bool as True/False', () => {
+    expect(stringFormatInvariant('{0}|{1}|{2}', 1e21, true, false)).toBe('1E+21|True|False');
+  });
+
+  it("writes a float boxed for the call with its own digits, specifier or not", () => {
+    expect(stringFormatInvariant('{0}|{1:G}', asSingle(Math.fround(0.1)), asSingle(Math.fround(0.1)))).toBe('0.1|0.1');
+    expect(asSingle(null)).toBeNull();
+  });
+
+  it('aligns a placeholder by its width, right for a positive one and left for a negative one', () => {
+    expect(stringFormatInvariant('[{0,5}][{0,-5}][{1,8:F2}]', 42, 3.14159)).toBe('[   42][42   ][    3.14]');
   });
 });
 
