@@ -58,6 +58,56 @@ public class EmittedTypeSurfaceTests
         Regex.IsMatch(ts, @":\s*Date(?![A-Za-z])").Should().BeFalse("the JS Date is not this type");
     }
 
+    /// <summary>
+    /// An element that is a union or a function is parenthesized before its array: TypeScript binds
+    /// `[]` tighter than `|` and `=>`, so `string | null[]` is a string OR an array of nulls, and
+    /// `() => void[]` a function returning an array. The code engine's row map keeps a
+    /// <c>List&lt;string?&gt;</c>, and its twin failed the runtime's own build at the first `push`.
+    /// </summary>
+    [Fact]
+    public void AUnionOrAFunctionElement_IsParenthesizedBeforeItsArray()
+    {
+        var ts = TestHelper.ConvertClass("""
+            private readonly List<string?> _labels = new();
+            public string?[] Names { get; init; } = [];
+            public IReadOnlyList<int?> Counts { get; init; } = [];
+            public List<Action> Callbacks { get; init; } = new();
+            public List<Action?> Handlers { get; init; } = new();
+            public string?[][] Grid { get; init; } = [];
+            public List<string> Plain { get; init; } = new();
+            """);
+
+        ts.Should().Contain("_labels: (string | null)[]");
+        ts.Should().Contain("names: (string | null)[]");
+        ts.Should().Contain("counts: (number | null)[]");
+        ts.Should().Contain("callbacks: (() => void)[]");
+        ts.Should().Contain("handlers: ((() => void) | null)[]");
+        ts.Should().Contain("grid: (string | null)[][]");
+        ts.Should().Contain("plain: string[]", "an element that is a plain name needs nothing");
+        ts.Should().NotContain("| null[]");
+    }
+
+    /// <summary>
+    /// An ordering's key selector is typed by the element it compares. It was written to a bare
+    /// <c>const _k = (filler) => …</c> inside the comparator, where nothing gives the lambda a type,
+    /// and the runtime's own build refused the implicit <c>any</c> (the code engine's row map sorts
+    /// its fillers). Typed through the comparator's own parameter, the key is checked again. Plain
+    /// JavaScript, which the conformance harness and the playground run, carries no annotation.
+    /// </summary>
+    [Fact]
+    public void AnOrderingsKeySelector_IsTypedByTheElementItCompares()
+    {
+        var ts = TestHelper.ConvertClass("""
+            public List<string> Sorted(List<string> items) => items.OrderBy(item => item.Length).ThenBy(item => item).ToList();
+            """);
+
+        // The lambda's own annotation, when it has one, is the same type: the key is typed either way.
+        System.Text.RegularExpressions.Regex.Matches(ts, @"const _k: \(x: typeof a\) => any = \(item(: string)?\) => item")
+            .Count.Should().Be(2, "both keys of the ordering are typed through the element they compare");
+        TestHelper.ConvertExpression("new List<string>().OrderBy(item => item.Length)")
+            .Should().Contain("const _k = (item) => item.length;").And.NotContain("typeof a");
+    }
+
     [Fact]
     public void TheWrappingSurvivesTheMapping()
     {

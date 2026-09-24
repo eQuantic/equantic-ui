@@ -2395,7 +2395,7 @@ public class TypeScriptEmitter
                 arrayDepth++;
                 element = element[..^2].Trim();
             }
-            return CSharpTypeToTypeScript(element) + string.Concat(Enumerable.Repeat("[]", arrayDepth));
+            return ArrayOf(CSharpTypeToTypeScript(element), arrayDepth);
         }
 
         if (baseType.StartsWith("Nullable<") && baseType.EndsWith(">"))
@@ -2438,7 +2438,7 @@ public class TypeScriptEmitter
         // and, worse, a lie in an app's editor.
         if (SequenceOf(tsType) is { } sequenceItem)
         {
-            tsType = $"{CSharpTypeToTypeScript(sequenceItem)}[]";
+            tsType = ArrayOf(CSharpTypeToTypeScript(sequenceItem), 1);
         }
         else if (SetOf(tsType) is { } setItem)
         {
@@ -2498,6 +2498,18 @@ public class TypeScriptEmitter
             tsType = tsType.Contains("=>") ? $"({tsType}) | null" : $"{tsType} | null";
 
         return tsType;
+    }
+
+    /// <summary>
+    /// An array of <paramref name="element"/>, <paramref name="depth"/> deep. TypeScript binds `[]`
+    /// tighter than `|` and `=>`, so an element that is a union or a function is parenthesized:
+    /// `string | null[]` is a string or an array of nulls, and `() => void[]` a function returning an
+    /// array. A nullable element is the common case (<c>List&lt;string?&gt;</c>).
+    /// </summary>
+    private static string ArrayOf(string element, int depth)
+    {
+        var bound = element.Contains('|') || element.Contains("=>") ? $"({element})" : element;
+        return bound + string.Concat(Enumerable.Repeat("[]", depth));
     }
 
     /// <summary>Every C# name for an ordered sequence — all of them are a JS array.</summary>
