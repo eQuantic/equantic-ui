@@ -173,7 +173,7 @@ public class TypeScriptEmitter
         if (build?.ExpressionBody != null)
         {
             var expression = build.ExpressionBody.Expression;
-            return (JsStatement.Block(new[] { JsStatement.Raw(ExpressionBodyReturn(expression)) }), expression);
+            return (JsStatement.Block(new[] { ExpressionBody(expression, returns: true) }), expression);
         }
         return (JsStatement.Block(new[] { fallback }), null);
     }
@@ -221,12 +221,19 @@ public class TypeScriptEmitter
                 var other => [other],
             }
             : expressionBody != null
-                ? [JsStatement.Raw(_converter.InBlock(() => ExpressionBodyReturn(expressionBody))) with { Origin = expressionBody }]
+                ? [_converter.InBlock(() => ExpressionBody(expressionBody, returns: true))]
                 : [];
         return hoisted.Length == 0
             ? JsStatement.Block(statements)
             : JsStatement.Block([JsStatement.Raw(hoisted.TrimEnd()), .. statements]);
     }
+
+    /// <summary>An expression body as the one statement of its member — a return, or a bare
+    /// statement where a setter or a constructor has nothing to return — carrying the expression, so
+    /// the map leads a frame in it to its line (#293). A getter's, a setter's, a Build's and a
+    /// constructor's took the text alone, and a debugger read their lines as the member's head.</summary>
+    private JsStatement ExpressionBody(ExpressionSyntax expression, bool returns) =>
+        JsStatement.Raw(returns ? ExpressionBodyReturn(expression) : ExpressionBodyStatement(expression)) with { Origin = expression };
 
     private string ExpressionBodyReturn(ExpressionSyntax expression) =>
         $"{PatternVariableScanner.Declarations(expression, TypeAnnotations)}return {_converter.ConvertExpression(expression)};";
@@ -643,7 +650,7 @@ public class TypeScriptEmitter
                             var bodyLine = statements.Count + 1;
                             if (ctorDef?.BodyNode is { } ctorBlock) statements.Add(Contents(ctorBlock));
                             else if (ctorDef?.ExpressionBodyNode is { } ctorExpression)
-                                statements.Add(JsStatement.Raw(ExpressionBodyStatement(ctorExpression)));
+                                statements.Add(ExpressionBody(ctorExpression, returns: false));
                             // …and the initializer last, which is where C# runs it.
                             statements.Add(JsStatement.Raw("if (props && typeof props === 'object') Object.assign(this, props);"));
                             c.Member(JsClassMember.Constructor(signature, JsStatement.Block(statements)),
@@ -1376,7 +1383,7 @@ public class TypeScriptEmitter
             if (node.ExpressionBody != null)
             {
                 _converter.SetCurrentClass(component.Name);
-                c.Member(JsClassMember.Getter(stat, name, "", JsStatement.Raw(ExpressionBodyReturn(node.ExpressionBody.Expression))), node);
+                c.Member(JsClassMember.Getter(stat, name, "", ExpressionBody(node.ExpressionBody.Expression, returns: true)), node);
                 continue;
             }
 
@@ -1408,7 +1415,7 @@ public class TypeScriptEmitter
                     if (getterHasBody)
                     {
                         var body = getter!.ExpressionBody != null
-                            ? JsStatement.Raw(ExpressionBodyReturn(getter.ExpressionBody.Expression))
+                            ? ExpressionBody(getter.ExpressionBody.Expression, returns: true)
                             : _converter.ConvertBlockIr(getter.Body!);
                         c.Member(JsClassMember.Getter(stat, name, "", body), getter);
                     }
@@ -1416,7 +1423,7 @@ public class TypeScriptEmitter
                     {
                         // C# setters use the implicit `value` parameter, which survives conversion as-is.
                         var body = setter!.ExpressionBody != null
-                            ? JsStatement.Raw(ExpressionBodyStatement(setter.ExpressionBody.Expression))
+                            ? ExpressionBody(setter.ExpressionBody.Expression, returns: false)
                             : _converter.ConvertBlockIr(setter.Body!);
                         c.Member(JsClassMember.Setter(stat, name, "value", body), setter);
                     }
@@ -1538,7 +1545,7 @@ public class TypeScriptEmitter
                 if (p.ExpressionBody != null)
                 {
                     c.Member(JsClassMember.Getter(qualifier, pn, Annotation(propertyType),
-                        JsStatement.Raw(ExpressionBodyReturn(p.ExpressionBody.Expression))), p);
+                        ExpressionBody(p.ExpressionBody.Expression, returns: true)), p);
                 }
                 else if (p.AccessorList != null)
                 {
@@ -1560,7 +1567,7 @@ public class TypeScriptEmitter
                     var g = p.AccessorList.Accessors.FirstOrDefault(a => a.Keyword.Text == "get");
                     if (g?.ExpressionBody != null)
                         c.Member(JsClassMember.Getter(qualifier, pn, Annotation(propertyType),
-                            JsStatement.Raw(ExpressionBodyReturn(g.ExpressionBody.Expression))), g);
+                            ExpressionBody(g.ExpressionBody.Expression, returns: true)), g);
                     else if (g?.Body != null)
                         c.Member(JsClassMember.Getter(qualifier, pn, Annotation(propertyType), _converter.ConvertBlockIr(g.Body)), g);
                     else if (p.Initializer != null)
@@ -1599,7 +1606,7 @@ public class TypeScriptEmitter
                         .FirstOrDefault(a => a.Keyword.Text is "set" or "init");
                     if (setter?.ExpressionBody != null)
                         c.Member(JsClassMember.Setter(qualifier, pn, $"value{Annotation(DeclaredType(p.Type))}",
-                            JsStatement.Raw(ExpressionBodyStatement(setter.ExpressionBody.Expression))), setter);
+                            ExpressionBody(setter.ExpressionBody.Expression, returns: false)), setter);
                     else if (setter?.Body != null)
                         c.Member(JsClassMember.Setter(qualifier, pn, $"value{Annotation(DeclaredType(p.Type))}",
                             _converter.ConvertBlockIr(setter.Body)), setter);
@@ -1678,7 +1685,7 @@ public class TypeScriptEmitter
                 if (OperatorBody(op) is not { } opBody) continue;
                 var opPars = string.Join(", ", op.ParameterList.Parameters
                     .Select(pp => pp.Identifier.Text.ToJsIdentifier()));
-                c.Member(JsClassMember.Method("static ", opName, "", opPars, "", JsStatement.Raw(opBody)), op);
+                c.Member(JsClassMember.Method("static ", opName, "", opPars, "", opBody), op);
             }
 
             foreach (var conversion in cls.Members.OfType<ConversionOperatorDeclarationSyntax>())
@@ -1693,7 +1700,7 @@ public class TypeScriptEmitter
                             : conversion.Type.ToString(),
                         from: conversion.Type.ToString() == cls.Identifier.Text);
                 var convPar = conversion.ParameterList.Parameters[0].Identifier.Text.ToJsIdentifier();
-                c.Member(JsClassMember.Method("static ", convName, "", convPar, "", JsStatement.Raw(convBody)), conversion);
+                c.Member(JsClassMember.Method("static ", convName, "", convPar, "", convBody), conversion);
             }
 
             EmitExtensionBlocks(cls, c);
@@ -1703,20 +1710,16 @@ public class TypeScriptEmitter
     /// An operator's body in either spelling, or null where it has neither — `extern`, or a
     /// declaration in an interface — and there is nothing to write.
     /// <para>
-    /// The hoisted locals come first, as they do for an ordinary method: `int.TryParse(s, out var n)`
-    /// inside an operator emits `n = …` with nothing declaring `n`, and an ES module is strict, so
-    /// the operator threw a ReferenceError the first time it ran instead of returning a value.
+    /// It is a method's body, built as one: each statement maps to its line (#293), and the hoisted
+    /// locals come first. `int.TryParse(s, out var n)` inside an operator emits `n = …`, and with
+    /// nothing declaring `n` in a strict ES module the operator threw a ReferenceError the first
+    /// time it ran instead of returning a value.
     /// </para>
     /// </summary>
-    private string? OperatorBody(BaseMethodDeclarationSyntax op)
-    {
-        var body = op.ExpressionBody is { } expression
-            ? ExpressionBodyReturn(expression.Expression)
-            : op.Body is { } block ? StripJsBraces(_converter.Convert(block)) : null;
-        return body is null
+    private JsStatement? OperatorBody(BaseMethodDeclarationSyntax op) =>
+        op.Body is null && op.ExpressionBody is null
             ? null
-            : OutParameters.HoistedLocals(op.Body ?? (SyntaxNode?)op.ExpressionBody) + body;
-    }
+            : MethodBody(op.Body, op.ExpressionBody?.Expression, isIterator: false, byReference: [], isAsync: false);
 
     /// <summary>
     /// C# 14 extension blocks (<c>extension(T receiver) { … }</c>): every member lowers to a
