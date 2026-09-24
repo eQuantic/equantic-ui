@@ -500,3 +500,5 @@ eQuantic.UI.Primitives.KeyboardConvention
 eQuantic.UI.Primitives.KeyboardConvention.Standard = 0 -> eQuantic.UI.Primitives.KeyboardConvention
 eQuantic.UI.Primitives.KeyboardConvention.Apple = 1 -> eQuantic.UI.Primitives.KeyboardConvention
 eQuantic.UI.Primitives.ICodeSurfaceModel.FocusVersion.get -> int
+eQuantic.UI.Primitives.Shortcut.FocusScoped.get -> bool
+eQuantic.UI.Primitives.Shortcut.FocusScoped.init -> void

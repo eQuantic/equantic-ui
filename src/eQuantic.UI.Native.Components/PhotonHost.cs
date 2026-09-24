@@ -536,6 +536,12 @@ public sealed class PhotonHost
         return scrolled;
     }
 
+    /// <summary>Whether the keyboard focus (a field or code being edited, or the control wearing the
+    /// ring) is inside the subtree at <paramref name="scope"/>: a focus-scoped shortcut's question.
+    /// Web twin: <c>focusWithin</c> in the lowering, over the focused element.</summary>
+    private bool FocusIsWithin(string scope) =>
+        FocusedPath is { } focused && (focused == scope || IsAncestorPath(scope, focused));
+
     /// <summary>Whether <paramref name="ancestor"/> names a node this path sits under. Compared on
     /// SEGMENT boundaries: "r/1" must not be read as an ancestor of "r/10".</summary>
     private static bool IsAncestorPath(string ancestor, string path) =>
@@ -2272,6 +2278,7 @@ public sealed class PhotonHost
                 var chord = bindings[i].Chord;
                 if (chord.Modifiers != modifiers) continue;
                 if (!string.Equals(chord.Key, key, StringComparison.OrdinalIgnoreCase)) continue;
+                if (bindings[i].Scope is { } scope && !FocusIsWithin(scope)) continue;
                 bindings[i].OnPressed();
                 NeedsRender = true;
                 return true;
