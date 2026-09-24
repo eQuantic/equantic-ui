@@ -75,6 +75,7 @@ public class ValueTextConformanceTests
     [InlineData("float[] xs = [0.1f]; return string.Format(\"{0}\", [.. xs]);")]                                  // "0.1"
     [InlineData("var xs = new List<float> { 0.1f, 0.2f }; return string.Format(\"{0}|{1}\", [.. xs]);")]           // "0.1|0.2"
     [InlineData("float[] xs = [0.1f]; return string.Format(\"{0}|{1}\", [2, .. xs]);")]                           // "2|0.1"
+    [InlineData("return string.Format(\"{0}\", [.. new float?[] { 0.1f }]);")]                                     // "0.1"
     // A NULL params array throws on both sides: .NET's ArgumentNullException, and spreading null. Controls.
     [InlineData("try { return string.Format(\"literal\", (object[])null); } catch { return \"throws\"; }")]
     [InlineData("object[] args = null; try { return string.Format(\"literal {0}\", args); } catch { return \"throws\"; }")]
