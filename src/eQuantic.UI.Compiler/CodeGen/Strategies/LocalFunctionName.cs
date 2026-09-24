@@ -94,7 +94,8 @@ internal static class LocalFunctionName
 
     /// <summary>The name a reference to <paramref name="localFunction"/> reaches.</summary>
     public static string Of(IMethodSymbol localFunction) =>
-        localFunction.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() is LocalFunctionStatementSyntax declaration
+        // The DEFINITION's syntax: a generic one is referenced constructed (`Id<int>`).
+        localFunction.OriginalDefinition.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() is LocalFunctionStatementSyntax declaration
             ? Named(declaration)
             : Cased(localFunction.Name);
 

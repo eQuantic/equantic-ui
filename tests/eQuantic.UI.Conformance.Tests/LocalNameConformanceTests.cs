@@ -30,8 +30,12 @@ public class LocalNameConformanceTests
     // A cased name that is a global the translation itself reads: Convert.ToInt32 over text is
     // `parseInt`, so the function called itself (RangeError).
     [InlineData("int ParseInt(string s) => Convert.ToInt32(s) * 2; return ParseInt(\"21\");")] // 42
-    // A generic one, called with its type argument.
+    // A generic one, called with its type argument...
     [InlineData("T Id<T>(T x) => x; return Id<int>(5);")] // 5
+    // ...and as a method group with it, which the generic-name path wrote as its source text:
+    // `Id` beside a declared `id`, and `Delete` beside `delete$` (ReferenceError).
+    [InlineData("T Id<T>(T x) => x; Func<int, int> f = Id<int>; return f(5);")] // 5
+    [InlineData("T Delete<T>(T x) => x; Func<int, int> f = Delete<int>; return f(6);")] // 6
     public void ALocalFunction_TakesANameItsScopeDoesNotHold(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
