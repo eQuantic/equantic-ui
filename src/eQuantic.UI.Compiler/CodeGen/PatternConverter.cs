@@ -106,11 +106,9 @@ public static class PatternConverter
                 }
                 if (recursive.PropertyPatternClause != null)
                     foreach (var sp in recursive.PropertyPatternClause.Subpatterns)
-                    {
-                        var propName = sp.NameColon?.Name.ToString() ?? sp.ExpressionColon?.Expression.ToString();
-                        if (propName != null)
-                            CollectBindings(sp.Pattern, $"{access}.{Camel(propName)}", context, bindings);
-                    }
+                        if (MemberPath(sp) is { } path)
+                            CollectBindings(sp.Pattern, access + string.Concat(path.Select(name => "." + Camel(name))),
+                                context, bindings);
                 break;
 
             case ListPatternSyntax list:
@@ -154,9 +152,16 @@ public static class PatternConverter
         if (recursive.PropertyPatternClause != null)
             foreach (var sp in recursive.PropertyPatternClause.Subpatterns)
             {
-                var propName = sp.NameColon?.Name.ToString() ?? sp.ExpressionColon?.Expression.ToString();
-                if (propName == null) continue;
-                var sub = BuildCondition(sp.Pattern, $"{access}.{Camel(propName)}", context);
+                if (MemberPath(sp) is not { } path) continue;
+                // `{ A.B: p }` is `{ A: { B: p } }`: every member before the last must be there, or
+                // the pattern answers false, as C#'s does, rather than reading through a null.
+                var at = access;
+                for (var i = 0; i < path.Count - 1; i++)
+                {
+                    at = $"{at}.{Camel(path[i])}";
+                    checks.Add($"{at} != null");
+                }
+                var sub = BuildCondition(sp.Pattern, $"{at}.{Camel(path[^1])}", context);
                 if (sub != "true") checks.Add(sub);
             }
 
@@ -308,6 +313,28 @@ public static class PatternConverter
             }
         }
         return false;
+    }
+
+    /// <summary>
+    /// The members a subpattern names, outermost first: one for <c>{ X: … }</c>, the whole path for
+    /// the extended <c>{ A.B.C: … }</c>. The path was lower-cased as ONE name, so
+    /// <c>{ Changes.Count: > 0 }</c> read <c>changes.Count</c>, undefined, and was quietly always false.
+    /// </summary>
+    private static List<string>? MemberPath(SubpatternSyntax sp)
+    {
+        if (sp.NameColon is { } nameColon) return [nameColon.Name.Identifier.ValueText];
+        if (sp.ExpressionColon is not { } expressionColon) return null;
+        var path = new List<string>();
+        var at = expressionColon.Expression;
+        while (at is MemberAccessExpressionSyntax member)
+        {
+            path.Insert(0, member.Name.Identifier.ValueText);
+            at = member.Expression;
+        }
+        // C# accepts nothing else before the colon (CS8918): a name, then members of it.
+        if (at is not IdentifierNameSyntax first) return null;
+        path.Insert(0, first.Identifier.ValueText);
+        return path;
     }
 
     /// <summary>

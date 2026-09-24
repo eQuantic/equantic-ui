@@ -276,7 +276,7 @@ export class CodeDiff extends StatefulComponent {
 
     stepTo(forward: boolean) {
         let source: any; let modified: any; let original: any; 
-        if (!(((this._source != null && this._source.changes.Count > 0) && (source = this._source, true))) || !((modified = this._modified) != null) || !((original = this._original) != null)) return;
+        if (!(((this._source != null && this._source.changes != null && this._source.changes.length > 0) && (source = this._source, true))) || !((modified = this._modified) != null) || !((original = this._original) != null)) return;
         let caret = modified.caret.line;
         let target = forward ? source.changes[0] : source.changes[source.changes.length - 1];
         if (forward) {
