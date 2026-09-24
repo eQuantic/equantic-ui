@@ -91,7 +91,11 @@ public class NumberMethodStrategy : IExpressionIrStrategy
             // We'll trust LocalDeclarationStrategy or standard var usage handled elsewhere if verified.
             // For now, simpler: assume variable exists or is created.
 
-            return JsExpr.Callish($"({varName} = {Parsed(input)}, !isNaN({varName}))");
+            if (IsBareName(varName)) return JsExpr.Callish($"({varName} = {Parsed(input)}, !isNaN({varName}))");
+            // A target with an effect of its own (`out values[index++]`) is named once: the parsed
+            // value is bound, written, and checked through the binding.
+            return JsExpr.Template($"(({varName} = {{0}}), !isNaN({{0}}))", [JsExpr.Callish(Parsed(input))],
+                context.TypeAnnotations);
         }
 
         return JsExpr.Opaque(context.Unhandled(node, "numeric Parse/TryParse"));
@@ -167,10 +171,24 @@ public class NumberMethodStrategy : IExpressionIrStrategy
         if (IsDiscard(outArgument, context))
             return JsExpr.Template($"({parsed} !== undefined)", parts, context.TypeAnnotations);
         var target = OutTarget(outArgument, context);
+        if (IsBareName(target))
+            return JsExpr.Template(
+                $"(({target} = {parsed}) !== undefined || (({target} = {Eq.Dec}(0)), false))",
+                parts, context.TypeAnnotations);
+        // A target with an effect of its own (`out values[index++]`) is written by ONE branch, once
+        // the parsed value is bound, so its effect runs once, as C#'s out does: named in both halves
+        // of an `||`, a failed parse stepped `index` twice and left the zero in the next element.
         return JsExpr.Template(
-            $"(({target} = {parsed}) !== undefined || (({target} = {Eq.Dec}(0)), false))",
-            parts, context.TypeAnnotations);
+            $"({{0}} !== undefined ? (({target} = {{0}}), true) : (({target} = {Eq.Dec}(0)), false))",
+            [JsExpr.Template(parsed, parts, context.TypeAnnotations)], context.TypeAnnotations);
     }
+
+    /// <summary>An <c>out</c> target a second mention cannot change: a bare name, which is a local
+    /// or a parameter here (the template writer's own rule: a plain name's second read cannot be
+    /// observed). An element or a member (<c>this.x</c>) may have an effect or an accessor of its
+    /// own, so it is named once.</summary>
+    private static bool IsBareName(string target) =>
+        System.Text.RegularExpressions.Regex.IsMatch(target, @"^[A-Za-z_$][A-Za-z0-9_$]*$");
 
     private static bool IsSpanOfChar(ITypeSymbol type) =>
         type is INamedTypeSymbol { Name: "ReadOnlySpan", TypeArguments: [{ SpecialType: SpecialType.System_Char }] };

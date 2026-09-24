@@ -43,6 +43,10 @@ public class DecimalConversionConformanceTests
     [InlineData("var ok = decimal.TryParse(\"1e5\", System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var d); return (ok ? \"ok \" : \"no \") + d;")] // "ok 100000"
     [InlineData("string s = null; var ok = decimal.TryParse(s, out var d); return (ok ? \"ok \" : \"no \") + d;")]         // "no 0"
     [InlineData("return decimal.TryParse(\"5\", out _) ? \"ok\" : \"no\";")]                                             // "ok"
+    // An out target with an effect of its own runs it once, as C# does, whether the parse succeeds or not.
+    [InlineData("var values = new decimal[2]; int index = 0; decimal.TryParse(\"x\", out values[index++]); return index + \"|\" + values[0] + \"|\" + values[1];")] // "1|0|0"
+    [InlineData("var values = new decimal[2]; int index = 0; decimal.TryParse(\"1.5\", out values[index++]); return index + \"|\" + values[0];")]               // "1|1.5"
+    [InlineData("var values = new int[2]; int index = 0; int.TryParse(\"7\", out values[index++]); return index + \"|\" + values[0];")]                          // "1|7"
     [InlineData("return int.TryParse(\"5\", out _) ? \"ok\" : \"no\";")]                                                 // "ok" — a discard, for every kind
     // ---- Convert.ToDecimal: by the type of what it converts ----
     [InlineData("return (Convert.ToDecimal(\"0.1\") + 0.2m).ToString();")]                                   // "0.3"
