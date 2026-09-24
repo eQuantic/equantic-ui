@@ -273,6 +273,43 @@ public class LinqStrategyTests
     }
 
     [Fact]
+    public void AnOperatorInItsStaticForm_IsRefused_ButMaxAndMin()
+    {
+        // The strategies read the source from the left of the member access, which in the static form
+        // is the TYPE: `Enumerable.Count(xs)` came out as `Enumerable.filter(xs).length` and
+        // `Enumerable.ToDictionary(xs, f)` keyed its dictionary by the source, with no diagnostic.
+        foreach (var (call, name) in new[]
+        {
+            ("Enumerable.ToDictionary(numbers, x => x)", "ToDictionary"),
+            ("Enumerable.ToDictionary(keySelector: x => x, source: numbers)", "ToDictionary"),
+            ("Enumerable.Count(numbers)", "Count"),
+            ("Enumerable.Select(numbers, x => x * 2)", "Select"),
+            ("Enumerable.Aggregate(numbers, (a, b) => a + b)", "Aggregate"),
+            ("Enumerable.OrderBy(numbers, x => x)", "OrderBy"),
+            ("Enumerable.GroupBy(numbers, x => x % 2)", "GroupBy"),
+            ("Enumerable.ToList(numbers)", "ToList"),
+            ("Enumerable.FirstOrDefault(numbers)", "FirstOrDefault"),
+            ("Enumerable.Sum(numbers)", "Sum"),
+            ("Enumerable.Distinct(numbers)", "Distinct"),
+        })
+        {
+            TestHelper.DiagnosticsFor($"var r = {call}")
+                .Should().Contain(d => d.Code == "EQ1004"
+                    && d.Message.Contains($"LINQ {name} in its static form (write source.{name}("), call);
+        }
+        // Max and Min bind their arguments by parameter, and the reduced form is the one that translates.
+        foreach (var call in new[]
+        {
+            "Enumerable.Max(numbers)", "Enumerable.Min(numbers, x => -x)", "numbers.Count()",
+            "numbers.ToDictionary(x => x)", "Enumerable.Range(0, 3).ToList()",
+        })
+        {
+            TestHelper.DiagnosticsFor($"var r = {call}")
+                .Should().NotContain(d => d.Code == "EQ1004", $"`{call}` translates");
+        }
+    }
+
+    [Fact]
     public void ToDictionary_WithAComparer_IsRefused()
     {
         // The comparer was called as if it were the element selector.
