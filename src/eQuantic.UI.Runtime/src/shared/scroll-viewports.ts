@@ -49,11 +49,10 @@ export function declareScrollViewport(path: string, declaration: ScrollViewportD
  */
 export function scheduleScrollViewportCommit(): void {
   if (declared.size === 0) return;
-  if (typeof queueMicrotask !== 'function') {
-    commitScrollViewports();
-    return;
-  }
-  queueMicrotask(commitScrollViewports);
+  // After the write on every engine: committing on the spot where there is no queueMicrotask
+  // measured the tree before, which is the defect this deferral exists to remove.
+  if (typeof queueMicrotask === 'function') queueMicrotask(commitScrollViewports);
+  else void Promise.resolve().then(commitScrollViewports);
 }
 
 export function commitScrollViewports(): void {
@@ -80,8 +79,13 @@ export function commitScrollViewports(): void {
     reportViewport(view);
     // Watched from here on, once: its size can change with no pass to measure it. The observer
     // is the element's own, so it goes when the element does. Its first answer, as it starts
-    // watching, is the size just reported, and stays silent.
-    if (declaration.onViewportChanged && !view.__eqResizeObserver && typeof ResizeObserver === 'function') {
+    // watching, is the size just reported, and stays silent. A scroll view that keeps its offset
+    // and stops asking for its viewport stops being watched, rather than being told of every
+    // resize for nobody.
+    if (!declaration.onViewportChanged) {
+      view.__eqResizeObserver?.disconnect();
+      view.__eqResizeObserver = undefined;
+    } else if (!view.__eqResizeObserver && typeof ResizeObserver === 'function') {
       const observer = new ResizeObserver(() => reportViewport(view));
       observer.observe(view);
       view.__eqResizeObserver = observer;

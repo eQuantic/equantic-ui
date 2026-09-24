@@ -157,6 +157,46 @@ describe('ScrollView web out-channels', () => {
       expect(observers).toHaveLength(1);
     });
 
+    /**
+     * A scroll view can keep its offset and stop asking for its viewport, and keep its marker with
+     * the offset: its observer was left watching, told of every resize for nobody.
+     */
+    it('stops watching a scroll view that keeps its offset and stops asking', () => {
+      const lowered = lowerVisualNode(scrollNode({ offset: 10, onViewportChanged: () => {} }), context());
+      const path = (lowered as { attributes: Record<string, string> }).attributes['data-eq-scroll'];
+      const el = document.createElement('div');
+      el.setAttribute('data-eq-scroll', path);
+      Object.defineProperty(el, 'clientHeight', { value: 400, configurable: true });
+      document.body.append(el);
+      commitScrollViewports();
+      expect(observers[0].target).toBe(el);
+
+      lowerVisualNode(scrollNode({ offset: 10 }), context());
+      commitScrollViewports();
+
+      expect(observers[0].target).toBeUndefined();
+    });
+
+    /** With no queueMicrotask the commit still waits for the write, rather than measuring the tree
+     * before it. */
+    it('waits for the write where there is no queueMicrotask', async () => {
+      vi.stubGlobal('queueMicrotask', undefined);
+      const seen: number[] = [];
+      const lowered = lowerVisualNode(scrollNode({ onViewportChanged: (h) => seen.push(h) }), context());
+      const path = (lowered as { attributes: Record<string, string> }).attributes['data-eq-scroll'];
+      scheduleScrollViewportCommit();
+
+      const el = document.createElement('div');
+      el.setAttribute('data-eq-scroll', path);
+      Object.defineProperty(el, 'clientHeight', { value: 400, configurable: true });
+      document.body.append(el);
+      expect(seen).toEqual([]);
+
+      await Promise.resolve();
+
+      expect(seen).toEqual([400]);
+    });
+
     it('and says nothing once the scroll view stops asking', () => {
       const seen: number[] = [];
       const lowered = lowerVisualNode(
