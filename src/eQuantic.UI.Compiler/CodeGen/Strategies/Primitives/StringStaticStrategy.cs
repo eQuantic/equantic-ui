@@ -189,6 +189,13 @@ public class StringStaticStrategy : IConversionStrategy
             spread = context.SemanticHelper.GetOperation(node) is IInvocationOperation invocation
                 && invocation.Arguments.Any(argument =>
                     argument.Parameter is { IsParams: true } && argument.ArgumentKind == ArgumentKind.Explicit);
+            // An array WRITTEN IN PLACE is its elements: they are the values, each boxed as C#
+            // boxes it into the array, so a float in `new object[] { 0.1f }` keeps its own digits.
+            if (spread && ElementsOf(values[0]) is { } elements)
+            {
+                values = elements.ToList();
+                spread = false;
+            }
             if (template is null || context.SemanticHelper.GetType(template) is not { SpecialType: SpecialType.System_String })
                 return context.Unhandled(node, "string.Format over a CompositeFormat");
         }
@@ -217,7 +224,7 @@ public class StringStaticStrategy : IConversionStrategy
         if (context.SemanticHelper.GetSymbol(template) is IPropertySymbol templateProperty
             && Services.ResourceClasses.IsResourceAccessor(templateProperty))
         {
-            ValidateResourceTemplate(node, spread ? KnownLength(values[0]) ?? int.MaxValue : values.Count, templateProperty, context);
+            ValidateResourceTemplate(node, spread ? int.MaxValue : values.Count, templateProperty, context);
         }
 
         // Route to the runtime helper, which substitutes {i}/{i,width}/{i:spec} (the spec through the
@@ -235,15 +242,15 @@ public class StringStaticStrategy : IConversionStrategy
         return rest.Count > 0 ? $"{function}({fmt}, {string.Join(", ", rest)})" : $"{function}({fmt})";
     }
 
-    /// <summary>The number of values an array passed as the params array holds when it is written in
-    /// place, so a resx template's arity is held against it as against a list of arguments; null
-    /// where only the running program knows.</summary>
-    private static int? KnownLength(ExpressionSyntax array) => array switch
+    /// <summary>The values an array passed as the params array holds when it is written in place:
+    /// they are the call's values, as a list of arguments would be, and a resx template's arity is
+    /// held against them. Null where only the running program knows, a spread element included.</summary>
+    private static IReadOnlyList<ExpressionSyntax>? ElementsOf(ExpressionSyntax array) => array switch
     {
-        ArrayCreationExpressionSyntax { Initializer: { } initializer } => initializer.Expressions.Count,
-        ImplicitArrayCreationExpressionSyntax { Initializer: var initializer } => initializer.Expressions.Count,
+        ArrayCreationExpressionSyntax { Initializer: { } initializer } => initializer.Expressions,
+        ImplicitArrayCreationExpressionSyntax { Initializer: var initializer } => initializer.Expressions,
         CollectionExpressionSyntax collection when collection.Elements.All(element => element is ExpressionElementSyntax) =>
-            collection.Elements.Count,
+            collection.Elements.Cast<ExpressionElementSyntax>().Select(element => element.Expression).ToList(),
         _ => null,
     };
 

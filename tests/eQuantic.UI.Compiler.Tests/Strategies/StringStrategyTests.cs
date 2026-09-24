@@ -266,12 +266,14 @@ public class StringStrategyTests
             .Should().Contain(d => d.Code == "EQ2108");
     }
 
-    /// <summary>A params array passed as itself is the values, as C#'s normal form reads it.</summary>
+    /// <summary>A params array passed as itself is the values, as C#'s normal form reads it, and one
+    /// written in place IS its elements, each passed as a value of its own (an array variable is
+    /// spread, which the conformance suite runs).</summary>
     [Fact]
-    public void Format_WithAWholeParamsArray_SpreadsIt()
+    public void Format_WithAParamsArrayWrittenInPlace_PassesItsElements()
     {
         var result = TestHelper.ConvertExpression("string.Format(\"{0} {1}\", new object[] { a, b })");
-        result.Should().Be("$eq.text.stringFormat('{0} {1}', ...[this.a, this.b])");
+        result.Should().Be("$eq.text.stringFormat('{0} {1}', this.a, this.b)");
     }
 
     [Fact]
