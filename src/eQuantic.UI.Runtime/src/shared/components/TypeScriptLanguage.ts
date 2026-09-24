@@ -3,7 +3,8 @@ import { CurlyBraceLanguage } from "./CurlyBraceLanguage";
 
 export class TypeScriptLanguage extends CurlyBraceLanguage {
     constructor(props?: any) {
-        super();  if (props && typeof props === 'object') Object.assign(this, props);
+        super();
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     get name(): string {

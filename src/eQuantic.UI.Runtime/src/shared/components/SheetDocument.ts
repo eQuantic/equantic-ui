@@ -2,8 +2,12 @@ import { $eq, CellRef, SheetCellSnapshot } from "../runtime-exports";
 
 export class SheetDocument {
     constructor(rows: number = 1000, cols: number = 26, props?: any) {
-        this._cells = {}; this._rowHeights = {}; this._colWidths = {}; this.rows = Math.max(1, rows);
-        this.cols = Math.max(1, Math.min(cols, 16384)); if (props && typeof props === 'object') Object.assign(this, props);
+        this._cells = {};
+        this._rowHeights = {};
+        this._colWidths = {};
+        this.rows = Math.max(1, rows);
+        this.cols = Math.max(1, Math.min(cols, 16384));
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     _cells: Record<string, any>;
@@ -19,7 +23,8 @@ export class SheetDocument {
     }
 
     getCell(cell: CellRef) {
-        let value: any; return (Object.prototype.hasOwnProperty.call(this._cells, cell.key) ? ((value = this._cells[cell.key]), true) : false) ? value : '';
+        let value: any;
+        return (Object.prototype.hasOwnProperty.call(this._cells, cell.key) ? ((value = this._cells[cell.key]), true) : false) ? value : '';
     }
 
     setCell(cell: CellRef, value: string) {
@@ -27,11 +32,13 @@ export class SheetDocument {
     }
 
     rowHeight(row: number) {
-        let height: any; return (Object.prototype.hasOwnProperty.call(this._rowHeights, row) ? ((height = this._rowHeights[row]), true) : false) ? height : SheetDocument.defaultRowHeight;
+        let height: any;
+        return (Object.prototype.hasOwnProperty.call(this._rowHeights, row) ? ((height = this._rowHeights[row]), true) : false) ? height : SheetDocument.defaultRowHeight;
     }
 
     colWidth(col: number) {
-        let width: any; return (Object.prototype.hasOwnProperty.call(this._colWidths, col) ? ((width = this._colWidths[col]), true) : false) ? width : SheetDocument.defaultColWidth;
+        let width: any;
+        return (Object.prototype.hasOwnProperty.call(this._colWidths, col) ? ((width = this._colWidths[col]), true) : false) ? width : SheetDocument.defaultColWidth;
     }
 
     setRowHeight(row: number, height: number) {
