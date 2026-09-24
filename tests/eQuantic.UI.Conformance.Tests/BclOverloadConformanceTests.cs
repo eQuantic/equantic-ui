@@ -243,6 +243,9 @@ public class BclOverloadConformanceTests
     [InlineData("return TimeSpan.FromMilliseconds(0.5).Ticks.ToString();")]     // "5000"
     [InlineData("return TimeSpan.FromMicroseconds(1.5).Ticks.ToString();")]     // "15"
     [InlineData("return TimeSpan.FromDays(1.5).ToString();")]                   // "1.12:00:00"
+    [InlineData("return TimeSpan.FromSeconds(922337203685.0).Ticks.ToString();")] // an integral double: the product in doubles
+    [InlineData("return TimeSpan.FromMinutes(15372286728.0).Ticks.ToString();")]
+    [InlineData("return TimeSpan.FromMilliseconds(922337203685477.0).Ticks.ToString();")]
     [InlineData("return TimeSpan.FromDays(3).ToString();")]                     // "3.00:00:00": the int overload
     [InlineData("try { return TimeSpan.FromHours(double.NaN).ToString(); } catch (Exception e) { return e.Message; }")]
     [InlineData("try { return TimeSpan.FromHours(1e20).ToString(); } catch (Exception e) { return e.Message; }")]
@@ -289,6 +292,8 @@ public class BclOverloadConformanceTests
     [InlineData("return Convert.ToSByte(\"-128\", 10);")]                        // -128
     [InlineData("try { return Convert.ToSByte(\"128\", 10).ToString(); } catch (Exception e) { return e.Message; }")]
     [InlineData("try { return Convert.ToSByte(\"100\", 16).ToString(); } catch (Exception e) { return e.Message; }")]
+    [InlineData("try { return Convert.ToSByte(\"80000000\", 16).ToString(); } catch (Exception e) { return e.Message; }")] // past the width, sign bit set
+    [InlineData("try { return Convert.ToInt16(\"FFFFFFFF\", 16).ToString(); } catch (Exception e) { return e.Message; }")]
     [InlineData("return Convert.ToInt16(\"ffff\", 16);")]                        // -1
     [InlineData("return Convert.ToInt16(\"-32768\", 10);")]                      // -32768
     [InlineData("try { return Convert.ToInt16(\"65535\", 10).ToString(); } catch (Exception e) { return e.Message; }")]
@@ -382,6 +387,8 @@ public class BclOverloadConformanceTests
     [InlineData("var d = new[] { 1, 2 }.ToDictionary(x => x); return d.ContainsKey(2);")]      // true
     [InlineData("var d = new[] { 1, 2 }.ToDictionary(x => x); d[3] = 3; return d.Count;")]     // 3
     [InlineData("return new[] { \"a\", \"bb\" }.ToDictionary(s => s.Length, s => s)[2];")]     // "bb"
+    [InlineData("return new[] { \"a\", \"bb\" }.ToDictionary(elementSelector: s => s, keySelector: s => s.Length)[2];")] // "bb": named, in its own place
+    [InlineData("return new[] { 1, 2, 3 }.Aggregate(func: (a, b) => a * 10 + b, seed: 4);")]  // 4123: the seed is the seed
     [InlineData("return new[] { 1, 2 }.ToDictionary(x => x, x => x * 10).Values.Sum();")]      // 30
     [InlineData("return string.Join(\"|\", new[] { 1, 2, 3, 4 }.GroupBy(x => x % 2, x => x * 10).Select(g => g.Key + \":\" + string.Join(\",\", g)));")] // "1:10,30|0:20,40"
     [InlineData("var l = new[] { 1, 2, 3, 4 }.ToLookup(x => x % 2, x => x * 10); return string.Join(\",\", l[1]) + \"|\" + l[5].Count() + \"|\" + l.Count;")] // "10,30|0|2"
@@ -406,6 +413,16 @@ public class BclOverloadConformanceTests
     [InlineData("var d = new[] { new Point(1, 2), new Point(3, 4) }.ToDictionary(p => p, p => p.X); return d[new Point(3, 4)] * 10 + d.Count;")] // 32
     [InlineData("return new[] { new Point(1, 2), new Point(3, 4) }.ToDictionary(p => p).ContainsKey(new Point(3, 4));")] // true
     [InlineData("try { new[] { new Point(1, 2), new Point(1, 2) }.ToDictionary(p => p); return \"added\"; } catch { return \"threw\"; }")] // "threw": equal by value
+    // GroupBy and ToLookup with an element selector group by the key's VALUE where the key is an
+    // object on this side (a record, a date, a decimal), and the lookup's indexer finds a group the
+    // same way. They compared with ===, so two equal records were two groups.
+    [InlineData("return new[] { new Point(1, 2), new Point(1, 2), new Point(3, 4) }.GroupBy(p => p, p => p.X).Count();")]         // 2
+    [InlineData("return new[] { new Point(1, 2), new Point(1, 2), new Point(3, 4) }.ToLookup(p => p, p => p.X).Count;")]          // 2
+    [InlineData("return new[] { new DateOnly(2026, 1, 2), new DateOnly(2026, 1, 2) }.GroupBy(d => d, d => d.Day).Count();")]      // 1
+    [InlineData("return new[] { new DateTime(2026, 1, 2), new DateTime(2026, 1, 2) }.ToLookup(d => d, d => d.Day).Count;")]       // 1
+    [InlineData("return new[] { 1.5m, 1.50m }.GroupBy(m => m, m => m).Count();")]                                               // 1: one decimal, two scales
+    [InlineData("var l = new[] { new Point(1, 2), new Point(3, 4) }.ToLookup(p => p, p => p.X); return l[new Point(3, 4)].Sum() * 10 + l[new Point(9, 9)].Count();")] // 30
+    [InlineData("return string.Join(\",\", new[] { new Point(1, 2), new Point(1, 2) }.GroupBy(p => p, p => p.Y).Select(g => g.Key.X + \":\" + g.Sum()));")] // "1:4"
     public void ToDictionaryKeys_MatchDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

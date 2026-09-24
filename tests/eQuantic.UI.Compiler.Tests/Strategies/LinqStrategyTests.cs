@@ -254,6 +254,25 @@ public class LinqStrategyTests
     }
 
     [Fact]
+    public void ToDictionary_KeyedByWhatAPlainObjectCannotHold_IsRefused()
+    {
+        // A DateTime's text drops its ticks, a class instance is "[object Object]", and an enum with
+        // aliases has two names for one key: none keeps .NET's equality as a plain object's text.
+        TestHelper.DiagnosticsFor("var r = Orders.ToDictionary(o => new DateTime(2026, 1, o.Id))")
+            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("ToDictionary keyed by System.DateTime"));
+        TestHelper.DiagnosticsFor("var r = Orders.ToDictionary(o => o)")
+            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("ToDictionary keyed by Order"));
+        TestHelper.DiagnosticsFor("var r = Orders.ToDictionary(o => Environment.SpecialFolder.Personal)")
+            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("ToDictionary keyed by System.Environment.SpecialFolder"));
+
+        foreach (var held in new[] { "o => o.Id", "o => new DateOnly(2026, 1, o.Id)", "o => Size.Small", "o => o.Id.ToString()" })
+        {
+            TestHelper.DiagnosticsFor($"var r = Orders.ToDictionary({held})")
+                .Should().NotContain(d => d.Code == "EQ1004", $"a plain object holds the key of `{held}` by its text");
+        }
+    }
+
+    [Fact]
     public void Reverse_MapsToSpreadReverse()
     {
         var result = TestHelper.ConvertExpression("list.Reverse()");
