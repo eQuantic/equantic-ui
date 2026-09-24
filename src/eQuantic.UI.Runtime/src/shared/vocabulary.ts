@@ -142,8 +142,10 @@ interface BoxStyleConfig {
   height?: SizeValue | number;
   minWidth?: number;
   minHeight?: number;
-  maxWidth?: number;
-  maxHeight?: number;
+  /** A SizeValue in C# (a cap can be the window less an inset), or the number its implicit float
+   * conversion leaves; the lowering reads both. */
+  maxWidth?: SizeValue | number;
+  maxHeight?: SizeValue | number;
   padding?: EdgeInsetsValue;
   background?: ColorTokenValue | null;
   cornerRadius?: CornerRadii;
@@ -178,8 +180,9 @@ export class BoxStyle {
   height?: SizeValue;
   minWidth = 0;
   minHeight = 0;
-  maxWidth = 0;
-  maxHeight = 0;
+  /** The C# `SizeValue` caps: a size, or the number a float converts from (0 = no cap). */
+  maxWidth: SizeValue | number = 0;
+  maxHeight: SizeValue | number = 0;
   padding: EdgeInsetsValue = new EdgeInsets();
   background?: ColorTokenValue | null;
   cornerRadius: CornerRadii = new CornerRadii();

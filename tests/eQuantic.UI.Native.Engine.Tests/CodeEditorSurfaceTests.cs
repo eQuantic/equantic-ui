@@ -144,10 +144,12 @@ public class CodeEditorSurfaceTests
     public void TypingReachesTheDocument_AndTheAppHearsAboutIt()
     {
         var changes = new List<string>();
+        var moves = new List<CodeRange>();
         var editor = new CodeEditor("", "csharp")
         {
             ShowLineNumbers = false,
             OnChanged = changes.Add,
+            OnSelectionChanged = moves.Add,
         };
         var host = new PhotonHost(editor, PhotonTheme.Instance, ThemeMode.Light, 400, 300)
         {
@@ -161,10 +163,12 @@ public class CodeEditorSurfaceTests
         Type(host, "var x");
 
         region.Surface.Engine().Document.Text.Should().Be("var x");
-        // One per character, plus the click that put the caret there: the seam reports MOVEMENT as
-        // well as change, because a status bar showing line:column needs both.
-        changes.Should().HaveCount(6);
+        // One per character. The click moved the caret and changed nothing, so it is heard as a
+        // MOVE: a status bar showing line:column listens to that, and an app re-reading the
+        // document on every change no longer does it for a click.
+        changes.Should().HaveCount(5);
         changes[^1].Should().Be("var x");
+        moves.Should().HaveCount(5, "each character moved the caret, and the click left it where it was");
     }
 
     [Fact]

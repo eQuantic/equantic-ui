@@ -517,6 +517,11 @@ internal sealed partial class WebLoweringVisitor
                 MinWidth = "0",
                 MinHeight = "0",
                 MaxWidth = "100%",
+                // The offset is the app's and the reader's, never the browser's guess. Scroll
+                // anchoring moved it whenever a windowed list swapped the rows above what was on
+                // screen, and a match the code editor's find had brought into view slid back out.
+                // Photon anchors nothing (TS twin: lowerScrollView).
+                OverflowAnchor = "none",
             },
         };
         var child = Lower(scroll.Child, horizontalAxis: null);
@@ -619,6 +624,14 @@ internal sealed partial class WebLoweringVisitor
             {
                 // Photon borders draw INSIDE the bounds — border-box is the CSS-parity contract.
                 BoxSizing = "border-box",
+                // A CAP with no decided height bounds the child, as the layout engine does: as a
+                // flex column, a child that may shrink (a scroller, a Fill box, both `min-height:
+                // 0`) takes the capped height and scrolls, and any other child keeps the content
+                // height a block gave it. As a block, a scroller's `height: 100%` resolved against
+                // no height at all, it grew with its content inside a box that clipped it, and
+                // nothing scrolled (defect 4 of docs/CODE-EDITOR-PLAN.md).
+                Display = CapsItsChild(box) ? Display.Flex : null,
+                FlexDirection = CapsItsChild(box) ? FlexDirection.Column : null,
                 Width = Size(style.Width),
                 Height = Size(style.Height, vertical: true),
                 FlexShrink = Rigid(style.Width, style.Height),
@@ -744,6 +757,14 @@ internal sealed partial class WebLoweringVisitor
         }
         return element;
     }
+
+    /// <summary>Whether this box bounds its child by a cap alone: a height cap, no decided height,
+    /// and a child to bound (see <see cref="LowerBox"/>; the TypeScript twin is
+    /// <c>capsItsChild</c>).</summary>
+    private static bool CapsItsChild(Box box) =>
+        box.Child is not null
+        && box.Style.Height.Kind == SizeKind.Hug
+        && box.Style.MaxHeight.Kind != SizeKind.Hug;
 
     /// <summary>
     /// Whether this box hands its height down: the box decided one, and the child is an auto-sized

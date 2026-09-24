@@ -635,6 +635,15 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   revealedVersions.set(path, model.revealVersion);
   if (revealed !== undefined && revealed !== model.revealVersion) revealCaret(path);
 
+  // The model ASKED for the keyboard (C# twin: PhotonHost.AdoptFocusRequests): an IDE after a file
+  // opens, the editor's own find bar as it closes. Remembered per model and counted from 0, so a
+  // request made before the surface was first drawn is honoured when it is, and one already honoured
+  // is not honoured again when the surface is drawn once more.
+  if ((focusedVersions.get(model) ?? 0) !== model.focusVersion) {
+    focusedVersions.set(model, model.focusVersion);
+    focusSurface(path);
+  }
+
   const changed = () => node.onChanged?.();
   const convention = keyboardConvention();
   const ime = compositionOf(model);
@@ -807,6 +816,9 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
 /** The reveal version each code surface was last rendered at, by path — see lowerCodeSurface. */
 const revealedVersions = new Map<string, number>();
 
+/** The focus request each code surface's MODEL was last given the keyboard for (see lowerCodeSurface). */
+const focusedVersions = new WeakMap<object, number>();
+
 /**
  * Where a code surface's input method stands: whether a composition is open, and the text it
  * committed in this task. Kept by MODEL, because the model outlives every render and a closure
@@ -899,6 +911,34 @@ function revealCaret(path: string): void {
     requestAnimationFrame(() => requestAnimationFrame(reveal));
   }
   if (typeof setTimeout === 'function') setTimeout(reveal, 48);
+}
+
+/**
+ * Gives the surface at `path` the keyboard, after the render that draws it: the same timing and the
+ * same two routes as {@link revealCaret}, and found by path for the same reason (the element the
+ * request arrived with is replaced by the render).
+ *
+ * Unlike a reveal, a focus given twice is not harmless. Where frames arrive, the timeout ran 16 ms
+ * after the frame had honoured the request and honoured it again, so a control the user or the page
+ * focused in between lost the keyboard to the code. The second route acts only when the first found
+ * nothing to focus, or when nothing has the keyboard any more, which is the render taking the
+ * focused element away.
+ */
+function focusSurface(path: string): void {
+  if (typeof document === 'undefined') return;
+  let given = false;
+  const focus = () => {
+    if (typeof document === 'undefined') return;
+    const input = document.querySelector<HTMLElement>(`[data-eq-code="${path}"] textarea`);
+    if (!input) return;
+    if (given && document.activeElement !== null && document.activeElement !== document.body) return;
+    given = true;
+    input.focus({ preventScroll: true });
+  };
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(() => requestAnimationFrame(focus));
+  }
+  if (typeof setTimeout === 'function') setTimeout(focus, 48);
 }
 
 /**
@@ -1509,6 +1549,10 @@ function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: s
       'max-width': '100%',
       'overflow-y': horizontal ? 'hidden' : 'auto',
       'overflow-x': node.axis === 'vertical' ? 'hidden' : 'auto',
+      // The offset is the app's and the reader's, never the browser's guess: scroll anchoring moved
+      // it whenever a windowed list swapped the rows above what was on screen (C# twin; Photon
+      // anchors nothing).
+      'overflow-anchor': 'none',
     },
     children,
   );
@@ -2197,8 +2241,15 @@ function paintsNothing(box: BoxNode): boolean {
 
 function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNode {
   const style = box.style ?? ({} as BoxStyleValue);
+  // A CAP with no decided height bounds the child (the C# twin, CapsItsChild): as a flex column, a
+  // child that may shrink takes the capped height and scrolls. As a block, a scroller's
+  // `height: 100%` resolved against no height, grew with its content inside a box that clipped it,
+  // and nothing scrolled (defect 4 of docs/CODE-EDITOR-PLAN.md).
+  const caps = capsItsChild(box);
   const entries: Record<string, string | undefined> = {
     'box-sizing': 'border-box',
+    display: caps ? 'flex' : undefined,
+    'flex-direction': caps ? 'column' : undefined,
     width: sizeValue(style.width),
     height: sizeValue(style.height, true),
     'flex-shrink': rigid(style.width, style.height),
@@ -2333,6 +2384,14 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
     }
   }
   return result;
+}
+
+/** The C# `CapsItsChild`: a height cap, no decided height, and a child to bound. */
+function capsItsChild(box: BoxNode): boolean {
+  const style = box.style;
+  if (!box.child || !style) return false;
+  if (style.height && style.height.kind !== 'hug') return false;
+  return sizeValue(asSize(style.maxHeight), true) !== undefined;
 }
 
 /** The C# `StretchesChildHeight`: the box decided a height, and the child is an auto-sized

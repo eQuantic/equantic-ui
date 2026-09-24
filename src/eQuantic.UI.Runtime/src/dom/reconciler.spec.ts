@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Reconciler, UNMEASURED_MARK } from './reconciler';
+import { commitShortcuts, declareShortcut, resetShortcuts } from './shortcuts';
 import { RenderManager } from './renderer';
-import { HtmlNode } from '../core/types';
+import { EventHandler, HtmlNode } from '../core/types';
 
 /**
  * Helper to create HtmlNode (virtual DOM node)
@@ -467,5 +468,39 @@ describe('Reconciler event contracts', () => {
     expect(input.checked).toBe(true);
 
     parent.remove();
+  });
+});
+
+/**
+ * A key a Shortcut took reaches nothing else, which is what Photon does (PhotonHost.KeyDown asks
+ * the shortcuts first and stops there). The window's shortcut listener runs in the capture phase
+ * and the element's own keydown ran after it anyway: Escape closing the code editor's find bar also
+ * reached the editor, which released its Tab, so the next Tab left the editor instead of indenting.
+ */
+describe('a key a shortcut took', () => {
+  it("reaches no element's own keydown, and every other key still does", () => {
+    resetShortcuts();
+    let closed = 0;
+    declareShortcut({ chord: 'escape', handler: () => closed++ });
+    commitShortcuts();
+    const seen: string[] = [];
+    const parent = document.createElement('div');
+    document.body.appendChild(parent);
+    const input: HtmlNode = {
+      tag: 'textarea',
+      attributes: {},
+      children: [],
+      events: { keydown: ((e: KeyboardEvent) => seen.push(e.key)) as unknown as EventHandler },
+    };
+    new Reconciler().reconcile(parent, null, input);
+    const element = parent.firstElementChild!;
+
+    element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    element.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true, cancelable: true }));
+
+    expect(closed).toBe(1);
+    expect(seen).toEqual(['a']);
+    parent.remove();
+    resetShortcuts();
   });
 });

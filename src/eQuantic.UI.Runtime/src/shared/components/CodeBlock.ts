@@ -1,8 +1,9 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeDecoration, CodeDecorationKindValue, CodeDocument, CodeGutterKindValue, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeLineCells, CodeMetrics, CodeTokenKindValue, Color, ColorToken, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SizeValue, SizeVariantValue, Sizing, Spacer, Stack, StatelessComponent, Text, TypeStyle, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeDecoration, CodeDecorationKindValue, CodeDocument, CodeGutterKindValue, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeLineCells, CodeMetrics, CodeTokenKindValue, Color, ColorToken, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SdkStrings, SizeValue, SizeVariantValue, Sizing, Spacer, Stack, StatelessComponent, Text, TypeStyle, VisualNode } from "../runtime-exports";
 
 export class CodeBlock extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.CodeBlock';
     static selectionAlpha: number = Math.fround(0.28);
+    _cells: Record<string, any> = {};
     static codeSlab: ColorToken = new ColorToken(Color.fromRgba(0x10, 0x14, 0x18, 0xFF));
     static codeInk: ColorToken = new ColorToken(Color.fromRgba(0xC9, 0xD4, 0xDE, 0xFF));
     static codeInkMuted: ColorToken = new ColorToken(Color.fromRgba(0x7C, 0x8A, 0x99, 0xFF));
@@ -29,6 +30,7 @@ export class CodeBlock extends StatelessComponent {
     declare decorations: CodeDecoration[];
     declare activeLine: any;
     declare selectionBands: Rect[];
+    declare widestLine: any;
     declare caption: any;
     declare onCopy: (() => void) | null;
     declare onGutterPressed: any;
@@ -70,7 +72,10 @@ export class CodeBlock extends StatelessComponent {
         let surface = this.inverse ? CodeBlock.codeSlab : theme.surfaceSubtle;
         let [first, last] = this.window(lineHeight);
         let widest = 0;
-        for (let index = 0; index < this.document.lineCount; index++) widest = Math.max(widest, CodeLineCells.widthOf(this.document.line(index), this.tabSize));
+        let known: any; 
+        if ((known = this.widestLine) != null) widest = known; else {
+            for (let index = 0; index < this.document.lineCount; index++) widest = Math.max(widest, CodeLineCells.widthOf(this.document.line(index), this.tabSize));
+        }
         let codeWidth = Math.fround(Math.fround(Math.fround(widest) * metrics.columnWidth) + metrics.columnWidth);
         let lines = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         if (first > 0) lines.add(Spacer.fixed(Math.fround(Math.fround(first) * lineHeight)));
@@ -87,17 +92,20 @@ export class CodeBlock extends StatelessComponent {
         }
         for (const decoration of this.decorations) {
             if (decoration.kind !== 'highlight') continue;
-            for (const mark of this.marks(decoration, metrics, theme)) marks.add(mark);
+            for (const mark of this.marks(decoration, metrics, theme, first, last)) marks.add(mark);
         }
         if (this.selectionBands.length > 0) {
             let band = CodeBlock.selectionFor(this.inverse, theme).withOpacity(CodeBlock.selectionAlpha);
+            let windowTop = Math.fround(metrics.contentTop + Math.fround(Math.fround(first) * lineHeight));
+            let windowBottom = Math.fround(metrics.contentTop + Math.fround(Math.fround(last + 1) * lineHeight));
             for (const rect of this.selectionBands) {
+                if (Math.fround(rect.y + rect.height) <= windowTop || rect.y >= windowBottom) continue;
                 marks.add(new Positioned(new Box(new BoxStyle({ width: rect.width, height: rect.height, background: band, cornerRadius: new CornerRadii(1) })), rect.y, null, null, rect.x));
             }
         }
         for (const decoration of this.decorations) {
             if (decoration.kind === 'highlight') continue;
-            for (const mark of this.marks(decoration, metrics, theme)) marks.add(mark);
+            for (const mark of this.marks(decoration, metrics, theme, first, last)) marks.add(mark);
         }
         if (marks.children.length > 0) {
             let layered = new Stack('topStart', { width: SizeValue.fill });
@@ -118,20 +126,11 @@ export class CodeBlock extends StatelessComponent {
             body = new Box(new BoxStyle({ width: SizeValue.fill, maxHeight: this.maxHeight }), new ScrollView(body, 'vertical', { width: SizeValue.fill, onScrolled: this.onScrolled, onViewportChanged: this.onViewportChanged }));
         }
         let slab = new Box(new BoxStyle({ width: SizeValue.fill, background: surface, cornerRadius: new CornerRadii(theme.shape('medium')), clip: true }), body);
-        if (this.caption == null && this.onCopy == null) return slab;
-        let corner = new Row(8, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'center' });
-        corner.add(new Spacer(1));
-        let caption: any; 
-        if ((caption = this.caption) != null) {
-            corner.add(new Text(caption, 'labelSmall', this.inverse ? CodeBlock.codeInkMuted : theme.textMuted, 1, 'start', false, false, null, 0, { mono: true }));
-        }
-        let copy: any; 
-        if ((copy = this.onCopy) != null) {
-            corner.add(new IconButton(new Icon(IconGlyph.fromIcons('copy')), 'Copy code', 'standard', 'medium', null, { size: 'small', onPressed: copy }));
-        }
+        let corner: any; 
+        if (!((corner = CodeBlock.corner(this.caption, this.onCopy, this.inverse, theme)) != null)) return slab;
         let layers = new Stack('topStart', { width: SizeValue.fill });
         layers.add(slab);
-        layers.add(new Positioned(new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(12, 8) }), corner), 0, null, null, 0));
+        layers.add(corner);
         return layers;
     }
 
@@ -143,6 +142,20 @@ export class CodeBlock extends StatelessComponent {
         let style = $eq.withPatch(TypeStyle.ofSize(Sizing.labelSize(size, context.density), 'regular'), { mono: true });
         let gutter = showLineNumbers ? Math.fround(Math.ceil(context.measureText(String(lastLineNumber) + '0', style)) + 12) : 0;
         return new CodeMetrics(style, $eq.math.roundSingle(Math.fround(style.lineHeight * Math.fround(1.15))), context.monoAdvance(style), gutter);
+    }
+
+    static corner(caption: any, onCopy: (() => void) | null, inverse: boolean, theme: any) {
+        if (caption == null && onCopy == null) return null;
+        let corner = new Row(8, 'start', 'center', false, null, null, { cross: 'center' });
+        let text: any; 
+        if ((text = caption) != null) {
+            corner.add(new Text(text, 'labelSmall', inverse ? CodeBlock.codeInkMuted : theme.textMuted, 1, 'start', false, false, null, 0, { mono: true }));
+        }
+        let copy: any; 
+        if ((copy = onCopy) != null) {
+            corner.add(new IconButton(new Icon(IconGlyph.fromIcons('copy')), SdkStrings.copyCode, 'standard', 'medium', null, { size: 'small', onPressed: copy }));
+        }
+        return new Positioned(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(12, 8) }), corner), 0, 0);
     }
 
     gutter(context: any) {
@@ -174,7 +187,7 @@ export class CodeBlock extends StatelessComponent {
         let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: lineHeight, cross: 'center' });
         let code = new Row(0, 'start', 'center', false, null, null, { height: SizeValue.fill, cross: 'center' });
         let text = this.document.line(index);
-        let cells = new CodeLineCells(text, this.tabSize);
+        let cells = this.cellsOf(index);
         let tokens = highlighter.tokensFor(this.document, index);
         let at = 0;
         for (const token of tokens) {
@@ -190,25 +203,37 @@ export class CodeBlock extends StatelessComponent {
         return row;
     }
 
-    window(lineHeight: number) {
-        if (this.viewportHeight <= 0 || lineHeight <= 0) return [0, this.document.lineCount - 1];
-        let margin = 8;
-        let first = Math.max(0, (Math.trunc(Math.floor(Math.fround(this.viewportOffset / lineHeight))) | 0) - margin);
-        let visible = (Math.trunc(Math.ceil(Math.fround(this.viewportHeight / lineHeight))) | 0) + margin * 2;
-        return [first, Math.min(this.document.lineCount - 1, first + visible)];
+    cellsOf(line: number) {
+        let cells: any;
+        if ((Object.prototype.hasOwnProperty.call(this._cells, line) ? ((cells = this._cells[line]), true) : false)) return cells;
+        cells = new CodeLineCells(this.document.line(line), this.tabSize);
+        this._cells[line] = cells;
+        return cells;
     }
 
-    marks(decoration: CodeDecoration, metrics: CodeMetrics, theme: any) {
+    window(lineHeight: number) {
+        return CodeBlock.windowOf(this.document.lineCount, lineHeight, this.viewportOffset, this.viewportHeight);
+    }
+
+    static windowOf(lineCount: number, lineHeight: number, offset: number, viewportHeight: number) {
+        if (viewportHeight <= 0 || lineHeight <= 0) return [0, lineCount - 1];
+        let margin = 8;
+        let first = Math.max(0, (Math.trunc(Math.floor(Math.fround(offset / lineHeight))) | 0) - margin);
+        let visible = (Math.trunc(Math.ceil(Math.fround(viewportHeight / lineHeight))) | 0) + margin * 2;
+        return [first, Math.min(lineCount - 1, first + visible)];
+    }
+
+    marks(decoration: CodeDecoration, metrics: CodeMetrics, theme: any, first: number, last: number) {
         const _seq = [];
         let start = this.document.clamp(decoration.range.start);
         let end = this.document.clamp(decoration.range.end);
         let color = decoration.color ?? this.defaultColor(decoration.kind, theme);
         if (this.inverse) color = new ColorToken(color.dark, color.dark);
-        for (let line = start.line; line <= end.line; line++) {
+        for (let line = Math.max(start.line, first); line <= Math.min(end.line, last); line++) {
             let from = line === start.line ? start.column : 0;
             let to = line === end.line ? end.column : this.document.line(line).length;
             if (to <= from) continue;
-            let cells = new CodeLineCells(this.document.line(line), this.tabSize);
+            let cells = this.cellsOf(line);
             let left = Math.fround(metrics.contentLeft + Math.fround(Math.fround(cells.cellOf(from)) * metrics.columnWidth));
             let top = Math.fround(metrics.contentTop + Math.fround(Math.fround(line) * metrics.lineHeight));
             let width = Math.fround(Math.fround(cells.cellOf(to) - cells.cellOf(from)) * metrics.columnWidth);

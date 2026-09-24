@@ -20,7 +20,8 @@ import { photonTheme } from './design-system.generated';
 import { lowerVisualNode } from './lowering';
 import { setPhotonTheme } from './photon-context';
 import type { HtmlNode } from '../core/types';
-import { Column, GridTrack, Icon, IconGlyph, Text } from './vocabulary';
+import { Box, BoxStyle, Column, GridTrack, Icon, IconGlyph, ScrollView, Text } from './vocabulary';
+import { SizeValue } from './value-types';
 import { Accordion } from './components/Accordion';
 import { AccordionItem } from './components/AccordionItem';
 import { Badge } from './components/Badge';
@@ -103,6 +104,18 @@ function cases(): Record<string, { node: unknown; presses: number[] }> {
       ),
     ),
     'button-in-column': still(column(8, new Button('A'), new Button('B', 'outline'))),
+    'capped-scroller': still(
+      new Box(
+        new BoxStyle({ width: SizeValue.fill, maxHeight: 120 }),
+        new ScrollView(
+          column(
+            8,
+            new Text('one', 'bodyM', photonTheme.textPrimary),
+            new Text('two', 'bodyM', photonTheme.textPrimary),
+          ),
+        ),
+      ),
+    ),
     badge: still(new Badge(7)),
     'badge-overflow': still(new Badge(140, 99, 'primary')),
     card: still(new Card(new Text('body', 'bodyM', photonTheme.textPrimary))),

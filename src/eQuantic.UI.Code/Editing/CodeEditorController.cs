@@ -41,6 +41,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         set
         {
             _document = value;
+            _widths = null;
             _selection = new CodeRange(_document.Clamp(_selection.Focus));
             _composition = null;
             Highlighter.Invalidate();
@@ -123,6 +124,94 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     private readonly Dictionary<int, CodeLineCells> _cells = new();
 
     /// <summary>
+    /// Each line's width in cells, kept beside the document from the first time
+    /// <see cref="WidestLine"/> is asked, and spliced by every edit rather than measured again. Every
+    /// keystroke makes a new document, so a width kept per document measured the whole file again
+    /// per key. Null until asked, and again whenever the document is replaced wholesale.
+    /// </summary>
+    private List<int>? _widths;
+    private int _widthsTabs;
+    private int _widest;
+
+    /// <summary>
+    /// How many cells the widest line of the document takes. A view is as wide as the widest line
+    /// of the FILE, so its width does not breathe as the window scrolls, and measuring every line on
+    /// every build cost a scroll step 14 ms over 50,000 lines on the web. An edit measures the lines
+    /// it touched, and only an edit to the widest line looks at the others' widths again.
+    /// </summary>
+    public int WidestLine
+    {
+        get
+        {
+            var tabSize = Rules.IndentWidth;
+            if (_widths is null || _widthsTabs != tabSize)
+            {
+                _widths = new List<int>(_document.LineCount);
+                for (var line = 0; line < _document.LineCount; line++)
+                    _widths.Add(CodeLineCells.WidthOf(_document.Line(line), tabSize));
+                _widthsTabs = tabSize;
+                _widest = Widest(_widths);
+            }
+            return _widest;
+        }
+    }
+
+    /// <summary>
+    /// The widths after an edit replaced lines <paramref name="line"/> to <paramref name="line"/> +
+    /// <paramref name="linesRemoved"/> with lines <paramref name="line"/> to <paramref name="line"/> +
+    /// <paramref name="linesInserted"/> of the new document: those are measured, the rest are
+    /// kept, and the widest is looked for again only when a line that was it is gone.
+    /// </summary>
+    private void WidthsChanged(int line, int linesInserted, int linesRemoved)
+    {
+        if (_widths is null) return;
+        var old = _widths;
+        var gone = Math.Min(linesRemoved + 1, old.Count - line);
+        var lostTheWidest = false;
+        for (var i = line; i < line + gone; i++)
+            if (old[i] >= _widest) lostTheWidest = true;
+        if (linesInserted == linesRemoved && gone == linesRemoved + 1)
+        {
+            // As many lines as before, which is nearly every keystroke: the widths change in place,
+            // and nothing is copied.
+            var widestHere = 0;
+            for (var i = line; i <= line + linesInserted; i++)
+            {
+                var width = CodeLineCells.WidthOf(_document.Line(i), _widthsTabs);
+                old[i] = width;
+                if (width > widestHere) widestHere = width;
+            }
+            if (lostTheWidest && widestHere < _widest) _widest = Widest(old);
+            else if (widestHere > _widest) _widest = widestHere;
+            return;
+        }
+        // Lines came or went: the list is built again, as the document's own list of lines is by
+        // every edit. Copied one by one, never inserted as a range: on the web a range becomes one
+        // argument per item, and a paste of a large file would pass more than an engine takes.
+        var next = new List<int>(old.Count - gone + linesInserted + 1);
+        for (var i = 0; i < line; i++) next.Add(old[i]);
+        var measuredWidest = 0;
+        for (var i = line; i <= line + linesInserted; i++)
+        {
+            var width = CodeLineCells.WidthOf(_document.Line(i), _widthsTabs);
+            if (width > measuredWidest) measuredWidest = width;
+            next.Add(width);
+        }
+        for (var i = line + gone; i < old.Count; i++) next.Add(old[i]);
+        _widths = next;
+        if (lostTheWidest) _widest = Widest(next);
+        else if (measuredWidest > _widest) _widest = measuredWidest;
+    }
+
+    private static int Widest(List<int> widths)
+    {
+        var widest = 0;
+        foreach (var width in widths)
+            if (width > widest) widest = width;
+        return widest;
+    }
+
+    /// <summary>
     /// Where line <paramref name="line"/>'s columns land on the grid: tabs to their stops, wide
     /// characters two cells, every text element whole (see <see cref="CodeLineCells"/>). The tab
     /// stops are the language's indent width.
@@ -192,34 +281,37 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     private bool _dragging;
 
     /// <summary>
-    /// The selection, as one band per line it covers, in the surface's own coordinates — drawn by the
-    /// COMPONENT in the code's own layers, under the text and over the active line, so it reads the
-    /// same on every target. A single rectangle over a multi-line range would cover the indentation of
-    /// lines the range never touched, which is why these are per line.
+    /// The selection, as one band per line it covers from <paramref name="first"/> to
+    /// <paramref name="last"/>, in the surface's own coordinates — drawn by the COMPONENT in the code's
+    /// own layers, under the text and over the active line, so it reads the same on every target. A
+    /// single rectangle over a multi-line range would cover the indentation of lines the range never
+    /// touched, which is why these are per line.
+    /// <para>
+    /// Asked for the lines a view BUILDS, never for the whole range. A band is measured through its
+    /// line's cells, and a select-all over 50,000 lines measured every one of them on every build (a
+    /// scroll step builds) and kept all 50,000 maps, where the view drew fifty.
+    /// </para>
     /// </summary>
-    public IReadOnlyList<Rect> SelectionBands
+    public IReadOnlyList<Rect> SelectionBandsIn(int first, int last)
     {
-        get
+        var bands = new List<Rect>();
+        if (_selection.IsEmpty) return bands;
+        var start = _selection.Start;
+        var end = _selection.End;
+        for (var line = Math.Max(start.Line, first); line <= Math.Min(end.Line, last); line++)
         {
-            var bands = new List<Rect>();
-            if (_selection.IsEmpty) return bands;
-            var start = _selection.Start;
-            var end = _selection.End;
-            for (var line = start.Line; line <= end.Line; line++)
-            {
-                var from = line == start.Line ? start.Column : 0;
-                // One cell past the end of every line but the last: the band shows that the line
-                // BREAK is held too, which is what makes a selection ending at column 0 of the next
-                // line read as the whole line it is.
-                var cells = CellsOf(line);
-                var fromCell = cells.CellOf(from);
-                var toCell = line == end.Line ? cells.CellOf(end.Column) : cells.Width + 1;
-                if (toCell <= fromCell) continue;
-                var at = Grid.PointOf(line, fromCell);
-                bands.Add(new Rect(at.X, at.Y, (toCell - fromCell) * Grid.Cell.Width, Grid.Cell.Height));
-            }
-            return bands;
+            var from = line == start.Line ? start.Column : 0;
+            // One cell past the end of every line but the last: the band shows that the line
+            // BREAK is held too, which is what makes a selection ending at column 0 of the next
+            // line read as the whole line it is.
+            var cells = CellsOf(line);
+            var fromCell = cells.CellOf(from);
+            var toCell = line == end.Line ? cells.CellOf(end.Column) : cells.Width + 1;
+            if (toCell <= fromCell) continue;
+            var at = Grid.PointOf(line, fromCell);
+            bands.Add(new Rect(at.X, at.Y, (toCell - fromCell) * Grid.Cell.Width, Grid.Cell.Height));
         }
+        return bands;
     }
 
     /// <inheritdoc />
@@ -229,6 +321,18 @@ public sealed class CodeEditorController : ICodeSurfaceModel
 
     /// <inheritdoc />
     public int RevealVersion => _revealVersion;
+
+    private int _focusVersion;
+
+    /// <inheritdoc />
+    public int FocusVersion => _focusVersion;
+
+    /// <summary>
+    /// Asks for the keyboard: whichever host draws this editor gives it to the surface, as a click
+    /// would, on its next frame (or its first, if it has not drawn it yet). What an IDE calls when a
+    /// file opens or a panel over the code closes. A REQUEST, because focus is the host's to grant.
+    /// </summary>
+    public void RequestFocus() => _focusVersion++;
 
     /// <summary>Where a caret at <paramref name="position"/> is drawn, in the surface's coordinates.</summary>
     public Rect CaretRect(CodePosition position)
@@ -367,6 +471,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         _document = next;
         _selection = new CodeRange(caret);
         Highlighter.LineChanged(_document, line, linesInserted, linesRemoved);
+        WidthsChanged(line, linesInserted, linesRemoved);
         _revealVersion++;
         _desiredCell = -1;
         var edit = new CodeEdit(ordered, removed, text, before, _selection, false);
@@ -457,6 +562,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         var edit = new CodeEdit(ordered, removed, text, before, _selection, typed);
         History.Record(edit);
         Highlighter.LineChanged(_document, line, linesInserted, linesRemoved);
+        WidthsChanged(line, linesInserted, linesRemoved);
 
         Changed?.Invoke(edit);
         SelectionChanged?.Invoke(_selection);
@@ -1010,13 +1116,19 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     {
         if (ReadOnly) return false;
         EndComposition();
-        var next = History.Undo(_document, out var selection);
+        var next = History.Undo(_document, out var selection, out var replaced, out var written);
         if (next is null) return false;
         _document = next;
         _revealVersion++;
         _selection = new CodeRange(next.Clamp(selection.Anchor), next.Clamp(selection.Focus));
         _desiredCell = -1;
-        Highlighter.Invalidate();
+        // One replacement, as an edit is: the colours and the widths follow the lines it touched,
+        // where both were thrown away and measured again over the whole file.
+        var line = replaced.Start.Line;
+        var linesInserted = written.End.Line - written.Start.Line;
+        var linesRemoved = replaced.End.Line - replaced.Start.Line;
+        Highlighter.LineChanged(_document, line, linesInserted, linesRemoved);
+        WidthsChanged(line, linesInserted, linesRemoved);
         Changed?.Invoke(null);
         SelectionChanged?.Invoke(_selection);
         return true;
@@ -1026,13 +1138,19 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     {
         if (ReadOnly) return false;
         EndComposition();
-        var next = History.Redo(_document, out var selection);
+        var next = History.Redo(_document, out var selection, out var replaced, out var written);
         if (next is null) return false;
         _document = next;
         _revealVersion++;
         _selection = new CodeRange(next.Clamp(selection.Anchor), next.Clamp(selection.Focus));
         _desiredCell = -1;
-        Highlighter.Invalidate();
+        // One replacement, as an edit is: the colours and the widths follow the lines it touched,
+        // where both were thrown away and measured again over the whole file.
+        var line = replaced.Start.Line;
+        var linesInserted = written.End.Line - written.Start.Line;
+        var linesRemoved = replaced.End.Line - replaced.Start.Line;
+        Highlighter.LineChanged(_document, line, linesInserted, linesRemoved);
+        WidthsChanged(line, linesInserted, linesRemoved);
         Changed?.Invoke(null);
         SelectionChanged?.Invoke(_selection);
         return true;
@@ -1072,20 +1190,40 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     }
 
     /// <summary>The match AFTER the caret, wrapping to the top — the Enter of a find bar.</summary>
-    public CodeRange? FindNext(string needle, bool matchCase = false, bool backward = false)
-    {
-        var matches = FindAll(needle, matchCase);
-        if (matches.Count == 0) return null;
+    public CodeRange? FindNext(string needle, bool matchCase = false, bool backward = false) =>
+        NextOf(FindAll(needle, matchCase), backward);
 
+    /// <summary>
+    /// The one of <paramref name="matches"/> after the selection, wrapping to the first, or before
+    /// it, wrapping to the last, when <paramref name="backward"/>. The matches are in document order
+    /// and never overlap, as <see cref="FindAll"/> answers them, so they are searched by halving: a
+    /// find bar steps through the list it already holds, where each Enter searched the whole file
+    /// again.
+    /// </summary>
+    public CodeRange? NextOf(IReadOnlyList<CodeRange> matches, bool backward = false)
+    {
+        if (matches.Count == 0) return null;
+        var low = 0;
+        var high = matches.Count;
         if (backward)
         {
-            for (var i = matches.Count - 1; i >= 0; i--)
-                if (matches[i].End <= _selection.Start) return matches[i];
-            return matches[^1];
+            // The first match that ends past the selection's start; the one before it is the answer.
+            while (low < high)
+            {
+                var middle = (low + high) / 2;
+                if (matches[middle].End <= _selection.Start) low = middle + 1;
+                else high = middle;
+            }
+            return low > 0 ? matches[low - 1] : matches[matches.Count - 1];
         }
-        foreach (var match in matches)
-            if (match.Start >= _selection.End) return match;
-        return matches[0];
+        // The first match that starts at or after the selection's end.
+        while (low < high)
+        {
+            var middle = (low + high) / 2;
+            if (matches[middle].Start < _selection.End) low = middle + 1;
+            else high = middle;
+        }
+        return low < matches.Count ? matches[low] : matches[0];
     }
 
     /// <summary>

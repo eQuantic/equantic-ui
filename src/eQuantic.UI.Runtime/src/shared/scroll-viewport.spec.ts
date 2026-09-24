@@ -5,10 +5,10 @@
  * (the browser owns the position after that — re-applying would fight the user).
  */
 
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { lowerVisualNode, type LoweringContext } from './lowering';
 import type { ScrollViewNode } from './nodes';
-import { commitScrollViewports } from './scroll-viewports';
+import { commitScrollViewports, declareScrollViewport, scheduleScrollViewportCommit } from './scroll-viewports';
 import { photonTheme } from './design-system.generated';
 
 function context(): LoweringContext {
@@ -70,6 +70,251 @@ describe('ScrollView web out-channels', () => {
     Object.defineProperty(el, 'clientHeight', { value: 300, configurable: true });
     commitScrollViewports();
     expect(seen).toEqual([400, 300]);
+  });
+
+  /**
+   * The pass ends while its tree is still a value, and the render manager writes it after. The
+   * commit ran at the end of the pass and measured the tree BEFORE, so a scroll view seen for the
+   * first time was measured by the pass after it, and a pass that resized a viewport reported the
+   * old size.
+   */
+  it('measures the viewport the pass WROTE, not the one before it', async () => {
+    const seen: number[] = [];
+    const lowered = lowerVisualNode(
+      scrollNode({ onViewportChanged: (h) => seen.push(h) }),
+      context(),
+    );
+    const path = (lowered as { attributes: Record<string, string> }).attributes['data-eq-scroll'];
+    scheduleScrollViewportCommit();
+
+    // The element arrives the way a rendered one does: after the pass returned.
+    const el = document.createElement('div');
+    el.setAttribute('data-eq-scroll', path);
+    Object.defineProperty(el, 'clientHeight', { value: 400, configurable: true });
+    document.body.append(el);
+    expect(seen).toEqual([]);
+
+    await Promise.resolve();
+
+    expect(seen).toEqual([400]);
+  });
+
+  describe('a viewport that changes with no pass', () => {
+    /** The observers the commit attached, each delivering by hand. */
+    const observers: { target?: Element; deliver: () => void }[] = [];
+
+    beforeEach(() => {
+      observers.length = 0;
+      vi.stubGlobal(
+        'ResizeObserver',
+        class {
+          private readonly entry: { target?: Element; deliver: () => void };
+          constructor(callback: ResizeObserverCallback) {
+            this.entry = { deliver: () => callback([], this as unknown as ResizeObserver) };
+            observers.push(this.entry);
+          }
+          observe(target: Element) {
+            this.entry.target = target;
+          }
+          disconnect() {
+            this.entry.target = undefined;
+          }
+        },
+      );
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    /**
+     * A window resized, or a splitter dragged: nothing re-renders, so nothing measured, and a code
+     * editor filling an IDE's pane went on building the rows it had built for the old height.
+     */
+    it('reports its new size, watched from the pass that first measured it', () => {
+      const seen: number[] = [];
+      const lowered = lowerVisualNode(
+        scrollNode({ onViewportChanged: (h) => seen.push(h) }),
+        context(),
+      );
+      const path = (lowered as { attributes: Record<string, string> }).attributes['data-eq-scroll'];
+      const el = document.createElement('div');
+      el.setAttribute('data-eq-scroll', path);
+      Object.defineProperty(el, 'clientHeight', { value: 400, configurable: true });
+      document.body.append(el);
+      commitScrollViewports();
+      expect(seen).toEqual([400]);
+      expect(observers).toHaveLength(1);
+      expect(observers[0].target).toBe(el);
+
+      Object.defineProperty(el, 'clientHeight', { value: 640, configurable: true });
+      observers[0].deliver();
+      expect(seen).toEqual([400, 640]);
+
+      // Once per element, however many passes declare it again.
+      lowerVisualNode(scrollNode({ onViewportChanged: (h) => seen.push(h) }), context());
+      commitScrollViewports();
+      expect(observers).toHaveLength(1);
+    });
+
+    /**
+     * A scroll view can keep its offset and stop asking for its viewport, and keep its marker with
+     * the offset: its observer was left watching, told of every resize for nobody.
+     */
+    it('stops watching a scroll view that keeps its offset and stops asking', () => {
+      const lowered = lowerVisualNode(scrollNode({ offset: 10, onViewportChanged: () => {} }), context());
+      const path = (lowered as { attributes: Record<string, string> }).attributes['data-eq-scroll'];
+      const el = document.createElement('div');
+      el.setAttribute('data-eq-scroll', path);
+      Object.defineProperty(el, 'clientHeight', { value: 400, configurable: true });
+      document.body.append(el);
+      commitScrollViewports();
+      expect(observers[0].target).toBe(el);
+
+      lowerVisualNode(scrollNode({ offset: 10 }), context());
+      commitScrollViewports();
+
+      expect(observers[0].target).toBeUndefined();
+    });
+
+    /**
+     * A scroll view that is simply unmounted is never resized again to find out: the first commit
+     * after it left the document lets it go.
+     */
+    it('lets go of a scroll view that has left the document', async () => {
+      const lowered = lowerVisualNode(scrollNode({ onViewportChanged: () => {} }), context());
+      const path = (lowered as { attributes: Record<string, string> }).attributes['data-eq-scroll'];
+      const el = document.createElement('div');
+      el.setAttribute('data-eq-scroll', path);
+      Object.defineProperty(el, 'clientHeight', { value: 400, configurable: true });
+      document.body.append(el);
+      commitScrollViewports();
+      expect(observers[0].target).toBe(el);
+
+      // The next pass lowers no scroll view at all, and the element leaves.
+      el.remove();
+      scheduleScrollViewportCommit();
+      await Promise.resolve();
+
+      expect(observers[0].target).toBeUndefined();
+    });
+
+    /**
+     * A page has a root per page and per bridge, each with passes of its own. One root's pass lowers
+     * none of another's scroll views, and letting go of every scroll view it did not declare took
+     * the other root's away while it was still on screen.
+     */
+    it('keeps watching another root\'s scroll view through this root\'s pass', async () => {
+      const lowered = lowerVisualNode(scrollNode({ onViewportChanged: () => {} }), context());
+      const path = (lowered as { attributes: Record<string, string> }).attributes['data-eq-scroll'];
+      const other = document.createElement('div');
+      other.setAttribute('data-eq-scroll', path);
+      Object.defineProperty(other, 'clientHeight', { value: 400, configurable: true });
+      document.body.append(other);
+      commitScrollViewports();
+      expect(observers[0].target).toBe(other);
+
+      // Another root's pass declares a scroll view of its own, at a path of its own (a root in a pass
+      // takes a prefix of its own), and none of the first root's.
+      const mine = document.createElement('div');
+      mine.setAttribute('data-eq-scroll', 'r1/0');
+      Object.defineProperty(mine, 'clientHeight', { value: 300, configurable: true });
+      document.body.append(mine);
+      declareScrollViewport('r1/0', { horizontal: false, onViewportChanged: () => {} });
+      scheduleScrollViewportCommit();
+      await Promise.resolve();
+
+      expect(observers[0].target, "the first root's scroll view is still on screen").toBe(other);
+      expect(observers[1].target).toBe(mine);
+    });
+
+    /**
+     * A root unmounts with no pass after it, so no commit would ever notice the scroll views it took
+     * away: the unmount itself lets them go.
+     */
+    it('lets go of the scroll views a root takes away as it unmounts', async () => {
+      const { RenderManager } = await import('../dom/renderer');
+      const lowered = lowerVisualNode(scrollNode({ onViewportChanged: () => {} }), context());
+      const container = document.createElement('div');
+      document.body.append(container);
+      const renderer = new RenderManager();
+      renderer.mount(lowered as never, container);
+      const el = container.querySelector('[data-eq-scroll]') as HTMLElement;
+      Object.defineProperty(el, 'clientHeight', { value: 400, configurable: true });
+      commitScrollViewports();
+      expect(observers[0].target).toBe(el);
+
+      renderer.unmount();
+
+      expect(observers[0].target).toBeUndefined();
+      container.remove();
+    });
+
+    /**
+     * Two passes that end in one task (two roots mounted together) get ONE commit. Each scheduled
+     * its own, the first consumed every declaration, and the second read an empty tree and let go
+     * of every scroll view on the page.
+     */
+    it('commits once for passes that end in the same task', async () => {
+      const seen: number[] = [];
+      const lowered = lowerVisualNode(scrollNode({ onViewportChanged: (h) => seen.push(h) }), context());
+      const path = (lowered as { attributes: Record<string, string> }).attributes['data-eq-scroll'];
+      const el = document.createElement('div');
+      el.setAttribute('data-eq-scroll', path);
+      Object.defineProperty(el, 'clientHeight', { value: 400, configurable: true });
+      document.body.append(el);
+      commitScrollViewports();
+      expect(observers[0].target).toBe(el);
+
+      lowerVisualNode(scrollNode({ onViewportChanged: (h) => seen.push(h) }), context());
+      scheduleScrollViewportCommit();
+      scheduleScrollViewportCommit();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(observers[0].target).toBe(el);
+    });
+
+    /** With no queueMicrotask the commit still waits for the write, rather than measuring the tree
+     * before it. */
+    it('waits for the write where there is no queueMicrotask', async () => {
+      vi.stubGlobal('queueMicrotask', undefined);
+      const seen: number[] = [];
+      const lowered = lowerVisualNode(scrollNode({ onViewportChanged: (h) => seen.push(h) }), context());
+      const path = (lowered as { attributes: Record<string, string> }).attributes['data-eq-scroll'];
+      scheduleScrollViewportCommit();
+
+      const el = document.createElement('div');
+      el.setAttribute('data-eq-scroll', path);
+      Object.defineProperty(el, 'clientHeight', { value: 400, configurable: true });
+      document.body.append(el);
+      expect(seen).toEqual([]);
+
+      await Promise.resolve();
+
+      expect(seen).toEqual([400]);
+    });
+
+    it('and says nothing once the scroll view stops asking', () => {
+      const seen: number[] = [];
+      const lowered = lowerVisualNode(
+        scrollNode({ onViewportChanged: (h) => seen.push(h) }),
+        context(),
+      );
+      const path = (lowered as { attributes: Record<string, string> }).attributes['data-eq-scroll'];
+      const el = document.createElement('div');
+      el.setAttribute('data-eq-scroll', path);
+      Object.defineProperty(el, 'clientHeight', { value: 400, configurable: true });
+      document.body.append(el);
+      commitScrollViewports();
+
+      el.removeAttribute('data-eq-scroll');
+      Object.defineProperty(el, 'clientHeight', { value: 640, configurable: true });
+      observers[0].deliver();
+
+      expect(seen).toEqual([400]);
+      expect(observers[0].target).toBeUndefined();
+    });
   });
 
   it('adopts the initial offset ONCE — the browser owns the position after', () => {
