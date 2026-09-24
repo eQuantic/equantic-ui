@@ -71,6 +71,22 @@ public class DefaultKeywordTests
 
     // ============ Contextual Default (literal) ============
 
+    /// <summary>With no model to ask, the name is all there is, and a name qualified with
+    /// <c>System.</c> is the same type as its keyword (found in review, #405).</summary>
+    [Theory]
+    [InlineData("default(System.Int64)", "$eq.num.long(0)")]
+    [InlineData("default(System.Decimal)", "$eq.num.dec(0)")]
+    [InlineData("default(System.Int32)", "0")]
+    [InlineData("default(char)", "'\\0'")]
+    [InlineData("default(System.Char)", "'\\0'")]
+    [InlineData("default(int?)", "null")]
+    public void Default_WithNoModel_IsWhatTheNameSays(string expression, string expected)
+    {
+        var converter = new eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter();
+        converter.ConvertExpression(Microsoft.CodeAnalysis.CSharp.SyntaxFactory.ParseExpression(expression))
+            .Should().Be(expected);
+    }
+
     [Fact]
     public void Default_Literal_ReturnsUndefined()
     {
