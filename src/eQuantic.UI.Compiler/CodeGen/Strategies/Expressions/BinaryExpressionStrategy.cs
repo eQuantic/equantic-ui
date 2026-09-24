@@ -81,11 +81,25 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
             if (decResult != null) return decResult;
         }
 
+        // A LONG quotient or remainder throws where .NET's 64-bit division does (#333). Decided by
+        // the RESULT, not by an operand: C# promotes a uint beside an int to long, so `u / i`
+        // divides longs with neither operand one (ValueFlow has already made both BigInts), and
+        // `aLong / 2.0` has a long operand and divides doubles. A nullable long divides only what
+        // it holds, through the lift every other nullable operator takes: `IsLong()` unwraps
+        // Nullable, so `long?` arrives here too. A literal null divisor falls through to that lift.
+        if (op is "/" or "%" && left != "null" && right != "null"
+            && context.SemanticHelper.GetType(binary) is var divided && divided.IsLong())
+        {
+            var check = IntegerDivision.NeedsCheck(binary.Right, context);
+            return divided.IsNullableValue()
+                ? IntegerDivision.Lifted(leftIr, rightIr, (a, b) => IntegerDivision.OfLongs(op, a, b, check, context), context)
+                : IntegerDivision.OfLongs(op, leftIr, rightIr, check, context);
+        }
+
         // long/ulong are exact 64-bit via BigInt, and the operands ARE BigInts: literals carry the
         // suffix, conversions settle at the bound tree's seams (ValueFlow), and a value from the
-        // server is hydrated at the typed boundary — so the native operators apply directly
-        // (BigInt `/` truncates, matching C# long division — so this must run before the
-        // integer-division branch below). Null comparisons fall through to the loose-equality logic.
+        // server is hydrated at the typed boundary — so the native operators apply directly.
+        // Null comparisons fall through to the loose-equality logic.
         if (left != "null" && right != "null" && op != "&&" && op != "||"
             && (context.SemanticHelper.GetType(binary.Left).IsLong()
                 || context.SemanticHelper.GetType(binary.Right).IsLong()))
@@ -102,17 +116,6 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
                     context.UsedHelpers.Add(Eq.Import);
                     rightIr = JsExpr.Callish($"{Eq.Long}({JsExprWriter.WriteIn(rightIr, JsPrecedence.Call)})");
                 }
-            }
-            // A long's quotient and remainder throw where .NET's 64-bit division does (#333). Only a
-            // LONG result: `aLong / 2.0` enters this branch by its operand and divides doubles.
-            // A nullable long divides only what it holds, through the lift every other nullable
-            // operator takes: `long.IsLong()` unwraps Nullable, so `long?` arrives here too.
-            if (op is "/" or "%" && context.SemanticHelper.GetType(binary) is var divided && divided.IsLong())
-            {
-                var check = IntegerDivision.NeedsCheck(binary.Right, context);
-                return divided.IsNullableValue()
-                    ? IntegerDivision.Lifted(leftIr, rightIr, (a, b) => IntegerDivision.OfLongs(op, a, b, check, context), context)
-                    : IntegerDivision.OfLongs(op, leftIr, rightIr, check, context);
             }
             var longResult = JsExpr.Binary(leftIr, jsOp, rightIr);
             // A 64-bit result settles like any fixed-width one: checked throws, an explicit

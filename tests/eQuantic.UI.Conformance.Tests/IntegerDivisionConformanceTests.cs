@@ -43,6 +43,24 @@ public class IntegerDivisionConformanceTests
     [InlineData("long x = 7; int d = 2; x /= d; return x.ToString();")]                                     // "3"
     [InlineData("long x = 7; int zero = 0; try { x /= zero; return x.ToString(); } catch (Exception e) { return e.Message; }")]
     [InlineData("long x = 7; double d = x / 2.0; return d.ToString();")]                                    // "3.5" — a long operand, a double division
+    // A uint beside an int computes in long, as C# promotes the pair: neither operand is a long.
+    [InlineData("uint u = 7; int d = 2; return (u / d).ToString();")]                                       // "3"
+    [InlineData("uint u = 7; int d = -2; return (u / d).ToString();")]                                      // "-3"
+    [InlineData("uint u = 7; int d = 2; return (u % d).ToString();")]                                       // "1"
+    [InlineData("uint u = 7; int zero = 0; try { return (u / zero).ToString(); } catch (Exception e) { return e.Message; }")]
+    [InlineData("uint u = 7; int zero = 0; try { return (u % zero).ToString(); } catch (Exception e) { return e.Message; }")]
+    [InlineData("uint u = 4000000000; int d = -1; return (u / d).ToString();")]                             // "-4000000000"
+    [InlineData("uint u = 7; return (u / -2).ToString();")]                                                 // "-3" — a negative constant is no uint
+    [InlineData("int i = -7; uint d = 2; return (i / d).ToString();")]                                      // "-3"
+    [InlineData("uint? u = 7; int? d = 0; try { return (u / d).ToString(); } catch (Exception e) { return e.Message; }")]
+    [InlineData("uint? u = null; int? d = 2; var c = u / d; return c == null ? \"null\" : c.ToString();")] // "null"
+    [InlineData("uint? u = 7; int? d = -2; return (u % d).ToString();")]                                    // "1"
+    // Controls: the pair's other operators, which ValueFlow's BigInts already answered.
+    [InlineData("uint u = 4000000000; int i = 1; return (u + i).ToString();")]                              // "4000000001"
+    [InlineData("uint u = 1; int i = -2; return (u * i).ToString();")]                                      // "-2"
+    [InlineData("uint u = 1; int i = -2; return (u < i) ? \"lt\" : \"ge\";")]                              // "ge"
+    [InlineData("uint u = 6; int i = -2; return (u & i).ToString();")]                                      // "6"
+    [InlineData("uint? u = 1; int? i = null; var c = u + i; return c == null ? \"null\" : c.ToString();")] // "null"
     // ---- the compound forms, and their targets evaluated once ----
     [InlineData("int x = 5, zero = 0; try { x %= zero; return x.ToString(); } catch (Exception e) { return e.Message; }")]
     [InlineData("int x = int.MinValue, minusOne = -1; try { x /= minusOne; return x.ToString(); } catch (Exception e) { return e.Message; }")]
