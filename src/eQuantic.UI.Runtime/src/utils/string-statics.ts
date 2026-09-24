@@ -12,7 +12,9 @@
  * `OrdinalCasing` does. That is `toUpperCase` wherever it maps one code point to one, with the
  * differences measured against .NET 10 over the BMP: .NET leaves the dotless i and the long s alone
  * (no Turkish i in an ordinal comparison), and takes the Greek letters with an iota subscript to
- * their title case, which `toUpperCase` expands to two letters. So the Kelvin sign is not a k.
+ * their title case, which `toUpperCase` expands to two letters. So the Kelvin sign is not a k. A
+ * surrogate pair is read as the code point it encodes, whose upper case is compared whole, and it
+ * orders after anything that is not a pair, whatever the code units say.
  */
 import { formatLocale } from './culture';
 
@@ -122,8 +124,17 @@ function ordinal(
   return lengthA - lengthB;
 }
 
-/** .NET's `Ordinal.CompareStringIgnoreCase` over two ranges: the difference of the first two code
- * units that differ once upper-cased, a surrogate pair upper-cased as its code point. */
+/** Whether a surrogate pair starts here with both halves inside the range, as .NET reads one. */
+function startsPair(text: string, at: number, remaining: number): boolean {
+  return remaining > 1 && isHigh(text.charCodeAt(at)) && isLow(text.charCodeAt(at + 1));
+}
+
+/**
+ * .NET's `OrdinalCasing.CompareStringIgnoreCase` over two ranges, step for step. A code unit is
+ * compared by its upper case, and a pair by the upper case of its code point, so the difference is of
+ * code units or of code points, the first that differs. A pair against a unit that is not one answers
+ * 1 or -1 without comparing them, and past the shorter range it is the difference of the lengths.
+ */
 function ordinalIgnoreCase(
   a: string,
   indexA: number,
@@ -133,24 +144,18 @@ function ordinalIgnoreCase(
   lengthB: number,
 ): number {
   const length = Math.min(lengthA, lengthB);
-  for (let i = 0; i < length; i++) {
-    const unitA = a.charCodeAt(indexA + i);
-    const unitB = b.charCodeAt(indexB + i);
-    if (unitA === unitB) continue;
-    const nextA = i + 1 < length ? a.charCodeAt(indexA + i + 1) : 0;
-    const nextB = i + 1 < length ? b.charCodeAt(indexB + i + 1) : 0;
-    if (isHigh(unitA) && isHigh(unitB) && isLow(nextA) && isLow(nextB)) {
-      const upperA = String.fromCodePoint(ordinalUpper(a.codePointAt(indexA + i) as number));
-      const upperB = String.fromCodePoint(ordinalUpper(b.codePointAt(indexB + i) as number));
-      for (let k = 0; k < 2; k++) {
-        const difference = upperA.charCodeAt(k) - upperB.charCodeAt(k);
-        if (difference !== 0) return difference;
-      }
-      i++;
-      continue;
+  let index = 0;
+  while (index < length) {
+    const pairA = startsPair(a, indexA + index, lengthA - index);
+    const pairB = startsPair(b, indexB + index, lengthB - index);
+    if (pairA !== pairB) return pairA ? 1 : -1;
+    const valueA = pairA ? (a.codePointAt(indexA + index) as number) : a.charCodeAt(indexA + index);
+    const valueB = pairB ? (b.codePointAt(indexB + index) as number) : b.charCodeAt(indexB + index);
+    if (valueA !== valueB) {
+      const difference = ordinalUpper(valueA) - ordinalUpper(valueB);
+      if (difference !== 0) return difference;
     }
-    const difference = ordinalUpper(unitA) - ordinalUpper(unitB);
-    if (difference !== 0) return difference;
+    index += pairA ? 2 : 1;
   }
   return lengthA - lengthB;
 }

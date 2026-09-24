@@ -160,6 +160,18 @@ public class BclOverloadConformanceTests
     [InlineData("return string.Compare(\"ab\", 2, \"cd\", 0, 0, StringComparison.Ordinal);")]       // 0
     [InlineData("return string.Compare(\"a\", 0, \"A\", 0, 1, StringComparison.OrdinalIgnoreCase);")] // 0
     [InlineData("try { return string.Compare(\"ab\", 3, \"ab\", 0, 0, StringComparison.Ordinal).ToString(); } catch (Exception e) { return e.Message; }")]
+    // A surrogate pair ignores case as the code point it encodes: Deseret's two cases share their
+    // high surrogate, a pair orders after any unit, and the difference is of the code points.
+    [InlineData("return string.Compare(\"\\U00010400\", \"\\U00010428\", StringComparison.OrdinalIgnoreCase);")] // 0
+    [InlineData("return string.Equals(\"\\U00010428\\U00010429\", \"\\U00010400\\U00010401\", StringComparison.OrdinalIgnoreCase);")] // true
+    [InlineData("return string.Compare(\"\\U00010428\", \"\\U0001E922\", StringComparison.OrdinalIgnoreCase);")] // -58624
+    [InlineData("return string.Compare(\"\\U00010428\", \"\\uFFFF\", StringComparison.OrdinalIgnoreCase);")] // 1: where the units say -10238
+    [InlineData("return string.Compare(\"\\uFFFF\", \"\\U00010428\", StringComparison.OrdinalIgnoreCase);")] // -1
+    [InlineData("return string.Compare(\"\\U00010428\", '\\uD801' + \"x\", StringComparison.OrdinalIgnoreCase);")] // 1: a lone high surrogate is no pair
+    [InlineData("var high = '\\uD801'; return string.Compare(high + \"\\U00010428\", high + \"\\U00010400\", StringComparison.OrdinalIgnoreCase);")] // 0
+    [InlineData("return string.Compare(\"\\U00010428xy\", \"\\U00010400X\", StringComparison.OrdinalIgnoreCase);")] // 1: the lengths
+    [InlineData("return string.Compare(\"\\U00010428\", 0, \"\\U00010400\", 0, 1, StringComparison.OrdinalIgnoreCase);")] // 0: the range cuts the pair
+    [InlineData("return string.Compare(\"x\\U00010428\", 1, \"y\\U00010400\", 1, 2, StringComparison.OrdinalIgnoreCase);")] // 0
     // The overloads graded before the regrouping, which the same change reached: the two-argument
     // Compare read a null as a receiver, and CompareOrdinal answered a sign and could not order a null.
     [InlineData("return string.Compare(null, \"a\");")]                  // -1

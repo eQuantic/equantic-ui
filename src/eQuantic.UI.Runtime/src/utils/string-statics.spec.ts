@@ -24,6 +24,22 @@ describe('compare (string.Compare)', () => {
     expect(compare('\u00e9', 'E', 'ordinalIgnoreCase')).toBe(132);
   });
 
+  it("reads a surrogate pair as .NET's OrdinalCasing does", () => {
+    const upper = '\ud801\udc00'; // U+10400; its lower case, U+10428, has the same high surrogate
+    const lower = '\ud801\udc28';
+    expect(compare(upper, lower, 'ordinalIgnoreCase')).toBe(0);
+    expect(equals(lower + '\ud801\udc29', upper + '\ud801\udc01', 'ordinalIgnoreCase')).toBe(true);
+    expect(compare(lower, '\ud83a\udd22', 'ordinalIgnoreCase')).toBe(-58624); // of the code points
+    expect(compare(lower, '\uffff', 'ordinalIgnoreCase')).toBe(1); // a pair orders after a unit
+    expect(compare('\uffff', lower, 'ordinalIgnoreCase')).toBe(-1);
+    expect(compare(lower, '\ud801x', 'ordinalIgnoreCase')).toBe(1);
+    expect(compare('\ud801' + lower, '\ud801' + upper, 'ordinalIgnoreCase')).toBe(0);
+    expect(compare(lower + 'xy', upper + 'X', 'ordinalIgnoreCase')).toBe(1);
+    expect(compare('\udc28', '\udc00', 'ordinalIgnoreCase')).toBe(40); // a lone unit by its own value
+    expect(compareRangeBy(lower, 0, upper, 0, 1, 'ordinalIgnoreCase')).toBe(0); // the range cuts it
+    expect(compareRangeBy('x' + lower, 1, 'y' + upper, 1, 2, 'ordinalIgnoreCase')).toBe(0);
+  });
+
   it('takes a comparison held in a variable, which is a plain string there', () => {
     let comparison = 'ordinalIgnoreCase';
     expect(equals('a', 'A', comparison)).toBe(true);
