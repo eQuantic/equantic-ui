@@ -21,8 +21,11 @@ public class DateOnlyTimeOnlyStrategy : ConversionStrategyBase
                 return KindOf(context.SemanticHelper.GetType(oc)) != null
                     || (oc is ObjectCreationExpressionSyntax named && KindOfName(named.Type.ToString()) != null);
 
+            // No twin reads a date back through a format pattern: `ParseExact` emitted a call to a
+            // member the runtime does not have, a TypeError the moment the page ran it, and the audit
+            // graded it `eq` because the call named `$eq`. Left unclaimed, it is EQ1001 at build time.
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
-                return Kind(ma, context) != null;
+                return Kind(ma, context) != null && ma.Name.Identifier.Text is not ("ParseExact" or "TryParseExact");
 
             case MemberAccessExpressionSyntax member:
                 return Kind(member, context) != null;

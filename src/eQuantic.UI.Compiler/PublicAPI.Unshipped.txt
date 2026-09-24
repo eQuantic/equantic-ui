@@ -229,9 +229,20 @@ override sealed eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow.Equals(eQuantic.UI.
 static eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow.operator !=(eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow? left, eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow? right) -> bool
 static eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow.operator ==(eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow? left, eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow? right) -> bool
 static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.ConstArrow(string! name, string! parameters, bool isAsync, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! body) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
+const eQuantic.UI.Compiler.CodeGen.Eq.FromBase = "$eq.num.fromBase" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ToBase = "$eq.num.toBase" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.StringCompare = "$eq.text.compare" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.StringCompareRange = "$eq.text.compareRange" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.StringCompareRangeBy = "$eq.text.compareRangeBy" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.StringEquals = "$eq.text.equals" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.StringJoinRange = "$eq.text.joinRange" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.LinqMax = "$eq.linq.max" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.LinqMin = "$eq.linq.min" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.LinqToDictionary = "$eq.linq.toDictionary" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.LiftUnary = "$eq.nullable.unary" -> string!
 static eQuantic.UI.Compiler.CodeGen.Strategies.IntegerWidth.Bitwise(string! op, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! left, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! right, (int Bits, bool Unsigned) width) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr?
 static eQuantic.UI.Compiler.CodeGen.Strategies.IntegerWidth.LongShift(string! op, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! value, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! count, object? constant, bool unsigned, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+const eQuantic.UI.Compiler.CodeGen.Eq.LinqToValueDictionary = "$eq.linq.toValueDictionary" -> string!
 *REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Invocation.DictionaryStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
 eQuantic.UI.Compiler.CodeGen.Strategies.Invocation.DictionaryStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 const eQuantic.UI.Compiler.CodeGen.Eq.MapGet = "$eq.mapGet" -> string!

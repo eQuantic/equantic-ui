@@ -191,6 +191,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<BclSurfaceTailStrategy>();  // instance tail: Equals/String/Dictionary/List QoL
         _strategyRegistry.Register<ReverseStrategy>();
         _strategyRegistry.Register<LinqTableStrategy>(); // the LINQ surface as a table of shapes
+        _strategyRegistry.Register<LinqStaticFormStrategy>(); // Enumerable.Count(xs): refused, not misread
         _strategyRegistry.Register<ListMethodStrategy>();
         _strategyRegistry.Register<ArrayStaticStrategy>();
 

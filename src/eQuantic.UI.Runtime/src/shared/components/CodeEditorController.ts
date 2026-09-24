@@ -386,7 +386,7 @@ export class CodeEditorController {
         }
         for (const [open, close] of rules.brackets) {
             if (c !== open) continue;
-            if (after === '\0' || (/^\s$/.test(after)) || rules.brackets.some((p) => p[1] === after)) {
+            if (after === '\0' || (/^\p{White_Space}$/u.test(after)) || rules.brackets.some((p) => p[1] === after)) {
                 if (!this.edit(this._selection, `${open}${close}`, true)) return false;
                 this.selection = new CodeRange($eq.withPatch(this.caret, { column: this.caret.column - 1 }));
                 return true;
@@ -396,7 +396,7 @@ export class CodeEditorController {
             if (c !== quote) continue;
             let before = this.caret.column > 0 ? line[this.caret.column - 1] : '\0';
             if (CodeDocument.isWordChar(before) || CodeDocument.isWordChar(after)) break;
-            if (after === '\0' || (/^\s$/.test(after))) {
+            if (after === '\0' || (/^\p{White_Space}$/u.test(after))) {
                 if (!this.edit(this._selection, `${quote}${quote}`, true)) return false;
                 this.selection = new CodeRange($eq.withPatch(this.caret, { column: this.caret.column - 1 }));
                 return true;
@@ -623,14 +623,14 @@ export class CodeEditorController {
         if (forward) {
             if (here.column >= line.length) return this.after(here);
             let i = here.column;
-            if (CodeDocument.isWordChar(line[i])) while (i < line.length && CodeDocument.isWordChar(line[i])) i = cells.next(i); else if (!(/^\s$/.test(line[i]))) while (i < line.length && !CodeDocument.isWordChar(line[i]) && !(/^\s$/.test(line[i]))) i = cells.next(i);
-            while (i < line.length && (/^\s$/.test(line[i]))) i = cells.next(i);
+            if (CodeDocument.isWordChar(line[i])) while (i < line.length && CodeDocument.isWordChar(line[i])) i = cells.next(i); else if (!(/^\p{White_Space}$/u.test(line[i]))) while (i < line.length && !CodeDocument.isWordChar(line[i]) && !(/^\p{White_Space}$/u.test(line[i]))) i = cells.next(i);
+            while (i < line.length && (/^\p{White_Space}$/u.test(line[i]))) i = cells.next(i);
             return $eq.withPatch(here, { column: i });
         }
         if (here.column === 0) return this.before(here);
         let back = here.column;
-        while (back > 0 && (/^\s$/.test(line[cells.previous(back)]))) back = cells.previous(back);
-        if (back > 0 && CodeDocument.isWordChar(line[cells.previous(back)])) while (back > 0 && CodeDocument.isWordChar(line[cells.previous(back)])) back = cells.previous(back); else while (back > 0 && !CodeDocument.isWordChar(line[cells.previous(back)]) && !(/^\s$/.test(line[cells.previous(back)]))) back = cells.previous(back);
+        while (back > 0 && (/^\p{White_Space}$/u.test(line[cells.previous(back)]))) back = cells.previous(back);
+        if (back > 0 && CodeDocument.isWordChar(line[cells.previous(back)])) while (back > 0 && CodeDocument.isWordChar(line[cells.previous(back)])) back = cells.previous(back); else while (back > 0 && !CodeDocument.isWordChar(line[cells.previous(back)]) && !(/^\p{White_Space}$/u.test(line[cells.previous(back)]))) back = cells.previous(back);
         return $eq.withPatch(here, { column: back });
     }
 
