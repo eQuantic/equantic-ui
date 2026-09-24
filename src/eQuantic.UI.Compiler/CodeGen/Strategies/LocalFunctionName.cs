@@ -32,20 +32,20 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 internal static class LocalFunctionName
 {
     /// <summary>
-    /// The names the EMITTER puts in a member's scope, which C# never declared. The free names the
-    /// output reads: <c>console</c> (Console.WriteLine), <c>parseInt</c> and <c>parseFloat</c>
-    /// (Convert.ToInt32 and ToDouble over text), <c>crypto</c> (Guid.NewGuid), <c>encodeURIComponent</c>
-    /// and <c>decodeURIComponent</c> (Uri.EscapeDataString and UnescapeDataString) and
-    /// <c>undefined</c>. The names it binds: <c>props</c>, the parameter a constructor takes, and the
-    /// lowerings' own, <c>_seq</c> (an iterator's buffer), <c>_s</c> (a switch's subject), and
-    /// <c>_sum</c>, <c>_x</c>, <c>_a</c>, <c>_b</c> (Sum's and Average's accumulators). A function on
-    /// one of these breaks code beside it that never named it, so even a name the casing left alone
-    /// yields to them.
+    /// The lowercase names the EMITTER puts in a member's scope, which C# never declared: the globals
+    /// the output reads, <c>console</c> (Console.WriteLine), <c>parseInt</c>, <c>parseFloat</c> and
+    /// <c>isNaN</c> (the number parses), <c>crypto</c> (Guid.NewGuid), <c>setTimeout</c> (Task.Delay
+    /// and Task.Yield), <c>encodeURI</c>, <c>decodeURI</c>, <c>encodeURIComponent</c> and
+    /// <c>decodeURIComponent</c> (Uri) and <c>undefined</c>, and <c>props</c>, the parameter a
+    /// constructor takes. A function on one of these breaks code beside it that never named it, so even a name
+    /// the casing left alone yields to them. The globals are not trusted to this list staying
+    /// complete: <c>LocalFunctionNameTests</c> reads the compiler's own source for every one it
+    /// emits, and fails on one missing here.
     /// </summary>
     private static readonly HashSet<string> EmittedNames = new(StringComparer.Ordinal)
     {
-        "console", "parseInt", "parseFloat", "crypto", "encodeURIComponent", "decodeURIComponent",
-        "undefined", "props", "_seq", "_s", "_sum", "_x", "_a", "_b",
+        "console", "parseInt", "parseFloat", "isNaN", "crypto", "setTimeout", "encodeURI", "decodeURI",
+        "encodeURIComponent", "decodeURIComponent", "undefined", "props",
     };
 
     /// <summary>
@@ -116,20 +116,34 @@ internal static class LocalFunctionName
         // One the casing changed, or one on an emitted name, takes the first spelling nothing holds.
         // A `$` is a character no C# name holds, so the suffix cannot land on one.
         foreach (var function in functions.Where(f => !names.ContainsKey(f)))
-        {
-            var cased = Cased(function.Identifier.ValueText);
-            var name = cased;
-            for (var n = 1; taken.Contains(name); n++)
-                name = cased.TrimEnd('$') + "$" + (n == 1 ? "" : n.ToString(CultureInfo.InvariantCulture));
-            taken.Add(names[function] = name);
-        }
+            taken.Add(names[function] = Candidates(Cased(function.Identifier.ValueText)).First(name => !taken.Contains(name)));
 
         return names;
     }
 
-    private static bool KeepsItsName(LocalFunctionStatementSyntax function) =>
-        Cased(function.Identifier.ValueText) == function.Identifier.ValueText
-        && !EmittedNames.Contains(function.Identifier.ValueText);
+    /// <summary>
+    /// Whether the function reaches JavaScript under the name it was written with: not when the casing
+    /// changed it, not on a name the emitter reads, and never when it starts with an underscore. The
+    /// lowerings spell their own bindings that way (<c>_idx</c>, <c>_s</c>, <c>_seq</c>, <c>_sum</c>,
+    /// <c>_m</c>…), and casing never produces a leading underscore, so only a name WRITTEN with one
+    /// can meet them. Such a name always takes a `$`, which none of them holds, rather than trusting a
+    /// list of them to stay complete.
+    /// </summary>
+    private static bool KeepsItsName(LocalFunctionStatementSyntax function)
+    {
+        var written = function.Identifier.ValueText;
+        return Cased(written) == written && !EmittedNames.Contains(written) && !written.StartsWith('_');
+    }
+
+    /// <summary>The spellings a function may take, in order: its cased name, unless it starts with an
+    /// underscore, then the name with a `$`, then numbered ones.</summary>
+    private static IEnumerable<string> Candidates(string cased)
+    {
+        if (!cased.StartsWith('_')) yield return cased;
+        var stem = cased.TrimEnd('$');
+        yield return stem + "$";
+        for (var n = 2; ; n++) yield return stem + "$" + n.ToString(CultureInfo.InvariantCulture);
+    }
 
     /// <summary>
     /// The name <paramref name="node"/> binds in JavaScript's scope, where it binds one: a parameter,
