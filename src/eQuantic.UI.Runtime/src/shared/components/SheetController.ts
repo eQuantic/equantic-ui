@@ -2,7 +2,10 @@ import { $eq, CellRef, SheetAxisValue, SheetCellSnapshot, SheetDocument, SheetEd
 
 export class SheetController {
     constructor(rows: number = 1000, cols: number = 26, props?: any) {
-        this._selection = new SheetRange(new CellRef(0, 0)); this._active = new CellRef(0, 0); this.document = new SheetDocument(rows, cols); if (props && typeof props === 'object') Object.assign(this, props);
+        this._selection = new SheetRange(new CellRef(0, 0));
+        this._active = new CellRef(0, 0);
+        this.document = new SheetDocument(rows, cols);
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     _selection: SheetRange;

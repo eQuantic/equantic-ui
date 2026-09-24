@@ -10,7 +10,8 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 /// hoists these to the top of their block, since C# hoists local functions and a const is not).
 /// An ARROW rather than a <c>function</c>: a C# local function can use the instance —
 /// <c>this._findText</c> — and a <c>function</c> declaration rebinds <c>this</c> to undefined in
-/// a module, so every capture read as a TypeError the first time it ran.
+/// a module, so every capture read as a TypeError the first time it ran. Its body reaches the
+/// writer as IR, so each statement in it maps to its own line (#293).
 /// </summary>
 public class LocalFunctionStatementStrategy : IStatementStrategy
 {
@@ -30,16 +31,15 @@ public class LocalFunctionStatementStrategy : IStatementStrategy
         var parameters = string.Join(", ", localFn.ParameterList.Parameters
             .Select(p => Parameter(p, context)));
 
-        // The body, laid out where it was built; an expression body becomes a block with one
-        // return, so both forms read the same.
-        var block = localFn.Body != null
-            ? context.Converter.ConvertBlock(localFn.Body)
-            : JsStatementWriter.Write(
-                JsStatement.Block(new[]
-                {
-                    JsStatement.Return(context.Converter.ConvertIr(localFn.ExpressionBody!.Expression)),
-                }),
-                context.Layout, context.Depth);
+        // An expression body becomes a block with one return, carrying the expression, so both
+        // forms read and map the same.
+        var body = localFn.Body != null
+            ? context.Converter.ConvertBlockIr(localFn.Body)
+            : JsStatement.Block(new[]
+            {
+                JsStatement.Return(context.Converter.InBlock(() => context.Converter.ConvertIr(localFn.ExpressionBody!.Expression)))
+                    with { Origin = localFn.ExpressionBody!.Expression },
+            });
 
         // The `async` has to cross. A C# local function that awaits becomes a JS arrow that
         // awaits, and an arrow that is not `async` makes `await` in its body a SyntaxError — the
@@ -47,7 +47,7 @@ public class LocalFunctionStatementStrategy : IStatementStrategy
         // Lambdas already carry it (LambdaExpressionStrategy) and so do component methods; this
         // one dropped it, so the shape only broke where somebody wrote a local async helper.
         var isAsync = localFn.Modifiers.Any(SyntaxKind.AsyncKeyword);
-        return JsStatement.Const(name, JsExpr.ArrowBlock(parameters, block, isAsync));
+        return JsStatement.ConstArrow(name, parameters, isAsync, body);
     }
 
     /// <summary>

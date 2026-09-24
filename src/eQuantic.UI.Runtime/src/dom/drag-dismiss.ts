@@ -60,8 +60,14 @@ function onPointerDown(down: Event): void {
 
     // An activated drag swallows the click the browser fires after pointerup — inner buttons
     // (the sheet's own actions) must not receive a tap that was really a drag.
-    document.addEventListener('click', squashClick, { capture: true, once: true });
-    setTimeout(() => document.removeEventListener('click', squashClick, { capture: true }), 50);
+    //
+    // The timer holds the DOCUMENT it registered on, as draggable.ts's does and for its reason: a
+    // torn-down test environment removed the global while this was pending, the callback threw
+    // `document is not defined` where nothing could catch it, and vitest failed a run in which all
+    // 137 files had passed. Deferred cleanup carries what it cleans up.
+    const host = document;
+    host.addEventListener('click', squashClick, { capture: true, once: true });
+    setTimeout(() => host.removeEventListener('click', squashClick, { capture: true }), 50);
 
     const dy = (ev as PointerEvent).clientY - startY;
     if (dy >= threshold) {

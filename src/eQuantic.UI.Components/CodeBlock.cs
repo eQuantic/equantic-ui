@@ -86,6 +86,14 @@ public sealed class CodeBlock : StatelessComponent
     /// </summary>
     public IReadOnlyList<Rect> SelectionBands { get; init; } = [];
 
+    /// <summary>
+    /// How many cells the widest line takes, when whoever composes the block keeps it across builds
+    /// (an editor does: <c>CodeEditorController.WidestLine</c>, kept beside the document). Null, the
+    /// default, has the block measure every line of the document, which a snippet can afford and a
+    /// long file scrolled a step at a time cannot. 0 is a width like any other: a file of empty lines.
+    /// </summary>
+    public int? WidestLine { get; init; }
+
     /// <summary>How much of the selection's ink shows — the band sits under the text, so it only has
     /// to be seen, never read through.</summary>
     public const float SelectionAlpha = 0.28f;
@@ -203,8 +211,12 @@ public sealed class CodeBlock : StatelessComponent
         // Measured from the widest line in the FILE rather than the widest one on screen: the width
         // must not change as the window scrolls, or the content would breathe under the reader.
         var widest = 0;
-        for (var index = 0; index < Document.LineCount; index++)
-            widest = Math.Max(widest, CodeLineCells.WidthOf(Document.Line(index), TabSize));
+        if (WidestLine is { } known) widest = known;
+        else
+        {
+            for (var index = 0; index < Document.LineCount; index++)
+                widest = Math.Max(widest, CodeLineCells.WidthOf(Document.Line(index), TabSize));
+        }
         var codeWidth = widest * metrics.ColumnWidth + metrics.ColumnWidth;
 
         var lines = new Column(gap: 0) { Width = SizeValue.Fill };
@@ -245,13 +257,18 @@ public sealed class CodeBlock : StatelessComponent
         foreach (var decoration in Decorations)
         {
             if (decoration.Kind != CodeDecorationKind.Highlight) continue;
-            foreach (var mark in Marks(decoration, metrics, theme)) marks.Add(mark);
+            foreach (var mark in Marks(decoration, metrics, theme, first, last)) marks.Add(mark);
         }
         if (SelectionBands.Count > 0)
         {
+            // …and the selection's bands, one per line, drawn for the lines in the window only: a
+            // select-all over a long file was a band per line of it, each build.
             var band = SelectionFor(Inverse, theme).WithOpacity(SelectionAlpha);
+            var windowTop = metrics.ContentTop + first * lineHeight;
+            var windowBottom = metrics.ContentTop + (last + 1) * lineHeight;
             foreach (var rect in SelectionBands)
             {
+                if (rect.Y + rect.Height <= windowTop || rect.Y >= windowBottom) continue;
                 marks.Add(new Positioned(new Box(new BoxStyle
                 {
                     Width = rect.Width,
@@ -264,7 +281,7 @@ public sealed class CodeBlock : StatelessComponent
         foreach (var decoration in Decorations)
         {
             if (decoration.Kind == CodeDecorationKind.Highlight) continue;
-            foreach (var mark in Marks(decoration, metrics, theme)) marks.Add(mark);
+            foreach (var mark in Marks(decoration, metrics, theme, first, last)) marks.Add(mark);
         }
         if (marks.Children.Count > 0)
         {
@@ -323,34 +340,48 @@ public sealed class CodeBlock : StatelessComponent
             Clip = true,
         }, body);
 
-        if (Caption is null && OnCopy is null) return slab;
+        if (Corner(Caption, OnCopy, Inverse, theme) is not { } corner) return slab;
 
-        // The caption and the copy button ride ABOVE the code, in the TRAILING corner — over the
-        // ragged right edge of code rather than over its first line, which always has text in it.
-        var corner = new Row(gap: Space.S2) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
-        corner.Add(new Spacer(1));
-        if (Caption is { } caption)
+        var layers = new Stack { Width = SizeValue.Fill };
+        layers.Add(slab);
+        layers.Add(corner);
+        return layers;
+    }
+
+    /// <summary>
+    /// The caption and the copy button, as a layer over the slab: ABOVE the code, in the TRAILING
+    /// corner, over the ragged right edge of code rather than over its first line, which always has
+    /// text in it. Null when there is nothing to put there. The editor draws its caption with it too.
+    /// <para>
+    /// The layer is as wide as what it holds. It was a row as wide as the slab with a spacer pushing
+    /// the two to the end, which drew the same and lay over the whole first line: on the web a press
+    /// there landed on the row, so the text under it could not be selected, and in an editor the
+    /// first line could not be clicked into.
+    /// </para>
+    /// </summary>
+    public static VisualNode? Corner(string? caption, Action? onCopy, bool inverse, IAppTheme theme)
+    {
+        if (caption is null && onCopy is null) return null;
+
+        var corner = new Row(gap: Space.S2) { Cross = CrossAlign.Center };
+        if (caption is { } text)
         {
-            corner.Add(new Text(caption, TypeRole.LabelSmall,
-                Inverse ? CodeInkMuted : theme.TextMuted, maxLines: 1) { Mono = true });
+            corner.Add(new Text(text, TypeRole.LabelSmall,
+                inverse ? CodeInkMuted : theme.TextMuted, maxLines: 1) { Mono = true });
         }
-        if (OnCopy is { } copy)
+        if (onCopy is { } copy)
         {
-            corner.Add(new IconButton(new Icon(Icons.Copy), "Copy code")
+            corner.Add(new IconButton(new Icon(Icons.Copy), SdkStrings.CopyCode)
             {
                 Size = SizeVariant.Small,
                 OnPressed = copy,
             });
         }
 
-        var layers = new Stack { Width = SizeValue.Fill };
-        layers.Add(slab);
-        layers.Add(new Positioned(new Box(new BoxStyle
+        return new Positioned(new Box(new BoxStyle
         {
-            Width = SizeValue.Fill,
             Padding = EdgeInsets.Symmetric(Space.S3, Space.S2),
-        }, corner), top: 0, start: 0));
-        return layers;
+        }, corner), top: 0, end: 0);
     }
 
     /// <summary>
@@ -443,7 +474,7 @@ public sealed class CodeBlock : StatelessComponent
         // is CODE, and column zero is where the row begins.
         var code = new Row(gap: 0) { Height = SizeValue.Fill, Cross = CrossAlign.Center };
         var text = Document.Line(index);
-        var cells = new CodeLineCells(text, TabSize);
+        var cells = CellsOf(index);
         var tokens = highlighter.TokensFor(Document, index);
         var at = 0;
         foreach (var token in tokens)
@@ -471,18 +502,37 @@ public sealed class CodeBlock : StatelessComponent
         return row;
     }
 
-    /// <summary>
-    /// The first and last line to BUILD. With no viewport reported yet the answer is "all of them",
-    /// which is right for a snippet and for the first frame — the window narrows as soon as layout
-    /// has said how tall the box turned out to be.
-    /// </summary>
-    private (int First, int Last) Window(float lineHeight)
+    /// <summary>The cells of the lines this build reads, by line: the line it draws and every mark on
+    /// it read the same map, built once. A block is built anew with each build of what holds it.</summary>
+    private readonly Dictionary<int, CodeLineCells> _cells = new();
+
+    private CodeLineCells CellsOf(int line)
     {
-        if (ViewportHeight <= 0 || lineHeight <= 0) return (0, Document.LineCount - 1);
+        if (_cells.TryGetValue(line, out var cells)) return cells;
+        cells = new CodeLineCells(Document.Line(line), TabSize);
+        _cells[line] = cells;
+        return cells;
+    }
+
+    /// <summary>The first and last line this block builds (see <see cref="WindowOf"/>).</summary>
+    private (int First, int Last) Window(float lineHeight) =>
+        WindowOf(Document.LineCount, lineHeight, ViewportOffset, ViewportHeight);
+
+    /// <summary>
+    /// The first and last line to BUILD, of <paramref name="lineCount"/> lines scrolled
+    /// <paramref name="offset"/> into a viewport <paramref name="viewportHeight"/> tall. With no
+    /// viewport reported yet the answer is "all of them", which is right for a snippet and for the
+    /// first frame — the window narrows as soon as layout has said how tall the box turned out to be.
+    /// An editor asks it too, for the only lines it measures anything on: the selection's bands and
+    /// the matches in view.
+    /// </summary>
+    internal static (int First, int Last) WindowOf(int lineCount, float lineHeight, float offset, float viewportHeight)
+    {
+        if (viewportHeight <= 0 || lineHeight <= 0) return (0, lineCount - 1);
         const int margin = 8;   // a scroll of one line builds nothing
-        var first = Math.Max(0, (int)MathF.Floor(ViewportOffset / lineHeight) - margin);
-        var visible = (int)MathF.Ceiling(ViewportHeight / lineHeight) + margin * 2;
-        return (first, Math.Min(Document.LineCount - 1, first + visible));
+        var first = Math.Max(0, (int)MathF.Floor(offset / lineHeight) - margin);
+        var visible = (int)MathF.Ceiling(viewportHeight / lineHeight) + margin * 2;
+        return (first, Math.Min(lineCount - 1, first + visible));
     }
 
     /// <summary>
@@ -490,14 +540,17 @@ public sealed class CodeBlock : StatelessComponent
     /// for the same reason: a single rectangle over a multi-line range would cover the indentation
     /// of lines the range never touched.
     /// </summary>
-    private IEnumerable<VisualNode> Marks(CodeDecoration decoration, CodeMetrics metrics, IAppTheme theme)
+    private IEnumerable<VisualNode> Marks(CodeDecoration decoration, CodeMetrics metrics, IAppTheme theme,
+        int first, int last)
     {
         var start = Document.Clamp(decoration.Range.Start);
         var end = Document.Clamp(decoration.Range.End);
         var color = decoration.Color ?? DefaultColor(decoration.Kind, theme);
         if (Inverse) color = new ColorToken(color.Dark, color.Dark);
 
-        for (var line = start.Line; line <= end.Line; line++)
+        // Only the lines the window builds: a mark on a line nobody can see is a box and a map of
+        // its line for nothing, and a search over a long file marked every line of it each build.
+        for (var line = Math.Max(start.Line, first); line <= Math.Min(end.Line, last); line++)
         {
             var from = line == start.Line ? start.Column : 0;
             var to = line == end.Line ? end.Column : Document.Line(line).Length;
@@ -505,7 +558,7 @@ public sealed class CodeBlock : StatelessComponent
 
             // Through the line's CELLS, the way the engine places its caret: a match after a tab
             // or across a wide character is drawn where the characters are.
-            var cells = new CodeLineCells(Document.Line(line), TabSize);
+            var cells = CellsOf(line);
             var left = metrics.ContentLeft + cells.CellOf(from) * metrics.ColumnWidth;
             var top = metrics.ContentTop + line * metrics.LineHeight;
             var width = (cells.CellOf(to) - cells.CellOf(from)) * metrics.ColumnWidth;

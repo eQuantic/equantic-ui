@@ -1,4 +1,4 @@
-import { FieldRule, FormField } from "../runtime-exports";
+import { $eq, FieldRule, FormField } from "../runtime-exports";
 
 export class Rules {
     static required(message: string = 'This field is required.') {
@@ -25,7 +25,8 @@ export class Rules {
     }
 
     static range(min: number, max: number, message: string | null = null) {
-        let number: any; return new FieldRule(message ?? `Enter a number between ${min} and ${max}.`, (value: string) => {
+        let number: any;
+        return new FieldRule(message ?? `Enter a number between ${$eq.num.double(min)} and ${$eq.num.double(max)}.`, (value: string) => {
             if (value.length === 0) return true;
             return (number = parseFloat(value), !isNaN(number)) && number >= min && number <= max;
         });

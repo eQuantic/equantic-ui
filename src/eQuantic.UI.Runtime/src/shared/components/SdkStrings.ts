@@ -53,6 +53,14 @@ export class SdkStrings {
         return $eq.str("SdkResources", "NextMatch");
     }
 
+    static get closeFind(): string {
+        return $eq.str("SdkResources", "CloseFind");
+    }
+
+    static get copyCode(): string {
+        return $eq.str("SdkResources", "CopyCode");
+    }
+
     static get previousMonth(): string {
         return $eq.str("SdkResources", "PreviousMonth");
     }

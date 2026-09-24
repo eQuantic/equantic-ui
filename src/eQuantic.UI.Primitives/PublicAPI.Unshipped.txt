@@ -499,3 +499,4 @@ eQuantic.UI.Primitives.ICodeSurfaceModel.FocusChanged(bool focused) -> void
 eQuantic.UI.Primitives.KeyboardConvention
 eQuantic.UI.Primitives.KeyboardConvention.Standard = 0 -> eQuantic.UI.Primitives.KeyboardConvention
 eQuantic.UI.Primitives.KeyboardConvention.Apple = 1 -> eQuantic.UI.Primitives.KeyboardConvention
+eQuantic.UI.Primitives.ICodeSurfaceModel.FocusVersion.get -> int

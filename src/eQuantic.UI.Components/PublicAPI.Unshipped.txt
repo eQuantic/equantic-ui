@@ -33,3 +33,10 @@ eQuantic.UI.Components.CodeBlock.SelectionBands.get -> System.Collections.Generi
 eQuantic.UI.Components.CodeBlock.SelectionBands.init -> void
 const eQuantic.UI.Components.CodeBlock.SelectionAlpha = 0.28 -> float
 static eQuantic.UI.Components.SdkStrings.CodeEditor.get -> string!
+eQuantic.UI.Components.CodeEditor.Height.get -> eQuantic.UI.Primitives.SizeValue
+eQuantic.UI.Components.CodeEditor.Height.set -> void
+static eQuantic.UI.Components.SdkStrings.CloseFind.get -> string!
+static eQuantic.UI.Components.SdkStrings.CopyCode.get -> string!
+static eQuantic.UI.Components.CodeBlock.Corner(string? caption, System.Action? onCopy, bool inverse, eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Primitives.VisualNode?
+eQuantic.UI.Components.CodeBlock.WidestLine.init -> void
+eQuantic.UI.Components.CodeBlock.WidestLine.get -> int?

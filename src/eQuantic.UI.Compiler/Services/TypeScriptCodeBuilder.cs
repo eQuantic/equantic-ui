@@ -29,6 +29,19 @@ public class TypeScriptCodeBuilder
 
     public List<SourceMapping> GetMappings() => _mappings;
 
+    /// <summary>Moves every mapping down by <paramref name="lines"/>: the text this builder wrote
+    /// lands below the lines a module puts above it (its imports, the classes written before it).</summary>
+    public void ShiftMappings(int lines)
+    {
+        for (var i = 0; i < _mappings.Count; i++)
+            _mappings[i] = _mappings[i] with { GeneratedLine = _mappings[i].GeneratedLine + lines };
+    }
+
+    /// <summary>Takes another builder's mappings, moved down by <paramref name="lines"/>: a class
+    /// written by that builder and placed in this one's module.</summary>
+    public void AddMappings(IEnumerable<SourceMapping> mappings, int lines) =>
+        _mappings.AddRange(mappings.Select(mapping => mapping with { GeneratedLine = mapping.GeneratedLine + lines }));
+
     /// <summary>The callback form: the class's members are collected into a <see cref="JsClass"/>
     /// and written through the one class writer below.</summary>
     public void Class(string name, string? baseClass, Action<ClassBuilder> buildAction, IEnumerable<string>? typeParameters = null, SyntaxNode? sourceNode = null, bool export = true, bool isAbstract = false)
@@ -67,9 +80,13 @@ public class TypeScriptCodeBuilder
                 if (written > 0 && (member.HasBody || lastHadBody)) Write("");
                 written++;
                 lastHadBody = member.HasBody;
-                // The body's source maps to the line it starts on, one level in.
-                if (member.Origin?.Body is { } body) RecordMapping(body, member.Origin.BodyLine, 1);
-                Line(JsMemberWriter.Write(member, Layout), member.Origin?.Member);
+                // Each statement of the body maps to the line it lands on (#293). A body whose
+                // statements carry no origin maps as a whole to the line it starts on, one level in.
+                var marks = new List<JsLineMark>();
+                var text = JsMemberWriter.WriteMarked(member, Layout, marks);
+                if (marks.Count == 0 && member.Origin?.Body is { } body) RecordMapping(body, member.Origin.BodyLine, 1);
+                foreach (var mark in marks) RecordMapping(mark.Origin, mark.Line, columnOffset: mark.Column);
+                Line(text, member.Origin?.Member);
             }
         }
         Write("");
@@ -104,14 +121,16 @@ public class TypeScriptCodeBuilder
     /// <param name="lineOffset">Lines BELOW the current one the mapping points at — a member
     /// body's first statement, written as part of the member's own text.</param>
     /// <param name="indentOffset">Levels deeper than the current indentation that line sits at.</param>
-    private void RecordMapping(SyntaxNode node, int lineOffset = 0, int indentOffset = 0)
+    /// <param name="columnOffset">Characters further along that line, past the indentation: where a
+    /// statement begins inside a member's text.</param>
+    private void RecordMapping(SyntaxNode node, int lineOffset = 0, int indentOffset = 0, int columnOffset = 0)
     {
         var pos = node.GetLocation().GetLineSpan();
         _mappings.Add(new SourceMapping
         {
             GeneratedLine = _writer.CurrentLine + lineOffset,
             // 0-based column where the emitted line's content begins (after indentation).
-            GeneratedColumn = (_writer.IndentLevel + indentOffset) * 4,
+            GeneratedColumn = (_writer.IndentLevel + indentOffset) * 4 + columnOffset,
             // Roslyn line/character positions are already 0-based, matching the source-map spec.
             SourceLine = pos.StartLinePosition.Line,
             SourceColumn = pos.StartLinePosition.Character,

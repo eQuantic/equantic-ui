@@ -51,10 +51,6 @@ export function checked(
 }
 
 /**
- * A C# `float` as text: the SHORTEST decimal that reads back as the same single-precision value —
- * `0.1f + 0.2f` prints "0.3", not the 0.30000001192092896 a double would show for the same bits.
- */
-/**
  * .NET's `Math.DivRem` for an integer that is a plain number here: the truncated quotient and the
  * remainder — or the throw .NET throws. A zero divisor is a DivideByZeroException where JavaScript
  * would answer Infinity and NaN; `int.MinValue / -1` overflows a 32-bit int and throws; a narrower
@@ -155,17 +151,6 @@ export function singleFromLong(value: bigint): number {
   if (rest > half || (rest === half && (mantissa & 1n) === 1n)) mantissa += 1n;
   const result = Number(mantissa) * 2 ** Number(shift);
   return negative ? -result : result;
-}
-
-export function single(value: number): string {
-  if (!Number.isFinite(value)) return String(value).replace('Infinity', '∞');
-  value = Math.fround(value);
-  if (Object.is(value, -0) || value === 0) return '0';
-  for (let digits = 1; digits <= 9; digits++) {
-    const candidate = Number(value.toPrecision(digits));
-    if (Math.fround(candidate) === value) return String(candidate);
-  }
-  return String(value);
 }
 
 /**

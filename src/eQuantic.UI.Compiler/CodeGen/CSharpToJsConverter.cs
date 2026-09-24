@@ -515,6 +515,24 @@ public class CSharpToJsConverter
         return sb.Append('"').ToString();
     }
 
+    /// <summary>
+    /// <paramref name="convert"/> run at the depth of a block's statements: where a member's
+    /// expression body sits once it is the one statement of the member's block, so what it lays
+    /// out (a lambda's block, say) indents as it would inside a block body.
+    /// </summary>
+    public T InBlock<T>(Func<T> convert)
+    {
+        _context.Depth++;
+        try
+        {
+            return convert();
+        }
+        finally
+        {
+            _context.Depth--;
+        }
+    }
+
     /// <summary>The block as text, laid out at the current depth — what a strategy still
     /// producing text splices for a nested body.</summary>
     public string ConvertBlock(BlockSyntax block) =>
@@ -551,6 +569,8 @@ public class CSharpToJsConverter
     /// try whose finally disposes the resource — also when the body throws or returns — and
     /// several in one block nest, each disposing in reverse order of declaration. Emitted as a
     /// bare const (which is what it was for a long time), the resource was simply never disposed.
+    /// The try is the declaration's own lowering, so its lines map to it (#293): the dispose that
+    /// throws names the <c>using</c>, not the last statement of the scope above it.
     /// </summary>
     private List<JsStatement> WithUsingDeclarations(IReadOnlyList<StatementSyntax> statements, int from)
     {
@@ -571,7 +591,7 @@ public class CSharpToJsConverter
             var disposes = usingDecl.Declaration.Variables.Reverse()
                 .Select(variable => Strategies.Statements.UsingLowering.Dispose(variable.Identifier.Text.ToJsIdentifier(), isAsync))
                 .ToList();
-            result.Add(JsStatement.Try(JsStatement.Block(rest), Array.Empty<JsCatch>(), JsStatement.Block(disposes)));
+            result.Add(JsStatement.Try(JsStatement.Block(rest), Array.Empty<JsCatch>(), JsStatement.Block(disposes)) with { Origin = usingDecl });
             return result;
         }
         return result;
@@ -581,13 +601,16 @@ public class CSharpToJsConverter
     public string ConvertStatement(StatementSyntax stmt) =>
         JsStatementWriter.Write(ConvertStatementIr(stmt), _context.Layout, _context.Depth);
 
-    /// <summary>The statement as IR — every statement strategy builds one.</summary>
+    /// <summary>The statement as IR — every statement strategy builds one — carrying the C# it
+    /// came from, so the writer can map the line it lands on back to it (#293). A block is left
+    /// unmarked: its statements carry their own origins, and its brace is no line to stop on.</summary>
     public JsStatement ConvertStatementIr(StatementSyntax stmt)
     {
         var strategy = _statementRegistry.FindStrategy(stmt, _context);
         if (strategy != null)
         {
-            return strategy.Convert(stmt, _context);
+            var converted = strategy.Convert(stmt, _context);
+            return stmt is BlockSyntax || converted.Origin is not null ? converted : converted with { Origin = stmt };
         }
 
         if (stmt is BlockSyntax block)

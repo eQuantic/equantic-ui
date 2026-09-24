@@ -124,7 +124,7 @@ public class CodeViewModelTests
         var editor = At("a\u4E2Db", 0, 0);
         editor.Selection = new CodeRange(new CodePosition(0, 1), new CodePosition(0, 2));
 
-        var band = editor.SelectionBands.Should().ContainSingle().Subject;
+        var band = editor.SelectionBandsIn(0, editor.Document.LineCount - 1).Should().ContainSingle().Subject;
         band.X.Should().Be(8);
         band.Width.Should().Be(16);
     }
@@ -208,5 +208,54 @@ public class CodeViewModelTests
         editor.Selection = new CodeRange(new CodePosition(0, 3), new CodePosition(0, 1));
         editor.Selection.Should().Be(new CodeRange(new CodePosition(0, 3), new CodePosition(0, 0)),
             "the range takes in the whole emoji, and keeps its direction");
+    }
+
+    /// <summary>
+    /// The widest line follows every edit without measuring the file again, and answers what
+    /// measuring it would: over random edits of random documents, typing, deleting, breaking and
+    /// joining lines, pasting several, undoing and redoing, and taking the widest line away. Undo
+    /// and redo bring the colours up to date the same way, and they must match a fresh highlighter.
+    /// </summary>
+    [Fact]
+    public void TheWidestLineFollowsEveryEdit()
+    {
+        var random = new Random(2026_09_24);
+        for (var round = 0; round < 200; round++)
+        {
+            var text = string.Join("\n", Enumerable.Range(0, random.Next(1, 12))
+                .Select(_ => new string('x', random.Next(0, 30))));
+            var editor = new CodeEditorController(text, CodeLanguages.For("csharp"));
+            _ = editor.WidestLine;   // from here on the widths are kept, and spliced
+            for (var step = 0; step < 20; step++)
+            {
+                editor.Selection = new CodeRange(Anywhere(random, editor.Document), Anywhere(random, editor.Document));
+                switch (random.Next(6))
+                {
+                    case 0: editor.HandleText(new string('y', random.Next(1, 40))); break;
+                    case 1: editor.DeleteBackward(); break;
+                    case 2: editor.InsertNewLine(); break;
+                    case 3:
+                        editor.Paste(string.Join("\n", Enumerable.Range(0, random.Next(1, 4))
+                            .Select(_ => new string('z', random.Next(0, 50)))));
+                        break;
+                    case 4: editor.Undo(); break;
+                    default: editor.Redo(); break;
+                }
+                var measured = Enumerable.Range(0, editor.Document.LineCount)
+                    .Max(line => CodeLineCells.WidthOf(editor.Document.Line(line), editor.Rules.IndentWidth));
+                editor.WidestLine.Should().Be(measured, $"round {round}, step {step}");
+                // …and the colours follow the same lines, undo and redo included.
+                var fresh = new CodeHighlighter(editor.Highlighter.Language);
+                for (var line = 0; line < editor.Document.LineCount; line++)
+                    editor.Highlighter.TokensFor(editor.Document, line).Should().Equal(
+                        fresh.TokensFor(editor.Document, line), $"round {round}, step {step}, line {line}");
+            }
+        }
+
+        static CodePosition Anywhere(Random random, CodeDocument document)
+        {
+            var line = random.Next(0, document.LineCount);
+            return new CodePosition(line, random.Next(0, document.Line(line).Length + 1));
+        }
     }
 }

@@ -2,18 +2,36 @@ import { $eq, CodeDirectionValue, CodeDocument, CodeEdit, CodeGrid, CodeHighligh
 
 export class CodeEditorController {
     constructor(text: string = '', language: any = null, props?: any) {
-        this._selection = new CodeRange(); this._desiredCell = -1; this._cells = {}; this._dragging = false; this._revealVersion = 0; this._composition = null; this._compositionReplaced = ''; this._compositionSelection = new CodeRange(); this._wholeLineCopy = null; this._document = CodeDocument.fromText(text);
+        this._selection = new CodeRange();
+        this._desiredCell = -1;
+        this._cells = {};
+        this._widths = null;
+        this._widthsTabs = 0;
+        this._widest = 0;
+        this._dragging = false;
+        this._revealVersion = 0;
+        this._focusVersion = 0;
+        this._composition = null;
+        this._compositionReplaced = '';
+        this._compositionSelection = new CodeRange();
+        this._wholeLineCopy = null;
+        this._document = CodeDocument.fromText(text);
         this._selection = new CodeRange(CodePosition.start);
-        this.highlighter = new CodeHighlighter(language ?? CodeLanguages.plainText); if (props && typeof props === 'object') Object.assign(this, props);
+        this.highlighter = new CodeHighlighter(language ?? CodeLanguages.plainText);
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     _document: CodeDocument;
     _selection: CodeRange;
     _desiredCell: number;
     _cells: Record<string, any>;
+    _widths: number[] | null;
+    _widthsTabs: number;
+    _widest: number;
     static caretWidth: number = 2;
     _dragging: boolean;
     _revealVersion: number;
+    _focusVersion: number;
     _composition: CodeRange | null;
     _compositionReplaced: string;
     _compositionSelection: CodeRange;
@@ -25,6 +43,7 @@ export class CodeEditorController {
 
     set document(value: CodeDocument) {
         this._document = value;
+        this._widths = null;
         this._selection = new CodeRange(this._document.clamp(this._selection.focus));
         this._composition = null;
         this.highlighter.invalidate();
@@ -54,24 +73,19 @@ export class CodeEditorController {
 
     readOnly: boolean = false;
     tabMovesFocus: boolean = false;
-    grid: CodeGrid = CodeGrid.default;
 
-    get selectionBands(): Rect[] {
-        let bands: Rect[] = [];
-        if (this._selection.isEmpty) return bands;
-        let start = this._selection.start;
-        let end = this._selection.end;
-        for (let line = start.line; line <= end.line; line++) {
-            let from = line === start.line ? start.column : 0;
-            let cells = this.cellsOf(line);
-            let fromCell = cells.cellOf(from);
-            let toCell = line === end.line ? cells.cellOf(end.column) : cells.width + 1;
-            if (toCell <= fromCell) continue;
-            let at = this.grid.pointOf(line, fromCell);
-            bands.push(new Rect(at.x, at.y, Math.fround(Math.fround(toCell - fromCell) * this.grid.cell.width), this.grid.cell.height));
+    get widestLine(): number {
+        let tabSize = this.rules.indentWidth;
+        if (this._widths == null || this._widthsTabs !== tabSize) {
+            this._widths = [];
+            for (let line = 0; line < this._document.lineCount; line++) this._widths.push(CodeLineCells.widthOf(this._document.line(line), tabSize));
+            this._widthsTabs = tabSize;
+            this._widest = CodeEditorController.widest(this._widths);
         }
-        return bands;
+        return this._widest;
     }
+
+    grid: CodeGrid = CodeGrid.default;
 
     get carets(): Rect[] {
         return [this.caretRect(this.caret)];
@@ -79,6 +93,10 @@ export class CodeEditorController {
 
     get revealVersion(): number {
         return this._revealVersion;
+    }
+
+    get focusVersion(): number {
+        return this._focusVersion;
     }
 
     get composition(): CodeRange | null {
@@ -101,8 +119,44 @@ export class CodeEditorController {
         this.selectionChanged?.(next);
     }
 
+    widthsChanged(line: number, linesInserted: number, linesRemoved: number) {
+        if (this._widths == null) return;
+        let old = this._widths;
+        let gone = Math.min(linesRemoved + 1, old.length - line);
+        let lostTheWidest = false;
+        for (let i = line; i < line + gone; i++) if (old[i] >= this._widest) lostTheWidest = true;
+        if (linesInserted === linesRemoved && gone === linesRemoved + 1) {
+            let widestHere = 0;
+            for (let i = line; i <= line + linesInserted; i++) {
+                let width = CodeLineCells.widthOf(this._document.line(i), this._widthsTabs);
+                old[i] = width;
+                if (width > widestHere) widestHere = width;
+            }
+            if (lostTheWidest && widestHere < this._widest) this._widest = CodeEditorController.widest(old); else if (widestHere > this._widest) this._widest = widestHere;
+            return;
+        }
+        let next: number[] = [];
+        for (let i = 0; i < line; i++) next.push(old[i]);
+        let measuredWidest = 0;
+        for (let i = line; i <= line + linesInserted; i++) {
+            let width = CodeLineCells.widthOf(this._document.line(i), this._widthsTabs);
+            if (width > measuredWidest) measuredWidest = width;
+            next.push(width);
+        }
+        for (let i = line + gone; i < old.length; i++) next.push(old[i]);
+        this._widths = next;
+        if (lostTheWidest) this._widest = CodeEditorController.widest(next); else if (measuredWidest > this._widest) this._widest = measuredWidest;
+    }
+
+    static widest(widths: number[]) {
+        let widest = 0;
+        for (const width of widths) if (width > widest) widest = width;
+        return widest;
+    }
+
     cellsOf(line: number) {
-        let cells: any; let text = this._document.line(line);
+        let cells: any;
+        let text = this._document.line(line);
         let tabSize = this.rules.indentWidth;
         if ((Object.prototype.hasOwnProperty.call(this._cells, line) ? ((cells = this._cells[line]), true) : false) && cells.text === text && cells.tabSize === tabSize) return cells;
         cells = new CodeLineCells(text, tabSize);
@@ -130,6 +184,27 @@ export class CodeEditorController {
         if (here.column < this._document.line(here.line).length) return $eq.withPatch(here, { column: this.cellsOf(here.line).next(here.column) });
         if (here.line === this._document.lineCount - 1) return here;
         return new CodePosition(here.line + 1, 0);
+    }
+
+    selectionBandsIn(first: number, last: number) {
+        let bands: Rect[] = [];
+        if (this._selection.isEmpty) return bands;
+        let start = this._selection.start;
+        let end = this._selection.end;
+        for (let line = Math.max(start.line, first); line <= Math.min(end.line, last); line++) {
+            let from = line === start.line ? start.column : 0;
+            let cells = this.cellsOf(line);
+            let fromCell = cells.cellOf(from);
+            let toCell = line === end.line ? cells.cellOf(end.column) : cells.width + 1;
+            if (toCell <= fromCell) continue;
+            let at = this.grid.pointOf(line, fromCell);
+            bands.push(new Rect(at.x, at.y, Math.fround(Math.fround(toCell - fromCell) * this.grid.cell.width), this.grid.cell.height));
+        }
+        return bands;
+    }
+
+    requestFocus() {
+        return this._focusVersion++;
     }
 
     caretRect(position: CodePosition) {
@@ -195,7 +270,8 @@ export class CodeEditorController {
     }
 
     replaceUnrecorded(range: CodeRange, text: string) {
-        let caret: any; let ordered = new CodeRange(this._document.clamp(range.start), this._document.clamp(range.end));
+        let caret: any;
+        let ordered = new CodeRange(this._document.clamp(range.start), this._document.clamp(range.end));
         let removed = this._document.textIn(ordered);
         let before = this._selection;
         let next = ($o => (caret = $o.caret, $o.$))(this._document.replace(ordered, text));
@@ -205,6 +281,7 @@ export class CodeEditorController {
         this._document = next;
         this._selection = new CodeRange(caret);
         this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
+        this.widthsChanged(line, linesInserted, linesRemoved);
         this._revealVersion++;
         this._desiredCell = -1;
         let edit = new CodeEdit(ordered, removed, text, before, this._selection, false);
@@ -251,7 +328,8 @@ export class CodeEditorController {
     }
 
     edit(range: CodeRange, text: string, typed: boolean) {
-        let caret: any; if (this.readOnly) return false;
+        let caret: any;
+        if (this.readOnly) return false;
         let ordered = new CodeRange(this._document.clamp(range.start), this._document.clamp(range.end));
         let removed = this._document.textIn(ordered);
         if (removed.length === 0 && text.length === 0) return false;
@@ -266,6 +344,7 @@ export class CodeEditorController {
         let edit = new CodeEdit(ordered, removed, text, before, this._selection, typed);
         this.history.record(edit);
         this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
+        this.widthsChanged(line, linesInserted, linesRemoved);
         this.changed?.(edit);
         this.selectionChanged?.(this._selection);
         this._desiredCell = -1;
@@ -608,30 +687,40 @@ export class CodeEditorController {
     }
 
     undo() {
-        let selection: any; if (this.readOnly) return false;
+        let selection: any, replaced: any, written: any;
+        if (this.readOnly) return false;
         this.endComposition();
-        let next = ($o => (selection = $o.selection, $o.$))(this.history.undo(this._document));
+        let next = ($o => (selection = $o.selection, replaced = $o.replaced, written = $o.written, $o.$))(this.history.undo(this._document));
         if (next == null) return false;
         this._document = next;
         this._revealVersion++;
         this._selection = new CodeRange(next.clamp(selection.anchor), next.clamp(selection.focus));
         this._desiredCell = -1;
-        this.highlighter.invalidate();
+        let line = replaced.start.line;
+        let linesInserted = written.end.line - written.start.line;
+        let linesRemoved = replaced.end.line - replaced.start.line;
+        this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
+        this.widthsChanged(line, linesInserted, linesRemoved);
         this.changed?.(null);
         this.selectionChanged?.(this._selection);
         return true;
     }
 
     redo() {
-        let selection: any; if (this.readOnly) return false;
+        let selection: any, replaced: any, written: any;
+        if (this.readOnly) return false;
         this.endComposition();
-        let next = ($o => (selection = $o.selection, $o.$))(this.history.redo(this._document));
+        let next = ($o => (selection = $o.selection, replaced = $o.replaced, written = $o.written, $o.$))(this.history.redo(this._document));
         if (next == null) return false;
         this._document = next;
         this._revealVersion++;
         this._selection = new CodeRange(next.clamp(selection.anchor), next.clamp(selection.focus));
         this._desiredCell = -1;
-        this.highlighter.invalidate();
+        let line = replaced.start.line;
+        let linesInserted = written.end.line - written.start.line;
+        let linesRemoved = replaced.end.line - replaced.start.line;
+        this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
+        this.widthsChanged(line, linesInserted, linesRemoved);
         this.changed?.(null);
         this.selectionChanged?.(this._selection);
         return true;
@@ -654,14 +743,25 @@ export class CodeEditorController {
     }
 
     findNext(needle: string, matchCase: boolean = false, backward: boolean = false) {
-        let matches = this.findAll(needle, matchCase);
+        return this.nextOf(this.findAll(needle, matchCase), backward);
+    }
+
+    nextOf(matches: CodeRange[], backward: boolean = false) {
         if (matches.length === 0) return null;
+        let low = 0;
+        let high = matches.length;
         if (backward) {
-            for (let i = matches.length - 1; i >= 0; i--) if (CodePosition.opLessOrEqual(matches[i].end, this._selection.start)) return matches[i];
-            return matches[matches.length - 1];
+            while (low < high) {
+                let middle = Math.trunc((low + high) / 2);
+                if (CodePosition.opLessOrEqual(matches[middle].end, this._selection.start)) low = middle + 1; else high = middle;
+            }
+            return low > 0 ? matches[low - 1] : matches[matches.length - 1];
         }
-        for (const match of matches) if (CodePosition.opGreaterOrEqual(match.start, this._selection.end)) return match;
-        return matches[0];
+        while (low < high) {
+            let middle = Math.trunc((low + high) / 2);
+            if (CodePosition.opLessThan(matches[middle].start, this._selection.end)) low = middle + 1; else high = middle;
+        }
+        return low < matches.length ? matches[low] : matches[0];
     }
 
     bracketAtCaret() {

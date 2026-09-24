@@ -50,6 +50,12 @@ public class ComponentParityFixtureTests
         ("column-of-text", Stack(Space.S3, new Text("one", TypeRole.BodyM, Theme.TextPrimary),
                                            new Text("two", TypeRole.Label, Theme.TextPrimary)), NoPresses),
         ("button-in-column", Stack(Space.S2, new Button("A"), new Button("B", Variant.Outline)), NoPresses),
+        // A CAP with no decided height, over a scroller: the box has to lower as a column on both
+        // sides, or the scroller grows with its content and nothing scrolls (defect 4 of
+        // docs/CODE-EDITOR-PLAN.md). Hydration adopts a node by its class hashes.
+        ("capped-scroller", new Box(new BoxStyle { Width = SizeValue.Fill, MaxHeight = 120 },
+            new ScrollView(Stack(Space.S2, new Text("one", TypeRole.BodyM, Theme.TextPrimary),
+                new Text("two", TypeRole.BodyM, Theme.TextPrimary)))), NoPresses),
 
         // A BROAD sweep of the library. Every one of these has a twin whose constructor mirrors
         // the C# one parameter for parameter, so the same arguments build the same component on

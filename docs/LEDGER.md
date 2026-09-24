@@ -581,6 +581,50 @@ record of a release, the wiki's Upgrading page is the distillate.
   answered 2^63 for `long.MinValue / -1` ([#333](https://github.com/eQuantic/equantic-ui/issues/333)).
   A divisor that can be zero, or -1 beside `MinValue`, goes through the runtime's check, the compound
   and lifted forms included; a constant divisor other than 0 and -1 keeps the bare operator.
+- **2026-09-23 · A number reads and writes as .NET's**: a double and a float wrote their text through
+  JavaScript's `String()`, which keeps fixed notation up to 1e21, spells `1e+21` and drops the sign
+  of -0, where .NET writes `1E+17` and `-0` ([#336](https://github.com/eQuantic/equantic-ui/issues/336));
+  and a decimal read from text or from `Convert` was a JavaScript number, `parseFloat`'s, with none
+  of the methods decimal arithmetic calls next ([#358](https://github.com/eQuantic/equantic-ui/issues/358)).
+  The runtime now writes .NET's notation from the shortest digits, reads a number's text by .NET's
+  own grammar under the `NumberStyles` a call names, rounds it into a decimal as .NET's parser does,
+  and converts a double or a float by the steps of .NET's `DecCalc`; the runtime spec is generated
+  from what .NET printed, and the conformance suites run every form on both sides. Reading a number
+  says which culture it reads in, as formatting already did: `CultureInfo.InvariantCulture`,
+  recognised by the property a provider binds to and not by its name, crosses exactly; no provider
+  is EQ2110, and any other is EQ2108, since the browser has no parser for another culture's text.
+- **2026-09-24 · A thrown error's frame names its C# statement**: C# mapped member by member in the
+  browser, so a frame or a breakpoint anywhere in a body landed on its method's first line
+  ([#293](https://github.com/eQuantic/equantic-ui/issues/293)). A statement now carries the C# it
+  came from, the statement writer marks the line it lands on, and the source map carries a segment
+  per statement. Method and constructor bodies reach the writer as IR instead of text, which is what
+  dropped the origins, and eqc's bundling moved into the compiler library as `ModuleBundler`, so a
+  smoke test bundles, runs and throws through the same pipeline and reads each frame back to its
+  C# line. A line a strategy lowers belongs to the statement that produced it: a pattern switch's
+  arm maps to its case, a `using`'s dispose to the `using`, and a `do`'s condition to itself.
+
+- **2026-09-24 · The code editor is a component**: slice 1c of
+  [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#375](https://github.com/eQuantic/equantic-ui/pull/375)).
+  An IDE holds the editor in a pane, and without a height cap there was no viewport, so every
+  keystroke built every line: `Height` (Fill or a fixed height) bounds it now, and it builds what is
+  in view. On the web a capped box lays its child out as a column, so `MaxHeight` scrolls (the
+  scroller grew to 2827px inside 520), and a scroll view anchors nothing, since the browser's scroll
+  anchoring moved the offset whenever the line window swapped rows and slid a revealed match back
+  out of view. The find bar is a layer over code that keeps its place in the tree (opening it made
+  the surface a new one to every host: the scroll went back to the top and Photon's keyboard pointed
+  at nothing), its field takes the keyboard when it appears, Enter walks the matches and keeps the
+  field, Escape closes it and gives the keyboard back through a request the model carries and both
+  hosts honour (`RequestFocus`, `FocusVersion`), and the app hears a move as a move and an edit as an
+  edit. A build draws and measures the lines in view only (the marks, the selection's bands, the
+  matches of a search, found once per search, and the widest line, once per document), where a
+  select-all with a search on built 8001 boxes a frame over 4000 lines and a scroll step over 50,000
+  took 81 ms (3 now). An editor that stops being bounded lets its window go, and on the web a
+  viewport is measured once the render is written, and again when it resizes with no render at all:
+  a Fill editor in a pane that grew kept the rows it had built for the old height. On the way:
+  Photon honoured a field's `Autofocus` once per path for the life of a window and never a code
+  surface's, Enter left a field on Photon and stayed on the web (it stays on both), a key an app's
+  shortcut took still reached the editor on the web, a code block's corner lay over its whole first
+  line, and seven tests asserted nothing when their value was null.
 
 ## Retired documents
 
