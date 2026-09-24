@@ -210,7 +210,11 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
             if (dtResult != null) return JsExpr.Opaque(dtResult);
         }
 
-        // Records, structs and value tuples compare by VALUE in C# (not reference). Route ==/!= to the
+        // Two value tuples compare by their ELEMENTS' own operators, which is not their Equals: a NaN
+        // element is unequal to itself, an array element compares by reference. See TupleEquality.
+        if (TupleEquality.Lower(binary, op, leftIr, rightIr, context) is { } tuples) return tuples;
+
+        // Records and structs compare by VALUE in C# (not reference). Route ==/!= to the
         // structural helper. (Null comparisons fall through to the loose ==/!= below — correct, since
         // `record == null` is a plain null check.)
         if ((op == "==" || op == "!=") && left != "null" && right != "null"

@@ -22,8 +22,11 @@ public class IndexFromEndStrategy : IConversionStrategy
             return true;
         }
 
-        // Handle element access with ^n index: array[^1]
-        if (node is ElementAccessExpressionSyntax elementAccess)
+        // Handle element access with ^n index: array[^1]. A dictionary keyed by Index is not one:
+        // `d[^1]` looks the key up (DictionaryEntry), where this counted back from a length a map
+        // does not have.
+        if (node is ElementAccessExpressionSyntax elementAccess
+            && DictionaryEntry.Of(elementAccess, context) is null)
         {
             var arg = elementAccess.ArgumentList.Arguments.FirstOrDefault()?.Expression;
             if (arg is PrefixUnaryExpressionSyntax indexExpr &&

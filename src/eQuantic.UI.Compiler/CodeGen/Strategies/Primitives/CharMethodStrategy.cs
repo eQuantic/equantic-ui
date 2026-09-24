@@ -61,8 +61,12 @@ public class CharMethodStrategy : IExpressionIrStrategy
             "IsNumber" => Test(@"/^\p{N}$/u", c),
             "IsLetter" => Test(@"/^\p{L}$/u", c),
             "IsLetterOrDigit" => Test(@"/^[\p{L}\p{Nd}]$/u", c),
-            // .NET's set, not JavaScript's: `\s` leaves U+0085 NEXT LINE, which .NET counts, and
-            // takes U+FEFF, which it does not. The runtime keeps the one list (utils/white-space).
+            // .NET's white space is the Unicode White_Space property. JavaScript's `\s` is not: it
+            // leaves out NEXT LINE (U+0085) and takes in the byte order mark (U+FEFF), and those
+            // are the whole difference over the BMP, measured on both sides. The runtime keeps the
+            // set in one place (utils/white-space), which Trim and Split read too, as a comparison
+            // per code unit: the code editor's tokenizers ask it of every character, and a pattern
+            // tested there measured about five times slower.
             "IsWhiteSpace" => $"{Eq.IsWhiteSpace}({c})",
             "IsUpper" => Test(@"/^\p{Lu}$/u", c),
             "IsLower" => Test(@"/^\p{Ll}$/u", c),

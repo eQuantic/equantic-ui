@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 
@@ -74,6 +75,14 @@ public class StringStaticStrategy : IConversionStrategy
         
         if (methodName == "Join")
         {
+            if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol
+                {
+                    Parameters: [_, _, { Type.SpecialType: SpecialType.System_Int32 }, { Type.SpecialType: SpecialType.System_Int32 }],
+                } range)
+            {
+                return Call($"{Eq.StringJoinRange}({{0}}, {{1}}, {{2}}, {{3}})", invocation, range, context);
+            }
+
             // Join(separator, values)
             var separator = context.Converter.ConvertExpression(args[0].Expression);
             var values = context.Converter.ConvertExpression(args[1].Expression);
@@ -90,8 +99,7 @@ public class StringStaticStrategy : IConversionStrategy
                 var arg = context.Converter.ConvertExpression(args[0].Expression);
                 return $"[...{arg}].join('')";
             }
-            var concatenated = string.Join(" + ", args.Select(a => context.Converter.ConvertExpression(a.Expression)));
-            return $"({concatenated})";
+            return ConcatCall(invocation, context);
         }
 
         if (methodName == "Format")
@@ -115,6 +123,8 @@ public class StringStaticStrategy : IConversionStrategy
 
         if (methodName == "Compare")
         {
+            if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol compare)
+                return CompareCall(invocation, compare, context);
             if (args.Count < 2) return "0";
             // string.Compare(a, b) -> a.localeCompare(b)
             var first = context.Converter.ConvertExpression(args[0].Expression);
@@ -124,6 +134,13 @@ public class StringStaticStrategy : IConversionStrategy
 
         if (methodName == "Equals")
         {
+            // With a comparison, by the one the call passes, which is a value like any other: read
+            // from its SPELLING, a comparison held in a variable was ordinal, and a null threw.
+            if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { Parameters: [_, _, var comparisonType] } equals
+                && comparisonType.Type.IsNamed("System.StringComparison"))
+            {
+                return Call($"{Eq.StringEquals}({{0}}, {{1}}, {{2}})", invocation, equals, context);
+            }
             if (args.Count < 2) return "false";
             // string.Equals(a, b) -> a === b
             // string.Equals(a, b, StringComparison.OrdinalIgnoreCase) -> a.toLowerCase() === b.toLowerCase()
@@ -229,5 +246,67 @@ public class StringStaticStrategy : IConversionStrategy
                 + ". A translation that asks for an argument the call never passes throws for the "
                 + "readers of that language only.");
         }
+    }
+
+    /// <summary>
+    /// <c>string.Concat</c> of two values or more: each written into the text as .NET writes it
+    /// (<see cref="StringConversion"/>), and the text JOINED. <c>(a + b)</c> added two numbers,
+    /// <c>string.Concat(1, 2)</c> answering 3, and wrote a null as "null" and a bool in lower case.
+    /// </summary>
+    private static string ConcatCall(InvocationExpressionSyntax node, ConversionContext context)
+    {
+        var arguments = node.ArgumentList.Arguments;
+        var parts = arguments
+            .Select(argument => StringConversion.ToDotNetString(argument.Expression,
+                context.Converter.ConvertIr(argument.Expression), context))
+            .ToArray();
+        var template = "''" + string.Concat(Enumerable.Range(0, parts.Length).Select(i => " + {" + i + "}"));
+        if (context.SemanticHelper.GetSymbol(node) is IMethodSymbol method)
+            template = PrimitiveStaticStrategy.BindNamedArguments(template, node, method);
+        return JsExprWriter.Write(JsExpr.Template(template, parts, context.TypeAnnotations));
+    }
+
+    /// <summary>
+    /// <c>string.Compare</c> by the overload C# bound. With no comparison named it is the current
+    /// culture's, case-blind where a bool says so; with a <c>StringComparison</c>, that one; and over
+    /// two RANGES where the call gives indexes and a length, each clamped and checked as .NET checks
+    /// it. A null orders first. <c>localeCompare</c> over the first two arguments answered all of
+    /// them: with a range it compared the first string with an INDEX, and it dropped a case flag and a
+    /// comparison. A culture or <c>CompareOptions</c> passed in has no form this side reads, and is
+    /// refused rather than dropped.
+    /// </summary>
+    private static string CompareCall(InvocationExpressionSyntax node, IMethodSymbol method, ConversionContext context)
+    {
+        var shape = string.Join(",", method.Parameters.Select(parameter => parameter.Type switch
+        {
+            { SpecialType: SpecialType.System_String } => "s",
+            { SpecialType: SpecialType.System_Int32 } => "i",
+            { SpecialType: SpecialType.System_Boolean } => "b",
+            var type when type.IsNamed("System.StringComparison") => "c",
+            _ => "?",
+        }));
+        var template = shape switch
+        {
+            "s,s" => $"{Eq.StringCompare}({{0}}, {{1}}, 'currentCulture')",
+            "s,s,b" => $"{Eq.StringCompare}({{0}}, {{1}}, {{2}} ? 'currentCultureIgnoreCase' : 'currentCulture')",
+            "s,s,c" => $"{Eq.StringCompare}({{0}}, {{1}}, {{2}})",
+            "s,i,s,i,i" => $"{Eq.StringCompareRange}({{0}}, {{1}}, {{2}}, {{3}}, {{4}}, false)",
+            "s,i,s,i,i,b" => $"{Eq.StringCompareRange}({{0}}, {{1}}, {{2}}, {{3}}, {{4}}, {{5}})",
+            "s,i,s,i,i,c" => $"{Eq.StringCompareRangeBy}({{0}}, {{1}}, {{2}}, {{3}}, {{4}}, {{5}})",
+            _ => null,
+        };
+        return template is null
+            ? context.Unhandled(node, "string.Compare with a CultureInfo or CompareOptions")
+            : Call(template, node, method, context);
+    }
+
+    /// <summary>A runtime helper over the call's arguments, each in its PARAMETER's hole and all of
+    /// them evaluated in the order they were written.</summary>
+    private static string Call(string template, InvocationExpressionSyntax node, IMethodSymbol method, ConversionContext context)
+    {
+        context.UsedHelpers.Add(Eq.Import);
+        var parts = node.ArgumentList.Arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToArray();
+        return JsExprWriter.Write(JsExpr.Template(PrimitiveStaticStrategy.BindNamedArguments(template, node, method),
+            parts, context.TypeAnnotations));
     }
 }

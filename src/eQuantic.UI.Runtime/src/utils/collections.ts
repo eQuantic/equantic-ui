@@ -137,7 +137,8 @@ export class ValueMap<K, V> implements Iterable<{ key: K; value: V }> {
     return this.indexOf(key) >= 0;
   }
 
-  /** Indexer read — `undefined` when absent (matching the non-throwing plain-object form). */
+  /** The value for `key`, `undefined` when absent. The indexer's read is `$eq.mapGet`, which throws
+   * for an absent key as .NET does; this is the lookup it and `TryGetValue` ask. */
   get(key: K): V | undefined {
     const i = this.indexOf(key);
     return i >= 0 ? this.entries[i].value : undefined;

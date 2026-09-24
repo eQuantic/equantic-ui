@@ -29,11 +29,13 @@ public class NullCoalescingAssignmentStrategy : IExpressionIrStrategy
         // assignment is: read through the guard, write the result. Writing back a value that was
         // already there is not observable on a plain object, and `??` still short-circuits the
         // right-hand side. The template binds the receiver and key once each.
-        if (assignment.Left is ElementAccessExpressionSyntax { ArgumentList.Arguments.Count: 1 } target
-            && context.SemanticHelper.GetType(target.Expression).IsDictionaryLike(out _))
+        // Parenthesized like every template, which the writer places without fencing: an entry's
+        // write is an assignment on a plain object, and `(d[k] ??= v).Length` read the length of v.
+        if (DictionaryEntry.Of(assignment.Left, context) is { } found)
         {
+            var (target, form) = found;
             context.UsedHelpers.Add(Eq.Import);
-            return JsExpr.Template($"{{0}}[{{1}}] = {Eq.DictGet}({{0}}, {{1}}) ?? {{2}}",
+            return JsExpr.Template($"({form.Write("{0}", "{1}", $"{form.Read("{0}", "{1}")} ?? {{2}}")})",
                 context.Converter.ConvertIr(target.Expression),
                 context.Converter.ConvertIr(target.ArgumentList.Arguments[0].Expression),
                 context.Converter.ConvertIr(assignment.Right));

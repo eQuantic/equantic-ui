@@ -52,10 +52,10 @@ internal static class BoolLogic
         context.UsedHelpers.Add(Eq.Import);
         var right = context.Converter.ConvertIr(assignment.Right);
 
-        if (assignment.Left is ElementAccessExpressionSyntax { ArgumentList.Arguments.Count: 1 } entry
-            && context.SemanticHelper.GetType(entry.Expression).IsDictionaryLike(out _))
+        if (DictionaryEntry.Of(assignment.Left, context) is { } found)
         {
-            return JsExpr.Template($"({{0}}[{{1}}] = {Combine(op, $"{Eq.DictGet}({{0}}, {{1}})", "{2}")})",
+            var (entry, form) = found;
+            return JsExpr.Template($"({form.Write("{0}", "{1}", Combine(op, form.Read("{0}", "{1}"), "{2}"))})",
                 [context.Converter.ConvertIr(entry.Expression),
                  context.Converter.ConvertIr(entry.ArgumentList.Arguments[0].Expression),
                  right],
