@@ -188,16 +188,17 @@ function checkedTicks(ticks: bigint): TimeSpan {
 }
 
 /**
- * A count of units, as .NET 7 and later read one. A whole count — an int, or a long, which is a
- * bigint here (`TimeSpan.FromSeconds(90)` binds .NET 9's long overload) — is exact. A fractional
- * `double` is scaled to TICKS and truncated toward zero: `FromSeconds(0.00001)` is 100 ticks and
- * `FromMilliseconds(0.5)` 5,000, where rounding to the millisecond, as .NET 6 and earlier did,
- * answered 0 and 10,000. Either is checked against the range a span holds.
+ * A count of units, as .NET 7 and later read one. A long, which is a bigint here
+ * (`TimeSpan.FromSeconds(90)` binds .NET 9's long overload), is exact. A number is scaled to TICKS
+ * in doubles and truncated toward zero, as .NET's double overload does: `FromSeconds(0.00001)` is
+ * 100 ticks and `FromMilliseconds(0.5)` 5,000, where rounding to the millisecond, as .NET 6 and
+ * earlier did, answered 0 and 10,000, and an integral double past 2^53 ticks keeps the product's
+ * rounding. The int overloads (`FromDays(int)`, `FromHours(int)`) arrive as numbers too, and every
+ * count inside the range a span holds is exact in doubles for them. Each is checked against that
+ * range.
  */
 function interval(value: bigint | number, ticksPerUnit: bigint): TimeSpan {
-  if (typeof value === 'bigint' || Number.isInteger(value)) {
-    return checkedTicks(BigInt(value) * ticksPerUnit);
-  }
+  if (typeof value === 'bigint') return checkedTicks(value * ticksPerUnit);
   if (Number.isNaN(value)) throw new Error(NOT_A_NUMBER);
   const ticks = value * Number(ticksPerUnit);
   if (ticks > TICKS_BOUND || ticks < -TICKS_BOUND) throw new Error(TOO_LONG);
