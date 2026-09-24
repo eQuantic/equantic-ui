@@ -195,8 +195,13 @@ export function dictGet<V>(map: Record<string, V>, key: unknown): V {
  */
 export function mapGet<K, V>(map: { has(key: K): boolean; get(key: K): V | undefined }, key: K): V {
   if (key === null || key === undefined) throw new Error("Value cannot be null. (Parameter 'key')");
-  if (!map.has(key)) throw new Error(`The given key '${String(key)}' was not present in the dictionary.`);
-  return map.get(key) as V;
+  // One lookup where the key is there: `has` is asked only when `get` answers undefined, which is
+  // either a missing key or a stored undefined, and a value-keyed map finds a key by a linear scan.
+  const value = map.get(key);
+  if (value === undefined && !map.has(key)) {
+    throw new Error(`The given key '${String(key)}' was not present in the dictionary.`);
+  }
+  return value as V;
 }
 
 /**

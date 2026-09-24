@@ -77,10 +77,11 @@ describe('integer division throws where .NET does', () => {
 });
 
 describe('mapGet / mapSet — a runtime map entry, read and written as .NET does', () => {
-  it('reads a key that is there, a stored null included', () => {
-    const m = sortedDictionary<string, string | null>([['a', 'x'], ['n', null]]);
+  it('reads a key that is there, a stored null or undefined included', () => {
+    const m = sortedDictionary<string, string | null | undefined>([['a', 'x'], ['n', null], ['u', undefined]]);
     expect(mapGet(m, 'a')).toBe('x');
     expect(mapGet(m, 'n')).toBeNull();
+    expect(mapGet(m, 'u')).toBeUndefined();
   });
 
   it("throws for a key that is not there, where the map's own get answers undefined", () => {
