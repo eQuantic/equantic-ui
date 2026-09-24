@@ -112,9 +112,15 @@ internal static class OverloadedMethods
     /// nothing of its own. A component's <c>[ServerOnly]</c> method never reaches the twin. An
     /// abstract method does take its name, though the base's twin writes nothing for it: the
     /// subclass that implements it writes it, over any overload the base carried.
+    /// <para>
+    /// An explicit interface implementation (<c>IEnumerable.GetEnumerator()</c> beside the generic
+    /// one) is left out: its name is the interface's, which the author cannot give another, and
+    /// "rename it" would be an answer nobody can follow. How it lowers is its own question.
+    /// </para>
     /// </summary>
     private static bool TakesAName(MethodDeclarationSyntax method, bool isComponent)
     {
+        if (method.ExplicitInterfaceSpecifier is not null) return false;
         if (method.Modifiers.Any(SyntaxKind.PartialKeyword) && method.Body is null && method.ExpressionBody is null)
             return false;
         return !isComponent || !method.AttributeLists.SelectMany(list => list.Attributes)

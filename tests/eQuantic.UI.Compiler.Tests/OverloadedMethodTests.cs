@@ -157,6 +157,26 @@ public class OverloadedMethodTests
         result.Errors.Should().NotContain(error => error.Code == "EQ1007");
     }
 
+    /// <summary>An explicit interface implementation's name is the interface's, which the author
+    /// cannot change, so "give each its own name" is no answer there.</summary>
+    [Fact]
+    public void AnExplicitInterfaceImplementation_IsNotAnOverload()
+    {
+        var result = Compile("""
+            using System.Collections;
+            using System.Collections.Generic;
+
+            public sealed class Bag : IEnumerable<int>
+            {
+                private readonly List<int> _items = [];
+                public IEnumerator<int> GetEnumerator() => _items.GetEnumerator();
+                IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+            }
+            """, "Bag");
+
+        result.Errors.Should().NotContain(error => error.Code == "EQ1007");
+    }
+
     /// <summary>A component's server-only method never reaches its twin, so it names nothing there.</summary>
     [Fact]
     public void AComponentsServerOnlyMethod_TakesNoName()
