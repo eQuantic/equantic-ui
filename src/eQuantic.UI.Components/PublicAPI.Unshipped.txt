@@ -40,3 +40,25 @@ static eQuantic.UI.Components.SdkStrings.CopyCode.get -> string!
 static eQuantic.UI.Components.CodeBlock.Corner(string? caption, System.Action? onCopy, bool inverse, eQuantic.UI.Primitives.IAppTheme! theme) -> eQuantic.UI.Primitives.VisualNode?
 eQuantic.UI.Components.CodeBlock.WidestLine.init -> void
 eQuantic.UI.Components.CodeBlock.WidestLine.get -> int?
+*REMOVED*eQuantic.UI.Components.CodeBlock.Gutter(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+eQuantic.UI.Components.CodeBlock.Rows.get -> eQuantic.UI.Code.CodeRows?
+eQuantic.UI.Components.CodeBlock.Rows.init -> void
+eQuantic.UI.Components.CodeBlock.FillerDocument.get -> eQuantic.UI.Code.CodeDocument?
+eQuantic.UI.Components.CodeBlock.FillerDocument.init -> void
+eQuantic.UI.Components.CodeBlock.FillerHighlighter.get -> eQuantic.UI.Code.CodeHighlighter?
+eQuantic.UI.Components.CodeBlock.FillerHighlighter.init -> void
+eQuantic.UI.Components.CodeBlock.FillerDecorations.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDecoration!>!
+eQuantic.UI.Components.CodeBlock.FillerDecorations.init -> void
+eQuantic.UI.Components.CodeBlock.FillerColor.get -> eQuantic.UI.Primitives.ColorToken?
+eQuantic.UI.Components.CodeBlock.FillerColor.init -> void
+eQuantic.UI.Components.CodeBlock.OnPlaceholderPressed.get -> System.Action<int>?
+eQuantic.UI.Components.CodeBlock.OnPlaceholderPressed.init -> void
+eQuantic.UI.Components.CodeBlock.Gutter(eQuantic.UI.Primitives.ComponentContext! context, System.Func<eQuantic.UI.Code.CodeRow, string?>? numberOf = null) -> eQuantic.UI.Primitives.VisualNode!
+static eQuantic.UI.Components.SdkStrings.LineNumbered(int number) -> string!
+static eQuantic.UI.Components.SdkStrings.UnchangedLines(int count) -> string!
+static eQuantic.UI.Components.SdkStrings.PreviousChange.get -> string!
+static eQuantic.UI.Components.SdkStrings.NextChange.get -> string!
+static eQuantic.UI.Components.SdkStrings.ShowInline.get -> string!
+static eQuantic.UI.Components.SdkStrings.ShowSideBySide.get -> string!
+static eQuantic.UI.Components.SdkStrings.DiffOriginal.get -> string!
+static eQuantic.UI.Components.SdkStrings.DiffModified.get -> string!

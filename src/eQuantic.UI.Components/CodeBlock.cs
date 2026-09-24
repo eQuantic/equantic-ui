@@ -94,6 +94,34 @@ public sealed class CodeBlock : StatelessComponent
     /// </summary>
     public int? WidestLine { get; init; }
 
+    /// <summary>
+    /// The rows the lines are drawn on, when a row is not simply a line (docs/CODE-EDITOR-PLAN.md, the
+    /// shape, §9): the padding that keeps two sides of a diff level, the lines a change removed drawn
+    /// between the lines that replaced them, a run of unchanged lines folded into one row. Null, the
+    /// default, draws a row per line. The window, its spacers, the gutter and every mark count in
+    /// rows, and an editor places its caret on the same map (<c>CodeGrid.Rows</c>).
+    /// </summary>
+    public CodeRows? Rows { get; init; }
+
+    /// <summary>The document a filler row shows its source line from: the original, in an inline
+    /// diff, whose removed lines are drawn between the lines that replaced them.</summary>
+    public CodeDocument? FillerDocument { get; init; }
+
+    /// <summary>What colours <see cref="FillerDocument"/>, kept across builds like
+    /// <see cref="Highlighter"/>. Null has the block make its own.</summary>
+    public CodeHighlighter? FillerHighlighter { get; init; }
+
+    /// <summary>Ranges of <see cref="FillerDocument"/> to mark where its lines are drawn: a removed
+    /// line's wash, and the words it lost.</summary>
+    public IReadOnlyList<CodeDecoration> FillerDecorations { get; init; } = [];
+
+    /// <summary>The wash of a row that shows no line: a diff's padding, the gap a patch left out, a
+    /// folded run. Null leaves them the slab's own.</summary>
+    public ColorToken? FillerColor { get; init; }
+
+    /// <summary>A press on a folded run's row, with the first line it hides: a diff opens it.</summary>
+    public Action<int>? OnPlaceholderPressed { get; init; }
+
     /// <summary>How much of the selection's ink shows — the band sits under the text, so it only has
     /// to be seen, never read through.</summary>
     public const float SelectionAlpha = 0.28f;
@@ -189,16 +217,17 @@ public sealed class CodeBlock : StatelessComponent
         // file. One measurement, one grid, whatever the two contexts happen to say.
         var metrics = Metrics ?? MetricsFor(context, Size, ShowLineNumbers,
             FirstLineNumber + Document.LineCount - 1);
-        var style = metrics.Style;
         var lineHeight = metrics.LineHeight;
 
         var ink = Inverse ? CodeInk : theme.TextPrimary;
         var surface = Inverse ? CodeSlab : theme.SurfaceSubtle;
 
-        // The WINDOW: the lines the viewport can show, plus a margin either side so a scroll of one
-        // line does not have to build anything. Above and below it, one spacer each, so the content
-        // is as tall as the file and the scrollbar tells the truth.
+        // The WINDOW: the rows the viewport can show, plus a margin either side so a scroll of one
+        // row does not have to build anything. Above and below it, one spacer each, so the content
+        // is as tall as the file and the scrollbar tells the truth. A row is a line until Rows says
+        // otherwise, and the lines the window holds are the ones anything is marked on.
         var (first, last) = Window(lineHeight);
+        var (firstLine, lastLine) = LinesIn(first, last);
 
         // The viewport's width, and NEVER less than the longest line's.
         //
@@ -216,17 +245,24 @@ public sealed class CodeBlock : StatelessComponent
         {
             for (var index = 0; index < Document.LineCount; index++)
                 widest = Math.Max(widest, CodeLineCells.WidthOf(Document.Line(index), TabSize));
+            // The lines drawn from another document are code on these rows too.
+            if (FillerDocument is { } fillers)
+            {
+                for (var index = 0; index < fillers.LineCount; index++)
+                    widest = Math.Max(widest, CodeLineCells.WidthOf(fillers.Line(index), TabSize));
+            }
         }
         var codeWidth = widest * metrics.ColumnWidth + metrics.ColumnWidth;
 
+        // The other document's own colouring: a highlighter keeps one document's state, and sharing
+        // one between two would re-colour both from the top on every build.
+        var fillerHighlighter = FillerDocument is null ? null : FillerHighlighter ?? new CodeHighlighter(Language);
         var lines = new Column(gap: 0) { Width = SizeValue.Fill };
         if (first > 0) lines.Add(Spacer.Fixed(first * lineHeight));
-        for (var index = first; index <= last; index++)
-        {
-            lines.Add(LineRow(highlighter, index, style, lineHeight, metrics.ColumnWidth, ink, theme));
-        }
-        if (last < Document.LineCount - 1)
-            lines.Add(Spacer.Fixed((Document.LineCount - 1 - last) * lineHeight));
+        for (var row = first; row <= last; row++)
+            lines.Add(RowView(RowAt(row), highlighter, fillerHighlighter, metrics, ink, theme));
+        if (last < RowCount - 1)
+            lines.Add(Spacer.Fixed((RowCount - 1 - last) * lineHeight));
 
         // The slab's own padding above the first line and below the last, on the LINES rather than on
         // the block: the mark layer beside them starts at the surface's corner, so every rectangle
@@ -245,20 +281,19 @@ public sealed class CodeBlock : StatelessComponent
         // text is painted after all of it and reads over it; only the caret, which must blink, is
         // left to the realizer, which paints it on top.
         var marks = new Stack { Width = SizeValue.Fill };
-        if (ActiveLine is { } activeLine && activeLine >= 0 && activeLine < Document.LineCount)
+        // A changed line's wash is under everything else, so the words that changed, the caret's
+        // line and the selection all read over it.
+        AddMarks(marks, LinePass, metrics, theme, first, last, firstLine, lastLine, width);
+        if (ActiveLine is { } activeLine && activeLine >= 0 && activeLine < Document.LineCount && Shows(activeLine))
         {
             marks.Add(new Positioned(new Box(new BoxStyle
             {
                 Width = width,
                 Height = lineHeight,
                 Background = Inverse ? CodeSlabActive : theme.Colors(Variant.Primary).Subtle,
-            }), top: metrics.ContentTop + activeLine * lineHeight, start: 0));
+            }), top: metrics.ContentTop + RowOf(activeLine) * lineHeight, start: 0));
         }
-        foreach (var decoration in Decorations)
-        {
-            if (decoration.Kind != CodeDecorationKind.Highlight) continue;
-            foreach (var mark in Marks(decoration, metrics, theme, first, last)) marks.Add(mark);
-        }
+        AddMarks(marks, HighlightPass, metrics, theme, first, last, firstLine, lastLine, width);
         if (SelectionBands.Count > 0)
         {
             // …and the selection's bands, one per line, drawn for the lines in the window only: a
@@ -278,11 +313,7 @@ public sealed class CodeBlock : StatelessComponent
                 }), top: rect.Y, start: rect.X));
             }
         }
-        foreach (var decoration in Decorations)
-        {
-            if (decoration.Kind == CodeDecorationKind.Highlight) continue;
-            foreach (var mark in Marks(decoration, metrics, theme, first, last)) marks.Add(mark);
-        }
+        AddMarks(marks, OutlinePass, metrics, theme, first, last, firstLine, lastLine, width);
         if (marks.Children.Count > 0)
         {
             var layered = new Stack { Width = SizeValue.Fill };
@@ -395,10 +426,13 @@ public sealed class CodeBlock : StatelessComponent
     /// </para>
     /// <para>
     /// Built over the same window and the same spacers as the code, so the two columns stay
-    /// line-for-line together however far the file is scrolled.
+    /// row-for-row together however far the file is scrolled. <paramref name="numberOf"/> says what a
+    /// row's number is, when it is not its line's counted from <see cref="FirstLineNumber"/>: a patch
+    /// numbers its lines as the file does, and an inline diff's second column numbers the lines of
+    /// the other document. Null, for a row that shows none.
     /// </para>
     /// </summary>
-    public VisualNode Gutter(ComponentContext context)
+    public VisualNode Gutter(ComponentContext context, Func<CodeRow, string?>? numberOf = null)
     {
         var theme = context.Theme;
         var metrics = Metrics ?? MetricsFor(context, Size, ShowLineNumbers,
@@ -410,15 +444,18 @@ public sealed class CodeBlock : StatelessComponent
         // The code's own top padding, so line 0 starts at the same height in both columns.
         column.Add(Spacer.Fixed(Space.S3));
         if (first > 0) column.Add(Spacer.Fixed(first * lineHeight));
-        for (var index = first; index <= last; index++)
-            column.Add(GutterCell(index, metrics, theme));
-        if (last < Document.LineCount - 1)
-            column.Add(Spacer.Fixed((Document.LineCount - 1 - last) * lineHeight));
+        for (var row = first; row <= last; row++)
+            column.Add(GutterCell(RowAt(row), numberOf, metrics, theme));
+        if (last < RowCount - 1)
+            column.Add(Spacer.Fixed((RowCount - 1 - last) * lineHeight));
         return column;
     }
 
-    private VisualNode GutterCell(int index, CodeMetrics metrics, IAppTheme theme)
+    private VisualNode GutterCell(CodeRow shown, Func<CodeRow, string?>? numberOf, CodeMetrics metrics, IAppTheme theme)
     {
+        var isLine = shown.Kind == CodeRowKind.Line;
+        var index = shown.Line;
+        var label = numberOf is { } number ? number(shown) : isLine ? (FirstLineNumber + index).ToString() : null;
         var numbers = new Row(gap: Space.S1)
         {
             Width = SizeValue.Fill,
@@ -426,7 +463,7 @@ public sealed class CodeBlock : StatelessComponent
             Main = MainAlign.End,
             Cross = CrossAlign.Center,
         };
-        if (MarkerFor(index) is { } mark)
+        if (isLine && MarkerFor(index) is { } mark)
         {
             numbers.Add(new Box(new BoxStyle
             {
@@ -436,13 +473,16 @@ public sealed class CodeBlock : StatelessComponent
                 CornerRadius = new CornerRadii(Radius.Full),
             }));
         }
-        numbers.Add(new Text((FirstLineNumber + index).ToString(), TypeRole.LabelSmall,
-            Inverse ? CodeInkMuted : theme.TextMuted, maxLines: 1)
+        if (label is { } text)
         {
-            Mono = true,
-            Tabular = true,
-            StyleOverride = metrics.Style with { Weight = FontWeight.Regular },
-        });
+            numbers.Add(new Text(text, TypeRole.LabelSmall,
+                Inverse ? CodeInkMuted : theme.TextMuted, maxLines: 1)
+            {
+                Mono = true,
+                Tabular = true,
+                StyleOverride = metrics.Style with { Weight = FontWeight.Regular },
+            });
+        }
 
         // The active line's wash crosses the gutter too: a "you are here" stripe that stops at the
         // first digit reads as a rendering fault rather than as an answer.
@@ -455,27 +495,83 @@ public sealed class CodeBlock : StatelessComponent
             // is inside the thing that scrolls, so it slid away and the digits ended up touching the
             // first character of every line.
             Padding = new EdgeInsets(0, 0, Space.S3, 0),
-            Background = ActiveLine == index
-                ? (Inverse ? CodeSlabActive : theme.Colors(Variant.Primary).Subtle)
+            // A row that shows no line carries the wash its code does, so the stripe crosses both.
+            Background = !isLine ? FillerColor
+                : ActiveLine == index ? (Inverse ? CodeSlabActive : theme.Colors(Variant.Primary).Subtle)
                 : null,
         }, numbers);
 
-        return OnGutterPressed is { } pressed
-            ? new Pressable(cell, () => pressed(index)) { Label = $"Line {FirstLineNumber + index}" }
+        return isLine && OnGutterPressed is { } pressed
+            ? new Pressable(cell, () => pressed(index)) { Label = SdkStrings.LineNumbered(FirstLineNumber + index) }
             : cell;
     }
 
-    private VisualNode LineRow(CodeHighlighter highlighter, int index,
-        TypeStyle style, float lineHeight, float columnWidth, ColorToken ink, IAppTheme theme)
+    /// <summary>What one row draws: a line of the document, a line of the other one, a label, a folded
+    /// run, or nothing.</summary>
+    private VisualNode RowView(CodeRow shown, CodeHighlighter highlighter, CodeHighlighter? fillerHighlighter,
+        CodeMetrics metrics, ColorToken ink, IAppTheme theme)
     {
+        if (shown.Kind == CodeRowKind.Line)
+            return LineRow(Document, highlighter, CellsOf(shown.Line), shown.Line, metrics, ink, theme);
+        if (shown.Kind == CodeRowKind.Placeholder) return PlaceholderRow(shown, metrics, theme);
+        if (shown.SourceLine >= 0 && FillerDocument is { } fillers && fillerHighlighter is { } colours
+            && shown.SourceLine < fillers.LineCount)
+            return LineRow(fillers, colours, FillerCellsOf(shown.SourceLine), shown.SourceLine, metrics, ink, theme);
+        return FillerRow(shown, metrics, theme);
+    }
+
+    /// <summary>A row that belongs to no line: padding, or what a label says is not there. Its wash is
+    /// its own, since nothing is marked under it.</summary>
+    private VisualNode FillerRow(CodeRow shown, CodeMetrics metrics, IAppTheme theme)
+    {
+        var row = new Row(gap: 0) { Width = SizeValue.Fill, Height = metrics.LineHeight, Cross = CrossAlign.Center };
+        if (shown.Label is { } label)
+            row.Add(new Box(new BoxStyle { Padding = EdgeInsets.Symmetric(Space.S3, 0) }, Muted(label, metrics, theme)));
+        return new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Height = metrics.LineHeight,
+            Background = FillerColor,
+        }, row);
+    }
+
+    /// <summary>A folded run, as one row that says what it hides and opens on a press.</summary>
+    private VisualNode PlaceholderRow(CodeRow shown, CodeMetrics metrics, IAppTheme theme)
+    {
+        var row = new Row(gap: 0) { Width = SizeValue.Fill, Height = metrics.LineHeight, Cross = CrossAlign.Center };
+        row.Add(new Box(new BoxStyle { Padding = EdgeInsets.Symmetric(Space.S3, 0) },
+            Muted(shown.Label ?? "⋯", metrics, theme)));
+        VisualNode box = new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Height = metrics.LineHeight,
+            Background = FillerColor,
+        }, row);
+        return OnPlaceholderPressed is { } pressed
+            ? new Pressable(box, () => pressed(shown.Line)) { Label = shown.Label }
+            : box;
+    }
+
+    private VisualNode Muted(string text, CodeMetrics metrics, IAppTheme theme) =>
+        new Text(text, TypeRole.LabelSmall, Inverse ? CodeInkMuted : theme.TextMuted, maxLines: 1)
+        {
+            Mono = true,
+            StyleOverride = metrics.Style,
+        };
+
+    private VisualNode LineRow(CodeDocument document, CodeHighlighter highlighter, CodeLineCells cells, int index,
+        CodeMetrics metrics, ColorToken ink, IAppTheme theme)
+    {
+        var style = metrics.Style;
+        var lineHeight = metrics.LineHeight;
+        var columnWidth = metrics.ColumnWidth;
         var row = new Row(gap: 0) { Width = SizeValue.Fill, Height = lineHeight, Cross = CrossAlign.Center };
 
         // No numbers here: the gutter is a sibling of this whole column now (see Gutter), so a row
         // is CODE, and column zero is where the row begins.
         var code = new Row(gap: 0) { Height = SizeValue.Fill, Cross = CrossAlign.Center };
-        var text = Document.Line(index);
-        var cells = CellsOf(index);
-        var tokens = highlighter.TokensFor(Document, index);
+        var text = document.Line(index);
+        var tokens = highlighter.TokensFor(document, index);
         var at = 0;
         foreach (var token in tokens)
         {
@@ -514,9 +610,39 @@ public sealed class CodeBlock : StatelessComponent
         return cells;
     }
 
-    /// <summary>The first and last line this block builds (see <see cref="WindowOf"/>).</summary>
+    /// <summary>The cells of the other document's lines this build draws, as <see cref="CellsOf"/>.</summary>
+    private readonly Dictionary<int, CodeLineCells> _fillerCells = new();
+
+    private CodeLineCells FillerCellsOf(int line)
+    {
+        if (_fillerCells.TryGetValue(line, out var cells)) return cells;
+        cells = new CodeLineCells(FillerDocument!.Line(line), TabSize);
+        _fillerCells[line] = cells;
+        return cells;
+    }
+
+    /// <summary>How many rows the block draws: a row per line, until <see cref="Rows"/> says otherwise.</summary>
+    private int RowCount => Rows?.RowCount ?? Document.LineCount;
+
+    private CodeRow RowAt(int row) => Rows is { } rows ? rows.RowAt(row) : new CodeRow(CodeRowKind.Line, row);
+
+    private int RowOf(int line) => Rows?.RowOf(line) ?? line;
+
+    /// <summary>Whether <paramref name="line"/> has a row of its own, which a folded one has not.</summary>
+    private bool Shows(int line) => Rows?.IsVisible(line) ?? true;
+
+    /// <summary>The first and last line of the document the rows from <paramref name="first"/> to
+    /// <paramref name="last"/> hold: the lines anything is marked on.</summary>
+    private (int First, int Last) LinesIn(int first, int last)
+    {
+        if (Rows is not { } rows) return (first, last);
+        if (last < first) return (0, -1);
+        return (rows.LineAtRow(first), rows.LineAtRow(last));
+    }
+
+    /// <summary>The first and last row this block builds (see <see cref="WindowOf"/>).</summary>
     private (int First, int Last) Window(float lineHeight) =>
-        WindowOf(Document.LineCount, lineHeight, ViewportOffset, ViewportHeight);
+        WindowOf(RowCount, lineHeight, ViewportOffset, ViewportHeight);
 
     /// <summary>
     /// The first and last line to BUILD, of <paramref name="lineCount"/> lines scrolled
@@ -535,32 +661,113 @@ public sealed class CodeBlock : StatelessComponent
         return (first, Math.Min(lineCount - 1, first + visible));
     }
 
+    /// <summary>The passes of the mark layer, bottom first: a changed line's wash, then the washes of
+    /// ranges (matches, a diff's words), then the outlines and the lines under and through the text.
+    /// The caret's line lies between the first two, and the selection between the last two.</summary>
+    private const int LinePass = 0;
+    private const int HighlightPass = 1;
+    private const int OutlinePass = 2;
+
+    private static int PassOf(CodeDecorationKind kind) => kind switch
+    {
+        CodeDecorationKind.Line => LinePass,
+        CodeDecorationKind.Highlight => HighlightPass,
+        _ => OutlinePass,
+    };
+
+    /// <summary>
+    /// One pass of the mark layer: the decorations of <paramref name="pass"/> on the lines the window
+    /// holds, then the filler decorations of the same pass on the rows the window draws the other
+    /// document's lines on.
+    /// </summary>
+    private void AddMarks(Stack marks, int pass, CodeMetrics metrics, IAppTheme theme, int first, int last,
+        int firstLine, int lastLine, float width)
+    {
+        foreach (var decoration in Decorations)
+        {
+            if (PassOf(decoration.Kind) != pass) continue;
+            foreach (var mark in Marks(decoration, Document, line => CellsOf(line),
+                         line => Shows(line) ? RowOf(line) : -1, firstLine, lastLine, metrics, theme, width))
+                marks.Add(mark);
+        }
+        if (FillerDocument is not { } fillers || FillerDecorations.Count == 0) return;
+
+        // The other document's lines this window draws, and the row each is drawn on.
+        var sources = new List<int>();
+        var rows = new List<int>();
+        var lowest = int.MaxValue;
+        var highest = -1;
+        for (var row = first; row <= last; row++)
+        {
+            var shown = RowAt(row);
+            if (shown.Kind != CodeRowKind.Filler || shown.SourceLine < 0) continue;
+            sources.Add(shown.SourceLine);
+            rows.Add(row);
+            lowest = Math.Min(lowest, shown.SourceLine);
+            highest = Math.Max(highest, shown.SourceLine);
+        }
+        if (sources.Count == 0) return;
+        foreach (var decoration in FillerDecorations)
+        {
+            if (PassOf(decoration.Kind) != pass) continue;
+            foreach (var mark in Marks(decoration, fillers, line => FillerCellsOf(line),
+                         line => RowOfSource(sources, rows, line), lowest, highest, metrics, theme, width))
+                marks.Add(mark);
+        }
+    }
+
+    /// <summary>The row the window draws the other document's <paramref name="line"/> on, or -1.</summary>
+    private static int RowOfSource(List<int> sources, List<int> rows, int line)
+    {
+        for (var i = 0; i < sources.Count; i++)
+            if (sources[i] == line) return rows[i];
+        return -1;
+    }
+
     /// <summary>
     /// One decoration as positioned rectangles — one per line it spans, like the selection band, and
     /// for the same reason: a single rectangle over a multi-line range would cover the indentation
-    /// of lines the range never touched.
+    /// of lines the range never touched. Each line is drawn on the row <paramref name="rowOf"/> says,
+    /// and not at all when it says -1 (a line a fold hides).
     /// </summary>
-    private IEnumerable<VisualNode> Marks(CodeDecoration decoration, CodeMetrics metrics, IAppTheme theme,
-        int first, int last)
+    private IEnumerable<VisualNode> Marks(CodeDecoration decoration, CodeDocument document,
+        Func<int, CodeLineCells> cellsOf, Func<int, int> rowOf, int first, int last, CodeMetrics metrics,
+        IAppTheme theme, float rowWidth)
     {
-        var start = Document.Clamp(decoration.Range.Start);
-        var end = Document.Clamp(decoration.Range.End);
+        var start = document.Clamp(decoration.Range.Start);
+        var end = document.Clamp(decoration.Range.End);
         var color = decoration.Color ?? DefaultColor(decoration.Kind, theme);
         if (Inverse) color = new ColorToken(color.Dark, color.Dark);
+        var whole = decoration.Kind == CodeDecorationKind.Line;
+        // A line wash takes every line the range touches, and not a last one it only reaches at its
+        // first column: a range of whole lines ends where the next one starts.
+        var lastTouched = whole && end.Line > start.Line && end.Column == 0 ? end.Line - 1 : end.Line;
 
         // Only the lines the window builds: a mark on a line nobody can see is a box and a map of
         // its line for nothing, and a search over a long file marked every line of it each build.
-        for (var line = Math.Max(start.Line, first); line <= Math.Min(end.Line, last); line++)
+        for (var line = Math.Max(start.Line, first); line <= Math.Min(lastTouched, last); line++)
         {
+            var row = rowOf(line);
+            if (row < 0) continue;
+            var top = metrics.ContentTop + row * metrics.LineHeight;
+            if (whole)
+            {
+                // The whole row, as wide as the code: a line a diff added or removed.
+                yield return new Positioned(new Box(new BoxStyle
+                {
+                    Width = rowWidth, Height = metrics.LineHeight, Background = color,
+                }), top: top, start: 0);
+                continue;
+            }
+
             var from = line == start.Line ? start.Column : 0;
-            var to = line == end.Line ? end.Column : Document.Line(line).Length;
+            var to = line == end.Line ? end.Column : document.Line(line).Length;
             if (to <= from) continue;
 
             // Through the line's CELLS, the way the engine places its caret: a match after a tab
             // or across a wide character is drawn where the characters are.
-            var cells = CellsOf(line);
+            var cells = cellsOf(line);
             var left = metrics.ContentLeft + cells.CellOf(from) * metrics.ColumnWidth;
-            var top = metrics.ContentTop + line * metrics.LineHeight;
             var width = (cells.CellOf(to) - cells.CellOf(from)) * metrics.ColumnWidth;
 
             yield return decoration.Kind switch
@@ -608,6 +815,7 @@ public sealed class CodeBlock : StatelessComponent
         CodeDecorationKind.Outline => theme.BorderStrong,
         CodeDecorationKind.Strike => theme.TextMuted,
         CodeDecorationKind.Underline => InkFor(Inverse, theme),
+        CodeDecorationKind.Line => theme.Colors(Variant.Primary).Subtle,
         _ => theme.Colors(Variant.Warning).Subtle,
     };
 

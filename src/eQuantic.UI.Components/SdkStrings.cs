@@ -44,6 +44,27 @@ public static class SdkStrings
     /// <summary>The code editor's accessible name when the app gives it no caption.</summary>
     public static string CodeEditor => SdkResources.CodeEditor;
 
+    /// <summary>What a press on a gutter row acts on, for assistive tech: "Line 12".</summary>
+    public static string LineNumbered(int number) => string.Format(SdkResources.LineNumbered, number);
+
+    // The code diff: a folded run of unchanged lines, the way through the changes, and its two sides.
+
+    /// <summary>What a folded run says it hides: one line in the singular, any other count in the
+    /// plural, which is the whole of the rule in the languages the SDK ships.</summary>
+    public static string UnchangedLines(int count) =>
+        count == 1 ? SdkResources.UnchangedLine : string.Format(SdkResources.UnchangedLines, count);
+
+    public static string PreviousChange => SdkResources.PreviousChange;
+    public static string NextChange => SdkResources.NextChange;
+    public static string ShowInline => SdkResources.ShowInline;
+    public static string ShowSideBySide => SdkResources.ShowSideBySide;
+
+    /// <summary>The name of a diff's original side, when the app names no file.</summary>
+    public static string DiffOriginal => SdkResources.DiffOriginal;
+
+    /// <summary>The name of a diff's modified side, when the app names no file.</summary>
+    public static string DiffModified => SdkResources.DiffModified;
+
     // The code editor's find bar.
     public static string Find => SdkResources.Find;
     public static string PreviousMatch => SdkResources.PreviousMatch;

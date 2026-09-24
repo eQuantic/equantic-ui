@@ -41,6 +41,30 @@ export class SdkStrings {
         return $eq.str("SdkResources", "CodeEditor");
     }
 
+    static get previousChange(): string {
+        return $eq.str("SdkResources", "PreviousChange");
+    }
+
+    static get nextChange(): string {
+        return $eq.str("SdkResources", "NextChange");
+    }
+
+    static get showInline(): string {
+        return $eq.str("SdkResources", "ShowInline");
+    }
+
+    static get showSideBySide(): string {
+        return $eq.str("SdkResources", "ShowSideBySide");
+    }
+
+    static get diffOriginal(): string {
+        return $eq.str("SdkResources", "DiffOriginal");
+    }
+
+    static get diffModified(): string {
+        return $eq.str("SdkResources", "DiffModified");
+    }
+
     static get find(): string {
         return $eq.str("SdkResources", "Find");
     }
@@ -107,6 +131,14 @@ export class SdkStrings {
 
     static get showAsChart(): string {
         return $eq.str("SdkResources", "ShowAsChart");
+    }
+
+    static lineNumbered(number: number) {
+        return $eq.text.stringFormat($eq.str("SdkResources", "LineNumbered"), number);
+    }
+
+    static unchangedLines(count: number) {
+        return count === 1 ? $eq.str("SdkResources", "UnchangedLine") : $eq.text.stringFormat($eq.str("SdkResources", "UnchangedLines"), count);
     }
 
     static hint(pattern: string, letters: string) {
