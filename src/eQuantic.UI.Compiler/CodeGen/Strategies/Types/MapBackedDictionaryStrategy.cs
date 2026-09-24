@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
@@ -23,7 +22,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 public abstract class MapBackedDictionaryStrategy : ConversionStrategyBase
 {
     private static readonly string[] Methods =
-        { "ContainsKey", "TryGetValue", "TryGetValueOrDefault", "GetValueOrDefault", "Add", "Remove", "Clear" };
+        { "ContainsKey", "TryGetValue", "GetValueOrDefault", "Add", "Remove", "Clear" };
 
     /// <summary>True when this strategy owns dictionaries of <paramref name="type"/>.</summary>
     protected abstract bool Matches(ITypeSymbol? type);
@@ -110,7 +109,7 @@ public abstract class MapBackedDictionaryStrategy : ConversionStrategyBase
             }
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:
-                return ConvertMethod(ma, inv.ArgumentList.Arguments, context);
+                return ConvertMethod(ma, inv, context);
 
             case MemberAccessExpressionSyntax member:
             {
@@ -168,11 +167,21 @@ public abstract class MapBackedDictionaryStrategy : ConversionStrategyBase
     }
 
     private static string ConvertMethod(
-        MemberAccessExpressionSyntax ma, SeparatedSyntaxList<ArgumentSyntax> args, ConversionContext context)
+        MemberAccessExpressionSyntax ma, InvocationExpressionSyntax invocation, ConversionContext context)
     {
-        var receiver = context.Converter.ConvertExpression(ma.Expression);
+        var args = invocation.ArgumentList.Arguments;
         var method = ma.Name.Identifier.Text;
 
+        // The two lookups answer as .NET's do, and evaluate each argument once — DictionaryLookup.
+        switch (method)
+        {
+            case "TryGetValue" when args.Count > 1:
+                return DictionaryLookup.RuntimeMap.TryGetValue(ma.Expression, invocation, context).ToString();
+            case "GetValueOrDefault" when args.Count > 0:
+                return DictionaryLookup.RuntimeMap.GetValueOrDefault(ma.Expression, invocation, context).ToString();
+        }
+
+        var receiver = context.Converter.ConvertExpression(ma.Expression);
         switch (method)
         {
             case "ContainsKey" when args.Count > 0:
@@ -191,36 +200,10 @@ public abstract class MapBackedDictionaryStrategy : ConversionStrategyBase
             case "Clear":
                 return $"{receiver}.clear()";
 
-            case "GetValueOrDefault" when args.Count > 0:
-            {
-                var k = context.Converter.ConvertExpression(args[0].Expression);
-                var def = args.Count > 1 ? context.Converter.ConvertExpression(args[1].Expression) : "null";
-                return $"({receiver}.get({k}) ?? {def})";
-            }
-
-            case "TryGetValue" or "TryGetValueOrDefault" when args.Count > 1:
-            {
-                var k = context.Converter.ConvertExpression(args[0].Expression);
-                var outVar = ExtractOutVar(args[1], context);
-                return $"({outVar} = {receiver}.get({k})) !== undefined";
-            }
-
             default:
                 var argList = string.Join(", ", args.Select(a => context.Converter.ConvertExpression(a.Expression)));
                 return $"{receiver}.{method.ToCamelCase()}({argList})";
         }
-    }
-
-    /// <summary>The receiving variable name of a <c>TryGetValue(key, out var x)</c> out-argument.</summary>
-    private static string ExtractOutVar(ArgumentSyntax outArg, ConversionContext context)
-    {
-        if (outArg.RefOrOutKeyword.IsKind(SyntaxKind.OutKeyword))
-        {
-            return outArg.Expression is DeclarationExpressionSyntax decl
-                ? decl.Designation.ToString()
-                : outArg.Expression.ToString().Trim();
-        }
-        return context.Converter.ConvertExpression(outArg.Expression);
     }
 
     public override int Priority => 25;

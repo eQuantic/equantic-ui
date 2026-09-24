@@ -152,8 +152,9 @@ public static class JsExprWriter
 
     /// <summary>A read nobody can observe happening twice: a bare name (locals and parameters
     /// have no getters; <c>this</c> is a keyword) or a literal. A member read is NOT one — a
-    /// property getter may count its calls.</summary>
-    private static bool IsInlinable(JsExpr part) =>
+    /// property getter may count its calls. Internal so a template that must decide WHEN a part is
+    /// read (<see cref="Strategies.DictionaryLookup"/>) asks this rule rather than keep a copy.</summary>
+    internal static bool IsInlinable(JsExpr part) =>
         part is JsLiteral || part is JsIdentifier { Name: var name } && !name.Contains('.');
 
     /// <summary>A receiver must be at least call-shaped; a bare number additionally needs
