@@ -114,7 +114,10 @@ public static class TestHelper
                 MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(List<>).Assembly.Location), // Collections
-                MetadataReference.CreateFromFile(Assembly.Load("System.Runtime").Location) // Core Runtime
+                MetadataReference.CreateFromFile(Assembly.Load("System.Runtime").Location), // Core Runtime
+                // Where System.Linq's metadata says Dictionary<,> lives: without it, no ToDictionary
+                // binds here, and a test of one met EQ2006 before any strategy saw the call.
+                MetadataReference.CreateFromFile(Assembly.Load("System.Collections").Location)
             });
             
         var semanticModel = compilation.GetSemanticModel(tree);

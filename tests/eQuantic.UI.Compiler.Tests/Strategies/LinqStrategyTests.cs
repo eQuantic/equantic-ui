@@ -228,6 +228,29 @@ public class LinqStrategyTests
     }
 
     [Fact]
+    public void MaxMin_WithNoFaithfulOrder_AreRefused()
+    {
+        // An enum's values cross as member NAMES, which order alphabetically where .NET orders by
+        // value, and a comparer has no form to call: each is refused where it was ordered wrongly.
+        TestHelper.DiagnosticsFor("var r = new[] { Size.Small, Size.Large }.Max()")
+            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("LINQ Max/Min over Size"));
+        TestHelper.DiagnosticsFor("var r = numbers.Min(Comparer<int>.Default)")
+            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("LINQ Max/Min with a comparer"));
+        TestHelper.DiagnosticsFor("var r = numbers.Max()")
+            .Should().NotContain(d => d.Code == "EQ1004", "an int has a faithful order");
+    }
+
+    [Fact]
+    public void ToDictionary_WithAComparer_IsRefused()
+    {
+        // The comparer was called as if it were the element selector.
+        TestHelper.DiagnosticsFor("var r = items.ToDictionary(x => x, (IEqualityComparer<string>)null)")
+            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("ToDictionary with a comparer"));
+        TestHelper.DiagnosticsFor("var r = items.ToDictionary(x => x, x => x.Length)")
+            .Should().NotContain(d => d.Code == "EQ1004", "an element selector is not a comparer");
+    }
+
+    [Fact]
     public void Reverse_MapsToSpreadReverse()
     {
         var result = TestHelper.ConvertExpression("list.Reverse()");
