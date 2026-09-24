@@ -60,6 +60,7 @@ import { double, single } from './utils/real-text';
 import { format, parseEnum, stringFormat } from './utils/format';
 import { nextTextElementLength, textElementStarts } from './utils/text-elements';
 import { unicodeCategory } from './utils/unicode-category';
+import { hasNonWhiteSpace, isWhiteSpace, splitOnWhiteSpace, trim, trimEnd, trimStart } from './utils/white-space';
 import { str } from './utils/culture';
 import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './utils/datetime';
 import { stringBuilder } from './utils/string-builder';
@@ -75,7 +76,7 @@ import {
   zip,
 } from './utils/collections';
 import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
-import { liftArith, liftCmp } from './utils/nullable';
+import { liftArith, liftCmp, liftUnary } from './utils/nullable';
 import { equals } from './utils/equals';
 import { resolveService } from './utils/services';
 import { StyleBuilder } from './utils/style-builder';
@@ -224,7 +225,21 @@ export const $eq = {
   },
   /** Text: number/string formatting, StringBuilder, StringInfo's text elements (grapheme clusters,
    * from the platform's segmenter), and a character's general category. */
-  text: { format, stringFormat, stringBuilder, substring, textElementStarts, nextTextElementLength, unicodeCategory },
+  text: {
+    format,
+    stringFormat,
+    stringBuilder,
+    substring,
+    textElementStarts,
+    nextTextElementLength,
+    unicodeCategory,
+    isWhiteSpace,
+    hasNonWhiteSpace,
+    trim,
+    trimStart,
+    trimEnd,
+    splitOnWhiteSpace,
+  },
   /** A dictionary read that fails on a missing key, the way .NET does. */
   dictGet,
   /** Date and time, tick-precise. */
@@ -250,7 +265,7 @@ export const $eq = {
     setAdd,
   },
   /** Nullable<T> lifted operators (null-propagating arithmetic, false-on-null relational). */
-  nullable: { arith: liftArith, cmp: liftCmp },
+  nullable: { arith: liftArith, cmp: liftCmp, unary: liftUnary },
   /** `bool | bool` and `bool & bool`: both operands evaluated, a bool answered — see `or`. */
   logic: { or, and },
   /**

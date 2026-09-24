@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies;
@@ -33,7 +35,7 @@ public static class ReadModifyWrite
     /// rounded, so it is bound once.
     /// </summary>
     public static JsExpr Assign(JsExpr target, IReadOnlyList<JsExpr> operands,
-        Func<JsExpr, IReadOnlyList<JsExpr>, JsExpr> next, bool answerOld, bool annotate)
+        Func<JsExpr, IReadOnlyList<JsExpr>, JsExpr> next, bool answerOld, ConversionContext context)
     {
         var parts = new List<JsExpr>();
         string place;
@@ -56,6 +58,38 @@ public static class ReadModifyWrite
         if (!answerOld && parts.All(IsPlainRead))
             return JsExpr.Binary(target, "=", next(target, operands));
 
+        return Spelled(parts, place, place, operands, next, answerOld, context);
+    }
+
+    /// <summary>
+    /// The same write to a dictionary ENTRY. .NET reads it first and throws for a key that is not
+    /// there, where JavaScript reads undefined and computes on: <c>m[k]++</c> made NaN and created
+    /// the key, and a nullable entry's lift made null of it. So the current value is read through
+    /// the guard that throws (<c>$eq.dictGet</c>), and the entry is written plainly, the receiver
+    /// and the key bound once each as any target's are.
+    /// </summary>
+    public static JsExpr AssignEntry(JsExpr receiver, JsExpr key, IReadOnlyList<JsExpr> operands,
+        Func<JsExpr, IReadOnlyList<JsExpr>, JsExpr> next, bool answerOld, ConversionContext context)
+    {
+        context.UsedHelpers.Add(Eq.Import);
+        return Spelled([receiver, key], "{0}[{1}]", $"{Eq.DictGet}({{0}}, {{1}})", operands, next, answerOld, context);
+    }
+
+    /// <summary>The access when <paramref name="target"/> names a dictionary's ENTRY, which a
+    /// read-modify-write reads through the guard (<see cref="AssignEntry"/>); null for any other
+    /// target.</summary>
+    public static ElementAccessExpressionSyntax? EntryOf(ExpressionSyntax target, ConversionContext context) =>
+        target is ElementAccessExpressionSyntax { ArgumentList.Arguments.Count: 1 } access
+        && context.SemanticHelper.GetType(access.Expression).IsDictionaryLike(out _)
+            ? access
+            : null;
+
+    /// <summary>The write spelled out as a template over <paramref name="parts"/>: the value read
+    /// from <paramref name="read"/>, the next one written to <paramref name="place"/>, and the old
+    /// one answered when asked for, bound once since no inverse recovers it.</summary>
+    private static JsExpr Spelled(List<JsExpr> parts, string place, string read, IReadOnlyList<JsExpr> operands,
+        Func<JsExpr, IReadOnlyList<JsExpr>, JsExpr> next, bool answerOld, ConversionContext context)
+    {
         var holes = new List<JsExpr>();
         foreach (var operand in operands)
         {
@@ -63,10 +97,11 @@ public static class ReadModifyWrite
             parts.Add(operand);
         }
 
-        var current = answerOld ? JsExpr.Identifier(Old) : JsExpr.Callish(place);
+        var annotate = context.TypeAnnotations;
+        var current = answerOld ? JsExpr.Identifier(Old) : JsExpr.Callish(read);
         var write = $"{place} = {JsExprWriter.Write(next(current, holes))}";
         var text = answerOld
-            ? $"(({Old}{(annotate ? ": any" : "")}) => ({write}, {Old}))({place})"
+            ? $"(({Old}{(annotate ? ": any" : "")}) => ({write}, {Old}))({read})"
             : $"({write})";
         return JsExpr.Template(text, parts, annotate);
     }

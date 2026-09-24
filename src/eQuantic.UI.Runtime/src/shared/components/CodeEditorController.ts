@@ -387,7 +387,7 @@ export class CodeEditorController {
         }
         for (const [open, close] of rules.brackets) {
             if (c !== open) continue;
-            if (after === '\0' || (/^\s$/.test(after)) || rules.brackets.some((p) => p[1] === after)) {
+            if (after === '\0' || $eq.text.isWhiteSpace(after) || rules.brackets.some((p) => p[1] === after)) {
                 if (!this.edit(this._selection, `${open}${close}`, true)) return false;
                 this.selection = new CodeRange($eq.withPatch(this.caret, { column: this.caret.column - 1 }));
                 return true;
@@ -397,7 +397,7 @@ export class CodeEditorController {
             if (c !== quote) continue;
             let before = this.caret.column > 0 ? line[this.caret.column - 1] : '\0';
             if (CodeDocument.isWordChar(before) || CodeDocument.isWordChar(after)) break;
-            if (after === '\0' || (/^\s$/.test(after))) {
+            if (after === '\0' || $eq.text.isWhiteSpace(after)) {
                 if (!this.edit(this._selection, `${quote}${quote}`, true)) return false;
                 this.selection = new CodeRange($eq.withPatch(this.caret, { column: this.caret.column - 1 }));
                 return true;
@@ -405,7 +405,7 @@ export class CodeEditorController {
         }
         if (this._selection.isEmpty && rules.outdentOn.includes(c)) {
             let indent = line.slice(0, this.caret.column);
-            if (indent.length > 0 && indent.trim().length === 0) {
+            if (indent.length > 0 && $eq.text.trim(indent).length === 0) {
                 let off = this.stepOff(indent);
                 return this.edit(new CodeRange(new CodePosition(this.caret.line, 0), this.caret), indent.slice(off) + c, true);
             }
@@ -419,8 +419,8 @@ export class CodeEditorController {
         let line = this._document.line(this.caret.line);
         let indent = this._document.indentOf(this.caret.line);
         let step = rules.insertSpaces ? ' '.repeat(rules.indentWidth) : '	';
-        let beforeCaret = line.slice(0, Math.min(this.caret.column, line.length)).trimEnd();
-        let afterCaret = this.caret.column < line.length ? line.slice(this.caret.column).trimStart() : '';
+        let beforeCaret = $eq.text.trimEnd(line.slice(0, Math.min(this.caret.column, line.length)));
+        let afterCaret = this.caret.column < line.length ? $eq.text.trimStart(line.slice(this.caret.column)) : '';
         let opens = beforeCaret.length > 0 && rules.indentAfter.includes(beforeCaret[beforeCaret.length - 1]);
         let closesNext = afterCaret.length > 0 && rules.outdentOn.includes(afterCaret[0]);
         if (opens && closesNext) {
@@ -528,7 +528,7 @@ export class CodeEditorController {
         if (last > first && this._selection.end.column === 0) last--;
         let allCommented = true;
         for (let line = first; line <= last; line++) {
-            let text = this._document.line(line).trimStart();
+            let text = $eq.text.trimStart(this._document.line(line));
             if (text.length === 0) continue;
             if (!text.startsWith(marker)) {
                 allCommented = false;
@@ -639,14 +639,14 @@ export class CodeEditorController {
         if (forward) {
             if (here.column >= line.length) return this.after(here);
             let i = here.column;
-            if (CodeDocument.isWordChar(line[i])) while (i < line.length && CodeDocument.isWordChar(line[i])) i = cells.next(i); else if (!(/^\s$/.test(line[i]))) while (i < line.length && !CodeDocument.isWordChar(line[i]) && !(/^\s$/.test(line[i]))) i = cells.next(i);
-            while (i < line.length && (/^\s$/.test(line[i]))) i = cells.next(i);
+            if (CodeDocument.isWordChar(line[i])) while (i < line.length && CodeDocument.isWordChar(line[i])) i = cells.next(i); else if (!$eq.text.isWhiteSpace(line[i])) while (i < line.length && !CodeDocument.isWordChar(line[i]) && !$eq.text.isWhiteSpace(line[i])) i = cells.next(i);
+            while (i < line.length && $eq.text.isWhiteSpace(line[i])) i = cells.next(i);
             return $eq.withPatch(here, { column: i });
         }
         if (here.column === 0) return this.before(here);
         let back = here.column;
-        while (back > 0 && (/^\s$/.test(line[cells.previous(back)]))) back = cells.previous(back);
-        if (back > 0 && CodeDocument.isWordChar(line[cells.previous(back)])) while (back > 0 && CodeDocument.isWordChar(line[cells.previous(back)])) back = cells.previous(back); else while (back > 0 && !CodeDocument.isWordChar(line[cells.previous(back)]) && !(/^\s$/.test(line[cells.previous(back)]))) back = cells.previous(back);
+        while (back > 0 && $eq.text.isWhiteSpace(line[cells.previous(back)])) back = cells.previous(back);
+        if (back > 0 && CodeDocument.isWordChar(line[cells.previous(back)])) while (back > 0 && CodeDocument.isWordChar(line[cells.previous(back)])) back = cells.previous(back); else while (back > 0 && !CodeDocument.isWordChar(line[cells.previous(back)]) && !$eq.text.isWhiteSpace(line[cells.previous(back)])) back = cells.previous(back);
         return $eq.withPatch(here, { column: back });
     }
 

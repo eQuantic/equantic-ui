@@ -38,7 +38,9 @@ public class CodeDifferTwinTests
         const range = (r) => `${r.start.line}:${r.start.column}-${r.end.line}:${r.end.column}`;
         for (const [original, modified] of pairs) {
           const changes = CodeDiffer.compare(CodeDocument.fromText(original), CodeDocument.fromText(modified));
-          console.log(changes.map((c) =>
+          // Every answer behind a mark: two equal texts answer nothing, and the runner trims the
+          // output, so an empty first answer was dropped and every answer after it slid up a pair.
+          console.log('=' + changes.map((c) =>
             `${c.originalStart},${c.originalCount},${c.modifiedStart},${c.modifiedCount}`
             + c.inner.map((i) => `|${range(i.original)}/${range(i.modified)}`).join('')).join(' '));
         }
@@ -56,7 +58,7 @@ public class CodeDifferTwinTests
         for (var i = 0; i < pairs.Count; i++)
         {
             var dotnet = Describe(CodeDiffer.Compare(CodeDocument.FromText(pairs[i].Original), CodeDocument.FromText(pairs[i].Modified)));
-            var twin = i < web.Length ? web[i].TrimEnd('\r') : "(no answer)";
+            var twin = i < web.Length && web[i].StartsWith('=') ? web[i].TrimEnd('\r')[1..] : "(no answer)";
             if (dotnet == twin) continue;
             if (count++ < 5) differences.Append($"\n  pair {i}:\n    .NET    {dotnet}\n    the web {twin}");
         }
@@ -73,6 +75,27 @@ public class CodeDifferTwinTests
             .ToList();
 
         BothSidesAgree(pairs, "random texts");
+    }
+
+    /// <summary>
+    /// Every pair of texts of one to four lines over three letters, 14,400 of them, answered the same
+    /// on both sides: the shapes where a walk's first rounds read what its setup wrote, which a random
+    /// sample reaches only by chance.
+    /// </summary>
+    [SkippableFact]
+    public void EverySmallPair_DiffsTheSameOnBothSides()
+    {
+        var texts = new List<string>();
+        var level = new List<string> { "" };
+        for (var length = 1; length <= 4; length++)
+        {
+            level = level.SelectMany(text => "abc".Select(letter => text.Length == 0 ? $"{letter}" : $"{text}\n{letter}")).ToList();
+            texts.AddRange(level);
+        }
+        var pairs = texts.SelectMany(original => texts.Select(modified => (original, modified))).ToList();
+
+        pairs.Should().HaveCount(14_400);
+        BothSidesAgree(pairs, "every small pair");
     }
 
     /// <summary>This file's own engine, under a few random edits at a time: lines removed and

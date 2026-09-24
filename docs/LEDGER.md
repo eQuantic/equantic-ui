@@ -602,6 +602,23 @@ record of a release, the wiki's Upgrading page is the distillate.
   smoke test bundles, runs and throws through the same pipeline and reads each frame back to its
   C# line. A line a strategy lowers belongs to the statement that produced it: a pattern switch's
   arm maps to its case, a `using`'s dispose to the `using`, and a `do`'s condition to itself.
+- **2026-09-24 · A nullable number keeps null and its type's rule**: a compound assignment, an
+  increment and a unary `-`, `~` or `+` on an `int?`, a `float?`, a `byte?` or a `decimal?` reached
+  JavaScript's own operator, which reads null as 0, so `x += 1` and `x++` on a null `int?` answered 1
+  and `-x` answered -0, and a value met none of its type's rules: a `float?` added doubles, a `byte?`
+  never wrapped, a `decimal?` called a method on null
+  ([#372](https://github.com/eQuantic/equantic-ui/issues/372)). Each now takes the underlying type's
+  rule inside the runtime's lift, the same rule a non-nullable target takes, and a nullable division
+  is one case of it. Found on the way: a literal the C# compiler types `long` because no `int` or
+  `uint` holds it (`637000000000000000`) was emitted as a plain number, which lost its low digits and
+  threw at the first arithmetic with another long. And from the review, for every target: a uint's
+  `&`, `|`, `^` and `>>` answered JavaScript's signed 32 bits (`uint.MaxValue & uint.MaxValue` was -1),
+  a long's shift threw a TypeError for an int count, kept the bits C# discards and did not mask its
+  count, and a checked or explicitly unchecked negation neither threw .NET's message nor wrapped. A
+  uint's or a ulong's complement answered a negative number. A step on a dictionary entry whose key
+  is missing now throws as .NET does, through the guard compound assignments read with, which closes
+  three of the conversion gaps. A decimal remainder is exact and stays a decimal: the runtime's
+  Decimal had none, so `%` computed in doubles (`0.3m % 0.1m` was `0.09999999999999998`).
 
 - **2026-09-24 · The code editor is a component**: slice 1c of
   [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#375](https://github.com/eQuantic/equantic-ui/pull/375)).
@@ -625,6 +642,21 @@ record of a release, the wiki's Upgrading page is the distillate.
   surface's, Enter left a field on Photon and stayed on the web (it stays on both), a key an app's
   shortcut took still reached the editor on the web, a code block's corner lay over its whole first
   line, and seven tests asserted nothing when their value was null.
+
+- **2026-09-24 · The code engine diffs two texts**: the engine half of slice 2b of
+  [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#386](https://github.com/eQuantic/equantic-ui/pull/386)).
+  `CodeDiffer` answers the lines that changed between two texts and, inside each change, the words:
+  Myers' shortest edit script over what is left once the common head and tail are trimmed, so the
+  cost follows the change and not the file, and the same algorithm over a change's tokens. Past
+  2,000 rounds two ranges are a rewrite, marked whole, counted in rounds rather than by a clock so
+  .NET and the web stop at the same point. Its counts are `git diff --minimal`'s own on five files of
+  this repository's history, and its twin answers change for change on 400 random pairs. On the way:
+  eqc named a method by its name alone, so two overloads reached a twin as one method, JavaScript
+  kept the last and a component's parser the first; the build now stops at the second declaration
+  and names the first (EQ1007). And white space is .NET's on the web: `char.IsWhiteSpace`, the
+  `Trim` family and `IsNullOrWhiteSpace` read one list, where JavaScript's left U+0085 and took
+  U+FEFF (the twin's word diff split on it), and a bare `Split()` splits on it instead of into
+  characters. The view's design, a row that is not a line, is the plan's ninth section.
 
 ## Retired documents
 

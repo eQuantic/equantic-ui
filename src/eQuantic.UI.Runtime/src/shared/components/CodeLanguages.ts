@@ -1,4 +1,4 @@
-import { CSharpLanguage, JsonLanguage, PlainTextLanguage, PythonLanguage, TypeScriptLanguage, XmlLanguage } from "../runtime-exports";
+import { $eq, CSharpLanguage, JsonLanguage, PlainTextLanguage, PythonLanguage, TypeScriptLanguage, XmlLanguage } from "../runtime-exports";
 
 export class CodeLanguages {
     static _cSharp: any | undefined;
@@ -49,7 +49,7 @@ export class CodeLanguages {
 
     static for(name: string | null) {
         let language: any;
-        if ((!name || !name.trim())) return CodeLanguages.plainText;
+        if ((!$eq.text.hasNonWhiteSpace(name))) return CodeLanguages.plainText;
         return (Object.prototype.hasOwnProperty.call(CodeLanguages.known, CodeLanguages.keyOf(name)) ? ((language = CodeLanguages.known[CodeLanguages.keyOf(name)]), true) : false) ? language : CodeLanguages.plainText;
     }
 

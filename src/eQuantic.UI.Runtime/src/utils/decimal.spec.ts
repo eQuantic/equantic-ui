@@ -12,6 +12,15 @@ describe('Decimal — exact base-10 arithmetic', () => {
     expect(dec('5').sub(dec('2.5')).toString()).toBe('2.5');
   });
 
+  it('takes a remainder exactly, with the dividend\'s sign, at the larger scale', () => {
+    expect(dec('5.5').mod(dec('2')).toString()).toBe('1.5');
+    expect(dec('-5.5').mod(dec('2')).toString()).toBe('-1.5');
+    expect(dec('5.5').mod(dec('-2')).toString()).toBe('1.5');
+    expect(dec('0.3').mod(dec('0.1')).toString()).toBe('0.0');
+    expect(dec('5.50').mod(dec('2')).toString()).toBe('1.50');
+    expect(() => dec('1').mod(dec('0'))).toThrow('Attempted to divide by zero.');
+  });
+
   it('multiplies and preserves scale like .NET', () => {
     expect(dec('1.5').mul(dec('2')).toString()).toBe('3.0'); // .NET keeps the trailing zero
     expect(dec('0.1').mul(dec('0.1')).toString()).toBe('0.01');

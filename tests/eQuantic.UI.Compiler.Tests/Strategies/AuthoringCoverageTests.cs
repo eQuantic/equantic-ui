@@ -268,7 +268,7 @@ public class AuthoringCoverageTests
                     "  private string Label(string package) => package.Trim(); " +
                     "  public override IComponent Build(RenderContext c) => " +
                     "    new Text(string.Join(\",\", new[] { \"a\" }.Select(interfaceName => interfaceName))); }");
-        ts.Should().Contain("package_: string").And.Contain("package_.trim()");
+        ts.Should().Contain("package_: string").And.Contain("$eq.text.trim(package_)");
     }
 
     [Fact]
