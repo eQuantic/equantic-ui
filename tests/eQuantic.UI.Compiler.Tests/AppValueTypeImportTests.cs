@@ -30,6 +30,16 @@ public class AppValueTypeImportTests
                 public Mark Flag() => new Mark("moved");
             }
             """,
+        // Span2 is named only inside a default the conversion writes: `new Span2[n]` and
+        // `default(Span2)` spell no `new Span2()`, and the signatures say `object`.
+        ["Rows.cs"] = """
+            namespace App;
+            public static class Rows
+            {
+                public static object Blank(int n) => new Span2[n];
+                public static object Origin() => default(Span2);
+            }
+            """,
         ["Board.cs"] = """
             using eQuantic.UI.Components;
             using eQuantic.UI.Primitives;
@@ -97,6 +107,18 @@ public class AppValueTypeImportTests
 
         ts.Should().Contain("new Mark(");
         ts.Should().Contain("import { Mark } from \"./Mark\"");
+    }
+
+    /// <summary>A zero the conversion writes names its struct where no syntax does, so a helper
+    /// that returned `new Span2[n]` or `default(Span2)` spelled `new Span2()` in a module that never
+    /// imported it, and the module failed when it loaded (found in review, #405).</summary>
+    [Fact]
+    public void AHelperImportsTheStructItsDefaultsName()
+    {
+        var ts = TypeScriptOf("Rows");
+
+        ts.Should().Contain("Array.from({ length: n }, () => new Span2())");
+        ts.Should().Contain("import { Span2 } from \"./Span2\"");
     }
 
     [Fact]

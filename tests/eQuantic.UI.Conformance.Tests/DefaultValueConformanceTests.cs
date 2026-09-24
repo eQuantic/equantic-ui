@@ -17,6 +17,8 @@ public class DefaultValueConformanceTests
         public struct Point { public int X; public int Y; }
         public record struct Pair(int A, int B);
         public enum Level { Low = 1, High = 2 }
+        public struct Gauge { public int Level { get; set; } = 5; public int Count; public Gauge() { } }
+        public struct Tally { public int N; public Tally() { N = 3; } }
         """;
 
     [SkippableTheory]
@@ -61,6 +63,15 @@ public class DefaultValueConformanceTests
     [InlineData("var a = new Level[1]; return a[0] == default(Level);")]                    // true
     [InlineData("var a = new Level[1]; return a[0] == Level.Low;")]                         // false
     [InlineData("Point p = default; return p.X + p.Y;")]                                    // 0
+    // A struct whose construction gives a member more than its zero: `new` runs the initializer
+    // or the constructor's body, and `default`, an array slot and OrDefault run neither.
+    [InlineData("return new Gauge().Level;")]                                               // 5
+    [InlineData("return default(Gauge).Level;")]                                            // 0
+    [InlineData("Gauge g = default; return g.Level + g.Count;")]                            // 0
+    [InlineData("var a = new Gauge[2]; return a[0].Level + a[1].Level;")]                   // 0
+    [InlineData("var a = new Gauge[2]; a[0].Level = 4; return a[1].Level;")]                // 0
+    [InlineData("return new List<Gauge>().FirstOrDefault().Level;")]                        // 0
+    [InlineData("return default(Tally).N;")]                                                // 0
     public void AStructOrAnEnum_StartsAsItsZero(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
@@ -88,6 +99,9 @@ public class DefaultValueConformanceTests
     [InlineData("long F(long x = default) => x + 1L; return F().ToString();")]              // "1"
     [InlineData("int Pick(bool first) => first ? 1 : default; return Pick(false);")]        // 0
     [InlineData("TimeSpan t = default; return t.TotalSeconds;")]                             // 0
+    // A tuple is an array on this side, and its zero is an array of its elements' zeros.
+    [InlineData("var t = default((int, string)); return t.Item1 + \"|\" + (t.Item2 == null);")] // "0|True"
+    [InlineData("var a = new (int, long)[1]; return (a[0].Item2 + 1L).ToString();")]        // "1"
     [InlineData("Guid g = default; return g == Guid.Empty;")]                                // true
     // Every site that asks a type for its default answers the same: LINQ's OrDefault too.
     [InlineData("return new List<DateTime>().FirstOrDefault().Year;")]                       // 1

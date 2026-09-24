@@ -98,6 +98,46 @@ public class StructDefaultTests
         ts.Should().MatchRegex($@"{method}\(\)[^{{]*\{{\s*return {System.Text.RegularExpressions.Regex.Escape(expected)};");
     }
 
+    private const string ZerosSource = """
+        using eQuantic.UI.Primitives;
+
+        public readonly record struct Cell(int Row, int Column);
+
+        public struct Counter { public int Step = 2; public long Total; public Counter() { } }
+
+        public static class Board
+        {
+            public static Cell[] Row(int n) => new Cell[n];
+            public static Cell Origin() => default;
+            public static Counter Fresh() => default;
+            public static BoxStyle[] Styles(int n) => new BoxStyle[n];
+        }
+        """;
+
+    /// <summary>
+    /// A struct whose construction gives a member more than its zero (an initializer, an explicit
+    /// parameterless constructor) is not zeroed by its twin's bare <c>new T()</c>, which runs them:
+    /// its zero passes every member's own (found in review, #405).
+    /// </summary>
+    [Fact]
+    public void AStructThatConstructsBeyondZero_IsZeroedMemberByMember()
+    {
+        var ts = TypeScriptOf(ZerosSource, "Board.cs", "Board");
+
+        ts.Should().MatchRegex(@"fresh\(\)[^{]*\{\s*return new Counter\(0, \$eq\.num\.long\(0\)\);");
+    }
+
+    /// <summary>A vocabulary struct whose twin cannot build its zero fills an array with its twin's
+    /// own default, undefined, as a default literal of it does: its constructor's defaults apply for
+    /// undefined and never for null (found in review, #405).</summary>
+    [Fact]
+    public void AnArrayOfAStructWithNoZeroTwin_HoldsTheTwinsOwnDefault()
+    {
+        var ts = TypeScriptOf(ZerosSource, "Board.cs", "Board");
+
+        ts.Should().Contain("new Array(n).fill(undefined)");
+    }
+
     /// <summary>The struct a zero names is IMPORTED, even compiled on its own (no per-app scan, the
     /// playground's mode): the constructor text alone was once all this checked, and the module it
     /// pinned threw "Cell is not defined" at its first default (found in review, #359).</summary>
@@ -119,13 +159,14 @@ public class StructDefaultTests
     }
 
     /// <summary>An EMPTY struct has no twin (the emitter refuses it), so `new Nothing()` would name
-    /// a class nothing wrote: its member keeps the null it always had (found in review, #359).</summary>
+    /// a class nothing wrote (found in review, #359). Its member holds undefined, the answer for a
+    /// struct no twin can build: C# has no null struct (#405).</summary>
     [Fact]
     public void AStructWithNoTwinIsNeverConstructed()
     {
         var ts = Emit("Wrap");
 
-        ts.Should().Contain("inner: any = null");
+        ts.Should().Contain("inner: any = undefined");
         ts.Should().NotContain("new Nothing()");
     }
 

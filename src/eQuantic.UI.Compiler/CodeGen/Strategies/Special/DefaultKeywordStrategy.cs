@@ -36,15 +36,7 @@ public class DefaultKeywordStrategy : IConversionStrategy
             ? context.SemanticHelper.GetType(named.Type)
             : context.SemanticHelper.GetConvertedType(node) ?? context.SemanticHelper.GetType(node);
         if (type is not null and not { TypeKind: TypeKind.Error })
-        {
-            var zero = DefaultValue.Of(type, context);
-            // A struct whose twin cannot build its zero (a hand-written vocabulary twin not marked
-            // [ZeroConstructs]) gets the twin's own default, which is what `undefined` asks for: a
-            // hand-written constructor's default parameters (`style: BoxStyle = new BoxStyle()`)
-            // and its `!== undefined` checks apply for undefined and never for null, and C# has no
-            // null struct to answer with. `UI.Box(style: default)` would build a Box with no style.
-            return zero == "null" && type.IsValueType && !type.IsNullableValue() ? "undefined" : zero;
-        }
+            return DefaultValue.Of(type, context);
 
         // No model: default(T) is what T's name says, and the literal names nothing.
         if (node is not DefaultExpressionSyntax spelled) return "undefined";
