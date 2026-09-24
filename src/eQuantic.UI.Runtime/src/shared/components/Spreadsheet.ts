@@ -79,7 +79,7 @@ export class Spreadsheet extends StatefulComponent {
         return name;
     }
 
-    windowFor(offset: number, viewport: number) {
+    windowFor(offset: number, viewport: number): [number, number, number] {
         let document = this.controller.document;
         let row = 0;
         let top = 0;

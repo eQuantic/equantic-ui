@@ -195,7 +195,7 @@ export abstract class CurlyBraceLanguage {
         return -1;
     }
 
-    static prefixedString(line: string, start: number) {
+    static prefixedString(line: string, start: number): [number, boolean] | null {
         let verbatim = false;
         let i = start;
         while (i < line.length && (line[i] === '$' || line[i] === '@')) {

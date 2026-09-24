@@ -596,6 +596,12 @@ public class RecordTypeEmitter
         }
 
         var isStatic = method.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword)) ? "static " : "";
-        return $"{isStatic}{jsName}({pars}) {{ {body} }}";
+        // A tuple crosses as an array literal, which TypeScript reads as an array of the union of its
+        // elements, so its type is said (TypeScriptEmitter.TupleReturn has the class path's twin).
+        var returns = tsTypeDeclarations
+            && method.ReturnType is TupleTypeSyntax or NullableTypeSyntax { ElementType: TupleTypeSyntax }
+            ? $": {TypeScriptEmitter.CSharpTypeToTypeScript(method.ReturnType.ToString())}"
+            : "";
+        return $"{isStatic}{jsName}({pars}){returns} {{ {body} }}";
     }
 }

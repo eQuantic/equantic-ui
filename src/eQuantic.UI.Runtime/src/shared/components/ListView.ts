@@ -50,7 +50,7 @@ export class ListView extends StatefulComponent {
         this.itemBuilder = fresh.itemBuilder;
     }
 
-    windowFor(offset: number, viewport: number) {
+    windowFor(offset: number, viewport: number): [number, number] {
         if (this.count === 0 || this.itemExtent <= 0) return [0, -1];
         let first = Math.max(0, (Math.trunc(Math.floor(Math.fround(offset / this.itemExtent))) | 0) - this.overscan);
         let last = Math.min(this.count - 1, (Math.trunc(Math.ceil(Math.fround(Math.fround(offset + viewport) / this.itemExtent))) | 0) + this.overscan);

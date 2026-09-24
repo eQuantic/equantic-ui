@@ -48,7 +48,7 @@ export class CodePatch {
         return files;
     }
 
-    static header(line: string) {
+    static header(line: string): [number, number, number, number, string] | null {
         let close = line.indexOf(' @@', 3);
         if (close < 0) return null;
         let parts = line.slice(3, close).split(' ');
@@ -59,7 +59,7 @@ export class CodePatch {
         return [original[0], original[1], modified[0], modified[1], section];
     }
 
-    static range(text: string) {
+    static range(text: string): [number, number] | null {
         let line: any, count: any;
         let comma = text.indexOf(',');
         let lineText = comma < 0 ? text : text.slice(0, comma);
@@ -107,7 +107,7 @@ export class CodePatch {
         return path;
     }
 
-    static gitHeaderPaths(text: string) {
+    static gitHeaderPaths(text: string): [string | null, string | null] {
         let split = text.lastIndexOf(' b/');
         if (split < 0) return [null, null];
         return [CodePatch.pathOf(text.slice(0, split)), CodePatch.pathOf(text.slice((split + 1)))];

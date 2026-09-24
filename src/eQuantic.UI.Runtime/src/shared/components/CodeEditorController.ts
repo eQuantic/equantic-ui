@@ -780,7 +780,7 @@ export class CodeEditorController {
         return low < matches.length ? matches[low] : matches[0];
     }
 
-    bracketAtCaret() {
+    bracketAtCaret(): [CodePosition, CodePosition] | null {
         let caret = this.caret;
         if (caret.column > 0) {
             let behind = $eq.withPatch(caret, { column: caret.column - 1 });

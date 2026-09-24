@@ -1663,7 +1663,7 @@ public class TypeScriptEmitter
                 var mbody = MethodBody(m.Body, m.ExpressionBody?.Expression, isIterator, byReference, isAsync);
                 var modifiers = (m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword) || asStatic ? "static " : "")
                     + (isAsync ? "async " : "");
-                c.Member(JsClassMember.Method(modifiers, mn, generics, pars, "", mbody), m);
+                c.Member(JsClassMember.Method(modifiers, mn, generics, pars, TupleReturn(m.ReturnType), mbody), m);
             }
             // USER-DEFINED OPERATORS — the same family a record's twin already carries, and for the
             // same reason: JavaScript cannot overload an operator, so the call site lowers `a + b`
@@ -1801,7 +1801,7 @@ public class TypeScriptEmitter
                         if (method.Body == null && method.ExpressionBody == null) break;
                         var body = MethodBody(method.Body, method.ExpressionBody?.Expression, isIterator: false, [], isAsync);
                         c.Member(JsClassMember.Method("static " + (isAsync ? "async " : ""), method.Identifier.Text.ToCamelCase(), "",
-                            WithReceiver(pars), "", body), method);
+                            WithReceiver(pars), TupleReturn(method.ReturnType), body), method);
                         break;
                     }
 
@@ -2308,8 +2308,8 @@ public class TypeScriptEmitter
             var body = MethodBody(method.SyntaxNode.Body, method.SyntaxNode.ExpressionBody?.Expression, isIterator, byReference, isAsync);
             var generics = method.TypeParameters is { } typeParameters && typeParameters.Any()
                 ? $"<{string.Join(", ", typeParameters)}>" : "";
-            c.Member(JsClassMember.Method((method.IsStatic ? "static " : "") + asyncPrefix, methodName, generics, parameters, "",
-                body), method.SyntaxNode);
+            c.Member(JsClassMember.Method((method.IsStatic ? "static " : "") + asyncPrefix, methodName, generics, parameters,
+                TupleReturn(method.SyntaxNode.ReturnType), body), method.SyntaxNode);
         }
         else
         {
@@ -2325,6 +2325,18 @@ public class TypeScriptEmitter
         }
     }
     
+    /// <summary>
+    /// The return annotation of a method that returns a TUPLE, and nothing for any other: a tuple
+    /// crosses as an array literal, which TypeScript reads as an array of the union of its elements,
+    /// so a pair of lists of different things destructured into two lists of either and the
+    /// runtime's own build refused every use of them. Every other return is left to inference,
+    /// which reads the value it returns right. A nullable tuple may be null.
+    /// </summary>
+    private string TupleReturn(TypeSyntax returnType) =>
+        TypeAnnotations && returnType is TupleTypeSyntax or NullableTypeSyntax { ElementType: TupleTypeSyntax }
+            ? $": {Annotate(returnType.ToString())}"
+            : "";
+
     /// <summary>
     /// Drops NAMESPACE qualification from a type name, keeping generics and arrays intact:
     /// <c>global::eQuantic.UI.Primitives.VisualNode</c> → <c>VisualNode</c>,
@@ -2378,7 +2390,7 @@ public class TypeScriptEmitter
                         text = text[..lastSpace];
                     return CSharpTypeToTypeScript(text.Trim());
                 });
-                return $"[{string.Join(", ", elements)}]" + string.Concat(Enumerable.Repeat("[]", arrayDepth));
+                return Nullable($"[{string.Join(", ", elements)}]" + string.Concat(Enumerable.Repeat("[]", arrayDepth)));
             }
         }
         
@@ -2395,7 +2407,7 @@ public class TypeScriptEmitter
                 arrayDepth++;
                 element = element[..^2].Trim();
             }
-            return ArrayOf(CSharpTypeToTypeScript(element), arrayDepth);
+            return Nullable(ArrayOf(CSharpTypeToTypeScript(element), arrayDepth));
         }
 
         if (baseType.StartsWith("Nullable<") && baseType.EndsWith(">"))
@@ -2490,14 +2502,17 @@ public class TypeScriptEmitter
             tsType = "Record<string, any>";
         }
 
+        return Nullable(tsType);
+
         // A NULLABLE C# type is nullable in TypeScript too. The flag was computed and then dropped,
         // so `Action?` annotated as `() => void` and passing the null its own signature invites was
         // a type error. A function type needs the parentheses: `() => void | null` parses as a
-        // function RETURNING `void | null`.
-        if (isNullable && tsType is not ("any" or "void"))
-            tsType = tsType.Contains("=>") ? $"({tsType}) | null" : $"{tsType} | null";
-
-        return tsType;
+        // function RETURNING `void | null`. The tuple and array forms answer early, and answer
+        // through here too: `(int, int)?` was annotated as a tuple that is never null.
+        string Nullable(string mapped) =>
+            !isNullable || mapped is "any" or "void" ? mapped
+            : mapped.Contains("=>") ? $"({mapped}) | null"
+            : $"{mapped} | null";
     }
 
     /// <summary>

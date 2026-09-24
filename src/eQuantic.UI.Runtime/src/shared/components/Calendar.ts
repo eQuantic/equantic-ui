@@ -99,7 +99,7 @@ export class Calendar extends StatefulComponent {
         return (day.dayNumber + 1) % 7;
     }
 
-    cursorCell(start: DateOnly) {
+    cursorCell(start: DateOnly): [number, number] | null {
         let cursor: any; 
         if (!((cursor = this._cursor) != null)) return null;
         let offset = cursor.dayNumber - start.dayNumber;

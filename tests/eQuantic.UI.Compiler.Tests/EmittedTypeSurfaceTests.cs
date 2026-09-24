@@ -108,6 +108,37 @@ public class EmittedTypeSurfaceTests
             .Should().Contain("const _k = (item) => item.length;").And.NotContain("typeof a");
     }
 
+    /// <summary>
+    /// A tuple crosses as an array literal, which TypeScript reads as an array of the union of its
+    /// elements: destructured into two lists of different things, each came out a list of either,
+    /// and the runtime's own build refused every use of them (the diff layout's runs and folds). A
+    /// method returning one says which, on a class and on a record alike, and a nullable one that it
+    /// may be null. Any other return is left to inference, which reads it right.
+    /// </summary>
+    [Fact]
+    public void AMethodReturningATuple_SaysWhichTuple()
+    {
+        var ts = TestHelper.ConvertClass("""
+            public (List<int> Runs, List<string> Names) Parts(int n) => (new List<int> { n }, new List<string> { "x" });
+            public (int Line, int Count)? Range(string text) => text.Length > 0 ? (1, 2) : null;
+            public int Plain() => 1;
+            """);
+
+        ts.Should().Contain("parts(n: number): [number[], string[]]");
+        ts.Should().Contain("range(text: string): [number, number] | null");
+        ts.Should().Contain("plain() {");
+
+        var record = new ComponentCompiler().CompileSource("""
+            using System.Collections.Generic;
+
+            public sealed record Layout(int Rows)
+            {
+                public static (List<int> Runs, List<string> Names) Parts(int n) => (new List<int> { n }, new List<string>());
+            }
+            """).Single(result => result.ComponentName == "Layout").TypeScript;
+        record.Should().Contain("static parts(n: number): [number[], string[]]");
+    }
+
     [Fact]
     public void TheWrappingSurvivesTheMapping()
     {
