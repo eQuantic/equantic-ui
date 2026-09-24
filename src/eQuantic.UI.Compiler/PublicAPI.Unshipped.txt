@@ -240,3 +240,5 @@ const eQuantic.UI.Compiler.CodeGen.Eq.LiftUnary = "$eq.nullable.unary" -> string
 static eQuantic.UI.Compiler.CodeGen.Strategies.IntegerWidth.Bitwise(string! op, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! left, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! right, (int Bits, bool Unsigned) width) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr?
 static eQuantic.UI.Compiler.CodeGen.Strategies.IntegerWidth.LongShift(string! op, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! value, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! count, object? constant, bool unsigned, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 const eQuantic.UI.Compiler.CodeGen.Eq.HasNonWhiteSpace = "$eq.text.hasNonWhiteSpace" -> string!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Invocation.DictionaryStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+eQuantic.UI.Compiler.CodeGen.Strategies.Invocation.DictionaryStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!

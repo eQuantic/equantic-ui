@@ -158,7 +158,7 @@ export class CodeEditorController {
         let cells: any;
         let text = this._document.line(line);
         let tabSize = this.rules.indentWidth;
-        if ((Object.prototype.hasOwnProperty.call(this._cells, line) ? ((cells = this._cells[line]), true) : false) && cells.text === text && cells.tabSize === tabSize) return cells;
+        if ((($0: any) => (Object.prototype.hasOwnProperty.call($0, line) ? ((cells = $0[line]), true) : ((cells = null), false)))(this._cells) && cells.text === text && cells.tabSize === tabSize) return cells;
         cells = new CodeLineCells(text, tabSize);
         this._cells[line] = cells;
         return cells;
