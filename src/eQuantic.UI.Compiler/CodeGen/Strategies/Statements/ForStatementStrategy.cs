@@ -33,7 +33,8 @@ public class ForStatementStrategy : IStatementStrategy
             var variables = forStmt.Declaration.Variables
                 .Select(v =>
                 {
-                    var name = v.Identifier.Text;
+                    // The name every reference reads (ToJsIdentifier), `@class` renamed.
+                    var name = v.Identifier.Text.ToJsIdentifier();
                     var initializer = v.Initializer != null
                         ? context.Converter.ConvertExpression(v.Initializer.Value)
                         : "undefined";

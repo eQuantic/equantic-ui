@@ -26,7 +26,7 @@ public class UsingStatementStrategy : IStatementStrategy
         {
             // using (var x = new X()) { ... }
             var variable = usingStmt.Declaration.Variables.First();
-            resourceVar = variable.Identifier.Text;
+            resourceVar = variable.Identifier.Text.ToJsIdentifier();
             init = variable.Initializer != null
                 ? context.Converter.ConvertIr(variable.Initializer.Value)
                 : JsExpr.Literal("null");

@@ -17,7 +17,7 @@ public class AnonymousMethodExpressionStrategy : IExpressionIrStrategy
         var anon = (AnonymousMethodExpressionSyntax)node;
         var parameters = anon.ParameterList is null
             ? ""
-            : string.Join(", ", anon.ParameterList.Parameters.Select(p => p.Identifier.Text));
+            : string.Join(", ", anon.ParameterList.Parameters.Select(p => p.Identifier.Text.ToJsIdentifier()));
         // `async delegate { … }` keeps its async, for the same reason the local function does:
         // an arrow that is not async makes `await` in its body a SyntaxError, and the module then
         // fails to parse rather than misbehaving somewhere visible.

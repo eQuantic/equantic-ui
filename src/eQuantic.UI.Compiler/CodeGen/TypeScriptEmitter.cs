@@ -483,7 +483,7 @@ public class TypeScriptEmitter
                             .OfType<DeclarationExpressionSyntax>()
                             .Select(d => d.Designation)
                             .OfType<SingleVariableDesignationSyntax>()
-                            .Select(s => s.Identifier.Text)
+                            .Select(s => s.Identifier.Text.ToJsIdentifier())
                             .Distinct()
                             .ToList();
                         var renderStatements = outVars.Select(v => JsStatement.Raw($"let {v};")).ToList();

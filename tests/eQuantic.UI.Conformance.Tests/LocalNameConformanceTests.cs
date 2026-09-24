@@ -88,4 +88,24 @@ public class LocalNameConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
+
+    [SkippableTheory]
+    // Every other kind of declaration that writes its own name, each measured with `@class` after the
+    // review of #399 named a few: each wrote the source text, `@` included, and the module did not
+    // parse. A for loop, a catch, a using, an anonymous method, a record's deconstruction, and the
+    // selector parameter Sum and Average write into their own arrows.
+    [InlineData("", "int s = 0; for (int @class = 0; @class < 3; @class++) s += @class; return s;")] // 3
+    [InlineData("", "try { throw new Exception(\"x\"); } catch (Exception @class) { return @class.Message; }")] // "x"
+    [InlineData("", "using (System.IDisposable @class = null) { return 1; }")] // 1
+    [InlineData("", "Func<int, int> f = delegate (int @class) { return @class * 2; }; return f(4);")] // 8
+    [InlineData("public record Point(int X, int Y);", "var (@class, y) = new Point(1, 2); return @class + y;")] // 3
+    [InlineData("", "var xs = new[] { 1, 2 }; return xs.Sum(@class => @class * 2);")] // 6
+    [InlineData("", "var xs = new[] { 1, 3 }; return xs.Average(@class => @class * 1.0);")] // 2
+    // A query's range variable already took the rename, and stays as a guard.
+    [InlineData("", "var xs = new[] { 1, 2, 3 }; return (from @class in xs where @class > 1 select @class).Count();")] // 2
+    public void ADeclarationOfAnyKind_IsRenamedAsItsReferencesRead(string prelude, string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, prelude);
+    }
 }
