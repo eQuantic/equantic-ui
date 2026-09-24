@@ -654,3 +654,4 @@ eQuantic.UI.Code.CodePatchLineKind.Removed = 1 -> eQuantic.UI.Code.CodePatchLine
 eQuantic.UI.Code.CodePatchLineKind.Added = 2 -> eQuantic.UI.Code.CodePatchLineKind
 eQuantic.UI.Code.CodePatchLineKind
 eQuantic.UI.Code.CodePatchLineKind.Context = 0 -> eQuantic.UI.Code.CodePatchLineKind
+eQuantic.UI.Code.CodeDecorationKind.Line = 5 -> eQuantic.UI.Code.CodeDecorationKind

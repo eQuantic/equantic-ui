@@ -14,4 +14,8 @@ public enum CodeDecorationKind : byte
     /// <summary>A thin line under the range in the code's own ink — the text an input method is
     /// still composing, which is in the document but not yet committed.</summary>
     Underline = 4,
+    /// <summary>A wash across the whole row of every line the range touches, under every other mark:
+    /// a line a diff added or removed. The words that changed in it wear a <see cref="Highlight"/>
+    /// over it.</summary>
+    Line = 5,
 }
