@@ -47,6 +47,9 @@ public class DecimalConversionConformanceTests
     [InlineData("var values = new decimal[2]; int index = 0; decimal.TryParse(\"x\", out values[index++]); return index + \"|\" + values[0] + \"|\" + values[1];")] // "1|0|0"
     [InlineData("var values = new decimal[2]; int index = 0; decimal.TryParse(\"1.5\", out values[index++]); return index + \"|\" + values[0];")]               // "1|1.5"
     [InlineData("var values = new int[2]; int index = 0; int.TryParse(\"7\", out values[index++]); return index + \"|\" + values[0];")]                          // "1|7"
+    // A named out written before the text is evaluated first, as every argument is where it was written.
+    [InlineData("var values = new decimal[2]; int index = 0; string S() { return index.ToString(); } decimal.TryParse(result: out values[index++], s: S()); return index + \"|\" + values[0] + \"|\" + values[1];")] // "1|1|0"
+    [InlineData("var values = new decimal[2]; int index = 0; string S() { return index.ToString(); } decimal.TryParse(S(), out values[index++]); return index + \"|\" + values[0] + \"|\" + values[1];")]              // "1|0|0"
     [InlineData("return int.TryParse(\"5\", out _) ? \"ok\" : \"no\";")]                                                 // "ok" — a discard, for every kind
     // ---- Convert.ToDecimal: by the type of what it converts ----
     [InlineData("return (Convert.ToDecimal(\"0.1\") + 0.2m).ToString();")]                                   // "0.3"
@@ -58,6 +61,8 @@ public class DecimalConversionConformanceTests
     [InlineData("return Convert.ToDecimal(long.MaxValue).ToString();")]                                      // exact
     [InlineData("object o = 1.5; return Convert.ToDecimal(o).ToString();")]                                  // "1.5"
     [InlineData("object o = null; return Convert.ToDecimal(o).ToString();")]                                 // "0"
+    // Named arguments in any order: the value is the one the method calls value.
+    [InlineData("return Convert.ToDecimal(provider: System.Globalization.CultureInfo.InvariantCulture, value: \"1.5\").ToString();")] // "1.5"
     // An object that holds text is read as text, in the culture the call names.
     [InlineData("object o = \"1,5\"; return Convert.ToDecimal(o, System.Globalization.CultureInfo.InvariantCulture).ToString();")] // "15"
     [InlineData("object o = \"abc\"; try { return Convert.ToDecimal(o, System.Globalization.CultureInfo.InvariantCulture).ToString(); } catch (Exception e) { return e.Message; }")]
