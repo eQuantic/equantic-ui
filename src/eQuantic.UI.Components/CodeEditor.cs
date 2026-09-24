@@ -75,8 +75,9 @@ public sealed class CodeEditor : StatefulComponent
     /// it is how you find the end of a block without counting.</summary>
     public bool MatchBrackets { get; set; } = true;
 
-    /// <summary>What FIND is looking for. Every match is washed and the current one outlined; null
-    /// or empty means the find bar is closed and nothing is marked.</summary>
+    /// <summary>What the APP searches for: an IDE with a find UI of its own sets it. Every match is
+    /// washed and the one the caret is on outlined, while the editor's own find bar is closed or its
+    /// field empty; null or empty marks nothing.</summary>
     public string? Search { get; set; }
 
     public bool SearchMatchCase { get; set; }
@@ -125,11 +126,18 @@ public sealed class CodeEditor : StatefulComponent
     }
 
     /// <summary>
-    /// Everything the block should mark: what the app handed in, every search match, and the bracket
-    /// pair under the caret. Computed per frame from the model rather than stored, because all three
-    /// are functions of where the caret is — and a stored copy would be one keystroke behind.
+    /// Everything the block should mark: what the app handed in, the search matches on the lines from
+    /// <paramref name="first"/> to <paramref name="last"/>, and the bracket pair under the caret.
+    /// Computed per frame from the model rather than stored, because all three are functions of
+    /// where the caret is — and a stored copy would be one keystroke behind.
+    /// <para>
+    /// Only the matches in the window become marks. A search over a long file finds tens of
+    /// thousands, and every one of them was a decoration the block walked twice to throw away, on
+    /// every build.
+    /// </para>
     /// </summary>
-    private IReadOnlyList<CodeDecoration> Marks(CodeEditorController editor, IReadOnlyList<CodeRange> matches)
+    private IReadOnlyList<CodeDecoration> Marks(CodeEditorController editor, IReadOnlyList<CodeRange> matches,
+        int first, int last)
     {
         if (matches.Count == 0 && !MatchBrackets && editor.Composition is null) return Decorations;
 
@@ -141,8 +149,9 @@ public sealed class CodeEditor : StatefulComponent
         if (matches.Count > 0)
         {
             var current = editor.Selection;
-            foreach (var match in matches)
+            for (var i = FirstEndingOnOrAfter(matches, first); i < matches.Count && matches[i].Start.Line <= last; i++)
             {
+                var match = matches[i];
                 // The one the caret is ON wears the outline; the rest are washed. Without that,
                 // "next match" moves something nobody can see.
                 marks.Add(new CodeDecoration(match,
@@ -207,6 +216,48 @@ public sealed class CodeEditor : StatefulComponent
     /// asked for through <see cref="Search"/>.</summary>
     private string? Needle => _findOpen && _findText.Length > 0 ? _findText : Search;
 
+    /// <summary>The matches of the last search, and what they were found for: the document, the
+    /// needle and the case rule. A document is immutable, so its reference says whether the text
+    /// changed.</summary>
+    private IReadOnlyList<CodeRange> _matches = [];
+    private CodeDocument? _matchedIn;
+    private string? _matchedFor;
+    private bool _matchedCase;
+
+    /// <summary>
+    /// Every match of <paramref name="needle"/>, found again only when the document, the needle or
+    /// the case rule changed. Every build scanned the whole file, and a build is a keystroke, a
+    /// caret blink's worth of state and every step of a scroll: over 50,000 lines, 4 ms a step before
+    /// anything was drawn.
+    /// </summary>
+    private IReadOnlyList<CodeRange> MatchesOf(CodeEditorController editor, string? needle)
+    {
+        if (needle is not { Length: > 0 }) return [];
+        if (editor.Document != _matchedIn || needle != _matchedFor || SearchMatchCase != _matchedCase)
+        {
+            _matches = editor.FindAll(needle, SearchMatchCase);
+            _matchedIn = editor.Document;
+            _matchedFor = needle;
+            _matchedCase = SearchMatchCase;
+        }
+        return _matches;
+    }
+
+    /// <summary>The index of the first match that ends on <paramref name="line"/> or after it. The
+    /// matches are in document order and never overlap, so their ends are in order too.</summary>
+    private static int FirstEndingOnOrAfter(IReadOnlyList<CodeRange> matches, int line)
+    {
+        var low = 0;
+        var high = matches.Count;
+        while (low < high)
+        {
+            var middle = (low + high) / 2;
+            if (matches[middle].End.Line < line) low = middle + 1;
+            else high = middle;
+        }
+        return low;
+    }
+
     public override VisualNode Build(ComponentContext context)
     {
         var editor = Editor;
@@ -225,11 +276,26 @@ public sealed class CodeEditor : StatefulComponent
         editor.Grid = new CodeGrid(new Point(metrics.ContentLeft, metrics.ContentTop),
             new Size(metrics.ColumnWidth, metrics.LineHeight));
 
-        // Every match, found ONCE per build: the marks and the bar's count both read it.
-        var needle = Needle;
-        IReadOnlyList<CodeRange> matches = needle is { Length: > 0 } search
-            ? editor.FindAll(search, SearchMatchCase)
-            : [];
+        // A BOUNDED editor scrolls the code inside it and builds only the lines in view: one that
+        // fills its place (an IDE's pane), one of a fixed height, and one capped by MaxHeight. Only
+        // an uncapped Hug grows with the code, and builds all of it, because all of it is on screen.
+        var bounded = Height.Kind != SizeKind.Hug;
+        var windowed = bounded || MaxHeight > 0;
+        if (!windowed)
+        {
+            // An editor with no viewport shows every line. The window it had while it had one went
+            // on limiting the build: a Fill editor switched to Hug went on building lines 1168 to
+            // 1220 of 2000, and every other line was blank. And a viewport mounted again later
+            // starts at the top, where this offset has to start too.
+            _offset = 0;
+            _viewport = 0;
+        }
+        // The lines this build draws, and the only ones anything is measured on: the selection's
+        // bands and the matches are asked for between these two, not over the whole file.
+        var (first, last) = CodeBlock.WindowOf(editor.Document.LineCount, metrics.LineHeight, _offset, _viewport);
+
+        // Every match, found once per search: the marks and the bar's count both read it.
+        var matches = MatchesOf(editor, Needle);
 
         // The empty-string constructor + inits, NOT the (document, language) pair as arguments:
         // the transpiled twin has one constructor whose body is the string shape, and the property
@@ -238,7 +304,7 @@ public sealed class CodeEditor : StatefulComponent
         {
             Document = editor.Document,
             Language = highlighter.Language,
-            Decorations = Marks(editor, matches),
+            Decorations = Marks(editor, matches, first, last),
             ShowLineNumbers = ShowLineNumbers,
             FirstLineNumber = FirstLineNumber,
             // Bare content — see CodeBlock.Standalone. The slab and both scroll views are built
@@ -261,7 +327,8 @@ public sealed class CodeEditor : StatefulComponent
             // the text — the two pieces of state the read-only block cannot know about. Both are the
             // ENGINE's measurements, on the grid handed to it above.
             ActiveLine = editor.Caret.Line,
-            SelectionBands = editor.SelectionBands,
+            SelectionBands = editor.SelectionBandsIn(first, last),
+            WidestLine = editor.WidestLine,
         };
 
         VisualNode surface = new CodeSurface(block, editor)
@@ -308,17 +375,14 @@ public sealed class CodeEditor : StatefulComponent
             viewport = withGutter;
         }
 
-        // A BOUNDED editor scrolls the code inside it and builds only the lines in view: one that
-        // fills its place (an IDE's pane), one of a fixed height, and one capped by MaxHeight. Only
-        // an uncapped Hug grows with the code, and builds all of it, because all of it is on screen.
-        var bounded = Height.Kind != SizeKind.Hug;
-        if (bounded || MaxHeight > 0)
+        if (windowed)
         {
             viewport = new Box(new BoxStyle
             {
                 Width = SizeValue.Fill,
                 Height = bounded ? SizeValue.Fill : SizeValue.Hug,
-                MaxHeight = MaxHeight > 0 ? SizeValue.Fixed(MaxHeight) : SizeValue.Hug,
+                // A Hug editor's cap is the viewport's; a bounded one's caps the whole editor below.
+                MaxHeight = !bounded && MaxHeight > 0 ? SizeValue.Fixed(MaxHeight) : SizeValue.Hug,
             }, new ScrollView(viewport)
             {
                 Width = SizeValue.Fill,
@@ -360,7 +424,11 @@ public sealed class CodeEditor : StatefulComponent
         // a new surface to every host: the scroll went back to the top, "next" revealed nothing
         // (a surface seen for the first time is where it opened), and on Photon the keyboard pointed
         // at a path nothing had any more.
-        var layers = new Stack { Width = SizeValue.Fill, Height = Height };
+        // A bounded editor with a cap takes the height its place gives it up to the cap, slab and
+        // all. The cap was the inner viewport's alone, and a Fill editor in a pane taller than it
+        // drew an empty slab below the code.
+        var capped = bounded && MaxHeight > 0;
+        var layers = new Stack { Width = SizeValue.Fill, Height = capped ? SizeValue.Fill : Height };
         layers.Add(surface);
         if (CodeBlock.Corner(Caption, null, Inverse, context.Theme) is { } corner) layers.Add(corner);
         if (_findOpen)
@@ -373,7 +441,13 @@ public sealed class CodeEditor : StatefulComponent
             layers.Add(new Positioned(new Shortcut(FindBar(context, editor, found), KeyChord.Escape,
                 () => CloseFind(editor)), top: Space.S2, end: Space.S2));
         }
-        return layers;
+        if (!capped) return layers;
+        return new Box(new BoxStyle
+        {
+            Width = SizeValue.Fill,
+            Height = Height,
+            MaxHeight = SizeValue.Fixed(MaxHeight),
+        }, layers);
     }
 
     /// <summary>Closes the bar and gives the code the keyboard back, which is where it came from
@@ -394,10 +468,19 @@ public sealed class CodeEditor : StatefulComponent
         IReadOnlyList<CodeRange> matches)
     {
         var theme = context.Theme;
+        // Which match the caret is on, by halving: the matches are in document order, and a
+        // search over a long file has tens of thousands of them.
         var index = 0;
-        var current = editor.Selection;
-        for (var i = 0; i < matches.Count; i++)
-            if (matches[i].Start.Equals(current.Start)) { index = i + 1; break; }
+        var current = editor.Selection.Start;
+        var low = 0;
+        var high = matches.Count;
+        while (low < high)
+        {
+            var middle = (low + high) / 2;
+            if (matches[middle].Start.CompareTo(current) < 0) low = middle + 1;
+            else high = middle;
+        }
+        if (low < matches.Count && matches[low].Start.Equals(current)) index = low + 1;
 
         // A STEP selects the match, which reveals it (the selection's own rule), and the app hears
         // that the selection moved, as it does when a key moves it.

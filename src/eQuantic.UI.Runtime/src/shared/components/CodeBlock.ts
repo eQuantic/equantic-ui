@@ -30,6 +30,7 @@ export class CodeBlock extends StatelessComponent {
     declare decorations: CodeDecoration[];
     declare activeLine: any;
     declare selectionBands: Rect[];
+    declare widestLine: number;
     declare caption: any;
     declare onCopy: (() => void) | null;
     declare onGutterPressed: any;
@@ -53,6 +54,7 @@ export class CodeBlock extends StatelessComponent {
         if (this.gutterMarkers === undefined) this.gutterMarkers = [];
         if (this.decorations === undefined) this.decorations = [];
         if (this.selectionBands === undefined) this.selectionBands = [];
+        if (this.widestLine === undefined) this.widestLine = 0;
         if (this.viewportOffset === undefined) this.viewportOffset = 0;
         if (this.viewportHeight === undefined) this.viewportHeight = 0;
         if (this.viewportWidth === undefined) this.viewportWidth = 0;
@@ -70,8 +72,10 @@ export class CodeBlock extends StatelessComponent {
         let ink = this.inverse ? CodeBlock.codeInk : theme.textPrimary;
         let surface = this.inverse ? CodeBlock.codeSlab : theme.surfaceSubtle;
         let [first, last] = this.window(lineHeight);
-        let widest = 0;
-        for (let index = 0; index < this.document.lineCount; index++) widest = Math.max(widest, CodeLineCells.widthOf(this.document.line(index), this.tabSize));
+        let widest = this.widestLine;
+        if (widest <= 0) {
+            for (let index = 0; index < this.document.lineCount; index++) widest = Math.max(widest, CodeLineCells.widthOf(this.document.line(index), this.tabSize));
+        }
         let codeWidth = Math.fround(Math.fround(Math.fround(widest) * metrics.columnWidth) + metrics.columnWidth);
         let lines = new Column(0, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         if (first > 0) lines.add(Spacer.fixed(Math.fround(Math.fround(first) * lineHeight)));
@@ -207,11 +211,15 @@ export class CodeBlock extends StatelessComponent {
     }
 
     window(lineHeight: number) {
-        if (this.viewportHeight <= 0 || lineHeight <= 0) return [0, this.document.lineCount - 1];
+        return CodeBlock.windowOf(this.document.lineCount, lineHeight, this.viewportOffset, this.viewportHeight);
+    }
+
+    static windowOf(lineCount: number, lineHeight: number, offset: number, viewportHeight: number) {
+        if (viewportHeight <= 0 || lineHeight <= 0) return [0, lineCount - 1];
         let margin = 8;
-        let first = Math.max(0, (Math.trunc(Math.floor(Math.fround(this.viewportOffset / lineHeight))) | 0) - margin);
-        let visible = (Math.trunc(Math.ceil(Math.fround(this.viewportHeight / lineHeight))) | 0) + margin * 2;
-        return [first, Math.min(this.document.lineCount - 1, first + visible)];
+        let first = Math.max(0, (Math.trunc(Math.floor(Math.fround(offset / lineHeight))) | 0) - margin);
+        let visible = (Math.trunc(Math.ceil(Math.fround(viewportHeight / lineHeight))) | 0) + margin * 2;
+        return [first, Math.min(lineCount - 1, first + visible)];
     }
 
     marks(decoration: CodeDecoration, metrics: CodeMetrics, theme: any, first: number, last: number) {

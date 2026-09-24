@@ -122,6 +122,32 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// read them, several times a frame, and a line's cells change only with its text.</summary>
     private readonly Dictionary<int, CodeLineCells> _cells = new();
 
+    /// <summary>The document and the tab stops <see cref="WidestLine"/> was measured for.</summary>
+    private CodeDocument? _widestOf;
+    private int _widestTabs;
+    private int _widest;
+
+    /// <summary>
+    /// How many cells the widest line of the document takes, measured once per document. A view is
+    /// as wide as the widest line of the FILE, so its width does not breathe as the window scrolls,
+    /// and measuring every line on every build cost a scroll step 14 ms over 50,000 lines on the web.
+    /// </summary>
+    public int WidestLine
+    {
+        get
+        {
+            var tabSize = Rules.IndentWidth;
+            if (_widestOf == _document && _widestTabs == tabSize) return _widest;
+            var widest = 0;
+            for (var line = 0; line < _document.LineCount; line++)
+                widest = Math.Max(widest, CodeLineCells.WidthOf(_document.Line(line), tabSize));
+            _widestOf = _document;
+            _widestTabs = tabSize;
+            _widest = widest;
+            return widest;
+        }
+    }
+
     /// <summary>
     /// Where line <paramref name="line"/>'s columns land on the grid: tabs to their stops, wide
     /// characters two cells, every text element whole (see <see cref="CodeLineCells"/>). The tab
@@ -192,34 +218,37 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     private bool _dragging;
 
     /// <summary>
-    /// The selection, as one band per line it covers, in the surface's own coordinates — drawn by the
-    /// COMPONENT in the code's own layers, under the text and over the active line, so it reads the
-    /// same on every target. A single rectangle over a multi-line range would cover the indentation of
-    /// lines the range never touched, which is why these are per line.
+    /// The selection, as one band per line it covers from <paramref name="first"/> to
+    /// <paramref name="last"/>, in the surface's own coordinates — drawn by the COMPONENT in the code's
+    /// own layers, under the text and over the active line, so it reads the same on every target. A
+    /// single rectangle over a multi-line range would cover the indentation of lines the range never
+    /// touched, which is why these are per line.
+    /// <para>
+    /// Asked for the lines a view BUILDS, never for the whole range. A band is measured through its
+    /// line's cells, and a select-all over 50,000 lines measured every one of them on every build (a
+    /// scroll step builds) and kept all 50,000 maps, where the view drew fifty.
+    /// </para>
     /// </summary>
-    public IReadOnlyList<Rect> SelectionBands
+    public IReadOnlyList<Rect> SelectionBandsIn(int first, int last)
     {
-        get
+        var bands = new List<Rect>();
+        if (_selection.IsEmpty) return bands;
+        var start = _selection.Start;
+        var end = _selection.End;
+        for (var line = Math.Max(start.Line, first); line <= Math.Min(end.Line, last); line++)
         {
-            var bands = new List<Rect>();
-            if (_selection.IsEmpty) return bands;
-            var start = _selection.Start;
-            var end = _selection.End;
-            for (var line = start.Line; line <= end.Line; line++)
-            {
-                var from = line == start.Line ? start.Column : 0;
-                // One cell past the end of every line but the last: the band shows that the line
-                // BREAK is held too, which is what makes a selection ending at column 0 of the next
-                // line read as the whole line it is.
-                var cells = CellsOf(line);
-                var fromCell = cells.CellOf(from);
-                var toCell = line == end.Line ? cells.CellOf(end.Column) : cells.Width + 1;
-                if (toCell <= fromCell) continue;
-                var at = Grid.PointOf(line, fromCell);
-                bands.Add(new Rect(at.X, at.Y, (toCell - fromCell) * Grid.Cell.Width, Grid.Cell.Height));
-            }
-            return bands;
+            var from = line == start.Line ? start.Column : 0;
+            // One cell past the end of every line but the last: the band shows that the line
+            // BREAK is held too, which is what makes a selection ending at column 0 of the next
+            // line read as the whole line it is.
+            var cells = CellsOf(line);
+            var fromCell = cells.CellOf(from);
+            var toCell = line == end.Line ? cells.CellOf(end.Column) : cells.Width + 1;
+            if (toCell <= fromCell) continue;
+            var at = Grid.PointOf(line, fromCell);
+            bands.Add(new Rect(at.X, at.Y, (toCell - fromCell) * Grid.Cell.Width, Grid.Cell.Height));
         }
+        return bands;
     }
 
     /// <inheritdoc />

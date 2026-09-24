@@ -86,6 +86,14 @@ public sealed class CodeBlock : StatelessComponent
     /// </summary>
     public IReadOnlyList<Rect> SelectionBands { get; init; } = [];
 
+    /// <summary>
+    /// How many cells the widest line takes, when whoever composes the block keeps it across builds
+    /// (an editor does: <c>CodeEditorController.WidestLine</c>, measured once per document). 0, the
+    /// default, has the block measure every line of the document, which a snippet can afford and a
+    /// long file scrolled a step at a time cannot.
+    /// </summary>
+    public int WidestLine { get; init; }
+
     /// <summary>How much of the selection's ink shows — the band sits under the text, so it only has
     /// to be seen, never read through.</summary>
     public const float SelectionAlpha = 0.28f;
@@ -202,9 +210,12 @@ public sealed class CodeBlock : StatelessComponent
         //
         // Measured from the widest line in the FILE rather than the widest one on screen: the width
         // must not change as the window scrolls, or the content would breathe under the reader.
-        var widest = 0;
-        for (var index = 0; index < Document.LineCount; index++)
-            widest = Math.Max(widest, CodeLineCells.WidthOf(Document.Line(index), TabSize));
+        var widest = WidestLine;
+        if (widest <= 0)
+        {
+            for (var index = 0; index < Document.LineCount; index++)
+                widest = Math.Max(widest, CodeLineCells.WidthOf(Document.Line(index), TabSize));
+        }
         var codeWidth = widest * metrics.ColumnWidth + metrics.ColumnWidth;
 
         var lines = new Column(gap: 0) { Width = SizeValue.Fill };
@@ -502,18 +513,25 @@ public sealed class CodeBlock : StatelessComponent
         return cells;
     }
 
+    /// <summary>The first and last line this block builds (see <see cref="WindowOf"/>).</summary>
+    private (int First, int Last) Window(float lineHeight) =>
+        WindowOf(Document.LineCount, lineHeight, ViewportOffset, ViewportHeight);
+
     /// <summary>
-    /// The first and last line to BUILD. With no viewport reported yet the answer is "all of them",
-    /// which is right for a snippet and for the first frame — the window narrows as soon as layout
-    /// has said how tall the box turned out to be.
+    /// The first and last line to BUILD, of <paramref name="lineCount"/> lines scrolled
+    /// <paramref name="offset"/> into a viewport <paramref name="viewportHeight"/> tall. With no
+    /// viewport reported yet the answer is "all of them", which is right for a snippet and for the
+    /// first frame — the window narrows as soon as layout has said how tall the box turned out to be.
+    /// An editor asks it too, for the only lines it measures anything on: the selection's bands and
+    /// the matches in view.
     /// </summary>
-    private (int First, int Last) Window(float lineHeight)
+    internal static (int First, int Last) WindowOf(int lineCount, float lineHeight, float offset, float viewportHeight)
     {
-        if (ViewportHeight <= 0 || lineHeight <= 0) return (0, Document.LineCount - 1);
+        if (viewportHeight <= 0 || lineHeight <= 0) return (0, lineCount - 1);
         const int margin = 8;   // a scroll of one line builds nothing
-        var first = Math.Max(0, (int)MathF.Floor(ViewportOffset / lineHeight) - margin);
-        var visible = (int)MathF.Ceiling(ViewportHeight / lineHeight) + margin * 2;
-        return (first, Math.Min(Document.LineCount - 1, first + visible));
+        var first = Math.Max(0, (int)MathF.Floor(offset / lineHeight) - margin);
+        var visible = (int)MathF.Ceiling(viewportHeight / lineHeight) + margin * 2;
+        return (first, Math.Min(lineCount - 1, first + visible));
     }
 
     /// <summary>

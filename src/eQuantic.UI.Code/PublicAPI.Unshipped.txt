@@ -93,7 +93,7 @@ eQuantic.UI.Code.CodeDirection.Backward = 0 -> eQuantic.UI.Code.CodeDirection
 eQuantic.UI.Code.CodeDirection.Forward = 1 -> eQuantic.UI.Code.CodeDirection
 eQuantic.UI.Code.CodeEditorController.Grid.get -> eQuantic.UI.Code.CodeGrid
 eQuantic.UI.Code.CodeEditorController.Grid.set -> void
-eQuantic.UI.Code.CodeEditorController.SelectionBands.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Rect>!
+eQuantic.UI.Code.CodeEditorController.SelectionBandsIn(int first, int last) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Rect>!
 eQuantic.UI.Code.CodeEditorController.Carets.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Primitives.Rect>!
 eQuantic.UI.Code.CodeEditorController.CaretRect(eQuantic.UI.Code.CodePosition position) -> eQuantic.UI.Primitives.Rect
 eQuantic.UI.Code.CodeEditorController.PositionAt(eQuantic.UI.Primitives.Point point) -> eQuantic.UI.Code.CodePosition
@@ -476,3 +476,4 @@ virtual eQuantic.UI.Code.CurlyBraceLanguage.HasRawStrings.get -> bool
 static eQuantic.UI.Code.CodeLineCells.IsZeroWidth(int codePoint) -> bool
 eQuantic.UI.Code.CodeEditorController.FocusVersion.get -> int
 eQuantic.UI.Code.CodeEditorController.RequestFocus() -> void
+eQuantic.UI.Code.CodeEditorController.WidestLine.get -> int

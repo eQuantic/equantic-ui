@@ -1,5 +1,9 @@
 using System.Diagnostics;
 using eQuantic.UI.Code;
+using eQuantic.UI.Components;
+using eQuantic.UI.Native.Components;
+using eQuantic.UI.Native.Engine;
+using eQuantic.UI.Primitives;
 using FluentAssertions;
 using Xunit;
 using Xunit.Abstractions;
@@ -45,6 +49,47 @@ public class CodeEditorPerfTests
 
         _output.WriteLine($"bracket walk over 3000 lines: {each:F2} ms (alarm {BracketWalkCeilingMs} ms)");
         each.Should().BeLessThan(BracketWalkCeilingMs, "the walk runs on every frame");
+    }
+
+    private const double ScrollStepCeilingMs = 40;
+
+    /// <summary>
+    /// A scroll step rebuilds the editor, and a build measured the whole file three times over: every
+    /// selected line's band, every match of the search (found again from scratch, and each made a
+    /// mark for the block to throw away), and every line's width, to find the widest. A select-all
+    /// with a search on over 50,000 lines is what an IDE does on a large file, and it has to scroll.
+    /// </summary>
+    [Fact]
+    public void AScrollStepThroughALongSelectedSearchedFile_StaysInsideTheAlarm()
+    {
+        var text = string.Join("\n", Enumerable.Range(0, 50_000).Select(i => $"    var needle{i} = compute(a, {i});"));
+        var editor = new CodeEditor(text, "csharp") { Height = SizeValue.Fill, Search = "needle" };
+        editor.Editor.SelectAll();
+        var host = new PhotonHost(editor, PhotonTheme.Instance, ThemeMode.Light, 800, 600);
+        host.RenderFrame(new DisplayListBuilder());
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        var viewport = frame.ScrollRegions.First(r => r.Axis == ScrollAxis.Vertical);
+        // Over the gutter, which the vertical viewport holds and the sideways one does not.
+        var (x, y) = (viewport.Bounds.X + 4, viewport.Bounds.Y + 20);
+        // Warm: the first steps measure the lines they bring into view.
+        for (var i = 0; i < 5; i++)
+        {
+            host.ScrollBy(x, y, 60).Should().BeTrue();
+            host.RenderFrame(new DisplayListBuilder());
+        }
+
+        const int steps = 20;
+        var clock = Stopwatch.StartNew();
+        for (var i = 0; i < steps; i++)
+        {
+            host.ScrollBy(x, y, 60).Should().BeTrue("the step has to scroll, or nothing is rebuilt");
+            host.RenderFrame(new DisplayListBuilder());
+            host.RenderFrame(new DisplayListBuilder());
+        }
+        var each = clock.Elapsed.TotalMilliseconds / steps;
+
+        _output.WriteLine($"a scroll step over 50,000 selected, searched lines: {each:F2} ms (alarm {ScrollStepCeilingMs} ms)");
+        each.Should().BeLessThan(ScrollStepCeilingMs, "a scroll step builds the lines in view, not the file");
     }
 
     /// <summary>

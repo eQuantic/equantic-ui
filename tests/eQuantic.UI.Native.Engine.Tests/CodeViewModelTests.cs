@@ -124,7 +124,7 @@ public class CodeViewModelTests
         var editor = At("a\u4E2Db", 0, 0);
         editor.Selection = new CodeRange(new CodePosition(0, 1), new CodePosition(0, 2));
 
-        var band = editor.SelectionBands.Should().ContainSingle().Subject;
+        var band = editor.SelectionBandsIn(0, editor.Document.LineCount - 1).Should().ContainSingle().Subject;
         band.X.Should().Be(8);
         band.Width.Should().Be(16);
     }

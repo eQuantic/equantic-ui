@@ -2,7 +2,7 @@ import { $eq, CodeDirectionValue, CodeDocument, CodeEdit, CodeGrid, CodeHighligh
 
 export class CodeEditorController {
     constructor(text: string = '', language: any = null, props?: any) {
-        this._selection = new CodeRange(); this._desiredCell = -1; this._cells = {}; this._dragging = false; this._revealVersion = 0; this._focusVersion = 0; this._composition = null; this._compositionReplaced = ''; this._compositionSelection = new CodeRange(); this._wholeLineCopy = null; this._document = CodeDocument.fromText(text);
+        this._selection = new CodeRange(); this._desiredCell = -1; this._cells = {}; this._widestOf = null; this._widestTabs = 0; this._widest = 0; this._dragging = false; this._revealVersion = 0; this._focusVersion = 0; this._composition = null; this._compositionReplaced = ''; this._compositionSelection = new CodeRange(); this._wholeLineCopy = null; this._document = CodeDocument.fromText(text);
         this._selection = new CodeRange(CodePosition.start);
         this.highlighter = new CodeHighlighter(language ?? CodeLanguages.plainText); if (props && typeof props === 'object') Object.assign(this, props);
     }
@@ -11,6 +11,9 @@ export class CodeEditorController {
     _selection: CodeRange;
     _desiredCell: number;
     _cells: Record<string, any>;
+    _widestOf: CodeDocument | null;
+    _widestTabs: number;
+    _widest: number;
     static caretWidth: number = 2;
     _dragging: boolean;
     _revealVersion: number;
@@ -55,24 +58,19 @@ export class CodeEditorController {
 
     readOnly: boolean = false;
     tabMovesFocus: boolean = false;
-    grid: CodeGrid = CodeGrid.default;
 
-    get selectionBands(): Rect[] {
-        let bands: Rect[] = [];
-        if (this._selection.isEmpty) return bands;
-        let start = this._selection.start;
-        let end = this._selection.end;
-        for (let line = start.line; line <= end.line; line++) {
-            let from = line === start.line ? start.column : 0;
-            let cells = this.cellsOf(line);
-            let fromCell = cells.cellOf(from);
-            let toCell = line === end.line ? cells.cellOf(end.column) : cells.width + 1;
-            if (toCell <= fromCell) continue;
-            let at = this.grid.pointOf(line, fromCell);
-            bands.push(new Rect(at.x, at.y, Math.fround(Math.fround(toCell - fromCell) * this.grid.cell.width), this.grid.cell.height));
-        }
-        return bands;
+    get widestLine(): number {
+        let tabSize = this.rules.indentWidth;
+        if (this._widestOf === this._document && this._widestTabs === tabSize) return this._widest;
+        let widest = 0;
+        for (let line = 0; line < this._document.lineCount; line++) widest = Math.max(widest, CodeLineCells.widthOf(this._document.line(line), tabSize));
+        this._widestOf = this._document;
+        this._widestTabs = tabSize;
+        this._widest = widest;
+        return widest;
     }
+
+    grid: CodeGrid = CodeGrid.default;
 
     get carets(): Rect[] {
         return [this.caretRect(this.caret)];
@@ -135,6 +133,23 @@ export class CodeEditorController {
         if (here.column < this._document.line(here.line).length) return $eq.withPatch(here, { column: this.cellsOf(here.line).next(here.column) });
         if (here.line === this._document.lineCount - 1) return here;
         return new CodePosition(here.line + 1, 0);
+    }
+
+    selectionBandsIn(first: number, last: number) {
+        let bands: Rect[] = [];
+        if (this._selection.isEmpty) return bands;
+        let start = this._selection.start;
+        let end = this._selection.end;
+        for (let line = Math.max(start.line, first); line <= Math.min(end.line, last); line++) {
+            let from = line === start.line ? start.column : 0;
+            let cells = this.cellsOf(line);
+            let fromCell = cells.cellOf(from);
+            let toCell = line === end.line ? cells.cellOf(end.column) : cells.width + 1;
+            if (toCell <= fromCell) continue;
+            let at = this.grid.pointOf(line, fromCell);
+            bands.push(new Rect(at.x, at.y, Math.fround(Math.fround(toCell - fromCell) * this.grid.cell.width), this.grid.cell.height));
+        }
+        return bands;
     }
 
     requestFocus() {

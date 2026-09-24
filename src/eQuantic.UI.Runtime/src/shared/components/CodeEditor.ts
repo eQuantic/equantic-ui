@@ -10,6 +10,10 @@ export class CodeEditor extends StatefulComponent {
     _viewportWidth: number = 0;
     _toldDocument: any = null;
     _toldSelection: CodeRange = new CodeRange();
+    _matches: CodeRange[] = [];
+    _matchedIn: any = null;
+    _matchedFor: any = null;
+    _matchedCase: boolean = false;
 
     static get $hydration() {
         return { _offset: 'single', _viewport: 'single', _viewportWidth: 'single', height: { of: SizeValue, members: { value: 'single' } }, maxHeight: 'single' };
@@ -68,10 +72,15 @@ export class CodeEditor extends StatefulComponent {
         let highlighter = editor.highlighter;
         let metrics = CodeBlock.metricsFor(context, this.size, this.showLineNumbers, this.firstLineNumber + editor.document.lineCount - 1);
         editor.grid = new CodeGrid(new Point(metrics.contentLeft, metrics.contentTop), new Size(metrics.columnWidth, metrics.lineHeight));
-        let needle = this.needle;
-        let search: any; 
-        let matches = ((needle != null && needle.length > 0) && (search = needle, true)) ? editor.findAll(search, this.searchMatchCase) : [];
-        let block = new CodeBlock('', null, { document: editor.document, language: highlighter.language, decorations: this.marks(editor, matches), showLineNumbers: this.showLineNumbers, firstLineNumber: this.firstLineNumber, standalone: false, size: this.size, inverse: this.inverse, gutterMarkers: this.gutterMarkers, onGutterPressed: this.onGutterPressed, highlighter: highlighter, metrics: metrics, viewportOffset: this._offset, viewportHeight: this._viewport, viewportWidth: this._viewportWidth, activeLine: editor.caret.line, selectionBands: editor.selectionBands });
+        let bounded = this.height.kind !== 'hug';
+        let windowed = bounded || this.maxHeight > 0;
+        if (!windowed) {
+            this._offset = 0;
+            this._viewport = 0;
+        }
+        let [first, last] = CodeBlock.windowOf(editor.document.lineCount, metrics.lineHeight, this._offset, this._viewport);
+        let matches = this.matchesOf(editor, this.needle);
+        let block = new CodeBlock('', null, { document: editor.document, language: highlighter.language, decorations: this.marks(editor, matches, first, last), showLineNumbers: this.showLineNumbers, firstLineNumber: this.firstLineNumber, standalone: false, size: this.size, inverse: this.inverse, gutterMarkers: this.gutterMarkers, onGutterPressed: this.onGutterPressed, highlighter: highlighter, metrics: metrics, viewportOffset: this._offset, viewportHeight: this._viewport, viewportWidth: this._viewportWidth, activeLine: editor.caret.line, selectionBands: editor.selectionBandsIn(first, last), widestLine: editor.widestLine });
         let surface: VisualNode = new CodeSurface(block, editor, { autofocus: this.autofocus, label: this.caption ?? SdkStrings.codeEditor, caretColor: CodeBlock.inkFor(this.inverse, context.theme), onChanged: () => this.setState(() => this.notify(editor)) });
         let viewport: VisualNode = new ScrollView(surface, 'horizontal', { width: SizeValue.fill, onViewportChanged: (width: number) => {
             if (Math.abs(Math.fround(width - this._viewportWidth)) < 1) return;
@@ -83,9 +92,8 @@ export class CodeEditor extends StatefulComponent {
             withGutter.add(new Flexible(viewport));
             viewport = withGutter;
         }
-        let bounded = this.height.kind !== 'hug';
-        if (bounded || this.maxHeight > 0) {
-            viewport = new Box(new BoxStyle({ width: SizeValue.fill, height: bounded ? SizeValue.fill : SizeValue.hug, maxHeight: this.maxHeight > 0 ? SizeValue.fixed(this.maxHeight) : SizeValue.hug }), new ScrollView(viewport, 'vertical', { width: SizeValue.fill, height: bounded ? SizeValue.fill : SizeValue.hug, onScrolled: (offset: number) => {
+        if (windowed) {
+            viewport = new Box(new BoxStyle({ width: SizeValue.fill, height: bounded ? SizeValue.fill : SizeValue.hug, maxHeight: !bounded && this.maxHeight > 0 ? SizeValue.fixed(this.maxHeight) : SizeValue.hug }), new ScrollView(viewport, 'vertical', { width: SizeValue.fill, height: bounded ? SizeValue.fill : SizeValue.hug, onScrolled: (offset: number) => {
                 if (Math.abs(Math.fround(offset - this._offset)) < 1) return;
                 this.setState(() => this._offset = offset);
             }, onViewportChanged: (height: number) => {
@@ -95,7 +103,8 @@ export class CodeEditor extends StatefulComponent {
         }
         surface = new Box(new BoxStyle({ width: SizeValue.fill, height: bounded ? SizeValue.fill : SizeValue.hug, background: CodeBlock.surfaceFor(this.inverse, context.theme), cornerRadius: new CornerRadii(context.theme.shape('medium')), clip: true }), viewport);
         surface = new Shortcut(surface, new KeyChord('f', 4), () => this.setState(() => this._findOpen = true));
-        let layers = new Stack('topStart', { width: SizeValue.fill, height: this.height });
+        let capped = bounded && this.maxHeight > 0;
+        let layers = new Stack('topStart', { width: SizeValue.fill, height: capped ? SizeValue.fill : this.height });
         layers.add(surface);
         let corner: any; 
         if ((corner = CodeBlock.corner(this.caption, null, this.inverse, context.theme)) != null) layers.add(corner);
@@ -103,7 +112,8 @@ export class CodeEditor extends StatefulComponent {
             let found = this._findText.length > 0 ? matches : [];
             layers.add(new Positioned(new Shortcut(this.findBar(context, editor, found), KeyChord.escape, () => this.closeFind(editor)), 8, 8));
         }
-        return layers;
+        if (!capped) return layers;
+        return new Box(new BoxStyle({ width: SizeValue.fill, height: this.height, maxHeight: SizeValue.fixed(this.maxHeight) }), layers);
     }
 
     create() {
@@ -124,14 +134,15 @@ export class CodeEditor extends StatefulComponent {
         }
     }
 
-    marks(editor: CodeEditorController, matches: CodeRange[]) {
+    marks(editor: CodeEditorController, matches: CodeRange[], first: number, last: number) {
         if (matches.length === 0 && !this.matchBrackets && editor.composition == null) return this.decorations;
         let marks: CodeDecoration[] = [...this.decorations];
         let composition: any; 
         if ((composition = editor.composition) != null) marks.push(new CodeDecoration(composition, 'underline'));
         if (matches.length > 0) {
             let current = editor.selection;
-            for (const match of matches) {
+            for (let i = CodeEditor.firstEndingOnOrAfter(matches, first); i < matches.length && matches[i].start.line <= last; i++) {
+                let match = matches[i];
                 marks.push(new CodeDecoration(match, $eq.equals(match.start, current.start) && $eq.equals(match.end, current.end) ? 'outline' : 'highlight'));
             }
         }
@@ -166,6 +177,27 @@ export class CodeEditor extends StatefulComponent {
         this.onGutterPressed = fresh.onGutterPressed;
     }
 
+    matchesOf(editor: CodeEditorController, needle: any) {
+        if (!((needle != null && needle.length > 0))) return [];
+        if (editor.document !== this._matchedIn || needle !== this._matchedFor || this.searchMatchCase !== this._matchedCase) {
+            this._matches = editor.findAll(needle, this.searchMatchCase);
+            this._matchedIn = editor.document;
+            this._matchedFor = needle;
+            this._matchedCase = this.searchMatchCase;
+        }
+        return this._matches;
+    }
+
+    static firstEndingOnOrAfter(matches: CodeRange[], line: number) {
+        let low = 0;
+        let high = matches.length;
+        while (low < high) {
+            let middle = Math.trunc((low + high) / 2);
+            if (matches[middle].end.line < line) low = middle + 1; else high = middle;
+        }
+        return low;
+    }
+
     closeFind(editor: CodeEditorController) {
         return this.setState(() => {
             this._findOpen = false;
@@ -186,11 +218,14 @@ export class CodeEditor extends StatefulComponent {
         };
         let theme = context.theme;
         let index = 0;
-        let current = editor.selection;
-        for (let i = 0; i < matches.length; i++) if ($eq.equals(matches[i].start, current.start)) {
-            index = i + 1;
-            break;
+        let current = editor.selection.start;
+        let low = 0;
+        let high = matches.length;
+        while (low < high) {
+            let middle = Math.trunc((low + high) / 2);
+            if (matches[middle].start.compareTo(current) < 0) low = middle + 1; else high = middle;
         }
+        if (low < matches.length && $eq.equals(matches[low].start, current)) index = low + 1;
         let row = new Row(8, 'start', 'center', false, null, null, { cross: 'center' });
         row.add(new Box(new BoxStyle({ width: 168 }), new TextEntry(this._findText, (value: string) => this.setState(() => this._findText = value), { placeholder: SdkStrings.find, label: SdkStrings.find, autofocus: true, onSubmit: () => step(true) })));
         row.add(new Text(matches.length === 0 ? this._findText.length === 0 ? '' : '0' : `${index}/${matches.length}`, 'labelSmall', theme.textMuted, 1, 'start', false, false, null, 0, { tabular: true }));

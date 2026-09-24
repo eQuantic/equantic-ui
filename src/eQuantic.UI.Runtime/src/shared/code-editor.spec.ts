@@ -178,10 +178,12 @@ describe('code surface (web)', () => {
     // The ENGINE's answer, which the component draws in the code's own layers (see the component
     // case below). The first starts at its column, the middle one is the whole line, and the last
     // starts at the line's start.
-    const bands = editor.selectionBands;
+    const bands = editor.selectionBandsIn(0, 2);
     expect(bands).toHaveLength(3);
     expect(bands[0].x).toBe(2 * COLUMN);
     expect(bands[2].x).toBe(0);
+    // …and only for the lines it is asked about: a view asks for the lines it builds.
+    expect(editor.selectionBandsIn(1, 1)).toHaveLength(1);
   });
 
   it('draws no selection of its own: the component draws it, under the text', () => {

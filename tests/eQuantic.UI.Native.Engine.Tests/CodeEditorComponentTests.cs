@@ -363,6 +363,74 @@ public class CodeEditorComponentTests
     }
 
     /// <summary>
+    /// A bounded editor with a cap is capped whole, slab and all. The cap was the inner viewport's
+    /// alone, so a Fill editor in a pane taller than its MaxHeight scrolled its code in the top of a
+    /// slab that went on, empty, to the bottom of the pane.
+    /// </summary>
+    [Fact]
+    public void AFillEditorWithACap_IsCappedWhole()
+    {
+        var text = string.Join("\n", Enumerable.Range(0, 200).Select(i => $"var line{i} = {i};"));
+        var host = Host(new CodeEditor(text, "csharp") { Height = SizeValue.Fill, MaxHeight = 300 }, 500, 600);
+
+        var frame = Settle(host);
+
+        var viewport = frame.ScrollRegions.First(r => r.Axis == ScrollAxis.Vertical);
+        viewport.Bounds.Height.Should().BeApproximately(300, 0.5f, "the code scrolls in the capped height");
+        var layers = First(frame.Root, node => node.Source is Stack)!;
+        layers.Bounds.Height.Should().BeApproximately(300, 0.5f, "and the editor is no taller than the code's viewport");
+    }
+
+    private static Framework.LayoutNode? First(Framework.LayoutNode node, Func<Framework.LayoutNode, bool> predicate)
+    {
+        if (predicate(node)) return node;
+        foreach (var child in node.Children)
+            if (First(child, predicate) is { } found) return found;
+        return null;
+    }
+
+    /// <summary>A parent that decides how tall its editor is, and builds it anew as a parent does.</summary>
+    private sealed class Pane(string text) : Primitives.StatefulComponent
+    {
+        public SizeValue EditorHeight = SizeValue.Fill;
+
+        public void Resize(SizeValue height) => SetState(() => EditorHeight = height);
+
+        public override VisualNode Build(ComponentContext context) =>
+            new CodeEditor(text, "csharp") { Height = EditorHeight };
+    }
+
+    /// <summary>
+    /// An editor that stops being bounded shows every line, and builds them. The window it had while
+    /// it had a viewport went on limiting the build, and with no viewport left to report anything it
+    /// was never let go: switched from Fill to Hug well down a file, it built one screen of lines
+    /// and every other line was blank. (On the web the offset stayed stale the other way too: a
+    /// viewport mounted again started at the top while the window stayed where it had been, and
+    /// the web reports an offset only when something scrolls.)
+    /// </summary>
+    [Fact]
+    public void AnEditorThatStopsBeingBounded_BuildsEveryLineAgain()
+    {
+        var text = string.Join("\n", Enumerable.Range(0, 400).Select(i => $"var line{i} = {i};"));
+        var pane = new Pane(text);
+        var host = Host(pane, 500, 400);
+        var frame = Settle(host);
+        var viewport = frame.ScrollRegions.First(r => r.Axis == ScrollAxis.Vertical);
+        // Over the gutter, which the vertical viewport holds and the sideways one does not.
+        host.ScrollBy(viewport.Bounds.X + 4, viewport.Bounds.Y + 20, 4000).Should().BeTrue();
+        Settle(host);
+
+        pane.Resize(SizeValue.Hug);
+        frame = Settle(host);
+
+        // The last line's number (only the gutter says 400) and the first line's name (only its code
+        // says line0): the two ends of the file, one screen of lines apart from where it was.
+        Count(frame.Root, node => node.Source is Text { Content: "400" }).Should().Be(1,
+            "an editor with no viewport shows every one of its 400 lines, the last");
+        Count(frame.Root, node => node.Source is Text { Content: "line0" }).Should().Be(1, "…and the first");
+    }
+
+    /// <summary>
     /// The MARKS are windowed with the lines. Every match and every selected line built a mark, and
     /// a map of its line's cells, on every build, in view or not: a select-all over 4000 lines with
     /// a search on built 8000 boxes a frame.
