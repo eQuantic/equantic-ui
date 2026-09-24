@@ -35,9 +35,9 @@ public class NumericCoverageTests
     }
 
     [Fact]
-    public void ConvertToInt32_FromStringLiteral_UsesParseInt()
+    public void ConvertToInt32_FromStringLiteral_ReadsAsIntParse()
     {
-        TestHelper.ConvertExpression("Convert.ToInt32(\"42\")").Should().Be("parseInt('42', 10)");
+        TestHelper.ConvertExpression("Convert.ToInt32(\"42\")").Should().Be("$eq.num.intConvert('42', 'int')");
     }
 
     [Fact]

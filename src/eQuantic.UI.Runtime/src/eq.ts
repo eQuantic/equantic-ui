@@ -60,6 +60,14 @@ import {
 } from './utils/overflow';
 import { double, single } from './utils/real-text';
 import { fromBase, toBase } from './utils/convert-base';
+import {
+  intConvert,
+  intParse,
+  intTryParse,
+  realConvert,
+  realParse,
+  realTryParse,
+} from './utils/number-parse';
 import { max, min, toDictionary, toValueDictionary } from './utils/linq';
 import {
   compare,
@@ -175,7 +183,8 @@ export const $eq = {
   origin,
   /** The typed boundary: a server value coerced ONCE to its runtime type — see utils/hydrate. */
   hydrate,
-  /** Numeric compat: exact decimal and 64-bit integer, and an integer read or written in a base. */
+  /** Numeric compat: exact decimal and 64-bit integer, every numeric type read from text as .NET
+   * reads it, and an integer read or written in a base. */
   num: {
     dec,
     decParse,
@@ -183,6 +192,12 @@ export const $eq = {
     decFromDouble,
     decFromSingle,
     decConvert,
+    intParse,
+    intTryParse,
+    intConvert,
+    realParse,
+    realTryParse,
+    realConvert,
     long,
     checked,
     divRem,

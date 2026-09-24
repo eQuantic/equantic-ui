@@ -28,7 +28,7 @@ export class Rules {
         let number: any;
         return new FieldRule(message ?? `Enter a number between ${$eq.num.double(min)} and ${$eq.num.double(max)}.`, (value: string) => {
             if (value.length === 0) return true;
-            return (number = parseFloat(value), !isNaN(number)) && number >= min && number <= max;
+            return ((number = $eq.num.realTryParse(value, 'double', 511)) !== undefined || ((number = 0), false)) && number >= min && number <= max;
         });
     }
 

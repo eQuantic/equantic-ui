@@ -74,6 +74,28 @@ describe('the form model in the browser (C# cross-pin)', () => {
     expect(age.error).toBeNull();
   });
 
+  /**
+   * The range rule reads the value as `double.TryParse` reads it under `NumberStyles.Any` (#376):
+   * a number with a unit after it is not a number. Through `parseFloat`, "42kg" was 42 and passed.
+   * Cross-pinned with FormModelTests.TheRangeRuleReadsANumberAsDotNetDoes.
+   */
+  it.each([
+    ['42', true],
+    ['7', false],
+    ['not a number', false],
+    ['42kg', false],
+    ['4.2e1', true],
+    ['(42)', false],
+    ['', true],
+  ])('reads %j as a number the way .NET does, valid: %s', (value, valid) => {
+    const form = new FormController();
+    const age = form.add('age', '', [Rules.range(18, 120)]);
+
+    age.set(value);
+
+    expect(age.error === null).toBe(valid);
+  });
+
   /** The signature whose annotation was broken: a rule built from a bare predicate. */
   it('takes a custom predicate (the Func<string, bool> the emitter used to spell in C#)', () => {
     const form = new FormController();
