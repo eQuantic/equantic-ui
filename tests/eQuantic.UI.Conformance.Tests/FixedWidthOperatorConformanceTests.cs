@@ -44,6 +44,13 @@ public class FixedWidthOperatorConformanceTests
     [InlineData("ulong u = ulong.MaxValue; u >>>= 60; return u.ToString();")]                               // "15"
     [InlineData("ulong u = 1; return (u << 63).ToString();")]                                               // control
     [InlineData("long l = -8; return (l >> 1).ToString();")]                                                // control: "-4"
+    // ---- a complement of an unsigned width is unsigned ----
+    [InlineData("uint x = 0; return (~x).ToString();")]                                                     // "4294967295"
+    [InlineData("uint? x = 0; var y = ~x; return y.ToString();")]
+    [InlineData("ulong u = 0; return (~u).ToString();")]                                                    // "18446744073709551615"
+    [InlineData("ulong? u = 5; return (~u).ToString();")]                                                   // "18446744073709551610"
+    [InlineData("byte b = 0; return (~b).ToString();")]                                                     // "-1": an int, control
+    [InlineData("long l = 0; return (~l).ToString();")]                                                     // "-1": control
     // ---- a negation, in the context it sits in ----
     [InlineData("int x = int.MinValue; try { return checked(-x).ToString(); } catch (Exception e) { return e.Message; }")]
     [InlineData("int? x = int.MinValue; try { return checked(-x).ToString(); } catch (Exception e) { return e.Message; }")]
