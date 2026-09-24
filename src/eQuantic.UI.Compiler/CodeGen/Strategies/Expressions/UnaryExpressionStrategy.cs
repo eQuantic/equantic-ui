@@ -46,6 +46,7 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
                 {
                     "+" => value,
                     "-" when liftedValue.IsDecimal() => JsExpr.Callish($"{JsExprWriter.WriteIn(value, JsPrecedence.Call)}.neg()"),
+                    "-" => Negated(value, prefix, context),
                     _ => JsExpr.Prefix(text, value),
                 }, context);
             }
@@ -67,6 +68,8 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
                 return JsExpr.Callish($"{JsExprWriter.WriteIn(negatable, JsPrecedence.Call)}.neg()");
             }
 
+            if (prefix.OperatorToken.Text == "-")
+                return Negated(context.Converter.ConvertIr(prefix.Operand), prefix, context);
             return JsExpr.Prefix(prefix.OperatorToken.Text,
                 context.Converter.ConvertIr(prefix.Operand));
         }
@@ -142,6 +145,24 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
         var one = width.Bits == 64 ? JsExpr.Literal("1n") : JsExpr.Literal("1");
         return current => IntegerWidth.Settle(JsExpr.Binary(current, delta, one), type,
             arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context);
+    }
+
+    /// <summary>
+    /// A negation settled by its result's width in the context it sits in (IntegerWidth): C#'s
+    /// <c>checked(-x)</c> throws for int.MinValue and an explicit <c>unchecked</c> negation of
+    /// long.MinValue wraps back to it, where JavaScript's <c>-</c> answers one more than the type
+    /// holds. The result is an int or a long (a narrower operand promotes, a uint's is a long), and
+    /// neither wraps by default, so a plain negation stays the plain operator.
+    /// </summary>
+    private static JsExpr Negated(JsExpr operand, PrefixUnaryExpressionSyntax prefix, ConversionContext context)
+    {
+        var negated = JsExpr.Prefix("-", operand);
+        var result = context.SemanticHelper.GetType(prefix).UnwrapNullable();
+        if (IntegerWidth.Of(result) is null) return negated;
+        var arithmetic = ArithmeticContext.Of(prefix, context);
+        return arithmetic.IsChecked || arithmetic.ExplicitUnchecked
+            ? IntegerWidth.Settle(negated, result, arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context)
+            : negated;
     }
 
     /// <summary>Whether the step's RESULT is read — false in the two places an increment is pure
