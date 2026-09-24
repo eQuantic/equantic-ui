@@ -323,7 +323,7 @@ src/
 ├── eQuantic.Build/             # eqc — the transpiler CLI the SDK runs; ships as tools/net10.0/eqc.dll
 ├── eQuantic.UI.Generators/     # Source generator: the declarative factory surface for an app's own components
 ├── eQuantic.UI.Sdk/            # MSBuild SDK for web apps (Sdk.props, Sdk.targets, Resources/boot.ts)
-├── eQuantic.UI.Runtime/        # TypeScript browser runtime (reconciler, state, events) → runtime.js
+├── eQuantic.UI.Runtime/        # TypeScript browser runtime's source and tests (reconciler, state, events); the Server bundles it
 ├── eQuantic.UI.Runtime.*/      # Embedded Bun, one package per OS+arch (Osx64, OsxArm64, Win64, WinArm64, Linux64, LinuxArm64)
 ├── eQuantic.UI.Native.*/       # PHOTON, the native track: Engine (+ .Metal/.Vulkan/.Reference backends),
 │                               # Framework, Components, Hosting, Build (eqicon — vectors, app icons, manifests;
