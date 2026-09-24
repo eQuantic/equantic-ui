@@ -389,4 +389,24 @@ public class BclOverloadConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
+
+    /// <summary>
+    /// ToDictionary's keys where the dictionary's shape decides the answer: a key a plain object
+    /// holds only as its own entry ("__proto__", which an assignment hands to the prototype's
+    /// setter), and a structural key (a record), whose dictionary is a value map that compares keys
+    /// by value, where a plain object wrote every record as the same "[object Object]".
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("return new[] { \"__proto__\", \"a\" }.ToDictionary(s => s).Count;")]                       // 2
+    [InlineData("var d = new[] { \"__proto__\" }.ToDictionary(s => s, s => 1); return d.ContainsKey(\"__proto__\");")] // true
+    [InlineData("var d = new[] { \"__proto__\" }.ToDictionary(s => s, s => 7); return d[\"__proto__\"];")]  // 7
+    [InlineData("try { new[] { \"__proto__\", \"__proto__\" }.ToDictionary(s => s); return \"added\"; } catch (Exception e) { return e.Message; }")]
+    [InlineData("var d = new[] { new Point(1, 2), new Point(3, 4) }.ToDictionary(p => p, p => p.X); return d[new Point(3, 4)] * 10 + d.Count;")] // 32
+    [InlineData("return new[] { new Point(1, 2), new Point(3, 4) }.ToDictionary(p => p).ContainsKey(new Point(3, 4));")] // true
+    [InlineData("try { new[] { new Point(1, 2), new Point(1, 2) }.ToDictionary(p => p); return \"added\"; } catch { return \"threw\"; }")] // "threw": equal by value
+    public void ToDictionaryKeys_MatchDotNet(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, "public record Point(int X, int Y);");
+    }
 }

@@ -58,7 +58,7 @@ import {
 } from './utils/overflow';
 import { double, single } from './utils/real-text';
 import { fromBase, toBase } from './utils/convert-base';
-import { max, min, toDictionary } from './utils/linq';
+import { max, min, toDictionary, toValueDictionary } from './utils/linq';
 import {
   compare,
   compareRange,
@@ -164,7 +164,7 @@ export const $eq = {
   /** LINQ Zip: pairs stop with the shorter sequence. */
   zip,
   /** LINQ's Max and Min by the type they answer, and ToDictionary with .NET's refusals. */
-  linq: { max, min, toDictionary },
+  linq: { max, min, toDictionary, toValueDictionary },
   /** C# `with` over a runtime value type — prototype preserved. */
   withPatch,
   /** C# range indexing whose endpoints count from the end — see `slice`. */

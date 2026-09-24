@@ -85,6 +85,9 @@ public static class Eq
     public const string LinqMin = "$eq.linq.min";
     /// <summary>LINQ <c>ToDictionary</c> into a plain object, refusing a null key and a key twice.</summary>
     public const string LinqToDictionary = "$eq.linq.toDictionary";
+    /// <summary>LINQ <c>ToDictionary</c> with a structural key (a record, a struct, a tuple), into the
+    /// value map such a dictionary is, with the same refusals.</summary>
+    public const string LinqToValueDictionary = "$eq.linq.toValueDictionary";
     /// <summary>Where each text element (an extended grapheme cluster, UAX #29) of a string begins:
     /// <c>StringInfo.ParseCombiningCharacters</c>, answered by the platform's segmenter.</summary>
     public const string TextElementStarts = "$eq.text.textElementStarts";

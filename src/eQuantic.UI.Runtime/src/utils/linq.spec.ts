@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { max, min, toDictionary } from './linq';
+import { max, min, toDictionary, toValueDictionary } from './linq';
 
 // Every answer below was measured on .NET 10; the conformance suite runs the same calls on both sides.
 describe('max and min (LINQ Max/Min)', () => {
@@ -42,6 +42,29 @@ describe('toDictionary (LINQ ToDictionary)', () => {
         (x) => x * 10,
       ),
     ).toEqual({ 1: 10, 2: 20 });
+  });
+
+  it('holds "__proto__" as an entry of its own', () => {
+    const d = toDictionary(['__proto__', 'a'], (x) => x);
+    expect(Object.keys(d)).toEqual(['__proto__', 'a']);
+    expect(Object.getPrototypeOf(d)).toBe(Object.prototype);
+    expect(() => toDictionary(['__proto__', '__proto__'], (x) => x)).toThrow(
+      'An item with the same key has already been added. Key: __proto__',
+    );
+  });
+
+  it('keys a structural value by its value', () => {
+    const point = (x: number, y: number) => ({ x, y });
+    const d = toValueDictionary(
+      [point(1, 2), point(3, 4)],
+      (p) => p,
+      (p) => p.x,
+    );
+    expect(d.size).toBe(2);
+    expect(d.get(point(3, 4))).toBe(3);
+    expect(() => toValueDictionary([point(1, 2), point(1, 2)], (p) => p)).toThrow(
+      'An item with the same key has already been added.',
+    );
   });
 
   it("refuses a key twice and a null key, with .NET's words", () => {

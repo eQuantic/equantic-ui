@@ -61,21 +61,22 @@ public class LinqTableStrategy : IExpressionIrStrategy
     }
 
     /// <summary>
-    /// <c>ToDictionary</c> into the plain object a dictionary of primitive keys is on this side, by
-    /// the runtime, which refuses a null key and a key twice as .NET does: <c>Object.fromEntries</c>
-    /// kept the last of two and wrote a null as "null". An empty template is a comparer, which has no
-    /// form here; null leaves the table's shape, for a key a plain object cannot hold (a record, a
-    /// struct, a tuple), whose dictionary is a value map and is not this helper's.
+    /// <c>ToDictionary</c> by the runtime, which refuses a null key and a key twice as .NET does:
+    /// <c>Object.fromEntries</c> kept the last of two and wrote a null as "null". Into the plain object
+    /// a dictionary of primitive keys is on this side, or, for a structural key (a record, a struct, a
+    /// tuple), into the value map such a dictionary is, which compares keys by value: a plain object
+    /// wrote every record as the same "[object Object]". An empty template is a comparer, which has no
+    /// form here; null is a call no model binds, which keeps the table's shape.
     /// </summary>
     private static string? ToDictionary(InvocationExpressionSyntax invocation, ConversionContext context)
     {
         if (context.SemanticHelper.GetSymbol(invocation) is not IMethodSymbol { TypeArguments: [_, var key, ..] } method)
             return null;
         if (method.Parameters.Any(parameter => parameter.Type.Name == "IEqualityComparer")) return "";
-        if (key.IsStructuralValueType()) return null;
+        var helper = key.IsStructuralValueType() ? Eq.LinqToValueDictionary : Eq.LinqToDictionary;
         return invocation.ArgumentList.Arguments.Count == 2
-            ? $"{Eq.LinqToDictionary}({{0}}, {{1}}, {{2}})"
-            : $"{Eq.LinqToDictionary}({{0}}, {{1}})";
+            ? $"{helper}({{0}}, {{1}}, {{2}})"
+            : $"{helper}({{0}}, {{1}})";
     }
 
     private static string? Template(string name, int argCount) => (name, argCount) switch
