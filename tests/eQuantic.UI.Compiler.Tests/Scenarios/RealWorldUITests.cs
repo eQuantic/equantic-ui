@@ -245,7 +245,10 @@ public class RealWorldUITests
         // nothing in it answered true for "constructor" and handed Object's method back as a hit.
         result.Should().Contain("!Object.prototype.hasOwnProperty.call(this.cache, this.key)");
         result.Should().Contain("this.cache[");
-        result.Should().Contain("((result = this.cache[this.key]), true)");
+        // TryGetValue names the receiver and the key twice, and both are properties here: each is
+        // bound once, and a miss writes default(string) to the out.
+        result.Should().Contain(
+            "(($0, $1) => (Object.prototype.hasOwnProperty.call($0, $1) ? ((result = $0[$1]), true) : ((result = null), false)))(this.cache, this.key)");
     }
 
     // ============ Array Static Methods in Loops ============

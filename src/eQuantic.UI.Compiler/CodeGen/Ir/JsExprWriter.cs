@@ -87,9 +87,10 @@ public static class JsExprWriter
     /// Single evaluation, decided here and nowhere else. A part the template mentions more than
     /// once is bound to a parameter of an arrow and passed exactly once — unless it is a plain name
     /// or a literal, whose repeated read no program can observe, in which case it is inlined. Once
-    /// any part is bound, every earlier part that could be observed is bound too, so the arguments
-    /// are still evaluated in the order C# evaluates them (receiver first, then each argument).
-    /// The fill is ONE pass — a part's text is never scanned for holes of its own.
+    /// any part is bound, every earlier part that is not <see cref="IsFixed">fixed</see> is bound
+    /// too, so the arguments are still evaluated in the order C# evaluates them (receiver first,
+    /// then each argument). The fill is ONE pass — a part's text is never scanned for holes of its
+    /// own.
     /// </summary>
     private static string RenderTemplate(JsTemplate template)
     {
@@ -102,20 +103,32 @@ public static class JsExprWriter
         for (var i = 0; i < parts.Count; i++)
             bound[i] = uses[i] > 1 && !IsInlinable(parts[i]);
         var last = Array.LastIndexOf(bound, true);
+        // A bound part runs FIRST, as the arrow's argument, and a name left inline is read later,
+        // in the body, after whatever that part did. C# had read the name before it: a key whose
+        // call reassigns the receiver's variable (`d.TryGetValue(Swap(), out var v)`) looked the key
+        // up in the dictionary it had swapped in. So an earlier name is bound too, and only what
+        // nothing can reassign stays inline.
         for (var i = 0; i < last; i++)
-            bound[i] |= !IsInlinable(parts[i]);
+            bound[i] |= !IsFixed(parts[i]);
 
         // …and a part left INLINE runs where its hole is, after every bound one — so the inline
-        // parts that can be observed must meet their holes in the order C# evaluates them, or two
-        // effects swap. A template that fills its slots out of argument order (a named argument
-        // placed in another parameter's hole) binds every observable part instead.
+        // parts must meet their holes in the order C# evaluates them wherever an effect is on
+        // either side of the swap: two effects would run in the other order, and a name would be
+        // read on the other side of a call that reassigns it. Two names alone may swap, since
+        // reading one cannot change the other. A template that fills its slots out of argument
+        // order (a named argument placed in another parameter's hole) binds every part that is
+        // not fixed instead.
         var inlineOrder = Hole.Matches(template.Text)
             .Select(match => int.Parse(match.Groups[1].Value))
-            .Where(index => !bound[index] && !IsInlinable(parts[index]))
+            .Where(index => !bound[index] && !IsFixed(parts[index]))
             .ToList();
-        if (inlineOrder.Zip(inlineOrder.Skip(1)).Any(pair => pair.First > pair.Second))
+        var swapped = inlineOrder
+            .SelectMany((earlier, at) => inlineOrder.Skip(at + 1).Select(later => (Earlier: earlier, Later: later)))
+            .Any(pair => pair.Earlier > pair.Later
+                && !(IsInlinable(parts[pair.Earlier]) && IsInlinable(parts[pair.Later])));
+        if (swapped)
         {
-            for (var i = 0; i < parts.Count; i++) bound[i] |= !IsInlinable(parts[i]);
+            for (var i = 0; i < parts.Count; i++) bound[i] |= !IsFixed(parts[i]);
             last = Array.LastIndexOf(bound, true);
         }
 
@@ -152,9 +165,17 @@ public static class JsExprWriter
 
     /// <summary>A read nobody can observe happening twice: a bare name (locals and parameters
     /// have no getters; <c>this</c> is a keyword) or a literal. A member read is NOT one — a
-    /// property getter may count its calls.</summary>
-    private static bool IsInlinable(JsExpr part) =>
+    /// property getter may count its calls. Internal so a template that must decide WHEN a part is
+    /// read (<see cref="Strategies.DictionaryLookup"/>) asks this rule rather than keep a copy.</summary>
+    internal static bool IsInlinable(JsExpr part) =>
         part is JsLiteral || part is JsIdentifier { Name: var name } && !name.Contains('.');
+
+    /// <summary>A part whose value nothing else in the template can change: a literal, or
+    /// <c>this</c> and <c>super</c>, which are keywords — and <c>super</c> is not a value an arrow
+    /// could even be passed. A local's name is NOT fixed: a call among the other parts can
+    /// reassign it.</summary>
+    private static bool IsFixed(JsExpr part) =>
+        part is JsLiteral || part is JsIdentifier { Name: "this" or "super" };
 
     /// <summary>A receiver must be at least call-shaped; a bare number additionally needs
     /// parentheses, because <c>1.toString()</c> reads the dot as a decimal point.</summary>

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using eQuantic.UI.Primitives;
 
@@ -44,15 +45,18 @@ public static class SdkStrings
     /// <summary>The code editor's accessible name when the app gives it no caption.</summary>
     public static string CodeEditor => SdkResources.CodeEditor;
 
-    /// <summary>What a press on a gutter row acts on, for assistive tech: "Line 12".</summary>
-    public static string LineNumbered(int number) => string.Format(SdkResources.LineNumbered, number);
+    /// <summary>What a press on a gutter row acts on, for assistive tech: "Line 12". The culture is
+    /// named: where no model binds the resource (an app's build reads this file as source), a
+    /// template in first place could be a provider, and eqc refuses to guess which.</summary>
+    public static string LineNumbered(int number) =>
+        string.Format(CultureInfo.CurrentCulture, SdkResources.LineNumbered, number);
 
     // The code diff: a folded run of unchanged lines, the way through the changes, and its two sides.
 
     /// <summary>What a folded run says it hides: one line in the singular, any other count in the
     /// plural, which is the whole of the rule in the languages the SDK ships.</summary>
     public static string UnchangedLines(int count) =>
-        count == 1 ? SdkResources.UnchangedLine : string.Format(SdkResources.UnchangedLines, count);
+        count == 1 ? SdkResources.UnchangedLine : string.Format(CultureInfo.CurrentCulture, SdkResources.UnchangedLines, count);
 
     public static string PreviousChange => SdkResources.PreviousChange;
     public static string NextChange => SdkResources.NextChange;

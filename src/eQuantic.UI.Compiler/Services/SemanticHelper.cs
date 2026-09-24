@@ -242,6 +242,14 @@ public class SemanticHelper
         return value != null;
     }
 
+    /// <summary>Whether the expression is the constant null — <c>null</c>, or a reference type's
+    /// <c>default</c>, cast or not — which <see cref="TryGetConstantValue"/> answers as no constant.</summary>
+    public bool IsNullConstant(SyntaxNode node)
+    {
+        node = Original(node);
+        return Knows(node) && _semanticModel!.GetConstantValue(node) is { HasValue: true, Value: null };
+    }
+
     // The LINQ name-gate moved to ConversionContext.IsLinqMethod: whether a NAME may decide is a
     // policy question (CanGuess — authoritative model or not), and policy lives on the context.
 

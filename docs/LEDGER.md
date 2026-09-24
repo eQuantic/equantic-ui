@@ -619,6 +619,22 @@ record of a release, the wiki's Upgrading page is the distillate.
   is missing now throws as .NET does, through the guard compound assignments read with, which closes
   three of the conversion gaps. A decimal remainder is exact and stays a decimal: the runtime's
   Decimal had none, so `%` computed in doubles (`0.3m % 0.1m` was `0.09999999999999998`).
+- **2026-09-24 · A value is written as .NET writes it, through the formatter too**: a bool's
+  `ToString()` was JavaScript's `false` ([#381](https://github.com/eQuantic/equantic-ui/issues/381));
+  `string.Format` took a format provider for its template, which threw `CultureInfo is not defined`
+  in the browser ([#377](https://github.com/eQuantic/equantic-ui/issues/377)); and a float that
+  reached the formatter printed the double underneath, since a number cannot say it is a single
+  ([#378](https://github.com/eQuantic/equantic-ui/issues/378)). `ToString()` on a bool takes the
+  concatenation's conversion; `string.Format` binds its arguments by the method and follows the
+  formatting culture policy; the compiler tells the formatter a float's kind where it knows it, and
+  boxes a float passed to `string.Format` with it. `G`, `R` and a placeholder with no specifier write
+  .NET's notation, and a placeholder aligns. From the review: a null provider formats with the current
+  culture, as .NET reads it, and a params array passed whole spreads by the form C# bound, so a
+  `string[]` or a collection expression is formatted element by element, where it was one value.
+  Each value is passed in its parameter's slot and evaluated where it was written, a named argument
+  included, and with no model to bind the call a named culture is still known for the provider. An
+  invariant conversion writes the invariant culture's date patterns and the generic ¤, where it read
+  the reader's.
 
 - **2026-09-24 · The code editor is a component**: slice 1c of
   [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#375](https://github.com/eQuantic/equantic-ui/pull/375)).
@@ -657,6 +673,30 @@ record of a release, the wiki's Upgrading page is the distillate.
   `Trim` family and `IsNullOrWhiteSpace` read one list, where JavaScript's left U+0085 and took
   U+FEFF (the twin's word diff split on it), and a bare `Split()` splits on it instead of into
   characters. The view's design, a row that is not a line, is the plan's ninth section.
+- **2026-09-24 · The BCL audit probes every arity**: a static surface was probed by name, so only
+  the shortest overload of each member was graded, and a group whose first overload takes an
+  `IFormatProvider` or an `IComparer` hid its siblings
+  ([#390](https://github.com/eQuantic/equantic-ui/pull/390)). Probed by name and arity, from the first
+  overload a probe can write, the baseline gained 59 lines, and each `native` or `eq` one is a claim
+  that `BclOverloadConformanceTests` runs on both sides: 161 of its 288 cases failed before the fixes.
+  `Convert` reads and writes an integer in a base as .NET does (a port of `ParseNumbers`), the
+  `TimeSpan` factories count every component and read a double to the tick, `string.Compare`,
+  `CompareOrdinal`, `Equals` with a comparison, `Concat` and a ranged `Join` answer as .NET's,
+  `char.IsWhiteSpace` reads the White_Space property, LINQ's `Max` and `Min` order by the type they
+  answer, `ToDictionary` refuses a key twice, and `DateOnly`/`TimeOnly.ParseExact` are EQ2004 where
+  they threw in the browser. The review found more of the kind, each measured on .NET before it was
+  fixed: a dictionary keyed by what a plain object cannot hold (a `DateTime`, a class, an enum with
+  aliases) is EQ1004 and a record key is held by value, `GroupBy` and `ToLookup` compare a record or
+  a date key by value, a named argument fills its own parameter, a double past 2^53 ticks multiplies
+  as .NET's does, an ordinal comparison that ignores case reads a surrogate pair as its code point,
+  `Max`/`Min` over a type with no `compareTo` here is EQ1004 where .NET's default comparer throws,
+  a LINQ operator called as `Enumerable.Count(source)` is EQ1004 where every strategy but `Max` and
+  `Min` read the type as its source, and a record holding NaN equals itself, as a double's `Equals`
+  holds it, while a tuple's `==` stays its elements'. Found on the way, each a task: the audit
+  grades `eq` without asking whether the member exists (9 lines are a TypeError in the browser),
+  overloads of one arity are still one probe (267 more lines by signature), a `Dictionary<int, T>`
+  loses insertion order, a decimal constant does not cross, a lone surrogate in a string literal
+  is written raw, and the date types' `Add*` round a double to the millisecond.
 
 ## Retired documents
 

@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
@@ -6,8 +7,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 
 /// <summary>
 /// Strategy for System.Convert.ToXxx conversions, argument-type aware where it matters.
-/// <c>ToDecimal</c> is .NET's, by the type it converts (see <see cref="ToDecimal"/>). The rest cover
-/// the common faithful cases; semantics that need .NET-exact behavior (banker's rounding for
+/// <c>ToDecimal</c> is .NET's, by the type it converts (see <see cref="ToDecimal"/>), and text into
+/// any other numeric type reads as that type's Parse does (see <see cref="TextReader"/>). The rest
+/// cover the common faithful cases; semantics that need .NET-exact behavior (banker's rounding for
 /// numeric→integer, Int64 precision) are best-effort here and will move to the eq compat helper
 /// (see DOTNET-COVERAGE-PROGRAM.md).
 /// </summary>
@@ -32,6 +34,17 @@ public class ConvertStrategy : IExpressionIrStrategy
         var args = invocation.ArgumentList.Arguments;
         if (args.Count == 0) return JsExpr.Identifier("undefined");
 
+        // Reading or writing an integer in a BASE is settled by the overload C# bound, which the
+        // method's name cannot say: the base went nowhere, so "ff" in base 16 was NaN and -1 in
+        // base 16 was "-1".
+        if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol method && BaseTemplate(method) is { } template)
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var parts = args.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToArray();
+            return JsExpr.Template(PrimitiveStaticStrategy.BindNamedArguments(template, invocation, method),
+                parts, context.TypeAnnotations);
+        }
+
         var (argExpr, providerExpr) = Arguments(invocation, context);
         if (name == "ToDecimal")
         {
@@ -42,7 +55,91 @@ public class ConvertStrategy : IExpressionIrStrategy
                 ParseCulture.Check(invocation, providerExpr, context);
             return ToDecimal(argExpr, context);
         }
+        if (ReadsText(invocation, argExpr, context) && TextReader(name) is { } text)
+        {
+            // Text is read in a culture, and the browser reads the invariant one (see ParseCulture).
+            // A null literal is never read, so no culture is involved.
+            if (!argExpr.IsKind(SyntaxKind.NullLiteralExpression))
+                ParseCulture.Check(invocation, providerExpr, context);
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Template($"{text.Reader}({{0}}, '{text.Tag}')", [context.Converter.ConvertIr(argExpr)],
+                context.TypeAnnotations);
+        }
         return JsExpr.Opaque(Converted(name, argExpr, context));
+    }
+
+    /// <summary>
+    /// Whether the overload C# bound reads TEXT: its value parameter is a string. The argument's
+    /// own type cannot say for a bare null, which has none and binds to the string overload all the
+    /// same, so <c>Convert.ToInt32(null)</c> is 0 and was the null <c>$eq.math.round</c> handed
+    /// back. With no model, the argument's type is all there is.
+    /// </summary>
+    private static bool ReadsText(InvocationExpressionSyntax invocation, ExpressionSyntax value, ConversionContext context) =>
+        context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol method
+            ? method.Parameters.FirstOrDefault(parameter => parameter.Ordinal == 0)?.Type.SpecialType == SpecialType.System_String
+            : context.SemanticHelper.GetType(value)?.SpecialType == SpecialType.System_String;
+
+    /// <summary>
+    /// The runtime's reader for text converted to an integer or a binary floating-point type, and
+    /// the tag that names the type to it, or null for a conversion that is not one of those.
+    /// <c>Convert.ToInt32(string)</c> is <c>int.Parse</c> over the text, except that a null text is
+    /// 0, and so on for every width: <c>parseInt</c> read "12abc" as 12 and a long's text into a
+    /// number, where every other long on this side is a BigInt (#376).
+    /// </summary>
+    private static (string Reader, string Tag)? TextReader(string name) => name switch
+    {
+        "ToByte" => (Eq.IntConvert, "byte"),
+        "ToSByte" => (Eq.IntConvert, "sbyte"),
+        "ToInt16" => (Eq.IntConvert, "short"),
+        "ToUInt16" => (Eq.IntConvert, "ushort"),
+        "ToInt32" => (Eq.IntConvert, "int"),
+        "ToUInt32" => (Eq.IntConvert, "uint"),
+        "ToInt64" => (Eq.IntConvert, "long"),
+        "ToUInt64" => (Eq.IntConvert, "ulong"),
+        "ToDouble" => (Eq.RealConvert, "double"),
+        "ToSingle" => (Eq.RealConvert, "single"),
+        _ => null,
+    };
+
+    /// <summary>
+    /// The template for an overload that reads or writes an integer in a base, or null. Reading is
+    /// <c>(string value, int fromBase)</c> into any of the eight integer types, answering what .NET's
+    /// overload for that type answers: the text is the type's BITS in a base other than 10, so
+    /// "ffffffff" is -1 for an int. Writing is <c>(integer value, int toBase)</c> on a byte, a short,
+    /// an int or a long, a byte written as the int it widens to, as .NET's own overload does, and a
+    /// negative number as its bits in any base but 10.
+    /// </summary>
+    private static string? BaseTemplate(IMethodSymbol method)
+    {
+        if (method.Parameters is not [var value, { Type.SpecialType: SpecialType.System_Int32 } radix]) return null;
+        if (radix.Name == "fromBase" && value.Type.SpecialType == SpecialType.System_String)
+        {
+            var target = method.ReturnType.SpecialType switch
+            {
+                SpecialType.System_Byte => "byte",
+                SpecialType.System_SByte => "sbyte",
+                SpecialType.System_Int16 => "short",
+                SpecialType.System_UInt16 => "ushort",
+                SpecialType.System_Int32 => "int",
+                SpecialType.System_UInt32 => "uint",
+                SpecialType.System_Int64 => "long",
+                SpecialType.System_UInt64 => "ulong",
+                _ => null,
+            };
+            return target is null ? null : $"{Eq.FromBase}({{0}}, {{1}}, '{target}')";
+        }
+        if (radix.Name == "toBase")
+        {
+            var bits = value.Type.SpecialType switch
+            {
+                SpecialType.System_Int16 => 16,
+                SpecialType.System_Byte or SpecialType.System_Int32 => 32,
+                SpecialType.System_Int64 => 64,
+                _ => 0,
+            };
+            return bits == 0 ? null : $"{Eq.ToBase}({{0}}, {{1}}, {bits})";
+        }
+        return null;
     }
 
     /// <summary>
@@ -130,10 +227,11 @@ public class ConvertStrategy : IExpressionIrStrategy
         var argType = context.SemanticHelper.GetType(argExpr);
         var isStringArg = argType?.SpecialType == SpecialType.System_String;
 
-        // Numeric → integer uses .NET banker's rounding via the $eq.math.round compat helper.
+        // Numeric → integer uses .NET banker's rounding via the $eq.math.round compat helper. Text
+        // never gets here: it reads as the type's Parse does (TextReader).
         bool isIntegerTarget = name is "ToInt32" or "ToInt16" or "ToByte" or "ToSByte"
             or "ToUInt32" or "ToUInt16" or "ToInt64" or "ToUInt64";
-        if (isIntegerTarget && !isStringArg)
+        if (isIntegerTarget)
         {
             context.UsedHelpers.Add(Eq.Import);
             return $"{Eq.Round}({value})";
@@ -150,11 +248,10 @@ public class ConvertStrategy : IExpressionIrStrategy
         return name switch
         {
             "ToString" => $"String({value})",
-            "ToInt32" or "ToInt16" or "ToByte" or "ToSByte" or "ToUInt32" or "ToUInt16" or "ToInt64" or "ToUInt64"
-                => $"parseInt({value}, 10)", // string arg
-            // A single, as every float this side produces (SinglePrecision).
-            "ToSingle" => isStringArg ? $"Math.fround(parseFloat({value}))" : $"Math.fround(Number({value}))",
-            "ToDouble" => isStringArg ? $"parseFloat({value})" : $"Number({value})",
+            // A single, as every float this side produces (SinglePrecision). Text never gets here:
+            // it reads as float.Parse and double.Parse do (TextReader).
+            "ToSingle" => $"Math.fround(Number({value}))",
+            "ToDouble" => $"Number({value})",
             "ToBoolean" => isStringArg
                 ? $"(String({value}).trim().toLowerCase() === 'true')"
                 : $"(({value}) !== 0)",

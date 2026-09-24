@@ -487,8 +487,10 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
         {
             return name switch
             {
-                // Ordinal by definition — the one string comparison with an exact JS twin.
-                "CompareOrdinal" when argCount == 2 => "({0} < {1} ? -1 : {0} > {1} ? 1 : 0)",
+                // .NET answers the DIFFERENCE of the first two code units that differ, or of the
+                // lengths, and orders a null first: `CompareOrdinal("a", "c")` is -2, where a
+                // three-way comparison said -1, and a null compared as nothing at all.
+                "CompareOrdinal" when argCount == 2 => "$eq.text.compare({0}, {1}, 'ordinal')",
                 // The intern pool is an allocation concern; the string itself is the answer.
                 "Intern" when argCount == 1 => "{0}",
                 _ => null,

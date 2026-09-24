@@ -50,7 +50,7 @@ export class CodeLanguages {
     static for(name: string | null) {
         let language: any;
         if ((!$eq.text.hasNonWhiteSpace(name))) return CodeLanguages.plainText;
-        return (Object.prototype.hasOwnProperty.call(CodeLanguages.known, CodeLanguages.keyOf(name)) ? ((language = CodeLanguages.known[CodeLanguages.keyOf(name)]), true) : false) ? language : CodeLanguages.plainText;
+        return (($0: any, $1: any) => (Object.prototype.hasOwnProperty.call($0, $1) ? ((language = $0[$1]), true) : ((language = null), false)))(CodeLanguages.known, CodeLanguages.keyOf(name)) ? language : CodeLanguages.plainText;
     }
 
     static keyOf(name: string) {

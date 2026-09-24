@@ -48,7 +48,7 @@ export class CodeDiffer {
         let result = new Array(items.length).fill(0);
         let next = Object.keys(ids).length;
         for (let i = 0; i < items.length; i++) {
-            if (!(Object.prototype.hasOwnProperty.call(ids, items[i]) ? ((id = ids[items[i]]), true) : false)) {
+            if (!(($0: any, $1: any) => (Object.prototype.hasOwnProperty.call($0, $1) ? ((id = $0[$1]), true) : ((id = 0), false)))(ids, items[i])) {
                 id = next++;
                 ids[items[i]] = id;
             }
@@ -81,8 +81,9 @@ export class CodeDiffer {
         let n = aHi - aLo;
         let m = bHi - bLo;
         let maxD = Math.trunc((n + m + 1) / 2);
-        let offset = maxD;
-        let length = 2 * maxD + 2;
+        let reach = Math.min(maxD, CodeDiffer.maxRounds);
+        let offset = reach;
+        let length = 2 * reach + 2;
         let forward = new Array(length).fill(0);
         let reverse = new Array(length).fill(0);
         for (let k = 0; k < length; k++) {
@@ -156,12 +157,10 @@ export class CodeDiffer {
         let aTexts: string[] = [];
         let aLines: number[] = [];
         let aColumns: number[] = [];
-        CodeDiffer.tokenize(original, originalStart, originalCount, aTexts, aLines, aColumns);
         let bTexts: string[] = [];
         let bLines: number[] = [];
         let bColumns: number[] = [];
-        CodeDiffer.tokenize(modified, modifiedStart, modifiedCount, bTexts, bLines, bColumns);
-        if (aTexts.length > CodeDiffer.innerTokenLimit || bTexts.length > CodeDiffer.innerTokenLimit) return [];
+        if (!CodeDiffer.tokenize(original, originalStart, originalCount, aTexts, aLines, aColumns) || !CodeDiffer.tokenize(modified, modifiedStart, modifiedCount, bTexts, bLines, bColumns)) return [];
         let ids: Record<string, number> = {};
         let a = CodeDiffer.idsOf(aTexts, ids);
         let b = CodeDiffer.idsOf(bTexts, ids);
@@ -195,6 +194,7 @@ export class CodeDiffer {
                 texts.push('\n');
                 tokenLines.push(line - 1);
                 tokenColumns.push(lines[line - 1].length);
+                if (texts.length > CodeDiffer.innerTokenLimit) return false;
             }
             let text = lines[line];
             let column = 0;
@@ -210,8 +210,10 @@ export class CodeDiffer {
                 texts.push($eq.text.substring(text, begin, column - begin));
                 tokenLines.push(line);
                 tokenColumns.push(begin);
+                if (texts.length > CodeDiffer.innerTokenLimit) return false;
             }
         }
+        return true;
     }
 
     static span(texts: string[], lines: number[], columns: number[], from: number, to: number, end: CodePosition) {

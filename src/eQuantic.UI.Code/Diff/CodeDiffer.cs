@@ -135,9 +135,14 @@ public static class CodeDiffer
         var n = aHi - aLo;
         var m = bHi - bLo;
         var maxD = (n + m + 1) / 2;
-        var offset = maxD;
+        // The walks go no further than MaxRounds diagonals either way, so neither do the arrays: sized
+        // from maxD alone, two long unrelated texts allocated two arrays as long as both of them,
+        // for rounds that were never going to run. What lies past the reach was never written, and
+        // every read that could land there is bounded below.
+        var reach = Math.Min(maxD, MaxRounds);
+        var offset = reach;
         // Two slots of headroom: the walks read one diagonal past the last one they write.
-        var length = 2 * maxD + 2;
+        var length = 2 * reach + 2;
         var forward = new int[length];
         var reverse = new int[length];
         for (var k = 0; k < length; k++)
@@ -246,12 +251,12 @@ public static class CodeDiffer
         var aTexts = new List<string>();
         var aLines = new List<int>();
         var aColumns = new List<int>();
-        Tokenize(original, originalStart, originalCount, aTexts, aLines, aColumns);
         var bTexts = new List<string>();
         var bLines = new List<int>();
         var bColumns = new List<int>();
-        Tokenize(modified, modifiedStart, modifiedCount, bTexts, bLines, bColumns);
-        if (aTexts.Count > InnerTokenLimit || bTexts.Count > InnerTokenLimit) return [];
+        if (!Tokenize(original, originalStart, originalCount, aTexts, aLines, aColumns)
+            || !Tokenize(modified, modifiedStart, modifiedCount, bTexts, bLines, bColumns))
+            return [];
 
         var ids = new Dictionary<string, int>();
         var a = IdsOf(aTexts, ids);
@@ -289,8 +294,11 @@ public static class CodeDiffer
     /// The tokens of <paramref name="count"/> lines from <paramref name="start"/>: runs of word
     /// characters, runs of whitespace, and every other character (a surrogate pair whole) by itself,
     /// with a line break between two lines. Each token's text, line and column go to the three lists.
+    /// False as soon as there are more than <see cref="InnerTokenLimit"/>: the region is a rewrite, and
+    /// the tokens past the limit are never built (a line of a million punctuation marks built a
+    /// million substrings before the limit was asked).
     /// </summary>
-    private static void Tokenize(IReadOnlyList<string> lines, int start, int count,
+    private static bool Tokenize(IReadOnlyList<string> lines, int start, int count,
         List<string> texts, List<int> tokenLines, List<int> tokenColumns)
     {
         for (var line = start; line < start + count; line++)
@@ -300,6 +308,7 @@ public static class CodeDiffer
                 texts.Add("\n");
                 tokenLines.Add(line - 1);
                 tokenColumns.Add(lines[line - 1].Length);
+                if (texts.Count > InnerTokenLimit) return false;
             }
             var text = lines[line];
             var column = 0;
@@ -321,8 +330,10 @@ public static class CodeDiffer
                 texts.Add(text.Substring(begin, column - begin));
                 tokenLines.Add(line);
                 tokenColumns.Add(begin);
+                if (texts.Count > InnerTokenLimit) return false;
             }
         }
+        return true;
     }
 
     /// <summary>

@@ -21,19 +21,84 @@ export const NumberStyles = {
   AllowCurrencySymbol: 256,
   AllowHexSpecifier: 512,
   AllowBinarySpecifier: 1024,
+  /** `NumberStyles.Integer`, the style an integer type reads when the call names none. */
+  Integer: 7,
   /** `NumberStyles.Number`, the style `decimal.Parse` reads when the call names none. */
   Number: 111,
+  /** `NumberStyles.Float`: `double.Parse` and `float.Parse` read it with `AllowThousands` beside. */
+  Float: 167,
+  /** `NumberStyles.HexNumber`: the hex specifier and whitespace around it, nothing else. */
+  HexNumber: 515,
+  /** `NumberStyles.BinaryNumber`: the binary specifier and whitespace around it, nothing else. */
+  BinaryNumber: 1027,
 } as const;
+
+/** Every flag NumberStyles defines; a bit beyond them is not a style. */
+const DEFINED_STYLES = 2047;
+const UNDEFINED_STYLE = "An undefined NumberStyles value is being used. (Parameter 'style')";
+
+/** `ArgumentNullException` for the text a Parse was handed, as .NET words it. */
+export const NULL_TEXT = "Value cannot be null. (Parameter 's')";
+
+/** The FormatException a Parse throws for text its grammar refuses, as .NET words it. */
+export function badFormat(text: string): Error {
+  return new Error(`The input string '${text}' was not in a correct format.`);
+}
+
+/**
+ * `NumberFormatInfo.ValidateParseStyleInteger`: a flag NumberStyles does not define, or the hex or
+ * the binary specifier beside anything but the whitespace around it, is an ArgumentException.
+ */
+export function validateIntegerStyles(styles: number): void {
+  if (
+    (styles &
+      (~DEFINED_STYLES | NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) !==
+      0 &&
+    (styles & ~NumberStyles.HexNumber) !== 0 &&
+    (styles & ~NumberStyles.BinaryNumber) !== 0
+  ) {
+    throw new Error(
+      (styles & ~DEFINED_STYLES) !== 0
+        ? UNDEFINED_STYLE
+        : 'With the AllowHexSpecifier or AllowBinarySpecifier bit set in the enum bit field, the ' +
+            'only other valid bits that can be combined into the enum value must be ' +
+            "AllowLeadingWhite and AllowTrailingWhite. (Parameter 'style')",
+    );
+  }
+}
+
+/**
+ * `NumberFormatInfo.ValidateParseStyleFloatingPoint`, which `decimal`, `double` and `float` share:
+ * a flag NumberStyles does not define, or either specifier at all, is an ArgumentException.
+ */
+export function validateRealStyles(styles: number): void {
+  if (
+    (styles &
+      (~DEFINED_STYLES | NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) !==
+    0
+  ) {
+    throw new Error(
+      (styles & ~DEFINED_STYLES) !== 0
+        ? UNDEFINED_STYLE
+        : 'The number styles AllowHexSpecifier and AllowBinarySpecifier are not supported on ' +
+            "floating point data types. (Parameter 'style')",
+    );
+  }
+}
 
 /**
  * What a number's text says before a type holds it: the sign, the significant digits from the
  * first that is not zero (every one of them, trailing zeros included), and where the point falls
  * among them, so that the number is `0.digits × 10^scale`. `0.050` is `{ digits: '50', scale: -1 }`.
+ * And whether a decimal point was read at all, because an integer read from a zero keeps the zero's
+ * sign only when one was: .NET's `uint.Parse("-0.0", NumberStyles.Float)` overflows, and
+ * `uint.Parse("-0", NumberStyles.Float)` is 0.
  */
 export interface NumberText {
   negative: boolean;
   digits: string;
   scale: number;
+  point: boolean;
 }
 
 const SIGN = 0x01;
@@ -57,7 +122,7 @@ const EXPONENT_LIMIT = 100_000_000;
 const INT_MAX = 2_147_483_647;
 
 /** .NET's whitespace for a number: space, and `\t` through `\r`. */
-function isWhite(ch: number): boolean {
+export function isWhite(ch: number): boolean {
   return ch === 0x20 || (ch >= 0x09 && ch <= 0x0d);
 }
 
@@ -204,5 +269,5 @@ export function readNumber(text: string, styles: number): NumberText | undefined
   for (let index = p; index < end; index++) {
     if (text.charCodeAt(index) !== 0) return undefined;
   }
-  return { negative, digits, scale };
+  return { negative, digits, scale, point: (state & DECIMAL) !== 0 };
 }

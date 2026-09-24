@@ -2,8 +2,8 @@ namespace eQuantic.UI.Code;
 
 /// <summary>
 /// The languages this SDK ships, by name. A registry rather than an enum because an app may bring
-/// its own: <c>CodeLanguages.Register(new SqlLanguage())</c> and the editor colours it with no
-/// change here.
+/// its own: <c>CodeLanguages.Register("sql", new SqlLanguage())</c> and the editor colours it with
+/// no change here.
 /// </summary>
 public static class CodeLanguages
 {

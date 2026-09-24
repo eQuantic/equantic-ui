@@ -64,7 +64,7 @@ export class CodePatch {
         let comma = text.indexOf(',');
         let lineText = comma < 0 ? text : text.slice(0, comma);
         let countText = comma < 0 ? '1' : text.slice((comma + 1));
-        if (!(line = parseInt(lineText), !isNaN(line)) || !(count = parseInt(countText), !isNaN(count))) return null;
+        if (!((line = $eq.num.intTryParse(lineText, 'int')) !== undefined || ((line = 0), false)) || !((count = $eq.num.intTryParse(countText, 'int')) !== undefined || ((count = 0), false))) return null;
         return [line, count];
     }
 

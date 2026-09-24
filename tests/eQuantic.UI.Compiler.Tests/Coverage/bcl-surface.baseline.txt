@@ -1,7 +1,7 @@
 # eqc BCL surface audit — the coverage DENOMINATOR, one verdict per probed member.
 # native = a strategy mapped it to plain JS · eq = routed through a $eq compat helper
 # fenced:EQxxxx = refused with that diagnostic · invalid-probe = the probe itself doesn't compile
-# totals: eq=131 · fenced=35 · invalid-probe=6 · native=732
+# totals: eq=186 · fenced=42 · invalid-probe=6 · native=729
 native         Array.MaxLength
 native         Boolean.CompareTo(Boolean)
 native         Boolean.CompareTo(Object)
@@ -9,7 +9,7 @@ native         Boolean.Equals(Boolean)
 native         Boolean.Equals(Object)
 native         Boolean.FalseString
 native         Boolean.Parse(String)
-native         Boolean.ToString()
+eq             Boolean.ToString()
 native         Boolean.TrueString
 native         Char.CompareTo(Char)
 native         Char.CompareTo(Object)
@@ -18,7 +18,9 @@ native         Char.ConvertToUtf32(Char,Char)
 native         Char.Equals(Char)
 native         Char.Equals(Object)
 fenced:EQ1001  Char.GetNumericValue(Char)
+fenced:EQ1001  Char.GetNumericValue(String,Int32)
 eq             Char.GetUnicodeCategory(Char)
+eq             Char.GetUnicodeCategory(String,Int32)
 native         Char.IsAscii(Char)
 native         Char.IsAsciiDigit(Char)
 native         Char.IsAsciiHexDigit(Char)
@@ -30,20 +32,34 @@ native         Char.IsAsciiLetterOrDigit(Char)
 native         Char.IsAsciiLetterUpper(Char)
 native         Char.IsBetween(Char,Char,Char)
 native         Char.IsControl(Char)
+native         Char.IsControl(String,Int32)
 native         Char.IsDigit(Char)
+native         Char.IsDigit(String,Int32)
 native         Char.IsHighSurrogate(Char)
+fenced:EQ1001  Char.IsHighSurrogate(String,Int32)
 native         Char.IsLetter(Char)
+native         Char.IsLetter(String,Int32)
 native         Char.IsLetterOrDigit(Char)
+native         Char.IsLetterOrDigit(String,Int32)
 native         Char.IsLowSurrogate(Char)
+fenced:EQ1001  Char.IsLowSurrogate(String,Int32)
 native         Char.IsLower(Char)
+native         Char.IsLower(String,Int32)
 native         Char.IsNumber(Char)
+native         Char.IsNumber(String,Int32)
 native         Char.IsPunctuation(Char)
+native         Char.IsPunctuation(String,Int32)
 native         Char.IsSeparator(Char)
+native         Char.IsSeparator(String,Int32)
 native         Char.IsSurrogate(Char)
+fenced:EQ1001  Char.IsSurrogate(String,Int32)
 native         Char.IsSurrogatePair(String,Int32)
 native         Char.IsSymbol(Char)
+native         Char.IsSymbol(String,Int32)
 native         Char.IsUpper(Char)
+native         Char.IsUpper(String,Int32)
 eq             Char.IsWhiteSpace(Char)
+eq             Char.IsWhiteSpace(String,Int32)
 native         Char.MaxValue
 native         Char.MinValue
 native         Char.Parse(String)
@@ -59,20 +75,29 @@ fenced:EQ2004  Convert.FromBase64String(String)
 fenced:EQ2004  Convert.FromHexString(String)
 fenced:EQ2004  Convert.IsDBNull(Object)
 native         Convert.ToBoolean(Object)
-native         Convert.ToByte(Object)
+eq             Convert.ToByte(Object)
+eq             Convert.ToByte(String,Int32)
 native         Convert.ToChar(Object)
 eq             Convert.ToDateTime(DateTime)
 eq             Convert.ToDecimal(Object)
-native         Convert.ToDouble(Object)
-native         Convert.ToInt16(Object)
-native         Convert.ToInt32(Object)
-native         Convert.ToInt64(Object)
-native         Convert.ToSByte(Object)
-native         Convert.ToSingle(Object)
+eq             Convert.ToDouble(Object)
+eq             Convert.ToInt16(Object)
+eq             Convert.ToInt16(String,Int32)
+eq             Convert.ToInt32(Object)
+eq             Convert.ToInt32(String,Int32)
+eq             Convert.ToInt64(Object)
+eq             Convert.ToInt64(String,Int32)
+eq             Convert.ToSByte(Object)
+eq             Convert.ToSByte(String,Int32)
+eq             Convert.ToSingle(Object)
+eq             Convert.ToString(Byte,Int32)
 native         Convert.ToString(Object)
-native         Convert.ToUInt16(Object)
-native         Convert.ToUInt32(Object)
-native         Convert.ToUInt64(Object)
+eq             Convert.ToUInt16(Object)
+eq             Convert.ToUInt16(String,Int32)
+eq             Convert.ToUInt32(Object)
+eq             Convert.ToUInt32(String,Int32)
+eq             Convert.ToUInt64(Object)
+eq             Convert.ToUInt64(String,Int32)
 native         DateOnly.AddDays(Int32)
 native         DateOnly.AddMonths(Int32)
 native         DateOnly.AddYears(Int32)
@@ -90,6 +115,7 @@ eq             DateOnly.MaxValue
 eq             DateOnly.MinValue
 native         DateOnly.Month
 eq             DateOnly.Parse(String)
+fenced:EQ2004  DateOnly.ParseExact(String,String)
 eq             DateOnly.ToDateTime(TimeOnly)
 native         DateOnly.ToLongDateString()
 native         DateOnly.ToShortDateString()
@@ -275,6 +301,7 @@ native         Double.IsRealNumber(Double)
 native         Double.IsSubnormal(Double)
 eq             Double.Lerp(Double,Double,Double)
 native         Double.Log(Double)
+eq             Double.Log(Double,Double)
 native         Double.Log10(Double)
 native         Double.Log10P1(Double)
 native         Double.Log2(Double)
@@ -296,7 +323,7 @@ eq             Double.MultiplyAddEstimate(Double,Double,Double)
 native         Double.NaN
 native         Double.NegativeInfinity
 native         Double.NegativeZero
-native         Double.Parse(String)
+eq             Double.Parse(String)
 native         Double.Pi
 native         Double.PositiveInfinity
 native         Double.Pow(Double,Double)
@@ -305,6 +332,8 @@ fenced:EQ1001  Double.ReciprocalEstimate(Double)
 fenced:EQ1001  Double.ReciprocalSqrtEstimate(Double)
 eq             Double.RootN(Double,Int32)
 eq             Double.Round(Double)
+eq             Double.Round(Double,Int32)
+eq             Double.Round(Double,Int32,MidpointRounding)
 native         Double.ScaleB(Double,Int32)
 native         Double.Sign(Double)
 native         Double.Sin(Double)
@@ -349,6 +378,7 @@ native         Enumerable.FirstOrDefault/0
 native         Enumerable.FirstOrDefault/1
 native         Enumerable.FirstOrDefault/2
 native         Enumerable.GroupBy/1
+native         Enumerable.GroupBy/2
 fenced:EQ2004  Enumerable.Index/0
 native         Enumerable.Intersect/1
 native         Enumerable.IntersectBy/2
@@ -359,9 +389,11 @@ native         Enumerable.LastOrDefault/1
 native         Enumerable.LastOrDefault/2
 eq             Enumerable.LongCount/0
 eq             Enumerable.LongCount/1
-native         Enumerable.Max/0
+eq             Enumerable.Max/0
+eq             Enumerable.Max/1
 native         Enumerable.MaxBy/1
-native         Enumerable.Min/0
+eq             Enumerable.Min/0
+eq             Enumerable.Min/1
 native         Enumerable.MinBy/1
 invalid-probe  Enumerable.OfType/0
 native         Enumerable.Order/0
@@ -388,9 +420,12 @@ native         Enumerable.TakeLast/1
 native         Enumerable.TakeWhile/1
 native         Enumerable.ToArray/0
 invalid-probe  Enumerable.ToDictionary/0
+eq             Enumerable.ToDictionary/1
+eq             Enumerable.ToDictionary/2
 native         Enumerable.ToHashSet/0
 native         Enumerable.ToList/0
 native         Enumerable.ToLookup/1
+native         Enumerable.ToLookup/2
 native         Enumerable.Union/1
 native         Enumerable.UnionBy/2
 native         Enumerable.Where/1
@@ -455,7 +490,7 @@ native         Int32.MaxValue
 native         Int32.Min(Int32,Int32)
 native         Int32.MinMagnitude(Int32,Int32)
 native         Int32.MinValue
-native         Int32.Parse(String)
+eq             Int32.Parse(String)
 eq             Int32.PopCount(Int32)
 native         Int32.RotateLeft(Int32,Int32)
 native         Int32.RotateRight(Int32,Int32)
@@ -485,7 +520,7 @@ native         Int64.MaxValue
 native         Int64.Min(Int64,Int64)
 eq             Int64.MinMagnitude(Int64,Int64)
 native         Int64.MinValue
-native         Int64.Parse(String)
+eq             Int64.Parse(String)
 eq             Int64.PopCount(Int64)
 eq             Int64.RotateLeft(Int64,Int32)
 eq             Int64.RotateRight(Int64,Int32)
@@ -538,6 +573,7 @@ native         Math.Clamp(Byte,Byte,Byte)
 native         Math.CopySign(Double,Double)
 native         Math.Cos(Double)
 native         Math.Cosh(Double)
+eq             Math.DivRem(Byte,Byte)
 native         Math.E
 native         Math.Exp(Double)
 native         Math.Floor(Double)
@@ -545,6 +581,7 @@ eq             Math.FusedMultiplyAdd(Double,Double,Double)
 eq             Math.IEEERemainder(Double,Double)
 eq             Math.ILogB(Double)
 native         Math.Log(Double)
+eq             Math.Log(Double,Double)
 native         Math.Log10(Double)
 native         Math.Log2(Double)
 native         Math.Max(Byte,Byte)
@@ -556,6 +593,8 @@ native         Math.Pow(Double,Double)
 fenced:EQ1004  Math.ReciprocalEstimate(Double)
 fenced:EQ1004  Math.ReciprocalSqrtEstimate(Double)
 eq             Math.Round(Decimal)
+eq             Math.Round(Decimal,Int32)
+eq             Math.Round(Decimal,Int32,MidpointRounding)
 native         Math.ScaleB(Double,Int32)
 eq             Math.Sign(Decimal)
 native         Math.Sin(Double)
@@ -588,6 +627,7 @@ eq             MathF.FusedMultiplyAdd(Single,Single,Single)
 eq             MathF.IEEERemainder(Single,Single)
 eq             MathF.ILogB(Single)
 native         MathF.Log(Single)
+eq             MathF.Log(Single,Single)
 native         MathF.Log10(Single)
 native         MathF.Log2(Single)
 native         MathF.Max(Single,Single)
@@ -599,6 +639,8 @@ native         MathF.Pow(Single,Single)
 fenced:EQ1004  MathF.ReciprocalEstimate(Single)
 fenced:EQ1004  MathF.ReciprocalSqrtEstimate(Single)
 eq             MathF.Round(Single)
+eq             MathF.Round(Single,Int32)
+eq             MathF.Round(Single,Int32,MidpointRounding)
 native         MathF.ScaleB(Single,Int32)
 native         MathF.Sign(Single)
 native         MathF.Sin(Single)
@@ -667,11 +709,18 @@ native         Stack<Int32>.ToArray()
 native         Stack<Int32>.TrimExcess()
 native         Stack<Int32>.TrimExcess(Int32)
 native         String.Clone()
-native         String.Compare(String,String)
-native         String.CompareOrdinal(String,String)
+eq             String.Compare(String,Int32,String,Int32,Int32)
+eq             String.Compare(String,Int32,String,Int32,Int32,Boolean)
+eq             String.Compare(String,String)
+eq             String.Compare(String,String,Boolean)
+fenced:EQ1001  String.CompareOrdinal(String,Int32,String,Int32,Int32)
+eq             String.CompareOrdinal(String,String)
 native         String.CompareTo(Object)
 native         String.CompareTo(String)
 native         String.Concat(Object)
+native         String.Concat(Object,Object)
+native         String.Concat(Object,Object,Object)
+native         String.Concat(String,String,String,String)
 native         String.Contains(Char)
 native         String.Contains(Char,StringComparison)
 native         String.Contains(String)
@@ -684,8 +733,11 @@ fenced:EQ2004  String.EnumerateRunes()
 native         String.Equals(Object)
 native         String.Equals(String)
 native         String.Equals(String,String)
+eq             String.Equals(String,String,StringComparison)
 native         String.Equals(String,StringComparison)
 eq             String.Format(String,Object)
+eq             String.Format(String,Object,Object)
+eq             String.Format(String,Object,Object,Object)
 native         String.IndexOf(Char)
 native         String.IndexOf(Char,Int32)
 native         String.IndexOf(Char,Int32,Int32)
@@ -706,6 +758,7 @@ native         String.IsNormalized()
 native         String.IsNullOrEmpty(String)
 eq             String.IsNullOrWhiteSpace(String)
 native         String.Join(Char,String[])
+eq             String.Join(Char,String[],Int32,Int32)
 native         String.LastIndexOf(Char)
 native         String.LastIndexOf(Char,Int32)
 native         String.LastIndexOf(Char,Int32,Int32)
@@ -827,6 +880,7 @@ eq             TimeOnly.MinValue
 native         TimeOnly.Minute
 native         TimeOnly.Nanosecond
 eq             TimeOnly.Parse(String)
+fenced:EQ2004  TimeOnly.ParseExact(String,String)
 native         TimeOnly.Second
 native         TimeOnly.Ticks
 native         TimeOnly.ToLongTimeString()
@@ -846,11 +900,16 @@ native         TimeSpan.Equals(Object)
 eq             TimeSpan.Equals(TimeSpan)
 eq             TimeSpan.Equals(TimeSpan,TimeSpan)
 eq             TimeSpan.FromDays(Double)
+eq             TimeSpan.FromDays(Int32,Int32,Int64,Int64,Int64,Int64)
 eq             TimeSpan.FromHours(Int32)
+eq             TimeSpan.FromHours(Int32,Int64,Int64,Int64,Int64)
 eq             TimeSpan.FromMicroseconds(Int64)
 eq             TimeSpan.FromMilliseconds(Int64)
+eq             TimeSpan.FromMilliseconds(Int64,Int64)
 eq             TimeSpan.FromMinutes(Int64)
+eq             TimeSpan.FromMinutes(Int64,Int64,Int64,Int64)
 eq             TimeSpan.FromSeconds(Int64)
+eq             TimeSpan.FromSeconds(Int64,Int64,Int64)
 eq             TimeSpan.FromTicks(Int64)
 native         TimeSpan.Hours
 native         TimeSpan.HoursPerDay

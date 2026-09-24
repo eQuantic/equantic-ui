@@ -58,12 +58,12 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         // written: the value it takes follows every rule below, as any compound target's does. A
         // template of its own had returned ahead of them, so a float entry's `+=` added doubles, a
         // decimal's glued two texts together and a byte's never wrapped.
-        (JsExpr Receiver, JsExpr Key)? entry = null;
+        (DictionaryEntry Form, JsExpr Receiver, JsExpr Key)? entry = null;
         if (!assignment.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression)
-            && ReadModifyWrite.EntryOf(assignment.Left, context) is { } target)
+            && DictionaryEntry.Of(assignment.Left, context) is { } target)
         {
-            entry = (context.Converter.ConvertIr(target.Expression),
-                context.Converter.ConvertIr(target.ArgumentList.Arguments[0].Expression));
+            entry = (target.Entry, context.Converter.ConvertIr(target.Access.Expression),
+                context.Converter.ConvertIr(target.Access.ArgumentList.Arguments[0].Expression));
         }
 
         var leftIr = context.Converter.ConvertIr(assignment.Left);
@@ -84,8 +84,8 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         // Every compound this strategy spells out as `target = next(target, value)` evaluates the
         // target once, as JavaScript's own `op=` and C# both do (ReadModifyWrite): the text names it
         // twice, so `values[i++] += x` would otherwise step `i` twice.
-        JsExpr Compound(Func<JsExpr, JsExpr, JsExpr> next) => entry is var (receiver, key)
-            ? ReadModifyWrite.AssignEntry(
+        JsExpr Compound(Func<JsExpr, JsExpr, JsExpr> next) => entry is var (form, receiver, key)
+            ? ReadModifyWrite.AssignEntry(form,
                 receiver, key, [rightIr], (current, operands) => next(current, operands[0]), answerOld: false, context)
             : ReadModifyWrite.Assign(
                 leftIr, [rightIr], (current, operands) => next(current, operands[0]), answerOld: false, context);

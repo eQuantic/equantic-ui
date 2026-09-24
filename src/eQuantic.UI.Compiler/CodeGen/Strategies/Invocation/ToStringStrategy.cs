@@ -1,6 +1,7 @@
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Invocation;
 
@@ -35,6 +36,29 @@ public class ToStringStrategy : IConversionStrategy
         // in no browser, so the page died with "CultureInfo is not defined" while the server, which
         // runs the C#, was perfectly happy.
         var args = invocation.ArgumentList.Arguments;
+        var receiverType = context.SemanticHelper.GetType(memberAccess.Expression);
+
+        // A BOOL writes True or False, what a concatenation already writes it as (StringConversion):
+        // `String(b)` lowercased it (#381). Its provider changes nothing, and a null bool? is empty.
+        // C# still evaluates the provider, after the receiver: one that could have an effect runs,
+        // in that order, and one that could not is left out — a named culture, a null, a literal,
+        // or a name bound to a local, a parameter or a field. A bare name can be a PROPERTY, whose
+        // getter may have one.
+        if (receiverType.UnwrapNullable() is { SpecialType: SpecialType.System_Boolean })
+        {
+            var ignored = args.FirstOrDefault(argument => IsFormatProvider(argument.Expression, context))?.Expression;
+            if (ignored is null || ignored is LiteralExpressionSyntax
+                || ignored is IdentifierNameSyntax && context.SemanticHelper.GetSymbol(ignored) is ILocalSymbol or IParameterSymbol or IFieldSymbol
+                || NamedCulture.IsInvariant(ignored, context) || NamedCulture.IsCurrent(ignored, context))
+                return JsExprWriter.Write(StringConversion.ToDotNetString(memberAccess.Expression,
+                    context.Converter.ConvertIr(memberAccess.Expression), context));
+            // `$value`: no C# name can take it, so nothing the provider names is shadowed.
+            var text = StringConversion.ToDotNetString(memberAccess.Expression, JsExpr.Identifier("$value"), context);
+            return JsExprWriter.Write(JsExpr.Template($"(($value) => ({{1}}, {JsExprWriter.Write(text)}))({{0}})",
+                [context.Converter.ConvertIr(memberAccess.Expression), context.Converter.ConvertIr(ignored)],
+                context.TypeAnnotations));
+        }
+
         var provider = args.FirstOrDefault(argument => IsFormatProvider(argument.Expression, context));
         var formatArg = args.FirstOrDefault(argument => argument != provider);
 
@@ -62,9 +86,11 @@ public class ToStringStrategy : IConversionStrategy
             var fmt = context.Converter.ConvertExpression(formatArg.Expression);
             context.UsedHelpers.Add(Eq.Import);
             // The alignment slot stays empty: this shape has none, and the invariant flag is what
-            // makes the helper stop reading the culture the reader happens to be in.
-            return invariant
-                ? $"{Eq.Format}({caller}, {fmt}, undefined, true)"
+            // makes the helper stop reading the culture the reader happens to be in. A float says
+            // it is one, since `G` and `R` write a single's own digits (#378).
+            var kind = receiverType.UnwrapNullable() is { SpecialType: SpecialType.System_Single } ? ", 'single'" : "";
+            return invariant || kind.Length > 0
+                ? $"{Eq.Format}({caller}, {fmt}, undefined, {(invariant ? "true" : "undefined")}{kind})"
                 : $"{Eq.Format}({caller}, {fmt})";
         }
 

@@ -1,21 +1,21 @@
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Invocation;
 
 /// <summary>
 /// Strategy for Dictionary method invocations.
 /// Handles:
-/// - ContainsKey(key) → key in obj
-/// - TryGetValue(key, out var val) → (val = obj[key]) !== undefined
+/// - ContainsKey(key) → the object's own key
+/// - TryGetValue(key, out var val), GetValueOrDefault(key[, fallback]) → see DictionaryLookup
 /// - Add(key, value) → obj[key] = value
 /// - Remove(key) → delete obj[key]
-/// - Clear() → Object.keys(obj).forEach(k => delete obj[k])
+/// - Clear() → Object.keys(obj).forEach(($k) => delete obj[$k]), obj evaluated once
 /// - Keys → Object.keys(obj)
 /// - Values → Object.values(obj)
 /// </summary>
-public class DictionaryStrategy : IConversionStrategy
+public class DictionaryStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
@@ -26,7 +26,7 @@ public class DictionaryStrategy : IConversionStrategy
                 return false;
 
             var methodName = memberAccess.Name.Identifier.Text;
-            if (methodName is not ("ContainsKey" or "TryGetValue" or "TryGetValueOrDefault" or "GetValueOrDefault" or "Add" or "Remove" or "Clear"))
+            if (methodName is not ("ContainsKey" or "TryGetValue" or "GetValueOrDefault" or "Add" or "Remove" or "Clear"))
                 return false;
 
             // Check via semantic model if available
@@ -40,15 +40,15 @@ public class DictionaryStrategy : IConversionStrategy
                 var containingType = symbol.ContainingType.ToDisplayString();
                 if (containingType.Contains("Dictionary") || containingType.Contains("IDictionary") || containingType.Contains("CollectionExtensions"))
                     return true;
-                
+
                 if (symbol.IsExtensionMethod && symbol.Parameters.Length > 0)
                 {
                     var receiverType = symbol.Parameters[0].Type.ToDisplayString();
                     if (receiverType.Contains("Dictionary") || receiverType.Contains("IDictionary"))
                         return true;
                 }
-                
-                // For GetValueOrDefault, we trust the name even if semantic check is ambiguous 
+
+                // For GetValueOrDefault, we trust the name even if semantic check is ambiguous
                 // (could be a library method where containing type isn't clearly 'Dictionary')
                 if (methodName == "GetValueOrDefault") return true;
 
@@ -81,7 +81,7 @@ public class DictionaryStrategy : IConversionStrategy
         return false;
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         // Handle property access (Keys, Values)
         if (node is MemberAccessExpressionSyntax propertyAccess)
@@ -106,9 +106,17 @@ public class DictionaryStrategy : IConversionStrategy
 
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         var methodName = memberAccess.Name.Identifier.Text;
-        var caller = context.Converter.ConvertExpression(memberAccess.Expression);
-
         var args = invocation.ArgumentList.Arguments;
+
+        // The two lookups answer as .NET's do, and evaluate each argument once — DictionaryLookup.
+        if (methodName == "TryGetValue" && args.Count > 1)
+            return DictionaryLookup.PlainObject.TryGetValue(invocation, context);
+
+        if (methodName == "GetValueOrDefault" && args.Count > 0)
+            return DictionaryLookup.PlainObject.GetValueOrDefault(invocation, context);
+
+        var receiver = context.Converter.ConvertIr(memberAccess.Expression);
+        var caller = receiver.ToString();
 
         // ContainsKey(key) asks for the object's OWN key, never `key in obj`: `in` walks the
         // prototype chain, so an empty dictionary answers true for "constructor", "toString" and
@@ -121,46 +129,6 @@ public class DictionaryStrategy : IConversionStrategy
         {
             var key = context.Converter.ConvertExpression(args[0].Expression);
             return $"Object.prototype.hasOwnProperty.call({caller}, {key})";
-        }
-
-        // TryGetValue(key, out var val) → (val = obj[key]) !== undefined
-        if ((methodName == "TryGetValue" || methodName == "TryGetValueOrDefault") && args.Count > 1)
-        {
-            var key = context.Converter.ConvertExpression(args[0].Expression);
-
-            // Extract the out variable name
-            string outVar;
-            var outArg = args[1];
-            if (outArg.RefOrOutKeyword.IsKind(SyntaxKind.OutKeyword))
-            {
-                if (outArg.Expression is DeclarationExpressionSyntax decl)
-                {
-                    outVar = decl.Designation.ToString();
-                }
-                else
-                {
-                    outVar = outArg.Expression.ToString().Trim();
-                }
-            }
-            else
-            {
-                outVar = context.Converter.ConvertExpression(outArg.Expression);
-            }
-
-            // Guarded by hasOwn for the same reason ContainsKey is: `caller["toString"]` finds a
-            // function on the prototype, so the miss reported a hit and handed back Object's method.
-            return $"(Object.prototype.hasOwnProperty.call({caller}, {key}) ? (({outVar} = {caller}[{key}]), true) : false)";
-        }
-
-        // GetValueOrDefault(key, defaultValue?) → (caller[key] ?? defaultValue)
-        if (methodName == "GetValueOrDefault" && args.Count > 0)
-        {
-            var key = context.Converter.ConvertExpression(args[0].Expression);
-            var defaultValue = args.Count > 1 
-                ? context.Converter.ConvertExpression(args[1].Expression)
-                : "null";
-
-            return $"({caller}[{key}] ?? {defaultValue})";
         }
 
         // Add(key, value) → obj[key] = value
@@ -178,10 +146,13 @@ public class DictionaryStrategy : IConversionStrategy
             return $"delete {caller}[{key}]";
         }
 
-        // Clear() → Object.keys(obj).forEach(k => delete obj[k])
+        // Clear() deletes every own key of ONE object: the receiver is evaluated once (the writer
+        // binds a part the template names twice), where the text used to name it again for every
+        // key it deleted. And the arrow's parameter is `$k`, which no C# name can be: a dictionary
+        // called `k` was shadowed by it, and `k.Clear()` deleted nothing.
         if (methodName == "Clear" && args.Count == 0)
         {
-            return $"Object.keys({caller}).forEach(k => delete {caller}[k])";
+            return JsExpr.Template("Object.keys({0}).forEach(($k) => delete {0}[$k])", [receiver], context.TypeAnnotations);
         }
 
         // Fallback
