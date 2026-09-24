@@ -6,10 +6,10 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace eQuantic.UI.Compiler.CodeGen;
 
-/// <summary>One value member of a record/struct — its declared name, camelCased JS name, the JS
-/// literal for its <c>default(T)</c> (used for omitted constructor arguments), and the TS type for its
-/// type-only declaration.</summary>
-public readonly record struct ValueMember(string Display, string Js, string Default, string TsType);
+/// <summary>One value member of a record/struct — its declared name, camelCased JS name, and the TS
+/// type for its type-only declaration. What an omitted argument leaves in it is not part of the
+/// member list: the twin's constructor writes it, from the declaration (<see cref="RecordTypeEmitter"/>).</summary>
+public readonly record struct ValueMember(string Display, string Js, string TsType);
 
 /// <summary>
 /// Extracts the value members of a record/struct declaration — the data that participates in
@@ -20,11 +20,8 @@ public readonly record struct ValueMember(string Display, string Js, string Defa
 public static class TypeDeclarationExtensions
 {
     /// <param name="type">The declaration whose value members to read.</param>
-    /// <param name="model">The semantic model, when the caller has one. A default that is not a
-    /// literal — <c>TextAlignment.Start</c>, a named constant — can only be lowered by ASKING what it
-    /// is, and getting it wrong is silent: the C# side used Start while the emitted class defaulted to
-    /// null, so the same column aligned one way on the server and the other on the client. Without a
-    /// model the literal rules still apply and everything else stays <c>default(T)</c>.</param>
+    /// <param name="model">The semantic model, when the caller has one, which the member TYPES are
+    /// asked of (an enum crosses as its member string, an interface as nothing to name).</param>
     public static IReadOnlyList<ValueMember> ValueMembers(this TypeDeclarationSyntax type,
         SemanticModel? model = null)
     {
@@ -34,16 +31,7 @@ public static class TypeDeclarationExtensions
         if (type.ParameterList != null)
         {
             foreach (var p in type.ParameterList.Parameters)
-            {
-                // An OPTIONAL parameter's own default wins over `default(T)` — `string Tag = ""`
-                // must construct as `''`, not null, or every call site that omits it reads null
-                // (and `Tag.Length` throws the moment the page hydrates).
-                var fallback = p.Default is { } declared
-                    ? DefaultLiteral(declared.Value, model)
-                    : DefaultOf(p.Type, model);
-                members.Add(new ValueMember(
-                    p.Identifier.Text, p.Identifier.Text.ToCamelCase(), fallback, TsTypeFor(p.Type, model)));
-            }
+                members.Add(new ValueMember(p.Identifier.Text, p.Identifier.Text.ToCamelCase(), TsTypeFor(p.Type, model)));
         }
 
         foreach (var member in type.Members)
@@ -59,10 +47,7 @@ public static class TypeDeclarationExtensions
                          && prop.AccessorList?.Accessors.Any(a => a.IsKind(SyntaxKind.GetAccessorDeclaration)
                              && a.Body == null && a.ExpressionBody == null) == true:
                     members.Add(new ValueMember(
-                        prop.Identifier.Text,
-                        prop.Identifier.Text.ToCamelCase(),
-                        prop.Initializer is { } init ? DefaultLiteral(init.Value, model) : DefaultOf(prop.Type, model),
-                        TsTypeFor(prop.Type, model)));
+                        prop.Identifier.Text, prop.Identifier.Text.ToCamelCase(), TsTypeFor(prop.Type, model)));
                     break;
 
                 // Public instance fields (common in plain structs).
@@ -77,74 +62,13 @@ public static class TypeDeclarationExtensions
                          && !field.Modifiers.Any(SyntaxKind.StaticKeyword)
                          && !field.Modifiers.Any(SyntaxKind.ConstKeyword):
                     foreach (var v in field.Declaration.Variables)
-                        members.Add(new ValueMember(v.Identifier.Text, v.Identifier.Text.ToCamelCase(), DefaultOf(field.Declaration.Type, model), TsTypeFor(field.Declaration.Type, model)));
+                        members.Add(new ValueMember(v.Identifier.Text, v.Identifier.Text.ToCamelCase(), TsTypeFor(field.Declaration.Type, model)));
                     break;
             }
         }
 
         return members;
     }
-
-    /// <summary>
-    /// The JS literal for a DECLARED default (`= ""`, `= 0`, `= true`, `= null`). Anything more
-    /// interesting than a literal (a const reference, an expression) falls back to the type's
-    /// `default(T)` — the emitter runs pre-symbol and must not guess.
-    /// </summary>
-    private static string DefaultLiteral(ExpressionSyntax expression, SemanticModel? model = null)
-    {
-        // An enum member is a camelCase STRING everywhere in the emitted world, and a named constant
-        // is its value. Both need the model to be recognised; neither can be guessed from the syntax,
-        // since `Space.S2` and `TextAlignment.Start` are written identically.
-        if (expression is MemberAccessExpressionSyntax or IdentifierNameSyntax
-            && model is not null
-            && ReferenceEquals(expression.SyntaxTree, model.SyntaxTree))
-        {
-            var symbol = model.GetSymbolInfo(expression).Symbol;
-            if (symbol is IFieldSymbol { ContainingType.TypeKind: TypeKind.Enum } member)
-                return "'" + member.Name.ToCamelCase() + "'";
-            if (symbol is IFieldSymbol { HasConstantValue: true, ConstantValue: { } constant })
-                return constant switch
-                {
-                    string text => "'" + text.Replace("\\", "\\\\").Replace("'", "\\'") + "'",
-                    bool flag => flag ? "true" : "false",
-                    null => "null",
-                    _ => System.Convert.ToString(constant, System.Globalization.CultureInfo.InvariantCulture) ?? "null",
-                };
-        }
-
-        return LiteralOf(expression);
-    }
-
-    private static string LiteralOf(ExpressionSyntax expression) => expression switch
-    {
-        LiteralExpressionSyntax literal when literal.IsKind(SyntaxKind.StringLiteralExpression) =>
-            "'" + literal.Token.ValueText.Replace("\\", "\\\\").Replace("'", "\\'") + "'",
-        LiteralExpressionSyntax literal when literal.IsKind(SyntaxKind.TrueLiteralExpression) => "true",
-        LiteralExpressionSyntax literal when literal.IsKind(SyntaxKind.FalseLiteralExpression) => "false",
-        LiteralExpressionSyntax literal when literal.IsKind(SyntaxKind.NumericLiteralExpression) =>
-            literal.Token.ValueText,
-        LiteralExpressionSyntax literal when literal.IsKind(SyntaxKind.NullLiteralExpression) => "null",
-        // A char is a one-character STRING on the other side — the same thing `text[i]` gives back.
-        LiteralExpressionSyntax literal when literal.IsKind(SyntaxKind.CharacterLiteralExpression) =>
-            "'" + literal.Token.ValueText.Replace("\\", "\\\\").Replace("'", "\\'") + "'",
-        // A collection expression default. `= []` is an empty array on both sides — and one WITH
-        // elements is an array of them, which used to come out `null`: a member declared as a list
-        // of bracket pairs arrived as nothing, and the first `foreach` over it threw "not iterable"
-        // somewhere with no clue where the value was supposed to come from.
-        CollectionExpressionSyntax collection =>
-            "[" + string.Join(", ", collection.Elements.Select(ElementOf)) + "]",
-        _ => "null",
-    };
-
-    /// <summary>One element of a collection-expression default. A tuple is an ARRAY on the other
-    /// side, which is what the deconstruction strategies already bank on.</summary>
-    private static string ElementOf(CollectionElementSyntax element) => element switch
-    {
-        ExpressionElementSyntax { Expression: TupleExpressionSyntax tuple } =>
-            "[" + string.Join(", ", tuple.Arguments.Select(a => LiteralOf(a.Expression))) + "]",
-        ExpressionElementSyntax expression => LiteralOf(expression.Expression),
-        _ => "null",
-    };
 
     /// <summary>
     /// TS type for a value member's TYPE-ONLY declaration, from the declared type syntax (name-based —

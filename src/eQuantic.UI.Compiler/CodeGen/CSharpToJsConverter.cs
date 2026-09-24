@@ -75,6 +75,9 @@ public class CSharpToJsConverter
     }
 
     /// <summary>Names the array an ITERATOR method is filling — null outside one.</summary>
+    /// <summary>See <see cref="ConversionContext.ConstructorParametersInScope"/>.</summary>
+    public void SetConstructorParametersInScope(bool inScope) => _context.ConstructorParametersInScope = inScope;
+
     public void SetIteratorBuffer(string? buffer)
     {
         _context.IteratorBuffer = buffer;
