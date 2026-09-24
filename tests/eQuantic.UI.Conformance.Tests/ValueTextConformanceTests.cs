@@ -75,6 +75,9 @@ public class ValueTextConformanceTests
     [InlineData("float[] xs = [0.1f]; return string.Format(\"{0}\", [.. xs]);")]                                  // "0.1"
     [InlineData("var xs = new List<float> { 0.1f, 0.2f }; return string.Format(\"{0}|{1}\", [.. xs]);")]           // "0.1|0.2"
     [InlineData("float[] xs = [0.1f]; return string.Format(\"{0}|{1}\", [2, .. xs]);")]                           // "2|0.1"
+    // A NULL params array throws on both sides: .NET's ArgumentNullException, and spreading null. Controls.
+    [InlineData("try { return string.Format(\"literal\", (object[])null); } catch { return \"throws\"; }")]
+    [InlineData("object[] args = null; try { return string.Format(\"literal {0}\", args); } catch { return \"throws\"; }")]
     // An INVARIANT provider writes the invariant culture's date patterns and currency sign.
     [InlineData("var d = new DateTime(2026, 9, 24, 10, 30, 15); return string.Format(System.Globalization.CultureInfo.InvariantCulture, \"{0:G}|{0:d}|{0:T}\", d);")] // "09/24/2026 10:30:15|09/24/2026|10:30:15"
     [InlineData("return string.Format(System.Globalization.CultureInfo.InvariantCulture, \"{0:C}\", 1.5);")]          // "¤1.50"
