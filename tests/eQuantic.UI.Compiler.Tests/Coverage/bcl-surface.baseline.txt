@@ -1,7 +1,7 @@
 # eqc BCL surface audit — the coverage DENOMINATOR, one verdict per probed member.
 # native = a strategy mapped it to plain JS · eq = routed through a $eq compat helper
 # fenced:EQxxxx = refused with that diagnostic · invalid-probe = the probe itself doesn't compile
-# totals: eq=173 · fenced=42 · invalid-probe=6 · native=742
+# totals: eq=186 · fenced=42 · invalid-probe=6 · native=729
 native         Array.MaxLength
 native         Boolean.CompareTo(Boolean)
 native         Boolean.CompareTo(Object)
@@ -75,28 +75,28 @@ fenced:EQ2004  Convert.FromBase64String(String)
 fenced:EQ2004  Convert.FromHexString(String)
 fenced:EQ2004  Convert.IsDBNull(Object)
 native         Convert.ToBoolean(Object)
-native         Convert.ToByte(Object)
+eq             Convert.ToByte(Object)
 eq             Convert.ToByte(String,Int32)
 native         Convert.ToChar(Object)
 eq             Convert.ToDateTime(DateTime)
 eq             Convert.ToDecimal(Object)
-native         Convert.ToDouble(Object)
-native         Convert.ToInt16(Object)
+eq             Convert.ToDouble(Object)
+eq             Convert.ToInt16(Object)
 eq             Convert.ToInt16(String,Int32)
-native         Convert.ToInt32(Object)
+eq             Convert.ToInt32(Object)
 eq             Convert.ToInt32(String,Int32)
-native         Convert.ToInt64(Object)
+eq             Convert.ToInt64(Object)
 eq             Convert.ToInt64(String,Int32)
-native         Convert.ToSByte(Object)
+eq             Convert.ToSByte(Object)
 eq             Convert.ToSByte(String,Int32)
-native         Convert.ToSingle(Object)
+eq             Convert.ToSingle(Object)
 eq             Convert.ToString(Byte,Int32)
 native         Convert.ToString(Object)
-native         Convert.ToUInt16(Object)
+eq             Convert.ToUInt16(Object)
 eq             Convert.ToUInt16(String,Int32)
-native         Convert.ToUInt32(Object)
+eq             Convert.ToUInt32(Object)
 eq             Convert.ToUInt32(String,Int32)
-native         Convert.ToUInt64(Object)
+eq             Convert.ToUInt64(Object)
 eq             Convert.ToUInt64(String,Int32)
 native         DateOnly.AddDays(Int32)
 native         DateOnly.AddMonths(Int32)
@@ -323,7 +323,7 @@ eq             Double.MultiplyAddEstimate(Double,Double,Double)
 native         Double.NaN
 native         Double.NegativeInfinity
 native         Double.NegativeZero
-native         Double.Parse(String)
+eq             Double.Parse(String)
 native         Double.Pi
 native         Double.PositiveInfinity
 native         Double.Pow(Double,Double)
@@ -490,7 +490,7 @@ native         Int32.MaxValue
 native         Int32.Min(Int32,Int32)
 native         Int32.MinMagnitude(Int32,Int32)
 native         Int32.MinValue
-native         Int32.Parse(String)
+eq             Int32.Parse(String)
 eq             Int32.PopCount(Int32)
 native         Int32.RotateLeft(Int32,Int32)
 native         Int32.RotateRight(Int32,Int32)
@@ -520,7 +520,7 @@ native         Int64.MaxValue
 native         Int64.Min(Int64,Int64)
 eq             Int64.MinMagnitude(Int64,Int64)
 native         Int64.MinValue
-native         Int64.Parse(String)
+eq             Int64.Parse(String)
 eq             Int64.PopCount(Int64)
 eq             Int64.RotateLeft(Int64,Int32)
 eq             Int64.RotateRight(Int64,Int32)

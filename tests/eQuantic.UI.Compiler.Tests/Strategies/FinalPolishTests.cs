@@ -60,37 +60,35 @@ public class FinalPolishTests
 
     // Number Tests
     [Fact]
-    public void Int_Parse_ConvertsToParseInt()
+    public void Int_Parse_IsTheRuntimesReader()
     {
         var code = "int.Parse(\"123\")";
         var js = ConvertExpression(code);
-        Assert.Equal("parseInt('123')", js);
+        Assert.Equal("$eq.num.intParse('123', 'int')", js);
     }
     
     [Fact]
-    public void Double_Parse_ConvertsToParseFloat()
+    public void Double_Parse_IsTheRuntimesReader()
     {
         var code = "double.Parse(\"12.3\")";
         var js = ConvertExpression(code);
-        Assert.Equal("parseFloat('12.3')", js);
+        Assert.Equal("$eq.num.realParse('12.3', 'double')", js);
     }
     
     [Fact]
-    public void Int_TryParse_ConvertsToSafeCheck()
+    public void Int_TryParse_LeavesZeroWhenItFails()
     {
         var code = "int.TryParse(s, out var x)";
         var js = ConvertExpression(code);
-        Assert.Contains("x = parseInt(s)", js);
-        Assert.Contains("!isNaN(x)", js);
+        Assert.Equal("((x = $eq.num.intTryParse(s, 'int')) !== undefined || ((x = 0), false))", js);
     }
     
     [Fact]
-    public void Int_TryParse_ExistingVar_ConvertsToSafeCheck()
+    public void Int_TryParse_ExistingVar_LeavesZeroWhenItFails()
     {
         var code = "int.TryParse(s, out x)";
         var js = ConvertExpression(code);
-        Assert.Contains("x = parseInt(s)", js);
-        Assert.Contains("!isNaN(x)", js);
+        Assert.Equal("((x = $eq.num.intTryParse(s, 'int')) !== undefined || ((x = 0), false))", js);
     }
 
     private string ConvertExpression(string code)
