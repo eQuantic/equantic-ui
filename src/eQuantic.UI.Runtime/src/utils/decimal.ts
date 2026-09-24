@@ -146,6 +146,18 @@ export class Decimal {
     return new Decimal(this.mantissa * other.mantissa, this.scale + other.scale);
   }
 
+  /**
+   * `%` — C#'s decimal remainder, exact: the dividend less the divisor times their quotient
+   * truncated toward zero, so it takes the dividend's sign, at the larger of the two scales
+   * (`5.5m % 2m` is `1.5`, `-5.5m % 2m` is `-1.5`, `0.3m % 0.1m` is `0.0`). It had none, and `%`
+   * computed on the two values as doubles. A zero divisor throws what .NET throws.
+   */
+  mod(other: Decimal): Decimal {
+    if (other.mantissa === 0n) throw new Error('Attempted to divide by zero.');
+    const [am, bm, scale] = Decimal.align(this, other);
+    return new Decimal(am % bm, scale);
+  }
+
   div(other: Decimal): Decimal {
     if (other.mantissa === 0n) throw new Error('Attempted to divide by zero.');
 

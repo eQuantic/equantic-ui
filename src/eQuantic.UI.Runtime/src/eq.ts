@@ -76,7 +76,7 @@ import {
   zip,
 } from './utils/collections';
 import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
-import { liftArith, liftCmp } from './utils/nullable';
+import { liftArith, liftCmp, liftUnary } from './utils/nullable';
 import { equals } from './utils/equals';
 import { resolveService } from './utils/services';
 import { StyleBuilder } from './utils/style-builder';
@@ -265,7 +265,7 @@ export const $eq = {
     setAdd,
   },
   /** Nullable<T> lifted operators (null-propagating arithmetic, false-on-null relational). */
-  nullable: { arith: liftArith, cmp: liftCmp },
+  nullable: { arith: liftArith, cmp: liftCmp, unary: liftUnary },
   /** `bool | bool` and `bool & bool`: both operands evaluated, a bool answered — see `or`. */
   logic: { or, and },
   /**

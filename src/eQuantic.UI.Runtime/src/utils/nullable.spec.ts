@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { liftArith, liftCmp } from './nullable';
+import { liftArith, liftCmp, liftUnary } from './nullable';
 
 describe('Nullable lifted operators', () => {
   it('liftArith returns null when either operand is null/undefined', () => {
@@ -36,5 +36,18 @@ describe('Nullable lifted operators', () => {
 
   it('liftCmp treats 0 as a present value', () => {
     expect(liftCmp(0, 5, (a, b) => a < b)).toBe(true);
+  });
+
+  it('liftUnary answers null for an absent operand, where JavaScript reads it as 0', () => {
+    // `-null` is -0, `~null` is -1 and `null + 1` is 1 in JavaScript; C#'s lifted operators answer null.
+    expect(liftUnary<number, number>(null, (a) => -a)).toBeNull();
+    expect(liftUnary<number, number>(undefined, (a) => ~a)).toBeNull();
+    expect(liftUnary<number, number>(null, (a) => a + 1)).toBeNull();
+  });
+
+  it('liftUnary applies the op to a present value, 0 and a BigInt included', () => {
+    expect(liftUnary(5, (a) => a + 1)).toBe(6);
+    expect(liftUnary(0, (a) => ~a)).toBe(-1);
+    expect(liftUnary(5n, (a) => a - 1n)).toBe(4n);
   });
 });

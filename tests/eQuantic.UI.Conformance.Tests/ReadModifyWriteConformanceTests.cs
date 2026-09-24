@@ -72,6 +72,19 @@ public class ReadModifyWriteConformanceTests
     [InlineData("int n = 0; var d = new Dictionary<int, float> { [0] = 1f }; int K() { n++; return 0; } d[K()] += 0.5f; return n + \"|\" + (double)d[0];")] // "1|1.5"
     [InlineData("var d = new Dictionary<int, int> { [0] = 1 }; var r = (d[0] += 2) * 10; return r.ToString();")] // "30"
     [InlineData("var d = new Dictionary<int, int?> { [0] = null }; d[0] ??= 5; return d[0].ToString();")]  // "5"
+    // A STEP reads first too, and .NET throws for a missing key, where JavaScript stepped an
+    // undefined into NaN and created the key, and a nullable entry's lift made null of it.
+    [InlineData("var d = new Dictionary<string, int>(); try { d[\"gone\"]++; return \"no\"; } catch (KeyNotFoundException) { return \"throws\"; }")]
+    [InlineData("var d = new Dictionary<string, int?>(); try { d[\"gone\"]++; return \"no\"; } catch (KeyNotFoundException) { return \"throws\"; }")]
+    [InlineData("var d = new Dictionary<string, int?>(); try { --d[\"gone\"]; return \"no\"; } catch (KeyNotFoundException) { return \"throws\"; }")]
+    [InlineData("var d = new Dictionary<string, int?>(); try { var v = d[\"gone\"]--; return \"no\"; } catch (KeyNotFoundException) { return \"throws\"; }")]
+    [InlineData("var d = new Dictionary<string, int> { [\"k\"] = 1 }; var old = d[\"k\"]++; var pre = ++d[\"k\"]; return old + \"|\" + pre + \"|\" + d[\"k\"];")] // "1|3|3"
+    [InlineData("var d = new Dictionary<string, int?> { [\"k\"] = 4 }; var old = d[\"k\"]--; return old + \"|\" + d[\"k\"];")]  // "4|3"
+    [InlineData("var d = new Dictionary<string, int?> { [\"k\"] = null }; d[\"k\"]++; return d[\"k\"] == null ? \"null\" : \"v\";")] // "null"
+    [InlineData("var d = new Dictionary<string, long> { [\"k\"] = 1 }; d[\"k\"]++; --d[\"k\"]; d[\"k\"]++; return d[\"k\"].ToString();")] // "2"
+    [InlineData("var d = new Dictionary<string, double> { [\"k\"] = 0.5 }; d[\"k\"]++; return d[\"k\"].ToString();")]  // "1.5"
+    [InlineData("var d = new Dictionary<string, byte> { [\"k\"] = 255 }; d[\"k\"]++; return d[\"k\"].ToString();")]  // "0"
+    [InlineData("int n = 0; var d = new Dictionary<int, int> { [0] = 5 }; int K() { n++; return 0; } var old = d[K()]++; return n + \"|\" + old + \"|\" + d[0];")] // "1|5|6"
     public void ADictionaryEntry_TakesItsTypesRule(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

@@ -112,6 +112,9 @@ public static class Eq
     public const string LiftArith = "$eq.nullable.arith";
     /// <summary>Lifted Nullable&lt;T&gt; relational — <c>false</c> if either operand is null.</summary>
     public const string LiftCmp = "$eq.nullable.cmp";
+    /// <summary>A lifted Nullable&lt;T&gt; unary operator (<c>++</c>, <c>--</c>, <c>-</c>, <c>~</c>):
+    /// <c>null</c> if the operand is null.</summary>
+    public const string LiftUnary = "$eq.nullable.unary";
 
     /// <summary>C#'s non-short-circuit <c>bool | bool</c> and <c>bool &amp; bool</c>: BOTH operands
     /// evaluated, in order, and a bool answered. JavaScript's <c>|</c>/<c>&amp;</c> answer a number,

@@ -52,6 +52,11 @@ public class NumericCoverageTests
     [InlineData("1.5f", "1.5")]  // float suffix stripped
     [InlineData("2.0d", "2.0")]  // double suffix stripped
     [InlineData("100u", "100")]  // unsigned suffix stripped
+    // A long by its TYPE, with no suffix: int and uint cannot hold it, so C# makes it a long.
+    [InlineData("637000000000000000", "637000000000000000n")]
+    [InlineData("18446744073709551615", "18446744073709551615n")] // a ulong
+    [InlineData("0x1_0000_0000", "0x1_0000_0000n")]
+    [InlineData("4000000000", "4000000000")]  // a uint, which is a number here
     public void NumericLiteralSuffixes_AreHandled(string csharp, string expected)
     {
         TestHelper.ConvertExpression(csharp).Should().Be(expected);

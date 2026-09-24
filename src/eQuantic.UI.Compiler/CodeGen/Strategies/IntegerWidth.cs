@@ -61,6 +61,63 @@ public static class IntegerWidth
         return JsExpr.Callish($"{Eq.Checked}({JsExprWriter.Write(value)}, {width.Bits}{unsigned})");
     }
 
+    /// <summary>
+    /// A bitwise operator's result in <paramref name="width"/>, or null where JavaScript's own
+    /// operator already answers C#'s. JavaScript computes <c>&amp;</c>, <c>|</c>, <c>^</c> and <c>&gt;&gt;</c> in
+    /// SIGNED 32 bits, so a uint with its top bit set came back negative (<c>uint.MaxValue &amp;
+    /// uint.MaxValue</c> was -1) and <c>&gt;&gt;</c> shifted its sign in, where C# shifts an unsigned value
+    /// logically: a uint's result goes back to 32 unsigned bits, and its right shift is <c>&gt;&gt;&gt;</c>.
+    /// <c>&gt;&gt;&gt;</c> answers an unsigned 32-bit number, which a signed or narrower width brings back to
+    /// its own. The other widths' <c>&amp;</c>, <c>|</c>, <c>^</c> and <c>&gt;&gt;</c> stay in range, and a long's
+    /// are exact on its BigInt.
+    /// </summary>
+    public static JsExpr? Bitwise(string op, JsExpr left, JsExpr right, (int Bits, bool Unsigned) width)
+    {
+        if (width.Bits == 64) return null;
+        if (width is (32, true))
+        {
+            return op switch
+            {
+                ">>" or ">>>" => JsExpr.Binary(left, ">>>", right),
+                "&" or "|" or "^" => Wrap(JsExpr.Binary(left, op, right), width),
+                _ => null,
+            };
+        }
+        return op == ">>>" ? Wrap(JsExpr.Binary(left, ">>>", right), width) : null;
+    }
+
+    /// <summary>
+    /// A shift of a 64-bit value as C# shifts it, whatever the context: the count is masked to six
+    /// bits and made a BigInt (C# shifts a long by <c>count &amp; 63</c>, and a BigInt shifts only by a
+    /// BigInt, so an int count threw a TypeError), and the bits a left shift pushes past 64 are
+    /// discarded (<c>1L &lt;&lt; 63</c> is long.MinValue; a shift never throws, not even checked). JavaScript
+    /// has no <c>&gt;&gt;&gt;</c> for a BigInt: a long shifts its unsigned 64-bit pattern and comes back signed,
+    /// and a ulong, never negative, shifts logically with <c>&gt;&gt;</c>. The count arrives as C# wrote it,
+    /// an int, with its value as <c>constant</c> when it has one.
+    /// </summary>
+    public static JsExpr LongShift(string op, JsExpr value, JsExpr count, object? constant, bool unsigned,
+        ConversionContext context)
+    {
+        JsExpr shiftBy;
+        if (constant is not null)
+        {
+            shiftBy = JsExpr.Literal($"{System.Convert.ToInt64(constant, System.Globalization.CultureInfo.InvariantCulture) & 63}n");
+        }
+        else
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            shiftBy = JsExpr.Call(JsExpr.Identifier(Eq.Long), JsExpr.Binary(count, "&", JsExpr.Literal("63")));
+        }
+        var bits = unsigned ? "BigInt.asUintN" : "BigInt.asIntN";
+        return op switch
+        {
+            "<<" => JsExpr.Callish($"{bits}(64, {JsExprWriter.Write(JsExpr.Binary(value, "<<", shiftBy))})"),
+            ">>>" when !unsigned => JsExpr.Callish(
+                $"BigInt.asIntN(64, BigInt.asUintN(64, {JsExprWriter.Write(value)}) >> {JsExprWriter.WriteIn(shiftBy, JsPrecedence.Shift)})"),
+            _ => JsExpr.Binary(value, ">>", shiftBy),
+        };
+    }
+
     /// <summary>Brings an arithmetic result of a fixed-width type into C#'s semantics for the
     /// context it sits in: checked → throws past the edge; unchecked → wraps where the width
     /// wraps by default or the author asked for it; otherwise the value as computed.</summary>
