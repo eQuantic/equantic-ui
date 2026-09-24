@@ -151,6 +151,14 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
             return (current, operand) => JsExpr.Callish(
                 $"String.fromCharCode({JsExprWriter.WriteIn(current, JsPrecedence.Call)}.charCodeAt(0) {binaryOp} {JsExprWriter.WriteIn(operand, JsPrecedence.Additive)})");
 
+        // A 64-bit target shifts as C# shifts a long (IntegerWidth.LongShift): the count, an int,
+        // became a BigInt nowhere, so `l >>= 1` threw a TypeError.
+        if (binaryOp is "<<" or ">>" or ">>>" && IntegerWidth.Of(type) is { Bits: 64 } wide)
+        {
+            context.SemanticHelper.TryGetConstantValue(assignment.Right, out var count);
+            return (current, operand) => IntegerWidth.LongShift(binaryOp, current, operand, count, wide.Unsigned, context);
+        }
+
         // A fixed-width target settles the compound result by its type (IntegerWidth), and a float
         // target rounds it to single precision, every one of the five, because a double on the
         // right makes it `(float)(x op y)`, and a remainder by a double is not a single.
@@ -166,6 +174,11 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
                     type, arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context);
             }
         }
+        // A bitwise compound writes the target's width back (IntegerWidth.Bitwise): a uint's `&=`
+        // stored -1 for uint.MaxValue, and its `>>=` shifted a sign in.
+        if (binaryOp is "&" or "|" or "^" or ">>" or ">>>" && IntegerWidth.Of(type) is { } bits
+            && IntegerWidth.Bitwise(binaryOp, JsExpr.Identifier("a"), JsExpr.Identifier("b"), bits) is not null)
+            return (current, operand) => IntegerWidth.Bitwise(binaryOp, current, operand, bits)!;
         if (binaryOp is "+" or "-" or "*" or "/" or "%" && SinglePrecision.Is(type))
             return (current, operand) => SinglePrecision.Round(JsExpr.Binary(current, binaryOp, operand));
 

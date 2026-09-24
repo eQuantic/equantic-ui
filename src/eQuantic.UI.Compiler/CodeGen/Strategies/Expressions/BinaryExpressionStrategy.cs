@@ -105,22 +105,18 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
                 || context.SemanticHelper.GetType(binary.Right).IsLong()))
         {
             var jsOp = op switch { "==" => "===", "!=" => "!==", _ => op };
-            // A SHIFT COUNT stays an int in C# (no conversion for the bound tree to record), but a
-            // BigInt shift needs BigInt on both sides — the one conversion this branch owns.
-            if (op is "<<" or ">>" && !context.SemanticHelper.GetType(binary.Right).IsLong())
+            // A SHIFT keeps its count an int in C# (no conversion for the bound tree to record): the
+            // count, the mask and the discarded bits are IntegerWidth.LongShift's, in any context.
+            if (op is "<<" or ">>" or ">>>" && context.SemanticHelper.GetType(binary.Left) is var shifted && shifted.IsLong())
             {
-                if (context.SemanticHelper.TryGetConstantValue(binary.Right, out var count))
-                    rightIr = JsExpr.Literal($"{System.Convert.ToInt64(count, System.Globalization.CultureInfo.InvariantCulture)}n");
-                else
-                {
-                    context.UsedHelpers.Add(Eq.Import);
-                    rightIr = JsExpr.Callish($"{Eq.Long}({JsExprWriter.WriteIn(rightIr, JsPrecedence.Call)})");
-                }
+                context.SemanticHelper.TryGetConstantValue(binary.Right, out var count);
+                return IntegerWidth.LongShift(op, leftIr, rightIr, count,
+                    shifted.UnwrapNullable()?.SpecialType == SpecialType.System_UInt64, context);
             }
             var longResult = JsExpr.Binary(leftIr, jsOp, rightIr);
             // A 64-bit result settles like any fixed-width one: checked throws, an explicit
             // `unchecked` wraps (BigInt does not on its own), the default keeps counting.
-            if (op is "+" or "-" or "*" or "<<")
+            if (op is "+" or "-" or "*")
             {
                 var arithmetic = ArithmeticContext.Of(binary, context);
                 return IntegerWidth.Settle(longResult, context.SemanticHelper.GetType(binary),
@@ -281,6 +277,12 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
             return IntegerWidth.Settle(JsExpr.Binary(leftIr, op, rightIr), resultType,
                 arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context);
         }
+
+        // A BITWISE result keeps its width (IntegerWidth.Bitwise): JavaScript's operators compute in
+        // signed 32 bits, so `uint.MaxValue & uint.MaxValue` was -1 and a uint's `>>` shifted a sign in.
+        if (op is "&" or "|" or "^" or ">>" or ">>>" && IntegerWidth.Of(resultType) is { } bitwiseWidth
+            && IntegerWidth.Bitwise(op, leftIr, rightIr, bitwiseWidth) is { } bitwise)
+            return bitwise;
 
         // A FLOAT result is a single where it is PRODUCED (SinglePrecision): RyuJIT rounds every
         // float operation, so `a*x - b*x` is three roundings here too, not one at a store — and a
