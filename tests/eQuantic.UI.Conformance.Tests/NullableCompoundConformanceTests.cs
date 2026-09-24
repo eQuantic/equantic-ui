@@ -76,6 +76,12 @@ public class NullableCompoundConformanceTests
     [InlineData("decimal? m = 1.5m; var y = -m; return y.ToString();")]                                        // "-1.5"
     [InlineData("long? l = 5; var y = ~l; return y.ToString();")]                                               // "-6"
     [InlineData("long? l = 5; var y = +l; return y.ToString();")]                                               // "5": `+5n` throws
+    // A char? promotes to int? before the lift (ValueFlow), so the rule sees a code unit.
+    [InlineData("char? c = 'a'; var y = +c; return y.ToString();")]                                             // "97"
+    [InlineData("char? c = 'a'; var y = -c; return y.ToString();")]                                             // "-97"
+    [InlineData("char? c = 'a'; var y = ~c; return y.ToString();")]                                             // "-98"
+    [InlineData("char? c = null; var y = -c; return y == null ? \"null\" : y.ToString();")]
+    [InlineData("char c = 'a'; return (+c) + \"|\" + (-c) + \"|\" + (~c);")]                                       // "97|-97|-98" — control
     [InlineData("long? l = 5; return (l + 1L).ToString();")]                                                    // "6" — control
     public void ANullableTarget_KeepsNullAndItsTypesRule(string statements)
     {
