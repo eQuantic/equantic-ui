@@ -614,7 +614,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   threw at the first arithmetic with another long. And from the review, for every target: a uint's
   `&`, `|`, `^` and `>>` answered JavaScript's signed 32 bits (`uint.MaxValue & uint.MaxValue` was -1),
   a long's shift threw a TypeError for an int count, kept the bits C# discards and did not mask its
-  count, and a checked or explicitly unchecked negation neither threw .NET's message nor wrapped.
+  count, and a checked or explicitly unchecked negation neither threw .NET's message nor wrapped. A
+  uint's or a ulong's complement answered a negative number. A step on a dictionary entry whose key
+  is missing now throws as .NET does, through the guard compound assignments read with, which closes
+  three of the conversion gaps.
 
 - **2026-09-24 · The code editor is a component**: slice 1c of
   [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#375](https://github.com/eQuantic/equantic-ui/pull/375)).
