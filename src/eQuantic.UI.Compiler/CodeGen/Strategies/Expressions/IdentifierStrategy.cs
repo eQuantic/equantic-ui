@@ -27,11 +27,13 @@ public class IdentifierStrategy : IExpressionIrStrategy
         // ValueText strips the verbatim-identifier @ (C# `@checked` → JS `checked` — not reserved there).
         var name = identifier.Identifier.ValueText;
 
-        // Map 'Component' property (in State classes) to 'this._component'
-        if (name == "Component") return JsExpr.ThisMember("_component");
-
         // Priority: Semantic Check > String Check (Fallback)
         var symbol = context.SemanticHelper.GetSymbol(identifier);
+
+        // Map 'Component' property (in State classes) to 'this._component', but not a name bound in
+        // scope: a local, a parameter or a local function called `Component` is that binding, and
+        // mapped first it read the inherited value instead (Copilot's review of #399).
+        if (name == "Component" && !BoundInScope(symbol, identifier, name)) return JsExpr.ThisMember("_component");
 
         // If it's a type symbol, return as is (to allow EnumStrategy to work)
         if (symbol is ITypeSymbol || symbol is INamedTypeSymbol) return JsExpr.Identifier(name);
@@ -142,6 +144,17 @@ public class IdentifierStrategy : IExpressionIrStrategy
 
         return JsExpr.Identifier(name.ToJsIdentifier());
     }
+
+    /// <summary>Whether <paramref name="name"/> reaches a binding of the scope it is read in, a local,
+    /// a parameter, a range variable or a local function, rather than a member.</summary>
+    private static bool BoundInScope(ISymbol? symbol, SyntaxNode at, string name) => symbol switch
+    {
+        null => LocalFunctionName.InScope(at, name) is not null,
+        IMethodSymbol { MethodKind: MethodKind.LocalFunction } => true,
+        { Kind: SymbolKind.Local or SymbolKind.RangeVariable } => true,
+        { Kind: SymbolKind.Parameter } => !symbol.IsPrimaryConstructorParameter(),
+        _ => false,
+    };
 
     public int Priority => 10;
 }

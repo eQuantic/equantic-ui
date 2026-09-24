@@ -36,6 +36,12 @@ public class LocalNameConformanceTests
     // `Id` beside a declared `id`, and `Delete` beside `delete$` (ReferenceError).
     [InlineData("T Id<T>(T x) => x; Func<int, int> f = Id<int>; return f(5);")] // 5
     [InlineData("T Delete<T>(T x) => x; Func<int, int> f = Delete<int>; return f(6);")] // 6
+    // A function called `Component` is that function: the name was read as the component's
+    // inherited `_component` before anything asked what it bound (TypeError).
+    [InlineData("int Component() => 4; Func<int> f = Component; return f();")] // 4
+    // Nested: a local function is a statement, not a member, so the inner function's member is the
+    // method's, the captured `d` is seen, and `D` keeps off it. Copilot's review of #399 asked.
+    [InlineData("int d = 5; int Outer() { int D() => 1; return d + D(); } return Outer();")] // 6
     public void ALocalFunction_TakesANameItsScopeDoesNotHold(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
