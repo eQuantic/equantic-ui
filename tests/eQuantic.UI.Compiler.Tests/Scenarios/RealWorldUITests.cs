@@ -87,7 +87,9 @@ public class RealWorldUITests
         var result = TestHelper.ConvertCodeBlock(code);
 
         result.Should().Contain("filter");
-        result.Should().Contain("!== undefined");
+        // default(OrderStatus) is its zero member, New (#380). This asserted `!== undefined`, which
+        // every status passes, so the filter kept the orders C# drops.
+        result.Should().Contain("!== 'new'");
         result.Should().Contain("sort");
         result.Should().Contain("slice(0, 10)");
     }

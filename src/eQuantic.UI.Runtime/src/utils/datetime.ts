@@ -676,7 +676,8 @@ function tryParseDateOnly(text: string): DateOnly | null {
   const monthAt = pattern.indexOf('m');
   const yearAt = pattern.indexOf('y');
   const dayFirst = dayAt >= 0 && monthAt >= 0 && dayAt < monthAt;
-  const yearFirst = yearAt >= 0 && (dayAt < 0 || yearAt < dayAt) && (monthAt < 0 || yearAt < monthAt);
+  const yearFirst =
+    yearAt >= 0 && (dayAt < 0 || yearAt < dayAt) && (monthAt < 0 || yearAt < monthAt);
 
   const [, one, two, three] = parts;
   // Three digits or more is a year wherever it sits, and a year-first culture takes the leading
@@ -964,6 +965,10 @@ export interface DateTimeOffsetFactory {
   fromUnixTimeMilliseconds(ms: bigint | number): DateTimeOffset;
   now(): DateTimeOffset;
   utcNow(): DateTimeOffset;
+  /** `DateTimeOffset.MinValue`, which is also `default(DateTimeOffset)`: 0001-01-01 at +00:00. */
+  minValue(): DateTimeOffset;
+  /** `DateTimeOffset.MaxValue`: 9999-12-31 23:59:59.9999999 at +00:00. */
+  maxValue(): DateTimeOffset;
   parse(text: string): DateTimeOffset;
 }
 
@@ -998,6 +1003,8 @@ dateTimeOffset.fromUnixTimeMilliseconds = (ms) =>
   new DateTimeOffset(UNIX_EPOCH_TICKS + asBigInt(ms) * TICKS_PER_MILLISECOND, 0n);
 dateTimeOffset.now = () => new DateTimeOffset(dateTime.now().ticks, 0n);
 dateTimeOffset.utcNow = () => new DateTimeOffset(dateTime.utcNow().ticks, 0n);
+dateTimeOffset.minValue = () => new DateTimeOffset(0n, 0n);
+dateTimeOffset.maxValue = () => new DateTimeOffset(MAX_DATETIME_TICKS, 0n);
 dateTimeOffset.parse = (text: string): DateTimeOffset => {
   const t = text.trim();
   // yyyy-MM-ddTHH:mm:ss[.fff][(+|-)HH:mm | Z]
