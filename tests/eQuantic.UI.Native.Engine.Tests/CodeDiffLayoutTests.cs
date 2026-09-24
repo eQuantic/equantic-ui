@@ -149,4 +149,26 @@ public class CodeDiffLayoutTests
         layout.Original.RowOf(2).Should().Be(layout.Modified.RowOf(3), "far away is level on both sides");
         layout.Original.RowCount.Should().Be(layout.Modified.RowCount);
     }
+
+    /// <summary>
+    /// Every fold is listed with its line on both sides, so a press on either side's placeholder, or a
+    /// caret that lands inside one, opens the same run, named by its original line.
+    /// </summary>
+    [Fact]
+    public void EveryFoldIsListedOnBothSides_AndFoundFromEither()
+    {
+        var original = Lines(100, i => $"line {i}");
+        var modified = original.ToList();
+        modified.Insert(50, "added");
+        var changes = CodeDiffer.CompareLines(original, modified);
+
+        var layout = CodeDiffLayout.SideBySide(changes, 100, 101, context: 3);
+
+        layout.Folds.Should().Equal(new CodeDiffFold(0, 0, 47), new CodeDiffFold(53, 54, 47));
+        layout.FoldOfModified(60).Should().Be(new CodeDiffFold(53, 54, 47), "line 60 of the modified side is line 59 of the original");
+        layout.FoldOfOriginal(10).Should().Be(new CodeDiffFold(0, 0, 47));
+        layout.FoldOfModified(50).Should().BeNull("a changed line is never folded");
+        CodeDiffLayout.SideBySide(changes, 100, 101, context: 3, expanded: [53]).Folds.Should().ContainSingle(
+            "a run the view opened is no fold");
+    }
 }

@@ -61,12 +61,40 @@ public sealed class CodeDiffSource
     public int ModifiedNumber(int line) => _modifiedNumbers is { } numbers ? numbers[line] : line + 1;
 
     /// <summary>Two whole texts, compared.</summary>
-    public static CodeDiffSource FromTexts(string original, string modified)
-    {
-        var before = CodeDocument.FromText(original);
-        var after = CodeDocument.FromText(modified);
-        return new CodeDiffSource(before, before.LineCount, after, after.LineCount, CodeDiffer.Compare(before, after),
+    public static CodeDiffSource FromTexts(string original, string modified) =>
+        FromDocuments(CodeDocument.FromText(original), CodeDocument.FromText(modified));
+
+    /// <summary>Two whole documents, compared: what a diff whose modified side is being edited asks
+    /// again after every edit, with the editor's own document.</summary>
+    public static CodeDiffSource FromDocuments(CodeDocument original, CodeDocument modified) =>
+        new(original, original.LineCount, modified, modified.LineCount, CodeDiffer.Compare(original, modified),
             null, null, []);
+
+    /// <summary>
+    /// The line of <see cref="Original"/> that line <paramref name="modifiedLine"/> of
+    /// <see cref="Modified"/> was, or -1 for a line a change added: the number an inline view shows
+    /// in its original column beside an unchanged line. Found by halving over the changes.
+    /// </summary>
+    public int OriginalLineOf(int modifiedLine)
+    {
+        // The last change that starts at or before the line.
+        var low = 0;
+        var high = Changes.Count - 1;
+        var found = -1;
+        while (low <= high)
+        {
+            var middle = (low + high) / 2;
+            if (Changes[middle].ModifiedStart <= modifiedLine)
+            {
+                found = middle;
+                low = middle + 1;
+            }
+            else high = middle - 1;
+        }
+        if (found < 0) return modifiedLine;
+        var change = Changes[found];
+        if (modifiedLine < change.ModifiedStart + change.ModifiedCount) return -1;
+        return change.OriginalStart + change.OriginalCount + (modifiedLine - change.ModifiedStart - change.ModifiedCount);
     }
 
     /// <summary>The lines one file of a patch quotes, and the changes it marks.</summary>

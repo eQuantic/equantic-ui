@@ -33,9 +33,28 @@ export class CodeDiffSource {
     }
 
     static fromTexts(original: string, modified: string) {
-        let before = CodeDocument.fromText(original);
-        let after = CodeDocument.fromText(modified);
-        return new CodeDiffSource(before, before.lineCount, after, after.lineCount, CodeDiffer.compare(before, after), null, null, []);
+        return CodeDiffSource.fromDocuments(CodeDocument.fromText(original), CodeDocument.fromText(modified));
+    }
+
+    static fromDocuments(original: CodeDocument, modified: CodeDocument) {
+        return new CodeDiffSource(original, original.lineCount, modified, modified.lineCount, CodeDiffer.compare(original, modified), null, null, []);
+    }
+
+    originalLineOf(modifiedLine: number) {
+        let low = 0;
+        let high = this.changes.length - 1;
+        let found = -1;
+        while (low <= high) {
+            let middle = Math.trunc((low + high) / 2);
+            if (this.changes[middle].modifiedStart <= modifiedLine) {
+                found = middle;
+                low = middle + 1;
+            } else high = middle - 1;
+        }
+        if (found < 0) return modifiedLine;
+        let change = this.changes[found];
+        if (modifiedLine < change.modifiedStart + change.modifiedCount) return -1;
+        return change.originalStart + change.originalCount + (modifiedLine - change.modifiedStart - change.modifiedCount);
     }
 
     static fromPatch(file: CodePatchFile) {

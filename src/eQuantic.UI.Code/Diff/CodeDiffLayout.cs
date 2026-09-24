@@ -18,7 +18,7 @@ namespace eQuantic.UI.Code;
 /// run is folded across one.
 /// </para>
 /// </summary>
-public sealed record CodeDiffLayout(CodeRows Original, CodeRows Modified)
+public sealed record CodeDiffLayout(CodeRows Original, CodeRows Modified, IReadOnlyList<CodeDiffFold> Folds)
 {
     /// <summary>How many unchanged lines stay in view either side of a change.</summary>
     public const int DefaultContext = 3;
@@ -47,11 +47,11 @@ public sealed record CodeDiffLayout(CodeRows Original, CodeRows Modified)
             else if (difference < 0)
                 modifiedFillers.Add(new CodeFiller(change.ModifiedStart + change.ModifiedCount, -difference));
         }
-        var (originalRuns, modifiedRuns) = UnchangedRuns(changes, originalLines, modifiedLines, context, expanded, gaps,
-            foldLabel);
+        var (originalRuns, modifiedRuns, folds) = UnchangedRuns(changes, originalLines, modifiedLines, context, expanded,
+            gaps, foldLabel);
         return new CodeDiffLayout(
             new CodeRows(originalLines, originalFillers, originalRuns),
-            new CodeRows(modifiedLines, modifiedFillers, modifiedRuns));
+            new CodeRows(modifiedLines, modifiedFillers, modifiedRuns), folds);
     }
 
     /// <summary>
@@ -72,11 +72,11 @@ public sealed record CodeDiffLayout(CodeRows Original, CodeRows Modified)
             if (change.OriginalCount > 0)
                 removed.Add(new CodeFiller(change.ModifiedStart, change.OriginalCount, change.OriginalStart));
         }
-        var (originalRuns, modifiedRuns) = UnchangedRuns(changes, originalLines, modifiedLines, context, expanded, gaps,
-            foldLabel);
+        var (originalRuns, modifiedRuns, folds) = UnchangedRuns(changes, originalLines, modifiedLines, context, expanded,
+            gaps, foldLabel);
         return new CodeDiffLayout(
             new CodeRows(originalLines, originalGaps, originalRuns),
-            new CodeRows(modifiedLines, removed, modifiedRuns));
+            new CodeRows(modifiedLines, removed, modifiedRuns), folds);
     }
 
     /// <summary>One row on each side for each gap, saying what the patch says there.</summary>
@@ -95,12 +95,13 @@ public sealed record CodeDiffLayout(CodeRows Original, CodeRows Modified)
     /// file), everything but <paramref name="context"/> lines next to each change, when that leaves at
     /// least <see cref="FewestFolded"/> lines to hide and the view has not opened the run.
     /// </summary>
-    private static (List<CodeCollapse> Original, List<CodeCollapse> Modified) UnchangedRuns(
+    private static (List<CodeCollapse> Original, List<CodeCollapse> Modified, List<CodeDiffFold> Folds) UnchangedRuns(
         IReadOnlyList<CodeLineChange> changes, int originalLines, int modifiedLines, int context,
         IReadOnlyCollection<int>? expanded, IReadOnlyList<CodeDiffGap>? gaps, Func<int, string>? foldLabel)
     {
         var original = new List<CodeCollapse>();
         var modified = new List<CodeCollapse>();
+        var folds = new List<CodeDiffFold>();
         var originalAt = 0;
         var modifiedAt = 0;
         for (var i = 0; i <= changes.Count; i++)
@@ -120,6 +121,7 @@ public sealed record CodeDiffLayout(CodeRows Original, CodeRows Modified)
                 var label = foldLabel?.Invoke(hidden);
                 original.Add(new CodeCollapse(originalAt + before, originalAt + before + hidden - 1, Label: label));
                 modified.Add(new CodeCollapse(modifiedAt + before, modifiedAt + before + hidden - 1, Label: label));
+                folds.Add(new CodeDiffFold(originalAt + before, modifiedAt + before, hidden));
             }
             if (i < changes.Count)
             {
@@ -127,7 +129,23 @@ public sealed record CodeDiffLayout(CodeRows Original, CodeRows Modified)
                 modifiedAt = changes[i].ModifiedStart + changes[i].ModifiedCount;
             }
         }
-        return (original, modified);
+        return (original, modified, folds);
+    }
+
+    /// <summary>The fold that hides <paramref name="line"/> of the modified side, or null.</summary>
+    public CodeDiffFold? FoldOfModified(int line)
+    {
+        foreach (var fold in Folds)
+            if (line >= fold.ModifiedLine && line < fold.ModifiedLine + fold.Count) return fold;
+        return null;
+    }
+
+    /// <summary>The fold that hides <paramref name="line"/> of the original side, or null.</summary>
+    public CodeDiffFold? FoldOfOriginal(int line)
+    {
+        foreach (var fold in Folds)
+            if (line >= fold.OriginalLine && line < fold.OriginalLine + fold.Count) return fold;
+        return null;
     }
 
     /// <summary>Whether a gap stands inside lines <paramref name="from"/> to <paramref name="to"/> of

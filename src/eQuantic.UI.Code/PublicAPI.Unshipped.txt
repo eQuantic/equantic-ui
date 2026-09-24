@@ -565,8 +565,6 @@ eQuantic.UI.Code.CodeRows
 eQuantic.UI.Code.CodeRows.CodeRows(int lineCount, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeFiller>! fillers, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeCollapse>! collapses) -> void
 eQuantic.UI.Code.CodeDiffLayout
 eQuantic.UI.Code.CodeDiffLayout.<Clone>$() -> eQuantic.UI.Code.CodeDiffLayout!
-eQuantic.UI.Code.CodeDiffLayout.CodeDiffLayout(eQuantic.UI.Code.CodeRows! Original, eQuantic.UI.Code.CodeRows! Modified) -> void
-eQuantic.UI.Code.CodeDiffLayout.Deconstruct(out eQuantic.UI.Code.CodeRows! Original, out eQuantic.UI.Code.CodeRows! Modified) -> void
 eQuantic.UI.Code.CodeDiffLayout.Equals(eQuantic.UI.Code.CodeDiffLayout? other) -> bool
 override eQuantic.UI.Code.CodeDiffLayout.Equals(object? obj) -> bool
 override eQuantic.UI.Code.CodeDiffLayout.GetHashCode() -> int
@@ -699,3 +697,27 @@ eQuantic.UI.Code.CodeCollapse.Label.get -> string?
 eQuantic.UI.Code.CodeCollapse.Label.init -> void
 eQuantic.UI.Code.CodeCollapse.CodeCollapse(int FirstLine, int LastLine, bool Placeholder = true, string? Label = null) -> void
 eQuantic.UI.Code.CodeCollapse.Deconstruct(out int FirstLine, out int LastLine, out bool Placeholder, out string? Label) -> void
+eQuantic.UI.Code.CodeDiffFold
+eQuantic.UI.Code.CodeDiffFold.CodeDiffFold() -> void
+eQuantic.UI.Code.CodeDiffFold.CodeDiffFold(int OriginalLine, int ModifiedLine, int Count) -> void
+eQuantic.UI.Code.CodeDiffFold.Deconstruct(out int OriginalLine, out int ModifiedLine, out int Count) -> void
+eQuantic.UI.Code.CodeDiffFold.Equals(eQuantic.UI.Code.CodeDiffFold other) -> bool
+override eQuantic.UI.Code.CodeDiffFold.GetHashCode() -> int
+static eQuantic.UI.Code.CodeDiffFold.operator !=(eQuantic.UI.Code.CodeDiffFold left, eQuantic.UI.Code.CodeDiffFold right) -> bool
+static eQuantic.UI.Code.CodeDiffFold.operator ==(eQuantic.UI.Code.CodeDiffFold left, eQuantic.UI.Code.CodeDiffFold right) -> bool
+~override eQuantic.UI.Code.CodeDiffFold.Equals(object obj) -> bool
+~override eQuantic.UI.Code.CodeDiffFold.ToString() -> string
+eQuantic.UI.Code.CodeDiffFold.OriginalLine.get -> int
+eQuantic.UI.Code.CodeDiffFold.OriginalLine.init -> void
+eQuantic.UI.Code.CodeDiffFold.ModifiedLine.get -> int
+eQuantic.UI.Code.CodeDiffFold.ModifiedLine.init -> void
+eQuantic.UI.Code.CodeDiffFold.Count.get -> int
+eQuantic.UI.Code.CodeDiffFold.Count.init -> void
+eQuantic.UI.Code.CodeDiffLayout.FoldOfModified(int line) -> eQuantic.UI.Code.CodeDiffFold?
+eQuantic.UI.Code.CodeDiffLayout.FoldOfOriginal(int line) -> eQuantic.UI.Code.CodeDiffFold?
+eQuantic.UI.Code.CodeDiffLayout.Folds.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDiffFold>!
+eQuantic.UI.Code.CodeDiffLayout.Folds.init -> void
+eQuantic.UI.Code.CodeDiffLayout.CodeDiffLayout(eQuantic.UI.Code.CodeRows! Original, eQuantic.UI.Code.CodeRows! Modified, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDiffFold>! Folds) -> void
+eQuantic.UI.Code.CodeDiffLayout.Deconstruct(out eQuantic.UI.Code.CodeRows! Original, out eQuantic.UI.Code.CodeRows! Modified, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDiffFold>! Folds) -> void
+static eQuantic.UI.Code.CodeDiffSource.FromDocuments(eQuantic.UI.Code.CodeDocument! original, eQuantic.UI.Code.CodeDocument! modified) -> eQuantic.UI.Code.CodeDiffSource!
+eQuantic.UI.Code.CodeDiffSource.OriginalLineOf(int modifiedLine) -> int

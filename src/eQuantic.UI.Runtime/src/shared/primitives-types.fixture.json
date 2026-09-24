@@ -17,6 +17,7 @@
   "CodeCompletionItem",
   "CodeDecoration",
   "CodeDiagnostic",
+  "CodeDiffFold",
   "CodeDiffGap",
   "CodeDiffLayout",
   "CodeDiffSource",

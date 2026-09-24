@@ -136,4 +136,30 @@ public class CodeDiffSourceTests
             return null;
         }
     }
+
+    /// <summary>
+    /// An unchanged line of the modified side is the original line it was, which an inline view
+    /// numbers in its original column; a line a change added was none.
+    /// </summary>
+    [Fact]
+    public void AnUnchangedLineKnowsTheOriginalLineItWas_AndAnAddedOneKnowsItWasNone()
+    {
+        // a b c d  ->  a X Y c d Z : b became X and Y, and Z was added at the end.
+        var source = CodeDiffSource.FromTexts("a\nb\nc\nd", "a\nX\nY\nc\nd\nZ");
+
+        Enumerable.Range(0, 6).Select(source.OriginalLineOf).Should().Equal(0, -1, -1, 2, 3, -1);
+    }
+
+    [Fact]
+    public void TwoDocuments_CompareAsTheirTextsDo()
+    {
+        var before = CodeDocument.FromText("one\ntwo\nthree");
+        var after = CodeDocument.FromText("one\n2\nthree\nfour");
+
+        CodeDiffSource.FromDocuments(before, after).Changes.Should().Equal(
+            CodeDiffSource.FromTexts(before.Text, after.Text).Changes, (a, b) =>
+                a.OriginalStart == b.OriginalStart && a.OriginalCount == b.OriginalCount
+                && a.ModifiedStart == b.ModifiedStart && a.ModifiedCount == b.ModifiedCount);
+        CodeDiffSource.FromDocuments(before, after).Modified.Should().BeSameAs(after, "the editor's own document is the side");
+    }
 }
