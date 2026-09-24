@@ -49,4 +49,18 @@ public class LocalNameConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
+
+    [SkippableTheory]
+    // A C# keyword reaches JavaScript through the verbatim escape, and each of these is reserved
+    // there too: the rename's list held only the words that are not C# keywords, so each one
+    // arrived as written and the module did not parse.
+    [InlineData("int @class = 3; return @class;")] // 3
+    [InlineData("int @default = 2; return @default * 10;")] // 20
+    [InlineData("int @this = 4; return @this + 1;")] // 5
+    [InlineData("int F(int @new) => @new * 2; return F(5);")] // 10
+    public void AVerbatimKeyword_IsRenamedLikeAnyReservedWord(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
 }

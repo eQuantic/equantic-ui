@@ -14,15 +14,23 @@ public static class StringExtensions
         string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name[1..];
 
     /// <summary>
-    /// Identifiers JS refuses in a module (modules are always strict): the strict-mode reserved
-    /// words and the FUTURE reserved words. Only the ones a C# author can actually reach are here —
-    /// `class`, `new`, `if` and friends are C# keywords too, so they never arrive.
+    /// Identifiers JS refuses in a module (modules are always strict): the reserved words, the
+    /// strict-mode and FUTURE reserved words, and the literals. A C# author reaches every one of
+    /// them: the ones that are not C# keywords as plain names, and the ones that are through the
+    /// verbatim escape. `@class`, `@default` and `@this` are ordinary C#, and they arrived as
+    /// `class`, `default` and `this`, a module that did not parse, while this list held only the
+    /// first kind.
     /// </summary>
     private static readonly HashSet<string> JsReserved = new(StringComparer.Ordinal)
     {
-        "package", "interface", "implements", "let", "yield", "enum", "await", "arguments",
-        "eval", "function", "var", "typeof", "instanceof", "delete", "debugger", "with",
-        "export", "import", "extends", "super", "of",
+        // Not C# keywords, so reached as they are.
+        "package", "implements", "let", "yield", "await", "arguments", "eval", "function", "var",
+        "delete", "debugger", "with", "export", "import", "extends", "super", "of",
+        // C# keywords, reached through `@`.
+        "break", "case", "catch", "class", "const", "continue", "default", "do", "else", "enum",
+        "false", "finally", "for", "if", "in", "instanceof", "interface", "new", "null", "private",
+        "protected", "public", "return", "static", "switch", "this", "throw", "true", "try",
+        "typeof", "void", "while",
     };
 
     /// <summary>
