@@ -55,6 +55,17 @@ public class CodeRowsTests
         rows.RowAt(2).SourceLine.Should().Be(11);
     }
 
+    /// <summary>A filler can say something about what is not there: a patch's view says how many
+    /// lines of the file it left out, on the row between two hunks.</summary>
+    [Fact]
+    public void AFillerCanCarryALabel()
+    {
+        var rows = new CodeRows(4, [new CodeFiller(2, 1, Label: "12 lines")], []);
+
+        rows.RowAt(2).Should().Be(new CodeRow(CodeRowKind.Filler, 2, Label: "12 lines"));
+        rows.RowAt(3).Label.Should().BeNull("the next row is line 2, which says nothing");
+    }
+
     [Fact]
     public void ACollapsedRunIsOnePlaceholderRow()
     {

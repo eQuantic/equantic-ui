@@ -35,6 +35,9 @@ public sealed class CodeRows
     /// <summary>The line of another document a filler shows from, or -1.</summary>
     private readonly List<int> _sources = new();
 
+    /// <summary>What a filler says, or null.</summary>
+    private readonly List<string?> _labels = new();
+
     /// <summary>
     /// The rows of a document of <paramref name="lineCount"/> lines, with <paramref name="fillers"/>
     /// before the lines they name and <paramref name="collapses"/> hidden. A filler at the same line
@@ -64,14 +67,14 @@ public sealed class CodeRows
                 throw new ArgumentException($"A filler or a collapse at line {at} overlaps a collapse, or lies outside the {LineCount} lines.");
             if (at > line)
             {
-                Add(CodeRowKind.Line, line, at - line, row, at - line, -1);
+                Add(CodeRowKind.Line, line, at - line, row, at - line, -1, null);
                 row += at - line;
                 line = at;
             }
             if (takeFiller)
             {
                 var filler = sortedFillers[f++];
-                Add(CodeRowKind.Filler, filler.BeforeLine, 0, row, filler.Rows, filler.SourceLine);
+                Add(CodeRowKind.Filler, filler.BeforeLine, 0, row, filler.Rows, filler.SourceLine, filler.Label);
                 row += filler.Rows;
             }
             else
@@ -79,20 +82,20 @@ public sealed class CodeRows
                 var collapse = sortedCollapses[c++];
                 var last = Math.Min(collapse.LastLine, LineCount - 1);
                 var rows = collapse.Placeholder ? 1 : 0;
-                Add(CodeRowKind.Placeholder, collapse.FirstLine, last - collapse.FirstLine + 1, row, rows, -1);
+                Add(CodeRowKind.Placeholder, collapse.FirstLine, last - collapse.FirstLine + 1, row, rows, -1, null);
                 row += rows;
                 line = last + 1;
             }
         }
         if (line < LineCount)
         {
-            Add(CodeRowKind.Line, line, LineCount - line, row, LineCount - line, -1);
+            Add(CodeRowKind.Line, line, LineCount - line, row, LineCount - line, -1, null);
             row += LineCount - line;
         }
         RowCount = row;
     }
 
-    private void Add(CodeRowKind kind, int line, int lineCount, int row, int rowCount, int source)
+    private void Add(CodeRowKind kind, int line, int lineCount, int row, int rowCount, int source, string? label)
     {
         _kinds.Add(kind);
         _lines.Add(line);
@@ -100,6 +103,7 @@ public sealed class CodeRows
         _rows.Add(row);
         _rowCounts.Add(rowCount);
         _sources.Add(source);
+        _labels.Add(label);
     }
 
     /// <summary>How many lines the document has.</summary>
@@ -141,7 +145,7 @@ public sealed class CodeRows
         {
             CodeRowKind.Line => new CodeRow(CodeRowKind.Line, _lines[segment] + offset),
             CodeRowKind.Filler => new CodeRow(CodeRowKind.Filler, _lines[segment], 1,
-                _sources[segment] >= 0 ? _sources[segment] + offset : -1),
+                _sources[segment] >= 0 ? _sources[segment] + offset : -1, _labels[segment]),
             _ => new CodeRow(CodeRowKind.Placeholder, _lines[segment], _lineCounts[segment]),
         };
     }

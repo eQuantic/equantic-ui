@@ -527,8 +527,6 @@ eQuantic.UI.Code.CodeCollapse.Placeholder.get -> bool
 eQuantic.UI.Code.CodeCollapse.Placeholder.init -> void
 eQuantic.UI.Code.CodeFiller
 eQuantic.UI.Code.CodeFiller.CodeFiller() -> void
-eQuantic.UI.Code.CodeFiller.CodeFiller(int BeforeLine, int Rows, int SourceLine = -1) -> void
-eQuantic.UI.Code.CodeFiller.Deconstruct(out int BeforeLine, out int Rows, out int SourceLine) -> void
 eQuantic.UI.Code.CodeFiller.Equals(eQuantic.UI.Code.CodeFiller other) -> bool
 override eQuantic.UI.Code.CodeFiller.GetHashCode() -> int
 static eQuantic.UI.Code.CodeFiller.operator !=(eQuantic.UI.Code.CodeFiller left, eQuantic.UI.Code.CodeFiller right) -> bool
@@ -543,8 +541,6 @@ eQuantic.UI.Code.CodeFiller.SourceLine.get -> int
 eQuantic.UI.Code.CodeFiller.SourceLine.init -> void
 eQuantic.UI.Code.CodeRow
 eQuantic.UI.Code.CodeRow.CodeRow() -> void
-eQuantic.UI.Code.CodeRow.CodeRow(eQuantic.UI.Code.CodeRowKind Kind, int Line, int Count = 1, int SourceLine = -1) -> void
-eQuantic.UI.Code.CodeRow.Deconstruct(out eQuantic.UI.Code.CodeRowKind Kind, out int Line, out int Count, out int SourceLine) -> void
 eQuantic.UI.Code.CodeRow.Equals(eQuantic.UI.Code.CodeRow other) -> bool
 override eQuantic.UI.Code.CodeRow.GetHashCode() -> int
 static eQuantic.UI.Code.CodeRow.operator !=(eQuantic.UI.Code.CodeRow left, eQuantic.UI.Code.CodeRow right) -> bool
@@ -655,3 +651,11 @@ eQuantic.UI.Code.CodePatchLineKind.Added = 2 -> eQuantic.UI.Code.CodePatchLineKi
 eQuantic.UI.Code.CodePatchLineKind
 eQuantic.UI.Code.CodePatchLineKind.Context = 0 -> eQuantic.UI.Code.CodePatchLineKind
 eQuantic.UI.Code.CodeDecorationKind.Line = 5 -> eQuantic.UI.Code.CodeDecorationKind
+eQuantic.UI.Code.CodeFiller.CodeFiller(int BeforeLine, int Rows, int SourceLine = -1, string? Label = null) -> void
+eQuantic.UI.Code.CodeFiller.Deconstruct(out int BeforeLine, out int Rows, out int SourceLine, out string? Label) -> void
+eQuantic.UI.Code.CodeFiller.Label.get -> string?
+eQuantic.UI.Code.CodeFiller.Label.init -> void
+eQuantic.UI.Code.CodeRow.Label.get -> string?
+eQuantic.UI.Code.CodeRow.Label.init -> void
+eQuantic.UI.Code.CodeRow.CodeRow(eQuantic.UI.Code.CodeRowKind Kind, int Line, int Count = 1, int SourceLine = -1, string? Label = null) -> void
+eQuantic.UI.Code.CodeRow.Deconstruct(out eQuantic.UI.Code.CodeRowKind Kind, out int Line, out int Count, out int SourceLine, out string? Label) -> void
