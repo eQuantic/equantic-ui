@@ -77,10 +77,10 @@ public class KeyboardTests
         var (host, form) = Open();
 
         Press(host, "Tab");
-        host.TextTarget?.Placeholder.Should().Be("Full name");
+        (host.TextTarget?.Placeholder).Should().Be("Full name");
 
         Press(host, "Tab");
-        host.TextTarget?.Placeholder.Should().Be("Email", "Tab must not skip the second field");
+        (host.TextTarget?.Placeholder).Should().Be("Email", "Tab must not skip the second field");
 
         Press(host, "Tab");
         host.TextTarget.Should().BeNull("the button is not a text field");
@@ -98,10 +98,10 @@ public class KeyboardTests
 
         Press(host, "Tab");
         Press(host, "Tab");
-        host.TextTarget?.Placeholder.Should().Be("Email");
+        (host.TextTarget?.Placeholder).Should().Be("Email");
 
         Press(host, "Tab", KeyModifiers.Shift);
-        host.TextTarget?.Placeholder.Should().Be("Full name", "overshooting a field must be undoable");
+        (host.TextTarget?.Placeholder).Should().Be("Full name", "overshooting a field must be undoable");
     }
 
     [Fact]
@@ -307,7 +307,7 @@ public class ScrolledFocusTests
             host.RenderFrame(new DisplayListBuilder(), now += 16);
         }
 
-        host.TextTarget?.Placeholder.Should().Be("field 8");
+        (host.TextTarget?.Placeholder).Should().Be("field 8");
 
         for (var i = 0; i < 60; i++) host.RenderFrame(new DisplayListBuilder(), now += 16);
         var frame = host.RenderFrame(new DisplayListBuilder(), now += 16);
@@ -336,7 +336,7 @@ public class AutofocusTests
     [Fact]
     public void AFieldThatAsksForTheCaret_GetsIt()
     {
-        Open(autofocus: true).TextTarget?.Placeholder.Should().Be("Search");
+        (Open(autofocus: true).TextTarget?.Placeholder).Should().Be("Search");
         Open(autofocus: false).TextTarget.Should().BeNull("nothing asked");
     }
 
