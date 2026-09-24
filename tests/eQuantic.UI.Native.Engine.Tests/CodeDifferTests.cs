@@ -103,6 +103,52 @@ public class CodeDifferTests
     }
 
     /// <summary>
+    /// Every pair of texts of up to four lines over three letters, 14,641 of them: the script
+    /// rebuilds the modified text and is as short as the longest common subsequence allows. The small
+    /// shapes are where a walk's first rounds read the diagonals its setup wrote (two different
+    /// two-line texts among them), and a random sample reaches each only by chance.
+    /// </summary>
+    [Fact]
+    public void EverySmallPair_IsRightAndAsShortAsItCanBe()
+    {
+        var texts = AllTexts(4, "abc");
+        var wrong = new List<string>();
+        foreach (var original in texts)
+        {
+            foreach (var modified in texts)
+            {
+                var changes = CodeDiffer.CompareLines(original, modified);
+                var rebuilt = Apply(original, modified, changes);
+                var length = changes.Sum(c => c.OriginalCount + c.ModifiedCount);
+                if (rebuilt.SequenceEqual(modified)
+                    && length == original.Length + modified.Length - 2 * Lcs(original, modified)) continue;
+                wrong.Add($"[{string.Join(",", original)}] against [{string.Join(",", modified)}]");
+            }
+        }
+
+        texts.Should().HaveCount(121);
+        wrong.Should().BeEmpty("every small pair diffs right and minimal");
+    }
+
+    /// <summary>Every text of up to <paramref name="longest"/> lines, each line one letter of
+    /// <paramref name="alphabet"/>, the empty text first.</summary>
+    private static List<string[]> AllTexts(int longest, string alphabet)
+    {
+        var texts = new List<string[]> { Array.Empty<string>() };
+        var level = new List<string[]> { Array.Empty<string>() };
+        for (var length = 1; length <= longest; length++)
+        {
+            var next = new List<string[]>();
+            foreach (var text in level)
+                foreach (var letter in alphabet)
+                    next.Add([.. text, letter.ToString()]);
+            texts.AddRange(next);
+            level = next;
+        }
+        return texts;
+    }
+
+    /// <summary>
     /// Against git on real files: the version of a file before and after a commit on main, and the
     /// lines added and removed as <c>git diff --minimal --numstat</c> counts them. The minimal count is
     /// unique even where the script is not.
