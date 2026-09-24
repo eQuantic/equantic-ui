@@ -77,7 +77,9 @@ public class MinMaxStrategy : IConversionStrategy
         // `Enumerable.Max(list, f)` names the source as its first PARAMETER; `list.Max(f)` as the receiver.
         var staticForm = method.MethodKind != MethodKind.ReducedExtension;
         var parameters = staticForm ? method.Parameters.Skip(1).ToArray() : method.Parameters.ToArray();
-        if (parameters is [{ Type.Name: "IComparer" }, ..])
+        // .NET 10 has one comparer overload, (source, comparer); any parameter is read, so one that
+        // came after a selector would be refused too rather than dropped.
+        if (parameters.Any(parameter => parameter.Type.Name == "IComparer"))
             return context.Unhandled(invocation, "LINQ Max/Min with a comparer");
         if (OrderingOf(method.ReturnType) is not var (ordering, nullable))
             return context.Unhandled(invocation, $"LINQ Max/Min over {method.ReturnType.ToDisplayString()}");
