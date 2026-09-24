@@ -183,7 +183,8 @@ function formatCustomNumber(value: number, format: string): string {
  * prints the generic ¤ sign, so that is what this prints too rather than guessing a country.
  */
 function formatCurrency(value: number, precision: number): string {
-  const currency = activeCurrency();
+  // An invariant conversion has no currency of its own, whichever culture is reading.
+  const currency = invariantDepth > 0 ? null : activeCurrency();
   const locale = activeFormatLocale();
   const rounded = round(value, precision);
   if (currency !== null) {
@@ -295,6 +296,26 @@ const DATE_ROLES: Record<string, string[]> = {
   Y: ['yearMonth'],
   y: ['yearMonth'],
 };
+
+/**
+ * The invariant culture's date and time patterns, as .NET's `CultureInfo.InvariantCulture` holds
+ * them. An explicitly invariant conversion writes these whatever culture is reading, as it writes
+ * the invariant number conventions and the generic ¤ for a currency: read from the active culture,
+ * `string.Format(CultureInfo.InvariantCulture, "{0:G}", date)` followed the reader's patterns.
+ */
+const INVARIANT_PATTERNS: Readonly<Record<string, string>> = {
+  dateShort: 'MM/dd/yyyy',
+  dateLong: 'dddd, dd MMMM yyyy',
+  timeShort: 'HH:mm',
+  timeLong: 'HH:mm:ss',
+  monthDay: 'MMMM dd',
+  yearMonth: 'yyyy MMMM',
+};
+
+/** A pattern role in the culture the formatter is writing in. */
+function patternFor(role: string): string | null {
+  return invariantDepth > 0 ? (INVARIANT_PATTERNS[role] ?? null) : activePattern(role);
+}
 
 /** `Intl`'s fallback for a culture whose patterns did not travel (no catalog installed). Close,
  * not exact — which is why the patterns travel at all. */
@@ -436,7 +457,7 @@ function formatDate(value: Date, format: string): string {
   if (format === 's') return value.toISOString().slice(0, 19);
 
   if (format.length === 1 && DATE_ROLES[format] !== undefined) {
-    const patterns = DATE_ROLES[format].map(activePattern);
+    const patterns = DATE_ROLES[format].map(patternFor);
     // Every role must have travelled; a half-known composite would print half a date.
     if (patterns.every((pattern) => pattern !== null))
       return patterns.map((pattern) => renderPattern(value, pattern as string)).join(' ');

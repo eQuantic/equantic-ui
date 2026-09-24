@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { parseEnum, format, stringFormat, stringFormatInvariant, asSingle } from './format';
+import { installCulture } from './culture';
 
 describe('parseEnum', () => {
   // String enum (TypeScript style)
@@ -205,5 +206,30 @@ describe('custom numeric formats (digit pictures)', () => {
     expect(format(3.14159, 'F2')).toBe('3.14');
     expect(format(7, 'D3')).toBe('007');
     expect(format(1234.5, 'N2')).toBe('1,234.50');
+  });
+});
+
+describe('an invariant conversion ignores the culture reading it', () => {
+  afterEach(() => installCulture('', '', {}));
+
+  const reading = () =>
+    installCulture('pt-BR', 'pt-BR', {
+      $dateShort: 'dd/MM/yyyy',
+      $timeLong: 'HH:mm:ss',
+      $currency: 'BRL',
+    });
+
+  it('writes the invariant date patterns', () => {
+    reading();
+    const date = new Date(2026, 8, 24, 10, 30, 15);
+    expect(stringFormat('{0:d}', date)).toBe('24/09/2026');
+    expect(stringFormatInvariant('{0:G}', date)).toBe('09/24/2026 10:30:15');
+    expect(format(date, 'd', undefined, true)).toBe('09/24/2026');
+  });
+
+  it('writes the generic currency sign', () => {
+    reading();
+    expect(stringFormatInvariant('{0:C}', 1.5)).toBe('¤1.50');
+    expect(format(1.5, 'C', undefined, true)).toBe('¤1.50');
   });
 });
