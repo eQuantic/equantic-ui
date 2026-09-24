@@ -86,7 +86,8 @@ public class CultureCrossingTests
 
         Assert.True(result.Success);
         Assert.DoesNotContain("CultureInfo", result.TypeScript);
-        Assert.Contains("$eq.text.format(this._value, '0.##', undefined, true)", result.TypeScript);
+        // The float says it is one (#378): its `G` and `R` digits are a single's.
+        Assert.Contains("$eq.text.format(this._value, '0.##', undefined, true, 'single')", result.TypeScript);
     }
 
     /// <summary>A specifier alone is the CULTURE-following shape, and it already crossed correctly.
@@ -98,7 +99,7 @@ public class CultureCrossingTests
         var result = Compile("_value.ToString(\"N2\")");
 
         Assert.True(result.Success);
-        Assert.Contains("$eq.text.format(this._value, 'N2')", result.TypeScript);
+        Assert.Contains("$eq.text.format(this._value, 'N2', undefined, undefined, 'single')", result.TypeScript);
     }
 
     /// <summary>The quiet one: the shape everybody writes, which means two different things.</summary>

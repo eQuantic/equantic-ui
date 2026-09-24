@@ -1,6 +1,7 @@
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Invocation;
 
@@ -35,6 +36,14 @@ public class ToStringStrategy : IConversionStrategy
         // in no browser, so the page died with "CultureInfo is not defined" while the server, which
         // runs the C#, was perfectly happy.
         var args = invocation.ArgumentList.Arguments;
+        var receiverType = context.SemanticHelper.GetType(memberAccess.Expression);
+
+        // A BOOL writes True or False, what a concatenation already writes it as (StringConversion):
+        // `String(b)` lowercased it (#381). Its provider changes nothing, and a null bool? is empty.
+        if (receiverType.UnwrapNullable() is { SpecialType: SpecialType.System_Boolean })
+            return JsExprWriter.Write(StringConversion.ToDotNetString(memberAccess.Expression,
+                context.Converter.ConvertIr(memberAccess.Expression), context));
+
         var provider = args.FirstOrDefault(argument => IsFormatProvider(argument.Expression, context));
         var formatArg = args.FirstOrDefault(argument => argument != provider);
 
@@ -62,9 +71,11 @@ public class ToStringStrategy : IConversionStrategy
             var fmt = context.Converter.ConvertExpression(formatArg.Expression);
             context.UsedHelpers.Add(Eq.Import);
             // The alignment slot stays empty: this shape has none, and the invariant flag is what
-            // makes the helper stop reading the culture the reader happens to be in.
-            return invariant
-                ? $"{Eq.Format}({caller}, {fmt}, undefined, true)"
+            // makes the helper stop reading the culture the reader happens to be in. A float says
+            // it is one, since `G` and `R` write a single's own digits (#378).
+            var kind = receiverType.UnwrapNullable() is { SpecialType: SpecialType.System_Single } ? ", 'single'" : "";
+            return invariant || kind.Length > 0
+                ? $"{Eq.Format}({caller}, {fmt}, undefined, {(invariant ? "true" : "undefined")}{kind})"
                 : $"{Eq.Format}({caller}, {fmt})";
         }
 
