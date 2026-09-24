@@ -294,7 +294,7 @@ public class StringStaticStrategy : IConversionStrategy
         // written in place, and each element of a spread collection of floats.
         string Passed((int Slot, ExpressionSyntax Value, bool Spread) value, string text) =>
             value.Spread
-                ? ElementTypeOf(context.SemanticHelper.GetType(value.Value)) is { SpecialType: SpecialType.System_Single }
+                ? ElementTypeOf(context.SemanticHelper.GetType(value.Value)).UnwrapNullable() is { SpecialType: SpecialType.System_Single }
                     ? $"...Array.from({text}, {Eq.AsSingle})"
                     : $"...{text}"
                 : Boxed(value.Value, context).UnwrapNullable() is { SpecialType: SpecialType.System_Single }
