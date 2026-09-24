@@ -57,9 +57,31 @@ public class ValueTextConformanceTests
     [InlineData("return string.Format(\"{0}|{1}\", [\"a\", \"b\"]);")]                                           // "a|b"
     [InlineData("return string.Format(System.Globalization.CultureInfo.InvariantCulture, \"{0} e {1}\", new[] { \"a\", \"b\" });")] // "a e b"
     [InlineData("return string.Format(\"{0}|{1}|{2}|{3}\", 1, 2, 3, 4);")]                                         // "1|2|3|4"
+    // An array written in place is its elements, each boxed as C# boxes it: a float keeps its digits.
+    [InlineData("return string.Format(\"{0}\", new object[] { 0.1f });")]                                          // "0.1"
+    [InlineData("float f = 0.1f; return string.Format(\"{0}|{1}\", new object[] { f, \"x\" });")]                   // "0.1|x"
+    [InlineData("return string.Format(\"{0}|{1}\", [0.1f, 2]);")]                                                  // "0.1|2"
     public void AValue_IsWrittenAsDotNetWritesIt(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>A bool's provider named by a bare identifier that binds to a PROPERTY: its getter
+    /// runs, after the receiver, as C# runs it.</summary>
+    [SkippableFact]
+    public void ABoolsProvider_ThatIsAProperty_IsStillRead()
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(
+            "return new Probe().Run(true);",   // "Truep"
+            """
+            public record Probe
+            {
+                public string Log { get; set; } = "";
+                public IFormatProvider? Provider { get { Log += "p"; return null; } }
+                public string Run(bool b) { var s = b.ToString(Provider); return s + Log; }
+            }
+            """);
     }
 }
