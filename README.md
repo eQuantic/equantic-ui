@@ -7,7 +7,7 @@
 <p align="center">
   Write components once in C#. On the web they compile to optimized JavaScript at build time — no WASM.<br/>
   Natively they render through <strong>Photon</strong>, our own GPU engine on Metal and Vulkan — no WebView, no Skia.<br/>
-  And the same components can render as email-safe HTML.
+  And the part of the vocabulary an email can hold renders as email-safe HTML, with its plain-text twin.
 </p>
 
 <p align="center">
@@ -20,7 +20,7 @@
 
 <p align="center">
   <strong><a href="https://ui.equantic.tech/playground">Try it in your browser →</a></strong><br/>
-  <sub>Write a component in C#, press Run, and watch it render, compiled by eqc, the transpiler your build runs. Nothing to install.</sub>
+  <sub>Write a component in C#, press Run, and watch it render, compiled by the eqc deployed with the playground, which can trail the newest preview. Nothing to install.</sub>
 </p>
 
 <p align="center">
@@ -56,8 +56,9 @@
 | **Toolchain** | .NET | Node.js, npm, bundlers | **only the .NET SDK**: the bundler ships embedded |
 
 Components are authored **once** against an abstract visual vocabulary and realized per target:
-DOM and atomic CSS on the web, GPU pixels in a native window, tables and inline styles in an
-email. It is not "write once, run in a WebView": each target gets its real rendering path.
+DOM and atomic CSS on the web, GPU pixels in a native window, and tables and inline styles in an
+email, for the part of the vocabulary an email can hold. It is not "write once, run in a WebView":
+each target gets its real rendering path.
 
 And the SDK stays out of your way. **Your project file names the SDK and nothing else**, and
 everything else is C#, `appsettings.json` and fluent configuration in `Program.cs`. This is the
@@ -174,7 +175,9 @@ target is a project setting, not a rewrite.
 
 One abstract vocabulary (`Box`, `Row`, `Column`, `Stack`, `Text`, `TextEntry`, `ScrollView`,
 `Overlay`, …) and three realizers: the **web** (server-rendered DOM, hydrated in the browser),
-**Photon** (GPU pixels) and **email** (tables and inline styles). The component library is
+**Photon** (GPU pixels) and **email** (tables and inline styles for the columns, rows, text, boxes,
+images and links an email can hold, and its plain-text part from the same tree, while anything
+else is refused). The component library is
 authored once against that vocabulary. Selection marks, focus rings and editing carets are
 computed in shared C#, and the two realizers are held to each other by cross-pinned fixtures and
 a suite of native golden images.
@@ -290,7 +293,7 @@ when it is genuinely impossible. Nothing miscompiles silently.
 | Category | Supported |
 |----------|-----------|
 | **Language, up to C# 15** | C# 13 `params` collections and `\e`; C# 14 null-conditional assignment, `field`-backed properties, extension members and `nameof(List<>)`; C# 15 labeled `break`/`continue`, `union` declarations and `closed` hierarchies |
-| **Numbers, exactly** | fixed-width integers wrap as their type does (`byte`, `short`, `uint`), `checked` throws, `float` rounds to single precision where it is produced, `decimal` is exact base 10, `long`/`ulong` are BigInt, and a division by zero throws |
+| **Numbers, exactly** | fixed-width integers wrap as their type does (`byte`, `short`, `uint`), `checked` throws, `float` rounds to single precision where it is produced, `decimal` is exact base 10, `long`/`ulong` are BigInt, and an integer or decimal division by zero throws, as .NET's does (a double's is an infinity or NaN) |
 | **Nullable** | `Nullable<T>` with lifted operators: arithmetic, compound assignment and increments keep null and their type's rule (a `float?` rounds, a `byte?` wraps) |
 | **Pattern matching** | type, property, positional, relational, list and slice patterns, and `and`/`or`/`not` |
 | **Types** | `record`/`struct`/value tuples with structural equality and `with`; records emit as JavaScript classes with their methods, inheritance and generics; user-defined operators and conversions on your own types |
