@@ -15,7 +15,7 @@ export class JsonLanguage {
         let i = 0;
         while (i < line.length) {
             let c = line[i];
-            if ((/^\s$/.test(c))) {
+            if ((/^\p{White_Space}$/u.test(c))) {
                 i++;
                 continue;
             }
@@ -58,7 +58,7 @@ export class JsonLanguage {
     }
 
     static nextNonSpace(line: string, from: number) {
-        for (let i = from; i < line.length; i++) if (!(/^\s$/.test(line[i]))) return line[i];
+        for (let i = from; i < line.length; i++) if (!(/^\p{White_Space}$/u.test(line[i]))) return line[i];
         return '\0';
     }
 }

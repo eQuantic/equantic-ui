@@ -11,8 +11,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 /// g.Count()) AND exposes g.Key — matching .NET; groups stay in first-occurrence key order, as
 /// LINQ's do. The element selector transforms what goes INTO a group; the result selector maps
 /// each finished group through <c>(key, group)</c>. Which role an argument plays is read from the
-/// bound overload's parameter names, and from lambda arity where nothing binds. A custom key
-/// comparer has no translation (keys group by <c>===</c>) and is fenced, never dropped.
+/// bound overload's parameter names, and from lambda arity where nothing binds. Keys group by the
+/// key type's equality (<see cref="LinqKeys"/>). A custom key comparer has no translation and is
+/// fenced, never dropped.
 /// <para>
 /// The element selector used to be silently ignored — <c>GroupBy(w => w.Length, w => w.ToUpper())</c>
 /// grouped the raw words — which the query-syntax differential (<c>group w.ToUpper() by w.Length</c>
@@ -39,7 +40,8 @@ public class GroupByStrategy : IConversionStrategy
         string? elementSelector = null;
         string? resultSelector = null;
 
-        var parameters = (context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol)?.Parameters;
+        var bound = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
+        var parameters = bound?.Parameters;
         for (var i = 1; i < args.Count; i++)
         {
             switch (Role(parameters, args.Count, i, args[i].Expression))
@@ -60,9 +62,13 @@ public class GroupByStrategy : IConversionStrategy
         }
 
         var pushed = elementSelector is null ? "item" : $"({elementSelector})(item)";
+        // A key that is an object here (a record, a date, a decimal) groups by its VALUE, as .NET's
+        // default equality does: by === two equal records were two groups.
+        var key = bound is { TypeArguments.Length: > 1 } ? bound.TypeArguments[1] : null;
+        if (LinqKeys.ComparesByValue(key)) context.UsedHelpers.Add(Eq.Import);
         var grouped = $"{source}.reduce((groups, item) => {{ " +
                       $"const key = ({keySelector})(item); " +
-                      "let g = groups.find(x => x.key === key); " +
+                      $"let g = groups.find(x => {LinqKeys.Matches(key, "x.key", "key")}); " +
                       "if (!g) { g = []; g.key = key; groups.push(g); } " +
                       $"g.push({pushed}); return groups; }}, [])";
 

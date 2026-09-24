@@ -106,6 +106,16 @@ public static class TestHelper
                 public void Method() {{
                     {code};
                 }}
+            }}
+
+            // Comparable types of the app's own: by a CompareTo it wrote, which the twin carries
+            // under that name, and by an explicit interface member, which it has no name to call by.
+            public record Grade(int Value) : IComparable<Grade> {{
+                public int CompareTo(Grade other) => Value - other.Value;
+            }}
+
+            public class Rank : IComparable<Rank> {{
+                int IComparable<Rank>.CompareTo(Rank other) => 0;
             }}");
             
         var compilation = CSharpCompilation.Create("TestAssembly", new[] { tree }, 
@@ -114,7 +124,10 @@ public static class TestHelper
                 MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(List<>).Assembly.Location), // Collections
-                MetadataReference.CreateFromFile(Assembly.Load("System.Runtime").Location) // Core Runtime
+                MetadataReference.CreateFromFile(Assembly.Load("System.Runtime").Location), // Core Runtime
+                // Where System.Linq's metadata says Dictionary<,> lives: without it, no ToDictionary
+                // binds here, and a test of one met EQ2006 before any strategy saw the call.
+                MetadataReference.CreateFromFile(Assembly.Load("System.Collections").Location)
             });
             
         var semanticModel = compilation.GetSemanticModel(tree);

@@ -643,6 +643,31 @@ record of a release, the wiki's Upgrading page is the distillate.
   shortcut took still reached the editor on the web, a code block's corner lay over its whole first
   line, and seven tests asserted nothing when their value was null.
 
+- **2026-09-24 · The BCL audit probes every arity**: a static surface was probed by name, so only
+  the shortest overload of each member was graded, and a group whose first overload takes an
+  `IFormatProvider` or an `IComparer` hid its siblings
+  ([#390](https://github.com/eQuantic/equantic-ui/pull/390)). Probed by name and arity, from the first
+  overload a probe can write, the baseline gained 59 lines, and each `native` or `eq` one is a claim
+  that `BclOverloadConformanceTests` runs on both sides: 161 of its 288 cases failed before the fixes.
+  `Convert` reads and writes an integer in a base as .NET does (a port of `ParseNumbers`), the
+  `TimeSpan` factories count every component and read a double to the tick, `string.Compare`,
+  `CompareOrdinal`, `Equals` with a comparison, `Concat` and a ranged `Join` answer as .NET's,
+  `char.IsWhiteSpace` reads the White_Space property, LINQ's `Max` and `Min` order by the type they
+  answer, `ToDictionary` refuses a key twice, and `DateOnly`/`TimeOnly.ParseExact` are EQ2004 where
+  they threw in the browser. The review found more of the kind, each measured on .NET before it was
+  fixed: a dictionary keyed by what a plain object cannot hold (a `DateTime`, a class, an enum with
+  aliases) is EQ1004 and a record key is held by value, `GroupBy` and `ToLookup` compare a record or
+  a date key by value, a named argument fills its own parameter, a double past 2^53 ticks multiplies
+  as .NET's does, an ordinal comparison that ignores case reads a surrogate pair as its code point,
+  `Max`/`Min` over a type with no `compareTo` here is EQ1004 where .NET's default comparer throws,
+  a LINQ operator called as `Enumerable.Count(source)` is EQ1004 where every strategy but `Max` and
+  `Min` read the type as its source, and a record holding NaN equals itself, as a double's `Equals`
+  holds it, while a tuple's `==` stays its elements'. Found on the way, each a task: the audit
+  grades `eq` without asking whether the member exists (9 lines are a TypeError in the browser),
+  overloads of one arity are still one probe (267 more lines by signature), a `Dictionary<int, T>`
+  loses insertion order, a decimal constant does not cross, a lone surrogate in a string literal
+  is written raw, and the date types' `Add*` round a double to the millisecond.
+
 ## Retired documents
 
 | document | what it was | where its substance lives now |

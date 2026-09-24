@@ -36,6 +36,36 @@ describe('TimeSpan — .NET "c" format and component math', () => {
   });
 });
 
+// Measured on .NET 10; the conformance suite runs the same factories on both sides.
+describe("TimeSpan factories — .NET 9's components and .NET 7's tick precision", () => {
+  it('counts every component, each of which may be negative', () => {
+    expect(timeSpan.fromDays(1, 2, 3n, 4n, 5n, 6n).toString()).toBe('1.02:03:04.0050060');
+    expect(timeSpan.fromDays(1, -25).toString()).toBe('-01:00:00');
+    expect(timeSpan.fromHours(1, undefined, 5n).toString()).toBe('01:00:05');
+    expect(timeSpan.fromMilliseconds(1n, 2n).toString()).toBe('00:00:00.0010020');
+    expect(timeSpan.fromMicroseconds(15n).toString()).toBe('00:00:00.0000150');
+  });
+
+  it('reads a fractional count to the tick, truncated', () => {
+    expect(timeSpan.fromSeconds(0.00001).ticks).toBe(100n);
+    expect(timeSpan.fromSeconds(-1.23456789).ticks).toBe(-12345678n);
+    expect(timeSpan.fromMilliseconds(0.5).ticks).toBe(5000n);
+  });
+
+  it('refuses a span it cannot hold', () => {
+    const tooLong = 'TimeSpan overflowed because the duration is too long.';
+    expect(timeSpan.fromDays(10675199, 2, 48n, 5n, 477n, 580n).toString()).toBe(
+      '10675199.02:48:05.4775800',
+    );
+    expect(() => timeSpan.fromDays(10675199, 2, 48n, 5n, 477n, 581n)).toThrow(tooLong);
+    expect(() => timeSpan.fromSeconds(922337203686n)).toThrow(tooLong);
+    expect(() => timeSpan.fromHours(1e20)).toThrow(tooLong);
+    expect(() => timeSpan.fromHours(NaN)).toThrow(
+      'TimeSpan does not accept floating point Not-a-Number values.',
+    );
+  });
+});
+
 describe('DateTime — .NET semantics', () => {
   it('formats with the invariant default MM/dd/yyyy HH:mm:ss', () => {
     expect(dateTime(2024, 1, 15).toString()).toBe('01/15/2024 00:00:00');

@@ -202,17 +202,29 @@ public class StringStrategyTests
     }
 
     [Fact]
-    public void Concat_MapsToPlus()
+    public void Concat_JoinsTheTextOfEachValue()
     {
+        // Text, not a sum: a null string is nothing, as .NET writes it.
         var result = TestHelper.ConvertExpression("string.Concat(a, b, c)");
-        result.Should().Be("(this.a + this.b + this.c)");
+        result.Should().Be("'' + (this.a ?? '') + (this.b ?? '') + (this.c ?? '')");
     }
 
     [Fact]
-    public void Compare_MapsToLocaleCompare()
+    public void Compare_IsTheCurrentCulturesComparison()
     {
         var result = TestHelper.ConvertExpression("string.Compare(a, b)");
-        result.Should().Be("this.a.localeCompare(this.b)");
+        result.Should().Be("$eq.text.compare(this.a, this.b, 'currentCulture')");
+    }
+
+    [Fact]
+    public void Compare_WithACultureOrCompareOptions_IsRefused()
+    {
+        // No form this side reads either: dropping them compared as if neither had been passed.
+        TestHelper.DiagnosticsFor(
+                "var r = string.Compare(a, b, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.CompareOptions.IgnoreCase)")
+            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("string.Compare with a CultureInfo"));
+        TestHelper.DiagnosticsFor("var r = string.Compare(a, b, StringComparison.OrdinalIgnoreCase)")
+            .Should().NotContain(d => d.Code == "EQ1004", "a StringComparison crosses as its name");
     }
 
     [Fact]

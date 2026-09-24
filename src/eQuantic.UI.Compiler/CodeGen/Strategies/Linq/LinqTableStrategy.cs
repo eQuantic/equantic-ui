@@ -28,7 +28,10 @@ public class LinqTableStrategy : IExpressionIrStrategy
     {
         if (node is not InvocationExpressionSyntax invocation) return false;
         if (!invocation.TryGetInstanceCall(out _, out var name)) return false;
-        if (Template(name.Identifier.Text, invocation.ArgumentList.Arguments.Count) is null) return false;
+        // A ToDictionary of three arguments has no shape of its own: its third is a comparer, which
+        // ConvertIr refuses in the words it refuses the shorter overloads with.
+        if (Template(name.Identifier.Text, invocation.ArgumentList.Arguments.Count) is null
+            && !IsToDictionaryWithAComparer(name.Identifier.Text, invocation.ArgumentList.Arguments.Count)) return false;
 
         // The SYMBOL decides when there is one; a NAME may decide only where the model cannot be
         // asked at all (CanGuess — the documented policy). Claiming by name FIRST and checking the
@@ -48,12 +51,91 @@ public class LinqTableStrategy : IExpressionIrStrategy
             .Select(a => context.Converter.ConvertIr(a.Expression))
             .ToArray();
 
-        var template = Template(name.Identifier.Text, args.Length)!;
+        var template = Template(name.Identifier.Text, args.Length);
+        if (name.Identifier.Text == "ToDictionary" && ToDictionary(invocation, context) is var (dictionary, refusal))
+        {
+            if (refusal is not null) return JsExpr.Opaque(context.Unhandled(invocation, refusal));
+            template = dictionary;
+        }
+        // Only a ToDictionary of three arguments reaches here without a shape, and its third is a
+        // comparer: a call no model binds has nothing to refuse it with but its count.
+        if (template is null) return JsExpr.Opaque(context.Unhandled(invocation, "ToDictionary with a comparer"));
+        // A lookup groups by the key type's equality, as GroupBy does: by === two equal records
+        // were two groups.
+        if (name.Identifier.Text == "ToLookup"
+            && context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { TypeArguments: [_, var lookupKey, ..] })
+        {
+            template = template.Replace("x.key === key", LinqKeys.Matches(lookupKey, "x.key", "key"));
+        }
         if (template.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
 
         // {0} is the receiver; {1}… the arguments. The writer binds whatever is reused.
-        return JsExpr.Template(template, new[] { receiver }.Concat(args).ToArray(), context.TypeAnnotations);
+        return JsExpr.Template(BindNamedArguments(template, invocation, context),
+            new[] { receiver }.Concat(args).ToArray(), context.TypeAnnotations);
     }
+
+    /// <summary>
+    /// The table's holes past <c>{0}</c> are the call's PARAMETERS in order, and the arguments arrive
+    /// in the order they were WRITTEN: the same thing until one is named, when
+    /// <c>Aggregate(func: f, seed: s)</c> reduced with the seed as the function and
+    /// <c>ToDictionary(elementSelector: e, keySelector: k)</c> keyed by the element. Each parameter
+    /// hole is pointed at the argument that fills it, and the arguments stay in the order C#
+    /// evaluates them, which the template writer keeps.
+    /// </summary>
+    private static string BindNamedArguments(string template, InvocationExpressionSyntax invocation, ConversionContext context)
+    {
+        var arguments = invocation.ArgumentList.Arguments;
+        if (arguments.All(argument => argument.NameColon is null)) return template;
+        if (context.SemanticHelper.GetSymbol(invocation) is not IMethodSymbol { MethodKind: MethodKind.ReducedExtension } method)
+            return template;
+        var writtenForSlot = Enumerable.Repeat(-1, method.Parameters.Length).ToArray();
+        for (var i = 0; i < arguments.Count; i++)
+        {
+            var named = arguments[i].NameColon?.Name.Identifier.ValueText;
+            var slot = named is null ? i : method.Parameters.FirstOrDefault(parameter => parameter.Name == named)?.Ordinal ?? -1;
+            if (slot < 0 || slot >= writtenForSlot.Length) return template;
+            writtenForSlot[slot] = i;
+        }
+        var holes = new System.Text.RegularExpressions.Regex(@"\{(\d+)\}");
+        if (holes.Matches(template).Select(hole => int.Parse(hole.Groups[1].Value))
+            .Any(hole => hole > 0 && (hole > writtenForSlot.Length || writtenForSlot[hole - 1] < 0)))
+        {
+            return template;
+        }
+        return holes.Replace(template, hole =>
+        {
+            var index = int.Parse(hole.Groups[1].Value);
+            return index == 0 ? hole.Value : "{" + (writtenForSlot[index - 1] + 1) + "}";
+        });
+    }
+
+    /// <summary>
+    /// <c>ToDictionary</c> by the runtime, which refuses a null key and a key twice as .NET does:
+    /// <c>Object.fromEntries</c> kept the last of two and wrote a null as "null". Into the plain object
+    /// a dictionary of primitive keys is on this side, or, for a structural key (a record, a struct, a
+    /// tuple), into the value map such a dictionary is, which compares keys by value: a plain object
+    /// wrote every record as the same "[object Object]". A key neither holds faithfully (a DateTime,
+    /// a decimal, a class, an enum with aliases, see <see cref="LinqKeys.HeldAsText"/>) is refused, and
+    /// so is a comparer, which has no form here. Null is a call no model binds, which keeps the table's
+    /// shape.
+    /// </summary>
+    private static (string? Template, string? Refusal)? ToDictionary(InvocationExpressionSyntax invocation,
+        ConversionContext context)
+    {
+        if (context.SemanticHelper.GetSymbol(invocation) is not IMethodSymbol { TypeArguments: [_, var key, ..] } method)
+            return null;
+        if (method.Parameters.Any(parameter => parameter.Type.Name == "IEqualityComparer"))
+            return (null, "ToDictionary with a comparer");
+        var structural = key.IsStructuralValueType();
+        if (!structural && !LinqKeys.HeldAsText(key))
+            return (null, $"ToDictionary keyed by {key.ToDisplayString()}");
+        var helper = structural ? Eq.LinqToValueDictionary : Eq.LinqToDictionary;
+        return (invocation.ArgumentList.Arguments.Count == 2
+            ? $"{helper}({{0}}, {{1}}, {{2}})"
+            : $"{helper}({{0}}, {{1}})", null);
+    }
+
+    private static bool IsToDictionaryWithAComparer(string name, int argCount) => name == "ToDictionary" && argCount == 3;
 
     private static string? Template(string name, int argCount) => (name, argCount) switch
     {

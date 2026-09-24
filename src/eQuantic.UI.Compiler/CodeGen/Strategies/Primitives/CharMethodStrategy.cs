@@ -61,7 +61,10 @@ public class CharMethodStrategy : IExpressionIrStrategy
             "IsNumber" => Test(@"/^\p{N}$/u", c),
             "IsLetter" => Test(@"/^\p{L}$/u", c),
             "IsLetterOrDigit" => Test(@"/^[\p{L}\p{Nd}]$/u", c),
-            "IsWhiteSpace" => Test(@"/^\s$/", c),
+            // .NET's white space is the Unicode White_Space property. JavaScript's `\s` is not: it
+            // leaves out NEXT LINE (U+0085) and takes in the byte order mark (U+FEFF), and those
+            // are the whole difference over the BMP, measured on both sides.
+            "IsWhiteSpace" => Test(@"/^\p{White_Space}$/u", c),
             "IsUpper" => Test(@"/^\p{Lu}$/u", c),
             "IsLower" => Test(@"/^\p{Ll}$/u", c),
             "IsPunctuation" => Test(@"/^\p{P}$/u", c),

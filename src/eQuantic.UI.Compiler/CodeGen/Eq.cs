@@ -66,12 +66,28 @@ public static class Eq
     public const string Single = "$eq.num.single";
     /// <summary>A double's text as .NET writes it: the shortest digits, in .NET's notation.</summary>
     public const string Double = "$eq.num.double";
+    /// <summary><c>Convert.ToInt32(value, fromBase)</c> and its seven siblings: an integer read from
+    /// text in base 2, 8, 10 or 16 as .NET reads it, a base other than 10 reading the type's bits.</summary>
+    public const string FromBase = "$eq.num.fromBase";
+    /// <summary><c>Convert.ToString(value, toBase)</c>: an integer written in base 2, 8, 10 or 16, a
+    /// negative one as its bits in any base but 10.</summary>
+    public const string ToBase = "$eq.num.toBase";
     /// <summary>Substring that refuses an out-of-range index, the way .NET does.</summary>
     public const string Substring = "$eq.text.substring";
     /// <summary>A dictionary read that throws for a key that is not there.</summary>
     public const string DictGet = "$eq.dictGet";
     /// <summary>LINQ Zip — pairs stop with the shorter sequence.</summary>
     public const string Zip = "$eq.zip";
+    /// <summary>LINQ <c>Max</c>, by the ordering of the type it answers: an empty sequence of a value
+    /// type throws, a NaN is passed over, a null is skipped.</summary>
+    public const string LinqMax = "$eq.linq.max";
+    /// <summary>LINQ <c>Min</c>, by the ordering of the type it answers: a NaN wins.</summary>
+    public const string LinqMin = "$eq.linq.min";
+    /// <summary>LINQ <c>ToDictionary</c> into a plain object, refusing a null key and a key twice.</summary>
+    public const string LinqToDictionary = "$eq.linq.toDictionary";
+    /// <summary>LINQ <c>ToDictionary</c> with a structural key (a record, a struct, a tuple), into the
+    /// value map such a dictionary is, with the same refusals.</summary>
+    public const string LinqToValueDictionary = "$eq.linq.toValueDictionary";
     /// <summary>Where each text element (an extended grapheme cluster, UAX #29) of a string begins:
     /// <c>StringInfo.ParseCombiningCharacters</c>, answered by the platform's segmenter.</summary>
     public const string TextElementStarts = "$eq.text.textElementStarts";
@@ -83,6 +99,19 @@ public static class Eq
     public const string UnicodeCategory = "$eq.text.unicodeCategory";
     public const string Format = "$eq.text.format";
     public const string StringFormat = "$eq.text.stringFormat";
+    /// <summary><c>string.Compare</c> by a <c>StringComparison</c>: a null first, a culture comparison
+    /// by the platform's collator, an ordinal one answering .NET's difference.</summary>
+    public const string StringCompare = "$eq.text.compare";
+    /// <summary><c>string.Compare</c> over two ranges in the current culture, clamped and checked as
+    /// <c>CompareInfo</c> checks them.</summary>
+    public const string StringCompareRange = "$eq.text.compareRange";
+    /// <summary><c>string.Compare</c> over two ranges by a <c>StringComparison</c>, and
+    /// <c>string.CompareOrdinal</c> over two ranges, whose checks run in their own order.</summary>
+    public const string StringCompareRangeBy = "$eq.text.compareRangeBy";
+    /// <summary><c>string.Equals(a, b, comparisonType)</c>.</summary>
+    public const string StringEquals = "$eq.text.equals";
+    /// <summary><c>string.Join(separator, value, startIndex, count)</c>: the range, checked.</summary>
+    public const string StringJoinRange = "$eq.text.joinRange";
     public const string StringBuilder = "$eq.text.stringBuilder";
     public const string DateTime = "$eq.time.dateTime";
     public const string TimeSpan = "$eq.time.timeSpan";
