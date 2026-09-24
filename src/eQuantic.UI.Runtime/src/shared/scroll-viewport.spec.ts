@@ -221,6 +221,31 @@ describe('ScrollView web out-channels', () => {
       container.remove();
     });
 
+    /**
+     * Two passes that end in one task (two roots mounted together) get ONE commit. Each scheduled
+     * its own, the first consumed every declaration, and the second read an empty tree and let go
+     * of every scroll view on the page.
+     */
+    it('commits once for passes that end in the same task', async () => {
+      const seen: number[] = [];
+      const lowered = lowerVisualNode(scrollNode({ onViewportChanged: (h) => seen.push(h) }), context());
+      const path = (lowered as { attributes: Record<string, string> }).attributes['data-eq-scroll'];
+      const el = document.createElement('div');
+      el.setAttribute('data-eq-scroll', path);
+      Object.defineProperty(el, 'clientHeight', { value: 400, configurable: true });
+      document.body.append(el);
+      commitScrollViewports();
+      expect(observers[0].target).toBe(el);
+
+      lowerVisualNode(scrollNode({ onViewportChanged: (h) => seen.push(h) }), context());
+      scheduleScrollViewportCommit();
+      scheduleScrollViewportCommit();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(observers[0].target).toBe(el);
+    });
+
     /** With no queueMicrotask the commit still waits for the write, rather than measuring the tree
      * before it. */
     it('waits for the write where there is no queueMicrotask', async () => {

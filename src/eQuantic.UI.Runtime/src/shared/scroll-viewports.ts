@@ -64,17 +64,28 @@ export function releaseDetachedScrollViewports(): void {
   for (const view of [...watched]) if (!view.isConnected) stopWatching(view);
 }
 
+/** Whether a commit is already waiting for the write. */
+let scheduled = false;
+
 /**
  * Commits AFTER the pass's DOM has been written: a microtask is the first moment after the write,
  * and it keeps the commit itself synchronous for tests that drive it directly (see
  * `scheduleInViewCommit`, the same move for the same reason).
  */
 export function scheduleScrollViewportCommit(): void {
-  if (declared.size === 0 && watched.size === 0) return;
+  if (scheduled || (declared.size === 0 && watched.size === 0)) return;
+  scheduled = true;
+  // ONE commit for however many passes end before it runs: two roots mounted in one task scheduled
+  // two, the first consumed every declaration, and the second read an empty tree and let go of
+  // every scroll view on the page.
+  const commit = () => {
+    scheduled = false;
+    commitScrollViewports();
+  };
   // After the write on every engine: committing on the spot where there is no queueMicrotask
   // measured the tree before, which is the defect this deferral exists to remove.
-  if (typeof queueMicrotask === 'function') queueMicrotask(commitScrollViewports);
-  else void Promise.resolve().then(commitScrollViewports);
+  if (typeof queueMicrotask === 'function') queueMicrotask(commit);
+  else void Promise.resolve().then(commit);
 }
 
 export function commitScrollViewports(): void {
