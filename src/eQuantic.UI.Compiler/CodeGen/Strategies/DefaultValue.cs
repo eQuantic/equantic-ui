@@ -19,12 +19,21 @@ public static class DefaultValue
     /// module's own scan cannot see it, and an unimported twin fails the module when it loads.</summary>
     public static string Of(ITypeSymbol? type, ConversionContext context)
     {
-        var value = Of(type, named => (named.Locations.Any(location => location.IsInSource)
-            ? context.UsedAppTypes
-            : context.UsedRuntimeTypes).Add(named.Name));
+        var value = Of(type, named => (IsRuntimeProvided(named) ? context.UsedRuntimeTypes : context.UsedAppTypes)
+            .Add(named.Name));
         if (value.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
         return value;
     }
+
+    /// <summary>Whether a struct's twin comes from the runtime, by the rule the import scan uses
+    /// (<see cref="Services.RuntimeProvidedTypeScanner"/>): a runtime-provided namespace, or a type
+    /// marked <c>[RuntimeProvided]</c>. Only the rest is one of the app's own modules. Being in
+    /// source does not decide it: a source-tree build compiles the library's own structs from source,
+    /// and they still come from <c>@equantic/runtime</c> (found in review, #405).</summary>
+    private static bool IsRuntimeProvided(INamedTypeSymbol type) =>
+        Services.RuntimeProvidedTypeScanner.IsRuntimeProvidedNamespace(type.ContainingNamespace?.ToDisplayString() ?? "")
+        || type.GetAttributes().Any(attribute => attribute.AttributeClass?.Name == "RuntimeProvidedAttribute")
+        || !type.Locations.Any(location => location.IsInSource);
 
     /// <summary>The default, with no context to tell about the helper import — the emitter's field
     /// path already scans what it emits for <c>$eq.</c> and adds it.</summary>

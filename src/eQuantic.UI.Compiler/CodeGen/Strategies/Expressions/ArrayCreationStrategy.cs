@@ -56,15 +56,16 @@ public class ArrayCreationStrategy : IConversionStrategy
     /// decided before, so a long and a decimal started as a plain 0, a char, an enum and a struct as
     /// null, and a type not written as its keyword (<c>Int64</c>) as null too. A struct's zero is an
     /// object, and <c>fill</c> puts ONE object in every slot, so a write through one element showed
-    /// through all of them: each slot builds its own. Every other default is a value nothing
-    /// mutates, and one fills them all.
+    /// through all of them: each slot builds its own, and so does a tuple's, which is an array here.
+    /// Every other default is a value nothing mutates, and one fills them all.
     /// </summary>
     private static string Sized(ArrayCreationExpressionSyntax sized, string size, ConversionContext context)
     {
         var fill = context.SemanticHelper.GetType(sized) is IArrayTypeSymbol array
             ? Strategies.DefaultValue.Of(array.ElementType, context)
             : Unbound(sized.Type, context);
-        return fill.StartsWith("new ", StringComparison.Ordinal)
+        // A struct's zero and a tuple's (an array on this side) are objects: each slot builds its own.
+        return fill.StartsWith("new ", StringComparison.Ordinal) || fill.StartsWith('[')
             ? $"Array.from({{ length: {size} }}, () => {fill})"
             : $"new Array({size}).fill({fill})";
     }

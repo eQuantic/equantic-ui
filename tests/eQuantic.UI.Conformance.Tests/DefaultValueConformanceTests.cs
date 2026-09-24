@@ -102,6 +102,8 @@ public class DefaultValueConformanceTests
     // A tuple is an array on this side, and its zero is an array of its elements' zeros.
     [InlineData("var t = default((int, string)); return t.Item1 + \"|\" + (t.Item2 == null);")] // "0|True"
     [InlineData("var a = new (int, long)[1]; return (a[0].Item2 + 1L).ToString();")]        // "1"
+    // Each slot holds its own tuple: a write through one does not show through another.
+    [InlineData("var a = new (int, long)[2]; a[0].Item1 = 5; return a[1].Item1;")]          // 0
     [InlineData("Guid g = default; return g == Guid.Empty;")]                                // true
     // Every site that asks a type for its default answers the same: LINQ's OrDefault too.
     [InlineData("return new List<DateTime>().FirstOrDefault().Year;")]                       // 1
