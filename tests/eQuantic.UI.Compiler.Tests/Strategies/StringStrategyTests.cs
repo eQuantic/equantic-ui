@@ -291,6 +291,22 @@ public class StringStrategyTests
     public void Format_WithNoModel_KnowsTheProviderByItsSpelling(string code, string expected) =>
         new CSharpToJsConverter().ConvertExpression(SyntaxFactory.ParseExpression(code)).Should().Be(expected);
 
+    /// <summary>With no model, an argument that is not text in front of a literal template is a
+    /// provider, and one nobody can name is EQ2108 as it is with a model. A value that is text first
+    /// is still the template's.</summary>
+    [Fact]
+    public void Format_WithNoModel_RefusesAProviderItCannotName()
+    {
+        var converter = new CSharpToJsConverter();
+        converter.ConvertExpression(SyntaxFactory.ParseExpression("string.Format(provider, \"{0}\", x)"));
+        converter.Diagnostics.Should().Contain(d => d.Code == "EQ2108");
+
+        var kept = new CSharpToJsConverter();
+        kept.ConvertExpression(SyntaxFactory.ParseExpression("string.Format(template, \"x\")"))
+            .Should().Be("$eq.text.stringFormat(template, 'x')");
+        kept.Diagnostics.Should().NotContain(d => d.Code == "EQ2108");
+    }
+
     [Fact]
     public void Equals_MapsToStrictEquality()
     {
