@@ -631,6 +631,8 @@ record of a release, the wiki's Upgrading page is the distillate.
   .NET's notation, and a placeholder aligns. From the review: a null provider formats with the current
   culture, as .NET reads it, and a params array passed whole spreads by the form C# bound, so a
   `string[]` or a collection expression is formatted element by element, where it was one value.
+  Each value is passed in its parameter's slot and evaluated where it was written, a named argument
+  included, and with no model to bind the call a named culture is still known for the provider.
 
 - **2026-09-24 · The code editor is a component**: slice 1c of
   [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#375](https://github.com/eQuantic/equantic-ui/pull/375)).
