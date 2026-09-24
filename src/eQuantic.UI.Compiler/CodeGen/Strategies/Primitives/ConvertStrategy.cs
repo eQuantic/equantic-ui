@@ -32,8 +32,9 @@ public class ConvertStrategy : IExpressionIrStrategy
         var args = invocation.ArgumentList.Arguments;
         if (args.Count == 0) return JsExpr.Identifier("undefined");
 
-        // Reading or writing an integer in a base is settled by the bound overload, whatever the
-        // name: the base went nowhere, so "ff" in base 16 was NaN and -1 in base 16 was "-1".
+        // Reading or writing an integer in a BASE is settled by the overload C# bound, which the
+        // method's name cannot say: the base went nowhere, so "ff" in base 16 was NaN and -1 in
+        // base 16 was "-1".
         if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol method && BaseTemplate(method) is { } template)
         {
             context.UsedHelpers.Add(Eq.Import);
