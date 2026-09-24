@@ -46,8 +46,8 @@ public abstract class MapBackedDictionaryStrategy : ConversionStrategyBase
             case AssignmentExpressionSyntax { Left: ElementAccessExpressionSyntax la }:
                 return ReceiverMatches(la.Expression, context);
 
-            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
-                return Methods.Contains(ma.Name.Identifier.Text) && ReceiverMatches(ma.Expression, context);
+            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:
+                return Methods.Contains(ma.Name.Identifier.Text) && ReceiverMatches(DictionaryOf(inv, ma, context), context);
 
             case MemberAccessExpressionSyntax member:
                 return member.Name.Identifier.Text is "Keys" or "Values" or "Count"
@@ -131,6 +131,16 @@ public abstract class MapBackedDictionaryStrategy : ConversionStrategyBase
     private bool ReceiverMatches(ExpressionSyntax receiver, ConversionContext context) =>
         Matches(context.SemanticHelper.GetType(receiver));
 
+    /// <summary>The dictionary a call reads: its receiver, or — for a lookup's static form,
+    /// <c>CollectionExtensions.GetValueOrDefault(m, key)</c> — the argument that passes it, whose
+    /// type is the one that says this is a runtime map.</summary>
+    private static ExpressionSyntax DictionaryOf(
+        InvocationExpressionSyntax invocation, MemberAccessExpressionSyntax member, ConversionContext context) =>
+        member.Name.Identifier.Text is "TryGetValue" or "GetValueOrDefault"
+        && DictionaryLookup.DictionaryOf(invocation, context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol) is { } dictionary
+            ? dictionary
+            : member.Expression;
+
     /// <summary>
     /// Emits <c>factory(...)</c>, seeding from a dictionary collection-initializer (<c>{ {k, v}, … }</c>
     /// or the indexed form <c>[k] = v</c>) as an array of <c>[key, value]</c> pairs.
@@ -176,9 +186,9 @@ public abstract class MapBackedDictionaryStrategy : ConversionStrategyBase
         switch (method)
         {
             case "TryGetValue" when args.Count > 1:
-                return DictionaryLookup.RuntimeMap.TryGetValue(ma.Expression, invocation, context).ToString();
+                return DictionaryLookup.RuntimeMap.TryGetValue(invocation, context).ToString();
             case "GetValueOrDefault" when args.Count > 0:
-                return DictionaryLookup.RuntimeMap.GetValueOrDefault(ma.Expression, invocation, context).ToString();
+                return DictionaryLookup.RuntimeMap.GetValueOrDefault(invocation, context).ToString();
         }
 
         var receiver = context.Converter.ConvertExpression(ma.Expression);

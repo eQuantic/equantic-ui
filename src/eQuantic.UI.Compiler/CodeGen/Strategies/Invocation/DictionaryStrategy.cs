@@ -110,10 +110,10 @@ public class DictionaryStrategy : IExpressionIrStrategy
 
         // The two lookups answer as .NET's do, and evaluate each argument once — DictionaryLookup.
         if (methodName == "TryGetValue" && args.Count > 1)
-            return DictionaryLookup.PlainObject.TryGetValue(memberAccess.Expression, invocation, context);
+            return DictionaryLookup.PlainObject.TryGetValue(invocation, context);
 
         if (methodName == "GetValueOrDefault" && args.Count > 0)
-            return DictionaryLookup.PlainObject.GetValueOrDefault(memberAccess.Expression, invocation, context);
+            return DictionaryLookup.PlainObject.GetValueOrDefault(invocation, context);
 
         var receiver = context.Converter.ConvertIr(memberAccess.Expression);
         var caller = receiver.ToString();

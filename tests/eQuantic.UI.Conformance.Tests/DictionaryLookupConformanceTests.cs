@@ -20,6 +20,9 @@ public class DictionaryLookupConformanceTests
     [InlineData("int calls = 0; var d = new Dictionary<string, int> { [\"a\"] = 1 }; Dictionary<string, int> Get() { calls++; return d; } Get().TryGetValue(\"a\", out var v); return v + \"/\" + calls;")] // "1/1"
     [InlineData("int calls = 0; var m = new SortedDictionary<string, int> { [\"a\"] = 1 }; string Key() { calls++; return \"a\"; } m.TryGetValue(Key(), out var v); return v + \"/\" + calls;")] // "1/1"
     [InlineData("int calls = 0; var m = new SortedDictionary<string, int> { [\"a\"] = 1 }; SortedDictionary<string, int> Get() { calls++; return m; } Get().TryGetValue(\"a\", out var v); return v + \"/\" + calls;")] // "1/1"
+    // ---- and the receiver before the key: a key that reassigns the receiver's variable reads the one C# had read ----
+    [InlineData("var d = new Dictionary<string, int> { [\"a\"] = 1 }; var other = new Dictionary<string, int> { [\"a\"] = 2 }; string Swap() { d = other; return \"a\"; } d.TryGetValue(Swap(), out var v); return v;")] // 1
+    [InlineData("var m = new SortedDictionary<string, int> { [\"a\"] = 1 }; var other = new SortedDictionary<string, int> { [\"a\"] = 2 }; string Swap() { m = other; return \"a\"; } m.TryGetValue(Swap(), out var v); return v;")] // 1
     // ---- a miss leaves default(TValue) in the out, whatever it held ----
     [InlineData("var d = new Dictionary<string, int> { [\"a\"] = 1 }; var hit = d.TryGetValue(\"z\", out var v); return (hit ? \"t\" : \"f\") + v;")] // "f0"
     [InlineData("var d = new Dictionary<string, int> { [\"a\"] = 1 }; int v = 5; d.TryGetValue(\"z\", out v); return v;")] // 0
@@ -78,6 +81,8 @@ public class DictionaryLookupConformanceTests
     // ---- the key and the receiver are evaluated once ----
     [InlineData("int calls = 0; var d = new Dictionary<string, int> { [\"a\"] = 1 }; string Key() { calls++; return \"a\"; } var r = d.GetValueOrDefault(Key()); return r + \"/\" + calls;")] // "1/1"
     [InlineData("int calls = 0; var d = new Dictionary<string, int> { [\"a\"] = 1 }; Dictionary<string, int> Get() { calls++; return d; } var r = Get().GetValueOrDefault(\"a\", -1); return r + \"/\" + calls;")] // "1/1"
+    [InlineData("var d = new Dictionary<string, int> { [\"a\"] = 1 }; var other = new Dictionary<string, int> { [\"a\"] = 2 }; string Swap() { d = other; return \"a\"; } return d.GetValueOrDefault(Swap());")] // 1
+    [InlineData("var d = new Dictionary<string, int> { [\"a\"] = 1 }; var other = new Dictionary<string, int> { [\"a\"] = 2 }; string Swap() { d = other; return \"a\"; } int Seven() { return 7; } return d.GetValueOrDefault(Swap(), Seven());")] // 1
     // ---- an explicit default is evaluated once, hit or miss, after the key unless named first ----
     [InlineData("int calls = 0; var d = new Dictionary<string, int> { [\"a\"] = 1 }; int Fallback() { calls++; return 7; } var r = d.GetValueOrDefault(\"a\", Fallback()); return r + \"/\" + calls;")] // "1/1"
     [InlineData("int calls = 0; var d = new Dictionary<string, int> { [\"a\"] = 1 }; int Fallback() { calls++; return 7; } var r = d.GetValueOrDefault(\"z\", Fallback()); return r + \"/\" + calls;")] // "7/1"
@@ -85,6 +90,22 @@ public class DictionaryLookupConformanceTests
     [InlineData("string log = \"\"; var d = new Dictionary<string, int> { [\"a\"] = 1 }; string NextKey() { log += \"k\"; return \"a\"; } int Fallback() { log += \"d\"; return 7; } d.GetValueOrDefault(NextKey(), Fallback()); return log;")] // "kd"
     [InlineData("string log = \"\"; var d = new Dictionary<string, int> { [\"a\"] = 1 }; string NextKey() { log += \"k\"; return \"a\"; } int Fallback() { log += \"d\"; return 7; } d.GetValueOrDefault(defaultValue: Fallback(), key: NextKey()); return log;")] // "dk"
     public void GetValueOrDefault_MatchesDotNet(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>The static form of an extension passes the dictionary as its first argument: the
+    /// lowering took the TYPE's name for the dictionary, a ReferenceError at the first call, and the
+    /// dictionary for the key.</summary>
+    [SkippableTheory]
+    [InlineData("var d = new Dictionary<string, int> { [\"a\"] = 1 }; return CollectionExtensions.GetValueOrDefault(d, \"a\");")] // 1
+    [InlineData("var d = new Dictionary<string, int> { [\"a\"] = 1 }; return CollectionExtensions.GetValueOrDefault(d, \"z\", -1);")] // -1
+    [InlineData("var m = new SortedDictionary<string, int> { [\"a\"] = 1 }; return CollectionExtensions.GetValueOrDefault(m, \"a\");")] // 1
+    [InlineData("var m = new SortedDictionary<string, long>(); return (CollectionExtensions.GetValueOrDefault(m, \"z\") + 1).ToString();")] // "1"
+    // Every argument where it was written, the dictionary included.
+    [InlineData("string log = \"\"; var d = new Dictionary<string, int> { [\"a\"] = 1 }; Dictionary<string, int> Get() { log += \"d\"; return d; } string NextKey() { log += \"k\"; return \"a\"; } CollectionExtensions.GetValueOrDefault(key: NextKey(), dictionary: Get()); return log;")] // "kd"
+    public void GetValueOrDefault_InItsStaticForm_ReadsTheDictionaryArgument(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
