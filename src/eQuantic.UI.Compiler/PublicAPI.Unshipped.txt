@@ -262,3 +262,5 @@ const eQuantic.UI.Compiler.CodeGen.Eq.MapSet = "$eq.mapSet" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.AsSingle = "$eq.text.asSingle" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.StringFormatInvariant = "$eq.text.stringFormatInvariant" -> string!
 eQuantic.UI.Compiler.Services.SemanticHelper.IsNullConstant(Microsoft.CodeAnalysis.SyntaxNode! node) -> bool
+eQuantic.UI.Compiler.Models.ComponentDefinition.ClassSyntax.get -> Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax?
+eQuantic.UI.Compiler.Models.ComponentDefinition.ClassSyntax.set -> void
