@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { equals, tupleEquals } from './equals';
+import { equals } from './equals';
 import { dec } from './decimal';
 import { dateTime } from './datetime';
 
@@ -56,17 +56,5 @@ describe('Structural equality ($eq.equals)', () => {
     expect(equals(0, -0)).toBe(true);
     expect(equals(NaN, 0)).toBe(false);
     expect(equals(1, 2)).toBe(false);
-  });
-});
-
-describe("A value tuple's == ($eq.tupleEquals)", () => {
-  it("compares element by element with each element's ==", () => {
-    expect(tupleEquals([1, 'a'], [1, 'a'])).toBe(true);
-    expect(tupleEquals([1, 'a'], [1, 'b'])).toBe(false);
-    expect(tupleEquals([NaN, 1], [NaN, 1])).toBe(false); // (double.NaN, 1) == (double.NaN, 1)
-    expect(tupleEquals([[NaN]], [[NaN]])).toBe(false); // a nested tuple the same way
-    expect(tupleEquals([{ x: NaN }, 1], [{ x: NaN }, 1])).toBe(true); // a record element by its Equals
-    expect(tupleEquals([dec('1.0'), 2], [dec('1.00'), 2])).toBe(true); // a decimal by its value
-    expect(tupleEquals([0, null], [-0, null])).toBe(true);
   });
 });

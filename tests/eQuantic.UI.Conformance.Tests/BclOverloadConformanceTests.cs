@@ -481,9 +481,24 @@ public class BclOverloadConformanceTests
     [InlineData("return (double.NaN, 1).Equals((double.NaN, 1));")]                                                // true
     [InlineData("return (new P(double.NaN), 1) == (new P(double.NaN), 1);")]                                       // true: a record element by its ==
     [InlineData("var t = (1.5, \"a\"); return t == (1.5, \"a\") && t != (1.5, \"b\");")]                               // true
+    // A tuple's == is lowered by the compiler, where the element types are known: an array element
+    // compares by reference, a nested tuple element by element, a decimal by its value.
+    [InlineData("return (new[] { 1 }, 2) == (new[] { 1 }, 2);")]                                           // false: two arrays
+    [InlineData("var a = new[] { 1 }; return (a, 2) == (a, 2);")]                                          // true: one array
+    [InlineData("return ((double.NaN, 1), 2) == ((double.NaN, 1), 2);")]                                   // false
+    [InlineData("return (new P(double.NaN), (double.NaN, 1)) == (new P(double.NaN), (double.NaN, 1));")]   // false: the record is equal, the NaN is not
+    [InlineData("return (1.5m, \"a\") == (1.50m, \"a\");")]                                                 // true
+    [InlineData("return (1, \"a\") != (1, \"b\");")]                                                        // true
+    [InlineData("(int, int)? x = (1, 2); (int, int)? y = (1, 2); (int, int)? z = null; return (x == y ? 100 : 0) + (x == z ? 10 : 0) + (z == null ? 1 : 0);")] // 101
+    [InlineData("int n = 0; (int, int) L() { n = n * 10 + 1; return (1, 2); } (int, int) R() { n = n * 10 + 2; return (1, 2); } var e = L() == R(); return n * 10 + (e ? 1 : 0);")] // 121: each side once, in order
+    [InlineData("return (new M(1, 7), 2) == (new M(1, 8), 2);")]                                          // true: M's own ==, which reads V alone
+    [InlineData("return (new M(1, 7), 2) == (new M(3, 7), 2);")]                                          // false
     public void StructuralEqualityHoldsNaNAsDotNetDoes(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
-        ConformanceRunner.AssertStatementsSameAsDotNet(statements, "public record P(double X);");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, "public record P(double X); "
+            + "public struct M { public int V; public int Tag; public M(int v, int tag) { V = v; Tag = tag; } "
+            + "public static bool operator ==(M a, M b) => a.V == b.V; public static bool operator !=(M a, M b) => a.V != b.V; "
+            + "public override bool Equals(object o) => o is M m && m.V == V; public override int GetHashCode() => V; }");
     }
 }

@@ -15,8 +15,8 @@
  *
  * A number compares as a double's `Equals` does, which is not `===`: NaN equals NaN there
  * (`EqualityComparer<double>.Default`), so two records with a NaN member are equal and group as one
- * key. A value tuple's `==` is the exception, element by element with each element's `==`, and has
- * its own helper below.
+ * key. A value tuple's `==` is the exception, its elements' own operators, which the compiler lowers
+ * where it knows their types (TupleEquality): a tuple and an array are both arrays here.
  */
 export function equals(a: unknown, b: unknown): boolean {
   // Identical reference, or equal primitives (number/string/boolean/bigint/symbol).
@@ -62,22 +62,4 @@ export function equals(a: unknown, b: unknown): boolean {
     if (!equals(ao[k], bo[k])) return false;
   }
   return true;
-}
-
-/**
- * C#'s `==` between two value tuples, which is not their `Equals`: it compares element by element with
- * each element's own `==`, so a NaN element is unequal to itself (`(double.NaN, 1) == (double.NaN, 1)`
- * is false where `.Equals` is true). A nested tuple compares the same way, and any other element by
- * its type's equality, which for a record is its `Equals`.
- */
-export function tupleEquals(a: unknown, b: unknown): boolean {
-  if (Array.isArray(a) && Array.isArray(b)) {
-    if (a.length !== b.length) return false;
-    for (let i = 0; i < a.length; i++) {
-      if (!tupleEquals(a[i], b[i])) return false;
-    }
-    return true;
-  }
-  if (typeof a === 'number' || typeof b === 'number') return a === b;
-  return equals(a, b);
 }

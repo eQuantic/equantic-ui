@@ -210,20 +210,19 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
             if (dtResult != null) return JsExpr.Opaque(dtResult);
         }
 
-        // Records, structs and value tuples compare by VALUE in C# (not reference). Route ==/!= to the
+        // Two value tuples compare by their ELEMENTS' own operators, which is not their Equals: a NaN
+        // element is unequal to itself, an array element compares by reference. See TupleEquality.
+        if (TupleEquality.Lower(binary, op, leftIr, rightIr, context) is { } tuples) return tuples;
+
+        // Records and structs compare by VALUE in C# (not reference). Route ==/!= to the
         // structural helper. (Null comparisons fall through to the loose ==/!= below — correct, since
-        // `record == null` is a plain null check.) Two tuples compare by their elements' own `==`,
-        // which is not their Equals: a NaN element is unequal to itself there.
+        // `record == null` is a plain null check.)
         if ((op == "==" || op == "!=") && left != "null" && right != "null"
             && (context.SemanticHelper.GetType(binary.Left).IsStructuralValueType()
                 || context.SemanticHelper.GetType(binary.Right).IsStructuralValueType()))
         {
             context.UsedHelpers.Add(Eq.Import);
-            var helper = context.SemanticHelper.GetType(binary.Left).UnwrapNullable() is { IsTupleType: true }
-                && context.SemanticHelper.GetType(binary.Right).UnwrapNullable() is { IsTupleType: true }
-                ? Eq.TupleEquals
-                : Eq.Equals;
-            return JsExpr.Opaque(op == "==" ? $"{helper}({left}, {right})" : $"!{helper}({left}, {right})");
+            return JsExpr.Opaque(op == "==" ? $"{Eq.Equals}({left}, {right})" : $"!{Eq.Equals}({left}, {right})");
         }
 
         // C# integer division truncates toward zero; JS `/` is always float division.
