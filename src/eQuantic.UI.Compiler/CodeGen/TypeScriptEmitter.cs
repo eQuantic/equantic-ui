@@ -178,6 +178,56 @@ public class TypeScriptEmitter
         return (JsStatement.Block(new[] { fallback }), null);
     }
 
+    /// <summary>
+    /// A method's body as IR, so each statement reaches the class writer carrying the C# it came
+    /// from and the source map leads a frame or a breakpoint to it (#293): converted as text, the
+    /// body lost every origin before the writer saw it, and the map stopped at the method's first
+    /// line. The locals an <c>out var</c> declares lead the block. An iterator's buffer and an out
+    /// parameter's returned object still wrap the body's TEXT, so those two shapes stay text.
+    /// </summary>
+    private JsStatement MethodBody(BlockSyntax? block, ExpressionSyntax? expressionBody, bool isIterator,
+        IReadOnlyList<ParameterSyntax> byReference, bool isAsync)
+    {
+        var hoisted = OutParameters.HoistedLocals(block ?? (SyntaxNode?)expressionBody);
+        if (isIterator || byReference.Count > 0)
+        {
+            string text;
+            if (block != null)
+            {
+                _converter.SetIteratorBuffer(isIterator ? IteratorBufferName : null);
+                text = _converter.Convert(block);
+                _converter.SetIteratorBuffer(null);
+                if (isIterator) text = Braced(WrapIterator(StripJsBraces(text)));
+            }
+            else if (expressionBody != null)
+            {
+                text = Braced(ExpressionBodyReturn(expressionBody));
+            }
+            else
+            {
+                text = "{}";
+            }
+            var body = hoisted + StripJsBraces(text);
+            if (byReference.Count > 0) body = OutParameters.WrapBody(body, byReference, isAsync);
+            return JsStatement.Raw(body);
+        }
+
+        // An expression body never reaches ReturnStatementStrategy, so nothing hoisted the `let` for
+        // a pattern variable bound in it: ExpressionBodyReturn declares it in front of the return.
+        IReadOnlyList<JsStatement> statements = block != null
+            ? _converter.ConvertBlockIr(block) switch
+            {
+                JsBlock converted => converted.Statements,
+                var other => [other],
+            }
+            : expressionBody != null
+                ? [JsStatement.Raw(_converter.InBlock(() => ExpressionBodyReturn(expressionBody))) with { Origin = expressionBody }]
+                : [];
+        return hoisted.Length == 0
+            ? JsStatement.Block(statements)
+            : JsStatement.Block([JsStatement.Raw(hoisted.TrimEnd()), .. statements]);
+    }
+
     private string ExpressionBodyReturn(ExpressionSyntax expression) =>
         $"{PatternVariableScanner.Declarations(expression, TypeAnnotations)}return {_converter.ConvertExpression(expression)};";
 
@@ -666,9 +716,10 @@ public class TypeScriptEmitter
         // plain (non-exported) classes above the component — as their own modules, two same-named
         // nested classes would overwrite each other's file, and the C# scoping is lexical anyway.
         var nestedCode = string.Empty;
+        TypeScriptCodeBuilder? nb = null;
         if (component.BuildMethodNode?.Parent is ClassDeclarationSyntax ownerClass)
         {
-            var nb = new TypeScriptCodeBuilder { TypeAnnotations = TypeAnnotations, Layout = _converter.Layout };
+            nb = new TypeScriptCodeBuilder { TypeAnnotations = TypeAnnotations, Layout = _converter.Layout };
             foreach (var nested in ownerClass.Members.OfType<ClassDeclarationSyntax>()
                          .Where(n => n.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword)))
             {
@@ -692,8 +743,15 @@ public class TypeScriptEmitter
         // actually referenced, so it is passed in to drop imports the scan over-collected.
         var imports = Imports(component, nestedCode + componentCode);
 
-        // Return imports + nested scope classes + component code
-        return JsModuleWriter.Write(new JsModule(imports, nestedCode + componentCode));
+        // Return imports + nested scope classes + component code. The two builders recorded their
+        // mappings against their own text, and the module puts the imports above both and the
+        // nested classes above the component: every segment moves down by what stands above it,
+        // or a frame read through the map lands that many lines too early (#293).
+        var module = new JsModule(imports, nestedCode + componentCode);
+        var bodyLine = JsModuleWriter.BodyLine(module);
+        _builder.ShiftMappings(bodyLine + nestedCode.Count(c => c == '\n'));
+        if (nb is not null) _builder.AddMappings(nb.GetMappings(), bodyLine);
+        return JsModuleWriter.Write(module);
     }
     
     /// <summary>Every identifier the emitted body mentions — the authority on which imports are live.</summary>
@@ -1592,22 +1650,13 @@ public class TypeScriptEmitter
                 var generics = m.TypeParameterList is { Parameters.Count: > 0 }
                     ? $"<{string.Join(", ", m.TypeParameterList.Parameters.Select(tp => tp.Identifier.Text))}>"
                     : "";
-                string mbody;
-                if (m.Body != null)
-                {
-                    _converter.SetIteratorBuffer(isIterator ? IteratorBufferName : null);
-                    mbody = StripJsBraces(_converter.Convert(m.Body));
-                    _converter.SetIteratorBuffer(null);
-                    if (isIterator) mbody = WrapIterator(mbody);
-                }
-                else if (m.ExpressionBody != null) mbody = ExpressionBodyReturn(m.ExpressionBody.Expression);
-                else continue;
-                // `out var x` at a CALL SITE inside this body needs `x` to exist before the call.
-                mbody = OutParameters.HoistedLocals(m.Body ?? (SyntaxNode?)m.ExpressionBody) + mbody;
-                if (byReference.Count > 0) mbody = OutParameters.WrapBody(mbody, byReference, isAsync);
+                if (m.Body == null && m.ExpressionBody == null) continue;
+                // `out var x` at a CALL SITE inside this body needs `x` to exist before the call:
+                // MethodBody declares it in front.
+                var mbody = MethodBody(m.Body, m.ExpressionBody?.Expression, isIterator, byReference, isAsync);
                 var modifiers = (m.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.StaticKeyword) || asStatic ? "static " : "")
                     + (isAsync ? "async " : "");
-                c.Member(JsClassMember.Method(modifiers, mn, generics, pars, "", JsStatement.Raw(mbody)), m);
+                c.Member(JsClassMember.Method(modifiers, mn, generics, pars, "", mbody), m);
             }
             // USER-DEFINED OPERATORS — the same family a record's twin already carries, and for the
             // same reason: JavaScript cannot overload an operator, so the call site lowers `a + b`
@@ -1707,9 +1756,8 @@ public class TypeScriptEmitter
                                 $"extension property '{property.Identifier.Text}' has no getter body the compiler can lower — auto-accessors have no store on a receiver.");
                             break;
                         }
-                        var text = body is not null ? ExpressionBodyReturn(body) : StripJsBraces(_converter.Convert(getterBlock!));
                         c.Member(JsClassMember.Method("static ", property.Identifier.Text.ToCamelCase(), "", WithReceiver(""),
-                            Annotation(DeclaredType(property.Type)), JsStatement.Raw(text)), property);
+                            Annotation(DeclaredType(property.Type)), MethodBody(getterBlock, body, isIterator: false, [], isAsync: false)), property);
                         ReportExtensionSetter(property.AccessorList?.Accessors, property.Identifier.Text);
                         break;
                     }
@@ -1727,9 +1775,8 @@ public class TypeScriptEmitter
                                 "extension indexer has no getter body the compiler can lower.");
                             break;
                         }
-                        var text = body is not null ? ExpressionBodyReturn(body) : StripJsBraces(_converter.Convert(getterBlock!));
                         c.Member(JsClassMember.Method("static ", "item", "", WithReceiver(pars),
-                            Annotation(DeclaredType(indexer.Type)), JsStatement.Raw(text)), indexer);
+                            Annotation(DeclaredType(indexer.Type)), MethodBody(getterBlock, body, isIterator: false, [], isAsync: false)), indexer);
                         ReportExtensionSetter(indexer.AccessorList?.Accessors, "this[]");
                         break;
                     }
@@ -1748,13 +1795,10 @@ public class TypeScriptEmitter
                                 pp.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ParamsKeyword))));
                         var isAsync = method.ReturnType.ToString().StartsWith("Task")
                             || method.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
-                        string body;
-                        if (method.Body != null) body = StripJsBraces(_converter.Convert(method.Body));
-                        else if (method.ExpressionBody != null) body = ExpressionBodyReturn(method.ExpressionBody.Expression);
-                        else break;
-                        body = OutParameters.HoistedLocals(method.Body ?? (SyntaxNode?)method.ExpressionBody) + body;
+                        if (method.Body == null && method.ExpressionBody == null) break;
+                        var body = MethodBody(method.Body, method.ExpressionBody?.Expression, isIterator: false, [], isAsync);
                         c.Member(JsClassMember.Method("static " + (isAsync ? "async " : ""), method.Identifier.Text.ToCamelCase(), "",
-                            WithReceiver(pars), "", JsStatement.Raw(body)), method);
+                            WithReceiver(pars), "", body), method);
                         break;
                     }
 
@@ -1784,7 +1828,9 @@ public class TypeScriptEmitter
     /// </summary>
     private void EmitInstanceConstructor(ClassDeclarationSyntax cls, TypeScriptCodeBuilder.ClassBuilder c)
     {
-        var initialisers = new StringBuilder();
+        // Each initialiser and each statement of the body is its own statement, carrying the C# it
+        // came from, so a frame thrown in one leads to its line (#293).
+        var initialisers = new List<JsStatement>();
         foreach (var field in cls.Members.OfType<FieldDeclarationSyntax>())
         {
             // `const` is static in C#. Assigning one per instance shadowed the class member the
@@ -1800,13 +1846,13 @@ public class TypeScriptEmitter
                 // component path has answered this from the type for a while (FieldDefaultTests);
                 // a plain class is the same C#.
                 var value = variable.Initializer is { } init
-                    ? _converter.ConvertExpression(init.Value, field.Declaration.Type.ToString())
+                    ? _converter.InBlock(() => _converter.ConvertExpression(init.Value, field.Declaration.Type.ToString()))
                     : ValueTypeDefault(field.Declaration.Type.ToString(), field.Declaration.Type);
                 if (value is null) continue;
                 if (value.Contains("$eq.")) _converter.UsedHelpers.Add(Eq.Import);
                 // The SAME casing the field declaration uses, or the constructor writes a second,
                 // differently-spelled member beside the one every read goes through.
-                initialisers.Append($"this.{variable.Identifier.Text.ToCamelCase()} = {value}; ");
+                initialisers.Add(JsStatement.Raw($"this.{variable.Identifier.Text.ToCamelCase()} = {value};") with { Origin = variable });
             }
         }
 
@@ -1822,18 +1868,28 @@ public class TypeScriptEmitter
                     p.Default is null ? null : _converter.ConvertExpression(p.Default.Value),
                     p.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ParamsKeyword))));
 
-        var body = ctor?.Body is { } block ? StripJsBraces(_converter.Convert(block))
-            : ctor?.ExpressionBody is { } expression ? $"{_converter.ConvertExpression(expression.Expression)};"
-            : "";
+        IReadOnlyList<JsStatement> body = ctor?.Body is { } block
+            ? _converter.ConvertBlockIr(block) switch
+            {
+                JsBlock converted => converted.Statements,
+                var other => [other],
+            }
+            : ctor?.ExpressionBody is { } expression
+                ? [JsStatement.Raw($"{_converter.InBlock(() => _converter.ConvertExpression(expression.Expression))};") with { Origin = expression.Expression }]
+                : [];
+        // `out var x` at a call inside the body needs `x` to exist before the call.
+        var hoisted = OutParameters.HoistedLocals(ctor?.Body ?? (SyntaxNode?)ctor?.ExpressionBody);
 
         // `new Editor(text) { ReadOnly = true }` — an object initialiser is an ordinary way to
         // construct one of these, and it arrives as a trailing config object exactly as it does for
         // a component. A constructor that did not take one made the emitted call arity-wrong.
         var config = parameters.Length == 0 ? OptionalParam("props", "any") : $", {OptionalParam("props", "any")}";
-        var assign = " if (props && typeof props === 'object') Object.assign(this, props);";
         // A derived class must call super() before it touches `this`.
-        var superCall = HasEmittedBase(cls) ? "super(); " : "";
-        c.Member(JsClassMember.Constructor($"{parameters}{config}", JsStatement.Raw(superCall + initialisers + body + assign)),
+        JsStatement[] superCall = HasEmittedBase(cls) ? [JsStatement.Raw("super();")] : [];
+        JsStatement[] locals = hoisted.Length == 0 ? [] : [JsStatement.Raw(hoisted.TrimEnd())];
+        c.Member(JsClassMember.Constructor($"{parameters}{config}", JsStatement.Block([
+                .. superCall, .. initialisers, .. locals, .. body,
+                JsStatement.Raw("if (props && typeof props === 'object') Object.assign(this, props);")])),
             ctor ?? (SyntaxNode)cls);
     }
 
@@ -2175,7 +2231,10 @@ public class TypeScriptEmitter
             if (runtimeProvided.Contains(ct) || referencedEnums.Contains(ct)) continue;
             if (IsAppModule(ct)) imports.Add(new JsImport([ct], $"./{ct}"));
         }
-        return JsModuleWriter.Write(new JsModule(imports, builder.ToString()));
+        var module = new JsModule(imports, builder.ToString());
+        // The class's mappings were recorded against its own text; the imports stand above it.
+        builder.ShiftMappings(JsModuleWriter.BodyLine(module));
+        return JsModuleWriter.Write(module);
     }
 
     private void EmitMethod(MethodDefinition method, TypeScriptCodeBuilder.ClassBuilder c, ComponentDefinition component, string? className = null)
@@ -2242,38 +2301,12 @@ public class TypeScriptEmitter
 
         if (method.SyntaxNode != null)
         {
-            // Use Robust SyntaxNode Conversion (Phase 2+)
-            // Handle body (Block or ExpressionBody)
-            string jsBody;
-            if (method.SyntaxNode.Body != null)
-            {
-                _converter.SetCurrentClass(className);
-                _converter.SetIteratorBuffer(isIterator ? IteratorBufferName : null);
-                jsBody = _converter.Convert(method.SyntaxNode.Body);
-                _converter.SetIteratorBuffer(null);
-                if (isIterator) jsBody = Braced(WrapIterator(StripJsBraces(jsBody)));
-            }
-            else if (method.SyntaxNode.ExpressionBody != null)
-            {
-                _converter.SetCurrentClass(className);
-                // An expression body never reaches ReturnStatementStrategy, so nothing hoisted the
-                // `let` for a pattern variable bound in it — the converted condition assigned an
-                // undeclared name, which in a module (strict mode) throws ReferenceError.
-                jsBody = $"{Braced(ExpressionBodyReturn(method.SyntaxNode.ExpressionBody.Expression))}";
-            }
-            else
-            {
-                jsBody = "{}";
-            }
-            
-            var body = StripJsBraces(jsBody);
-            body = OutParameters.HoistedLocals(method.SyntaxNode.Body
-                ?? (SyntaxNode?)method.SyntaxNode.ExpressionBody) + body;
-            if (byReference.Count > 0) body = OutParameters.WrapBody(body, byReference, isAsync);
+            _converter.SetCurrentClass(className);
+            var body = MethodBody(method.SyntaxNode.Body, method.SyntaxNode.ExpressionBody?.Expression, isIterator, byReference, isAsync);
             var generics = method.TypeParameters is { } typeParameters && typeParameters.Any()
                 ? $"<{string.Join(", ", typeParameters)}>" : "";
             c.Member(JsClassMember.Method((method.IsStatic ? "static " : "") + asyncPrefix, methodName, generics, parameters, "",
-                JsStatement.Raw(body)), method.SyntaxNode);
+                body), method.SyntaxNode);
         }
         else
         {

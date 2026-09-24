@@ -16,7 +16,8 @@ export class CodeLineCells {
             cell += this.elementWidth(text, start, end, cell);
         }
         this._columns[starts.length] = text.length;
-        this._cells[starts.length] = cell; if (props && typeof props === 'object') Object.assign(this, props);
+        this._cells[starts.length] = cell;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     _columns: number[];
