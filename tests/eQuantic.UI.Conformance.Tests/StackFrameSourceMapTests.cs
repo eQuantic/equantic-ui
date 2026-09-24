@@ -148,8 +148,7 @@ public class StackFrameSourceMapTests
     /// </summary>
     private static (string Stack, List<(int Line, int Column)> Frames, string Map) Throw(string source, string module, string call)
     {
-        Skip.If(JsExecutor.BunExecutable is null, "The embedded Bun does not run here.");
-        var bun = JsExecutor.BunExecutable!;
+        var bun = JsExecutor.RequireBun();
         var dir = Directory.CreateTempSubdirectory("eq-stack-").FullName;
         try
         {

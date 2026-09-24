@@ -63,9 +63,23 @@ public static class JsExecutor
     /// <summary>The engine that will actually run scripts: "bun", "node", or "none".</summary>
     public static string EngineName => BunWorks() ? "bun" : NodeWorks() ? "node" : "none";
 
-    /// <summary>The embedded Bun the SDK ships, when it runs here: what a test hands to code that
-    /// bundles as the build does, rather than a script to run.</summary>
-    public static string? BunExecutable => BunWorks() ? BunPath() : null;
+    /// <summary>
+    /// The embedded Bun the SDK ships, for a test only Bun can answer: its bundler, its stack, its
+    /// <c>Bun.stringWidth</c>. Where it does not run the test is skipped, except under
+    /// <c>EQ_REQUIRE_JS=1</c>, where it FAILS: a runner that falls back to Node runs the rest of the
+    /// suite, and a Bun-only test that skipped there reported a pass for code nothing ran. The SDK
+    /// bundles with this same Bun, so a CI runner that cannot run it cannot build an app either.
+    /// </summary>
+    public static string RequireBun()
+    {
+        if (BunWorks()) return BunPath()!;
+        if (Environment.GetEnvironmentVariable("EQ_REQUIRE_JS") == "1")
+            throw new InvalidOperationException(
+                "EQ_REQUIRE_JS=1 but the embedded Bun does not run here, and this test only Bun can answer. " +
+                "It must FAIL loudly rather than skip — fix the runner environment.");
+        Xunit.Skip.If(true, "The embedded Bun does not run here.");
+        throw new InvalidOperationException("unreachable: Skip.If(true) throws");
+    }
 
     public static string Run(string jsProgram, int timeoutMs = 20000)
     {
