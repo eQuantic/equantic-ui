@@ -61,6 +61,10 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         // side. See BoolLogic.
         if (BoolLogic.Lower(binary, op, leftIr, rightIr, context) is { } logical) return logical;
 
+        // A LIFTED operator over nullable numbers takes its value's rule inside the lift (#372):
+        // the decimal and long branches below compute on their runtime types and never saw a null.
+        if (Lifted(binary, op, leftIr, rightIr, context) is { } liftedOperator) return liftedOperator;
+
         // CHAR ARITHMETIC moved to ValueFlow: a char promoting to a number is an implicit
         // conversion in the bound tree, so it is settled wherever C# applies it — an argument, a
         // return, an initializer — not only in a binary expression.
@@ -307,6 +311,84 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         EnumOperand(operand, context) is { } type
             ? JsExpr.Callish($"({CastExpressionStrategy.BuildNameToValueMap(type)})[{JsExprWriter.Write(converted)}]")
             : converted;
+
+    /// <summary>
+    /// C#'s own operator over Nullable&lt;T&gt; operands, for any number T (#372). The decimal and long
+    /// branches compute on their runtime types and never saw a null: <c>null + 1m</c> called
+    /// <c>add</c> on null, a long?'s <c>null &lt;&lt; 1</c> mixed a null into a BigInt and its
+    /// <c>null &lt; 7</c> answered true, and an int?'s <c>&amp;</c> or <c>&lt;&lt;</c> read null as 0. Here the
+    /// value's own rule runs inside the runtime's lift: arithmetic, bitwise and shifts answer null
+    /// for an absent operand, a relation answers false, and a decimal's equality is
+    /// <c>$eq.equals</c>, for which null equals null. Null otherwise: a user-defined operator, a
+    /// bool's logic and every non-numeric operand are someone else's.
+    /// </summary>
+    private static JsExpr? Lifted(BinaryExpressionSyntax binary, string op, JsExpr leftIr, JsExpr rightIr,
+        ConversionContext context)
+    {
+        if (context.SemanticHelper.GetOperation(binary) is not IBinaryOperation { IsLifted: true, OperatorMethod: null } bound
+            || !NullableLift.IsNullableNumber(bound.LeftOperand.Type, out var operand)
+            || !NullableLift.IsNullableNumber(bound.RightOperand.Type, out _))
+            return null;
+
+        switch (op)
+        {
+            case "==" or "!=":
+                if (!operand.IsDecimal()) return null;   // === already answers C#'s lifted equality
+                context.UsedHelpers.Add(Eq.Import);
+                var equals = JsExpr.Call(JsExpr.Identifier(Eq.Equals), leftIr, rightIr);
+                return op == "==" ? equals : JsExpr.Prefix("!", equals);
+            case "<" or ">" or "<=" or ">=":
+                context.UsedHelpers.Add(Eq.Import);
+                var relation = JsExprWriter.Write(operand.IsDecimal()
+                    ? ConvertDecimal(JsExpr.Identifier("a"), JsExpr.Identifier("b"), op)!
+                    : JsExpr.Binary(JsExpr.Identifier("a"), op, JsExpr.Identifier("b")));
+                return JsExpr.Callish(
+                    $"{Eq.LiftCmp}({JsExprWriter.WriteIn(leftIr, JsPrecedence.Assignment)}, {JsExprWriter.WriteIn(rightIr, JsPrecedence.Assignment)}, (a, b) => {relation})");
+            case "+" or "-" or "*" or "/" or "%" or "&" or "|" or "^" or "<<" or ">>" or ">>>":
+                var result = bound.Type.UnwrapNullable();
+                return NullableLift.Binary(leftIr, rightIr,
+                    (a, b) => LiftedRule(op, a, b, operand, result, binary, context) ?? JsExpr.Binary(a, op, b), context);
+            default:
+                return null;
+        }
+    }
+
+    /// <summary>The rule an operator computes on the VALUES of a lifted operation, by the type it
+    /// computes in: a decimal's methods, a long's settle, division and shift, a width's settle and
+    /// bitwise rule, a single's rounding. Null where JavaScript's own operator is C#'s.</summary>
+    private static JsExpr? LiftedRule(string op, JsExpr a, JsExpr b, ITypeSymbol operand, ITypeSymbol? result,
+        BinaryExpressionSyntax binary, ConversionContext context)
+    {
+        if (operand.IsDecimal()) return ConvertDecimal(a, b, op);
+        var arithmetic = ArithmeticContext.Of(binary, context);
+        if (op is "/" or "%" && result.IsIntegral())
+        {
+            var check = IntegerDivision.NeedsCheck(binary.Right, context);
+            return result.IsLong()
+                ? IntegerDivision.OfLongs(op, a, b, check, context)
+                : IntegerWidth.Settle(IntegerDivision.OfNumbers(op, a, b, check, context), result,
+                    arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context);
+        }
+        if (op is "<<" or ">>" or ">>>" && result.IsLong())
+        {
+            context.SemanticHelper.TryGetConstantValue(binary.Right, out var count);
+            return IntegerWidth.LongShift(op, a, b, count, result?.SpecialType == SpecialType.System_UInt64, context);
+        }
+        if (op is "&" or "|" or "^" or ">>" or ">>>" && IntegerWidth.Of(result) is { } bits)
+            return IntegerWidth.Bitwise(op, a, b, bits);
+        if (op is "+" or "-" or "*" or "<<" && IntegerWidth.Of(result) is { } width)
+        {
+            var settles = arithmetic.IsChecked || arithmetic.ExplicitUnchecked || IntegerWidth.WrapsByDefault(width);
+            if (!settles) return null;
+            return op == "*" && width.Bits == 32 && !arithmetic.IsChecked
+                ? IntegerWidth.Settle(JsExpr.Callish($"Math.imul({JsExprWriter.Write(a)}, {JsExprWriter.Write(b)})"),
+                    result, false, arithmetic.ExplicitUnchecked, context)
+                : IntegerWidth.Settle(JsExpr.Binary(a, op, b), result, arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context);
+        }
+        return op is "+" or "-" or "*" or "/" && SinglePrecision.Is(result)
+            ? SinglePrecision.Round(JsExpr.Binary(a, op, b))
+            : null;
+    }
 
     /// <summary>
     /// Routes a decimal binary operation to the runtime Decimal class — directly on the operands,
