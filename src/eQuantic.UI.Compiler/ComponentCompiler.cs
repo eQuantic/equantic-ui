@@ -375,9 +375,6 @@ public class ComponentCompiler
     }
     
     /// <summary>
-    /// Compile a parsed component definition
-    /// </summary>
-    /// <summary>
     /// The declaration a definition emits: its own syntax for a value type, a plain class or a static
     /// class, and for a component the class of its name in its tree, found as the base-chain walk of
     /// <see cref="Services.ShadowedRuntimeMembers"/> finds it.
@@ -388,6 +385,9 @@ public class ComponentCompiler
             .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax>()
             .FirstOrDefault(type => type.Identifier.Text == component.Name);
 
+    /// <summary>
+    /// Compile a parsed component definition
+    /// </summary>
     public CompilationResult Compile(ComponentDefinition component)
     {
         var result = new CompilationResult

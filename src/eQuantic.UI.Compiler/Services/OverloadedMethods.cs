@@ -41,6 +41,13 @@ namespace eQuantic.UI.Compiler.Services;
 /// With a model, the bases declared in the source are walked, the runtime's own being EQ2011's to
 /// hold, and an override is the method it overrides rather than a second one.
 /// </para>
+///
+/// <para>
+/// One DECLARATION is what a twin is written from: eqc does not merge a type's partial halves, one
+/// file holding two being EQ2009, and across files every half after the first is dropped and
+/// reported (<c>EmittedTwins.Divided</c>). So an overload in another half never reaches a twin to
+/// collide in. When partial types merge, this walks every declaration of the symbol.
+/// </para>
 /// </summary>
 internal static class OverloadedMethods
 {
