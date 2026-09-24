@@ -1,4 +1,5 @@
 using FluentAssertions;
+using eQuantic.UI.Compiler.CodeGen;
 using Xunit;
 
 namespace eQuantic.UI.Compiler.Tests.Strategies;
@@ -44,26 +45,37 @@ public class NumberStrategyTests
     }
 
     /// <summary>
-    /// The format provider is left out, which is faithful only when C# evaluating it cannot be
-    /// observed: a read of the BCL's own culture goes without a word, and a provider a call computes
-    /// is a build error, because C# would run the call and the twin has no CultureInfo to run it on.
+    /// The browser reads a number in the invariant culture and no other. A provider that names it
+    /// is left out without a word; no provider is EQ2110, because C# then reads in the request's
+    /// culture ("1,5" is 1.5 in pt) and the browser reads 15; any other provider is EQ2108.
     /// </summary>
     [Theory]
     [InlineData("decimal.Parse(str, System.Globalization.CultureInfo.InvariantCulture)", "$eq.num.decParse(this.str)")]
     [InlineData("Convert.ToDecimal(str, System.Globalization.CultureInfo.InvariantCulture)", "$eq.num.decConvert(this.str)")]
-    public void ADecimalConversion_LeavesOutAProviderWhoseReadCannotBeObserved(string call, string expected)
+    public void ADecimalReadInTheInvariantCulture_LeavesTheProviderOut(string call, string expected)
     {
         TestHelper.ConvertExpression(call).Should().Be(expected);
-        TestHelper.DiagnosticsFor(call).Should().NotContain(d => d.Code == "EQ1004");
+        TestHelper.DiagnosticsFor(call).Should().NotContain(d => d.Code == "EQ2108" || d.Code == "EQ2110" || d.Code == "EQ1004");
     }
 
     [Theory]
+    [InlineData("decimal.Parse(str, System.Globalization.CultureInfo.CurrentCulture)")]
     [InlineData("decimal.Parse(str, System.Globalization.CultureInfo.GetCultureInfo(\"pt-BR\"))")]
     [InlineData("decimal.TryParse(str, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.GetCultureInfo(\"pt-BR\"), out var v)")]
-    [InlineData("Convert.ToDecimal(str, System.Globalization.CultureInfo.GetCultureInfo(\"pt-BR\"))")]
-    public void ADecimalConversionWhoseProviderACallComputes_IsABuildError(string call)
+    [InlineData("Convert.ToDecimal(str, System.Globalization.CultureInfo.CurrentCulture)")]
+    public void ADecimalReadInAnotherCulture_IsABuildError(string call)
     {
-        TestHelper.DiagnosticsFor(call).Should().Contain(d => d.Code == "EQ1004");
+        TestHelper.DiagnosticsFor(call).Should().Contain(d => d.Code == "EQ2108");
+    }
+
+    [Theory]
+    [InlineData("decimal.Parse(str)")]
+    [InlineData("decimal.Parse(str, null)")]
+    [InlineData("decimal.TryParse(str, out var v)")]
+    [InlineData("Convert.ToDecimal(str)")]
+    public void ADecimalReadWithNoCulture_IsWarnedAbout(string call)
+    {
+        TestHelper.DiagnosticsFor(call).Should().Contain(d => d.Code == "EQ2110" && d.Severity == ConversionSeverity.Warning);
     }
 
     [Fact]

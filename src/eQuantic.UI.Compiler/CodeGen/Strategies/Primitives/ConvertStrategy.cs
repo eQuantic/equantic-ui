@@ -35,10 +35,10 @@ public class ConvertStrategy : IExpressionIrStrategy
         var argExpr = args[0].Expression;
         if (name == "ToDecimal")
         {
-            // The provider is left out, which is only faithful when C# evaluating it cannot be
-            // observed (see DroppedArgument).
-            if (args.Skip(1).Any(extra => !DroppedArgument.IsUnobservable(extra.Expression, context)))
-                return JsExpr.Opaque(context.Unhandled(invocation, "Convert.ToDecimal, whose format provider C# computes"));
+            // Text is read in a culture, and the browser reads the invariant one (see ParseCulture).
+            // A number converts with no culture involved, and so does a value the site cannot type.
+            if (context.SemanticHelper.GetType(argExpr) is { SpecialType: SpecialType.System_String })
+                ParseCulture.Check(invocation, args.Count > 1 ? args[1].Expression : null, context);
             return ToDecimal(argExpr, context);
         }
         return JsExpr.Opaque(Converted(name, argExpr, context));

@@ -115,7 +115,7 @@ public class NumberMethodStrategy : IExpressionIrStrategy
         ConversionContext context)
     {
         var arguments = invocation.ArgumentList.Arguments;
-        int? text = null, style = null, result = null;
+        int? text = null, style = null, result = null, provider = null;
         if (method is not null)
         {
             // The text is a string or a span of chars; a span of UTF-8 bytes has no twin to read.
@@ -135,10 +135,9 @@ public class NumberMethodStrategy : IExpressionIrStrategy
                 else if (parameter.Ordinal == 0) text = i;
                 else if (parameter.Type is { Name: "NumberStyles", ContainingNamespace: var home }
                          && home.ToDisplayString() == "System.Globalization") style = i;
-                // The provider: left out, which is only faithful when C# evaluating it cannot be
-                // observed (see DroppedArgument).
-                else if (!DroppedArgument.IsUnobservable(arguments[i].Expression, context))
-                    return JsExpr.Opaque(context.Unhandled(invocation, "decimal Parse/TryParse, whose format provider C# computes"));
+                // The provider: the browser reads the invariant culture, so it is left out, and the
+                // culture it names decides whether that is faithful (see ParseCulture).
+                else provider = i;
             }
         }
         else if (arguments.Count == (name == "TryParse" ? 2 : 1))
@@ -155,6 +154,7 @@ public class NumberMethodStrategy : IExpressionIrStrategy
         }
         if (text is not { } at || (name == "TryParse") != result.HasValue)
             return JsExpr.Opaque(context.Unhandled(invocation, "decimal Parse/TryParse"));
+        ParseCulture.Check(invocation, provider is { } culture ? arguments[culture].Expression : null, context);
 
         context.UsedHelpers.Add(Eq.Import);
         // The parts in the order they were written; each hole names its part by that order.
