@@ -68,6 +68,13 @@ public class ValueTextConformanceTests
     [InlineData("return string.Format(\"{0}|{1}\", [0.1f, 2]);")]                                                  // "0.1|2"
     // An array in parentheses or behind a cast is still written in place.
     [InlineData("return string.Format(\"{0}\", (new object[] { 0.1f }));")]                                       // "0.1"
+    // A culture behind a cast is still that culture.
+    [InlineData("return string.Format((IFormatProvider)System.Globalization.CultureInfo.InvariantCulture, \"{0:F1}\", 2.25);")] // "2.3"
+    [InlineData("double d = 2.5; return d.ToString(\"F2\", (IFormatProvider)System.Globalization.CultureInfo.InvariantCulture);")] // "2.50"
+    // A spread of floats is boxed element by element, its element type being float.
+    [InlineData("float[] xs = [0.1f]; return string.Format(\"{0}\", [.. xs]);")]                                  // "0.1"
+    [InlineData("var xs = new List<float> { 0.1f, 0.2f }; return string.Format(\"{0}|{1}\", [.. xs]);")]           // "0.1|0.2"
+    [InlineData("float[] xs = [0.1f]; return string.Format(\"{0}|{1}\", [2, .. xs]);")]                           // "2|0.1"
     // An INVARIANT provider writes the invariant culture's date patterns and currency sign.
     [InlineData("var d = new DateTime(2026, 9, 24, 10, 30, 15); return string.Format(System.Globalization.CultureInfo.InvariantCulture, \"{0:G}|{0:d}|{0:T}\", d);")] // "09/24/2026 10:30:15|09/24/2026|10:30:15"
     [InlineData("return string.Format(System.Globalization.CultureInfo.InvariantCulture, \"{0:C}\", 1.5);")]          // "¤1.50"
