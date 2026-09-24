@@ -408,6 +408,7 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
             "-" => JsExpr.Callish($"{l}.sub({r})"),
             "*" => JsExpr.Callish($"{l}.mul({r})"),
             "/" => JsExpr.Callish($"{l}.div({r})"),
+            "%" => JsExpr.Callish($"{l}.mod({r})"),
             "==" => JsExpr.Callish($"{l}.equals({r})"),
             "!=" => JsExpr.Prefix("!", JsExpr.Callish($"{l}.equals({r})")),
             "<" => JsExpr.Callish($"({l}.compareTo({r}) < 0)"),

@@ -136,9 +136,9 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         // amount, glued end to end. The target IS a Decimal (typed world) and the VALUE arrives
         // converted: the bound tree wraps a mixed value in the conversion, and ValueFlow settles it
         // like any other flow.
-        if (binaryOp is "+" or "-" or "*" or "/" && type.IsDecimal())
+        if (binaryOp is "+" or "-" or "*" or "/" or "%" && type.IsDecimal())
         {
-            var method = binaryOp switch { "+" => "add", "-" => "sub", "*" => "mul", _ => "div" };
+            var method = binaryOp switch { "+" => "add", "-" => "sub", "*" => "mul", "/" => "div", _ => "mod" };
             return (current, operand) => JsExpr.Callish(
                 $"{JsExprWriter.WriteIn(current, JsPrecedence.Call)}.{method}({JsExprWriter.Write(operand)})");
         }
