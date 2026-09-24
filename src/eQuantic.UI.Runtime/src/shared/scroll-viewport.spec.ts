@@ -199,6 +199,28 @@ describe('ScrollView web out-channels', () => {
       expect(observers[0].target).toBeUndefined();
     });
 
+    /**
+     * A root unmounts with no pass after it, so no commit would ever notice the scroll views it took
+     * away: the unmount itself lets them go.
+     */
+    it('lets go of the scroll views a root takes away as it unmounts', async () => {
+      const { RenderManager } = await import('../dom/renderer');
+      const lowered = lowerVisualNode(scrollNode({ onViewportChanged: () => {} }), context());
+      const container = document.createElement('div');
+      document.body.append(container);
+      const renderer = new RenderManager();
+      renderer.mount(lowered as never, container);
+      const el = container.querySelector('[data-eq-scroll]') as HTMLElement;
+      Object.defineProperty(el, 'clientHeight', { value: 400, configurable: true });
+      commitScrollViewports();
+      expect(observers[0].target).toBe(el);
+
+      renderer.unmount();
+
+      expect(observers[0].target).toBeUndefined();
+      container.remove();
+    });
+
     /** With no queueMicrotask the commit still waits for the write, rather than measuring the tree
      * before it. */
     it('waits for the write where there is no queueMicrotask', async () => {

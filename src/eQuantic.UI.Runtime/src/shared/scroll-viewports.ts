@@ -56,6 +56,15 @@ function stopWatching(view: AdoptedScrollElement): void {
 }
 
 /**
+ * Lets go of every watched scroll view that has left the document. A root unmounts without a pass
+ * (`RenderManager.unmount`), so no commit follows to notice, and the observer would hold the element
+ * and its component's callback for as long as the page lived.
+ */
+export function releaseDetachedScrollViewports(): void {
+  for (const view of [...watched]) if (!view.isConnected) stopWatching(view);
+}
+
+/**
  * Commits AFTER the pass's DOM has been written: a microtask is the first moment after the write,
  * and it keeps the commit itself synchronous for tests that drive it directly (see
  * `scheduleInViewCommit`, the same move for the same reason).
@@ -113,7 +122,7 @@ export function commitScrollViewports(): void {
 function reportViewport(view: AdoptedScrollElement): void {
   // A scroll view that stopped asking lost its marker with its declaration: its old callback is
   // not called for a size nobody wants any more.
-  if (!view.hasAttribute('data-eq-scroll')) {
+  if (!view.isConnected || !view.hasAttribute('data-eq-scroll')) {
     stopWatching(view);
     return;
   }
