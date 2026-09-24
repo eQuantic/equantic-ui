@@ -311,6 +311,9 @@ public class StringStaticStrategy : IConversionStrategy
     /// held against them. Null where only the running program knows, a spread element included.</summary>
     private static IReadOnlyList<ExpressionSyntax>? ElementsOf(ExpressionSyntax array) => array switch
     {
+        // Parentheses and a cast name the same array: `(new object[] { 0.1f })` is still written in place.
+        ParenthesizedExpressionSyntax parenthesized => ElementsOf(parenthesized.Expression),
+        CastExpressionSyntax cast => ElementsOf(cast.Expression),
         ArrayCreationExpressionSyntax { Initializer: { } initializer } => initializer.Expressions,
         ImplicitArrayCreationExpressionSyntax { Initializer: var initializer } => initializer.Expressions,
         CollectionExpressionSyntax collection when collection.Elements.All(element => element is ExpressionElementSyntax) =>
