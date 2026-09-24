@@ -47,6 +47,7 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
                     "+" => value,
                     "-" when liftedValue.IsDecimal() => JsExpr.Callish($"{JsExprWriter.WriteIn(value, JsPrecedence.Call)}.neg()"),
                     "-" => Negated(value, prefix, context),
+                    "~" => Complemented(value, prefix, context),
                     _ => JsExpr.Prefix(text, value),
                 }, context);
             }
@@ -70,6 +71,8 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
 
             if (prefix.OperatorToken.Text == "-")
                 return Negated(context.Converter.ConvertIr(prefix.Operand), prefix, context);
+            if (prefix.OperatorToken.Text == "~")
+                return Complemented(context.Converter.ConvertIr(prefix.Operand), prefix, context);
             return JsExpr.Prefix(prefix.OperatorToken.Text,
                 context.Converter.ConvertIr(prefix.Operand));
         }
@@ -163,6 +166,20 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
         return arithmetic.IsChecked || arithmetic.ExplicitUnchecked
             ? IntegerWidth.Settle(negated, result, arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context)
             : negated;
+    }
+
+    /// <summary>
+    /// A complement in its result's width: JavaScript's <c>~</c> answers a signed 32-bit number, or a
+    /// negative BigInt, so a uint's <c>~0</c> was -1 where C# answers uint.MaxValue, and a ulong's
+    /// the same in 64 bits. An unsigned result goes back to its width; a signed one, int or long
+    /// (a narrower operand promotes to int), is already what C# answers.
+    /// </summary>
+    private static JsExpr Complemented(JsExpr operand, PrefixUnaryExpressionSyntax prefix, ConversionContext context)
+    {
+        var complemented = JsExpr.Prefix("~", operand);
+        return IntegerWidth.Of(context.SemanticHelper.GetType(prefix).UnwrapNullable()) is { Unsigned: true } width
+            ? IntegerWidth.Wrap(complemented, width)
+            : complemented;
     }
 
     /// <summary>Whether the step's RESULT is read — false in the two places an increment is pure
