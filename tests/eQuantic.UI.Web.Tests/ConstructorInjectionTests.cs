@@ -187,6 +187,78 @@ public class ConstructorInjectionTests
     /// browser having done both, or every page navigation leaves a timer running against a
     /// component nobody can see.
     /// </summary>
+    /// <summary>A page taking a clock, with <paramref name="constructor"/> as its constructor.</summary>
+    private static string ClockPage(string constructor) => Transpile($$"""
+        using eQuantic.UI.Components;
+        using eQuantic.UI.Primitives;
+
+        namespace eQuantic.UI.Web.Tests.Fixtures;
+
+        public sealed class TickPage : StatefulComponent
+        {
+            private readonly IClock? _clock;
+            private string _label = "";
+            private int _n;
+
+            {{constructor}}
+
+            public override VisualNode Build(ComponentContext context) => new Text($"{_label} {_n}", TypeRole.BodyM);
+        }
+        """);
+
+    /// <summary>The names the emitted constructor declares with <c>const</c>, in order.</summary>
+    private static List<string> ConstructorConsts(string module)
+    {
+        var start = module.IndexOf("constructor(", StringComparison.Ordinal);
+        var end = module.IndexOf("build(", start, StringComparison.Ordinal);
+        return System.Text.RegularExpressions.Regex
+            .Matches(module[start..end], @"\bconst ([A-Za-z_$][\w$]*)")
+            .Select(match => match.Groups[1].Value)
+            .ToList();
+    }
+
+    [Theory]
+    // A dependency is bound under the name the constructor BODY reads it by. The binding was
+    // camel-cased while the body read the parameter as written: `IClock Clock` bound `clock`
+    // beside a body reading `Clock`, a ReferenceError at `new`...
+    [InlineData("IClock Clock", "Clock", "const Clock = $eq.services.resolve('IClock')", "this._clock = Clock")]
+    // ...and `@default` bound `default`, a reserved word, so the module did not parse.
+    [InlineData("IClock @default", "@default", "const default$ = $eq.services.resolve('IClock')", "this._clock = default$")]
+    public void ADependency_IsBoundUnderTheNameTheBodyReads(string parameter, string read, string bound, string used)
+    {
+        var page = ClockPage($"public TickPage({parameter}) {{ _clock = {read}; }}");
+
+        page.Should().Contain(bound).And.Contain(used);
+    }
+
+    [Fact]
+    public void APassedParameter_IsBoundUnderTheNameTheBodyReads()
+    {
+        // The signature camel-cased it too: `constructor(label…)` beside a body reading `Label`.
+        var page = ClockPage("public TickPage(string Label) { _label = Label; }");
+
+        page.Should().Contain("constructor(Label?: any, props?: any)").And.Contain("this._label = Label");
+    }
+
+    [Theory]
+    // The shape Copilot's review of #399 named: a function the casing leaves alone, beside a
+    // dependency whose binding was camel-cased onto its name, two `const clock`, a module that did
+    // not parse. Bound as the body reads it, the dependency is `Clock` and the two never meet.
+    [InlineData("IClock Clock", "int clock() => 3;", "_n = clock();", "const clock = () =>", "this._n = clock()")]
+    // The usual shape: the function's cased name is the dependency's own, so the function yields.
+    [InlineData("IClock clock", "int Clock() => 3;", "_n = Clock();", "const clock$ = () =>", "this._n = clock$()")]
+    public void ALocalFunction_BesideADependency_TakesANameOfItsOwn(
+        string parameter, string function, string call, string declared, string called)
+    {
+        var page = ClockPage($"public TickPage({parameter}) {{ {function} _clock = {parameter.Split(' ')[1]}; {call} }}");
+
+        page.Should().Contain(declared).And.Contain(called);
+        // Two declarations, the dependency and the function, and never one name for both. The count
+        // keeps the check from passing on a constructor it failed to read.
+        ConstructorConsts(page).Should().HaveCount(2)
+            .And.OnlyHaveUniqueItems("a name declared twice in one scope does not parse");
+    }
+
     [Fact]
     public void AClockSubscription_CrossesWithItsDisposal()
     {

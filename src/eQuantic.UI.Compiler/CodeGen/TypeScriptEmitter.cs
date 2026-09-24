@@ -419,7 +419,7 @@ public class TypeScriptEmitter
                     if (hasExplicitParams)
                     {
                         // Constructor has explicit params (e.g., Heading(content, level))
-                        var paramList = string.Join(", ", ctor!.Parameters.Select(p => Param(p.Name, "any")));
+                        var paramList = string.Join(", ", ctor!.Parameters.Select(p => Param(p.Name.ToJsIdentifier(), "any")));
                         jsParams = paramList;
                     }
                     else
@@ -439,7 +439,7 @@ public class TypeScriptEmitter
                     if (hasExplicitParams)
                     {
                         foreach (var param in ctor!.Parameters)
-                            ctorStatements.Add(Assign(JsExpr.ThisMember(param.Name.ToCamelCase()), JsExpr.Identifier(param.Name)));
+                            ctorStatements.Add(Assign(JsExpr.ThisMember(param.Name.ToCamelCase()), JsExpr.Identifier(param.Name.ToJsIdentifier())));
                     }
 
                     // Apply defaults for properties not provided in props (only if still undefined)
@@ -564,9 +564,14 @@ public class TypeScriptEmitter
                         var services = ctorParams.Where(p => p.IsService).ToList();
                         var passed = ctorParams.Where(p => !p.IsService).ToList();
 
+                        // Each parameter is bound under the name the constructor BODY reads it by, the one
+                        // IdentifierStrategy gives a parameter: as written, made a legal JS identifier.
+                        // Camel-cased here and read as written there, `string Label` was
+                        // `constructor(label…)` beside a body reading `Label` (a ReferenceError at `new`),
+                        // and `@default` bound `default`, a module that did not parse.
                         var paramList = string.Join(", ", passed.Select(p => p.DefaultValueNode != null
-                            ? $"{p.Name.ToCamelCase()}: any = {_converter.ConvertExpression(p.DefaultValueNode, p.Type)}"
-                            : $"{p.Name.ToCamelCase()}?: any"));
+                            ? $"{p.Name.ToJsIdentifier()}: any = {_converter.ConvertExpression(p.DefaultValueNode, p.Type)}"
+                            : $"{p.Name.ToJsIdentifier()}?: any"));
                         var signature = paramList.Length > 0
                             ? $"{paramList}, {OptionalParam("props", "any")}"
                             : OptionalParam("props", "any");
@@ -594,7 +599,7 @@ public class TypeScriptEmitter
                                 // field undefined and the dependency unreachable from Build.
                                 var target = ctorDef!.IsPrimaryConstructor
                                     ? $"this.{service.Name.ToCamelCase()}"
-                                    : $"const {service.Name.ToCamelCase()}";
+                                    : $"const {service.Name.ToJsIdentifier()}";
                                 statements.Add(JsStatement.Raw($"{target} = {Eq.ResolveService}('{service.ServiceKey}');"));
 
                                 // The twin of CapabilityScope.Require: a component that declared it
@@ -605,8 +610,9 @@ public class TypeScriptEmitter
                                 // and the bug only exists there.
                                 if (service.IsRequiredService)
                                 {
-                                    var name = service.Name.ToCamelCase();
-                                    var read = ctorDef.IsPrimaryConstructor ? $"this.{name}" : name;
+                                    var read = ctorDef.IsPrimaryConstructor
+                                        ? $"this.{service.Name.ToCamelCase()}"
+                                        : service.Name.ToJsIdentifier();
                                     statements.Add(JsStatement.Raw($"if ({read} === undefined || {read} === null) throw new Error("
                                         + $"'{component.Name} needs {service.ServiceKey}, and this target has none. "
                                         + $"Register it with the host, or declare the parameter as {service.ServiceKey}? "
@@ -616,6 +622,7 @@ public class TypeScriptEmitter
                             foreach (var param in passed)
                             {
                                 var camelName = param.Name.ToCamelCase();
+                                var local = param.Name.ToJsIdentifier();
                                 var target = component.Properties
                                     .FirstOrDefault(pr => !pr.IsStatic && pr.Name.ToCamelCase() == camelName);
                                 // PRIMARY-constructor params are implicit fields — always assign. With an
@@ -632,8 +639,8 @@ public class TypeScriptEmitter
                                 // assignment there would lose the value instead of relocating it.
                                 if (hasCtorBody && target != null && !IsAssignableSlot(target)) continue;
                                 statements.Add(JsStatement.If(
-                                    JsExpr.Binary(JsExpr.Identifier(camelName), "!==", JsExpr.Identifier("undefined")),
-                                    Assign(JsExpr.ThisMember(camelName), JsExpr.Identifier(camelName)), null));
+                                    JsExpr.Binary(JsExpr.Identifier(local), "!==", JsExpr.Identifier("undefined")),
+                                    Assign(JsExpr.ThisMember(camelName), JsExpr.Identifier(local)), null));
                             }
                             _converter.SetCurrentClass(component.Name);
                             foreach (var p in autoDefaults)
