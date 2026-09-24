@@ -588,7 +588,9 @@ record of a release, the wiki's Upgrading page is the distillate.
   at nothing), its field takes the keyboard when it appears, Enter walks the matches and keeps the
   field, Escape closes it and gives the keyboard back through a request the model carries and both
   hosts honour (`RequestFocus`, `FocusVersion`), and the app hears a move as a move and an edit as an
-  edit. On the way: Photon honoured a field's `Autofocus` once per path for the life of a window and
+  edit. The block builds the marks of the lines in view, where a select-all with a search on over
+  4000 lines built 8001 boxes a frame. On the way: Photon honoured a field's `Autofocus` once per
+  path for the life of a window and
   never a code surface's, Enter left a field on Photon and stayed on the web (it stays on both), a
   key an app's shortcut took still reached the editor on the web, a code block's corner lay over its
   whole first line, and seven tests asserted nothing when their value was null.
