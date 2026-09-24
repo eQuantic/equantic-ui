@@ -1,5 +1,12 @@
 import type { MidpointRounding } from './dotnet-math';
-import { NumberStyles, readNumber, type NumberText } from './number-grammar';
+import {
+  NULL_TEXT,
+  NumberStyles,
+  badFormat,
+  readNumber,
+  validateRealStyles,
+  type NumberText,
+} from './number-grammar';
 
 /** The largest mantissa a decimal holds: 96 bits. */
 const MAX_MANTISSA = (1n << 96n) - 1n;
@@ -10,8 +17,6 @@ const PRECISION = 29;
 /** A mantissa that rounded past 96 bits, a digit shorter: 2^96 / 10, rounded up. */
 const CARRIED = 7922816251426433759354395034n;
 const OVERFLOW = 'Value was either too large or too small for a Decimal.';
-/** Every flag NumberStyles defines; a bit beyond them is not a style. */
-const DEFINED_STYLES = 2047;
 
 /**
  * Each power of ten as the double nearest it, as .NET's `DecCalc.DoublePowers10` holds it. Read
@@ -72,17 +77,15 @@ export class Decimal {
 
   /**
    * `decimal.Parse`: the number `text` holds under `styles`, `NumberStyles.Number` unless the call
-   * named others, rounded to what a decimal keeps. It throws what .NET throws, with its words: for
-   * a style a decimal cannot read, for no text, for text that is not a number (a FormatException)
-   * and for one no decimal holds (an OverflowException).
+   * named others, rounded to what a decimal keeps. It throws what .NET throws, with its words, and
+   * in its order: for no text, then for a style a decimal cannot read, then for text that is not a
+   * number (a FormatException) and for one no decimal holds (an OverflowException).
    */
   static parse(text: string | null | undefined, styles: number = NumberStyles.Number): Decimal {
-    validateStyles(styles);
-    if (text == null) throw new Error("Value cannot be null. (Parameter 's')");
+    if (text == null) throw new Error(NULL_TEXT);
+    validateRealStyles(styles);
     const number = readNumber(text, styles);
-    if (number === undefined) {
-      throw new Error(`The input string '${text}' was not in a correct format.`);
-    }
+    if (number === undefined) throw badFormat(text);
     const value = fromText(number);
     if (value === undefined) throw new Error(OVERFLOW);
     return value;
@@ -90,13 +93,14 @@ export class Decimal {
 
   /**
    * `decimal.TryParse`: the value `parse` would return, or `undefined` where it would throw for
-   * the text. A style a decimal cannot read still throws, as it does in .NET.
+   * the text. A style a decimal cannot read still throws, and before the text is looked at, as it
+   * does in .NET.
    */
   static tryParse(
     text: string | null | undefined,
     styles: number = NumberStyles.Number,
   ): Decimal | undefined {
-    validateStyles(styles);
+    validateRealStyles(styles);
     if (text == null) return undefined;
     const number = readNumber(text, styles);
     return number === undefined ? undefined : fromText(number);
@@ -258,17 +262,6 @@ export class Decimal {
 }
 
 const ZERO = new Decimal(0n, 0);
-
-function validateStyles(styles: number): void {
-  if ((styles & ~DEFINED_STYLES) !== 0) {
-    throw new Error("An undefined NumberStyles value is being used. (Parameter 'style')");
-  }
-  if ((styles & (NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) !== 0) {
-    throw new Error(
-      "The number styles AllowHexSpecifier and AllowBinarySpecifier are not supported on floating point data types. (Parameter 'style')",
-    );
-  }
-}
 
 /**
  * A decimal from the digits of its text, as .NET makes one (`Number.TryNumberToDecimal`), or
