@@ -602,6 +602,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   smoke test bundles, runs and throws through the same pipeline and reads each frame back to its
   C# line. A line a strategy lowers belongs to the statement that produced it: a pattern switch's
   arm maps to its case, a `using`'s dispose to the `using`, and a `do`'s condition to itself.
+- **2026-09-24 · A nullable number keeps null and its type's rule**: a compound assignment, an
+  increment and a unary `-`, `~` or `+` on an `int?`, a `float?`, a `byte?` or a `decimal?` reached
+  JavaScript's own operator, which reads null as 0, so `x += 1` and `x++` on a null `int?` answered 1
+  and `-x` answered -0, and a value met none of its type's rules: a `float?` added doubles, a `byte?`
+  never wrapped, a `decimal?` called a method on null
+  ([#372](https://github.com/eQuantic/equantic-ui/issues/372)). Each now takes the underlying type's
+  rule inside the runtime's lift, the same rule a non-nullable target takes, and a nullable division
+  is one case of it. Found on the way: a literal the C# compiler types `long` because no `int` or
+  `uint` holds it (`637000000000000000`) was emitted as a plain number, which lost its low digits and
+  threw at the first arithmetic with another long.
 
 - **2026-09-24 · The code editor is a component**: slice 1c of
   [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#375](https://github.com/eQuantic/equantic-ui/pull/375)).
