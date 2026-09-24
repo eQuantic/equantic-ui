@@ -162,8 +162,6 @@ static eQuantic.UI.Compiler.CodeGen.Strategies.SinglePrecision.HoldsExactly(Micr
 const eQuantic.UI.Compiler.CodeGen.Eq.SingleFromLong = "$eq.num.singleFromLong" -> string!
 eQuantic.UI.Compiler.CodeGen.Strategies.ReadModifyWrite
 static eQuantic.UI.Compiler.CodeGen.Strategies.ReadModifyWrite.Assign(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! target, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!>! operands, System.Func<eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!>!, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!>! next, bool answerOld, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
-static eQuantic.UI.Compiler.CodeGen.Strategies.ReadModifyWrite.AssignEntry(eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! receiver, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr! key, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!>! operands, System.Func<eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!>!, eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!>! next, bool answerOld, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
-static eQuantic.UI.Compiler.CodeGen.Strategies.ReadModifyWrite.EntryOf(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax! target, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> Microsoft.CodeAnalysis.CSharp.Syntax.ElementAccessExpressionSyntax?
 static eQuantic.UI.Compiler.CodeGen.HydrationSpec.Members(Microsoft.CodeAnalysis.INamedTypeSymbol! type, System.Collections.Generic.ISet<string!>! referenced, System.Collections.Generic.ISet<string!>! runtime) -> string?
 static eQuantic.UI.Compiler.CodeGen.HydrationSpec.Of(Microsoft.CodeAnalysis.ITypeSymbol? type, System.Collections.Generic.ISet<string!>! referenced, System.Collections.Generic.ISet<string!>! runtime) -> string?
 static eQuantic.UI.Compiler.CodeGen.TypeSymbolExtensions.IsHostOnly(this Microsoft.CodeAnalysis.INamedTypeSymbol! type) -> bool
@@ -247,3 +245,5 @@ static eQuantic.UI.Compiler.CodeGen.Strategies.IntegerWidth.LongShift(string! op
 const eQuantic.UI.Compiler.CodeGen.Eq.LinqToValueDictionary = "$eq.linq.toValueDictionary" -> string!
 *REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Invocation.DictionaryStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
 eQuantic.UI.Compiler.CodeGen.Strategies.Invocation.DictionaryStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+const eQuantic.UI.Compiler.CodeGen.Eq.MapGet = "$eq.mapGet" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.MapSet = "$eq.mapSet" -> string!

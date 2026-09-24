@@ -47,6 +47,8 @@ import {
 import {
   checked,
   dictGet,
+  mapGet,
+  mapSet,
   divRem,
   divRemLong,
   intDiv,
@@ -254,6 +256,10 @@ export const $eq = {
   },
   /** A dictionary read that fails on a missing key, the way .NET does. */
   dictGet,
+  /** The same read on a runtime map (a sorted or value-keyed dictionary), and its write, which
+   * answers the value written as C#'s assignment does. */
+  mapGet,
+  mapSet,
   /** Date and time, tick-precise. */
   time: { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset },
   /** Enum parsing (member-name string). */

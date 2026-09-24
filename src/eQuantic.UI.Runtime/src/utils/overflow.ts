@@ -187,3 +187,31 @@ export function dictGet<V>(map: Record<string, V>, key: unknown): V {
   }
   return map[property];
 }
+
+/**
+ * The same read on a RUNTIME MAP — a `SortedDictionary`, a `SortedList`, a dictionary keyed by a
+ * value — whose own `get` answers undefined for a key that is not there, where .NET throws, exactly
+ * as {@link dictGet} throws for the plain-object dictionary.
+ */
+export function mapGet<K, V>(map: { has(key: K): boolean; get(key: K): V | undefined }, key: K): V {
+  if (key === null || key === undefined) throw new Error("Value cannot be null. (Parameter 'key')");
+  // One lookup where the key is there: `has` is asked only when `get` answers undefined, which is
+  // either a missing key or a stored undefined, and a value-keyed map finds a key by a linear scan.
+  const value = map.get(key);
+  if (value === undefined && !map.has(key)) {
+    throw new Error(`The given key '${String(key)}' was not present in the dictionary.`);
+  }
+  return value as V;
+}
+
+/**
+ * A runtime map's entry WRITE, through the map's own `set`, answering the value written as C#'s
+ * assignment does: `set` answers the map, so `var r = (m[k] += 2) * 10` multiplied the map. A null
+ * key is refused as {@link mapGet} refuses it, since .NET's indexer throws on a write too, where
+ * `set` would have filed the entry under null.
+ */
+export function mapSet<K, V>(map: { set(key: K, value: V): unknown }, key: K, value: V): V {
+  if (key === null || key === undefined) throw new Error("Value cannot be null. (Parameter 'key')");
+  map.set(key, value);
+  return value;
+}

@@ -92,7 +92,8 @@ public class RecordKeyedDictionaryConformanceTests
         var recordKeyed = Transpiler.TranspileStatements(
             "var d = new Dictionary<Point, int>(); d[new Point(1, 2)] = 10; return d.Count;", Point);
         recordKeyed.Should().Contain("$eq.collections.valueMap");
-        recordKeyed.Should().Contain(".set(");
+        // The entry is written through the map's set, by the helper that answers the value written.
+        recordKeyed.Should().Contain("$eq.mapSet(");
         recordKeyed.Should().Contain(".size");
 
         var stringKeyed = Transpiler.TranspileExpression(
