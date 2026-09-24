@@ -262,7 +262,7 @@ public class StringStaticStrategy : IConversionStrategy
         var passed = values.OrderBy(value => value.Slot).Select(value => value.Value).ToList();
         string Passed(ExpressionSyntax value, string text) =>
             spread ? $"...{text}"
-            : context.SemanticHelper.GetType(value).UnwrapNullable() is { SpecialType: SpecialType.System_Single }
+            : Boxed(value, context).UnwrapNullable() is { SpecialType: SpecialType.System_Single }
                 ? $"{Eq.AsSingle}({text})"
                 : text;
 
@@ -283,6 +283,27 @@ public class StringStaticStrategy : IConversionStrategy
         var holes = passed.Select(value => Passed(value, Hole(value)));
         var call = $"{function}({string.Join(", ", holes.Prepend(Hole(template)))})";
         return JsExprWriter.Write(JsExpr.Template(call, parts, context.TypeAnnotations));
+    }
+
+    /// <summary>The type of the value an argument boxes: its own, or, through a cast to
+    /// <c>object</c> written by hand, the operand's. <c>(object)0.1f</c> is still a float to the
+    /// model, and boxed with its kind it keeps its own digits.</summary>
+    private static ITypeSymbol? Boxed(ExpressionSyntax value, ConversionContext context)
+    {
+        while (true)
+        {
+            switch (value)
+            {
+                case ParenthesizedExpressionSyntax parenthesized:
+                    value = parenthesized.Expression;
+                    continue;
+                case CastExpressionSyntax cast when context.SemanticHelper.GetType(cast) is { SpecialType: SpecialType.System_Object }:
+                    value = cast.Expression;
+                    continue;
+                default:
+                    return context.SemanticHelper.GetType(value);
+            }
+        }
     }
 
     /// <summary>The values an array passed as the params array holds when it is written in place:

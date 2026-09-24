@@ -27,7 +27,18 @@ internal static class NamedCulture
     private static bool IsNull(ExpressionSyntax provider, ConversionContext context) =>
         context.SemanticHelper.KnowsOrMapped(provider)
             ? context.SemanticHelper.IsNullConstant(provider)
-            : provider.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.NullLiteralExpression);
+            : Bare(provider).Kind() is Microsoft.CodeAnalysis.CSharp.SyntaxKind.NullLiteralExpression
+                or Microsoft.CodeAnalysis.CSharp.SyntaxKind.DefaultLiteralExpression
+                or Microsoft.CodeAnalysis.CSharp.SyntaxKind.DefaultExpression;
+
+    /// <summary>The expression a cast and parentheses name: <c>(IFormatProvider?)null</c> is a null
+    /// by its spelling too.</summary>
+    private static ExpressionSyntax Bare(ExpressionSyntax expression) => expression switch
+    {
+        ParenthesizedExpressionSyntax parenthesized => Bare(parenthesized.Expression),
+        CastExpressionSyntax cast => Bare(cast.Expression),
+        _ => expression,
+    };
 
     private static bool Names(ExpressionSyntax provider, string property, ConversionContext context)
     {
