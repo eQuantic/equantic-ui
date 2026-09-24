@@ -20,7 +20,7 @@ import { commitShortcuts } from '../dom/shortcuts';
 import { commitFocusTraps } from '../dom/focus-trap';
 import { installHoverRevealSuppression } from '../dom/hover-reveal';
 import { attachCameraStreams } from './devices/camera';
-import { commitScrollViewports } from './scroll-viewports';
+import { scheduleScrollViewportCommit } from './scroll-viewports';
 import { scheduleInViewCommit } from './in-view';
 import { scheduleCanvasCommit } from './canvas-surface';
 import { scheduleAnchorOffset } from './sticky-offset';
@@ -154,9 +154,10 @@ export function exitPass(): void {
   // A CameraPreview lowered this pass has a fresh <video>; the stream re-attaches here, the same
   // after-the-pass moment the shortcut set commits.
   attachCameraStreams();
-  // Scroll views measure their viewport (and adopt an initial offset) here too — a windowed list
-  // is (offset, viewport), and neither is knowable before the pass has mounted.
-  commitScrollViewports();
+  // Scroll views measure their viewport (and adopt an initial offset) once the pass is WRITTEN —
+  // a windowed list is (offset, viewport), and neither is knowable before the pass has mounted.
+  // Measured here, it was the tree before this one (see scroll-viewports.ts).
+  scheduleScrollViewportCommit();
   // An element cannot be observed before it exists — and at THIS moment it still does not. The
   // pass produced a tree; the render manager writes it once the pass has returned. So the commit
   // waits for the microtask after the write (see scheduleInViewCommit).

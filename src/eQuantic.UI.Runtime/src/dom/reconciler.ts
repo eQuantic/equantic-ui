@@ -6,6 +6,7 @@
  */
 
 import { HtmlNode, EventHandler } from '../core/types';
+import { claimedByShortcut } from './shortcuts';
 
 /**
  * The MOUNT hook: a reserved `events` key that is not a DOM event — the reconciler calls it once,
@@ -415,6 +416,10 @@ export class Reconciler {
    */
   private createEventHandler(eventName: string, handler: EventHandler): (e: Event) => void {
     return (e: Event) => {
+      // 0. A key a Shortcut took reaches no element's own handler (see claimedByShortcut). Escape
+      // closing the code editor's find bar also reached the editor, which released its Tab.
+      if (eventName === 'keydown' && claimedByShortcut(e)) return;
+
       // 1. Value Change Events (Input, Change)
       if (eventName === 'change' || eventName === 'input') {
         const value = this.extractEventValue(e);

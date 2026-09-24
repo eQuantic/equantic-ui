@@ -87,6 +87,16 @@ namespace eQuantic.UI.Components
             get { return ResourceManager.GetString("NextMatch", Culture)!; }
         }
 
+        internal static string CloseFind
+        {
+            get { return ResourceManager.GetString("CloseFind", Culture)!; }
+        }
+
+        internal static string CopyCode
+        {
+            get { return ResourceManager.GetString("CopyCode", Culture)!; }
+        }
+
         internal static string CodeEditor
         {
             get { return ResourceManager.GetString("CodeEditor", Culture)!; }

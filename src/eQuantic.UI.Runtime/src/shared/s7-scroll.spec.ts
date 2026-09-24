@@ -74,3 +74,20 @@ describe('S7 scroll semantics (C# cross-pin)', () => {
     expect(style).toContain('overflow-y: auto');
   });
 });
+
+/**
+ * A scroll view anchors nothing (C# twin: ScrollAnchoringTests): its offset changes only because
+ * someone changed it, as on Photon. Scroll anchoring moved it whenever a windowed list swapped the
+ * rows above what was on screen, and a match the code editor's find had brought into view slid back
+ * out of it.
+ */
+describe('scroll anchoring', () => {
+  it('is off on every scroll view, whatever its axis', () => {
+    for (const axis of ['vertical', 'horizontal', 'both']) {
+      const style = effectiveStyle(
+        lowerVisualNode({ nodeKind: 'scrollView', child: box(), axis } as unknown as VisualNodeValue, ctx),
+      );
+      expect(style).toContain('overflow-anchor: none');
+    }
+  });
+});

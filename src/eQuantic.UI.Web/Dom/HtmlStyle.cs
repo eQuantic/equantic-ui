@@ -179,6 +179,13 @@ public class HtmlStyle
     public string? Overflow { get; set; }
     public string? OverflowX { get; set; }
     public string? OverflowY { get; set; }
+
+    /// <summary>
+    /// Whether the browser may move the scroll offset to keep what is on screen in place when the
+    /// content above it changes — <c>none</c> on every scroll view, whose offset changes only because
+    /// someone changed it, as on Photon.
+    /// </summary>
+    public string? OverflowAnchor { get; set; }
     public string? Transition { get; set; }
     public string? Transform { get; set; }
     public string? Animation { get; set; }
@@ -289,6 +296,7 @@ public class HtmlStyle
         AddProperty(properties, "visibility", Visibility);
         AddProperty(properties, "pointer-events", PointerEvents);
         AddProperty(properties, "isolation", Isolation);
+        AddProperty(properties, "overflow-anchor", OverflowAnchor);
         AddProperty(properties, "outline", Outline);
         AddProperty(properties, "user-select", UserSelect);
         AddProperty(properties, "-webkit-user-select", UserSelect);

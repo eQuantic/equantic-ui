@@ -74,7 +74,7 @@ public class OneAmbientAtTheWebSeamTests
     {
         using var _ = CapabilityScope.With<IClipboardish>(new Clipboardish());
 
-        new RenderContext().GetService<IClipboardish>()?.Read().Should().Be("armed");
+        (new RenderContext().GetService<IClipboardish>()?.Read()).Should().Be("armed");
     }
 
     /// <summary>…and an absence is an absence rather than a throw, because that is what the TWIN
