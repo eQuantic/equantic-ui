@@ -41,11 +41,14 @@ public class ToStringStrategy : IConversionStrategy
         // A BOOL writes True or False, what a concatenation already writes it as (StringConversion):
         // `String(b)` lowercased it (#381). Its provider changes nothing, and a null bool? is empty.
         // C# still evaluates the provider, after the receiver: one that could have an effect runs,
-        // in that order, and one that could not is left out.
+        // in that order, and one that could not is left out — a named culture, a null, a literal,
+        // or a name bound to a local, a parameter or a field. A bare name can be a PROPERTY, whose
+        // getter may have one.
         if (receiverType.UnwrapNullable() is { SpecialType: SpecialType.System_Boolean })
         {
             var ignored = args.FirstOrDefault(argument => IsFormatProvider(argument.Expression, context))?.Expression;
-            if (ignored is null || ignored is IdentifierNameSyntax or LiteralExpressionSyntax
+            if (ignored is null || ignored is LiteralExpressionSyntax
+                || ignored is IdentifierNameSyntax && context.SemanticHelper.GetSymbol(ignored) is ILocalSymbol or IParameterSymbol or IFieldSymbol
                 || NamedCulture.IsInvariant(ignored, context) || NamedCulture.IsCurrent(ignored, context))
                 return JsExprWriter.Write(StringConversion.ToDotNetString(memberAccess.Expression,
                     context.Converter.ConvertIr(memberAccess.Expression), context));
