@@ -39,6 +39,9 @@ public class IntegerDivisionConformanceTests
     [InlineData("long x = 7, zero = 0; try { x /= zero; return x.ToString(); } catch (Exception e) { return e.Message; }")]
     [InlineData("long x = long.MinValue, minusOne = -1; try { x %= minusOne; return x.ToString(); } catch (Exception e) { return e.Message; }")]
     [InlineData("long x = long.MaxValue; return (x / 2L + x % 2L).ToString();")]                            // control
+    // A long target divided by an int: the int converts to the long's BigInt before the helper.
+    [InlineData("long x = 7; int d = 2; x /= d; return x.ToString();")]                                     // "3"
+    [InlineData("long x = 7; int zero = 0; try { x /= zero; return x.ToString(); } catch (Exception e) { return e.Message; }")]
     [InlineData("long x = 7; double d = x / 2.0; return d.ToString();")]                                    // "3.5" — a long operand, a double division
     // ---- the compound forms, and their targets evaluated once ----
     [InlineData("int x = 5, zero = 0; try { x %= zero; return x.ToString(); } catch (Exception e) { return e.Message; }")]
