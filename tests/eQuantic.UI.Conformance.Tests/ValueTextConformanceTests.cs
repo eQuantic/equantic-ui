@@ -66,6 +66,11 @@ public class ValueTextConformanceTests
     [InlineData("return string.Format(\"{0}\", new object[] { 0.1f });")]                                          // "0.1"
     [InlineData("float f = 0.1f; return string.Format(\"{0}|{1}\", new object[] { f, \"x\" });")]                   // "0.1|x"
     [InlineData("return string.Format(\"{0}|{1}\", [0.1f, 2]);")]                                                  // "0.1|2"
+    // An array in parentheses or behind a cast is still written in place.
+    [InlineData("return string.Format(\"{0}\", (new object[] { 0.1f }));")]                                       // "0.1"
+    // An INVARIANT provider writes the invariant culture's date patterns and currency sign.
+    [InlineData("var d = new DateTime(2026, 9, 24, 10, 30, 15); return string.Format(System.Globalization.CultureInfo.InvariantCulture, \"{0:G}|{0:d}|{0:T}\", d);")] // "09/24/2026 10:30:15|09/24/2026|10:30:15"
+    [InlineData("return string.Format(System.Globalization.CultureInfo.InvariantCulture, \"{0:C}\", 1.5);")]          // "¤1.50"
     // A float boxed by hand is still a float to the compiler, as an argument and in an array.
     [InlineData("return string.Format(\"{0}\", (object)0.1f);")]                                                  // "0.1"
     [InlineData("return string.Format(\"{0}\", new object[] { (object)0.1f });")]                                  // "0.1"
