@@ -24,8 +24,15 @@ describe('compare (string.Compare)', () => {
     expect(compare('\u00e9', 'E', 'ordinalIgnoreCase')).toBe(132);
   });
 
+  it('takes a comparison held in a variable, which is a plain string there', () => {
+    let comparison = 'ordinalIgnoreCase';
+    expect(equals('a', 'A', comparison)).toBe(true);
+    comparison = 'ordinal';
+    expect(compare('a', 'c', comparison)).toBe(-2);
+  });
+
   it('checks the comparison before anything else', () => {
-    expect(() => compare(null, null, 'nope' as never)).toThrow(
+    expect(() => compare(null, null, 'nope')).toThrow(
       "The string comparison type passed in is currently not supported. (Parameter 'comparisonType')",
     );
   });

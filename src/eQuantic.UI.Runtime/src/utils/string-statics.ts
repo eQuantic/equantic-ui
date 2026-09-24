@@ -37,7 +37,11 @@ const COMPARISONS: ReadonlySet<string> = new Set<StringComparison>([
 const NOT_SUPPORTED =
   "The string comparison type passed in is currently not supported. (Parameter 'comparisonType')";
 
-function requireComparison(comparison: StringComparison): void {
+/**
+ * A comparison held in a variable reaches here as a plain string (a `let` widens the member's name),
+ * so the statics take any string and this says which are comparisons, as .NET's own check does.
+ */
+function requireComparison(comparison: string): asserts comparison is StringComparison {
   if (!COMPARISONS.has(comparison)) throw new Error(NOT_SUPPORTED);
 }
 
@@ -187,7 +191,7 @@ function compareBy(
 export function compare(
   a: string | null | undefined,
   b: string | null | undefined,
-  comparison: StringComparison,
+  comparison: string,
 ): number {
   requireComparison(comparison);
   if (a == null) return b == null ? 0 : -1;
@@ -252,7 +256,7 @@ export function compareRangeBy(
   b: string | null | undefined,
   indexB: number,
   length: number,
-  comparison: StringComparison,
+  comparison: string,
 ): number {
   requireComparison(comparison);
   if (a == null || b == null) return a == null ? (b == null ? 0 : -1) : 1;
@@ -274,7 +278,7 @@ export function compareRangeBy(
 export function equals(
   a: string | null | undefined,
   b: string | null | undefined,
-  comparison: StringComparison,
+  comparison: string,
 ): boolean {
   requireComparison(comparison);
   if (a == null || b == null) return a == null && b == null;
