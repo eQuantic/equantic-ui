@@ -2,8 +2,6 @@
 eQuantic.UI.Code.CodeDocument.PositionOf(int offset) -> eQuantic.UI.Code.CodePosition
 eQuantic.UI.Code.CodeDocument.TextIn(eQuantic.UI.Code.CodeRange range) -> string!
 eQuantic.UI.Code.CodeDocument.Replace(eQuantic.UI.Code.CodeRange range, string! text, out eQuantic.UI.Code.CodePosition caret) -> eQuantic.UI.Code.CodeDocument!
-eQuantic.UI.Code.CodeDocument.Previous(eQuantic.UI.Code.CodePosition position) -> eQuantic.UI.Code.CodePosition
-eQuantic.UI.Code.CodeDocument.Next(eQuantic.UI.Code.CodePosition position) -> eQuantic.UI.Code.CodePosition
 eQuantic.UI.Code.CodeDocument.LineStart(eQuantic.UI.Code.CodePosition position) -> eQuantic.UI.Code.CodePosition
 eQuantic.UI.Code.CodeDocument
 eQuantic.UI.Code.CodeDocument.LineEnd(eQuantic.UI.Code.CodePosition position) -> eQuantic.UI.Code.CodePosition
@@ -34,8 +32,6 @@ eQuantic.UI.Code.CodeEdit.InsertedRange.get -> eQuantic.UI.Code.CodeRange
 eQuantic.UI.Code.CodeEdit.IsSimpleInsert.get -> bool
 eQuantic.UI.Code.CodeEdit
 eQuantic.UI.Code.CodeEdit.<Clone>$() -> eQuantic.UI.Code.CodeEdit!
-eQuantic.UI.Code.CodeEdit.CodeEdit(eQuantic.UI.Code.CodeRange Range, string! RemovedText, string! InsertedText, eQuantic.UI.Code.CodeRange SelectionBefore, eQuantic.UI.Code.CodeRange SelectionAfter) -> void
-eQuantic.UI.Code.CodeEdit.Deconstruct(out eQuantic.UI.Code.CodeRange Range, out string! RemovedText, out string! InsertedText, out eQuantic.UI.Code.CodeRange SelectionBefore, out eQuantic.UI.Code.CodeRange SelectionAfter) -> void
 eQuantic.UI.Code.CodeEdit.Equals(eQuantic.UI.Code.CodeEdit? other) -> bool
 override eQuantic.UI.Code.CodeEdit.Equals(object? obj) -> bool
 override eQuantic.UI.Code.CodeEdit.GetHashCode() -> int
@@ -438,3 +434,43 @@ eQuantic.UI.Code.CodeEditorController.TabMovesFocus.get -> bool
 eQuantic.UI.Code.CodeEditorController.TabMovesFocus.set -> void
 static eQuantic.UI.Code.CodeKeymap.Handle(eQuantic.UI.Code.CodeEditorController! editor, string! key, eQuantic.UI.Primitives.KeyModifiers modifiers, eQuantic.UI.Primitives.KeyboardConvention convention, eQuantic.UI.Primitives.ITextClipboard? clipboard = null) -> bool
 eQuantic.UI.Code.CodeDecorationKind.Underline = 4 -> eQuantic.UI.Code.CodeDecorationKind
+eQuantic.UI.Code.CodeCell
+eQuantic.UI.Code.CodeCell.CodeCell() -> void
+eQuantic.UI.Code.CodeCell.CodeCell(int Start, int End, int Cell, int Width) -> void
+eQuantic.UI.Code.CodeCell.Deconstruct(out int Start, out int End, out int Cell, out int Width) -> void
+eQuantic.UI.Code.CodeCell.Equals(eQuantic.UI.Code.CodeCell other) -> bool
+override eQuantic.UI.Code.CodeCell.GetHashCode() -> int
+static eQuantic.UI.Code.CodeCell.operator !=(eQuantic.UI.Code.CodeCell left, eQuantic.UI.Code.CodeCell right) -> bool
+static eQuantic.UI.Code.CodeCell.operator ==(eQuantic.UI.Code.CodeCell left, eQuantic.UI.Code.CodeCell right) -> bool
+~override eQuantic.UI.Code.CodeCell.Equals(object obj) -> bool
+~override eQuantic.UI.Code.CodeCell.ToString() -> string
+eQuantic.UI.Code.CodeCell.Start.get -> int
+eQuantic.UI.Code.CodeCell.Start.init -> void
+eQuantic.UI.Code.CodeCell.End.get -> int
+eQuantic.UI.Code.CodeCell.End.init -> void
+eQuantic.UI.Code.CodeCell.Cell.get -> int
+eQuantic.UI.Code.CodeCell.Cell.init -> void
+eQuantic.UI.Code.CodeCell.Width.get -> int
+eQuantic.UI.Code.CodeCell.Width.init -> void
+eQuantic.UI.Code.CodeLineCells.Previous(int column) -> int
+static eQuantic.UI.Code.CodeLineCells.IsWide(int codePoint) -> bool
+eQuantic.UI.Code.CodeLineCells
+eQuantic.UI.Code.CodeLineCells.CodeLineCells(string! text, int tabSize) -> void
+eQuantic.UI.Code.CodeLineCells.Text.get -> string!
+eQuantic.UI.Code.CodeLineCells.TabSize.get -> int
+eQuantic.UI.Code.CodeLineCells.Width.get -> int
+eQuantic.UI.Code.CodeLineCells.Count.get -> int
+eQuantic.UI.Code.CodeLineCells.ElementAt(int index) -> eQuantic.UI.Code.CodeCell
+eQuantic.UI.Code.CodeLineCells.CellOf(int column) -> int
+eQuantic.UI.Code.CodeLineCells.ColumnAt(float cell) -> int
+eQuantic.UI.Code.CodeLineCells.Next(int column) -> int
+eQuantic.UI.Code.CodeEditorController.CellsOf(int line) -> eQuantic.UI.Code.CodeLineCells!
+static eQuantic.UI.Code.CodeLineCells.WidthOf(string! text, int tabSize) -> int
+eQuantic.UI.Code.CodeLineCells.IndexOf(int column) -> int
+eQuantic.UI.Code.CodeEdit.CodeEdit(eQuantic.UI.Code.CodeRange Range, string! RemovedText, string! InsertedText, eQuantic.UI.Code.CodeRange SelectionBefore, eQuantic.UI.Code.CodeRange SelectionAfter, bool Typed) -> void
+eQuantic.UI.Code.CodeEdit.Deconstruct(out eQuantic.UI.Code.CodeRange Range, out string! RemovedText, out string! InsertedText, out eQuantic.UI.Code.CodeRange SelectionBefore, out eQuantic.UI.Code.CodeRange SelectionAfter, out bool Typed) -> void
+eQuantic.UI.Code.CodeEdit.Typed.get -> bool
+eQuantic.UI.Code.CodeEdit.Typed.init -> void
+const eQuantic.UI.Code.CurlyBraceLanguage.StateRawString = 16 -> int
+virtual eQuantic.UI.Code.CurlyBraceLanguage.HasRawStrings.get -> bool
+static eQuantic.UI.Code.CodeLineCells.IsZeroWidth(int codePoint) -> bool

@@ -43,6 +43,10 @@ public sealed class CodeBlock : StatelessComponent
     /// <summary>Caps the height and scrolls past it; 0 = as tall as the code.</summary>
     public float MaxHeight { get; init; }
 
+    /// <summary>How many cells apart the tab stops are: the language's indent width, the number the
+    /// editor's engine places its carets by (<c>CodeEditorController.CellsOf</c>).</summary>
+    private int TabSize => Language.Rules.IndentWidth;
+
     /// <summary>
     /// Whether the block is the WHOLE widget — its own slab, its own viewport — or bare content
     /// that something outside frames and scrolls.
@@ -179,7 +183,6 @@ public sealed class CodeBlock : StatelessComponent
             FirstLineNumber + Document.LineCount - 1);
         var style = metrics.Style;
         var lineHeight = metrics.LineHeight;
-        var gutterWidth = metrics.GutterWidth;
 
         var ink = Inverse ? CodeInk : theme.TextPrimary;
         var surface = Inverse ? CodeSlab : theme.SurfaceSubtle;
@@ -201,14 +204,14 @@ public sealed class CodeBlock : StatelessComponent
         // must not change as the window scrolls, or the content would breathe under the reader.
         var widest = 0;
         for (var index = 0; index < Document.LineCount; index++)
-            widest = Math.Max(widest, Document.Line(index).Length);
+            widest = Math.Max(widest, CodeLineCells.WidthOf(Document.Line(index), TabSize));
         var codeWidth = widest * metrics.ColumnWidth + metrics.ColumnWidth;
 
         var lines = new Column(gap: 0) { Width = SizeValue.Fill };
         if (first > 0) lines.Add(Spacer.Fixed(first * lineHeight));
         for (var index = first; index <= last; index++)
         {
-            lines.Add(LineRow(context, highlighter, index, style, lineHeight, gutterWidth, ink, theme));
+            lines.Add(LineRow(highlighter, index, style, lineHeight, metrics.ColumnWidth, ink, theme));
         }
         if (last < Document.LineCount - 1)
             lines.Add(Spacer.Fixed((Document.LineCount - 1 - last) * lineHeight));
@@ -431,8 +434,8 @@ public sealed class CodeBlock : StatelessComponent
             : cell;
     }
 
-    private VisualNode LineRow(ComponentContext context, CodeHighlighter highlighter, int index,
-        TypeStyle style, float lineHeight, float gutterWidth, ColorToken ink, IAppTheme theme)
+    private VisualNode LineRow(CodeHighlighter highlighter, int index,
+        TypeStyle style, float lineHeight, float columnWidth, ColorToken ink, IAppTheme theme)
     {
         var row = new Row(gap: 0) { Width = SizeValue.Fill, Height = lineHeight, Cross = CrossAlign.Center };
 
@@ -440,16 +443,22 @@ public sealed class CodeBlock : StatelessComponent
         // is CODE, and column zero is where the row begins.
         var code = new Row(gap: 0) { Height = SizeValue.Fill, Cross = CrossAlign.Center };
         var text = Document.Line(index);
+        var cells = new CodeLineCells(text, TabSize);
         var tokens = highlighter.TokensFor(Document, index);
         var at = 0;
         foreach (var token in tokens)
         {
-            if (token.Start > at) code.Add(Run(text[at..token.Start], ink, style));
-            code.Add(Run(text[token.Start..Math.Min(token.End, text.Length)],
-                Inverse ? InverseCode(token.Kind, theme) : theme.Code(token.Kind), style));
-            at = Math.Min(token.End, text.Length);
+            // A token is only a colour, and the TEXT says what is drawn: one that outlived its text
+            // or overlaps the one before is cut to what is left of the line, so no character is
+            // drawn twice and none past the end of its line.
+            var start = Math.Clamp(token.Start, at, text.Length);
+            var end = Math.Clamp(token.End, start, text.Length);
+            if (start > at) AddSpan(code, cells, at, start, ink, style, columnWidth);
+            AddSpan(code, cells, start, end,
+                Inverse ? InverseCode(token.Kind, theme) : theme.Code(token.Kind), style, columnWidth);
+            at = end;
         }
-        if (at < text.Length) code.Add(Run(text[at..], ink, style));
+        if (at < text.Length) AddSpan(code, cells, at, text.Length, ink, style, columnWidth);
         // An empty line still needs its height, and a space is the cheapest way to say so.
         if (text.Length == 0) code.Add(Run(" ", ink, style));
 
@@ -494,9 +503,12 @@ public sealed class CodeBlock : StatelessComponent
             var to = line == end.Line ? end.Column : Document.Line(line).Length;
             if (to <= from) continue;
 
-            var left = metrics.ContentLeft + from * metrics.ColumnWidth;
+            // Through the line's CELLS, the way the engine places its caret: a match after a tab
+            // or across a wide character is drawn where the characters are.
+            var cells = new CodeLineCells(Document.Line(line), TabSize);
+            var left = metrics.ContentLeft + cells.CellOf(from) * metrics.ColumnWidth;
             var top = metrics.ContentTop + line * metrics.LineHeight;
-            var width = (to - from) * metrics.ColumnWidth;
+            var width = (cells.CellOf(to) - cells.CellOf(from)) * metrics.ColumnWidth;
 
             yield return decoration.Kind switch
             {
@@ -545,6 +557,39 @@ public sealed class CodeBlock : StatelessComponent
         CodeDecorationKind.Underline => InkFor(Inverse, theme),
         _ => theme.Colors(Variant.Warning).Subtle,
     };
+
+    /// <summary>
+    /// The columns from <paramref name="from"/> up to <paramref name="to"/>, drawn on the cells the
+    /// engine counts (<see cref="CodeLineCells"/>): a tab as the spaces up to its stop, and a wide
+    /// element in a box two cells wide, so a fallback font's advance cannot move the rest of the line
+    /// off the grid the caret is placed on. Everything else goes out as one run. An element split by
+    /// a token boundary is drawn with the span it BEGINS in.
+    /// </summary>
+    private static void AddSpan(Row code, CodeLineCells cells, int from, int to, ColorToken color,
+        TypeStyle style, float columnWidth)
+    {
+        if (to <= from) return;
+        var run = "";
+        for (var i = cells.IndexOf(from); i < cells.Count; i++)
+        {
+            var element = cells.ElementAt(i);
+            if (element.Start >= to) break;
+            if (element.Start < from) continue;
+            var text = cells.Text.Substring(element.Start, element.End - element.Start);
+            if (text == "\t")
+            {
+                for (var space = 0; space < element.Width; space++) run += " ";
+            }
+            else if (element.Width == 2)
+            {
+                if (run.Length > 0) code.Add(Run(run, color, style));
+                run = "";
+                code.Add(new Box(new BoxStyle { Width = 2 * columnWidth }, Run(text, color, style)));
+            }
+            else run += text;
+        }
+        if (run.Length > 0) code.Add(Run(run, color, style));
+    }
 
     private static VisualNode Run(string content, ColorToken color, TypeStyle style) =>
         new Text(content, TypeRole.LabelSmall, color, maxLines: 1)

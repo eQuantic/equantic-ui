@@ -528,6 +528,35 @@ record of a release, the wiki's Upgrading page is the distillate.
   adopting it. The server writes `CodeSurface` (the code, its carets and its input), `/code`
   hydrates whole where one missing child used to send it to a full re-render, and the block's gutter
   is 26px where it was 12.
+- **2026-09-23 · The code editor counts what is drawn**: slice 1b of
+  [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#371](https://github.com/eQuantic/equantic-ui/pull/371)).
+  The engine counted one column per UTF-16 unit and placed every caret one cell per column, while
+  the browser drew a tab to the next eight-column stop and a wide character across two cells: the
+  caret stood beside the wrong glyph, and a Backspace on an emoji left half of its surrogate pair.
+  One map from a column to its cell (`CodeLineCells`) now serves the caret, the selection, the
+  click, the arrows, Backspace and the drawing, which draws a tab as spaces to its stop and a wide
+  character in a box two cells wide. Measured in Chromium, the glyph after an ideograph starts at
+  the pixel the caret before it stands on. Text elements come from the platform on both sides
+  (`StringInfo`, transpiled to `Intl.Segmenter`). The model's remaining defects went with it: Tab,
+  Shift+Tab and ⌘/ keep the selection they edit, a closing brace steps back to its block, typing
+  over a selection is one undo and a paste is its own, and C# raw strings are one string across
+  lines. Found on the way in eqc: the `(string, index)` overloads of the char classifiers tested
+  the whole string, and a code point read from a string reached tsc as `number | undefined`. Found
+  in review: a char method spliced its argument as a receiver, so over a conditional it read one
+  branch, and the bracket match walked to its pair with the caret's step, segmenting every line on
+  the way (110 ms a frame on 3000 lines, under one now that it scans). A second review of the model
+  found more: ⌘/ over three lines re-coloured only the first, so a line it emptied kept a comment
+  longer than itself and Photon's boundary replaced the editor with its failure panel; a `$` after an
+  operator was drawn twice, and `@$"""` coloured the rest of the file as a string; ✌🏻 took one cell
+  and drew two; a click kept the cell a run of ↓ had aimed at; Tab counted columns, not cells. The
+  width table was written by hand, so it is now compared, character by character and on both sides,
+  with the SDK's own Bun (`Bun.stringWidth`), which found the web twin reading every astral
+  character as one cell: eqc translated `char.IsSurrogatePair(char, char)` as the (string, index)
+  overload. A third review found a mark that begins an element taking cells (the voiced sound mark,
+  two) and a word step stopping between a letter and its accent: a nonspacing or enclosing mark
+  takes none now, read from `CharUnicodeInfo.GetUnicodeCategory`, which eqc translates for the
+  first time, and words step over whole elements. The served runtime grew from 143,104 bytes
+  gzipped, main's after #330, to 146,004.
 - **2026-09-23 · A publish sees the files this build wrote**: editing a component two pages share
   and publishing failed on the first run ([#361](https://github.com/eQuantic/equantic-ui/issues/361)).
   bun names a shared chunk by its content's hash, and the static web assets pipeline registered

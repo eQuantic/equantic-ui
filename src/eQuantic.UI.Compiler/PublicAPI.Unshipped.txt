@@ -133,6 +133,21 @@ static eQuantic.UI.Compiler.CodeGen.RecordTypeEmitter.EmitsTwin(Microsoft.CodeAn
 static eQuantic.UI.Compiler.Services.ComponentDependencyResolver.From(Microsoft.CodeAnalysis.Compilation! compilation) -> eQuantic.UI.Compiler.Services.ComponentDependencyResolver!
 eQuantic.UI.Compiler.Services.SourceMapComposer
 static eQuantic.UI.Compiler.Services.SourceMapComposer.Compose(string! outerMap, System.Func<string!, string?>! innerMapOf) -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.NextTextElementLength = "$eq.text.nextTextElementLength" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.TextElementStarts = "$eq.text.textElementStarts" -> string!
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.TextElementStrategy
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.TextElementStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.TextElementStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.TextElementStrategy.Priority.get -> int
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.TextElementStrategy.TextElementStrategy() -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CharMethodStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.CharMethodStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
+const eQuantic.UI.Compiler.CodeGen.Eq.UnicodeCategory = "$eq.text.unicodeCategory" -> string!
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.UnicodeCategoryStrategy
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.UnicodeCategoryStrategy.UnicodeCategoryStrategy() -> void
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.UnicodeCategoryStrategy.Priority.get -> int
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.UnicodeCategoryStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.UnicodeCategoryStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 const eQuantic.UI.Compiler.CodeGen.Eq.RoundSingle = "$eq.math.roundSingle" -> string!
 eQuantic.UI.Compiler.CodeGen.Strategies.Invocation.MathStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 eQuantic.UI.Compiler.CodeGen.Strategies.SinglePrecision

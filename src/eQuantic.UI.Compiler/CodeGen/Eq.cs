@@ -49,6 +49,15 @@ public static class Eq
     public const string DictGet = "$eq.dictGet";
     /// <summary>LINQ Zip — pairs stop with the shorter sequence.</summary>
     public const string Zip = "$eq.zip";
+    /// <summary>Where each text element (an extended grapheme cluster, UAX #29) of a string begins:
+    /// <c>StringInfo.ParseCombiningCharacters</c>, answered by the platform's segmenter.</summary>
+    public const string TextElementStarts = "$eq.text.textElementStarts";
+    /// <summary>How many UTF-16 units the text element at an index spans:
+    /// <c>StringInfo.GetNextTextElementLength</c>.</summary>
+    public const string NextTextElementLength = "$eq.text.nextTextElementLength";
+    /// <summary>A character's general category, as its <c>UnicodeCategory</c> member crosses:
+    /// <c>CharUnicodeInfo.GetUnicodeCategory</c> and <c>char.GetUnicodeCategory</c>.</summary>
+    public const string UnicodeCategory = "$eq.text.unicodeCategory";
     public const string Format = "$eq.text.format";
     public const string StringFormat = "$eq.text.stringFormat";
     public const string StringBuilder = "$eq.text.stringBuilder";

@@ -122,20 +122,6 @@ export class CodeDocument {
         return new CodeDocument(lines); })(); return { $: $r, caret };
     }
 
-    previous(position: CodePosition) {
-        let here = this.clamp(position);
-        if (here.column > 0) return $eq.withPatch(here, { column: here.column - 1 });
-        if (here.line === 0) return CodePosition.start;
-        return new CodePosition(here.line - 1, this._lines[here.line - 1].length);
-    }
-
-    next(position: CodePosition) {
-        let here = this.clamp(position);
-        if (here.column < this._lines[here.line].length) return $eq.withPatch(here, { column: here.column + 1 });
-        if (here.line === this._lines.length - 1) return here;
-        return new CodePosition(here.line + 1, 0);
-    }
-
     lineStart(position: CodePosition) {
         let here = this.clamp(position);
         let line = this._lines[here.line];

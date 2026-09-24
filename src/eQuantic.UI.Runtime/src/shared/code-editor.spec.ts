@@ -593,6 +593,74 @@ describe('code surface pointer (the SAME model the native host drives)', () => {
   });
 });
 
+/**
+ * The MODEL's rules, as the browser runs them: the engine the page carries is the C# one
+ * transpiled, and these ask it what CodeViewModelTests and CodeEditorControllerTests ask natively.
+ */
+describe('the model, as the browser runs it', () => {
+  const at = (text: string, line: number, column: number) => {
+    const editor = new CodeEditorController(text, CodeLanguages.for('csharp'));
+    editor.grid = new CodeGrid(new Point(0, 0), new Size(8, 18));
+    editor.selection = new CodeRange(new CodePosition(line, column));
+    return editor;
+  };
+
+  it('places a caret after a tab at its stop, and after a wide character two cells on', () => {
+    expect(at('\tx', 0, 1).caretRect(new CodePosition(0, 1)).x).toBe(32);
+    expect(at('\u4E2Dx', 0, 1).caretRect(new CodePosition(0, 1)).x).toBe(16);
+  });
+
+  it('steps over a whole emoji and deletes it whole', () => {
+    const editor = at('a\u{1F600}b', 0, 1);
+
+    editor.move('character', 'forward', false);
+    expect(editor.caret.column).toBe(3);
+    editor.deleteBackward();
+    expect(editor.document.text).toBe('ab');
+  });
+
+  it('types over a selection as one undo step', () => {
+    const editor = at('var name = 1;', 0, 0);
+    editor.selection = new CodeRange(new CodePosition(0, 4), new CodePosition(0, 8));
+
+    editor.type('i');
+    editor.type('d');
+    editor.undo();
+
+    expect(editor.document.text).toBe('var name = 1;');
+  });
+
+  it('keeps the selection a Tab indents, each end with its line', () => {
+    const editor = at('one\ntwo', 0, 0);
+    editor.selection = new CodeRange(new CodePosition(1, 2), new CodePosition(0, 1));
+
+    editor.indent();
+
+    expect(editor.selection.anchor.line).toBe(1);
+    expect(editor.selection.anchor.column).toBe(6);
+    expect(editor.selection.focus.line).toBe(0);
+    expect(editor.selection.focus.column).toBe(5);
+  });
+
+  it('steps a closing brace back to its block', () => {
+    const editor = at('if (x) {\n        ', 1, 8);
+
+    editor.type('}');
+
+    expect(editor.document.line(1)).toBe('    }');
+  });
+
+  it('colours a raw string as one string, across lines', () => {
+    const tokens: unknown[] = [];
+    const state = CodeLanguages.cSharp.tokenize('var t = """', 0, tokens as never);
+    expect(state).not.toBe(0);
+
+    const next: unknown[] = [];
+    CodeLanguages.cSharp.tokenize('    if (x) { }', state, next as never);
+    expect((next as { kind: string }[]).every((t) => t.kind === 'string')).toBe(true);
+  });
+});
+
 describe('the tokenizers, running in the browser', () => {
   // The registry leaned on a case-insensitive comparer the twin never had: a plain object keys
   // exactly, so 'CSharp' coloured C# natively and plain text here. CodeLanguagesTests asks the C#
@@ -659,6 +727,54 @@ describe('code editor (the component, end to end)', () => {
     expect(node.tag).toBeTruthy();
     expect(editor.editor.document.text).toBe('var x = 1;');
     expect(editor.editor.highlighter.language.name).toBe('C#');
+  });
+});
+
+/**
+ * The block draws the CELLS the engine counts (defect 12 of docs/CODE-EDITOR-PLAN.md): a tab as the
+ * spaces up to its stop, where the browser drew it to the next eight-column stop and the caret stood
+ * one cell in, and a wide character in a box two cells wide, so a fallback font cannot move the
+ * rest of the line off the grid the caret is placed on.
+ */
+describe('the block draws the cells the engine counts', () => {
+  it('draws a tab to its stop and a wide character across two cells', async () => {
+    const { materializeTheme } = await import('./theme-bridge');
+    const photonData = (await import('./theme-bridge.photon.json')).default;
+    const { CodeBlock } = await import('./components/CodeBlock');
+    const theme = materializeTheme(photonData as never);
+    setPhotonTheme(theme);
+    const context = {
+      theme,
+      density: 'comfortable',
+      measureText: (text: string) => text.length * 7,
+      monoAdvance: () => 7,
+    };
+    const block = new CodeBlock('a\tb\u4E2Dc', 'csharp');
+    const drawn: string[] = [];
+    const visit = (node: unknown): void => {
+      if (!node || typeof node !== 'object') return;
+      const n = node as Record<string, unknown> & { build?: (c: unknown) => unknown };
+      if (n.nodeKind === 'text') {
+        drawn.push(String(n.content));
+        return;
+      }
+      // A size crosses as its number (SizeValue passes a number through) or as { value }.
+      const size = (n.style as { width?: number | { value?: number } } | undefined)?.width;
+      const width = typeof size === 'number' ? size : size?.value;
+      if (n.nodeKind === 'box' && typeof width === 'number' && n.child && (n.child as { nodeKind?: string }).nodeKind === 'text')
+        drawn.push(`[${width}]`);
+      if (typeof n.build === 'function' && n.nodeKind === 'component') visit(n.build(context));
+      if (n.child) visit(n.child);
+      if (Array.isArray(n.children)) for (const c of n.children) visit(c);
+    };
+    visit(block.build(context as never));
+
+    const line = drawn.join('|');
+    // The tab begins after `a`, at cell 1, and runs to the stop at 4: three spaces.
+    expect(line).toContain('a|   |b');
+    // The ideograph sits in a box two cells (2 x 7) wide, and the text around it is not moved.
+    expect(line).toContain('[14]|\u4E2D|c');
+    setPhotonTheme(photonTheme);
   });
 });
 

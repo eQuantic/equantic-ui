@@ -5,13 +5,18 @@ namespace eQuantic.UI.Code;
 /// and where the caret stood on each side. It is also the EVENT an editor raises — a host building
 /// an IDE listens to edits, not to keystrokes, because a paste, a refactor and a typed character
 /// are the same thing to everything downstream (a language server, a dirty flag, a diff).
+/// <para>
+/// <c>Typed</c> says a person TYPED it, a character at a time, which is what a run of undo joins.
+/// A paste, a cut, an indent or a refactor arrives whole and is a step of its own.
+/// </para>
 /// </summary>
 public sealed record CodeEdit(
     CodeRange Range,
     string RemovedText,
     string InsertedText,
     CodeRange SelectionBefore,
-    CodeRange SelectionAfter)
+    CodeRange SelectionAfter,
+    bool Typed)
 {
     /// <summary>The range the inserted text occupies AFTER the edit — what a decoration or a
     /// language server has to shift to.</summary>

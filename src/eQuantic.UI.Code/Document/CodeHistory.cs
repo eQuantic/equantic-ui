@@ -26,11 +26,13 @@ public sealed class CodeHistory
     {
         _future.Clear();
 
-        // Coalesce: a character typed right where the last one landed continues that run.
-        if (edit.IsSimpleInsert && _past.Count > 0 && edit.Range.Start == _runEnd)
+        // Coalesce: a character TYPED right where the last typed one landed continues that run, and
+        // a run may begin by typing over a selection, the replacement being its first step. What
+        // was not typed (a paste, a cut, an indent) never joins one and never starts one.
+        if (edit.Typed && edit.IsSimpleInsert && _past.Count > 0 && edit.Range.Start == _runEnd)
         {
             var previous = _past[^1];
-            if (previous.IsSimpleInsert)
+            if (previous.Typed && !previous.InsertedText.Contains('\n'))
             {
                 _past[^1] = previous with
                 {
@@ -44,7 +46,9 @@ public sealed class CodeHistory
 
         _past.Add(edit);
         if (_past.Count > Limit) _past.RemoveAt(0);
-        _runEnd = edit.IsSimpleInsert ? edit.InsertedRange.End : new CodePosition(-1, -1);
+        _runEnd = edit.Typed && !edit.InsertedText.Contains('\n')
+            ? edit.InsertedRange.End
+            : new CodePosition(-1, -1);
     }
 
     /// <summary>Ends the current typing run, so the NEXT character starts a new undo step. Called

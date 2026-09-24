@@ -14,6 +14,10 @@ export class CSharpLanguage extends CurlyBraceLanguage {
         return true;
     }
 
+    get hasRawStrings(): boolean {
+        return true;
+    }
+
     get hasBracketAttributes(): boolean {
         return true;
     }

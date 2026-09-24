@@ -38,6 +38,22 @@ public class StringTotalityConformanceTests
     [InlineData("char.IsLetter('a')")]                 // true
     [InlineData("char.ToUpper('a')")]                  // "A"
     [InlineData("char.ToLower('A')")]                  // "a"
+    // The (string, index) overloads read the character AT the index, and a surrogate pair there
+    // as one code point. They tested the whole string, so every one of these answered false.
+    [InlineData("char.IsDigit(\"a1\", 1)")]            // true
+    [InlineData("char.IsLetter(\"1a\", 1)")]           // true
+    [InlineData("char.IsLetter(\"a1\", 1)")]           // false
+    [InlineData("char.IsUpper(\"aB\", 1)")]            // true
+    [InlineData("char.IsWhiteSpace(\"a b\", 1)")]      // true
+    [InlineData("char.IsLetter(\"x\U0001D400\", 1)")] // true — MATHEMATICAL BOLD CAPITAL A, a pair
+    // An argument C# needs no parentheses for (a conditional) lands as a RECEIVER in JavaScript,
+    // where `c ? a : b.codePointAt(i)` reads only the false branch. The writer fences it.
+    [InlineData("char.IsLetter(\"a\".Length < 5 ? \"1a\" : \"a1\", 1)")] // true
+    [InlineData("char.ToUpper(\"a\".Length < 5 ? 'a' : 'b')")]            // "A"
+    [InlineData("char.IsAscii(\"a\".Length < 5 ? 'e' : '\u00e9')")]      // true
+    // Named out of order: each argument fills its own parameter, whatever order it was written in.
+    [InlineData("char.IsLetter(index: 1, s: \"1a\")")]                                                                                 // true
+    [InlineData("char.IsUpper(index: 0, s: \"Ab\")")]                                                                                 // true
     public void Strings_MatchDotNet(string expression)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

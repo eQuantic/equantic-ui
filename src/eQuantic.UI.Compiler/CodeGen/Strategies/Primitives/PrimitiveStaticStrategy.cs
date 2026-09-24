@@ -20,9 +20,8 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 /// conformance case per entry proves each mapping against .NET (NumericBclConformanceTests).
 /// What stays fenced is impossible BY CONSTRUCTION or deliberately out of scope:
 /// <c>Int64.BigMul</c> returns an Int128 (a type with no twin), <c>Char.GetNumericValue</c>
-/// needs the Unicode numeric-value table (data, not a function), <c>Char.GetUnicodeCategory</c>
-/// would need thirty <c>\p{…}</c> classes mapped to the enum (derivable — parked until someone
-/// needs it), <c>String.IsInterned</c> asks about an intern pool JavaScript does not have, and
+/// needs the Unicode numeric-value table (data, not a function), <c>String.IsInterned</c> asks
+/// about an intern pool JavaScript does not have, and
 /// the <c>ReciprocalEstimate</c> pair answers with the PLATFORM's hardware estimate (.NET on
 /// ARM64 uses FRECPE — there is no number this side could faithfully produce).
 /// <c>Parse</c>/<c>TryParse</c> stay with <see cref="NumberMethodStrategy"/>.
@@ -84,7 +83,7 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
     {
         if (method.Name == "Round" && (IsFloating(home) || home == SpecialType.System_Decimal))
             return RoundTemplate(method, home);
-        return Answered(method.Name, home, argCount, SinglePrecision.Is(method.ReturnType));
+        return Answered(method.Name, home, argCount, SinglePrecision.Is(method.ReturnType), Indexed(method));
     }
 
     /// <summary>
@@ -96,11 +95,11 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
     internal static string? TemplateByName(string name, SpecialType home, int argCount) =>
         name == "Round"
             ? null
-            : Answered(name, home, argCount, answersSingle: name is not ("Sign" or "ILogB" or "SinCos"));
+            : Answered(name, home, argCount, answersSingle: name is not ("Sign" or "ILogB" or "SinCos"), indexed: false);
 
-    private static string? Answered(string name, SpecialType home, int argCount, bool answersSingle)
+    private static string? Answered(string name, SpecialType home, int argCount, bool answersSingle, bool indexed)
     {
-        var emit = MethodTable(home, name, argCount);
+        var emit = MethodTable(home, name, argCount, indexed);
         if (emit is null || home != SpecialType.System_Single || !answersSingle) return emit;
 
         // A SINGLE answer (SinglePrecision): the shared templates compute in doubles, so a member
@@ -221,8 +220,17 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
     private static bool IsFloating(SpecialType type) =>
         type is SpecialType.System_Double or SpecialType.System_Single;
 
+    /// <summary>
+    /// Whether the call is one of the (string, index) overloads, which ask about the character AT an
+    /// index. The count of arguments cannot tell: <c>char.IsSurrogatePair</c> and
+    /// <c>char.ConvertToUtf32</c> each have a (char, char) overload of the same length, and the table
+    /// read each pair as the other's.
+    /// </summary>
+    private static bool Indexed(IMethodSymbol method) =>
+        method.Parameters is [{ Type.SpecialType: SpecialType.System_String }, { Type.SpecialType: SpecialType.System_Int32 }];
+
     /// <summary>Emission template ({0}, {1}, … are the converted arguments), or null = fenced.</summary>
-    private static string? MethodTable(SpecialType home, string name, int argCount)
+    private static string? MethodTable(SpecialType home, string name, int argCount, bool indexed)
     {
         if (home == SpecialType.System_Single && SingleTable(name, argCount) is { } single) return single;
         if (IsFloating(home))
@@ -459,11 +467,18 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
                     "(($s) => { if ($s.length !== 1) throw new Error('String must be exactly one character long.'); return $s; })({0})",
                 "ConvertFromUtf32" when argCount == 1 => "String.fromCodePoint({0})",
                 // The surrogate pair IS the code point: concatenate the halves and read it back.
-                "ConvertToUtf32" when argCount == 2 => "({0} + {1}).codePointAt(0)",
+                // Through Number(): `codePointAt` answers `number | undefined`, and a strict tsc
+                // refused every twin that handed the result on as the int it is in C#. The
+                // (string, index) overload stays fenced: .NET throws on a lone surrogate there,
+                // where codePointAt answers it, and the table read its index as the low half.
+                "ConvertToUtf32" when argCount == 2 && !indexed => "Number(({0} + {1}).codePointAt(0))",
                 // Out-of-range indexes read NaN from charCodeAt, and every comparison says no.
-                "IsSurrogatePair" when argCount == 2 =>
+                "IsSurrogatePair" when indexed =>
                     "({0}.charCodeAt({1}) >= 0xD800 && {0}.charCodeAt({1}) <= 0xDBFF"
                     + " && {0}.charCodeAt({1} + 1) >= 0xDC00 && {0}.charCodeAt({1} + 1) <= 0xDFFF)",
+                // The (char, char) pair: a high half, then a low one.
+                "IsSurrogatePair" when argCount == 2 =>
+                    "(/^[\\uD800-\\uDBFF]$/.test({0}) && /^[\\uDC00-\\uDFFF]$/.test({1}))",
                 _ => null,
             };
         }

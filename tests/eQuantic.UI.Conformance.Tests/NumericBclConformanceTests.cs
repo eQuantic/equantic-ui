@@ -165,6 +165,18 @@ public class NumericBclConformanceTests
     [InlineData("return char.IsSurrogatePair(\"a\\uD83D\\uDE00\", 1);")]         // true
     [InlineData("return char.IsSurrogatePair(\"ab\", 0);")]                      // false
     [InlineData("return char.IsSurrogatePair(\"a\\uD83D\\uDE00\", 2);")]         // false — lone low at the end
+    // The (char, char) pair: two overloads of two arguments each, and the table read both as the
+    // (string, index) one, so the web took the low half for an INDEX and answered false.
+    [InlineData("return char.IsSurrogatePair('\\uD83D', '\\uDE00');")]             // true
+    [InlineData("return char.IsSurrogatePair('\\uDE00', '\\uD83D');")]             // false: the halves swapped
+    [InlineData("return char.IsSurrogatePair('a', 'b');")]                           // false
+    // A classifier's (string, index) overload throws for an index outside the string, on both sides:
+    // the code point read there is not a number, and String.fromCodePoint refuses it.
+    [InlineData("try { char.IsLetter(\"a\", 5); return 1; } catch { return -1; }")]      // -1
+    [InlineData("try { char.IsLetter(\"a\", -1); return 1; } catch { return -1; }")]     // -1
+    [InlineData("try { char.IsUpper(\"aB\", 2); return 1; } catch { return -1; }")]      // -1
+    // Named out of order, the arguments still run in the order they were WRITTEN: the index, then the string.
+    [InlineData("int n = 0; string S() { n = n * 10 + 1; return \"1a\"; } int I() { n = n * 10 + 2; return 1; } var r = char.IsLetter(index: I(), s: S()); return n * 10 + (r ? 1 : 0);")] // 211
     // ---- Double: .NET's own compositions, which the precise JS primitives are NOT ----
     [InlineData("return double.ExpM1(1e-10) * 1e10;")]                           // 1.000000082740371 — Exp(x) - 1
     [InlineData("return double.LogP1(1e-10) * 1e10;")]                           // 1.000000082690371 — Log(x + 1)

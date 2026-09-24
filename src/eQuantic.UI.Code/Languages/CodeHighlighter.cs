@@ -42,10 +42,11 @@ public sealed class CodeHighlighter
     }
 
     /// <summary>
-    /// Tells the highlighter a line CHANGED. Returns how far down the file the colours moved —
-    /// usually just that line, and the rest of the file when a multi-line construct opened or
-    /// closed. A caller repainting only what changed uses the number; a caller repainting
-    /// everything can ignore it.
+    /// Tells the highlighter an edit rewrote lines from <paramref name="line"/> on: as many as it
+    /// inserted after the first, and it removed <paramref name="linesRemoved"/>. Returns how far down
+    /// the file the colours moved — usually just the lines the edit touched, and the rest of the file
+    /// when a multi-line construct opened or closed. A caller repainting only what changed uses the
+    /// number; a caller repainting everything can ignore it.
     /// </summary>
     public int LineChanged(CodeDocument document, int line, int linesInserted = 0, int linesRemoved = 0)
     {
@@ -59,12 +60,17 @@ public sealed class CodeHighlighter
 
         if (line >= _tokens.Count) return line;
 
-        var before = _endStates[line];
-        Retokenize(document, line);
-        if (_endStates[line] == before) return line;
+        // EVERY line the edit rewrote, not only the first: ⌘/ and Tab over a selection rewrite each
+        // line they touch in one edit, and the lines after the first kept the tokens of the text
+        // they used to hold (colours off by the indent Tab added, a comment longer than the line ⌘/
+        // had emptied).
+        var last = Math.Min(line + linesInserted, _tokens.Count - 1);
+        var before = _endStates[last];
+        for (var rewritten = line; rewritten <= last; rewritten++) Retokenize(document, rewritten);
+        if (_endStates[last] == before) return last;
 
-        // The state at the end of this line changed, so the next line means something else now.
-        for (var next = line + 1; next < _tokens.Count; next++)
+        // The state at the end of the edit changed, so the next line means something else now.
+        for (var next = last + 1; next < _tokens.Count; next++)
         {
             var previous = _endStates[next];
             Retokenize(document, next);
