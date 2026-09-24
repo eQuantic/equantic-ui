@@ -1,4 +1,4 @@
-import { BuildContext, Column, ScrollView, SizeValue, Spacer, StatefulComponent, UiComponent } from "../runtime-exports";
+import { BuildContext, Column, ScrollView, SizeValue, Spacer, StatefulComponent, UiComponent, VisualNode } from "../runtime-exports";
 
 export class ListView extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.ListView';
@@ -13,7 +13,7 @@ export class ListView extends StatefulComponent {
 
     declare count: number;
     declare itemExtent: number;
-    declare itemBuilder: any;
+    declare itemBuilder: (value: number) => VisualNode;
     declare overscan: number;
     declare width: SizeValue;
     declare height: SizeValue;

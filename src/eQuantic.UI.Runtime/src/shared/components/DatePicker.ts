@@ -10,7 +10,7 @@ export class DatePicker extends StatefulComponent {
     }
 
     declare selected: any;
-    declare onChanged: any;
+    declare onChanged: ((dateOnly: DateOnly) => void) | null;
     declare min: any;
     declare max: any;
     declare label: string;

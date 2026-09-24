@@ -1,4 +1,6 @@
 using System.Text.RegularExpressions;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using FluentAssertions;
 using Xunit;
 
@@ -137,6 +139,72 @@ public class EmittedTypeSurfaceTests
             }
             """).Single(result => result.ComponentName == "Layout").TypeScript;
         record.Should().Contain("static parts(n: number): [number[], string[]]");
+    }
+
+    /// <summary>
+    /// A component's function-typed parameter keeps its type, so a lambda passed to it is typed by
+    /// it. The resolvability check read the parameter's NAME inside the function type (`value` in
+    /// `(value: string) => string | null`) as a type it could not resolve, degraded the whole
+    /// parameter to `any`, and the code block's gutter handed every caller's lambda an implicit any.
+    /// </summary>
+    [Fact]
+    public void AComponentsFunctionParameter_KeepsItsType()
+    {
+        var ts = new ComponentCompiler().CompileSource("""
+            using eQuantic.UI.Primitives;
+
+            public sealed class Grid : StatelessComponent
+            {
+                public string Label(System.Func<string, string?> numberOf) => numberOf("a") ?? "";
+                public override VisualNode Build(ComponentContext context) => new Text(Label(text => text), TypeRole.BodyM);
+            }
+            """, "Grid.cs").Single(result => result.ComponentName == "Grid").TypeScript;
+
+        ts.Should().Contain("label(numberOf: (value: string) => string | null)");
+    }
+
+    /// <summary>
+    /// A delegate member invoked where C# proved it not null keeps that proof in the twin. C#'s flow
+    /// analysis reads a lambda with the state where the lambda is written, and TypeScript does not
+    /// carry a property's narrowing into a closure, so <c>OnSelect is null ? null : () => OnSelect(i)</c>
+    /// was a possibly-null call in eleven twins the moment their delegates were typed. A member C#
+    /// did not prove is left as it is.
+    /// </summary>
+    [Fact]
+    public void ADelegateMemberCSharpProvedNotNull_KeepsThatProofInTheTwin()
+    {
+        var source = """
+            using System;
+            using eQuantic.UI.Primitives;
+
+            public sealed class Tabs : StatelessComponent
+            {
+                public Action<int>? OnSelect { get; init; }
+                public Action? OnClose { get; init; }
+
+                public override VisualNode Build(ComponentContext context)
+                {
+                    Action? press = OnSelect is null ? null : () => OnSelect(1);
+                    OnClose?.Invoke();
+                    return new Text("x", TypeRole.BodyM);
+                }
+            }
+            """;
+        var tree = CSharpSyntaxTree.ParseText(source, path: "Tabs.cs");
+        var references = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
+            .Split(Path.PathSeparator)
+            .Where(path => path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
+            .Append(MetadataReference.CreateFromFile(typeof(eQuantic.UI.Primitives.VisualNode).Assembly.Location));
+        var compilation = CSharpCompilation.Create("Probe", [tree], references,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable));
+        var compiler = new ComponentCompiler();
+        compiler.SetProjectCompilation(compilation);
+
+        var ts = compiler.CompileSource(source, "Tabs.cs").Single(result => result.ComponentName == "Tabs").TypeScript;
+
+        ts.Should().Contain("() => this.onSelect!(1)", "C# proved OnSelect not null where the lambda is written");
+        ts.Should().NotContain("onClose!", "a conditional call proves nothing, and needs nothing");
     }
 
     [Fact]

@@ -1281,10 +1281,13 @@ public class TypeScriptEmitter
         if (IntrinsicTsTypes.Contains(ts)) return true;
 
         // A composite (`(x: Foo) => void`, `Record<string, any>`): every identifier inside must resolve.
+        // A parameter's NAME inside a function type is a label and not a type, so a name followed by
+        // its colon is left out: `value` in `(value: Point) => string | null` resolved nothing, the
+        // whole parameter degraded to `any`, and every lambda passed to it was an implicit any.
         if (ts.Contains('<') || ts.Contains("=>") || ts.Contains('('))
         {
             var names = System.Text.RegularExpressions.Regex
-                .Matches(ts, @"[A-Za-z_][A-Za-z0-9_]*")
+                .Matches(ts, @"\b[A-Za-z_][A-Za-z0-9_]*\b(?!\s*\??:)")
                 .Select(m => m.Value)
                 .Where(n => n is not ("void" or "Record"));
             return names.All(n => IsResolvableTsName(component, n));

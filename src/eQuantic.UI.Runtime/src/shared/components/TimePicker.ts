@@ -11,7 +11,7 @@ export class TimePicker extends StatefulComponent {
     }
 
     declare selected: any;
-    declare onChanged: any;
+    declare onChanged: ((timeOnly: TimeOnly) => void) | null;
     declare stepMinutes: number;
     declare min: any;
     declare max: any;

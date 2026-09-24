@@ -20,6 +20,15 @@ public class SemanticHelper
     /// <summary>
     /// Checks if a symbol belongs to the System namespace (or sub-namespace).
     /// </summary>
+    /// <summary>
+    /// Whether C#'s nullable flow analysis proved <paramref name="expression"/> not null where it is
+    /// read, which is what a TypeScript non-null assertion may say, and only then. False where the
+    /// model cannot be asked, or the compilation does not analyse nullability.
+    /// </summary>
+    public bool ProvedNotNull(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax expression) =>
+        _semanticModel is { } model && model.SyntaxTree == expression.SyntaxTree
+        && model.GetTypeInfo(expression).Nullability.FlowState == NullableFlowState.NotNull;
+
     public bool IsSystemType(ISymbol? symbol)
     {
         return IsNamespace(symbol, "System");

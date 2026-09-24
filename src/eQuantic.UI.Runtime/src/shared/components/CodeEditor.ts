@@ -22,7 +22,7 @@ export class CodeEditor extends StatefulComponent {
     declare initialCode: string;
     declare languageName: any;
     declare onChanged: ((string: string) => void) | null;
-    declare onSelectionChanged: any;
+    declare onSelectionChanged: ((codeRange: CodeRange) => void) | null;
     declare showLineNumbers: boolean;
     declare firstLineNumber: number;
     declare height: SizeValue;
@@ -37,7 +37,7 @@ export class CodeEditor extends StatefulComponent {
     declare matchBrackets: boolean;
     declare search: any;
     declare searchMatchCase: boolean;
-    declare onGutterPressed: any;
+    declare onGutterPressed: ((int: number) => void) | null;
 
     get editor() {
         return this._editor ?? (this._editor = this.create());

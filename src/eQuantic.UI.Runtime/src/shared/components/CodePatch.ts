@@ -1,4 +1,4 @@
-import { CodePatchFile, CodePatchHunk, CodePatchLine } from "../runtime-exports";
+import { $eq, CodePatchFile, CodePatchHunk, CodePatchLine } from "../runtime-exports";
 
 export class CodePatch {
     static parse(text: string) {
@@ -55,7 +55,7 @@ export class CodePatch {
         if (parts.length !== 2 || !parts[0].startsWith('-') || !parts[1].startsWith('+')) return null;
         let original: any; let modified: any; 
         if (!((original = CodePatch.range(parts[0].slice(1))) != null) || !((modified = CodePatch.range(parts[1].slice(1))) != null)) return null;
-        let section = close + 3 < line.length ? line.slice((close + 3)).trimStart() : '';
+        let section = close + 3 < line.length ? $eq.text.trimStart(line.slice((close + 3))) : '';
         return [original[0], original[1], modified[0], modified[1], section];
     }
 

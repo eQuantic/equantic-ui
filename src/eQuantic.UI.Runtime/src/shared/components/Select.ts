@@ -6,7 +6,7 @@ export class Select extends StatefulComponent {
     _highlight: number = 0;
     declare options: string[];
     declare selectedIndex: number;
-    declare onChanged: any;
+    declare onChanged: ((int: number) => void) | null;
     declare placeholder: any;
     declare disabled: boolean;
 
