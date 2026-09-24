@@ -62,3 +62,40 @@ static eQuantic.UI.Components.SdkStrings.ShowInline.get -> string!
 static eQuantic.UI.Components.SdkStrings.ShowSideBySide.get -> string!
 static eQuantic.UI.Components.SdkStrings.DiffOriginal.get -> string!
 static eQuantic.UI.Components.SdkStrings.DiffModified.get -> string!
+eQuantic.UI.Components.CodeDiff.ModifiedCaption.get -> string?
+eQuantic.UI.Components.CodeDiff.ModifiedCaption.set -> void
+eQuantic.UI.Components.CodeDiff.ShowToolbar.get -> bool
+eQuantic.UI.Components.CodeDiff.ShowToolbar.set -> void
+eQuantic.UI.Components.CodeDiff.Editor.get -> eQuantic.UI.Code.CodeEditorController!
+override eQuantic.UI.Components.CodeDiff.AdoptConfig(eQuantic.UI.Primitives.UiComponent! next) -> void
+eQuantic.UI.Components.CodeDiff
+override eQuantic.UI.Components.CodeDiff.Build(eQuantic.UI.Primitives.ComponentContext! context) -> eQuantic.UI.Primitives.VisualNode!
+const eQuantic.UI.Components.CodeDiff.WordAlpha = 0.3 -> float
+eQuantic.UI.Components.CodeDiff.CodeDiff(string! original = "", string! modified = "", string? language = null) -> void
+static eQuantic.UI.Components.CodeDiff.OfPatch(eQuantic.UI.Code.CodePatchFile! file, string? language = null) -> eQuantic.UI.Components.CodeDiff!
+eQuantic.UI.Components.CodeDiff.Original.get -> string!
+eQuantic.UI.Components.CodeDiff.Original.set -> void
+eQuantic.UI.Components.CodeDiff.Modified.get -> string!
+eQuantic.UI.Components.CodeDiff.Modified.set -> void
+eQuantic.UI.Components.CodeDiff.Patch.get -> eQuantic.UI.Code.CodePatchFile?
+eQuantic.UI.Components.CodeDiff.Patch.set -> void
+eQuantic.UI.Components.CodeDiff.LanguageName.get -> string?
+eQuantic.UI.Components.CodeDiff.LanguageName.set -> void
+eQuantic.UI.Components.CodeDiff.Inline.get -> bool
+eQuantic.UI.Components.CodeDiff.Inline.set -> void
+eQuantic.UI.Components.CodeDiff.Context.get -> int
+eQuantic.UI.Components.CodeDiff.Context.set -> void
+eQuantic.UI.Components.CodeDiff.ReadOnly.get -> bool
+eQuantic.UI.Components.CodeDiff.ReadOnly.set -> void
+eQuantic.UI.Components.CodeDiff.OnChanged.get -> System.Action<string!>?
+eQuantic.UI.Components.CodeDiff.OnChanged.set -> void
+eQuantic.UI.Components.CodeDiff.Height.get -> eQuantic.UI.Primitives.SizeValue
+eQuantic.UI.Components.CodeDiff.Height.set -> void
+eQuantic.UI.Components.CodeDiff.MaxHeight.get -> float
+eQuantic.UI.Components.CodeDiff.MaxHeight.set -> void
+eQuantic.UI.Components.CodeDiff.Size.get -> eQuantic.UI.Primitives.SizeVariant
+eQuantic.UI.Components.CodeDiff.Size.set -> void
+eQuantic.UI.Components.CodeDiff.Inverse.get -> bool
+eQuantic.UI.Components.CodeDiff.Inverse.set -> void
+eQuantic.UI.Components.CodeDiff.OriginalCaption.get -> string?
+eQuantic.UI.Components.CodeDiff.OriginalCaption.set -> void

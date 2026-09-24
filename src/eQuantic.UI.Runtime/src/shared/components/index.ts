@@ -29,6 +29,7 @@ export { CodeCollapse } from './CodeCollapse';
 export { CodeCompletionItem } from './CodeCompletionItem';
 export { CodeDecoration } from './CodeDecoration';
 export { CodeDiagnostic } from './CodeDiagnostic';
+export { CodeDiff } from './CodeDiff';
 export { CodeDiffFold } from './CodeDiffFold';
 export { CodeDiffGap } from './CodeDiffGap';
 export { CodeDiffLayout } from './CodeDiffLayout';
