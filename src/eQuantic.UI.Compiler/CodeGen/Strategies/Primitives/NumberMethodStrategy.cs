@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 
@@ -9,8 +10,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 /// - int.Parse(s) -> parseInt(s)
 /// - double.Parse(s) -> parseFloat(s)
 /// - int.TryParse(s, out var x) -> x = parseInt(s); return !isNaN(x)
+/// - decimal.Parse and decimal.TryParse -> the runtime's reader, which answers a Decimal
 /// </summary>
-public class NumberMethodStrategy : IConversionStrategy
+public class NumberMethodStrategy : IExpressionIrStrategy
 {
     private static readonly HashSet<string> Types = new() { "int", "Int32", "double", "Double", "float", "Single", "decimal", "Decimal", "long", "Int64" };
 
@@ -18,7 +20,7 @@ public class NumberMethodStrategy : IConversionStrategy
     {
         if (node is not InvocationExpressionSyntax invocation) return false;
         if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess) return false;
-        
+
         var name = memberAccess.Name.Identifier.Text;
         if (name is not ("Parse" or "TryParse")) return false;
 
@@ -28,39 +30,46 @@ public class NumberMethodStrategy : IConversionStrategy
             [.. Types]);
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         var type = memberAccess.Expression.ToString();
         var name = memberAccess.Name.Identifier.Text;
         var args = invocation.ArgumentList.Arguments;
-        
-        string parsMethod = (type == "int" || type == "Int32" || type == "long" || type == "Int64") 
-            ? "parseInt" 
+        var method = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
+
+        if (method is { ContainingType.SpecialType: SpecialType.System_Decimal }
+            || (method is null && type is "decimal" or "Decimal" or "System.Decimal"))
+        {
+            return DecimalText(invocation, name, method, context);
+        }
+
+        string parsMethod = (type == "int" || type == "Int32" || type == "long" || type == "Int64")
+            ? "parseInt"
             : "parseFloat";
         // A float parsed from text is a single, like every other float this side produces
         // (SinglePrecision): `parseFloat("0.1")` is the double 0.1, and .NET's float.Parse is not.
-        var parsesSingle = context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { ContainingType.SpecialType: SpecialType.System_Single }
+        var parsesSingle = method is { ContainingType.SpecialType: SpecialType.System_Single }
             || type is "float" or "Single" or "System.Single";
         string Parsed(string input) => parsesSingle ? $"Math.fround({parsMethod}({input}))" : $"{parsMethod}({input})";
 
         if (name == "Parse")
         {
             var input = context.Converter.ConvertExpression(args[0].Expression);
-            return Parsed(input);
+            return JsExpr.Callish(Parsed(input));
         }
-        
+
         if (name == "TryParse")
         {
             // int.TryParse(s, out var result)
             // Transform to IIFE: (() => { result = parseInt(s); return !isNaN(result); })()
-            // BUT: This updates a local variable 'result'. 
+            // BUT: This updates a local variable 'result'.
             // If the argument is `out var result` (DeclarationExpression), we need to handle scope.
             // If it's `out result` (IdentifierName), we assign to it.
-            
-            if (args.Count < 2) return "false";
-            
+
+            if (args.Count < 2) return JsExpr.Literal("false");
+
             var input = context.Converter.ConvertExpression(args[0].Expression);
             // The `out` is the LAST argument, not the second. `TryParse(s, out var n)` and
             // `TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var n)` are the same
@@ -70,31 +79,155 @@ public class NumberMethodStrategy : IConversionStrategy
             // emitting — `parseFloat` is already invariant and permissive — so they are dropped,
             // deliberately, and the value they carried is the one this comment owes you.
             var outArg = args[^1];
-            
-            string varName = "";
-            
-            if (outArg.Expression is DeclarationExpressionSyntax decl)
-            {
-                if (decl.Designation is SingleVariableDesignationSyntax single)
-                {
-                    varName = single.Identifier.Text;
-                }
-            }
-            else
-            {
-                varName = context.Converter.ConvertExpression(outArg.Expression);
-            }
-            
-            // Note: In strict JS logic, assignment relies on variable being available. 
+
+            // A discard receives nothing. Converted as a name, `_` read as a member of the
+            // component: `this._ = parseInt(…)` gave it a property nobody declared.
+            if (IsDiscard(outArg, context)) return JsExpr.Callish($"(!isNaN({Parsed(input)}))");
+
+            var varName = OutTarget(outArg, context);
+
+            // Note: In strict JS logic, assignment relies on variable being available.
             // If it's `out var x`, `x` is hoisted in C# scope. In JS `var` is hoisted too, but let isn't.
             // We'll trust LocalDeclarationStrategy or standard var usage handled elsewhere if verified.
             // For now, simpler: assume variable exists or is created.
-            
-            return $"({varName} = {Parsed(input)}, !isNaN({varName}))";
+
+            if (IsBareName(varName)) return JsExpr.Callish($"({varName} = {Parsed(input)}, !isNaN({varName}))");
+            // A target with an effect of its own (`out values[index++]`) is named once: the parsed
+            // value is bound, written, and checked through the binding.
+            return JsExpr.Template($"(({varName} = {{0}}), !isNaN({{0}}))", [JsExpr.Callish(Parsed(input))],
+                context.TypeAnnotations);
         }
 
-        return context.Unhandled(node, "numeric Parse/TryParse");
+        return JsExpr.Opaque(context.Unhandled(node, "numeric Parse/TryParse"));
     }
+
+    /// <summary>
+    /// <c>decimal.Parse</c> and <c>decimal.TryParse</c> (#358). The runtime reads the text with
+    /// .NET's grammar, under the NumberStyles the call names, and rounds as .NET's parser rounds,
+    /// so the value is a Decimal: <c>parseFloat</c> made a double, which lost <c>0.1</c> on the way
+    /// in and had none of the methods decimal arithmetic calls next. The style reaches the runtime
+    /// as the number a NumberStyles holds; the provider does not, since the twin reads the
+    /// invariant culture (EQ2110). The bound method says which argument fills which parameter, so a
+    /// named one lands in its own slot, and the template keeps them in the order C# evaluates them.
+    /// A TryParse that fails leaves 0 in its <c>out</c>, as .NET does.
+    /// </summary>
+    private static JsExpr DecimalText(InvocationExpressionSyntax invocation, string name, IMethodSymbol? method,
+        ConversionContext context)
+    {
+        var arguments = invocation.ArgumentList.Arguments;
+        int? text = null, style = null, result = null, provider = null;
+        if (method is not null)
+        {
+            // The text is a string or a span of chars; a span of UTF-8 bytes has no twin to read.
+            if (method.Parameters is not [{ Type: var first }, ..]
+                || !(first.SpecialType == SpecialType.System_String || IsSpanOfChar(first)))
+            {
+                return JsExpr.Opaque(context.Unhandled(invocation, "decimal Parse/TryParse over UTF-8 bytes"));
+            }
+            for (var i = 0; i < arguments.Count; i++)
+            {
+                var named = arguments[i].NameColon?.Name.Identifier.ValueText;
+                var parameter = named is null
+                    ? (i < method.Parameters.Length ? method.Parameters[i] : null)
+                    : method.Parameters.FirstOrDefault(p => p.Name == named);
+                if (parameter is null) return JsExpr.Opaque(context.Unhandled(invocation, "decimal Parse/TryParse"));
+                if (parameter.RefKind == RefKind.Out) result = i;
+                else if (parameter.Ordinal == 0) text = i;
+                else if (parameter.Type is { Name: "NumberStyles", ContainingNamespace: var home }
+                         && home.ToDisplayString() == "System.Globalization") style = i;
+                // The provider: the browser reads the invariant culture, so it is left out, and the
+                // culture it names decides whether that is faithful (see ParseCulture).
+                else provider = i;
+            }
+        }
+        else if (arguments.Count == (name == "TryParse" ? 2 : 1))
+        {
+            // No model bound the call: the text comes first and TryParse's out last.
+            text = 0;
+            if (name == "TryParse") result = 1;
+        }
+        else
+        {
+            // Anything between the text and the out is a style or a provider, and only the bound
+            // overload can tell which: a guess would parse under a style nobody wrote.
+            return JsExpr.Opaque(context.Unhandled(invocation, "decimal Parse/TryParse"));
+        }
+        if (text is not { } at || (name == "TryParse") != result.HasValue)
+            return JsExpr.Opaque(context.Unhandled(invocation, "decimal Parse/TryParse"));
+        ParseCulture.Check(invocation, provider is { } culture ? arguments[culture].Expression : null, context);
+
+        context.UsedHelpers.Add(Eq.Import);
+        // The parts in the order they were written; each hole names its part by that order.
+        var read = new[] { text, style }.OfType<int>().Order().ToList();
+        var parts = read.Select(i => context.Converter.ConvertIr(arguments[i].Expression)).ToArray();
+        string Hole(int argument) => "{" + read.IndexOf(argument) + "}";
+        var callArguments = style is { } styles ? $"{Hole(at)}, {Hole(styles)}" : Hole(at);
+
+        if (name == "Parse")
+            return JsExpr.Template($"{Eq.DecParse}({callArguments})", parts, context.TypeAnnotations);
+
+        var parsed = $"{Eq.DecTryParse}({callArguments})";
+        var outArgument = arguments[result!.Value];
+        if (IsDiscard(outArgument, context))
+            return JsExpr.Template($"({parsed} !== undefined)", parts, context.TypeAnnotations);
+        var target = OutTarget(outArgument, context);
+        if (IsBareName(target))
+            return JsExpr.Template(
+                $"(({target} = {parsed}) !== undefined || (({target} = {Eq.Dec}(0)), false))",
+                parts, context.TypeAnnotations);
+        // A target with an effect of its own (`out values[index++]`) is written by ONE branch, once
+        // the parsed value is bound, so its effect runs once, as C#'s out does: named in both halves
+        // of an `||`, a failed parse stepped `index` twice and left the zero in the next element.
+        // And its receiver and key are evaluated where the argument was WRITTEN, as C# evaluates
+        // every argument: a named argument can put the out first (`TryParse(result: out
+        // values[index++], s: S())`), and then `index` steps before S() runs.
+        var targetIr = context.Converter.ConvertIr(outArgument.Expression);
+        var (targetParts, place) = targetIr switch
+        {
+            JsIndex index => (new[] { index.Target, index.IndexExpression }, "{t0}[{t1}]"),
+            JsMember member => (new[] { member.Target }, "{t0}." + member.Name),
+            _ => (Array.Empty<JsExpr>(), JsExprWriter.Write(targetIr)),
+        };
+        var ordered = read.Select(i => (Argument: i, Sub: 0, Part: context.Converter.ConvertIr(arguments[i].Expression), Key: $"a{i}"))
+            .Concat(targetParts.Select((part, sub) => (Argument: result.Value, Sub: sub, Part: part, Key: $"t{sub}")))
+            .OrderBy(entry => entry.Argument).ThenBy(entry => entry.Sub).ToList();
+        string Numbered(string text) => ordered.Select((entry, position) => (entry.Key, position))
+            .Aggregate(text, (written, hole) => written.Replace("{" + hole.Key + "}", "{" + hole.position + "}"));
+        var call = style is { } read2 ? $"{Eq.DecTryParse}({{a{at}}}, {{a{read2}}})" : $"{Eq.DecTryParse}({{a{at}}})";
+        var value = context.TypeAnnotations ? "($r: any)" : "($r)";
+        return JsExpr.Template(
+            Numbered($"({value} => ($r !== undefined ? (({place} = $r), true) : (({place} = {Eq.Dec}(0)), false)))({call})"),
+            [.. ordered.Select(entry => entry.Part)], context.TypeAnnotations);
+    }
+
+    /// <summary>An <c>out</c> target a second mention cannot change: a bare name, which is a local
+    /// or a parameter here (the template writer's own rule: a plain name's second read cannot be
+    /// observed). An element or a member (<c>this.x</c>) may have an effect or an accessor of its
+    /// own, so it is named once.</summary>
+    private static bool IsBareName(string target) =>
+        System.Text.RegularExpressions.Regex.IsMatch(target, @"^[A-Za-z_$][A-Za-z0-9_$]*$");
+
+    private static bool IsSpanOfChar(ITypeSymbol type) =>
+        type is INamedTypeSymbol { Name: "ReadOnlySpan", TypeArguments: [{ SpecialType: SpecialType.System_Char }] };
+
+    /// <summary><c>out _</c>, <c>out var _</c> and <c>out T _</c>: a discard, which nothing reads.</summary>
+    private static bool IsDiscard(ArgumentSyntax argument, ConversionContext context) => argument.Expression switch
+    {
+        DeclarationExpressionSyntax { Designation: DiscardDesignationSyntax } => true,
+        IdentifierNameSyntax { Identifier.ValueText: "_" } discard =>
+            context.SemanticHelper.GetSymbol(discard) is null or IDiscardSymbol,
+        _ => false,
+    };
+
+    /// <summary>What an <c>out</c> argument assigns: the variable it declares (hoisted by
+    /// <see cref="OutParameters"/> under the same name), or the one it names.</summary>
+    private static string OutTarget(ArgumentSyntax argument, ConversionContext context) => argument.Expression switch
+    {
+        DeclarationExpressionSyntax { Designation: SingleVariableDesignationSyntax single } =>
+            single.Identifier.Text.ToJsIdentifier(),
+        DeclarationExpressionSyntax => "",
+        var expression => context.Converter.ConvertExpression(expression),
+    };
 
     public int Priority => 10;
 }

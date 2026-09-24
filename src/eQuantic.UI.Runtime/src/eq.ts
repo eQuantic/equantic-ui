@@ -1,4 +1,11 @@
-import { dec } from './utils/decimal';
+import {
+  dec,
+  decConvert,
+  decFromDouble,
+  decFromSingle,
+  decParse,
+  decTryParse,
+} from './utils/decimal';
 import { combineDelegate, removeDelegate } from './utils/delegates';
 import { hydrate } from './utils/hydrate';
 import { long } from './utils/long';
@@ -46,10 +53,10 @@ import {
   intRem,
   longDiv,
   longRem,
-  single,
   singleFromLong,
   substring,
 } from './utils/overflow';
+import { double, single } from './utils/real-text';
 import { format, parseEnum, stringFormat } from './utils/format';
 import { nextTextElementLength, textElementStarts } from './utils/text-elements';
 import { unicodeCategory } from './utils/unicode-category';
@@ -158,6 +165,11 @@ export const $eq = {
   /** Numeric compat: exact decimal and 64-bit integer. */
   num: {
     dec,
+    decParse,
+    decTryParse,
+    decFromDouble,
+    decFromSingle,
+    decConvert,
     long,
     checked,
     divRem,
@@ -167,6 +179,7 @@ export const $eq = {
     longDiv,
     longRem,
     single,
+    double,
     singleFromLong,
   },
   /** Math with .NET semantics: banker's rounding, the *Pi family (exact at special angles),

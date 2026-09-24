@@ -12,7 +12,6 @@ CollectionMaterializationStrategy
 ConditionalAccessStrategy
 ConsoleStrategy
 ContainsStrategy
-ConvertStrategy
 CountStrategy
 DateOnlyTimeOnlyStrategy
 DateTimeOffsetStrategy
@@ -47,7 +46,6 @@ MinMaxStrategy
 NameofStrategy
 NamespaceRemovalStrategy
 NullableStrategy
-NumberMethodStrategy
 NumericConstantStrategy
 ObjectCreationStrategy
 OfTypeStrategy

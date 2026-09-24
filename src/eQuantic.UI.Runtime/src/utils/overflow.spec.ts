@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { checked, intDiv, intRem, longDiv, longRem, single } from './overflow';
+import { checked, intDiv, intRem, longDiv, longRem } from './overflow';
+import { single } from './real-text';
 
 describe('checked arithmetic', () => {
   it('hands a value in range back, and throws past the edge', () => {

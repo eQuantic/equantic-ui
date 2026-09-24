@@ -581,6 +581,18 @@ record of a release, the wiki's Upgrading page is the distillate.
   answered 2^63 for `long.MinValue / -1` ([#333](https://github.com/eQuantic/equantic-ui/issues/333)).
   A divisor that can be zero, or -1 beside `MinValue`, goes through the runtime's check, the compound
   and lifted forms included; a constant divisor other than 0 and -1 keeps the bare operator.
+- **2026-09-23 · A number reads and writes as .NET's**: a double and a float wrote their text through
+  JavaScript's `String()`, which keeps fixed notation up to 1e21, spells `1e+21` and drops the sign
+  of -0, where .NET writes `1E+17` and `-0` ([#336](https://github.com/eQuantic/equantic-ui/issues/336));
+  and a decimal read from text or from `Convert` was a JavaScript number, `parseFloat`'s, with none
+  of the methods decimal arithmetic calls next ([#358](https://github.com/eQuantic/equantic-ui/issues/358)).
+  The runtime now writes .NET's notation from the shortest digits, reads a number's text by .NET's
+  own grammar under the `NumberStyles` a call names, rounds it into a decimal as .NET's parser does,
+  and converts a double or a float by the steps of .NET's `DecCalc`; the runtime spec is generated
+  from what .NET printed, and the conformance suites run every form on both sides. Reading a number
+  says which culture it reads in, as formatting already did: `CultureInfo.InvariantCulture`,
+  recognised by the property a provider binds to and not by its name, crosses exactly; no provider
+  is EQ2110, and any other is EQ2108, since the browser has no parser for another culture's text.
 
 - **2026-09-24 · The code editor is a component**: slice 1c of
   [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#375](https://github.com/eQuantic/equantic-ui/pull/375)).
