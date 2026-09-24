@@ -88,11 +88,11 @@ public sealed class CodeBlock : StatelessComponent
 
     /// <summary>
     /// How many cells the widest line takes, when whoever composes the block keeps it across builds
-    /// (an editor does: <c>CodeEditorController.WidestLine</c>, measured once per document). 0, the
+    /// (an editor does: <c>CodeEditorController.WidestLine</c>, kept beside the document). Null, the
     /// default, has the block measure every line of the document, which a snippet can afford and a
-    /// long file scrolled a step at a time cannot.
+    /// long file scrolled a step at a time cannot. 0 is a width like any other: a file of empty lines.
     /// </summary>
-    public int WidestLine { get; init; }
+    public int? WidestLine { get; init; }
 
     /// <summary>How much of the selection's ink shows — the band sits under the text, so it only has
     /// to be seen, never read through.</summary>
@@ -210,8 +210,9 @@ public sealed class CodeBlock : StatelessComponent
         //
         // Measured from the widest line in the FILE rather than the widest one on screen: the width
         // must not change as the window scrolls, or the content would breathe under the reader.
-        var widest = WidestLine;
-        if (widest <= 0)
+        var widest = 0;
+        if (WidestLine is { } known) widest = known;
+        else
         {
             for (var index = 0; index < Document.LineCount; index++)
                 widest = Math.Max(widest, CodeLineCells.WidthOf(Document.Line(index), TabSize));
