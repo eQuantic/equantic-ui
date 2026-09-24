@@ -170,9 +170,10 @@ public class StringStaticStrategy : IConversionStrategy
         // argument in the order it was WRITTEN, which is the order C# evaluates them. A named
         // argument makes the two differ: `format: t, arg1: b, arg0: a` passes a, then b, and
         // evaluates t, b, a.
-        var values = new List<(int Slot, ExpressionSyntax Value)>();
+        // A value can be a SPREAD, `..xs` in a collection expression, or the params array passed
+        // whole, whose elements the call receives.
+        var values = new List<(int Slot, ExpressionSyntax Value, bool Spread)>();
         var written = new List<ExpressionSyntax>();
-        var spread = false;
         if (context.SemanticHelper.GetSymbol(node) is IMethodSymbol { Parameters.Length: > 0 } method)
         {
             var last = method.Parameters[^1];
@@ -190,25 +191,30 @@ public class StringStaticStrategy : IConversionStrategy
                 }
                 written.Add(args[i].Expression);
                 if (parameter.Name == "format") template = args[i].Expression;
-                else values.Add((parameter.Ordinal, args[i].Expression));
+                else values.Add((parameter.Ordinal, args[i].Expression, false));
             }
             // A params array passed as the array itself: its elements are the values. The bound call
             // says which form C# chose, so a covariant `string[]` and a collection expression are
             // the array too, where comparing the argument's type with the parameter's saw only an
             // exact `object[]` and formatted the others as one value.
-            spread = context.SemanticHelper.GetOperation(node) is IInvocationOperation invocation
+            var whole = context.SemanticHelper.GetOperation(node) is IInvocationOperation invocation
                 && invocation.Arguments.Any(argument =>
                     argument.Parameter is { IsParams: true } && argument.ArgumentKind == ArgumentKind.Explicit);
             // An array WRITTEN IN PLACE is its elements: they are the values, each boxed as C#
-            // boxes it into the array, so a float in `new object[] { 0.1f }` keeps its own digits.
-            // They take the array's place in the written order, where the array ran them.
-            if (spread && ElementsOf(values[0].Value) is { } elements)
+            // boxes it into the array, so a float in `new object[] { 0.1f }` keeps its own digits,
+            // and a collection's spread element stays a spread. They take the array's place in the
+            // written order, where the array ran them. Any other array is spread as it is.
+            if (whole && ElementsOf(values[0].Value) is { } elements)
             {
                 var at = written.IndexOf(values[0].Value);
                 written.RemoveAt(at);
-                written.InsertRange(at, elements);
-                values = elements.Select(element => (values[0].Slot, element)).ToList();
-                spread = false;
+                written.InsertRange(at, elements.Select(element => element.Value));
+                var slot = values[0].Slot;
+                values = elements.Select(element => (slot, element.Value, element.Spread)).ToList();
+            }
+            else if (whole)
+            {
+                values[0] = values[0] with { Spread = true };
             }
             if (template is null || context.SemanticHelper.GetType(template) is not { SpecialType: SpecialType.System_String })
                 return context.Unhandled(node, "string.Format over a CompositeFormat");
@@ -237,7 +243,7 @@ public class StringStaticStrategy : IConversionStrategy
             }
             template = args[skip].Expression;
             written.AddRange(args.Skip(skip).Select(argument => argument.Expression));
-            values.AddRange(args.Skip(skip + 1).Select((argument, slot) => (slot, argument.Expression)));
+            values.AddRange(args.Skip(skip + 1).Select((argument, slot) => (slot, argument.Expression, false)));
         }
 
         var function = Eq.StringFormat;
@@ -259,26 +265,31 @@ public class StringStaticStrategy : IConversionStrategy
         if (context.SemanticHelper.GetSymbol(template) is IPropertySymbol templateProperty
             && Services.ResourceClasses.IsResourceAccessor(templateProperty))
         {
-            ValidateResourceTemplate(node, spread ? int.MaxValue : values.Count, templateProperty, context);
+            ValidateResourceTemplate(node, values.Any(value => value.Spread) ? int.MaxValue : values.Count, templateProperty, context);
         }
 
         // Route to the runtime helper, which substitutes {i}/{i,width}/{i:spec} (the spec through the
         // same formatter the interpolation path uses, so `{0:F2}` works) and unescapes {{/}}.
         context.UsedHelpers.Add(Eq.Import);
-        var passed = values.OrderBy(value => value.Slot).Select(value => value.Value).ToList();
-        string Passed(ExpressionSyntax value, string text) =>
-            spread ? $"...{text}"
-            : Boxed(value, context).UnwrapNullable() is { SpecialType: SpecialType.System_Single }
-                ? $"{Eq.AsSingle}({text})"
-                : text;
+        var passed = values.OrderBy(value => value.Slot).ToList();
+        // A float is boxed with its kind wherever its static type is float: an argument, an element
+        // written in place, and each element of a spread collection of floats.
+        string Passed((int Slot, ExpressionSyntax Value, bool Spread) value, string text) =>
+            value.Spread
+                ? ElementTypeOf(context.SemanticHelper.GetType(value.Value)) is { SpecialType: SpecialType.System_Single }
+                    ? $"...Array.from({text}, {Eq.AsSingle})"
+                    : $"...{text}"
+                : Boxed(value.Value, context).UnwrapNullable() is { SpecialType: SpecialType.System_Single }
+                    ? $"{Eq.AsSingle}({text})"
+                    : text;
 
         // In the written order, the call is text as it always was. Out of it, the parts are the
         // arguments in the order C# evaluates them and the call names them where it passes them:
         // the template writer binds every part that could be observed, so each runs where C# runs it.
-        var passedOrder = passed.Prepend(template).ToList();
+        var passedOrder = passed.Select(value => value.Value).Prepend(template).ToList();
         if (passedOrder.SequenceEqual(written))
         {
-            var rest = passed.Select(value => Passed(value, context.Converter.ConvertExpression(value))).ToList();
+            var rest = passed.Select(value => Passed(value, context.Converter.ConvertExpression(value.Value))).ToList();
             var fmt = context.Converter.ConvertExpression(template);
             return rest.Count > 0 ? $"{function}({fmt}, {string.Join(", ", rest)})" : $"{function}({fmt})";
         }
@@ -286,7 +297,7 @@ public class StringStaticStrategy : IConversionStrategy
             return context.Unhandled(node, "string.Format whose named arguments reorder more than ten values");
         var parts = written.Select(argument => context.Converter.ConvertIr(argument)).ToList();
         string Hole(ExpressionSyntax argument) => "{" + written.IndexOf(argument) + "}";
-        var holes = passed.Select(value => Passed(value, Hole(value)));
+        var holes = passed.Select(value => Passed(value, Hole(value.Value)));
         var call = $"{function}({string.Join(", ", holes.Prepend(Hole(template)))})";
         return JsExprWriter.Write(JsExpr.Template(call, parts, context.TypeAnnotations));
     }
@@ -320,15 +331,30 @@ public class StringStaticStrategy : IConversionStrategy
     /// <summary>The values an array passed as the params array holds when it is written in place:
     /// they are the call's values, as a list of arguments would be, and a resx template's arity is
     /// held against them. Null where only the running program knows, a spread element included.</summary>
-    private static IReadOnlyList<ExpressionSyntax>? ElementsOf(ExpressionSyntax array) => array switch
+    private static IReadOnlyList<(ExpressionSyntax Value, bool Spread)>? ElementsOf(ExpressionSyntax array) => array switch
     {
         // Parentheses and a cast name the same array: `(new object[] { 0.1f })` is still written in place.
         ParenthesizedExpressionSyntax parenthesized => ElementsOf(parenthesized.Expression),
         CastExpressionSyntax cast => ElementsOf(cast.Expression),
-        ArrayCreationExpressionSyntax { Initializer: { } initializer } => initializer.Expressions,
-        ImplicitArrayCreationExpressionSyntax { Initializer: var initializer } => initializer.Expressions,
-        CollectionExpressionSyntax collection when collection.Elements.All(element => element is ExpressionElementSyntax) =>
-            collection.Elements.Cast<ExpressionElementSyntax>().Select(element => element.Expression).ToList(),
+        ArrayCreationExpressionSyntax { Initializer: { } initializer } => initializer.Expressions.Select(element => (element, false)).ToList(),
+        ImplicitArrayCreationExpressionSyntax { Initializer: var initializer } => initializer.Expressions.Select(element => (element, false)).ToList(),
+        CollectionExpressionSyntax collection when collection.Elements.All(element => element is ExpressionElementSyntax or SpreadElementSyntax) =>
+            collection.Elements.Select(element => element switch
+            {
+                SpreadElementSyntax spread => (spread.Expression, true),
+                _ => (((ExpressionElementSyntax)element).Expression, false),
+            }).ToList(),
+        _ => null,
+    };
+
+    /// <summary>The element type of a collection, for a spread: an array's, or the T of the
+    /// <c>IEnumerable&lt;T&gt;</c> it implements; null where there is none.</summary>
+    private static ITypeSymbol? ElementTypeOf(ITypeSymbol? collection) => collection switch
+    {
+        IArrayTypeSymbol array => array.ElementType,
+        INamedTypeSymbol named => named.AllInterfaces.Append(named)
+            .FirstOrDefault(type => type.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_IEnumerable_T)
+            ?.TypeArguments[0],
         _ => null,
     };
 
