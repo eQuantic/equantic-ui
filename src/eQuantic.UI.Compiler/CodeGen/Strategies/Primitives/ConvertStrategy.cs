@@ -6,8 +6,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 
 /// <summary>
 /// Strategy for System.Convert.ToXxx conversions, argument-type aware where it matters.
-/// <c>ToDecimal</c> is .NET's, by the type it converts (see <see cref="ToDecimal"/>). The rest cover
-/// the common faithful cases; semantics that need .NET-exact behavior (banker's rounding for
+/// <c>ToDecimal</c> is .NET's, by the type it converts (see <see cref="ToDecimal"/>), and text into
+/// any other numeric type reads as that type's Parse does (see <see cref="TextReader"/>). The rest
+/// cover the common faithful cases; semantics that need .NET-exact behavior (banker's rounding for
 /// numeric→integer, Int64 precision) are best-effort here and will move to the eq compat helper
 /// (see DOTNET-COVERAGE-PROGRAM.md).
 /// </summary>
@@ -53,8 +54,39 @@ public class ConvertStrategy : IExpressionIrStrategy
                 ParseCulture.Check(invocation, providerExpr, context);
             return ToDecimal(argExpr, context);
         }
+        if (context.SemanticHelper.GetType(argExpr)?.SpecialType == SpecialType.System_String
+            && TextReader(name) is { } text)
+        {
+            // Text is read in a culture, and the browser reads the invariant one (see ParseCulture).
+            ParseCulture.Check(invocation, providerExpr, context);
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Template($"{text.Reader}({{0}}, '{text.Tag}')", [context.Converter.ConvertIr(argExpr)],
+                context.TypeAnnotations);
+        }
         return JsExpr.Opaque(Converted(name, argExpr, context));
     }
+
+    /// <summary>
+    /// The runtime's reader for text converted to an integer or a binary floating-point type, and
+    /// the tag that names the type to it, or null for a conversion that is not one of those.
+    /// <c>Convert.ToInt32(string)</c> is <c>int.Parse</c> over the text, except that a null text is
+    /// 0, and so on for every width: <c>parseInt</c> read "12abc" as 12 and a long's text into a
+    /// number, where every other long on this side is a BigInt (#376).
+    /// </summary>
+    private static (string Reader, string Tag)? TextReader(string name) => name switch
+    {
+        "ToByte" => (Eq.IntConvert, "byte"),
+        "ToSByte" => (Eq.IntConvert, "sbyte"),
+        "ToInt16" => (Eq.IntConvert, "short"),
+        "ToUInt16" => (Eq.IntConvert, "ushort"),
+        "ToInt32" => (Eq.IntConvert, "int"),
+        "ToUInt32" => (Eq.IntConvert, "uint"),
+        "ToInt64" => (Eq.IntConvert, "long"),
+        "ToUInt64" => (Eq.IntConvert, "ulong"),
+        "ToDouble" => (Eq.RealConvert, "double"),
+        "ToSingle" => (Eq.RealConvert, "single"),
+        _ => null,
+    };
 
     /// <summary>
     /// The template for an overload that reads or writes an integer in a base, or null. Reading is
@@ -182,10 +214,11 @@ public class ConvertStrategy : IExpressionIrStrategy
         var argType = context.SemanticHelper.GetType(argExpr);
         var isStringArg = argType?.SpecialType == SpecialType.System_String;
 
-        // Numeric → integer uses .NET banker's rounding via the $eq.math.round compat helper.
+        // Numeric → integer uses .NET banker's rounding via the $eq.math.round compat helper. Text
+        // never gets here: it reads as the type's Parse does (TextReader).
         bool isIntegerTarget = name is "ToInt32" or "ToInt16" or "ToByte" or "ToSByte"
             or "ToUInt32" or "ToUInt16" or "ToInt64" or "ToUInt64";
-        if (isIntegerTarget && !isStringArg)
+        if (isIntegerTarget)
         {
             context.UsedHelpers.Add(Eq.Import);
             return $"{Eq.Round}({value})";
@@ -202,11 +235,10 @@ public class ConvertStrategy : IExpressionIrStrategy
         return name switch
         {
             "ToString" => $"String({value})",
-            "ToInt32" or "ToInt16" or "ToByte" or "ToSByte" or "ToUInt32" or "ToUInt16" or "ToInt64" or "ToUInt64"
-                => $"parseInt({value}, 10)", // string arg
-            // A single, as every float this side produces (SinglePrecision).
-            "ToSingle" => isStringArg ? $"Math.fround(parseFloat({value}))" : $"Math.fround(Number({value}))",
-            "ToDouble" => isStringArg ? $"parseFloat({value})" : $"Number({value})",
+            // A single, as every float this side produces (SinglePrecision). Text never gets here:
+            // it reads as float.Parse and double.Parse do (TextReader).
+            "ToSingle" => $"Math.fround(Number({value}))",
+            "ToDouble" => $"Number({value})",
             "ToBoolean" => isStringArg
                 ? $"(String({value}).trim().toLowerCase() === 'true')"
                 : $"(({value}) !== 0)",

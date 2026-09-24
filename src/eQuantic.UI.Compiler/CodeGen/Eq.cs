@@ -37,6 +37,22 @@ public static class Eq
     /// <summary><c>Convert.ToDecimal</c> of a value whose type the call site cannot settle: null
     /// is 0, a string parses, a number is the double (or the single) the site names.</summary>
     public const string DecConvert = "$eq.num.decConvert";
+    /// <summary>An integer type's <c>Parse</c>: the text read by .NET's grammar under the call's
+    /// NumberStyles or <c>Integer</c>, held as the type named by its tag holds it, or .NET's
+    /// exception. Three args: the text, the type's tag (<c>'int'</c>, <c>'ulong'</c>…), the style.</summary>
+    public const string IntParse = "$eq.num.intParse";
+    /// <summary>An integer type's <c>TryParse</c>: the value, or undefined where Parse throws for the text.</summary>
+    public const string IntTryParse = "$eq.num.intTryParse";
+    /// <summary><c>Convert.ToInt32(string)</c> and its siblings: a null text is 0, any other reads as Parse does.</summary>
+    public const string IntConvert = "$eq.num.intConvert";
+    /// <summary><c>double.Parse</c> and <c>float.Parse</c>: the text read by .NET's grammar under
+    /// the call's NumberStyles or <c>Float | AllowThousands</c>, a float rounded once from the
+    /// digits, or .NET's exception. Three args: the text, <c>'double'</c> or <c>'single'</c>, the style.</summary>
+    public const string RealParse = "$eq.num.realParse";
+    /// <summary><c>double.TryParse</c> and <c>float.TryParse</c>: the value, or undefined where Parse throws for the text.</summary>
+    public const string RealTryParse = "$eq.num.realTryParse";
+    /// <summary><c>Convert.ToDouble(string)</c> and <c>Convert.ToSingle(string)</c>: a null text is 0, any other reads as Parse does.</summary>
+    public const string RealConvert = "$eq.num.realConvert";
     public const string Long = "$eq.num.long";
     /// <summary>The typed boundary: a server value (SSR state, a Server Action result) coerced
     /// ONCE to its runtime type, by the spec the compiler computed from the C# type.</summary>
