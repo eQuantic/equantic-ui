@@ -79,9 +79,8 @@ public class ElementAccessStrategy : IExpressionIrStrategy
             AssignmentExpressionSyntax assignment =>
                 assignment.Left == node && assignment.IsKind(SyntaxKind.SimpleAssignmentExpression),
             // ++ and -- also read first, and .NET throws for a key that is not there — but the
-            // guarded read cannot BE the target (`$eq.dictGet(…)++` does not parse) and the
-            // postfix form's value is the OLD one, so lowering it needs more than a template.
-            // Left as a plain `m[k]++` and recorded in the conversion gaps.
+            // guarded read cannot BE the target (`$eq.dictGet(…)++` does not parse), so the target
+            // stays plain and the unary strategy reads it through the guard (ReadModifyWrite).
             PrefixUnaryExpressionSyntax prefix =>
                 prefix.IsKind(SyntaxKind.PreIncrementExpression) || prefix.IsKind(SyntaxKind.PreDecrementExpression),
             PostfixUnaryExpressionSyntax postfix =>

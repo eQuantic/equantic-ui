@@ -185,6 +185,11 @@ public static class ValueFlow
     private static JsExpr Numeric(ITypeSymbol? from, ITypeSymbol? to, JsExpr translated, object? constant,
         bool isChecked, ConversionContext context)
     {
+        // An IDENTITY needs nothing: a T flowing into a T? is the same value. Through the table
+        // below a decimal went through its double and back, keeping 15 digits (`decimal? m =
+        // 1234567890.123456789012m` was 1234567890.12346), and a char through its code unit.
+        if (from is not null && SymbolEqualityComparer.Default.Equals(from, to)) return translated;
+
         var value = translated;
         var fromSpecial = from?.SpecialType ?? SpecialType.None;
 

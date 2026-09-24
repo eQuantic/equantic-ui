@@ -20,6 +20,15 @@ export function liftArith<L, R, O>(
   return l == null || r == null ? null : fn(l, r);
 }
 
+/**
+ * Lifted unary operator (`++`, `--`, `-`, `~`, `+` on a `T?`): `null` if the operand is
+ * null/undefined, otherwise `fn(v)`. JavaScript's own operators read null as 0: `-null` is -0,
+ * `~null` is -1 and `null + 1` is 1, where C# answers null.
+ */
+export function liftUnary<T, O>(v: T | null | undefined, fn: (a: T) => O): O | null {
+  return v == null ? null : fn(v);
+}
+
 /** Lifted relational comparison: `false` if either operand is null/undefined, otherwise `pred(l, r)`. */
 export function liftCmp<L, R>(
   l: L | null | undefined,
