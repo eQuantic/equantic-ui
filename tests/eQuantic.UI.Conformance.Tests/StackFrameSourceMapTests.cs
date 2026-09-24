@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using eQuantic.UI.Compiler;
@@ -77,6 +76,39 @@ public class StackFrameSourceMapTests
         }
         """;
 
+    /// <summary>Frames on lines no C# statement writes by itself: a <c>do</c>'s condition, on the
+    /// loop's last line, and an expression-bodied getter's return, which the emitter built as text.
+    /// The getter's sum keeps the call out of tail position, as above.</summary>
+    private const string LoweredSource = """
+        using System;
+
+        namespace Demo;
+
+        public class Countdown
+        {
+            public int Size => Count(3) + 1;
+
+            public int Count(int n)
+            {
+                do
+                {
+                    n--;
+                }
+                while (Check(n));
+                return n;
+            }
+
+            public bool Check(int n)
+            {
+                if (n < 2)
+                {
+                    throw new InvalidOperationException("low");
+                }
+                return true;
+            }
+        }
+        """;
+
     /// <summary>The 1-based line of the first line of <paramref name="source"/> that contains <paramref name="text"/>.</summary>
     private static int LineOf(string source, string text) =>
         source.Split('\n').Select((line, index) => (line, index)).First(pair => pair.line.Contains(text)).index + 1;
@@ -97,6 +129,16 @@ public class StackFrameSourceMapTests
         var (stack, frames, map) = Throw(ComponentSource, "Boom", "new Boom().twice(1)");
         Resolve(map, frames[0]).Should().Be(("Boom.cs", LineOf(ComponentSource, "throw new InvalidOperationException")), $"the top frame is the throw:\n{stack}");
         Resolve(map, frames[1]).Should().Be(("Boom.cs", LineOf(ComponentSource, "var text = Describe(count);")), $"the next frame is the call:\n{stack}");
+    }
+
+    [SkippableFact]
+    public void AFrameOnALineNoStatementWritesByItself_LeadsToTheCSharpThatProducedIt()
+    {
+        var (stack, frames, map) = Throw(LoweredSource, "Countdown", "new Countdown().size");
+        frames.Should().HaveCountGreaterThanOrEqualTo(3, $"the throw, the loop and the getter:\n{stack}");
+        Resolve(map, frames[0]).Should().Be(("Countdown.cs", LineOf(LoweredSource, "throw new InvalidOperationException")), $"the top frame is the throw:\n{stack}");
+        Resolve(map, frames[1]).Should().Be(("Countdown.cs", LineOf(LoweredSource, "while (Check(n));")), $"the loop's condition called it:\n{stack}");
+        Resolve(map, frames[2]).Should().Be(("Countdown.cs", LineOf(LoweredSource, "public int Size => Count(3) + 1;")), $"the getter called the loop:\n{stack}");
     }
 
     /// <summary>
@@ -136,7 +178,8 @@ public class StackFrameSourceMapTests
             File.WriteAllText(harness,
                 $"import {{ {module} }} from './out/{module}.js';\n" +
                 $"try {{ {call}; console.log('no throw'); }} catch (e) {{ console.log(e.stack); }}\n");
-            var stack = Run(bun, harness, dir);
+            var (_, stdout, stderr) = JsExecutor.RunProcess(bun, ["run", harness], 30000);
+            var stack = stdout + stderr;
 
             var frames = Regex.Matches(stack, $@"{module}\.js:(\d+):(\d+)")
                 .Select(m => (Line: int.Parse(m.Groups[1].Value), Column: int.Parse(m.Groups[2].Value))).ToList();
@@ -166,25 +209,6 @@ public class StackFrameSourceMapTests
         Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
         result.SourceMap.Should().NotBeNullOrEmpty();
         return result;
-    }
-
-    private static string Run(string bun, string script, string workingDirectory)
-    {
-        var start = new ProcessStartInfo(bun)
-        {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            WorkingDirectory = workingDirectory,
-        };
-        start.ArgumentList.Add("run");
-        start.ArgumentList.Add(script);
-        using var process = Process.Start(start)!;
-        var output = process.StandardOutput.ReadToEndAsync();
-        var error = process.StandardError.ReadToEndAsync();
-        process.WaitForExit(30000).Should().BeTrue("the harness finishes");
-        return output.Result + error.Result;
     }
 
     /// <summary>

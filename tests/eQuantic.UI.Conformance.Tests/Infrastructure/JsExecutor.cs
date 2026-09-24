@@ -182,7 +182,10 @@ public static class JsExecutor
         }
     }
 
-    private static (int exitCode, string stdout, string stderr) RunProcess(string fileName, string[] args, int timeoutMs)
+    /// <summary>Runs a process to its end and answers what it wrote. One that outlives
+    /// <paramref name="timeoutMs"/> is killed with every process it started, rather than left
+    /// running past the test that started it.</summary>
+    internal static (int exitCode, string stdout, string stderr) RunProcess(string fileName, string[] args, int timeoutMs)
     {
         var psi = new ProcessStartInfo(fileName)
         {
