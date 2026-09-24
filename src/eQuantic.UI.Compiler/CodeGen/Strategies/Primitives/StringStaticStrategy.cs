@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
@@ -181,9 +182,13 @@ public class StringStaticStrategy : IConversionStrategy
                 else if (parameter.Name == "format") template = args[i].Expression;
                 else values.Add(args[i].Expression);
             }
-            // A params array passed as the array itself: its elements are the values.
-            spread = last.IsParams && values.Count == 1
-                && SymbolEqualityComparer.Default.Equals(context.SemanticHelper.GetType(values[0]), last.Type);
+            // A params array passed as the array itself: its elements are the values. The bound call
+            // says which form C# chose, so a covariant `string[]` and a collection expression are
+            // the array too, where comparing the argument's type with the parameter's saw only an
+            // exact `object[]` and formatted the others as one value.
+            spread = context.SemanticHelper.GetOperation(node) is IInvocationOperation invocation
+                && invocation.Arguments.Any(argument =>
+                    argument.Parameter is { IsParams: true } && argument.ArgumentKind == ArgumentKind.Explicit);
             if (template is null || context.SemanticHelper.GetType(template) is not { SpecialType: SpecialType.System_String })
                 return context.Unhandled(node, "string.Format over a CompositeFormat");
         }
@@ -212,7 +217,7 @@ public class StringStaticStrategy : IConversionStrategy
         if (context.SemanticHelper.GetSymbol(template) is IPropertySymbol templateProperty
             && Services.ResourceClasses.IsResourceAccessor(templateProperty))
         {
-            ValidateResourceTemplate(node, spread ? int.MaxValue : values.Count, templateProperty, context);
+            ValidateResourceTemplate(node, spread ? KnownLength(values[0]) ?? int.MaxValue : values.Count, templateProperty, context);
         }
 
         // Route to the runtime helper, which substitutes {i}/{i,width}/{i:spec} (the spec through the
@@ -229,6 +234,18 @@ public class StringStaticStrategy : IConversionStrategy
         }).ToList();
         return rest.Count > 0 ? $"{function}({fmt}, {string.Join(", ", rest)})" : $"{function}({fmt})";
     }
+
+    /// <summary>The number of values an array passed as the params array holds when it is written in
+    /// place, so a resx template's arity is held against it as against a list of arguments; null
+    /// where only the running program knows.</summary>
+    private static int? KnownLength(ExpressionSyntax array) => array switch
+    {
+        ArrayCreationExpressionSyntax { Initializer: { } initializer } => initializer.Expressions.Count,
+        ImplicitArrayCreationExpressionSyntax { Initializer: var initializer } => initializer.Expressions.Count,
+        CollectionExpressionSyntax collection when collection.Elements.All(element => element is ExpressionElementSyntax) =>
+            collection.Elements.Count,
+        _ => null,
+    };
 
     private static void ValidateResourceTemplate(
         InvocationExpressionSyntax node,
