@@ -48,7 +48,7 @@ public class CellWidthOracleTests
     [SkippableFact]
     public void EveryCharacterIsAsWideAsTheOracleSays_OnBothSides()
     {
-        Skip.IfNot(JsExecutor.EngineName == "bun", "The oracle is Bun.stringWidth, and the engine here is not Bun.");
+        JsExecutor.RequireBun();   // the oracle is Bun.stringWidth
         var runtime = ConformanceRunner.RuntimeJsUrl() ?? throw new InvalidOperationException("No served runtime.js.");
 
         var lines = JsExecutor.Run(EveryCharacter(runtime), timeoutMs: 180_000).Split('\n');
@@ -98,7 +98,7 @@ public class CellWidthOracleTests
     [SkippableFact]
     public void AMarkThatBeginsAnElementTakesTheCellsItsKindSays_OnBothSides()
     {
-        Skip.IfNot(JsExecutor.EngineName == "bun", "The web side runs in the embedded Bun.");
+        JsExecutor.RequireBun();   // the web side runs in the embedded Bun
         var runtime = ConformanceRunner.RuntimeJsUrl() ?? throw new InvalidOperationException("No served runtime.js.");
 
         var lines = JsExecutor.Run(EveryMark(runtime), timeoutMs: 180_000).Split('\n');
@@ -143,7 +143,7 @@ public class CellWidthOracleTests
     [InlineData("x\u200By")]                                                               // a zero-width space
     public void AClusterIsAsWideAsTheOracleSays_OnBothSides(string text)
     {
-        Skip.IfNot(JsExecutor.EngineName == "bun", "The oracle is Bun.stringWidth, and the engine here is not Bun.");
+        JsExecutor.RequireBun();   // the oracle is Bun.stringWidth
         var runtime = ConformanceRunner.RuntimeJsUrl() ?? throw new InvalidOperationException("No served runtime.js.");
         var literal = JsonSerializer.Serialize(text);
 

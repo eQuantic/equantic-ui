@@ -2,7 +2,10 @@ import { $eq, CodeDocument, CodeEdit, CodePosition, CodeRange } from "../runtime
 
 export class CodeHistory {
     constructor(props?: any) {
-        this._past = []; this._future = []; this._runEnd = new CodePosition(-1, -1);  if (props && typeof props === 'object') Object.assign(this, props);
+        this._past = [];
+        this._future = [];
+        this._runEnd = new CodePosition(-1, -1);
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     _past: CodeEdit[];
