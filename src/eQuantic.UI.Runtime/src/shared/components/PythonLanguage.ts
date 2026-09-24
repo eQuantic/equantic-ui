@@ -30,7 +30,7 @@ export class PythonLanguage {
         return 'Python';
     }
 
-    rules: CodeLanguageRules = new CodeLanguageRules('#', null, [['(', ')'], ['[', ']'], ['{', '}']], ['"', '\''], [':', '(', '[', '{'], [')', ']', '}'], 4);
+    rules: CodeLanguageRules = new CodeLanguageRules('#', undefined, undefined, undefined, [':', '(', '[', '{'], [')', ']', '}'], 4);
 
     tokenize(line: string, state: number, into: CodeToken[]) {
         let i = 0;
