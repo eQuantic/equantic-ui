@@ -619,6 +619,16 @@ record of a release, the wiki's Upgrading page is the distillate.
   is missing now throws as .NET does, through the guard compound assignments read with, which closes
   three of the conversion gaps. A decimal remainder is exact and stays a decimal: the runtime's
   Decimal had none, so `%` computed in doubles (`0.3m % 0.1m` was `0.09999999999999998`).
+- **2026-09-24 · A value is written as .NET writes it, through the formatter too**: a bool's
+  `ToString()` was JavaScript's `false` ([#381](https://github.com/eQuantic/equantic-ui/issues/381));
+  `string.Format` took a format provider for its template, which threw `CultureInfo is not defined`
+  in the browser ([#377](https://github.com/eQuantic/equantic-ui/issues/377)); and a float that
+  reached the formatter printed the double underneath, since a number cannot say it is a single
+  ([#378](https://github.com/eQuantic/equantic-ui/issues/378)). `ToString()` on a bool takes the
+  concatenation's conversion; `string.Format` binds its arguments by the method and follows the
+  formatting culture policy; the compiler tells the formatter a float's kind where it knows it, and
+  boxes a float passed to `string.Format` with it. `G`, `R` and a placeholder with no specifier write
+  .NET's notation, and a placeholder aligns.
 
 - **2026-09-24 · The code editor is a component**: slice 1c of
   [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#375](https://github.com/eQuantic/equantic-ui/pull/375)).
