@@ -178,9 +178,26 @@ public class NumberMethodStrategy : IExpressionIrStrategy
         // A target with an effect of its own (`out values[index++]`) is written by ONE branch, once
         // the parsed value is bound, so its effect runs once, as C#'s out does: named in both halves
         // of an `||`, a failed parse stepped `index` twice and left the zero in the next element.
+        // And its receiver and key are evaluated where the argument was WRITTEN, as C# evaluates
+        // every argument: a named argument can put the out first (`TryParse(result: out
+        // values[index++], s: S())`), and then `index` steps before S() runs.
+        var targetIr = context.Converter.ConvertIr(outArgument.Expression);
+        var (targetParts, place) = targetIr switch
+        {
+            JsIndex index => (new[] { index.Target, index.IndexExpression }, "{t0}[{t1}]"),
+            JsMember member => (new[] { member.Target }, "{t0}." + member.Name),
+            _ => (Array.Empty<JsExpr>(), JsExprWriter.Write(targetIr)),
+        };
+        var ordered = read.Select(i => (Argument: i, Sub: 0, Part: context.Converter.ConvertIr(arguments[i].Expression), Key: $"a{i}"))
+            .Concat(targetParts.Select((part, sub) => (Argument: result.Value, Sub: sub, Part: part, Key: $"t{sub}")))
+            .OrderBy(entry => entry.Argument).ThenBy(entry => entry.Sub).ToList();
+        string Numbered(string text) => ordered.Select((entry, position) => (entry.Key, position))
+            .Aggregate(text, (written, hole) => written.Replace("{" + hole.Key + "}", "{" + hole.position + "}"));
+        var call = style is { } read2 ? $"{Eq.DecTryParse}({{a{at}}}, {{a{read2}}})" : $"{Eq.DecTryParse}({{a{at}}})";
+        var value = context.TypeAnnotations ? "($r: any)" : "($r)";
         return JsExpr.Template(
-            $"({{0}} !== undefined ? (({target} = {{0}}), true) : (({target} = {Eq.Dec}(0)), false))",
-            [JsExpr.Template(parsed, parts, context.TypeAnnotations)], context.TypeAnnotations);
+            Numbered($"({value} => ($r !== undefined ? (({place} = $r), true) : (({place} = {Eq.Dec}(0)), false)))({call})"),
+            [.. ordered.Select(entry => entry.Part)], context.TypeAnnotations);
     }
 
     /// <summary>An <c>out</c> target a second mention cannot change: a bare name, which is a local
