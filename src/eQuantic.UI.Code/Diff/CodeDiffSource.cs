@@ -85,7 +85,8 @@ public sealed class CodeDiffSource
             var skippedOriginal = hunk.OriginalStart - originalEnd;
             var skippedModified = hunk.ModifiedStart - modifiedEnd;
             if (skippedOriginal > 0 || skippedModified > 0)
-                gaps.Add(new CodeDiffGap(originalLines.Count, modifiedLines.Count, skippedOriginal, skippedModified));
+                gaps.Add(new CodeDiffGap(originalLines.Count, modifiedLines.Count, skippedOriginal, skippedModified,
+                    hunk.Header));
 
             var originalNumber = hunk.OriginalStart;
             var modifiedNumber = hunk.ModifiedStart;

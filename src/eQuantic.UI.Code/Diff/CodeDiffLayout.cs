@@ -9,12 +9,13 @@ namespace eQuantic.UI.Code;
 /// Runs of unchanged lines longer than the context either side of a change can use are folded into
 /// one row, on both sides at once, unless the view has opened them: both factories take the runs
 /// opened, named by the first line each hides on the original side, which a change elsewhere does
-/// not move.
+/// not move. A folded row says what the view's <c>foldLabel</c> says for the count it hides: the
+/// engine writes no text of the interface.
 /// </para>
 /// <para>
 /// A patch's view has gaps, the lines of the file between two hunks that the patch left out: each is
-/// one row on both sides, saying what the view's <c>gapLabel</c> says for its count (the engine
-/// writes no text of the interface), and no run is folded across one.
+/// one row on both sides, saying what the patch says there, the header of the hunk after it; and no
+/// run is folded across one.
 /// </para>
 /// </summary>
 public sealed record CodeDiffLayout(CodeRows Original, CodeRows Modified)
@@ -33,11 +34,11 @@ public sealed record CodeDiffLayout(CodeRows Original, CodeRows Modified)
     /// </summary>
     public static CodeDiffLayout SideBySide(IReadOnlyList<CodeLineChange> changes, int originalLines,
         int modifiedLines, int context = DefaultContext, IReadOnlyCollection<int>? expanded = null,
-        IReadOnlyList<CodeDiffGap>? gaps = null, Func<int, string>? gapLabel = null)
+        IReadOnlyList<CodeDiffGap>? gaps = null, Func<int, string>? foldLabel = null)
     {
         var originalFillers = new List<CodeFiller>();
         var modifiedFillers = new List<CodeFiller>();
-        AddGaps(gaps, gapLabel, originalFillers, modifiedFillers);
+        AddGaps(gaps, originalFillers, modifiedFillers);
         foreach (var change in changes)
         {
             var difference = change.ModifiedCount - change.OriginalCount;
@@ -46,7 +47,8 @@ public sealed record CodeDiffLayout(CodeRows Original, CodeRows Modified)
             else if (difference < 0)
                 modifiedFillers.Add(new CodeFiller(change.ModifiedStart + change.ModifiedCount, -difference));
         }
-        var (originalRuns, modifiedRuns) = UnchangedRuns(changes, originalLines, modifiedLines, context, expanded, gaps);
+        var (originalRuns, modifiedRuns) = UnchangedRuns(changes, originalLines, modifiedLines, context, expanded, gaps,
+            foldLabel);
         return new CodeDiffLayout(
             new CodeRows(originalLines, originalFillers, originalRuns),
             new CodeRows(modifiedLines, modifiedFillers, modifiedRuns));
@@ -60,31 +62,31 @@ public sealed record CodeDiffLayout(CodeRows Original, CodeRows Modified)
     /// </summary>
     public static CodeDiffLayout Inline(IReadOnlyList<CodeLineChange> changes, int originalLines,
         int modifiedLines, int context = DefaultContext, IReadOnlyCollection<int>? expanded = null,
-        IReadOnlyList<CodeDiffGap>? gaps = null, Func<int, string>? gapLabel = null)
+        IReadOnlyList<CodeDiffGap>? gaps = null, Func<int, string>? foldLabel = null)
     {
         var originalGaps = new List<CodeFiller>();
         var removed = new List<CodeFiller>();
-        AddGaps(gaps, gapLabel, originalGaps, removed);
+        AddGaps(gaps, originalGaps, removed);
         foreach (var change in changes)
         {
             if (change.OriginalCount > 0)
                 removed.Add(new CodeFiller(change.ModifiedStart, change.OriginalCount, change.OriginalStart));
         }
-        var (originalRuns, modifiedRuns) = UnchangedRuns(changes, originalLines, modifiedLines, context, expanded, gaps);
+        var (originalRuns, modifiedRuns) = UnchangedRuns(changes, originalLines, modifiedLines, context, expanded, gaps,
+            foldLabel);
         return new CodeDiffLayout(
             new CodeRows(originalLines, originalGaps, originalRuns),
             new CodeRows(modifiedLines, removed, modifiedRuns));
     }
 
-    /// <summary>One row on each side for each gap, saying how many lines of that side it stands for.</summary>
-    private static void AddGaps(IReadOnlyList<CodeDiffGap>? gaps, Func<int, string>? gapLabel,
-        List<CodeFiller> original, List<CodeFiller> modified)
+    /// <summary>One row on each side for each gap, saying what the patch says there.</summary>
+    private static void AddGaps(IReadOnlyList<CodeDiffGap>? gaps, List<CodeFiller> original, List<CodeFiller> modified)
     {
         if (gaps is null) return;
         foreach (var gap in gaps)
         {
-            original.Add(new CodeFiller(gap.OriginalLine, 1, Label: gapLabel?.Invoke(gap.OriginalCount)));
-            modified.Add(new CodeFiller(gap.ModifiedLine, 1, Label: gapLabel?.Invoke(gap.ModifiedCount)));
+            original.Add(new CodeFiller(gap.OriginalLine, 1, Label: gap.Header));
+            modified.Add(new CodeFiller(gap.ModifiedLine, 1, Label: gap.Header));
         }
     }
 
@@ -95,7 +97,7 @@ public sealed record CodeDiffLayout(CodeRows Original, CodeRows Modified)
     /// </summary>
     private static (List<CodeCollapse> Original, List<CodeCollapse> Modified) UnchangedRuns(
         IReadOnlyList<CodeLineChange> changes, int originalLines, int modifiedLines, int context,
-        IReadOnlyCollection<int>? expanded, IReadOnlyList<CodeDiffGap>? gaps)
+        IReadOnlyCollection<int>? expanded, IReadOnlyList<CodeDiffGap>? gaps, Func<int, string>? foldLabel)
     {
         var original = new List<CodeCollapse>();
         var modified = new List<CodeCollapse>();
@@ -115,8 +117,9 @@ public sealed record CodeDiffLayout(CodeRows Original, CodeRows Modified)
             if (hidden >= FewestFolded && !(expanded?.Contains(originalAt + before) ?? false)
                 && !CrossesAGap(gaps, originalAt + before, originalAt + before + hidden))
             {
-                original.Add(new CodeCollapse(originalAt + before, originalAt + before + hidden - 1));
-                modified.Add(new CodeCollapse(modifiedAt + before, modifiedAt + before + hidden - 1));
+                var label = foldLabel?.Invoke(hidden);
+                original.Add(new CodeCollapse(originalAt + before, originalAt + before + hidden - 1, Label: label));
+                modified.Add(new CodeCollapse(modifiedAt + before, modifiedAt + before + hidden - 1, Label: label));
             }
             if (i < changes.Count)
             {

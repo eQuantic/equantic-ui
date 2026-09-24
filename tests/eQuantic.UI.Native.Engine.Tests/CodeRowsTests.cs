@@ -69,10 +69,10 @@ public class CodeRowsTests
     [Fact]
     public void ACollapsedRunIsOnePlaceholderRow()
     {
-        var rows = new CodeRows(10, [], [new CodeCollapse(2, 6)]);
+        var rows = new CodeRows(10, [], [new CodeCollapse(2, 6, Label: "5 lines")]);
 
         rows.RowCount.Should().Be(6);
-        rows.RowAt(2).Should().Be(new CodeRow(CodeRowKind.Placeholder, 2, Count: 5));
+        rows.RowAt(2).Should().Be(new CodeRow(CodeRowKind.Placeholder, 2, Count: 5, Label: "5 lines"));
         rows.RowOf(4).Should().Be(2, "a hidden line is drawn at its placeholder");
         rows.IsVisible(4).Should().BeFalse();
         rows.RowOf(7).Should().Be(3);

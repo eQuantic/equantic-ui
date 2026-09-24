@@ -64,6 +64,22 @@ public class CodeDiffLayoutTests
     }
 
     [Fact]
+    public void AFoldedRowSaysWhatTheViewSays_ForTheCountItHides()
+    {
+        var original = Lines(100, i => $"line {i}");
+        var modified = original.ToArray();
+        modified[50] = "changed";
+        var changes = CodeDiffer.CompareLines(original, modified);
+
+        var layout = CodeDiffLayout.Inline(changes, 100, 100, context: 3, foldLabel: count => $"{count} hidden");
+
+        layout.Modified.RowAt(0).Label.Should().Be("47 hidden");
+        layout.Original.RowAt(0).Label.Should().Be("47 hidden", "both sides fold the same run");
+        CodeDiffLayout.SideBySide(changes, 100, 100).Modified.RowAt(0).Label.Should().BeNull(
+            "a view that gives no label gets none: the engine writes no text of the interface");
+    }
+
+    [Fact]
     public void ARunTheViewOpened_StaysOpen()
     {
         var original = Lines(100, i => $"line {i}");
@@ -105,8 +121,8 @@ public class CodeDiffLayoutTests
     }
 
     /// <summary>
-    /// A patch's view draws each gap as one row on both sides, saying how many lines of that side it
-    /// stands for, and keeps the lines after it level.
+    /// A patch's view draws each gap as one row on both sides, saying what the patch says in its
+    /// place, and keeps the lines after it level.
     /// </summary>
     [Fact]
     public void APatchsGapsAreOneRowOnEachSide_AndTheLinesAfterThemStayLevel()
@@ -125,11 +141,11 @@ public class CodeDiffLayoutTests
             """)[0]);
 
         var layout = CodeDiffLayout.SideBySide(source.Changes, source.OriginalLineCount, source.ModifiedLineCount,
-            gaps: source.Gaps, gapLabel: count => $"{count} lines");
+            gaps: source.Gaps);
 
-        layout.Original.RowAt(3).Should().Be(new CodeRow(CodeRowKind.Filler, 2, Label: "17 lines"),
-            "after the original's padding for the added line, the gap");
-        layout.Modified.RowAt(3).Should().Be(new CodeRow(CodeRowKind.Filler, 3, Label: "17 lines"));
+        layout.Original.RowAt(3).Should().Be(new CodeRow(CodeRowKind.Filler, 2, Label: "@@ -20,2 +21,2 @@"),
+            "after the original's padding for the added line, the gap, saying what the patch says there");
+        layout.Modified.RowAt(3).Should().Be(new CodeRow(CodeRowKind.Filler, 3, Label: "@@ -20,2 +21,2 @@"));
         layout.Original.RowOf(2).Should().Be(layout.Modified.RowOf(3), "far away is level on both sides");
         layout.Original.RowCount.Should().Be(layout.Modified.RowCount);
     }

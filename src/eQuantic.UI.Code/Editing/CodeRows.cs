@@ -35,7 +35,7 @@ public sealed class CodeRows
     /// <summary>The line of another document a filler shows from, or -1.</summary>
     private readonly List<int> _sources = new();
 
-    /// <summary>What a filler says, or null.</summary>
+    /// <summary>What a filler or a placeholder says, or null.</summary>
     private readonly List<string?> _labels = new();
 
     /// <summary>
@@ -82,7 +82,7 @@ public sealed class CodeRows
                 var collapse = sortedCollapses[c++];
                 var last = Math.Min(collapse.LastLine, LineCount - 1);
                 var rows = collapse.Placeholder ? 1 : 0;
-                Add(CodeRowKind.Placeholder, collapse.FirstLine, last - collapse.FirstLine + 1, row, rows, -1, null);
+                Add(CodeRowKind.Placeholder, collapse.FirstLine, last - collapse.FirstLine + 1, row, rows, -1, collapse.Label);
                 row += rows;
                 line = last + 1;
             }
@@ -146,7 +146,7 @@ public sealed class CodeRows
             CodeRowKind.Line => new CodeRow(CodeRowKind.Line, _lines[segment] + offset),
             CodeRowKind.Filler => new CodeRow(CodeRowKind.Filler, _lines[segment], 1,
                 _sources[segment] >= 0 ? _sources[segment] + offset : -1, _labels[segment]),
-            _ => new CodeRow(CodeRowKind.Placeholder, _lines[segment], _lineCounts[segment]),
+            _ => new CodeRow(CodeRowKind.Placeholder, _lines[segment], _lineCounts[segment], Label: _labels[segment]),
         };
     }
 

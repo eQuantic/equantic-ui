@@ -68,7 +68,7 @@ public static class CodePatch
             else if (line.StartsWith("@@ ", StringComparison.Ordinal) && Header(line) is { } header)
             {
                 open = true;
-                i = ReadHunk(lines, i + 1, header, hunks);
+                i = ReadHunk(lines, i + 1, header, line, hunks);
                 continue;
             }
             i++;
@@ -103,7 +103,7 @@ public static class CodePatch
     /// header counted, and answers where the next line of the patch is.</summary>
     private static int ReadHunk(string[] lines, int at,
         (int OriginalLine, int OriginalCount, int ModifiedLine, int ModifiedCount, string Section) header,
-        List<CodePatchHunk> hunks)
+        string headerLine, List<CodePatchHunk> hunks)
     {
         var body = new List<CodePatchLine>();
         var original = 0;
@@ -127,7 +127,7 @@ public static class CodePatch
         hunks.Add(new CodePatchHunk(
             header.OriginalCount == 0 ? header.OriginalLine : header.OriginalLine - 1, header.OriginalCount,
             header.ModifiedCount == 0 ? header.ModifiedLine : header.ModifiedLine - 1, header.ModifiedCount,
-            header.Section, body));
+            header.Section, body) { Header = headerLine });
         return i;
     }
 

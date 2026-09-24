@@ -61,7 +61,11 @@ public class CodePatchTests
     {
         var hunk = CodePatch.Parse(Patch)[0].Hunks[0];
 
-        hunk.Should().BeEquivalentTo(new { OriginalStart = 0, OriginalCount = 4, ModifiedStart = 0, ModifiedCount = 4, Section = "namespace Ledger" });
+        hunk.Should().BeEquivalentTo(new
+        {
+            OriginalStart = 0, OriginalCount = 4, ModifiedStart = 0, ModifiedCount = 4, Section = "namespace Ledger",
+            Header = "@@ -1,4 +1,4 @@ namespace Ledger",
+        });
         hunk.Lines.Select(l => l.Kind).Should().Equal(
             CodePatchLineKind.Context, CodePatchLineKind.Removed, CodePatchLineKind.Added,
             CodePatchLineKind.Context, CodePatchLineKind.Context);

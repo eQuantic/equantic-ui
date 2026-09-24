@@ -54,7 +54,8 @@ public class CodeDiffSourceTests
         source.Modified.Lines.Should().Equal("using System;", "var total = 2;", "", "// end", "var a = 1;", "var b = 20;", "var c = 3;");
         source.OriginalNumber(4).Should().Be(10, "the second hunk starts at line 10 of the file");
         source.ModifiedNumber(6).Should().Be(12);
-        source.Gaps.Should().Equal(new CodeDiffGap(4, 4, 5, 5));
+        source.Gaps.Should().ContainSingle().Which.Should().Be(new CodeDiffGap(4, 4, 5, 5, "@@ -10,2 +10,3 @@"),
+            "the gap says what the patch says in its place, the header of the hunk after it");
     }
 
     [Fact]

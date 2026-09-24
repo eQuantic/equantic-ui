@@ -509,8 +509,6 @@ eQuantic.UI.Code.CodeLineChange.Inner.get -> System.Collections.Generic.IReadOnl
 eQuantic.UI.Code.CodeLineChange.Inner.init -> void
 eQuantic.UI.Code.CodeCollapse
 eQuantic.UI.Code.CodeCollapse.CodeCollapse() -> void
-eQuantic.UI.Code.CodeCollapse.CodeCollapse(int FirstLine, int LastLine, bool Placeholder = true) -> void
-eQuantic.UI.Code.CodeCollapse.Deconstruct(out int FirstLine, out int LastLine, out bool Placeholder) -> void
 eQuantic.UI.Code.CodeCollapse.Equals(eQuantic.UI.Code.CodeCollapse other) -> bool
 override eQuantic.UI.Code.CodeCollapse.GetHashCode() -> int
 static eQuantic.UI.Code.CodeCollapse.operator !=(eQuantic.UI.Code.CodeCollapse left, eQuantic.UI.Code.CodeCollapse right) -> bool
@@ -659,8 +657,6 @@ eQuantic.UI.Code.CodeDiffGap.ModifiedCount.get -> int
 eQuantic.UI.Code.CodeDiffGap.ModifiedCount.init -> void
 eQuantic.UI.Code.CodeDiffGap
 eQuantic.UI.Code.CodeDiffGap.CodeDiffGap() -> void
-eQuantic.UI.Code.CodeDiffGap.CodeDiffGap(int OriginalLine, int ModifiedLine, int OriginalCount, int ModifiedCount) -> void
-eQuantic.UI.Code.CodeDiffGap.Deconstruct(out int OriginalLine, out int ModifiedLine, out int OriginalCount, out int ModifiedCount) -> void
 eQuantic.UI.Code.CodeDiffGap.Equals(eQuantic.UI.Code.CodeDiffGap other) -> bool
 override eQuantic.UI.Code.CodeDiffGap.GetHashCode() -> int
 static eQuantic.UI.Code.CodeDiffGap.operator !=(eQuantic.UI.Code.CodeDiffGap left, eQuantic.UI.Code.CodeDiffGap right) -> bool
@@ -685,11 +681,21 @@ static eQuantic.UI.Code.CodeDiffSource.FromPatch(eQuantic.UI.Code.CodePatchFile!
 eQuantic.UI.Code.CodeDiffSource.OriginalLineCount.get -> int
 eQuantic.UI.Code.CodeDiffSource.ModifiedLineCount.get -> int
 static eQuantic.UI.Code.CodeDocument.FromLines(System.Collections.Generic.IReadOnlyList<string!>! lines) -> eQuantic.UI.Code.CodeDocument!
-static eQuantic.UI.Code.CodeDiffLayout.SideBySide(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeLineChange!>! changes, int originalLines, int modifiedLines, int context = 3, System.Collections.Generic.IReadOnlyCollection<int>? expanded = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDiffGap>? gaps = null, System.Func<int, string!>? gapLabel = null) -> eQuantic.UI.Code.CodeDiffLayout!
-static eQuantic.UI.Code.CodeDiffLayout.Inline(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeLineChange!>! changes, int originalLines, int modifiedLines, int context = 3, System.Collections.Generic.IReadOnlyCollection<int>? expanded = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDiffGap>? gaps = null, System.Func<int, string!>? gapLabel = null) -> eQuantic.UI.Code.CodeDiffLayout!
 eQuantic.UI.Code.CodeEditorController.FocusVersion.get -> int
 eQuantic.UI.Code.CodeEditorController.RequestFocus() -> void
 eQuantic.UI.Code.CodeEditorController.WidestLine.get -> int
 eQuantic.UI.Code.CodeEditorController.NextOf(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeRange>! matches, bool backward = false) -> eQuantic.UI.Code.CodeRange?
 eQuantic.UI.Code.CodeHistory.Undo(eQuantic.UI.Code.CodeDocument! document, out eQuantic.UI.Code.CodeRange selection, out eQuantic.UI.Code.CodeRange replaced, out eQuantic.UI.Code.CodeRange written) -> eQuantic.UI.Code.CodeDocument?
 eQuantic.UI.Code.CodeHistory.Redo(eQuantic.UI.Code.CodeDocument! document, out eQuantic.UI.Code.CodeRange selection, out eQuantic.UI.Code.CodeRange replaced, out eQuantic.UI.Code.CodeRange written) -> eQuantic.UI.Code.CodeDocument?
+eQuantic.UI.Code.CodeDiffGap.CodeDiffGap(int OriginalLine, int ModifiedLine, int OriginalCount, int ModifiedCount, string! Header) -> void
+eQuantic.UI.Code.CodeDiffGap.Deconstruct(out int OriginalLine, out int ModifiedLine, out int OriginalCount, out int ModifiedCount, out string! Header) -> void
+eQuantic.UI.Code.CodeDiffGap.Header.get -> string!
+eQuantic.UI.Code.CodeDiffGap.Header.init -> void
+static eQuantic.UI.Code.CodeDiffLayout.SideBySide(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeLineChange!>! changes, int originalLines, int modifiedLines, int context = 3, System.Collections.Generic.IReadOnlyCollection<int>? expanded = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDiffGap>? gaps = null, System.Func<int, string!>? foldLabel = null) -> eQuantic.UI.Code.CodeDiffLayout!
+static eQuantic.UI.Code.CodeDiffLayout.Inline(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeLineChange!>! changes, int originalLines, int modifiedLines, int context = 3, System.Collections.Generic.IReadOnlyCollection<int>? expanded = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDiffGap>? gaps = null, System.Func<int, string!>? foldLabel = null) -> eQuantic.UI.Code.CodeDiffLayout!
+eQuantic.UI.Code.CodePatchHunk.Header.get -> string!
+eQuantic.UI.Code.CodePatchHunk.Header.init -> void
+eQuantic.UI.Code.CodeCollapse.Label.get -> string?
+eQuantic.UI.Code.CodeCollapse.Label.init -> void
+eQuantic.UI.Code.CodeCollapse.CodeCollapse(int FirstLine, int LastLine, bool Placeholder = true, string? Label = null) -> void
+eQuantic.UI.Code.CodeCollapse.Deconstruct(out int FirstLine, out int LastLine, out bool Placeholder, out string? Label) -> void
