@@ -617,7 +617,8 @@ record of a release, the wiki's Upgrading page is the distillate.
   count, and a checked or explicitly unchecked negation neither threw .NET's message nor wrapped. A
   uint's or a ulong's complement answered a negative number. A step on a dictionary entry whose key
   is missing now throws as .NET does, through the guard compound assignments read with, which closes
-  three of the conversion gaps.
+  three of the conversion gaps. A decimal remainder is exact and stays a decimal: the runtime's
+  Decimal had none, so `%` computed in doubles (`0.3m % 0.1m` was `0.09999999999999998`).
 
 - **2026-09-24 · The code editor is a component**: slice 1c of
   [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#375](https://github.com/eQuantic/equantic-ui/pull/375)).
