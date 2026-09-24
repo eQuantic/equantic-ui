@@ -80,18 +80,17 @@ public class NumberMethodStrategy : IExpressionIrStrategy
             // deliberately, and the value they carried is the one this comment owes you.
             var outArg = args[^1];
 
-            // A discard receives nothing. Converted as a name, `_` read as a member of the
-            // component: `this._ = parseInt(…)` gave it a property nobody declared.
-            if (IsDiscard(outArg, context)) return JsExpr.Callish($"(!isNaN({Parsed(input)}))");
+            // A discard receives nothing (OutArgument).
+            if (OutArgument.IsDiscard(outArg, context)) return JsExpr.Callish($"(!isNaN({Parsed(input)}))");
 
-            var varName = OutTarget(outArg, context);
+            var varName = OutArgument.Target(outArg, context);
 
             // Note: In strict JS logic, assignment relies on variable being available.
             // If it's `out var x`, `x` is hoisted in C# scope. In JS `var` is hoisted too, but let isn't.
             // We'll trust LocalDeclarationStrategy or standard var usage handled elsewhere if verified.
             // For now, simpler: assume variable exists or is created.
 
-            if (IsBareName(varName)) return JsExpr.Callish($"({varName} = {Parsed(input)}, !isNaN({varName}))");
+            if (OutArgument.IsBareName(varName)) return JsExpr.Callish($"({varName} = {Parsed(input)}, !isNaN({varName}))");
             // A target with an effect of its own (`out values[index++]`) is named once: the parsed
             // value is bound, written, and checked through the binding.
             return JsExpr.Template($"(({varName} = {{0}}), !isNaN({{0}}))", [JsExpr.Callish(Parsed(input))],
@@ -168,10 +167,10 @@ public class NumberMethodStrategy : IExpressionIrStrategy
 
         var parsed = $"{Eq.DecTryParse}({callArguments})";
         var outArgument = arguments[result!.Value];
-        if (IsDiscard(outArgument, context))
+        if (OutArgument.IsDiscard(outArgument, context))
             return JsExpr.Template($"({parsed} !== undefined)", parts, context.TypeAnnotations);
-        var target = OutTarget(outArgument, context);
-        if (IsBareName(target))
+        var target = OutArgument.Target(outArgument, context);
+        if (OutArgument.IsBareName(target))
             return JsExpr.Template(
                 $"(({target} = {parsed}) !== undefined || (({target} = {Eq.Dec}(0)), false))",
                 parts, context.TypeAnnotations);
@@ -181,13 +180,12 @@ public class NumberMethodStrategy : IExpressionIrStrategy
         // And its receiver and key are evaluated where the argument was WRITTEN, as C# evaluates
         // every argument: a named argument can put the out first (`TryParse(result: out
         // values[index++], s: S())`), and then `index` steps before S() runs.
-        var targetIr = context.Converter.ConvertIr(outArgument.Expression);
-        var (targetParts, place) = targetIr switch
+        var targetParts = new List<JsExpr>();
+        var place = OutArgument.Place(outArgument, context, part =>
         {
-            JsIndex index => (new[] { index.Target, index.IndexExpression }, "{t0}[{t1}]"),
-            JsMember member => (new[] { member.Target }, "{t0}." + member.Name),
-            _ => (Array.Empty<JsExpr>(), JsExprWriter.Write(targetIr)),
-        };
+            targetParts.Add(part);
+            return $"{{t{targetParts.Count - 1}}}";
+        });
         var ordered = read.Select(i => (Argument: i, Sub: 0, Part: context.Converter.ConvertIr(arguments[i].Expression), Key: $"a{i}"))
             .Concat(targetParts.Select((part, sub) => (Argument: result.Value, Sub: sub, Part: part, Key: $"t{sub}")))
             .OrderBy(entry => entry.Argument).ThenBy(entry => entry.Sub).ToList();
@@ -200,34 +198,8 @@ public class NumberMethodStrategy : IExpressionIrStrategy
             [.. ordered.Select(entry => entry.Part)], context.TypeAnnotations);
     }
 
-    /// <summary>An <c>out</c> target a second mention cannot change: a bare name, which is a local
-    /// or a parameter here (the template writer's own rule: a plain name's second read cannot be
-    /// observed). An element or a member (<c>this.x</c>) may have an effect or an accessor of its
-    /// own, so it is named once.</summary>
-    private static bool IsBareName(string target) =>
-        System.Text.RegularExpressions.Regex.IsMatch(target, @"^[A-Za-z_$][A-Za-z0-9_$]*$");
-
     private static bool IsSpanOfChar(ITypeSymbol type) =>
         type is INamedTypeSymbol { Name: "ReadOnlySpan", TypeArguments: [{ SpecialType: SpecialType.System_Char }] };
-
-    /// <summary><c>out _</c>, <c>out var _</c> and <c>out T _</c>: a discard, which nothing reads.</summary>
-    private static bool IsDiscard(ArgumentSyntax argument, ConversionContext context) => argument.Expression switch
-    {
-        DeclarationExpressionSyntax { Designation: DiscardDesignationSyntax } => true,
-        IdentifierNameSyntax { Identifier.ValueText: "_" } discard =>
-            context.SemanticHelper.GetSymbol(discard) is null or IDiscardSymbol,
-        _ => false,
-    };
-
-    /// <summary>What an <c>out</c> argument assigns: the variable it declares (hoisted by
-    /// <see cref="OutParameters"/> under the same name), or the one it names.</summary>
-    private static string OutTarget(ArgumentSyntax argument, ConversionContext context) => argument.Expression switch
-    {
-        DeclarationExpressionSyntax { Designation: SingleVariableDesignationSyntax single } =>
-            single.Identifier.Text.ToJsIdentifier(),
-        DeclarationExpressionSyntax => "",
-        var expression => context.Converter.ConvertExpression(expression),
-    };
 
     public int Priority => 10;
 }
