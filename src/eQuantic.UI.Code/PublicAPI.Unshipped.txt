@@ -511,3 +511,65 @@ eQuantic.UI.Code.CodeLineChange.ModifiedCount.get -> int
 eQuantic.UI.Code.CodeLineChange.ModifiedCount.init -> void
 eQuantic.UI.Code.CodeLineChange.Inner.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeInnerChange>!
 eQuantic.UI.Code.CodeLineChange.Inner.init -> void
+eQuantic.UI.Code.CodeCollapse
+eQuantic.UI.Code.CodeCollapse.CodeCollapse() -> void
+eQuantic.UI.Code.CodeCollapse.CodeCollapse(int FirstLine, int LastLine, bool Placeholder = true) -> void
+eQuantic.UI.Code.CodeCollapse.Deconstruct(out int FirstLine, out int LastLine, out bool Placeholder) -> void
+eQuantic.UI.Code.CodeCollapse.Equals(eQuantic.UI.Code.CodeCollapse other) -> bool
+override eQuantic.UI.Code.CodeCollapse.GetHashCode() -> int
+static eQuantic.UI.Code.CodeCollapse.operator !=(eQuantic.UI.Code.CodeCollapse left, eQuantic.UI.Code.CodeCollapse right) -> bool
+static eQuantic.UI.Code.CodeCollapse.operator ==(eQuantic.UI.Code.CodeCollapse left, eQuantic.UI.Code.CodeCollapse right) -> bool
+~override eQuantic.UI.Code.CodeCollapse.Equals(object obj) -> bool
+~override eQuantic.UI.Code.CodeCollapse.ToString() -> string
+eQuantic.UI.Code.CodeCollapse.FirstLine.get -> int
+eQuantic.UI.Code.CodeCollapse.FirstLine.init -> void
+eQuantic.UI.Code.CodeCollapse.LastLine.get -> int
+eQuantic.UI.Code.CodeCollapse.LastLine.init -> void
+eQuantic.UI.Code.CodeCollapse.Placeholder.get -> bool
+eQuantic.UI.Code.CodeCollapse.Placeholder.init -> void
+eQuantic.UI.Code.CodeFiller
+eQuantic.UI.Code.CodeFiller.CodeFiller() -> void
+eQuantic.UI.Code.CodeFiller.CodeFiller(int BeforeLine, int Rows, int SourceLine = -1) -> void
+eQuantic.UI.Code.CodeFiller.Deconstruct(out int BeforeLine, out int Rows, out int SourceLine) -> void
+eQuantic.UI.Code.CodeFiller.Equals(eQuantic.UI.Code.CodeFiller other) -> bool
+override eQuantic.UI.Code.CodeFiller.GetHashCode() -> int
+static eQuantic.UI.Code.CodeFiller.operator !=(eQuantic.UI.Code.CodeFiller left, eQuantic.UI.Code.CodeFiller right) -> bool
+static eQuantic.UI.Code.CodeFiller.operator ==(eQuantic.UI.Code.CodeFiller left, eQuantic.UI.Code.CodeFiller right) -> bool
+~override eQuantic.UI.Code.CodeFiller.Equals(object obj) -> bool
+~override eQuantic.UI.Code.CodeFiller.ToString() -> string
+eQuantic.UI.Code.CodeFiller.BeforeLine.get -> int
+eQuantic.UI.Code.CodeFiller.BeforeLine.init -> void
+eQuantic.UI.Code.CodeFiller.Rows.get -> int
+eQuantic.UI.Code.CodeFiller.Rows.init -> void
+eQuantic.UI.Code.CodeFiller.SourceLine.get -> int
+eQuantic.UI.Code.CodeFiller.SourceLine.init -> void
+eQuantic.UI.Code.CodeRow
+eQuantic.UI.Code.CodeRow.CodeRow() -> void
+eQuantic.UI.Code.CodeRow.CodeRow(eQuantic.UI.Code.CodeRowKind Kind, int Line, int Count = 1, int SourceLine = -1) -> void
+eQuantic.UI.Code.CodeRow.Deconstruct(out eQuantic.UI.Code.CodeRowKind Kind, out int Line, out int Count, out int SourceLine) -> void
+eQuantic.UI.Code.CodeRow.Equals(eQuantic.UI.Code.CodeRow other) -> bool
+override eQuantic.UI.Code.CodeRow.GetHashCode() -> int
+static eQuantic.UI.Code.CodeRow.operator !=(eQuantic.UI.Code.CodeRow left, eQuantic.UI.Code.CodeRow right) -> bool
+static eQuantic.UI.Code.CodeRow.operator ==(eQuantic.UI.Code.CodeRow left, eQuantic.UI.Code.CodeRow right) -> bool
+~override eQuantic.UI.Code.CodeRow.Equals(object obj) -> bool
+~override eQuantic.UI.Code.CodeRow.ToString() -> string
+eQuantic.UI.Code.CodeRow.Kind.get -> eQuantic.UI.Code.CodeRowKind
+eQuantic.UI.Code.CodeRow.Kind.init -> void
+eQuantic.UI.Code.CodeRow.Line.get -> int
+eQuantic.UI.Code.CodeRow.Line.init -> void
+eQuantic.UI.Code.CodeRow.Count.get -> int
+eQuantic.UI.Code.CodeRow.Count.init -> void
+eQuantic.UI.Code.CodeRow.SourceLine.get -> int
+eQuantic.UI.Code.CodeRow.SourceLine.init -> void
+eQuantic.UI.Code.CodeRowKind.Filler = 1 -> eQuantic.UI.Code.CodeRowKind
+eQuantic.UI.Code.CodeRowKind.Placeholder = 2 -> eQuantic.UI.Code.CodeRowKind
+eQuantic.UI.Code.CodeRowKind
+eQuantic.UI.Code.CodeRowKind.Line = 0 -> eQuantic.UI.Code.CodeRowKind
+eQuantic.UI.Code.CodeRows.LineCount.get -> int
+eQuantic.UI.Code.CodeRows.RowCount.get -> int
+eQuantic.UI.Code.CodeRows.RowOf(int line) -> int
+eQuantic.UI.Code.CodeRows.IsVisible(int line) -> bool
+eQuantic.UI.Code.CodeRows.RowAt(int row) -> eQuantic.UI.Code.CodeRow
+eQuantic.UI.Code.CodeRows.LineAtRow(int row) -> int
+eQuantic.UI.Code.CodeRows
+eQuantic.UI.Code.CodeRows.CodeRows(int lineCount, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeFiller>! fillers, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeCollapse>! collapses) -> void
