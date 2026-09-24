@@ -53,6 +53,8 @@ public class RecordInitializerConformanceTests
             public static int Seed = 3;
             public int Value = Seed * 2;
         }
+
+        public record Zeroed(long Count = default, decimal Total = default);
         """;
 
     [SkippableTheory]
@@ -83,6 +85,9 @@ public class RecordInitializerConformanceTests
     [InlineData("return new Tagged(4).Tag;")]                                                  // "#4"
     [InlineData("return new Seeded().Value;")]                                                 // 6
     [InlineData("Seeded.Seed = 5; return new Seeded().Value;")]                                // 10
+    // A positional `= default` is the type's own zero, a long's BigInt and a decimal's Decimal (#408).
+    [InlineData("return (new Zeroed().Count + 1L).ToString();")]                               // "1"
+    [InlineData("return (new Zeroed().Total + 1.5m).ToString();")]                             // "1.5"
     // Each construction runs the initializer again: a collection is its own, never shared.
     [InlineData("var a = new Props(); var b = new Props(); a.Tags.Add(\"x\"); return b.Tags.Count;")] // 0
     // `with` copies what the construction wrote, and changes only what it names.
