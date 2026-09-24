@@ -1509,6 +1509,10 @@ function lowerScrollView(node: ScrollViewNode, context: LoweringContext, path: s
       'max-width': '100%',
       'overflow-y': horizontal ? 'hidden' : 'auto',
       'overflow-x': node.axis === 'vertical' ? 'hidden' : 'auto',
+      // The offset is the app's and the reader's, never the browser's guess: scroll anchoring moved
+      // it whenever a windowed list swapped the rows above what was on screen (C# twin; Photon
+      // anchors nothing).
+      'overflow-anchor': 'none',
     },
     children,
   );
@@ -2197,8 +2201,15 @@ function paintsNothing(box: BoxNode): boolean {
 
 function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNode {
   const style = box.style ?? ({} as BoxStyleValue);
+  // A CAP with no decided height bounds the child (the C# twin, CapsItsChild): as a flex column, a
+  // child that may shrink takes the capped height and scrolls. As a block, a scroller's
+  // `height: 100%` resolved against no height, grew with its content inside a box that clipped it,
+  // and nothing scrolled (defect 4 of docs/CODE-EDITOR-PLAN.md).
+  const caps = capsItsChild(box);
   const entries: Record<string, string | undefined> = {
     'box-sizing': 'border-box',
+    display: caps ? 'flex' : undefined,
+    'flex-direction': caps ? 'column' : undefined,
     width: sizeValue(style.width),
     height: sizeValue(style.height, true),
     'flex-shrink': rigid(style.width, style.height),
@@ -2333,6 +2344,14 @@ function lowerBox(box: BoxNode, context: LoweringContext, path: string): HtmlNod
     }
   }
   return result;
+}
+
+/** The C# `CapsItsChild`: a height cap, no decided height, and a child to bound. */
+function capsItsChild(box: BoxNode): boolean {
+  const style = box.style;
+  if (!box.child || !style) return false;
+  if (style.height && style.height.kind !== 'hug') return false;
+  return sizeValue(asSize(style.maxHeight), true) !== undefined;
 }
 
 /** The C# `StretchesChildHeight`: the box decided a height, and the child is an auto-sized
