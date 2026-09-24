@@ -589,7 +589,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   The runtime now writes .NET's notation from the shortest digits, reads a number's text by .NET's
   own grammar under the `NumberStyles` a call names, rounds it into a decimal as .NET's parser does,
   and converts a double or a float by the steps of .NET's `DecCalc`; the runtime spec is generated
-  from what .NET printed, and the conformance suites run every form on both sides.
+  from what .NET printed, and the conformance suites run every form on both sides. Reading a number
+  says which culture it reads in, as formatting already did: `CultureInfo.InvariantCulture`,
+  recognised by the property a provider binds to and not by its name, crosses exactly; no provider
+  is EQ2110, and any other is EQ2108, since the browser has no parser for another culture's text.
 
 ## Retired documents
 
