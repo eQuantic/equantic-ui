@@ -600,7 +600,8 @@ record of a release, the wiki's Upgrading page is the distillate.
   per statement. Method and constructor bodies reach the writer as IR instead of text, which is what
   dropped the origins, and eqc's bundling moved into the compiler library as `ModuleBundler`, so a
   smoke test bundles, runs and throws through the same pipeline and reads each frame back to its
-  C# line.
+  C# line. A line a strategy lowers belongs to the statement that produced it: a pattern switch's
+  arm maps to its case, a `using`'s dispose to the `using`, and a `do`'s condition to itself.
 
 ## Retired documents
 
