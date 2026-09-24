@@ -12,6 +12,7 @@
  * "1.234,50" on a Brazilian one, from the same server response. The atom removes the question.
  */
 
+import { double } from './real-text';
 import { activeCurrency, activePattern, formatLocale } from './culture';
 
 /**
@@ -85,8 +86,10 @@ export function format(
 }
 
 function formatCore(value: any, format: string | null, alignment?: number): string {
-  // .NET spells a bool `True`/`False`; JavaScript lowercases it. Everything else reads the same.
-  let result = typeof value === 'boolean' ? (value ? 'True' : 'False') : String(value);
+  // .NET spells a bool `True`/`False`, where JavaScript lowercases it, and writes a number with
+  // its own notation (1E+17, -0), where String() keeps fixed notation up to 1e21.
+  let result =
+    typeof value === 'boolean' ? (value ? 'True' : 'False') : typeof value === 'number' ? double(value) : String(value);
 
   if (format) {
     const date = asJsDate(value);
