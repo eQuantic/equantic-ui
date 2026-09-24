@@ -82,4 +82,41 @@ public class NullableCompoundConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
+
+    /// <summary>
+    /// A binary operator over nullable numbers is lifted for every T, found in the review: the
+    /// decimal and long branches never saw a null, and an int?'s bitwise and shift operators read
+    /// it as 0. And a T flowing into a T? is the same value: a decimal went through its double.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("long? l = null; var y = l << 1; return y == null ? \"null\" : y.ToString();")]
+    [InlineData("long? l = 4; return (l << 1).ToString();")]                                                  // "8"
+    [InlineData("int? x = null; var y = x << 1; return y == null ? \"null\" : y.ToString();")]
+    [InlineData("int? a = null, b = 3; var y = a & b; return y == null ? \"null\" : y.ToString();")]
+    [InlineData("uint? p = uint.MaxValue, q = uint.MaxValue; return (p & q).ToString();")]                  // "4294967295"
+    [InlineData("int? a = 6, b = 3; return (a ^ b).ToString();")]                                            // "5"
+    [InlineData("long? a = 5, b = null; var c = a & b; return c == null ? \"null\" : c.ToString();")]
+    [InlineData("long? a = null, b = 1; var c = a + b; return c == null ? \"null\" : c.ToString();")]
+    [InlineData("long? a = 2, b = 3; return (a * b).ToString();")]                                           // "6"
+    [InlineData("long? a = null, b = 7; return (a < b) ? \"t\" : \"f\";")]                                // "f"
+    [InlineData("long? a = 7, b = null; return (a >= b) ? \"t\" : \"f\";")]                               // "f"
+    [InlineData("long? a = 7, b = 3; return (a > b) ? \"t\" : \"f\";")]                                   // "t"
+    [InlineData("decimal? a = null, b = 1m; var c = a + b; return c == null ? \"null\" : c.ToString();")]
+    [InlineData("decimal? a = 1.5m, b = 2m; return (a * b).ToString();")]                                    // "3.0"
+    [InlineData("decimal? a = null, b = 1m; return (a < b) ? \"t\" : \"f\";")]                            // "f"
+    [InlineData("decimal? a = null, b = null; return (a == b) ? \"t\" : \"f\";")]                         // "t"
+    [InlineData("decimal? a = null, b = 1m; return (a != b) ? \"t\" : \"f\";")]                           // "t"
+    [InlineData("decimal? a = 1m, b = 1.0m; return (a == b) ? \"t\" : \"f\";")]                           // "t"
+    [InlineData("int? a = int.MaxValue, b = 1; try { return checked(a + b).ToString(); } catch (Exception e) { return e.Message; }")]
+    [InlineData("byte? a = 200, b = 100; return (a + b).ToString();")]                                       // "300", an int
+    // ---- a T into a T? is the same value ----
+    [InlineData("decimal? m = 1234567890.123456789012m; return m.ToString();")]
+    [InlineData("decimal d = 0.1234567890123456789m; decimal? n = d; return n.ToString();")]
+    [InlineData("decimal? m = 79228162514264337593543950335m; return m.ToString();")]
+    [InlineData("char ch = 'b'; char? c = ch; return c.ToString();")]
+    public void ALiftedBinaryOperator_KeepsNullAndItsTypesRule(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
 }
