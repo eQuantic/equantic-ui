@@ -236,3 +236,6 @@ const eQuantic.UI.Compiler.CodeGen.Eq.StringCompareRange = "$eq.text.compareRang
 const eQuantic.UI.Compiler.CodeGen.Eq.StringCompareRangeBy = "$eq.text.compareRangeBy" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.StringEquals = "$eq.text.equals" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.StringJoinRange = "$eq.text.joinRange" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.LinqMax = "$eq.linq.max" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.LinqMin = "$eq.linq.min" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.LinqToDictionary = "$eq.linq.toDictionary" -> string!

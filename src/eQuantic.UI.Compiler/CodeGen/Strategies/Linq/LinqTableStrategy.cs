@@ -49,10 +49,33 @@ public class LinqTableStrategy : IExpressionIrStrategy
             .ToArray();
 
         var template = Template(name.Identifier.Text, args.Length)!;
+        if (name.Identifier.Text == "ToDictionary" && ToDictionary(invocation, context) is { } dictionary)
+        {
+            if (dictionary.Length == 0) return JsExpr.Opaque(context.Unhandled(invocation, "ToDictionary with a comparer"));
+            template = dictionary;
+        }
         if (template.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
 
         // {0} is the receiver; {1}… the arguments. The writer binds whatever is reused.
         return JsExpr.Template(template, new[] { receiver }.Concat(args).ToArray(), context.TypeAnnotations);
+    }
+
+    /// <summary>
+    /// <c>ToDictionary</c> into the plain object a dictionary of primitive keys is on this side, by
+    /// the runtime, which refuses a null key and a key twice as .NET does: <c>Object.fromEntries</c>
+    /// kept the last of two and wrote a null as "null". An empty template is a comparer, which has no
+    /// form here; null leaves the table's shape, for a key a plain object cannot hold (a record, a
+    /// struct, a tuple), whose dictionary is a value map and is not this helper's.
+    /// </summary>
+    private static string? ToDictionary(InvocationExpressionSyntax invocation, ConversionContext context)
+    {
+        if (context.SemanticHelper.GetSymbol(invocation) is not IMethodSymbol { TypeArguments: [_, var key, ..] } method)
+            return null;
+        if (method.Parameters.Any(parameter => parameter.Type.Name == "IEqualityComparer")) return "";
+        if (key.IsStructuralValueType()) return null;
+        return invocation.ArgumentList.Arguments.Count == 2
+            ? $"{Eq.LinqToDictionary}({{0}}, {{1}}, {{2}})"
+            : $"{Eq.LinqToDictionary}({{0}}, {{1}})";
     }
 
     private static string? Template(string name, int argCount) => (name, argCount) switch

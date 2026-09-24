@@ -78,6 +78,13 @@ public static class Eq
     public const string DictGet = "$eq.dictGet";
     /// <summary>LINQ Zip — pairs stop with the shorter sequence.</summary>
     public const string Zip = "$eq.zip";
+    /// <summary>LINQ <c>Max</c>, by the ordering of the type it answers: an empty sequence of a value
+    /// type throws, a NaN is passed over, a null is skipped.</summary>
+    public const string LinqMax = "$eq.linq.max";
+    /// <summary>LINQ <c>Min</c>, by the ordering of the type it answers: a NaN wins.</summary>
+    public const string LinqMin = "$eq.linq.min";
+    /// <summary>LINQ <c>ToDictionary</c> into a plain object, refusing a null key and a key twice.</summary>
+    public const string LinqToDictionary = "$eq.linq.toDictionary";
     /// <summary>Where each text element (an extended grapheme cluster, UAX #29) of a string begins:
     /// <c>StringInfo.ParseCombiningCharacters</c>, answered by the platform's segmenter.</summary>
     public const string TextElementStarts = "$eq.text.textElementStarts";

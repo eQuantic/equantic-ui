@@ -205,24 +205,26 @@ public class LinqStrategyTests
     }
 
     [Fact]
-    public void Min_NoPredicate_MapsToMathMin()
+    public void Min_NoSelector_OrdersByTheTypeItAnswers()
     {
-        var result = TestHelper.ConvertExpression("list.Min()");
-        result.Should().Be("Math.min(...this.list)");
+        // An int: ordered by `<`, and an empty list throws, where Math.min() answered Infinity.
+        var result = TestHelper.ConvertExpression("numbers.Min()");
+        result.Should().Be("$eq.linq.min(this.numbers, undefined, 'value', false)");
     }
 
     [Fact]
-    public void Max_NoPredicate_MapsToMathMax()
+    public void Max_NoSelector_OrdersByTheTypeItAnswers()
     {
+        // A class: ordered by its own compareTo, a null passed over, an empty list answering null.
         var result = TestHelper.ConvertExpression("list.Max()");
-        result.Should().Be("Math.max(...this.list)");
+        result.Should().Be("$eq.linq.max(this.list, undefined, 'comparable', true)");
     }
 
     [Fact]
-    public void Min_WithSelector_MapsToMathMinWithMap()
+    public void Min_WithSelector_OrdersByTheTypeItSelects()
     {
         var result = TestHelper.ConvertExpression("list.Min(x => x.Value)");
-        result.Should().Be("Math.min(...this.list.map((x) => x.value))");
+        result.Should().Be("$eq.linq.min(this.list, (x) => x.value, 'value', false)");
     }
 
     [Fact]
