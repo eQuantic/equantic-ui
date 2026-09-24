@@ -3,6 +3,7 @@ import { $eq, Box, BoxStyle, BuildContext, CodeDecoration, CodeDecorationKindVal
 export class CodeBlock extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.CodeBlock';
     static selectionAlpha: number = Math.fround(0.28);
+    _cells: Record<string, any> = {};
     static codeSlab: ColorToken = new ColorToken(Color.fromRgba(0x10, 0x14, 0x18, 0xFF));
     static codeInk: ColorToken = new ColorToken(Color.fromRgba(0xC9, 0xD4, 0xDE, 0xFF));
     static codeInkMuted: ColorToken = new ColorToken(Color.fromRgba(0x7C, 0x8A, 0x99, 0xFF));
@@ -87,17 +88,20 @@ export class CodeBlock extends StatelessComponent {
         }
         for (const decoration of this.decorations) {
             if (decoration.kind !== 'highlight') continue;
-            for (const mark of this.marks(decoration, metrics, theme)) marks.add(mark);
+            for (const mark of this.marks(decoration, metrics, theme, first, last)) marks.add(mark);
         }
         if (this.selectionBands.length > 0) {
             let band = CodeBlock.selectionFor(this.inverse, theme).withOpacity(CodeBlock.selectionAlpha);
+            let windowTop = Math.fround(metrics.contentTop + Math.fround(Math.fround(first) * lineHeight));
+            let windowBottom = Math.fround(metrics.contentTop + Math.fround(Math.fround(last + 1) * lineHeight));
             for (const rect of this.selectionBands) {
+                if (Math.fround(rect.y + rect.height) <= windowTop || rect.y >= windowBottom) continue;
                 marks.add(new Positioned(new Box(new BoxStyle({ width: rect.width, height: rect.height, background: band, cornerRadius: new CornerRadii(1) })), rect.y, null, null, rect.x));
             }
         }
         for (const decoration of this.decorations) {
             if (decoration.kind === 'highlight') continue;
-            for (const mark of this.marks(decoration, metrics, theme)) marks.add(mark);
+            for (const mark of this.marks(decoration, metrics, theme, first, last)) marks.add(mark);
         }
         if (marks.children.length > 0) {
             let layered = new Stack('topStart', { width: SizeValue.fill });
@@ -179,7 +183,7 @@ export class CodeBlock extends StatelessComponent {
         let row = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: lineHeight, cross: 'center' });
         let code = new Row(0, 'start', 'center', false, null, null, { height: SizeValue.fill, cross: 'center' });
         let text = this.document.line(index);
-        let cells = new CodeLineCells(text, this.tabSize);
+        let cells = this.cellsOf(index);
         let tokens = highlighter.tokensFor(this.document, index);
         let at = 0;
         for (const token of tokens) {
@@ -195,6 +199,13 @@ export class CodeBlock extends StatelessComponent {
         return row;
     }
 
+    cellsOf(line: number) {
+        let cells: any; if ((Object.prototype.hasOwnProperty.call(this._cells, line) ? ((cells = this._cells[line]), true) : false)) return cells;
+        cells = new CodeLineCells(this.document.line(line), this.tabSize);
+        this._cells[line] = cells;
+        return cells;
+    }
+
     window(lineHeight: number) {
         if (this.viewportHeight <= 0 || lineHeight <= 0) return [0, this.document.lineCount - 1];
         let margin = 8;
@@ -203,17 +214,17 @@ export class CodeBlock extends StatelessComponent {
         return [first, Math.min(this.document.lineCount - 1, first + visible)];
     }
 
-    marks(decoration: CodeDecoration, metrics: CodeMetrics, theme: any) {
+    marks(decoration: CodeDecoration, metrics: CodeMetrics, theme: any, first: number, last: number) {
         const _seq = [];
         let start = this.document.clamp(decoration.range.start);
         let end = this.document.clamp(decoration.range.end);
         let color = decoration.color ?? this.defaultColor(decoration.kind, theme);
         if (this.inverse) color = new ColorToken(color.dark, color.dark);
-        for (let line = start.line; line <= end.line; line++) {
+        for (let line = Math.max(start.line, first); line <= Math.min(end.line, last); line++) {
             let from = line === start.line ? start.column : 0;
             let to = line === end.line ? end.column : this.document.line(line).length;
             if (to <= from) continue;
-            let cells = new CodeLineCells(this.document.line(line), this.tabSize);
+            let cells = this.cellsOf(line);
             let left = Math.fround(metrics.contentLeft + Math.fround(Math.fround(cells.cellOf(from)) * metrics.columnWidth));
             let top = Math.fround(metrics.contentTop + Math.fround(Math.fround(line) * metrics.lineHeight));
             let width = Math.fround(Math.fround(cells.cellOf(to) - cells.cellOf(from)) * metrics.columnWidth);

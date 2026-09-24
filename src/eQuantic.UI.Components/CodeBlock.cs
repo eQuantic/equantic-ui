@@ -245,13 +245,18 @@ public sealed class CodeBlock : StatelessComponent
         foreach (var decoration in Decorations)
         {
             if (decoration.Kind != CodeDecorationKind.Highlight) continue;
-            foreach (var mark in Marks(decoration, metrics, theme)) marks.Add(mark);
+            foreach (var mark in Marks(decoration, metrics, theme, first, last)) marks.Add(mark);
         }
         if (SelectionBands.Count > 0)
         {
+            // …and the selection's bands, one per line, drawn for the lines in the window only: a
+            // select-all over a long file was a band per line of it, each build.
             var band = SelectionFor(Inverse, theme).WithOpacity(SelectionAlpha);
+            var windowTop = metrics.ContentTop + first * lineHeight;
+            var windowBottom = metrics.ContentTop + (last + 1) * lineHeight;
             foreach (var rect in SelectionBands)
             {
+                if (rect.Y + rect.Height <= windowTop || rect.Y >= windowBottom) continue;
                 marks.Add(new Positioned(new Box(new BoxStyle
                 {
                     Width = rect.Width,
@@ -264,7 +269,7 @@ public sealed class CodeBlock : StatelessComponent
         foreach (var decoration in Decorations)
         {
             if (decoration.Kind == CodeDecorationKind.Highlight) continue;
-            foreach (var mark in Marks(decoration, metrics, theme)) marks.Add(mark);
+            foreach (var mark in Marks(decoration, metrics, theme, first, last)) marks.Add(mark);
         }
         if (marks.Children.Count > 0)
         {
@@ -457,7 +462,7 @@ public sealed class CodeBlock : StatelessComponent
         // is CODE, and column zero is where the row begins.
         var code = new Row(gap: 0) { Height = SizeValue.Fill, Cross = CrossAlign.Center };
         var text = Document.Line(index);
-        var cells = new CodeLineCells(text, TabSize);
+        var cells = CellsOf(index);
         var tokens = highlighter.TokensFor(Document, index);
         var at = 0;
         foreach (var token in tokens)
@@ -485,6 +490,18 @@ public sealed class CodeBlock : StatelessComponent
         return row;
     }
 
+    /// <summary>The cells of the lines this build reads, by line: the line it draws and every mark on
+    /// it read the same map, built once. A block is built anew with each build of what holds it.</summary>
+    private readonly Dictionary<int, CodeLineCells> _cells = new();
+
+    private CodeLineCells CellsOf(int line)
+    {
+        if (_cells.TryGetValue(line, out var cells)) return cells;
+        cells = new CodeLineCells(Document.Line(line), TabSize);
+        _cells[line] = cells;
+        return cells;
+    }
+
     /// <summary>
     /// The first and last line to BUILD. With no viewport reported yet the answer is "all of them",
     /// which is right for a snippet and for the first frame — the window narrows as soon as layout
@@ -504,14 +521,17 @@ public sealed class CodeBlock : StatelessComponent
     /// for the same reason: a single rectangle over a multi-line range would cover the indentation
     /// of lines the range never touched.
     /// </summary>
-    private IEnumerable<VisualNode> Marks(CodeDecoration decoration, CodeMetrics metrics, IAppTheme theme)
+    private IEnumerable<VisualNode> Marks(CodeDecoration decoration, CodeMetrics metrics, IAppTheme theme,
+        int first, int last)
     {
         var start = Document.Clamp(decoration.Range.Start);
         var end = Document.Clamp(decoration.Range.End);
         var color = decoration.Color ?? DefaultColor(decoration.Kind, theme);
         if (Inverse) color = new ColorToken(color.Dark, color.Dark);
 
-        for (var line = start.Line; line <= end.Line; line++)
+        // Only the lines the window builds: a mark on a line nobody can see is a box and a map of
+        // its line for nothing, and a search over a long file marked every line of it each build.
+        for (var line = Math.Max(start.Line, first); line <= Math.Min(end.Line, last); line++)
         {
             var from = line == start.Line ? start.Column : 0;
             var to = line == end.Line ? end.Column : Document.Line(line).Length;
@@ -519,7 +539,7 @@ public sealed class CodeBlock : StatelessComponent
 
             // Through the line's CELLS, the way the engine places its caret: a match after a tab
             // or across a wide character is drawn where the characters are.
-            var cells = new CodeLineCells(Document.Line(line), TabSize);
+            var cells = CellsOf(line);
             var left = metrics.ContentLeft + cells.CellOf(from) * metrics.ColumnWidth;
             var top = metrics.ContentTop + line * metrics.LineHeight;
             var width = (cells.CellOf(to) - cells.CellOf(from)) * metrics.ColumnWidth;

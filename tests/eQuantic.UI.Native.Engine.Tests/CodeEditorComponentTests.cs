@@ -343,6 +343,32 @@ public class CodeEditorComponentTests
         viewport.Bounds.Height.Should().BeApproximately(400, 0.5f, "a short file in a tall pane still fills it");
     }
 
+    /// <summary>
+    /// The MARKS are windowed with the lines. Every match and every selected line built a mark, and
+    /// a map of its line's cells, on every build, in view or not: a select-all over 4000 lines with
+    /// a search on built 8000 boxes a frame.
+    /// </summary>
+    [Fact]
+    public void AnEditorBuildsTheMarksOfTheLinesInViewOnly()
+    {
+        var text = string.Join("\n", Enumerable.Range(0, 4000).Select(i => $"var needle{i} = {i};"));
+        var editor = new CodeEditor(text, "csharp")
+        {
+            MaxHeight = 300,
+            ShowLineNumbers = false,
+            Search = "needle",
+            MatchBrackets = false,
+        };
+        editor.Editor.SelectAll();
+        var host = Host(editor);
+
+        var frame = Settle(host);
+
+        var marks = Count(frame.Root, node => node.Source is Positioned);
+        marks.Should().BeLessThan(200, "4000 matches and 4000 selected lines must not build 8000 marks");
+        marks.Should().BeGreaterThan(20, "…and the ones in view are there");
+    }
+
     private static int Count(Framework.LayoutNode node, Func<Framework.LayoutNode, bool> predicate)
     {
         var total = predicate(node) ? 1 : 0;
