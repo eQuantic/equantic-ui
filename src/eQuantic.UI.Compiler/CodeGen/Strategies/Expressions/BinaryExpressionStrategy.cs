@@ -92,7 +92,7 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
         {
             var check = IntegerDivision.NeedsCheck(binary.Right, context);
             return divided.IsNullableValue()
-                ? IntegerDivision.Lifted(leftIr, rightIr, (a, b) => IntegerDivision.OfLongs(op, a, b, check, context), context)
+                ? NullableLift.Binary(leftIr, rightIr, (a, b) => IntegerDivision.OfLongs(op, a, b, check, context), context)
                 : IntegerDivision.OfLongs(op, leftIr, rightIr, check, context);
         }
 
