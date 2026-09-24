@@ -167,6 +167,29 @@ public class ResourceTemplateValidationTests
         AssertEq2100(result, "expects argument {1}");
     }
 
+    /// <summary>The values passed as the params array itself, written in place: the array's
+    /// elements are the call's arguments, and a template asking past them fails as it would past a
+    /// list. An array only the running program measures is left to it.</summary>
+    [Theory]
+    [InlineData("new object[] { UserName }")]
+    [InlineData("new[] { UserName }")]
+    [InlineData("[UserName]")]
+    public void ArityBeyondAnArrayWrittenInPlace_IsRefusedAtBuild(string array)
+    {
+        var result = CompileWithResx("{0} e {1}", array);
+        AssertEq2100(result, "expects argument {1}");
+    }
+
+    [Theory]
+    [InlineData("new object[] { UserName, UserName }")]
+    [InlineData("new[] { UserName, UserName }")]
+    [InlineData("[UserName, UserName]")]
+    public void AnArrayWrittenInPlace_ThatHoldsEveryArgument_Passes(string array)
+    {
+        var result = CompileWithResx("{0} e {1}", array);
+        Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
+    }
+
     [Fact]
     public void ANonStringArgument_PassesNow()
     {

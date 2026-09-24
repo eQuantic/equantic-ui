@@ -10,9 +10,9 @@ namespace eQuantic.UI.Components;
 /// the window plus spacers, converging through the ScrollView's out-channels.
 /// <para>
 /// All interaction lives in the <see cref="SheetController"/> the app owns (click/drag select,
-/// Excel's keyboard, TSV clipboard — wired by the surface). v1 fences: vertical virtualization
-/// only (columns materialize — sheets in the tens of columns; wide-sheet 2D scroll joins later);
-/// in-cell EDITING is the next slice.
+/// Excel's keyboard, TSV clipboard, in-cell editing — wired by the surface). v1 fences: vertical
+/// virtualization only (columns materialize — sheets in the tens of columns; wide-sheet 2D scroll
+/// joins later).
 /// </para>
 /// </summary>
 public sealed class Spreadsheet : StatefulComponent

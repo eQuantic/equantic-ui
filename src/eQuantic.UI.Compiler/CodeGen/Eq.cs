@@ -132,6 +132,12 @@ public static class Eq
     public const string StringEquals = "$eq.text.equals";
     /// <summary><c>string.Join(separator, value, startIndex, count)</c>: the range, checked.</summary>
     public const string StringJoinRange = "$eq.text.joinRange";
+    /// <summary><c>string.Format(CultureInfo.InvariantCulture, …)</c>: every placeholder in the
+    /// invariant culture.</summary>
+    public const string StringFormatInvariant = "$eq.text.stringFormatInvariant";
+    /// <summary>A float boxed for <c>string.Format</c>, with its kind: the formatter writes its own
+    /// digits, not those of the double underneath.</summary>
+    public const string AsSingle = "$eq.text.asSingle";
     public const string StringBuilder = "$eq.text.stringBuilder";
     public const string DateTime = "$eq.time.dateTime";
     public const string TimeSpan = "$eq.time.timeSpan";

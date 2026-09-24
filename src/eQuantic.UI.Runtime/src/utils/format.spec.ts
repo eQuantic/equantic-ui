@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { parseEnum, format, stringFormat } from './format';
+import { describe, it, expect, afterEach } from 'vitest';
+import { parseEnum, format, stringFormat, stringFormatInvariant, asSingle } from './format';
+import { installCulture } from './culture';
 
 describe('parseEnum', () => {
   // String enum (TypeScript style)
@@ -139,6 +140,42 @@ describe('stringFormat (string.Format)', () => {
   });
 });
 
+describe('a number in .NET notation, a float with its own digits (#378)', () => {
+  it('writes G and R as the shortest text that reads back, in .NET notation', () => {
+    expect(format(1e21, 'G', undefined, true)).toBe('1E+21');
+    expect(format(0.1 + 0.2, 'R', undefined, true)).toBe('0.30000000000000004');
+  });
+
+  it("writes a float's own digits when it says it is one", () => {
+    const tenth = Math.fround(0.1);
+    expect(format(tenth, 'G', undefined, true, 'single')).toBe('0.1');
+    expect(format(tenth, null, 6, undefined, 'single')).toBe('   0.1');
+    expect(format(Math.fround(1e9), null, undefined, undefined, 'single')).toBe('1E+09');
+    // Without the kind the double underneath shows, which is what the kind exists to prevent.
+    expect(format(tenth, 'G', undefined, true)).toBe('0.10000000149011612');
+  });
+
+  it('aligns a null as the empty text it writes', () => {
+    expect(format(null, null, 4)).toBe('    ');
+    expect(format(undefined, null, -3)).toBe('   ');
+  });
+});
+
+describe('stringFormat, as .NET writes its placeholders', () => {
+  it('writes a number with no specifier in .NET notation, and a bool as True/False', () => {
+    expect(stringFormatInvariant('{0}|{1}|{2}', 1e21, true, false)).toBe('1E+21|True|False');
+  });
+
+  it("writes a float boxed for the call with its own digits, specifier or not", () => {
+    expect(stringFormatInvariant('{0}|{1:G}', asSingle(Math.fround(0.1)), asSingle(Math.fround(0.1)))).toBe('0.1|0.1');
+    expect(asSingle(null)).toBeNull();
+  });
+
+  it('aligns a placeholder by its width, right for a positive one and left for a negative one', () => {
+    expect(stringFormatInvariant('[{0,5}][{0,-5}][{1,8:F2}]', 42, 3.14159)).toBe('[   42][42   ][    3.14]');
+  });
+});
+
 describe('custom numeric formats (digit pictures)', () => {
   // `$"{x:0.0}"` is ordinary C#, and it used to fall through to value.toString(): a size printed
   // as "0.72265625 KB" in a panel meant to read like a terminal. eqc emitted the specifier
@@ -169,5 +206,30 @@ describe('custom numeric formats (digit pictures)', () => {
     expect(format(3.14159, 'F2')).toBe('3.14');
     expect(format(7, 'D3')).toBe('007');
     expect(format(1234.5, 'N2')).toBe('1,234.50');
+  });
+});
+
+describe('an invariant conversion ignores the culture reading it', () => {
+  afterEach(() => installCulture('', '', {}));
+
+  const reading = () =>
+    installCulture('pt-BR', 'pt-BR', {
+      $dateShort: 'dd/MM/yyyy',
+      $timeLong: 'HH:mm:ss',
+      $currency: 'BRL',
+    });
+
+  it('writes the invariant date patterns', () => {
+    reading();
+    const date = new Date(2026, 8, 24, 10, 30, 15);
+    expect(stringFormat('{0:d}', date)).toBe('24/09/2026');
+    expect(stringFormatInvariant('{0:G}', date)).toBe('09/24/2026 10:30:15');
+    expect(format(date, 'd', undefined, true)).toBe('09/24/2026');
+  });
+
+  it('writes the generic currency sign', () => {
+    reading();
+    expect(stringFormatInvariant('{0:C}', 1.5)).toBe('¤1.50');
+    expect(format(1.5, 'C', undefined, true)).toBe('¤1.50');
   });
 });

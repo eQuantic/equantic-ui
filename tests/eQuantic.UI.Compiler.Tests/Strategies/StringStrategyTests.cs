@@ -1,4 +1,6 @@
+using eQuantic.UI.Compiler.CodeGen;
 using FluentAssertions;
+using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
 
 namespace eQuantic.UI.Compiler.Tests.Strategies;
@@ -242,6 +244,75 @@ public class StringStrategyTests
     {
         var result = TestHelper.ConvertExpression("string.Format(\"{0:F2}\", Id)");
         result.Should().Be("$eq.text.stringFormat('{0:F2}', this.id)");
+    }
+
+    /// <summary>
+    /// The provider overload binds its template by the method, never the provider (#377): taken
+    /// for the template, the provider reached the browser as `CultureInfo.invariantCulture`.
+    /// </summary>
+    [Fact]
+    public void Format_WithTheInvariantCulture_FormatsInvariantly_AndLeavesTheProviderOut()
+    {
+        var result = TestHelper.ConvertExpression("string.Format(System.Globalization.CultureInfo.InvariantCulture, \"{0}\", Amount)");
+        result.Should().Be("$eq.text.stringFormatInvariant('{0}', this.amount)");
+    }
+
+    [Fact]
+    public void Format_WithTheCurrentCulture_FormatsAsTheAppsCulture()
+    {
+        var result = TestHelper.ConvertExpression("string.Format(System.Globalization.CultureInfo.CurrentCulture, \"{0}\", Amount)");
+        result.Should().Be("$eq.text.stringFormat('{0}', this.amount)");
+    }
+
+    [Fact]
+    public void Format_WithAnotherProvider_IsABuildError()
+    {
+        TestHelper.DiagnosticsFor("string.Format(System.Globalization.CultureInfo.GetCultureInfo(\"pt-BR\"), \"{0}\", Amount)")
+            .Should().Contain(d => d.Code == "EQ2108");
+    }
+
+    /// <summary>A params array passed as itself is the values, as C#'s normal form reads it, and one
+    /// written in place IS its elements, each passed as a value of its own (an array variable is
+    /// spread, which the conformance suite runs).</summary>
+    [Fact]
+    public void Format_WithAParamsArrayWrittenInPlace_PassesItsElements()
+    {
+        var result = TestHelper.ConvertExpression("string.Format(\"{0} {1}\", new object[] { a, b })");
+        result.Should().Be("$eq.text.stringFormat('{0} {1}', this.a, this.b)");
+    }
+
+    /// <summary>With no model to bind the call, a named culture or a null in first place is still
+    /// the provider, known by its spelling: taken for the template, it put `CultureInfo` in the
+    /// browser. The string API converts with no model at all.</summary>
+    [Theory]
+    [InlineData("string.Format(CultureInfo.InvariantCulture, \"{0}\", x)", "$eq.text.stringFormatInvariant('{0}', x)")]
+    [InlineData("string.Format(System.Globalization.CultureInfo.CurrentCulture, \"{0}\", x)", "$eq.text.stringFormat('{0}', x)")]
+    [InlineData("string.Format(null, \"{0}\", x)", "$eq.text.stringFormat('{0}', x)")]
+    [InlineData("string.Format((IFormatProvider?)null, \"{0}\", x)", "$eq.text.stringFormat('{0}', x)")]
+    [InlineData("string.Format(default(IFormatProvider), \"{0}\", x)", "$eq.text.stringFormat('{0}', x)")]
+    [InlineData("string.Format(\"{0}\", x)", "$eq.text.stringFormat('{0}', x)")]
+    [InlineData("string.Format(\"{0} {1}\", new object[] { a, b })", "$eq.text.stringFormat('{0} {1}', a, b)")]
+    [InlineData("string.Format(\"{0} {1}\", new string[] { a, b })", "$eq.text.stringFormat('{0} {1}', a, b)")]
+    [InlineData("string.Format(\"{0} {1}\", [a, b])", "$eq.text.stringFormat('{0} {1}', a, b)")]
+    public void Format_WithNoModel_KnowsTheProviderByItsSpelling(string code, string expected) =>
+        new CSharpToJsConverter().ConvertExpression(SyntaxFactory.ParseExpression(code)).Should().Be(expected);
+
+    /// <summary>With no model, a first argument that is neither text nor a named culture could be
+    /// the template or a provider, and the spelling cannot say which: `string.Format(format, x)` and
+    /// `string.Format(provider, "", x)` read the same. It is a build error rather than a guess, and so
+    /// is a named argument.</summary>
+    [Theory]
+    [InlineData("string.Format(provider, \"{0}\", x)")]
+    [InlineData("string.Format(provider, \"\", x)")]
+    [InlineData("string.Format(format, x)")]
+    [InlineData("string.Format(format: \"{0}\", arg0: x)")]
+    [InlineData("string.Format(\"{0}\", new[] { a })")]
+    [InlineData("string.Format(\"{0}\", new Thing[] { a })")]
+    public void Format_WithNoModel_RefusesWhatItCannotPlace(string code)
+    {
+        var converter = new CSharpToJsConverter();
+        converter.ConvertExpression(SyntaxFactory.ParseExpression(code));
+        converter.Diagnostics.Should().Contain(d => d.Code == "EQ1004");
     }
 
     [Fact]
