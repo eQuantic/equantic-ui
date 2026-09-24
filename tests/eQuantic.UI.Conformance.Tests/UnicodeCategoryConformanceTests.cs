@@ -52,6 +52,7 @@ public class UnicodeCategoryConformanceTests
     [InlineData("(int)System.Globalization.CharUnicodeInfo.GetUnicodeCategory(\"x\\U0001F600\", 1)")] // a pair, read whole
     [InlineData("(int)char.GetUnicodeCategory(\"x\\U0001F600\", 1)")]                        // the char type's (string, index)
     [InlineData("(int)System.Globalization.CharUnicodeInfo.GetUnicodeCategory(\"ab\", 1)")]  // a plain index
+    [InlineData("(int)System.Globalization.CharUnicodeInfo.GetUnicodeCategory(index: 1, s: \"a1\")")]                                                                                         // named out of order
     public void UnicodeCategory_MatchesDotNet(string expression)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

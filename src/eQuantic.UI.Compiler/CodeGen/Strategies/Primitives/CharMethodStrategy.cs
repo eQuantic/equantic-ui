@@ -34,27 +34,29 @@ public class CharMethodStrategy : IExpressionIrStrategy
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         var name = memberAccess.Name.Identifier.Text;
-        var args = invocation.ArgumentList.Arguments;
-        if (args.Count == 0) return JsExpr.Identifier("undefined");
+        var args = invocation.ArgumentList.Arguments
+            .Select(a => context.Converter.ConvertIr(a.Expression))
+            .ToArray();
+        if (args.Length == 0) return JsExpr.Identifier("undefined");
 
         // The (string, index) overloads classify the character AT the index, and read a surrogate
         // pair there as the one code point it is, which is what .NET does. They were handed the
         // STRING, so `char.IsDigit("a1", 1)` tested "a1" against a one-character pattern and every
-        // one of them answered false. The string and the index each appear once.
+        // one of them answered false.
         //
-        // IR, not text: an ARGUMENT in C# becomes a RECEIVER here, and an argument needs no
-        // parentheses where a receiver does. Spliced as text, `char.ToUpper(c ? a : b)` read
-        // `c ? a : b.toUpperCase()`, upper-casing only the false branch; the writer fences it.
-        var c = args.Count == 2
-            && context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol { Parameters: [{ Type.SpecialType: SpecialType.System_String }, ..] }
-            ? JsExpr.Call(JsExpr.Identifier("String.fromCodePoint"),
-                CodePointAt(context.Converter.ConvertIr(args[0].Expression), context.Converter.ConvertIr(args[1].Expression)))
-            : context.Converter.ConvertIr(args[0].Expression);
+        // A template over PARAMETER holes: the writer fences a hole an operator or a member access
+        // touches, so `char.ToUpper(c ? a : b)` upper-cases the conditional's answer and not its
+        // last branch, and binds each part once, in the order C# evaluates the arguments, so a
+        // named argument written out of order (`char.IsLetter(index: 1, s: "1a")`) fills its own.
+        var method = (IMethodSymbol)context.SemanticHelper.GetSymbol(invocation)!;
+        var c = method.Parameters is [{ Type.SpecialType: SpecialType.System_String }, ..] && args.Length == 2
+            ? "String.fromCodePoint(Number({0}.codePointAt({1})))"
+            : "{0}";
 
-        return name switch
+        var template = name switch
         {
-            "ToUpper" or "ToUpperInvariant" => JsExpr.Call(JsExpr.Member(c, "toUpperCase")),
-            "ToLower" or "ToLowerInvariant" => JsExpr.Call(JsExpr.Member(c, "toLowerCase")),
+            "ToUpper" or "ToUpperInvariant" => $"{c}.toUpperCase()",
+            "ToLower" or "ToLowerInvariant" => $"{c}.toLowerCase()",
             "IsDigit" => Test(@"/^\p{Nd}$/u", c),
             "IsNumber" => Test(@"/^\p{N}$/u", c),
             "IsLetter" => Test(@"/^\p{L}$/u", c),
@@ -66,20 +68,16 @@ public class CharMethodStrategy : IExpressionIrStrategy
             "IsSeparator" => Test(@"/^\p{Z}$/u", c),
             "IsSymbol" => Test(@"/^\p{S}$/u", c),
             "IsControl" => Test(@"/^\p{Cc}$/u", c),
-            "IsAscii" => JsExpr.Group(JsExpr.Binary(CodePointAt(c, JsExpr.Literal("0")), "<", JsExpr.Literal("128"))),
+            // Number(): `codePointAt` answers `number | undefined`, which a strict tsc will not compare.
+            "IsAscii" => $"(Number({c}.codePointAt(0)) < 128)",
             _ => c,
         };
+        return JsExpr.Template(PrimitiveStaticStrategy.BindNamedArguments(template, invocation, method),
+            args, context.TypeAnnotations);
     }
 
-    /// <summary>The code point at <paramref name="index"/>, as the number it is in C#:
-    /// <c>codePointAt</c> answers <c>number | undefined</c>, which a strict tsc will not compare.</summary>
-    private static JsExpr CodePointAt(JsExpr text, JsExpr index) =>
-        JsExpr.Call(JsExpr.Identifier("Number"), JsExpr.Call(JsExpr.Member(text, "codePointAt"), index));
-
-    /// <summary>A pattern tested against the character. The character is an ARGUMENT of the test,
-    /// fenced by its parentheses, so the template needs no more than it has; the outer pair is the
-    /// spelling this has always had.</summary>
-    private static JsExpr Test(string pattern, JsExpr c) => JsExpr.Template($"({pattern}.test({{0}}))", c);
+    /// <summary>A pattern tested against the character, which is an argument of the test.</summary>
+    private static string Test(string pattern, string c) => $"({pattern}.test({c}))";
 
     public int Priority => 10;
 }

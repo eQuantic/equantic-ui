@@ -27,6 +27,7 @@ public class TextElementConformanceTests
     [InlineData("System.Globalization.StringInfo.GetNextTextElementLength(\"e\\u0301a\", 2)")]  // 1
     [InlineData("System.Globalization.StringInfo.GetNextTextElementLength(\"ab\", 2)")]         // 0 — the end
     [InlineData("System.Globalization.StringInfo.GetNextTextElementLength(\"\\U0001F600b\")")]  // 2
+    [InlineData("System.Globalization.StringInfo.GetNextTextElementLength(index: 1, str: \"a\\U0001F600\")")] // 2, named out of order
     public void TextElements_MatchDotNet(string expression)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

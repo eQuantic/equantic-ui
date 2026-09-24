@@ -175,6 +175,8 @@ public class NumericBclConformanceTests
     [InlineData("try { char.IsLetter(\"a\", 5); return 1; } catch { return -1; }")]      // -1
     [InlineData("try { char.IsLetter(\"a\", -1); return 1; } catch { return -1; }")]     // -1
     [InlineData("try { char.IsUpper(\"aB\", 2); return 1; } catch { return -1; }")]      // -1
+    // Named out of order, the arguments still run in the order they were WRITTEN: the index, then the string.
+    [InlineData("int n = 0; string S() { n = n * 10 + 1; return \"1a\"; } int I() { n = n * 10 + 2; return 1; } var r = char.IsLetter(index: I(), s: S()); return n * 10 + (r ? 1 : 0);")] // 211
     // ---- Double: .NET's own compositions, which the precise JS primitives are NOT ----
     [InlineData("return double.ExpM1(1e-10) * 1e10;")]                           // 1.000000082740371 — Exp(x) - 1
     [InlineData("return double.LogP1(1e-10) * 1e10;")]                           // 1.000000082690371 — Log(x + 1)

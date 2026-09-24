@@ -51,6 +51,9 @@ public class StringTotalityConformanceTests
     [InlineData("char.IsLetter(\"a\".Length < 5 ? \"1a\" : \"a1\", 1)")] // true
     [InlineData("char.ToUpper(\"a\".Length < 5 ? 'a' : 'b')")]            // "A"
     [InlineData("char.IsAscii(\"a\".Length < 5 ? 'e' : '\u00e9')")]      // true
+    // Named out of order: each argument fills its own parameter, whatever order it was written in.
+    [InlineData("char.IsLetter(index: 1, s: \"1a\")")]                                                                                 // true
+    [InlineData("char.IsUpper(index: 0, s: \"Ab\")")]                                                                                 // true
     public void Strings_MatchDotNet(string expression)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
