@@ -90,7 +90,10 @@ export class CodeEditorController {
 
     select(value: CodeRange, keepCell: boolean) {
         if (!keepCell) this._desiredCell = -1;
-        let next = new CodeRange(this._document.clamp(value.anchor), this._document.clamp(value.focus));
+        let anchor = this._document.clamp(value.anchor);
+        let focus = this._document.clamp(value.focus);
+        let backwards = !$eq.equals(new CodeRange(anchor, focus).start, anchor);
+        let next = $eq.equals(anchor, focus) ? new CodeRange(this.boundary(anchor, false)) : new CodeRange(this.boundary(anchor, backwards), this.boundary(focus, !backwards));
         if ($eq.equals(next, this._selection)) return;
         this.history.break();
         this._selection = next;
@@ -112,6 +115,14 @@ export class CodeEditorController {
         if (here.column > 0) return $eq.withPatch(here, { column: this.cellsOf(here.line).previous(here.column) });
         if (here.line === 0) return CodePosition.start;
         return new CodePosition(here.line - 1, this._document.line(here.line - 1).length);
+    }
+
+    boundary(position: CodePosition, after: boolean) {
+        let cells = this.cellsOf(position.line);
+        if (position.column <= 0 || position.column >= cells.text.length) return position;
+        let element = cells.elementAt(cells.indexOf(position.column));
+        if (element.start === position.column) return position;
+        return $eq.withPatch(position, { column: after ? element.end : element.start });
     }
 
     after(position: CodePosition) {

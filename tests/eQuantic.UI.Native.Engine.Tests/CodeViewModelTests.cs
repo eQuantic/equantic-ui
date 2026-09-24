@@ -189,4 +189,24 @@ public class CodeViewModelTests
         editor.SelectWord(new CodePosition(0, 1));
         editor.Selection.Should().Be(new CodeRange(new CodePosition(0, 0), new CodePosition(0, 5)));
     }
+
+    /// <summary>
+    /// A position INSIDE a text element is one no caret may hold: an edit from there splits the
+    /// element. Set from outside (the app, an IDE's command), a caret at column 1 of an emoji stood
+    /// between its halves, and a Backspace took the high one and left the low one behind. A caret goes
+    /// to the element's start, as it is drawn, and a range grows to take in the elements it cuts.
+    /// </summary>
+    [Fact]
+    public void APositionInsideAnElementIsTakenToItsBoundary()
+    {
+        var editor = At("\U0001F600xy", 0, 1);
+        editor.Caret.Should().Be(new CodePosition(0, 0), "a caret stands where the element begins");
+
+        editor.DeleteBackward();
+        editor.Document.Text.Should().Be("\U0001F600xy", "there is nothing before the emoji to delete");
+
+        editor.Selection = new CodeRange(new CodePosition(0, 3), new CodePosition(0, 1));
+        editor.Selection.Should().Be(new CodeRange(new CodePosition(0, 3), new CodePosition(0, 0)),
+            "the range takes in the whole emoji, and keeps its direction");
+    }
 }

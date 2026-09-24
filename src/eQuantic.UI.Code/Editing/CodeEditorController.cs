@@ -66,7 +66,16 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     private void Select(CodeRange value, bool keepCell)
     {
         if (!keepCell) _desiredCell = -1;
-        var next = new CodeRange(_document.Clamp(value.Anchor), _document.Clamp(value.Focus));
+        // A position INSIDE a text element is one no caret may hold: an edit from there splits the
+        // element (a Backspace at column 1 of an emoji took its high half). A caret goes to the
+        // element's start, where it is drawn, and a range grows to take in the elements it cuts,
+        // keeping its direction.
+        var anchor = _document.Clamp(value.Anchor);
+        var focus = _document.Clamp(value.Focus);
+        var backwards = new CodeRange(anchor, focus).Start != anchor;
+        var next = anchor == focus
+            ? new CodeRange(Boundary(anchor, after: false))
+            : new CodeRange(Boundary(anchor, after: backwards), Boundary(focus, after: !backwards));
         if (next == _selection) return;
         // Moving the caret ENDS the typing run: the next character starts a new undo step,
         // because a person who moved and typed did two things.
@@ -142,6 +151,19 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         if (here.Column > 0) return here with { Column = CellsOf(here.Line).Previous(here.Column) };
         if (here.Line == 0) return CodePosition.Start;
         return new CodePosition(here.Line - 1, _document.Line(here.Line - 1).Length);
+    }
+
+    /// <summary>
+    /// <paramref name="position"/> itself when it stands on a text element's boundary; inside one, the
+    /// element's start, or its end when <paramref name="after"/>.
+    /// </summary>
+    private CodePosition Boundary(CodePosition position, bool after)
+    {
+        var cells = CellsOf(position.Line);
+        if (position.Column <= 0 || position.Column >= cells.Text.Length) return position;
+        var element = cells.ElementAt(cells.IndexOf(position.Column));
+        if (element.Start == position.Column) return position;
+        return position with { Column = after ? element.End : element.Start };
     }
 
     /// <summary>The position one character (one text element) AFTER this one.</summary>
