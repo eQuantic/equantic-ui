@@ -99,4 +99,10 @@ describe('mapGet / mapSet — a runtime map entry, read and written as .NET does
     expect(mapSet(m, 'a', 5)).toBe(5);
     expect(m.get('a')).toBe(5);
   });
+
+  it('refuses a null key on a write too, where set would file the entry under null', () => {
+    const m = sortedDictionary<string | null, number>();
+    expect(() => mapSet(m, null, 1)).toThrow("Value cannot be null. (Parameter 'key')");
+    expect(m.size).toBe(0);
+  });
 });

@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies;
@@ -25,6 +26,7 @@ internal sealed class DictionaryEntry
     public static readonly DictionaryEntry RuntimeMap = new($"{Eq.MapGet}({{r}}, {{k}})", $"{Eq.MapSet}({{r}}, {{k}}, {{v}})");
 
     // Over {r}, the dictionary, {k}, the key, and {v}, the value written.
+    private static readonly Regex Token = new(@"\{([rkv])\}", RegexOptions.Compiled);
     private readonly string _read;
     private readonly string _write;
 
@@ -46,12 +48,21 @@ internal sealed class DictionaryEntry
     }
 
     /// <summary>The read, which throws for a key that is not there.</summary>
-    public string Read(string dictionary, string key) =>
-        _read.Replace("{r}", dictionary).Replace("{k}", key);
+    public string Read(string dictionary, string key) => Fill(_read, dictionary, key, "");
 
     /// <summary>The write, which answers <paramref name="value"/>. Its text is an assignment on a
     /// plain object and a call on a runtime map, so a template that places it among other operators
     /// wraps it in parentheses of its own.</summary>
-    public string Write(string dictionary, string key, string value) =>
-        _write.Replace("{r}", dictionary).Replace("{k}", key).Replace("{v}", value);
+    public string Write(string dictionary, string key, string value) => Fill(_write, dictionary, key, value);
+
+    /// <summary>The pattern with its tokens filled in ONE pass, so no text put in is scanned for a
+    /// token again: replaced one token at a time, a receiver written <c>GetMap("{k}")</c> had its
+    /// string literal rewritten by the key, and a key <c>"{v}"</c> by the value.</summary>
+    private static string Fill(string pattern, string dictionary, string key, string value) =>
+        Token.Replace(pattern, token => token.Groups[1].Value switch
+        {
+            "r" => dictionary,
+            "k" => key,
+            _ => value,
+        });
 }

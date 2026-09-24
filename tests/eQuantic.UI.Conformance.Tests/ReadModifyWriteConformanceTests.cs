@@ -139,8 +139,14 @@ public class ReadModifyWriteConformanceTests
     // ---- the receiver and the key once, and fixed before the right-hand side runs ----
     [InlineData("int calls = 0; var m = new SortedDictionary<string, int> { [\"a\"] = 1 }; SortedDictionary<string, int> Get() { calls++; return m; } Get()[\"a\"] += 2; return m[\"a\"] + \"/\" + calls;")] // "3/1"
     [InlineData("int calls = 0; var m = new SortedDictionary<string, int> { [\"a\"] = 1 }; string Key() { calls++; return \"a\"; } m[Key()] += 2; return m[\"a\"] + \"/\" + calls;")] // "3/1"
+    [InlineData("int calls = 0; var m = new SortedDictionary<string, int> { [\"a\"] = 1 }; string Key() { calls++; return \"a\"; } m[Key()]++; return m[\"a\"] + \"/\" + calls;")] // "2/1"
     [InlineData("var m = new SortedDictionary<string, int> { [\"a\"] = 1 }; var other = new SortedDictionary<string, int> { [\"a\"] = 10 }; var first = m; m[\"a\"] += (m = other)[\"a\"]; return first[\"a\"] * 100 + other[\"a\"];")] // 1110
     [InlineData("var m = new SortedDictionary<string, bool> { [\"a\"] = true }; m[\"a\"] &= false; return m[\"a\"];")] // false
+    // ---- a null key is refused on a write as on a read, where set filed the entry under null ----
+    [InlineData("var m = new SortedDictionary<string, int>(); string? k = null; try { m[k!] = 1; return \"no\"; } catch (ArgumentNullException) { return \"throws\"; }")]
+    [InlineData("var m = new SortedDictionary<string, int>(); string? k = null; try { var x = m[k!]; return \"no\"; } catch (ArgumentNullException) { return \"throws\"; }")]
+    // ---- a key whose text looks like the template's own tokens is written as it is ----
+    [InlineData("var m = new SortedDictionary<string, int>(); m[\"{v}\"] = 7; m[\"{k}\"] = 8; return m[\"{v}\"] * 10 + m[\"{k}\"];")] // 78
     public void ARuntimeMapEntry_TakesItsTypesRule(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
@@ -153,6 +159,13 @@ public class ReadModifyWriteConformanceTests
     [InlineData("var d = new Dictionary<Point, int> { { new Point(1, 2), 1 } }; d[new Point(1, 2)]++; return d[new Point(1, 2)];")] // 2
     [InlineData("var d = new Dictionary<Point, int>(); try { d[new Point(9, 9)] += 1; return \"no\"; } catch (KeyNotFoundException) { return \"throws\"; }")]
     [InlineData("var d = new Dictionary<Point, int>(); try { var x = d[new Point(9, 9)]; return \"no\"; } catch (KeyNotFoundException) { return \"throws\"; }")]
+    [InlineData("var d = new Dictionary<Point, int>(); try { d[new Point(9, 9)]++; return \"no\"; } catch (KeyNotFoundException) { return \"throws\"; }")]
+    [InlineData("var d = new Dictionary<Point, int> { { new Point(1, 2), 5 } }; var old = d[new Point(1, 2)]++; return old + \"|\" + d[new Point(1, 2)];")] // "5|6"
+    [InlineData("var d = new Dictionary<Point, decimal> { { new Point(1, 2), 1.5m } }; d[new Point(1, 2)] += 2.25m; return d[new Point(1, 2)].ToString();")] // "3.75"
+    // A tuple key is a value key too.
+    [InlineData("var d = new Dictionary<(int, int), int> { [(1, 2)] = 1 }; d[(1, 2)]++; ++d[(1, 2)]; return d[(1, 2)];")] // 3
+    [InlineData("var d = new Dictionary<(int, int), float> { [(1, 2)] = 0.1f }; d[(1, 2)] += 0.2f; return (double)d[(1, 2)];")]
+    [InlineData("var d = new Dictionary<(int, int), int>(); try { d[(9, 9)]++; return \"no\"; } catch (KeyNotFoundException) { return \"throws\"; }")]
     public void AValueKeyedEntry_TakesItsTypesRule(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

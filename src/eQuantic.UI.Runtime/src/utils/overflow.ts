@@ -201,9 +201,12 @@ export function mapGet<K, V>(map: { has(key: K): boolean; get(key: K): V | undef
 
 /**
  * A runtime map's entry WRITE, through the map's own `set`, answering the value written as C#'s
- * assignment does: `set` answers the map, so `var r = (m[k] += 2) * 10` multiplied the map.
+ * assignment does: `set` answers the map, so `var r = (m[k] += 2) * 10` multiplied the map. A null
+ * key is refused as {@link mapGet} refuses it, since .NET's indexer throws on a write too, where
+ * `set` would have filed the entry under null.
  */
 export function mapSet<K, V>(map: { set(key: K, value: V): unknown }, key: K, value: V): V {
+  if (key === null || key === undefined) throw new Error("Value cannot be null. (Parameter 'key')");
   map.set(key, value);
   return value;
 }
