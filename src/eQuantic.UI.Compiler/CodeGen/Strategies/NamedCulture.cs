@@ -31,6 +31,29 @@ internal static class NamedCulture
                 or Microsoft.CodeAnalysis.CSharp.SyntaxKind.DefaultLiteralExpression
                 or Microsoft.CodeAnalysis.CSharp.SyntaxKind.DefaultExpression;
 
+    /// <summary>The culture a cast or parentheses hand on: <c>(IFormatProvider)CultureInfo.InvariantCulture</c>
+    /// is the invariant culture. With a model, only a cast that keeps the object does, an identity or
+    /// a reference conversion; a user-defined one makes another value. With none, the spelling decides.</summary>
+    private static ExpressionSyntax Named(ExpressionSyntax provider, ConversionContext context)
+    {
+        while (true)
+        {
+            switch (provider)
+            {
+                case ParenthesizedExpressionSyntax parenthesized:
+                    provider = parenthesized.Expression;
+                    continue;
+                case CastExpressionSyntax cast when !context.SemanticHelper.KnowsOrMapped(cast)
+                    || context.SemanticHelper.GetOperation(cast) is Microsoft.CodeAnalysis.Operations.IConversionOperation
+                        { Conversion: { IsIdentity: true } or { IsReference: true } }:
+                    provider = cast.Expression;
+                    continue;
+                default:
+                    return provider;
+            }
+        }
+    }
+
     /// <summary>The expression a cast and parentheses name: <c>(IFormatProvider?)null</c> is a null
     /// by its spelling too.</summary>
     private static ExpressionSyntax Bare(ExpressionSyntax expression) => expression switch
@@ -42,6 +65,7 @@ internal static class NamedCulture
 
     private static bool Names(ExpressionSyntax provider, string property, ConversionContext context)
     {
+        provider = Named(provider, context);
         if (context.SemanticHelper.KnowsOrMapped(provider))
         {
             return context.SemanticHelper.GetSymbol(provider) is IPropertySymbol
