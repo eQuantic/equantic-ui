@@ -66,6 +66,9 @@ public class ValueTextConformanceTests
     [InlineData("return string.Format(\"{0}\", new object[] { 0.1f });")]                                          // "0.1"
     [InlineData("float f = 0.1f; return string.Format(\"{0}|{1}\", new object[] { f, \"x\" });")]                   // "0.1|x"
     [InlineData("return string.Format(\"{0}|{1}\", [0.1f, 2]);")]                                                  // "0.1|2"
+    // A float boxed by hand is still a float to the compiler, as an argument and in an array.
+    [InlineData("return string.Format(\"{0}\", (object)0.1f);")]                                                  // "0.1"
+    [InlineData("return string.Format(\"{0}\", new object[] { (object)0.1f });")]                                  // "0.1"
     public void AValue_IsWrittenAsDotNetWritesIt(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

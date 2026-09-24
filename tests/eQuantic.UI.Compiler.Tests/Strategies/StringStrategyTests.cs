@@ -285,6 +285,8 @@ public class StringStrategyTests
     [InlineData("string.Format(CultureInfo.InvariantCulture, \"{0}\", x)", "$eq.text.stringFormatInvariant('{0}', x)")]
     [InlineData("string.Format(System.Globalization.CultureInfo.CurrentCulture, \"{0}\", x)", "$eq.text.stringFormat('{0}', x)")]
     [InlineData("string.Format(null, \"{0}\", x)", "$eq.text.stringFormat('{0}', x)")]
+    [InlineData("string.Format((IFormatProvider?)null, \"{0}\", x)", "$eq.text.stringFormat('{0}', x)")]
+    [InlineData("string.Format(default(IFormatProvider), \"{0}\", x)", "$eq.text.stringFormat('{0}', x)")]
     [InlineData("string.Format(\"{0}\", x)", "$eq.text.stringFormat('{0}', x)")]
     public void Format_WithNoModel_KnowsTheProviderByItsSpelling(string code, string expected) =>
         new CSharpToJsConverter().ConvertExpression(SyntaxFactory.ParseExpression(code)).Should().Be(expected);
