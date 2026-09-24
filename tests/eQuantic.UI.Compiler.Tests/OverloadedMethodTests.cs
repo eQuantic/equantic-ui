@@ -157,6 +157,27 @@ public class OverloadedMethodTests
         result.Errors.Should().NotContain(error => error.Code == "EQ1007");
     }
 
+    /// <summary>
+    /// An abstract overload takes its name, though the base's twin writes nothing for it: the class
+    /// that implements it writes it under that name, and in JavaScript the implementation is what
+    /// every call on the name reaches, the base's other overload included. Left uncounted, neither
+    /// class would declare two methods that are written, and <c>new Square().Draw("x")</c> would
+    /// answer the square on the web where .NET answers the label.
+    /// </summary>
+    [Fact]
+    public void AnAbstractOverload_TakesItsName_ForItsImplementationIsWrittenOverTheOther()
+    {
+        var result = Compile("""
+            public abstract class Shape
+            {
+                public abstract string Draw(int size);
+                public string Draw(string label) => "label " + label;
+            }
+            """, "Shape");
+
+        result.Errors.Should().ContainSingle().Which.Code.Should().Be("EQ1007");
+    }
+
     /// <summary>An explicit interface implementation's name is the interface's, which the author
     /// cannot change, so "give each its own name" is no answer there.</summary>
     [Fact]
