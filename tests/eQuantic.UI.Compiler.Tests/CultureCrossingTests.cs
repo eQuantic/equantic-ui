@@ -55,8 +55,10 @@ public class CultureCrossingTests
         return compiler.CompileSource(source, "Readout.cs").Single();
     }
 
-    /// <summary>The escape has to compile. `String(x)` IS .NET's invariant rendering of a
-    /// number, so the ask is answered exactly rather than approximated.</summary>
+    /// <summary>The escape has to compile, and the invariant ask is answered exactly: by the
+    /// printer that writes a float's own shortest digits, as .NET's invariant text does. `String()`
+    /// was taken for that rendering and is not one: of this 0.55f it writes 0.550000011920929, the
+    /// double underneath (#336).</summary>
     [Fact]
     public void TheInvariantCulture_CrossesAsPlainConversion()
     {
@@ -64,7 +66,7 @@ public class CultureCrossingTests
 
         Assert.True(result.Success);
         Assert.DoesNotContain("CultureInfo", result.TypeScript);
-        Assert.Contains("String(this._value)", result.TypeScript);
+        Assert.Contains("$eq.num.single(this._value)", result.TypeScript);
     }
 
     /// <summary>With a specifier, the invariance has to reach the FORMATTER: every path in it reads
@@ -115,7 +117,7 @@ public class CultureCrossingTests
 
         Assert.True(result.Success);
         Assert.DoesNotContain("CultureInfo", result.TypeScript);
-        Assert.Contains("String(", result.TypeScript);
+        Assert.Contains("$eq.num.single($eq.math.roundSingle(", result.TypeScript);
     }
 
     /// <summary>A provider the subset cannot honour is refused where the developer can see it,

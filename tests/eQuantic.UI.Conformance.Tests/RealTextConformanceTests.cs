@@ -49,6 +49,12 @@ public class RealTextConformanceTests
     [InlineData("return float.Epsilon.ToString();")]                       // "1E-45"
     [InlineData("float f = -0f; return f.ToString();")]                    // "-0"
     [InlineData("return float.PositiveInfinity.ToString();")]              // "Infinity"
+    // ---- the invariant culture asked for by name, and a nullable, which prints nothing for a null ----
+    [InlineData("float f = 0.1f; return f.ToString(System.Globalization.CultureInfo.InvariantCulture);")]  // "0.1"
+    [InlineData("double d = 1e17; return d.ToString(System.Globalization.CultureInfo.InvariantCulture);")] // "1E+17"
+    [InlineData("double? d = null; return d.ToString();")]                 // ""
+    [InlineData("double? d = 1e17; return d.ToString();")]                 // "1E+17"
+    [InlineData("float? f = 0.1f; return f.ToString();")]                  // "0.1"
     public void AFractionalNumber_ReadsAsDotNetWritesIt(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

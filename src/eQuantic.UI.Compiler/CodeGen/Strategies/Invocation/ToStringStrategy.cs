@@ -75,7 +75,7 @@ public class ToStringStrategy : IConversionStrategy
             // rendering of a number, so the invariant ask is answered exactly; the CURRENT culture's
             // general format is not in the tested subset, and asking for it by name is how a page
             // gets digits nobody pinned.
-            if (invariant) return $"String({caller})";
+            if (invariant) return RealText(memberAccess.Expression, context) ?? $"String({caller})";
 
             context.Report(node, ConversionSeverity.Error, "EQ2109",
                 "ToString(CultureInfo.CurrentCulture) has no specifier to pin, and the general "
@@ -89,7 +89,7 @@ public class ToStringStrategy : IConversionStrategy
         // `String(x)` is always invariant, so the browser re-renders "0.55" over it. Two targets,
         // two answers, from source that looks obviously correct. A warning rather than an error:
         // this compiles in apps today, and the fix is one argument away.
-        if (context.SemanticHelper.GetType(memberAccess.Expression) is
+        if (context.SemanticHelper.GetType(memberAccess.Expression).UnwrapNullable() is
             { SpecialType: SpecialType.System_Single or SpecialType.System_Double
                 or SpecialType.System_Decimal })
         {
@@ -103,14 +103,8 @@ public class ToStringStrategy : IConversionStrategy
         // A FLOAT prints as the shortest decimal that reads back as the same single — `0.1f + 0.2f`
         // is "0.3", where String() of the same bits would spell the double underneath — and a
         // DOUBLE in .NET's notation, which turns scientific at 1e17 where String() waits for 1e21.
-        if (context.SemanticHelper.GetType(memberAccess.Expression) is
-                { SpecialType: SpecialType.System_Single or SpecialType.System_Double } real
-            && invocation.ArgumentList.Arguments.Count == 0)
-        {
-            context.UsedHelpers.Add(Eq.Import);
-            var printer = real.SpecialType == SpecialType.System_Single ? Eq.Single : Eq.Double;
-            return $"{printer}({context.Converter.ConvertExpression(memberAccess.Expression)})";
-        }
+        if (invocation.ArgumentList.Arguments.Count == 0 && RealText(memberAccess.Expression, context) is { } real)
+            return real;
 
         // An ENUM crosses as a lowercase string (`Kind.B` → 'b'), so String() hands back the WIRE
         // value while the server hands back the C# member name. Any text printing an enum then
@@ -123,6 +117,19 @@ public class ToStringStrategy : IConversionStrategy
         }
 
         return $"String({caller})";
+    }
+
+    /// <summary>
+    /// A float's or a double's text as .NET writes it, a nullable one's included, which is nothing
+    /// for a null (<c>Nullable&lt;T&gt;.ToString()</c> is "", where String() spelled "null"): the
+    /// same conversion a concatenation takes. Null for any other receiver.
+    /// </summary>
+    private static string? RealText(ExpressionSyntax receiver, ConversionContext context)
+    {
+        if (context.SemanticHelper.GetType(receiver).UnwrapNullable()?.SpecialType
+            is not (SpecialType.System_Single or SpecialType.System_Double)) return null;
+        return Ir.JsExprWriter.Write(
+            StringConversion.ToDotNetString(receiver, context.Converter.ConvertIr(receiver), context));
     }
 
     /// <summary>
