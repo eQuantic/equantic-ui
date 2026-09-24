@@ -477,3 +477,4 @@ static eQuantic.UI.Code.CodeLineCells.IsZeroWidth(int codePoint) -> bool
 eQuantic.UI.Code.CodeEditorController.FocusVersion.get -> int
 eQuantic.UI.Code.CodeEditorController.RequestFocus() -> void
 eQuantic.UI.Code.CodeEditorController.WidestLine.get -> int
+eQuantic.UI.Code.CodeEditorController.NextOf(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeRange>! matches, bool backward = false) -> eQuantic.UI.Code.CodeRange?

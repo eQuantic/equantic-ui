@@ -209,4 +209,47 @@ public class CodeViewModelTests
         editor.Selection.Should().Be(new CodeRange(new CodePosition(0, 3), new CodePosition(0, 0)),
             "the range takes in the whole emoji, and keeps its direction");
     }
+
+    /// <summary>
+    /// The widest line follows every edit without measuring the file again, and answers what
+    /// measuring it would: over random edits of random documents, typing, deleting, breaking and
+    /// joining lines, pasting several, undoing and redoing, and taking the widest line away.
+    /// </summary>
+    [Fact]
+    public void TheWidestLineFollowsEveryEdit()
+    {
+        var random = new Random(2026_09_24);
+        for (var round = 0; round < 200; round++)
+        {
+            var text = string.Join("\n", Enumerable.Range(0, random.Next(1, 12))
+                .Select(_ => new string('x', random.Next(0, 30))));
+            var editor = new CodeEditorController(text, CodeLanguages.For("csharp"));
+            _ = editor.WidestLine;   // from here on the widths are kept, and spliced
+            for (var step = 0; step < 20; step++)
+            {
+                editor.Selection = new CodeRange(Anywhere(random, editor.Document), Anywhere(random, editor.Document));
+                switch (random.Next(6))
+                {
+                    case 0: editor.HandleText(new string('y', random.Next(1, 40))); break;
+                    case 1: editor.DeleteBackward(); break;
+                    case 2: editor.InsertNewLine(); break;
+                    case 3:
+                        editor.Paste(string.Join("\n", Enumerable.Range(0, random.Next(1, 4))
+                            .Select(_ => new string('z', random.Next(0, 50)))));
+                        break;
+                    case 4: editor.Undo(); break;
+                    default: editor.Redo(); break;
+                }
+                var measured = Enumerable.Range(0, editor.Document.LineCount)
+                    .Max(line => CodeLineCells.WidthOf(editor.Document.Line(line), editor.Rules.IndentWidth));
+                editor.WidestLine.Should().Be(measured, $"round {round}, step {step}");
+            }
+        }
+
+        static CodePosition Anywhere(Random random, CodeDocument document)
+        {
+            var line = random.Next(0, document.LineCount);
+            return new CodePosition(line, random.Next(0, document.Line(line).Length + 1));
+        }
+    }
 }

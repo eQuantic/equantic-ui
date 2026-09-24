@@ -389,6 +389,46 @@ public class CodeEditorComponentTests
         return null;
     }
 
+    /// <summary>
+    /// A step through the matches the bar holds lands where a search of the whole file would have:
+    /// forward from the selection's end, back from its start, wrapping at either end.
+    /// </summary>
+    [Fact]
+    public void AStepThroughTheHeldMatches_LandsWhereASearchWould()
+    {
+        var random = new Random(2026_09_24);
+        for (var round = 0; round < 300; round++)
+        {
+            var text = string.Join("\n", Enumerable.Range(0, random.Next(1, 8))
+                .Select(_ => string.Concat(Enumerable.Range(0, random.Next(0, 12)).Select(_ => "ab "[random.Next(3)]))));
+            var controller = new CodeEditorController(text, CodeLanguages.For("csharp"));
+            var needle = new[] { "a", "b", "ab", "ba" }[random.Next(4)];
+            var matches = controller.FindAll(needle);
+            var end = controller.Document.End;
+            var line = random.Next(0, end.Line + 1);
+            var start = new CodePosition(line, random.Next(0, controller.Document.Line(line).Length + 1));
+            controller.Selection = new CodeRange(start, controller.Document.Clamp(start with { Column = start.Column + random.Next(0, 3) }));
+
+            foreach (var backward in new[] { false, true })
+                controller.NextOf(matches, backward).Should().Be(Linear(matches, controller.Selection, backward),
+                    $"round {round}, {(backward ? "back" : "forward")}");
+        }
+
+        static CodeRange? Linear(IReadOnlyList<CodeRange> matches, CodeRange selection, bool backward)
+        {
+            if (matches.Count == 0) return null;
+            if (backward)
+            {
+                for (var i = matches.Count - 1; i >= 0; i--)
+                    if (matches[i].End <= selection.Start) return matches[i];
+                return matches[^1];
+            }
+            foreach (var match in matches)
+                if (match.Start >= selection.End) return match;
+            return matches[0];
+        }
+    }
+
     /// <summary>A parent that decides how tall its editor is, and builds it anew as a parent does.</summary>
     private sealed class Pane(string text) : Primitives.StatefulComponent
     {

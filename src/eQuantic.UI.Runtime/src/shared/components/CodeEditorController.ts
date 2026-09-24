@@ -2,7 +2,7 @@ import { $eq, CodeDirectionValue, CodeDocument, CodeEdit, CodeGrid, CodeHighligh
 
 export class CodeEditorController {
     constructor(text: string = '', language: any = null, props?: any) {
-        this._selection = new CodeRange(); this._desiredCell = -1; this._cells = {}; this._widestOf = null; this._widestTabs = 0; this._widest = 0; this._dragging = false; this._revealVersion = 0; this._focusVersion = 0; this._composition = null; this._compositionReplaced = ''; this._compositionSelection = new CodeRange(); this._wholeLineCopy = null; this._document = CodeDocument.fromText(text);
+        this._selection = new CodeRange(); this._desiredCell = -1; this._cells = {}; this._widths = null; this._widthsTabs = 0; this._widest = 0; this._dragging = false; this._revealVersion = 0; this._focusVersion = 0; this._composition = null; this._compositionReplaced = ''; this._compositionSelection = new CodeRange(); this._wholeLineCopy = null; this._document = CodeDocument.fromText(text);
         this._selection = new CodeRange(CodePosition.start);
         this.highlighter = new CodeHighlighter(language ?? CodeLanguages.plainText); if (props && typeof props === 'object') Object.assign(this, props);
     }
@@ -11,8 +11,8 @@ export class CodeEditorController {
     _selection: CodeRange;
     _desiredCell: number;
     _cells: Record<string, any>;
-    _widestOf: CodeDocument | null;
-    _widestTabs: number;
+    _widths: number[] | null;
+    _widthsTabs: number;
     _widest: number;
     static caretWidth: number = 2;
     _dragging: boolean;
@@ -29,6 +29,7 @@ export class CodeEditorController {
 
     set document(value: CodeDocument) {
         this._document = value;
+        this._widths = null;
         this._selection = new CodeRange(this._document.clamp(this._selection.focus));
         this._composition = null;
         this.highlighter.invalidate();
@@ -61,13 +62,13 @@ export class CodeEditorController {
 
     get widestLine(): number {
         let tabSize = this.rules.indentWidth;
-        if (this._widestOf === this._document && this._widestTabs === tabSize) return this._widest;
-        let widest = 0;
-        for (let line = 0; line < this._document.lineCount; line++) widest = Math.max(widest, CodeLineCells.widthOf(this._document.line(line), tabSize));
-        this._widestOf = this._document;
-        this._widestTabs = tabSize;
-        this._widest = widest;
-        return widest;
+        if (this._widths == null || this._widthsTabs !== tabSize) {
+            this._widths = [];
+            for (let line = 0; line < this._document.lineCount; line++) this._widths.push(CodeLineCells.widthOf(this._document.line(line), tabSize));
+            this._widthsTabs = tabSize;
+            this._widest = CodeEditorController.widest(this._widths);
+        }
+        return this._widest;
     }
 
     grid: CodeGrid = CodeGrid.default;
@@ -102,6 +103,31 @@ export class CodeEditorController {
         this._selection = next;
         this._revealVersion++;
         this.selectionChanged?.(next);
+    }
+
+    widthsChanged(line: number, linesInserted: number, linesRemoved: number) {
+        if (this._widths == null) return;
+        let old = this._widths;
+        let gone = Math.min(linesRemoved + 1, old.length - line);
+        let lostTheWidest = false;
+        for (let i = line; i < line + gone; i++) if (old[i] >= this._widest) lostTheWidest = true;
+        let next: number[] = [];
+        for (let i = 0; i < line; i++) next.push(old[i]);
+        let measuredWidest = 0;
+        for (let i = line; i <= line + linesInserted; i++) {
+            let width = CodeLineCells.widthOf(this._document.line(i), this._widthsTabs);
+            if (width > measuredWidest) measuredWidest = width;
+            next.push(width);
+        }
+        for (let i = line + gone; i < old.length; i++) next.push(old[i]);
+        this._widths = next;
+        if (lostTheWidest) this._widest = CodeEditorController.widest(next); else if (measuredWidest > this._widest) this._widest = measuredWidest;
+    }
+
+    static widest(widths: number[]) {
+        let widest = 0;
+        for (const width of widths) if (width > widest) widest = width;
+        return widest;
     }
 
     cellsOf(line: number) {
@@ -229,6 +255,7 @@ export class CodeEditorController {
         this._document = next;
         this._selection = new CodeRange(caret);
         this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
+        this.widthsChanged(line, linesInserted, linesRemoved);
         this._revealVersion++;
         this._desiredCell = -1;
         let edit = new CodeEdit(ordered, removed, text, before, this._selection, false);
@@ -290,6 +317,7 @@ export class CodeEditorController {
         let edit = new CodeEdit(ordered, removed, text, before, this._selection, typed);
         this.history.record(edit);
         this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
+        this.widthsChanged(line, linesInserted, linesRemoved);
         this.changed?.(edit);
         this.selectionChanged?.(this._selection);
         this._desiredCell = -1;
@@ -637,6 +665,7 @@ export class CodeEditorController {
         let next = ($o => (selection = $o.selection, $o.$))(this.history.undo(this._document));
         if (next == null) return false;
         this._document = next;
+        this._widths = null;
         this._revealVersion++;
         this._selection = new CodeRange(next.clamp(selection.anchor), next.clamp(selection.focus));
         this._desiredCell = -1;
@@ -652,6 +681,7 @@ export class CodeEditorController {
         let next = ($o => (selection = $o.selection, $o.$))(this.history.redo(this._document));
         if (next == null) return false;
         this._document = next;
+        this._widths = null;
         this._revealVersion++;
         this._selection = new CodeRange(next.clamp(selection.anchor), next.clamp(selection.focus));
         this._desiredCell = -1;
@@ -678,14 +708,25 @@ export class CodeEditorController {
     }
 
     findNext(needle: string, matchCase: boolean = false, backward: boolean = false) {
-        let matches = this.findAll(needle, matchCase);
+        return this.nextOf(this.findAll(needle, matchCase), backward);
+    }
+
+    nextOf(matches: CodeRange[], backward: boolean = false) {
         if (matches.length === 0) return null;
+        let low = 0;
+        let high = matches.length;
         if (backward) {
-            for (let i = matches.length - 1; i >= 0; i--) if (CodePosition.opLessOrEqual(matches[i].end, this._selection.start)) return matches[i];
-            return matches[matches.length - 1];
+            while (low < high) {
+                let middle = Math.trunc((low + high) / 2);
+                if (CodePosition.opLessOrEqual(matches[middle].end, this._selection.start)) low = middle + 1; else high = middle;
+            }
+            return low > 0 ? matches[low - 1] : matches[matches.length - 1];
         }
-        for (const match of matches) if (CodePosition.opGreaterOrEqual(match.start, this._selection.end)) return match;
-        return matches[0];
+        while (low < high) {
+            let middle = Math.trunc((low + high) / 2);
+            if (CodePosition.opLessThan(matches[middle].start, this._selection.end)) low = middle + 1; else high = middle;
+        }
+        return low < matches.length ? matches[low] : matches[0];
     }
 
     bracketAtCaret() {

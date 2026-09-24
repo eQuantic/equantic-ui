@@ -487,7 +487,8 @@ public sealed class CodeEditor : StatefulComponent
         void Step(bool forward)
         {
             if (_findText.Length == 0) return;
-            if (editor.FindNext(_findText, SearchMatchCase, backward: !forward) is not { } found) return;
+            // Through the matches the bar already holds: FindNext would search the file again.
+            if (editor.NextOf(matches, backward: !forward) is not { } found) return;
             SetState(() =>
             {
                 editor.Selection = found;

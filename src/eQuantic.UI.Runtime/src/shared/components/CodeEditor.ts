@@ -210,7 +210,7 @@ export class CodeEditor extends StatefulComponent {
         const step = (forward: boolean) => {
             if (this._findText.length === 0) return;
             let found: any; 
-            if (!((found = editor.findNext(this._findText, this.searchMatchCase, !forward)) != null)) return;
+            if (!((found = editor.nextOf(matches, !forward)) != null)) return;
             this.setState(() => {
                 editor.selection = found;
                 this.notify(editor);
