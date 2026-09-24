@@ -206,6 +206,25 @@ public class CodeDifferTests
         clock.ElapsedMilliseconds.Should().BeLessThan(2_000, "a rewrite is marked, not searched to the end");
     }
 
+    /// <summary>
+    /// A change too large to mark word by word is known as soon as its tokens pass the limit, and the
+    /// tokens past it are never built. A line of a million punctuation marks built a million
+    /// substrings and two million coordinates before the limit was asked.
+    /// </summary>
+    [Fact]
+    public void ARewriteTooLargeToMarkWordByWord_StopsTokenizingAtTheLimit()
+    {
+        var huge = new string(';', 1_000_000);
+        CodeDiffer.CompareLines(["x", "a"], ["x", "b"]);
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var changes = CodeDiffer.CompareLines(["x", "a"], ["x", huge]);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        changes.Should().ContainSingle().Which.Inner.Should().BeEmpty("a rewrite that large is marked whole");
+        allocated.Should().BeLessThan(8_000_000, "the tokens past the limit are never built");
+    }
+
     private static string[] RandomLines(Random random)
     {
         var lines = new string[random.Next(0, 31)];
