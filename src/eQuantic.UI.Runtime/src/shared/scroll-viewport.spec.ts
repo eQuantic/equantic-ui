@@ -177,6 +177,28 @@ describe('ScrollView web out-channels', () => {
       expect(observers[0].target).toBeUndefined();
     });
 
+    /**
+     * A scroll view that is simply unmounted, or rebuilt with nothing to ask, is never resized again
+     * to find out: it is let go by the first pass that does not declare it.
+     */
+    it('lets go of a scroll view the pass no longer declares', async () => {
+      const lowered = lowerVisualNode(scrollNode({ onViewportChanged: () => {} }), context());
+      const path = (lowered as { attributes: Record<string, string> }).attributes['data-eq-scroll'];
+      const el = document.createElement('div');
+      el.setAttribute('data-eq-scroll', path);
+      Object.defineProperty(el, 'clientHeight', { value: 400, configurable: true });
+      document.body.append(el);
+      commitScrollViewports();
+      expect(observers[0].target).toBe(el);
+
+      // The next pass lowers no scroll view at all, and the element leaves.
+      el.remove();
+      scheduleScrollViewportCommit();
+      await Promise.resolve();
+
+      expect(observers[0].target).toBeUndefined();
+    });
+
     /** With no queueMicrotask the commit still waits for the write, rather than measuring the tree
      * before it. */
     it('waits for the write where there is no queueMicrotask', async () => {

@@ -43,12 +43,25 @@ export function declareScrollViewport(path: string, declaration: ScrollViewportD
 }
 
 /**
+ * The scroll views watched for their size. A pass re-declares every scroll view it lowers, so one
+ * this pass did not declare is gone, or no longer asks, and is let go at once rather than on the
+ * next resize, which an element that was simply unmounted never has.
+ */
+const watched = new Set<AdoptedScrollElement>();
+
+function stopWatching(view: AdoptedScrollElement): void {
+  view.__eqResizeObserver?.disconnect();
+  view.__eqResizeObserver = undefined;
+  watched.delete(view);
+}
+
+/**
  * Commits AFTER the pass's DOM has been written: a microtask is the first moment after the write,
  * and it keeps the commit itself synchronous for tests that drive it directly (see
  * `scheduleInViewCommit`, the same move for the same reason).
  */
 export function scheduleScrollViewportCommit(): void {
-  if (declared.size === 0) return;
+  if (declared.size === 0 && watched.size === 0) return;
   // After the write on every engine: committing on the spot where there is no queueMicrotask
   // measured the tree before, which is the defect this deferral exists to remove.
   if (typeof queueMicrotask === 'function') queueMicrotask(commitScrollViewports);
@@ -56,11 +69,12 @@ export function scheduleScrollViewportCommit(): void {
 }
 
 export function commitScrollViewports(): void {
-  if (declared.size === 0) return;
+  if (declared.size === 0 && watched.size === 0) return;
   if (typeof document === 'undefined') {
     declared.clear();
     return;
   }
+  const live = new Set<AdoptedScrollElement>();
   const mounted = document.querySelectorAll<AdoptedScrollElement>('[data-eq-scroll]');
   for (const view of mounted) {
     const declaration = declared.get(view.getAttribute('data-eq-scroll') ?? '');
@@ -82,15 +96,16 @@ export function commitScrollViewports(): void {
     // watching, is the size just reported, and stays silent. A scroll view that keeps its offset
     // and stops asking for its viewport stops being watched, rather than being told of every
     // resize for nobody.
-    if (!declaration.onViewportChanged) {
-      view.__eqResizeObserver?.disconnect();
-      view.__eqResizeObserver = undefined;
-    } else if (!view.__eqResizeObserver && typeof ResizeObserver === 'function') {
+    if (!declaration.onViewportChanged || typeof ResizeObserver !== 'function') continue;
+    live.add(view);
+    if (!view.__eqResizeObserver) {
       const observer = new ResizeObserver(() => reportViewport(view));
       observer.observe(view);
       view.__eqResizeObserver = observer;
+      watched.add(view);
     }
   }
+  for (const view of [...watched]) if (!live.has(view)) stopWatching(view);
   declared.clear();
 }
 
@@ -99,8 +114,7 @@ function reportViewport(view: AdoptedScrollElement): void {
   // A scroll view that stopped asking lost its marker with its declaration: its old callback is
   // not called for a size nobody wants any more.
   if (!view.hasAttribute('data-eq-scroll')) {
-    view.__eqResizeObserver?.disconnect();
-    view.__eqResizeObserver = undefined;
+    stopWatching(view);
     return;
   }
   const extent = view.__eqHorizontal ? view.clientWidth : view.clientHeight;
