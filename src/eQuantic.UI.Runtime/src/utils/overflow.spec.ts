@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { checked, intDiv, intRem, longDiv, longRem } from './overflow';
+import { checked, intDiv, intRem, longDiv, longRem, mapGet, mapSet } from './overflow';
 import { single } from './real-text';
+import { sortedDictionary } from './sorted';
+import { valueMap } from './collections';
 
 describe('checked arithmetic', () => {
   it('hands a value in range back, and throws past the edge', () => {
@@ -71,5 +73,30 @@ describe('integer division throws where .NET does', () => {
     expect(() => longDiv(-9_223_372_036_854_775_808n, -1n)).toThrow(overflow);
     expect(() => longRem(-9_223_372_036_854_775_808n, -1n)).toThrow(overflow);
     expect(intDiv(-2_147_483_647, -1)).toBe(2_147_483_647);
+  });
+});
+
+describe('mapGet / mapSet — a runtime map entry, read and written as .NET does', () => {
+  it('reads a key that is there, a stored null included', () => {
+    const m = sortedDictionary<string, string | null>([['a', 'x'], ['n', null]]);
+    expect(mapGet(m, 'a')).toBe('x');
+    expect(mapGet(m, 'n')).toBeNull();
+  });
+
+  it("throws for a key that is not there, where the map's own get answers undefined", () => {
+    const m = sortedDictionary<string, number>([['a', 1]]);
+    expect(m.get('z')).toBeUndefined();
+    expect(() => mapGet(m, 'z')).toThrow("The given key 'z' was not present in the dictionary.");
+  });
+
+  it('throws for a null key, as .NET does', () => {
+    const m = valueMap<unknown, number>();
+    expect(() => mapGet(m, null)).toThrow("Value cannot be null. (Parameter 'key')");
+  });
+
+  it('writes through set and answers the value written, not the map', () => {
+    const m = valueMap<string, number>();
+    expect(mapSet(m, 'a', 5)).toBe(5);
+    expect(m.get('a')).toBe(5);
   });
 });

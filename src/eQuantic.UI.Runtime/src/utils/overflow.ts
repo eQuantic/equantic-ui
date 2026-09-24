@@ -187,3 +187,23 @@ export function dictGet<V>(map: Record<string, V>, key: unknown): V {
   }
   return map[property];
 }
+
+/**
+ * The same read on a RUNTIME MAP — a `SortedDictionary`, a `SortedList`, a dictionary keyed by a
+ * value — whose own `get` answers undefined for a key that is not there, where .NET throws, exactly
+ * as {@link dictGet} throws for the plain-object dictionary.
+ */
+export function mapGet<K, V>(map: { has(key: K): boolean; get(key: K): V | undefined }, key: K): V {
+  if (key === null || key === undefined) throw new Error("Value cannot be null. (Parameter 'key')");
+  if (!map.has(key)) throw new Error(`The given key '${String(key)}' was not present in the dictionary.`);
+  return map.get(key) as V;
+}
+
+/**
+ * A runtime map's entry WRITE, through the map's own `set`, answering the value written as C#'s
+ * assignment does: `set` answers the map, so `var r = (m[k] += 2) * 10` multiplied the map.
+ */
+export function mapSet<K, V>(map: { set(key: K, value: V): unknown }, key: K, value: V): V {
+  map.set(key, value);
+  return value;
+}
