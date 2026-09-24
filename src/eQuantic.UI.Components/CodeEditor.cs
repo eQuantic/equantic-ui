@@ -48,6 +48,15 @@ public sealed class CodeEditor : StatefulComponent
 
     public bool ShowLineNumbers { get; set; } = true;
     public int FirstLineNumber { get; set; } = 1;
+    /// <summary>
+    /// How tall the editor is. Hug, the default, is as tall as the code, up to
+    /// <see cref="MaxHeight"/> when one is set. Fill takes the height its place gives it, which is
+    /// how an IDE's pane uses it, and a fixed height is that many dp. Anything but an uncapped Hug
+    /// scrolls the code inside it and builds only the lines in view.
+    /// </summary>
+    public SizeValue Height { get; set; } = SizeValue.Hug;
+
+    /// <summary>The most a Hug editor grows to before it scrolls, in dp. 0 = no cap.</summary>
     public float MaxHeight { get; set; }
     public SizeVariant Size { get; set; } = SizeVariant.Small;
     public bool Inverse { get; set; }
@@ -86,7 +95,33 @@ public sealed class CodeEditor : StatefulComponent
         {
             ReadOnly = ReadOnly,
         };
+        _toldDocument = editor.Document;
+        _toldSelection = editor.Selection;
         return editor;
+    }
+
+    /// <summary>The document and the selection the app was last told about (see <see cref="Notify"/>).</summary>
+    private CodeDocument? _toldDocument;
+    private CodeRange _toldSelection;
+
+    /// <summary>
+    /// Tells the app what CHANGED since it was last told: the document after an edit, the selection
+    /// after a move. Both were raised together for anything the surface did, so an arrow reached the
+    /// app as an edit (an app re-reading the document on every change did it for every arrow), and
+    /// the find bar's steps moved the selection without a word.
+    /// </summary>
+    private void Notify(CodeEditorController editor)
+    {
+        if (editor.Document != _toldDocument)
+        {
+            _toldDocument = editor.Document;
+            OnChanged?.Invoke(editor.Document.Text);
+        }
+        if (editor.Selection != _toldSelection)
+        {
+            _toldSelection = editor.Selection;
+            OnSelectionChanged?.Invoke(editor.Selection);
+        }
     }
 
     /// <summary>
@@ -94,20 +129,19 @@ public sealed class CodeEditor : StatefulComponent
     /// pair under the caret. Computed per frame from the model rather than stored, because all three
     /// are functions of where the caret is — and a stored copy would be one keystroke behind.
     /// </summary>
-    private IReadOnlyList<CodeDecoration> Marks(CodeEditorController editor)
+    private IReadOnlyList<CodeDecoration> Marks(CodeEditorController editor, IReadOnlyList<CodeRange> matches)
     {
-        var needle = _findOpen && _findText.Length > 0 ? _findText : Search;
-        if (needle is not { Length: > 0 } && !MatchBrackets && editor.Composition is null) return Decorations;
+        if (matches.Count == 0 && !MatchBrackets && editor.Composition is null) return Decorations;
 
         var marks = new List<CodeDecoration>(Decorations);
         // The text an input method is still composing is IN the document, and says so: underlined,
         // in the code's own ink, until it is committed or cancelled.
         if (editor.Composition is { } composition)
             marks.Add(new CodeDecoration(composition, CodeDecorationKind.Underline));
-        if (needle is { Length: > 0 } search)
+        if (matches.Count > 0)
         {
             var current = editor.Selection;
-            foreach (var match in editor.FindAll(search, SearchMatchCase))
+            foreach (var match in matches)
             {
                 // The one the caret is ON wears the outline; the rest are washed. Without that,
                 // "next match" moves something nobody can see.
@@ -154,6 +188,7 @@ public sealed class CodeEditor : StatefulComponent
         OnSelectionChanged = fresh.OnSelectionChanged;
         ShowLineNumbers = fresh.ShowLineNumbers;
         FirstLineNumber = fresh.FirstLineNumber;
+        Height = fresh.Height;
         MaxHeight = fresh.MaxHeight;
         Size = fresh.Size;
         Inverse = fresh.Inverse;
@@ -167,6 +202,10 @@ public sealed class CodeEditor : StatefulComponent
         SearchMatchCase = fresh.SearchMatchCase;
         OnGutterPressed = fresh.OnGutterPressed;
     }
+
+    /// <summary>What find is looking for: the bar's text while the bar is open, else what the app
+    /// asked for through <see cref="Search"/>.</summary>
+    private string? Needle => _findOpen && _findText.Length > 0 ? _findText : Search;
 
     public override VisualNode Build(ComponentContext context)
     {
@@ -186,6 +225,12 @@ public sealed class CodeEditor : StatefulComponent
         editor.Grid = new CodeGrid(new Point(metrics.ContentLeft, metrics.ContentTop),
             new Size(metrics.ColumnWidth, metrics.LineHeight));
 
+        // Every match, found ONCE per build: the marks and the bar's count both read it.
+        var needle = Needle;
+        IReadOnlyList<CodeRange> matches = needle is { Length: > 0 } search
+            ? editor.FindAll(search, SearchMatchCase)
+            : [];
+
         // The empty-string constructor + inits, NOT the (document, language) pair as arguments:
         // the transpiled twin has one constructor whose body is the string shape, and the property
         // assignment lands after it on both sides. CodeBlock.Of is this same move, packaged.
@@ -193,7 +238,7 @@ public sealed class CodeEditor : StatefulComponent
         {
             Document = editor.Document,
             Language = highlighter.Language,
-            Decorations = Marks(editor),
+            Decorations = Marks(editor, matches),
             ShowLineNumbers = ShowLineNumbers,
             FirstLineNumber = FirstLineNumber,
             // Bare content — see CodeBlock.Standalone. The slab and both scroll views are built
@@ -202,7 +247,6 @@ public sealed class CodeEditor : StatefulComponent
             Standalone = false,
             Size = Size,
             Inverse = Inverse,
-            Caption = Caption,
             GutterMarkers = GutterMarkers,
             OnGutterPressed = OnGutterPressed,
             Highlighter = highlighter,
@@ -215,7 +259,7 @@ public sealed class CodeEditor : StatefulComponent
             ViewportWidth = _viewportWidth,
             // The caret's line is washed while the editor holds it, and the selection is drawn under
             // the text — the two pieces of state the read-only block cannot know about. Both are the
-            // ENGINE's measurements, on the grid handed to it below.
+            // ENGINE's measurements, on the grid handed to it above.
             ActiveLine = editor.Caret.Line,
             SelectionBands = editor.SelectionBands,
         };
@@ -228,11 +272,7 @@ public sealed class CodeEditor : StatefulComponent
             CaretColor = CodeBlock.InkFor(Inverse, context.Theme),
             // The controller mutates outside the tree, so the rebuild has to be asked for. This is
             // the seam: everything the surface does ends here, and here is where the app hears it.
-            OnChanged = () => SetState(() =>
-            {
-                OnChanged?.Invoke(editor.Document.Text);
-                OnSelectionChanged?.Invoke(editor.Selection);
-            }),
+            OnChanged = () => SetState(() => Notify(editor)),
         };
 
         // The viewport lives OUT HERE, around the surface, rather than inside the block. One
@@ -268,24 +308,33 @@ public sealed class CodeEditor : StatefulComponent
             viewport = withGutter;
         }
 
-        if (MaxHeight > 0)
+        // A BOUNDED editor scrolls the code inside it and builds only the lines in view: one that
+        // fills its place (an IDE's pane), one of a fixed height, and one capped by MaxHeight. Only
+        // an uncapped Hug grows with the code, and builds all of it, because all of it is on screen.
+        var bounded = Height.Kind != SizeKind.Hug;
+        if (bounded || MaxHeight > 0)
         {
-            viewport = new Box(new BoxStyle { Width = SizeValue.Fill, MaxHeight = MaxHeight },
-                new ScrollView(viewport)
+            viewport = new Box(new BoxStyle
+            {
+                Width = SizeValue.Fill,
+                Height = bounded ? SizeValue.Fill : SizeValue.Hug,
+                MaxHeight = MaxHeight > 0 ? SizeValue.Fixed(MaxHeight) : SizeValue.Hug,
+            }, new ScrollView(viewport)
+            {
+                Width = SizeValue.Fill,
+                Height = bounded ? SizeValue.Fill : SizeValue.Hug,
+                // The window the block builds, reported from the viewport that actually moves.
+                OnScrolled = offset =>
                 {
-                    Width = SizeValue.Fill,
-                    // The window the block builds, reported from the viewport that actually moves.
-                    OnScrolled = offset =>
-                    {
-                        if (MathF.Abs(offset - _offset) < 1) return;
-                        SetState(() => _offset = offset);
-                    },
-                    OnViewportChanged = height =>
-                    {
-                        if (MathF.Abs(height - _viewport) < 1) return;
-                        SetState(() => _viewport = height);
-                    },
-                });
+                    if (MathF.Abs(offset - _offset) < 1) return;
+                    SetState(() => _offset = offset);
+                },
+                OnViewportChanged = height =>
+                {
+                    if (MathF.Abs(height - _viewport) < 1) return;
+                    SetState(() => _viewport = height);
+                },
+            });
         }
 
         // The slab the block used to paint for itself. It is out here now because it has to be the
@@ -294,6 +343,7 @@ public sealed class CodeEditor : StatefulComponent
         surface = new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
+            Height = bounded ? SizeValue.Fill : SizeValue.Hug,
             Background = CodeBlock.SurfaceFor(Inverse, context.Theme),
             CornerRadius = new CornerRadii(context.Theme.Shape(ShapeScale.Medium)),
             Clip = true,
@@ -304,37 +354,59 @@ public sealed class CodeEditor : StatefulComponent
         surface = new Shortcut(surface, new KeyChord("f", KeyModifiers.Command),
             () => SetState(() => _findOpen = true));
 
-        if (!_findOpen) return surface;
-
-        var layers = new Stack { Width = SizeValue.Fill };
+        // THE LAYERS, always: the code first, then its caption in the corner, then the find bar over
+        // both. The code is the first layer whether or not anything is over it, so it keeps its place
+        // in the tree. Opening find used to wrap it in a Stack it did not have before, which made it
+        // a new surface to every host: the scroll went back to the top, "next" revealed nothing
+        // (a surface seen for the first time is where it opened), and on Photon the keyboard pointed
+        // at a path nothing had any more.
+        var layers = new Stack { Width = SizeValue.Fill, Height = Height };
         layers.Add(surface);
-        layers.Add(new Positioned(FindBar(context, editor), top: Space.S2, end: Space.S2));
+        if (CodeBlock.Corner(Caption, null, Inverse, context.Theme) is { } corner) layers.Add(corner);
+        if (_findOpen)
+        {
+            // Escape closes it wherever the keyboard is, in the bar or in the code, which is what
+            // it means in every editor: a chord live while the bar is on screen.
+            layers.Add(new Positioned(new Shortcut(FindBar(context, editor, matches), KeyChord.Escape,
+                () => CloseFind(editor)), top: Space.S2, end: Space.S2));
+        }
         return layers;
     }
+
+    /// <summary>Closes the bar and gives the code the keyboard back, which is where it came from
+    /// or where it is anyway.</summary>
+    private void CloseFind(CodeEditorController editor) => SetState(() =>
+    {
+        _findOpen = false;
+        _findText = "";
+        editor.RequestFocus();
+    });
 
     /// <summary>
     /// The find bar: what to look for, how many there are, and the two ways through them. It floats
     /// over the top-right corner rather than pushing the code down — code that jumps when you open
     /// find has lost the line you were looking at.
     /// </summary>
-    private VisualNode FindBar(ComponentContext context, CodeEditorController editor)
+    private VisualNode FindBar(ComponentContext context, CodeEditorController editor,
+        IReadOnlyList<CodeRange> matches)
     {
         var theme = context.Theme;
-        var matches = _findText.Length > 0 ? editor.FindAll(_findText, SearchMatchCase).Count : 0;
         var index = 0;
-        if (matches > 0)
-        {
-            var current = editor.Selection;
-            var all = editor.FindAll(_findText, SearchMatchCase);
-            for (var i = 0; i < all.Count; i++)
-                if (all[i].Start.Equals(current.Start)) { index = i + 1; break; }
-        }
+        var current = editor.Selection;
+        for (var i = 0; i < matches.Count; i++)
+            if (matches[i].Start.Equals(current.Start)) { index = i + 1; break; }
 
+        // A STEP selects the match, which reveals it (the selection's own rule), and the app hears
+        // that the selection moved, as it does when a key moves it.
         void Step(bool forward)
         {
             if (_findText.Length == 0) return;
-            var match = editor.FindNext(_findText, SearchMatchCase, backward: !forward);
-            if (match is { } found) SetState(() => editor.Selection = found);
+            if (editor.FindNext(_findText, SearchMatchCase, backward: !forward) is not { } found) return;
+            SetState(() =>
+            {
+                editor.Selection = found;
+                Notify(editor);
+            });
         }
 
         var row = new Row(gap: Space.S2) { Cross = CrossAlign.Center };
@@ -346,7 +418,7 @@ public sealed class CodeEditor : StatefulComponent
             Autofocus = true,
             OnSubmit = () => Step(true),
         }));
-        row.Add(new Text(matches == 0 ? (_findText.Length == 0 ? "" : "0") : $"{index}/{matches}",
+        row.Add(new Text(matches.Count == 0 ? (_findText.Length == 0 ? "" : "0") : $"{index}/{matches.Count}",
             TypeRole.LabelSmall, theme.TextMuted, maxLines: 1)
         {
             Tabular = true,
@@ -361,10 +433,10 @@ public sealed class CodeEditor : StatefulComponent
             Size = SizeVariant.Small,
             OnPressed = () => Step(true),
         });
-        row.Add(new IconButton(new Icon(Icons.Close), "Close find")
+        row.Add(new IconButton(new Icon(Icons.Close), SdkStrings.CloseFind)
         {
             Size = SizeVariant.Small,
-            OnPressed = () => SetState(() => { _findOpen = false; _findText = ""; }),
+            OnPressed = () => CloseFind(editor),
         });
 
         return new Box(new BoxStyle

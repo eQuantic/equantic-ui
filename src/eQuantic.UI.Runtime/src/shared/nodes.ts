@@ -729,6 +729,8 @@ export interface CodeSurfaceModelLike {
   readonly carets: readonly SurfaceRectLike[];
   /** Changes whenever the primary caret should be brought into view. */
   readonly revealVersion: number;
+  /** Changes whenever the surface should take the keyboard; remembered per model, from 0. */
+  readonly focusVersion: number;
   handleKey(
     key: string,
     modifiers: number,

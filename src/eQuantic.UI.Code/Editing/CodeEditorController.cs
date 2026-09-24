@@ -230,6 +230,18 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// <inheritdoc />
     public int RevealVersion => _revealVersion;
 
+    private int _focusVersion;
+
+    /// <inheritdoc />
+    public int FocusVersion => _focusVersion;
+
+    /// <summary>
+    /// Asks for the keyboard: whichever host draws this editor gives it to the surface, as a click
+    /// would, on its next frame (or its first, if it has not drawn it yet). What an IDE calls when a
+    /// file opens or a panel over the code closes. A REQUEST, because focus is the host's to grant.
+    /// </summary>
+    public void RequestFocus() => _focusVersion++;
+
     /// <summary>Where a caret at <paramref name="position"/> is drawn, in the surface's coordinates.</summary>
     public Rect CaretRect(CodePosition position)
     {

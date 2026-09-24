@@ -2,7 +2,7 @@ import { $eq, CodeDirectionValue, CodeDocument, CodeEdit, CodeGrid, CodeHighligh
 
 export class CodeEditorController {
     constructor(text: string = '', language: any = null, props?: any) {
-        this._selection = new CodeRange(); this._desiredCell = -1; this._cells = {}; this._dragging = false; this._revealVersion = 0; this._composition = null; this._compositionReplaced = ''; this._compositionSelection = new CodeRange(); this._wholeLineCopy = null; this._document = CodeDocument.fromText(text);
+        this._selection = new CodeRange(); this._desiredCell = -1; this._cells = {}; this._dragging = false; this._revealVersion = 0; this._focusVersion = 0; this._composition = null; this._compositionReplaced = ''; this._compositionSelection = new CodeRange(); this._wholeLineCopy = null; this._document = CodeDocument.fromText(text);
         this._selection = new CodeRange(CodePosition.start);
         this.highlighter = new CodeHighlighter(language ?? CodeLanguages.plainText); if (props && typeof props === 'object') Object.assign(this, props);
     }
@@ -14,6 +14,7 @@ export class CodeEditorController {
     static caretWidth: number = 2;
     _dragging: boolean;
     _revealVersion: number;
+    _focusVersion: number;
     _composition: CodeRange | null;
     _compositionReplaced: string;
     _compositionSelection: CodeRange;
@@ -81,6 +82,10 @@ export class CodeEditorController {
         return this._revealVersion;
     }
 
+    get focusVersion(): number {
+        return this._focusVersion;
+    }
+
     get composition(): CodeRange | null {
         return this._composition;
     }
@@ -130,6 +135,10 @@ export class CodeEditorController {
         if (here.column < this._document.line(here.line).length) return $eq.withPatch(here, { column: this.cellsOf(here.line).next(here.column) });
         if (here.line === this._document.lineCount - 1) return here;
         return new CodePosition(here.line + 1, 0);
+    }
+
+    requestFocus() {
+        return this._focusVersion++;
     }
 
     caretRect(position: CodePosition) {

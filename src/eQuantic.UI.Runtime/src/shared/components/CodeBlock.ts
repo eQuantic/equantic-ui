@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CodeDecoration, CodeDecorationKindValue, CodeDocument, CodeGutterKindValue, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeLineCells, CodeMetrics, CodeTokenKindValue, Color, ColorToken, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SizeValue, SizeVariantValue, Sizing, Spacer, Stack, StatelessComponent, Text, TypeStyle, VisualNode } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CodeDecoration, CodeDecorationKindValue, CodeDocument, CodeGutterKindValue, CodeGutterMarker, CodeHighlighter, CodeLanguages, CodeLineCells, CodeMetrics, CodeTokenKindValue, Color, ColorToken, Column, CornerRadii, EdgeInsets, Flexible, Icon, IconButton, IconGlyph, Positioned, Pressable, Rect, Row, ScrollView, SdkStrings, SizeValue, SizeVariantValue, Sizing, Spacer, Stack, StatelessComponent, Text, TypeStyle, VisualNode } from "../runtime-exports";
 
 export class CodeBlock extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.CodeBlock';
@@ -118,20 +118,11 @@ export class CodeBlock extends StatelessComponent {
             body = new Box(new BoxStyle({ width: SizeValue.fill, maxHeight: this.maxHeight }), new ScrollView(body, 'vertical', { width: SizeValue.fill, onScrolled: this.onScrolled, onViewportChanged: this.onViewportChanged }));
         }
         let slab = new Box(new BoxStyle({ width: SizeValue.fill, background: surface, cornerRadius: new CornerRadii(theme.shape('medium')), clip: true }), body);
-        if (this.caption == null && this.onCopy == null) return slab;
-        let corner = new Row(8, 'start', 'center', false, null, null, { width: SizeValue.fill, cross: 'center' });
-        corner.add(new Spacer(1));
-        let caption: any; 
-        if ((caption = this.caption) != null) {
-            corner.add(new Text(caption, 'labelSmall', this.inverse ? CodeBlock.codeInkMuted : theme.textMuted, 1, 'start', false, false, null, 0, { mono: true }));
-        }
-        let copy: any; 
-        if ((copy = this.onCopy) != null) {
-            corner.add(new IconButton(new Icon(IconGlyph.fromIcons('copy')), 'Copy code', 'standard', 'medium', null, { size: 'small', onPressed: copy }));
-        }
+        let corner: any; 
+        if (!((corner = CodeBlock.corner(this.caption, this.onCopy, this.inverse, theme)) != null)) return slab;
         let layers = new Stack('topStart', { width: SizeValue.fill });
         layers.add(slab);
-        layers.add(new Positioned(new Box(new BoxStyle({ width: SizeValue.fill, padding: EdgeInsets.symmetric(12, 8) }), corner), 0, null, null, 0));
+        layers.add(corner);
         return layers;
     }
 
@@ -143,6 +134,20 @@ export class CodeBlock extends StatelessComponent {
         let style = $eq.withPatch(TypeStyle.ofSize(Sizing.labelSize(size, context.density), 'regular'), { mono: true });
         let gutter = showLineNumbers ? Math.fround(Math.ceil(context.measureText(String(lastLineNumber) + '0', style)) + 12) : 0;
         return new CodeMetrics(style, $eq.math.roundSingle(Math.fround(style.lineHeight * Math.fround(1.15))), context.monoAdvance(style), gutter);
+    }
+
+    static corner(caption: any, onCopy: (() => void) | null, inverse: boolean, theme: any) {
+        if (caption == null && onCopy == null) return null;
+        let corner = new Row(8, 'start', 'center', false, null, null, { cross: 'center' });
+        let text: any; 
+        if ((text = caption) != null) {
+            corner.add(new Text(text, 'labelSmall', inverse ? CodeBlock.codeInkMuted : theme.textMuted, 1, 'start', false, false, null, 0, { mono: true }));
+        }
+        let copy: any; 
+        if ((copy = onCopy) != null) {
+            corner.add(new IconButton(new Icon(IconGlyph.fromIcons('copy')), SdkStrings.copyCode, 'standard', 'medium', null, { size: 'small', onPressed: copy }));
+        }
+        return new Positioned(new Box(new BoxStyle({ padding: EdgeInsets.symmetric(12, 8) }), corner), 0, 0);
     }
 
     gutter(context: any) {

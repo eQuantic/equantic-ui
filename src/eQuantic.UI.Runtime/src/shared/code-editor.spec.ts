@@ -24,6 +24,8 @@ import { CodeRange } from './components/CodeRange';
 import { CodeLanguages } from './components/CodeLanguages';
 import { CodeDocument } from './components/CodeDocument';
 import type { HtmlNode } from '../core/types';
+import { Reconciler } from '../dom/reconciler';
+import { activeShortcuts, commitShortcuts, resetShortcuts } from '../dom/shortcuts';
 
 setPhotonTheme(photonTheme);
 
@@ -1013,5 +1015,76 @@ describe('a value the engine builds with no arguments is its zeros, as C# builds
 
     expect(range.isEmpty).toBe(true);
     expect(range.start).toEqual(new CodePosition(0, 0));
+  });
+});
+
+/**
+ * The app asks for the keyboard through the MODEL (C# twin: PhotonHost.AdoptFocusRequests): an IDE
+ * after a file opens, the editor's own find bar as it closes. Remembered per model and counted from
+ * 0, so a request made before the surface was first drawn is honoured when it is, and one already
+ * honoured is not honoured again when the surface is drawn once more.
+ */
+describe('the app asks for the keyboard', () => {
+  const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+  const lower = (editor: CodeEditorController) =>
+    lowerVisualNode(new CodeSurface(new Text('', 'labelSmall'), editor) as never, {
+      textPrimary: photonTheme.textPrimary,
+      componentContext: { theme: photonTheme, typeScale: 1 },
+    });
+
+  it('gives the surface the keyboard after the render, once per request', async () => {
+    const editor = new CodeEditorController('x', CodeLanguages.for('csharp'));
+    editor.requestFocus();
+    const parent = document.createElement('div');
+    document.body.appendChild(parent);
+    const reconciler = new Reconciler();
+    const first = lower(editor);
+    reconciler.reconcile(parent, null, first);
+
+    await wait(80);
+    expect(document.activeElement?.tagName).toBe('TEXTAREA');
+
+    (document.activeElement as HTMLElement).blur();
+    reconciler.reconcile(parent, first, lower(editor), 0);
+    await wait(80);
+    expect(document.activeElement?.tagName).not.toBe('TEXTAREA');
+    parent.remove();
+  });
+});
+
+/**
+ * Opening find leaves the code where it was in the tree (C# twin:
+ * CodeEditorComponentTests.OpeningFindLeavesTheCodeWhereItWas). It wrapped the code in a layer it
+ * did not have before, and a surface that moves is a new one: the scroll went back to the top, and
+ * "next" revealed nothing, the first sight of a surface being where it opened.
+ */
+describe('the find bar', () => {
+  it('opens over the code without moving it, and Escape is live while it is open', async () => {
+    const { materializeTheme } = await import('./theme-bridge');
+    const photonData = (await import('./theme-bridge.photon.json')).default;
+    const { CodeEditor } = await import('./components/CodeEditor');
+    const theme = materializeTheme(photonData as never);
+    setPhotonTheme(theme);
+    const context = {
+      theme,
+      textPrimary: theme.textPrimary,
+      density: 'comfortable',
+      measureText: (text: string) => text.length * 7,
+      monoAdvance: () => 7,
+    };
+    const pathOf = (node: HtmlNode): string | undefined =>
+      node.attributes['data-eq-code'] ?? node.children.map(pathOf).find((path) => path !== undefined);
+    const editor = new CodeEditor('var needle = 1;', 'csharp');
+
+    resetShortcuts();
+    const before = pathOf(lowerVisualNode(editor.build(context as never) as never, context as never));
+    commitShortcuts();
+    activeShortcuts().find((binding) => binding.chord === 'command+f')!.handler();
+    const after = pathOf(lowerVisualNode(editor.build(context as never) as never, context as never));
+    commitShortcuts();
+
+    expect(after).toBe(before);
+    expect(activeShortcuts().some((binding) => binding.chord === 'escape')).toBe(true);
+    resetShortcuts();
   });
 });

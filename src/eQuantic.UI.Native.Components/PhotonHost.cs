@@ -248,6 +248,7 @@ public sealed class PhotonHost
         // Costs one length check in a frame with no live region, which is almost every frame.
         _announcer.Observe(_lastFrame, timeMs);
         AdoptAutofocus();
+        AdoptFocusRequests();
         // The ROOT is not in the instance store (nothing reconciles it — it IS the tree), so the
         // surface owes it the mount its children get from the store. After the first frame realized:
         // the same "the tree exists" moment, for the one component that has no parent to give it.
@@ -834,31 +835,82 @@ public sealed class PhotonHost
     private const float CaretBlinkMs = CodeSurface.CaretBlinkMs;
 
     /// <summary>
-    /// A field that asked for the caret gets it — the search box in a palette that just opened, the
-    /// first field of a form. The web realization of the same tree has honoured `Autofocus` all
-    /// along; native ignored it, so the ⌘K panel opened ready to type in a browser and dead in a
-    /// window.
+    /// A field or a code surface that asked for the keyboard gets it when it APPEARS: the search box
+    /// of a palette that just opened, the first field of a form, an editor opened ready to type. The
+    /// web realization focuses the same tree on mount; native ignored it, so the ⌘K panel opened
+    /// ready to type in a browser and dead in a window.
     /// <para>
-    /// Honoured ONCE per field. Without remembering, leaving the field with Escape would hand it
-    /// straight back on the very next frame, and the field could never be left at all.
+    /// Once per MOUNT, the browser's rule. A field honoured while it stays on screen is not honoured
+    /// again, or leaving it with Escape would hand it straight back on the next frame and the field
+    /// could never be left. One that leaves the tree and comes back asks again, as the code editor's
+    /// find field does every time the bar opens. It was once per PATH for the life of the host, so a
+    /// bar opened a second time came up with no caret.
+    /// </para>
+    /// <para>
+    /// It takes the keyboard from whatever held it, as a mounted field does in a browser: it appeared
+    /// because someone opened it. It used to be refused while anything else was being typed in, and
+    /// ⌘F in the code editor opened a find bar that typing never reached. When several appear in one
+    /// frame the first field wins, then the first code surface.
     /// </para>
     /// </summary>
     private void AdoptAutofocus()
     {
         if (_lastFrame is null) return;
+        _autofocusNow.Clear();
+        TextRegion? newField = null;
         var fields = _lastFrame.TextRegions;
         for (var i = 0; i < fields.Count; i++)
         {
             var field = fields[i];
             if (!field.Entry.Autofocus || field.Entry.Disabled) continue;
-            if (!_autofocused.Add(field.Path)) continue;
-            if (_textPath is not null) continue;   // the user is already typing somewhere: leave them alone
-            BeginEditing(field);
-            return;
+            _autofocusNow.Add(field.Path);
+            if (newField is null && !_autofocusShown.Contains(field.Path)) newField = field;
+        }
+        CodeRegion? newSurface = null;
+        var surfaces = _lastFrame.CodeRegions;
+        for (var i = 0; i < surfaces.Count; i++)
+        {
+            var surface = surfaces[i];
+            if (!surface.Surface.Autofocus) continue;
+            _autofocusNow.Add(surface.Path);
+            if (newSurface is null && !_autofocusShown.Contains(surface.Path)) newSurface = surface;
+        }
+        (_autofocusShown, _autofocusNow) = (_autofocusNow, _autofocusShown);
+
+        if (newField is { } asked) BeginEditing(asked);
+        else if (newSurface is { } code) BeginCodeEditing(code);
+    }
+
+    /// <summary>The paths of the fields and surfaces asking for the keyboard in the last frame, and
+    /// the set the next frame fills: two sets swapped, so a steady frame allocates nothing.</summary>
+    private HashSet<string> _autofocusShown = [];
+    private HashSet<string> _autofocusNow = [];
+
+    /// <summary>
+    /// Gives a code surface the keyboard when its model ASKS (<see cref="ICodeSurfaceModel.FocusVersion"/>):
+    /// an IDE after a file opens, the editor's own find bar as it closes. Remembered per MODEL and
+    /// counted from 0, so a request made before the surface was first drawn is honoured when it is,
+    /// and one already honoured is not honoured again when the surface is drawn somewhere else.
+    /// </summary>
+    private void AdoptFocusRequests()
+    {
+        if (_lastFrame is null) return;
+        var surfaces = _lastFrame.CodeRegions;
+        for (var i = 0; i < surfaces.Count; i++)
+        {
+            var region = surfaces[i];
+            var model = region.Surface.Model;
+            var version = model.FocusVersion;
+            var seen = _focusRequests.TryGetValue(model, out var box) ? box.Value : 0;
+            if (version == seen) continue;
+            if (box is null) _focusRequests.Add(model, new System.Runtime.CompilerServices.StrongBox<int>(version));
+            else box.Value = version;
+            BeginCodeEditing(region);
         }
     }
 
-    private readonly HashSet<string> _autofocused = [];
+    private readonly System.Runtime.CompilerServices.ConditionalWeakTable<ICodeSurfaceModel,
+        System.Runtime.CompilerServices.StrongBox<int>> _focusRequests = new();
 
     private void BeginEditing(TextRegion field, float? atX = null) =>
         BeginEditing(field.Entry, field.Path, atX is { } x ? IndexAt(field.Entry, x - field.Bounds.X) : null);
@@ -1145,10 +1197,11 @@ public sealed class PhotonHost
                 return true;
 
             case "Enter":
-                // Submit, then leave: a form that stays in the field after Enter makes the user
-                // wonder whether anything happened.
+                // Submit and STAY, as a browser's field does: a search field walks its results one
+                // Enter at a time (the code editor's find bar is exactly that), and where the app
+                // wants the keyboard somewhere else after a submit, it moves it. This left the field,
+                // so the second Enter in a find bar went nowhere.
                 entry.OnSubmit?.Invoke();
-                EndEditing();
                 return true;
 
             case "Escape":

@@ -91,6 +91,28 @@ public class KeyboardTests
         form.Saved.Should().Be(1);
     }
 
+    /// <summary>
+    /// Enter submits and the field keeps the keyboard. It submitted and LEFT the field on Photon,
+    /// so that the caret going away would say something happened, while the web's field stayed: one
+    /// tree, two behaviours. The field stays now on both, as it does in a browser, an AppKit field,
+    /// a UIKit field and a Win32 edit control, so a search field walks its results one Enter at a
+    /// time (the second Enter in the code editor's find bar went nowhere), and saying that something
+    /// happened is the submit handler's to do.
+    /// </summary>
+    [Fact]
+    public void EnterSubmits_AndTheFieldKeepsTheKeyboard()
+    {
+        var (host, form) = Open();
+        Press(host, "Tab");
+        Type(host, "Ana");
+
+        Press(host, "Enter");
+        Press(host, "Enter");
+
+        form.Submitted.Should().Be(2, "the second Enter reached the field too");
+        (host.TextTarget?.Placeholder).Should().Be("Full name");
+    }
+
     [Fact]
     public void TabGoesBackwards_WithShift()
     {
@@ -151,19 +173,6 @@ public class KeyboardTests
         host.KeyDown("Backspace").Should().BeTrue(
             "a field claims Backspace even with nothing to delete — otherwise it reaches the app as Back");
         form.Name.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void EnterSubmits_AndLeavesTheField()
-    {
-        var (host, form) = Open();
-        Press(host, "Tab");
-        Type(host, "Ana");
-
-        Press(host, "Enter");
-
-        form.Submitted.Should().Be(1);
-        host.TextTarget.Should().BeNull("staying in the field after Enter hides whether anything happened");
     }
 
     [Fact]
@@ -338,6 +347,57 @@ public class AutofocusTests
     {
         (Open(autofocus: true).TextTarget?.Placeholder).Should().Be("Search");
         Open(autofocus: false).TextTarget.Should().BeNull("nothing asked");
+    }
+
+    /// <summary>A page with a field, and a palette whose search field asks for the keyboard and
+    /// comes and goes.</summary>
+    private sealed class Page : Primitives.StatefulComponent
+    {
+        public bool PaletteOpen;
+
+        public void Toggle() => SetState(() => PaletteOpen = !PaletteOpen);
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column(gap: Space.S2) { Width = SizeValue.Fill };
+            column.Add(new TextEntry("", _ => { }) { Placeholder = "Notes" });
+            if (PaletteOpen) column.Add(new TextEntry("", _ => { }) { Placeholder = "Search", Autofocus = true });
+            return column;
+        }
+    }
+
+    [Fact]
+    public void AFieldThatAppears_TakesTheKeyboardFromTheOneBeingTypedIn()
+    {
+        var page = new Page();
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 300, 200);
+        host.RenderFrame(new DisplayListBuilder());
+        host.KeyDown("Tab");
+        host.RenderFrame(new DisplayListBuilder());
+        (host.TextTarget?.Placeholder).Should().Be("Notes");
+
+        page.Toggle();
+        host.RenderFrame(new DisplayListBuilder());
+
+        (host.TextTarget?.Placeholder).Should().Be("Search", "it appeared because someone opened it, as in a browser");
+    }
+
+    [Fact]
+    public void AFieldThatLeavesAndComesBack_AsksAgain()
+    {
+        var page = new Page();
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 300, 200);
+        host.RenderFrame(new DisplayListBuilder());
+        page.Toggle();
+        host.RenderFrame(new DisplayListBuilder());
+        page.Toggle();
+        host.RenderFrame(new DisplayListBuilder());
+        host.TextTarget.Should().BeNull("the palette closed");
+
+        page.Toggle();
+        host.RenderFrame(new DisplayListBuilder());
+
+        (host.TextTarget?.Placeholder).Should().Be("Search", "once per appearance, not once per host");
     }
 
     [Fact]

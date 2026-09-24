@@ -635,6 +635,15 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   revealedVersions.set(path, model.revealVersion);
   if (revealed !== undefined && revealed !== model.revealVersion) revealCaret(path);
 
+  // The model ASKED for the keyboard (C# twin: PhotonHost.AdoptFocusRequests): an IDE after a file
+  // opens, the editor's own find bar as it closes. Remembered per model and counted from 0, so a
+  // request made before the surface was first drawn is honoured when it is, and one already honoured
+  // is not honoured again when the surface is drawn once more.
+  if ((focusedVersions.get(model) ?? 0) !== model.focusVersion) {
+    focusedVersions.set(model, model.focusVersion);
+    focusSurface(path);
+  }
+
   const changed = () => node.onChanged?.();
   const convention = keyboardConvention();
   const ime = compositionOf(model);
@@ -807,6 +816,9 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
 /** The reveal version each code surface was last rendered at, by path — see lowerCodeSurface. */
 const revealedVersions = new Map<string, number>();
 
+/** The focus request each code surface's MODEL was last given the keyboard for (see lowerCodeSurface). */
+const focusedVersions = new WeakMap<object, number>();
+
 /**
  * Where a code surface's input method stands: whether a composition is open, and the text it
  * committed in this task. Kept by MODEL, because the model outlives every render and a closure
@@ -899,6 +911,24 @@ function revealCaret(path: string): void {
     requestAnimationFrame(() => requestAnimationFrame(reveal));
   }
   if (typeof setTimeout === 'function') setTimeout(reveal, 48);
+}
+
+/**
+ * Gives the surface at `path` the keyboard, after the render that draws it: the same timing and the
+ * same two routes as {@link revealCaret}, and found by path for the same reason (the element the
+ * request arrived with is replaced by the render). Focusing twice is harmless.
+ */
+function focusSurface(path: string): void {
+  if (typeof document === 'undefined') return;
+  const focus = () => {
+    if (typeof document === 'undefined') return;
+    const input = document.querySelector<HTMLElement>(`[data-eq-code="${path}"] textarea`);
+    input?.focus({ preventScroll: true });
+  };
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(() => requestAnimationFrame(focus));
+  }
+  if (typeof setTimeout === 'function') setTimeout(focus, 48);
 }
 
 /**

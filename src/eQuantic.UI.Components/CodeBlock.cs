@@ -323,34 +323,48 @@ public sealed class CodeBlock : StatelessComponent
             Clip = true,
         }, body);
 
-        if (Caption is null && OnCopy is null) return slab;
+        if (Corner(Caption, OnCopy, Inverse, theme) is not { } corner) return slab;
 
-        // The caption and the copy button ride ABOVE the code, in the TRAILING corner — over the
-        // ragged right edge of code rather than over its first line, which always has text in it.
-        var corner = new Row(gap: Space.S2) { Width = SizeValue.Fill, Cross = CrossAlign.Center };
-        corner.Add(new Spacer(1));
-        if (Caption is { } caption)
+        var layers = new Stack { Width = SizeValue.Fill };
+        layers.Add(slab);
+        layers.Add(corner);
+        return layers;
+    }
+
+    /// <summary>
+    /// The caption and the copy button, as a layer over the slab: ABOVE the code, in the TRAILING
+    /// corner, over the ragged right edge of code rather than over its first line, which always has
+    /// text in it. Null when there is nothing to put there. The editor draws its caption with it too.
+    /// <para>
+    /// The layer is as wide as what it holds. It was a row as wide as the slab with a spacer pushing
+    /// the two to the end, which drew the same and lay over the whole first line: on the web a press
+    /// there landed on the row, so the text under it could not be selected, and in an editor the
+    /// first line could not be clicked into.
+    /// </para>
+    /// </summary>
+    public static VisualNode? Corner(string? caption, Action? onCopy, bool inverse, IAppTheme theme)
+    {
+        if (caption is null && onCopy is null) return null;
+
+        var corner = new Row(gap: Space.S2) { Cross = CrossAlign.Center };
+        if (caption is { } text)
         {
-            corner.Add(new Text(caption, TypeRole.LabelSmall,
-                Inverse ? CodeInkMuted : theme.TextMuted, maxLines: 1) { Mono = true });
+            corner.Add(new Text(text, TypeRole.LabelSmall,
+                inverse ? CodeInkMuted : theme.TextMuted, maxLines: 1) { Mono = true });
         }
-        if (OnCopy is { } copy)
+        if (onCopy is { } copy)
         {
-            corner.Add(new IconButton(new Icon(Icons.Copy), "Copy code")
+            corner.Add(new IconButton(new Icon(Icons.Copy), SdkStrings.CopyCode)
             {
                 Size = SizeVariant.Small,
                 OnPressed = copy,
             });
         }
 
-        var layers = new Stack { Width = SizeValue.Fill };
-        layers.Add(slab);
-        layers.Add(new Positioned(new Box(new BoxStyle
+        return new Positioned(new Box(new BoxStyle
         {
-            Width = SizeValue.Fill,
             Padding = EdgeInsets.Symmetric(Space.S3, Space.S2),
-        }, corner), top: 0, start: 0));
-        return layers;
+        }, corner), top: 0, end: 0);
     }
 
     /// <summary>

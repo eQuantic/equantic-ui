@@ -474,3 +474,5 @@ eQuantic.UI.Code.CodeEdit.Typed.init -> void
 const eQuantic.UI.Code.CurlyBraceLanguage.StateRawString = 16 -> int
 virtual eQuantic.UI.Code.CurlyBraceLanguage.HasRawStrings.get -> bool
 static eQuantic.UI.Code.CodeLineCells.IsZeroWidth(int codePoint) -> bool
+eQuantic.UI.Code.CodeEditorController.FocusVersion.get -> int
+eQuantic.UI.Code.CodeEditorController.RequestFocus() -> void

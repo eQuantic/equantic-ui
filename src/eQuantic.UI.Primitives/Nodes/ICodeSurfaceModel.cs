@@ -36,6 +36,16 @@ public interface ICodeSurfaceModel
     int RevealVersion { get; }
 
     /// <summary>
+    /// Changes whenever the surface should TAKE the keyboard: the app asked (a file opened, a panel
+    /// over the code closed), or the editor's own find bar gave it back. A realizer that sees a new
+    /// value gives the surface the keyboard, as a click on it would. It remembers the value per
+    /// MODEL, counting one it has never seen from 0: a request made before the surface was first
+    /// drawn is honoured when it is, and a surface drawn again somewhere else is not focused again
+    /// for a request already honoured.
+    /// </summary>
+    int FocusVersion { get; }
+
+    /// <summary>
     /// A key the platform reported, by NAME ("ArrowLeft", "Enter", "Tab", "z"). Answers whether the
     /// editor CLAIMED it: false leaves the key to whatever is around the editor — Escape to the
     /// dialog it sits in, Tab to the form once Escape has released it. The
