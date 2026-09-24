@@ -1,7 +1,7 @@
 # eqc BCL surface audit — the coverage DENOMINATOR, one verdict per probed member.
 # native = a strategy mapped it to plain JS · eq = routed through a $eq compat helper
 # fenced:EQxxxx = refused with that diagnostic · invalid-probe = the probe itself doesn't compile
-# totals: eq=146 · fenced=40 · invalid-probe=6 · native=771
+# totals: eq=166 · fenced=42 · invalid-probe=6 · native=749
 native         Array.MaxLength
 native         Boolean.CompareTo(Boolean)
 native         Boolean.CompareTo(Object)
@@ -76,28 +76,28 @@ fenced:EQ2004  Convert.FromHexString(String)
 fenced:EQ2004  Convert.IsDBNull(Object)
 native         Convert.ToBoolean(Object)
 native         Convert.ToByte(Object)
-native         Convert.ToByte(String,Int32)
+eq             Convert.ToByte(String,Int32)
 native         Convert.ToChar(Object)
 eq             Convert.ToDateTime(DateTime)
 eq             Convert.ToDecimal(Object)
 native         Convert.ToDouble(Object)
 native         Convert.ToInt16(Object)
-native         Convert.ToInt16(String,Int32)
+eq             Convert.ToInt16(String,Int32)
 native         Convert.ToInt32(Object)
-native         Convert.ToInt32(String,Int32)
+eq             Convert.ToInt32(String,Int32)
 native         Convert.ToInt64(Object)
-native         Convert.ToInt64(String,Int32)
+eq             Convert.ToInt64(String,Int32)
 native         Convert.ToSByte(Object)
-native         Convert.ToSByte(String,Int32)
+eq             Convert.ToSByte(String,Int32)
 native         Convert.ToSingle(Object)
-native         Convert.ToString(Byte,Int32)
+eq             Convert.ToString(Byte,Int32)
 native         Convert.ToString(Object)
 native         Convert.ToUInt16(Object)
-native         Convert.ToUInt16(String,Int32)
+eq             Convert.ToUInt16(String,Int32)
 native         Convert.ToUInt32(Object)
-native         Convert.ToUInt32(String,Int32)
+eq             Convert.ToUInt32(String,Int32)
 native         Convert.ToUInt64(Object)
-native         Convert.ToUInt64(String,Int32)
+eq             Convert.ToUInt64(String,Int32)
 native         DateOnly.AddDays(Int32)
 native         DateOnly.AddMonths(Int32)
 native         DateOnly.AddYears(Int32)
@@ -115,7 +115,7 @@ eq             DateOnly.MaxValue
 eq             DateOnly.MinValue
 native         DateOnly.Month
 eq             DateOnly.Parse(String)
-eq             DateOnly.ParseExact(String,String)
+fenced:EQ2004  DateOnly.ParseExact(String,String)
 eq             DateOnly.ToDateTime(TimeOnly)
 native         DateOnly.ToLongDateString()
 native         DateOnly.ToShortDateString()
@@ -389,11 +389,11 @@ native         Enumerable.LastOrDefault/1
 native         Enumerable.LastOrDefault/2
 eq             Enumerable.LongCount/0
 eq             Enumerable.LongCount/1
-native         Enumerable.Max/0
-native         Enumerable.Max/1
+eq             Enumerable.Max/0
+eq             Enumerable.Max/1
 native         Enumerable.MaxBy/1
-native         Enumerable.Min/0
-native         Enumerable.Min/1
+eq             Enumerable.Min/0
+eq             Enumerable.Min/1
 native         Enumerable.MinBy/1
 invalid-probe  Enumerable.OfType/0
 native         Enumerable.Order/0
@@ -420,8 +420,8 @@ native         Enumerable.TakeLast/1
 native         Enumerable.TakeWhile/1
 native         Enumerable.ToArray/0
 invalid-probe  Enumerable.ToDictionary/0
-native         Enumerable.ToDictionary/1
-native         Enumerable.ToDictionary/2
+eq             Enumerable.ToDictionary/1
+eq             Enumerable.ToDictionary/2
 native         Enumerable.ToHashSet/0
 native         Enumerable.ToList/0
 native         Enumerable.ToLookup/1
@@ -709,12 +709,12 @@ native         Stack<Int32>.ToArray()
 native         Stack<Int32>.TrimExcess()
 native         Stack<Int32>.TrimExcess(Int32)
 native         String.Clone()
-native         String.Compare(String,Int32,String,Int32,Int32)
-native         String.Compare(String,Int32,String,Int32,Int32,Boolean)
-native         String.Compare(String,String)
-native         String.Compare(String,String,Boolean)
+eq             String.Compare(String,Int32,String,Int32,Int32)
+eq             String.Compare(String,Int32,String,Int32,Int32,Boolean)
+eq             String.Compare(String,String)
+eq             String.Compare(String,String,Boolean)
 fenced:EQ1001  String.CompareOrdinal(String,Int32,String,Int32,Int32)
-native         String.CompareOrdinal(String,String)
+eq             String.CompareOrdinal(String,String)
 native         String.CompareTo(Object)
 native         String.CompareTo(String)
 native         String.Concat(Object)
@@ -733,7 +733,7 @@ fenced:EQ2004  String.EnumerateRunes()
 native         String.Equals(Object)
 native         String.Equals(String)
 native         String.Equals(String,String)
-native         String.Equals(String,String,StringComparison)
+eq             String.Equals(String,String,StringComparison)
 native         String.Equals(String,StringComparison)
 eq             String.Format(String,Object)
 eq             String.Format(String,Object,Object)
@@ -758,7 +758,7 @@ native         String.IsNormalized()
 native         String.IsNullOrEmpty(String)
 native         String.IsNullOrWhiteSpace(String)
 native         String.Join(Char,String[])
-native         String.Join(Char,String[],Int32,Int32)
+eq             String.Join(Char,String[],Int32,Int32)
 native         String.LastIndexOf(Char)
 native         String.LastIndexOf(Char,Int32)
 native         String.LastIndexOf(Char,Int32,Int32)
@@ -880,7 +880,7 @@ eq             TimeOnly.MinValue
 native         TimeOnly.Minute
 native         TimeOnly.Nanosecond
 eq             TimeOnly.Parse(String)
-eq             TimeOnly.ParseExact(String,String)
+fenced:EQ2004  TimeOnly.ParseExact(String,String)
 native         TimeOnly.Second
 native         TimeOnly.Ticks
 native         TimeOnly.ToLongTimeString()
