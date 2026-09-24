@@ -43,9 +43,11 @@ export function declareScrollViewport(path: string, declaration: ScrollViewportD
 }
 
 /**
- * The scroll views watched for their size. A pass re-declares every scroll view it lowers, so one
- * this pass did not declare is gone, or no longer asks, and is let go at once rather than on the
- * next resize, which an element that was simply unmounted never has.
+ * The scroll views watched for their size. One is let go when it leaves the document or stops
+ * asking (its marker goes with its declaration), at once rather than on the next resize, which an
+ * element that was simply unmounted never has. Never because a pass did not lower it: a page has a
+ * root per page and per bridge, each with passes of its own, and one root's pass says nothing about
+ * another root's scroll views.
  */
 const watched = new Set<AdoptedScrollElement>();
 
@@ -94,7 +96,6 @@ export function commitScrollViewports(): void {
     declared.clear();
     return;
   }
-  const live = new Set<AdoptedScrollElement>();
   const mounted = document.querySelectorAll<AdoptedScrollElement>('[data-eq-scroll]');
   for (const view of mounted) {
     const declaration = declared.get(view.getAttribute('data-eq-scroll') ?? '');
@@ -116,8 +117,11 @@ export function commitScrollViewports(): void {
     // watching, is the size just reported, and stays silent. A scroll view that keeps its offset
     // and stops asking for its viewport stops being watched, rather than being told of every
     // resize for nobody.
-    if (!declaration.onViewportChanged || typeof ResizeObserver !== 'function') continue;
-    live.add(view);
+    if (!declaration.onViewportChanged) {
+      stopWatching(view);
+      continue;
+    }
+    if (typeof ResizeObserver !== 'function') continue;
     if (!view.__eqResizeObserver) {
       const observer = new ResizeObserver(() => reportViewport(view));
       observer.observe(view);
@@ -125,7 +129,9 @@ export function commitScrollViewports(): void {
       watched.add(view);
     }
   }
-  for (const view of [...watched]) if (!live.has(view)) stopWatching(view);
+  for (const view of [...watched]) {
+    if (!view.isConnected || !view.hasAttribute('data-eq-scroll')) stopWatching(view);
+  }
   declared.clear();
 }
 

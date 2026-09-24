@@ -8,7 +8,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { lowerVisualNode, type LoweringContext } from './lowering';
 import type { ScrollViewNode } from './nodes';
-import { commitScrollViewports, scheduleScrollViewportCommit } from './scroll-viewports';
+import { commitScrollViewports, declareScrollViewport, scheduleScrollViewportCommit } from './scroll-viewports';
 import { photonTheme } from './design-system.generated';
 
 function context(): LoweringContext {
@@ -178,10 +178,10 @@ describe('ScrollView web out-channels', () => {
     });
 
     /**
-     * A scroll view that is simply unmounted, or rebuilt with nothing to ask, is never resized again
-     * to find out: it is let go by the first pass that does not declare it.
+     * A scroll view that is simply unmounted is never resized again to find out: the first commit
+     * after it left the document lets it go.
      */
-    it('lets go of a scroll view the pass no longer declares', async () => {
+    it('lets go of a scroll view that has left the document', async () => {
       const lowered = lowerVisualNode(scrollNode({ onViewportChanged: () => {} }), context());
       const path = (lowered as { attributes: Record<string, string> }).attributes['data-eq-scroll'];
       const el = document.createElement('div');
@@ -197,6 +197,35 @@ describe('ScrollView web out-channels', () => {
       await Promise.resolve();
 
       expect(observers[0].target).toBeUndefined();
+    });
+
+    /**
+     * A page has a root per page and per bridge, each with passes of its own. One root's pass lowers
+     * none of another's scroll views, and letting go of every scroll view it did not declare took
+     * the other root's away while it was still on screen.
+     */
+    it('keeps watching another root\'s scroll view through this root\'s pass', async () => {
+      const lowered = lowerVisualNode(scrollNode({ onViewportChanged: () => {} }), context());
+      const path = (lowered as { attributes: Record<string, string> }).attributes['data-eq-scroll'];
+      const other = document.createElement('div');
+      other.setAttribute('data-eq-scroll', path);
+      Object.defineProperty(other, 'clientHeight', { value: 400, configurable: true });
+      document.body.append(other);
+      commitScrollViewports();
+      expect(observers[0].target).toBe(other);
+
+      // Another root's pass declares a scroll view of its own, at a path of its own (a root in a pass
+      // takes a prefix of its own), and none of the first root's.
+      const mine = document.createElement('div');
+      mine.setAttribute('data-eq-scroll', 'r1/0');
+      Object.defineProperty(mine, 'clientHeight', { value: 300, configurable: true });
+      document.body.append(mine);
+      declareScrollViewport('r1/0', { horizontal: false, onViewportChanged: () => {} });
+      scheduleScrollViewportCommit();
+      await Promise.resolve();
+
+      expect(observers[0].target, "the first root's scroll view is still on screen").toBe(other);
+      expect(observers[1].target).toBe(mine);
     });
 
     /**
