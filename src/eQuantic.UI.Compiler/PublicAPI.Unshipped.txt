@@ -203,6 +203,8 @@ static eQuantic.UI.Compiler.CodeGen.Ir.JsLineMark.operator !=(eQuantic.UI.Compil
 static eQuantic.UI.Compiler.CodeGen.Ir.JsLineMark.operator ==(eQuantic.UI.Compiler.CodeGen.Ir.JsLineMark? left, eQuantic.UI.Compiler.CodeGen.Ir.JsLineMark? right) -> bool
 static eQuantic.UI.Compiler.CodeGen.Ir.JsStatementWriter.WriteMarked(eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! statement, eQuantic.UI.Compiler.CodeGen.Ir.JsLayout layout, int depth, System.Collections.Generic.List<eQuantic.UI.Compiler.CodeGen.Ir.JsLineMark!>! marks) -> string!
 static eQuantic.UI.Compiler.CodeGen.Ir.JsMemberWriter.WriteMarked(eQuantic.UI.Compiler.CodeGen.Ir.JsClassMember! member, eQuantic.UI.Compiler.CodeGen.Ir.JsLayout layout, System.Collections.Generic.List<eQuantic.UI.Compiler.CodeGen.Ir.JsLineMark!>! marks) -> string!
+eQuantic.UI.Compiler.Services.ModuleBundler
+static eQuantic.UI.Compiler.Services.ModuleBundler.Bundle(string! bunPath, System.Collections.Generic.IReadOnlyCollection<string!>! entryPoints, string! outputDir, string! intermediateDir, eQuantic.UI.Compiler.SourceMapMode sourceMaps, System.Action<string!>? warn = null) -> string?
 eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.InBlock<T>(System.Func<T>! convert) -> T
 eQuantic.UI.Compiler.Services.TypeScriptCodeBuilder.AddMappings(System.Collections.Generic.IEnumerable<eQuantic.UI.Compiler.Services.TypeScriptCodeBuilder.SourceMapping>! mappings, int lines) -> void
 eQuantic.UI.Compiler.Services.TypeScriptCodeBuilder.ShiftMappings(int lines) -> void
