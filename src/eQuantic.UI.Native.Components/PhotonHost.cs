@@ -856,35 +856,41 @@ public sealed class PhotonHost
     private void AdoptAutofocus()
     {
         if (_lastFrame is null) return;
-        _autofocusNow.Clear();
+        _fieldsNow.Clear();
         TextRegion? newField = null;
         var fields = _lastFrame.TextRegions;
         for (var i = 0; i < fields.Count; i++)
         {
             var field = fields[i];
             if (!field.Entry.Autofocus || field.Entry.Disabled) continue;
-            _autofocusNow.Add(field.Path);
-            if (newField is null && !_autofocusShown.Contains(field.Path)) newField = field;
+            _fieldsNow.Add(field.Path);
+            if (newField is null && !_fieldsShown.Contains(field.Path)) newField = field;
         }
+        _surfacesNow.Clear();
         CodeRegion? newSurface = null;
         var surfaces = _lastFrame.CodeRegions;
         for (var i = 0; i < surfaces.Count; i++)
         {
             var surface = surfaces[i];
             if (!surface.Surface.Autofocus) continue;
-            _autofocusNow.Add(surface.Path);
-            if (newSurface is null && !_autofocusShown.Contains(surface.Path)) newSurface = surface;
+            _surfacesNow.Add(surface.Path);
+            if (newSurface is null && !_surfacesShown.Contains(surface.Path)) newSurface = surface;
         }
-        (_autofocusShown, _autofocusNow) = (_autofocusNow, _autofocusShown);
+        (_fieldsShown, _fieldsNow) = (_fieldsNow, _fieldsShown);
+        (_surfacesShown, _surfacesNow) = (_surfacesNow, _surfacesShown);
 
         if (newField is { } asked) BeginEditing(asked);
         else if (newSurface is { } code) BeginCodeEditing(code);
     }
 
-    /// <summary>The paths of the fields and surfaces asking for the keyboard in the last frame, and
-    /// the set the next frame fills: two sets swapped, so a steady frame allocates nothing.</summary>
-    private HashSet<string> _autofocusShown = [];
-    private HashSet<string> _autofocusNow = [];
+    /// <summary>The paths of the fields asking for the keyboard in the last frame, and the set the
+    /// next frame fills: two sets swapped, so a steady frame allocates nothing. The surfaces keep
+    /// their own pair, because a path is a place and not a control: a code surface that takes the
+    /// place of a field is a new mount, and one history of paths took it for the field.</summary>
+    private HashSet<string> _fieldsShown = [];
+    private HashSet<string> _fieldsNow = [];
+    private HashSet<string> _surfacesShown = [];
+    private HashSet<string> _surfacesNow = [];
 
     /// <summary>
     /// Gives a code surface the keyboard when its model ASKS (<see cref="ICodeSurfaceModel.FocusVersion"/>):

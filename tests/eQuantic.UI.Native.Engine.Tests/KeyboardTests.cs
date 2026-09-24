@@ -1,3 +1,4 @@
+using eQuantic.UI.Code;
 using eQuantic.UI.Components;
 using eQuantic.UI.Native.Components;
 using eQuantic.UI.Native.Engine;
@@ -398,6 +399,52 @@ public class AutofocusTests
         host.RenderFrame(new DisplayListBuilder());
 
         (host.TextTarget?.Placeholder).Should().Be("Search", "once per appearance, not once per host");
+    }
+
+    /// <summary>A page whose one slot holds a field or a code surface, each asking for the keyboard.</summary>
+    private sealed class Slot : Primitives.StatefulComponent
+    {
+        public bool Code;
+
+        public void Toggle() => SetState(() => Code = !Code);
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            var column = new Column(gap: Space.S2) { Width = SizeValue.Fill };
+            column.Add(Code
+                ? new CodeSurface(new Text("code", TypeRole.BodyM), new CodeEditorController("x")) { Autofocus = true }
+                : new TextEntry("", _ => { }) { Placeholder = "Name", Autofocus = true });
+            return column;
+        }
+    }
+
+    /// <summary>
+    /// A code surface in the place a field held is a new mount, as a textarea replacing an input is in
+    /// a browser, and so is the field that comes back. The two share the slot's path, and a history
+    /// of paths alone took each for the other. Each is left first: the keyboard is remembered by path
+    /// too, and a surface arriving on the path being typed in would get it without asking.
+    /// </summary>
+    [Fact]
+    public void ASurfaceThatTakesAFieldsPlace_AsksAgain_AndSoDoesTheFieldThatComesBack()
+    {
+        var page = new Slot();
+        var host = new PhotonHost(page, PhotonTheme.Instance, ThemeMode.Light, 300, 200);
+        host.RenderFrame(new DisplayListBuilder());
+        (host.TextTarget?.Placeholder).Should().Be("Name");
+        host.KeyDown("Escape");
+        host.RenderFrame(new DisplayListBuilder());
+        host.TextTarget.Should().BeNull("the field was left");
+
+        page.Toggle();
+        host.RenderFrame(new DisplayListBuilder());
+        host.CodeTarget.Should().NotBeNull("the surface is new where the field was");
+        host.KeyDown("Escape");
+        host.RenderFrame(new DisplayListBuilder());
+        host.CodeTarget.Should().BeNull("the surface was left");
+
+        page.Toggle();
+        host.RenderFrame(new DisplayListBuilder());
+        (host.TextTarget?.Placeholder).Should().Be("Name", "and so is the field where the surface was");
     }
 
     [Fact]
