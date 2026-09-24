@@ -72,6 +72,8 @@ public class ReadModifyWriteConformanceTests
     [InlineData("int n = 0; var d = new Dictionary<int, float> { [0] = 1f }; int K() { n++; return 0; } d[K()] += 0.5f; return n + \"|\" + (double)d[0];")] // "1|1.5"
     [InlineData("var d = new Dictionary<int, int> { [0] = 1 }; var r = (d[0] += 2) * 10; return r.ToString();")] // "30"
     [InlineData("var d = new Dictionary<int, int?> { [0] = null }; d[0] ??= 5; return d[0].ToString();")]  // "5"
+    // The coalescing write is one expression wherever it stands: unfenced, `.ToUpper()` bound to "abc".
+    [InlineData("var d = new Dictionary<string, string?> { [\"k\"] = \"had\" }; return (d[\"k\"] ??= \"abc\").ToUpper();")] // "HAD"
     // A STEP reads first too, and .NET throws for a missing key, where JavaScript stepped an
     // undefined into NaN and created the key, and a nullable entry's lift made null of it.
     [InlineData("var d = new Dictionary<string, int>(); try { d[\"gone\"]++; return \"no\"; } catch (KeyNotFoundException) { return \"throws\"; }")]
@@ -101,6 +103,60 @@ public class ReadModifyWriteConformanceTests
             // A record, because the harness emits a prelude's records; it is a reference type, so
             // `first` is the same object `h` named before the right-hand side replaced it.
             "public record Holder { public float F; }");
+    }
+
+    /// <summary>
+    /// A RUNTIME-MAP entry — a <c>SortedDictionary</c>, a <c>SortedList</c>, a <c>Dictionary</c> keyed by
+    /// a value — takes the same rule as the plain dictionary's above: read through a guard that throws
+    /// for a missing key, written through the map's <c>set</c>, and the value computed by its type's
+    /// rule. Its own text template had answered all of it wrong: <c>m[k] *= 1 + 2</c> multiplied only
+    /// the 1, an int's <c>/=</c> kept its fraction, a decimal's <c>+=</c> glued two texts together, a
+    /// byte never wrapped, <c>m[k]++</c> was a SyntaxError that cost the whole module, a missing key
+    /// neither threw on a read nor on a write, and the receiver and the key ran twice.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("var m = new SortedDictionary<string, int> { [\"a\"] = 2 }; m[\"a\"] *= 1 + 2; return m[\"a\"];")] // 6
+    [InlineData("var m = new SortedDictionary<string, int> { [\"a\"] = 7 }; m[\"a\"] /= 2; return m[\"a\"];")] // 3
+    [InlineData("var m = new SortedDictionary<string, decimal> { [\"a\"] = 1.5m }; m[\"a\"] += 2.25m; return m[\"a\"].ToString();")] // "3.75"
+    [InlineData("var m = new SortedDictionary<string, byte> { [\"a\"] = 250 }; m[\"a\"] += 10; return m[\"a\"].ToString();")] // "4"
+    [InlineData("var m = new SortedList<int, float> { [0] = 0.1f }; m[0] += 0.2f; return (double)m[0];")]
+    [InlineData("var m = new SortedDictionary<int, char> { [0] = 'a' }; m[0] += (char)1; return m[0].ToString();")] // "b"
+    [InlineData("var m = new SortedDictionary<string, int> { [\"a\"] = 1 }; var r = (m[\"a\"] += 2) * 10; return r.ToString();")] // "30"
+    [InlineData("var m = new SortedDictionary<string, int>(); var x = (m[\"a\"] = 5); return x + m[\"a\"];")] // 10
+    // ---- a step, in value position and not ----
+    [InlineData("var m = new SortedDictionary<string, int> { [\"a\"] = 1 }; m[\"a\"]++; return m[\"a\"];")] // 2
+    [InlineData("var m = new SortedDictionary<string, int> { [\"k\"] = 1 }; var old = m[\"k\"]++; var pre = ++m[\"k\"]; return old + \"|\" + pre + \"|\" + m[\"k\"];")] // "1|3|3"
+    [InlineData("var m = new SortedDictionary<string, byte> { [\"k\"] = 255 }; var old = m[\"k\"]++; return old + \"|\" + m[\"k\"];")] // "255|0"
+    [InlineData("var m = new SortedDictionary<string, int?> { [\"k\"] = 4 }; var old = m[\"k\"]--; return old + \"|\" + m[\"k\"];")] // "4|3"
+    // ---- a missing key throws on a read, a compound, a step and a coalescing write ----
+    [InlineData("var m = new SortedDictionary<string, int>(); try { var x = m[\"z\"]; return \"no\"; } catch (KeyNotFoundException) { return \"throws\"; }")]
+    [InlineData("var m = new SortedDictionary<string, int>(); try { m[\"z\"] += 1; return \"no\"; } catch (KeyNotFoundException) { return \"throws\"; }")]
+    [InlineData("var m = new SortedDictionary<string, int>(); try { m[\"z\"]++; return \"no\"; } catch (KeyNotFoundException) { return \"throws\"; }")]
+    [InlineData("var m = new SortedDictionary<string, string?>(); try { m[\"z\"] ??= \"v\"; return \"no\"; } catch (KeyNotFoundException) { return \"throws\"; }")]
+    [InlineData("var m = new SortedDictionary<string, string?> { [\"k\"] = null }; m[\"k\"] ??= \"v\"; return m[\"k\"];")] // "v"
+    [InlineData("var m = new SortedDictionary<string, string?> { [\"k\"] = \"had\" }; m[\"k\"] ??= \"v\"; return m[\"k\"];")] // "had"
+    [InlineData("var m = new SortedDictionary<string, string?> { [\"k\"] = \"had\" }; return (m[\"k\"] ??= \"abc\").ToUpper();")] // "HAD"
+    // ---- the receiver and the key once, and fixed before the right-hand side runs ----
+    [InlineData("int calls = 0; var m = new SortedDictionary<string, int> { [\"a\"] = 1 }; SortedDictionary<string, int> Get() { calls++; return m; } Get()[\"a\"] += 2; return m[\"a\"] + \"/\" + calls;")] // "3/1"
+    [InlineData("int calls = 0; var m = new SortedDictionary<string, int> { [\"a\"] = 1 }; string Key() { calls++; return \"a\"; } m[Key()] += 2; return m[\"a\"] + \"/\" + calls;")] // "3/1"
+    [InlineData("var m = new SortedDictionary<string, int> { [\"a\"] = 1 }; var other = new SortedDictionary<string, int> { [\"a\"] = 10 }; var first = m; m[\"a\"] += (m = other)[\"a\"]; return first[\"a\"] * 100 + other[\"a\"];")] // 1110
+    [InlineData("var m = new SortedDictionary<string, bool> { [\"a\"] = true }; m[\"a\"] &= false; return m[\"a\"];")] // false
+    public void ARuntimeMapEntry_TakesItsTypesRule(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
+
+    /// <summary>A dictionary keyed by a value is a runtime map too (<c>$eq.collections.valueMap</c>).</summary>
+    [SkippableTheory]
+    [InlineData("var d = new Dictionary<Point, byte> { { new Point(1, 2), 250 } }; d[new Point(1, 2)] += 10; return d[new Point(1, 2)].ToString();")] // "4"
+    [InlineData("var d = new Dictionary<Point, int> { { new Point(1, 2), 1 } }; d[new Point(1, 2)]++; return d[new Point(1, 2)];")] // 2
+    [InlineData("var d = new Dictionary<Point, int>(); try { d[new Point(9, 9)] += 1; return \"no\"; } catch (KeyNotFoundException) { return \"throws\"; }")]
+    [InlineData("var d = new Dictionary<Point, int>(); try { var x = d[new Point(9, 9)]; return \"no\"; } catch (KeyNotFoundException) { return \"throws\"; }")]
+    public void AValueKeyedEntry_TakesItsTypesRule(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, "public record Point(int X, int Y);");
     }
 
     [SkippableFact]

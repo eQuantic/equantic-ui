@@ -70,6 +70,10 @@ public static class Eq
     public const string Substring = "$eq.text.substring";
     /// <summary>A dictionary read that throws for a key that is not there.</summary>
     public const string DictGet = "$eq.dictGet";
+    /// <summary>The same read on a runtime map (a sorted or value-keyed dictionary).</summary>
+    public const string MapGet = "$eq.mapGet";
+    /// <summary>A runtime map's entry write, through its <c>set</c>, answering the value written.</summary>
+    public const string MapSet = "$eq.mapSet";
     /// <summary>LINQ Zip — pairs stop with the shorter sequence.</summary>
     public const string Zip = "$eq.zip";
     /// <summary>Where each text element (an extended grapheme cluster, UAX #29) of a string begins:

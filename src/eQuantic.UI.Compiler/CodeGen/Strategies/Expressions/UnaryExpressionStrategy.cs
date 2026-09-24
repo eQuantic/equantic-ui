@@ -112,10 +112,10 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
         var type = context.SemanticHelper.GetType(operandSyntax);
         var delta = op == "++" ? "+" : "-";
         var answerOld = node is PostfixUnaryExpressionSyntax && ValueUsed(node);
-        var entry = ReadModifyWrite.EntryOf(operandSyntax, context);
-        JsExpr Stepped(Func<JsExpr, JsExpr> next) => entry is not null
-            ? ReadModifyWrite.AssignEntry(context.Converter.ConvertIr(entry.Expression),
-                context.Converter.ConvertIr(entry.ArgumentList.Arguments[0].Expression), [], (current, _) => next(current),
+        var entry = DictionaryEntry.Of(operandSyntax, context);
+        JsExpr Stepped(Func<JsExpr, JsExpr> next) => entry is { } found
+            ? ReadModifyWrite.AssignEntry(found.Entry, context.Converter.ConvertIr(found.Access.Expression),
+                context.Converter.ConvertIr(found.Access.ArgumentList.Arguments[0].Expression), [], (current, _) => next(current),
                 answerOld, context)
             : ReadModifyWrite.Assign(context.Converter.ConvertIr(operandSyntax), [], (current, _) => next(current),
                 answerOld, context);
