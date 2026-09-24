@@ -42,6 +42,10 @@ import {
   dictGet,
   divRem,
   divRemLong,
+  intDiv,
+  intRem,
+  longDiv,
+  longRem,
   single,
   singleFromLong,
   substring,
@@ -152,7 +156,19 @@ export const $eq = {
   /** The typed boundary: a server value coerced ONCE to its runtime type — see utils/hydrate. */
   hydrate,
   /** Numeric compat: exact decimal and 64-bit integer. */
-  num: { dec, long, checked, divRem, divRemLong, single, singleFromLong },
+  num: {
+    dec,
+    long,
+    checked,
+    divRem,
+    divRemLong,
+    intDiv,
+    intRem,
+    longDiv,
+    longRem,
+    single,
+    singleFromLong,
+  },
   /** Math with .NET semantics: banker's rounding, the *Pi family (exact at special angles),
    * fused multiply-add, the neighbours of a double or a single, the IEEE remainder, sign-aware
    * roots, and the min/max tie rules. */

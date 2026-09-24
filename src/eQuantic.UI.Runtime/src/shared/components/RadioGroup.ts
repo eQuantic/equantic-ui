@@ -1,4 +1,4 @@
-import { Adjustable, Box, BoxStyle, BuildContext, Column, CornerRadii, Pressable, Row, SizeValue, Sizing, StatelessComponent, Text, VisualNode, VisualNodeExtensions } from "../runtime-exports";
+import { $eq, Adjustable, Box, BoxStyle, BuildContext, Column, CornerRadii, Pressable, Row, SizeValue, Sizing, StatelessComponent, Text, VisualNode, VisualNodeExtensions } from "../runtime-exports";
 
 export class RadioGroup extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.RadioGroup';
@@ -40,7 +40,7 @@ export class RadioGroup extends StatelessComponent {
         let group: VisualNode = options;
         if (!this.disabled && !(this.onChanged == null) && this.options.length > 0) {
             let count = this.options.length;
-            group = new Adjustable(options, (direction: number) => this.onChanged((this.selected + direction + count) % count), { role: 'radiogroup', label: this.label ?? '' });
+            group = new Adjustable(options, (direction: number) => this.onChanged($eq.num.intRem(this.selected + direction + count, count)), { role: 'radiogroup', label: this.label ?? '' });
         }
         let column = new Column(4, 'start', 'stretch', false, null, null, { width: SizeValue.fill });
         let groupLabel: any; 

@@ -93,6 +93,50 @@ export function divRemLong(left: bigint, right: bigint): [bigint, bigint] {
   return [left / right, left % right];
 }
 
+const DIVIDE_BY_ZERO = 'Attempted to divide by zero.';
+const OVERFLOW = 'Arithmetic operation resulted in an overflow.';
+const INT_MIN = -2_147_483_648;
+const LONG_MIN = -9_223_372_036_854_775_808n;
+
+/**
+ * C#'s integer `/` for a width a plain number carries, where the divisor is not a constant that
+ * settles it: truncated toward zero as the transpiler always wrote it, and the throws .NET throws.
+ * A zero divisor is a DivideByZeroException where JavaScript answers Infinity or NaN, and
+ * `int.MinValue / -1` an OverflowException where JavaScript answers 2147483648, in a checked
+ * context or not. The narrower widths compute in int and an unsigned value is never negative, so
+ * only a zero divisor reaches them.
+ */
+export function intDiv(left: number, right: number): number {
+  if (right === 0) throw new Error(DIVIDE_BY_ZERO);
+  if (right === -1 && left === INT_MIN) throw new Error(OVERFLOW);
+  return Math.trunc(left / right);
+}
+
+/** C#'s integer `%`: the same throws, `int.MinValue % -1` included, where JavaScript answers -0. */
+export function intRem(left: number, right: number): number {
+  if (right === 0) throw new Error(DIVIDE_BY_ZERO);
+  if (right === -1 && left === INT_MIN) throw new Error(OVERFLOW);
+  return left % right;
+}
+
+/**
+ * C#'s `/` for a long, a BigInt here: BigInt division already truncates, and it throws for a zero
+ * divisor, but a RangeError of its own; `long.MinValue / -1` is exact in a BigInt, where .NET's
+ * 64-bit quotient overflows.
+ */
+export function longDiv(left: bigint, right: bigint): bigint {
+  if (right === 0n) throw new Error(DIVIDE_BY_ZERO);
+  if (right === -1n && left === LONG_MIN) throw new Error(OVERFLOW);
+  return left / right;
+}
+
+/** C#'s `%` for a long: the same throws, `long.MinValue % -1` included. */
+export function longRem(left: bigint, right: bigint): bigint {
+  if (right === 0n) throw new Error(DIVIDE_BY_ZERO);
+  if (right === -1n && left === LONG_MIN) throw new Error(OVERFLOW);
+  return left % right;
+}
+
 /**
  * A long (a BigInt) converted to a single the way .NET converts it: rounded ONCE, to nearest with
  * ties to even, from all 64 bits. `Math.fround(Number(l))` rounds twice — to 53 bits and then to 24

@@ -149,11 +149,30 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         // has to be fenced under the `/`, and the writer is the one that knows. The quotient goes
         // back into the TARGET's width, as C#'s `x = (T)(x / y)` does: `sbyte s = -128; s /= -1`
         // is -128, not 128.
-        if (op == "/=" && leftType.IsIntegral() && !leftType.IsLong())
+        // `%=` joins it where the divisor could throw (#333), and so do a long's two, whose BigInt
+        // operators answer a zero divisor with a RangeError of their own and long.MinValue / -1 with
+        // a quotient no long holds. A divisor that settles it keeps JavaScript's own `%=`.
+        var divides = op is "/=" or "%=" && leftType.IsIntegral();
+        var check = divides && IntegerDivision.NeedsCheck(assignment.Right, context);
+        // A NULLABLE target divides only what it holds: null in, null out, and the value's own rule
+        // and width inside the lift. `IsIntegral()` unwraps Nullable, and without the lift a null
+        // target was read as 0 (a number) or reached a BigInt helper (a TypeError).
+        if (divides && leftType.IsNullableValue())
+        {
+            var arithmetic = ArithmeticContext.Of(assignment, context);
+            var underlying = leftType.UnwrapNullable();
+            return Compound((current, operand) => IntegerDivision.Lifted(current, operand, (a, b) => underlying.IsLong()
+                ? IntegerDivision.OfLongs(op[..^1], a, b, check, context)
+                : IntegerWidth.Settle(IntegerDivision.OfNumbers(op[..^1], a, b, check, context),
+                    underlying, arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context), context));
+        }
+        if (divides && leftType.IsLong() && check)
+            return Compound((current, operand) => IntegerDivision.OfLongs(op[..^1], current, operand, check: true, context));
+        if (divides && !leftType.IsLong() && (op == "/=" || check))
         {
             var arithmetic = ArithmeticContext.Of(assignment, context);
             return Compound((current, operand) => IntegerWidth.Settle(
-                JsExpr.Call(JsExpr.Identifier("Math.trunc"), JsExpr.Binary(current, "/", operand)),
+                IntegerDivision.OfNumbers(op[..^1], current, operand, check, context),
                 leftType, arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context));
         }
 

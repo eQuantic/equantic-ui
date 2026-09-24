@@ -69,7 +69,7 @@ export class CodeLineCells {
         let stop = Math.max(1, tabSize);
         let cell = 0;
         for (const c of text) {
-            if (c === '\t') cell += stop - cell % stop; else if (c < String.fromCharCode(0x80)) cell++; else return new CodeLineCells(text, tabSize).width;
+            if (c === '\t') cell += stop - $eq.num.intRem(cell, stop); else if (c < String.fromCharCode(0x80)) cell++; else return new CodeLineCells(text, tabSize).width;
         }
         return cell;
     }
@@ -86,7 +86,7 @@ export class CodeLineCells {
 
     elementWidth(text: string, start: number, end: number, cell: number) {
         let first = text[start];
-        if (first === '\t') return this.tabSize - cell % this.tabSize;
+        if (first === '\t') return this.tabSize - $eq.num.intRem(cell, this.tabSize);
         let codePoint = start + 1 < end && (/^[\uD800-\uDBFF]$/.test(first) && /^[\uDC00-\uDFFF]$/.test(text[start + 1])) ? Number((first + text[start + 1]).codePointAt(0)) : first.charCodeAt(0);
         if (codePoint >= 0x0300) {
             let category = $eq.text.unicodeCategory(codePoint);

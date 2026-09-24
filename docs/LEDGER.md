@@ -575,6 +575,12 @@ record of a release, the wiki's Upgrading page is the distillate.
   `MidpointRounding`. A value the browser produces (a scroll offset, a drag's travel, a pointer's
   position) enters C# through the runtime, which now rounds it at each of the five seams C# types
   `float`; `FloatSeamsTests` derives them by reflection and requires a spec for each.
+- **2026-09-23 · An integer division refuses what .NET refuses**: `a / b` and `a % b` on integers
+  answered `Infinity`, `NaN` or 2147483648 where .NET throws, so a count of zero rendered `Infinity`
+  in the browser where the server threw; a long's BigInt threw a `RangeError` of its own for zero and
+  answered 2^63 for `long.MinValue / -1` ([#333](https://github.com/eQuantic/equantic-ui/issues/333)).
+  A divisor that can be zero, or -1 beside `MinValue`, goes through the runtime's check, the compound
+  and lifted forms included; a constant divisor other than 0 and -1 keeps the bare operator.
 
 ## Retired documents
 

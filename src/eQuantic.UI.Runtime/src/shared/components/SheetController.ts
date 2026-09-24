@@ -1,4 +1,4 @@
-import { CellRef, SheetAxisValue, SheetCellSnapshot, SheetDocument, SheetEdit, SheetHistory, SheetMotionValue, SheetRange, TsvCodec } from "../runtime-exports";
+import { $eq, CellRef, SheetAxisValue, SheetCellSnapshot, SheetDocument, SheetEdit, SheetHistory, SheetMotionValue, SheetRange, TsvCodec } from "../runtime-exports";
 
 export class SheetController {
     constructor(rows: number = 1000, cols: number = 26, props?: any) {
@@ -280,7 +280,7 @@ export class SheetController {
     }
 
     static mod(value: number, size: number) {
-        return (value % size + size) % size;
+        return $eq.num.intRem($eq.num.intRem(value, size) + size, size);
     }
 
     fillDown() {
