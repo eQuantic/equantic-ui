@@ -35,6 +35,21 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
                     return unaryCall;
             }
 
+            // A NULLABLE number negates its value inside the lift (#372): JavaScript's `-null` is -0,
+            // `~null` is -1 and `+null` is 0, where C#'s lifted operator answers null. `+` is the
+            // value itself, which a BigInt needs: JavaScript's `+5n` throws.
+            if (prefix.OperatorToken.Text is "-" or "~" or "+"
+                && NullableLift.IsNullableNumber(context.SemanticHelper.GetType(prefix.Operand), out var liftedValue))
+            {
+                var text = prefix.OperatorToken.Text;
+                return NullableLift.Unary(context.Converter.ConvertIr(prefix.Operand), value => text switch
+                {
+                    "+" => value,
+                    "-" when liftedValue.IsDecimal() => JsExpr.Callish($"{JsExprWriter.WriteIn(value, JsPrecedence.Call)}.neg()"),
+                    _ => JsExpr.Prefix(text, value),
+                }, context);
+            }
+
             // A DECIMAL is a runtime Decimal object: JavaScript's `-` coerces it through its text
             // into a plain NUMBER, silently shedding the type (`-3.99m` computed on as a double).
             // A constant folds to the negated literal; anything else negates on the type.
@@ -78,7 +93,8 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
     /// by code unit (`'a'++` is NaN here), a DECIMAL steps on the type (JavaScript's `++` coerces it
     /// through its text into a plain number), a FLOAT rounds to single precision (`0.1f + 1` is not
     /// exact), a narrow width wraps and a checked context throws — the result type decides
-    /// (IntegerWidth). Null leaves the native `++`, which is what every loop counter wants.
+    /// (IntegerWidth). A NULLABLE number steps its value by the same rule inside the lift, so null
+    /// stays null (#372). Null leaves the native `++`, which is what every loop counter wants.
     /// The target is evaluated once and a postfix step in value position answers the value BEFORE
     /// it, as C# does (ReadModifyWrite): `values[i++]++` steps `i` once, and `byte b = 255;
     /// var old = b++;` is 255, not the wrapped 0.
@@ -92,27 +108,40 @@ public class UnaryExpressionStrategy : IExpressionIrStrategy
             context.Converter.ConvertIr(operandSyntax), [], (current, _) => next(current), answerOld,
             context.TypeAnnotations);
 
+        if (NullableLift.IsNullableNumber(type, out var value))
+        {
+            var one = JsExpr.Literal(value.IsLong() ? "1n" : "1");
+            var rule = StepRule(value, delta, node, context) ?? (current => JsExpr.Binary(current, delta, one));
+            return Stepped(current => NullableLift.Unary(current, rule, context));
+        }
+        return StepRule(type, delta, node, context) is { } typed ? Stepped(typed) : null;
+    }
+
+    /// <summary>The value one step computes from the current one on <paramref name="type"/>, where
+    /// JavaScript's own step would compute another; null where it computes C#'s.</summary>
+    private static Func<JsExpr, JsExpr>? StepRule(ITypeSymbol? type, string delta, SyntaxNode node, ConversionContext context)
+    {
         if (type is { SpecialType: SpecialType.System_Char })
-            return Stepped(current => JsExpr.Callish(
-                $"String.fromCharCode({JsExprWriter.WriteIn(current, JsPrecedence.Call)}.charCodeAt(0) {delta} 1)"));
+            return current => JsExpr.Callish(
+                $"String.fromCharCode({JsExprWriter.WriteIn(current, JsPrecedence.Call)}.charCodeAt(0) {delta} 1)");
 
         if (type.IsDecimal())
         {
             context.UsedHelpers.Add(Eq.Import);
-            var method = op == "++" ? "add" : "sub";
-            return Stepped(current => JsExpr.Callish(
-                $"{JsExprWriter.WriteIn(current, JsPrecedence.Call)}.{method}({Eq.Dec}(1))"));
+            var method = delta == "+" ? "add" : "sub";
+            return current => JsExpr.Callish(
+                $"{JsExprWriter.WriteIn(current, JsPrecedence.Call)}.{method}({Eq.Dec}(1))");
         }
 
         if (SinglePrecision.Is(type))
-            return Stepped(current => SinglePrecision.Round(JsExpr.Binary(current, delta, JsExpr.Literal("1"))));
+            return current => SinglePrecision.Round(JsExpr.Binary(current, delta, JsExpr.Literal("1")));
 
         if (IntegerWidth.Of(type) is not { } width) return null;
         var arithmetic = ArithmeticContext.Of(node, context);
         if (!(arithmetic.IsChecked || arithmetic.ExplicitUnchecked || IntegerWidth.WrapsByDefault(width))) return null;
         var one = width.Bits == 64 ? JsExpr.Literal("1n") : JsExpr.Literal("1");
-        return Stepped(current => IntegerWidth.Settle(JsExpr.Binary(current, delta, one), type,
-            arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context));
+        return current => IntegerWidth.Settle(JsExpr.Binary(current, delta, one), type,
+            arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context);
     }
 
     /// <summary>Whether the step's RESULT is read — false in the two places an increment is pure
