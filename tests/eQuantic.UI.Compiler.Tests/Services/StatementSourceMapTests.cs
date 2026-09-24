@@ -77,6 +77,15 @@ public class StatementSourceMapTests
 
             public int Measure(int n)
             {
+                int Twice(int x)
+                {
+                    var doubled = x * 2;
+                    return doubled;
+                }
+
+                int Next(int x) => x + 1;
+
+                n = Next(Twice(n));
                 do
                 {
                     n--;
@@ -179,6 +188,8 @@ public class StatementSourceMapTests
     [InlineData("const _s = value;", "switch (value)")]
     [InlineData("resource.dispose();", "using var resource = new Resource();")]
     [InlineData("sum.total = a.total + b.total;", "sum.Total = a.Total + b.Total;")]
+    [InlineData("let doubled = x * 2;", "var doubled = x * 2;")]
+    [InlineData("return x + 1;", "int Next(int x) => x + 1;")]
     public void ALineNoStatementWritesByItself_MapsToTheCSharpThatProducedIt(string emitted, string written) =>
         AssertMapped(Compile(LoweredSource, "Lowered.cs"), emitted, written, LoweredSource);
 

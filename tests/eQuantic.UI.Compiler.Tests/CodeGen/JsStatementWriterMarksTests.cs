@@ -72,8 +72,7 @@ public class JsStatementWriterMarksTests
 
         text.Should().Be("{\n    const _s = a;\n    if (_s === 1) {\n        first();\n    } else if (_s === 2) {\n        second();\n    }\n}");
         marks.Select(mark => (mark.Line, mark.Column, mark.Origin)).Should().Equal(
-            (0, 0, (SyntaxNode)@switch),
-            (1, 4, @switch),
+            (1, 4, (SyntaxNode)@switch),
             (2, 4, @switch),
             (3, 8, Origin<ExpressionStatementSyntax>()),
             (4, 11, @switch),
@@ -81,13 +80,38 @@ public class JsStatementWriterMarksTests
     }
 
     [Fact]
-    public void ABlockWithNoOriginOfItsOwn_TakesNoMark()
+    public void ABlockOrASequence_TakesNoMark_AndHandsItsOriginToItsStatements()
     {
-        // Its statements take the one around them; its brace is no line to stop on.
+        // A brace is no line to stop on; the statements in it take the origin around them, and the
+        // first statement of a sequence begins where the sequence does, so it is marked once.
         var marks = new List<JsLineMark>();
         JsStatementWriter.WriteMarked(JsStatement.Block([JsStatement.Block([Call("go")])]) with { Origin = Origin<ReturnStatementSyntax>() },
             JsLayout.Pretty, 0, marks);
-        marks.Select(mark => (mark.Line, mark.Column)).Should().Equal((0, 0), (2, 8));
+        marks.Select(mark => (mark.Line, mark.Column)).Should().Equal((2, 8));
+
+        marks.Clear();
+        JsStatementWriter.WriteMarked(new JsStatements([Call("first"), Call("second")]) with { Origin = Origin<ReturnStatementSyntax>() },
+            JsLayout.Pretty, 0, marks);
+        marks.Select(mark => (mark.Line, mark.Column)).Should().Equal((0, 0), (1, 0));
+    }
+
+    [Fact]
+    public void ALocalFunctionsBody_IsMarkedStatementByStatement()
+    {
+        var local = JsStatement.ConstArrow("twice", "x", isAsync: false, JsStatement.Block([
+            JsStatement.Raw("let doubled = x * 2;") with { Origin = Origin<LocalDeclarationStatementSyntax>() },
+            JsStatement.Return(JsExpr.Identifier("doubled")) with { Origin = Origin<ReturnStatementSyntax>() },
+        ])) with { Origin = Origin<IfStatementSyntax>() };
+
+        var marks = new List<JsLineMark>();
+        var text = JsStatementWriter.WriteMarked(local, JsLayout.Pretty, 0, marks);
+
+        text.Should().Be("const twice = (x) => {\n    let doubled = x * 2;\n    return doubled;\n};");
+        JsStatementWriter.Write(local, JsLayout.Compact).Should().Be("const twice = (x) => {let doubled = x * 2;return doubled;};");
+        marks.Select(mark => (mark.Line, mark.Column, mark.Origin)).Should().Equal(
+            (0, 0, (SyntaxNode)Origin<IfStatementSyntax>()),
+            (1, 4, Origin<LocalDeclarationStatementSyntax>()),
+            (2, 4, Origin<ReturnStatementSyntax>()));
     }
 
     [Fact]
