@@ -135,9 +135,14 @@ public static class CodeDiffer
         var n = aHi - aLo;
         var m = bHi - bLo;
         var maxD = (n + m + 1) / 2;
-        var offset = maxD;
+        // The walks go no further than MaxRounds diagonals either way, so neither do the arrays: sized
+        // from maxD alone, two long unrelated texts allocated two arrays as long as both of them,
+        // for rounds that were never going to run. What lies past the reach was never written, and
+        // every read that could land there is bounded below.
+        var reach = Math.Min(maxD, MaxRounds);
+        var offset = reach;
         // Two slots of headroom: the walks read one diagonal past the last one they write.
-        var length = 2 * maxD + 2;
+        var length = 2 * reach + 2;
         var forward = new int[length];
         var reverse = new int[length];
         for (var k = 0; k < length; k++)

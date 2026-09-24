@@ -81,8 +81,9 @@ export class CodeDiffer {
         let n = aHi - aLo;
         let m = bHi - bLo;
         let maxD = Math.trunc((n + m + 1) / 2);
-        let offset = maxD;
-        let length = 2 * maxD + 2;
+        let reach = Math.min(maxD, CodeDiffer.maxRounds);
+        let offset = reach;
+        let length = 2 * reach + 2;
         let forward = new Array(length).fill(0);
         let reverse = new Array(length).fill(0);
         for (let k = 0; k < length; k++) {
