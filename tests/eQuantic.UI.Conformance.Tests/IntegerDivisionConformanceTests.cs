@@ -63,6 +63,10 @@ public class IntegerDivisionConformanceTests
     [InlineData("long? a = 7, b = 2; return (a / b).ToString();")]                                        // "3"
     [InlineData("long? a = 7, zero = 0; try { return (a / zero).ToString(); } catch (Exception e) { return e.Message; }")]
     [InlineData("long? x = null; x /= 2; return x == null ? \"null\" : \"value\";")]                   // "null"
+    [InlineData("long? a = 7, b = 2; return (a % b).ToString();")]                                        // "1"
+    [InlineData("long? a = null, b = 2; var c = a % b; return c == null ? \"null\" : c.ToString();")]    // "null"
+    [InlineData("long? a = 5; var c = a / null; return c == null ? \"null\" : c.ToString();")]           // "null", a literal null
+    [InlineData("int? a = 5; var c = a % null; return c == null ? \"null\" : c.ToString();")]            // "null"
     // ---- controls: what .NET divides, the twin divides ----
     [InlineData("int a = -7, b = 2; return (a / b * 10 + a % b).ToString();")]                              // "-31"
     [InlineData("int a = 10, b = 3; a /= b; return a.ToString();")]                                        // "3"
