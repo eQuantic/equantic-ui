@@ -52,6 +52,79 @@ public class StatementSourceMapTests
         }
         """;
 
+    /// <summary>Lines no C# statement writes by itself: what a strategy lowers — a pattern switch's
+    /// arms, a <c>using</c>'s dispose, a <c>do</c>'s condition on the loop's last line — and the
+    /// bodies the emitter built as text, an expression-bodied accessor's and an operator's. Each one
+    /// read, through the map, as whatever statement was written above it.</summary>
+    private const string LoweredSource = """
+        using System;
+
+        namespace Demo;
+
+        public class Lowered
+        {
+            private int _level;
+
+            public int Total { get; set; }
+
+            public int Size => Measure(2) + 1;
+
+            public int Level
+            {
+                get => _level;
+                set => _level = Clamp(value);
+            }
+
+            public int Measure(int n)
+            {
+                do
+                {
+                    n--;
+                }
+                while (Check(n));
+                return n;
+            }
+
+            public string Name(object value)
+            {
+                switch (value)
+                {
+                    case int number when number > 0:
+                        return "positive";
+                    case string text:
+                        return text;
+                }
+                return "other";
+            }
+
+            public int Scope()
+            {
+                using var resource = new Resource();
+                return resource.Touch();
+            }
+
+            public static Lowered operator +(Lowered a, Lowered b)
+            {
+                var sum = new Lowered();
+                sum.Total = a.Total + b.Total;
+                return sum;
+            }
+
+            private bool Check(int n) => n > 0;
+
+            private int Clamp(int value) => value < 0 ? 0 : value;
+        }
+
+        public sealed class Resource : IDisposable
+        {
+            public int Touch() => 1;
+
+            public void Dispose()
+            {
+            }
+        }
+        """;
+
     private static CompilationResult Compile() => Compile(Source, "Tally.cs");
 
     private static CompilationResult Compile(string source, string path)
@@ -67,7 +140,8 @@ public class StatementSourceMapTests
 
         var compiler = new ComponentCompiler();
         compiler.SetProjectCompilation(compilation);
-        var result = compiler.CompileSource(source, path).Single();
+        // The module of the type the file is named for: a source may declare a helper type beside it.
+        var result = compiler.CompileSource(source, path).Single(result => result.ComponentName == Path.GetFileNameWithoutExtension(path));
         Assert.True(result.Success, string.Join("\n", result.Errors.Select(e => e.Message)));
         return result;
     }
@@ -95,6 +169,18 @@ public class StatementSourceMapTests
         result.TypeScript.Should().StartWith("import ", "this case is about the lines the imports take");
         AssertMapped(result, emitted, written, ImportingSource);
     }
+
+    [Theory]
+    [InlineData("return this.measure(2) + 1;", "public int Size => Measure(2) + 1;")]
+    [InlineData("this._level = this.clamp(value);", "set => _level = Clamp(value);")]
+    [InlineData("while (this.check(n));", "while (Check(n));")]
+    [InlineData("number > 0", "case int number when number > 0:")]
+    [InlineData("typeof _s === 'string'", "case string text:")]
+    [InlineData("const _s = value;", "switch (value)")]
+    [InlineData("resource.dispose();", "using var resource = new Resource();")]
+    [InlineData("sum.total = a.total + b.total;", "sum.Total = a.Total + b.Total;")]
+    public void ALineNoStatementWritesByItself_MapsToTheCSharpThatProducedIt(string emitted, string written) =>
+        AssertMapped(Compile(LoweredSource, "Lowered.cs"), emitted, written, LoweredSource);
 
     private static void AssertMapped(CompilationResult result, string emitted, string written, string source)
     {

@@ -15,7 +15,7 @@ namespace eQuantic.UI.Compiler.Tests.CodeGen;
 public class JsStatementWriterMarksTests
 {
     private static readonly StatementSyntax[] Origins = CSharpSyntaxTree
-        .ParseText("class C { void M() { int a = 1; if (a > 0) { a++; } switch (a) { case 1: a--; break; } return; } }")
+        .ParseText("class C { void M() { int a = 1; if (a > 0) { a++; } switch (a) { case 1: a--; break; } do { a++; } while (a < 9); return; } }")
         .GetRoot().DescendantNodes().OfType<StatementSyntax>().Where(s => s is not BlockSyntax).ToArray();
 
     private static T Origin<T>(int index = 0) where T : StatementSyntax => Origins.OfType<T>().ElementAt(index);
@@ -31,7 +31,8 @@ public class JsStatementWriterMarksTests
                 JsStatement.Block([JsStatement.Raw("a++;") with { Origin = Origin<ExpressionStatementSyntax>() }]), null)
                 with { Origin = Origin<IfStatementSyntax>() },
             JsStatement.Switch(JsExpr.Identifier("a"),
-                [new JsCase(["case 1"], [JsStatement.Raw("a--;") with { Origin = Origin<ExpressionStatementSyntax>(1) }, JsStatement.Break(null)])])
+                [new JsCase(["case 1"], [JsStatement.Raw("a--;") with { Origin = Origin<ExpressionStatementSyntax>(1) },
+                    JsStatement.Break(null) with { Origin = Origin<BreakStatementSyntax>() }])])
                 with { Origin = Origin<SwitchStatementSyntax>() },
             JsStatement.Return(null) with { Origin = Origin<ReturnStatementSyntax>() },
         ]);
@@ -48,7 +49,63 @@ public class JsStatementWriterMarksTests
             (3, 8, Origin<ExpressionStatementSyntax>()),
             (5, 4, Origin<SwitchStatementSyntax>()),
             (7, 12, Origin<ExpressionStatementSyntax>(1)),
+            (8, 12, Origin<BreakStatementSyntax>()),
             (10, 4, Origin<ReturnStatementSyntax>()));
+    }
+
+    [Fact]
+    public void AStatementWithNoOriginOfItsOwn_IsMarkedAsTheStatementAroundIt()
+    {
+        // A pattern switch's lowering: the subject bound once, then the arms. The binding and the
+        // `else if` are no C# statement, and unmarked they read as `first()` above them.
+        var @switch = Origin<SwitchStatementSyntax>();
+        var lowered = JsStatement.Block([
+            JsStatement.Raw("const _s = a;"),
+            JsStatement.If(JsExpr.Binary(JsExpr.Identifier("_s"), "===", JsExpr.Literal("1")),
+                JsStatement.Block([Call("first") with { Origin = Origin<ExpressionStatementSyntax>() }]),
+                JsStatement.If(JsExpr.Binary(JsExpr.Identifier("_s"), "===", JsExpr.Literal("2")),
+                    JsStatement.Block([Call("second")]), null)),
+        ]) with { Origin = @switch };
+
+        var marks = new List<JsLineMark>();
+        var text = JsStatementWriter.WriteMarked(lowered, JsLayout.Pretty, 0, marks);
+
+        text.Should().Be("{\n    const _s = a;\n    if (_s === 1) {\n        first();\n    } else if (_s === 2) {\n        second();\n    }\n}");
+        marks.Select(mark => (mark.Line, mark.Column, mark.Origin)).Should().Equal(
+            (0, 0, (SyntaxNode)@switch),
+            (1, 4, @switch),
+            (2, 4, @switch),
+            (3, 8, Origin<ExpressionStatementSyntax>()),
+            (4, 11, @switch),
+            (5, 8, @switch));
+    }
+
+    [Fact]
+    public void ABlockWithNoOriginOfItsOwn_TakesNoMark()
+    {
+        // Its statements take the one around them; its brace is no line to stop on.
+        var marks = new List<JsLineMark>();
+        JsStatementWriter.WriteMarked(JsStatement.Block([JsStatement.Block([Call("go")])]) with { Origin = Origin<ReturnStatementSyntax>() },
+            JsLayout.Pretty, 0, marks);
+        marks.Select(mark => (mark.Line, mark.Column)).Should().Equal((0, 0), (2, 8));
+    }
+
+    [Fact]
+    public void ADoWhilesCondition_IsMarkedOnTheLineItRunsOn_AsTheCSharpCondition()
+    {
+        var @do = Origin<DoStatementSyntax>();
+        var loop = JsStatement.DoWhile(
+            JsStatement.Block([JsStatement.Raw("a++;") with { Origin = Origin<ExpressionStatementSyntax>(2) }]),
+            JsExpr.Binary(JsExpr.Identifier("a"), "<", JsExpr.Literal("9"))) with { Origin = @do };
+
+        var marks = new List<JsLineMark>();
+        var text = JsStatementWriter.WriteMarked(loop, JsLayout.Pretty, 0, marks);
+
+        text.Should().Be("do {\n    a++;\n} while (a < 9);");
+        marks.Select(mark => (mark.Line, mark.Column, mark.Origin)).Should().Equal(
+            (0, 0, (SyntaxNode)@do),
+            (1, 4, Origin<ExpressionStatementSyntax>(2)),
+            (2, 2, @do.Condition));
     }
 
     [Fact]
