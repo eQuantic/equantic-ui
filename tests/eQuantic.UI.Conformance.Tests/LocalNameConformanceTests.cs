@@ -67,4 +67,19 @@ public class LocalNameConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements);
     }
+
+    [SkippableTheory]
+    // A pattern, a deconstruction or a loop declares its names in paths of their own, and each one
+    // wrote the source text where every reference reads the renamed name: `is int @class` declared
+    // `class`, `is int package` a reserved word, and a switch arm `@default` kept its `@`.
+    [InlineData("object o = 5; if (o is int @class) return @class; return 0;")] // 5
+    [InlineData("object o = 7; if (o is int package) return package; return 0;")] // 7
+    [InlineData("object o = 3; return o switch { int @default => @default * 2, _ => 0 };")] // 6
+    [InlineData("var (@class, b) = (1, 2); return @class + b;")] // 3
+    [InlineData("var xs = new[] { (1, 2) }; int s = 0; foreach (var (@class, b) in xs) s += @class + b; return s;")] // 3
+    public void APatternOrDeconstructionName_IsRenamedAsItsReferencesRead(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
 }

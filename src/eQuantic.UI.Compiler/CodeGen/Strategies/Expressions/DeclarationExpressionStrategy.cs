@@ -24,14 +24,15 @@ public class DeclarationExpressionStrategy : IConversionStrategy
         {
             // Array destructuring (tuples). Discards (`_`) keep their slot as a hole so the remaining
             // names still line up positionally: `var (_, y) = (5, 7)` -> `[, y]`.
+            // Each name as every reference reads it (ToJsIdentifier), a reserved word renamed.
             var names = deconstruction.Variables.Select(v =>
-                v is SingleVariableDesignationSyntax s && s.Identifier.Text != "_" ? s.Identifier.Text : "");
+                v is SingleVariableDesignationSyntax s && s.Identifier.Text != "_" ? s.Identifier.Text.ToJsIdentifier() : "");
             return $"[{string.Join(", ", names)}]";
         }
         
         if (decl.Designation is SingleVariableDesignationSyntax single)
         {
-            return single.Identifier.Text;
+            return single.Identifier.Text.ToJsIdentifier();
         }
 
         return decl.Designation.ToString();

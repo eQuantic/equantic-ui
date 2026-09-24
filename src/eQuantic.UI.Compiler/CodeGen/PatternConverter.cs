@@ -83,17 +83,19 @@ public static class PatternConverter
     {
         switch (pattern)
         {
+            // Each binding under the name every reference reads it by (ToJsIdentifier): as source
+            // text, `is int @class` bound `@class` and `is int package` a reserved word.
             case VarPatternSyntax { Designation: SingleVariableDesignationSyntax v }:
-                bindings.Add((v.Identifier.Text, access));
+                bindings.Add((v.Identifier.Text.ToJsIdentifier(), access));
                 break;
 
             case DeclarationPatternSyntax { Designation: SingleVariableDesignationSyntax d }:
-                bindings.Add((d.Identifier.Text, access));
+                bindings.Add((d.Identifier.Text.ToJsIdentifier(), access));
                 break;
 
             case RecursivePatternSyntax recursive:
                 if (recursive.Designation is SingleVariableDesignationSyntax r)
-                    bindings.Add((r.Identifier.Text, access));
+                    bindings.Add((r.Identifier.Text.ToJsIdentifier(), access));
                 if (recursive.PositionalPatternClause != null)
                 {
                     // The pattern's OWN type decides the deconstruction names — the governing

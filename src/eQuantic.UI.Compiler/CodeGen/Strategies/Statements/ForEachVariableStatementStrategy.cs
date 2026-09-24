@@ -49,7 +49,7 @@ public class ForEachVariableStatementStrategy : IStatementStrategy
 
     private static string ConvertVariableDesignation(VariableDesignationSyntax designation) => designation switch
     {
-        SingleVariableDesignationSyntax single => single.Identifier.Text,
+        SingleVariableDesignationSyntax single => single.Identifier.Text.ToJsIdentifier(),
         ParenthesizedVariableDesignationSyntax nested =>
             "[" + string.Join(", ", nested.Variables.Select(ConvertVariableDesignation)) + "]",
         // A discard still needs a binding name in JS; it is scoped to the loop body and unused.
