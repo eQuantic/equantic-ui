@@ -57,6 +57,11 @@ public class ValueTextConformanceTests
     [InlineData("return string.Format(\"{0}|{1}\", [\"a\", \"b\"]);")]                                           // "a|b"
     [InlineData("return string.Format(System.Globalization.CultureInfo.InvariantCulture, \"{0} e {1}\", new[] { \"a\", \"b\" });")] // "a e b"
     [InlineData("return string.Format(\"{0}|{1}|{2}|{3}\", 1, 2, 3, 4);")]                                         // "1|2|3|4"
+    // NAMED arguments out of their parameters' order: C# passes them by slot and evaluates them as
+    // written.
+    [InlineData("var log = \"\"; string T() { log += \"t\"; return \"{0}|{1}\"; } object A() { log += \"a\"; return 1; } object B() { log += \"b\"; return 2; } var s = string.Format(format: T(), arg1: B(), arg0: A()); return s + \"/\" + log;")] // "1|2/tba"
+    [InlineData("var log = \"\"; object[] Args() { log += \"a\"; return new object[] { 1 }; } string T() { log += \"t\"; return \"{0}\"; } var s = string.Format(args: Args(), format: T()); return s + \"/\" + log;")] // "1/at"
+    [InlineData("return string.Format(format: \"{0}\", arg0: 5);")]                                            // "5": control
     // An array written in place is its elements, each boxed as C# boxes it: a float keeps its digits.
     [InlineData("return string.Format(\"{0}\", new object[] { 0.1f });")]                                          // "0.1"
     [InlineData("float f = 0.1f; return string.Format(\"{0}|{1}\", new object[] { f, \"x\" });")]                   // "0.1|x"

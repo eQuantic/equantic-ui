@@ -1,4 +1,6 @@
+using eQuantic.UI.Compiler.CodeGen;
 using FluentAssertions;
+using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
 
 namespace eQuantic.UI.Compiler.Tests.Strategies;
@@ -275,6 +277,17 @@ public class StringStrategyTests
         var result = TestHelper.ConvertExpression("string.Format(\"{0} {1}\", new object[] { a, b })");
         result.Should().Be("$eq.text.stringFormat('{0} {1}', this.a, this.b)");
     }
+
+    /// <summary>With no model to bind the call, a named culture or a null in first place is still
+    /// the provider, known by its spelling: taken for the template, it put `CultureInfo` in the
+    /// browser. The string API converts with no model at all.</summary>
+    [Theory]
+    [InlineData("string.Format(CultureInfo.InvariantCulture, \"{0}\", x)", "$eq.text.stringFormatInvariant('{0}', x)")]
+    [InlineData("string.Format(System.Globalization.CultureInfo.CurrentCulture, \"{0}\", x)", "$eq.text.stringFormat('{0}', x)")]
+    [InlineData("string.Format(null, \"{0}\", x)", "$eq.text.stringFormat('{0}', x)")]
+    [InlineData("string.Format(\"{0}\", x)", "$eq.text.stringFormat('{0}', x)")]
+    public void Format_WithNoModel_KnowsTheProviderByItsSpelling(string code, string expected) =>
+        new CSharpToJsConverter().ConvertExpression(SyntaxFactory.ParseExpression(code)).Should().Be(expected);
 
     [Fact]
     public void Equals_MapsToStrictEquality()
