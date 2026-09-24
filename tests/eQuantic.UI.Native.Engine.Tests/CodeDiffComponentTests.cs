@@ -38,6 +38,16 @@ public class CodeDiffComponentTests
         return host.RenderFrame(new DisplayListBuilder());
     }
 
+    /// <summary>A press the way a pointer makes one: down and up at the middle of the region, through
+    /// the host's own dispatch, which a code surface under a pressable must not take from it.</summary>
+    private static void Press(PhotonHost host, HitRegion region)
+    {
+        var x = region.Bounds.X + region.Bounds.Width / 2;
+        var y = region.Bounds.Y + region.Bounds.Height / 2;
+        host.PressDown(x, y);
+        host.PressUp(x, y);
+    }
+
     private static List<Framework.LayoutNode> All(Framework.LayoutNode node, Func<Framework.LayoutNode, bool> predicate)
     {
         var found = new List<Framework.LayoutNode>();
@@ -91,10 +101,12 @@ public class CodeDiffComponentTests
 
         Texts(frame, "line 10").Should().BeEmpty("the unchanged run before the change is folded");
         var fold = frame.HitRegions.First(region => region.Node.Label == SdkStrings.UnchangedLines(87));
-        fold.Node.OnPressed!();
+        var caret = host.CodeTarget;
+        Press(host, fold);
         frame = Settle(host);
 
         Texts(frame, "line 10").Should().HaveCount(2, "the run is open on both sides");
+        host.CodeTarget.Should().Be(caret, "the press was the row's, not the code's");
     }
 
     [Fact]
@@ -107,12 +119,12 @@ public class CodeDiffComponentTests
         var frame = Settle(host);
 
         diff.Editor.Caret.Line.Should().Be(10, "a diff opens at its first change");
-        frame.HitRegions.Single(region => region.Node.Label == SdkStrings.NextChange).Node.OnPressed!();
+        Press(host, frame.HitRegions.Single(region => region.Node.Label == SdkStrings.NextChange));
         frame = Settle(host);
         diff.Editor.Caret.Line.Should().Be(80);
         Texts(frame, "second").Should().NotBeEmpty("the change the step reached is drawn");
 
-        frame.HitRegions.Single(region => region.Node.Label == SdkStrings.NextChange).Node.OnPressed!();
+        Press(host, frame.HitRegions.Single(region => region.Node.Label == SdkStrings.NextChange));
         Settle(host);
         diff.Editor.Caret.Line.Should().Be(10, "past the last change the step wraps to the first");
     }
