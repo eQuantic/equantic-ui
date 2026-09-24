@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
@@ -99,23 +100,7 @@ public class StringStaticStrategy : IConversionStrategy
         }
 
         if (methodName == "Format")
-        {
-             // Track L D11/EQ2100: when the TEMPLATE is a resx accessor it is per-culture DATA —
-             // validated here, at build, against the neutral resx, because a format that will not
-             // survive the trip to the browser must be a compile error, never a runtime surprise.
-             if (context.SemanticHelper.GetSymbol(args[0].Expression) is IPropertySymbol templateProperty
-                 && Services.ResourceClasses.IsResourceAccessor(templateProperty))
-             {
-                 ValidateResourceTemplate((InvocationExpressionSyntax)node, args, templateProperty, context);
-             }
-
-             // Route to the runtime helper, which substitutes {i}/{i:spec} (the latter via the same
-             // formatter the interpolation path uses, so `{0:F2}` works) and unescapes {{/}}.
-             context.UsedHelpers.Add(Eq.Import);
-             var fmt = context.Converter.ConvertExpression(args[0].Expression);
-             var restArgs = string.Join(", ", args.Skip(1).Select(a => context.Converter.ConvertExpression(a.Expression)));
-             return restArgs.Length > 0 ? $"{Eq.StringFormat}({fmt}, {restArgs})" : $"{Eq.StringFormat}({fmt})";
-        }
+            return FormatCall((InvocationExpressionSyntax)node, args, context);
 
         if (methodName == "Compare")
         {
@@ -168,9 +153,246 @@ public class StringStaticStrategy : IConversionStrategy
     /// because a pt-BR string that says {2} where the neutral says {0}/{1} is a crash a Brazilian
     /// visitor finds, on a page nobody tested — the build machine is where that belongs.
     /// </summary>
+    /// <summary>
+    /// <c>string.Format</c>, its arguments bound by the method C# chose (#377): the provider, the
+    /// template and the values, a params array passed whole spread as C#'s normal form reads it.
+    /// The provider never reaches the browser, where <c>CultureInfo</c> does not exist: taken for the
+    /// template, it made the page throw "CultureInfo is not defined". The invariant culture formats
+    /// invariantly, the current culture as a call with none does, and any other is EQ2108, the
+    /// policy <c>ToString</c> has. A float value is boxed with its kind, as C# boxes it into the
+    /// object it is passed as, so the formatter writes a float's own digits (#378).
+    /// </summary>
+    private static string FormatCall(InvocationExpressionSyntax node, SeparatedSyntaxList<ArgumentSyntax> args,
+        ConversionContext context)
+    {
+        ExpressionSyntax? provider = null, template = null;
+        // Each value with the slot it binds to, for the order the call PASSES them in, and every
+        // argument in the order it was WRITTEN, which is the order C# evaluates them. A named
+        // argument makes the two differ: `format: t, arg1: b, arg0: a` passes a, then b, and
+        // evaluates t, b, a.
+        // A value can be a SPREAD, `..xs` in a collection expression, or the params array passed
+        // whole, whose elements the call receives.
+        var values = new List<(int Slot, ExpressionSyntax Value, bool Spread)>();
+        var written = new List<ExpressionSyntax>();
+        if (context.SemanticHelper.GetSymbol(node) is IMethodSymbol { Parameters.Length: > 0 } method)
+        {
+            var last = method.Parameters[^1];
+            for (var i = 0; i < args.Count; i++)
+            {
+                var named = args[i].NameColon?.Name.Identifier.ValueText;
+                var parameter = named is not null
+                    ? method.Parameters.FirstOrDefault(p => p.Name == named)
+                    : i < method.Parameters.Length - 1 ? method.Parameters[i] : last;
+                if (parameter is null) continue;
+                if (parameter.Type is { Name: "IFormatProvider", ContainingNamespace.Name: "System" })
+                {
+                    provider = args[i].Expression;
+                    continue;
+                }
+                written.Add(args[i].Expression);
+                if (parameter.Name == "format") template = args[i].Expression;
+                else values.Add((parameter.Ordinal, args[i].Expression, false));
+            }
+            // A params array passed as the array itself: its elements are the values. The bound call
+            // says which form C# chose, so a covariant `string[]` and a collection expression are
+            // the array too, where comparing the argument's type with the parameter's saw only an
+            // exact `object[]` and formatted the others as one value.
+            var whole = context.SemanticHelper.GetOperation(node) is IInvocationOperation invocation
+                && invocation.Arguments.Any(argument =>
+                    argument.Parameter is { IsParams: true } && argument.ArgumentKind == ArgumentKind.Explicit);
+            // An array WRITTEN IN PLACE is its elements: they are the values, each boxed as C#
+            // boxes it into the array, so a float in `new object[] { 0.1f }` keeps its own digits,
+            // and a collection's spread element stays a spread. They take the array's place in the
+            // written order, where the array ran them. Any other array is spread as it is.
+            if (whole && ElementsOf(values[0].Value) is { } elements)
+            {
+                var at = written.IndexOf(values[0].Value);
+                written.RemoveAt(at);
+                written.InsertRange(at, elements.Select(element => element.Value));
+                var slot = values[0].Slot;
+                values = elements.Select(element => (slot, element.Value, element.Spread)).ToList();
+            }
+            else if (whole)
+            {
+                values[0] = values[0] with { Spread = true };
+            }
+            if (template is null || context.SemanticHelper.GetType(template) is not { SpecialType: SpecialType.System_String })
+                return context.Unhandled(node, "string.Format over a CompositeFormat");
+        }
+        else
+        {
+            // No model binds the call, so a slot is known only by what the spelling PROVES: text in
+            // first place is the template, and a named culture or a null there is the provider, the
+            // template after it. Anything else in first place could be either, since
+            // `string.Format(format, x)` and `string.Format(provider, "", x)` read the same, and a
+            // named argument could be any slot. Those are a build error rather than a guessed
+            // overload: taken for the template, a provider put `CultureInfo` in the browser, or had
+            // `replace` called on it.
+            if (args.Any(argument => argument.NameColon is not null))
+                return context.Unhandled(node, "string.Format with a named argument, which no model places");
+            var first = args[0].Expression;
+            var skip = 0;
+            if (args.Count >= 2 && (NamedCulture.IsInvariant(first, context) || NamedCulture.IsCurrent(first, context)))
+            {
+                provider = first;
+                skip = 1;
+            }
+            else if (args.Count >= 2 && !HoldsText(first))
+            {
+                return context.Unhandled(node, "string.Format whose first argument no model can place");
+            }
+            template = args[skip].Expression;
+            written.Add(template);
+            var rest = args.Skip(skip + 1).Select(argument => argument.Expression).ToList();
+            // One array written in place is the params array in its normal form when the spelling
+            // proves it can be: an `object[]` or a `string[]` (covariant) creation, or a collection
+            // expression, which only the params parameter takes. Its elements are the values then.
+            // Any other array's element type is the model's to say, and a guess is a build error.
+            if (rest.Count == 1 && ProvesParamsArray(rest[0]) && ElementsOf(rest[0]) is { } spelled)
+            {
+                written.AddRange(spelled.Select(element => element.Value));
+                values.AddRange(spelled.Select(element => (0, element.Value, element.Spread)));
+            }
+            else if (rest.Count == 1 && Bare(rest[0]) is ArrayCreationExpressionSyntax or ImplicitArrayCreationExpressionSyntax)
+            {
+                return context.Unhandled(node, "string.Format over an array whose element type no model can say");
+            }
+            else
+            {
+                written.AddRange(rest);
+                values.AddRange(rest.Select((value, slot) => (slot, value, false)));
+            }
+        }
+
+        var function = Eq.StringFormat;
+        if (provider is not null)
+        {
+            if (NamedCulture.IsInvariant(provider, context)) function = Eq.StringFormatInvariant;
+            else if (!NamedCulture.IsCurrent(provider, context))
+            {
+                context.Report(node, ConversionSeverity.Error, "EQ2108",
+                    "Only CultureInfo.InvariantCulture and CultureInfo.CurrentCulture cross to JavaScript. "
+                    + "Format with one of them, or with no provider to follow the app's culture.");
+                return "''";
+            }
+        }
+
+        // Track L D11/EQ2100: when the TEMPLATE is a resx accessor it is per-culture DATA —
+        // validated here, at build, against the neutral resx, because a format that will not
+        // survive the trip to the browser must be a compile error, never a runtime surprise.
+        if (context.SemanticHelper.GetSymbol(template) is IPropertySymbol templateProperty
+            && Services.ResourceClasses.IsResourceAccessor(templateProperty))
+        {
+            ValidateResourceTemplate(node, values.Any(value => value.Spread) ? int.MaxValue : values.Count, templateProperty, context);
+        }
+
+        // Route to the runtime helper, which substitutes {i}/{i,width}/{i:spec} (the spec through the
+        // same formatter the interpolation path uses, so `{0:F2}` works) and unescapes {{/}}.
+        context.UsedHelpers.Add(Eq.Import);
+        var passed = values.OrderBy(value => value.Slot).ToList();
+        // A float is boxed with its kind wherever its static type is float: an argument, an element
+        // written in place, and each element of a spread collection of floats.
+        string Passed((int Slot, ExpressionSyntax Value, bool Spread) value, string text) =>
+            value.Spread
+                ? ElementTypeOf(context.SemanticHelper.GetType(value.Value)).UnwrapNullable() is { SpecialType: SpecialType.System_Single }
+                    ? $"...Array.from({text}, {Eq.AsSingle})"
+                    : $"...{text}"
+                : Boxed(value.Value, context).UnwrapNullable() is { SpecialType: SpecialType.System_Single }
+                    ? $"{Eq.AsSingle}({text})"
+                    : text;
+
+        // In the written order, the call is text as it always was. Out of it, the parts are the
+        // arguments in the order C# evaluates them and the call names them where it passes them:
+        // the template writer binds every part that could be observed, so each runs where C# runs it.
+        var passedOrder = passed.Select(value => value.Value).Prepend(template).ToList();
+        if (passedOrder.SequenceEqual(written))
+        {
+            var rest = passed.Select(value => Passed(value, context.Converter.ConvertExpression(value.Value))).ToList();
+            var fmt = context.Converter.ConvertExpression(template);
+            return rest.Count > 0 ? $"{function}({fmt}, {string.Join(", ", rest)})" : $"{function}({fmt})";
+        }
+        if (written.Count > 10)
+            return context.Unhandled(node, "string.Format whose named arguments reorder more than ten values");
+        var parts = written.Select(argument => context.Converter.ConvertIr(argument)).ToList();
+        string Hole(ExpressionSyntax argument) => "{" + written.IndexOf(argument) + "}";
+        var holes = passed.Select(value => Passed(value, Hole(value.Value)));
+        var call = $"{function}({string.Join(", ", holes.Prepend(Hole(template)))})";
+        return JsExprWriter.Write(JsExpr.Template(call, parts, context.TypeAnnotations));
+    }
+
+    /// <summary>Whether the spelling alone proves an array written in place binds as the params
+    /// array itself: an <c>object[]</c> or <c>string[]</c> creation, or a collection expression.</summary>
+    private static bool ProvesParamsArray(ExpressionSyntax argument) => Bare(argument) switch
+    {
+        CollectionExpressionSyntax => true,
+        ArrayCreationExpressionSyntax { Type.ElementType: PredefinedTypeSyntax element } =>
+            element.Keyword.Text is "object" or "string",
+        _ => false,
+    };
+
+    /// <summary>The expression parentheses name.</summary>
+    private static ExpressionSyntax Bare(ExpressionSyntax expression) =>
+        expression is ParenthesizedExpressionSyntax parenthesized ? Bare(parenthesized.Expression) : expression;
+
+    /// <summary>Whether the spelling alone proves <paramref name="argument"/> is text: a string
+    /// literal or an interpolated string, which no provider can be.</summary>
+    private static bool HoldsText(ExpressionSyntax argument) =>
+        argument is LiteralExpressionSyntax { Token.Value: string } or InterpolatedStringExpressionSyntax;
+
+    /// <summary>The type of the value an argument boxes: its own, or, through a cast to
+    /// <c>object</c> written by hand, the operand's. <c>(object)0.1f</c> is still a float to the
+    /// model, and boxed with its kind it keeps its own digits.</summary>
+    private static ITypeSymbol? Boxed(ExpressionSyntax value, ConversionContext context)
+    {
+        while (true)
+        {
+            switch (value)
+            {
+                case ParenthesizedExpressionSyntax parenthesized:
+                    value = parenthesized.Expression;
+                    continue;
+                case CastExpressionSyntax cast when context.SemanticHelper.GetType(cast) is { SpecialType: SpecialType.System_Object }:
+                    value = cast.Expression;
+                    continue;
+                default:
+                    return context.SemanticHelper.GetType(value);
+            }
+        }
+    }
+
+    /// <summary>The values an array passed as the params array holds when it is written in place:
+    /// they are the call's values, as a list of arguments would be, and a resx template's arity is
+    /// held against them. Null where only the running program knows, a spread element included.</summary>
+    private static IReadOnlyList<(ExpressionSyntax Value, bool Spread)>? ElementsOf(ExpressionSyntax array) => array switch
+    {
+        // Parentheses and a cast name the same array: `(new object[] { 0.1f })` is still written in place.
+        ParenthesizedExpressionSyntax parenthesized => ElementsOf(parenthesized.Expression),
+        CastExpressionSyntax cast => ElementsOf(cast.Expression),
+        ArrayCreationExpressionSyntax { Initializer: { } initializer } => initializer.Expressions.Select(element => (element, false)).ToList(),
+        ImplicitArrayCreationExpressionSyntax { Initializer: var initializer } => initializer.Expressions.Select(element => (element, false)).ToList(),
+        CollectionExpressionSyntax collection when collection.Elements.All(element => element is ExpressionElementSyntax or SpreadElementSyntax) =>
+            collection.Elements.Select(element => element switch
+            {
+                SpreadElementSyntax spread => (spread.Expression, true),
+                _ => (((ExpressionElementSyntax)element).Expression, false),
+            }).ToList(),
+        _ => null,
+    };
+
+    /// <summary>The element type of a collection, for a spread: an array's, or the T of the
+    /// <c>IEnumerable&lt;T&gt;</c> it implements; null where there is none.</summary>
+    private static ITypeSymbol? ElementTypeOf(ITypeSymbol? collection) => collection switch
+    {
+        IArrayTypeSymbol array => array.ElementType,
+        INamedTypeSymbol named => named.AllInterfaces.Append(named)
+            .FirstOrDefault(type => type.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_IEnumerable_T)
+            ?.TypeArguments[0],
+        _ => null,
+    };
+
     private static void ValidateResourceTemplate(
         InvocationExpressionSyntax node,
-        IReadOnlyList<ArgumentSyntax> args,
+        int argCount,
         IPropertySymbol templateProperty,
         ConversionContext context)
     {
@@ -189,7 +411,6 @@ public class StringStaticStrategy : IConversionStrategy
             return;
         }
 
-        var argCount = args.Count - 1;
         foreach (var hole in holes)
         {
             if (hole.Index < argCount) continue;

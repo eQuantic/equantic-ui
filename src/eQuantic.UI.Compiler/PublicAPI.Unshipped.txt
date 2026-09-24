@@ -179,6 +179,12 @@ const eQuantic.UI.Compiler.CodeGen.Eq.DecFromDouble = "$eq.num.decFromDouble" ->
 const eQuantic.UI.Compiler.CodeGen.Eq.DecFromSingle = "$eq.num.decFromSingle" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.DecParse = "$eq.num.decParse" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.DecTryParse = "$eq.num.decTryParse" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.IntConvert = "$eq.num.intConvert" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.IntParse = "$eq.num.intParse" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.IntTryParse = "$eq.num.intTryParse" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.RealConvert = "$eq.num.realConvert" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.RealParse = "$eq.num.realParse" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.RealTryParse = "$eq.num.realTryParse" -> string!
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.ConvertStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.NumberMethodStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 *REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.ConvertStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
@@ -247,3 +253,6 @@ const eQuantic.UI.Compiler.CodeGen.Eq.LinqToValueDictionary = "$eq.linq.toValueD
 eQuantic.UI.Compiler.CodeGen.Strategies.Invocation.DictionaryStrategy.ConvertIr(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> eQuantic.UI.Compiler.CodeGen.Ir.JsExpr!
 const eQuantic.UI.Compiler.CodeGen.Eq.MapGet = "$eq.mapGet" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.MapSet = "$eq.mapSet" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.AsSingle = "$eq.text.asSingle" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.StringFormatInvariant = "$eq.text.stringFormatInvariant" -> string!
+eQuantic.UI.Compiler.Services.SemanticHelper.IsNullConstant(Microsoft.CodeAnalysis.SyntaxNode! node) -> bool

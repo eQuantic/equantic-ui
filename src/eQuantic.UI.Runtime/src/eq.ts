@@ -60,6 +60,14 @@ import {
 } from './utils/overflow';
 import { double, single } from './utils/real-text';
 import { fromBase, toBase } from './utils/convert-base';
+import {
+  intConvert,
+  intParse,
+  intTryParse,
+  realConvert,
+  realParse,
+  realTryParse,
+} from './utils/number-parse';
 import { max, min, toDictionary, toValueDictionary } from './utils/linq';
 import {
   compare,
@@ -68,7 +76,7 @@ import {
   equals as stringEquals,
   joinRange,
 } from './utils/string-statics';
-import { format, parseEnum, stringFormat } from './utils/format';
+import { asSingle, format, parseEnum, stringFormat, stringFormatInvariant } from './utils/format';
 import { nextTextElementLength, textElementStarts } from './utils/text-elements';
 import { unicodeCategory } from './utils/unicode-category';
 import { str } from './utils/culture';
@@ -175,7 +183,8 @@ export const $eq = {
   origin,
   /** The typed boundary: a server value coerced ONCE to its runtime type — see utils/hydrate. */
   hydrate,
-  /** Numeric compat: exact decimal and 64-bit integer, and an integer read or written in a base. */
+  /** Numeric compat: exact decimal and 64-bit integer, every numeric type read from text as .NET
+   * reads it, and an integer read or written in a base. */
   num: {
     dec,
     decParse,
@@ -183,6 +192,12 @@ export const $eq = {
     decFromDouble,
     decFromSingle,
     decConvert,
+    intParse,
+    intTryParse,
+    intConvert,
+    realParse,
+    realTryParse,
+    realConvert,
     long,
     checked,
     divRem,
@@ -243,6 +258,8 @@ export const $eq = {
   text: {
     format,
     stringFormat,
+    stringFormatInvariant,
+    asSingle,
     stringBuilder,
     substring,
     textElementStarts,

@@ -323,6 +323,13 @@ describe('decimal.TryParse answers undefined where Parse throws for the text', (
     expect(Decimal.tryParse(null)).toBeUndefined();
     expect(() => Decimal.parse(null)).toThrow("Value cannot be null. (Parameter 's')");
   });
+
+  it('refuses a null text before a style in Parse, and the style first in TryParse, as .NET does', () => {
+    expect(() => Decimal.parse(null, 512)).toThrow("Value cannot be null. (Parameter 's')");
+    expect(() => Decimal.tryParse(null, 512)).toThrow(
+      "The number styles AllowHexSpecifier and AllowBinarySpecifier are not supported on floating point data types. (Parameter 'style')",
+    );
+  });
 });
 
 describe("the messages are .NET's", () => {
