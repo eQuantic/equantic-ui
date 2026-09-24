@@ -291,20 +291,20 @@ public class StringStrategyTests
     public void Format_WithNoModel_KnowsTheProviderByItsSpelling(string code, string expected) =>
         new CSharpToJsConverter().ConvertExpression(SyntaxFactory.ParseExpression(code)).Should().Be(expected);
 
-    /// <summary>With no model, an argument that is not text in front of a literal template is a
-    /// provider, and one nobody can name is EQ2108 as it is with a model. A value that is text first
-    /// is still the template's.</summary>
-    [Fact]
-    public void Format_WithNoModel_RefusesAProviderItCannotName()
+    /// <summary>With no model, a first argument that is neither text nor a named culture could be
+    /// the template or a provider, and the spelling cannot say which: `string.Format(format, x)` and
+    /// `string.Format(provider, "", x)` read the same. It is a build error rather than a guess, and so
+    /// is a named argument.</summary>
+    [Theory]
+    [InlineData("string.Format(provider, \"{0}\", x)")]
+    [InlineData("string.Format(provider, \"\", x)")]
+    [InlineData("string.Format(format, x)")]
+    [InlineData("string.Format(format: \"{0}\", arg0: x)")]
+    public void Format_WithNoModel_RefusesWhatItCannotPlace(string code)
     {
         var converter = new CSharpToJsConverter();
-        converter.ConvertExpression(SyntaxFactory.ParseExpression("string.Format(provider, \"{0}\", x)"));
-        converter.Diagnostics.Should().Contain(d => d.Code == "EQ2108");
-
-        var kept = new CSharpToJsConverter();
-        kept.ConvertExpression(SyntaxFactory.ParseExpression("string.Format(template, \"x\")"))
-            .Should().Be("$eq.text.stringFormat(template, 'x')");
-        kept.Diagnostics.Should().NotContain(d => d.Code == "EQ2108");
+        converter.ConvertExpression(SyntaxFactory.ParseExpression(code));
+        converter.Diagnostics.Should().Contain(d => d.Code == "EQ1004");
     }
 
     [Fact]
