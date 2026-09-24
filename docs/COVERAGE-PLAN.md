@@ -17,11 +17,11 @@ paragraph remembers:
 |---|---|---|---|
 | Strategies still emitting text (no writer guarantees) | 111 | **92** | 26 Expressions, 23 LINQ, 21 Types, 8 Primitives, 6 Invocation, 4 Special, 3 UI, 1 Async |
 | BCL members fenced (a build error today) | 99 | **32** | 23 EQ2004 (extension methods declared outside the compilation), 6 EQ1001, 3 EQ1004 |
-| Conversion divergences | 2 | **7** | the two `unchecked` limits, plus five found by widening the instrument: array index out of range (×2) and `m[k]++`/`++m[k]`/`--m[k]` on a missing key |
+| Conversion divergences | 2 | **4** | the two `unchecked` limits, plus two found by widening the instrument: array index out of range (×2). `m[k]++`/`++m[k]`/`--m[k]` on a missing key, three more it found, now read through the guard (#372) |
 
-The divergence row went UP, and that is the phase working rather than failing. Two of them were
-all the generator could see; the other five were always there, in a grammar that had never written
-an array index or a compound assignment through a dictionary key.
+The divergence row went UP, to seven, and that is the phase working rather than failing. Two of them
+were all the generator could see; the other five were always there, in a grammar that had never
+written an array index or a compound assignment through a dictionary key.
 
 Both remaining pockets are CONCENTRATED and REGULAR, which is what makes them derivable rather
 than writable. That is the whole thesis of this phase.
