@@ -1,5 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
+using eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Linq;
 
@@ -71,7 +73,7 @@ public class MinMaxStrategy : IConversionStrategy
         IMethodSymbol method, string helper, ConversionContext context)
     {
         var arguments = invocation.ArgumentList.Arguments;
-        // `Enumerable.Max(list, f)` names the source as its first argument; `list.Max(f)` as the receiver.
+        // `Enumerable.Max(list, f)` names the source as its first PARAMETER; `list.Max(f)` as the receiver.
         var staticForm = method.MethodKind != MethodKind.ReducedExtension;
         var parameters = staticForm ? method.Parameters.Skip(1).ToArray() : method.Parameters.ToArray();
         if (parameters is [{ Type.Name: "IComparer" }, ..])
@@ -80,10 +82,19 @@ public class MinMaxStrategy : IConversionStrategy
             return context.Unhandled(invocation, $"LINQ Max/Min over {method.ReturnType.ToDisplayString()}");
 
         context.UsedHelpers.Add(Eq.Import);
-        var source = context.Converter.ConvertExpression(staticForm ? arguments[0].Expression : access.Expression);
-        var rest = staticForm ? arguments.Skip(1).ToArray() : arguments.ToArray();
-        var selector = rest.Length > 0 ? context.Converter.ConvertExpression(rest[0].Expression) : "undefined";
-        return $"{helper}({source}, {selector}, '{ordering}', {(nullable ? "true" : "false")})";
+        var how = $"'{ordering}', {(nullable ? "true" : "false")}";
+        if (staticForm)
+        {
+            // Each argument in its parameter's place, and all of them run in the order they were
+            // written: `Enumerable.Max(selector: f, source: xs)` handed the lambda over as the source.
+            var selector = parameters.Length > 0 ? "{1}" : "undefined";
+            var template = PrimitiveStaticStrategy.BindNamedArguments($"{helper}({{0}}, {selector}, {how})", invocation, method);
+            var parts = arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToArray();
+            return JsExprWriter.Write(JsExpr.Template(template, parts, context.TypeAnnotations));
+        }
+        var source = context.Converter.ConvertExpression(access.Expression);
+        var projection = arguments.Count > 0 ? context.Converter.ConvertExpression(arguments[0].Expression) : "undefined";
+        return $"{helper}({source}, {projection}, {how})";
     }
 
     /// <summary>How the runtime orders the values a call answers, and whether it answers null: see

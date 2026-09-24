@@ -246,6 +246,9 @@ public class LinqStrategyTests
         // The comparer was called as if it were the element selector.
         TestHelper.DiagnosticsFor("var r = items.ToDictionary(x => x, (IEqualityComparer<string>)null)")
             .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("ToDictionary with a comparer"));
+        TestHelper.DiagnosticsFor("var r = items.ToDictionary(x => x, x => x.Length, (IEqualityComparer<string>)null)")
+            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("ToDictionary with a comparer"),
+                "the comparer beside an element selector is refused in the same words");
         TestHelper.DiagnosticsFor("var r = items.ToDictionary(x => x, x => x.Length)")
             .Should().NotContain(d => d.Code == "EQ1004", "an element selector is not a comparer");
     }

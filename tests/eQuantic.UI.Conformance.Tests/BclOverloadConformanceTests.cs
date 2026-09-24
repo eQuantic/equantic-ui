@@ -363,6 +363,8 @@ public class BclOverloadConformanceTests
     [InlineData("return (double)new[] { 1.5f, 2.5f }.Max(x => x);")]                           // 2.5
     [InlineData("return new[] { \"bb\", \"a\", \"ccc\" }.Max(s => s.Length);")]                // 3
     [InlineData("return Enumerable.Max(new[] { 1, 3, 2 }, x => x * 2);")]                      // 6: the static form
+    [InlineData("return Enumerable.Max(selector: x => x * 2, source: new[] { 1, 3, 2 });")]    // 6: named, each in its own place
+    [InlineData("int n = 0; int[] S() { n = n * 10 + 1; return new[] { 1, 3 }; } Func<int, int> F() { n = n * 10 + 2; return x => x; } var m = Enumerable.Min(selector: F(), source: S()); return n * 10 + m;")] // 211: run as written
     [InlineData("return new double?[] { null, double.NaN, 1.0 }.Max(x => x);")]                // 1
     [InlineData("return double.IsNaN(new double?[] { null, double.NaN, 1.0 }.Min(x => x).Value);")] // true
     [InlineData("int n = 0; var m = new[] { 1.0, double.NaN, 3.0 }.Min(x => { n++; return x; }); return n;")] // 2: Min stops at the NaN

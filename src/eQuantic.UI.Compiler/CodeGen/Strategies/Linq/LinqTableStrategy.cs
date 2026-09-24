@@ -28,7 +28,10 @@ public class LinqTableStrategy : IExpressionIrStrategy
     {
         if (node is not InvocationExpressionSyntax invocation) return false;
         if (!invocation.TryGetInstanceCall(out _, out var name)) return false;
-        if (Template(name.Identifier.Text, invocation.ArgumentList.Arguments.Count) is null) return false;
+        // A ToDictionary of three arguments has no shape of its own: its third is a comparer, which
+        // ConvertIr refuses in the words it refuses the shorter overloads with.
+        if (Template(name.Identifier.Text, invocation.ArgumentList.Arguments.Count) is null
+            && !IsToDictionaryWithAComparer(name.Identifier.Text, invocation.ArgumentList.Arguments.Count)) return false;
 
         // The SYMBOL decides when there is one; a NAME may decide only where the model cannot be
         // asked at all (CanGuess — the documented policy). Claiming by name FIRST and checking the
@@ -48,12 +51,13 @@ public class LinqTableStrategy : IExpressionIrStrategy
             .Select(a => context.Converter.ConvertIr(a.Expression))
             .ToArray();
 
-        var template = Template(name.Identifier.Text, args.Length)!;
+        var template = Template(name.Identifier.Text, args.Length);
         if (name.Identifier.Text == "ToDictionary" && ToDictionary(invocation, context) is { } dictionary)
         {
             if (dictionary.Length == 0) return JsExpr.Opaque(context.Unhandled(invocation, "ToDictionary with a comparer"));
             template = dictionary;
         }
+        if (template is null) return JsExpr.Opaque(context.Unhandled(invocation, "ToDictionary with a comparer"));
         if (template.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
 
         // {0} is the receiver; {1}… the arguments. The writer binds whatever is reused.
@@ -78,6 +82,8 @@ public class LinqTableStrategy : IExpressionIrStrategy
             ? $"{helper}({{0}}, {{1}}, {{2}})"
             : $"{helper}({{0}}, {{1}})";
     }
+
+    private static bool IsToDictionaryWithAComparer(string name, int argCount) => name == "ToDictionary" && argCount == 3;
 
     private static string? Template(string name, int argCount) => (name, argCount) switch
     {
