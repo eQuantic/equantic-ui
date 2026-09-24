@@ -119,7 +119,7 @@ internal static class OverloadedMethods
         {
             if (model.GetDeclaredSymbol(method) is not IMethodSymbol symbol) continue;
             var name = method.Identifier.Text.ToCamelCase();
-            if (Inherited(declared, symbol, name, isStatic) is not { } inherited) continue;
+            if (Inherited(declared, symbol, name, isStatic, isComponent) is not { } inherited) continue;
             var position = method.Identifier.GetLocation().GetLineSpan().StartLinePosition;
             var where = inherited.Locations.FirstOrDefault(location => location.IsInSource)?.GetLineSpan();
             var at = where is { } span ? $" ({Path.GetFileName(span.Path)} line {span.StartLinePosition.Line + 1})" : "";
@@ -140,8 +140,11 @@ internal static class OverloadedMethods
     }
 
     /// <summary>The inherited method <paramref name="method"/> would take over, or null. A base the
-    /// source does not declare ends the walk: its twin is the runtime's.</summary>
-    private static IMethodSymbol? Inherited(INamedTypeSymbol declared, IMethodSymbol method, string name, bool isStatic)
+    /// source does not declare ends the walk: its twin is the runtime's. A server-only method is left
+    /// out of a COMPONENT's twin only: a plain class's twin writes it like any other, so along a plain
+    /// chain it takes its name.</summary>
+    private static IMethodSymbol? Inherited(INamedTypeSymbol declared, IMethodSymbol method, string name, bool isStatic,
+        bool isComponent)
     {
         var seen = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
         for (var current = declared.BaseType;
@@ -153,9 +156,9 @@ internal static class OverloadedMethods
                 if (member.MethodKind != MethodKind.Ordinary || member.IsImplicitlyDeclared) continue;
                 if (member.IsStatic != isStatic || member.Name.ToCamelCase() != name) continue;
                 if (member.ExplicitInterfaceImplementations.Length > 0 || Overrides(method, member)) continue;
-                // A defining half of a partial method, or a server-only one, reaches no twin.
+                // A defining half of a partial method reaches no twin, nor does a component's server-only one.
                 if (member.IsPartialDefinition && member.PartialImplementationPart is null) continue;
-                if (member.GetAttributes().Any(attribute => attribute.AttributeClass?.Name is "ServerOnlyAttribute" or "ServerOnly"))
+                if (isComponent && member.GetAttributes().Any(attribute => attribute.AttributeClass?.Name is "ServerOnlyAttribute" or "ServerOnly"))
                     continue;
                 return member;
             }
