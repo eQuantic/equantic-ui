@@ -32,7 +32,7 @@ export class Avatar extends StatelessComponent {
             return this.status === 'none' ? photo : this.withStatusDot(photo, side, theme);
         }
         let seed = this.name ?? this.initials;
-        let tint = theme.colors(Avatar.tintPalette[seed.length % Avatar.tintPalette.length]);
+        let tint = theme.colors(Avatar.tintPalette[$eq.num.intRem(seed.length, Avatar.tintPalette.length)]);
         let clipped = this.initials.length > 2 ? $eq.text.substring(this.initials, 0, 2) : this.initials;
         let hasInitials = clipped.length > 0;
         let glyphSize = (() => { const _s = this.size; if (_s === 'small') return 16; if (_s === 'medium') return 20; if (_s === 'large') return 24; return 32; })();

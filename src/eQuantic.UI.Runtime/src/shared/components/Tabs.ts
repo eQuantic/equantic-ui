@@ -1,4 +1,4 @@
-import { Adjustable, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Pressable, Row, SizeValue, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
+import { $eq, Adjustable, Box, BoxStyle, BuildContext, Column, CornerRadii, EdgeInsets, Flexible, Pressable, Row, SizeValue, StatelessComponent, Text, TypeStyle } from "../runtime-exports";
 
 export class Tabs extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.Tabs';
@@ -35,7 +35,7 @@ export class Tabs extends StatelessComponent {
         }
         if (this.onSelect == null || this.labels.length === 0) return row;
         let count = this.labels.length;
-        return new Adjustable(row, (direction: number) => this.onSelect((this.selected + direction + count) % count), { role: 'tablist' });
+        return new Adjustable(row, (direction: number) => this.onSelect($eq.num.intRem(this.selected + direction + count, count)), { role: 'tablist' });
     }
 }
 

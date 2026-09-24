@@ -81,11 +81,25 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
             if (decResult != null) return decResult;
         }
 
+        // A LONG quotient or remainder throws where .NET's 64-bit division does (#333). Decided by
+        // the RESULT, not by an operand: C# promotes a uint beside an int to long, so `u / i`
+        // divides longs with neither operand one (ValueFlow has already made both BigInts), and
+        // `aLong / 2.0` has a long operand and divides doubles. A nullable long divides only what
+        // it holds, through the lift every other nullable operator takes: `IsLong()` unwraps
+        // Nullable, so `long?` arrives here too. A literal null divisor falls through to that lift.
+        if (op is "/" or "%" && left != "null" && right != "null"
+            && context.SemanticHelper.GetType(binary) is var divided && divided.IsLong())
+        {
+            var check = IntegerDivision.NeedsCheck(binary.Right, context);
+            return divided.IsNullableValue()
+                ? IntegerDivision.Lifted(leftIr, rightIr, (a, b) => IntegerDivision.OfLongs(op, a, b, check, context), context)
+                : IntegerDivision.OfLongs(op, leftIr, rightIr, check, context);
+        }
+
         // long/ulong are exact 64-bit via BigInt, and the operands ARE BigInts: literals carry the
         // suffix, conversions settle at the bound tree's seams (ValueFlow), and a value from the
-        // server is hydrated at the typed boundary — so the native operators apply directly
-        // (BigInt `/` truncates, matching C# long division — so this must run before the
-        // integer-division branch below). Null comparisons fall through to the loose-equality logic.
+        // server is hydrated at the typed boundary — so the native operators apply directly.
+        // Null comparisons fall through to the loose-equality logic.
         if (left != "null" && right != "null" && op != "&&" && op != "||"
             && (context.SemanticHelper.GetType(binary.Left).IsLong()
                 || context.SemanticHelper.GetType(binary.Right).IsLong()))
@@ -145,7 +159,9 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
                     // A float? result is a single where it is produced, like any float (SinglePrecision).
                     var underlying = context.SemanticHelper.GetType(binary).UnwrapNullable();
                     var body = (op is "/" or "%") && underlying.IsIntegral()
-                        ? (op == "/" ? "Math.trunc(a / b)" : "(a % b)")
+                        ? IntegerDivision.NeedsCheck(binary.Right, context)
+                            ? $"{(op == "/" ? Eq.IntDiv : Eq.IntRem)}(a, b)"
+                            : (op == "/" ? "Math.trunc(a / b)" : "(a % b)")
                         : op is not "%" && SinglePrecision.Is(underlying)
                             ? $"Math.fround(a {op} b)"
                             : $"a {op} b";
@@ -207,10 +223,13 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
 
         // C# integer division truncates toward zero; JS `/` is always float division.
         // When the result type is integral, emit Math.trunc to preserve C# semantics
-        // (7 / 2 == 3, not 3.5). Chained divisions nest correctly.
-        if (op == "/" && context.SemanticHelper.GetType(binary).IsIntegral())
+        // (7 / 2 == 3, not 3.5). Chained divisions nest correctly. A divisor that can be zero, or
+        // -1 beside int.MinValue, goes through the runtime's check, and so does a remainder's (#333).
+        if (op is "/" or "%" && context.SemanticHelper.GetType(binary).IsIntegral())
         {
-            return JsExpr.Callish($"Math.trunc({left} / {right})");
+            var check = IntegerDivision.NeedsCheck(binary.Right, context);
+            if (op == "/" && !check) return JsExpr.Callish($"Math.trunc({left} / {right})");
+            if (check) return IntegerDivision.OfNumbers(op, leftIr, rightIr, check: true, context);
         }
 
         // Convert C# operators to JS equivalents
