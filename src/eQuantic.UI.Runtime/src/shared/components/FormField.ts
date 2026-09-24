@@ -2,12 +2,14 @@ import { FieldRule } from "../runtime-exports";
 
 export class FormField {
     constructor(name: string, initial: string = '', rules: FieldRule[] | null = null, relevantWhen: (() => boolean) | null = null, props?: any) {
-        this._relevantWhen = null; this.name = name;
+        this._relevantWhen = null;
+        this.name = name;
         this.initial = initial;
         this.value = initial;
         this._rules = rules == null ? [] : [...rules];
         this._relevantWhen = relevantWhen;
-        this.revalidate(); if (props && typeof props === 'object') Object.assign(this, props);
+        this.revalidate();
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     _rules: FieldRule[];
