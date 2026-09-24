@@ -23,7 +23,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// </summary>
 public class RangeIndexerStrategy : IConversionStrategy
 {
-    // A dictionary keyed by Range is not a slice: `d[1..2]` looks the key up (DictionaryEntry).
+    // A dictionary keyed by Range is not a slice: `d[1..2]` looks the key up (DictionaryEntry), and
+    // a Range key is a Range VALUE, which RangeExpressionStrategy fences (EQ2004), so the build says
+    // so at the key where this emitted `.slice(1, 2)` on a map and reported nothing.
     public bool CanConvert(SyntaxNode node, ConversionContext context) =>
         node is ElementAccessExpressionSyntax { ArgumentList.Arguments: [{ Expression: RangeExpressionSyntax }] } access
         && DictionaryEntry.Of(access, context) is null;

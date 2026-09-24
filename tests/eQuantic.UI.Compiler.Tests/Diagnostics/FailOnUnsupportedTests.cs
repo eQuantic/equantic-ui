@@ -124,6 +124,18 @@ public class FailOnUnsupportedTests
             .Should().Contain(d => d.Severity == ConversionSeverity.Error && d.Code == "EQ2004");
     }
 
+    /// <summary>
+    /// A dictionary keyed by Range is looked up, not sliced, so its key is a Range VALUE, which is
+    /// fenced, and the build says so at the key. The range indexer took <c>d[1..2]</c> for a slice
+    /// whatever its receiver, and emitted <c>.slice(1, 2)</c> on a map with nothing reported.
+    /// </summary>
+    [Fact]
+    public void ARangeKeyedLookup_ReportsTheRangeValue_RatherThanSlicingTheMap()
+    {
+        TestHelper.DiagnosticsFor("new Dictionary<Range, int>()[1..2]")
+            .Should().Contain(d => d.Severity == ConversionSeverity.Error && d.Code == "EQ2004");
+    }
+
     [Theory]
     [InlineData("System.Linq.Enumerable.Range(1, 3)")]      // now materialises an array
     [InlineData("System.Linq.Enumerable.Repeat(1, 3)")]

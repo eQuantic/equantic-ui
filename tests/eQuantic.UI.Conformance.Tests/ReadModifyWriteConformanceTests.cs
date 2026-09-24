@@ -167,8 +167,6 @@ public class ReadModifyWriteConformanceTests
     [InlineData("var d = new Dictionary<(int, int), int> { [(1, 2)] = 1 }; d[(1, 2)]++; ++d[(1, 2)]; return d[(1, 2)];")] // 3
     [InlineData("var d = new Dictionary<(int, int), float> { [(1, 2)] = 0.1f }; d[(1, 2)] += 0.2f; return (double)d[(1, 2)];")]
     [InlineData("var d = new Dictionary<(int, int), int>(); try { d[(9, 9)]++; return \"no\"; } catch (KeyNotFoundException) { return \"throws\"; }")]
-    // A Range key is looked up, not sliced: the range indexer took `d[1..2]` for `.slice(1, 2)`.
-    [InlineData("var d = new Dictionary<Range, int> { [1..2] = 5 }; d[1..2] += 1; return d[1..2];")] // 6
     public void AValueKeyedEntry_TakesItsTypesRule(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
