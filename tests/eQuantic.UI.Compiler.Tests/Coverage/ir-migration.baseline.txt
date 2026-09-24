@@ -19,7 +19,6 @@ DateTimeStrategy
 DeclarationExpressionStrategy
 DefaultIfEmptyStrategy
 DefaultKeywordStrategy
-DictionaryStrategy
 DistinctStrategy
 ElementAtStrategy
 EnumHasFlagStrategy

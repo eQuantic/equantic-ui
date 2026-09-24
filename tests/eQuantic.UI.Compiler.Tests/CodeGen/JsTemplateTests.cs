@@ -47,14 +47,34 @@ public class JsTemplateTests
     }
 
     [Fact]
-    public void BindingALaterPart_BindsTheEarlierObservableOnes_ToKeepEvaluationOrder()
+    public void BindingALaterPart_BindsTheEarlierOnes_ToKeepEvaluationOrder()
     {
         // {1} needs binding; {0} is a call that C# evaluates FIRST — passing it as the earlier
-        // argument keeps that order. An inlinable {0} needs nothing.
+        // argument keeps that order.
         Write(JsExpr.Template("{0}.has({1}) ? {1} : null", Call("f()"), Call("g()")))
             .Should().Be("(($0, $1) => $0.has($1) ? $1 : null)(f(), g())");
+        // A NAME is bound too. The bound call runs first, as the arrow's argument, and it can
+        // reassign the name C# had already read: `d.TryGetValue(Swap(), out var v)`, where Swap()
+        // sets d, looked the key up in the dictionary Swap() swapped in.
         Write(JsExpr.Template("{0}.has({1}) ? {1} : null", JsExpr.Identifier("m"), Call("g()")))
-            .Should().Be("(($1) => m.has($1) ? $1 : null)(g())");
+            .Should().Be("(($0, $1) => $0.has($1) ? $1 : null)(m, g())");
+        // Only what nothing can reassign stays inline: a literal, `this`.
+        Write(JsExpr.Template("{0}.has({1}) ? {1} : null", JsExpr.This, Call("g()")))
+            .Should().Be("(($1) => this.has($1) ? $1 : null)(g())");
+    }
+
+    [Fact]
+    public void InlineParts_SwapOnlyWhereNoEffectCrossesARead()
+    {
+        // Two names read in either order read the same values.
+        Write(JsExpr.Template("f({1}, {0})", JsExpr.Identifier("a"), JsExpr.Identifier("b")))
+            .Should().Be("f(b, a)");
+        // A call C# evaluates AFTER the name must not run before the name is read.
+        Write(JsExpr.Template("f({1}, {0})", JsExpr.Identifier("a"), Call("g()")))
+            .Should().Be("(($0, $1) => f($1, $0))(a, g())");
+        // Nor may a name be read a second time after a call that runs between its two reads.
+        Write(JsExpr.Template("({0} === {1} ? {0} : 0)", JsExpr.Identifier("a"), Call("g()")))
+            .Should().Be("(($0, $1) => ($0 === $1 ? $0 : 0))(a, g())");
     }
 
     [Fact]

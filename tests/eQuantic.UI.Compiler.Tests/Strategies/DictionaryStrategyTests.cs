@@ -16,20 +16,24 @@ public class DictionaryStrategyTests
         result.Should().Be("Object.prototype.hasOwnProperty.call(this.dict, 'key')");
     }
 
+    /// <summary>The lowering names the receiver twice — in the own-key question and in the read —
+    /// and `this.dict` is a PROPERTY, whose getter could count its calls, so the writer binds it
+    /// once. A miss writes default(TValue) to the out: null for a string.</summary>
     [Fact]
-    public void TryGetValue_WithOutVar_MapsToAssignmentCheck()
+    public void TryGetValue_WithOutVar_BindsTheReceiverOnce_AndAMissWritesTheDefault()
     {
         var result = TestHelper.ConvertExpression("dict.TryGetValue(\"key\", out var value)");
         result.Should().Be(
-            "(Object.prototype.hasOwnProperty.call(this.dict, 'key') ? ((value = this.dict['key']), true) : false)");
+            "(($0) => (Object.prototype.hasOwnProperty.call($0, 'key') ? ((value = $0['key']), true) : ((value = null), false)))(this.dict)");
     }
 
+    /// <summary>A key read through a property is bound once too, after the receiver.</summary>
     [Fact]
-    public void TryGetValue_WithVariable_MapsToAssignmentCheck()
+    public void TryGetValue_WithVariable_BindsTheReceiverAndTheKeyOnce()
     {
         var result = TestHelper.ConvertExpression("dict.TryGetValue(str, out var result)");
         result.Should().Be(
-            "(Object.prototype.hasOwnProperty.call(this.dict, this.str) ? ((result = this.dict[this.str]), true) : false)");
+            "(($0, $1) => (Object.prototype.hasOwnProperty.call($0, $1) ? ((result = $0[$1]), true) : ((result = null), false)))(this.dict, this.str)");
     }
 
     // ============ New Methods ============
@@ -62,11 +66,13 @@ public class DictionaryStrategyTests
         result.Should().Be("delete this.dict[this.str]");
     }
 
+    /// <summary>The receiver once, not once more per key deleted; and `$k`, which no C# name can
+    /// be, so a dictionary called `k` is not shadowed.</summary>
     [Fact]
-    public void Clear_MapsToForEachDelete()
+    public void Clear_DeletesEveryOwnKey_ThroughOneReceiver()
     {
         var result = TestHelper.ConvertExpression("dict.Clear()");
-        result.Should().Be("Object.keys(this.dict).forEach(k => delete this.dict[k])");
+        result.Should().Be("(($0) => Object.keys($0).forEach(($k) => delete $0[$k]))(this.dict)");
     }
 
     // ============ Properties ============
