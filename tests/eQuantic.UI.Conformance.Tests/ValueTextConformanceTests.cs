@@ -22,6 +22,15 @@ public class ValueTextConformanceTests
     [InlineData("float g = 0.1f; return string.Format(System.Globalization.CultureInfo.InvariantCulture, \"{0}\", g);")] // "0.1"
     [InlineData("return string.Format(System.Globalization.CultureInfo.InvariantCulture, \"{0:F2}|{1}\", 1.5, \"x\");")]   // "1.50|x"
     [InlineData("return string.Format(System.Globalization.CultureInfo.CurrentCulture, \"{0}\", 2.5);")]                 // "2.5"
+    // A NULL provider is the current culture, as .NET reads it.
+    [InlineData("return string.Format((IFormatProvider?)null, \"{0:F1}|{1}\", 2.25, 3);")]                               // "2.3|3"
+    [InlineData("return string.Format(null, \"{0}\", 2.5);")]                                                          // "2.5"
+    [InlineData("double d = 2.5; return d.ToString((IFormatProvider?)null);")]                                         // "2.5"
+    [InlineData("double d = 2.5; return d.ToString(\"F2\", null);")]                                                   // "2.50"
+    [InlineData("return double.Parse(\"2.5\", (IFormatProvider?)null).ToString(System.Globalization.CultureInfo.InvariantCulture);")] // "2.5"
+    // A bool's provider changes nothing, but C# evaluates it, after the receiver.
+    [InlineData("var log = \"\"; bool B() { log += \"b\"; return true; } IFormatProvider? P() { log += \"p\"; return null; } var s = B().ToString(P()); return s + log;")] // "Truebp"
+    [InlineData("bool? b = null; return \"[\" + b.ToString() + \"]\";")]                                               // "[]"
     // ---- a float and a double through the formatter (#378) ----
     [InlineData("float f = 1e9f; return $\"[{f,12}]\";")]                                                  // "[       1E+09]"
     [InlineData("float g = 0.1f; return $\"[{g,6}]\";")]                                                   // "[   0.1]"
@@ -40,6 +49,14 @@ public class ValueTextConformanceTests
     [InlineData("return string.Format(\"[{0,5}]\", 42);")]                                                 // "[   42]"
     [InlineData("return string.Format(\"[{0,-5}]\", 42);")]                                                // "[42   ]"
     [InlineData("return string.Format(\"[{0,8:F2}]\", 3.14159);")]                                         // "[    3.14]"
+    // The params array passed as the array itself, as C# binds it: a covariant string[] and a
+    // collection expression are the values, not one value.
+    [InlineData("return string.Format(\"{0} e {1}\", new[] { \"a\", \"b\" });")]                                 // "a e b"
+    [InlineData("var xs = new[] { \"a\", \"b\" }; return string.Format(\"{0}+{1}\", xs);")]                      // "a+b"
+    [InlineData("var xs = new object[] { 1, 2 }; return string.Format(\"{0}+{1}\", xs);")]                         // "1+2"
+    [InlineData("return string.Format(\"{0}|{1}\", [\"a\", \"b\"]);")]                                           // "a|b"
+    [InlineData("return string.Format(System.Globalization.CultureInfo.InvariantCulture, \"{0} e {1}\", new[] { \"a\", \"b\" });")] // "a e b"
+    [InlineData("return string.Format(\"{0}|{1}|{2}|{3}\", 1, 2, 3, 4);")]                                         // "1|2|3|4"
     public void AValue_IsWrittenAsDotNetWritesIt(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
