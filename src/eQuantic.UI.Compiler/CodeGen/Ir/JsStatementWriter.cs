@@ -55,6 +55,7 @@ public static class JsStatementWriter
         JsThrow @throw => $"throw {JsExprWriter.Write(@throw.Value!)};",
         JsLet let => $"let {let.Name}{let.Annotation} = {JsExprWriter.Write(let.Initializer)};",
         JsConst @const => $"const {@const.Name} = {JsExprWriter.Write(@const.Initializer)};",
+        JsConstArrow arrow => $"{ArrowHead(arrow)}{BracedCompact(arrow.Body)};",
         JsHeaded headed => $"{headed.Head} {BracedCompact(headed.Body)}",
         JsTry @try => $"try {Compact(@try.Body)}"
                       + string.Concat(@try.Catches.Select(c => $" catch{(c.Binding.Length == 0 ? "" : " " + c.Binding)} {Compact(c.Block)}"))
@@ -114,7 +115,8 @@ public static class JsStatementWriter
     /// strategy's LOWERING — the dispose in a <c>using</c>'s finally, the <c>const</c> a pattern
     /// switch binds its subject to — is no C# statement, but it is code one produced, and left
     /// unmarked, a frame on its line read through the map as whatever statement was written above
-    /// it. A block or a sequence is no line to stop on, and takes a mark only when it was given one.
+    /// it. A block or a sequence is no line to stop on: it takes no mark, and hands its origin to
+    /// the statements in it, the first of which begins where it does.
     /// </para>
     /// </summary>
     private static Written Pretty(JsStatement statement, int depth, SyntaxNode? enclosing = null)
@@ -128,6 +130,7 @@ public static class JsStatementWriter
             JsIf @if => new Text().Add($"if ({JsExprWriter.Write(@if.Condition)}) ").Add(BracedPretty(@if.Then, depth, owner))
                 .AddIf(@if.Else is not null, () => new Text().Add(" else ").Add(BracedPretty(@if.Else!, depth, owner)).Done()).Done(),
             JsHeaded headed => new Text().Add($"{headed.Head} ").Add(BracedPretty(headed.Body, depth, owner)).Done(),
+            JsConstArrow arrow => new Text().Add(ArrowHead(arrow)).Add(BracedPretty(arrow.Body, depth, owner)).Add(";").Done(),
             JsTry @try => PrettyTry(@try, depth, owner),
             JsSwitch @switch => PrettySwitch(@switch, depth, owner),
             JsWhile @while => new Text().Add($"while ({JsExprWriter.Write(@while.Condition)}) ").Add(BracedPretty(@while.Body, depth, owner)).Done(),
@@ -138,9 +141,11 @@ public static class JsStatementWriter
                     .MarkedAt(owner is DoStatementSyntax @do ? @do.Condition : owner)).Done(),
             _ => Written.Of(Compact(statement)),
         };
-        var mark = statement.Origin ?? (statement is JsBlock or JsStatements ? null : enclosing);
-        return written.Text.Length > 0 ? written.MarkedAt(mark) : written;
+        return written.Text.Length > 0 && statement is not (JsBlock or JsStatements) ? written.MarkedAt(owner) : written;
     }
+
+    private static string ArrowHead(JsConstArrow arrow) =>
+        $"const {arrow.Name} = {(arrow.IsAsync ? "async " : "")}({arrow.Parameters}) => ";
 
     private static Written PrettyTry(JsTry @try, int depth, SyntaxNode? enclosing)
     {

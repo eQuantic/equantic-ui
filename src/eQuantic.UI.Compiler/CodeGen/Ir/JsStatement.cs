@@ -51,6 +51,12 @@ public abstract record JsStatement
 
     public static JsStatement Const(string name, JsExpr initializer) => new JsConst(name, initializer);
 
+    /// <summary><c>const name = (parameters) => { … };</c> — an arrow with a block body bound to a
+    /// name, as a statement, so the writer lays its body out and marks each statement in it (#293).
+    /// An arrow in an expression still carries its block as text.</summary>
+    public static JsStatement ConstArrow(string name, string parameters, bool isAsync, JsStatement body) =>
+        new JsConstArrow(name, parameters, isAsync, body);
+
     /// <summary>A statement introduced by a head the writer does not model — <c>for (…)</c>,
     /// <c>for (const x of xs)</c>, <c>label:</c> — followed by its body, laid out like any block.</summary>
     public static JsStatement Headed(string head, JsStatement body) => new JsHeaded(head, body);

@@ -209,3 +209,23 @@ eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.InBlock<T>(System.Func<T>! conv
 eQuantic.UI.Compiler.Services.TypeScriptCodeBuilder.AddMappings(System.Collections.Generic.IEnumerable<eQuantic.UI.Compiler.Services.TypeScriptCodeBuilder.SourceMapping>! mappings, int lines) -> void
 eQuantic.UI.Compiler.Services.TypeScriptCodeBuilder.ShiftMappings(int lines) -> void
 static eQuantic.UI.Compiler.CodeGen.Ir.JsModuleWriter.BodyLine(eQuantic.UI.Compiler.CodeGen.Ir.JsModule! module) -> int
+eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow
+eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow.Body.get -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
+eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow.Body.init -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow.Deconstruct(out string! Name, out string! Parameters, out bool IsAsync, out eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! Body) -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow.Equals(eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow? other) -> bool
+eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow.IsAsync.get -> bool
+eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow.IsAsync.init -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow.JsConstArrow(string! Name, string! Parameters, bool IsAsync, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! Body) -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow.Name.get -> string!
+eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow.Name.init -> void
+eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow.Parameters.get -> string!
+eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow.Parameters.init -> void
+override eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow.<Clone>$() -> eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow!
+override eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow.Equals(object? obj) -> bool
+override eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow.GetHashCode() -> int
+override eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow.ToString() -> string!
+override sealed eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow.Equals(eQuantic.UI.Compiler.CodeGen.Ir.JsStatement? other) -> bool
+static eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow.operator !=(eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow? left, eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow? right) -> bool
+static eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow.operator ==(eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow? left, eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow? right) -> bool
+static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.ConstArrow(string! name, string! parameters, bool isAsync, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! body) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
