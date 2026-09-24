@@ -89,6 +89,19 @@ public class CodeRowsTests
         rows.RowOf(4).Should().Be(4);
     }
 
+    /// <summary>A list of lines can be empty, where a document never is: a diff against nothing is
+    /// its fillers alone, and must not gain a line nobody wrote.</summary>
+    [Fact]
+    public void AViewOfNoLines_IsItsFillersAlone()
+    {
+        var rows = new CodeRows(0, [new CodeFiller(0, 3)], []);
+
+        rows.RowCount.Should().Be(3);
+        rows.RowAt(1).Should().Be(new CodeRow(CodeRowKind.Filler, 0));
+        rows.LineAtRow(1).Should().Be(0);
+        new CodeRows(0, [], []).RowCount.Should().Be(0);
+    }
+
     [Fact]
     public void AViewThatCannotBeDrawn_SaysSo()
     {

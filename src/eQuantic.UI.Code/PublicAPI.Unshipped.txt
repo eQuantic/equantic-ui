@@ -573,3 +573,20 @@ eQuantic.UI.Code.CodeRows.RowAt(int row) -> eQuantic.UI.Code.CodeRow
 eQuantic.UI.Code.CodeRows.LineAtRow(int row) -> int
 eQuantic.UI.Code.CodeRows
 eQuantic.UI.Code.CodeRows.CodeRows(int lineCount, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeFiller>! fillers, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeCollapse>! collapses) -> void
+eQuantic.UI.Code.CodeDiffLayout
+eQuantic.UI.Code.CodeDiffLayout.<Clone>$() -> eQuantic.UI.Code.CodeDiffLayout!
+eQuantic.UI.Code.CodeDiffLayout.CodeDiffLayout(eQuantic.UI.Code.CodeRows! Original, eQuantic.UI.Code.CodeRows! Modified) -> void
+eQuantic.UI.Code.CodeDiffLayout.Deconstruct(out eQuantic.UI.Code.CodeRows! Original, out eQuantic.UI.Code.CodeRows! Modified) -> void
+eQuantic.UI.Code.CodeDiffLayout.Equals(eQuantic.UI.Code.CodeDiffLayout? other) -> bool
+override eQuantic.UI.Code.CodeDiffLayout.Equals(object? obj) -> bool
+override eQuantic.UI.Code.CodeDiffLayout.GetHashCode() -> int
+override eQuantic.UI.Code.CodeDiffLayout.ToString() -> string!
+static eQuantic.UI.Code.CodeDiffLayout.operator !=(eQuantic.UI.Code.CodeDiffLayout? left, eQuantic.UI.Code.CodeDiffLayout? right) -> bool
+static eQuantic.UI.Code.CodeDiffLayout.operator ==(eQuantic.UI.Code.CodeDiffLayout? left, eQuantic.UI.Code.CodeDiffLayout? right) -> bool
+eQuantic.UI.Code.CodeDiffLayout.Original.get -> eQuantic.UI.Code.CodeRows!
+eQuantic.UI.Code.CodeDiffLayout.Original.init -> void
+eQuantic.UI.Code.CodeDiffLayout.Modified.get -> eQuantic.UI.Code.CodeRows!
+eQuantic.UI.Code.CodeDiffLayout.Modified.init -> void
+const eQuantic.UI.Code.CodeDiffLayout.DefaultContext = 3 -> int
+static eQuantic.UI.Code.CodeDiffLayout.SideBySide(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeLineChange!>! changes, int originalLines, int modifiedLines, int context = 3, System.Collections.Generic.IReadOnlyCollection<int>? expanded = null) -> eQuantic.UI.Code.CodeDiffLayout!
+static eQuantic.UI.Code.CodeDiffLayout.Inline(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeLineChange!>! changes, int originalLines, int modifiedLines, int context = 3, System.Collections.Generic.IReadOnlyCollection<int>? expanded = null) -> eQuantic.UI.Code.CodeDiffLayout!

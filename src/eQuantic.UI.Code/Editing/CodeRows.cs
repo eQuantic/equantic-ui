@@ -43,7 +43,9 @@ public sealed class CodeRows
     /// </summary>
     public CodeRows(int lineCount, IReadOnlyList<CodeFiller> fillers, IReadOnlyList<CodeCollapse> collapses)
     {
-        LineCount = Math.Max(1, lineCount);
+        // No lines is a view too: a diff against nothing is its fillers alone. A document always has
+        // a line, and a list of lines need not.
+        LineCount = Math.Max(0, lineCount);
         var sortedFillers = fillers.Where(filler => filler.Rows > 0).OrderBy(filler => filler.BeforeLine).ToList();
         var sortedCollapses = collapses.Where(collapse => collapse.LastLine >= collapse.FirstLine)
             .OrderBy(collapse => collapse.FirstLine).ToList();
@@ -113,6 +115,7 @@ public sealed class CodeRows
     /// </summary>
     public int RowOf(int line)
     {
+        if (LineCount == 0) return 0;
         var target = Math.Clamp(line, 0, LineCount - 1);
         var segment = SegmentOfLine(target);
         if (_kinds[segment] == CodeRowKind.Line) return _rows[segment] + (target - _lines[segment]);
@@ -130,7 +133,8 @@ public sealed class CodeRows
     /// <summary>What row <paramref name="row"/> shows. A row outside the view is clamped into it.</summary>
     public CodeRow RowAt(int row)
     {
-        var target = Math.Clamp(row, 0, Math.Max(0, RowCount - 1));
+        if (RowCount == 0) return new CodeRow(CodeRowKind.Filler, 0);
+        var target = Math.Clamp(row, 0, RowCount - 1);
         var segment = SegmentOfRow(target);
         var offset = target - _rows[segment];
         return _kinds[segment] switch
@@ -149,7 +153,7 @@ public sealed class CodeRows
     public int LineAtRow(int row)
     {
         var shown = RowAt(row);
-        return Math.Min(shown.Line, LineCount - 1);
+        return Math.Max(0, Math.Min(shown.Line, LineCount - 1));
     }
 
     /// <summary>The segment that covers <paramref name="line"/>: the last one covering lines that
