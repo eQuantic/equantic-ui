@@ -778,11 +778,20 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
   // `mousedown` arrives only AFTER the touch ended, so for those the press is the `pointerdown`.
   // The capture is taken on the `pointerdown` either way, since it names the pointer to capture.
   let pressedBy = 'mouse';
+  // A PRESSABLE drawn inside the surface takes its own press, as it does on Photon, where a press goes
+  // to what is drawn on top: a diff's folded run opens on a press on its row. The surface captured
+  // the pointer on every press, so the release went to the surface and the row's click never came.
+  const onPressable = (event: Event) => {
+    const surfaceElement = event.currentTarget as HTMLElement | null;
+    const pressed = (event.target as Element | null)?.closest?.('button, [role="button"]');
+    return pressed != null && pressed !== surfaceElement && surfaceElement?.contains?.(pressed) === true;
+  };
   const press = (event: MouseEvent, clicks: number) => {
     model.handlePointer('down', local(event), modifiersOf(event), clicks);
     changed();
   };
   surface.events['pointerdown'] = ((event: PointerEvent) => {
+    if (onPressable(event)) return;
     pressedBy = event.pointerType || 'mouse';
     (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
     if (pressedBy !== 'mouse') {
@@ -791,6 +800,7 @@ function lowerCodeSurface(node: CodeSurfaceNode, context: LoweringContext, path:
     }
   }) as unknown as EventHandler;
   surface.events['mousedown'] = ((event: MouseEvent) => {
+    if (onPressable(event)) return;
     // Cancelled, whoever pressed: the browser's own reaction to a press is to move the focus to what
     // was pressed — the code's text, which cannot hold it — and that took it from the input the
     // keyboard types into, the moment it had been given.
