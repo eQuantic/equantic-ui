@@ -28,4 +28,22 @@ public class LongConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertSameAsDotNet(expression);
     }
+
+    /// <summary>A literal is a long by its TYPE, which it has with no suffix when int and uint
+    /// cannot hold it; as a plain number it lost its low digits and threw at the first arithmetic
+    /// with another long.</summary>
+    [SkippableTheory]
+    [InlineData("long l = 9007199254740993; return l.ToString();")]                                         // "9007199254740993"
+    [InlineData("long l = 9007199254740993; return (l + 1L).ToString();")]                                  // "9007199254740994"
+    [InlineData("var t = 637000000000000000; return (t / 10).ToString();")]                                 // a var is a long too
+    [InlineData("ulong u = 18446744073709551615; return u.ToString();")]
+    [InlineData("var h = 0x1_0000_0000; return (h + 1).ToString();")]                                       // "4294967297": hex, separators
+    [InlineData("return (-9223372036854775808).ToString();")]                                               // long.MinValue, written out
+    [InlineData("long? l = 9007199254740993; return l.ToString();")]                                        // into a nullable long
+    [InlineData("long big = 3000000000; return (big * 2).ToString();")]                                     // "6000000000": a uint literal, widened (control)
+    public void ALongLiteral_WithNoSuffix_IsALong(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements);
+    }
 }
