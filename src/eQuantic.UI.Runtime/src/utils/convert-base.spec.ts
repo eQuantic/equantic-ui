@@ -20,6 +20,12 @@ describe('fromBase (Convert.ToXxx(value, fromBase))', () => {
     expect(fromBase('-9223372036854775808', 10, 'long')).toBe(-9223372036854775808n);
   });
 
+  it('types an int as a number and a long as a BigInt', () => {
+    const int: number = fromBase('7f', 16, 'int');
+    const long: bigint = fromBase('7f', 16, 'long');
+    expect([int, long]).toEqual([127, 127n]);
+  });
+
   it('reads a null as 0, after checking the base', () => {
     expect(fromBase(null, 16, 'int')).toBe(0);
     expect(fromBase(null, 16, 'long')).toBe(0n);

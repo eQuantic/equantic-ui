@@ -152,8 +152,19 @@ function stringToLong(s: string, r: number, unsigned: boolean): bigint {
 /**
  * `Convert.To{target}(value, fromBase)`: the base is checked first, then a null is 0, then the
  * text is read as .NET's overload for that type reads it. A long or a ulong answers a BigInt, as
- * every long does on this side.
+ * every long does on this side, and the overloads say which, so a type-checked twin that keeps an
+ * int in a `number` compiles.
  */
+export function fromBase(
+  value: string | null | undefined,
+  base: number,
+  target: 'long' | 'ulong',
+): bigint;
+export function fromBase(
+  value: string | null | undefined,
+  base: number,
+  target: 'byte' | 'sbyte' | 'short' | 'ushort' | 'int' | 'uint',
+): number;
 export function fromBase(
   value: string | null | undefined,
   base: number,
