@@ -36,6 +36,8 @@
     <!-- The Windows shell, for the same reason the Apple one is here: its bindings are exercised
          against the real system where the system IS Windows, and skip with a reason elsewhere. -->
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Shell.Windows\eQuantic.UI.Native.Shell.Windows.csproj" />
+    <!-- The macOS shell, for its key names: a pure mapping, so it is measured on every host. -->
+    <ProjectReference Include="..\..\src\eQuantic.UI.Native.Shell.MacOS\eQuantic.UI.Native.Shell.MacOS.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Codegen\eQuantic.UI.Codegen.csproj" />
     <ProjectReference Include="..\..\src\eQuantic.UI.Native.Hosting\eQuantic.UI.Native.Hosting.csproj" />
     <!-- Referenced as a LIBRARY, not as an analyzer: these tests drive the generator directly
