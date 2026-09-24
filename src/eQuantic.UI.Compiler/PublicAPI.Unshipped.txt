@@ -249,3 +249,4 @@ const eQuantic.UI.Compiler.CodeGen.Eq.MapGet = "$eq.mapGet" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.MapSet = "$eq.mapSet" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.AsSingle = "$eq.text.asSingle" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.StringFormatInvariant = "$eq.text.stringFormatInvariant" -> string!
+eQuantic.UI.Compiler.Services.SemanticHelper.IsNullConstant(Microsoft.CodeAnalysis.SyntaxNode! node) -> bool

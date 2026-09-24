@@ -11,6 +11,10 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// getter may have an effect that leaving the argument out would lose. Where the model cannot be
 /// asked (no model, or a node a strategy rewrote), the author's spelling decides, and only the
 /// exact one: <c>CultureInfo.InvariantCulture</c>, with or without its namespace.
+/// <para>
+/// A NULL provider names the current culture, as .NET reads it: <c>string.Format(null, …)</c> and
+/// <c>x.ToString((IFormatProvider?)null)</c> format as the provider-less call does.
+/// </para>
 /// </summary>
 internal static class NamedCulture
 {
@@ -18,7 +22,12 @@ internal static class NamedCulture
         Names(provider, "InvariantCulture", context);
 
     public static bool IsCurrent(ExpressionSyntax provider, ConversionContext context) =>
-        Names(provider, "CurrentCulture", context);
+        IsNull(provider, context) || Names(provider, "CurrentCulture", context);
+
+    private static bool IsNull(ExpressionSyntax provider, ConversionContext context) =>
+        context.SemanticHelper.KnowsOrMapped(provider)
+            ? context.SemanticHelper.IsNullConstant(provider)
+            : provider.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.NullLiteralExpression);
 
     private static bool Names(ExpressionSyntax provider, string property, ConversionContext context)
     {
