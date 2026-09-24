@@ -239,4 +239,71 @@ public class OverloadedMethodTests
 
         result.Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new { Code = "EQ1007", Line = 9 });
     }
+
+    /// <summary>
+    /// A name a BASE already takes is taken along the chain too: <c>Derived extends Base</c> has one
+    /// member per name, so a derived <c>Format(int)</c> beside the base's <c>Format(string)</c>
+    /// answers every call on both, and <c>derived.Format("x")</c> reaches the integer body. The error
+    /// is the derived one's, and names what it takes over.
+    /// </summary>
+    [Fact]
+    public void AnOverloadOfAnInheritedMethod_IsRefused()
+    {
+        var results = new ComponentCompiler().CompileSource("""
+            public class Base
+            {
+                public virtual string Format(string s) => s;
+            }
+
+            public sealed class Derived : Base
+            {
+                public string Format(int n) => n.ToString();
+            }
+            """, "Probe.cs");
+
+        results.Single(result => result.ComponentName == "Base").Errors.Should().NotContain(error => error.Code == "EQ1007");
+        var error = results.Single(result => result.ComponentName == "Derived").Errors.Should().ContainSingle().Subject;
+        error.Code.Should().Be("EQ1007");
+        error.Message.Should().Contain("Derived.Format(int)").And.Contain("Base.Format(string)");
+    }
+
+    [Fact]
+    public void AStaticThatTakesTheNameOfAnInheritedStatic_IsRefused()
+    {
+        var results = new ComponentCompiler().CompileSource("""
+            public class Base
+            {
+                public static int Size(int x) => x;
+            }
+
+            public class Derived : Base
+            {
+                public static int Size(string s) => s.Length;
+            }
+            """, "Probe.cs");
+
+        results.Single(result => result.ComponentName == "Derived").Errors.Should().ContainSingle()
+            .Which.Code.Should().Be("EQ1007", "a class's statics are inherited along the chain in JavaScript too");
+    }
+
+    /// <summary>An override is the method it overrides, and replacing it is what it is for.</summary>
+    [Fact]
+    public void AnOverride_IsNotASecondMethod()
+    {
+        var results = new ComponentCompiler().CompileSource("""
+            public abstract class Base
+            {
+                public abstract string Format(string s);
+                public virtual string Describe() => "base";
+            }
+
+            public sealed class Derived : Base
+            {
+                public override string Format(string s) => s.ToUpperInvariant();
+                public override string Describe() => "derived";
+            }
+            """, "Probe.cs");
+
+        results.SelectMany(result => result.Errors).Should().NotContain(error => error.Code == "EQ1007");
+    }
 }

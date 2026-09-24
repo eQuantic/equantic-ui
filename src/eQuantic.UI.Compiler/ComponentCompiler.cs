@@ -439,7 +439,8 @@ public class ComponentCompiler
             if (DeclarationOf(component) is { } declaration)
             {
                 var overloaded = Services.OverloadedMethods.Check(declaration, component.SourcePath,
-                    isComponent: !component.IsRecordType && !component.IsPlainClass && !component.IsStaticHelper);
+                    isComponent: !component.IsRecordType && !component.IsPlainClass && !component.IsStaticHelper,
+                    component.SyntaxTree is { } tree ? _semanticModelProvider.GetSemanticModel(tree) : null);
                 if (overloaded.Count > 0)
                 {
                     result.Success = false;
