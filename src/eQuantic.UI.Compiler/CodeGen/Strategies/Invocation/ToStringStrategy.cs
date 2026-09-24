@@ -40,9 +40,21 @@ public class ToStringStrategy : IConversionStrategy
 
         // A BOOL writes True or False, what a concatenation already writes it as (StringConversion):
         // `String(b)` lowercased it (#381). Its provider changes nothing, and a null bool? is empty.
+        // C# still evaluates the provider, after the receiver: one that could have an effect runs,
+        // in that order, and one that could not is left out.
         if (receiverType.UnwrapNullable() is { SpecialType: SpecialType.System_Boolean })
-            return JsExprWriter.Write(StringConversion.ToDotNetString(memberAccess.Expression,
-                context.Converter.ConvertIr(memberAccess.Expression), context));
+        {
+            var ignored = args.FirstOrDefault(argument => IsFormatProvider(argument.Expression, context))?.Expression;
+            if (ignored is null || ignored is IdentifierNameSyntax or LiteralExpressionSyntax
+                || NamedCulture.IsInvariant(ignored, context) || NamedCulture.IsCurrent(ignored, context))
+                return JsExprWriter.Write(StringConversion.ToDotNetString(memberAccess.Expression,
+                    context.Converter.ConvertIr(memberAccess.Expression), context));
+            // `$value`: no C# name can take it, so nothing the provider names is shadowed.
+            var text = StringConversion.ToDotNetString(memberAccess.Expression, JsExpr.Identifier("$value"), context);
+            return JsExprWriter.Write(JsExpr.Template($"(($value) => ({{1}}, {JsExprWriter.Write(text)}))({{0}})",
+                [context.Converter.ConvertIr(memberAccess.Expression), context.Converter.ConvertIr(ignored)],
+                context.TypeAnnotations));
+        }
 
         var provider = args.FirstOrDefault(argument => IsFormatProvider(argument.Expression, context));
         var formatArg = args.FirstOrDefault(argument => argument != provider);
