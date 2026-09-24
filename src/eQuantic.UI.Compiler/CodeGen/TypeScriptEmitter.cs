@@ -674,9 +674,17 @@ public class TypeScriptEmitter
                     // An EXPRESSION-bodied Build has no `Body`, so this read `null?.Contains(...)`,
                     // answered `context`, and emitted a parameter the body never uses — which the
                     // emitted module's own type check rejects. Ask whichever half the method has.
-                    var buildBodyText = component.BuildMethodNode?.Body?.ToString()
-                        ?? component.BuildMethodNode?.ExpressionBody?.ToString();
-                    var buildParamName = buildBodyText?.Contains("context") == false ? "_context" : "context";
+                    // The parameter is named as C# named it, the name its body reads it by: `context`
+                    // hard-coded left a `Build(ComponentContext ctx)` reading a `ctx` nothing declared.
+                    // Whether the body reads it is asked of the syntax, since a short name like `c` is
+                    // a substring of nearly any body.
+                    var buildParameterSyntax = component.BuildMethodNode?.ParameterList.Parameters.FirstOrDefault();
+                    var buildParamName = component.BuildMethodNode is not { } buildNode || buildParameterSyntax is null
+                        ? "context"
+                        : buildNode.DescendantNodes().OfType<IdentifierNameSyntax>()
+                            .Any(id => id.Identifier.ValueText == buildParameterSyntax.Identifier.ValueText)
+                            ? buildParameterSyntax.Identifier.Text.ToJsIdentifier()
+                            : "_" + buildParameterSyntax.Identifier.Text.ToJsIdentifier();
                     // The body converts straight to IR: a block as itself, an expression-bodied Build
                     // (`IComponent Build(ctx) => new Box {…};`) as a return, and nothing as the fallback.
                     _converter.SetCurrentClass(component.Name);

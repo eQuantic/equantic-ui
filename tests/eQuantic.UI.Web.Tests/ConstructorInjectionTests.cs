@@ -244,6 +244,27 @@ public class ConstructorInjectionTests
     }
 
     [Fact]
+    public void ABuildParameter_IsBoundUnderTheNameTheBodyReads()
+    {
+        // `build` took `context` whatever C# called it, so a `Build(ComponentContext ctx)` read a
+        // `ctx` nothing declared, a ReferenceError at the first render.
+        var page = Transpile("""
+            using eQuantic.UI.Components;
+            using eQuantic.UI.Primitives;
+
+            namespace eQuantic.UI.Web.Tests.Fixtures;
+
+            public sealed class TickPage : StatelessComponent
+            {
+                public override VisualNode Build(ComponentContext ctx) =>
+                    new Text(ctx == null ? "none" : "some", TypeRole.BodyM);
+            }
+            """);
+
+        page.Should().Contain("build(ctx: BuildContext)").And.Contain("ctx == null");
+    }
+
+    [Fact]
     public void APassedParameter_IsBoundUnderTheNameTheBodyReads()
     {
         // The signature camel-cased it too: `constructor(label…)` beside a body reading `Label`.
