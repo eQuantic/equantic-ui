@@ -32,18 +32,21 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 internal static class LocalFunctionName
 {
     /// <summary>
-    /// The free names the emitted code reads, each lowercase-initial and so reachable by camel-casing:
-    /// <c>console</c> (Console.WriteLine), <c>parseInt</c> and <c>parseFloat</c> (Convert.ToInt32 and
-    /// ToDouble over text), <c>crypto</c> (Guid.NewGuid), <c>encodeURIComponent</c> and
-    /// <c>decodeURIComponent</c> (Uri.EscapeDataString and UnescapeDataString), <c>undefined</c>, and
-    /// <c>props</c>, the parameter a plain class's constructor takes. A function that shadows one
-    /// breaks the translation of code beside it that never named it.
+    /// The names the EMITTER puts in a member's scope, which C# never declared. The free names the
+    /// output reads: <c>console</c> (Console.WriteLine), <c>parseInt</c> and <c>parseFloat</c>
+    /// (Convert.ToInt32 and ToDouble over text), <c>crypto</c> (Guid.NewGuid), <c>encodeURIComponent</c>
+    /// and <c>decodeURIComponent</c> (Uri.EscapeDataString and UnescapeDataString) and
+    /// <c>undefined</c>. The names it binds: <c>props</c>, the parameter a constructor takes, and the
+    /// lowerings' own, <c>_seq</c> (an iterator's buffer), <c>_s</c> (a switch's subject), and
+    /// <c>_sum</c>, <c>_x</c>, <c>_a</c>, <c>_b</c> (Sum's and Average's accumulators). A function on
+    /// one of these breaks code beside it that never named it, so even a name the casing left alone
+    /// yields to them.
     /// </summary>
-    private static readonly string[] EmittedFreeNames =
-    [
+    private static readonly HashSet<string> EmittedNames = new(StringComparer.Ordinal)
+    {
         "console", "parseInt", "parseFloat", "crypto", "encodeURIComponent", "decodeURIComponent",
-        "undefined", "props",
-    ];
+        "undefined", "props", "_seq", "_s", "_sum", "_x", "_a", "_b",
+    };
 
     /// <summary>
     /// The names every local function of a member takes, assigned once per member. A function of the
@@ -94,7 +97,7 @@ internal static class LocalFunctionName
 
     private static IReadOnlyDictionary<LocalFunctionStatementSyntax, string> Assign(SyntaxNode member)
     {
-        var taken = new HashSet<string>(EmittedFreeNames, StringComparer.Ordinal);
+        var taken = new HashSet<string>(EmittedNames, StringComparer.Ordinal);
         var functions = new List<LocalFunctionStatementSyntax>();
         foreach (var node in member.DescendantNodes())
         {
@@ -105,12 +108,13 @@ internal static class LocalFunctionName
         var names = new Dictionary<LocalFunctionStatementSyntax, string>();
 
         // A name that reaches JavaScript as it was written keeps it: C# already keeps it apart from
-        // every name its scopes can see, and JavaScript scopes it the same way.
-        foreach (var function in functions.Where(f => Cased(f.Identifier.ValueText) == f.Identifier.ValueText))
+        // every name its scopes declare, and JavaScript scopes it the same way. The emitter's names
+        // are the ones C# never saw, so it keeps it only off those.
+        foreach (var function in functions.Where(KeepsItsName))
             taken.Add(names[function] = function.Identifier.ValueText);
 
-        // One the casing changed takes the first spelling nothing declares. A `$` is a character no
-        // C# name holds, so the suffix cannot land on one.
+        // One the casing changed, or one on an emitted name, takes the first spelling nothing holds.
+        // A `$` is a character no C# name holds, so the suffix cannot land on one.
         foreach (var function in functions.Where(f => !names.ContainsKey(f)))
         {
             var cased = Cased(function.Identifier.ValueText);
@@ -122,6 +126,10 @@ internal static class LocalFunctionName
 
         return names;
     }
+
+    private static bool KeepsItsName(LocalFunctionStatementSyntax function) =>
+        Cased(function.Identifier.ValueText) == function.Identifier.ValueText
+        && !EmittedNames.Contains(function.Identifier.ValueText);
 
     /// <summary>
     /// The name <paramref name="node"/> binds in JavaScript's scope, where it binds one: a parameter,

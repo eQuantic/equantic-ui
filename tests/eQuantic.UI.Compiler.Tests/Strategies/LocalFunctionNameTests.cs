@@ -10,13 +10,17 @@ namespace eQuantic.UI.Compiler.Tests.Strategies;
 /// </summary>
 public class LocalFunctionNameTests
 {
-    [Fact]
-    public void InAConstructor_ItDoesNotRedeclareTheParameterTheEmitterAdds()
+    [Theory]
+    // A constructor with no parameters of its own takes `props` in JavaScript, and `Props`
+    // camel-cased is that name: `const props` beside the parameter did not parse.
+    [InlineData("Props")]
+    // A name the casing leaves alone yields too: C# never saw the emitter's `props`, so nothing
+    // kept the two apart.
+    [InlineData("props")]
+    public void InAConstructor_ItDoesNotRedeclareTheParameterTheEmitterAdds(string function)
     {
-        // A constructor with no parameters of its own takes `props` in JavaScript, and `Props`
-        // camel-cased is that name: `const props` beside the parameter did not parse.
         var ts = TestHelper.ConvertClass(
-            "public int Value { get; set; } public Setup() { int Props() => 5; Value = Props(); }", "Setup");
+            $"public int Value {{ get; set; }} public Setup() {{ int {function}() => 5; Value = {function}(); }}", "Setup");
 
         ts.Should().Contain("const props$ = ").And.Contain("this.value = props$()");
         ts.Should().NotContain("const props = ");
