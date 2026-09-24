@@ -114,6 +114,11 @@ public class IdentifierStrategy : IExpressionIrStrategy
             }
         }
 
+        // With no model to ask, a name can still be a local function a block around it declares,
+        // which C# finds before any member: its declaration's name, not a guessed `this.<name>`.
+        if (symbol == null && !isMemberName && LocalFunctionName.InScope(identifier, name) is { } local)
+            return JsExpr.Identifier(LocalFunctionName.Of(local, context));
+
         // A source-directory scan can prove that an otherwise-unbound PascalCase receiver is a
         // top-level static/runtime type. Preserve the type name so the emitter can route its import;
         // do not turn it into an instance member purely by casing.

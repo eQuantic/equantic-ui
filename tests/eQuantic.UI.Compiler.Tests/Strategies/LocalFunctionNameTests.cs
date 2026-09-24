@@ -1,9 +1,11 @@
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using eQuantic.UI.Compiler.CodeGen;
 using eQuantic.UI.Compiler.Services;
 using FluentAssertions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Xunit;
 
 namespace eQuantic.UI.Compiler.Tests.Strategies;
@@ -49,6 +51,24 @@ public class LocalFunctionNameTests
         var ts = TestHelper.ConvertClass("public int M() { int _idx() => 1; return _idx(); }");
 
         ts.Should().Contain("const _idx$ = ").And.Contain("return _idx$()");
+    }
+
+    [Fact]
+    public void WithNoModel_TheReferencesNameWhatTheDeclarationNamed()
+    {
+        // The playground converts with no semantic model, so no reference has a symbol to ask. The
+        // declaration still went through the owner (`d$`, `delete$`), and the call camel-cased by
+        // hand (`d()`, `delete()`), a module that did not parse (Copilot's review of #399).
+        var method = CSharpSyntaxTree.ParseText(
+                "class C { int M() { int d = 1; int D() => 2; int Delete() => 3; System.Func<int> f = Delete; return d + D() + Delete() + f(); } }",
+                ParseDefaults.Options)
+            .GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>().Single();
+
+        var js = new CSharpToJsConverter().Convert(method.Body!);
+
+        js.Should().Contain("const d$ = ").And.Contain("const delete$ = ");
+        js.Should().Contain("d$()").And.Contain("delete$()").And.Contain("f = delete$");
+        js.Should().NotContain(" d()").And.NotContain("delete()");
     }
 
     /// <summary>

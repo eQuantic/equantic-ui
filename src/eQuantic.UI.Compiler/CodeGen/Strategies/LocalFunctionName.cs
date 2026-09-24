@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies;
@@ -63,6 +64,33 @@ internal static class LocalFunctionName
         context.SemanticHelper.GetDeclaredSymbol(declaration) is IMethodSymbol symbol
             ? Of(symbol)
             : Named(declaration);
+
+    /// <summary>
+    /// The local function <paramref name="name"/> reaches from <paramref name="at"/>, found by the
+    /// syntax alone: the innermost block, switch section or file around it that declares one, which
+    /// is where C# looks first. For a reference with no model to ask (the playground, a node a
+    /// strategy rewrote), so it names the function its declaration named instead of guessing a
+    /// member: a call camel-cased by hand there met a declaration this owner had renamed.
+    /// </summary>
+    public static LocalFunctionStatementSyntax? InScope(SyntaxNode at, string name)
+    {
+        foreach (var ancestor in at.Ancestors())
+        {
+            var statements = ancestor switch
+            {
+                BlockSyntax block => block.Statements,
+                SwitchSectionSyntax section => section.Statements,
+                CompilationUnitSyntax unit => SyntaxFactory.List(unit.Members.OfType<GlobalStatementSyntax>().Select(global => global.Statement)),
+                _ => default(SyntaxList<StatementSyntax>?),
+            };
+            if (statements?.OfType<LocalFunctionStatementSyntax>()
+                    .FirstOrDefault(function => function.Identifier.ValueText == name) is { } found)
+                return found;
+            // Past the member its body belongs to, no local function is in scope.
+            if (ancestor is MemberDeclarationSyntax and not GlobalStatementSyntax) return null;
+        }
+        return null;
+    }
 
     /// <summary>The name a reference to <paramref name="localFunction"/> reaches.</summary>
     public static string Of(IMethodSymbol localFunction) =>

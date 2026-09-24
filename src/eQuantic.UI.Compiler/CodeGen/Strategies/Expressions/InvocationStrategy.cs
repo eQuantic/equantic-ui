@@ -324,6 +324,13 @@ public class InvocationStrategy : IExpressionIrStrategy
             }
         }
         
+        // With no model to ask, a bare call can still be a local function a block around it
+        // declares, which C# finds before any member: called by its declaration's name
+        // (LocalFunctionName), not guessed a member nor camel-cased by hand.
+        if (symbol == null && methodExpression is SimpleNameSyntax bareName
+            && LocalFunctionName.InScope(invocation, bareName.Identifier.ValueText) is { } local)
+            return JsExpr.Call(JsExpr.Identifier(LocalFunctionName.Of(local, context)), argIrs);
+
         // Heuristic fallback
         if (!needsThis && !string.IsNullOrEmpty(context.CurrentClassName))
         {
