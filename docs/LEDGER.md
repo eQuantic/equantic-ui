@@ -636,8 +636,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   this repository's history, and its twin answers change for change on 400 random pairs. On the way:
   eqc named a method by its name alone, so two overloads reached a twin as one method, JavaScript
   kept the last and a component's parser the first; the build now stops at the second declaration
-  and names the first (EQ1007). The view's design, a row that is not a line, is the plan's ninth
-  section.
+  and names the first (EQ1007). And white space is .NET's on the web: `char.IsWhiteSpace`, the
+  `Trim` family and `IsNullOrWhiteSpace` read one list, where JavaScript's left U+0085 and took
+  U+FEFF (the twin's word diff split on it), and a bare `Split()` splits on it instead of into
+  characters. The view's design, a row that is not a line, is the plan's ninth section.
 
 ## Retired documents
 
