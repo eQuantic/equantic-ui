@@ -474,3 +474,40 @@ eQuantic.UI.Code.CodeEdit.Typed.init -> void
 const eQuantic.UI.Code.CurlyBraceLanguage.StateRawString = 16 -> int
 virtual eQuantic.UI.Code.CurlyBraceLanguage.HasRawStrings.get -> bool
 static eQuantic.UI.Code.CodeLineCells.IsZeroWidth(int codePoint) -> bool
+eQuantic.UI.Code.CodeDiffer
+static eQuantic.UI.Code.CodeDiffer.Compare(eQuantic.UI.Code.CodeDocument! original, eQuantic.UI.Code.CodeDocument! modified) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeLineChange!>!
+static eQuantic.UI.Code.CodeDiffer.CompareLines(System.Collections.Generic.IReadOnlyList<string!>! original, System.Collections.Generic.IReadOnlyList<string!>! modified) -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeLineChange!>!
+eQuantic.UI.Code.CodeInnerChange
+eQuantic.UI.Code.CodeInnerChange.CodeInnerChange() -> void
+eQuantic.UI.Code.CodeInnerChange.CodeInnerChange(eQuantic.UI.Code.CodeRange Original, eQuantic.UI.Code.CodeRange Modified) -> void
+eQuantic.UI.Code.CodeInnerChange.Deconstruct(out eQuantic.UI.Code.CodeRange Original, out eQuantic.UI.Code.CodeRange Modified) -> void
+eQuantic.UI.Code.CodeInnerChange.Equals(eQuantic.UI.Code.CodeInnerChange other) -> bool
+override eQuantic.UI.Code.CodeInnerChange.GetHashCode() -> int
+static eQuantic.UI.Code.CodeInnerChange.operator !=(eQuantic.UI.Code.CodeInnerChange left, eQuantic.UI.Code.CodeInnerChange right) -> bool
+static eQuantic.UI.Code.CodeInnerChange.operator ==(eQuantic.UI.Code.CodeInnerChange left, eQuantic.UI.Code.CodeInnerChange right) -> bool
+~override eQuantic.UI.Code.CodeInnerChange.Equals(object obj) -> bool
+~override eQuantic.UI.Code.CodeInnerChange.ToString() -> string
+eQuantic.UI.Code.CodeInnerChange.Original.get -> eQuantic.UI.Code.CodeRange
+eQuantic.UI.Code.CodeInnerChange.Original.init -> void
+eQuantic.UI.Code.CodeInnerChange.Modified.get -> eQuantic.UI.Code.CodeRange
+eQuantic.UI.Code.CodeInnerChange.Modified.init -> void
+eQuantic.UI.Code.CodeLineChange
+eQuantic.UI.Code.CodeLineChange.<Clone>$() -> eQuantic.UI.Code.CodeLineChange!
+eQuantic.UI.Code.CodeLineChange.CodeLineChange(int OriginalStart, int OriginalCount, int ModifiedStart, int ModifiedCount, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeInnerChange>! Inner) -> void
+eQuantic.UI.Code.CodeLineChange.Deconstruct(out int OriginalStart, out int OriginalCount, out int ModifiedStart, out int ModifiedCount, out System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeInnerChange>! Inner) -> void
+eQuantic.UI.Code.CodeLineChange.Equals(eQuantic.UI.Code.CodeLineChange? other) -> bool
+override eQuantic.UI.Code.CodeLineChange.Equals(object? obj) -> bool
+override eQuantic.UI.Code.CodeLineChange.GetHashCode() -> int
+override eQuantic.UI.Code.CodeLineChange.ToString() -> string!
+static eQuantic.UI.Code.CodeLineChange.operator !=(eQuantic.UI.Code.CodeLineChange? left, eQuantic.UI.Code.CodeLineChange? right) -> bool
+static eQuantic.UI.Code.CodeLineChange.operator ==(eQuantic.UI.Code.CodeLineChange? left, eQuantic.UI.Code.CodeLineChange? right) -> bool
+eQuantic.UI.Code.CodeLineChange.OriginalStart.get -> int
+eQuantic.UI.Code.CodeLineChange.OriginalStart.init -> void
+eQuantic.UI.Code.CodeLineChange.OriginalCount.get -> int
+eQuantic.UI.Code.CodeLineChange.OriginalCount.init -> void
+eQuantic.UI.Code.CodeLineChange.ModifiedStart.get -> int
+eQuantic.UI.Code.CodeLineChange.ModifiedStart.init -> void
+eQuantic.UI.Code.CodeLineChange.ModifiedCount.get -> int
+eQuantic.UI.Code.CodeLineChange.ModifiedCount.init -> void
+eQuantic.UI.Code.CodeLineChange.Inner.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeInnerChange>!
+eQuantic.UI.Code.CodeLineChange.Inner.init -> void
