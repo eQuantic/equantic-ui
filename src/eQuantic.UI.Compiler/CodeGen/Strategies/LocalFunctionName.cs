@@ -132,6 +132,12 @@ internal static class LocalFunctionName
         {
             if (node is LocalFunctionStatementSyntax function) functions.Add(function);
             else if (Declared(node) is { } name) taken.Add(name.ValueText.ToJsIdentifier());
+            // An accessor that takes a value declares `value` without a syntax of its own, and the
+            // emitter writes it as the setter's parameter: a `Value()` there was `const value`
+            // beside it (Copilot's review of #399).
+            else if (node is AccessorDeclarationSyntax accessor
+                     && accessor.Keyword.ValueText is "set" or "init" or "add" or "remove")
+                taken.Add("value");
         }
 
         var names = new Dictionary<LocalFunctionStatementSyntax, string>();

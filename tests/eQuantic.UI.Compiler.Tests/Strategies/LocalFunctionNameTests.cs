@@ -34,6 +34,17 @@ public class LocalFunctionNameTests
     }
 
     [Fact]
+    public void InASetter_ItDoesNotRedeclareTheImplicitValue()
+    {
+        // A setter takes `value` with no syntax of its own, and the emitter writes it as the
+        // parameter: `Value()` camel-cased was `const value` beside it (Copilot's review of #399).
+        var ts = TestHelper.ConvertClass(
+            "private int _v; public int V { get => _v; set { int Value() => value * 2; _v = Value(); } }", "Cell");
+
+        ts.Should().Contain("const value$ = ").And.Contain("return value * 2").And.Contain("this._v = value$()");
+    }
+
+    [Fact]
     public void ANameNothingHolds_KeepsItsCasing()
     {
         // The rename is for a collision only: a function whose cased name is free reads as authored.
