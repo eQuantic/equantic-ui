@@ -224,7 +224,8 @@ public class StringStaticStrategy : IConversionStrategy
                 return context.Unhandled(node, "string.Format with a named argument, which no model places");
             var first = args[0].Expression;
             var skip = 0;
-            if (args.Count >= 2 && (NamedCulture.IsInvariant(first, context) || NamedCulture.IsCurrent(first, context)))
+            if (args.Count >= 2 && (NamedCulture.IsInvariant(first, context) || NamedCulture.IsCurrent(first, context)
+                || HoldsATemplate(args[1].Expression) && !HoldsText(first)))
             {
                 provider = first;
                 skip = 1;
@@ -284,6 +285,20 @@ public class StringStaticStrategy : IConversionStrategy
         var call = $"{function}({string.Join(", ", holes.Prepend(Hole(template)))})";
         return JsExprWriter.Write(JsExpr.Template(call, parts, context.TypeAnnotations));
     }
+
+    /// <summary>With no model to say which parameter an argument binds to: a string literal with a
+    /// placeholder in it (<c>"{0}"</c>) is a template, so an argument that is not text in front of
+    /// one is a provider, one the policy then names or refuses. Taken for the template, the runtime
+    /// called <c>replace</c> on it. A value that is text first (<c>string.Format(template, "x")</c>)
+    /// stays the template.</summary>
+    private static bool HoldsATemplate(ExpressionSyntax argument) =>
+        argument is LiteralExpressionSyntax { Token.Value: string text } && TemplateHole.IsMatch(text);
+
+    private static bool HoldsText(ExpressionSyntax argument) =>
+        argument is LiteralExpressionSyntax { Token.Value: string } or InterpolatedStringExpressionSyntax;
+
+    private static readonly System.Text.RegularExpressions.Regex TemplateHole =
+        new(@"\{\d+[,:}]", System.Text.RegularExpressions.RegexOptions.Compiled);
 
     /// <summary>The type of the value an argument boxes: its own, or, through a cast to
     /// <c>object</c> written by hand, the operand's. <c>(object)0.1f</c> is still a float to the
