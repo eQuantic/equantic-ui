@@ -659,3 +659,33 @@ eQuantic.UI.Code.CodeRow.Label.get -> string?
 eQuantic.UI.Code.CodeRow.Label.init -> void
 eQuantic.UI.Code.CodeRow.CodeRow(eQuantic.UI.Code.CodeRowKind Kind, int Line, int Count = 1, int SourceLine = -1, string? Label = null) -> void
 eQuantic.UI.Code.CodeRow.Deconstruct(out eQuantic.UI.Code.CodeRowKind Kind, out int Line, out int Count, out int SourceLine, out string? Label) -> void
+eQuantic.UI.Code.CodeDiffGap.ModifiedCount.get -> int
+eQuantic.UI.Code.CodeDiffGap.ModifiedCount.init -> void
+eQuantic.UI.Code.CodeDiffGap
+eQuantic.UI.Code.CodeDiffGap.CodeDiffGap() -> void
+eQuantic.UI.Code.CodeDiffGap.CodeDiffGap(int OriginalLine, int ModifiedLine, int OriginalCount, int ModifiedCount) -> void
+eQuantic.UI.Code.CodeDiffGap.Deconstruct(out int OriginalLine, out int ModifiedLine, out int OriginalCount, out int ModifiedCount) -> void
+eQuantic.UI.Code.CodeDiffGap.Equals(eQuantic.UI.Code.CodeDiffGap other) -> bool
+override eQuantic.UI.Code.CodeDiffGap.GetHashCode() -> int
+static eQuantic.UI.Code.CodeDiffGap.operator !=(eQuantic.UI.Code.CodeDiffGap left, eQuantic.UI.Code.CodeDiffGap right) -> bool
+static eQuantic.UI.Code.CodeDiffGap.operator ==(eQuantic.UI.Code.CodeDiffGap left, eQuantic.UI.Code.CodeDiffGap right) -> bool
+~override eQuantic.UI.Code.CodeDiffGap.Equals(object obj) -> bool
+~override eQuantic.UI.Code.CodeDiffGap.ToString() -> string
+eQuantic.UI.Code.CodeDiffGap.OriginalLine.get -> int
+eQuantic.UI.Code.CodeDiffGap.OriginalLine.init -> void
+eQuantic.UI.Code.CodeDiffGap.ModifiedLine.get -> int
+eQuantic.UI.Code.CodeDiffGap.ModifiedLine.init -> void
+eQuantic.UI.Code.CodeDiffGap.OriginalCount.get -> int
+eQuantic.UI.Code.CodeDiffGap.OriginalCount.init -> void
+eQuantic.UI.Code.CodeDiffSource
+eQuantic.UI.Code.CodeDiffSource.Original.get -> eQuantic.UI.Code.CodeDocument!
+eQuantic.UI.Code.CodeDiffSource.Modified.get -> eQuantic.UI.Code.CodeDocument!
+eQuantic.UI.Code.CodeDiffSource.Changes.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeLineChange!>!
+eQuantic.UI.Code.CodeDiffSource.Gaps.get -> System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDiffGap>!
+eQuantic.UI.Code.CodeDiffSource.OriginalNumber(int line) -> int
+eQuantic.UI.Code.CodeDiffSource.ModifiedNumber(int line) -> int
+static eQuantic.UI.Code.CodeDiffSource.FromTexts(string! original, string! modified) -> eQuantic.UI.Code.CodeDiffSource!
+static eQuantic.UI.Code.CodeDiffSource.FromPatch(eQuantic.UI.Code.CodePatchFile! file) -> eQuantic.UI.Code.CodeDiffSource!
+eQuantic.UI.Code.CodeDiffSource.OriginalLineCount.get -> int
+eQuantic.UI.Code.CodeDiffSource.ModifiedLineCount.get -> int
+static eQuantic.UI.Code.CodeDocument.FromLines(System.Collections.Generic.IReadOnlyList<string!>! lines) -> eQuantic.UI.Code.CodeDocument!
