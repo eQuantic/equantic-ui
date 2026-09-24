@@ -576,6 +576,23 @@ record of a release, the wiki's Upgrading page is the distillate.
   position) enters C# through the runtime, which now rounds it at each of the five seams C# types
   `float`; `FloatSeamsTests` derives them by reflection and requires a spec for each.
 
+- **2026-09-24 · The code editor is a component**: slice 1c of
+  [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#N](https://github.com/eQuantic/equantic-ui/pull/N)).
+  An IDE holds the editor in a pane, and without a height cap there was no viewport, so every
+  keystroke built every line: `Height` (Fill or a fixed height) bounds it now, and it builds what is
+  in view. On the web a capped box lays its child out as a column, so `MaxHeight` scrolls (the
+  scroller grew to 2827px inside 520), and a scroll view anchors nothing, since the browser's scroll
+  anchoring moved the offset whenever the line window swapped rows and slid a revealed match back
+  out of view. The find bar is a layer over code that keeps its place in the tree (opening it made
+  the surface a new one to every host: the scroll went back to the top and Photon's keyboard pointed
+  at nothing), its field takes the keyboard when it appears, Enter walks the matches and keeps the
+  field, Escape closes it and gives the keyboard back through a request the model carries and both
+  hosts honour (`RequestFocus`, `FocusVersion`), and the app hears a move as a move and an edit as an
+  edit. On the way: Photon honoured a field's `Autofocus` once per path for the life of a window and
+  never a code surface's, Enter left a field on Photon and stayed on the web (it stays on both), a
+  key an app's shortcut took still reached the editor on the web, a code block's corner lay over its
+  whole first line, and seven tests asserted nothing when their value was null.
+
 ## Retired documents
 
 | document | what it was | where its substance lives now |
