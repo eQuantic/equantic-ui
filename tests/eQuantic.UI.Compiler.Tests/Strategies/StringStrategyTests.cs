@@ -202,17 +202,18 @@ public class StringStrategyTests
     }
 
     [Fact]
-    public void Concat_MapsToPlus()
+    public void Concat_JoinsTheTextOfEachValue()
     {
+        // Text, not a sum: a null string is nothing, as .NET writes it.
         var result = TestHelper.ConvertExpression("string.Concat(a, b, c)");
-        result.Should().Be("(this.a + this.b + this.c)");
+        result.Should().Be("'' + (this.a ?? '') + (this.b ?? '') + (this.c ?? '')");
     }
 
     [Fact]
-    public void Compare_MapsToLocaleCompare()
+    public void Compare_IsTheCurrentCulturesComparison()
     {
         var result = TestHelper.ConvertExpression("string.Compare(a, b)");
-        result.Should().Be("this.a.localeCompare(this.b)");
+        result.Should().Be("$eq.text.compare(this.a, this.b, 'currentCulture')");
     }
 
     [Fact]

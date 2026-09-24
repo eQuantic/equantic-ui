@@ -405,6 +405,9 @@ function formatDate(value: Date, format: string): string {
     .replace(/ss/g, ss);
 }
 
+const FORMAT_INDEX =
+  'Index (zero based) must be greater than or equal to zero and less than the size of the argument list.';
+
 /**
  * .NET `string.Format(template, ...args)`. Substitutes `{i}` / `{i:spec}` placeholders (the latter via
  * {@link format}, so `{0:F2}` formats arg 0 to 2 decimals) and unescapes `{{`/`}}` to `{`/`}`. Mirrors
@@ -414,6 +417,8 @@ export function stringFormat(template: string, ...args: unknown[]): string {
   return template.replace(/\{\{|\}\}|\{(\d+)(?::([^}]*))?\}/g, (m, idx, spec) => {
     if (m === '{{') return '{';
     if (m === '}}') return '}';
+    // A placeholder past the values is .NET's FormatException, where it was written as nothing.
+    if (Number(idx) >= args.length) throw new Error(FORMAT_INDEX);
     const v = args[Number(idx)];
     if (spec != null) return format(v, spec);
     return general(v);

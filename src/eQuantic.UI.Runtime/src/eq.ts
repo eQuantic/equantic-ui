@@ -58,6 +58,13 @@ import {
 } from './utils/overflow';
 import { double, single } from './utils/real-text';
 import { fromBase, toBase } from './utils/convert-base';
+import {
+  compare,
+  compareRange,
+  compareRangeBy,
+  equals as stringEquals,
+  joinRange,
+} from './utils/string-statics';
 import { format, parseEnum, stringFormat } from './utils/format';
 import { nextTextElementLength, textElementStarts } from './utils/text-elements';
 import { unicodeCategory } from './utils/unicode-category';
@@ -226,8 +233,22 @@ export const $eq = {
     log2Of64,
   },
   /** Text: number/string formatting, StringBuilder, StringInfo's text elements (grapheme clusters,
-   * from the platform's segmenter), and a character's general category. */
-  text: { format, stringFormat, stringBuilder, substring, textElementStarts, nextTextElementLength, unicodeCategory },
+   * from the platform's segmenter), a character's general category, and string's comparisons and
+   * ranged join. */
+  text: {
+    format,
+    stringFormat,
+    stringBuilder,
+    substring,
+    textElementStarts,
+    nextTextElementLength,
+    unicodeCategory,
+    compare,
+    compareRange,
+    compareRangeBy,
+    equals: stringEquals,
+    joinRange,
+  },
   /** A dictionary read that fails on a missing key, the way .NET does. */
   dictGet,
   /** Date and time, tick-precise. */

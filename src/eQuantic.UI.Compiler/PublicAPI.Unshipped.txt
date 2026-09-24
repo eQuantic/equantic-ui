@@ -231,3 +231,8 @@ static eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow.operator ==(eQuantic.UI.Comp
 static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.ConstArrow(string! name, string! parameters, bool isAsync, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! body) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
 const eQuantic.UI.Compiler.CodeGen.Eq.FromBase = "$eq.num.fromBase" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.ToBase = "$eq.num.toBase" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.StringCompare = "$eq.text.compare" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.StringCompareRange = "$eq.text.compareRange" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.StringCompareRangeBy = "$eq.text.compareRangeBy" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.StringEquals = "$eq.text.equals" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.StringJoinRange = "$eq.text.joinRange" -> string!

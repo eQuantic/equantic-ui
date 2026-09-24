@@ -89,6 +89,19 @@ public static class Eq
     public const string UnicodeCategory = "$eq.text.unicodeCategory";
     public const string Format = "$eq.text.format";
     public const string StringFormat = "$eq.text.stringFormat";
+    /// <summary><c>string.Compare</c> by a <c>StringComparison</c>: a null first, a culture comparison
+    /// by the platform's collator, an ordinal one answering .NET's difference.</summary>
+    public const string StringCompare = "$eq.text.compare";
+    /// <summary><c>string.Compare</c> over two ranges in the current culture, clamped and checked as
+    /// <c>CompareInfo</c> checks them.</summary>
+    public const string StringCompareRange = "$eq.text.compareRange";
+    /// <summary><c>string.Compare</c> over two ranges by a <c>StringComparison</c>, and
+    /// <c>string.CompareOrdinal</c> over two ranges, whose checks run in their own order.</summary>
+    public const string StringCompareRangeBy = "$eq.text.compareRangeBy";
+    /// <summary><c>string.Equals(a, b, comparisonType)</c>.</summary>
+    public const string StringEquals = "$eq.text.equals";
+    /// <summary><c>string.Join(separator, value, startIndex, count)</c>: the range, checked.</summary>
+    public const string StringJoinRange = "$eq.text.joinRange";
     public const string StringBuilder = "$eq.text.stringBuilder";
     public const string DateTime = "$eq.time.dateTime";
     public const string TimeSpan = "$eq.time.timeSpan";
