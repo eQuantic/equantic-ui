@@ -28,13 +28,18 @@ public static class StringExtensions
     /// <summary>
     /// A C# LOCAL/PARAMETER name as a legal JS identifier: the verbatim escape comes off first
     /// (`@checked` → `checked` — the `@` is C#'s keyword escape and a syntax error in JS), then a
-    /// reserved word takes a trailing underscore (`package` → `package_`). Renaming must be applied
+    /// reserved word takes a trailing `$` (`package` → `package$`). Renaming must be applied
     /// at BOTH the declaration and every reference — which is why it lives here, on the one path
     /// both go through. Anything else passes back unchanged, so ordinary names read as authored.
+    /// <para>
+    /// A `$` because no C# identifier can hold one, so the renamed name cannot land on another
+    /// name in its scope. The underscore it took before could: `package` and `package_` in one
+    /// scope were both `package_`, and the module did not parse.
+    /// </para>
     /// </summary>
     public static string ToJsIdentifier(this string name)
     {
         if (name.StartsWith('@')) name = name[1..];
-        return JsReserved.Contains(name) ? name + "_" : name;
+        return JsReserved.Contains(name) ? name + "$" : name;
     }
 }

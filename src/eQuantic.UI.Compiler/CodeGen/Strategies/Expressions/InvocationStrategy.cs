@@ -263,8 +263,11 @@ public class InvocationStrategy : IExpressionIrStrategy
             // …but a PRIMARY-CONSTRUCTOR parameter is neither: Roslyn models it as a parameter and
             // it behaves like an instance field, so emitting it bare compiles and then throws a
             // ReferenceError the moment the callback runs — long after the page looked fine.
+            // The binding's name is the one its declaration took, the JS-identifier rename
+            // included: the source text called `Func<int> package` as `package()`, which a module
+            // refuses as a reserved word, beside the `package$` it had declared.
             if (delegateTarget.IsInScopeBinding())
-                return JsExpr.Callish($"{delegateIdentifier.Identifier.Text}({args})");
+                return JsExpr.Callish($"{delegateIdentifier.Identifier.ValueText.ToJsIdentifier()}({args})");
             return JsExpr.Callish($"this.{delegateIdentifier.Identifier.Text.ToCamelCase()}({args})");
         }
 

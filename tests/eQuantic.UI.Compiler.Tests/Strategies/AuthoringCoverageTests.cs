@@ -256,8 +256,8 @@ public class AuthoringCoverageTests
                     "  public override IComponent Build(RenderContext c) { " +
                     "    var package = \"eQuantic.Core\"; var yield = 2; " +
                     "    return new Text(package + yield); } }");
-        ts.Should().Contain("let package_ = 'eQuantic.Core'");
-        ts.Should().Contain("package_ + yield_");
+        ts.Should().Contain("let package$ = 'eQuantic.Core'");
+        ts.Should().Contain("package$ + yield$");
         ts.Should().NotContain("let package =").And.NotContain("let yield =");
     }
 
@@ -268,7 +268,7 @@ public class AuthoringCoverageTests
                     "  private string Label(string package) => package.Trim(); " +
                     "  public override IComponent Build(RenderContext c) => " +
                     "    new Text(string.Join(\",\", new[] { \"a\" }.Select(interfaceName => interfaceName))); }");
-        ts.Should().Contain("package_: string").And.Contain("package_.trim()");
+        ts.Should().Contain("package$: string").And.Contain("package$.trim()");
     }
 
     [Fact]
