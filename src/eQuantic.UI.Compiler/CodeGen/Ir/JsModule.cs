@@ -28,4 +28,12 @@ public static class JsModuleWriter
         if (builder.Length > 0) builder.Append('\n');
         return builder.Append(module.Body).ToString();
     }
+
+    /// <summary>The line, counted from zero, the body starts on: the import lines above it and the
+    /// blank line after them. A source map recorded against the body moves down by this (#293).</summary>
+    public static int BodyLine(JsModule module)
+    {
+        var imports = module.Imports.Count(import => import.Names.Count > 0);
+        return imports == 0 ? 0 : imports + 1;
+    }
 }

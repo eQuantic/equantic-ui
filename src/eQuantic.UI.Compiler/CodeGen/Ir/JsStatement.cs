@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis;
+
 namespace eQuantic.UI.Compiler.CodeGen.Ir;
 
 /// <summary>
@@ -8,6 +10,18 @@ namespace eQuantic.UI.Compiler.CodeGen.Ir;
 /// </summary>
 public abstract record JsStatement
 {
+    /// <summary>
+    /// The C# statement this one was converted from, when the dispatcher knows: what the source map
+    /// records for the line the writer places it on (#293). It is not part of the statement's
+    /// value, so two statements that write the same text are equal wherever they came from.
+    /// </summary>
+    public SyntaxNode? Origin { get; init; }
+
+    public virtual bool Equals(JsStatement? other) =>
+        other is not null && EqualityContract == other.EqualityContract;
+
+    public override int GetHashCode() => EqualityContract.GetHashCode();
+
     /// <summary>The strangler seam: text is a raw statement.</summary>
     public static implicit operator JsStatement(string text) => new JsRawStatement(text);
 
