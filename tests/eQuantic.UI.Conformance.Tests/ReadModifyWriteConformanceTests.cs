@@ -1,4 +1,5 @@
 using eQuantic.UI.Conformance.Tests.Infrastructure;
+using FluentAssertions;
 using Xunit;
 
 namespace eQuantic.UI.Conformance.Tests;
@@ -166,10 +167,25 @@ public class ReadModifyWriteConformanceTests
     [InlineData("var d = new Dictionary<(int, int), int> { [(1, 2)] = 1 }; d[(1, 2)]++; ++d[(1, 2)]; return d[(1, 2)];")] // 3
     [InlineData("var d = new Dictionary<(int, int), float> { [(1, 2)] = 0.1f }; d[(1, 2)] += 0.2f; return (double)d[(1, 2)];")]
     [InlineData("var d = new Dictionary<(int, int), int>(); try { d[(9, 9)]++; return \"no\"; } catch (KeyNotFoundException) { return \"throws\"; }")]
+    // A Range key is looked up, not sliced: the range indexer took `d[1..2]` for `.slice(1, 2)`.
+    [InlineData("var d = new Dictionary<Range, int> { [1..2] = 5 }; d[1..2] += 1; return d[1..2];")] // 6
     public void AValueKeyedEntry_TakesItsTypesRule(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, "public record Point(int X, int Y);");
+    }
+
+    /// <summary>
+    /// An Index key is looked up too, where the index-from-end indexer counted back from a length a
+    /// map does not have (<c>d[d.length - 1]</c>). What the key itself becomes is not settled here: a
+    /// standalone <c>^1</c> still has no translation of its own, so this pins the routing, not a run.
+    /// </summary>
+    [Fact]
+    public void AnIndexKey_IsLookedUp_NotCountedBackFromALength()
+    {
+        var js = Transpiler.TranspileStatements("var d = new Dictionary<Index, int>(); d[2] = 1; return d[^1];");
+        js.Should().Contain("return $eq.mapGet(d, ");
+        js.Should().NotContain(".length -");
     }
 
     [SkippableFact]

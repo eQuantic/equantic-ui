@@ -23,8 +23,10 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// </summary>
 public class RangeIndexerStrategy : IConversionStrategy
 {
+    // A dictionary keyed by Range is not a slice: `d[1..2]` looks the key up (DictionaryEntry).
     public bool CanConvert(SyntaxNode node, ConversionContext context) =>
-        node is ElementAccessExpressionSyntax { ArgumentList.Arguments: [{ Expression: RangeExpressionSyntax }] };
+        node is ElementAccessExpressionSyntax { ArgumentList.Arguments: [{ Expression: RangeExpressionSyntax }] } access
+        && DictionaryEntry.Of(access, context) is null;
 
     public string Convert(SyntaxNode node, ConversionContext context)
     {
