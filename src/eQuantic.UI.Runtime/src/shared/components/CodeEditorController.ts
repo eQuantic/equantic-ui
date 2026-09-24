@@ -303,6 +303,7 @@ export class CodeEditorController {
         switch (phase) {
             case 'down':
                 {
+                    if (this.onPlaceholder(position)) return false;
                     let at = this.positionAt(position);
                     if (clicks >= 3) this.selectLine(at.line); else if (clicks === 2) this.selectWord(at); else if ((modifiers & 1) !== 0) this.selection = new CodeRange(this._selection.anchor, at); else this.selection = new CodeRange(at);
                     this._dragging = clicks < 2;
@@ -310,7 +311,7 @@ export class CodeEditorController {
                 }
             case 'move':
                 {
-                    if (!this._dragging) return false;
+                    if (!this._dragging || this.onPlaceholder(position)) return false;
                     let at = this.positionAt(position);
                     if ($eq.equals(at, this._selection.focus)) return false;
                     this.selection = new CodeRange(this._selection.anchor, at);
@@ -322,6 +323,13 @@ export class CodeEditorController {
             default:
                 return false;
         }
+    }
+
+    onPlaceholder(point: Point) {
+        let rows: any; 
+        if (!((rows = this.grid.rows) != null)) return false;
+        let row = (Math.trunc(Math.floor(Math.fround(Math.fround(point.y - this.grid.origin.y) / this.grid.cell.height))) | 0);
+        return row >= 0 && row < rows.rowCount && rows.rowAt(row).kind === 'placeholder';
     }
 
     apply(range: CodeRange, text: string) {

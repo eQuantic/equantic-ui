@@ -510,6 +510,10 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         {
             case PointerPhase.Down:
             {
+                // A folded run's row opens on a press, which the component drawing it answers: the
+                // caret stays. It landed in the run's first line, at the column pressed, and revealing
+                // it slid a diff's side sideways as the run opened.
+                if (OnPlaceholder(position)) return false;
                 var at = PositionAt(position);
                 if (clicks >= 3) SelectLine(at.Line);
                 else if (clicks == 2) SelectWord(at);
@@ -520,7 +524,8 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             }
             case PointerPhase.Move:
             {
-                if (!_dragging) return false;
+                // A drag that crosses a folded run does not enter it.
+                if (!_dragging || OnPlaceholder(position)) return false;
                 var at = PositionAt(position);
                 if (at == _selection.Focus) return false;
                 Selection = new CodeRange(_selection.Anchor, at);
@@ -532,6 +537,14 @@ public sealed class CodeEditorController : ICodeSurfaceModel
             default:
                 return false;
         }
+    }
+
+    /// <summary>Whether <paramref name="point"/> is on a row that stands for a folded run.</summary>
+    private bool OnPlaceholder(Point point)
+    {
+        if (Grid.Rows is not { } rows) return false;
+        var row = (int)MathF.Floor((point.Y - Grid.Origin.Y) / Grid.Cell.Height);
+        return row >= 0 && row < rows.RowCount && rows.RowAt(row).Kind == CodeRowKind.Placeholder;
     }
 
     // ---- editing ------------------------------------------------------------------------------

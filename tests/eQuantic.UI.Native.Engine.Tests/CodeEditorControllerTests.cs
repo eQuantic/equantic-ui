@@ -388,6 +388,27 @@ public class CodeEditorControllerTests
         editor.Caret.Line.Should().Be(6, "every line below is folded");
     }
 
+    /// <summary>
+    /// A press on a folded run's row opens it, and the component that draws the row answers it: the
+    /// caret stays where it was. It landed in the first line the fold hid, at the column of the press,
+    /// and revealing it slid a diff's side sideways as the run opened. A drag that crosses the row
+    /// does not enter the run either.
+    /// </summary>
+    [Fact]
+    public void APressOnAFoldsRow_LeavesTheCaretWhereItWas()
+    {
+        var editor = Folded(new CodeCollapse(3, 6));
+        editor.Selection = new CodeRange(new CodePosition(1, 2));
+        var placeholder = new Point(40, 3 * 18 + 5);
+
+        editor.HandlePointer(PointerPhase.Down, placeholder, KeyModifiers.None, 1).Should().BeFalse();
+        editor.Selection.Should().Be(new CodeRange(new CodePosition(1, 2)));
+
+        editor.HandlePointer(PointerPhase.Down, new Point(0, 5), KeyModifiers.None, 1);
+        editor.HandlePointer(PointerPhase.Move, placeholder, KeyModifiers.None, 1).Should().BeFalse();
+        editor.Selection.Focus.Line.Should().Be(0, "the drag stays out of the run");
+    }
+
     [Fact]
     public void ASelection_DrawsNoBandForTheLinesAFoldHides()
     {
