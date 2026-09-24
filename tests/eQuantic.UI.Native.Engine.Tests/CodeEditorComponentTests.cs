@@ -187,6 +187,25 @@ public class CodeEditorComponentTests
         editor.Editor.Selection.Start.Line.Should().Be(80, "the next Enter is the next match");
     }
 
+    /// <summary>
+    /// The bar counts what ITS field looks for. The app's own <c>Search</c> still marks the code, and
+    /// with the field empty the bar showed that search's count beside it, a count for nothing typed.
+    /// </summary>
+    [Fact]
+    public void TheBarCountsWhatItsFieldLooksFor_NotTheAppsSearch()
+    {
+        var editor = new CodeEditor("one two one", "csharp") { ShowLineNumbers = false, Search = "one" };
+        var host = Host(editor);
+        Settle(host);
+
+        var opened = OpenFind(host);
+        Count(opened.Root, node => node.Source is Text { Content: var text } && text.Contains('/')).Should().Be(0,
+            "nothing is typed in the field yet");
+
+        var typed = Type(host, "two");
+        Count(typed.Root, node => node.Source is Text { Content: "0/1" }).Should().Be(1);
+    }
+
     [Fact]
     public void TheBarsCloseButtonSpeaksTheInterfacesLanguage()
     {

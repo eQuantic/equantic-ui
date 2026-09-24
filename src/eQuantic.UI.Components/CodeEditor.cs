@@ -367,7 +367,10 @@ public sealed class CodeEditor : StatefulComponent
         {
             // Escape closes it wherever the keyboard is, in the bar or in the code, which is what
             // it means in every editor: a chord live while the bar is on screen.
-            layers.Add(new Positioned(new Shortcut(FindBar(context, editor, matches), KeyChord.Escape,
+            // The bar counts what ITS field looks for: with the field empty, the matches of the app's own
+            // Search still mark the code, and are no count of anything typed.
+            IReadOnlyList<CodeRange> found = _findText.Length > 0 ? matches : [];
+            layers.Add(new Positioned(new Shortcut(FindBar(context, editor, found), KeyChord.Escape,
                 () => CloseFind(editor)), top: Space.S2, end: Space.S2));
         }
         return layers;

@@ -100,7 +100,8 @@ export class CodeEditor extends StatefulComponent {
         let corner: any; 
         if ((corner = CodeBlock.corner(this.caption, null, this.inverse, context.theme)) != null) layers.add(corner);
         if (this._findOpen) {
-            layers.add(new Positioned(new Shortcut(this.findBar(context, editor, matches), KeyChord.escape, () => this.closeFind(editor)), 8, 8));
+            let found = this._findText.length > 0 ? matches : [];
+            layers.add(new Positioned(new Shortcut(this.findBar(context, editor, found), KeyChord.escape, () => this.closeFind(editor)), 8, 8));
         }
         return layers;
     }
