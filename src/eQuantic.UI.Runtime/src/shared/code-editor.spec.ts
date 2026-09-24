@@ -10,7 +10,7 @@
  * moment it had to, the two targets would have started to drift.
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { photonTheme } from './design-system.generated';
 import { lowerVisualNode } from './lowering';
 import { setPhotonTheme } from './photon-context';
@@ -1049,6 +1049,31 @@ describe('the app asks for the keyboard', () => {
     await wait(80);
     expect(document.activeElement?.tagName).not.toBe('TEXTAREA');
     parent.remove();
+  });
+
+  it('gives it once, and never takes it back from a control focused since', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'requestAnimationFrame'] });
+    const parent = document.createElement('div');
+    const other = document.createElement('input');
+    try {
+      const editor = new CodeEditorController('x', CodeLanguages.for('csharp'));
+      editor.requestFocus();
+      document.body.append(parent, other);
+      new Reconciler().reconcile(parent, null, lower(editor));
+
+      vi.advanceTimersToNextFrame();
+      vi.advanceTimersToNextFrame();
+      expect(document.activeElement?.tagName).toBe('TEXTAREA');
+
+      // The user, or the page, moves on before the timeout that backs the frames up has run.
+      other.focus();
+      vi.advanceTimersByTime(100);
+      expect(document.activeElement).toBe(other);
+    } finally {
+      vi.useRealTimers();
+      parent.remove();
+      other.remove();
+    }
   });
 });
 

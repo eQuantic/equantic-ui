@@ -916,14 +916,24 @@ function revealCaret(path: string): void {
 /**
  * Gives the surface at `path` the keyboard, after the render that draws it: the same timing and the
  * same two routes as {@link revealCaret}, and found by path for the same reason (the element the
- * request arrived with is replaced by the render). Focusing twice is harmless.
+ * request arrived with is replaced by the render).
+ *
+ * Unlike a reveal, a focus given twice is not harmless. Where frames arrive, the timeout ran 16 ms
+ * after the frame had honoured the request and honoured it again, so a control the user or the page
+ * focused in between lost the keyboard to the code. The second route acts only when the first found
+ * nothing to focus, or when nothing has the keyboard any more, which is the render taking the
+ * focused element away.
  */
 function focusSurface(path: string): void {
   if (typeof document === 'undefined') return;
+  let given = false;
   const focus = () => {
     if (typeof document === 'undefined') return;
     const input = document.querySelector<HTMLElement>(`[data-eq-code="${path}"] textarea`);
-    input?.focus({ preventScroll: true });
+    if (!input) return;
+    if (given && document.activeElement !== null && document.activeElement !== document.body) return;
+    given = true;
+    input.focus({ preventScroll: true });
   };
   if (typeof requestAnimationFrame === 'function') {
     requestAnimationFrame(() => requestAnimationFrame(focus));
