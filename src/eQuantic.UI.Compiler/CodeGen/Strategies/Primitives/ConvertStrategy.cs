@@ -32,6 +32,16 @@ public class ConvertStrategy : IExpressionIrStrategy
         var args = invocation.ArgumentList.Arguments;
         if (args.Count == 0) return JsExpr.Identifier("undefined");
 
+        // Reading or writing an integer in a base is settled by the bound overload, whatever the
+        // name: the base went nowhere, so "ff" in base 16 was NaN and -1 in base 16 was "-1".
+        if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol method && BaseTemplate(method) is { } template)
+        {
+            context.UsedHelpers.Add(Eq.Import);
+            var parts = args.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToArray();
+            return JsExpr.Template(PrimitiveStaticStrategy.BindNamedArguments(template, invocation, method),
+                parts, context.TypeAnnotations);
+        }
+
         var (argExpr, providerExpr) = Arguments(invocation, context);
         if (name == "ToDecimal")
         {
@@ -43,6 +53,47 @@ public class ConvertStrategy : IExpressionIrStrategy
             return ToDecimal(argExpr, context);
         }
         return JsExpr.Opaque(Converted(name, argExpr, context));
+    }
+
+    /// <summary>
+    /// The template for an overload that reads or writes an integer in a base, or null. Reading is
+    /// <c>(string value, int fromBase)</c> into any of the eight integer types, answering what .NET's
+    /// overload for that type answers: the text is the type's BITS in a base other than 10, so
+    /// "ffffffff" is -1 for an int. Writing is <c>(integer value, int toBase)</c> on a byte, a short,
+    /// an int or a long, a byte written as the int it widens to, as .NET's own overload does, and a
+    /// negative number as its bits in any base but 10.
+    /// </summary>
+    private static string? BaseTemplate(IMethodSymbol method)
+    {
+        if (method.Parameters is not [var value, { Type.SpecialType: SpecialType.System_Int32 } radix]) return null;
+        if (radix.Name == "fromBase" && value.Type.SpecialType == SpecialType.System_String)
+        {
+            var target = method.ReturnType.SpecialType switch
+            {
+                SpecialType.System_Byte => "byte",
+                SpecialType.System_SByte => "sbyte",
+                SpecialType.System_Int16 => "short",
+                SpecialType.System_UInt16 => "ushort",
+                SpecialType.System_Int32 => "int",
+                SpecialType.System_UInt32 => "uint",
+                SpecialType.System_Int64 => "long",
+                SpecialType.System_UInt64 => "ulong",
+                _ => null,
+            };
+            return target is null ? null : $"{Eq.FromBase}({{0}}, {{1}}, '{target}')";
+        }
+        if (radix.Name == "toBase")
+        {
+            var bits = value.Type.SpecialType switch
+            {
+                SpecialType.System_Int16 => 16,
+                SpecialType.System_Byte or SpecialType.System_Int32 => 32,
+                SpecialType.System_Int64 => 64,
+                _ => 0,
+            };
+            return bits == 0 ? null : $"{Eq.ToBase}({{0}}, {{1}}, {bits})";
+        }
+        return null;
     }
 
     /// <summary>

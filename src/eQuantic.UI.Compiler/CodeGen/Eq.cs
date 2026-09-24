@@ -66,6 +66,12 @@ public static class Eq
     public const string Single = "$eq.num.single";
     /// <summary>A double's text as .NET writes it: the shortest digits, in .NET's notation.</summary>
     public const string Double = "$eq.num.double";
+    /// <summary><c>Convert.ToInt32(value, fromBase)</c> and its seven siblings: an integer read from
+    /// text in base 2, 8, 10 or 16 as .NET reads it, a base other than 10 reading the type's bits.</summary>
+    public const string FromBase = "$eq.num.fromBase";
+    /// <summary><c>Convert.ToString(value, toBase)</c>: an integer written in base 2, 8, 10 or 16, a
+    /// negative one as its bits in any base but 10.</summary>
+    public const string ToBase = "$eq.num.toBase";
     /// <summary>Substring that refuses an out-of-range index, the way .NET does.</summary>
     public const string Substring = "$eq.text.substring";
     /// <summary>A dictionary read that throws for a key that is not there.</summary>

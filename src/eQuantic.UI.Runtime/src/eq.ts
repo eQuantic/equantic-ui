@@ -57,6 +57,7 @@ import {
   substring,
 } from './utils/overflow';
 import { double, single } from './utils/real-text';
+import { fromBase, toBase } from './utils/convert-base';
 import { format, parseEnum, stringFormat } from './utils/format';
 import { nextTextElementLength, textElementStarts } from './utils/text-elements';
 import { unicodeCategory } from './utils/unicode-category';
@@ -162,7 +163,7 @@ export const $eq = {
   origin,
   /** The typed boundary: a server value coerced ONCE to its runtime type — see utils/hydrate. */
   hydrate,
-  /** Numeric compat: exact decimal and 64-bit integer. */
+  /** Numeric compat: exact decimal and 64-bit integer, and an integer read or written in a base. */
   num: {
     dec,
     decParse,
@@ -181,6 +182,8 @@ export const $eq = {
     single,
     double,
     singleFromLong,
+    fromBase,
+    toBase,
   },
   /** Math with .NET semantics: banker's rounding, the *Pi family (exact at special angles),
    * fused multiply-add, the neighbours of a double or a single, the IEEE remainder, sign-aware

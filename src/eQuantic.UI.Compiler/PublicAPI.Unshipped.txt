@@ -229,3 +229,5 @@ override sealed eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow.Equals(eQuantic.UI.
 static eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow.operator !=(eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow? left, eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow? right) -> bool
 static eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow.operator ==(eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow? left, eQuantic.UI.Compiler.CodeGen.Ir.JsConstArrow? right) -> bool
 static eQuantic.UI.Compiler.CodeGen.Ir.JsStatement.ConstArrow(string! name, string! parameters, bool isAsync, eQuantic.UI.Compiler.CodeGen.Ir.JsStatement! body) -> eQuantic.UI.Compiler.CodeGen.Ir.JsStatement!
+const eQuantic.UI.Compiler.CodeGen.Eq.FromBase = "$eq.num.fromBase" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.ToBase = "$eq.num.toBase" -> string!
