@@ -103,4 +103,34 @@ public class CodeDiffLayoutTests
         layout.Modified.RowAt(2).Should().Be(new CodeRow(CodeRowKind.Filler, 1, SourceLine: 2));
         layout.Modified.RowAt(3).Should().Be(new CodeRow(CodeRowKind.Line, 1), "then the line that replaced them");
     }
+
+    /// <summary>
+    /// A patch's view draws each gap as one row on both sides, saying how many lines of that side it
+    /// stands for, and keeps the lines after it level.
+    /// </summary>
+    [Fact]
+    public void APatchsGapsAreOneRowOnEachSide_AndTheLinesAfterThemStayLevel()
+    {
+        var source = CodeDiffSource.FromPatch(CodePatch.Parse("""
+            --- a/f.cs
+            +++ b/f.cs
+            @@ -1,2 +1,3 @@
+             keep
+            +added
+             keep too
+            @@ -20,2 +21,2 @@
+             far away
+            -old
+            +new
+            """)[0]);
+
+        var layout = CodeDiffLayout.SideBySide(source.Changes, source.OriginalLineCount, source.ModifiedLineCount,
+            gaps: source.Gaps, gapLabel: count => $"{count} lines");
+
+        layout.Original.RowAt(3).Should().Be(new CodeRow(CodeRowKind.Filler, 2, Label: "17 lines"),
+            "after the original's padding for the added line, the gap");
+        layout.Modified.RowAt(3).Should().Be(new CodeRow(CodeRowKind.Filler, 3, Label: "17 lines"));
+        layout.Original.RowOf(2).Should().Be(layout.Modified.RowOf(3), "far away is level on both sides");
+        layout.Original.RowCount.Should().Be(layout.Modified.RowCount);
+    }
 }

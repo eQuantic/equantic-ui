@@ -11,6 +11,11 @@ namespace eQuantic.UI.Code;
 /// opened, named by the first line each hides on the original side, which a change elsewhere does
 /// not move.
 /// </para>
+/// <para>
+/// A patch's view has gaps, the lines of the file between two hunks that the patch left out: each is
+/// one row on both sides, saying what the view's <c>gapLabel</c> says for its count (the engine
+/// writes no text of the interface), and no run is folded across one.
+/// </para>
 /// </summary>
 public sealed record CodeDiffLayout(CodeRows Original, CodeRows Modified)
 {
@@ -27,10 +32,12 @@ public sealed record CodeDiffLayout(CodeRows Original, CodeRows Modified)
     /// run is folded on both.
     /// </summary>
     public static CodeDiffLayout SideBySide(IReadOnlyList<CodeLineChange> changes, int originalLines,
-        int modifiedLines, int context = DefaultContext, IReadOnlyCollection<int>? expanded = null)
+        int modifiedLines, int context = DefaultContext, IReadOnlyCollection<int>? expanded = null,
+        IReadOnlyList<CodeDiffGap>? gaps = null, Func<int, string>? gapLabel = null)
     {
         var originalFillers = new List<CodeFiller>();
         var modifiedFillers = new List<CodeFiller>();
+        AddGaps(gaps, gapLabel, originalFillers, modifiedFillers);
         foreach (var change in changes)
         {
             var difference = change.ModifiedCount - change.OriginalCount;
@@ -39,7 +46,7 @@ public sealed record CodeDiffLayout(CodeRows Original, CodeRows Modified)
             else if (difference < 0)
                 modifiedFillers.Add(new CodeFiller(change.ModifiedStart + change.ModifiedCount, -difference));
         }
-        var (originalRuns, modifiedRuns) = UnchangedRuns(changes, originalLines, modifiedLines, context, expanded);
+        var (originalRuns, modifiedRuns) = UnchangedRuns(changes, originalLines, modifiedLines, context, expanded, gaps);
         return new CodeDiffLayout(
             new CodeRows(originalLines, originalFillers, originalRuns),
             new CodeRows(modifiedLines, modifiedFillers, modifiedRuns));
@@ -52,18 +59,33 @@ public sealed record CodeDiffLayout(CodeRows Original, CodeRows Modified)
     /// shows the original side too.
     /// </summary>
     public static CodeDiffLayout Inline(IReadOnlyList<CodeLineChange> changes, int originalLines,
-        int modifiedLines, int context = DefaultContext, IReadOnlyCollection<int>? expanded = null)
+        int modifiedLines, int context = DefaultContext, IReadOnlyCollection<int>? expanded = null,
+        IReadOnlyList<CodeDiffGap>? gaps = null, Func<int, string>? gapLabel = null)
     {
+        var originalGaps = new List<CodeFiller>();
         var removed = new List<CodeFiller>();
+        AddGaps(gaps, gapLabel, originalGaps, removed);
         foreach (var change in changes)
         {
             if (change.OriginalCount > 0)
                 removed.Add(new CodeFiller(change.ModifiedStart, change.OriginalCount, change.OriginalStart));
         }
-        var (originalRuns, modifiedRuns) = UnchangedRuns(changes, originalLines, modifiedLines, context, expanded);
+        var (originalRuns, modifiedRuns) = UnchangedRuns(changes, originalLines, modifiedLines, context, expanded, gaps);
         return new CodeDiffLayout(
-            new CodeRows(originalLines, [], originalRuns),
+            new CodeRows(originalLines, originalGaps, originalRuns),
             new CodeRows(modifiedLines, removed, modifiedRuns));
+    }
+
+    /// <summary>One row on each side for each gap, saying how many lines of that side it stands for.</summary>
+    private static void AddGaps(IReadOnlyList<CodeDiffGap>? gaps, Func<int, string>? gapLabel,
+        List<CodeFiller> original, List<CodeFiller> modified)
+    {
+        if (gaps is null) return;
+        foreach (var gap in gaps)
+        {
+            original.Add(new CodeFiller(gap.OriginalLine, 1, Label: gapLabel?.Invoke(gap.OriginalCount)));
+            modified.Add(new CodeFiller(gap.ModifiedLine, 1, Label: gapLabel?.Invoke(gap.ModifiedCount)));
+        }
     }
 
     /// <summary>
@@ -73,7 +95,7 @@ public sealed record CodeDiffLayout(CodeRows Original, CodeRows Modified)
     /// </summary>
     private static (List<CodeCollapse> Original, List<CodeCollapse> Modified) UnchangedRuns(
         IReadOnlyList<CodeLineChange> changes, int originalLines, int modifiedLines, int context,
-        IReadOnlyCollection<int>? expanded)
+        IReadOnlyCollection<int>? expanded, IReadOnlyList<CodeDiffGap>? gaps)
     {
         var original = new List<CodeCollapse>();
         var modified = new List<CodeCollapse>();
@@ -90,7 +112,8 @@ public sealed record CodeDiffLayout(CodeRows Original, CodeRows Modified)
             var before = i > 0 ? context : 0;
             var after = i < changes.Count ? context : 0;
             var hidden = length - before - after;
-            if (hidden >= FewestFolded && !(expanded?.Contains(originalAt + before) ?? false))
+            if (hidden >= FewestFolded && !(expanded?.Contains(originalAt + before) ?? false)
+                && !CrossesAGap(gaps, originalAt + before, originalAt + before + hidden))
             {
                 original.Add(new CodeCollapse(originalAt + before, originalAt + before + hidden - 1));
                 modified.Add(new CodeCollapse(modifiedAt + before, modifiedAt + before + hidden - 1));
@@ -102,5 +125,15 @@ public sealed record CodeDiffLayout(CodeRows Original, CodeRows Modified)
             }
         }
         return (original, modified);
+    }
+
+    /// <summary>Whether a gap stands inside lines <paramref name="from"/> to <paramref name="to"/> of
+    /// the original side, or at their end: a fold across one would hide it.</summary>
+    private static bool CrossesAGap(IReadOnlyList<CodeDiffGap>? gaps, int from, int to)
+    {
+        if (gaps is null) return false;
+        foreach (var gap in gaps)
+            if (gap.OriginalLine > from && gap.OriginalLine <= to) return true;
+        return false;
     }
 }

@@ -582,8 +582,6 @@ eQuantic.UI.Code.CodeDiffLayout.Original.init -> void
 eQuantic.UI.Code.CodeDiffLayout.Modified.get -> eQuantic.UI.Code.CodeRows!
 eQuantic.UI.Code.CodeDiffLayout.Modified.init -> void
 const eQuantic.UI.Code.CodeDiffLayout.DefaultContext = 3 -> int
-static eQuantic.UI.Code.CodeDiffLayout.SideBySide(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeLineChange!>! changes, int originalLines, int modifiedLines, int context = 3, System.Collections.Generic.IReadOnlyCollection<int>? expanded = null) -> eQuantic.UI.Code.CodeDiffLayout!
-static eQuantic.UI.Code.CodeDiffLayout.Inline(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeLineChange!>! changes, int originalLines, int modifiedLines, int context = 3, System.Collections.Generic.IReadOnlyCollection<int>? expanded = null) -> eQuantic.UI.Code.CodeDiffLayout!
 eQuantic.UI.Code.CodeGrid.CodeGrid(eQuantic.UI.Primitives.Point Origin, eQuantic.UI.Primitives.Size Cell, eQuantic.UI.Code.CodeRows? Rows = null) -> void
 eQuantic.UI.Code.CodeGrid.Deconstruct(out eQuantic.UI.Primitives.Point Origin, out eQuantic.UI.Primitives.Size Cell, out eQuantic.UI.Code.CodeRows? Rows) -> void
 eQuantic.UI.Code.CodeGrid.Rows.get -> eQuantic.UI.Code.CodeRows?
@@ -689,3 +687,5 @@ static eQuantic.UI.Code.CodeDiffSource.FromPatch(eQuantic.UI.Code.CodePatchFile!
 eQuantic.UI.Code.CodeDiffSource.OriginalLineCount.get -> int
 eQuantic.UI.Code.CodeDiffSource.ModifiedLineCount.get -> int
 static eQuantic.UI.Code.CodeDocument.FromLines(System.Collections.Generic.IReadOnlyList<string!>! lines) -> eQuantic.UI.Code.CodeDocument!
+static eQuantic.UI.Code.CodeDiffLayout.SideBySide(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeLineChange!>! changes, int originalLines, int modifiedLines, int context = 3, System.Collections.Generic.IReadOnlyCollection<int>? expanded = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDiffGap>? gaps = null, System.Func<int, string!>? gapLabel = null) -> eQuantic.UI.Code.CodeDiffLayout!
+static eQuantic.UI.Code.CodeDiffLayout.Inline(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeLineChange!>! changes, int originalLines, int modifiedLines, int context = 3, System.Collections.Generic.IReadOnlyCollection<int>? expanded = null, System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeDiffGap>? gaps = null, System.Func<int, string!>? gapLabel = null) -> eQuantic.UI.Code.CodeDiffLayout!
