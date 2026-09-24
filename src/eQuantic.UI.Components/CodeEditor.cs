@@ -426,9 +426,10 @@ public sealed class CodeEditor : StatefulComponent
         // at a path nothing had any more.
         // A bounded editor with a cap takes the height its place gives it up to the cap, slab and
         // all. The cap was the inner viewport's alone, and a Fill editor in a pane taller than it
-        // drew an empty slab below the code.
+        // drew an empty slab below the code. The box that caps it is always there, capping or not,
+        // so a cap set or taken away leaves the code where it was in the tree.
         var capped = bounded && MaxHeight > 0;
-        var layers = new Stack { Width = SizeValue.Fill, Height = capped ? SizeValue.Fill : Height };
+        var layers = new Stack { Width = SizeValue.Fill, Height = SizeValue.Fill };
         layers.Add(surface);
         if (CodeBlock.Corner(Caption, null, Inverse, context.Theme) is { } corner) layers.Add(corner);
         if (_findOpen)
@@ -441,12 +442,11 @@ public sealed class CodeEditor : StatefulComponent
             layers.Add(new Positioned(new Shortcut(FindBar(context, editor, found), KeyChord.Escape,
                 () => CloseFind(editor)), top: Space.S2, end: Space.S2));
         }
-        if (!capped) return layers;
         return new Box(new BoxStyle
         {
             Width = SizeValue.Fill,
             Height = Height,
-            MaxHeight = SizeValue.Fixed(MaxHeight),
+            MaxHeight = capped ? SizeValue.Fixed(MaxHeight) : SizeValue.Hug,
         }, layers);
     }
 
@@ -487,8 +487,10 @@ public sealed class CodeEditor : StatefulComponent
         void Step(bool forward)
         {
             if (_findText.Length == 0) return;
-            // Through the matches the bar already holds: FindNext would search the file again.
-            if (editor.NextOf(matches, backward: !forward) is not { } found) return;
+            // Through the matches of what the field holds NOW, which the cache answers without a
+            // search when the build saw the same: a key typed and Enter pressed before the next build
+            // would have stepped through the matches of the text before it.
+            if (editor.NextOf(MatchesOf(editor, _findText), backward: !forward) is not { } found) return;
             SetState(() =>
             {
                 editor.Selection = found;

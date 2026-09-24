@@ -429,6 +429,59 @@ public class CodeEditorComponentTests
         }
     }
 
+    /// <summary>
+    /// Enter steps through the matches of what the field holds when it is pressed. A key typed and
+    /// Enter pressed before the next build stepped through the matches of the text before the key.
+    /// </summary>
+    [Fact]
+    public void EnterStepsThroughWhatTheFieldHoldsNow_NotWhatTheLastBuildSaw()
+    {
+        var editor = new CodeEditor("fo x foo", "csharp") { ShowLineNumbers = false };
+        var host = Host(editor);
+        Settle(host);
+        OpenFind(host);
+        Type(host, "fo");
+
+        host.TextInput("o");
+        host.KeyDown("Enter");
+        Frame(host);
+
+        editor.Editor.Selection.Should().Be(new CodeRange(new CodePosition(0, 5), new CodePosition(0, 8)),
+            "the only foo, where the fo before it would have stepped to the first fo");
+    }
+
+    /// <summary>
+    /// A cap set on a bounded editor, or taken away, leaves the code where it was in the tree: the box
+    /// that caps it is always there. It was there only while it capped, so the surface moved, the
+    /// scroll went back to the top and, on Photon, the keyboard pointed at a path nothing had.
+    /// </summary>
+    [Fact]
+    public void ACapSetOrTakenAway_LeavesTheCodeWhereItWas()
+    {
+        var text = string.Join("\n", Enumerable.Range(0, 200).Select(i => $"var line{i} = {i};"));
+        var pane = new CappedPane(text);
+        var host = Host(pane, 500, 600);
+        var before = Settle(host).CodeRegions.Single().Path;
+
+        pane.Cap(300);
+        var capped = Settle(host).CodeRegions.Single().Path;
+        pane.Cap(0);
+        var after = Settle(host).CodeRegions.Single().Path;
+
+        capped.Should().Be(before);
+        after.Should().Be(before);
+    }
+
+    private sealed class CappedPane(string text) : Primitives.StatefulComponent
+    {
+        private float _cap;
+
+        public void Cap(float cap) => SetState(() => _cap = cap);
+
+        public override VisualNode Build(ComponentContext context) =>
+            new CodeEditor(text, "csharp") { Height = SizeValue.Fill, MaxHeight = _cap };
+    }
+
     /// <summary>A parent that decides how tall its editor is, and builds it anew as a parent does.</summary>
     private sealed class Pane(string text) : Primitives.StatefulComponent
     {

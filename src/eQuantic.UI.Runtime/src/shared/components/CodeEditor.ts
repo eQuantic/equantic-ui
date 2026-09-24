@@ -104,7 +104,7 @@ export class CodeEditor extends StatefulComponent {
         surface = new Box(new BoxStyle({ width: SizeValue.fill, height: bounded ? SizeValue.fill : SizeValue.hug, background: CodeBlock.surfaceFor(this.inverse, context.theme), cornerRadius: new CornerRadii(context.theme.shape('medium')), clip: true }), viewport);
         surface = new Shortcut(surface, new KeyChord('f', 4), () => this.setState(() => this._findOpen = true));
         let capped = bounded && this.maxHeight > 0;
-        let layers = new Stack('topStart', { width: SizeValue.fill, height: capped ? SizeValue.fill : this.height });
+        let layers = new Stack('topStart', { width: SizeValue.fill, height: SizeValue.fill });
         layers.add(surface);
         let corner: any; 
         if ((corner = CodeBlock.corner(this.caption, null, this.inverse, context.theme)) != null) layers.add(corner);
@@ -112,8 +112,7 @@ export class CodeEditor extends StatefulComponent {
             let found = this._findText.length > 0 ? matches : [];
             layers.add(new Positioned(new Shortcut(this.findBar(context, editor, found), KeyChord.escape, () => this.closeFind(editor)), 8, 8));
         }
-        if (!capped) return layers;
-        return new Box(new BoxStyle({ width: SizeValue.fill, height: this.height, maxHeight: SizeValue.fixed(this.maxHeight) }), layers);
+        return new Box(new BoxStyle({ width: SizeValue.fill, height: this.height, maxHeight: capped ? SizeValue.fixed(this.maxHeight) : SizeValue.hug }), layers);
     }
 
     create() {
@@ -210,7 +209,7 @@ export class CodeEditor extends StatefulComponent {
         const step = (forward: boolean) => {
             if (this._findText.length === 0) return;
             let found: any; 
-            if (!((found = editor.nextOf(matches, !forward)) != null)) return;
+            if (!((found = editor.nextOf(this.matchesOf(editor, this._findText), !forward)) != null)) return;
             this.setState(() => {
                 editor.selection = found;
                 this.notify(editor);
