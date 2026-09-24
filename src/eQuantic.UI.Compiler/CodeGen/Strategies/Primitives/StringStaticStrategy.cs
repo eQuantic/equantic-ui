@@ -166,7 +166,12 @@ public class StringStaticStrategy : IConversionStrategy
         ConversionContext context)
     {
         ExpressionSyntax? provider = null, template = null;
-        var values = new List<ExpressionSyntax>();
+        // Each value with the slot it binds to, for the order the call PASSES them in, and every
+        // argument in the order it was WRITTEN, which is the order C# evaluates them. A named
+        // argument makes the two differ: `format: t, arg1: b, arg0: a` passes a, then b, and
+        // evaluates t, b, a.
+        var values = new List<(int Slot, ExpressionSyntax Value)>();
+        var written = new List<ExpressionSyntax>();
         var spread = false;
         if (context.SemanticHelper.GetSymbol(node) is IMethodSymbol { Parameters.Length: > 0 } method)
         {
@@ -178,9 +183,14 @@ public class StringStaticStrategy : IConversionStrategy
                     ? method.Parameters.FirstOrDefault(p => p.Name == named)
                     : i < method.Parameters.Length - 1 ? method.Parameters[i] : last;
                 if (parameter is null) continue;
-                if (parameter.Type is { Name: "IFormatProvider", ContainingNamespace.Name: "System" }) provider = args[i].Expression;
-                else if (parameter.Name == "format") template = args[i].Expression;
-                else values.Add(args[i].Expression);
+                if (parameter.Type is { Name: "IFormatProvider", ContainingNamespace.Name: "System" })
+                {
+                    provider = args[i].Expression;
+                    continue;
+                }
+                written.Add(args[i].Expression);
+                if (parameter.Name == "format") template = args[i].Expression;
+                else values.Add((parameter.Ordinal, args[i].Expression));
             }
             // A params array passed as the array itself: its elements are the values. The bound call
             // says which form C# chose, so a covariant `string[]` and a collection expression are
@@ -191,9 +201,13 @@ public class StringStaticStrategy : IConversionStrategy
                     argument.Parameter is { IsParams: true } && argument.ArgumentKind == ArgumentKind.Explicit);
             // An array WRITTEN IN PLACE is its elements: they are the values, each boxed as C#
             // boxes it into the array, so a float in `new object[] { 0.1f }` keeps its own digits.
-            if (spread && ElementsOf(values[0]) is { } elements)
+            // They take the array's place in the written order, where the array ran them.
+            if (spread && ElementsOf(values[0].Value) is { } elements)
             {
-                values = elements.ToList();
+                var at = written.IndexOf(values[0].Value);
+                written.RemoveAt(at);
+                written.InsertRange(at, elements);
+                values = elements.Select(element => (values[0].Slot, element)).ToList();
                 spread = false;
             }
             if (template is null || context.SemanticHelper.GetType(template) is not { SpecialType: SpecialType.System_String })
@@ -201,8 +215,23 @@ public class StringStaticStrategy : IConversionStrategy
         }
         else
         {
-            template = args[0].Expression;
-            values.AddRange(args.Skip(1).Select(a => a.Expression));
+            // No model binds the call, so a slot is known only by its place: a named argument could
+            // be any of them, and is a build error rather than a guessed placement. A provider is
+            // known by its spelling, as NamedCulture reads one where the model cannot be asked: a
+            // named culture or a null in first place, the template after it. Taken for the
+            // template, it put `CultureInfo` in the browser.
+            if (args.Any(argument => argument.NameColon is not null))
+                return context.Unhandled(node, "string.Format with a named argument, which no model places");
+            var first = args[0].Expression;
+            var skip = 0;
+            if (args.Count >= 2 && (NamedCulture.IsInvariant(first, context) || NamedCulture.IsCurrent(first, context)))
+            {
+                provider = first;
+                skip = 1;
+            }
+            template = args[skip].Expression;
+            written.AddRange(args.Skip(skip).Select(argument => argument.Expression));
+            values.AddRange(args.Skip(skip + 1).Select((argument, slot) => (slot, argument.Expression)));
         }
 
         var function = Eq.StringFormat;
@@ -230,16 +259,30 @@ public class StringStaticStrategy : IConversionStrategy
         // Route to the runtime helper, which substitutes {i}/{i,width}/{i:spec} (the spec through the
         // same formatter the interpolation path uses, so `{0:F2}` works) and unescapes {{/}}.
         context.UsedHelpers.Add(Eq.Import);
-        var fmt = context.Converter.ConvertExpression(template);
-        var rest = values.Select(value =>
-        {
-            var text = context.Converter.ConvertExpression(value);
-            if (spread) return $"...{text}";
-            return context.SemanticHelper.GetType(value).UnwrapNullable() is { SpecialType: SpecialType.System_Single }
+        var passed = values.OrderBy(value => value.Slot).Select(value => value.Value).ToList();
+        string Passed(ExpressionSyntax value, string text) =>
+            spread ? $"...{text}"
+            : context.SemanticHelper.GetType(value).UnwrapNullable() is { SpecialType: SpecialType.System_Single }
                 ? $"{Eq.AsSingle}({text})"
                 : text;
-        }).ToList();
-        return rest.Count > 0 ? $"{function}({fmt}, {string.Join(", ", rest)})" : $"{function}({fmt})";
+
+        // In the written order, the call is text as it always was. Out of it, the parts are the
+        // arguments in the order C# evaluates them and the call names them where it passes them:
+        // the template writer binds every part that could be observed, so each runs where C# runs it.
+        var passedOrder = passed.Prepend(template).ToList();
+        if (passedOrder.SequenceEqual(written))
+        {
+            var rest = passed.Select(value => Passed(value, context.Converter.ConvertExpression(value))).ToList();
+            var fmt = context.Converter.ConvertExpression(template);
+            return rest.Count > 0 ? $"{function}({fmt}, {string.Join(", ", rest)})" : $"{function}({fmt})";
+        }
+        if (written.Count > 10)
+            return context.Unhandled(node, "string.Format whose named arguments reorder more than ten values");
+        var parts = written.Select(argument => context.Converter.ConvertIr(argument)).ToList();
+        string Hole(ExpressionSyntax argument) => "{" + written.IndexOf(argument) + "}";
+        var holes = passed.Select(value => Passed(value, Hole(value)));
+        var call = $"{function}({string.Join(", ", holes.Prepend(Hole(template)))})";
+        return JsExprWriter.Write(JsExpr.Template(call, parts, context.TypeAnnotations));
     }
 
     /// <summary>The values an array passed as the params array holds when it is written in place:
