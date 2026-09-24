@@ -30,6 +30,33 @@ public class RecordPipelineTests
         ts.Should().Contain("sum()");        // user instance method
     }
 
+    /// <summary>
+    /// A record the RUNTIME provides (its namespace says so) never imports its own name. A call to
+    /// its own static helper is written qualified, <c>Layout.twice(…)</c>, and the conversion
+    /// registers the name it wrote after the module had already struck its own: the code engine's
+    /// diff layout imported itself, which TypeScript refuses as a conflict with its declaration.
+    /// </summary>
+    [Fact]
+    public void ARuntimeProvidedRecord_NeverImportsItself()
+    {
+        var src = """
+            namespace eQuantic.UI.Code;
+            public sealed record Layout(int Rows)
+            {
+                public static Layout Of(int rows) => new(Twice(rows));
+                private static int Twice(int value) => value * 2;
+            }
+            """;
+        var result = new ComponentCompiler().CompileSource(src).Single();
+
+        result.Success.Should().BeTrue();
+        result.TypeScript.Should().Contain("Layout.twice(", "the helper is called on the record's own name");
+        var imported = System.Text.RegularExpressions.Regex
+            .Match(result.TypeScript, "import \\{([^}]*)\\} from \"@equantic/runtime\"").Groups[1].Value
+            .Split(',').Select(name => name.Trim());
+        imported.Should().NotContain("Layout", "a module declares its own name and never imports it");
+    }
+
     [Fact]
     public void Component_ReferencingRecord_ReactivelyImportsIt()
     {

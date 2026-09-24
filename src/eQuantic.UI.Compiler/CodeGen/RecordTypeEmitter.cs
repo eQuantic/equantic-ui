@@ -129,7 +129,6 @@ public class RecordTypeEmitter
         var appTypes = new HashSet<string>();
         if (ModelFor(type) is { } model)
             Services.RuntimeProvidedTypeScanner.Collect(type, model, runtimeProvided, new HashSet<string>(), appTypes);
-        runtimeProvided.Remove(type.Identifier.Text);
 
         // What the hydration map names, split by where it comes from: this compilation's own twins
         // are sibling modules, and the vocabulary's (`of: Rect`) join the runtime import.
@@ -151,6 +150,11 @@ public class RecordTypeEmitter
         // A vocabulary enum member is annotated with its UNION, a name that exists only in the
         // emitted TypeScript — the scanner above walks C# syntax and could never have seen it.
         TypeScriptEmitter.SeedEnumUnions(body, ModelFor(type)?.Compilation, runtimeProvided);
+        // A module declares its own name and never imports it, whoever added it: struck here, after
+        // every set above has been merged in. It was struck right after the scan, and the names the
+        // conversion introduced put it back: a runtime-provided record calling its own static helper
+        // (`CodeDiffLayout.addGaps(…)`) imported itself, which TypeScript refuses as a conflict.
+        runtimeProvided.Remove(type.Identifier.Text);
         // Only what the emitted text actually NAMES: a type mentioned in the C# and erased on the
         // way out (an interface, an enum) would otherwise import a name nothing uses, which the
         // runtime's own build rejects.
