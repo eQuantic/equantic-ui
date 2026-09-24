@@ -212,13 +212,18 @@ public class BinaryExpressionStrategy : IExpressionIrStrategy
 
         // Records, structs and value tuples compare by VALUE in C# (not reference). Route ==/!= to the
         // structural helper. (Null comparisons fall through to the loose ==/!= below — correct, since
-        // `record == null` is a plain null check.)
+        // `record == null` is a plain null check.) Two tuples compare by their elements' own `==`,
+        // which is not their Equals: a NaN element is unequal to itself there.
         if ((op == "==" || op == "!=") && left != "null" && right != "null"
             && (context.SemanticHelper.GetType(binary.Left).IsStructuralValueType()
                 || context.SemanticHelper.GetType(binary.Right).IsStructuralValueType()))
         {
             context.UsedHelpers.Add(Eq.Import);
-            return JsExpr.Opaque(op == "==" ? $"{Eq.Equals}({left}, {right})" : $"!{Eq.Equals}({left}, {right})");
+            var helper = context.SemanticHelper.GetType(binary.Left).UnwrapNullable() is { IsTupleType: true }
+                && context.SemanticHelper.GetType(binary.Right).UnwrapNullable() is { IsTupleType: true }
+                ? Eq.TupleEquals
+                : Eq.Equals;
+            return JsExpr.Opaque(op == "==" ? $"{helper}({left}, {right})" : $"!{helper}({left}, {right})");
         }
 
         // C# integer division truncates toward zero; JS `/` is always float division.

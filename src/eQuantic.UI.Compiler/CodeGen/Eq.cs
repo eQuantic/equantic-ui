@@ -147,6 +147,11 @@ public static class Eq
     /// warning travelling to everyone who builds this assembly.</summary>
     public new const string Equals = "$eq.equals";
 
+    /// <summary>C#'s <c>==</c> between two value tuples, element by element with each element's
+    /// own <c>==</c>: a NaN element is unequal to itself there, where <see cref="Equals"/> holds it
+    /// equal.</summary>
+    public const string TupleEquals = "$eq.tupleEquals";
+
     /// <summary>Dictionary enumeration (foreach / List copy): destructurable pairs with .key/.value.</summary>
     public const string Entries = "$eq.entries";
 

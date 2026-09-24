@@ -85,7 +85,7 @@ import {
 } from './utils/collections';
 import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
 import { liftArith, liftCmp, liftUnary } from './utils/nullable';
-import { equals } from './utils/equals';
+import { equals, tupleEquals } from './utils/equals';
 import { resolveService } from './utils/services';
 import { StyleBuilder } from './utils/style-builder';
 import { ClassBuilder, joinClasses, whenClass } from './utils/class-builder';
@@ -287,6 +287,8 @@ export const $eq = {
   delegates: { combine: combineDelegate, remove: removeDelegate },
   /** Structural (value) equality for records/structs/tuples — backs ==, Contains, Distinct. */
   equals,
+  /** C#'s `==` between two value tuples: element by element, each element by its own `==`. */
+  tupleEquals,
   /** CSS class composition (the styling subsystem). */
   css: { styleBuilder: StyleBuilder, classBuilder: ClassBuilder, joinClasses, whenClass },
 } as const;

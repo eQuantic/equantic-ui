@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { equals } from './equals';
+import { equals, tupleEquals } from './equals';
 import { dec } from './decimal';
 import { dateTime } from './datetime';
 
@@ -46,5 +46,27 @@ describe('Structural equality ($eq.equals)', () => {
     expect(equals(dateTime(2024, 1, 15), dateTime(2024, 1, 16))).toBe(false);
     // record holding a decimal field
     expect(equals({ price: dec('9.99') }, { price: dec('9.99') })).toBe(true);
+  });
+
+  it("holds NaN equal to itself, as a double's Equals does", () => {
+    // EqualityComparer<double>.Default: two records with a NaN member are one key in .NET.
+    expect(equals(NaN, NaN)).toBe(true);
+    expect(equals({ x: NaN }, { x: NaN })).toBe(true);
+    expect(equals([NaN, 1], [NaN, 1])).toBe(true); // a tuple's Equals
+    expect(equals(0, -0)).toBe(true);
+    expect(equals(NaN, 0)).toBe(false);
+    expect(equals(1, 2)).toBe(false);
+  });
+});
+
+describe("A value tuple's == ($eq.tupleEquals)", () => {
+  it("compares element by element with each element's ==", () => {
+    expect(tupleEquals([1, 'a'], [1, 'a'])).toBe(true);
+    expect(tupleEquals([1, 'a'], [1, 'b'])).toBe(false);
+    expect(tupleEquals([NaN, 1], [NaN, 1])).toBe(false); // (double.NaN, 1) == (double.NaN, 1)
+    expect(tupleEquals([[NaN]], [[NaN]])).toBe(false); // a nested tuple the same way
+    expect(tupleEquals([{ x: NaN }, 1], [{ x: NaN }, 1])).toBe(true); // a record element by its Equals
+    expect(tupleEquals([dec('1.0'), 2], [dec('1.00'), 2])).toBe(true); // a decimal by its value
+    expect(tupleEquals([0, null], [-0, null])).toBe(true);
   });
 });

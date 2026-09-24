@@ -659,12 +659,14 @@ record of a release, the wiki's Upgrading page is the distillate.
   aliases) is EQ1004 and a record key is held by value, `GroupBy` and `ToLookup` compare a record or
   a date key by value, a named argument fills its own parameter, a double past 2^53 ticks multiplies
   as .NET's does, an ordinal comparison that ignores case reads a surrogate pair as its code point,
-  and `Max`/`Min` over a type with no `compareTo` here is EQ1004 where .NET's default comparer
-  throws. Found on the way, each a task: the audit grades `eq` without asking
-  whether the member exists (9 lines are a TypeError in the browser), overloads of one arity are
-  still one probe (267 more lines by signature), a `Dictionary<int, T>` loses insertion order, a
-  decimal constant does not cross, a lone surrogate in a string literal is written raw, and the date
-  types' `Add*` round a double to the millisecond.
+  `Max`/`Min` over a type with no `compareTo` here is EQ1004 where .NET's default comparer throws,
+  a LINQ operator called as `Enumerable.Count(source)` is EQ1004 where every strategy but `Max` and
+  `Min` read the type as its source, and a record holding NaN equals itself, as a double's `Equals`
+  holds it, while a tuple's `==` stays its elements'. Found on the way, each a task: the audit
+  grades `eq` without asking whether the member exists (9 lines are a TypeError in the browser),
+  overloads of one arity are still one probe (267 more lines by signature), a `Dictionary<int, T>`
+  loses insertion order, a decimal constant does not cross, a lone surrogate in a string literal
+  is written raw, and the date types' `Add*` round a double to the millisecond.
 
 ## Retired documents
 

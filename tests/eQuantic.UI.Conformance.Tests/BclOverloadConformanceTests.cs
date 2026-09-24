@@ -459,4 +459,31 @@ public class BclOverloadConformanceTests
         ConformanceRunner.AssertStatementsSameAsDotNet(statements,
             "public record Score(int Value) : IComparable<Score> { public int CompareTo(Score other) => other is null ? 1 : Value - other.Value; }");
     }
+
+    /// <summary>
+    /// A record compares its members as <c>EqualityComparer&lt;T&gt;.Default</c> does, which for a double is
+    /// its <c>Equals</c>: NaN equals NaN there, so two records holding one are equal and group as one
+    /// key. A value tuple's <c>==</c> is the exception, its elements' own <c>==</c>, where NaN is not
+    /// equal to itself.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("return new[] { new P(double.NaN), new P(double.NaN) }.GroupBy(p => p).Count();")]                  // 1
+    [InlineData("return new[] { new P(double.NaN), new P(double.NaN) }.ToLookup(p => p, p => p.X).Count;")]         // 1
+    [InlineData("try { return new[] { new P(double.NaN), new P(double.NaN) }.ToDictionary(p => p).Count; } catch { return -1; }")] // -1: a key twice
+    [InlineData("return new[] { new P(double.NaN), new P(double.NaN) }.Distinct().Count();")]                       // 1
+    [InlineData("return new[] { new P(double.NaN) }.Contains(new P(double.NaN));")]                                // true
+    [InlineData("return new P(double.NaN) == new P(double.NaN);")]                                                 // true
+    [InlineData("return new P(double.NaN) != new P(double.NaN);")]                                                 // false
+    [InlineData("return new P(double.NaN).Equals(new P(double.NaN));")]                                            // true
+    [InlineData("return new P(0.0) == new P(-0.0);")]                                                              // true
+    [InlineData("object a = double.NaN; object b = double.NaN; return a.Equals(b);")]                              // true: a boxed double's Equals
+    [InlineData("return (double.NaN, 1) == (double.NaN, 1);")]                                                     // false: a tuple's == is its elements'
+    [InlineData("return (double.NaN, 1).Equals((double.NaN, 1));")]                                                // true
+    [InlineData("return (new P(double.NaN), 1) == (new P(double.NaN), 1);")]                                       // true: a record element by its ==
+    [InlineData("var t = (1.5, \"a\"); return t == (1.5, \"a\") && t != (1.5, \"b\");")]                               // true
+    public void StructuralEqualityHoldsNaNAsDotNetDoes(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, "public record P(double X);");
+    }
 }
