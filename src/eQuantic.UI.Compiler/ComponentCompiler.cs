@@ -377,6 +377,17 @@ public class ComponentCompiler
     /// <summary>
     /// Compile a parsed component definition
     /// </summary>
+    /// <summary>
+    /// The declaration a definition emits: its own syntax for a value type, a plain class or a static
+    /// class, and for a component the class of its name in its tree, found as the base-chain walk of
+    /// <see cref="Services.ShadowedRuntimeMembers"/> finds it.
+    /// </summary>
+    private static Microsoft.CodeAnalysis.CSharp.Syntax.TypeDeclarationSyntax? DeclarationOf(ComponentDefinition component) =>
+        component.ValueTypeSyntax
+        ?? component.SyntaxTree?.GetRoot().DescendantNodes()
+            .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax>()
+            .FirstOrDefault(type => type.Identifier.Text == component.Name);
+
     public CompilationResult Compile(ComponentDefinition component)
     {
         var result = new CompilationResult
@@ -420,6 +431,21 @@ public class ComponentCompiler
                 }
                 result.Success = true;
                 return result;
+            }
+
+            // A method declared twice under one name reaches the twin as one, and each emitter below
+            // lost one of the two in its own way, in silence. So it is refused before any of them
+            // runs (EQ1007).
+            if (DeclarationOf(component) is { } declaration)
+            {
+                var overloaded = Services.OverloadedMethods.Check(declaration, component.SourcePath,
+                    isComponent: !component.IsRecordType && !component.IsPlainClass && !component.IsStaticHelper);
+                if (overloaded.Count > 0)
+                {
+                    result.Success = false;
+                    result.Errors.AddRange(overloaded);
+                    return result;
+                }
             }
 
             // User value type (record/struct) — emit as a standalone named-class module.
