@@ -7,6 +7,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 /// Strategy for static String methods.
 /// Handles:
 /// - String.IsNullOrEmpty(s) -> !s
+/// - String.IsNullOrWhiteSpace(s) -> $eq.text.isNullOrWhiteSpace(s), .NET's white space
 /// - String.Join(sep, val) -> val.join(sep)
 /// - String.Format(fmt, args) -> fmt.replace... (Simplified)
 /// </summary>
@@ -64,8 +65,10 @@ public class StringStaticStrategy : IConversionStrategy
         if (methodName == "IsNullOrWhiteSpace")
         {
             var target = context.Converter.ConvertExpression(args[0].Expression);
-            // !x || !x.trim()
-            return $"(!{target} || !{target}.trim())";
+            // .NET's white space, and the argument read once: `!x || !x.trim()` read it twice and
+            // trimmed with JavaScript's set, which leaves U+0085 and takes U+FEFF.
+            context.UsedHelpers.Add(Eq.Import);
+            return $"{Eq.IsNullOrWhiteSpace}({target})";
         }
         
         if (methodName == "Join")

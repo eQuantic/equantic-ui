@@ -202,8 +202,8 @@ export class CodeDiffer {
                 let begin = column;
                 if (CodeDocument.isWordChar(text[column])) {
                     while (column < text.length && CodeDocument.isWordChar(text[column])) column++;
-                } else if ((/^\s$/.test(text[column]))) {
-                    while (column < text.length && (/^\s$/.test(text[column]))) column++;
+                } else if ($eq.text.isWhiteSpace(text[column])) {
+                    while (column < text.length && $eq.text.isWhiteSpace(text[column])) column++;
                 } else {
                     column += column + 1 < text.length && (/^[\uD800-\uDBFF]$/.test(text[column]) && /^[\uDC00-\uDFFF]$/.test(text[column + 1])) ? 2 : 1;
                 }

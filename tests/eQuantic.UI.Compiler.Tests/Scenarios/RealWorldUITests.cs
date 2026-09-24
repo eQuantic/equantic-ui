@@ -26,7 +26,7 @@ public class RealWorldUITests
 
         result.Should().Contain("this.name ?? (this.name = '')");
         result.Should().Contain("'name'");
-        result.Should().Contain("(!this.name || !this.name.trim())");
+        result.Should().Contain("$eq.text.isNullOrWhiteSpace(this.name)");
     }
 
     [Fact]
@@ -40,8 +40,9 @@ public class RealWorldUITests
 
         var result = TestHelper.ConvertCodeBlock(code);
 
-        result.Should().Contain("?.");
-        result.Should().MatchRegex("(T|t)rim");
+        // Trim is .NET's through the runtime, so the chain is guarded by binding its receiver once
+        // rather than by `?.`, which only reads a JavaScript member.
+        result.Should().Contain("$r == null ? null : $eq.text.trim($r)");
         result.Should().Contain("toLowerCase()");
         result.Should().Contain("?? null");
         result.Should().Contain("includes('@')");
@@ -196,8 +197,9 @@ public class RealWorldUITests
 
         var result = TestHelper.ConvertExpression(code);
 
-        result.Should().Contain("?.");
-        result.Should().MatchRegex("(T|t)rim");
+        // Trim is .NET's through the runtime, so the chain is guarded by binding its receiver once
+        // rather than by `?.`, which only reads a JavaScript member.
+        result.Should().Contain("$r == null ? null : $eq.text.trim($r)");
         result.Should().Contain("toLowerCase()");
         result.Should().Contain("replaceAll");
         result.Should().Contain("?? null");

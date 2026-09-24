@@ -144,9 +144,9 @@ export class CodeDocument {
         if (!CodeDocument.isWordChar(line[index])) {
             if (here.column > 0 && CodeDocument.isWordChar(line[here.column - 1])) index = here.column - 1; else {
                 let symbolStart = index;
-                while (symbolStart > 0 && !CodeDocument.isWordChar(line[symbolStart - 1]) && !(/^\s$/.test(line[symbolStart - 1]))) symbolStart--;
+                while (symbolStart > 0 && !CodeDocument.isWordChar(line[symbolStart - 1]) && !$eq.text.isWhiteSpace(line[symbolStart - 1])) symbolStart--;
                 let symbolEnd = index;
-                while (symbolEnd < line.length && !CodeDocument.isWordChar(line[symbolEnd]) && !(/^\s$/.test(line[symbolEnd]))) symbolEnd++;
+                while (symbolEnd < line.length && !CodeDocument.isWordChar(line[symbolEnd]) && !$eq.text.isWhiteSpace(line[symbolEnd])) symbolEnd++;
                 return new CodeRange($eq.withPatch(here, { column: symbolStart }), $eq.withPatch(here, { column: symbolEnd }));
             }
         }

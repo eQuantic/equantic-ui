@@ -55,7 +55,7 @@ public class TranspilationCapabilityTests
 
         var result = TestHelper.ConvertCodeBlock(code);
 
-        result.Should().Contain("trim()");
+        result.Should().Contain("$eq.text.trim(");
         result.Should().Contain("toLowerCase()");
     }
 
@@ -80,7 +80,7 @@ public class TranspilationCapabilityTests
 
         var result = TestHelper.ConvertCodeBlock(code);
 
-        result.Should().Contain("(!this.name || !this.name.trim())");
+        result.Should().Contain("$eq.text.isNullOrWhiteSpace(this.name)");
     }
 
     [Fact]
@@ -108,7 +108,7 @@ public class TranspilationCapabilityTests
         var result = TestHelper.ConvertCodeBlock(code);
 
         result.Should().Contain("if");
-        result.Should().Contain("(!this.name || !this.name.trim())");
+        result.Should().Contain("$eq.text.isNullOrWhiteSpace(this.name)");
         result.Should().Contain("this.name = 'Guest'");
     }
 
@@ -125,7 +125,7 @@ public class TranspilationCapabilityTests
 
         result.Should().Contain("??");
         result.Should().Contain("'name'");
-        result.Should().Contain("trim()");
+        result.Should().Contain("$eq.text.trim(");
         result.Should().Contain("toLowerCase()");
     }
 
@@ -147,7 +147,7 @@ public class TranspilationCapabilityTests
 
         // Deve conter TODAS as conversões esperadas
         result.Should().Contain("this.name ?? (this.name = '')");
-        result.Should().Contain("(!this.name || !this.name.trim())");
+        result.Should().Contain("$eq.text.isNullOrWhiteSpace(this.name)");
         result.Should().Contain("'name'");
     }
 

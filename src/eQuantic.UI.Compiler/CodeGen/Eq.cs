@@ -68,6 +68,20 @@ public static class Eq
     public const string Double = "$eq.num.double";
     /// <summary>Substring that refuses an out-of-range index, the way .NET does.</summary>
     public const string Substring = "$eq.text.substring";
+    /// <summary><c>char.IsWhiteSpace</c> over .NET's set, which JavaScript's <c>\s</c> is not: it leaves
+    /// U+0085 NEXT LINE and takes U+FEFF. The runtime's <c>utils/white-space</c> keeps the one list.</summary>
+    public const string IsWhiteSpace = "$eq.text.isWhiteSpace";
+    /// <summary><c>string.IsNullOrWhiteSpace</c>, reading its argument once.</summary>
+    public const string IsNullOrWhiteSpace = "$eq.text.isNullOrWhiteSpace";
+    /// <summary><c>string.Trim()</c> of .NET's white space.</summary>
+    public const string Trim = "$eq.text.trim";
+    /// <summary><c>string.TrimStart()</c> of .NET's white space.</summary>
+    public const string TrimStart = "$eq.text.trimStart";
+    /// <summary><c>string.TrimEnd()</c> of .NET's white space.</summary>
+    public const string TrimEnd = "$eq.text.trimEnd";
+    /// <summary><c>string.Split()</c> with no separator: every white space character is one, and the
+    /// empty entries between two of them stay.</summary>
+    public const string SplitOnWhiteSpace = "$eq.text.splitOnWhiteSpace";
     /// <summary>A dictionary read that throws for a key that is not there.</summary>
     public const string DictGet = "$eq.dictGet";
     /// <summary>LINQ Zip — pairs stop with the shorter sequence.</summary>

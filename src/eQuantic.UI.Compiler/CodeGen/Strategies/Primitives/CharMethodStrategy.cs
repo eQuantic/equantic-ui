@@ -61,7 +61,9 @@ public class CharMethodStrategy : IExpressionIrStrategy
             "IsNumber" => Test(@"/^\p{N}$/u", c),
             "IsLetter" => Test(@"/^\p{L}$/u", c),
             "IsLetterOrDigit" => Test(@"/^[\p{L}\p{Nd}]$/u", c),
-            "IsWhiteSpace" => Test(@"/^\s$/", c),
+            // .NET's set, not JavaScript's: `\s` leaves U+0085 NEXT LINE, which .NET counts, and
+            // takes U+FEFF, which it does not. The runtime keeps the one list (utils/white-space).
+            "IsWhiteSpace" => $"{Eq.IsWhiteSpace}({c})",
             "IsUpper" => Test(@"/^\p{Lu}$/u", c),
             "IsLower" => Test(@"/^\p{Ll}$/u", c),
             "IsPunctuation" => Test(@"/^\p{P}$/u", c),
@@ -72,6 +74,7 @@ public class CharMethodStrategy : IExpressionIrStrategy
             "IsAscii" => $"(Number({c}.codePointAt(0)) < 128)",
             _ => c,
         };
+        if (name == "IsWhiteSpace") context.UsedHelpers.Add(Eq.Import);
         return JsExpr.Template(PrimitiveStaticStrategy.BindNamedArguments(template, invocation, method),
             args, context.TypeAnnotations);
     }

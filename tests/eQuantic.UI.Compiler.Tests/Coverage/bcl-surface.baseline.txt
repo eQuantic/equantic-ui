@@ -1,7 +1,7 @@
 # eqc BCL surface audit — the coverage DENOMINATOR, one verdict per probed member.
 # native = a strategy mapped it to plain JS · eq = routed through a $eq compat helper
 # fenced:EQxxxx = refused with that diagnostic · invalid-probe = the probe itself doesn't compile
-# totals: eq=126 · fenced=35 · invalid-probe=6 · native=737
+# totals: eq=131 · fenced=35 · invalid-probe=6 · native=732
 native         Array.MaxLength
 native         Boolean.CompareTo(Boolean)
 native         Boolean.CompareTo(Object)
@@ -43,7 +43,7 @@ native         Char.IsSurrogate(Char)
 native         Char.IsSurrogatePair(String,Int32)
 native         Char.IsSymbol(Char)
 native         Char.IsUpper(Char)
-native         Char.IsWhiteSpace(Char)
+eq             Char.IsWhiteSpace(Char)
 native         Char.MaxValue
 native         Char.MinValue
 native         Char.Parse(String)
@@ -704,7 +704,7 @@ native         String.Intern(String)
 fenced:EQ1001  String.IsInterned(String)
 native         String.IsNormalized()
 native         String.IsNullOrEmpty(String)
-native         String.IsNullOrWhiteSpace(String)
+eq             String.IsNullOrWhiteSpace(String)
 native         String.Join(Char,String[])
 native         String.LastIndexOf(Char)
 native         String.LastIndexOf(Char,Int32)
@@ -749,13 +749,13 @@ native         String.ToLowerInvariant()
 native         String.ToString()
 native         String.ToUpper()
 native         String.ToUpperInvariant()
-native         String.Trim()
+eq             String.Trim()
 native         String.Trim(Char)
 native         String.Trim(Char[])
-native         String.TrimEnd()
+eq             String.TrimEnd()
 native         String.TrimEnd(Char)
 native         String.TrimEnd(Char[])
-native         String.TrimStart()
+eq             String.TrimStart()
 native         String.TrimStart(Char)
 native         String.TrimStart(Char[])
 native         StringBuilder.Append(Boolean)

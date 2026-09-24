@@ -60,6 +60,7 @@ import { double, single } from './utils/real-text';
 import { format, parseEnum, stringFormat } from './utils/format';
 import { nextTextElementLength, textElementStarts } from './utils/text-elements';
 import { unicodeCategory } from './utils/unicode-category';
+import { isNullOrWhiteSpace, isWhiteSpace, splitOnWhiteSpace, trim, trimEnd, trimStart } from './utils/white-space';
 import { str } from './utils/culture';
 import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './utils/datetime';
 import { stringBuilder } from './utils/string-builder';
@@ -224,7 +225,21 @@ export const $eq = {
   },
   /** Text: number/string formatting, StringBuilder, StringInfo's text elements (grapheme clusters,
    * from the platform's segmenter), and a character's general category. */
-  text: { format, stringFormat, stringBuilder, substring, textElementStarts, nextTextElementLength, unicodeCategory },
+  text: {
+    format,
+    stringFormat,
+    stringBuilder,
+    substring,
+    textElementStarts,
+    nextTextElementLength,
+    unicodeCategory,
+    isWhiteSpace,
+    isNullOrWhiteSpace,
+    trim,
+    trimStart,
+    trimEnd,
+    splitOnWhiteSpace,
+  },
   /** A dictionary read that fails on a missing key, the way .NET does. */
   dictGet,
   /** Date and time, tick-precise. */
