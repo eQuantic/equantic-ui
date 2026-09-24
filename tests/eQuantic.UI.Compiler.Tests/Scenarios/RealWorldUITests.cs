@@ -26,7 +26,7 @@ public class RealWorldUITests
 
         result.Should().Contain("this.name ?? (this.name = '')");
         result.Should().Contain("'name'");
-        result.Should().Contain("$eq.text.isNullOrWhiteSpace(this.name)");
+        result.Should().Contain("(!$eq.text.hasNonWhiteSpace(this.name))");
     }
 
     [Fact]

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isNullOrWhiteSpace, isWhiteSpace, splitOnWhiteSpace, trim, trimEnd, trimStart } from './white-space';
+import { hasNonWhiteSpace, isWhiteSpace, splitOnWhiteSpace, trim, trimEnd, trimStart } from './white-space';
 
 /** .NET's white space, the list `char.IsWhiteSpace` answers true for (see white-space.ts). */
 const DOTNET = [
@@ -34,12 +34,23 @@ describe('white space is .NET\'s', () => {
     expect(splitOnWhiteSpace('')).toEqual(['']);
   });
 
-  it('reads null, empty and white as white', () => {
-    expect(isNullOrWhiteSpace(null)).toBe(true);
-    expect(isNullOrWhiteSpace(undefined)).toBe(true);
-    expect(isNullOrWhiteSpace('')).toBe(true);
-    expect(isNullOrWhiteSpace('\u0085 ')).toBe(true);
-    expect(isNullOrWhiteSpace('\ufeff')).toBe(false);
+  it('reads null, empty and white as holding nothing', () => {
+    expect(hasNonWhiteSpace(null)).toBe(false);
+    expect(hasNonWhiteSpace(undefined)).toBe(false);
+    expect(hasNonWhiteSpace('')).toBe(false);
+    expect(hasNonWhiteSpace('\u0085 ')).toBe(false);
+    expect(hasNonWhiteSpace('\ufeff'), 'the byte order mark is text').toBe(true);
+  });
+
+  // Checked by the runtime's own tsc, which reads this file: a predicate that took the false branch
+  // for null would read the white label below as `never`, and `.length` on it would not compile.
+  it('proves a string only where it answers true', () => {
+    const label: string = '   ';
+    if (!hasNonWhiteSpace(label)) expect(label.length, 'a white label is still a string').toBe(3);
+    const name: string | null = label.length > 0 ? 'x' : null;
+    if (!hasNonWhiteSpace(name)) throw new Error('a name was expected');
+    const narrowed: string = name;
+    expect(narrowed).toBe('x');
   });
 
   it('trims a long line of white space in linear time', () => {

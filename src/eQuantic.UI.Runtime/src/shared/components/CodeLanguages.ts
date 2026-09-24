@@ -49,7 +49,7 @@ export class CodeLanguages {
 
     static for(name: string | null) {
         let language: any;
-        if ($eq.text.isNullOrWhiteSpace(name)) return CodeLanguages.plainText;
+        if ((!$eq.text.hasNonWhiteSpace(name))) return CodeLanguages.plainText;
         return (Object.prototype.hasOwnProperty.call(CodeLanguages.known, CodeLanguages.keyOf(name)) ? ((language = CodeLanguages.known[CodeLanguages.keyOf(name)]), true) : false) ? language : CodeLanguages.plainText;
     }
 

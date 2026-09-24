@@ -67,14 +67,24 @@ export function splitOnWhiteSpace(value: string): string[] {
   return parts;
 }
 
+declare const nonWhite: unique symbol;
+
+/** A string that holds something besides white space: what a true `hasNonWhiteSpace` proves. */
+export type NonWhiteSpaceText = string & { readonly [nonWhite]: true };
+
 /**
- * `string.IsNullOrWhiteSpace`, reading its argument once. A type predicate for what C# knows of it
- * (`[NotNullWhen(false)]`): past a false answer the value is a string, which the `!x || !x.trim()`
- * this replaced told TypeScript by its shape. The true branch reads as absent, stricter than C#'s
- * own "maybe null" there, which only a read C# already warns about can notice.
+ * Whether `value` holds something besides white space: `!string.IsNullOrWhiteSpace(value)`, which
+ * the transpiler writes as `(!$eq.text.hasNonWhiteSpace(value))`, reading its argument once.
+ *
+ * A predicate for one side only, as C#'s `[NotNullWhen(false)]` is: a true answer proves a string
+ * (the branch where IsNullOrWhiteSpace answered false), and a false one proves nothing, since the
+ * value may be null or a string of white space. The branded type is what keeps the false branch
+ * whole: TypeScript narrows a predicate's false branch by taking the predicate's type out, and no
+ * plain `string` is one, so `x is null | undefined` on the other side would have read a white
+ * `string` as `never` there, and refused valid code that reads it.
  */
-export function isNullOrWhiteSpace(value: string | null | undefined): value is null | undefined {
-  if (value == null) return true;
-  for (let i = 0; i < value.length; i++) if (!isWhiteUnit(value.charCodeAt(i))) return false;
-  return true;
+export function hasNonWhiteSpace(value: string | null | undefined): value is NonWhiteSpaceText {
+  if (value == null) return false;
+  for (let i = 0; i < value.length; i++) if (!isWhiteUnit(value.charCodeAt(i))) return true;
+  return false;
 }

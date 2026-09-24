@@ -194,7 +194,7 @@ public class StringStrategyTests
     public void IsNullOrWhiteSpace_ReadsItsArgumentOnce_AsDotNetsWhiteSpace()
     {
         var result = TestHelper.ConvertExpression("string.IsNullOrWhiteSpace(str)");
-        result.Should().Be("$eq.text.isNullOrWhiteSpace(this.str)");
+        result.Should().Be("(!$eq.text.hasNonWhiteSpace(this.str))");
     }
 
     [Fact]

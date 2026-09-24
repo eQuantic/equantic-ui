@@ -80,7 +80,7 @@ public class TranspilationCapabilityTests
 
         var result = TestHelper.ConvertCodeBlock(code);
 
-        result.Should().Contain("$eq.text.isNullOrWhiteSpace(this.name)");
+        result.Should().Contain("(!$eq.text.hasNonWhiteSpace(this.name))");
     }
 
     [Fact]
@@ -108,7 +108,7 @@ public class TranspilationCapabilityTests
         var result = TestHelper.ConvertCodeBlock(code);
 
         result.Should().Contain("if");
-        result.Should().Contain("$eq.text.isNullOrWhiteSpace(this.name)");
+        result.Should().Contain("(!$eq.text.hasNonWhiteSpace(this.name))");
         result.Should().Contain("this.name = 'Guest'");
     }
 
@@ -147,7 +147,7 @@ public class TranspilationCapabilityTests
 
         // Deve conter TODAS as conversões esperadas
         result.Should().Contain("this.name ?? (this.name = '')");
-        result.Should().Contain("$eq.text.isNullOrWhiteSpace(this.name)");
+        result.Should().Contain("(!$eq.text.hasNonWhiteSpace(this.name))");
         result.Should().Contain("'name'");
     }
 

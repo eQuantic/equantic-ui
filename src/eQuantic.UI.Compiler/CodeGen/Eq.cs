@@ -71,8 +71,10 @@ public static class Eq
     /// <summary><c>char.IsWhiteSpace</c> over .NET's set, which JavaScript's <c>\s</c> is not: it leaves
     /// U+0085 NEXT LINE and takes U+FEFF. The runtime's <c>utils/white-space</c> keeps the one list.</summary>
     public const string IsWhiteSpace = "$eq.text.isWhiteSpace";
-    /// <summary><c>string.IsNullOrWhiteSpace</c>, reading its argument once.</summary>
-    public const string IsNullOrWhiteSpace = "$eq.text.isNullOrWhiteSpace";
+    /// <summary>Whether a string holds more than white space: <c>string.IsNullOrWhiteSpace</c> is its
+    /// negation, reading its argument once, and a predicate that proves a string where it answers
+    /// true and nothing where it answers false, as <c>[NotNullWhen(false)]</c> does in C#.</summary>
+    public const string HasNonWhiteSpace = "$eq.text.hasNonWhiteSpace";
     /// <summary><c>string.Trim()</c> of .NET's white space.</summary>
     public const string Trim = "$eq.text.trim";
     /// <summary><c>string.TrimStart()</c> of .NET's white space.</summary>

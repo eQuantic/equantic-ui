@@ -60,7 +60,7 @@ import { double, single } from './utils/real-text';
 import { format, parseEnum, stringFormat } from './utils/format';
 import { nextTextElementLength, textElementStarts } from './utils/text-elements';
 import { unicodeCategory } from './utils/unicode-category';
-import { isNullOrWhiteSpace, isWhiteSpace, splitOnWhiteSpace, trim, trimEnd, trimStart } from './utils/white-space';
+import { hasNonWhiteSpace, isWhiteSpace, splitOnWhiteSpace, trim, trimEnd, trimStart } from './utils/white-space';
 import { str } from './utils/culture';
 import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './utils/datetime';
 import { stringBuilder } from './utils/string-builder';
@@ -234,7 +234,7 @@ export const $eq = {
     nextTextElementLength,
     unicodeCategory,
     isWhiteSpace,
-    isNullOrWhiteSpace,
+    hasNonWhiteSpace,
     trim,
     trimStart,
     trimEnd,
