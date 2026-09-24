@@ -53,6 +53,7 @@ public class NumberStrategyTests
     [InlineData("decimal.Parse(str, System.Globalization.CultureInfo.InvariantCulture)", "$eq.num.decParse(this.str)")]
     [InlineData("Convert.ToDecimal(str, System.Globalization.CultureInfo.InvariantCulture)", "$eq.num.decConvert(this.str)")]
     [InlineData("Convert.ToDecimal((object)str, System.Globalization.CultureInfo.InvariantCulture)", "$eq.num.decConvert(this.str)")]
+    [InlineData("Convert.ToDecimal(provider: System.Globalization.CultureInfo.InvariantCulture, value: str)", "$eq.num.decConvert(this.str)")]
     public void ADecimalReadInTheInvariantCulture_LeavesTheProviderOut(string call, string expected)
     {
         TestHelper.ConvertExpression(call).Should().Be(expected);

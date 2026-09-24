@@ -32,17 +32,44 @@ public class ConvertStrategy : IExpressionIrStrategy
         var args = invocation.ArgumentList.Arguments;
         if (args.Count == 0) return JsExpr.Identifier("undefined");
 
-        var argExpr = args[0].Expression;
+        var (argExpr, providerExpr) = Arguments(invocation, context);
         if (name == "ToDecimal")
         {
             // Text is read in a culture, and the browser reads the invariant one (see ParseCulture).
             // A number converts with no culture involved; a value that may be text when the call
             // runs (an object holding "1,5") is read in the culture the call names, as text is.
             if (MayHoldText(context.SemanticHelper.GetType(argExpr), context))
-                ParseCulture.Check(invocation, args.Count > 1 ? args[1].Expression : null, context);
+                ParseCulture.Check(invocation, providerExpr, context);
             return ToDecimal(argExpr, context);
         }
         return JsExpr.Opaque(Converted(name, argExpr, context));
+    }
+
+    /// <summary>
+    /// Which argument is the value and which the format provider, as the bound method says: a named
+    /// argument may come in any order, and <c>Convert.ToDecimal(provider: p, value: s)</c> has its
+    /// value second. Taking the first argument for the value emitted the provider as one, and
+    /// <c>CultureInfo</c> is not defined in a browser. Without a model, the value is the first.
+    /// </summary>
+    private static (ExpressionSyntax Value, ExpressionSyntax? Provider) Arguments(
+        InvocationExpressionSyntax invocation, ConversionContext context)
+    {
+        var args = invocation.ArgumentList.Arguments;
+        if (context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol method)
+        {
+            ExpressionSyntax? value = null, provider = null;
+            for (var i = 0; i < args.Count; i++)
+            {
+                var named = args[i].NameColon?.Name.Identifier.ValueText;
+                var parameter = named is null
+                    ? (i < method.Parameters.Length ? method.Parameters[i] : null)
+                    : method.Parameters.FirstOrDefault(p => p.Name == named);
+                if (parameter?.Ordinal == 0) value = args[i].Expression;
+                else if (parameter?.Type is { Name: "IFormatProvider", ContainingNamespace.Name: "System" }) provider = args[i].Expression;
+            }
+            if (value is not null) return (value, provider);
+        }
+        return (args[0].Expression, args.Count > 1 ? args[1].Expression : null);
     }
 
     /// <summary>Whether a value of <paramref name="type"/> may be a string when the call runs: a
