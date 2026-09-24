@@ -440,4 +440,23 @@ public class BclOverloadConformanceTests
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, "public record Point(int X, int Y);");
     }
+
+    /// <summary>
+    /// <c>Max</c> and <c>Min</c> over a type of the app's own, which order by the <c>CompareTo</c> it
+    /// wrote: its twin carries it as <c>compareTo</c>. A type with no such method is refused at build
+    /// time (LinqStrategyTests), since .NET's default comparer throws for it.
+    /// </summary>
+    [SkippableTheory]
+    [InlineData("return new[] { new Score(3), new Score(7), new Score(5) }.Max().Value;")]      // 7
+    [InlineData("return new[] { new Score(3), new Score(7), new Score(5) }.Min().Value;")]      // 3
+    [InlineData("return new[] { new Score(3), null, new Score(1) }.Min().Value;")]              // 1: a null is passed over
+    [InlineData("return new Score[0].Max() == null;")]                                          // true: a reference type answers null
+    [InlineData("return new[] { new Score(2), new Score(9) }.Max(s => s).Value;")]              // 9: the selector's form
+    [InlineData("return Enumerable.Min(new List<Score> { new Score(4), new Score(-4) }).Value;")] // -4: the static form
+    public void MaxMinOverAComparableType_MatchDotNet(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements,
+            "public record Score(int Value) : IComparable<Score> { public int CompareTo(Score other) => other is null ? 1 : Value - other.Value; }");
+    }
 }

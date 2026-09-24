@@ -66,8 +66,9 @@ public class MinMaxStrategy : IConversionStrategy
     /// <c>Math.max</c> over the values answered -Infinity for an empty list, let a NaN win a
     /// <c>Max</c>, and made NaN of two strings and a TypeError of two longs. An enum is refused: its
     /// values cross as member NAMES, which order alphabetically where .NET orders by value; and so is
-    /// a Guid, which .NET orders by its fields and this side rides as text. A comparer argument has
-    /// no JavaScript form to call.
+    /// a Guid, which .NET orders by its fields and this side rides as text, and every other type with
+    /// no <c>compareTo</c> to call here (<see cref="CarriesCompareTo"/>). A comparer argument has no
+    /// JavaScript form to call.
     /// </summary>
     private static string Extreme(InvocationExpressionSyntax invocation, MemberAccessExpressionSyntax access,
         IMethodSymbol method, string helper, ConversionContext context)
@@ -103,8 +104,7 @@ public class MinMaxStrategy : IConversionStrategy
     {
         var nullable = type.IsReferenceType || type.IsNullableValue();
         var value = type.UnwrapNullable() ?? type;
-        if (value.TypeKind == TypeKind.Enum || value.IsNamed("System.Guid")) return null;
-        var ordering = value.SpecialType switch
+        string? ordering = value.SpecialType switch
         {
             SpecialType.System_Double or SpecialType.System_Single => "real",
             SpecialType.System_Int32 or SpecialType.System_Int64 or SpecialType.System_Int16
@@ -112,9 +112,33 @@ public class MinMaxStrategy : IConversionStrategy
                 or SpecialType.System_UInt32 or SpecialType.System_UInt64 or SpecialType.System_Char
                 or SpecialType.System_Boolean => "value",
             SpecialType.System_String => "text",
-            _ => "comparable",
+            _ when CarriesCompareTo(value) => "comparable",
+            _ => null,
         };
-        return (ordering, nullable);
+        return ordering is null ? null : (ordering, nullable);
+    }
+
+    /// <summary>
+    /// Whether a value of this type orders by a <c>compareTo</c> it carries on this side: a decimal and
+    /// the dates, whose runtime types have one, and a type of the app's own that is comparable through
+    /// a <c>CompareTo</c> it wrote, which its twin carries by that name. Nothing else has one to call:
+    /// an enum and a Guid are comparable in the BCL but cross as a name and as text, a type that is not
+    /// comparable makes .NET's default comparer throw, a comparison written as an explicit interface
+    /// member has no name to be called by, and a type parameter may be answered by a number.
+    /// </summary>
+    private static bool CarriesCompareTo(ITypeSymbol type)
+    {
+        if (type.SpecialType is SpecialType.System_Decimal or SpecialType.System_DateTime
+            || type.IsNamed("System.TimeSpan") || type.IsNamed("System.DateOnly")
+            || type.IsNamed("System.TimeOnly") || type.IsNamed("System.DateTimeOffset"))
+            return true;
+        return type.AllInterfaces
+            .Where(contract => contract.ContainingNamespace?.ToDisplayString() == "System"
+                && contract.OriginalDefinition.MetadataName is "IComparable" or "IComparable`1")
+            .SelectMany(contract => contract.GetMembers("CompareTo"))
+            .Select(type.FindImplementationForInterfaceMember)
+            .Any(found => found is IMethodSymbol { MethodKind: MethodKind.Ordinary } method
+                && method.Locations.Any(location => location.IsInSource));
     }
 
     public int Priority => 10;

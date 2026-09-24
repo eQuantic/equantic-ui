@@ -215,9 +215,10 @@ public class LinqStrategyTests
     [Fact]
     public void Max_NoSelector_OrdersByTheTypeItAnswers()
     {
-        // A class: ordered by its own compareTo, a null passed over, an empty list answering null.
-        var result = TestHelper.ConvertExpression("list.Max()");
-        result.Should().Be("$eq.linq.max(this.list, undefined, 'comparable', true)");
+        // A comparable type of the app's own: ordered by the compareTo its twin carries, a null passed
+        // over, an empty list answering null. (A class that is not comparable is refused, below.)
+        var result = TestHelper.ConvertExpression("new List<Grade>().Max()");
+        result.Should().Be("$eq.linq.max([], undefined, 'comparable', true)");
     }
 
     [Fact]
@@ -238,6 +239,37 @@ public class LinqStrategyTests
             .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("LINQ Max/Min with a comparer"));
         TestHelper.DiagnosticsFor("var r = numbers.Max()")
             .Should().NotContain(d => d.Code == "EQ1004", "an int has a faithful order");
+
+        // Any other value orders by a compareTo it carries, and only the decimal, the dates and the
+        // app's own comparable types carry one. .NET's default comparer throws for a type that is not
+        // comparable, where calling one here was a TypeError, and a type parameter may be a number.
+        foreach (var (call, type) in new[]
+        {
+            ("var r = Orders.Max()", "Order"),
+            ("var r = new object[] { 1, 2 }.Min()", "object"),
+            ("var r = new[] { (1, 2) }.Max()", "(int, int)"),
+            ("var r = new[] { new Rank() }.Max()", "Rank"),
+            // The first statement is the one converted, so the generic function comes alone.
+            ("static T Top<T>(IEnumerable<T> xs) where T : IComparable<T> => xs.Max()", "T"),
+        })
+        {
+            TestHelper.DiagnosticsFor(call)
+                .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains($"LINQ Max/Min over {type}"), call);
+        }
+        foreach (var call in new[]
+        {
+            "var r = new[] { new Grade(2), new Grade(1) }.Max()",
+            "var r = new[] { 1.5m, 2.5m }.Min()",
+            "var r = new[] { DateTime.Now }.Max()",
+            "var r = new DateTimeOffset?[] { null }.Min()",
+            "var r = new[] { TimeSpan.Zero }.Max()",
+            "var r = new[] { DateOnly.MinValue }.Min()",
+            "var r = new[] { TimeOnly.MinValue }.Max()",
+        })
+        {
+            TestHelper.DiagnosticsFor(call)
+                .Should().NotContain(d => d.Code == "EQ1004", $"`{call}` orders by a compareTo it carries");
+        }
     }
 
     [Fact]

@@ -106,6 +106,16 @@ public static class TestHelper
                 public void Method() {{
                     {code};
                 }}
+            }}
+
+            // Comparable types of the app's own: by a CompareTo it wrote, which the twin carries
+            // under that name, and by an explicit interface member, which it has no name to call by.
+            public record Grade(int Value) : IComparable<Grade> {{
+                public int CompareTo(Grade other) => Value - other.Value;
+            }}
+
+            public class Rank : IComparable<Rank> {{
+                int IComparable<Rank>.CompareTo(Rank other) => 0;
             }}");
             
         var compilation = CSharpCompilation.Create("TestAssembly", new[] { tree }, 

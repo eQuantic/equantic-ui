@@ -654,7 +654,13 @@ record of a release, the wiki's Upgrading page is the distillate.
   `CompareOrdinal`, `Equals` with a comparison, `Concat` and a ranged `Join` answer as .NET's,
   `char.IsWhiteSpace` reads the White_Space property, LINQ's `Max` and `Min` order by the type they
   answer, `ToDictionary` refuses a key twice, and `DateOnly`/`TimeOnly.ParseExact` are EQ2004 where
-  they threw in the browser. Found on the way, each a task: the audit grades `eq` without asking
+  they threw in the browser. The review found more of the kind, each measured on .NET before it was
+  fixed: a dictionary keyed by what a plain object cannot hold (a `DateTime`, a class, an enum with
+  aliases) is EQ1004 and a record key is held by value, `GroupBy` and `ToLookup` compare a record or
+  a date key by value, a named argument fills its own parameter, a double past 2^53 ticks multiplies
+  as .NET's does, an ordinal comparison that ignores case reads a surrogate pair as its code point,
+  and `Max`/`Min` over a type with no `compareTo` here is EQ1004 where .NET's default comparer
+  throws. Found on the way, each a task: the audit grades `eq` without asking
   whether the member exists (9 lines are a TypeError in the browser), overloads of one arity are
   still one probe (267 more lines by signature), a `Dictionary<int, T>` loses insertion order, a
   decimal constant does not cross, a lone surrogate in a string literal is written raw, and the date
