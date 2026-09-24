@@ -63,6 +63,10 @@ public static class JsExecutor
     /// <summary>The engine that will actually run scripts: "bun", "node", or "none".</summary>
     public static string EngineName => BunWorks() ? "bun" : NodeWorks() ? "node" : "none";
 
+    /// <summary>The embedded Bun the SDK ships, when it runs here: what a test hands to code that
+    /// bundles as the build does, rather than a script to run.</summary>
+    public static string? BunExecutable => BunWorks() ? BunPath() : null;
+
     public static string Run(string jsProgram, int timeoutMs = 20000)
     {
         // The program is the TYPESCRIPT the SDK emits — a declaration whose type differs from its
