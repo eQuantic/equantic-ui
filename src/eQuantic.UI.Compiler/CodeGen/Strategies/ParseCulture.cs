@@ -10,8 +10,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// provider that names the invariant culture is left out and the reading is exact. No provider at
 /// all is EQ2110, because C# then reads in the request's culture (<c>"1,5"</c> is 1.5 under pt)
 /// while the browser reads 15. Any other provider, the current culture, a variable or a call, is
-/// EQ2108. The culture is recognised as <c>ToString</c> recognises it, by what the author WROTE: a
-/// value that only exists at run time cannot be honoured at build time.
+/// EQ2108. The culture is recognised as <c>ToString</c> recognises it (<see cref="NamedCulture"/>):
+/// by the property the provider binds to, since a value that only exists at run time cannot be
+/// honoured at build time.
 /// </summary>
 internal static class ParseCulture
 {
@@ -27,7 +28,7 @@ internal static class ParseCulture
                 + "invariant one. Say which you mean: pass CultureInfo.InvariantCulture.");
             return;
         }
-        if (provider is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "InvariantCulture" }) return;
+        if (NamedCulture.IsInvariant(provider, context)) return;
         context.Report(call, ConversionSeverity.Error, "EQ2108",
             "Only CultureInfo.InvariantCulture crosses for reading a number: the browser has no "
             + "parser for another culture's text. Read it with CultureInfo.InvariantCulture.");

@@ -52,6 +52,7 @@ public class NumberStrategyTests
     [Theory]
     [InlineData("decimal.Parse(str, System.Globalization.CultureInfo.InvariantCulture)", "$eq.num.decParse(this.str)")]
     [InlineData("Convert.ToDecimal(str, System.Globalization.CultureInfo.InvariantCulture)", "$eq.num.decConvert(this.str)")]
+    [InlineData("Convert.ToDecimal((object)str, System.Globalization.CultureInfo.InvariantCulture)", "$eq.num.decConvert(this.str)")]
     public void ADecimalReadInTheInvariantCulture_LeavesTheProviderOut(string call, string expected)
     {
         TestHelper.ConvertExpression(call).Should().Be(expected);
@@ -63,6 +64,9 @@ public class NumberStrategyTests
     [InlineData("decimal.Parse(str, System.Globalization.CultureInfo.GetCultureInfo(\"pt-BR\"))")]
     [InlineData("decimal.TryParse(str, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.GetCultureInfo(\"pt-BR\"), out var v)")]
     [InlineData("Convert.ToDecimal(str, System.Globalization.CultureInfo.CurrentCulture)")]
+    // A value that may be text when the call runs is read in the culture the call names.
+    [InlineData("Convert.ToDecimal((object)str, System.Globalization.CultureInfo.CurrentCulture)")]
+    [InlineData("Convert.ToDecimal((IConvertible)str, System.Globalization.CultureInfo.CurrentCulture)")]
     public void ADecimalReadInAnotherCulture_IsABuildError(string call)
     {
         TestHelper.DiagnosticsFor(call).Should().Contain(d => d.Code == "EQ2108");
@@ -73,9 +77,20 @@ public class NumberStrategyTests
     [InlineData("decimal.Parse(str, null)")]
     [InlineData("decimal.TryParse(str, out var v)")]
     [InlineData("Convert.ToDecimal(str)")]
+    [InlineData("Convert.ToDecimal((object)str)")]
     public void ADecimalReadWithNoCulture_IsWarnedAbout(string call)
     {
         TestHelper.DiagnosticsFor(call).Should().Contain(d => d.Code == "EQ2110" && d.Severity == ConversionSeverity.Warning);
+    }
+
+    /// <summary>A number converts into a decimal with no culture involved, so it is not asked for one.</summary>
+    [Theory]
+    [InlineData("Convert.ToDecimal(Value)")]
+    [InlineData("Convert.ToDecimal(Amount)")]
+    [InlineData("Convert.ToDecimal(Active)")]
+    public void ANumberConvertedToDecimal_NeedsNoCulture(string call)
+    {
+        TestHelper.DiagnosticsFor(call).Should().NotContain(d => d.Code == "EQ2108" || d.Code == "EQ2110");
     }
 
     [Fact]

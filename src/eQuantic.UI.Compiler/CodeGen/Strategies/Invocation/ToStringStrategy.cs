@@ -41,12 +41,11 @@ public class ToStringStrategy : IConversionStrategy
         var invariant = false;
         if (provider is not null)
         {
-            var culture = CultureNameOf(provider.Expression);
-            if (culture == "InvariantCulture")
+            if (NamedCulture.IsInvariant(provider.Expression, context))
             {
                 invariant = true;
             }
-            else if (culture != "CurrentCulture")
+            else if (!NamedCulture.IsCurrent(provider.Expression, context))
             {
                 // Never approximate a provider nobody tested: a custom IFormatProvider, or a culture
                 // read from a variable, has no counterpart in the Intl subset this framework pins.
@@ -173,12 +172,6 @@ public class ToStringStrategy : IConversionStrategy
 
         return expression is MemberAccessExpressionSyntax { Expression: IdentifierNameSyntax { Identifier.Text: "CultureInfo" } };
     }
-
-    /// <summary>The culture a provider expression NAMES, or null when it names none — a variable, a
-    /// field, a custom provider. Syntax, deliberately: what matters is that the author WROTE the
-    /// invariant culture, and a value that only exists at runtime cannot be honoured at build time.</summary>
-    private static string? CultureNameOf(ExpressionSyntax expression) =>
-        expression is MemberAccessExpressionSyntax member ? member.Name.Identifier.Text : null;
 
     /// <summary>The wire spelling of a member — the same camelCase the member access converts to,
     /// so the map's keys match the values that will be looked up in it.</summary>

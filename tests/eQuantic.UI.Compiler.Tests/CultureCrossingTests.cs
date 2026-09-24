@@ -25,8 +25,15 @@ public class CultureCrossingTests
             using System;
             using System.Globalization;
             using eQuantic.UI.Primitives;
+            using Cultures = System.Globalization.CultureInfo;
 
             namespace Demo;
+
+            // A member called InvariantCulture that is not CultureInfo's own: it may return any culture.
+            public static class Lookalike
+            {
+                public static CultureInfo InvariantCulture => CultureInfo.CurrentCulture;
+            }
 
             public sealed class Readout : StatelessComponent
             {
@@ -52,7 +59,7 @@ public class CultureCrossingTests
 
         var compiler = new ComponentCompiler();
         compiler.SetProjectCompilation(compilation);
-        return compiler.CompileSource(source, "Readout.cs").Single();
+        return compiler.CompileSource(source, "Readout.cs").Single(result => result.ComponentName == "Readout");
     }
 
     /// <summary>The escape has to compile, and the invariant ask is answered exactly: by the
@@ -118,6 +125,29 @@ public class CultureCrossingTests
         Assert.True(result.Success);
         Assert.DoesNotContain("CultureInfo", result.TypeScript);
         Assert.Contains("$eq.num.single($eq.math.roundSingle(", result.TypeScript);
+    }
+
+    /// <summary>The culture is the PROPERTY the provider binds to, not its name: an alias names
+    /// CultureInfo's own and crosses, and a lookalike of another type is refused, since it may
+    /// return any culture. Reading a number follows the same rule.</summary>
+    [Theory]
+    [InlineData("_value.ToString(Cultures.InvariantCulture)", true)]
+    [InlineData("_value.ToString(Lookalike.InvariantCulture)", false)]
+    [InlineData("decimal.Parse(\"1.5\", Cultures.InvariantCulture).ToString(CultureInfo.InvariantCulture)", true)]
+    [InlineData("decimal.Parse(\"1.5\", Lookalike.InvariantCulture).ToString(CultureInfo.InvariantCulture)", false)]
+    public void TheInvariantCulture_IsRecognisedByItsSymbol(string body, bool crosses)
+    {
+        var result = Compile(body);
+
+        if (crosses)
+        {
+            Assert.True(result.Success, string.Join("; ", result.Errors.Select(e => e.Message)));
+            Assert.DoesNotContain("InvariantCulture", result.TypeScript);
+        }
+        else
+        {
+            Assert.Single(result.Errors, e => e.Code == "EQ2108");
+        }
     }
 
     /// <summary>A provider the subset cannot honour is refused where the developer can see it,

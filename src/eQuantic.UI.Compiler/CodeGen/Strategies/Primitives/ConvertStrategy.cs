@@ -36,12 +36,24 @@ public class ConvertStrategy : IExpressionIrStrategy
         if (name == "ToDecimal")
         {
             // Text is read in a culture, and the browser reads the invariant one (see ParseCulture).
-            // A number converts with no culture involved, and so does a value the site cannot type.
-            if (context.SemanticHelper.GetType(argExpr) is { SpecialType: SpecialType.System_String })
+            // A number converts with no culture involved; a value that may be text when the call
+            // runs (an object holding "1,5") is read in the culture the call names, as text is.
+            if (MayHoldText(context.SemanticHelper.GetType(argExpr), context))
                 ParseCulture.Check(invocation, args.Count > 1 ? args[1].Expression : null, context);
             return ToDecimal(argExpr, context);
         }
         return JsExpr.Opaque(Converted(name, argExpr, context));
+    }
+
+    /// <summary>Whether a value of <paramref name="type"/> may be a string when the call runs: a
+    /// string itself, a type a string converts to by reference (<c>object</c>, <c>IConvertible</c>),
+    /// <c>dynamic</c>, or a type parameter. A type the model cannot give is not guessed at.</summary>
+    private static bool MayHoldText(ITypeSymbol? type, ConversionContext context)
+    {
+        if (type is null || context.SemanticModel is not { Compilation: var compilation }) return false;
+        if (type.TypeKind is TypeKind.TypeParameter or TypeKind.Dynamic) return true;
+        var conversion = compilation.ClassifyCommonConversion(compilation.GetSpecialType(SpecialType.System_String), type);
+        return conversion.IsIdentity || (conversion.IsImplicit && conversion.IsReference);
     }
 
     /// <summary>

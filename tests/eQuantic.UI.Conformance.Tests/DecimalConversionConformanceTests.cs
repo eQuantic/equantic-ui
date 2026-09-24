@@ -58,6 +58,10 @@ public class DecimalConversionConformanceTests
     [InlineData("return Convert.ToDecimal(long.MaxValue).ToString();")]                                      // exact
     [InlineData("object o = 1.5; return Convert.ToDecimal(o).ToString();")]                                  // "1.5"
     [InlineData("object o = null; return Convert.ToDecimal(o).ToString();")]                                 // "0"
+    // An object that holds text is read as text, in the culture the call names.
+    [InlineData("object o = \"1,5\"; return Convert.ToDecimal(o, System.Globalization.CultureInfo.InvariantCulture).ToString();")] // "15"
+    [InlineData("object o = \"abc\"; try { return Convert.ToDecimal(o, System.Globalization.CultureInfo.InvariantCulture).ToString(); } catch (Exception e) { return e.Message; }")]
+    [InlineData("IConvertible c = \"2.5\"; return Convert.ToDecimal(c, System.Globalization.CultureInfo.InvariantCulture).ToString();")] // "2.5"
     [InlineData("double? n = null; return Convert.ToDecimal(n).ToString();")]                                // "0"
     [InlineData("float? n = 0.1f; return Convert.ToDecimal(n).ToString();")]                                 // "0.1" — the single's 7 digits
     [InlineData("try { return Convert.ToDecimal('A').ToString(); } catch (Exception e) { return e.Message; }")] // InvalidCastException
