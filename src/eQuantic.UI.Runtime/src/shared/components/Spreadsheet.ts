@@ -1,4 +1,4 @@
-import { $eq, Box, BoxStyle, BuildContext, CellRef, Column, Draggable, EdgeInsets, Flexible, Positioned, Pressable, Row, ScrollView, SdkStrings, SheetAxisValue, SheetController, SheetDocument, SheetSurface, SizeValue, Spacer, Stack, StatefulComponent, Text, UiComponent, VisualNodeExtensions } from "../runtime-exports";
+import { $eq, Box, BoxStyle, BuildContext, CellRef, Column, Draggable, EdgeInsets, Flexible, Positioned, Pressable, Row, ScrollView, SdkStrings, SheetAxisValue, SheetController, SheetDocument, SheetSurface, SizeValue, Spacer, Stack, StatefulComponent, Text, UiComponent, VisualNode, VisualNodeExtensions } from "../runtime-exports";
 
 export class Spreadsheet extends StatefulComponent {
     static $typeId = 'eQuantic.UI.Components.Spreadsheet';
@@ -171,7 +171,7 @@ export class Spreadsheet extends StatefulComponent {
             let inFillPreview = (preview = fillTarget) != null && preview.contains(cell);
             let editingHere = isActive && this.controller.editing;
             let value = editingHere ? this.controller.draft : document.getCell(cell);
-            let content = null;
+            let content: VisualNode | null = null;
             if (editingHere) {
                 let draftLine = new Row(0, 'start', 'center', false, null, null, { cross: 'center' });
                 if (value.length > 0) draftLine.add(new Text(value, 'bodyM', theme.textPrimary, 1));
