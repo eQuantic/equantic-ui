@@ -99,23 +99,7 @@ public class StringStaticStrategy : IConversionStrategy
         }
 
         if (methodName == "Format")
-        {
-             // Track L D11/EQ2100: when the TEMPLATE is a resx accessor it is per-culture DATA —
-             // validated here, at build, against the neutral resx, because a format that will not
-             // survive the trip to the browser must be a compile error, never a runtime surprise.
-             if (context.SemanticHelper.GetSymbol(args[0].Expression) is IPropertySymbol templateProperty
-                 && Services.ResourceClasses.IsResourceAccessor(templateProperty))
-             {
-                 ValidateResourceTemplate((InvocationExpressionSyntax)node, args, templateProperty, context);
-             }
-
-             // Route to the runtime helper, which substitutes {i}/{i:spec} (the latter via the same
-             // formatter the interpolation path uses, so `{0:F2}` works) and unescapes {{/}}.
-             context.UsedHelpers.Add(Eq.Import);
-             var fmt = context.Converter.ConvertExpression(args[0].Expression);
-             var restArgs = string.Join(", ", args.Skip(1).Select(a => context.Converter.ConvertExpression(a.Expression)));
-             return restArgs.Length > 0 ? $"{Eq.StringFormat}({fmt}, {restArgs})" : $"{Eq.StringFormat}({fmt})";
-        }
+            return FormatCall((InvocationExpressionSyntax)node, args, context);
 
         if (methodName == "Compare")
         {
@@ -168,9 +152,87 @@ public class StringStaticStrategy : IConversionStrategy
     /// because a pt-BR string that says {2} where the neutral says {0}/{1} is a crash a Brazilian
     /// visitor finds, on a page nobody tested — the build machine is where that belongs.
     /// </summary>
+    /// <summary>
+    /// <c>string.Format</c>, its arguments bound by the method C# chose (#377): the provider, the
+    /// template and the values, a params array passed whole spread as C#'s normal form reads it.
+    /// The provider never reaches the browser, where <c>CultureInfo</c> does not exist: taken for the
+    /// template, it made the page throw "CultureInfo is not defined". The invariant culture formats
+    /// invariantly, the current culture as a call with none does, and any other is EQ2108, the
+    /// policy <c>ToString</c> has. A float value is boxed with its kind, as C# boxes it into the
+    /// object it is passed as, so the formatter writes a float's own digits (#378).
+    /// </summary>
+    private static string FormatCall(InvocationExpressionSyntax node, SeparatedSyntaxList<ArgumentSyntax> args,
+        ConversionContext context)
+    {
+        ExpressionSyntax? provider = null, template = null;
+        var values = new List<ExpressionSyntax>();
+        var spread = false;
+        if (context.SemanticHelper.GetSymbol(node) is IMethodSymbol { Parameters.Length: > 0 } method)
+        {
+            var last = method.Parameters[^1];
+            for (var i = 0; i < args.Count; i++)
+            {
+                var named = args[i].NameColon?.Name.Identifier.ValueText;
+                var parameter = named is not null
+                    ? method.Parameters.FirstOrDefault(p => p.Name == named)
+                    : i < method.Parameters.Length - 1 ? method.Parameters[i] : last;
+                if (parameter is null) continue;
+                if (parameter.Type is { Name: "IFormatProvider", ContainingNamespace.Name: "System" }) provider = args[i].Expression;
+                else if (parameter.Name == "format") template = args[i].Expression;
+                else values.Add(args[i].Expression);
+            }
+            // A params array passed as the array itself: its elements are the values.
+            spread = last.IsParams && values.Count == 1
+                && SymbolEqualityComparer.Default.Equals(context.SemanticHelper.GetType(values[0]), last.Type);
+            if (template is null || context.SemanticHelper.GetType(template) is not { SpecialType: SpecialType.System_String })
+                return context.Unhandled(node, "string.Format over a CompositeFormat");
+        }
+        else
+        {
+            template = args[0].Expression;
+            values.AddRange(args.Skip(1).Select(a => a.Expression));
+        }
+
+        var function = Eq.StringFormat;
+        if (provider is not null)
+        {
+            if (NamedCulture.IsInvariant(provider, context)) function = Eq.StringFormatInvariant;
+            else if (!NamedCulture.IsCurrent(provider, context))
+            {
+                context.Report(node, ConversionSeverity.Error, "EQ2108",
+                    "Only CultureInfo.InvariantCulture and CultureInfo.CurrentCulture cross to JavaScript. "
+                    + "Format with one of them, or with no provider to follow the app's culture.");
+                return "''";
+            }
+        }
+
+        // Track L D11/EQ2100: when the TEMPLATE is a resx accessor it is per-culture DATA —
+        // validated here, at build, against the neutral resx, because a format that will not
+        // survive the trip to the browser must be a compile error, never a runtime surprise.
+        if (context.SemanticHelper.GetSymbol(template) is IPropertySymbol templateProperty
+            && Services.ResourceClasses.IsResourceAccessor(templateProperty))
+        {
+            ValidateResourceTemplate(node, spread ? int.MaxValue : values.Count, templateProperty, context);
+        }
+
+        // Route to the runtime helper, which substitutes {i}/{i,width}/{i:spec} (the spec through the
+        // same formatter the interpolation path uses, so `{0:F2}` works) and unescapes {{/}}.
+        context.UsedHelpers.Add(Eq.Import);
+        var fmt = context.Converter.ConvertExpression(template);
+        var rest = values.Select(value =>
+        {
+            var text = context.Converter.ConvertExpression(value);
+            if (spread) return $"...{text}";
+            return context.SemanticHelper.GetType(value).UnwrapNullable() is { SpecialType: SpecialType.System_Single }
+                ? $"{Eq.AsSingle}({text})"
+                : text;
+        }).ToList();
+        return rest.Count > 0 ? $"{function}({fmt}, {string.Join(", ", rest)})" : $"{function}({fmt})";
+    }
+
     private static void ValidateResourceTemplate(
         InvocationExpressionSyntax node,
-        IReadOnlyList<ArgumentSyntax> args,
+        int argCount,
         IPropertySymbol templateProperty,
         ConversionContext context)
     {
@@ -189,7 +251,6 @@ public class StringStaticStrategy : IConversionStrategy
             return;
         }
 
-        var argCount = args.Count - 1;
         foreach (var hole in holes)
         {
             if (hole.Index < argCount) continue;

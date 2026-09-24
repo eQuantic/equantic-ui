@@ -241,6 +241,39 @@ public class StringStrategyTests
         result.Should().Be("$eq.text.stringFormat('{0:F2}', this.id)");
     }
 
+    /// <summary>
+    /// The provider overload binds its template by the method, never the provider (#377): taken
+    /// for the template, the provider reached the browser as `CultureInfo.invariantCulture`.
+    /// </summary>
+    [Fact]
+    public void Format_WithTheInvariantCulture_FormatsInvariantly_AndLeavesTheProviderOut()
+    {
+        var result = TestHelper.ConvertExpression("string.Format(System.Globalization.CultureInfo.InvariantCulture, \"{0}\", Amount)");
+        result.Should().Be("$eq.text.stringFormatInvariant('{0}', this.amount)");
+    }
+
+    [Fact]
+    public void Format_WithTheCurrentCulture_FormatsAsTheAppsCulture()
+    {
+        var result = TestHelper.ConvertExpression("string.Format(System.Globalization.CultureInfo.CurrentCulture, \"{0}\", Amount)");
+        result.Should().Be("$eq.text.stringFormat('{0}', this.amount)");
+    }
+
+    [Fact]
+    public void Format_WithAnotherProvider_IsABuildError()
+    {
+        TestHelper.DiagnosticsFor("string.Format(System.Globalization.CultureInfo.GetCultureInfo(\"pt-BR\"), \"{0}\", Amount)")
+            .Should().Contain(d => d.Code == "EQ2108");
+    }
+
+    /// <summary>A params array passed as itself is the values, as C#'s normal form reads it.</summary>
+    [Fact]
+    public void Format_WithAWholeParamsArray_SpreadsIt()
+    {
+        var result = TestHelper.ConvertExpression("string.Format(\"{0} {1}\", new object[] { a, b })");
+        result.Should().Be("$eq.text.stringFormat('{0} {1}', ...[this.a, this.b])");
+    }
+
     [Fact]
     public void Equals_MapsToStrictEquality()
     {
