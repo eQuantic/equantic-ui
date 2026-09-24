@@ -177,6 +177,34 @@ not escape an `overflow:hidden` scroller); nothing here needs it to.
 - A running page and a running window are the proof of anything visual; a screenshot goes with every
   slice that changes what is drawn.
 
+### 9. A row is not a line
+
+Slice 2b draws two documents side by side with their changes level, and the side that is shorter
+at a change needs rows of nothing to stay level with the other. A run of unchanged lines folds into
+one row that says how many it hides. An inline diff shows the lines a change removed between the
+lines of the text that replaced them: drawn, and part of no document. Folding (slice 6) is the same
+thing again.
+
+So the grid maps a LINE to a ROW before it maps anything to a point. `CodeRows` is the map: runs of
+the document's lines, rows of filler (empty, or carrying lines that belong to no document, like the
+removed lines of an inline diff), and folds (a range of lines drawn as one row). `CodeGrid` carries
+it. A caret is placed on its line's row, a click on a filler lands on the nearest line and a click
+on a fold opens it, the block builds rows instead of lines (its window, its spacers and its gutter
+numbers are counted in rows), and a reveal scrolls to a row. With no map a row is a line, and
+nothing that exists changes.
+
+*How does Flutter solve it?* It has no code editor. VS Code's are view zones (rows of content that
+belong to no line) and a view model that maps the model's lines to view lines through hidden areas,
+and both of its diff editors are built on them. The map here is that pair in one immutable value the
+engine owns, so the hosts, which paint the rectangles the engine answers, need nothing new.
+
+The diff view (`CodeDiff`) is then: one `CodeDiffer.Compare` per pair of documents; the two maps it
+implies (the shorter side of each change padded, unchanged runs longer than twice the context
+folded); a wash for each line removed or added, and a stronger one for the words that changed; both
+sides in ONE vertical scroll view, so they cannot drift apart, each with its own sideways scroll and
+gutter; the modified side a `CodeSurface` over an editor controller, compared again as it is edited;
+and the next and previous change as commands over the changes.
+
 ## Slices
 
 | slice | what lands | proof |
