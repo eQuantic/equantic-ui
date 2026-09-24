@@ -215,20 +215,25 @@ public class StringStaticStrategy : IConversionStrategy
         }
         else
         {
-            // No model binds the call, so a slot is known only by its place: a named argument could
-            // be any of them, and is a build error rather than a guessed placement. A provider is
-            // known by its spelling, as NamedCulture reads one where the model cannot be asked: a
-            // named culture or a null in first place, the template after it. Taken for the
-            // template, it put `CultureInfo` in the browser.
+            // No model binds the call, so a slot is known only by what the spelling PROVES: text in
+            // first place is the template, and a named culture or a null there is the provider, the
+            // template after it. Anything else in first place could be either, since
+            // `string.Format(format, x)` and `string.Format(provider, "", x)` read the same, and a
+            // named argument could be any slot. Those are a build error rather than a guessed
+            // overload: taken for the template, a provider put `CultureInfo` in the browser, or had
+            // `replace` called on it.
             if (args.Any(argument => argument.NameColon is not null))
                 return context.Unhandled(node, "string.Format with a named argument, which no model places");
             var first = args[0].Expression;
             var skip = 0;
-            if (args.Count >= 2 && (NamedCulture.IsInvariant(first, context) || NamedCulture.IsCurrent(first, context)
-                || HoldsATemplate(args[1].Expression) && !HoldsText(first)))
+            if (args.Count >= 2 && (NamedCulture.IsInvariant(first, context) || NamedCulture.IsCurrent(first, context)))
             {
                 provider = first;
                 skip = 1;
+            }
+            else if (args.Count >= 2 && !HoldsText(first))
+            {
+                return context.Unhandled(node, "string.Format whose first argument no model can place");
             }
             template = args[skip].Expression;
             written.AddRange(args.Skip(skip).Select(argument => argument.Expression));
@@ -286,19 +291,10 @@ public class StringStaticStrategy : IConversionStrategy
         return JsExprWriter.Write(JsExpr.Template(call, parts, context.TypeAnnotations));
     }
 
-    /// <summary>With no model to say which parameter an argument binds to: a string literal with a
-    /// placeholder in it (<c>"{0}"</c>) is a template, so an argument that is not text in front of
-    /// one is a provider, one the policy then names or refuses. Taken for the template, the runtime
-    /// called <c>replace</c> on it. A value that is text first (<c>string.Format(template, "x")</c>)
-    /// stays the template.</summary>
-    private static bool HoldsATemplate(ExpressionSyntax argument) =>
-        argument is LiteralExpressionSyntax { Token.Value: string text } && TemplateHole.IsMatch(text);
-
+    /// <summary>Whether the spelling alone proves <paramref name="argument"/> is text: a string
+    /// literal or an interpolated string, which no provider can be.</summary>
     private static bool HoldsText(ExpressionSyntax argument) =>
         argument is LiteralExpressionSyntax { Token.Value: string } or InterpolatedStringExpressionSyntax;
-
-    private static readonly System.Text.RegularExpressions.Regex TemplateHole =
-        new(@"\{\d+[,:}]", System.Text.RegularExpressions.RegexOptions.Compiled);
 
     /// <summary>The type of the value an argument boxes: its own, or, through a cast to
     /// <c>object</c> written by hand, the operand's. <c>(object)0.1f</c> is still a float to the
