@@ -246,8 +246,7 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     /// </summary>
     public CodePosition PositionAt(Point point)
     {
-        var line = (int)MathF.Floor((point.Y - Grid.Origin.Y) / Grid.Cell.Height);
-        var target = _document.Clamp(new CodePosition(Math.Max(0, line), 0)).Line;
+        var target = _document.Clamp(new CodePosition(Math.Max(0, Grid.LineAt(point.Y)), 0)).Line;
         return new CodePosition(target, CellsOf(target).ColumnAt((point.X - Grid.Origin.X) / Grid.Cell.Width));
     }
 

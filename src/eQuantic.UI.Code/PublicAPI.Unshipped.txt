@@ -416,8 +416,6 @@ eQuantic.UI.Code.CodeGutterMarker.Kind.get -> eQuantic.UI.Code.CodeGutterKind
 eQuantic.UI.Code.CodeGutterMarker.Kind.init -> void
 eQuantic.UI.Code.CodeGutterMarker.Tooltip.get -> string?
 eQuantic.UI.Code.CodeGutterMarker.Tooltip.init -> void
-eQuantic.UI.Code.CodeGrid.CodeGrid(eQuantic.UI.Primitives.Point Origin, eQuantic.UI.Primitives.Size Cell) -> void
-eQuantic.UI.Code.CodeGrid.Deconstruct(out eQuantic.UI.Primitives.Point Origin, out eQuantic.UI.Primitives.Size Cell) -> void
 eQuantic.UI.Code.CodeGrid.Origin.get -> eQuantic.UI.Primitives.Point
 eQuantic.UI.Code.CodeGrid.Origin.init -> void
 eQuantic.UI.Code.CodeGrid.Cell.get -> eQuantic.UI.Primitives.Size
@@ -590,3 +588,9 @@ eQuantic.UI.Code.CodeDiffLayout.Modified.init -> void
 const eQuantic.UI.Code.CodeDiffLayout.DefaultContext = 3 -> int
 static eQuantic.UI.Code.CodeDiffLayout.SideBySide(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeLineChange!>! changes, int originalLines, int modifiedLines, int context = 3, System.Collections.Generic.IReadOnlyCollection<int>? expanded = null) -> eQuantic.UI.Code.CodeDiffLayout!
 static eQuantic.UI.Code.CodeDiffLayout.Inline(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeLineChange!>! changes, int originalLines, int modifiedLines, int context = 3, System.Collections.Generic.IReadOnlyCollection<int>? expanded = null) -> eQuantic.UI.Code.CodeDiffLayout!
+eQuantic.UI.Code.CodeGrid.CodeGrid(eQuantic.UI.Primitives.Point Origin, eQuantic.UI.Primitives.Size Cell, eQuantic.UI.Code.CodeRows? Rows = null) -> void
+eQuantic.UI.Code.CodeGrid.Deconstruct(out eQuantic.UI.Primitives.Point Origin, out eQuantic.UI.Primitives.Size Cell, out eQuantic.UI.Code.CodeRows? Rows) -> void
+eQuantic.UI.Code.CodeGrid.Rows.get -> eQuantic.UI.Code.CodeRows?
+eQuantic.UI.Code.CodeGrid.Rows.init -> void
+eQuantic.UI.Code.CodeGrid.RowOf(int line) -> int
+eQuantic.UI.Code.CodeGrid.LineAt(float y) -> int

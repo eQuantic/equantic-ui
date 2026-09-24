@@ -102,6 +102,27 @@ public class CodeRowsTests
         new CodeRows(0, [], []).RowCount.Should().Be(0);
     }
 
+    /// <summary>
+    /// The grid places a line on its ROW, and a press finds the line of the row it hit: a caret after
+    /// a filler is drawn below it, a press on the filler lands on the line it stands before, and a
+    /// press on a placeholder on the first line it hides.
+    /// </summary>
+    [Fact]
+    public void TheGridPlacesALineOnItsRow_AndAPressFindsTheRowsLine()
+    {
+        var rows = new CodeRows(10, [new CodeFiller(2, 3)], [new CodeCollapse(6, 8)]);
+        var editor = new CodeEditorController(string.Join("\n", Enumerable.Range(0, 10).Select(i => $"line {i}")),
+            CodeLanguages.For("csharp"))
+        {
+            Grid = new CodeGrid(new Primitives.Point(0, 0), new Primitives.Size(8, 18), rows),
+        };
+
+        editor.CaretRect(new CodePosition(2, 0)).Y.Should().Be(5 * 18, "three rows of filler stand before line 2");
+        editor.PositionAt(new Primitives.Point(1, 3 * 18 + 5)).Line.Should().Be(2, "a press on a filler lands on the line it stands before");
+        editor.PositionAt(new Primitives.Point(1, 9 * 18 + 5)).Line.Should().Be(6, "a press on the placeholder lands on the first line it hides");
+        editor.CaretRect(new CodePosition(9, 0)).Y.Should().Be(10 * 18, "the three folded lines take one row");
+    }
+
     [Fact]
     public void AViewThatCannotBeDrawn_SaysSo()
     {
