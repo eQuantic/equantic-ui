@@ -213,7 +213,8 @@ public class CodeViewModelTests
     /// <summary>
     /// The widest line follows every edit without measuring the file again, and answers what
     /// measuring it would: over random edits of random documents, typing, deleting, breaking and
-    /// joining lines, pasting several, undoing and redoing, and taking the widest line away.
+    /// joining lines, pasting several, undoing and redoing, and taking the widest line away. Undo
+    /// and redo bring the colours up to date the same way, and they must match a fresh highlighter.
     /// </summary>
     [Fact]
     public void TheWidestLineFollowsEveryEdit()
@@ -243,6 +244,11 @@ public class CodeViewModelTests
                 var measured = Enumerable.Range(0, editor.Document.LineCount)
                     .Max(line => CodeLineCells.WidthOf(editor.Document.Line(line), editor.Rules.IndentWidth));
                 editor.WidestLine.Should().Be(measured, $"round {round}, step {step}");
+                // …and the colours follow the same lines, undo and redo included.
+                var fresh = new CodeHighlighter(editor.Highlighter.Language);
+                for (var line = 0; line < editor.Document.LineCount; line++)
+                    editor.Highlighter.TokensFor(editor.Document, line).Should().Equal(
+                        fresh.TokensFor(editor.Document, line), $"round {round}, step {step}, line {line}");
             }
         }
 

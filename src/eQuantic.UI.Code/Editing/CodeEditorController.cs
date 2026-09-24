@@ -170,8 +170,24 @@ public sealed class CodeEditorController : ICodeSurfaceModel
         var lostTheWidest = false;
         for (var i = line; i < line + gone; i++)
             if (old[i] >= _widest) lostTheWidest = true;
-        // Copied one by one, never inserted as a range: on the web a range becomes one argument per
-        // item, and a paste of a large file would pass more than an engine takes.
+        if (linesInserted == linesRemoved && gone == linesRemoved + 1)
+        {
+            // As many lines as before, which is nearly every keystroke: the widths change in place,
+            // and nothing is copied.
+            var widestHere = 0;
+            for (var i = line; i <= line + linesInserted; i++)
+            {
+                var width = CodeLineCells.WidthOf(_document.Line(i), _widthsTabs);
+                old[i] = width;
+                if (width > widestHere) widestHere = width;
+            }
+            if (lostTheWidest && widestHere < _widest) _widest = Widest(old);
+            else if (widestHere > _widest) _widest = widestHere;
+            return;
+        }
+        // Lines came or went: the list is built again, as the document's own list of lines is by
+        // every edit. Copied one by one, never inserted as a range: on the web a range becomes one
+        // argument per item, and a paste of a large file would pass more than an engine takes.
         var next = new List<int>(old.Count - gone + linesInserted + 1);
         for (var i = 0; i < line; i++) next.Add(old[i]);
         var measuredWidest = 0;
@@ -1100,14 +1116,19 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     {
         if (ReadOnly) return false;
         EndComposition();
-        var next = History.Undo(_document, out var selection);
+        var next = History.Undo(_document, out var selection, out var replaced, out var written);
         if (next is null) return false;
         _document = next;
-        _widths = null;
         _revealVersion++;
         _selection = new CodeRange(next.Clamp(selection.Anchor), next.Clamp(selection.Focus));
         _desiredCell = -1;
-        Highlighter.Invalidate();
+        // One replacement, as an edit is: the colours and the widths follow the lines it touched,
+        // where both were thrown away and measured again over the whole file.
+        var line = replaced.Start.Line;
+        var linesInserted = written.End.Line - written.Start.Line;
+        var linesRemoved = replaced.End.Line - replaced.Start.Line;
+        Highlighter.LineChanged(_document, line, linesInserted, linesRemoved);
+        WidthsChanged(line, linesInserted, linesRemoved);
         Changed?.Invoke(null);
         SelectionChanged?.Invoke(_selection);
         return true;
@@ -1117,14 +1138,19 @@ public sealed class CodeEditorController : ICodeSurfaceModel
     {
         if (ReadOnly) return false;
         EndComposition();
-        var next = History.Redo(_document, out var selection);
+        var next = History.Redo(_document, out var selection, out var replaced, out var written);
         if (next is null) return false;
         _document = next;
-        _widths = null;
         _revealVersion++;
         _selection = new CodeRange(next.Clamp(selection.Anchor), next.Clamp(selection.Focus));
         _desiredCell = -1;
-        Highlighter.Invalidate();
+        // One replacement, as an edit is: the colours and the widths follow the lines it touched,
+        // where both were thrown away and measured again over the whole file.
+        var line = replaced.Start.Line;
+        var linesInserted = written.End.Line - written.Start.Line;
+        var linesRemoved = replaced.End.Line - replaced.Start.Line;
+        Highlighter.LineChanged(_document, line, linesInserted, linesRemoved);
+        WidthsChanged(line, linesInserted, linesRemoved);
         Changed?.Invoke(null);
         SelectionChanged?.Invoke(_selection);
         return true;

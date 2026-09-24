@@ -55,10 +55,19 @@ public sealed class CodeHistory
     /// when the caret moves somewhere else, when the editor loses focus, when a file is saved.</summary>
     public void Break() => _runEnd = new CodePosition(-1, -1);
 
-    /// <summary>Takes the last step back, applying it to <paramref name="document"/>.</summary>
-    public CodeDocument? Undo(CodeDocument document, out CodeRange selection)
+    /// <summary>
+    /// Takes the last step back, applying it to <paramref name="document"/>. A step is one
+    /// replacement: <paramref name="replaced"/> is the range of <paramref name="document"/> it wrote
+    /// over, and <paramref name="written"/> the range of the result that holds what it wrote, which is
+    /// what anything kept per line (the colours, the widths) is brought up to date by, as it is for
+    /// an edit.
+    /// </summary>
+    public CodeDocument? Undo(CodeDocument document, out CodeRange selection, out CodeRange replaced,
+        out CodeRange written)
     {
         selection = default;
+        replaced = default;
+        written = default;
         if (_past.Count == 0) return null;
 
         var edit = _past[^1];
@@ -66,15 +75,21 @@ public sealed class CodeHistory
         _future.Add(edit);
         Break();
 
-        var next = document.Replace(edit.InsertedRange, edit.RemovedText, out _);
+        replaced = new CodeRange(document.Clamp(edit.InsertedRange.Start), document.Clamp(edit.InsertedRange.End));
+        var next = document.Replace(replaced, edit.RemovedText, out var end);
+        written = new CodeRange(replaced.Start, end);
         selection = edit.SelectionBefore;
         return next;
     }
 
-    /// <summary>Puts back what <see cref="Undo"/> took.</summary>
-    public CodeDocument? Redo(CodeDocument document, out CodeRange selection)
+    /// <summary>Puts back what <see cref="Undo"/> took, and says what it replaced as
+    /// <see cref="Undo"/> does.</summary>
+    public CodeDocument? Redo(CodeDocument document, out CodeRange selection, out CodeRange replaced,
+        out CodeRange written)
     {
         selection = default;
+        replaced = default;
+        written = default;
         if (_future.Count == 0) return null;
 
         var edit = _future[^1];
@@ -82,7 +97,9 @@ public sealed class CodeHistory
         _past.Add(edit);
         Break();
 
-        var next = document.Replace(edit.Range, edit.InsertedText, out _);
+        replaced = new CodeRange(document.Clamp(edit.Range.Start), document.Clamp(edit.Range.End));
+        var next = document.Replace(replaced, edit.InsertedText, out var end);
+        written = new CodeRange(replaced.Start, end);
         selection = edit.SelectionAfter;
         return next;
     }

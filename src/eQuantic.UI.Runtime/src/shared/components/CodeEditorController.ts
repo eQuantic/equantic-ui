@@ -111,6 +111,16 @@ export class CodeEditorController {
         let gone = Math.min(linesRemoved + 1, old.length - line);
         let lostTheWidest = false;
         for (let i = line; i < line + gone; i++) if (old[i] >= this._widest) lostTheWidest = true;
+        if (linesInserted === linesRemoved && gone === linesRemoved + 1) {
+            let widestHere = 0;
+            for (let i = line; i <= line + linesInserted; i++) {
+                let width = CodeLineCells.widthOf(this._document.line(i), this._widthsTabs);
+                old[i] = width;
+                if (width > widestHere) widestHere = width;
+            }
+            if (lostTheWidest && widestHere < this._widest) this._widest = CodeEditorController.widest(old); else if (widestHere > this._widest) this._widest = widestHere;
+            return;
+        }
         let next: number[] = [];
         for (let i = 0; i < line; i++) next.push(old[i]);
         let measuredWidest = 0;
@@ -660,32 +670,38 @@ export class CodeEditorController {
     }
 
     undo() {
-        let selection: any; if (this.readOnly) return false;
+        let selection: any, replaced: any, written: any; if (this.readOnly) return false;
         this.endComposition();
-        let next = ($o => (selection = $o.selection, $o.$))(this.history.undo(this._document));
+        let next = ($o => (selection = $o.selection, replaced = $o.replaced, written = $o.written, $o.$))(this.history.undo(this._document));
         if (next == null) return false;
         this._document = next;
-        this._widths = null;
         this._revealVersion++;
         this._selection = new CodeRange(next.clamp(selection.anchor), next.clamp(selection.focus));
         this._desiredCell = -1;
-        this.highlighter.invalidate();
+        let line = replaced.start.line;
+        let linesInserted = written.end.line - written.start.line;
+        let linesRemoved = replaced.end.line - replaced.start.line;
+        this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
+        this.widthsChanged(line, linesInserted, linesRemoved);
         this.changed?.(null);
         this.selectionChanged?.(this._selection);
         return true;
     }
 
     redo() {
-        let selection: any; if (this.readOnly) return false;
+        let selection: any, replaced: any, written: any; if (this.readOnly) return false;
         this.endComposition();
-        let next = ($o => (selection = $o.selection, $o.$))(this.history.redo(this._document));
+        let next = ($o => (selection = $o.selection, replaced = $o.replaced, written = $o.written, $o.$))(this.history.redo(this._document));
         if (next == null) return false;
         this._document = next;
-        this._widths = null;
         this._revealVersion++;
         this._selection = new CodeRange(next.clamp(selection.anchor), next.clamp(selection.focus));
         this._desiredCell = -1;
-        this.highlighter.invalidate();
+        let line = replaced.start.line;
+        let linesInserted = written.end.line - written.start.line;
+        let linesRemoved = replaced.end.line - replaced.start.line;
+        this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
+        this.widthsChanged(line, linesInserted, linesRemoved);
         this.changed?.(null);
         this.selectionChanged?.(this._selection);
         return true;

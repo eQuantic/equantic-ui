@@ -46,8 +46,6 @@ eQuantic.UI.Code.CodeHistory.CanUndo.get -> bool
 eQuantic.UI.Code.CodeHistory.CanRedo.get -> bool
 eQuantic.UI.Code.CodeHistory.Record(eQuantic.UI.Code.CodeEdit! edit) -> void
 eQuantic.UI.Code.CodeHistory.Break() -> void
-eQuantic.UI.Code.CodeHistory.Undo(eQuantic.UI.Code.CodeDocument! document, out eQuantic.UI.Code.CodeRange selection) -> eQuantic.UI.Code.CodeDocument?
-eQuantic.UI.Code.CodeHistory.Redo(eQuantic.UI.Code.CodeDocument! document, out eQuantic.UI.Code.CodeRange selection) -> eQuantic.UI.Code.CodeDocument?
 eQuantic.UI.Code.CodeHistory.Clear() -> void
 eQuantic.UI.Code.CodePosition
 eQuantic.UI.Code.CodePosition.CodePosition() -> void
@@ -478,3 +476,5 @@ eQuantic.UI.Code.CodeEditorController.FocusVersion.get -> int
 eQuantic.UI.Code.CodeEditorController.RequestFocus() -> void
 eQuantic.UI.Code.CodeEditorController.WidestLine.get -> int
 eQuantic.UI.Code.CodeEditorController.NextOf(System.Collections.Generic.IReadOnlyList<eQuantic.UI.Code.CodeRange>! matches, bool backward = false) -> eQuantic.UI.Code.CodeRange?
+eQuantic.UI.Code.CodeHistory.Undo(eQuantic.UI.Code.CodeDocument! document, out eQuantic.UI.Code.CodeRange selection, out eQuantic.UI.Code.CodeRange replaced, out eQuantic.UI.Code.CodeRange written) -> eQuantic.UI.Code.CodeDocument?
+eQuantic.UI.Code.CodeHistory.Redo(eQuantic.UI.Code.CodeDocument! document, out eQuantic.UI.Code.CodeRange selection, out eQuantic.UI.Code.CodeRange replaced, out eQuantic.UI.Code.CodeRange written) -> eQuantic.UI.Code.CodeDocument?
