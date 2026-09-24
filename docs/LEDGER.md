@@ -577,7 +577,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   `float`; `FloatSeamsTests` derives them by reflection and requires a spec for each.
 
 - **2026-09-24 · The code editor is a component**: slice 1c of
-  [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#N](https://github.com/eQuantic/equantic-ui/pull/N)).
+  [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#375](https://github.com/eQuantic/equantic-ui/pull/375)).
   An IDE holds the editor in a pane, and without a height cap there was no viewport, so every
   keystroke built every line: `Height` (Fill or a fixed height) bounds it now, and it builds what is
   in view. On the web a capped box lays its child out as a column, so `MaxHeight` scrolls (the
