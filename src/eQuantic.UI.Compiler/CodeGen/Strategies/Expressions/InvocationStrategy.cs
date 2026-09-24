@@ -346,6 +346,10 @@ public class InvocationStrategy : IExpressionIrStrategy
         }
 
         ReportIfUntranslatable(symbol, methodName, invocation, context);
+        // A local function is called by the name its declaration took (LocalFunctionName). Cased
+        // here alone, a `Delete` was called as `delete()` beside the renamed name it declared.
+        if (symbol is { MethodKind: MethodKind.LocalFunction })
+            return JsExpr.Call(JsExpr.Identifier(LocalFunctionName.Of(symbol)), argIrs);
         return JsExpr.Call(JsExpr.Identifier(methodName.ToCamelCase()), argIrs);
     }
 

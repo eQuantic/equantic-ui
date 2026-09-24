@@ -63,8 +63,9 @@ public class IdentifierStrategy : IExpressionIrStrategy
             // below then throws on `undefined` where the C# ran perfectly. Only the browser sees it
             // (the server runs the C#), which is the worst place for a difference to live.
             // InvocationStrategy already excludes local functions on three paths; this is the fourth.
-            if (symbol is IMethodSymbol { MethodKind: MethodKind.LocalFunction })
-                return JsExpr.Identifier(name.ToCamelCase().ToJsIdentifier());
+            // The name is the one its declaration takes, renamed where the member holds it already.
+            if (symbol is IMethodSymbol { MethodKind: MethodKind.LocalFunction } localFunction)
+                return JsExpr.Identifier(LocalFunctionName.Of(localFunction));
 
             if (symbol.Kind == SymbolKind.Field || symbol.Kind == SymbolKind.Property || symbol.Kind == SymbolKind.Method)
             {
