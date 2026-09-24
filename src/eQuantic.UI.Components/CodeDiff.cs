@@ -415,10 +415,12 @@ public sealed class CodeDiff : StatefulComponent
         whole.Add(bounded ? new Flexible(frame) : frame);
 
         // The ways from one change to the next: JetBrains' F7 and VS Code's Alt+F5, and back with Shift.
-        VisualNode shortcuts = new Shortcut(whole, new KeyChord("F7"), () => StepTo(true));
-        shortcuts = new Shortcut(shortcuts, new KeyChord("F7", KeyModifiers.Shift), () => StepTo(false));
-        shortcuts = new Shortcut(shortcuts, new KeyChord("F5", KeyModifiers.Alt), () => StepTo(true));
-        shortcuts = new Shortcut(shortcuts, new KeyChord("F5", KeyModifiers.Alt | KeyModifiers.Shift), () => StepTo(false));
+        // This diff's own, answered while the keyboard is in it: of two diffs on one page, the one in
+        // use steps (page-wide, the last one mounted did, wherever the keyboard was).
+        VisualNode shortcuts = new Shortcut(whole, new KeyChord("F7"), () => StepTo(true)) { FocusScoped = true };
+        shortcuts = new Shortcut(shortcuts, new KeyChord("F7", KeyModifiers.Shift), () => StepTo(false)) { FocusScoped = true };
+        shortcuts = new Shortcut(shortcuts, new KeyChord("F5", KeyModifiers.Alt), () => StepTo(true)) { FocusScoped = true };
+        shortcuts = new Shortcut(shortcuts, new KeyChord("F5", KeyModifiers.Alt | KeyModifiers.Shift), () => StepTo(false)) { FocusScoped = true };
 
         var capped = bounded && MaxHeight > 0;
         return new Box(new BoxStyle

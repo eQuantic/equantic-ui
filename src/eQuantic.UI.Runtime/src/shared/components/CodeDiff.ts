@@ -155,10 +155,10 @@ export class CodeDiff extends StatefulComponent {
         let whole = new Column(8, 'start', 'stretch', false, null, null, { width: SizeValue.fill, height: bounded ? SizeValue.fill : SizeValue.hug });
         if (this.showToolbar) whole.add(this.toolbar(theme, source, inline));
         whole.add(bounded ? new Flexible(frame) : frame);
-        let shortcuts: VisualNode = new Shortcut(whole, new KeyChord('F7'), () => this.stepTo(true));
-        shortcuts = new Shortcut(shortcuts, new KeyChord('F7', 1), () => this.stepTo(false));
-        shortcuts = new Shortcut(shortcuts, new KeyChord('F5', 2), () => this.stepTo(true));
-        shortcuts = new Shortcut(shortcuts, new KeyChord('F5', 2 | 1), () => this.stepTo(false));
+        let shortcuts: VisualNode = new Shortcut(whole, new KeyChord('F7'), () => this.stepTo(true), { focusScoped: true });
+        shortcuts = new Shortcut(shortcuts, new KeyChord('F7', 1), () => this.stepTo(false), { focusScoped: true });
+        shortcuts = new Shortcut(shortcuts, new KeyChord('F5', 2), () => this.stepTo(true), { focusScoped: true });
+        shortcuts = new Shortcut(shortcuts, new KeyChord('F5', 2 | 1), () => this.stepTo(false), { focusScoped: true });
         let capped = bounded && this.maxHeight > 0;
         return new Box(new BoxStyle({ width: SizeValue.fill, height: this.height, maxHeight: capped ? SizeValue.fixed(this.maxHeight) : SizeValue.hug }), shortcuts);
     }

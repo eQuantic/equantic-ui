@@ -129,6 +129,41 @@ public class CodeDiffComponentTests
         diff.Editor.Caret.Line.Should().Be(10, "past the last change the step wraps to the first");
     }
 
+    /// <summary>
+    /// F7 is the diff's own: of two on one screen, the one the keyboard is in steps, and with the
+    /// keyboard in neither the key is not taken. Page-wide, F7 typed in the first diff stepped the
+    /// last one mounted.
+    /// </summary>
+    [Fact]
+    public void F7_StepsTheDiffTheKeyboardIsIn()
+    {
+        var original = Lines(30, i => $"line {i}");
+        var modified = original.Replace("line 5", "first").Replace("line 20", "second");
+        var top = new CodeDiff(original, modified, "plaintext") { MaxHeight = 150 };
+        var bottom = new CodeDiff(original, modified, "plaintext") { MaxHeight = 150 };
+        var page = new Column(gap: Space.S4) { Width = SizeValue.Fill };
+        page.Add(top);
+        page.Add(bottom);
+        var host = Host(page);
+        var frame = Settle(host);
+
+        host.KeyDown("F7").Should().BeFalse("the keyboard is in neither diff");
+
+        // Into the top diff's code, on its caret's own row: the first change, line 5.
+        var region = frame.CodeRegions.Single(r => ReferenceEquals(r.Surface.Model, top.Editor));
+        var caret = top.Editor.Carets[0];
+        host.PressDown(region.Bounds.X + caret.X + 1, region.Bounds.Y + caret.Y + caret.Height / 2);
+        host.PressUp(region.Bounds.X + caret.X + 1, region.Bounds.Y + caret.Y + caret.Height / 2);
+        Settle(host);
+        top.Editor.Caret.Line.Should().Be(5);
+
+        host.KeyDown("F7").Should().BeTrue();
+        Settle(host);
+
+        top.Editor.Caret.Line.Should().Be(20, "the diff the keyboard is in stepped to its next change");
+        bottom.Editor.Caret.Line.Should().Be(5, "the other stayed where it opened");
+    }
+
     [Fact]
     public void EditingTheModifiedSide_ComparesAgain_AndTellsTheApp()
     {
