@@ -232,6 +232,18 @@ public class ConstructorInjectionTests
     }
 
     [Fact]
+    public void AParameterNamedProps_LeavesTheConfigObjectANameOfItsOwn()
+    {
+        // The config object an initializer arrives in is `props`, and a parameter of that name made
+        // `constructor(props?: any, props?: any)`, which a strict module refuses (Copilot's review of
+        // #399). It moves to `$props` there, a name no C# parameter can take.
+        var page = ClockPage("public TickPage(string props) { _label = props; }");
+
+        page.Should().Contain("constructor(props?: any, $props?: any)")
+            .And.Contain("Object.assign(this, $props)").And.Contain("this._label = props");
+    }
+
+    [Fact]
     public void APassedParameter_IsBoundUnderTheNameTheBodyReads()
     {
         // The signature camel-cased it too: `constructor(label…)` beside a body reading `Label`.

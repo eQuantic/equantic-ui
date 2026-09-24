@@ -272,6 +272,17 @@ public class AuthoringCoverageTests
     }
 
     [Fact]
+    public void APlainClassParameterNamedProps_LeavesTheConfigObjectANameOfItsOwn()
+    {
+        // The trailing config object is `props`: a parameter of that name made
+        // `constructor(props: number, props?: any)`, which a strict module refuses.
+        var ts = TestHelper.ConvertClass("public int Value { get; set; } public Setup(int props) { Value = props; }", "Setup");
+
+        ts.Should().Contain("constructor(props: number, $props?: any)")
+            .And.Contain("Object.assign(this, $props)").And.Contain("this.value = props");
+    }
+
+    [Fact]
     public void OptionalParameters_KeepTheirDefaultsInTheSignature()
     {
         // C# lets a caller omit them; without the default in the signature a call the compiler

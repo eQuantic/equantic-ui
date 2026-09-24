@@ -572,9 +572,13 @@ public class TypeScriptEmitter
                         var paramList = string.Join(", ", passed.Select(p => p.DefaultValueNode != null
                             ? $"{p.Name.ToJsIdentifier()}: any = {_converter.ConvertExpression(p.DefaultValueNode, p.Type)}"
                             : $"{p.Name.ToJsIdentifier()}?: any"));
+                        // The trailing config object is `props`, unless a parameter of the C# constructor
+                        // is: then `constructor(props, props)` did not parse. A `$` in front is a name no
+                        // C# parameter and no renamed local function can take.
+                        var config = ConfigParameter(ctorParams.Select(p => p.Name.ToJsIdentifier()));
                         var signature = paramList.Length > 0
-                            ? $"{paramList}, {OptionalParam("props", "any")}"
-                            : OptionalParam("props", "any");
+                            ? $"{paramList}, {OptionalParam(config, "any")}"
+                            : OptionalParam(config, "any");
                         var statements = new List<JsStatement> { JsStatement.Expression(JsExpr.Call(JsExpr.Identifier("super"))) };
                         {
                             // The config object carries what a C# OBJECT INITIALIZER assigned, and in C#
@@ -659,7 +663,7 @@ public class TypeScriptEmitter
                             else if (ctorDef?.ExpressionBodyNode is { } ctorExpression)
                                 statements.Add(ExpressionBody(ctorExpression, returns: false));
                             // …and the initializer last, which is where C# runs it.
-                            statements.Add(JsStatement.Raw("if (props && typeof props === 'object') Object.assign(this, props);"));
+                            statements.Add(JsStatement.Raw($"if ({config} && typeof {config} === 'object') Object.assign(this, {config});"));
                             c.Member(JsClassMember.Constructor(signature, JsStatement.Block(statements)),
                                 bodySource: (SyntaxNode?)ctorDef?.BodyNode ?? ctorDef?.ExpressionBodyNode, bodyLine: bodyLine);
                         }
@@ -1893,15 +1897,24 @@ public class TypeScriptEmitter
         // `new Editor(text) { ReadOnly = true }` — an object initialiser is an ordinary way to
         // construct one of these, and it arrives as a trailing config object exactly as it does for
         // a component. A constructor that did not take one made the emitted call arity-wrong.
-        var config = parameters.Length == 0 ? OptionalParam("props", "any") : $", {OptionalParam("props", "any")}";
+        var configName = ConfigParameter(ctor?.ParameterList.Parameters.Select(p => p.Identifier.Text.ToJsIdentifier()) ?? []);
+        var config = parameters.Length == 0 ? OptionalParam(configName, "any") : $", {OptionalParam(configName, "any")}";
         // A derived class must call super() before it touches `this`.
         JsStatement[] superCall = HasEmittedBase(cls) ? [JsStatement.Raw("super();")] : [];
         JsStatement[] locals = hoisted.Length == 0 ? [] : [JsStatement.Raw(hoisted.TrimEnd())];
         c.Member(JsClassMember.Constructor($"{parameters}{config}", JsStatement.Block([
                 .. superCall, .. initialisers, .. locals, .. body,
-                JsStatement.Raw("if (props && typeof props === 'object') Object.assign(this, props);")])),
+                JsStatement.Raw($"if ({configName} && typeof {configName} === 'object') Object.assign(this, {configName});")])),
             ctor ?? (SyntaxNode)cls);
     }
+
+    /// <summary>
+    /// The name of the config object a constructor takes last: <c>props</c>, or <c>$props</c> where
+    /// one of the constructor's own parameters is called <c>props</c>, which no C# parameter and no
+    /// renamed local function can be.
+    /// </summary>
+    private static string ConfigParameter(IEnumerable<string> parameterNames) =>
+        parameterNames.Contains("props", StringComparer.Ordinal) ? "$props" : "props";
 
     /// <summary>
     /// A PLAIN class the developer wrote — not a record, not static, not a component: a bucket, a
