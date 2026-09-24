@@ -129,20 +129,25 @@ public class CultureCrossingTests
 
     /// <summary>The culture is the PROPERTY the provider binds to, not its name: an alias names
     /// CultureInfo's own and crosses, and a lookalike of another type is refused, since it may
-    /// return any culture. Reading a number follows the same rule.</summary>
+    /// return any culture. Reading a number follows the same rule, and so does the current culture:
+    /// the thread's is the same value, but only CultureInfo's property is taken for it.</summary>
     [Theory]
     [InlineData("_value.ToString(Cultures.InvariantCulture)", true)]
     [InlineData("_value.ToString(Lookalike.InvariantCulture)", false)]
     [InlineData("decimal.Parse(\"1.5\", Cultures.InvariantCulture).ToString(CultureInfo.InvariantCulture)", true)]
     [InlineData("decimal.Parse(\"1.5\", Lookalike.InvariantCulture).ToString(CultureInfo.InvariantCulture)", false)]
-    public void TheInvariantCulture_IsRecognisedByItsSymbol(string body, bool crosses)
+    // The thread's culture is the same value, but not CultureInfo's property: it is named as that.
+    [InlineData("_value.ToString(\"N2\", System.Threading.Thread.CurrentThread.CurrentCulture)", false)]
+    [InlineData("_value.ToString(\"N2\", Cultures.CurrentCulture)", true)]
+    public void ACulture_IsRecognisedByItsSymbol(string body, bool crosses)
     {
         var result = Compile(body);
 
         if (crosses)
         {
             Assert.True(result.Success, string.Join("; ", result.Errors.Select(e => e.Message)));
-            Assert.DoesNotContain("InvariantCulture", result.TypeScript);
+            Assert.DoesNotContain("CultureInfo", result.TypeScript);
+            Assert.DoesNotContain("Cultures", result.TypeScript);
         }
         else
         {
