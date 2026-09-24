@@ -174,6 +174,19 @@ public class NumberStrategyTests
         TestHelper.DiagnosticsFor(call).Should().NotContain(d => d.Code == "EQ2108" || d.Code == "EQ2110");
     }
 
+    /// <summary>A bare null binds to the string overload, so it reads as text does, and is 0: the
+    /// argument has no type to ask, and the bound overload is what says it is text. No culture is
+    /// involved in reading nothing.</summary>
+    [Theory]
+    [InlineData("Convert.ToInt32(null)", "$eq.num.intConvert(null, 'int')")]
+    [InlineData("Convert.ToInt64(null)", "$eq.num.intConvert(null, 'long')")]
+    [InlineData("Convert.ToDouble(null)", "$eq.num.realConvert(null, 'double')")]
+    public void ABareNullConverted_ReadsAsText(string call, string expected)
+    {
+        TestHelper.ConvertExpression(call).Should().Be(expected);
+        TestHelper.DiagnosticsFor(call).Should().NotContain(d => d.Code == "EQ2108" || d.Code == "EQ2110");
+    }
+
     /// <summary>A span of UTF-8 bytes has no twin to read, and a call that names one says so.</summary>
     [Fact]
     public void ANumberReadFromUtf8Bytes_IsRefused()

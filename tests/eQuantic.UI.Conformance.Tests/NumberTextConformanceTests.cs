@@ -199,6 +199,10 @@ public class NumberTextConformanceTests
     [InlineData("return Convert.ToInt32(\"  42  \");")]                                                                 // 42
     [InlineData("string s = null; return Convert.ToInt32(s);")]                                                        // 0: where Parse throws
     [InlineData("string s = null; return Convert.ToDouble(s).ToString();")]                                            // "0"
+    // A bare null has no type of its own and binds to the string overload all the same.
+    [InlineData("return Convert.ToInt32(null);")]                                                                       // 0
+    [InlineData("return Convert.ToInt64(null).ToString();")]                                                            // "0"
+    [InlineData("return Convert.ToDouble(null).ToString();")]                                                           // "0"
     [InlineData("return Convert.ToInt64(\"9007199254740993\").ToString();")]
     [InlineData("return (Convert.ToInt64(\"5\") + 1L).ToString();")]
     [InlineData("try { return Convert.ToByte(\"256\"); } catch (Exception e) { return e.Message; }")]

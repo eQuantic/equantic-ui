@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Compiler.CodeGen.Ir;
 
@@ -54,17 +55,29 @@ public class ConvertStrategy : IExpressionIrStrategy
                 ParseCulture.Check(invocation, providerExpr, context);
             return ToDecimal(argExpr, context);
         }
-        if (context.SemanticHelper.GetType(argExpr)?.SpecialType == SpecialType.System_String
-            && TextReader(name) is { } text)
+        if (ReadsText(invocation, argExpr, context) && TextReader(name) is { } text)
         {
             // Text is read in a culture, and the browser reads the invariant one (see ParseCulture).
-            ParseCulture.Check(invocation, providerExpr, context);
+            // A null literal is never read, so no culture is involved.
+            if (!argExpr.IsKind(SyntaxKind.NullLiteralExpression))
+                ParseCulture.Check(invocation, providerExpr, context);
             context.UsedHelpers.Add(Eq.Import);
             return JsExpr.Template($"{text.Reader}({{0}}, '{text.Tag}')", [context.Converter.ConvertIr(argExpr)],
                 context.TypeAnnotations);
         }
         return JsExpr.Opaque(Converted(name, argExpr, context));
     }
+
+    /// <summary>
+    /// Whether the overload C# bound reads TEXT: its value parameter is a string. The argument's
+    /// own type cannot say for a bare null, which has none and binds to the string overload all the
+    /// same, so <c>Convert.ToInt32(null)</c> is 0 and was the null <c>$eq.math.round</c> handed
+    /// back. With no model, the argument's type is all there is.
+    /// </summary>
+    private static bool ReadsText(InvocationExpressionSyntax invocation, ExpressionSyntax value, ConversionContext context) =>
+        context.SemanticHelper.GetSymbol(invocation) is IMethodSymbol method
+            ? method.Parameters.FirstOrDefault(parameter => parameter.Ordinal == 0)?.Type.SpecialType == SpecialType.System_String
+            : context.SemanticHelper.GetType(value)?.SpecialType == SpecialType.System_String;
 
     /// <summary>
     /// The runtime's reader for text converted to an integer or a binary floating-point type, and
