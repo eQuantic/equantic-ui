@@ -54,4 +54,12 @@ describe('DateTimeOffset — .NET semantics', () => {
       '01/15/2024 16:30:00',
     );
   });
+
+  it('MinValue is default(DateTimeOffset) and MaxValue the last tick, both at +00:00', () => {
+    expect(dateTimeOffset.minValue().toString()).toBe('01/01/0001 00:00:00 +00:00');
+    expect(dateTimeOffset.maxValue().toString()).toBe('12/31/9999 23:59:59 +00:00');
+    expect(dateTimeOffset.maxValue().ticks - dateTimeOffset.minValue().ticks).toBe(
+      3_155_378_975_999_999_999n,
+    );
+  });
 });

@@ -80,8 +80,10 @@ public class ComponentParser
             return null;
         }
 
+        // A struct whose twin cannot build its zero answers `undefined`, which IS the slot left
+        // alone: writing it would only emit `if (this.width === undefined) this.width = undefined`.
         var value = CodeGen.Strategies.DefaultValue.Of(type);
-        return value == "null" ? null : value;
+        return value is "null" or "undefined" ? null : value;
     }
 
     /// <summary>
@@ -336,6 +338,7 @@ public class ComponentParser
                 TypeIdentity = ClrIdentity(classDecl),
                 SourcePath = sourcePath,
                 SyntaxTree = tree,
+                ClassSyntax = classDecl,
                 Namespace = ns ?? "",
                 TypeParameters = classDecl.TypeParameterList?.Parameters.Select(p => p.Identifier.Text).ToList() ?? new List<string>(),
                 IsAbstract = classDecl.Modifiers.Any(SyntaxKind.AbstractKeyword),

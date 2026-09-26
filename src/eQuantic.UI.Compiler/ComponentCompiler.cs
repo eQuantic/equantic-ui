@@ -376,14 +376,11 @@ public class ComponentCompiler
     
     /// <summary>
     /// The declaration a definition emits: its own syntax for a value type, a plain class or a static
-    /// class, and for a component the class of its name in its tree, found as the base-chain walk of
-    /// <see cref="Services.ShadowedRuntimeMembers"/> finds it.
+    /// class, and for a component the class the parser read it from. Never a search by name, which
+    /// found the first class of the name in the tree.
     /// </summary>
     private static Microsoft.CodeAnalysis.CSharp.Syntax.TypeDeclarationSyntax? DeclarationOf(ComponentDefinition component) =>
-        component.ValueTypeSyntax
-        ?? component.SyntaxTree?.GetRoot().DescendantNodes()
-            .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax>()
-            .FirstOrDefault(type => type.Identifier.Text == component.Name);
+        component.ValueTypeSyntax ?? component.ClassSyntax;
 
     /// <summary>
     /// Compile a parsed component definition

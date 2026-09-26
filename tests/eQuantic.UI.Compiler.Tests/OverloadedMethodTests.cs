@@ -286,6 +286,87 @@ public class OverloadedMethodTests
             .Which.Code.Should().Be("EQ1007", "a class's statics are inherited along the chain in JavaScript too");
     }
 
+    /// <summary>
+    /// A component is the declaration it was parsed from, not the first class of its name in its file:
+    /// an empty <c>A.Probe</c> ahead of a page <c>B.Probe</c> stood in for it, and the page's own
+    /// overloads were never checked.
+    /// </summary>
+    [Fact]
+    public void AComponentIsCheckedAsItsOwnDeclaration_NotAsTheFirstOfItsName()
+    {
+        var results = new ComponentCompiler().CompileSource("""
+            using eQuantic.UI.Primitives;
+
+            namespace A
+            {
+                public class Probe { }
+            }
+
+            namespace B
+            {
+                [Page("/probe")]
+                public sealed class Probe : StatelessComponent
+                {
+                    private string Label(int n) => n.ToString();
+                    private string Label(string s) => s;
+                    public override VisualNode Build(ComponentContext context) => new Text(Label("a"), TypeRole.BodyM);
+                }
+            }
+            """, "Probe.cs");
+
+        results.SelectMany(result => result.Errors).Should()
+            .Contain(error => error.Code == "EQ1007" && error.Line == 14, "the page's second Label is on line 14");
+    }
+
+    /// <summary>
+    /// A server-only method is left out of a COMPONENT's twin, and only there: a plain class's twin
+    /// writes every method, server-only ones too, so a derived <c>Foo(int)</c> takes over the base's
+    /// server-only <c>Foo(string)</c> in JavaScript as it would any other.
+    /// </summary>
+    [Fact]
+    public void AnInheritedServerOnlyMethod_TakesItsName_InAPlainClassChain()
+    {
+        var results = new ComponentCompiler().CompileSource("""
+            using eQuantic.UI.Primitives;
+
+            public class Base
+            {
+                [ServerOnly] public string Foo(string s) => s;
+            }
+
+            public sealed class Derived : Base
+            {
+                public string Foo(int n) => n.ToString();
+            }
+            """, "Probe.cs");
+
+        results.Single(result => result.ComponentName == "Derived").Errors.Should().ContainSingle()
+            .Which.Code.Should().Be("EQ1007");
+    }
+
+    /// <summary>In a component's chain a base's server-only method reaches no twin, so it takes no name.</summary>
+    [Fact]
+    public void AnInheritedServerOnlyMethod_TakesNoName_InAComponentChain()
+    {
+        var results = new ComponentCompiler().CompileSource("""
+            using eQuantic.UI.Primitives;
+
+            public abstract class ScreenBase : StatelessComponent
+            {
+                [ServerOnly] protected string Label(System.Net.Http.HttpClient client) => "";
+            }
+
+            [Page("/probe")]
+            public sealed class Screen : ScreenBase
+            {
+                private string Label(string s) => s;
+                public override VisualNode Build(ComponentContext context) => new Text(Label("a"), TypeRole.BodyM);
+            }
+            """, "Probe.cs");
+
+        results.SelectMany(result => result.Errors).Should().NotContain(error => error.Code == "EQ1007");
+    }
+
     /// <summary>An override is the method it overrides, and replacing it is what it is for.</summary>
     [Fact]
     public void AnOverride_IsNotASecondMethod()

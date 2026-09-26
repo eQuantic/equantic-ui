@@ -1,4 +1,6 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 
@@ -12,17 +14,34 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 public static class DefaultValue
 {
     /// <summary>The default of <paramref name="type"/>, or <c>null</c> where the type is a
-    /// reference type, unknown, or a struct with no faithful zero on this side.</summary>
+    /// reference type or unknown. Every struct the value names is imported: the default is text no
+    /// syntax spells (<c>new T[n]</c> and <c>default(T)</c> never write <c>new Point()</c>), so the
+    /// module's own scan cannot see it, and an unimported twin fails the module when it loads.</summary>
     public static string Of(ITypeSymbol? type, ConversionContext context)
     {
-        var value = Of(type);
+        var value = Of(type, named => (IsRuntimeProvided(named) ? context.UsedRuntimeTypes : context.UsedAppTypes)
+            .Add(named.Name));
         if (value.Contains("$eq.")) context.UsedHelpers.Add(Eq.Import);
         return value;
     }
 
+    /// <summary>Whether a struct's twin comes from the runtime, by the rule the import scan uses
+    /// (<see cref="Services.RuntimeProvidedTypeScanner"/>): a runtime-provided namespace, or a type
+    /// marked <c>[RuntimeProvided]</c>. Only the rest is one of the app's own modules. Being in
+    /// source does not decide it: a source-tree build compiles the library's own structs from source,
+    /// and they still come from <c>@equantic/runtime</c> (found in review, #405).</summary>
+    private static bool IsRuntimeProvided(INamedTypeSymbol type) =>
+        Services.RuntimeProvidedTypeScanner.IsRuntimeProvidedNamespace(type.ContainingNamespace?.ToDisplayString() ?? "")
+        || type.GetAttributes().Any(attribute => attribute.AttributeClass?.Name == "RuntimeProvidedAttribute")
+        || !type.Locations.Any(location => location.IsInSource);
+
     /// <summary>The default, with no context to tell about the helper import — the emitter's field
     /// path already scans what it emits for <c>$eq.</c> and adds it.</summary>
-    public static string Of(ITypeSymbol? type)
+    public static string Of(ITypeSymbol? type) => Of(type, named: null);
+
+    /// <param name="type">The type whose default to write.</param>
+    /// <param name="named">Told of every struct the value constructs, for its import.</param>
+    private static string Of(ITypeSymbol? type, Action<INamedTypeSymbol>? named)
     {
         switch (type?.SpecialType)
         {
@@ -41,6 +60,24 @@ public static class DefaultValue
                 return "'\\0'";
             case SpecialType.System_String or SpecialType.System_Object:
                 return "null";
+            case SpecialType.System_DateTime:
+                return $"{Eq.DateTime}.minValue()";
+        }
+
+        // The time and identity structs the runtime twins: each one's zero is what its MinValue, Zero
+        // or Empty crosses as. `new DateTime[1]` held null on the web, where C# holds 0001-01-01.
+        switch (type?.ToDisplayString())
+        {
+            case "System.TimeSpan":
+                return $"{Eq.TimeSpan}.zero";
+            case "System.DateOnly":
+                return "$eq.time.dateOnly.minValue()";
+            case "System.TimeOnly":
+                return "$eq.time.timeOnly.minValue()";
+            case "System.DateTimeOffset":
+                return $"{Eq.DateTimeOffset}.minValue()";
+            case "System.Guid":
+                return "'00000000-0000-0000-0000-000000000000'";
         }
 
         // An enum is its member NAME at runtime, so the default is the member whose value is 0.
@@ -51,7 +88,7 @@ public static class DefaultValue
             // default is 0 whatever its zero member is called. An ordinary enum is its member
             // NAME, and the default is the member whose value is zero; .NET still yields the
             // numeric 0 when the enum declares no such member.
-            if (type is INamedTypeSymbol named && named.IsFlagsEnum()) return "0";
+            if (type is INamedTypeSymbol enumType && enumType.IsFlagsEnum()) return "0";
             var zero = type.GetMembers().OfType<IFieldSymbol>()
                 .FirstOrDefault(field => field.HasConstantValue && IsZero(field.ConstantValue));
             return zero is null ? "0" : $"'{zero.Name.ToCamelCase()}'";
@@ -64,13 +101,66 @@ public static class DefaultValue
         // whose hand-written twin says it does ([ZeroConstructs]). `new CodeGrid()` held a null
         // Point on the web before this.
         if (type is INamedTypeSymbol { TypeKind: TypeKind.Struct } structType && ZeroConstructs(structType))
-            return $"new {structType.Name}()";
+        {
+            named?.Invoke(structType);
+            return ConstructsBeyondZero(structType) ? ZeroOf(structType, named) : $"new {structType.Name}()";
+        }
+
+        // A tuple is an ARRAY on this side, and its zero is an array of its elements' zeros.
+        if (type is INamedTypeSymbol { IsTupleType: true } tuple)
+            return "[" + string.Join(", ", tuple.TupleElements.Select(element => Of(element.Type, named))) + "]";
 
         // A nullable value type defaults to the null one; every reference type does too. A struct
-        // whose twin cannot zero-construct has no zeroed instance on this side — null is the honest
-        // answer there, and the sites that need better say so explicitly.
-        return "null";
+        // whose twin cannot build its zero (a hand-written vocabulary twin not marked
+        // [ZeroConstructs]) gets its twin's own default instead, which is what `undefined` asks
+        // for: the twin's constructor defaults (`style: BoxStyle = new BoxStyle()`) and its
+        // `!== undefined` checks apply for undefined and never for null, and C# has no null struct.
+        // ParameterDefaultLiteral fills an omitted `= default` struct argument by the same rule.
+        return type is { IsValueType: true } && !type.IsNullableValue() ? "undefined" : "null";
     }
+
+    /// <summary>
+    /// Whether a struct's twin constructor gives a member more than its zero: a field's or a
+    /// property's initializer, a positional parameter's default, or an explicit parameterless
+    /// constructor's body. <c>default(T)</c> runs none of them, and the twin's bare <c>new T()</c>
+    /// runs all of them, so such a struct's zero is built with every member's own zero passed in
+    /// instead: <c>default(Counter)</c> held the <c>Step = 2</c> C# never gives it.
+    /// </summary>
+    private static bool ConstructsBeyondZero(INamedTypeSymbol type) =>
+        type.DeclaringSyntaxReferences.Select(reference => reference.GetSyntax()).OfType<TypeDeclarationSyntax>()
+            .Any(declaration =>
+                declaration.ParameterList?.Parameters.Any(parameter => parameter.Default is not null) == true
+                || declaration.Members.Any(member => member switch
+                {
+                    FieldDeclarationSyntax field => !field.Modifiers.Any(SyntaxKind.StaticKeyword)
+                        && !field.Modifiers.Any(SyntaxKind.ConstKeyword)
+                        && field.Declaration.Variables.Any(variable => variable.Initializer is not null),
+                    PropertyDeclarationSyntax property => !property.Modifiers.Any(SyntaxKind.StaticKeyword)
+                        && property.Initializer is not null,
+                    ConstructorDeclarationSyntax constructor => !constructor.Modifiers.Any(SyntaxKind.StaticKeyword)
+                        && constructor.ParameterList.Parameters.Count == 0,
+                    _ => false,
+                }));
+
+    /// <summary>The zero of such a struct: every member's own zero, passed to the twin's
+    /// constructor in the order it takes them, which is the order its value members are listed in.</summary>
+    private static string ZeroOf(INamedTypeSymbol type, Action<INamedTypeSymbol>? named)
+    {
+        var declaration = type.DeclaringSyntaxReferences.Select(reference => reference.GetSyntax())
+            .OfType<TypeDeclarationSyntax>().First();
+        var zeros = declaration.ValueMembers().Select(member => Of(MemberType(type, member.Display), named));
+        return $"new {type.Name}({string.Join(", ", zeros)})";
+    }
+
+    /// <summary>A value member's type: a field's, or a property's, which a positional parameter
+    /// declares too.</summary>
+    private static ITypeSymbol? MemberType(INamedTypeSymbol type, string name) =>
+        type.GetMembers(name).FirstOrDefault() switch
+        {
+            IFieldSymbol field => field.Type,
+            IPropertySymbol property => property.Type,
+            _ => null,
+        };
 
     /// <summary>Whether the twin of <paramref name="type"/> builds its zero instance from a bare
     /// constructor — see <see cref="Of(ITypeSymbol?)"/>.</summary>
