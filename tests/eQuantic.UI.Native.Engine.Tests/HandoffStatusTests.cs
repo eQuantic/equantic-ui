@@ -1,5 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using FluentAssertions;
 using Xunit;
 
@@ -139,12 +141,11 @@ public class HandoffStatusTests
             var except = probe.TryGetProperty("except", out var list)
                 ? list.EnumerateArray().Select(e => Normalize(e.GetString()!)).ToHashSet(StringComparer.Ordinal)
                 : new HashSet<string>(StringComparer.Ordinal);
-            var word = new Regex(@"\b" + Regex.Escape(name) + @"\b");
             var hit = Directory.EnumerateFiles(Path.Combine(Root, "src"), "*.cs", SearchOption.AllDirectories)
                 .Select(f => Normalize(Path.GetRelativePath(Root, f)))
                 .Where(f => !IsBuildOutput(f) && !except.Contains(f))
                 .OrderBy(f => f, StringComparer.Ordinal)
-                .FirstOrDefault(f => word.IsMatch(File.ReadAllText(Path.Combine(Root, f))));
+                .FirstOrDefault(f => NamesInCode(File.ReadAllText(Path.Combine(Root, f)), name));
             return hit is null
                 ? Found.Single(false, $"a reference to {name} in src outside {string.Join(", ", except)}")
                 : Found.Single(true, $"{name} is referenced in {hit}");
@@ -152,6 +153,18 @@ public class HandoffStatusTests
 
         throw new InvalidOperationException("a probe names api, apiContains or sourceReference");
     }
+
+    /// <summary>
+    /// Whether the code names <paramref name="name"/>: an identifier in the syntax tree, never a comment,
+    /// an XML doc or a string. Reading the file's text took any of those as proof, so a TODO naming a
+    /// type flipped its request to shipped, and a stale comment could keep a shipped item after its code
+    /// was gone (found in review). The text is searched first, so only a file that mentions the name is
+    /// parsed.
+    /// </summary>
+    private static bool NamesInCode(string source, string name) =>
+        source.Contains(name, StringComparison.Ordinal)
+        && CSharpSyntaxTree.ParseText(source).GetRoot().DescendantTokens()
+            .Any(token => token.IsKind(SyntaxKind.IdentifierToken) && token.ValueText == name);
 
     private static string Entries(IReadOnlyList<string> names) =>
         names.Count == 1 ? $"the public API entry {names[0]}" : $"the public API entries {string.Join(", ", names)}";

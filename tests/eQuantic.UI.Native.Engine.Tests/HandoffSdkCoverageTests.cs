@@ -140,7 +140,9 @@ public class HandoffSdkCoverageTests
     {
         var source = File.ReadAllText(Path.Combine(Root, "src", "eQuantic.UI.Primitives", "Theme", "Tokens.cs"));
         var declared = Regex.Matches(source,
-                @"^public (?:(?:static|readonly|sealed|partial|abstract|record|class|struct|enum|interface) )+(\w+)",
+                // The declaration keyword is required: without it a member line at column 0 would read its
+                // return type as a declared type (found in review; the same eleven types either way today).
+                @"^public (?:(?:static|readonly|sealed|partial|abstract) )*(?:record struct|record class|record|class|struct|enum|interface) (\w+)",
                 RegexOptions.Multiline)
             .Select(match => match.Groups[1].Value)
             .ToHashSet(StringComparer.Ordinal);
