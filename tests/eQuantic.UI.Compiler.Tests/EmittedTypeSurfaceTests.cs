@@ -142,6 +142,31 @@ public class EmittedTypeSurfaceTests
     }
 
     /// <summary>
+    /// A record says the same about a value as a class does. Its mapper wrote its own nullable union,
+    /// so a <c>Func&lt;int, string&gt;?</c> parameter came out <c>(value: number) =&gt; string | null</c>,
+    /// a function that returns null where C# declares a function that may be missing (the diff
+    /// layout's fold label), and a member or a tuple return typed decimal named <c>Decimal</c> in a
+    /// module that never imported it, which the runtime's own build refuses.
+    /// </summary>
+    [Fact]
+    public void ARecordsNullableDelegate_IsANullableFunction_AndItsDecimalArrivesImported()
+    {
+        var record = new ComponentCompiler().CompileSource("""
+            using System;
+
+            public sealed record Invoice(decimal Amount)
+            {
+                public (decimal Net, decimal Tax) Split() => (Amount * 0.8m, Amount * 0.2m);
+                public static string Label(int count, Func<int, string>? label = null) => label?.Invoke(count) ?? "";
+            }
+            """).Single(result => result.ComponentName == "Invoice").TypeScript;
+
+        record.Should().Contain("label: ((value: number) => string) | null");
+        record.Should().Contain("split(): [Decimal, Decimal]");
+        record.Should().Contain("import { $eq, Decimal } from \"@equantic/runtime\"");
+    }
+
+    /// <summary>
     /// A component's function-typed parameter keeps its type, so a lambda passed to it is typed by
     /// it. The resolvability check read the parameter's NAME inside the function type (`value` in
     /// `(value: string) => string | null`) as a type it could not resolve, degraded the whole

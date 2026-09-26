@@ -125,7 +125,7 @@ public class TypeScriptEmitter
     /// other runtime-backed type is spelled the same in both languages, so the type scan sees the
     /// name in the syntax and routes the import itself. This one the TRANSLATION invents, and a
     /// name no walk can see is a name no import covers.</summary>
-    private const string Decimal = "Decimal";
+    internal const string Decimal = "Decimal";
 
     /// <summary>Runtime names an ANNOTATION introduced — same contract as
     /// <see cref="_hydrationReferences"/>, and merged into the import candidates beside it.</summary>
@@ -2002,12 +2002,18 @@ public class TypeScriptEmitter
             null when echoed && !Resolvable(mapped) => "any",
             _ => mapped,
         };
-        // A function type has to be PARENTHESISED before a union, or the `| null` binds to its
-        // RETURN: `(e: Edit) => void | null` says the handler may return null, not that the
-        // handler itself may be absent.
         if (!nullable || core == "any") return core;
-        return core.Contains("=>") ? $"({core}) | null" : $"{core} | null";
+        return OrNull(core);
     }
+
+    /// <summary>
+    /// <paramref name="type"/> or null. A function type is PARENTHESISED before the union, or the
+    /// `| null` binds to its RETURN: `(e: Edit) => void | null` says the handler may return null, not
+    /// that the handler itself may be absent. Every emitter writes a nullable union through here: the
+    /// record path wrote its own, and a record's `Func&lt;int, string&gt;? foldLabel` came out a
+    /// function that returns null rather than a function that may be missing.
+    /// </summary>
+    internal static string OrNull(string type) => type.Contains("=>") ? $"({type}) | null" : $"{type} | null";
 
     /// <summary>
     /// A type and every type argument BELOW it, to any depth — `IReadOnlyList&lt;NavigableMove&gt;`
@@ -2513,9 +2519,7 @@ public class TypeScriptEmitter
         // function RETURNING `void | null`. The tuple and array forms answer early, and answer
         // through here too: `(int, int)?` was annotated as a tuple that is never null.
         string Nullable(string mapped) =>
-            !isNullable || mapped is "any" or "void" ? mapped
-            : mapped.Contains("=>") ? $"({mapped}) | null"
-            : $"{mapped} | null";
+            !isNullable || mapped is "any" or "void" ? mapped : OrNull(mapped);
     }
 
     /// <summary>

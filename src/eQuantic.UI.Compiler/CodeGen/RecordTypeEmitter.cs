@@ -147,6 +147,12 @@ public class RecordTypeEmitter
         // `import { $eq, Text }` beside `VisualNodeExtensions.centered(...)` — a qualified call to a
         // name the module never imports, which fails at LOAD rather than at the call.
         runtimeProvided.UnionWith(_converter.UsedRuntimeTypes);
+        // The one runtime name the TRANSLATION invents (`decimal` is `Decimal` on the other side), so
+        // no scan of the C# can see it: a member or a tuple return typed decimal named a class the
+        // module never imported, and the runtime's own build refused it. It is a candidate like the
+        // rest, kept only where the emitted text names it (TypeScriptEmitter.Annotate is the class
+        // path's twin).
+        runtimeProvided.Add(TypeScriptEmitter.Decimal);
         // A vocabulary enum member is annotated with its UNION, a name that exists only in the
         // emitted TypeScript — the scanner above walks C# syntax and could never have seen it.
         TypeScriptEmitter.SeedEnumUnions(body, ModelFor(type)?.Compilation, runtimeProvided);
