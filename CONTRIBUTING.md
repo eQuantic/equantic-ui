@@ -22,6 +22,9 @@ This page says where.
 You need the [.NET 10 SDK](https://dotnet.microsoft.com/download) and nothing else — no Node.js, no
 npm. The TypeScript runtime is built by an embedded Bun the build extracts itself, and the Photon
 shaders are committed (only framework developers changing a shader run `scripts/generate-shaders.sh`).
+The one exception is outside the build: the change workflow runs the OpenSpec CLI, which needs
+Node >= 20.19, and `./scripts/openspec.sh` installs the pinned version from its lockfile on first
+use. CI validates your change either way.
 
 ```bash
 git clone https://github.com/eQuantic/equantic-ui.git
@@ -100,8 +103,12 @@ actually met.
 
 ## Commits and pull requests
 
-`main` is protected: every change arrives through a pull request, reviewed by GitHub Copilot
-automatically and merged when the review threads are resolved and CI is green.
+The working agreement is the **Workflow** section of [CLAUDE.md](CLAUDE.md), the same text as in
+[AGENTS.md](AGENTS.md); what follows is the short version, and where the two differ that section wins.
+
+`main` is protected: every change arrives through a pull request that closes an issue on the
+[board](https://github.com/orgs/eQuantic/projects/11), is reviewed by GitHub Copilot until a round
+finds nothing new, and is squash-merged when every review thread is resolved and CI is green.
 
 **Check that CI actually RAN before you read it as green.** The ruleset requires a review, not a
 status check, so a pull request whose workflow never started still reads mergeable — and a workflow
@@ -116,7 +123,10 @@ It answers the two questions the pull-request page cannot: does GitHub still cal
 (it falls back to the file's path when it cannot read it), and did the run for this branch create
 any jobs at all.
 
-- **Branch first**, from `main`. Never commit onto `main` locally either.
+- **Start from an issue.** Every change has one on the board; if none exists, create it as a
+  sub-issue of the epic or feature it belongs to, with the right type.
+- **Branch first**, from `main`, named `<type>/<slug>` (`feat/`, `fix/`, `chore/`, `refactor/`,
+  `docs/`, `test/`, `ci/`, `perf/`, `build/`). Never commit onto `main` locally either.
 - **Commit messages** are `emoji type: description`, in English, emoji first:
 
   | Type | Emoji | Use |
@@ -129,13 +139,21 @@ any jobs at all.
   | chore | 🔧 | maintenance |
   | ci | 👷 | the pipeline |
   | perf | ⚡ | performance |
+  | build | 📦 | the build system and dependencies |
   | style | 💄 | formatting |
 
   A breaking change is `✨ feat!: …` with a `BREAKING CHANGE:` paragraph in the body.
+- **No attribution** in a commit or a pull request: no co-authorship line for an assistant, no
+  session link, no generated-with footer.
 - **The PR title follows the same format** — a squash merge takes it as the commit subject. The body
-  says what changed, why, and what you ran; the template asks for exactly that.
-- **Read the Copilot review** and address it: fix, or reply saying why not. A PR is not done when it
-  is opened.
+  says `Closes #N`, what changed, why, and what you ran; the template asks for exactly that.
+- **A change that creates or changes behaviour starts with an OpenSpec proposal** in the same pull
+  request (`/opsx:propose`, under `openspec/changes/`), archived before the merge.
+- **Ask for the Copilot review** (`gh pr edit <n> --add-reviewer @copilot`) and address it: fix, or
+  reply saying why not, resolve the thread, and ask again until a round finds nothing new. A PR is
+  not done when it is opened.
+- **Documentation and the ledger change with the code**: the Markdown here, the wiki in English and
+  Portuguese when the pull request merges, and one `docs/LEDGER.md` line citing the issue.
 - **Do not open thin PRs.** Group a coherent body of work — a slice, a family of fixes, a refactor and
   the test that proves it — so it can be reviewed as a unit.
 
