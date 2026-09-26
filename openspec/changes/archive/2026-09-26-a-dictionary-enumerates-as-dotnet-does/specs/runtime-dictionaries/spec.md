@@ -118,3 +118,19 @@ dictionary sent to the server SHALL write itself as the JSON object System.Text.
 
 - **WHEN** a dictionary is sent as a Server Action argument
 - **THEN** it serializes as a JSON object of its entries, keyed by each key's wire text
+
+### Requirement: A change while the pairs are walked answers as .NET's
+
+A dictionary SHALL end a walk over its pairs with an InvalidOperationException when a new key is added
+during it, and SHALL let an overwrite, a removal and `Clear` run on. A sorted dictionary and a sorted
+list SHALL end the walk on any change.
+
+#### Scenario: A key added while walking
+
+- **WHEN** a `foreach` over a `Dictionary<int, int>` adds a key on each step
+- **THEN** the walk ends with an InvalidOperationException, as in .NET
+
+#### Scenario: A removal while walking
+
+- **WHEN** a `foreach` over a `Dictionary<int, int>` removes the key it is on
+- **THEN** the walk goes on over the rest, as in .NET

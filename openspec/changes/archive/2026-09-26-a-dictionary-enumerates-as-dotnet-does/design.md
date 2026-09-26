@@ -96,6 +96,16 @@ goes through `$eq.mapGet`, whose value type defaults to `any`: inference from an
 candidate and would land on `unknown`, refusing every read in a twin, while a typed map still infers
 its value.
 
+### A change while the pairs are walked answers as .NET's
+
+The pairs are walked over the live slots, which is what lets a removal run on as .NET's does, and
+what visited every key a loop added, so a loop that adds as it goes never ended. Measured in .NET:
+a new key ends the walk with an InvalidOperationException, on the last step and into a freed slot
+too, while an overwrite, a removal and `Clear` run on; a sorted dictionary and a sorted list refuse
+every change. Each class keeps a version the walk compares after every step, bumped by the changes
+its .NET twin refuses. `Keys` and `Values` are still copies, so a key added while they are walked is
+not noticed (#463).
+
 ## Risks / Trade-offs
 
 - [A lookup by value is a linear scan] → As the record-keyed dictionary always was; a key found by
@@ -105,6 +115,9 @@ its value.
 
 ## Not here
 
+- A nested collection initializer on a member, which replaces the member's dictionary instead of
+  adding to it, as it does a list (#462).
+- Live `Keys` and `Values` views, and .NET's capacity behind `TrimExcess` and `EnsureCapacity` (#463).
 - A Guid keeps the text it was written in, so two cases of one Guid are two keys, as they are two
   values to `==` (#459).
 - The JSON wire's order for integer keys (#437).

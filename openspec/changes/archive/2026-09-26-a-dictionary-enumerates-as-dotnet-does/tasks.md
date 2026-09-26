@@ -16,6 +16,7 @@
 - [x] 2.5 Dictionary annotations degrade to `any`, and a read from one is `any`
 - [x] 2.6 Check: conformance cases run on both sides over insertion order, removal and re-insertion, int and string keys, `Keys`, `Values`, `foreach`, `Count`, `ContainsKey`, `TryGetValue` and `ToDictionary`, 34 of 52 failing before
 - [x] 2.7 A key of a type that does not decide (`object`, an interface, a type parameter, a class) compares by the value's own equality, and a compat value's `equals` refuses another kind (found in Copilot's third round)
+- [x] 2.8 A change while the pairs are walked answers as .NET's: a new key ends a dictionary's walk, any change a sorted one's (found in the author's review)
 
 ## 3. The DOM escape hatch and the other hand-written readers
 

@@ -808,8 +808,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   deconstructing `foreach` over a record-keyed or sorted dictionary, and a copy, which was an alias.
   A key whose type does not decide (`object`, an interface, a type parameter, a class) compares by
   the value's own equality, which Copilot's third round found missing: two equal records under
-  `object` were two keys. 34 of the 52 conformance cases failed before, and the served runtime grew
-  819 gzip bytes. Measured
+  `object` were two keys. The author's review found that a key added while the pairs are walked was
+  visited in turn, so a loop that added as it went never ended: it ends now as .NET's enumerator
+  ends it, with an InvalidOperationException. 34 of the 52 conformance cases failed before, and
+  the served runtime grew 819 gzip bytes. Measured
   and left to their own issues: integer keys across the JSON wire
   ([#437](https://github.com/eQuantic/equantic-ui/issues/437)), a `HashSet<T>`'s slot reuse
   ([#438](https://github.com/eQuantic/equantic-ui/issues/438)), LINQ over a dictionary's pairs
@@ -817,7 +819,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   ([#440](https://github.com/eQuantic/equantic-ui/issues/440)), `string.Join` over bools, enums and
   floats ([#441](https://github.com/eQuantic/equantic-ui/issues/441)), and an enum key, which EqJson
   refuses on the wire ([#442](https://github.com/eQuantic/equantic-ui/issues/442)), and a Guid,
-  which keeps the text it was written in ([#459](https://github.com/eQuantic/equantic-ui/issues/459)).
+  which keeps the text it was written in ([#459](https://github.com/eQuantic/equantic-ui/issues/459)),
+  a nested initializer that replaces a member's collection
+  ([#462](https://github.com/eQuantic/equantic-ui/issues/462)), and live `Keys` and `Values` with
+  .NET's capacity ([#463](https://github.com/eQuantic/equantic-ui/issues/463)).
 
 ## Retired documents
 
