@@ -19,6 +19,11 @@ public class SwitchExpressionStrategy : IConversionStrategy
         return node is SwitchExpressionSyntax;
     }
 
+    /// <summary>The name the governing value is bound to: a `$`, which no C# identifier holds, so no
+    /// variable an arm declares can land on it. `_s` could: an arm's `out var _s` was a second
+    /// declaration of it in the same arrow, and a module that did not parse (#397).</summary>
+    internal const string Subject = "$s";
+
     public string Convert(SyntaxNode node, ConversionContext context)
     {
         var switchExpr = (SwitchExpressionSyntax)node;
@@ -37,7 +42,7 @@ public class SwitchExpressionStrategy : IConversionStrategy
             .SelectMany(arm => ExpressionVariableScanner.Names(arm.Expression)
                 .Concat(ExpressionVariableScanner.Names(arm.WhenClause?.Condition))),
             context.TypeAnnotations));
-        sb.Append($" const _s = {governingExpr};");
+        sb.Append($" const {Subject} = {governingExpr};");
 
         foreach (var arm in switchExpr.Arms)
         {
@@ -47,9 +52,9 @@ public class SwitchExpressionStrategy : IConversionStrategy
                 break; // discard matches everything
             }
 
-            var condition = PatternConverter.BuildCondition(arm.Pattern, "_s", context, governingType);
+            var condition = PatternConverter.BuildCondition(arm.Pattern, Subject, context, governingType);
             var bindings = new List<(string Name, string Access)>();
-            PatternConverter.CollectBindings(arm.Pattern, "_s", context, bindings, governingType);
+            PatternConverter.CollectBindings(arm.Pattern, Subject, context, bindings, governingType);
             var armResult = context.Converter.ConvertExpression(arm.Expression);
 
             if (bindings.Count > 0)

@@ -74,11 +74,11 @@ public class BulletproofTests
         var js = ConvertMethodBody(code);
 
         Assert.Contains("(() => {", js);
-        Assert.Contains("const _s = x;", js);
-        Assert.Contains("if (_s > 10) return 'Big';", js);
+        Assert.Contains("const $s = x;", js);
+        Assert.Contains("if ($s > 10) return 'Big';", js);
         // Property pattern: camelCased member access, guarded by a null check (in C# a property pattern
         // on null is `false`, not a null-dereference) — matches `null is { Status: ... }` semantics.
-        Assert.Contains("if ((_s != null && _s.status === 'Active')) return 'Active';", js);
+        Assert.Contains("if (($s != null && $s.status === 'Active')) return 'Active';", js);
         Assert.Contains("return 'Default';", js);
         Assert.Contains("})()", js);
     }

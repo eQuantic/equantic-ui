@@ -40,9 +40,9 @@ of it showed.
   - a switch expression declares its arms' once, a query's clauses declare their own, and an
     initializer declares in an arrow of its own.
 - Every declaration the scanner writes takes the spelling `transpiler-names` gives the variable's
-  readers (#399, merged first, escapes a reserved word with a `$` on every path), and `undefined`,
-  `NaN` and `Infinity` are escaped too: the emitted code compares against them, and a local of that
-  name answered for the global.
+  readers (#399, merged first, escapes a reserved word with a `$` on every path).
+- A switch binds its subject to `$s`, which no C# identifier holds: a variable a section or an arm
+  now declares in the switch's own scope could be called `_s`, the name it used (a slice of #397).
 - Plain JavaScript carries no annotation on a local.
 - Found by the new tests: a `static` property on a plain class is written as a static getter, and a
   label on a loop whose head declares a variable stays on the loop.
@@ -64,7 +64,7 @@ declared an `out var` at its top: the `let` now stands in front of the statement
 
 ### Modified Capabilities
 
-- `transpiler-names`: a local named after a global the emitted code reads is escaped.
+None.
 
 ## Impact
 

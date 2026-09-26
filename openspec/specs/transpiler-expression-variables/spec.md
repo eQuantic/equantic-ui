@@ -1,12 +1,11 @@
-# Spec Delta
+# transpiler-expression-variables Specification
 
 ## Purpose
-
 Where the JavaScript declares a variable a C# expression declares (a pattern's binding, an `out var`,
 a deconstruction's element), with the scope C# gives it. The name it is declared under is the one
 `transpiler-names` gives every reader.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: An expression variable is declared by its statement, with C#'s scope
 
@@ -33,6 +32,11 @@ SHALL be declared inside it, once for every call.
 
 - **WHEN** `switch (k) { case 1: int.TryParse("5", out var a); return a; case 2: a = 7; return a; default: return 0; }` runs with `k` 2
 - **THEN** it answers 7
+
+#### Scenario: A variable named like the switch's subject used to be
+
+- **WHEN** `return 1 switch { 1 => int.TryParse("2", out var _s) ? _s : 0, _ => 0 };` runs
+- **THEN** it answers 2, the switch binding its subject to a name no C# identifier holds
 
 #### Scenario: Two sibling loops bind one name
 

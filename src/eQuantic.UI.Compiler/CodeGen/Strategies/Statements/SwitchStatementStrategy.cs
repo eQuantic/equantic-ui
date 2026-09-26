@@ -6,11 +6,15 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 /// <summary>
 /// <c>switch</c> statements. Constant labels only → a native JavaScript <c>switch</c>. Any
 /// pattern label (<c>case int n when n > 3:</c>) → an if/else chain over the subject bound once
-/// (<c>const _s = …</c>), because JavaScript's switch has no patterns; the pattern's bindings are
+/// (<c>const $s = …</c>), because JavaScript's switch has no patterns; the pattern's bindings are
 /// hoisted once for the whole chain and assigned inside each arm's condition.
 /// </summary>
 public class SwitchStatementStrategy : IStatementStrategy
 {
+    /// <summary>The subject's name, the switch expression's own: a `$` no variable a section
+    /// declares can hold (SwitchExpressionStrategy.Subject).</summary>
+    private const string Subject = Expressions.SwitchExpressionStrategy.Subject;
+
     public bool CanConvert(StatementSyntax node, ConversionContext context)
     {
         return node is SwitchStatementSyntax;
@@ -86,13 +90,13 @@ public class SwitchStatementStrategy : IStatementStrategy
                 switch (label)
                 {
                     case CaseSwitchLabelSyntax constant:
-                        labelConditions.Add($"_s === {context.Converter.ConvertExpression(constant.Value)}");
+                        labelConditions.Add($"{Subject} === {context.Converter.ConvertExpression(constant.Value)}");
                         break;
 
                     case CasePatternSwitchLabelSyntax pat:
-                        var cond = PatternConverter.BuildCondition(pat.Pattern, "_s", context, governingType);
+                        var cond = PatternConverter.BuildCondition(pat.Pattern, Subject, context, governingType);
                         var bindings = new List<(string Name, string Access)>();
-                        PatternConverter.CollectBindings(pat.Pattern, "_s", context, bindings, governingType);
+                        PatternConverter.CollectBindings(pat.Pattern, Subject, context, bindings, governingType);
                         foreach (var b in bindings) if (seen.Add(b.Name)) hoist.Add(b.Name);
 
                         // Assign the pattern's bindings AND evaluate the when-clause inside the condition (a
@@ -130,7 +134,7 @@ public class SwitchStatementStrategy : IStatementStrategy
         // Annotated in TypeScript, as every declaration the scanner writes is: a section's `out var`
         // may be assigned inside an arrow (a dictionary's TryGetValue), which TypeScript cannot follow.
         if (hoist.Count > 0) statements.Add(JsStatement.Raw($"let {ExpressionVariableScanner.List(hoist, context.TypeAnnotations)};"));
-        statements.Add(JsStatement.Const("_s", expr));
+        statements.Add(JsStatement.Const(Subject, expr));
         if (chain is not null) statements.Add(chain);
         return JsStatement.Block(statements);
     }

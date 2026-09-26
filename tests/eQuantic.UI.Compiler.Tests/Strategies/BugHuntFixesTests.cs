@@ -193,7 +193,7 @@ public class BugHuntFixesTests
     public void SwitchExpression_VarPattern_BindsCapturedVariable()
     {
         var result = TestHelper.ConvertCodeBlock("var r = x switch { var v => v + 1 };");
-        result.Should().Contain("const v = _s");
+        result.Should().Contain("const v = $s");
         result.Should().Contain("return v + 1");
     }
 

@@ -10,7 +10,7 @@
 
 ## 2. Names and modes
 
-- [x] 2.1 The declarations the scanner writes take the spelling every reader takes (#399's `$`), and `undefined`, `NaN` and `Infinity` are escaped
+- [x] 2.1 The declarations the scanner writes take the spelling every reader takes (#399's `$`), and a switch's subject is `$s`, which none can reach
 - [x] 2.2 Plain JavaScript carries no local annotation; a static property is written static
 - [x] 2.3 Check: `ExpressionVariableEmissionTests` run every member kind through `ComponentCompiler` in both modes against .NET; on main neither mode's modules load
 

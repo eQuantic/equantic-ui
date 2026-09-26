@@ -858,8 +858,9 @@ record of a release, the wiki's Upgrading page is the distillate.
   deconstruction, and a `do`'s condition, each now a case. Found on the way: a static property on a
   plain class was an instance getter (its `field` slot is still an instance one,
   [#483](https://github.com/eQuantic/equantic-ui/issues/483)), plain JavaScript annotated a local
-  declared as another type, and a local named `undefined`, `NaN` or `Infinity` answered for the
-  global. Filed: two catch clauses do not parse and one ignores its type and filter
+  declared as another type, and a switch's subject is now `$s`, since a local `_s` could land on it
+  (a slice of [#397](https://github.com/eQuantic/equantic-ui/issues/397)). Filed: two catch clauses
+  do not parse and one ignores its type and filter
   ([#474](https://github.com/eQuantic/equantic-ui/issues/474)), a lock drops its expression
   ([#475](https://github.com/eQuantic/equantic-ui/issues/475)), a for's own variable is one per
   iteration ([#476](https://github.com/eQuantic/equantic-ui/issues/476)), `fs[0]()` reads off

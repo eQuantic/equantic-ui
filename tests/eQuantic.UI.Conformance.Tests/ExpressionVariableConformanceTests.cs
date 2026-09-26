@@ -62,6 +62,9 @@ public class ExpressionVariableConformanceTests
     // A section's statements declare into the switch block, which a later section assigns and reads.
     [InlineData("var k = 2; switch (k) { case 1: int.TryParse(\"5\", out var a); return a; case 2: a = 7; return a; default: return 0; }")]
     [InlineData("object o = 2; switch (o) { case int x when x == 1: int.TryParse(\"5\", out var a); return a; default: a = 7; return a; }")]
+    // A variable the switch now declares in its own scope may be named like its subject was (`_s`).
+    [InlineData("return 1 switch { 1 => int.TryParse(\"2\", out var _s) ? _s : 0, _ => 0 };")]
+    [InlineData("object o = 1; switch (o) { case int x when x == 1: int.TryParse(\"3\", out var _s); return _s; default: return 0; }")]
     [InlineData("object o = 2; return o switch { 1 => int.TryParse(\"5\", out var n) ? n : 0, _ => int.TryParse(\"6\", out var n) ? n : 0 };")]
     [InlineData("object o = \"xy\"; return o switch { int => o is int k ? k : 0, _ => o is string k ? k.Length : -1 };")]
     // The other statements an expression can sit in.
@@ -84,7 +87,7 @@ public class ExpressionVariableConformanceTests
     /// C#'s verbatim escape makes a keyword a name (<c>@class</c>, <c>@new</c>, <c>@default</c>), and
     /// JavaScript refuses most of them as a binding. The escape (<c>class$</c>, #399) must reach the
     /// declaration and every reference, whichever way the name was bound, the declarations this
-    /// scanner writes included. <c>undefined</c> is no keyword, but the lowerings compare against it.
+    /// scanner writes included.
     /// </summary>
     [SkippableTheory]
     [InlineData("var @class = 5; return @class;")]
@@ -104,7 +107,6 @@ public class ExpressionVariableConformanceTests
     [InlineData("return (from @class in new[] { 1, 2, 3 } where @class > 1 select @class * 2).Sum();")]
     [InlineData("int[] a = { 1, 2 }; if (a is [1, _] @while) return @while.Length; return 0;")]
     [InlineData("using (var @using = new Res(4)) { return @using.V; }", Disposable)]
-    [InlineData("var undefined = 5; int.TryParse(\"x\", out var n); return n + undefined;")]
     public void ANameJavaScriptReserves_IsOneNameOnEveryPath(string statements, string prelude = "")
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

@@ -9,7 +9,7 @@ namespace eQuantic.UI.Compiler.Tests.Strategies;
 /// <summary>
 /// A `switch` STATEMENT that uses pattern labels (`case Type t:`, `case { … }:`, `case … when …:`) has no
 /// JS equivalent, so it is rewritten to an if/else chain (shared <see cref="eQuantic.UI.Compiler.CodeGen.PatternConverter"/> — same
-/// condition/binding logic the conformance-validated switch EXPRESSION uses): value bound once to `_s`,
+/// condition/binding logic the conformance-validated switch EXPRESSION uses): value bound once to `$s`,
 /// pattern bindings hoisted and assigned inside the arm condition (so a `when` can see them and a failing
 /// `when` falls through), `default` → trailing `else`. A constant-only switch keeps the native `switch`.
 /// </summary>
@@ -33,12 +33,12 @@ public class SwitchStatementPatternTests
         var ts = Build("public string M(object o) { switch (o) { " +
                         "case int n when n > 0: return \"pos\" + n; case string s: return s; default: return \"?\"; } }");
         _out.WriteLine(ts);
-        ts.Should().Contain("const _s = o;");
+        ts.Should().Contain("const $s = o;");
         ts.Should().Contain("let n");                                   // bindings hoisted for the chain
         // when-clause assigns the binding in the condition, so `n` is in scope for `n > 0`.
-        ts.Should().Contain("typeof _s === 'number' && (n = _s, n > 0)");
+        ts.Should().Contain("typeof $s === 'number' && (n = $s, n > 0)");
         ts.Should().Contain("else if");
-        ts.Should().Contain("typeof _s === 'string'");
+        ts.Should().Contain("typeof $s === 'string'");
         System.Text.RegularExpressions.Regex.Replace(ts, @"\s+", "").Should().Contain("else{return'?';}");
         ts.Should().NotContain("switch (o)");                           // not a native switch
     }
@@ -48,8 +48,8 @@ public class SwitchStatementPatternTests
     {
         var ts = Build("public string M(Pt p) { switch (p) { " +
                        "case { X: 0, Y: var y }: return \"y\" + y; default: return \"?\"; } }");
-        ts.Should().Contain("_s.x === 0");
-        ts.Should().Contain("y = _s.y");                                // nested var bound from the property
+        ts.Should().Contain("$s.x === 0");
+        ts.Should().Contain("y = $s.y");                                // nested var bound from the property
     }
 
     [Fact]
@@ -57,9 +57,9 @@ public class SwitchStatementPatternTests
     {
         var ts = Build("public int M(Pt p) { switch (p) { " +
                        "case (0, var b): return b; default: return -1; } }");
-        ts.Should().Contain("_s.x === 0");                              // position 0 -> X -> .x
-        ts.Should().Contain("b = _s.y");                                // position 1 -> Y -> .y
-        ts.Should().NotContain("_s[0]");                                // never index access on a record
+        ts.Should().Contain("$s.x === 0");                              // position 0 -> X -> .x
+        ts.Should().Contain("b = $s.y");                                // position 1 -> Y -> .y
+        ts.Should().NotContain("$s[0]");                                // never index access on a record
     }
 
     [Fact]

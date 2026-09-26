@@ -61,9 +61,13 @@ only when it declares something.
 
 A declaration the scanner writes is spelled by `ToJsIdentifier`, as every reference to the variable
 is, so the two cannot drift. #399, merged while this was under review, made that function escape a
-reserved word with a `$` on every declaration path, which is the spelling kept here. What this change
-adds to it is three names no rule reserves: `undefined`, `NaN` and `Infinity`, which the emitted code
-compares against, so that a local of that name no longer answers for the global.
+reserved word with a `$` on every declaration path, which is the spelling kept here.
+
+A switch's subject was bound to `_s`, a name a C# local can take. Now that a section's and an arm's
+variables are declared in the switch's own scope, a local called `_s` there was a second declaration
+of it, so the subject is `$s`, the `$` no C# identifier holds. That is the slice of #397, which moves
+every synthesized name to a `$`, that this change made reachable; the rest stays there, the globals
+the emitted code reads included.
 
 ## Not here
 

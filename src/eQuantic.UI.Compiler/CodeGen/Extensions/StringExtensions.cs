@@ -31,9 +31,6 @@ public static class StringExtensions
         "false", "finally", "for", "if", "in", "instanceof", "interface", "new", "null", "private",
         "protected", "public", "return", "static", "switch", "this", "throw", "true", "try",
         "typeof", "void", "while",
-        // Not reserved at all, but the emitted code compares against them (a TryParse's
-        // `!== undefined`, `double.NaN`), and a local of that name would answer for the global.
-        "undefined", "NaN", "Infinity",
     };
 
     /// <summary>

@@ -28,8 +28,8 @@ export class Skeleton extends StatelessComponent {
 
     build(context: BuildContext) {
         let theme = context.theme;
-        let height = (() => { const _s = this.shape; if (_s === 'line') return 12; if (_s === 'circle') return this.width; return this.height > 0 ? this.height : this.width; })();
-        let radius = (() => { const _s = this.shape; if (_s === 'line') return theme.shape('full'); if (_s === 'circle') return theme.shape('full'); return theme.shape('medium'); })();
+        let height = (() => { const $s = this.shape; if ($s === 'line') return 12; if ($s === 'circle') return this.width; return this.height > 0 ? this.height : this.width; })();
+        let radius = (() => { const $s = this.shape; if ($s === 'line') return theme.shape('full'); if ($s === 'circle') return theme.shape('full'); return theme.shape('medium'); })();
         let glint = new Row(0, 'start', 'center', false, null, null, { width: SizeValue.fill, height: height });
         glint.add(new Flexible(new Box(new BoxStyle({ height: height, gradient: new LinearGradient(new ColorToken(Color.transparent), theme.surfaceHighlight) })), 1));
         glint.add(new Flexible(new Box(new BoxStyle({ height: height, gradient: new LinearGradient(theme.surfaceHighlight, new ColorToken(Color.transparent)) })), 1));
