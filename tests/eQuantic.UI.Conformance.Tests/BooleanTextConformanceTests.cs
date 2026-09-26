@@ -65,6 +65,12 @@ public class BooleanTextConformanceTests
     [InlineData("try { return Convert.ToBoolean(new DateTime(2026, 1, 2)).ToString(); } catch (InvalidCastException e) { return e.Message; }")]
     // Text with a provider reads as text without one.
     [InlineData("return Convert.ToBoolean(\" TRUE \", System.Globalization.CultureInfo.InvariantCulture);")]          // true
+    // A provider is not consulted, and it is still evaluated, after the value, as C# evaluates every
+    // argument: its side effect happens and its exception is thrown (found in review, #421).
+    [InlineData("int n = 0; IFormatProvider P() { n++; return null; } var b = Convert.ToBoolean(\"true\", P()); return b + \"|\" + n;")] // "True|1"
+    [InlineData("int n = 0; IFormatProvider P() { n++; return null; } object o = 1; var b = Convert.ToBoolean(o, P()); return b + \"|\" + n;")] // "True|1"
+    [InlineData("var order = \"\"; string V() { order += \"v\"; return \"true\"; } IFormatProvider P() { order += \"p\"; return null; } Convert.ToBoolean(V(), P()); return order;")] // "vp"
+    [InlineData("IFormatProvider P() => throw new InvalidOperationException(\"provider\"); try { return Convert.ToBoolean(\"true\", P()).ToString(); } catch (InvalidOperationException e) { return e.Message; }")] // "provider"
     public void ConvertToBoolean_TakesEachOverloadAsDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
