@@ -2,8 +2,8 @@
 
 ## Purpose
 
-How eqc translates a C# expression or pattern into the JavaScript twin: the answer the twin gives
-is the one .NET gives.
+How eqc translates a C# expression, pattern or local into the JavaScript twin: the answer the twin
+gives is the one .NET gives, and plain JavaScript holds nothing of TypeScript.
 
 ## ADDED Requirements
 
@@ -34,3 +34,13 @@ breaks escaped, so the module parses and the value is the one .NET holds.
   constructed without arguments and its three members are concatenated
 - **THEN** the answer is `a`, a line feed, a line feed, a carriage return and a line feed, as .NET
   gives it
+
+### Requirement: Plain JavaScript carries no annotation
+
+A module eqc writes without type annotations, as the design host asks, SHALL hold no TypeScript
+syntax, a local's declared type included.
+
+#### Scenario: A local that starts null
+
+- **WHEN** `string? label = null;` is compiled with type annotations off
+- **THEN** it is written `let label = null;`, and with them on `let label: string | null = null;`

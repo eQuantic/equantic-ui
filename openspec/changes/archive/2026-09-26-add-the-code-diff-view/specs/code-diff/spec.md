@@ -17,6 +17,12 @@ after a change is on the same row on both sides.
 - **WHEN** a diff compares `a`, `b`, `c` with `a`, `X`, `Y`, `c`
 - **THEN** each side draws its own `c`, and the two are at the same height, the original on the left
 
+#### Scenario: A patch written with no context
+
+- **WHEN** a patch whose two hunks only add lines, written with no context (`git diff -U0`), is drawn
+  side by side
+- **THEN** each hunk's header stands on the same row on both sides
+
 ### Requirement: Inline, the removed lines stand before what replaced them
 
 Inline, a `CodeDiff` SHALL draw the lines a change removed between the lines that replaced them, in
@@ -30,8 +36,8 @@ one column, with the original's line numbers beside the modified's.
 ### Requirement: An unchanged run folds into a row that opens
 
 A run of unchanged lines longer than `Context` on each side of a change SHALL fold into one row that
-says how many lines it holds, and a press on that row SHALL open the run on both sides and leave the
-caret where it was.
+says how many lines it holds, and a press on that row SHALL open the run on both sides, leave the
+caret where it was, and leave the keyboard in the side pressed.
 
 #### Scenario: A press on a fold
 
@@ -39,6 +45,11 @@ caret where it was.
   the host's own dispatch
 - **THEN** line 10 is not drawn before the press, is drawn on both sides after it, and the caret did
   not move
+
+#### Scenario: F7 after a press on a fold
+
+- **WHEN** a fold is pressed, and then F7
+- **THEN** the side pressed has the keyboard and the step moves its caret, in a browser as on Photon
 
 #### Scenario: A fold with no words of its own
 
@@ -57,11 +68,16 @@ reveal the change it reaches.
 - **THEN** the caret is on line 10 when it opens, on line 80 after the first press, and back on line
   10 after the second
 
+#### Scenario: A change that removed the end of the text
+
+- **WHEN** a diff of 40 lines against their first 30, with one change at line 5, is stepped twice
+- **THEN** the first step puts the caret on the last line, and the second wraps to line 5
+
 ### Requirement: The modified side edits and is compared again
 
 When a `CodeDiff` compares two texts and is not `ReadOnly`, its modified side SHALL take edits,
 compare the edited document again, and call `OnChanged` with the whole text. A patch's view SHALL
-read only.
+read only, and its editors SHALL hold the lines the patch quotes.
 
 #### Scenario: A character typed
 
@@ -74,3 +90,8 @@ read only.
 - **WHEN** a diff opens one file of a patch with two hunks
 - **THEN** its editor reads only, each side shows the second hunk's header where the patch leaves
   lines out, and its lines are numbered as the file numbers them
+
+#### Scenario: A patch line holding a bare carriage return
+
+- **WHEN** a patch quotes a line holding a carriage return that no line feed follows
+- **THEN** the modified side's editor holds it as one line, as the patch does

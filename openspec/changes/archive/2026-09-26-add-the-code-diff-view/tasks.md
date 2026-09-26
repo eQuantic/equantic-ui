@@ -33,3 +33,9 @@
 - [x] 5.1 The wiki's code editor and components pages, in English and Portuguese
 - [x] 5.2 The plan's 2b rows and the `docs/LEDGER.md` line citing #420
 - [x] 5.3 Archive this change before the merge, so `openspec/specs` on main matches the code
+
+## 6. The author's review
+
+- [x] 6.1 Review the whole diff (`/code-review high`) and fix each defect it confirms, proved failing
+      without its fix
+- [x] 6.2 File what is not a defect of this change (#457)

@@ -13,3 +13,8 @@ import every runtime name its annotations use, `Decimal` included.
   parameter `Func<int, string>? label`
 - **THEN** its module imports `Decimal`, the method is annotated `[Decimal, Decimal]`, and the
   parameter `((value: number) => string) | null`
+
+#### Scenario: A tuple holding an enum
+
+- **WHEN** a record's method returns `(Side Side, int Line)`, `Side` an enum of the app
+- **THEN** it is annotated `[string, number]`, the member string the enum crosses as
