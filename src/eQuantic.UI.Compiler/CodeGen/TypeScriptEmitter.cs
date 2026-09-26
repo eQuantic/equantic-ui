@@ -2452,12 +2452,15 @@ public class TypeScriptEmitter
         string tsType = baseType switch
         {
             "string" or "char" => "string",
-            "int" or "double" or "float" or "number" => "number",
+            // Every integer that is not 64 bits is a JS number, as a float and a double are. A narrow
+            // one reached TypeScript verbatim (`static get top(): byte`), naming nothing there.
+            "int" or "double" or "float" or "number" or "uint" or "short" or "ushort" or "byte" or "sbyte"
+                or "nint" or "nuint" => "number",
             // NOT `number`, either of them. A long is a JS bigint on this side and a decimal is the
             // runtime's Decimal class — `$eq.num.long(0)` and `$eq.num.dec(0)` are what the emitter
             // writes for their literals, and a `number` annotation over either is a lie the rest of
             // the file then typechecks against: `unit.mul(...)` on a "number" is the shape it takes.
-            "long" => "bigint",
+            "long" or "ulong" => "bigint",
             "decimal" => Decimal,
             "bool" or "boolean" => "boolean",
             "void" => "void",

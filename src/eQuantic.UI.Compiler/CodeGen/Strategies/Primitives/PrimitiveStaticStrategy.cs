@@ -6,8 +6,9 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 
 /// <summary>
 /// The static surface of the primitive types themselves — <c>double.IsNaN</c>, <c>int.Clamp</c>,
-/// <c>char.IsAsciiLetter</c>, <c>double.MaxValue</c> — which .NET 7+ made the idiomatic home of
-/// what used to live only on <c>Math</c>. Symbol-first and TABLE-driven: a member is translated
+/// <c>char.IsAsciiLetter</c>, <c>bool.TrueString</c> — which .NET 7+ made the idiomatic home of
+/// what used to live only on <c>Math</c>. Their constants (<c>double.MaxValue</c>) are
+/// InlinedConstantStrategy's. Symbol-first and TABLE-driven: a member is translated
 /// only when the table names it AND the bound symbol's containing type is the primitive, so a
 /// user method that merely shares a name never routes here, and everything outside the table
 /// stays visibly fenced in the BCL audit baseline instead of silently guessed.
@@ -44,7 +45,7 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
             case MemberAccessExpressionSyntax access:
                 return context.SemanticHelper.GetSymbol(access) is { IsStatic: true, ContainingType: { } owner } member
                     && member is IFieldSymbol or IPropertySymbol
-                    && ConstantTable(owner.SpecialType, member.Name) is not null;
+                    && StaticValueTable(owner.SpecialType, member.Name) is not null;
 
             default:
                 return false;
@@ -56,7 +57,7 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
         if (node is MemberAccessExpressionSyntax access)
         {
             var member = context.SemanticHelper.GetSymbol(access)!;
-            return ConstantTable(member.ContainingType!.SpecialType, member.Name)!;
+            return StaticValueTable(member.ContainingType!.SpecialType, member.Name)!;
         }
 
         var invocation = (InvocationExpressionSyntax)node;
@@ -511,56 +512,14 @@ public class PrimitiveStaticStrategy : IExpressionIrStrategy
         _ => null,
     };
 
-    /// <summary>Static constants, per primitive: null = fenced.</summary>
-    private static string? ConstantTable(SpecialType home, string name) => home switch
+    /// <summary>
+    /// The static values of a primitive that are not constants: null = fenced. Every CONSTANT
+    /// (<c>int.MaxValue</c>, <c>double.NaN</c>, <c>long.MaxValue</c>, <c>decimal.MaxValue</c>…) is written
+    /// as its value by InlinedConstantStrategy (priority 25) before this table (12) is asked, so an
+    /// entry for one could never answer.
+    /// </summary>
+    private static string? StaticValueTable(SpecialType home, string name) => home switch
     {
-        SpecialType.System_Double or SpecialType.System_Single => name switch
-        {
-            "MaxValue" when home == SpecialType.System_Double => "1.7976931348623157e308",
-            "MinValue" when home == SpecialType.System_Double => "-1.7976931348623157e308",
-            // float constants as their EXACT double values — (double)float.MaxValue, not the
-            // shortest-round-trip "3.4028235E+38" a display would show.
-            "MaxValue" => "3.4028234663852886e38",
-            "MinValue" => "-3.4028234663852886e38",
-            "Epsilon" when home == SpecialType.System_Double => "5e-324",
-            "NaN" => "NaN",
-            "PositiveInfinity" => "Infinity",
-            "NegativeInfinity" => "-Infinity",
-            // No Pi, E or Tau: each is a `const`, which InlinedConstantStrategy (priority 25) writes
-            // as its exact value before this table (12) is asked, in both homes. The entries this
-            // table had for them could only ever answer the DOUBLE constants, a float's included.
-            _ => null,
-        },
-        SpecialType.System_Int32 => name switch
-        {
-            "MaxValue" => "2147483647",
-            "MinValue" => "-2147483648",
-            _ => null,
-        },
-        SpecialType.System_Int16 => name switch
-        {
-            "MaxValue" => "32767",
-            "MinValue" => "-32768",
-            _ => null,
-        },
-        SpecialType.System_Int64 => name switch
-        {
-            "MaxValue" => "9223372036854775807n",
-            "MinValue" => "-9223372036854775808n",
-            _ => null,
-        },
-        SpecialType.System_Byte => name switch
-        {
-            "MaxValue" => "255",
-            "MinValue" => "0",
-            _ => null,
-        },
-        SpecialType.System_Char => name switch
-        {
-            "MaxValue" => "'\\uffff'",
-            "MinValue" => "'\\u0000'",
-            _ => null,
-        },
         SpecialType.System_Boolean => name switch
         {
             "TrueString" => "'True'",

@@ -152,7 +152,7 @@ public class InvocationStrategy : IExpressionIrStrategy
             var lastSet = Array.FindLastIndex(slots, s => s != null);
             argsList = new List<JsExpr>();
             for (var i = 0; i <= lastSet; i++)
-                argsList.Add(slots[i] ?? JsExpr.Opaque(ObjectCreationStrategy.DefaultLiteralFor(symbol.Parameters[i])));
+                argsList.Add(slots[i] ?? JsExpr.Opaque(ObjectCreationStrategy.DefaultLiteralFor(symbol.Parameters[i], context)));
         }
         var argIrs = argsList;
         // The same arguments as text, for the template branches that splice them.

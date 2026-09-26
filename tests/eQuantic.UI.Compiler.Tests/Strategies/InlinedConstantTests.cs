@@ -63,6 +63,86 @@ public class InlinedConstantTests
         return result.TypeScript;
     }
 
+    /// <summary>
+    /// A constant is written as its value in its C# type (#447): a decimal as the runtime's exact
+    /// Decimal, reached through its type or a <c>using static</c>, and a long as a BigInt. Neither had
+    /// a writer: <c>decimal.maxValue</c> was a ReferenceError, and <c>TimeSpan.TicksPerSecond</c> a
+    /// number the first long threw on. A const of the class's own source keeps its reference.
+    /// </summary>
+    [Fact]
+    public void AConstant_IsWrittenAsItsValue_InItsType()
+    {
+        var ts = Transpile("""
+            using static System.Decimal;
+            namespace App;
+            public class Prices
+            {
+                public const decimal Standard = 1.50m;
+                public decimal Max() => decimal.MaxValue;
+                public decimal Min() => MinValue;
+                public long Ticks() => System.TimeSpan.TicksPerSecond;
+                public ulong Top() => ulong.MaxValue;
+                public decimal Qualified() => Prices.Standard;
+                public decimal Bare() => Standard;
+            }
+            """);
+
+        ts.Should().Contain("$eq.num.dec(\"79228162514264337593543950335\")");
+        ts.Should().Contain("$eq.num.dec(\"-79228162514264337593543950335\")");
+        ts.Should().Contain("return 10000000n;");
+        ts.Should().Contain("return 18446744073709551615n;");
+        ts.Should().Contain("return $eq.num.dec(\"1.50\");");
+        ts.Should().Contain("return Prices.standard;");
+        ts.Should().NotContain("decimal.maxValue").And.NotContain("Decimal.minValue");
+    }
+
+    /// <summary>A constant's own static is annotated in its JavaScript type: a narrow integer as a
+    /// number and a ulong as a bigint, where each reached TypeScript verbatim, naming nothing there.</summary>
+    [Fact]
+    public void AConstantsStatic_IsAnnotatedInItsJavaScriptType()
+    {
+        var ts = Transpile("""
+            namespace App;
+            public class Limits
+            {
+                public const ulong Top = 18446744073709551615UL;
+                public const byte Small = 7;
+                public const ushort Port = 8080;
+                public const sbyte Signed = -3;
+                public ulong ReadTop() => Top;
+                public int Sum() => Small + Port + Signed;
+            }
+            """);
+
+        ts.Should().Contain("static get top(): bigint");
+        ts.Should().Contain("static small: number = 7;");
+        ts.Should().Contain("static port: number = 8080;");
+        ts.Should().Contain("static signed: number = -3;");
+        foreach (var raw in new[] { ": ulong", ": byte", ": ushort", ": sbyte" })
+            ts.Should().NotContain(raw);
+    }
+
+    /// <summary>
+    /// A parameter's default filled in for an argument a named one skips is the constant it is, in
+    /// the parameter's type: a char was written with no quotes (a bare identifier), a string with a
+    /// quote in it as a broken literal, a decimal and a long as numbers, and a float as its own text.
+    /// </summary>
+    [Fact]
+    public void ASkippedParametersDefault_IsWrittenAsItsValue_InItsType()
+    {
+        var ts = Transpile("""
+            namespace App;
+            public class Labels
+            {
+                public static string Label(char c = 'x', string s = "it's", decimal d = 1.5m, long l = 5,
+                    float f = 0.1f, int n = 0) => s;
+                public string Call() => Label(n: 1);
+            }
+            """);
+
+        ts.Should().Contain("Labels.label('x', 'it\\'s', $eq.num.dec(\"1.5\"), 5n, 0.10000000149011612, 1)");
+    }
+
     [Fact]
     public void PackGlyphAccess_InlinesTheConstructor_AtTheUseSite()
     {

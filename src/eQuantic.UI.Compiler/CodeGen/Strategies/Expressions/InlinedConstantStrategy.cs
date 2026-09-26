@@ -15,12 +15,28 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// The initializer lives in the PACK's syntax tree (added to the compilation as a reference source),
 /// so it is converted with the pack tree's own semantic model. Triggers ONLY when the field's
 /// initializer is reachable and side-effect-free; otherwise the fallback member-access applies.
+/// <para>
+/// A <c>const</c> is written as its value in its C# type (<see cref="ConstantLiteral"/>), reached
+/// through its type (<c>decimal.MaxValue</c>) or, for one with no source here to emit a twin from,
+/// by its bare name under a <c>using static</c>.
+/// </para>
 /// </summary>
 public class InlinedConstantStrategy : IConversionStrategy
 {
-    public bool CanConvert(SyntaxNode node, ConversionContext context) =>
-        node is MemberAccessExpressionSyntax
-        && (TryResolveConstant(node, context, out _) || TryResolveInlinable(node, context, out _, out _));
+    public bool CanConvert(SyntaxNode node, ConversionContext context) => node switch
+    {
+        MemberAccessExpressionSyntax =>
+            TryResolveConstant(node, context, out _) || TryResolveInlinable(node, context, out _, out _),
+        // A bare name reaches a const of ANOTHER type only through `using static`, and one with no
+        // source has no twin for the identifier strategy's `Owner.member` to name. An in-source
+        // one keeps its reference, to the static its own module declares.
+        IdentifierNameSyntax identifier
+            when !(identifier.Parent is MemberAccessExpressionSyntax access && access.Name == identifier) =>
+            context.SemanticHelper.GetSymbol(identifier) is IFieldSymbol { IsConst: true } field
+            && !field.Locations.Any(location => location.IsInSource)
+            && TryResolveConstant(node, context, out _),
+        _ => false,
+    };
 
     public string Convert(SyntaxNode node, ConversionContext context)
     {
@@ -28,7 +44,11 @@ public class InlinedConstantStrategy : IConversionStrategy
         // is what lets a page default to a constant from an assembly the client bundle never sees
         // (a server-side domain's `PackageStats.LastVerifiedDownloads`, say: emitting the reference
         // would be "PackageStats is not defined" the moment the page renders).
-        if (TryResolveConstant(node, context, out var constant)) return constant;
+        if (TryResolveConstant(node, context, out var constant))
+        {
+            if (ConstantLiteral.NeedsRuntime(constant)) context.UsedHelpers.Add(Eq.Import);
+            return constant;
+        }
 
         if (!TryResolveInlinable(node, context, out var initializer, out var glyphTypeName))
             return context.Converter.ConvertExpression(((MemberAccessExpressionSyntax)node).Expression);
@@ -44,8 +64,9 @@ public class InlinedConstantStrategy : IConversionStrategy
     }
 
     /// <summary>
-    /// The JS literal for a `const` field access. ENUM members are excluded: their member-name
-    /// string representation is the wire contract (EnumStrategy owns it), not their ordinal.
+    /// The JS literal for a `const` field access, in the field's C# type (<see cref="ConstantLiteral"/>).
+    /// ENUM members are excluded: their member-name string representation is the wire contract
+    /// (EnumStrategy owns it), not their ordinal.
     /// </summary>
     private static bool TryResolveConstant(SyntaxNode node, ConversionContext context, out string literal)
     {
@@ -66,48 +87,15 @@ public class InlinedConstantStrategy : IConversionStrategy
         if (Services.ResourceClasses.IsResourceClass(owner)) return false;
         if (owner.TypeKind == TypeKind.Enum) return false;
 
-        switch (field.ConstantValue)
-        {
-            case null:
-                literal = "null";
-                return true;
-            case string text:
-                literal = $"'{Escape(text)}'";
-                return true;
-            case char character:
-                literal = $"'{Escape(character.ToString())}'";
-                return true;
-            case bool flag:
-                literal = flag ? "true" : "false";
-                return true;
-            // EXACTNESS FIRST: only values a JS number represents exactly are inlined. `long.MaxValue`
-            // as a literal becomes 9223372036854776000 — the dedicated long/decimal strategies keep
-            // those in their compat types, so leave them alone.
-            case decimal:
-                return false;
-            case long or ulong or int or uint or short or ushort or byte or sbyte:
-                var integral = System.Convert.ToDecimal(field.ConstantValue);
-                if (System.Math.Abs(integral) > 9007199254740991m) return false;
-                literal = integral.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                return true;
-            // A FLOAT constant is written as the DOUBLE it is. Its own shortest text names the single
-            // to .NET and a different number to JavaScript: `float.E` printed as "2.7182817" is read
-            // back as 2.7182817000000001, not 2.7182817459106445 — so a design token like `0.38f`
-            // reached arithmetic already off by the difference (SinglePrecision). "R" is the
-            // shortest text that reads back as the same double, which is JavaScript's own rule.
-            case float single:
-                literal = ((double)single).ToString("R", System.Globalization.CultureInfo.InvariantCulture);
-                return true;
-            case double number:
-                literal = number.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
-                return true;
-            default:
-                return false;
-        }
+        // EXACTNESS FIRST, in the value's own type: a decimal and a long reach JavaScript as the
+        // runtime's Decimal and a BigInt, never as a number. A decimal had no writer at all, so
+        // `decimal.MaxValue` emitted `decimal.maxValue` and met a ReferenceError, and a long in a
+        // number's range was written as a number (`TimeSpan.TicksPerSecond`), which the first long
+        // it met threw on. A FLOAT is the double it is: `float.E` printed as "2.7182817" is read back
+        // as 2.7182817000000001, not 2.7182817459106445 (SinglePrecision).
+        literal = ConstantLiteral.Write(field.ConstantValue, field.Type)!;
+        return literal is not null;
     }
-
-    private static string Escape(string value) =>
-        value.Replace("\\", "\\\\").Replace("'", "\\'").Replace("\n", "\\n").Replace("\r", "\\r");
 
     /// <summary>The inlinable initializer for the accessed field, when this is an external constant
     /// of the write-once icon-glyph type with a reachable, side-effect-free value.</summary>
