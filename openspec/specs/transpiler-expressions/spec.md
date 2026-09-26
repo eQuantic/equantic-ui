@@ -1,8 +1,8 @@
-# csharp-translation Specification
+# transpiler-expressions Specification
 
 ## Purpose
-How eqc translates a C# construct into the JavaScript twin: the answer the twin gives is the one
-.NET gives, and the twin typechecks under the runtime's own build.
+How eqc translates a C# expression or pattern into the JavaScript twin: the answer the twin gives
+is the one .NET gives.
 
 ## Requirements
 
@@ -33,25 +33,3 @@ breaks escaped, so the module parses and the value is the one .NET holds.
   constructed without arguments and its three members are concatenated
 - **THEN** the answer is `a`, a line feed, a line feed, a carriage return and a line feed, as .NET
   gives it
-
-### Requirement: A declared default is the constant C# folds
-
-A default value SHALL be the constant the C# compiler folds from its expression, a negative number
-included, both where a type is constructed without the argument and where a named call skips it.
-
-#### Scenario: A negative default
-
-- **WHEN** a record declares `int SourceLine = -1` and a call names another argument and skips it
-- **THEN** the twin constructs it with -1, not null
-
-### Requirement: A record's twin says what C# declares
-
-A record's twin SHALL annotate a nullable delegate as a function that may be missing, and SHALL
-import every runtime name its annotations use, `Decimal` included.
-
-#### Scenario: A record with a fold label and an amount
-
-- **WHEN** a record has a `decimal Amount`, a method returning `(decimal Net, decimal Tax)`, and a
-  parameter `Func<int, string>? label`
-- **THEN** its module imports `Decimal`, the method is annotated `[Decimal, Decimal]`, and the
-  parameter `((value: number) => string) | null`

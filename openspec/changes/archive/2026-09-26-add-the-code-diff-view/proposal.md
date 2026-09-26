@@ -28,8 +28,9 @@ not a line": a view draws ROWS, some of which are lines of its document and some
   code editor's ⌘F and the diff's keys use it, so of two on one page the one in use answers.
 - The macOS shell names F1 to F20, PageUp and PageDown (`MacKeys`), so a chord written F7 matches.
 - eqc translates, as .NET answers, the shapes this code was the first to cross: an extended
-  property pattern, a string holding a line break, a negative declared default, and a record's
-  nullable delegate and decimal annotations.
+  property pattern, a string holding a line break, and a record's nullable delegate and decimal
+  annotations. A negative declared default is left to #409, whose constructor writes every default
+  as its declaration gives it.
 
 A break, allowed in preview: `CodeGrid` takes the rows as a third member, `CodeBlock.Gutter` an
 optional numbering, and Photon's `ShortcutBinding` a scope, so a compiled call to their old shapes
@@ -42,11 +43,13 @@ the editor. Migration line: rebuild against the new shapes, no source change nee
 
 - `code-diff`: two versions of a text and what differs between them, drawn as rows.
 - `keyboard-shortcuts`: a chord's scope, and a key's name on every host.
-- `csharp-translation`: the translation rules this change settled, each against .NET's answer.
+- `transpiler-expressions`: an extended property pattern and a string literal, each against .NET's
+  answer.
 
 ### Modified Capabilities
 
-None.
+- `transpiler-records`: a record's twin annotates a nullable delegate as a function that may be
+  missing, and imports the `Decimal` its annotations name.
 
 ## Impact
 

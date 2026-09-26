@@ -705,6 +705,19 @@ record of a release, the wiki's Upgrading page is the distillate.
   `CLAUDE.md` and `AGENTS.md` held so by `WorkflowSectionTests`; OpenSpec 1.13.2, pinned by a
   lockfile and validated strictly in CI; and a `SessionStart` hook that gives a cloud container the
   owner's identity, no foreign signature and the pinned .NET SDK, asserted by CI's `session-start` job.
+
+- **2026-09-26 · A record member starts as its declaration says**: a record's field initializer went
+  nowhere, and the defaults that crossed were copied as literals into every construction site, so a
+  decimal, a long, a float or a `new()` came out as a plain number or as null
+  ([#385](https://github.com/eQuantic/equantic-ui/issues/385)). The twin's constructor now writes
+  every member's default from its declaration, converted like any expression, and a construction
+  that skips a member leaves it to the constructor; a default and a base clause read the primary
+  constructor's parameters as its own. From the review: a zero built member by member names a struct
+  no syntax of the class does, and every emitter now imports it, and a base clause that computed
+  from a parameter read `this` before `super()`. Measured and left to their own issues: an
+  initializer's side effect when an object initializer sets its member
+  ([#413](https://github.com/eQuantic/equantic-ui/issues/413)), and statics read before C# would have
+  zeroed them ([#417](https://github.com/eQuantic/equantic-ui/issues/417)).
 - **2026-09-26 · The code diff view**: the view half of slice 2b of
   [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#420](https://github.com/eQuantic/equantic-ui/issues/420), [#412](https://github.com/eQuantic/equantic-ui/pull/412)).
   `CodeDiff` draws two texts, or one file of a patch, side by side (the sides level at every change)
@@ -713,8 +726,9 @@ record of a release, the wiki's Upgrading page is the distillate.
   the changes with F7 and the toolbar, and edits the modified side, compared again after every edit.
   Under it the engine maps a view's lines to rows (`CodeRows`), `CodeDiffLayout` lays out each side
   and `CodePatch` reads a unified diff, and `CodeBlock` draws the rows. On the way, eqc's twins of
-  this code were the first to cross an array of a union, a tuple return, a local starting null, a
-  function-typed parameter and a negative declared default, and each crossed wrong; an extended
+  this code were the first to cross an array of a union, a tuple return, a local starting null and a
+  function-typed parameter, and each crossed wrong (a negative declared default did too, and
+  [#409](https://github.com/eQuantic/equantic-ui/pull/409), above, settled it first); an extended
   property pattern read `changes.Count`, which is undefined; a button drawn in a code surface never
   heard its click on the web; a `Shortcut` answered for the whole page, so F7 in one diff stepped
   another, and `FocusScoped` now makes a chord the subtree's own (FLUTTER-PARITY said SAME, and it

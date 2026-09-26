@@ -92,12 +92,53 @@ public class RecordTypeEmitter
     /// The default of a declared type, asked of the SYMBOL where one is available. The syntax-only
     /// fallback cannot see through a name: it answers <c>null</c> for <c>char</c> and for every
     /// enum, where C# gives <c>'\0'</c> and the zero-valued member. A static of either type would
-    /// then hold a different value in the twin than on the server, silently.
+    /// then hold a different value in the twin than on the server, silently. It goes through the
+    /// converter, which registers every struct the zero constructs for this module's imports.
     /// </summary>
     private string DefaultOf(TypeSyntax type) =>
         ModelFor(type)?.GetTypeInfo(type).Type is { } symbol
-            ? DefaultValue.Of(symbol)
+            ? _converter.DefaultOf(symbol)
             : TypeDeclarationExtensions.DefaultFor(type);
+
+    /// <summary>
+    /// What an omitted argument leaves in a member (#385): its declaration's own initializer, a
+    /// positional parameter's default or a property's or a field's <c>= value</c>, converted like
+    /// any expression, and the type's default where there is none. This constructor is the one
+    /// place a member's default is written. A construction site that skips a member passes
+    /// <c>undefined</c> and lets this default run, in the twin's own module where the initializer's
+    /// names resolve. Copied into the call site instead, it had to be a literal: a field's
+    /// initializer went nowhere at all, and a decimal, a long, a float or a <c>new()</c> came out
+    /// as a plain number or as null.
+    /// </summary>
+    private string DefaultFor(TypeDeclarationSyntax type, ValueMember member)
+    {
+        var (declared, initializer) = Declaration(type, member.Display);
+        if (initializer is null) return declared is null ? "null" : DefaultOf(declared);
+        // The default runs in the constructor's parameter list, where a positional parameter the
+        // initializer reads (`Tag = "#" + Id`) is the parameter itself, and no member is set yet.
+        return _converter.WithConstructorParametersInScope(
+            () => _converter.ConvertExpression(initializer, declared?.ToString()));
+    }
+
+    /// <summary>The type and the initializer a value member is declared with, found by its name
+    /// among the positional parameters, the properties and the fields.</summary>
+    private static (TypeSyntax? Type, ExpressionSyntax? Initializer) Declaration(TypeDeclarationSyntax type, string name)
+    {
+        if (type.ParameterList?.Parameters.FirstOrDefault(p => p.Identifier.Text == name) is { } parameter)
+            return (parameter.Type, parameter.Default?.Value);
+        foreach (var member in type.Members)
+        {
+            switch (member)
+            {
+                case PropertyDeclarationSyntax property when property.Identifier.Text == name:
+                    return (property.Type, property.Initializer?.Value);
+                case FieldDeclarationSyntax field
+                    when field.Declaration.Variables.FirstOrDefault(v => v.Identifier.Text == name) is { } variable:
+                    return (field.Declaration.Type, variable.Initializer?.Value);
+            }
+        }
+        return (null, null);
+    }
 
     /// <summary>Every accessor bodyless and no expression body — an auto-property and nothing else.</summary>
     private static bool IsPureAuto(PropertyDeclarationSyntax property) =>
@@ -285,9 +326,11 @@ public class RecordTypeEmitter
         // members passed to the base record's primary constructor are assigned by `super`, not here.
         // TS mode annotates ctor params (`label: any = null`) — a bare `= null` default would make
         // TypeScript infer the param TYPE as `null`. Plain-JS mode stays annotation-free (.mjs).
+        _converter.SetCurrentClass(name);
+        var defaults = members.Select(m => DefaultFor(type, m)).ToList();
         sb.Append(tsTypeDeclarations
-            ? $"constructor({string.Join(", ", members.Select(m => $"{m.Js}: any = {m.Default}"))}) {{ "
-            : $"constructor({string.Join(", ", members.Select(m => $"{m.Js} = {m.Default}"))}) {{ ");
+            ? $"constructor({string.Join(", ", members.Select((m, i) => $"{m.Js}: any = {defaults[i]}"))}) {{ "
+            : $"constructor({string.Join(", ", members.Select((m, i) => $"{m.Js} = {defaults[i]}"))}) {{ ");
         if (baseName != null) sb.Append($"super({superArgs}); ");
         sb.Append(ChainedOverloads(type, members));
         foreach (var m in members)
@@ -487,7 +530,10 @@ public class RecordTypeEmitter
                 }
                 else
                 {
-                    superArgs.Add(_converter.ConvertExpression(arg.Expression));
+                    // It runs before `super()`, where the parameters are the constructor's own and
+                    // `this` cannot be read: `: Base(X + 1)` wrote `super(this.x + 1)`, which threw.
+                    superArgs.Add(_converter.WithConstructorParametersInScope(
+                        () => _converter.ConvertExpression(arg.Expression)));
                 }
             }
         }

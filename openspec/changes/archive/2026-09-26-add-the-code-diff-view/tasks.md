@@ -25,7 +25,7 @@
 
 - [x] 4.1 Name each member of an extended property pattern, and answer false on a null on the path
 - [x] 4.2 Quote every string through one writer that escapes its line breaks
-- [x] 4.3 Fold a negative declared default, and write a record's nullable delegate and decimal right
+- [x] 4.3 Write a record's nullable delegate and decimal right, and leave a negative default to #409
 - [x] 4.4 Check: the conformance suite on both sides, and the runtime's `tsc` over every twin
 
 ## 5. Documentation

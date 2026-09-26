@@ -331,7 +331,7 @@ export class CodeDiff extends StatefulComponent {
             if (count === 0 || start + count - 1 < first || start > last) continue;
             let end = Math.min(start + count - 1, document.lineCount - 1);
             marks.push(new CodeDecoration(new CodeRange(new CodePosition(start, 0), new CodePosition(end, document.line(end).length)), 'line', line));
-            for (const inner of change.inner) marks.push(new CodeDecoration(modifiedSide ? inner.modified : inner.original, 'highlight', word));
+            for (const inner of change.inner) marks.push(new CodeDecoration(modifiedSide ? inner.modified : inner.original, undefined, word));
         }
         let composing: any; 
         if ((composing = composition) != null) marks.push(new CodeDecoration(composing, 'underline'));

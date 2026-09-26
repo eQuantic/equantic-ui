@@ -41,6 +41,10 @@ public class RecordMethodConformanceTests
     // inside a JavaScript string literal is a syntax error that took the whole module with it.
     [InlineData("public record Sep(string Joined = \"a\" + \"\\n\", char Line = '\\n', string Plain = \"\\r\\n\");", "new Sep().Joined + new Sep().Line + new Sep().Plain")]
     [InlineData("public record Sep(string Joined = \"a\" + \"\\n\", char Line = '\\n', string Plain = \"\\r\\n\");", "new Sep(Plain: \"z\").Joined + new Sep(Plain: \"z\").Line")]
+    // A declared default gives the value its declaration does, whatever expression wrote it, where a named call
+    // skips it: `-1` is a minus over a literal, and an optional `int SourceLine = -1` once constructed as null,
+    // which a diff's gap row read as the other document's first line.
+    [InlineData("public record Filler(int BeforeLine, int Rows, int SourceLine = -1, double Scale = -0.5, int Mask = 1 << 3, string Tag = \"a\" + \"b\", string? Label = null);", "new Filler(3, 1, Label: \"h\").SourceLine + \"|\" + new Filler(3, 1, Label: \"h\").Scale + \"|\" + new Filler(3, 1, Label: \"h\").Mask + \"|\" + new Filler(3, 1, Label: \"h\").Tag")]
     public void RecordMethods_MatchDotNet(string prelude, string expression)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

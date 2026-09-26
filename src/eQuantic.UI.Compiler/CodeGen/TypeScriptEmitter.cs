@@ -543,11 +543,11 @@ public class TypeScriptEmitter
                     var ctorDef = component.Constructors.OrderByDescending(ct => ct.Parameters.Count).FirstOrDefault();
                     var ctorParams = ctorDef?.Parameters ?? new System.Collections.Generic.List<ParameterDefinition>();
                     // Auto-properties that must hold a value even when the caller supplies none: an explicit
-                    // C# initializer, or (enums) the implicit zero-member default the server-side C# has and
-                    // `undefined` does not — see PropertyDefinition.ImplicitDefaultJs.
+                    // C# initializer, or the implicit default of a value type, which the server-side C#
+                    // has and `undefined` does not — see ImplicitDefault.
                     var autoDefaults = component.Properties
                         .Where(p => !p.IsStatic && IsAutoProperty(p)
-                                    && (p.DefaultValueNode != null || p.ImplicitDefaultJs != null))
+                                    && (p.DefaultValueNode != null || ImplicitDefault(p) != null))
                         .ToList();
                     // EITHER form of body counts: a block, or the arrow a one-line constructor is
                     // written with. Only the block was read, so `public Chart(x) => _x = x;` emitted a
@@ -641,10 +641,7 @@ public class TypeScriptEmitter
                                 var cn = p.Name.ToCamelCase();
                                 var def = p.DefaultValueNode != null
                                     ? _converter.ConvertExpression(p.DefaultValueNode, p.Type)
-                                    : p.ImplicitDefaultJs!;
-                                // Same seam as above: ImplicitDefaultJs is parser-made text the
-                                // converter never saw, so the $eq it may carry is marked here.
-                                if (def.Contains("$eq.")) component.UsedHelpers.Add(Eq.Import);
+                                    : ImplicitDefault(p)!;
                                 statements.Add(DefaultIfUndefined(cn, def));
                             }
                             var bodyLine = statements.Count + 1;
@@ -1104,8 +1101,57 @@ public class TypeScriptEmitter
         if (csharpType.EndsWith('?')) return "null";
         if (ImplicitValueTypeDefault(csharpType) is { } byName) return byName;
         if (BindType(typeNode) is not { } symbol) return null;
-        var bySymbol = Strategies.DefaultValue.Of(symbol);
+        var bySymbol = _converter.DefaultOf(symbol);
         return bySymbol == "null" ? null : bySymbol;
+    }
+
+    /// <summary>
+    /// The JS literal for an uninitialized VALUE-TYPE property's C# default. A field of a value type
+    /// is zero in C# whether or not anyone wrote <c>= 0</c>; on the client it is <c>undefined</c>
+    /// unless someone writes it, and the two are not the same value.
+    /// <para>
+    /// This started at enums, where the divergence is loud: an unset enum is its zero member, lowered
+    /// as a string, so a <c>status === 'none'</c> test that is TRUE on the server takes the other
+    /// branch after hydration. Numbers were left out because <c>undefined</c> is falsy and reads like
+    /// <c>x > 0</c> behave the same — which is true right up to the first ARITHMETIC:
+    /// <c>Math.max(w, undefined)</c> is NaN, and a NaN width reaches the stylesheet as
+    /// <c>width:NaNpx</c>, a rule the CSS parser drops whole. It showed up on a code block, on a
+    /// client-rendered page only, because SSR computes the same property in C# where it is 0.
+    /// </para>
+    /// <para>
+    /// The value is answered by the one table (<see cref="Strategies.DefaultValue"/>), and it
+    /// has to be: a `long` defaults to 0n and a `decimal` to a Decimal, and answering plain `0` for
+    /// them put a NUMBER in a slot the twin declares `bigint`, so the first arithmetic on it threw
+    /// "Cannot mix BigInt and other types" — in the browser only, after hydration, on a page whose
+    /// server render was perfect.
+    /// </para>
+    /// <para>It is decided HERE, where the module's imports are, and through the converter: the
+    /// parser used to write it as text, so a struct the zero constructs (<c>new Outer(new Inner(),
+    /// 0)</c>) was named in a module that never imported it (found in review, #409).</para>
+    /// <para>Null for reference types, where C#'s default and `undefined` really do behave alike.</para>
+    /// </summary>
+    /// <returns>The JS default, or null where there is none to write (a reference type, a nullable
+    /// value type, an enum with no zero member — C#'s default there is null or an unnamed value,
+    /// and `undefined` is the honest twin).</returns>
+    private string? ImplicitDefault(PropertyDefinition property)
+    {
+        if (property.Node is not { Initializer: null } node || BindType(node.Type) is not { } type) return null;
+
+        // An enum with no zero member: C#'s default is an unnamed value, so leave the slot alone
+        // rather than inventing a name for it. DefaultValue answers "0" there, which would be a
+        // number in a slot the twin declares as the member-name string.
+        if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType
+            && !enumType.IsFlagsEnum()
+            && !enumType.GetMembers().OfType<IFieldSymbol>().Any(field => field.HasConstantValue
+                && Convert.ToInt64(field.ConstantValue, System.Globalization.CultureInfo.InvariantCulture) == 0))
+        {
+            return null;
+        }
+
+        // A struct whose twin cannot build its zero answers `undefined`, which IS the slot left
+        // alone: writing it would only emit `if (this.width === undefined) this.width = undefined`.
+        var value = _converter.DefaultOf(type);
+        return value is "null" or "undefined" ? null : value;
     }
 
     private static string? ImplicitValueTypeDefault(string csharpType) => csharpType switch
