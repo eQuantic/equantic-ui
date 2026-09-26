@@ -198,7 +198,7 @@ function formatCore(
     if (typeof value === 'number' || typeof value === 'bigint' || value instanceof Decimal) {
       result = formatNumber(value, format, kind);
     } else if (date !== null) {
-      result = formatDate(date, format, fractionOf(value, date));
+      result = formatDate(date, format, () => fractionOf(value, date));
     }
   }
 
@@ -685,7 +685,10 @@ const DATE_STYLES: Record<string, Intl.DateTimeFormatOptions> = {
 /** One `Intl` part, for the NAMES a pattern cannot spell — months, weekdays, the AM/PM designator.
  * `Intl` is exactly right about these, in every culture, which is why they are not in the patterns. */
 function namePart(value: Date, options: Intl.DateTimeFormatOptions, type: string): string {
-  const parts = new Intl.DateTimeFormat(activeFormatLocale(), options).formatToParts(value);
+  // With no culture in force the names are the invariant culture's, as the patterns are: the
+  // host's own locale wrote `quinta-feira` into an invariant layout on a Portuguese machine.
+  const locale = formatLocale() === undefined ? INVARIANT_LOCALE : activeFormatLocale();
+  const parts = new Intl.DateTimeFormat(locale, options).formatToParts(value);
   return parts.find((part) => part.type === type)?.value ?? '';
 }
 
@@ -696,7 +699,7 @@ function namePart(value: Date, options: Intl.DateTimeFormatOptions, type: string
  * digits), `K` writes nothing for a value with no kind, `%` marks a lone token, and anything
  * unrecognized is a literal too.
  */
-function renderPattern(value: Date, pattern: string, fraction: string): string {
+function renderPattern(value: Date, pattern: string, fraction: () => string): string {
   const hours24 = value.getHours();
   const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
   const out: string[] = [];
@@ -711,7 +714,7 @@ function renderPattern(value: Date, pattern: string, fraction: string): string {
     if (ch === 'f' || ch === 'F') {
       let digits = 1;
       while (i + digits < pattern.length && pattern[i + digits] === ch) digits++;
-      const written = fraction.slice(0, Math.min(digits, 7));
+      const written = fraction().slice(0, Math.min(digits, 7));
       if (ch === 'f') {
         out.push(written);
       } else {
@@ -827,7 +830,20 @@ function renderPattern(value: Date, pattern: string, fraction: string): string {
 
 /** The invariant culture's abbreviated names, which `R` writes whatever culture is reading. */
 const INVARIANT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const INVARIANT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const INVARIANT_MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 
 /** `yyyy-MM-dd` and `HH:mm:ss` from a date's own parts: a DateTime keeps no time zone to shift. */
 function sortableParts(value: Date): { date: string; time: string } {
@@ -842,24 +858,31 @@ function sortableParts(value: Date): { date: string; time: string } {
  * Formats a date through a standard specifier or a custom picture, as .NET formats a DateTime:
  * its kind is not tracked (a wall-clock value, .NET's `Unspecified`), so the round-trip, sortable
  * and RFC 1123 forms write its own parts, and only `U` converts, reading it as local time as .NET
- * does. `fraction` is its fraction of a second, seven digits (#388).
+ * does. `fraction` gives its fraction of a second, seven digits, asked only by what writes it (#388).
  */
-function formatDate(value: Date, format: string, fraction: string): string {
+function formatDate(value: Date, format: string, fraction: () => string): string {
   // The invariant forms first: they are DEFINED to ignore the culture, which is the whole reason a
   // wire format uses them. They wrote `toISOString()`, which is UTC, so a page off UTC shifted the
   // hour and `o` spelled a `Z` a wall-clock value does not have.
-  const { date, time } = sortableParts(value);
   switch (format) {
     case 'O':
-    case 'o':
-      return `${date}T${time}.${fraction}`;
-    case 's':
+    case 'o': {
+      const { date, time } = sortableParts(value);
+      return `${date}T${time}.${fraction()}`;
+    }
+    case 's': {
+      const { date, time } = sortableParts(value);
       return `${date}T${time}`;
-    case 'u':
+    }
+    case 'u': {
+      const { date, time } = sortableParts(value);
       return `${date} ${time}Z`;
+    }
     case 'R':
-    case 'r':
+    case 'r': {
+      const { date, time } = sortableParts(value);
       return `${INVARIANT_DAYS[value.getDay()]}, ${date.slice(8)} ${INVARIANT_MONTHS[value.getMonth()]} ${date.slice(0, 4)} ${time} GMT`;
+    }
     case 'U': {
       // The full date and time of the value read as local time and moved to UTC, as .NET's
       // ToUniversalTime moves an unspecified one.
@@ -943,7 +966,7 @@ function general(value: unknown): string {
   if (typeof value === 'bigint' || value instanceof Decimal) return plainDigits(value);
   if (typeof value === 'boolean') return value ? 'True' : 'False';
   const date = asJsDate(value);
-  if (date !== null) return formatDate(date, 'G', fractionOf(value, date));
+  if (date !== null) return formatDate(date, 'G', () => fractionOf(value, date));
   return String(value);
 }
 

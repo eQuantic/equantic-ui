@@ -17,6 +17,15 @@ public class DateTimeStrategy : ConversionStrategyBase
 {
     private const string TypeName = "System.DateTime";
 
+    /// <summary>The methods that are a standard specifier by another name.</summary>
+    private static readonly Dictionary<string, string> CultureStrings = new(StringComparer.Ordinal)
+    {
+        ["ToShortDateString"] = "d",
+        ["ToLongDateString"] = "D",
+        ["ToShortTimeString"] = "t",
+        ["ToLongTimeString"] = "T",
+    };
+
     public override bool CanConvert(SyntaxNode node, ConversionContext context)
     {
         switch (node)
@@ -63,6 +72,11 @@ public class DateTimeStrategy : ConversionStrategyBase
                     return $"{Eq.DateTime}.{name.ToCamelCase()}({args})";
                 }
                 var receiver = context.Converter.ConvertExpression(ma.Expression);
+                // The short and long date and time strings are .NET's ToString("d"), ("D"), ("t")
+                // and ("T") in the current culture, and go where ToString goes; the twin has no
+                // method by those names, so each was a TypeError in the browser (found in review, #388).
+                if (CultureStrings.TryGetValue(name, out var specifier))
+                    return $"{Eq.Format}({receiver}, '{specifier}')";
                 return $"{receiver}.{name.ToCamelCase()}({args})";
             }
 
