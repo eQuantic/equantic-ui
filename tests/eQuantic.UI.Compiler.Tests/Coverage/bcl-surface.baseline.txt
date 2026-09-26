@@ -1,7 +1,7 @@
 # eqc BCL surface audit — the coverage DENOMINATOR, one verdict per probed member.
 # native = a strategy mapped it to plain JS · eq = routed through a $eq compat helper
 # fenced:EQxxxx = refused with that diagnostic · invalid-probe = the probe itself doesn't compile
-# totals: eq=188 · fenced=42 · invalid-probe=6 · native=727
+# totals: eq=197 · fenced=80 · invalid-probe=6 · native=727
 native         Array.MaxLength
 native         Boolean.CompareTo(Boolean)
 native         Boolean.CompareTo(Object)
@@ -223,13 +223,60 @@ native         DateTimeOffset.TotalOffsetMinutes
 native         DateTimeOffset.UtcDateTime
 native         DateTimeOffset.UtcTicks
 native         DateTimeOffset.Year
+fenced:EQ2004  Decimal.Abs(Decimal)
+fenced:EQ2004  Decimal.Add(Decimal,Decimal)
+fenced:EQ2004  Decimal.Ceiling(Decimal)
+fenced:EQ2004  Decimal.Clamp(Decimal,Decimal,Decimal)
+fenced:EQ2004  Decimal.Compare(Decimal,Decimal)
 fenced:EQ2004  Decimal.CompareTo(Decimal)
 fenced:EQ2004  Decimal.CompareTo(Object)
+fenced:EQ2004  Decimal.CopySign(Decimal,Decimal)
+fenced:EQ2004  Decimal.Divide(Decimal,Decimal)
 fenced:EQ2004  Decimal.Equals(Decimal)
+fenced:EQ2004  Decimal.Equals(Decimal,Decimal)
 fenced:EQ2004  Decimal.Equals(Object)
+fenced:EQ2004  Decimal.Floor(Decimal)
+fenced:EQ2004  Decimal.FromOACurrency(Int64)
+fenced:EQ2004  Decimal.GetBits(Decimal)
+fenced:EQ2004  Decimal.IsCanonical(Decimal)
+fenced:EQ2004  Decimal.IsEvenInteger(Decimal)
+fenced:EQ2004  Decimal.IsInteger(Decimal)
+fenced:EQ2004  Decimal.IsNegative(Decimal)
+fenced:EQ2004  Decimal.IsOddInteger(Decimal)
+fenced:EQ2004  Decimal.IsPositive(Decimal)
+fenced:EQ2004  Decimal.Max(Decimal,Decimal)
+fenced:EQ2004  Decimal.MaxMagnitude(Decimal,Decimal)
+eq             Decimal.MaxValue
+fenced:EQ2004  Decimal.Min(Decimal,Decimal)
+fenced:EQ2004  Decimal.MinMagnitude(Decimal,Decimal)
+eq             Decimal.MinValue
+eq             Decimal.MinusOne
+fenced:EQ2004  Decimal.Multiply(Decimal,Decimal)
+fenced:EQ2004  Decimal.Negate(Decimal)
+eq             Decimal.One
+eq             Decimal.Parse(String)
+fenced:EQ2004  Decimal.Remainder(Decimal,Decimal)
+eq             Decimal.Round(Decimal)
+eq             Decimal.Round(Decimal,Int32)
+eq             Decimal.Round(Decimal,Int32,MidpointRounding)
 native         Decimal.Scale
+fenced:EQ2004  Decimal.Sign(Decimal)
+fenced:EQ2004  Decimal.Subtract(Decimal,Decimal)
+fenced:EQ2004  Decimal.ToByte(Decimal)
+fenced:EQ2004  Decimal.ToDouble(Decimal)
+fenced:EQ2004  Decimal.ToInt16(Decimal)
+fenced:EQ2004  Decimal.ToInt32(Decimal)
+fenced:EQ2004  Decimal.ToInt64(Decimal)
+fenced:EQ2004  Decimal.ToOACurrency(Decimal)
+fenced:EQ2004  Decimal.ToSByte(Decimal)
+fenced:EQ2004  Decimal.ToSingle(Decimal)
 native         Decimal.ToString()
 eq             Decimal.ToString(String)
+fenced:EQ2004  Decimal.ToUInt16(Decimal)
+fenced:EQ2004  Decimal.ToUInt32(Decimal)
+fenced:EQ2004  Decimal.ToUInt64(Decimal)
+fenced:EQ2004  Decimal.Truncate(Decimal)
+eq             Decimal.Zero
 native         Dictionary<String,Int32>.Add(String,Int32)
 native         Dictionary<String,Int32>.Capacity
 native         Dictionary<String,Int32>.Clear()
