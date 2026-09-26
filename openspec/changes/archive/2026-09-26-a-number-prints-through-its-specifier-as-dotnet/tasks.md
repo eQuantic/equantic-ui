@@ -16,3 +16,12 @@
 - [x] 3.1 Add the `docs/LEDGER.md` line citing #393
 - [x] 3.2 Update the wiki's SupportedFeatures page, English and Portuguese, on a wiki branch named like this pull request's
 - [x] 3.3 Archive this change before the merge
+
+## 4. Review
+
+- [x] 4.1 Write `X` and `B` at the integer's width, which the compiler passes as the kind (`int16`, `sbyte`…)
+- [x] 4.2 Draw a custom picture as .NET draws it: sections, text, percent and per mille, exponents, scaling commas
+- [x] 4.3 Take a precision past the 100 digits `Intl` writes after the point, and throw for a specifier the type does not take
+- [x] 4.4 Group as .NET groups (es-ES), and write the culture's minus sign in `D`, `G` and `R` (sv-SE)
+- [x] 4.5 Check: the conformance class grows to 34 cases, 16 of them failing without these fixes, and the cross-pinned fixture gains es-ES, sv-SE, the infinities, `E2` and two pictures
+- [x] 4.6 File what the review found outside this change: #454, #455, #456

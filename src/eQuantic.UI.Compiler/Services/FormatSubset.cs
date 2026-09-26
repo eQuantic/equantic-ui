@@ -15,8 +15,11 @@ public readonly record struct TemplateHole(int Index, string Spec);
 /// <para>
 /// Out, and each for a reason worth stating: alignment (<c>{0,10}</c>) pads to a width the
 /// browser measures differently for the same string; <c>X</c> prints a negative number as two's
-/// complement at the C# TYPE's width, and JavaScript hands the runtime one untyped number; <c>R</c>
-/// and <c>G17</c> are round-trip forms whose digit choice is the CLR's, not ICU's.
+/// complement at the C# TYPE's width, which the compiler passes with every integer whose type it
+/// knows (#445) but not with an argument typed as an object, which reaches the runtime as one
+/// untyped number. <c>R</c>, <c>G</c> with a precision, <c>B</c> and a picture's sections and
+/// exponents are written as .NET writes them since #383 and #445, and wait for the subset to be
+/// widened with rows that prove them (#456).
 /// </para>
 /// </summary>
 public static class FormatSubset
