@@ -63,7 +63,7 @@ internal static class OverloadedMethods
         var errors = new List<CompilationError>();
         CheckOne(type, sourcePath, isComponent, errors);
         if (errors.Count == 0 && model is not null) CheckInherited(type, sourcePath, isComponent, model, errors);
-        if (errors.Count == 0 && model is not null) CheckDefaults(type, sourcePath, model, errors);
+        if (errors.Count == 0 && model is not null) CheckDefaults(type, sourcePath, isComponent, model, errors);
         if (isComponent)
         {
             foreach (var nested in type.Members.OfType<ClassDeclarationSyntax>()
@@ -120,7 +120,7 @@ internal static class OverloadedMethods
     /// base's, and a member that implements the default's interface member because the derived class
     /// lists the interface again.
     /// </summary>
-    private static void CheckDefaults(TypeDeclarationSyntax type, string sourcePath, SemanticModel model,
+    private static void CheckDefaults(TypeDeclarationSyntax type, string sourcePath, bool isComponent, SemanticModel model,
         List<CompilationError> errors)
     {
         if (model.SyntaxTree != type.SyntaxTree || model.GetDeclaredSymbol(type) is not INamedTypeSymbol declared)
@@ -143,7 +143,7 @@ internal static class OverloadedMethods
              current is { DeclaringSyntaxReferences.Length: > 0 } && seen.Add(current);
              current = current.BaseType)
         {
-            foreach (var member in InstanceMembers(current))
+            foreach (var member in InstanceMembers(current, isComponent))
                 inherited.TryAdd(Lowered(member), new Holder($"'{current.Name}.{Shown(member)}', which it inherits", FromInterface: false, Contract: null));
             foreach (var parameter in PrimaryParameters(current))
                 inherited.TryAdd(parameter.ToCamelCase(),
@@ -158,7 +158,7 @@ internal static class OverloadedMethods
         }
 
         var taken = new Dictionary<string, string>();
-        foreach (var member in InstanceMembers(declared))
+        foreach (var member in InstanceMembers(declared, isComponent))
         {
             var name = Lowered(member);
             taken.TryAdd(name, $"'{declared.Name}.{Shown(member)}'");
@@ -252,10 +252,14 @@ internal static class OverloadedMethods
     /// <c>IA.M()</c> beside a default <c>IB.M()</c>, and an event, which lowers to an instance field
     /// (all found in review, #418). An indexer is written into no twin (#427), so it takes no name.
     /// </summary>
-    private static IEnumerable<ISymbol> InstanceMembers(INamedTypeSymbol type) =>
+    private static IEnumerable<ISymbol> InstanceMembers(INamedTypeSymbol type, bool isComponent) =>
         type.GetMembers().Where(member => !member.IsStatic && !member.IsImplicitlyDeclared
             && member is IFieldSymbol or IEventSymbol or IPropertySymbol { IsIndexer: false }
-                or IMethodSymbol { MethodKind: MethodKind.Ordinary or MethodKind.ExplicitInterfaceImplementation });
+                or IMethodSymbol { MethodKind: MethodKind.Ordinary or MethodKind.ExplicitInterfaceImplementation }
+            // A component's server-only method never reaches its twin, so it takes no name there
+            // (asked in review, #418), as CheckInherited leaves it out too.
+            && !(isComponent && member is IMethodSymbol
+                && member.GetAttributes().Any(attribute => attribute.AttributeClass?.Name is "ServerOnlyAttribute" or "ServerOnly")));
 
     /// <summary>
     /// A method whose name a BASE already takes (see the type's remarks): the first inherited method
