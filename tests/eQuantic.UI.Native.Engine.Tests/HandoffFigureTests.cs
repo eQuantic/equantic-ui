@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using eQuantic.UI.Primitives;
 using FluentAssertions;
 using Xunit;
@@ -29,9 +31,11 @@ public class HandoffFigureTests
     private const int Floor = 52;
 
     /// <summary>The counted figures (<c>data-figure</c>) the pages carried when this was written: the
-    /// component count on Foundations, and three times on the design system's index (its opening, its
-    /// header metric and its catalog summary).</summary>
-    private const int CountedFloor = 4;
+    /// component count on Foundations, three times on the design system's index (its opening, its
+    /// header metric and its catalog summary), and five on the Handoff page's gallery row (how many
+    /// the Studio gallery builds, of how many, and how many it is missing, twice where the row repeats
+    /// them).</summary>
+    private const int CountedFloor = 9;
 
     private static readonly Regex TokenFigure =
         new("data-token=\"(?<path>[^\"]+)\"[^>]*>(?<text>[^<]*)<", RegexOptions.Compiled);
@@ -78,11 +82,19 @@ public class HandoffFigureTests
     [Fact]
     public void CountedFiguresMatchTheSdk()
     {
-        var components = typeof(global::eQuantic.UI.Components.ListDetail).Assembly.GetTypes()
-            .Count(t => t.IsPublic && !t.IsAbstract
-                && (typeof(StatelessComponent).IsAssignableFrom(t) || typeof(StatefulComponent).IsAssignableFrom(t)));
+        var catalog = typeof(global::eQuantic.UI.Components.ListDetail).Assembly.GetTypes()
+            .Where(t => t.IsPublic && !t.IsAbstract
+                && (typeof(StatelessComponent).IsAssignableFrom(t) || typeof(StatefulComponent).IsAssignableFrom(t)))
+            .ToArray();
+        var components = catalog.Length;
+        var built = BuiltByTheGallery(catalog.Select(t => t.Name.Split('`')[0]).ToHashSet(StringComparer.Ordinal));
 
-        var counted = new Dictionary<string, int>(StringComparer.Ordinal) { ["components.count"] = components };
+        var counted = new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            ["components.count"] = components,
+            ["gallery.instantiated"] = built,
+            ["gallery.missing"] = components - built,
+        };
 
         var offences = new List<string>();
         var found = 0;
@@ -135,6 +147,30 @@ public class HandoffFigureTests
         if (node.ValueKind != JsonValueKind.Number) return false;
         value = node.GetSingle();
         return true;
+    }
+
+    /// <summary>
+    /// How many catalog components the Studio gallery builds: a factory call, named exactly like its
+    /// type (the declarative surface), or a <c>new</c>, read from the syntax tree so that a name in a
+    /// comment or a string is not a component on screen. The Handoff page printed "31 of 56" by hand,
+    /// and it had already drifted when this was written (found in review).
+    /// </summary>
+    private static int BuiltByTheGallery(IReadOnlySet<string> catalog)
+    {
+        var source = File.ReadAllText(Path.Combine(Root, "samples", "PhotonDesktop", "Studio", "Gallery.cs"));
+        var built = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var node in CSharpSyntaxTree.ParseText(source).GetRoot().DescendantNodes())
+        {
+            var name = node switch
+            {
+                InvocationExpressionSyntax { Expression: SimpleNameSyntax factory } => factory.Identifier.ValueText,
+                ObjectCreationExpressionSyntax { Type: SimpleNameSyntax type } => type.Identifier.ValueText,
+                ObjectCreationExpressionSyntax { Type: QualifiedNameSyntax qualified } => qualified.Right.Identifier.ValueText,
+                _ => null,
+            };
+            if (name is not null && catalog.Contains(name)) built.Add(name);
+        }
+        return built.Count;
     }
 
     private static bool TryShown(string text, out float value)
