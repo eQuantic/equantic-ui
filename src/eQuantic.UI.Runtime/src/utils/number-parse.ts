@@ -9,6 +9,7 @@ import {
   type NumberText,
 } from './number-grammar';
 import { equals } from './string-statics';
+import { trim } from './white-space';
 
 /**
  * `int.Parse`, `double.Parse` and the other integer and binary floating-point readers, and
@@ -281,38 +282,13 @@ function singleOf(number: NumberText): number {
   return number.negative ? -nearest : nearest;
 }
 
-/** `char.IsWhiteSpace`: Unicode's White_Space. `trim()` takes U+FEFF too, and leaves U+0085. */
-function isWhiteSpace(ch: number): boolean {
-  return (
-    (ch >= 0x09 && ch <= 0x0d) ||
-    ch === 0x20 ||
-    ch === 0x85 ||
-    ch === 0xa0 ||
-    ch === 0x1680 ||
-    (ch >= 0x2000 && ch <= 0x200a) ||
-    ch === 0x2028 ||
-    ch === 0x2029 ||
-    ch === 0x202f ||
-    ch === 0x205f ||
-    ch === 0x3000
-  );
-}
-
-function trimWhiteSpace(text: string): string {
-  let start = 0;
-  let end = text.length;
-  while (start < end && isWhiteSpace(text.charCodeAt(start))) start++;
-  while (end > start && isWhiteSpace(text.charCodeAt(end - 1))) end--;
-  return text.slice(start, end);
-}
-
 function sameIgnoringCase(text: string, symbol: string): boolean {
   return equals(text, symbol, 'ordinalIgnoreCase');
 }
 
 /** The invariant culture's symbols, where the grammar refused the text (.NET's `TryParseFloat`). */
 function readSymbol(text: string): number | undefined {
-  const trimmed = trimWhiteSpace(text);
+  const trimmed = trim(text);
   if (sameIgnoringCase(trimmed, 'Infinity')) return Infinity;
   if (sameIgnoringCase(trimmed, '-Infinity')) return -Infinity;
   if (sameIgnoringCase(trimmed, 'NaN')) return NaN;

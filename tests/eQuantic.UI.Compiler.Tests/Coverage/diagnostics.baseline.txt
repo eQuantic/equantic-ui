@@ -28,7 +28,7 @@ EQ2104 eQuantic.UI.Compiler/Services/SemanticValidator.cs
 EQ2105 eQuantic.UI.Compiler/Services/SemanticValidator.cs
 EQ2106 eQuantic.UI.Compiler/Services/SemanticValidator.cs
 EQ2107 eQuantic.UI.Compiler/Services/SemanticValidator.cs
-EQ2108 eQuantic.UI.Compiler/CodeGen/Strategies/Invocation/ToStringStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/ParseCulture.cs eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/StringStaticStrategy.cs
+EQ2108 eQuantic.UI.Compiler/CodeGen/Strategies/Invocation/ToStringStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/ParseCulture.cs eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/ConvertStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/StringStaticStrategy.cs
 EQ2109 eQuantic.UI.Compiler/CodeGen/Strategies/Invocation/ToStringStrategy.cs
 EQ2110 eQuantic.UI.Compiler/CodeGen/Strategies/Invocation/ToStringStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/ParseCulture.cs
 EQ2111 eQuantic.UI.Compiler/CodeGen/Strategies/Invocation/ServiceProviderStrategy.cs

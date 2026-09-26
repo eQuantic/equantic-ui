@@ -286,7 +286,6 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<TaskMethodStrategy>();
         _strategyRegistry.Register<NumberMethodStrategy>();
         _strategyRegistry.Register<CompareToStrategy>();
-        _strategyRegistry.Register<BooleanMethodStrategy>();
         _strategyRegistry.Register<CharMethodStrategy>();
         _strategyRegistry.Register<ConvertStrategy>();
         // StringStaticStrategy is registered in primitives block? Checking order logic.
