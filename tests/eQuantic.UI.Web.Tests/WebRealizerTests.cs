@@ -40,9 +40,9 @@ public class WebRealizerTests
         style.Should().Contain("width: 120px");
         style.Should().Contain("height: 40px");
         style.Should().Contain("padding: 0 16px 0 16px");
-        style.Should().Contain("background-color: light-dark(#0050a0, #5ca2e8)");
+        style.Should().Contain("background-color: light-dark(#0050a0, #76baff)");
         style.Should().Contain("border-radius: 10px");
-        style.Should().Contain("border: 1px solid light-dark(#c9ced6, #3d4754)");
+        style.Should().Contain("border: 1px solid light-dark(#c9ced6, #4c5664)");
     }
 
     [Fact]
@@ -63,8 +63,8 @@ public class WebRealizerTests
 
         Render(box).Attributes["style"].Should().Be(
             "flex-shrink: 0; width: 120px; height: 40px; padding: 0 16px 0 16px; " +
-            "background-color: light-dark(#0050a0, #5ca2e8); " +
-            "border: 1px solid light-dark(#c9ced6, #3d4754); border-radius: 10px; " +
+            "background-color: light-dark(#0050a0, #76baff); " +
+            "border: 1px solid light-dark(#c9ced6, #4c5664); border-radius: 10px; " +
             // A box that PAINTS is a hit target and says so, because a transparent row above it
             // now carries `pointer-events: none` and that inherits (Flutter's hitTestSelf rule).
             "pointer-events: auto; box-sizing: border-box");
@@ -314,7 +314,7 @@ public class WebRealizerTests
         boxStyle.Should().Contain("height: 40px", "Medium height from the spec A12 table");
         boxStyle.Should().Contain("min-width: 64px");
         boxStyle.Should().Contain("border-radius: 10px");
-        boxStyle.Should().Contain("background-color: light-dark(#0050a0, #5ca2e8)");
+        boxStyle.Should().Contain("background-color: light-dark(#0050a0, #76baff)");
         boxStyle.Should().Contain("padding: 0 16px 0 16px");
 
         var label = box.Children[0].Children[0];

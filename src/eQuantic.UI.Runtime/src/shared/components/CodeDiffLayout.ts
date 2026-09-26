@@ -1,6 +1,6 @@
 import { $eq, CodeCollapse, CodeDiffFold, CodeFiller, CodeLineChange, CodeRows } from "../runtime-exports";
 
-export class CodeDiffLayout { declare original: CodeRows; declare modified: CodeRows; declare folds: CodeDiffFold[]; constructor(original: any = null, modified: any = null, folds: any = null) { this.original = original; this.modified = modified; this.folds = folds; } equals(o: unknown) { return o instanceof CodeDiffLayout && $eq.equals(this.original, o.original) && $eq.equals(this.modified, o.modified) && $eq.equals(this.folds, o.folds); } with(patch: any) { return new CodeDiffLayout(('original' in patch ? patch.original : this.original), ('modified' in patch ? patch.modified : this.modified), ('folds' in patch ? patch.folds : this.folds)); } static sideBySide(changes: any, originalLines: number, modifiedLines: number, context: number, expanded: any, gaps: any, foldLabel: ((value: number) => string) | null) { let originalFillers: CodeFiller[] = [];
+export class CodeDiffLayout { declare original: CodeRows; declare modified: CodeRows; declare folds: CodeDiffFold[]; constructor(original: any = null, modified: any = null, folds: any = null) { this.original = original; this.modified = modified; this.folds = folds; } equals(o: unknown) { return o instanceof CodeDiffLayout && $eq.equals(this.original, o.original) && $eq.equals(this.modified, o.modified) && $eq.equals(this.folds, o.folds); } with(patch: any) { return new CodeDiffLayout(('original' in patch ? patch.original : this.original), ('modified' in patch ? patch.modified : this.modified), ('folds' in patch ? patch.folds : this.folds)); } static sideBySide(changes: any, originalLines: number, modifiedLines: number, context: number = CodeDiffLayout.defaultContext, expanded: any = null, gaps: any = null, foldLabel: ((value: number) => string) | null = null) { let originalFillers: CodeFiller[] = [];
     let modifiedFillers: CodeFiller[] = [];
     let gap = 0;
     for (const change of changes) {
@@ -10,7 +10,7 @@ export class CodeDiffLayout { declare original: CodeRows; declare modified: Code
     }
     CodeDiffLayout.addGapsBefore(null, gaps, gap, originalFillers, modifiedFillers);
     let [originalRuns, modifiedRuns, folds] = CodeDiffLayout.unchangedRuns(changes, originalLines, modifiedLines, context, expanded, gaps, foldLabel);
-    return new CodeDiffLayout(new CodeRows(originalLines, originalFillers, originalRuns), new CodeRows(modifiedLines, modifiedFillers, modifiedRuns), folds); } static inline(changes: any, originalLines: number, modifiedLines: number, context: number, expanded: any, gaps: any, foldLabel: ((value: number) => string) | null) { let originalGaps: CodeFiller[] = [];
+    return new CodeDiffLayout(new CodeRows(originalLines, originalFillers, originalRuns), new CodeRows(modifiedLines, modifiedFillers, modifiedRuns), folds); } static inline(changes: any, originalLines: number, modifiedLines: number, context: number = CodeDiffLayout.defaultContext, expanded: any = null, gaps: any = null, foldLabel: ((value: number) => string) | null = null) { let originalGaps: CodeFiller[] = [];
     let removed: CodeFiller[] = [];
     let gap = 0;
     for (const change of changes) {

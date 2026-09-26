@@ -18,26 +18,26 @@ public sealed class PhotonTheme : IAppTheme
     public ColorToken SurfaceSubtle { get; } = Token(0xEFF1F4, 0x1C232B);
     public ColorToken SurfaceHighlight { get; } = new(Rgba(0xFFFFFF, 140), Rgba(0xFFFFFF, 18)); // 55% / 7%
     public ColorToken Border { get; } = Token(0xE2E5EA, 0x2A323D);
-    public ColorToken BorderStrong { get; } = Token(0xC9CED6, 0x3D4754);
+    public ColorToken BorderStrong { get; } = Token(0xC9CED6, 0x4C5664);
 
     // ---- Text tiers (§01) ------------------------------------------------------------------------
     public ColorToken TextPrimary { get; } = Token(0x171B21, 0xF2F4F7);
-    public ColorToken TextSecondary { get; } = Token(0x4B5563, 0xAEB7C2);
-    public ColorToken TextMuted { get; } = Token(0x5F6B7A, 0x8B95A3);
+    public ColorToken TextSecondary { get; } = Token(0x4B5563, 0xC7D1DC);
+    public ColorToken TextMuted { get; } = Token(0x5F6B7A, 0xACB7C5);
     public ColorToken TextInverse { get; } = Token(0xFFFFFF, 0x171B21);
 
     // ---- Interaction chrome (§01) ----------------------------------------------------------------
-    public ColorToken FocusRing { get; } = Token(0x0050A0, 0x7CB5EE);
-    public ColorToken LinkColor { get; } = Token(0x0050A0, 0x7CB5EE);
+    public ColorToken FocusRing { get; } = Token(0x0050A0, 0x81BAF3);
+    public ColorToken LinkColor { get; } = Token(0x0050A0, 0x81BAF3);
     public ColorToken Scrim { get; } = new(Rgba(0x0B0E12, 102), Rgba(0x000000, 143)); // 40% / 56%
 
     public float DisabledOpacity => 0.38f;
 
     // ---- Variants (§01 interactive table) --------------------------------------------------------
     private static readonly VariantColors PrimaryColors = new(
-        Base: Token(0x0050A0, 0x5CA2E8),
+        Base: Token(0x0050A0, 0x76BAFF),
         OnBase: Token(0xFFFFFF, 0x06263F),
-        Pressed: Token(0x00427F, 0x7CB5EE),
+        Pressed: Token(0x00427F, 0x9BCDFF),
         Subtle: Token(0xE8F1FA, 0x0F2740),
         OnSubtle: Token(0x003E7E, 0xA8CDF2));
 
@@ -49,16 +49,16 @@ public sealed class PhotonTheme : IAppTheme
         OnSubtle: Token(0x3A4350, 0xD7DDE5));   // = OnBase
 
     private static readonly VariantColors DestructiveColors = new(
-        Base: Token(0xB42318, 0xE5645C),
+        Base: Token(0xB42318, 0xFF958C),
         OnBase: Token(0xFFFFFF, 0x3B0704),
-        Pressed: Token(0x8F1D1D, 0xF28B85),
+        Pressed: Token(0x8F1D1D, 0xFEC0BB),
         Subtle: Token(0xFCEBEA, 0x3A1210),
         OnSubtle: Token(0x8F1D1D, 0xF4A9A4));
 
     private static readonly VariantColors SuccessColors = new(
-        Base: Token(0x3B7A22, 0x85C05E),
+        Base: Token(0x3B7A22, 0x89C562),
         OnBase: Token(0xFFFFFF, 0x12290A),
-        Pressed: Token(0x2C5E17, 0x9ACD74),
+        Pressed: Token(0x2C5E17, 0x9FD279),
         Subtle: Token(0xEDF6E6, 0x16290C),
         OnSubtle: Token(0x2C5E17, 0xB5DB97));
 
@@ -70,9 +70,9 @@ public sealed class PhotonTheme : IAppTheme
         OnSubtle: Token(0x7A5200, 0xEECF8F));
 
     private static readonly VariantColors InfoColors = new(
-        Base: Token(0x0C6C86, 0x4CC3DE),
+        Base: Token(0x0C6C86, 0x4DC4DF),
         OnBase: Token(0xFFFFFF, 0x062B33),
-        Pressed: Token(0x0A5468, 0x6ED0E6),
+        Pressed: Token(0x0A5468, 0x6FD1E7),
         Subtle: Token(0xE4F3F8, 0x0A2A32),
         OnSubtle: Token(0x0A5468, 0x9FDCEB));
 

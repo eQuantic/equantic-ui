@@ -1,3 +1,4 @@
+using eQuantic.UI.Compiler.CodeGen.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -85,7 +86,8 @@ public class ListMethodStrategy : IConversionStrategy
             "AddRange" => args.Count > 0 ? $"{caller}.push(...{args[0]})" : caller,
             "Insert" => ConvertInsert(caller, args),
             "InsertRange" => ConvertInsertRange(caller, args),
-            "Remove" => ConvertRemove(caller, args),
+            "Remove" => ConvertRemove(caller, args, context,
+                context.SemanticHelper.GetType(memberAccess.Expression).GetEnumerableElementType()),
             "RemoveAt" => ConvertRemoveAt(caller, args),
             "RemoveRange" => ConvertRemoveRange(caller, args),
             "RemoveAll" => ConvertRemoveAll(caller, args),
@@ -122,12 +124,57 @@ public class ListMethodStrategy : IConversionStrategy
         return caller;
     }
 
-    private string ConvertRemove(string caller, List<string> args)
+    /// <summary>
+    /// <c>list.Remove(item)</c>, through the runtime, which answers the bool C# does and compares as
+    /// <c>EqualityComparer&lt;T&gt;.Default</c> does (#400). It assigned an index nothing declared
+    /// (<c>(_idx = list.indexOf(item)) &gt;= 0 &amp;&amp; list.splice(_idx, 1)</c>), so every call threw
+    /// a ReferenceError in a module, and would have answered the spliced array. The list and the item
+    /// are each evaluated once, in the order C# evaluates them. A value-shaped element (a tuple, a
+    /// record, a struct) compares through the structural equality <c>Contains</c> uses, so the two
+    /// agree: a tuple is an array on this side, which the default comparison takes by reference (found
+    /// in review, #421).
+    /// </summary>
+    private static string ConvertRemove(string caller, List<string> args, ConversionContext context,
+        ITypeSymbol? element)
     {
         if (args.Count == 0) return caller;
-        // list.Remove(item) -> list.splice(list.indexOf(item), 1)
-        return $"((_idx = {caller}.indexOf({args[0]})) >= 0 && {caller}.splice(_idx, 1))";
+        context.UsedHelpers.Add(Eq.Import);
+        return Comparer(element) is { } comparer
+            ? $"{Eq.ListRemove}({caller}, {args[0]}, {comparer})"
+            : $"{Eq.ListRemove}({caller}, {args[0]})";
     }
+
+    /// <summary>
+    /// The comparison <c>EqualityComparer&lt;T&gt;.Default</c> makes for the element, when it is not the
+    /// runtime's default: the structural one for an element compared by value, and for a
+    /// <c>KeyValuePair&lt;K, V&gt;</c> one that compares each half by its own type's rule, which is what
+    /// the pair's <c>Equals</c> does and what a dictionary's <c>ICollection&lt;KeyValuePair&lt;K, V&gt;&gt;.Remove</c>
+    /// does with the value (found in review, #421). A pair is compared by its fields, not walked as an
+    /// object: a dictionary's entries are arrays that carry <c>key</c> and <c>value</c>.
+    /// </summary>
+    private static string? Comparer(ITypeSymbol? element)
+    {
+        if (element is INamedTypeSymbol { Name: "KeyValuePair", ContainingNamespace: { } ns, TypeArguments.Length: 2 } pair
+            && ns.ToDisplayString() == "System.Collections.Generic")
+        {
+            static string Half(ITypeSymbol half) => ComparesByValue(half) ? Eq.Equals : Eq.SameItem;
+            return $"{Eq.PairComparer}({Half(pair.TypeArguments[0])}, {Half(pair.TypeArguments[1])})";
+        }
+        return ComparesByValue(element) ? Eq.Equals : null;
+    }
+
+    /// <summary>
+    /// Whether <c>EqualityComparer&lt;T&gt;.Default</c> compares the element by value: a tuple, a record
+    /// or a struct, a nullable one of those, and an anonymous type, whose <c>Equals</c> compares its
+    /// members (the last two found in review, #421). Asked here and not of
+    /// <c>IsStructuralValueType</c>, which <c>==</c> asks too, and an anonymous type's <c>==</c>
+    /// compares references.
+    /// </summary>
+    private static bool ComparesByValue(ITypeSymbol? element) =>
+        element.IsStructuralValueType()
+        || element is { IsAnonymousType: true }
+        || (element is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable
+            && nullable.TypeArguments[0].IsStructuralValueType());
 
     private string ConvertRemoveAt(string caller, List<string> args)
     {

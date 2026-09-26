@@ -68,6 +68,40 @@ public class CSharpToJsConverter
         _context.CurrentClassName = className;
     }
 
+    /// <summary>
+    /// Converts with the model of <paramref name="node"/>'s file in force, and puts this one back as
+    /// it was, the correspondences it holds included. A default interface member is written into
+    /// every class that relies on it, and its body lives in the interface's file, which a model
+    /// answers for only when it is that file's (#414). A file outside the compilation converts
+    /// under the model in force, which answers nothing for it.
+    /// </summary>
+    public void InFileOf(SyntaxNode node, Action convert)
+    {
+        if (_semanticModel is not { } model
+            || ReferenceEquals(node.SyntaxTree, model.SyntaxTree)
+            || !model.Compilation.ContainsSyntaxTree(node.SyntaxTree))
+        {
+            convert();
+            return;
+        }
+
+        var (savedModel, savedHelper) = (_semanticModel, _context.SemanticHelper);
+        var other = model.Compilation.GetSemanticModel(node.SyntaxTree);
+        _semanticModel = other;
+        _context.SemanticModel = other;
+        _context.SemanticHelper = new SemanticHelper(other);
+        try
+        {
+            convert();
+        }
+        finally
+        {
+            _semanticModel = savedModel;
+            _context.SemanticModel = savedModel;
+            _context.SemanticHelper = savedHelper;
+        }
+    }
+
     public void SetFallbackTypeReceivers(IReadOnlySet<string> staticTypes, IReadOnlySet<string> runtimeTypes)
     {
         _context.FallbackStaticTypes = staticTypes;
@@ -286,7 +320,6 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<TaskMethodStrategy>();
         _strategyRegistry.Register<NumberMethodStrategy>();
         _strategyRegistry.Register<CompareToStrategy>();
-        _strategyRegistry.Register<BooleanMethodStrategy>();
         _strategyRegistry.Register<CharMethodStrategy>();
         _strategyRegistry.Register<ConvertStrategy>();
         // StringStaticStrategy is registered in primitives block? Checking order logic.
