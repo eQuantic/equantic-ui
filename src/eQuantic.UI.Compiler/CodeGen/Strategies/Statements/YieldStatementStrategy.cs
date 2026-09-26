@@ -24,10 +24,12 @@ public class YieldStatementStrategy : IStatementStrategy
         if (yieldStmt.Kind() == SyntaxKind.YieldBreakStatement)
             return JsStatement.Return(buffer is null ? null : JsExpr.Identifier(buffer));
 
+        // What the value declares is hoisted in front, as a return's is (enclosing block).
+        var declared = ExpressionVariableScanner.Declarations(yieldStmt.Expression, context.TypeAnnotations);
         var value = context.Converter.ConvertIr(yieldStmt.Expression!);
-        return buffer is null
+        return JsStatement.Hoisted(declared, buffer is null
             ? JsStatement.Raw($"yield {JsExprWriter.Write(value)};")
-            : JsStatement.Expression(JsExpr.Call(JsExpr.Member(JsExpr.Identifier(buffer), "push"), value));
+            : JsStatement.Expression(JsExpr.Call(JsExpr.Member(JsExpr.Identifier(buffer), "push"), value)));
     }
 
     public int Priority => 10;

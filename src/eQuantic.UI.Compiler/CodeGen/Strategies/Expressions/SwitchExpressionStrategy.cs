@@ -27,15 +27,16 @@ public class SwitchExpressionStrategy : IConversionStrategy
 
         var sb = new StringBuilder();
         sb.Append("(() => {");
-        // Pattern variables bound inside an ARM'S OWN expression (`… => Maybe(v) is { } bound ? …`)
-        // are ASSIGNED by the converted condition and were never declared, so the arm threw
-        // ReferenceError the moment it matched — in a module, which is strict mode. The IIFE this
-        // strategy already emits is exactly the scope they belong to.
-        foreach (var arm in switchExpr.Arms)
-        {
-            sb.Append(PatternVariableScanner.Declarations(arm.Expression, context.TypeAnnotations));
-            if (arm.WhenClause != null) sb.Append(PatternVariableScanner.Declarations(arm.WhenClause.Condition, context.TypeAnnotations));
-        }
+        // Variables declared inside an ARM'S OWN expression or guard (`… => Maybe(v) is { } bound ? …`,
+        // `… when int.TryParse(s, out var n) => n`) are ASSIGNED by the converted code and were never
+        // declared, so the arm threw ReferenceError the moment it matched — in a module, which is
+        // strict mode. The IIFE this strategy already emits is the scope they belong to, declared
+        // ONCE: every arm is its own C# scope, so two arms may bind the same name, and declaring it
+        // per arm was two `let`s of one name in one function.
+        sb.Append(ExpressionVariableScanner.Declarations(switchExpr.Arms
+            .SelectMany(arm => ExpressionVariableScanner.Names(arm.Expression)
+                .Concat(ExpressionVariableScanner.Names(arm.WhenClause?.Condition))),
+            context.TypeAnnotations));
         sb.Append($" const _s = {governingExpr};");
 
         foreach (var arm in switchExpr.Arms)

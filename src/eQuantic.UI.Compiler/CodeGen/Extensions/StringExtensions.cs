@@ -14,15 +14,24 @@ public static class StringExtensions
         string.IsNullOrEmpty(name) ? name : char.ToLowerInvariant(name[0]) + name[1..];
 
     /// <summary>
-    /// Identifiers JS refuses in a module (modules are always strict): the strict-mode reserved
-    /// words and the FUTURE reserved words. Only the ones a C# author can actually reach are here —
-    /// `class`, `new`, `if` and friends are C# keywords too, so they never arrive.
+    /// Identifiers JS refuses in a module (modules are always strict): every keyword, the
+    /// strict-mode and future reserved words, and the two names strict mode will not bind. The
+    /// keywords are here although C# reserves most of them too, because C#'s verbatim escape makes
+    /// every one of them a name (<c>@class</c>, <c>@new</c>, <c>@default</c>): the list once left
+    /// them out on the reasoning that they could never arrive, and <c>var @class = 5;</c> was
+    /// <c>let class = 5;</c>, a SyntaxError that cost the whole module. <c>undefined</c>, <c>NaN</c>
+    /// and <c>Infinity</c> are not reserved, but the emitted code compares against them, and a local
+    /// of that name would quietly answer for the global.
     /// </summary>
     private static readonly HashSet<string> JsReserved = new(StringComparer.Ordinal)
     {
-        "package", "interface", "implements", "let", "yield", "enum", "await", "arguments",
-        "eval", "function", "var", "typeof", "instanceof", "delete", "debugger", "with",
-        "export", "import", "extends", "super", "of",
+        "break", "case", "catch", "class", "const", "continue", "debugger", "default", "delete",
+        "do", "else", "export", "extends", "false", "finally", "for", "function", "if", "import",
+        "in", "instanceof", "new", "null", "return", "super", "switch", "this", "throw", "true",
+        "try", "typeof", "var", "void", "while", "with",
+        "let", "static", "yield", "implements", "interface", "package", "private", "protected",
+        "public", "enum", "await", "arguments", "eval", "of",
+        "undefined", "NaN", "Infinity",
     };
 
     /// <summary>

@@ -36,7 +36,8 @@ public class LambdaExpressionStrategy : IExpressionIrStrategy
                 var isAsync = parenthesized.Modifiers.Any(Microsoft.CodeAnalysis.CSharp.SyntaxKind.AsyncKeyword);
                 var inner = parenthesized.Block != null
                     ? TrimBraces(context.Converter.ConvertBlock(parenthesized.Block))
-                    : $"return {context.Converter.ConvertExpression(parenthesized.ExpressionBody!)};";
+                    : ExpressionVariableScanner.Declarations(parenthesized.ExpressionBody, context.TypeAnnotations)
+                        + $"return {context.Converter.ConvertExpression(parenthesized.ExpressionBody!)};";
                 var wrapped = OutParameters.WrapBody(inner, byReference, isAsync);
                 return JsExpr.ArrowBlock(kept, $"{{ {wrapped} }}", isAsync);
             }
@@ -65,21 +66,21 @@ public class LambdaExpressionStrategy : IExpressionIrStrategy
     }
 
     /// <summary>
-    /// A concise lambda body, given a BLOCK when it binds pattern variables.
+    /// A concise lambda body, given a BLOCK when it declares variables.
     /// <para>
     /// `x => Maybe(x) is { } y ? y : ""` converts to an assignment of `y` inside the condition, and
     /// a concise body has nowhere to declare it — so the name was assigned and never declared,
-    /// which in a module (strict mode) is a ReferenceError the first time the lambda runs. The
-    /// block is added only when there is something to declare, so every other lambda emits
-    /// unchanged.
+    /// which in a module (strict mode) is a ReferenceError the first time the lambda runs. An
+    /// `out var` there (`t => int.TryParse(t, out var n) ? n : -1`) was declared by the enclosing
+    /// METHOD instead, one slot for every call. The block is added only when there is something
+    /// to declare, so every other lambda stays an expression — the writer parenthesizes an object
+    /// literal there.
     /// </para>
     /// </summary>
-    /// <summary>An expression body stays an expression — the writer parenthesizes an object
-    /// literal there — unless it binds pattern variables, whose hoisted declarations need a block.</summary>
     private static JsExpr ExpressionBody(string parameters, ExpressionSyntax expression, bool isAsync,
         ConversionContext context)
     {
-        var hoisted = PatternVariableScanner.Declarations(expression, context.TypeAnnotations);
+        var hoisted = ExpressionVariableScanner.Declarations(expression, context.TypeAnnotations);
         var body = context.Converter.ConvertIr(expression);
         if (hoisted.Length == 0) return JsExpr.Arrow(parameters, body, isAsync);
 

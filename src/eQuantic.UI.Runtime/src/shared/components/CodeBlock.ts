@@ -204,7 +204,7 @@ export class CodeBlock extends StatelessComponent {
     }
 
     cellsOf(line: number) {
-        let cells: any;
+        let cells: any; 
         if ((($0: any) => (Object.prototype.hasOwnProperty.call($0, line) ? ((cells = $0[line]), true) : ((cells = null), false)))(this._cells)) return cells;
         cells = new CodeLineCells(this.document.line(line), this.tabSize);
         this._cells[line] = cells;

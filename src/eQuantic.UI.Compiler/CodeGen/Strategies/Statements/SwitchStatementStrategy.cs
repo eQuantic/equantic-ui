@@ -19,14 +19,18 @@ public class SwitchStatementStrategy : IStatementStrategy
     public JsStatement Convert(StatementSyntax node, ConversionContext context)
     {
         var switchStmt = (SwitchStatementSyntax)node;
+        // What the governing expression declares lives on after the switch — Roslyn scopes it to
+        // the enclosing block, like an if's condition — so it is declared in front, outside the
+        // block the if-chain form opens.
+        var declared = ExpressionVariableScanner.Declarations(switchStmt.Expression, context.TypeAnnotations);
         var expr = context.Converter.ConvertIr(switchStmt.Expression);
         var usesPatterns = switchStmt.Sections
             .SelectMany(s => s.Labels)
             .Any(l => l is CasePatternSwitchLabelSyntax);
 
-        return usesPatterns
+        return JsStatement.Hoisted(declared, usesPatterns
             ? ConvertAsIfChain(switchStmt, expr, context)
-            : ConvertAsNativeSwitch(switchStmt, context, expr);
+            : ConvertAsNativeSwitch(switchStmt, context, expr));
     }
 
     private static JsStatement ConvertAsNativeSwitch(SwitchStatementSyntax switchStmt, ConversionContext context, JsExpr expr)
@@ -79,6 +83,10 @@ public class SwitchStatementStrategy : IStatementStrategy
                         var whenExpr = pat.WhenClause != null
                             ? context.Converter.ConvertExpression(pat.WhenClause.Condition)
                             : null;
+                        // What the guard itself declares (`when int.TryParse(s, out var n)`) belongs
+                        // to the section, and the chain's one declaration covers every section.
+                        foreach (var name in ExpressionVariableScanner.Names(pat.WhenClause?.Condition))
+                            if (seen.Add(name)) hoist.Add(name);
                         if (bindings.Count > 0 || whenExpr != null)
                         {
                             var assigns = string.Concat(bindings.Select(b => $"{b.Name} = {b.Access}, "));

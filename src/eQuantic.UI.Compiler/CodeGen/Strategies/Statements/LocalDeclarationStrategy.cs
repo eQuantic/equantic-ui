@@ -26,7 +26,7 @@ public class LocalDeclarationStrategy : IStatementStrategy
             // A reserved JS word takes a trailing underscore — declaration and references go
             // through the same rule, so `var package = …` stays one identifier on both sides.
             var name = variable.Identifier.Text.ToJsIdentifier();
-            var patternVars = PatternVariableScanner.Declarations(variable.Initializer?.Value, context.TypeAnnotations);
+            var declared = ExpressionVariableScanner.Declarations(variable.Initializer?.Value, context.TypeAnnotations);
             var init = variable.Initializer != null
                 ? context.Converter.ConvertIr(variable.Initializer.Value)
                 : JsExpr.Literal("null");
@@ -37,11 +37,11 @@ public class LocalDeclarationStrategy : IStatementStrategy
                 // try/finally that disposes it (CSharpToJsConverter.ConvertBlockIr).
                 // Since this strategy only sees the statement, we'll emit a declaration
                 // and a comment. The true 100% implementation requires block-aware conversion.
-                statements.Add($"{patternVars}const {name} = {JsExprWriter.Write(init)};");
+                statements.Add($"{declared}const {name} = {JsExprWriter.Write(init)};");
                 continue;
             }
 
-            statements.Add(JsStatement.Hoisted(patternVars,
+            statements.Add(JsStatement.Hoisted(declared,
                 JsStatement.Let(name, Annotation(decl, variable, context), init)));
         }
         return JsStatement.Sequence(statements);
@@ -57,6 +57,11 @@ public class LocalDeclarationStrategy : IStatementStrategy
     private static string Annotation(LocalDeclarationStatementSyntax decl, VariableDeclaratorSyntax variable,
         ConversionContext context)
     {
+        // Plain JavaScript has no annotation to write, and `let money: Money = …` there is a
+        // SyntaxError that costs the whole module — the playground, the harness and the design host
+        // run what this writes as it is. Every branch below answered TypeScript whatever the mode.
+        if (!context.TypeAnnotations) return "";
+
         // A local holding a vocabulary ENUM. TypeScript widens `command ? 'dataEdge' : 'cell'` to
         // `string`, and `string` is wider than the slot this local is on its way to — the keymaps
         // were the first to hit it, choosing a motion and handing it to the controller.

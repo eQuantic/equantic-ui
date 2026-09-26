@@ -6,7 +6,7 @@ using eQuantic.UI.Compiler.Services;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 
 /// <summary><c>if</c>/<c>else</c>, an <c>else if</c> chain being an if in the else position.
-/// Pattern bindings of the condition hoist in front — see the note on scope below.</summary>
+/// The variables the condition declares hoist in front — see the note on scope below.</summary>
 public class IfStatementStrategy : IStatementStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context)
@@ -25,11 +25,12 @@ public class IfStatementStrategy : IStatementStrategy
         // The SHARED scanner, not a private copy: this one walked DescendantNodesAndSelf, so a
         // condition containing a lambda (`if (rows.Any(r => r.X is T t))`) hoisted that lambda's
         // binding out into the if's own scope, where it collides with any same-named binding.
-        var declarations = PatternVariableScanner.Declarations(ifStmt.Condition, context.TypeAnnotations);
+        var declarations = ExpressionVariableScanner.Declarations(ifStmt.Condition, context.TypeAnnotations);
         if (declarations.Length == 0) return result;
 
-        // C# pattern variables scope to the ENCLOSING block ("definite assignment when false":
-        // `if (x is not T t) return;` leaves t usable AFTER the if — the guard idiom). Inside a
+        // A condition's variables scope to the ENCLOSING block ("definite assignment when false":
+        // `if (x is not T t) return;` leaves t usable AFTER the if, and so does
+        // `if (!int.TryParse(s, out var n)) return;` — the guard idiom). Inside a
         // block parent the declarations emit as siblings; only a brace-less composite body
         // (`while (c) if (x is T t) …`) needs the wrapping block to stay one statement — and
         // there no code can follow the if anyway.

@@ -33,3 +33,12 @@ const eQuantic.UI.Compiler.CodeGen.Eq.SameItem = "$eq.collections.sameItem" -> s
 const eQuantic.UI.Compiler.CodeGen.Eq.PairComparer = "$eq.collections.pairComparer" -> string!
 eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.InFileOf(Microsoft.CodeAnalysis.SyntaxNode! node, System.Action! convert) -> void
 static readonly eQuantic.UI.Compiler.Services.RuntimeProvidedTypeScanner.RuntimeAssemblies -> System.Collections.Generic.IReadOnlyList<string!>!
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.PatternVariableScanner.Declarations(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? expression, bool typeAnnotations) -> string!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.PatternVariableScanner
+static eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner.BindingPattern(Microsoft.CodeAnalysis.CSharp.Syntax.VariableDesignationSyntax! designation) -> string!
+eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner
+static eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner.Declarations(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? expression, bool typeAnnotations) -> string!
+static eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner.Declarations(System.Collections.Generic.IEnumerable<string!>! names, bool typeAnnotations) -> string!
+static eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner.List(System.Collections.Generic.IEnumerable<string!>! names, bool typeAnnotations) -> string!
+static eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner.Scoped(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? expression, string! converted, bool typeAnnotations) -> string!
+static eQuantic.UI.Compiler.CodeGen.ExpressionVariableScanner.Names(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax? expression) -> System.Collections.Generic.IReadOnlyList<string!>!

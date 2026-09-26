@@ -83,17 +83,20 @@ public static class PatternConverter
     {
         switch (pattern)
         {
+            // Every name through ToJsIdentifier, as the declaration (ExpressionVariableScanner) and
+            // every reference (IdentifierStrategy) spell it: `is int @class` assigned `@class`, a
+            // SyntaxError, beside a declaration of `class`, another.
             case VarPatternSyntax { Designation: SingleVariableDesignationSyntax v }:
-                bindings.Add((v.Identifier.Text, access));
+                bindings.Add((v.Identifier.Text.ToJsIdentifier(), access));
                 break;
 
             case DeclarationPatternSyntax { Designation: SingleVariableDesignationSyntax d }:
-                bindings.Add((d.Identifier.Text, access));
+                bindings.Add((d.Identifier.Text.ToJsIdentifier(), access));
                 break;
 
             case RecursivePatternSyntax recursive:
                 if (recursive.Designation is SingleVariableDesignationSyntax r)
-                    bindings.Add((r.Identifier.Text, access));
+                    bindings.Add((r.Identifier.Text.ToJsIdentifier(), access));
                 if (recursive.PositionalPatternClause != null)
                 {
                     // The pattern's OWN type decides the deconstruction names — the governing
@@ -187,6 +190,10 @@ public static class PatternConverter
     private static void CollectListBindings(ListPatternSyntax list, string access,
         ConversionContext context, List<(string Name, string Access)> bindings)
     {
+        // The list ITSELF, when the pattern names it (`is [1, _] pair`): declared by the scanner,
+        // so it must be assigned here, or it reads undefined where C# reads the list.
+        if (list.Designation is SingleVariableDesignationSyntax whole)
+            bindings.Add((whole.Identifier.Text.ToJsIdentifier(), access));
         var (before, after, sliceIndex) = SliceShape(list);
         for (int i = 0; i < before; i++)
             CollectBindings(list.Patterns[i], $"{access}[{i}]", context, bindings);

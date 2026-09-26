@@ -30,7 +30,7 @@ public class TryStatementStrategy : IStatementStrategy
             // `error.Message` without asking — and the emitted module refused to compile on
             // exactly that line. The type is gone either way; this only stops the annotation
             // from being narrower than the language it came from.
-            var identifier = catchClause.Declaration?.Identifier.Text;
+            var identifier = catchClause.Declaration?.Identifier.Text.ToJsIdentifier();
             var binding = string.IsNullOrEmpty(identifier)
                 ? ""
                 : context.TypeAnnotations ? $"({identifier}: any)" : $"({identifier})";
