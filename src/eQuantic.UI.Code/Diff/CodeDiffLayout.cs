@@ -38,15 +38,17 @@ public sealed record CodeDiffLayout(CodeRows Original, CodeRows Modified, IReadO
     {
         var originalFillers = new List<CodeFiller>();
         var modifiedFillers = new List<CodeFiller>();
-        AddGaps(gaps, originalFillers, modifiedFillers);
+        var gap = 0;
         foreach (var change in changes)
         {
+            gap = AddGapsBefore(change, gaps, gap, originalFillers, modifiedFillers);
             var difference = change.ModifiedCount - change.OriginalCount;
             if (difference > 0)
                 originalFillers.Add(new CodeFiller(change.OriginalStart + change.OriginalCount, difference));
             else if (difference < 0)
                 modifiedFillers.Add(new CodeFiller(change.ModifiedStart + change.ModifiedCount, -difference));
         }
+        AddGapsBefore(null, gaps, gap, originalFillers, modifiedFillers);
         var (originalRuns, modifiedRuns, folds) = UnchangedRuns(changes, originalLines, modifiedLines, context, expanded,
             gaps, foldLabel);
         return new CodeDiffLayout(
@@ -66,12 +68,14 @@ public sealed record CodeDiffLayout(CodeRows Original, CodeRows Modified, IReadO
     {
         var originalGaps = new List<CodeFiller>();
         var removed = new List<CodeFiller>();
-        AddGaps(gaps, originalGaps, removed);
+        var gap = 0;
         foreach (var change in changes)
         {
+            gap = AddGapsBefore(change, gaps, gap, originalGaps, removed);
             if (change.OriginalCount > 0)
                 removed.Add(new CodeFiller(change.ModifiedStart, change.OriginalCount, change.OriginalStart));
         }
+        AddGapsBefore(null, gaps, gap, originalGaps, removed);
         var (originalRuns, modifiedRuns, folds) = UnchangedRuns(changes, originalLines, modifiedLines, context, expanded,
             gaps, foldLabel);
         return new CodeDiffLayout(
@@ -79,15 +83,26 @@ public sealed record CodeDiffLayout(CodeRows Original, CodeRows Modified, IReadO
             new CodeRows(modifiedLines, removed, modifiedRuns), folds);
     }
 
-    /// <summary>One row on each side for each gap, saying what the patch says there.</summary>
-    private static void AddGaps(IReadOnlyList<CodeDiffGap>? gaps, List<CodeFiller> original, List<CodeFiller> modified)
+    /// <summary>
+    /// One row on each side for each gap from <paramref name="next"/> on that stands before
+    /// <paramref name="change"/> on both sides (every gap left, with no change), saying what the patch
+    /// says there; answers the first gap not taken. Taken in step with the changes, so two fillers at
+    /// one line are in the order the file has them: a hunk that ends in a change (a patch written with
+    /// no context) put its padding and the next hunk's gap at one line, and every gap, added before any
+    /// change, was drawn above that padding on one side and below the added lines on the other.
+    /// </summary>
+    private static int AddGapsBefore(CodeLineChange? change, IReadOnlyList<CodeDiffGap>? gaps, int next,
+        List<CodeFiller> original, List<CodeFiller> modified)
     {
-        if (gaps is null) return;
-        foreach (var gap in gaps)
+        if (gaps is null) return next;
+        while (next < gaps.Count && (change is null
+            || (gaps[next].OriginalLine <= change.OriginalStart && gaps[next].ModifiedLine <= change.ModifiedStart)))
         {
-            original.Add(new CodeFiller(gap.OriginalLine, 1, Label: gap.Header));
-            modified.Add(new CodeFiller(gap.ModifiedLine, 1, Label: gap.Header));
+            original.Add(new CodeFiller(gaps[next].OriginalLine, 1, Label: gaps[next].Header));
+            modified.Add(new CodeFiller(gaps[next].ModifiedLine, 1, Label: gaps[next].Header));
+            next++;
         }
+        return next;
     }
 
     /// <summary>

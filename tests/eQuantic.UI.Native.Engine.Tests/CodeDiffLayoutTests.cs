@@ -151,6 +151,55 @@ public class CodeDiffLayoutTests
     }
 
     /// <summary>
+    /// A patch written with no context (<c>git diff -U0</c>) has hunks that end in a change, so the
+    /// change's padding and the next hunk's gap stand at one line of a side. Each gap is drawn where
+    /// the file has it, level with the same gap on the other side, and inline the lines a hunk
+    /// removed come between its own gap and the next.
+    /// </summary>
+    [Fact]
+    public void APatchWithNoContext_DrawsEveryGapWhereTheFileHasIt()
+    {
+        var additions = CodeDiffSource.FromPatch(CodePatch.Parse("""
+            --- a/f.txt
+            +++ b/f.txt
+            @@ -5,0 +6,2 @@
+            +added one
+            +added two
+            @@ -10,0 +13 @@
+            +added three
+            """)[0]);
+
+        var sideBySide = CodeDiffLayout.SideBySide(additions.Changes, additions.OriginalLineCount,
+            additions.ModifiedLineCount, gaps: additions.Gaps);
+
+        sideBySide.Original.RowCount.Should().Be(sideBySide.Modified.RowCount);
+        for (var row = 0; row < sideBySide.Modified.RowCount; row++)
+            sideBySide.Original.RowAt(row).Label.Should().Be(sideBySide.Modified.RowAt(row).Label,
+                $"row {row}: a gap on one side is the same gap on the other");
+        sideBySide.Modified.RowAt(3).Label.Should().Be("@@ -10,0 +13 @@", "after the first hunk's two lines");
+
+        var removals = CodeDiffSource.FromPatch(CodePatch.Parse("""
+            --- a/f.txt
+            +++ b/f.txt
+            @@ -5,2 +4,0 @@
+            -gone one
+            -gone two
+            @@ -10 +7,0 @@
+            -gone three
+            """)[0]);
+
+        var inline = CodeDiffLayout.Inline(removals.Changes, removals.OriginalLineCount, removals.ModifiedLineCount,
+            gaps: removals.Gaps);
+
+        Enumerable.Range(0, inline.Modified.RowCount).Select(row => inline.Modified.RowAt(row)).Should().Equal(
+            new CodeRow(CodeRowKind.Filler, 0, Label: "@@ -5,2 +4,0 @@"),
+            new CodeRow(CodeRowKind.Filler, 0, SourceLine: 0),
+            new CodeRow(CodeRowKind.Filler, 0, SourceLine: 1),
+            new CodeRow(CodeRowKind.Filler, 0, Label: "@@ -10 +7,0 @@"),
+            new CodeRow(CodeRowKind.Filler, 0, SourceLine: 2));
+    }
+
+    /// <summary>
     /// Every fold is listed with its line on both sides, so a press on either side's placeholder, or a
     /// caret that lands inside one, opens the same run, named by its original line.
     /// </summary>
