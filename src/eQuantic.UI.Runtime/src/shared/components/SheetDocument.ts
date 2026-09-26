@@ -2,8 +2,12 @@ import { $eq, CellRef, SheetCellSnapshot } from "../runtime-exports";
 
 export class SheetDocument {
     constructor(rows: number = 1000, cols: number = 26, props?: any) {
-        this._cells = {}; this._rowHeights = {}; this._colWidths = {}; this.rows = Math.max(1, rows);
-        this.cols = Math.max(1, Math.min(cols, 16384)); if (props && typeof props === 'object') Object.assign(this, props);
+        this._cells = {};
+        this._rowHeights = {};
+        this._colWidths = {};
+        this.rows = Math.max(1, rows);
+        this.cols = Math.max(1, Math.min(cols, 16384));
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     _cells: Record<string, any>;
@@ -19,7 +23,8 @@ export class SheetDocument {
     }
 
     getCell(cell: CellRef) {
-        let value: any; return (Object.prototype.hasOwnProperty.call(this._cells, cell.key) ? ((value = this._cells[cell.key]), true) : false) ? value : '';
+        let value: any;
+        return (($0: any, $1: any) => (Object.prototype.hasOwnProperty.call($0, $1) ? ((value = $0[$1]), true) : ((value = null), false)))(this._cells, cell.key) ? value : '';
     }
 
     setCell(cell: CellRef, value: string) {
@@ -27,19 +32,21 @@ export class SheetDocument {
     }
 
     rowHeight(row: number) {
-        let height: any; return (Object.prototype.hasOwnProperty.call(this._rowHeights, row) ? ((height = this._rowHeights[row]), true) : false) ? height : SheetDocument.defaultRowHeight;
+        let height: any;
+        return (($0: any) => (Object.prototype.hasOwnProperty.call($0, row) ? ((height = $0[row]), true) : ((height = 0), false)))(this._rowHeights) ? height : SheetDocument.defaultRowHeight;
     }
 
     colWidth(col: number) {
-        let width: any; return (Object.prototype.hasOwnProperty.call(this._colWidths, col) ? ((width = this._colWidths[col]), true) : false) ? width : SheetDocument.defaultColWidth;
+        let width: any;
+        return (($0: any) => (Object.prototype.hasOwnProperty.call($0, col) ? ((width = $0[col]), true) : ((width = 0), false)))(this._colWidths) ? width : SheetDocument.defaultColWidth;
     }
 
     setRowHeight(row: number, height: number) {
-        if (Math.abs(height - SheetDocument.defaultRowHeight) < Math.fround(0.01)) delete this._rowHeights[row]; else this._rowHeights[row] = Math.max(12, height);
+        if (Math.abs(Math.fround(height - SheetDocument.defaultRowHeight)) < Math.fround(0.01)) delete this._rowHeights[row]; else this._rowHeights[row] = Math.max(12, height);
     }
 
     setColWidth(col: number, width: number) {
-        if (Math.abs(width - SheetDocument.defaultColWidth) < Math.fround(0.01)) delete this._colWidths[col]; else this._colWidths[col] = Math.max(24, width);
+        if (Math.abs(Math.fround(width - SheetDocument.defaultColWidth)) < Math.fround(0.01)) delete this._colWidths[col]; else this._colWidths[col] = Math.max(24, width);
     }
 
     clamp(cell: CellRef) {

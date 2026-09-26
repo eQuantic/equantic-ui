@@ -41,10 +41,17 @@ public static class SdkStrings
     public static string SearchPlaceholder => SdkResources.SearchPlaceholder;
     public static string ClearSearch => SdkResources.ClearSearch;
 
+    /// <summary>The code editor's accessible name when the app gives it no caption.</summary>
+    public static string CodeEditor => SdkResources.CodeEditor;
+
     // The code editor's find bar.
     public static string Find => SdkResources.Find;
     public static string PreviousMatch => SdkResources.PreviousMatch;
     public static string NextMatch => SdkResources.NextMatch;
+    public static string CloseFind => SdkResources.CloseFind;
+
+    /// <summary>A code block's copy button.</summary>
+    public static string CopyCode => SdkResources.CopyCode;
 
     // The calendar's own chrome. The month and day NAMES are not here — those come from the
     // culture itself (Primitives.CalendarNames), the way .NET reads them, and no resx of ours

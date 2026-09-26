@@ -131,6 +131,17 @@ public sealed class PhotonHost
     /// answer on a host that has none).</summary>
     public ITextClipboard? Clipboard { get; set; }
 
+    /// <summary>
+    /// Which keyboard tradition this window's users live in — what ⌘← or Ctrl+← MEANS inside a code
+    /// surface (<see cref="Primitives.KeyboardConvention"/>). Derived from the operating system the
+    /// process runs on, because that is the one fact a host knows and a model never should; settable
+    /// so a test can drive either tradition from any machine.
+    /// </summary>
+    public KeyboardConvention KeyboardConvention { get; init; } =
+        OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsMacCatalyst()
+            ? KeyboardConvention.Apple
+            : KeyboardConvention.Standard;
+
     /// <summary>W4: the platform image service (null = SurfaceSubtle placeholder boxes).</summary>
     public Framework.IImageLoader? ImageLoader { get; set; }
 
@@ -237,6 +248,7 @@ public sealed class PhotonHost
         // Costs one length check in a frame with no live region, which is almost every frame.
         _announcer.Observe(_lastFrame, timeMs);
         AdoptAutofocus();
+        AdoptFocusRequests();
         // The ROOT is not in the instance store (nothing reconciles it — it IS the tree), so the
         // surface owes it the mount its children get from the store. After the first frame realized:
         // the same "the tree exists" moment, for the one component that has no parent to give it.
@@ -248,6 +260,11 @@ public sealed class PhotonHost
         // A subscribed frame ticker IS motion: frames keep flowing while anyone wants them, and the
         // loop goes idle the moment the last subscription is disposed.
         NeedsRender = _lastFrame.HasActiveMotion || gliding || PhotonFrameTicker.Shared.HasSubscribers;
+
+        // A code surface whose caret was MOVED since the last frame is brought into view — by a key,
+        // a command, a find stepping to a match. After the frame, because that is when the caret's
+        // new place exists in window coordinates; the scroll it causes paints on the next one.
+        if (RevealCodeCarets()) NeedsRender = true;
 
         // The caret is 2Hz motion, not vsync motion. Holding NeedsRender for it pinned the whole
         // loop to the display's refresh — 120 presents a second on a ProMotion panel, measured, to
@@ -451,6 +468,73 @@ public sealed class PhotonHost
     }
 
     private const float ScrollIntoViewMargin = 24f;
+
+    /// <summary>The <see cref="ICodeSurfaceModel.RevealVersion"/> each code surface was last brought
+    /// into view at, by path.</summary>
+    private readonly Dictionary<string, int> _revealedCode = new();
+
+    /// <summary>
+    /// Brings each code surface's primary caret into view when its model says it moved — the Photon
+    /// half of what the browser does with <c>scrollIntoView</c>, and the reason arrowing past the edge
+    /// of a code viewport no longer leaves you typing somewhere you cannot see. A surface seen for the
+    /// first time is left where the layout put it: nothing moved it yet. Answers whether anything
+    /// scrolled.
+    /// </summary>
+    private bool RevealCodeCarets()
+    {
+        if (_lastFrame is null) return false;
+        var scrolled = false;
+        var regions = _lastFrame.CodeRegions;
+        for (var i = 0; i < regions.Count; i++)
+        {
+            var region = regions[i];
+            var version = region.Surface.Model.RevealVersion;
+            var known = _revealedCode.TryGetValue(region.Path, out var seen);
+            _revealedCode[region.Path] = version;
+            if (!known || seen == version) continue;
+
+            var carets = region.Surface.Model.Carets;
+            if (carets.Count == 0) continue;
+            var caret = carets[0];
+            scrolled |= RevealRect(region.Path, new Rect(region.Bounds.X + caret.X,
+                region.Bounds.Y + caret.Y, caret.Width, caret.Height));
+        }
+        return scrolled;
+    }
+
+    /// <summary>
+    /// Scrolls every scroll region that contains <paramref name="path"/>, each on its own axis, the
+    /// least that brings <paramref name="rect"/> inside it — a code viewport scrolls down AND across
+    /// for the same caret, which is why this is not <see cref="ScrollIntoView"/>'s innermost-only
+    /// rule. A small margin keeps the caret off the very edge, so the line after it is seen coming.
+    /// </summary>
+    private bool RevealRect(string path, Rect rect)
+    {
+        var regions = _lastFrame!.ScrollRegions;
+        var scrolled = false;
+        for (var i = 0; i < regions.Count; i++)
+        {
+            var region = regions[i];
+            if (region.MaxOffset <= 0 || !IsAncestorPath(region.Path, path)) continue;
+
+            var viewport = region.Bounds;
+            var horizontal = region.Axis == ScrollAxis.Horizontal;
+            var (start, end, viewStart, viewEnd) = horizontal
+                ? (rect.X, rect.X + rect.Width, viewport.X, viewport.X + viewport.Width)
+                : (rect.Y, rect.Y + rect.Height, viewport.Y, viewport.Y + viewport.Height);
+
+            var margin = MathF.Min(horizontal ? rect.Height : rect.Height / 2, (viewEnd - viewStart) / 4);
+            var delta = 0f;
+            if (start < viewStart + margin) delta = start - viewStart - margin;
+            else if (end > viewEnd - margin) delta = end - viewEnd + margin;
+            if (delta == 0) continue;
+
+            var current = _scrolls.Get(region.Path) ?? region.Fallback;
+            _scrolls.ScrollTo(region.Path, current + delta, region.MaxOffset);
+            scrolled = true;
+        }
+        return scrolled;
+    }
 
     /// <summary>Whether <paramref name="ancestor"/> names a node this path sits under. Compared on
     /// SEGMENT boundaries: "r/1" must not be read as an ancestor of "r/10".</summary>
@@ -724,6 +808,7 @@ public sealed class PhotonHost
         _textPath = region.Path;
         _focused = null;
         _focusedPath = null;
+        if (changed) region.Surface.Model.FocusChanged(true);
         NeedsRender = true;
     }
 
@@ -750,31 +835,88 @@ public sealed class PhotonHost
     private const float CaretBlinkMs = CodeSurface.CaretBlinkMs;
 
     /// <summary>
-    /// A field that asked for the caret gets it — the search box in a palette that just opened, the
-    /// first field of a form. The web realization of the same tree has honoured `Autofocus` all
-    /// along; native ignored it, so the ⌘K panel opened ready to type in a browser and dead in a
-    /// window.
+    /// A field or a code surface that asked for the keyboard gets it when it APPEARS: the search box
+    /// of a palette that just opened, the first field of a form, an editor opened ready to type. The
+    /// web realization focuses the same tree on mount; native ignored it, so the ⌘K panel opened
+    /// ready to type in a browser and dead in a window.
     /// <para>
-    /// Honoured ONCE per field. Without remembering, leaving the field with Escape would hand it
-    /// straight back on the very next frame, and the field could never be left at all.
+    /// Once per MOUNT, the browser's rule. A field honoured while it stays on screen is not honoured
+    /// again, or leaving it with Escape would hand it straight back on the next frame and the field
+    /// could never be left. One that leaves the tree and comes back asks again, as the code editor's
+    /// find field does every time the bar opens. It was once per PATH for the life of the host, so a
+    /// bar opened a second time came up with no caret.
+    /// </para>
+    /// <para>
+    /// It takes the keyboard from whatever held it, as a mounted field does in a browser: it appeared
+    /// because someone opened it. It used to be refused while anything else was being typed in, and
+    /// ⌘F in the code editor opened a find bar that typing never reached. When several appear in one
+    /// frame the first field wins, then the first code surface.
     /// </para>
     /// </summary>
     private void AdoptAutofocus()
     {
         if (_lastFrame is null) return;
+        _fieldsNow.Clear();
+        TextRegion? newField = null;
         var fields = _lastFrame.TextRegions;
         for (var i = 0; i < fields.Count; i++)
         {
             var field = fields[i];
             if (!field.Entry.Autofocus || field.Entry.Disabled) continue;
-            if (!_autofocused.Add(field.Path)) continue;
-            if (_textPath is not null) continue;   // the user is already typing somewhere: leave them alone
-            BeginEditing(field);
-            return;
+            _fieldsNow.Add(field.Path);
+            if (newField is null && !_fieldsShown.Contains(field.Path)) newField = field;
+        }
+        _surfacesNow.Clear();
+        CodeRegion? newSurface = null;
+        var surfaces = _lastFrame.CodeRegions;
+        for (var i = 0; i < surfaces.Count; i++)
+        {
+            var surface = surfaces[i];
+            if (!surface.Surface.Autofocus) continue;
+            _surfacesNow.Add(surface.Path);
+            if (newSurface is null && !_surfacesShown.Contains(surface.Path)) newSurface = surface;
+        }
+        (_fieldsShown, _fieldsNow) = (_fieldsNow, _fieldsShown);
+        (_surfacesShown, _surfacesNow) = (_surfacesNow, _surfacesShown);
+
+        if (newField is { } asked) BeginEditing(asked);
+        else if (newSurface is { } code) BeginCodeEditing(code);
+    }
+
+    /// <summary>The paths of the fields asking for the keyboard in the last frame, and the set the
+    /// next frame fills: two sets swapped, so a steady frame allocates nothing. The surfaces keep
+    /// their own pair, because a path is a place and not a control: a code surface that takes the
+    /// place of a field is a new mount, and one history of paths took it for the field.</summary>
+    private HashSet<string> _fieldsShown = [];
+    private HashSet<string> _fieldsNow = [];
+    private HashSet<string> _surfacesShown = [];
+    private HashSet<string> _surfacesNow = [];
+
+    /// <summary>
+    /// Gives a code surface the keyboard when its model ASKS (<see cref="ICodeSurfaceModel.FocusVersion"/>):
+    /// an IDE after a file opens, the editor's own find bar as it closes. Remembered per MODEL and
+    /// counted from 0, so a request made before the surface was first drawn is honoured when it is,
+    /// and one already honoured is not honoured again when the surface is drawn somewhere else.
+    /// </summary>
+    private void AdoptFocusRequests()
+    {
+        if (_lastFrame is null) return;
+        var surfaces = _lastFrame.CodeRegions;
+        for (var i = 0; i < surfaces.Count; i++)
+        {
+            var region = surfaces[i];
+            var model = region.Surface.Model;
+            var version = model.FocusVersion;
+            var seen = _focusRequests.TryGetValue(model, out var box) ? box.Value : 0;
+            if (version == seen) continue;
+            if (box is null) _focusRequests.Add(model, new System.Runtime.CompilerServices.StrongBox<int>(version));
+            else box.Value = version;
+            BeginCodeEditing(region);
         }
     }
 
-    private readonly HashSet<string> _autofocused = [];
+    private readonly System.Runtime.CompilerServices.ConditionalWeakTable<ICodeSurfaceModel,
+        System.Runtime.CompilerServices.StrongBox<int>> _focusRequests = new();
 
     private void BeginEditing(TextRegion field, float? atX = null) =>
         BeginEditing(field.Entry, field.Path, atX is { } x ? IndexAt(field.Entry, x - field.Bounds.X) : null);
@@ -802,6 +944,13 @@ public sealed class PhotonHost
     {
         if (_textPath is null) return;
         TextTarget?.OnFocusChanged?.Invoke(false);
+        // A code surface hears it too: the typing run ends, and a composition the platform just
+        // dropped must not stay underlined in the document.
+        if (CodeTarget is { } code)
+        {
+            code.Model.FocusChanged(false);
+            code.OnChanged?.Invoke();
+        }
         _textPath = null;
         _marked = "";
         Caret = 0;
@@ -875,8 +1024,16 @@ public sealed class PhotonHost
     public bool SetMarkedText(string text)
     {
         if (_textPath is null) return false;
-        // A code surface has no composition VISUAL yet (its face lives in its child's render) —
-        // the state still tracks, so commit lands and cancel is clean.
+        // A code surface composes IN its document: the model shows the marked text where it will
+        // land, underlined, and a cancellation takes it back out. The host still tracks it, because
+        // the platform's input client asks the host whether anything is marked.
+        if (CodeTarget is { } code)
+        {
+            // A composition the model refuses (a read-only editor) is not one the host may claim:
+            // the platform asks the HOST whether anything is marked. A cancellation still clears it.
+            if (!code.Model.SetComposition(text) && text.Length > 0) return false;
+            code.OnChanged?.Invoke();
+        }
         if (TextTarget is { } entry && !entry.Disabled)
         {
             var (start, end) = Selection;
@@ -1046,10 +1203,11 @@ public sealed class PhotonHost
                 return true;
 
             case "Enter":
-                // Submit, then leave: a form that stays in the field after Enter makes the user
-                // wonder whether anything happened.
+                // Submit and STAY, as a browser's field does: a search field walks its results one
+                // Enter at a time (the code editor's find bar is exactly that), and where the app
+                // wants the keyboard somewhere else after a submit, it moves it. This left the field,
+                // so the second Enter in a find bar went nowhere.
                 entry.OnSubmit?.Invoke();
-                EndEditing();
                 return true;
 
             case "Escape":
@@ -2135,7 +2293,7 @@ public sealed class PhotonHost
         // function the web half calls, so the two never drift on what ⌥← or ⇧Tab mean.
         if (CodeTarget is { } surface)
         {
-            if (surface.Model.HandleKey(key, modifiers, Clipboard))
+            if (surface.Model.HandleKey(key, modifiers, KeyboardConvention, Clipboard))
             {
                 RestartBlink();
                 surface.OnChanged?.Invoke();

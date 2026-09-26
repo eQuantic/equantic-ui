@@ -122,6 +122,30 @@ public class FormModelTests
         (email.Error is null).Should().Be(valid);
     }
 
+    /// <summary>
+    /// The range rule reads the value as <c>double.TryParse</c> reads it under
+    /// <c>NumberStyles.Any</c>, and so does its twin (#376): a number with a unit after it is not a
+    /// number. The web read it through <c>parseFloat</c>, which took "42kg" as 42 and passed it.
+    /// Cross-pinned with forms.spec.ts, which runs the same literals through the emitted rule.
+    /// </summary>
+    [Theory]
+    [InlineData("42", true)]
+    [InlineData("7", false)]
+    [InlineData("not a number", false)]
+    [InlineData("42kg", false)]
+    [InlineData("4.2e1", true)]
+    [InlineData("(42)", false)]  // Any reads parentheses as a sign: -42
+    [InlineData("", true)]
+    public void TheRangeRuleReadsANumberAsDotNetDoes(string value, bool valid)
+    {
+        var form = new FormController();
+        var age = form.Add("age", rules: [Rules.Range(18, 120)]);
+
+        age.Set(value);
+
+        (age.Error is null).Should().Be(valid);
+    }
+
     /// <summary>A cross-field rule reads the OTHER field at validation time, so it is always
     /// judged against what is on screen — not against what was there when the form was built.</summary>
     [Fact]

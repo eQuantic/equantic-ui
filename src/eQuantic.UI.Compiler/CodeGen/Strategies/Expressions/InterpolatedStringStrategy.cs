@@ -56,8 +56,12 @@ public class InterpolatedStringStrategy : IConversionStrategy
                         }
                         context.UsedHelpers.Add(Eq.Import);
                         var fmtArg = format != null ? $"'{format}'" : "null";
-                        var alignArg = alignment != null ? $", {alignment}" : "";
-                        sb.Append($"{Eq.Format}({expr}, {fmtArg}{alignArg})");
+                        // A float says it is one: its own digits are not the double's (#378).
+                        var single = context.SemanticHelper.GetType(interpolation.Expression).UnwrapNullable()
+                            is { SpecialType: SpecialType.System_Single };
+                        var alignArg = alignment != null ? $", {alignment}" : single ? ", undefined" : "";
+                        var kindArg = single ? ", undefined, 'single'" : "";
+                        sb.Append($"{Eq.Format}({expr}, {fmtArg}{alignArg}{kindArg})");
                     }
                     else
                     {

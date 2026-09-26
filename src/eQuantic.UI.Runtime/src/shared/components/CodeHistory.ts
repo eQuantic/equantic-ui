@@ -1,8 +1,11 @@
-import { $eq, CodeDocument, CodeEdit, CodePosition } from "../runtime-exports";
+import { $eq, CodeDocument, CodeEdit, CodePosition, CodeRange } from "../runtime-exports";
 
 export class CodeHistory {
     constructor(props?: any) {
-        this._past = []; this._future = []; this._runEnd = new CodePosition(-1, -1);  if (props && typeof props === 'object') Object.assign(this, props);
+        this._past = [];
+        this._future = [];
+        this._runEnd = new CodePosition(-1, -1);
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     _past: CodeEdit[];
@@ -20,9 +23,9 @@ export class CodeHistory {
 
     record(edit: CodeEdit) {
         this._future.splice(0);
-        if (edit.isSimpleInsert && this._past.length > 0 && $eq.equals(edit.range.start, this._runEnd)) {
+        if (edit.typed && edit.isSimpleInsert && this._past.length > 0 && $eq.equals(edit.range.start, this._runEnd)) {
             let previous = this._past[this._past.length - 1];
-            if (previous.isSimpleInsert) {
+            if (previous.typed && !previous.insertedText.includes('\n')) {
                 this._past[this._past.length - 1] = $eq.withPatch(previous, { insertedText: previous.insertedText + edit.insertedText, selectionAfter: edit.selectionAfter });
                 this._runEnd = edit.insertedRange.end;
                 return;
@@ -30,7 +33,7 @@ export class CodeHistory {
         }
         this._past.push(edit);
         if (this._past.length > this.limit) this._past.splice(0, 1);
-        this._runEnd = edit.isSimpleInsert ? edit.insertedRange.end : new CodePosition(-1, -1);
+        this._runEnd = edit.typed && !edit.insertedText.includes('\n') ? edit.insertedRange.end : new CodePosition(-1, -1);
     }
 
     break() {
@@ -38,27 +41,35 @@ export class CodeHistory {
     }
 
     undo(document: CodeDocument) {
-        let selection; const $r = (() => { selection = undefined;
+        let selection, replaced, written; const $r = (() => { let end: any; selection = new CodeRange();
+        replaced = new CodeRange();
+        written = new CodeRange();
         if (this._past.length === 0) return null;
         let edit = this._past[this._past.length - 1];
         this._past.splice(this._past.length - 1, 1);
         this._future.push(edit);
         this.break();
-        let next = ($o => ($o.$))(document.replace(edit.insertedRange, edit.removedText));
+        replaced = new CodeRange(document.clamp(edit.insertedRange.start), document.clamp(edit.insertedRange.end));
+        let next = ($o => (end = $o.caret, $o.$))(document.replace(replaced, edit.removedText));
+        written = new CodeRange(replaced.start, end);
         selection = edit.selectionBefore;
-        return next; })(); return { $: $r, selection };
+        return next; })(); return { $: $r, selection, replaced, written };
     }
 
     redo(document: CodeDocument) {
-        let selection; const $r = (() => { selection = undefined;
+        let selection, replaced, written; const $r = (() => { let end: any; selection = new CodeRange();
+        replaced = new CodeRange();
+        written = new CodeRange();
         if (this._future.length === 0) return null;
         let edit = this._future[this._future.length - 1];
         this._future.splice(this._future.length - 1, 1);
         this._past.push(edit);
         this.break();
-        let next = ($o => ($o.$))(document.replace(edit.range, edit.insertedText));
+        replaced = new CodeRange(document.clamp(edit.range.start), document.clamp(edit.range.end));
+        let next = ($o => (end = $o.caret, $o.$))(document.replace(replaced, edit.insertedText));
+        written = new CodeRange(replaced.start, end);
         selection = edit.selectionAfter;
-        return next; })(); return { $: $r, selection };
+        return next; })(); return { $: $r, selection, replaced, written };
     }
 
     clear() {

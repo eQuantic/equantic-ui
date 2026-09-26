@@ -205,24 +205,140 @@ public class LinqStrategyTests
     }
 
     [Fact]
-    public void Min_NoPredicate_MapsToMathMin()
+    public void Min_NoSelector_OrdersByTheTypeItAnswers()
     {
-        var result = TestHelper.ConvertExpression("list.Min()");
-        result.Should().Be("Math.min(...this.list)");
+        // An int: ordered by `<`, and an empty list throws, where Math.min() answered Infinity.
+        var result = TestHelper.ConvertExpression("numbers.Min()");
+        result.Should().Be("$eq.linq.min(this.numbers, undefined, 'value', false)");
     }
 
     [Fact]
-    public void Max_NoPredicate_MapsToMathMax()
+    public void Max_NoSelector_OrdersByTheTypeItAnswers()
     {
-        var result = TestHelper.ConvertExpression("list.Max()");
-        result.Should().Be("Math.max(...this.list)");
+        // A comparable type of the app's own: ordered by the compareTo its twin carries, a null passed
+        // over, an empty list answering null. (A class that is not comparable is refused, below.)
+        var result = TestHelper.ConvertExpression("new List<Grade>().Max()");
+        result.Should().Be("$eq.linq.max([], undefined, 'comparable', true)");
     }
 
     [Fact]
-    public void Min_WithSelector_MapsToMathMinWithMap()
+    public void Min_WithSelector_OrdersByTheTypeItSelects()
     {
         var result = TestHelper.ConvertExpression("list.Min(x => x.Value)");
-        result.Should().Be("Math.min(...this.list.map((x) => x.value))");
+        result.Should().Be("$eq.linq.min(this.list, (x) => x.value, 'value', false)");
+    }
+
+    [Fact]
+    public void MaxMin_WithNoFaithfulOrder_AreRefused()
+    {
+        // An enum's values cross as member NAMES, which order alphabetically where .NET orders by
+        // value, and a comparer has no form to call: each is refused where it was ordered wrongly.
+        TestHelper.DiagnosticsFor("var r = new[] { Size.Small, Size.Large }.Max()")
+            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("LINQ Max/Min over Size"));
+        TestHelper.DiagnosticsFor("var r = numbers.Min(Comparer<int>.Default)")
+            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("LINQ Max/Min with a comparer"));
+        TestHelper.DiagnosticsFor("var r = numbers.Max()")
+            .Should().NotContain(d => d.Code == "EQ1004", "an int has a faithful order");
+
+        // Any other value orders by a compareTo it carries, and only the decimal, the dates and the
+        // app's own comparable types carry one. .NET's default comparer throws for a type that is not
+        // comparable, where calling one here was a TypeError, and a type parameter may be a number.
+        foreach (var (call, type) in new[]
+        {
+            ("var r = Orders.Max()", "Order"),
+            ("var r = new object[] { 1, 2 }.Min()", "object"),
+            ("var r = new[] { (1, 2) }.Max()", "(int, int)"),
+            ("var r = new[] { new Rank() }.Max()", "Rank"),
+            // The first statement is the one converted, so the generic function comes alone.
+            ("static T Top<T>(IEnumerable<T> xs) where T : IComparable<T> => xs.Max()", "T"),
+        })
+        {
+            TestHelper.DiagnosticsFor(call)
+                .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains($"LINQ Max/Min over {type}"), call);
+        }
+        foreach (var call in new[]
+        {
+            "var r = new[] { new Grade(2), new Grade(1) }.Max()",
+            "var r = new[] { 1.5m, 2.5m }.Min()",
+            "var r = new[] { DateTime.Now }.Max()",
+            "var r = new DateTimeOffset?[] { null }.Min()",
+            "var r = new[] { TimeSpan.Zero }.Max()",
+            "var r = new[] { DateOnly.MinValue }.Min()",
+            "var r = new[] { TimeOnly.MinValue }.Max()",
+        })
+        {
+            TestHelper.DiagnosticsFor(call)
+                .Should().NotContain(d => d.Code == "EQ1004", $"`{call}` orders by a compareTo it carries");
+        }
+    }
+
+    [Fact]
+    public void AnOperatorInItsStaticForm_IsRefused_ButMaxAndMin()
+    {
+        // The strategies read the source from the left of the member access, which in the static form
+        // is the TYPE: `Enumerable.Count(xs)` came out as `Enumerable.filter(xs).length` and
+        // `Enumerable.ToDictionary(xs, f)` keyed its dictionary by the source, with no diagnostic.
+        foreach (var (call, name) in new[]
+        {
+            ("Enumerable.ToDictionary(numbers, x => x)", "ToDictionary"),
+            ("Enumerable.ToDictionary(keySelector: x => x, source: numbers)", "ToDictionary"),
+            ("Enumerable.Count(numbers)", "Count"),
+            ("Enumerable.Select(numbers, x => x * 2)", "Select"),
+            ("Enumerable.Aggregate(numbers, (a, b) => a + b)", "Aggregate"),
+            ("Enumerable.OrderBy(numbers, x => x)", "OrderBy"),
+            ("Enumerable.GroupBy(numbers, x => x % 2)", "GroupBy"),
+            ("Enumerable.ToList(numbers)", "ToList"),
+            ("Enumerable.FirstOrDefault(numbers)", "FirstOrDefault"),
+            ("Enumerable.Sum(numbers)", "Sum"),
+            ("Enumerable.Distinct(numbers)", "Distinct"),
+        })
+        {
+            TestHelper.DiagnosticsFor($"var r = {call}")
+                .Should().Contain(d => d.Code == "EQ1004"
+                    && d.Message.Contains($"LINQ {name} in its static form (write source.{name}("), call);
+        }
+        // Max and Min bind their arguments by parameter, and the reduced form is the one that translates.
+        foreach (var call in new[]
+        {
+            "Enumerable.Max(numbers)", "Enumerable.Min(numbers, x => -x)", "numbers.Count()",
+            "numbers.ToDictionary(x => x)", "Enumerable.Range(0, 3).ToList()",
+        })
+        {
+            TestHelper.DiagnosticsFor($"var r = {call}")
+                .Should().NotContain(d => d.Code == "EQ1004", $"`{call}` translates");
+        }
+    }
+
+    [Fact]
+    public void ToDictionary_WithAComparer_IsRefused()
+    {
+        // The comparer was called as if it were the element selector.
+        TestHelper.DiagnosticsFor("var r = items.ToDictionary(x => x, (IEqualityComparer<string>)null)")
+            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("ToDictionary with a comparer"));
+        TestHelper.DiagnosticsFor("var r = items.ToDictionary(x => x, x => x.Length, (IEqualityComparer<string>)null)")
+            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("ToDictionary with a comparer"),
+                "the comparer beside an element selector is refused in the same words");
+        TestHelper.DiagnosticsFor("var r = items.ToDictionary(x => x, x => x.Length)")
+            .Should().NotContain(d => d.Code == "EQ1004", "an element selector is not a comparer");
+    }
+
+    [Fact]
+    public void ToDictionary_KeyedByWhatAPlainObjectCannotHold_IsRefused()
+    {
+        // A DateTime's text drops its ticks, a class instance is "[object Object]", and an enum with
+        // aliases has two names for one key: none keeps .NET's equality as a plain object's text.
+        TestHelper.DiagnosticsFor("var r = Orders.ToDictionary(o => new DateTime(2026, 1, o.Id))")
+            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("ToDictionary keyed by System.DateTime"));
+        TestHelper.DiagnosticsFor("var r = Orders.ToDictionary(o => o)")
+            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("ToDictionary keyed by Order"));
+        TestHelper.DiagnosticsFor("var r = Orders.ToDictionary(o => Environment.SpecialFolder.Personal)")
+            .Should().Contain(d => d.Code == "EQ1004" && d.Message.Contains("ToDictionary keyed by System.Environment.SpecialFolder"));
+
+        foreach (var held in new[] { "o => o.Id", "o => new DateOnly(2026, 1, o.Id)", "o => Size.Small", "o => o.Id.ToString()" })
+        {
+            TestHelper.DiagnosticsFor($"var r = Orders.ToDictionary({held})")
+                .Should().NotContain(d => d.Code == "EQ1004", $"a plain object holds the key of `{held}` by its text");
+        }
     }
 
     [Fact]

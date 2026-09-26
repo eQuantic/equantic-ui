@@ -43,6 +43,50 @@ jobs:
           EQ_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: ./scripts/check-commit-messages.sh --range "$EQ_BASE" "$EQ_HEAD"
 
+  # Every OpenSpec change and spec, validated strictly by the CLI tools/openspec/package-lock.json
+  # pins, through the same script a developer runs. The plain `openspec validate --all --strict`
+  # answers "No items found" and exits 0 on an empty tree, so the script also fails when nothing was
+  # validated: an openspec/ that lost its specs is not a state main can be in.
+  openspec:
+    runs-on: ubuntu-latest
+    # It reads the tree and nothing else.
+    permissions:
+      contents: read
+    env:
+      OPENSPEC_TELEMETRY: "0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # The CLI's own engine range starts at 20.19; 22 is what the other Node jobs here use.
+          node-version: 22
+
+      - name: Validate every change and spec, strictly
+        run: ./scripts/check-openspec.sh
+
+  # The SessionStart hook acts only in a cloud container, a path no laptop takes, so nothing else
+  # would notice the day it stopped working. This runs it the way a fresh container would (a hostile
+  # global git config, no dotnet on PATH) and asserts every promise, with two controls: a commit
+  # before the hook must fail, and a hook with a wrong SHA-256 must refuse the SDK.
+  session-start:
+    runs-on: ubuntu-latest
+    # It reads the tree and nothing else; the fixture's commits stay in a throwaway clone.
+    permissions:
+      contents: read
+    steps:
+      # Full history, so the fixture's clone of HEAD is an ordinary repository.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run the hook as a fresh cloud container, and assert what it promises
+        run: ./scripts/check-session-start.sh
+
   # The runtime's TypeScript, proven once: the command a developer runs, through the embedded bun
   # (bun.lock as pinned, tsc, vitest). It hands nothing on. The bundle an app runs is written by
   # the Server's own build, in every job that builds it, and a library build of the same sources
@@ -481,6 +525,27 @@ jobs:
           fi
           exit $status
 
+      # Composing a map installed an npm package beside eqc on the first Debug build, and bun's
+      # auto-install fetched what it imported (#356). eqc composes maps in C# now, so a package
+      # manager's files in its folder are a fetch someone put back. The Debug builds above composed
+      # every web sample's maps, and a folder with no eqc in it would prove nothing.
+      - name: No build wrote a package into eqc's folder
+        shell: bash
+        run: |
+          set -uo pipefail
+          tool=src/eQuantic.Build/bin/Debug/net10.0
+          if [ ! -f "$tool/eqc.dll" ]; then
+            echo "::error::no eqc at $tool, so this would check nothing"
+            exit 1
+          fi
+          found=$(find "$tool" \( -name node_modules -o -name package.json -o -name 'bun.lock*' \) -print)
+          if [ -n "$found" ]; then
+            echo "::error::a build wrote a package manager's files into eqc's folder:"
+            echo "$found"
+            exit 1
+          fi
+          echo "eqc's folder holds no package manager's files."
+
       # Beside a source tree the SDK copies the Server project's own bundle next to a web app's
       # modules. Each copy must be the served runtime byte for byte, derived from what the builds
       # wrote rather than listed here, and a tree where no sample wrote one is not a pass.
@@ -579,6 +644,56 @@ jobs:
             echo
             echo "A shared chunk is what two or more modules have in common, split out by bun (eqc runs it with \`--splitting\`) and named after one of them; it loads once, with the first page that needs it. The served runtime, which every page loads first, is budgeted by \`ServedRuntimeBudgetTests\`."
           } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # Edit, then publish: the most ordinary sequence there is, and it failed (#361). What two
+      # pages share is a chunk named by its content's hash, so changing it renames the chunk, and
+      # the old name, registered while the project evaluated, failed the publish's compression. The
+      # step changes the dashboard's console shell and publishes without building first. A chunk of
+      # the last build has to be gone from this one, or the step proved nothing; the publish has to
+      # hold exactly the chunks this build wrote; and each module it holds has to be served
+      # compressed, from THIS build's file, in both formats a browser negotiates: the same order
+      # once compressed the previous build's modules, and a compression that ran before the assets
+      # were defined would drop every module to its raw size, neither failing anything.
+      # scripts/check-compressed-assets.cs reads the bytes of both with .NET's own streams. Then
+      # the source goes back and a --no-build publish runs, which must carry what the last build
+      # wrote: the output folder is defined by a build target, and one that compiled here would
+      # carry the chunks of the source instead.
+      - name: A publish right after a shared component changes
+        shell: bash
+        run: |
+          set -uo pipefail
+          shell=samples/DefaultUIDashboard/Screens/ConsoleShell.cs
+          dir=samples/DefaultUIDashboard/wwwroot/_equantic
+          chunks() { [ -d "$1" ] && ls "$1" | grep -E -- '-[a-z0-9]{8}\.js$' | sort; }
+          before=$(chunks "$dir")
+          perl -0pi -e 's/(class ConsoleShell[^{]*\{)/$1\n    public const string CiMark = "the shared chunk changed";/' "$shell"
+          status=0
+          dotnet publish samples/DefaultUIDashboard -c Release -o republished || status=1
+          git checkout -- "$shell"
+          after=$(chunks "$dir")
+          published=$(chunks republished/wwwroot/_equantic)
+          gone=$(comm -23 <(echo "$before") <(echo "$after"))
+          echo "chunks before: $(echo $before)"
+          echo "chunks after:  $(echo $after)"
+          echo "published:     $(echo $published)"
+          if [ "$status" -ne 0 ]; then
+            echo "::error::the publish after a shared component changed failed"
+          elif [ -z "$gone" ] || [ -z "$after" ]; then
+            echo "::error::no chunk of the last build was renamed, so this proves nothing about a renamed one"
+            status=1
+          elif [ "$published" != "$after" ]; then
+            echo "::error::the publish holds other chunks than the build wrote"
+            status=1
+          fi
+          dotnet run scripts/check-compressed-assets.cs -- republished/wwwroot/_equantic || status=1
+          dotnet publish samples/DefaultUIDashboard -c Release --no-build -o unbuilt || status=1
+          unbuilt=$(chunks unbuilt/wwwroot/_equantic)
+          echo "--no-build:    $(echo $unbuilt)"
+          if [ "$unbuilt" != "$after" ]; then
+            echo "::error::a --no-build publish holds other chunks than the last build wrote"
+            status=1
+          fi
+          exit $status
 
       # Exit 0 is not the proof. A mobile target framework exists to produce a BUNDLE, and the
       # build checks worth exercising here are precisely the ones that only run when one is
@@ -742,9 +857,23 @@ jobs:
             (cd "$name" && cp ../nuget.config . && dotnet build -c Release)
           done
 
+          # A DEBUG build composes source maps, and composing them wrote an npm package into the
+          # SDK's own folder in the package cache (#356). The folder is listed before and after, and
+          # the Release builds above have already restored it, so a missing folder is a failure.
+          SDK_DIR=$(find "$HOME/.nuget/packages/equantic.ui.sdk" -mindepth 1 -maxdepth 1 -type d | head -1)
+          test -n "$SDK_DIR"
+          FIRST="GateWeb$(echo "$WEB_SHELLS" | awk '{print $1}' | tr -d '-')"
+          before=$(cd "$SDK_DIR" && find . -type f | sort)
+          (cd "$FIRST" && dotnet build -c Debug)
+          after=$(cd "$SDK_DIR" && find . -type f | sort)
+          if [ "$before" != "$after" ]; then
+            echo "::error::a Debug build wrote into the SDK's package folder:"
+            diff <(echo "$before") <(echo "$after") || true
+            exit 1
+          fi
+
           # PUBLISH once, on the first shape: the runtime lands through one target for every shell,
           # so publishing each of them buys the same assertion three times over.
-          FIRST="GateWeb$(echo "$WEB_SHELLS" | awk '{print $1}' | tr -d '-')"
           (cd "$FIRST" && dotnet publish -c Release -o publish)
           # The published copy is the runtime the Server package serves, byte for byte. This was a
           # presence check, and it passed four releases while the copy was a library build with no

@@ -271,6 +271,32 @@ public class BarChartTests
         ValueAxis axis, float width, float height) =>
         $"== {name} ==\n" + Dump(BarChartLayout.Solve(Series, visible, Categories.Categories.Count, layout, orientation, axis, width, height));
 
+    /// <summary>A float at FULL precision: the double it is, in the shortest text that reads back as
+    /// that double — JavaScript's own rule for a number, so both sides print one text for one value
+    /// and a last-bit difference is a different line. A negative zero prints as zero.</summary>
+    private static string Exact(float v) => v == 0 ? "0" : ((double)v).ToString("R", CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// The four bounds the hit test compares a pointer against, at full precision (#146). The dump
+    /// above rounds to three decimals on purpose and is one rounding coarser than the bit in
+    /// question; a probe POINT cannot fail either, because a point derived from the same edge moves
+    /// with it. So this pins the BOUND: <c>box.Bottom + HitSlack</c> was 169.8333282470703 here and
+    /// 169.83334350585938 in the twin while a float leaving a method kept a double.
+    /// </summary>
+    private static string HitBounds(string name, BarLayout layout, ChartOrientation orientation, float width, float height)
+    {
+        var g = BarChartLayout.Solve(Series, All, Categories.Categories.Count, layout, orientation, new ValueAxis(), width, height);
+        var lines = new List<string> { $"== {name} ==" };
+        foreach (var b in g.Bars)
+        {
+            var box = b.Box;
+            lines.Add($"hit c{b.Category} s{b.Series} {Exact(box.Left - BarChartLayout.HitSlack)} {Exact(box.Right + BarChartLayout.HitSlack)}"
+                + $" {Exact(box.Top - BarChartLayout.HitSlack)} {Exact(box.Bottom + BarChartLayout.HitSlack)}");
+        }
+
+        return string.Join("\n", lines);
+    }
+
     [Fact]
     public void TheLayoutFixture_IsWhatBothCompilationsProduce()
     {
@@ -281,6 +307,8 @@ public class BarChartTests
             Scenario("grouped-horizontal", BarLayout.Grouped, ChartOrientation.Horizontal, All, new ValueAxis(), 320, 200),
             Scenario("stacked-horizontal-hidden", BarLayout.Stacked, ChartOrientation.Horizontal, WithoutBeta, new ValueAxis(), 320, 200),
             Scenario("grouped-fixed-axis", BarLayout.Grouped, ChartOrientation.Vertical, All, new ValueAxis(null, 0, 40, "N0", 5), 250, 100),
+            HitBounds("hit-bounds-grouped", BarLayout.Grouped, ChartOrientation.Vertical, 317, 199),
+            HitBounds("hit-bounds-stacked", BarLayout.Stacked, ChartOrientation.Horizontal, 317, 199),
         ]) + "\n";
 
         if (Environment.GetEnvironmentVariable("EQ_UPDATE_BAR_CHART_FIXTURE") == "1")

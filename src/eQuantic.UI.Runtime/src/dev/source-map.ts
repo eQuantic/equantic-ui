@@ -2,7 +2,7 @@
  * Minimal Source Map (V3) consumer for the dev error overlay.
  *
  * Translates a generated (JavaScript) position back to its original position. For eQuantic.UI the
- * "original" is the C# source — the build composes the C#→TS and TS→JS maps (merge-maps.js) into a
+ * "original" is the C# source — eqc composes the C#→TS and TS→JS maps (SourceMapComposer) into a
  * single JS→C# map whose `sourcesContent` holds the C# files — so this is what lets the overlay show
  * a C# stack trace instead of JavaScript.
  */

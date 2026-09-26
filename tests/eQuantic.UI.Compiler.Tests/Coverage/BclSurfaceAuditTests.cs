@@ -172,34 +172,53 @@ public class BclSurfaceAuditTests
                 $"var __r = {SpeakType(surface)}.{field.Name};");
         }
 
-        foreach (var method in surface.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
+        // One probe per name AND ARITY, from the first overload of that arity the generator can
+        // SPEAK. By name alone only the shortest overload was ever probed: `char.IsLetter(s, i)` and
+        // its siblings handed the regex the whole string and answered false on the web, while the
+        // audit graded `char.IsLetter(c)` native. And a group whose first overload takes what no
+        // probe can write (an IFormatProvider) took its speakable siblings down with it —
+        // `Convert.ToInt32(string, fromBase)` sat behind `(object, IFormatProvider)`.
+        foreach (var overloads in surface.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
                      .Where(m => !Skip(m) && !m.IsSpecialName && !m.IsGenericMethodDefinition
                          && Speakable(m.ReturnType) && m.ReturnType != typeof(void))
                      .OrderBy(m => m.Name, StringComparer.Ordinal).ThenBy(m => m.GetParameters().Length)
-                     .GroupBy(m => m.Name).Select(g => g.First()))
+                     .GroupBy(m => (m.Name, m.GetParameters().Length)))
         {
-            if (BuildCall(SpeakType(surface), method, null) is { } call)
-                yield return new Probe($"{surface.Name}.{Signature(method)}", call);
+            var probe = overloads
+                .Select(m => BuildCall(SpeakType(surface), m, null) is { } call
+                    ? new Probe($"{surface.Name}.{Signature(m)}", call)
+                    : null)
+                .FirstOrDefault(p => p is not null);
+            if (probe is not null) yield return probe;
         }
     }
 
     private static IEnumerable<Probe> LinqProbes()
     {
-        foreach (var method in LinqSurface.GetMethods(BindingFlags.Public | BindingFlags.Static)
+        // The first SPEAKABLE overload of each arity, as for the static surfaces: `Max(selector)`
+        // sat behind `Max(IComparer)` and `ToDictionary(keySelector)` behind
+        // `ToDictionary(IEqualityComparer)`, so neither was ever probed.
+        foreach (var overloads in LinqSurface.GetMethods(BindingFlags.Public | BindingFlags.Static)
                      .Where(m => !Skip(m) && m.GetParameters().Length is >= 1 and <= 3)
                      .OrderBy(m => m.Name, StringComparer.Ordinal).ThenBy(m => m.GetParameters().Length)
-                     .GroupBy(m => (m.Name, m.GetParameters().Length)).Select(g => g.First()))
+                     .GroupBy(m => (m.Name, m.GetParameters().Length)))
         {
-            var parameters = method.GetParameters().Skip(1).ToArray();
-            var args = parameters.Select(p => ArgumentFor(p.ParameterType, typeof(int))).ToArray();
-            if (args.Any(a => a is null)) continue;
-
-            var receiverIsInts = method.GetParameters()[0].ParameterType.Name.Contains("IEnumerable");
-            if (!receiverIsInts) continue;
-
-            yield return new Probe($"Enumerable.{method.Name}/{parameters.Length}",
-                $"var __r = recvList.{method.Name}({string.Join(", ", args)});");
+            var probe = overloads.Select(LinqProbe).FirstOrDefault(p => p is not null);
+            if (probe is not null) yield return probe;
         }
+    }
+
+    private static Probe? LinqProbe(MethodInfo method)
+    {
+        var parameters = method.GetParameters().Skip(1).ToArray();
+        var args = parameters.Select(p => ArgumentFor(p.ParameterType, typeof(int))).ToArray();
+        if (args.Any(a => a is null)) return null;
+
+        var receiverIsInts = method.GetParameters()[0].ParameterType.Name.Contains("IEnumerable");
+        if (!receiverIsInts) return null;
+
+        return new Probe($"Enumerable.{method.Name}/{parameters.Length}",
+            $"var __r = recvList.{method.Name}({string.Join(", ", args)});");
     }
 
     private static string? BuildCall(string receiver, MethodInfo method, Type? element)

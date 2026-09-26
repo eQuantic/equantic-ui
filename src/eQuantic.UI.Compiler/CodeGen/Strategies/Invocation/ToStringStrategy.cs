@@ -1,6 +1,7 @@
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Invocation;
 
@@ -35,18 +36,40 @@ public class ToStringStrategy : IConversionStrategy
         // in no browser, so the page died with "CultureInfo is not defined" while the server, which
         // runs the C#, was perfectly happy.
         var args = invocation.ArgumentList.Arguments;
+        var receiverType = context.SemanticHelper.GetType(memberAccess.Expression);
+
+        // A BOOL writes True or False, what a concatenation already writes it as (StringConversion):
+        // `String(b)` lowercased it (#381). Its provider changes nothing, and a null bool? is empty.
+        // C# still evaluates the provider, after the receiver: one that could have an effect runs,
+        // in that order, and one that could not is left out — a named culture, a null, a literal,
+        // or a name bound to a local, a parameter or a field. A bare name can be a PROPERTY, whose
+        // getter may have one.
+        if (receiverType.UnwrapNullable() is { SpecialType: SpecialType.System_Boolean })
+        {
+            var ignored = args.FirstOrDefault(argument => IsFormatProvider(argument.Expression, context))?.Expression;
+            if (ignored is null || ignored is LiteralExpressionSyntax
+                || ignored is IdentifierNameSyntax && context.SemanticHelper.GetSymbol(ignored) is ILocalSymbol or IParameterSymbol or IFieldSymbol
+                || NamedCulture.IsInvariant(ignored, context) || NamedCulture.IsCurrent(ignored, context))
+                return JsExprWriter.Write(StringConversion.ToDotNetString(memberAccess.Expression,
+                    context.Converter.ConvertIr(memberAccess.Expression), context));
+            // `$value`: no C# name can take it, so nothing the provider names is shadowed.
+            var text = StringConversion.ToDotNetString(memberAccess.Expression, JsExpr.Identifier("$value"), context);
+            return JsExprWriter.Write(JsExpr.Template($"(($value) => ({{1}}, {JsExprWriter.Write(text)}))({{0}})",
+                [context.Converter.ConvertIr(memberAccess.Expression), context.Converter.ConvertIr(ignored)],
+                context.TypeAnnotations));
+        }
+
         var provider = args.FirstOrDefault(argument => IsFormatProvider(argument.Expression, context));
         var formatArg = args.FirstOrDefault(argument => argument != provider);
 
         var invariant = false;
         if (provider is not null)
         {
-            var culture = CultureNameOf(provider.Expression);
-            if (culture == "InvariantCulture")
+            if (NamedCulture.IsInvariant(provider.Expression, context))
             {
                 invariant = true;
             }
-            else if (culture != "CurrentCulture")
+            else if (!NamedCulture.IsCurrent(provider.Expression, context))
             {
                 // Never approximate a provider nobody tested: a custom IFormatProvider, or a culture
                 // read from a variable, has no counterpart in the Intl subset this framework pins.
@@ -63,9 +86,11 @@ public class ToStringStrategy : IConversionStrategy
             var fmt = context.Converter.ConvertExpression(formatArg.Expression);
             context.UsedHelpers.Add(Eq.Import);
             // The alignment slot stays empty: this shape has none, and the invariant flag is what
-            // makes the helper stop reading the culture the reader happens to be in.
-            return invariant
-                ? $"{Eq.Format}({caller}, {fmt}, undefined, true)"
+            // makes the helper stop reading the culture the reader happens to be in. A float says
+            // it is one, since `G` and `R` write a single's own digits (#378).
+            var kind = receiverType.UnwrapNullable() is { SpecialType: SpecialType.System_Single } ? ", 'single'" : "";
+            return invariant || kind.Length > 0
+                ? $"{Eq.Format}({caller}, {fmt}, undefined, {(invariant ? "true" : "undefined")}{kind})"
                 : $"{Eq.Format}({caller}, {fmt})";
         }
 
@@ -75,7 +100,7 @@ public class ToStringStrategy : IConversionStrategy
             // rendering of a number, so the invariant ask is answered exactly; the CURRENT culture's
             // general format is not in the tested subset, and asking for it by name is how a page
             // gets digits nobody pinned.
-            if (invariant) return $"String({caller})";
+            if (invariant) return RealText(memberAccess.Expression, context) ?? $"String({caller})";
 
             context.Report(node, ConversionSeverity.Error, "EQ2109",
                 "ToString(CultureInfo.CurrentCulture) has no specifier to pin, and the general "
@@ -89,7 +114,7 @@ public class ToStringStrategy : IConversionStrategy
         // `String(x)` is always invariant, so the browser re-renders "0.55" over it. Two targets,
         // two answers, from source that looks obviously correct. A warning rather than an error:
         // this compiles in apps today, and the fix is one argument away.
-        if (context.SemanticHelper.GetType(memberAccess.Expression) is
+        if (context.SemanticHelper.GetType(memberAccess.Expression).UnwrapNullable() is
             { SpecialType: SpecialType.System_Single or SpecialType.System_Double
                 or SpecialType.System_Decimal })
         {
@@ -101,13 +126,10 @@ public class ToStringStrategy : IConversionStrategy
         }
 
         // A FLOAT prints as the shortest decimal that reads back as the same single — `0.1f + 0.2f`
-        // is "0.3", where String() of the same bits would spell the double underneath.
-        if (context.SemanticHelper.GetType(memberAccess.Expression) is { SpecialType: SpecialType.System_Single }
-            && invocation.ArgumentList.Arguments.Count == 0)
-        {
-            context.UsedHelpers.Add(Eq.Import);
-            return $"{Eq.Single}({context.Converter.ConvertExpression(memberAccess.Expression)})";
-        }
+        // is "0.3", where String() of the same bits would spell the double underneath — and a
+        // DOUBLE in .NET's notation, which turns scientific at 1e17 where String() waits for 1e21.
+        if (invocation.ArgumentList.Arguments.Count == 0 && RealText(memberAccess.Expression, context) is { } real)
+            return real;
 
         // An ENUM crosses as a lowercase string (`Kind.B` → 'b'), so String() hands back the WIRE
         // value while the server hands back the C# member name. Any text printing an enum then
@@ -120,6 +142,19 @@ public class ToStringStrategy : IConversionStrategy
         }
 
         return $"String({caller})";
+    }
+
+    /// <summary>
+    /// A float's or a double's text as .NET writes it, a nullable one's included, which is nothing
+    /// for a null (<c>Nullable&lt;T&gt;.ToString()</c> is "", where String() spelled "null"): the
+    /// same conversion a concatenation takes. Null for any other receiver.
+    /// </summary>
+    private static string? RealText(ExpressionSyntax receiver, ConversionContext context)
+    {
+        if (context.SemanticHelper.GetType(receiver).UnwrapNullable()?.SpecialType
+            is not (SpecialType.System_Single or SpecialType.System_Double)) return null;
+        return Ir.JsExprWriter.Write(
+            StringConversion.ToDotNetString(receiver, context.Converter.ConvertIr(receiver), context));
     }
 
     /// <summary>
@@ -163,12 +198,6 @@ public class ToStringStrategy : IConversionStrategy
 
         return expression is MemberAccessExpressionSyntax { Expression: IdentifierNameSyntax { Identifier.Text: "CultureInfo" } };
     }
-
-    /// <summary>The culture a provider expression NAMES, or null when it names none — a variable, a
-    /// field, a custom provider. Syntax, deliberately: what matters is that the author WROTE the
-    /// invariant culture, and a value that only exists at runtime cannot be honoured at build time.</summary>
-    private static string? CultureNameOf(ExpressionSyntax expression) =>
-        expression is MemberAccessExpressionSyntax member ? member.Name.Identifier.Text : null;
 
     /// <summary>The wire spelling of a member — the same camelCase the member access converts to,
     /// so the map's keys match the values that will be looked up in it.</summary>

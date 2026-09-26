@@ -37,6 +37,10 @@ export class SdkStrings {
         return $eq.str("SdkResources", "ClearSearch");
     }
 
+    static get codeEditor(): string {
+        return $eq.str("SdkResources", "CodeEditor");
+    }
+
     static get find(): string {
         return $eq.str("SdkResources", "Find");
     }
@@ -47,6 +51,14 @@ export class SdkStrings {
 
     static get nextMatch(): string {
         return $eq.str("SdkResources", "NextMatch");
+    }
+
+    static get closeFind(): string {
+        return $eq.str("SdkResources", "CloseFind");
+    }
+
+    static get copyCode(): string {
+        return $eq.str("SdkResources", "CopyCode");
     }
 
     static get previousMonth(): string {

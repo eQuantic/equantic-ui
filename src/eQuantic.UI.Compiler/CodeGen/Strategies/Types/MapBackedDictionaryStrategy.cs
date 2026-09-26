@@ -12,18 +12,23 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 /// <c>{key,value}</c>-iterator interface (rather than a plain JS object). Concrete subclasses only
 /// declare WHICH dictionary types they own (<see cref="Matches"/>) and WHICH runtime factory to
 /// construct (<see cref="FactoryFor"/>) — e.g. record-keyed dictionaries → <c>valueMap</c>, sorted
-/// dictionaries → <c>sortedDictionary</c>/<c>sortedList</c>. The whole node surface is owned uniformly:
-/// construction, indexer read (<c>d[k]</c> → <c>get</c>) and assignment (<c>d[k] = v</c> / <c>op=</c> →
-/// <c>set</c>), <c>ContainsKey</c>/<c>Add</c>/<c>Remove</c>/<c>Clear</c>/<c>TryGetValue</c>/
-/// <c>GetValueOrDefault</c>, <c>Keys</c>/<c>Values</c>/<c>Count</c>, and <c>foreach</c>.
+/// dictionaries → <c>sortedDictionary</c>/<c>sortedList</c>. This strategy owns construction, the
+/// entry's plain assignment (<c>d[k] = v</c>), <c>ContainsKey</c>/<c>Add</c>/<c>Remove</c>/<c>Clear</c>/
+/// <c>TryGetValue</c>/<c>GetValueOrDefault</c>, <c>Keys</c>/<c>Values</c>/<c>Count</c>, and <c>foreach</c>.
+/// <para>
+/// The ENTRY's read and its read-modify-writes are not here. A read, a compound, a step and <c>??=</c>
+/// go where the plain dictionary's go, and take the runtime map's read and write from
+/// <see cref="DictionaryEntry"/>: a text template of its own had answered all of them wrong, from
+/// <c>m[k] *= 1 + 2</c> to <c>m[k]++</c>, which did not even parse.
+/// </para>
 ///
 /// Registered above the plain-object dictionary (20), indexer (1), member-access (0) and assignment
-/// (10) strategies, so for an owned type it wins every relevant node.
+/// (10) strategies, so for an owned type it wins every node it claims.
 /// </summary>
 public abstract class MapBackedDictionaryStrategy : ConversionStrategyBase
 {
     private static readonly string[] Methods =
-        { "ContainsKey", "TryGetValue", "TryGetValueOrDefault", "GetValueOrDefault", "Add", "Remove", "Clear" };
+        { "ContainsKey", "TryGetValue", "GetValueOrDefault", "Add", "Remove", "Clear" };
 
     /// <summary>True when this strategy owns dictionaries of <paramref name="type"/>.</summary>
     protected abstract bool Matches(ITypeSymbol? type);
@@ -41,14 +46,12 @@ public abstract class MapBackedDictionaryStrategy : ConversionStrategyBase
             case ImplicitObjectCreationExpressionSyntax ioc:
                 return Matches(context.SemanticHelper.GetType(ioc));
 
-            case ElementAccessExpressionSyntax ea:
-                return ReceiverMatches(ea.Expression, context);
-
-            case AssignmentExpressionSyntax { Left: ElementAccessExpressionSyntax la }:
+            case AssignmentExpressionSyntax { Left: ElementAccessExpressionSyntax la } assignment
+                when assignment.IsKind(SyntaxKind.SimpleAssignmentExpression):
                 return ReceiverMatches(la.Expression, context);
 
-            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma }:
-                return Methods.Contains(ma.Name.Identifier.Text) && ReceiverMatches(ma.Expression, context);
+            case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:
+                return Methods.Contains(ma.Name.Identifier.Text) && ReceiverMatches(DictionaryOf(inv, ma, context), context);
 
             case MemberAccessExpressionSyntax member:
                 return member.Name.Identifier.Text is "Keys" or "Values" or "Count"
@@ -69,48 +72,18 @@ public abstract class MapBackedDictionaryStrategy : ConversionStrategyBase
             case ImplicitObjectCreationExpressionSyntax ioc:
                 return BuildConstruction(ioc.Initializer, FactoryFor(context.SemanticHelper.GetType(ioc)), context);
 
-            case ElementAccessExpressionSyntax ea:
-            {
-                var receiver = context.Converter.ConvertExpression(ea.Expression);
-                var key = context.Converter.ConvertExpression(ea.ArgumentList.Arguments[0].Expression);
-                return $"{receiver}.get({key})";
-            }
-
-            case AssignmentExpressionSyntax { Left: ElementAccessExpressionSyntax la } assignment
-                when assignment.OperatorToken.Text is "|=" or "&=" or "^=" && Expressions.BoolLogic.OnBools(assignment, context):
-            {
-                // A bool's `|=`, `&=` and `^=` is the LOGICAL operator here too, as on every other
-                // target (BoolLogic): JavaScript's bitwise one stores a number in a bool slot. The
-                // receiver and the key are each evaluated once, as C# evaluates them — the
-                // template's writer binds a part it uses twice.
-                context.UsedHelpers.Add(Eq.Import);
-                var op = assignment.OperatorToken.Text[..^1];
-                return Ir.JsExpr.Template(
-                    $"{{0}}.set({{1}}, {Expressions.BoolLogic.Combine(op, "{0}.get({1})", "{2}")})",
-                    [context.Converter.ConvertIr(la.Expression),
-                     context.Converter.ConvertIr(la.ArgumentList.Arguments[0].Expression),
-                     context.Converter.ConvertIr(assignment.Right)],
-                    context.TypeAnnotations).ToString();
-            }
-
             case AssignmentExpressionSyntax { Left: ElementAccessExpressionSyntax la } assignment:
             {
-                var receiver = context.Converter.ConvertExpression(la.Expression);
-                var key = context.Converter.ConvertExpression(la.ArgumentList.Arguments[0].Expression);
-                var value = context.Converter.ConvertExpression(assignment.Right);
-                var op = assignment.OperatorToken.Text;
-
-                // Compound assignment `d[k] op= v` → `d.set(k, d.get(k) op v)`.
-                if (op != "=")
-                {
-                    var binaryOp = op.TrimEnd('=');
-                    value = $"{receiver}.get({key}) {binaryOp} {value}";
-                }
-                return $"{receiver}.set({key}, {value})";
+                // The entry's write answers the value, as C#'s assignment does: `set` answers the map.
+                context.UsedHelpers.Add(Eq.Import);
+                return DictionaryEntry.RuntimeMap.Write(
+                    context.Converter.ConvertExpression(la.Expression),
+                    context.Converter.ConvertExpression(la.ArgumentList.Arguments[0].Expression),
+                    context.Converter.ConvertExpression(assignment.Right));
             }
 
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:
-                return ConvertMethod(ma, inv.ArgumentList.Arguments, context);
+                return ConvertMethod(ma, inv, context);
 
             case MemberAccessExpressionSyntax member:
             {
@@ -131,6 +104,16 @@ public abstract class MapBackedDictionaryStrategy : ConversionStrategyBase
 
     private bool ReceiverMatches(ExpressionSyntax receiver, ConversionContext context) =>
         Matches(context.SemanticHelper.GetType(receiver));
+
+    /// <summary>The dictionary a call reads: its receiver, or — for a lookup's static form,
+    /// <c>CollectionExtensions.GetValueOrDefault(m, key)</c> — the argument that passes it, whose
+    /// type is the one that says this is a runtime map.</summary>
+    private static ExpressionSyntax DictionaryOf(
+        InvocationExpressionSyntax invocation, MemberAccessExpressionSyntax member, ConversionContext context) =>
+        member.Name.Identifier.Text is "TryGetValue" or "GetValueOrDefault"
+        && DictionaryLookup.DictionaryOf(invocation, context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol) is { } dictionary
+            ? dictionary
+            : member.Expression;
 
     /// <summary>
     /// Emits <c>factory(...)</c>, seeding from a dictionary collection-initializer (<c>{ {k, v}, … }</c>
@@ -168,11 +151,21 @@ public abstract class MapBackedDictionaryStrategy : ConversionStrategyBase
     }
 
     private static string ConvertMethod(
-        MemberAccessExpressionSyntax ma, SeparatedSyntaxList<ArgumentSyntax> args, ConversionContext context)
+        MemberAccessExpressionSyntax ma, InvocationExpressionSyntax invocation, ConversionContext context)
     {
-        var receiver = context.Converter.ConvertExpression(ma.Expression);
+        var args = invocation.ArgumentList.Arguments;
         var method = ma.Name.Identifier.Text;
 
+        // The two lookups answer as .NET's do, and evaluate each argument once — DictionaryLookup.
+        switch (method)
+        {
+            case "TryGetValue" when args.Count > 1:
+                return DictionaryLookup.RuntimeMap.TryGetValue(invocation, context).ToString();
+            case "GetValueOrDefault" when args.Count > 0:
+                return DictionaryLookup.RuntimeMap.GetValueOrDefault(invocation, context).ToString();
+        }
+
+        var receiver = context.Converter.ConvertExpression(ma.Expression);
         switch (method)
         {
             case "ContainsKey" when args.Count > 0:
@@ -191,36 +184,10 @@ public abstract class MapBackedDictionaryStrategy : ConversionStrategyBase
             case "Clear":
                 return $"{receiver}.clear()";
 
-            case "GetValueOrDefault" when args.Count > 0:
-            {
-                var k = context.Converter.ConvertExpression(args[0].Expression);
-                var def = args.Count > 1 ? context.Converter.ConvertExpression(args[1].Expression) : "null";
-                return $"({receiver}.get({k}) ?? {def})";
-            }
-
-            case "TryGetValue" or "TryGetValueOrDefault" when args.Count > 1:
-            {
-                var k = context.Converter.ConvertExpression(args[0].Expression);
-                var outVar = ExtractOutVar(args[1], context);
-                return $"({outVar} = {receiver}.get({k})) !== undefined";
-            }
-
             default:
                 var argList = string.Join(", ", args.Select(a => context.Converter.ConvertExpression(a.Expression)));
                 return $"{receiver}.{method.ToCamelCase()}({argList})";
         }
-    }
-
-    /// <summary>The receiving variable name of a <c>TryGetValue(key, out var x)</c> out-argument.</summary>
-    private static string ExtractOutVar(ArgumentSyntax outArg, ConversionContext context)
-    {
-        if (outArg.RefOrOutKeyword.IsKind(SyntaxKind.OutKeyword))
-        {
-            return outArg.Expression is DeclarationExpressionSyntax decl
-                ? decl.Designation.ToString()
-                : outArg.Expression.ToString().Trim();
-        }
-        return context.Converter.ConvertExpression(outArg.Expression);
     }
 
     public override int Priority => 25;

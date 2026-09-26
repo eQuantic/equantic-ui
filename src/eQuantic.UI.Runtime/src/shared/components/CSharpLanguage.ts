@@ -3,7 +3,8 @@ import { CurlyBraceLanguage } from "./CurlyBraceLanguage";
 
 export class CSharpLanguage extends CurlyBraceLanguage {
     constructor(props?: any) {
-        super();  if (props && typeof props === 'object') Object.assign(this, props);
+        super();
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     get name(): string {
@@ -11,6 +12,10 @@ export class CSharpLanguage extends CurlyBraceLanguage {
     }
 
     get hasVerbatimStrings(): boolean {
+        return true;
+    }
+
+    get hasRawStrings(): boolean {
         return true;
     }
 

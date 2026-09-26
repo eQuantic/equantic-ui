@@ -22,6 +22,8 @@ export interface ShortcutBinding {
 
 /** Bindings declared by the pass currently being lowered. */
 let pending: ShortcutBinding[] = [];
+/** The keydowns a binding took (see {@link claimedByShortcut}). */
+const claimed = new WeakSet<Event>();
 /** Bindings the last COMPLETED pass declared — what the listener dispatches to. */
 let active: ShortcutBinding[] = [];
 let installed = false;
@@ -90,10 +92,23 @@ function install(): void {
         binding.handler();
         break;
       }
-      if (handled) event.preventDefault();
+      if (handled) {
+        claimed.add(event);
+        event.preventDefault();
+      }
     },
     true,
   );
+}
+
+/**
+ * Whether a binding took this keydown. A key a Shortcut took reaches nothing else, which is what the
+ * C# twin does (PhotonHost.KeyDown asks the shortcuts first and stops there): the reconciler drops
+ * it before any element's own keydown, since this listener runs in the capture phase and theirs
+ * after it.
+ */
+export function claimedByShortcut(event: Event): boolean {
+  return claimed.has(event);
 }
 
 /** Test seam: drop every binding and let the next pass rebuild them. */

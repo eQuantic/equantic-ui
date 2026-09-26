@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { checked, single } from './overflow';
+import { checked, intDiv, intRem, longDiv, longRem, mapGet, mapSet } from './overflow';
+import { single } from './real-text';
+import { sortedDictionary } from './sorted';
+import { valueMap } from './collections';
 
 describe('checked arithmetic', () => {
   it('hands a value in range back, and throws past the edge', () => {
@@ -40,5 +43,67 @@ describe('a float as text', () => {
     expect(single(Math.fround(16777217))).toBe('16777216');
     expect(single(0)).toBe('0');
     expect(single(Math.fround(-2.5))).toBe('-2.5');
+  });
+});
+
+/** .NET 10's answers, measured: a zero divisor and `MinValue / -1` throw, the remainder included. */
+describe('integer division throws where .NET does', () => {
+  const zero = 'Attempted to divide by zero.';
+  const overflow = 'Arithmetic operation resulted in an overflow.';
+
+  it('divides and truncates what .NET divides', () => {
+    expect(intDiv(-7, 2)).toBe(-3);
+    expect(intRem(-7, 2)).toBe(-1);
+    expect(intDiv(-2_147_483_648, 1)).toBe(-2_147_483_648);
+    expect(intDiv(4_294_967_295, 2)).toBe(2_147_483_647);
+    expect(longDiv(9_223_372_036_854_775_807n, 2n)).toBe(4_611_686_018_427_387_903n);
+    expect(longRem(-7n, 2n)).toBe(-1n);
+  });
+
+  it("refuses a zero divisor with .NET's message", () => {
+    expect(() => intDiv(5, 0)).toThrow(zero);
+    expect(() => intRem(5, 0)).toThrow(zero);
+    expect(() => longDiv(5n, 0n)).toThrow(zero);
+    expect(() => longRem(5n, 0n)).toThrow(zero);
+  });
+
+  it('refuses MinValue by -1, the remainder included', () => {
+    expect(() => intDiv(-2_147_483_648, -1)).toThrow(overflow);
+    expect(() => intRem(-2_147_483_648, -1)).toThrow(overflow);
+    expect(() => longDiv(-9_223_372_036_854_775_808n, -1n)).toThrow(overflow);
+    expect(() => longRem(-9_223_372_036_854_775_808n, -1n)).toThrow(overflow);
+    expect(intDiv(-2_147_483_647, -1)).toBe(2_147_483_647);
+  });
+});
+
+describe('mapGet / mapSet — a runtime map entry, read and written as .NET does', () => {
+  it('reads a key that is there, a stored null or undefined included', () => {
+    const m = sortedDictionary<string, string | null | undefined>([['a', 'x'], ['n', null], ['u', undefined]]);
+    expect(mapGet(m, 'a')).toBe('x');
+    expect(mapGet(m, 'n')).toBeNull();
+    expect(mapGet(m, 'u')).toBeUndefined();
+  });
+
+  it("throws for a key that is not there, where the map's own get answers undefined", () => {
+    const m = sortedDictionary<string, number>([['a', 1]]);
+    expect(m.get('z')).toBeUndefined();
+    expect(() => mapGet(m, 'z')).toThrow("The given key 'z' was not present in the dictionary.");
+  });
+
+  it('throws for a null key, as .NET does', () => {
+    const m = valueMap<unknown, number>();
+    expect(() => mapGet(m, null)).toThrow("Value cannot be null. (Parameter 'key')");
+  });
+
+  it('writes through set and answers the value written, not the map', () => {
+    const m = valueMap<string, number>();
+    expect(mapSet(m, 'a', 5)).toBe(5);
+    expect(m.get('a')).toBe(5);
+  });
+
+  it('refuses a null key on a write too, where set would file the entry under null', () => {
+    const m = sortedDictionary<string | null, number>();
+    expect(() => mapSet(m, null, 1)).toThrow("Value cannot be null. (Parameter 'key')");
+    expect(m.size).toBe(0);
   });
 });

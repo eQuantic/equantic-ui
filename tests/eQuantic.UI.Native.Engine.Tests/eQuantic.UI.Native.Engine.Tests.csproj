@@ -58,4 +58,10 @@
     <ProjectReference Include="..\..\src\eQuantic.UI.Email\eQuantic.UI.Email.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The walk behind "a node belongs to ONE tree", compiled in from the web tests rather than
+         copied: the native shells are held to the same rule by the same instrument. -->
+    <Compile Include="..\eQuantic.UI.Web.Tests\NodePlacements.cs" Link="Shared\NodePlacements.cs" />
+  </ItemGroup>
+
 </Project>

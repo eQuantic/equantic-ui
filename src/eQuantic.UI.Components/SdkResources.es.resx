@@ -23,6 +23,15 @@
   <data name="NextMatch" xml:space="preserve">
     <value>Coincidencia siguiente</value>
   </data>
+  <data name="CloseFind" xml:space="preserve">
+    <value>Cerrar barra de búsqueda</value>
+  </data>
+  <data name="CopyCode" xml:space="preserve">
+    <value>Copiar código</value>
+  </data>
+  <data name="CodeEditor" xml:space="preserve">
+    <value>Editor de código</value>
+  </data>
   <data name="Spreadsheet" xml:space="preserve">
     <value>Hoja de cálculo</value>
   </data>

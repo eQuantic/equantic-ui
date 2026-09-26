@@ -7,7 +7,7 @@ export class BarChartLayout {
     static hitSlack: number = 4;
 
     static tickOffset(ticks: ValueTicks, index: number, across: number) {
-        return ticks.span <= 0 ? 0 : Math.fround(((ticks.at(index) - ticks.min) / ticks.span)) * across;
+        return ticks.span <= 0 ? 0 : Math.fround(Math.fround(((ticks.at(index) - ticks.min) / ticks.span)) * across);
     }
 
     static ticks(series: ChartSeries[], visible: boolean[], categoryCount: number, layout: string, axis: ValueAxis) {
@@ -48,28 +48,28 @@ export class BarChartLayout {
         for (let s = 0; s < series.length; s++) {
             if (visible[s]) shown.push(s);
         }
-        let slot = Math.fround(categoryCount === 0 ? along : along / categoryCount);
+        let slot = categoryCount === 0 ? along : Math.fround(along / Math.fround(categoryCount));
         let bars: BarRect[] = [];
         for (let c = 0; c < categoryCount; c++) {
-            let categoryStart = Math.fround(c * slot);
+            let categoryStart = Math.fround(Math.fround(c) * slot);
             if (layout === 'grouped') {
                 let n = shown.length;
                 if (n === 0) continue;
-                let thickness = Math.min(BarChartLayout.maxThickness, (slot - BarChartLayout.gap * (n + 1)) / n);
+                let thickness = Math.min(BarChartLayout.maxThickness, Math.fround(Math.fround(slot - Math.fround(BarChartLayout.gap * Math.fround(n + 1))) / Math.fround(n)));
                 if (thickness < 1) thickness = 1;
-                let group = Math.fround(n * thickness + (n - 1) * BarChartLayout.gap);
-                let start = Math.fround(categoryStart + (slot - group) / 2);
+                let group = Math.fround(Math.fround(Math.fround(n) * thickness) + Math.fround(Math.fround(n - 1) * BarChartLayout.gap));
+                let start = Math.fround(categoryStart + Math.fround(Math.fround(slot - group) / 2));
                 for (let k = 0; k < n; k++) {
                     let s = shown[k];
                     let v = series[s].at(c);
                     let from = BarChartLayout.offset(ticks, baseValue, across);
                     let to = BarChartLayout.offset(ticks, v, across);
-                    bars.push(BarChartLayout.rect(vertical, across, c, s, start + k * (thickness + BarChartLayout.gap), thickness, Math.min(from, to), Math.max(from, to), v < baseValue, true));
+                    bars.push(BarChartLayout.rect(vertical, across, c, s, Math.fround(start + Math.fround(Math.fround(k) * Math.fround(thickness + BarChartLayout.gap))), thickness, Math.min(from, to), Math.max(from, to), v < baseValue, true));
                 }
             } else {
-                let thickness = Math.min(BarChartLayout.maxThickness, slot - 2 * BarChartLayout.gap);
+                let thickness = Math.min(BarChartLayout.maxThickness, Math.fround(slot - Math.fround(2 * BarChartLayout.gap)));
                 if (thickness < 1) thickness = 1;
-                let position = Math.fround(categoryStart + (slot - thickness) / 2);
+                let position = Math.fround(categoryStart + Math.fround(Math.fround(slot - thickness) / 2));
                 let lastPositive = -1;
                 let lastNegative = -1;
                 for (const s of shown) {
@@ -103,7 +103,7 @@ export class BarChartLayout {
                 }
             }
         }
-        return new BarChartGeometry(width, height, orientation, ticks, vertical ? height - baseline : baseline, bars);
+        return new BarChartGeometry(width, height, orientation, ticks, vertical ? Math.fround(height - baseline) : baseline, bars);
     }
 
     static hitTest(geometry: BarChartGeometry, x: number, y: number) {
@@ -116,12 +116,12 @@ export class BarChartLayout {
     }
 
     static offset(ticks: ValueTicks, value: number, across: number) {
-        return ticks.span <= 0 ? 0 : Math.fround(((value - ticks.min) / ticks.span)) * across;
+        return ticks.span <= 0 ? 0 : Math.fround(Math.fround(((value - ticks.min) / ticks.span)) * across);
     }
 
     static rect(vertical: boolean, across: number, category: number, series: number, position: number, thickness: number, low: number, high: number, negative: boolean, dataEnd: boolean) {
         let length = Math.fround(high - low);
-        return vertical ? new BarRect(category, series, new Rect(position, across - high, thickness, length), negative, dataEnd) : new BarRect(category, series, new Rect(low, position, length, thickness), negative, dataEnd);
+        return vertical ? new BarRect(category, series, new Rect(position, Math.fround(across - high), thickness, length), negative, dataEnd) : new BarRect(category, series, new Rect(low, position, length, thickness), negative, dataEnd);
     }
 }
 

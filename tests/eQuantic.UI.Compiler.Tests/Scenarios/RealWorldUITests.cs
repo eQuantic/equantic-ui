@@ -26,7 +26,7 @@ public class RealWorldUITests
 
         result.Should().Contain("this.name ?? (this.name = '')");
         result.Should().Contain("'name'");
-        result.Should().Contain("(!this.name || !this.name.trim())");
+        result.Should().Contain("(!$eq.text.hasNonWhiteSpace(this.name))");
     }
 
     [Fact]
@@ -40,8 +40,9 @@ public class RealWorldUITests
 
         var result = TestHelper.ConvertCodeBlock(code);
 
-        result.Should().Contain("?.");
-        result.Should().MatchRegex("(T|t)rim");
+        // Trim is .NET's through the runtime, so the chain is guarded by binding its receiver once
+        // rather than by `?.`, which only reads a JavaScript member.
+        result.Should().Contain("$r == null ? null : $eq.text.trim($r)");
         result.Should().Contain("toLowerCase()");
         result.Should().Contain("?? null");
         result.Should().Contain("includes('@')");
@@ -87,7 +88,9 @@ public class RealWorldUITests
         var result = TestHelper.ConvertCodeBlock(code);
 
         result.Should().Contain("filter");
-        result.Should().Contain("!== undefined");
+        // default(OrderStatus) is its zero member, New (#380). This asserted `!== undefined`, which
+        // every status passes, so the filter kept the orders C# drops.
+        result.Should().Contain("!== 'new'");
         result.Should().Contain("sort");
         result.Should().Contain("slice(0, 10)");
     }
@@ -196,8 +199,9 @@ public class RealWorldUITests
 
         var result = TestHelper.ConvertExpression(code);
 
-        result.Should().Contain("?.");
-        result.Should().MatchRegex("(T|t)rim");
+        // Trim is .NET's through the runtime, so the chain is guarded by binding its receiver once
+        // rather than by `?.`, which only reads a JavaScript member.
+        result.Should().Contain("$r == null ? null : $eq.text.trim($r)");
         result.Should().Contain("toLowerCase()");
         result.Should().Contain("replaceAll");
         result.Should().Contain("?? null");
@@ -243,7 +247,10 @@ public class RealWorldUITests
         // nothing in it answered true for "constructor" and handed Object's method back as a hit.
         result.Should().Contain("!Object.prototype.hasOwnProperty.call(this.cache, this.key)");
         result.Should().Contain("this.cache[");
-        result.Should().Contain("((result = this.cache[this.key]), true)");
+        // TryGetValue names the receiver and the key twice, and both are properties here: each is
+        // bound once, and a miss writes default(string) to the out.
+        result.Should().Contain(
+            "(($0, $1) => (Object.prototype.hasOwnProperty.call($0, $1) ? ((result = $0[$1]), true) : ((result = null), false)))(this.cache, this.key)");
     }
 
     // ============ Array Static Methods in Loops ============

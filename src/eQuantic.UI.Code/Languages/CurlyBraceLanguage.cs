@@ -23,6 +23,12 @@ public abstract class CurlyBraceLanguage : ICodeLanguage
     /// <summary>Inside a multi-line string: C#'s <c>@"…"</c>, JS's <c>`…`</c>.</summary>
     protected const int StateMultilineString = 2;
 
+    /// <summary>
+    /// Inside a RAW string that opened on an earlier line: this plus the number of quotes that
+    /// opened it, which is the run that closes it (C# 11: <c>"""</c>, <c>""""</c>, …).
+    /// </summary>
+    protected const int StateRawString = 16;
+
     public abstract string Name { get; }
 
     /// <inheritdoc />
@@ -42,6 +48,10 @@ public abstract class CurlyBraceLanguage : ICodeLanguage
 
     /// <summary>Whether <c>`…`</c> opens a string that spans lines (JS template literal).</summary>
     protected virtual bool HasTemplateStrings => false;
+
+    /// <summary>Whether three or more quotes open a RAW string that ends at the same run of quotes
+    /// and may span lines (C# 11).</summary>
+    protected virtual bool HasRawStrings => false;
 
     /// <summary>Whether <c>[Attribute]</c> at the head of a line is an attribute (C#).</summary>
     protected virtual bool HasBracketAttributes => false;
@@ -64,6 +74,18 @@ public abstract class CurlyBraceLanguage : ICodeLanguage
             }
             Add(into, 0, close + 2, CodeTokenKind.Comment);
             i = close + 2;
+        }
+        else if (state >= StateRawString)
+        {
+            var quotes = state - StateRawString;
+            var end = CloseRaw(line, 0, quotes);
+            if (end < 0)
+            {
+                Add(into, 0, line.Length, CodeTokenKind.String);
+                return state;
+            }
+            Add(into, 0, end, CodeTokenKind.String);
+            i = end;
         }
         else if (state == StateMultilineString)
         {
@@ -105,14 +127,36 @@ public abstract class CurlyBraceLanguage : ICodeLanguage
                 }
             }
 
-            // Strings and characters.
-            if (HasVerbatimStrings && c == '@' && i + 1 < line.Length && line[i + 1] == '"')
+            // Strings and characters. A C# string's PREFIX belongs to it ($, @, $@ or @$, and a raw
+            // string's run of $), and it is read AT the prefix. Read from the quote looking back, a $
+            // right after an operator had already joined that operator's token (x=>$"…"), and the
+            // two tokens drew it twice.
+            if (HasVerbatimStrings && (c == '$' || c == '@') && PrefixedString(line, i) is { } prefixed)
             {
-                var end = ScanVerbatim(line, i + 2);
+                var quote = prefixed.Quote;
+                // A raw string takes $ and never @: @$""" opens a VERBATIM string whose first
+                // character is an escaped quote.
+                if (HasRawStrings && !prefixed.Verbatim && QuotesAt(line, quote) >= 3)
+                {
+                    var quotes = QuotesAt(line, quote);
+                    var raw = CloseRaw(line, quote + quotes, quotes);
+                    if (raw < 0)
+                    {
+                        Add(into, i, line.Length - i, CodeTokenKind.String);
+                        return StateRawString + quotes;
+                    }
+                    Add(into, i, raw - i, CodeTokenKind.String);
+                    i = raw;
+                    continue;
+                }
+                var end = prefixed.Verbatim ? ScanVerbatim(line, quote + 1) : ScanQuoted(line, quote + 1, '"');
                 if (end < 0)
                 {
                     Add(into, i, line.Length - i, CodeTokenKind.String);
-                    return StateMultilineString;
+                    // A verbatim string runs on to the next line; any other ends with this one.
+                    if (prefixed.Verbatim) return StateMultilineString;
+                    i = line.Length;
+                    continue;
                 }
                 Add(into, i, end - i, CodeTokenKind.String);
                 i = end;
@@ -130,14 +174,23 @@ public abstract class CurlyBraceLanguage : ICodeLanguage
                 i = end;
                 continue;
             }
+            if (HasRawStrings && c == '"' && QuotesAt(line, i) >= 3)
+            {
+                var quotes = QuotesAt(line, i);
+                var end = CloseRaw(line, i + quotes, quotes);
+                if (end < 0)
+                {
+                    Add(into, i, line.Length - i, CodeTokenKind.String);
+                    return StateRawString + quotes;
+                }
+                Add(into, i, end - i, CodeTokenKind.String);
+                i = end;
+                continue;
+            }
             if (c == '"' || c == '\'')
             {
-                // An interpolated C# string opens with $" — the $ belongs to the string.
-                var start = i > 0 && line[i - 1] == '$' ? i - 1 : i;
-                if (start < i && into.Count > 0 && into[^1].Start == start) into.RemoveAt(into.Count - 1);
                 var end = ScanQuoted(line, i + 1, c);
-                var length = (end < 0 ? line.Length : end) - start;
-                Add(into, start, length, CodeTokenKind.String);
+                Add(into, i, (end < 0 ? line.Length : end) - i, CodeTokenKind.String);
                 i = end < 0 ? line.Length : end;
                 continue;
             }
@@ -213,6 +266,27 @@ public abstract class CurlyBraceLanguage : ICodeLanguage
 
     private static readonly HashSet<char> Punctuation = ['(', ')', '[', ']', '{', '}', ',', ';', '.', ':'];
 
+    /// <summary>
+    /// Where the quote of a C# string that opens with a prefix at <paramref name="start"/> is, and
+    /// whether the prefix makes it verbatim: <c>$"…"</c>, <c>@"…"</c>, <c>$@"…"</c> and <c>@$"…"</c>,
+    /// and a raw string's <c>$$"""…"""</c>. Null when what begins there is not a string.
+    /// </summary>
+    private static (int Quote, bool Verbatim)? PrefixedString(string line, int start)
+    {
+        var verbatim = false;
+        var i = start;
+        while (i < line.Length && (line[i] == '$' || line[i] == '@'))
+        {
+            if (line[i] == '@')
+            {
+                if (verbatim) return null;
+                verbatim = true;
+            }
+            i++;
+        }
+        return i < line.Length && line[i] == '"' ? (i, verbatim) : null;
+    }
+
     private static void Add(List<CodeToken> into, int start, int length, CodeTokenKind kind)
     {
         if (length <= 0) return;
@@ -232,6 +306,28 @@ public abstract class CurlyBraceLanguage : ICodeLanguage
         {
             if (line[i] == '\\') { i++; continue; }
             if (line[i] == quote) return i + 1;
+        }
+        return -1;
+    }
+
+    /// <summary>How many quotes run from <paramref name="index"/>.</summary>
+    private static int QuotesAt(string line, int index)
+    {
+        var count = 0;
+        while (index + count < line.Length && line[index + count] == '"') count++;
+        return count;
+    }
+
+    /// <summary>Where a raw string of <paramref name="quotes"/> quotes ends on this line, after
+    /// the run that closes it, or -1 if it goes on. A shorter run of quotes is part of its text.</summary>
+    private static int CloseRaw(string line, int from, int quotes)
+    {
+        for (var i = from; i < line.Length; i++)
+        {
+            if (line[i] != '"') continue;
+            var run = QuotesAt(line, i);
+            if (run >= quotes) return i + run;
+            i += run - 1;
         }
         return -1;
     }

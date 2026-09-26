@@ -7,6 +7,7 @@ public sealed class CSharpLanguage : CurlyBraceLanguage
     public override string Name => "C#";
 
     protected override bool HasVerbatimStrings => true;
+    protected override bool HasRawStrings => true;
     protected override bool HasBracketAttributes => true;
 
     public override CodeLanguageRules Rules { get; } = new()

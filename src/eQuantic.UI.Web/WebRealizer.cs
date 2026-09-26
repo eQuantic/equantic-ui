@@ -34,8 +34,11 @@ public static class WebRealizer
     public static HtmlElement Lower(
         VisualNode node, IAppTheme theme, float typeScale = 1f, StyleSink? styles = null)
     {
-        var context = new ComponentContext(theme, typeScale);
-        var root = LowerRoot(node, context)
+        // No font here to measure with: a component that asks is answered 0 and remembered, so the
+        // client draws it again instead of adopting geometry built on zeros (FontlessMeasurer).
+        var measurer = new FontlessMeasurer();
+        var context = new ComponentContext(theme, typeScale, measureText: measurer.Measure);
+        var root = LowerRoot(node, context, measurer)
                ?? new RealizedElement("span"); // layout-only nodes outside a flex row lower to nothing
         if (styles != null)
             StyleAtomizer.AtomizeTree(root, ThemeVarMap.For(theme), styles);
@@ -47,8 +50,8 @@ public static class WebRealizer
     /// <see cref="WebLoweringVisitor"/>'s, and this class is the entry point plus the atomizing
     /// step that wraps it.
     /// </summary>
-    private static HtmlElement? LowerRoot(VisualNode node, ComponentContext context) =>
-        new WebLoweringVisitor(context).Lower(node, horizontalAxis: null);
+    private static HtmlElement? LowerRoot(VisualNode node, ComponentContext context, FontlessMeasurer measurer) =>
+        new WebLoweringVisitor(context, measurer).Lower(node, horizontalAxis: null);
 
     internal static string PaintCss(VectorPaint paint) => paint.Kind switch
     {

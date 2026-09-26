@@ -147,6 +147,13 @@ public class HtmlStyle
     public string? Visibility { get; set; }
     public string? PointerEvents { get; set; }
 
+    /// <summary>
+    /// Whether the element keeps its descendants' stacking in a context of its own —
+    /// <c>isolate</c> on a code surface's child, so a layer the child raised stays under the caret
+    /// painted after it.
+    /// </summary>
+    public string? Isolation { get; set; }
+
     /// <summary>The focus ring the element draws for itself — <c>none</c> on a surface that draws
     /// its own, which is what an editor and a grid do.</summary>
     public string? Outline { get; set; }
@@ -172,6 +179,13 @@ public class HtmlStyle
     public string? Overflow { get; set; }
     public string? OverflowX { get; set; }
     public string? OverflowY { get; set; }
+
+    /// <summary>
+    /// Whether the browser may move the scroll offset to keep what is on screen in place when the
+    /// content above it changes — <c>none</c> on every scroll view, whose offset changes only because
+    /// someone changed it, as on Photon.
+    /// </summary>
+    public string? OverflowAnchor { get; set; }
     public string? Transition { get; set; }
     public string? Transform { get; set; }
     public string? Animation { get; set; }
@@ -281,6 +295,8 @@ public class HtmlStyle
         AddProperty(properties, "opacity", Opacity);
         AddProperty(properties, "visibility", Visibility);
         AddProperty(properties, "pointer-events", PointerEvents);
+        AddProperty(properties, "isolation", Isolation);
+        AddProperty(properties, "overflow-anchor", OverflowAnchor);
         AddProperty(properties, "outline", Outline);
         AddProperty(properties, "user-select", UserSelect);
         AddProperty(properties, "-webkit-user-select", UserSelect);

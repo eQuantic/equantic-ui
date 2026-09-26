@@ -7,6 +7,7 @@ EQ1003 eQuantic.UI.Compiler/CodeGen/CSharpToJsConverter.cs
 EQ1004 eQuantic.UI.Compiler/CodeGen/ConversionContext.cs
 EQ1005 eQuantic.Build/Program.cs
 EQ1006 eQuantic.Build/Program.cs
+EQ1007 eQuantic.UI.Compiler/Services/OverloadedMethods.cs
 EQ2001 eQuantic.Build/Program.cs eQuantic.UI.Compiler/CodeGen/Strategies/Special/UnsupportedConstructStrategy.cs
 EQ2002 eQuantic.UI.Compiler/CodeGen/Strategies/Statements/GotoStatementStrategy.cs
 EQ2003 eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ObjectCreationStrategy.cs
@@ -27,9 +28,9 @@ EQ2104 eQuantic.UI.Compiler/Services/SemanticValidator.cs
 EQ2105 eQuantic.UI.Compiler/Services/SemanticValidator.cs
 EQ2106 eQuantic.UI.Compiler/Services/SemanticValidator.cs
 EQ2107 eQuantic.UI.Compiler/Services/SemanticValidator.cs
-EQ2108 eQuantic.UI.Compiler/CodeGen/Strategies/Invocation/ToStringStrategy.cs
+EQ2108 eQuantic.UI.Compiler/CodeGen/Strategies/Invocation/ToStringStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/ParseCulture.cs eQuantic.UI.Compiler/CodeGen/Strategies/Primitives/StringStaticStrategy.cs
 EQ2109 eQuantic.UI.Compiler/CodeGen/Strategies/Invocation/ToStringStrategy.cs
-EQ2110 eQuantic.UI.Compiler/CodeGen/Strategies/Invocation/ToStringStrategy.cs
+EQ2110 eQuantic.UI.Compiler/CodeGen/Strategies/Invocation/ToStringStrategy.cs eQuantic.UI.Compiler/CodeGen/Strategies/ParseCulture.cs
 EQ2111 eQuantic.UI.Compiler/CodeGen/Strategies/Invocation/ServiceProviderStrategy.cs
 EQ2112 eQuantic.UI.Compiler/Services/SemanticValidator.cs
 EQ2113 eQuantic.UI.Compiler/CodeGen/Strategies/Async/TaskMethodStrategy.cs

@@ -44,14 +44,9 @@ public class ConversionConformanceTests
         // Recorded so the limit is known rather than discovered.
         "try { var bad = (new int[1])[5]; return 1; } catch { return -1; }",          // -1 in .NET; undefined here
         "var xs = new[]{1,2}; try { var v = xs[9]; return 1; } catch { return -1; }", // same, through a variable
-        // ++ and -- on a MISSING key: .NET reads first and throws, and a plain object increments an
-        // undefined into NaN and creates the key. `+=` and `??=` ARE lowered — read through the
-        // guard, write the result — because their value IS the result.
-        //
-        // The POSTFIX form's value is the value BEFORE the write, which the template cannot
-        // express. The PREFIX form's is the result, so it could be lowered the same way as `+=`
-        // and simply has not been; both are pinned here so neither drifts, and closing the prefix
-        // one should take the postfix out of this list only if it finds a shape for it too.
+        // ++ and -- on a MISSING key: .NET reads first and throws, where a plain object stepped an
+        // undefined into NaN and created the key. A step reads through the same guard as `+=`
+        // (ReadModifyWrite), and the postfix form answers the value it read before the write.
         "var m = new Dictionary<string, int>(); try { m[\"gone\"]++; return 1; } catch { return -1; }",
         "var m = new Dictionary<string, int>(); try { ++m[\"gone\"]; return 1; } catch { return -1; }",
         "var m = new Dictionary<string, int>(); try { --m[\"gone\"]; return 1; } catch { return -1; }",

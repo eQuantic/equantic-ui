@@ -26,11 +26,13 @@ public sealed class CodeHistory
     {
         _future.Clear();
 
-        // Coalesce: a character typed right where the last one landed continues that run.
-        if (edit.IsSimpleInsert && _past.Count > 0 && edit.Range.Start == _runEnd)
+        // Coalesce: a character TYPED right where the last typed one landed continues that run, and
+        // a run may begin by typing over a selection, the replacement being its first step. What
+        // was not typed (a paste, a cut, an indent) never joins one and never starts one.
+        if (edit.Typed && edit.IsSimpleInsert && _past.Count > 0 && edit.Range.Start == _runEnd)
         {
             var previous = _past[^1];
-            if (previous.IsSimpleInsert)
+            if (previous.Typed && !previous.InsertedText.Contains('\n'))
             {
                 _past[^1] = previous with
                 {
@@ -44,17 +46,28 @@ public sealed class CodeHistory
 
         _past.Add(edit);
         if (_past.Count > Limit) _past.RemoveAt(0);
-        _runEnd = edit.IsSimpleInsert ? edit.InsertedRange.End : new CodePosition(-1, -1);
+        _runEnd = edit.Typed && !edit.InsertedText.Contains('\n')
+            ? edit.InsertedRange.End
+            : new CodePosition(-1, -1);
     }
 
     /// <summary>Ends the current typing run, so the NEXT character starts a new undo step. Called
     /// when the caret moves somewhere else, when the editor loses focus, when a file is saved.</summary>
     public void Break() => _runEnd = new CodePosition(-1, -1);
 
-    /// <summary>Takes the last step back, applying it to <paramref name="document"/>.</summary>
-    public CodeDocument? Undo(CodeDocument document, out CodeRange selection)
+    /// <summary>
+    /// Takes the last step back, applying it to <paramref name="document"/>. A step is one
+    /// replacement: <paramref name="replaced"/> is the range of <paramref name="document"/> it wrote
+    /// over, and <paramref name="written"/> the range of the result that holds what it wrote, which is
+    /// what anything kept per line (the colours, the widths) is brought up to date by, as it is for
+    /// an edit.
+    /// </summary>
+    public CodeDocument? Undo(CodeDocument document, out CodeRange selection, out CodeRange replaced,
+        out CodeRange written)
     {
         selection = default;
+        replaced = default;
+        written = default;
         if (_past.Count == 0) return null;
 
         var edit = _past[^1];
@@ -62,15 +75,21 @@ public sealed class CodeHistory
         _future.Add(edit);
         Break();
 
-        var next = document.Replace(edit.InsertedRange, edit.RemovedText, out _);
+        replaced = new CodeRange(document.Clamp(edit.InsertedRange.Start), document.Clamp(edit.InsertedRange.End));
+        var next = document.Replace(replaced, edit.RemovedText, out var end);
+        written = new CodeRange(replaced.Start, end);
         selection = edit.SelectionBefore;
         return next;
     }
 
-    /// <summary>Puts back what <see cref="Undo"/> took.</summary>
-    public CodeDocument? Redo(CodeDocument document, out CodeRange selection)
+    /// <summary>Puts back what <see cref="Undo"/> took, and says what it replaced as
+    /// <see cref="Undo"/> does.</summary>
+    public CodeDocument? Redo(CodeDocument document, out CodeRange selection, out CodeRange replaced,
+        out CodeRange written)
     {
         selection = default;
+        replaced = default;
+        written = default;
         if (_future.Count == 0) return null;
 
         var edit = _future[^1];
@@ -78,7 +97,9 @@ public sealed class CodeHistory
         _past.Add(edit);
         Break();
 
-        var next = document.Replace(edit.Range, edit.InsertedText, out _);
+        replaced = new CodeRange(document.Clamp(edit.Range.Start), document.Clamp(edit.Range.End));
+        var next = document.Replace(replaced, edit.InsertedText, out var end);
+        written = new CodeRange(replaced.Start, end);
         selection = edit.SelectionAfter;
         return next;
     }

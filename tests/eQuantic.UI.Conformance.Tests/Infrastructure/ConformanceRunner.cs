@@ -270,9 +270,20 @@ public static class ConformanceRunner
         return $"import {{ {string.Join(", ", used)} }} from '{runtimeUrl}';\n";
     }
 
+    /// <summary>What importing the served bundle prints for <c>typeof $eq</c> — "object" when it
+    /// loads. PUBLIC for the harness's own check: when the bundle cannot load, every case that
+    /// imports a helper fails with it, and hundreds of unrelated failures are the worst way to say
+    /// one thing.</summary>
+    public static string ImportTheRuntimeBundle()
+    {
+        var url = RuntimeJsUrl()
+            ?? throw new InvalidOperationException("Could not locate the bundled runtime.js.");
+        return JsExecutor.Run($"import {{ $eq }} from '{url}';\nconsole.log(typeof $eq);").Trim();
+    }
+
     /// <summary>The bundle the Server serves, which this project's build-order edge to the Server has
     /// just written from the current runtime source — never a committed copy (#273).</summary>
-    private static string? RuntimeJsUrl()
+    internal static string? RuntimeJsUrl()
     {
         var root = RepoRoot.Find();
         if (root == null) return null;

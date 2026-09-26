@@ -8,11 +8,15 @@ namespace eQuantic.UI.Web;
 /// What DOM the server writes for each word of the vocabulary — the web realizer's dispatch, moved
 /// off a switch with a default arm and onto the visitor the compiler checks.
 /// </summary>
-internal sealed partial class WebLoweringVisitor(ComponentContext context)
+internal sealed partial class WebLoweringVisitor(ComponentContext context, FontlessMeasurer measurer)
     : IVisualNodeVisitor<bool?, HtmlElement?>
 {
     /// <summary>The theme and type scale this lowering runs against — fixed for the pass.</summary>
     private readonly ComponentContext _context = context;
+
+    /// <summary>The context's measurer, which answers 0 and counts: how <see cref="Visit(UiComponent, bool?)"/>
+    /// learns that a component was built on widths nobody measured.</summary>
+    private readonly FontlessMeasurer _measurer = measurer;
 
 
     /// <summary>
@@ -120,22 +124,13 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context)
         LowerSheetSurface(sheet, horizontalAxis);
 
     /// <summary>
-    /// THE ONE WORD THIS REALIZER STILL DOES NOT WRITE, and the reason is not "nobody noticed" — it
-    /// was that once, when `SheetSurface` sat here beside it and both lowered to an empty
-    /// <c>&lt;span&gt;</c>. The client appends a caret to every code surface and the server has no
-    /// business rendering a caret; emitting only the child would hand hydration a tree one element
-    /// short, which the reconciler records as a failed adoption. Settling the shape needs a running
-    /// page rather than a guess. <c>SurfaceSsrTests</c> holds the half that is done.
-    /// <para>
-    /// It returns null exactly as the old default arm did. What is new is not that null is rare —
-    /// <see cref="Visit(Spacer, bool?)"/> returns it outside a flex axis, and every wrapper
-    /// propagates a null child — but that this is the only node with NO lowering at all, the only
-    /// one that answers null for every instance, and that the answer is written where the node is
-    /// instead of in an exemption list. (Review caught the overstatement in the first draft of this
-    /// comment, which claimed it was the only node that could return null.)
-    /// </para>
+    /// An editable code surface, written the way the client builds it (see
+    /// <see cref="LowerCodeSurface"/>). It was the one node this realizer did not write at all, and
+    /// for a reason measured on a running page: its geometry is text geometry, the server has no
+    /// font to measure with, and hydration adopted the zeros it was built on. The component that
+    /// measured is now marked for the client to draw again, so the arm can write the code.
     /// </summary>
-    public HtmlElement? Visit(CodeSurface code, bool? horizontalAxis) => null;
+    public HtmlElement? Visit(CodeSurface code, bool? horizontalAxis) => LowerCodeSurface(code);
 
     // ---- graphics --------------------------------------------------------------------------------
 
@@ -209,8 +204,30 @@ internal sealed partial class WebLoweringVisitor(ComponentContext context)
         // the design host's, and neither prefetches.
         ComponentExpansionScope.Ambient?.Enter(component);
 
-        return component.ExpandContained(_context, (Visitor: this, Axis: horizontalAxis),
-            static (built, state) => state.Visitor.Lower(built, state.Axis));
+        return component.ExpandContained(_context, (Visitor: this, Axis: horizontalAxis, Asked: _measurer.Asks),
+            static (built, state) =>
+            {
+                // Counted BEFORE the built tree lowers: the components inside it build during that
+                // lowering, and what they ask is theirs, not this one's.
+                var unmeasured = state.Visitor._measurer.Asks > state.Asked;
+                var element = state.Visitor.Lower(built, state.Axis);
+                if (unmeasured && element is not null) MarkUnmeasured(element);
+                return element;
+            });
+    }
+
+    /// <summary>
+    /// The attribute that tells hydration this element's subtree was laid out on widths the server
+    /// could not measure, so the client DRAWS it rather than adopting it. Adoption is right for
+    /// everything else, and it is why the mark has to exist: hydration leaves the server's markup
+    /// alone, so geometry built on zeros stayed on the page after the client took over.
+    /// </summary>
+    internal const string UnmeasuredMark = "eq-unmeasured";
+
+    private static void MarkUnmeasured(HtmlElement element)
+    {
+        element.DataAttributes ??= new Dictionary<string, string>();
+        element.DataAttributes[UnmeasuredMark] = "";
     }
 
     // ---- what more than one family reaches ---------------------------------------------

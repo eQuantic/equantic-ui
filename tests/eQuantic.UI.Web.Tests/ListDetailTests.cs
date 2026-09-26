@@ -44,7 +44,7 @@ public class ListDetailTests
     [Fact]
     public void TheWebEmitsBothShapes()
     {
-        var html = Render(new ListDetail(Inbox(), new Text("The message body"))
+        var html = Render(new ListDetail(Inbox, () => new Text("The message body"))
         {
             Title = "Message detail",
             ListTitle = "Inbox",
@@ -63,7 +63,7 @@ public class ListDetailTests
         // browser picks the shape with no JavaScript and no measurement.
         var sink = new StyleSink();
         var element = WebRealizer.Lower(
-            new ListDetail(Inbox(), new Text("The message body")) { Title = "Message detail" },
+            new ListDetail(Inbox, () => new Text("The message body")) { Title = "Message detail" },
             Theme, 1f, sink);
 
         element.Children.Should().HaveCount(2);
@@ -75,20 +75,94 @@ public class ListDetailTests
     }
 
     /// <summary>
-    /// The app hands over ONE list node and both shapes need it, so the same instance lands in two
-    /// trees — the thing the vocabulary says not to do. It holds because lowering READS a node and
-    /// builds fresh elements per position: each variant gets its own subtree, with its own paths.
-    /// Pinned because the day it stops holding, one of the two shapes silently renders nothing.
+    /// Nothing chosen, the list is on screen in BOTH shapes — the compact screen and the wide left
+    /// pane — and each shape builds its own. The contract this replaces handed ONE list node to both
+    /// and pinned that it rendered twice. It did, and for a stateful list that was one instance
+    /// mounted at two places: one state driving two copies.
     /// </summary>
     [Fact]
-    public void OneListNodeServesBothShapes()
+    public void EachShapeBuildsItsOwnList()
     {
-        var html = Render(new ListDetail(Inbox()) { ListTitle = "Inbox" });
+        var built = 0;
+        var html = Render(new ListDetail(() =>
+        {
+            built++;
+            return Inbox();
+        })
+        { ListTitle = "Inbox" });
 
+        built.Should().Be(2, "one list per shape that shows it");
         var texts = TextsIn(html);
         texts.Count(text => text == "First message").Should().Be(2,
             "nothing is chosen, so the list is the compact screen AND the wide left pane");
         texts.Count(text => text == "Inbox").Should().Be(2);
+    }
+
+    /// <summary>
+    /// The built tree, walked through every node-typed property: no instance is reachable by two
+    /// paths, in either state. Under the AdaptiveNode two paths are two mounts on the web.
+    /// </summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void NoNodeIsReachableByTwoPaths(bool chosen)
+    {
+        var built = new ListDetail(Inbox, chosen ? () => new Text("The message body") : null)
+        {
+            Title = "Message detail",
+            ListTitle = "Inbox",
+            OnBack = () => { },
+            Placeholder = new Text("Pick a message"),
+        }.BuildContained(Context());
+
+        NodePlacements.Shared(built).Should().BeEmpty("a node belongs to ONE tree, so each shape builds its own");
+    }
+
+    /// <summary>
+    /// The symptom itself, on the realizer that produced it: every stateful pane the app builds is
+    /// built — and so mounted — exactly once. With the list handed over as one node, the web built
+    /// it twice (once per shape) and the browser then kept one instance at two paths.
+    /// </summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void OnTheWeb_EveryStatefulPaneIsBuiltOnce(bool chosen)
+    {
+        var lists = new List<Probe>();
+        var details = new List<Probe>();
+
+        VisualNode NewList()
+        {
+            var probe = new Probe("the list");
+            lists.Add(probe);
+            return probe;
+        }
+
+        VisualNode NewDetail()
+        {
+            var probe = new Probe("the detail");
+            details.Add(probe);
+            return probe;
+        }
+
+        WebRealizer.Lower(new ListDetail(NewList, chosen ? NewDetail : null), Theme).Render();
+
+        lists.Concat(details).Should().OnlyContain(probe => probe.Builds == 1,
+            "each shape mounts its own instance, and mounts it once");
+        lists.Should().HaveCount(chosen ? 1 : 2,
+            "the list is in the wide shape, and in the compact one while nothing is chosen");
+        details.Should().HaveCount(chosen ? 2 : 0, "a chosen detail is a pane in both shapes");
+    }
+
+    private sealed class Probe(string marker) : StatefulComponent
+    {
+        public int Builds { get; private set; }
+
+        public override VisualNode Build(ComponentContext context)
+        {
+            Builds++;
+            return new Text(marker, TypeRole.BodyM);
+        }
     }
 
     /// <summary>Nothing chosen on a phone means the LIST is the screen: no detail bar, and no back
@@ -96,7 +170,7 @@ public class ListDetailTests
     [Fact]
     public void WithNothingChosen_TheCompactShapeIsTheListAlone()
     {
-        var compact = ((AdaptiveNode)new ListDetail(Inbox())
+        var compact = ((AdaptiveNode)new ListDetail(Inbox)
         {
             Title = "Message detail",
             ListTitle = "Inbox",
@@ -113,7 +187,7 @@ public class ListDetailTests
     [Fact]
     public void WithSomethingChosen_TheCompactShapeIsTheDetail()
     {
-        var compact = ((AdaptiveNode)new ListDetail(Inbox(), new Text("The message body"))
+        var compact = ((AdaptiveNode)new ListDetail(Inbox, () => new Text("The message body"))
         {
             Title = "Message detail",
             ListTitle = "Inbox",
@@ -132,7 +206,7 @@ public class ListDetailTests
     [Fact]
     public void TheWideShapeHasNoBackAffordance()
     {
-        var shape = (AdaptiveNode)new ListDetail(Inbox(), new Text("Body"), onBack: () => { })
+        var shape = (AdaptiveNode)new ListDetail(Inbox, () => new Text("Body"), onBack: () => { })
         {
             Title = "Message detail",
         }.BuildContained(Context());
@@ -150,11 +224,11 @@ public class ListDetailTests
     [Fact]
     public void AWideWindowWithNothingChosen_ShowsTheEmptyState()
     {
-        var own = (AdaptiveNode)new ListDetail(Inbox())
+        var own = (AdaptiveNode)new ListDetail(Inbox)
         {
             Placeholder = new Text("Pick a message"),
         }.BuildContained(Context());
-        var none = (AdaptiveNode)new ListDetail(Inbox()).BuildContained(Context());
+        var none = (AdaptiveNode)new ListDetail(Inbox).BuildContained(Context());
 
         TextsIn(Render(own.Expanded!)).Should().Contain("Pick a message");
         TextsIn(Render(none.Expanded!)).Should().Contain(SdkStrings.NothingSelected,
@@ -166,7 +240,7 @@ public class ListDetailTests
     [Fact]
     public void TheThresholdIsTheAppsToMove()
     {
-        var shape = (AdaptiveNode)new ListDetail(Inbox()) { TwoPaneFrom = 1024 }
+        var shape = (AdaptiveNode)new ListDetail(Inbox) { TwoPaneFrom = 1024 }
             .BuildContained(Context());
 
         shape.ExpandedFrom.Should().Be(1024);

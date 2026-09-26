@@ -1,17 +1,41 @@
-import { $eq, CodeDirectionValue, CodeDocument, CodeEdit, CodeGrid, CodeHighlighter, CodeHistory, CodeKeymap, CodeLanguageRules, CodeLanguages, CodeMotionValue, CodePosition, CodeRange, Point, PointerPhaseValue, Rect } from "../runtime-exports";
+import { $eq, CodeDirectionValue, CodeDocument, CodeEdit, CodeGrid, CodeHighlighter, CodeHistory, CodeKeymap, CodeLanguageRules, CodeLanguages, CodeLineCells, CodeMotionValue, CodePosition, CodeRange, KeyboardConventionValue, Point, PointerPhaseValue, Rect } from "../runtime-exports";
 
 export class CodeEditorController {
     constructor(text: string = '', language: any = null, props?: any) {
-        this._selection = new CodeRange(); this._desiredColumn = -1; this._dragging = false; this._document = CodeDocument.fromText(text);
+        this._selection = new CodeRange();
+        this._desiredCell = -1;
+        this._cells = {};
+        this._widths = null;
+        this._widthsTabs = 0;
+        this._widest = 0;
+        this._dragging = false;
+        this._revealVersion = 0;
+        this._focusVersion = 0;
+        this._composition = null;
+        this._compositionReplaced = '';
+        this._compositionSelection = new CodeRange();
+        this._wholeLineCopy = null;
+        this._document = CodeDocument.fromText(text);
         this._selection = new CodeRange(CodePosition.start);
-        this.highlighter = new CodeHighlighter(language ?? CodeLanguages.plainText); if (props && typeof props === 'object') Object.assign(this, props);
+        this.highlighter = new CodeHighlighter(language ?? CodeLanguages.plainText);
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     _document: CodeDocument;
     _selection: CodeRange;
-    _desiredColumn: number;
+    _desiredCell: number;
+    _cells: Record<string, any>;
+    _widths: number[] | null;
+    _widthsTabs: number;
+    _widest: number;
     static caretWidth: number = 2;
     _dragging: boolean;
+    _revealVersion: number;
+    _focusVersion: number;
+    _composition: CodeRange | null;
+    _compositionReplaced: string;
+    _compositionSelection: CodeRange;
+    _wholeLineCopy: string | null;
 
     get document(): CodeDocument {
         return this._document;
@@ -19,9 +43,12 @@ export class CodeEditorController {
 
     set document(value: CodeDocument) {
         this._document = value;
+        this._widths = null;
         this._selection = new CodeRange(this._document.clamp(this._selection.focus));
+        this._composition = null;
         this.highlighter.invalidate();
         this.history.clear();
+        this._revealVersion++;
         this.changed?.(null);
     }
 
@@ -30,11 +57,7 @@ export class CodeEditorController {
     }
 
     set selection(value: CodeRange) {
-        let next = new CodeRange(this._document.clamp(value.anchor), this._document.clamp(value.focus));
-        if ($eq.equals(next, this._selection)) return;
-        this.history.break();
-        this._selection = next;
-        this.selectionChanged?.(next);
+        this.select(value, false);
     }
 
     get caret(): CodePosition {
@@ -49,49 +72,230 @@ export class CodeEditorController {
     }
 
     readOnly: boolean = false;
-    grid: CodeGrid = CodeGrid.default;
+    tabMovesFocus: boolean = false;
 
-    get selectionBands(): Rect[] {
-        let bands: Rect[] = [];
-        if (this._selection.isEmpty) return bands;
-        let start = this._selection.start;
-        let end = this._selection.end;
-        for (let line = start.line; line <= end.line; line++) {
-            let from = line === start.line ? start.column : 0;
-            let to = line === end.line ? end.column : this._document.line(line).length + 1;
-            if (to <= from) continue;
-            let at = this.grid.pointOf(line, from);
-            bands.push(new Rect(at.x, at.y, (to - from) * this.grid.cell.width, this.grid.cell.height));
+    get widestLine(): number {
+        let tabSize = this.rules.indentWidth;
+        if (this._widths == null || this._widthsTabs !== tabSize) {
+            this._widths = [];
+            for (let line = 0; line < this._document.lineCount; line++) this._widths.push(CodeLineCells.widthOf(this._document.line(line), tabSize));
+            this._widthsTabs = tabSize;
+            this._widest = CodeEditorController.widest(this._widths);
         }
-        return bands;
+        return this._widest;
     }
+
+    grid: CodeGrid = CodeGrid.default;
 
     get carets(): Rect[] {
         return [this.caretRect(this.caret)];
     }
 
+    get revealVersion(): number {
+        return this._revealVersion;
+    }
+
+    get focusVersion(): number {
+        return this._focusVersion;
+    }
+
+    get composition(): CodeRange | null {
+        return this._composition;
+    }
+
     changed: ((codeEdit: CodeEdit | null) => void) | null = null;
     selectionChanged: ((codeRange: CodeRange) => void) | null = null;
 
+    select(value: CodeRange, keepCell: boolean) {
+        if (!keepCell) this._desiredCell = -1;
+        let anchor = this._document.clamp(value.anchor);
+        let focus = this._document.clamp(value.focus);
+        let backwards = !$eq.equals(new CodeRange(anchor, focus).start, anchor);
+        let next = $eq.equals(anchor, focus) ? new CodeRange(this.boundary(anchor, false)) : new CodeRange(this.boundary(anchor, backwards), this.boundary(focus, !backwards));
+        if ($eq.equals(next, this._selection)) return;
+        this.history.break();
+        this._selection = next;
+        this._revealVersion++;
+        this.selectionChanged?.(next);
+    }
+
+    widthsChanged(line: number, linesInserted: number, linesRemoved: number) {
+        if (this._widths == null) return;
+        let old = this._widths;
+        let gone = Math.min(linesRemoved + 1, old.length - line);
+        let lostTheWidest = false;
+        for (let i = line; i < line + gone; i++) if (old[i] >= this._widest) lostTheWidest = true;
+        if (linesInserted === linesRemoved && gone === linesRemoved + 1) {
+            let widestHere = 0;
+            for (let i = line; i <= line + linesInserted; i++) {
+                let width = CodeLineCells.widthOf(this._document.line(i), this._widthsTabs);
+                old[i] = width;
+                if (width > widestHere) widestHere = width;
+            }
+            if (lostTheWidest && widestHere < this._widest) this._widest = CodeEditorController.widest(old); else if (widestHere > this._widest) this._widest = widestHere;
+            return;
+        }
+        let next: number[] = [];
+        for (let i = 0; i < line; i++) next.push(old[i]);
+        let measuredWidest = 0;
+        for (let i = line; i <= line + linesInserted; i++) {
+            let width = CodeLineCells.widthOf(this._document.line(i), this._widthsTabs);
+            if (width > measuredWidest) measuredWidest = width;
+            next.push(width);
+        }
+        for (let i = line + gone; i < old.length; i++) next.push(old[i]);
+        this._widths = next;
+        if (lostTheWidest) this._widest = CodeEditorController.widest(next); else if (measuredWidest > this._widest) this._widest = measuredWidest;
+    }
+
+    static widest(widths: number[]) {
+        let widest = 0;
+        for (const width of widths) if (width > widest) widest = width;
+        return widest;
+    }
+
+    cellsOf(line: number) {
+        let cells: any;
+        let text = this._document.line(line);
+        let tabSize = this.rules.indentWidth;
+        if ((($0: any) => (Object.prototype.hasOwnProperty.call($0, line) ? ((cells = $0[line]), true) : ((cells = null), false)))(this._cells) && cells.text === text && cells.tabSize === tabSize) return cells;
+        cells = new CodeLineCells(text, tabSize);
+        this._cells[line] = cells;
+        return cells;
+    }
+
+    before(position: CodePosition) {
+        let here = this._document.clamp(position);
+        if (here.column > 0) return $eq.withPatch(here, { column: this.cellsOf(here.line).previous(here.column) });
+        if (here.line === 0) return CodePosition.start;
+        return new CodePosition(here.line - 1, this._document.line(here.line - 1).length);
+    }
+
+    boundary(position: CodePosition, after: boolean) {
+        let cells = this.cellsOf(position.line);
+        if (position.column <= 0 || position.column >= cells.text.length) return position;
+        let element = cells.elementAt(cells.indexOf(position.column));
+        if (element.start === position.column) return position;
+        return $eq.withPatch(position, { column: after ? element.end : element.start });
+    }
+
+    after(position: CodePosition) {
+        let here = this._document.clamp(position);
+        if (here.column < this._document.line(here.line).length) return $eq.withPatch(here, { column: this.cellsOf(here.line).next(here.column) });
+        if (here.line === this._document.lineCount - 1) return here;
+        return new CodePosition(here.line + 1, 0);
+    }
+
+    selectionBandsIn(first: number, last: number) {
+        let bands: Rect[] = [];
+        if (this._selection.isEmpty) return bands;
+        let start = this._selection.start;
+        let end = this._selection.end;
+        for (let line = Math.max(start.line, first); line <= Math.min(end.line, last); line++) {
+            let from = line === start.line ? start.column : 0;
+            let cells = this.cellsOf(line);
+            let fromCell = cells.cellOf(from);
+            let toCell = line === end.line ? cells.cellOf(end.column) : cells.width + 1;
+            if (toCell <= fromCell) continue;
+            let at = this.grid.pointOf(line, fromCell);
+            bands.push(new Rect(at.x, at.y, Math.fround(Math.fround(toCell - fromCell) * this.grid.cell.width), this.grid.cell.height));
+        }
+        return bands;
+    }
+
+    requestFocus() {
+        return this._focusVersion++;
+    }
+
     caretRect(position: CodePosition) {
-        let at = this.grid.pointOf(position.line, position.column);
+        let at = this.grid.pointOf(position.line, this.cellsOf(position.line).cellOf(position.column));
         return new Rect(at.x, at.y, CodeEditorController.caretWidth, this.grid.cell.height);
     }
 
     positionAt(point: Point) {
-        let line = (Math.trunc(Math.floor((point.y - this.grid.origin.y) / this.grid.cell.height)) | 0);
-        let column = (Math.trunc($eq.math.round((point.x - this.grid.origin.x) / this.grid.cell.width)) | 0);
-        return this._document.clamp(new CodePosition(Math.max(0, line), Math.max(0, column)));
+        let line = (Math.trunc(Math.floor(Math.fround(Math.fround(point.y - this.grid.origin.y) / this.grid.cell.height))) | 0);
+        let target = this._document.clamp(new CodePosition(Math.max(0, line), 0)).line;
+        return new CodePosition(target, this.cellsOf(target).columnAt(Math.fround(Math.fround(point.x - this.grid.origin.x) / this.grid.cell.width)));
     }
 
-    handleKey(key: string, modifiers: number, clipboard: any) {
-        return CodeKeymap.handle(this, key, modifiers, clipboard);
+    handleKey(key: string, modifiers: number, convention: KeyboardConventionValue, clipboard: any) {
+        return CodeKeymap.handle(this, key, modifiers, convention, clipboard);
     }
 
     handleText(text: string) {
+        if (this.readOnly || text.length === 0) return false;
+        this.tabMovesFocus = false;
+        let committing = !(this._composition == null);
+        this.endComposition();
         let typed = false;
-        for (const c of text) typed = $eq.logic.or(typed, this.type(c));
+        let starts = $eq.text.textElementStarts(text);
+        for (let i = 0; i < starts.length; i++) {
+            let end = i + 1 < starts.length ? starts[i + 1] : text.length;
+            typed = $eq.logic.or(typed, end - starts[i] === 1 ? this.type(text[starts[i]]) : this.edit(this._selection, $eq.text.substring(text, starts[i], end - starts[i]), true));
+        }
+        if (committing) this.history.break();
         return typed;
+    }
+
+    setComposition(text: string) {
+        if (this.readOnly) return false;
+        let current: any; 
+        if (!((current = this._composition) != null)) {
+            if (text.length === 0) return false;
+            this.history.break();
+            this._compositionSelection = this._selection;
+            let over = new CodeRange(this._document.clamp(this._selection.start), this._document.clamp(this._selection.end));
+            this._compositionReplaced = this._document.textIn(over);
+            this._composition = this.replaceUnrecorded(over, text);
+            return true;
+        }
+        if (text.length === 0) {
+            this.replaceUnrecorded(current, this._compositionReplaced);
+            this._composition = null;
+            this._selection = new CodeRange(this._document.clamp(this._compositionSelection.anchor), this._document.clamp(this._compositionSelection.focus));
+            this._revealVersion++;
+            this.selectionChanged?.(this._selection);
+            return true;
+        }
+        this._composition = this.replaceUnrecorded(current, text);
+        return true;
+    }
+
+    endComposition() {
+        let current: any; 
+        if (!((current = this._composition) != null)) return;
+        this.replaceUnrecorded(current, this._compositionReplaced);
+        this._composition = null;
+        this._selection = new CodeRange(this._document.clamp(this._compositionSelection.anchor), this._document.clamp(this._compositionSelection.focus));
+    }
+
+    replaceUnrecorded(range: CodeRange, text: string) {
+        let caret: any;
+        let ordered = new CodeRange(this._document.clamp(range.start), this._document.clamp(range.end));
+        let removed = this._document.textIn(ordered);
+        let before = this._selection;
+        let next = ($o => (caret = $o.caret, $o.$))(this._document.replace(ordered, text));
+        let line = ordered.start.line;
+        let linesRemoved = ordered.end.line - ordered.start.line;
+        let linesInserted = caret.line - ordered.start.line;
+        this._document = next;
+        this._selection = new CodeRange(caret);
+        this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
+        this.widthsChanged(line, linesInserted, linesRemoved);
+        this._revealVersion++;
+        this._desiredCell = -1;
+        let edit = new CodeEdit(ordered, removed, text, before, this._selection, false);
+        this.changed?.(edit);
+        this.selectionChanged?.(this._selection);
+        return new CodeRange(ordered.start, caret);
+    }
+
+    focusChanged(focused: boolean) {
+        this.history.break();
+        this.tabMovesFocus = false;
+        if (focused) return;
+        if (!(this._composition == null)) this.setComposition('');
+        this._dragging = false;
     }
 
     handlePointer(phase: PointerPhaseValue, position: Point, modifiers: number, clicks: number) {
@@ -120,7 +324,12 @@ export class CodeEditorController {
     }
 
     apply(range: CodeRange, text: string) {
-        let caret: any; if (this.readOnly) return false;
+        return this.edit(range, text, false);
+    }
+
+    edit(range: CodeRange, text: string, typed: boolean) {
+        let caret: any;
+        if (this.readOnly) return false;
         let ordered = new CodeRange(this._document.clamp(range.start), this._document.clamp(range.end));
         let removed = this._document.textIn(ordered);
         if (removed.length === 0 && text.length === 0) return false;
@@ -131,12 +340,14 @@ export class CodeEditorController {
         let linesInserted = caret.line - ordered.start.line;
         this._document = next;
         this._selection = new CodeRange(caret);
-        let edit = new CodeEdit(ordered, removed, text, before, this._selection);
+        this._revealVersion++;
+        let edit = new CodeEdit(ordered, removed, text, before, this._selection, typed);
         this.history.record(edit);
         this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
+        this.widthsChanged(line, linesInserted, linesRemoved);
         this.changed?.(edit);
         this.selectionChanged?.(this._selection);
-        this._desiredColumn = -1;
+        this._desiredCell = -1;
         return true;
     }
 
@@ -151,12 +362,12 @@ export class CodeEditorController {
             for (const [open, close] of rules.brackets) {
                 if (c !== open) continue;
                 let text = this._document.textIn(this._selection);
-                return this.apply(this._selection, open + text + close);
+                return this.edit(this._selection, open + text + close, true);
             }
             for (const quote of rules.quotes) {
                 if (c !== quote) continue;
                 let text = this._document.textIn(this._selection);
-                return this.apply(this._selection, quote + text + quote);
+                return this.edit(this._selection, quote + text + quote, true);
             }
         }
         let line = this._document.line(this.caret.line);
@@ -175,8 +386,8 @@ export class CodeEditorController {
         }
         for (const [open, close] of rules.brackets) {
             if (c !== open) continue;
-            if (after === '\0' || (/^\s$/.test(after)) || rules.brackets.some((p) => p[1] === after)) {
-                if (!this.apply(this._selection, `${open}${close}`)) return false;
+            if (after === '\0' || $eq.text.isWhiteSpace(after) || rules.brackets.some((p) => p[1] === after)) {
+                if (!this.edit(this._selection, `${open}${close}`, true)) return false;
                 this.selection = new CodeRange($eq.withPatch(this.caret, { column: this.caret.column - 1 }));
                 return true;
             }
@@ -185,13 +396,20 @@ export class CodeEditorController {
             if (c !== quote) continue;
             let before = this.caret.column > 0 ? line[this.caret.column - 1] : '\0';
             if (CodeDocument.isWordChar(before) || CodeDocument.isWordChar(after)) break;
-            if (after === '\0' || (/^\s$/.test(after))) {
-                if (!this.apply(this._selection, `${quote}${quote}`)) return false;
+            if (after === '\0' || $eq.text.isWhiteSpace(after)) {
+                if (!this.edit(this._selection, `${quote}${quote}`, true)) return false;
                 this.selection = new CodeRange($eq.withPatch(this.caret, { column: this.caret.column - 1 }));
                 return true;
             }
         }
-        return this.apply(this._selection, String(c));
+        if (this._selection.isEmpty && rules.outdentOn.includes(c)) {
+            let indent = line.slice(0, this.caret.column);
+            if (indent.length > 0 && $eq.text.trim(indent).length === 0) {
+                let off = this.stepOff(indent);
+                return this.edit(new CodeRange(new CodePosition(this.caret.line, 0), this.caret), indent.slice(off) + c, true);
+            }
+        }
+        return this.edit(this._selection, String(c), true);
     }
 
     insertNewLine() {
@@ -200,8 +418,8 @@ export class CodeEditorController {
         let line = this._document.line(this.caret.line);
         let indent = this._document.indentOf(this.caret.line);
         let step = rules.insertSpaces ? ' '.repeat(rules.indentWidth) : '	';
-        let beforeCaret = line.slice(0, Math.min(this.caret.column, line.length)).trimEnd();
-        let afterCaret = this.caret.column < line.length ? line.slice(this.caret.column).trimStart() : '';
+        let beforeCaret = $eq.text.trimEnd(line.slice(0, Math.min(this.caret.column, line.length)));
+        let afterCaret = this.caret.column < line.length ? $eq.text.trimStart(line.slice(this.caret.column)) : '';
         let opens = beforeCaret.length > 0 && rules.indentAfter.includes(beforeCaret[beforeCaret.length - 1]);
         let closesNext = afterCaret.length > 0 && rules.outdentOn.includes(afterCaret[0]);
         if (opens && closesNext) {
@@ -219,12 +437,15 @@ export class CodeEditorController {
             let start = this.moveTo(this.caret, 'word', 'backward');
             return this.apply(new CodeRange(start, this.caret), '');
         }
+        if (motion === 'lineBoundary' && this.caret.column > 0) return this.apply(new CodeRange($eq.withPatch(this.caret, { column: 0 }), this.caret), '');
         let line = this._document.line(this.caret.line);
         let indent = this._document.indentOf(this.caret.line).length;
         if (this.caret.column > 0 && this.caret.column <= indent && this.rules.insertSpaces) {
             let width = this.rules.indentWidth;
-            let back = this.caret.column % width === 0 ? width : this.caret.column % width;
-            return this.apply(new CodeRange($eq.withPatch(this.caret, { column: this.caret.column - back }), this.caret), '');
+            let cells = this.cellsOf(this.caret.line);
+            let cell = cells.cellOf(this.caret.column);
+            let stop = $eq.num.intRem(cell, width) === 0 ? cell - width : cell - $eq.num.intRem(cell, width);
+            return this.apply(new CodeRange($eq.withPatch(this.caret, { column: cells.columnAt(Math.fround(stop)) }), this.caret), '');
         }
         if (this.caret.column > 0 && this.caret.column < line.length) {
             let before = line[this.caret.column - 1];
@@ -234,14 +455,14 @@ export class CodeEditorController {
                 return this.apply(new CodeRange($eq.withPatch(this.caret, { column: this.caret.column - 1 }), $eq.withPatch(this.caret, { column: this.caret.column + 1 })), '');
             }
         }
-        let previous = this._document.previous(this.caret);
+        let previous = this.before(this.caret);
         return !$eq.equals(previous, this.caret) && this.apply(new CodeRange(previous, this.caret), '');
     }
 
     deleteForward(motion: CodeMotionValue = 'character') {
         if (this.readOnly) return false;
         if (!this._selection.isEmpty) return this.apply(this._selection, '');
-        let to = motion === 'word' ? this.moveTo(this.caret, 'word', 'forward') : this._document.next(this.caret);
+        let to = motion === 'word' ? this.moveTo(this.caret, 'word', 'forward') : this.after(this.caret);
         return !$eq.equals(to, this.caret) && this.apply(new CodeRange(this.caret, to), '');
     }
 
@@ -250,7 +471,8 @@ export class CodeEditorController {
         if (this._selection.isEmpty) {
             if (!this.rules.insertSpaces) return this.apply(this._selection, '	');
             let width = this.rules.indentWidth;
-            return this.apply(this._selection, ' '.repeat(width - this.caret.column % width));
+            let cell = this.cellsOf(this.caret.line).cellOf(this.caret.column);
+            return this.apply(this._selection, ' '.repeat(width - $eq.num.intRem(cell, width)));
         }
         return this.shiftLines(true);
     }
@@ -265,15 +487,36 @@ export class CodeEditorController {
         let last = this._selection.end.line;
         if (last > first && this._selection.end.column === 0) last--;
         let lines: string[] = [];
+        let changes: number[] = [];
         for (let line = first; line <= last; line++) {
             let text = this._document.line(line);
-            if (add) lines.push(text.length === 0 ? text : step + text); else if (text.startsWith(step)) lines.push(text.slice(step.length)); else lines.push((_s => { const _c = ' ' + '\t'; let _i = 0; while (_i < _s.length && _c.includes(_s[_i])) _i++; return _s.slice(_i); })(text).length === text.length ? text : text.slice(1));
+            let change = add ? text.length === 0 ? 0 : step.length : this.stepOff(text);
+            lines.push(add ? change === 0 ? text : step + text : text.slice(change));
+            changes.push(change);
         }
+        let anchor = this._selection.anchor;
+        let focus = this._selection.focus;
         let range = new CodeRange(new CodePosition(first, 0), new CodePosition(last, this._document.line(last).length));
-        let anchorShift = add ? step.length : -Math.min(step.length, this._document.indentOf(first).length);
         if (!this.apply(range, lines.join('\n'))) return false;
-        this.selection = new CodeRange(new CodePosition(first, Math.max(0, this._selection.anchor.column + anchorShift)), new CodePosition(last, this._document.line(last).length));
+        this.selection = new CodeRange(CodeEditorController.shiftedBy(anchor, first, last, changes, add), CodeEditorController.shiftedBy(focus, first, last, changes, add));
         return true;
+    }
+
+    static shiftedBy(position: CodePosition, first: number, last: number, changes: number[], add: boolean) {
+        if (position.line < first || position.line > last) return position;
+        let change = changes[position.line - first];
+        return new CodePosition(position.line, add ? CodeEditorController.shifted(position.column, 0, 0, change) : CodeEditorController.shifted(position.column, 0, change, 0));
+    }
+
+    static shifted(column: number, at: number, removed: number, inserted: number) {
+        return column <= at ? column : column < at + removed ? at : column - removed + inserted;
+    }
+
+    stepOff(text: string) {
+        if (text.length > 0 && text[0] === '\t') return 1;
+        let off = 0;
+        while (off < text.length && off < this.rules.indentWidth && text[off] === ' ') off++;
+        return off;
     }
 
     toggleLineComment() {
@@ -284,7 +527,7 @@ export class CodeEditorController {
         if (last > first && this._selection.end.column === 0) last--;
         let allCommented = true;
         for (let line = first; line <= last; line++) {
-            let text = this._document.line(line).trimStart();
+            let text = $eq.text.trimStart(this._document.line(line));
             if (text.length === 0) continue;
             if (!text.startsWith(marker)) {
                 allCommented = false;
@@ -292,24 +535,46 @@ export class CodeEditorController {
             }
         }
         let lines: string[] = [];
+        let ats: number[] = [];
+        let removals: number[] = [];
+        let insertions: number[] = [];
         for (let line = first; line <= last; line++) {
             let text = this._document.line(line);
             if (allCommented) {
                 let at = text.indexOf(marker);
                 if (at < 0) {
                     lines.push(text);
+                    ats.push(0);
+                    removals.push(0);
+                    insertions.push(0);
                     continue;
                 }
                 let after = at + marker.length;
                 if (after < text.length && text[after] === ' ') after++;
                 lines.push(text.slice(0, at) + text.slice(after));
+                ats.push(at);
+                removals.push(after - at);
+                insertions.push(0);
             } else {
                 let indent = this._document.indentOf(line);
                 lines.push(text.length === 0 ? marker + ' ' : indent + marker + ' ' + text.slice(indent.length));
+                ats.push(text.length === 0 ? 0 : indent.length);
+                removals.push(0);
+                insertions.push(marker.length + 1);
             }
         }
+        let anchor = this._selection.anchor;
+        let focus = this._selection.focus;
         let range = new CodeRange(new CodePosition(first, 0), new CodePosition(last, this._document.line(last).length));
-        return this.apply(range, lines.join('\n'));
+        if (!this.apply(range, lines.join('\n'))) return false;
+        this.selection = new CodeRange(CodeEditorController.commented(anchor, first, last, ats, removals, insertions), CodeEditorController.commented(focus, first, last, ats, removals, insertions));
+        return true;
+    }
+
+    static commented(position: CodePosition, first: number, last: number, ats: number[], removals: number[], insertions: number[]) {
+        if (position.line < first || position.line > last) return position;
+        let index = position.line - first;
+        return new CodePosition(position.line, CodeEditorController.shifted(position.column, ats[index], removals[index], insertions[index]));
     }
 
     move(motion: CodeMotionValue, direction: CodeDirectionValue, extend: boolean = false, pageLines: number = 20) {
@@ -318,36 +583,35 @@ export class CodeEditorController {
             return;
         }
         let target = this.moveTo(this.caret, motion, direction, pageLines);
-        this.selection = extend ? $eq.withPatch(this._selection, { focus: target }) : new CodeRange(target);
+        this.select(extend ? $eq.withPatch(this._selection, { focus: target }) : new CodeRange(target), (motion === 'line' || motion === 'page'));
     }
 
     moveTo(from: CodePosition, motion: CodeMotionValue, direction: CodeDirectionValue, pageLines: number = 20) {
         let forward = direction === 'forward';
         switch (motion) {
             case 'character':
-                this._desiredColumn = -1;
-                return forward ? this._document.next(from) : this._document.previous(from);
+                this._desiredCell = -1;
+                return forward ? this.after(from) : this.before(from);
             case 'word':
-                this._desiredColumn = -1;
+                this._desiredCell = -1;
                 return this.wordStep(from, forward);
             case 'line':
                 {
-                    if (this._desiredColumn < 0) this._desiredColumn = from.column;
+                    if (this._desiredCell < 0) this._desiredCell = this.cellsOf(from.line).cellOf(from.column);
                     let line = Math.min(Math.max(from.line + (forward ? 1 : -1), 0), this._document.lineCount - 1);
-                    let column = Math.min(this._desiredColumn, this._document.line(line).length);
-                    return new CodePosition(line, column);
+                    return new CodePosition(line, this.cellsOf(line).columnAt(Math.fround(this._desiredCell)));
                 }
             case 'page':
                 {
-                    if (this._desiredColumn < 0) this._desiredColumn = from.column;
+                    if (this._desiredCell < 0) this._desiredCell = this.cellsOf(from.line).cellOf(from.column);
                     let line = Math.min(Math.max(from.line + (forward ? pageLines : -pageLines), 0), this._document.lineCount - 1);
-                    return new CodePosition(line, Math.min(this._desiredColumn, this._document.line(line).length));
+                    return new CodePosition(line, this.cellsOf(line).columnAt(Math.fround(this._desiredCell)));
                 }
             case 'lineBoundary':
-                this._desiredColumn = -1;
+                this._desiredCell = -1;
                 return forward ? this._document.lineEnd(from) : this._document.lineStart(from);
             default:
-                this._desiredColumn = -1;
+                this._desiredCell = -1;
                 return forward ? this._document.end : CodePosition.start;
         }
     }
@@ -355,17 +619,18 @@ export class CodeEditorController {
     wordStep(from: CodePosition, forward: boolean) {
         let here = this._document.clamp(from);
         let line = this._document.line(here.line);
+        let cells = this.cellsOf(here.line);
         if (forward) {
-            if (here.column >= line.length) return this._document.next(here);
+            if (here.column >= line.length) return this.after(here);
             let i = here.column;
-            if (CodeDocument.isWordChar(line[i])) while (i < line.length && CodeDocument.isWordChar(line[i])) i++; else if (!(/^\s$/.test(line[i]))) while (i < line.length && !CodeDocument.isWordChar(line[i]) && !(/^\s$/.test(line[i]))) i++;
-            while (i < line.length && (/^\s$/.test(line[i]))) i++;
+            if (CodeDocument.isWordChar(line[i])) while (i < line.length && CodeDocument.isWordChar(line[i])) i = cells.next(i); else if (!$eq.text.isWhiteSpace(line[i])) while (i < line.length && !CodeDocument.isWordChar(line[i]) && !$eq.text.isWhiteSpace(line[i])) i = cells.next(i);
+            while (i < line.length && $eq.text.isWhiteSpace(line[i])) i = cells.next(i);
             return $eq.withPatch(here, { column: i });
         }
-        if (here.column === 0) return this._document.previous(here);
+        if (here.column === 0) return this.before(here);
         let back = here.column;
-        while (back > 0 && (/^\s$/.test(line[back - 1]))) back--;
-        if (back > 0 && CodeDocument.isWordChar(line[back - 1])) while (back > 0 && CodeDocument.isWordChar(line[back - 1])) back--; else while (back > 0 && !CodeDocument.isWordChar(line[back - 1]) && !(/^\s$/.test(line[back - 1]))) back--;
+        while (back > 0 && $eq.text.isWhiteSpace(line[cells.previous(back)])) back = cells.previous(back);
+        if (back > 0 && CodeDocument.isWordChar(line[cells.previous(back)])) while (back > 0 && CodeDocument.isWordChar(line[cells.previous(back)])) back = cells.previous(back); else while (back > 0 && !CodeDocument.isWordChar(line[cells.previous(back)]) && !$eq.text.isWhiteSpace(line[cells.previous(back)])) back = cells.previous(back);
         return $eq.withPatch(here, { column: back });
     }
 
@@ -374,7 +639,13 @@ export class CodeEditorController {
     }
 
     selectWord(at: CodePosition) {
-        return this.selection = this._document.wordAt(at);
+        let word = this._document.wordAt(at);
+        if (word.isEmpty) {
+            this.selection = word;
+            return;
+        }
+        let cells = this.cellsOf(word.start.line);
+        this.selection = new CodeRange($eq.withPatch(word.start, { column: cells.elementAt(cells.indexOf(word.start.column)).start }), $eq.withPatch(word.end, { column: cells.next(word.end.column - 1) }));
     }
 
     selectLine(line: number) {
@@ -383,7 +654,13 @@ export class CodeEditorController {
     }
 
     copyText() {
-        return this._selection.isEmpty ? this._document.line(this.caret.line) + '\n' : this._document.textIn(this._selection);
+        if (!this._selection.isEmpty) {
+            this._wholeLineCopy = null;
+            return this._document.textIn(this._selection);
+        }
+        let line = this._document.line(this.caret.line) + '\n';
+        this._wholeLineCopy = line;
+        return line;
     }
 
     cut() {
@@ -393,25 +670,57 @@ export class CodeEditorController {
         return text;
     }
 
+    paste(text: string) {
+        if (this.readOnly || text.length === 0) return false;
+        this.tabMovesFocus = false;
+        this.endComposition();
+        let normalized = CodeDocument.fromText(text).text;
+        let line: any; 
+        if (this._selection.isEmpty && (line = this._wholeLineCopy) != null && normalized === line) {
+            let caret = this.caret;
+            let lineStart = new CodePosition(caret.line, 0);
+            if (!this.apply(new CodeRange(lineStart), normalized)) return false;
+            this.selection = new CodeRange(new CodePosition(caret.line + 1, caret.column));
+            return true;
+        }
+        return this.insert(text);
+    }
+
     undo() {
-        let selection: any; if (this.readOnly) return false;
-        let next = ($o => (selection = $o.selection, $o.$))(this.history.undo(this._document));
+        let selection: any, replaced: any, written: any;
+        if (this.readOnly) return false;
+        this.endComposition();
+        let next = ($o => (selection = $o.selection, replaced = $o.replaced, written = $o.written, $o.$))(this.history.undo(this._document));
         if (next == null) return false;
         this._document = next;
+        this._revealVersion++;
         this._selection = new CodeRange(next.clamp(selection.anchor), next.clamp(selection.focus));
-        this.highlighter.invalidate();
+        this._desiredCell = -1;
+        let line = replaced.start.line;
+        let linesInserted = written.end.line - written.start.line;
+        let linesRemoved = replaced.end.line - replaced.start.line;
+        this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
+        this.widthsChanged(line, linesInserted, linesRemoved);
         this.changed?.(null);
         this.selectionChanged?.(this._selection);
         return true;
     }
 
     redo() {
-        let selection: any; if (this.readOnly) return false;
-        let next = ($o => (selection = $o.selection, $o.$))(this.history.redo(this._document));
+        let selection: any, replaced: any, written: any;
+        if (this.readOnly) return false;
+        this.endComposition();
+        let next = ($o => (selection = $o.selection, replaced = $o.replaced, written = $o.written, $o.$))(this.history.redo(this._document));
         if (next == null) return false;
         this._document = next;
+        this._revealVersion++;
         this._selection = new CodeRange(next.clamp(selection.anchor), next.clamp(selection.focus));
-        this.highlighter.invalidate();
+        this._desiredCell = -1;
+        let line = replaced.start.line;
+        let linesInserted = written.end.line - written.start.line;
+        let linesRemoved = replaced.end.line - replaced.start.line;
+        this.highlighter.lineChanged(this._document, line, linesInserted, linesRemoved);
+        this.widthsChanged(line, linesInserted, linesRemoved);
         this.changed?.(null);
         this.selectionChanged?.(this._selection);
         return true;
@@ -434,14 +743,25 @@ export class CodeEditorController {
     }
 
     findNext(needle: string, matchCase: boolean = false, backward: boolean = false) {
-        let matches = this.findAll(needle, matchCase);
+        return this.nextOf(this.findAll(needle, matchCase), backward);
+    }
+
+    nextOf(matches: CodeRange[], backward: boolean = false) {
         if (matches.length === 0) return null;
+        let low = 0;
+        let high = matches.length;
         if (backward) {
-            for (let i = matches.length - 1; i >= 0; i--) if (CodePosition.opLessOrEqual(matches[i].end, this._selection.start)) return matches[i];
-            return matches[matches.length - 1];
+            while (low < high) {
+                let middle = Math.trunc((low + high) / 2);
+                if (CodePosition.opLessOrEqual(matches[middle].end, this._selection.start)) low = middle + 1; else high = middle;
+            }
+            return low > 0 ? matches[low - 1] : matches[matches.length - 1];
         }
-        for (const match of matches) if (CodePosition.opGreaterOrEqual(match.start, this._selection.end)) return match;
-        return matches[0];
+        while (low < high) {
+            let middle = Math.trunc((low + high) / 2);
+            if (CodePosition.opLessThan(matches[middle].start, this._selection.end)) low = middle + 1; else high = middle;
+        }
+        return low < matches.length ? matches[low] : matches[0];
     }
 
     bracketAtCaret() {
@@ -469,19 +789,23 @@ export class CodeEditorController {
 
     scanForBracket(from: CodePosition, same: string, other: string, forward: boolean) {
         let depth = 0;
-        let position = from;
+        let line = from.line;
+        let column = from.column;
         while (true) {
-            let line = this._document.line(position.line);
-            if (position.column < line.length) {
-                let c = line[position.column];
-                if (c === same) depth++; else if (c === other) {
-                    depth--;
-                    if (depth === 0) return position;
+            let text = this._document.line(line);
+            while (forward ? column < text.length : column >= 0) {
+                if (column < text.length) {
+                    let c = text[column];
+                    if (c === same) depth++; else if (c === other) {
+                        depth--;
+                        if (depth === 0) return new CodePosition(line, column);
+                    }
                 }
+                column += forward ? 1 : -1;
             }
-            let next = forward ? this._document.next(position) : this._document.previous(position);
-            if ($eq.equals(next, position)) return null;
-            position = next;
+            line += forward ? 1 : -1;
+            if (line < 0 || line >= this._document.lineCount) return null;
+            column = forward ? 0 : this._document.line(line).length - 1;
         }
     }
 }

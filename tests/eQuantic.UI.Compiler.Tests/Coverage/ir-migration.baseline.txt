@@ -6,14 +6,12 @@ AsExpressionStrategy
 AverageStrategy
 BooleanMethodStrategy
 CastStrategy
-CharMethodStrategy
 CheckedExpressionStrategy
 CollectionExpressionStrategy
 CollectionMaterializationStrategy
 ConditionalAccessStrategy
 ConsoleStrategy
 ContainsStrategy
-ConvertStrategy
 CountStrategy
 DateOnlyTimeOnlyStrategy
 DateTimeOffsetStrategy
@@ -21,7 +19,6 @@ DateTimeStrategy
 DeclarationExpressionStrategy
 DefaultIfEmptyStrategy
 DefaultKeywordStrategy
-DictionaryStrategy
 DistinctStrategy
 ElementAtStrategy
 EnumHasFlagStrategy
@@ -44,12 +41,10 @@ IsPatternStrategy
 LastStrategy
 ListMethodStrategy
 LookupIndexerStrategy
-MathStrategy
 MinMaxStrategy
 NameofStrategy
 NamespaceRemovalStrategy
 NullableStrategy
-NumberMethodStrategy
 NumericConstantStrategy
 ObjectCreationStrategy
 OfTypeStrategy

@@ -233,7 +233,7 @@ seventh by the pin the day it grew to read the web realizer.
 | `VisualNode.Key` | Documented as reconciler identity, read by neither realizer | an audit (#95) |
 | `Navigable` · `Overlay` | Open: honoured by the web, silent on Photon | still open |
 | `SheetSurface` | **Closed.** The server rendered an EMPTY `<span>` where the browser draws a spreadsheet — no case in `LowerNodeKind`, `_ => null`, from the day it shipped (d8be2bd6). `SurfaceSsrTests` keeps it; its A/B is the empty span itself | this pass — found by this pin, fixed in the same week |
-| `CodeSurface` | **Open, for a different reason than it was found for.** The empty span is understood; what blocks the arm is that the client appends a CARET to every code surface, so a server tree with only the child is one element short and the reconciler records a failed adoption. The shape has to be settled — does the server render the controller's caret, or does the client stop appending during hydration? — and settling it needs a running page | this pass |
+| `CodeSurface` | **Closed.** The shape was settled by building it in the code editor's slice 1a (the controller's carets and the input beside the child, in the client's spelling), and what blocked it was measured there: its geometry is text geometry, the server has no measurer, and hydration adopted a 12px gutter and zero-width columns and kept them. The SSR slice gives the server a measurer with no fonts (`FontlessMeasurer`), which answers 0 and counts, marks the component whose own `Build` asked (`data-eq-unmeasured`), and hydration draws a marked subtree instead of adopting it. The standalone `CodeBlock` had the same zeros on `/markdown`, and has its measured gutter now | found by this pass; closed by the SSR slice of [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) |
 
 ### The asymmetry it exposes, and how Flutter avoids it
 
@@ -786,11 +786,10 @@ makes the rest safe.
    parity rows with probes, the dead `Web → Components` edge, the alias comment, the A11 word.
 1. **The SSR surfaces defect** (`CodeSurface`, `SheetSurface` → empty span). ~~`SheetSurface`~~ done:
    the server writes the grid and its child, and its exemption is gone from the coverage pin — the
-   first time that list has shrunk. `CodeSurface` remains, and the question is now a SHAPE one: the
-   client appends a caret to every surface, so an arm that writes only the child hands hydration a
-   tree one element short. Either the server renders the controller's caret (it has the state) or
-   the client stops appending during hydration; the choice needs a running page to settle. — S done,
-   S remaining
+   first time that list has shrunk. ~~`CodeSurface`~~ done too, and no node answers null for every
+   instance any more: the server writes the surface, and what it could not measure (it has no fonts,
+   so text geometry comes out 0) is marked for the client to draw instead of adopting, which fixed
+   the standalone `CodeBlock`'s gutter on the way. — S done, M done
 2. **Visitor over the vocabulary, generated `NodeKind` union with `assertNever` in TypeScript**
    (Flutter: abstract `performLayout`/`paint`). One file per node family per realizer, as
    `Strategies/` is per construct. Retire the regex pin when the last switch is gone. — L.
@@ -858,6 +857,18 @@ are two numbers, and a cross-pin promises the second — a translation rule just
 owes a measurement against the real runtime. The pin that will hold it is parked with the fix, and
 the fix is two: an arrow body reaches the emitter as a string while `ReturnStatementStrategy` has the
 node, so the repro is written in both shapes first, the lesson of #98.
+
+Fixed, and wider than the return seam: rounding at a return would still have been one rounding for
+`a*x - b*x`, where RyuJIT makes three. So a float is now a single where it is PRODUCED
+(`SinglePrecision`): every operation, increment and compound, a wide int on its way in, a constant,
+a hydrated value, and every float answer of the numeric table — which turned out to answer in
+doubles for the whole `float` home. Its `Math` spelling guessed a JavaScript name for what the table
+did not see: twelve functions JavaScript does not have (`Math.copySign`, `Math.scaleB`,
+`Math.bitIncrement` and nine more, each a TypeError at the call), and `Math.Log(a, newBase)`, whose
+base JavaScript's one-argument `log` dropped in silence. Both spellings now read one table. The bar
+chart's hit bounds are pinned at full precision on both sides, and the generator that had written
+chains of float operations for months without seeing this now observes every float and double
+exactly.
 
 A second one arrived the same way, from the first external contributor's issue rather than from a
 pin. #127 asks for `ButtonStyles` to move from `Primitives` to `Components`, and the issue measured

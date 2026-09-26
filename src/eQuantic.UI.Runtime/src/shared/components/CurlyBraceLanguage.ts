@@ -8,6 +8,7 @@ export abstract class CurlyBraceLanguage {
     static stateNormal: number = 0;
     static stateBlockComment: number = 1;
     static stateMultilineString: number = 2;
+    static stateRawString: number = 16;
     static _punctuation: Set<string> | undefined;
 
     static get punctuation(): Set<string> {
@@ -25,6 +26,10 @@ export abstract class CurlyBraceLanguage {
     }
 
     get hasTemplateStrings(): boolean {
+        return false;
+    }
+
+    get hasRawStrings(): boolean {
         return false;
     }
 
@@ -46,6 +51,15 @@ export abstract class CurlyBraceLanguage {
             }
             CurlyBraceLanguage.add(into, 0, close + 2, 'comment');
             i = close + 2;
+        } else if (state >= CurlyBraceLanguage.stateRawString) {
+            let quotes = state - CurlyBraceLanguage.stateRawString;
+            let end = CurlyBraceLanguage.closeRaw(line, 0, quotes);
+            if (end < 0) {
+                CurlyBraceLanguage.add(into, 0, line.length, 'string');
+                return state;
+            }
+            CurlyBraceLanguage.add(into, 0, end, 'string');
+            i = end;
         } else if (state === CurlyBraceLanguage.stateMultilineString) {
             let end = this.closeMultilineString(line);
             if (end < 0) {
@@ -57,7 +71,7 @@ export abstract class CurlyBraceLanguage {
         }
         while (i < line.length) {
             let c = line[i];
-            if ((/^\s$/.test(c))) {
+            if ($eq.text.isWhiteSpace(c)) {
                 i++;
                 continue;
             }
@@ -77,11 +91,26 @@ export abstract class CurlyBraceLanguage {
                     continue;
                 }
             }
-            if (this.hasVerbatimStrings && c === '@' && i + 1 < line.length && line[i + 1] === '"') {
-                let end = CurlyBraceLanguage.scanVerbatim(line, i + 2);
+            let prefixed: any; 
+            if (this.hasVerbatimStrings && (c === '$' || c === '@') && (prefixed = CurlyBraceLanguage.prefixedString(line, i)) != null) {
+                let quote = prefixed[0];
+                if (this.hasRawStrings && !prefixed[1] && CurlyBraceLanguage.quotesAt(line, quote) >= 3) {
+                    let quotes = CurlyBraceLanguage.quotesAt(line, quote);
+                    let raw = CurlyBraceLanguage.closeRaw(line, quote + quotes, quotes);
+                    if (raw < 0) {
+                        CurlyBraceLanguage.add(into, i, line.length - i, 'string');
+                        return CurlyBraceLanguage.stateRawString + quotes;
+                    }
+                    CurlyBraceLanguage.add(into, i, raw - i, 'string');
+                    i = raw;
+                    continue;
+                }
+                let end = prefixed[1] ? CurlyBraceLanguage.scanVerbatim(line, quote + 1) : CurlyBraceLanguage.scanQuoted(line, quote + 1, '"');
                 if (end < 0) {
                     CurlyBraceLanguage.add(into, i, line.length - i, 'string');
-                    return CurlyBraceLanguage.stateMultilineString;
+                    if (prefixed[1]) return CurlyBraceLanguage.stateMultilineString;
+                    i = line.length;
+                    continue;
                 }
                 CurlyBraceLanguage.add(into, i, end - i, 'string');
                 i = end;
@@ -97,12 +126,20 @@ export abstract class CurlyBraceLanguage {
                 i = end;
                 continue;
             }
+            if (this.hasRawStrings && c === '"' && CurlyBraceLanguage.quotesAt(line, i) >= 3) {
+                let quotes = CurlyBraceLanguage.quotesAt(line, i);
+                let end = CurlyBraceLanguage.closeRaw(line, i + quotes, quotes);
+                if (end < 0) {
+                    CurlyBraceLanguage.add(into, i, line.length - i, 'string');
+                    return CurlyBraceLanguage.stateRawString + quotes;
+                }
+                CurlyBraceLanguage.add(into, i, end - i, 'string');
+                i = end;
+                continue;
+            }
             if (c === '"' || c === '\'') {
-                let start = i > 0 && line[i - 1] === '$' ? i - 1 : i;
-                if (start < i && into.length > 0 && into[into.length - 1].start === start) into.splice(into.length - 1, 1);
                 let end = CurlyBraceLanguage.scanQuoted(line, i + 1, c);
-                let length = (end < 0 ? line.length : end) - start;
-                CurlyBraceLanguage.add(into, start, length, 'string');
+                CurlyBraceLanguage.add(into, i, (end < 0 ? line.length : end) - i, 'string');
                 i = end < 0 ? line.length : end;
                 continue;
             }
@@ -158,6 +195,19 @@ export abstract class CurlyBraceLanguage {
         return -1;
     }
 
+    static prefixedString(line: string, start: number) {
+        let verbatim = false;
+        let i = start;
+        while (i < line.length && (line[i] === '$' || line[i] === '@')) {
+            if (line[i] === '@') {
+                if (verbatim) return null;
+                verbatim = true;
+            }
+            i++;
+        }
+        return i < line.length && line[i] === '"' ? [i, verbatim] : null;
+    }
+
     static add(into: CodeToken[], start: number, length: number, kind: CodeTokenKindValue) {
         if (length <= 0) return;
         if (into.length > 0 && into[into.length - 1].kind === kind && into[into.length - 1].end === start) {
@@ -174,6 +224,22 @@ export abstract class CurlyBraceLanguage {
                 continue;
             }
             if (line[i] === quote) return i + 1;
+        }
+        return -1;
+    }
+
+    static quotesAt(line: string, index: number) {
+        let count = 0;
+        while (index + count < line.length && line[index + count] === '"') count++;
+        return count;
+    }
+
+    static closeRaw(line: string, from: number, quotes: number) {
+        for (let i = from; i < line.length; i++) {
+            if (line[i] !== '"') continue;
+            let run = CurlyBraceLanguage.quotesAt(line, i);
+            if (run >= quotes) return i + run;
+            i += run - 1;
         }
         return -1;
     }
@@ -215,12 +281,12 @@ export abstract class CurlyBraceLanguage {
     }
 
     static nextNonSpace(line: string, from: number) {
-        for (let i = from; i < line.length; i++) if (!(/^\s$/.test(line[i]))) return line[i];
+        for (let i = from; i < line.length; i++) if (!$eq.text.isWhiteSpace(line[i])) return line[i];
         return '\0';
     }
 
     static isLineHead(line: string, index: number) {
-        for (let i = 0; i < index; i++) if (!(/^\s$/.test(line[i]))) return false;
+        for (let i = 0; i < index; i++) if (!$eq.text.isWhiteSpace(line[i])) return false;
         return true;
     }
 }

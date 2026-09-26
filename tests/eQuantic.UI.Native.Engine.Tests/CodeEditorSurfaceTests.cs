@@ -144,10 +144,12 @@ public class CodeEditorSurfaceTests
     public void TypingReachesTheDocument_AndTheAppHearsAboutIt()
     {
         var changes = new List<string>();
+        var moves = new List<CodeRange>();
         var editor = new CodeEditor("", "csharp")
         {
             ShowLineNumbers = false,
             OnChanged = changes.Add,
+            OnSelectionChanged = moves.Add,
         };
         var host = new PhotonHost(editor, PhotonTheme.Instance, ThemeMode.Light, 400, 300)
         {
@@ -161,10 +163,12 @@ public class CodeEditorSurfaceTests
         Type(host, "var x");
 
         region.Surface.Engine().Document.Text.Should().Be("var x");
-        // One per character, plus the click that put the caret there: the seam reports MOVEMENT as
-        // well as change, because a status bar showing line:column needs both.
-        changes.Should().HaveCount(6);
+        // One per character. The click moved the caret and changed nothing, so it is heard as a
+        // MOVE: a status bar showing line:column listens to that, and an app re-reading the
+        // document on every change no longer does it for a click.
+        changes.Should().HaveCount(5);
         changes[^1].Should().Be("var x");
+        moves.Should().HaveCount(5, "each character moved the caret, and the click left it where it was");
     }
 
     [Fact]
@@ -279,6 +283,118 @@ public class CodeEditorSurfaceTests
     }
 
     /// <summary>
+    /// The code is DRAWN on the cells the caret is placed on (defect 12): a tab as the spaces up to
+    /// its stop, and a wide character in a box two cells wide. The caret after a tab stood one cell
+    /// in while the glyph after it was drawn at the stop, or wherever the font put it.
+    /// </summary>
+    [Fact]
+    public void TheGlyphAfterATabIsDrawnWhereTheCaretBeforeItStands()
+    {
+        var (host, surface, bounds) = Open("\tx");
+        Focus(host, surface, bounds);
+        surface.Engine().Selection = new CodeRange(new CodePosition(0, 1));
+
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder, 0);
+        var commands = builder.Build().Commands.ToArray();
+
+        var caret = commands.Last(c => c.Kind == DrawCommandKind.FillRRect
+            && MathF.Abs(c.Shape.Rect.Width - 2f) < 0.01f);
+        var glyph = commands.Single(c => c.Kind == DrawCommandKind.Texture
+            && MathF.Abs(c.Shape.Rect.Width - surface.Grid().Cell.Width) < 0.01f);
+        caret.Shape.Rect.X.Should().BeApproximately(
+            bounds.X + surface.Grid().Origin.X + 4 * surface.Grid().Cell.Width, 0.01f, "the tab runs to its stop");
+        glyph.Shape.Rect.X.Should().BeApproximately(caret.Shape.Rect.X, 0.01f,
+            "and the x is drawn where the caret before it stands");
+    }
+
+    [Fact]
+    public void AnEmojiWithASkinToneIsDrawnInItsTwoCells()
+    {
+        var (host, surface, bounds) = Open("\u270C\U0001F3FBx");
+
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder, 0);
+        var x = builder.Build().Commands.ToArray()
+            .Where(c => c.Kind == DrawCommandKind.Texture
+                && MathF.Abs(c.Shape.Rect.Width - surface.Grid().Cell.Width) < 0.01f)
+            .OrderBy(c => c.Shape.Rect.X)
+            .Last();
+
+        x.Shape.Rect.X.Should().BeApproximately(
+            bounds.X + surface.Grid().Origin.X + 2 * surface.Grid().Cell.Width, 0.01f,
+            "the emoji's box is two cells wide, and the x after it starts where the caret after it stands");
+    }
+
+    /// <summary>
+    /// ⌘/ over three lines rewrites them in ONE edit, and the highlighter re-coloured only the first,
+    /// so the line it emptied kept a comment token longer than itself. The block threw drawing it,
+    /// and Photon's boundary put the failure panel where the editor had been.
+    /// </summary>
+    [Fact]
+    public void CommentingOutSeveralLines_LeavesTheEditorOnScreen()
+    {
+        ComponentBoundary.ClearContained();
+        var (host, surface, bounds) = Open("// a\n//\n// b");
+        Focus(host, surface, bounds);
+        surface.Engine().Selection = new CodeRange(new CodePosition(0, 0), new CodePosition(2, 4));
+
+        Press(host, "/", KeyModifiers.Command);
+
+        surface.Engine().Document.Text.Should().Be("a\n\nb");
+        ComponentBoundary.Contained.Should().BeEmpty("the editor drew the lines ⌘/ rewrote");
+    }
+
+    /// <summary>
+    /// The block draws what the TEXT says, and a token is only its colour. A token that outlived its
+    /// text (a line an edit emptied, while the highlighter still held its comment) threw when the
+    /// block went to draw it. Whatever keeps the tokens honest, the drawing does not depend on it.
+    /// </summary>
+    [Fact]
+    public void ATokenLongerThanItsLineIsDrawnAsFarAsTheLineGoes()
+    {
+        ComponentBoundary.ClearContained();
+        var stale = new CodeHighlighter(CodeLanguages.CSharp);
+        stale.TokensFor(CodeDocument.FromText("// a\n// long comment\nb"), 2);
+        var block = new CodeBlock("")
+        {
+            Document = CodeDocument.FromText("a\n\nb"),
+            Language = CodeLanguages.CSharp,
+            Highlighter = stale,
+            ShowLineNumbers = false,
+        };
+        var host = new PhotonHost(block, PhotonTheme.Instance, ThemeMode.Light, 400, 300, new FixedWidthMeasurer())
+        {
+            TextRasterizer = new FixedWidthRasterizer(),
+        };
+
+        host.RenderFrame(new DisplayListBuilder());
+
+        ComponentBoundary.Contained.Should().BeEmpty("the block drew every line, the empty one too");
+    }
+
+    [Fact]
+    public void TheGlyphAfterAWideCharacterIsDrawnTwoCellsOn()
+    {
+        var (host, surface, bounds) = Open("\u4E2Dx");
+
+        var builder = new DisplayListBuilder();
+        host.RenderFrame(builder, 0);
+        var glyphs = builder.Build().Commands.ToArray()
+            .Where(c => c.Kind == DrawCommandKind.Texture
+                && MathF.Abs(c.Shape.Rect.Width - surface.Grid().Cell.Width) < 0.01f)
+            .OrderBy(c => c.Shape.Rect.X)
+            .ToArray();
+
+        glyphs.Should().HaveCount(2, "the ideograph and the x");
+        glyphs[1].Shape.Rect.X.Should().BeApproximately(
+            bounds.X + surface.Grid().Origin.X + 2 * surface.Grid().Cell.Width, 0.01f,
+            "the ideograph's box is two cells wide, whatever its glyph measures");
+        surface.Engine().CaretRect(new CodePosition(0, 1)).X.Should().BeApproximately(
+            surface.Grid().Origin.X + 2 * surface.Grid().Cell.Width, 0.01f);
+    }
+
+    /// <summary>
     /// The caret is painted AFTER the code, over everything the block drew for its line. It was
     /// painted before, and the active line's wash, opaque and always under the caret, covered it: the
     /// caret never showed on the line it was on. The web had the same defect wherever a bracket
@@ -331,6 +447,155 @@ public class CodeEditorSurfaceTests
         host.CursorAt(code.X + 4, code.Y + 4).Should().Be(CursorShape.Text);
         // The gutter sits beside the code, outside the surface: the page's own pointer.
         host.CursorAt(code.X - 4, code.Y + 4).Should().Be(CursorShape.Default);
+    }
+
+    // ---- the platform's input ---------------------------------------------------------------------
+
+    /// <summary>
+    /// An input method, through the host: the marked text is IN the document while it is composed,
+    /// and the commit lands as one edit. The host tracked a composition it never showed; the model
+    /// shows it now, underlined, where it will land.
+    /// </summary>
+    [Fact]
+    public void AnInputMethodComposesInTheDocument_AndCommitsAsOneEdit()
+    {
+        var (host, surface, bounds) = Open("ab");
+        Focus(host, surface, bounds);
+        surface.Engine().Selection = new CodeRange(new CodePosition(0, 1));
+
+        host.SetMarkedText("k");
+        host.RenderFrame(new DisplayListBuilder());
+        surface.Engine().Document.Text.Should().Be("akb");
+        surface.Engine().Composition.Should().NotBeNull();
+
+        // The marked text GROWS in place: marking is not committing, so the second one replaces
+        // the first rather than landing beside it.
+        host.SetMarkedText("ka");
+        host.RenderFrame(new DisplayListBuilder());
+        surface.Engine().Document.Text.Should().Be("akab");
+        surface.Engine().Composition.Should().NotBeNull();
+
+        // The platform's commit, through the door its input client calls.
+        host.CommitText("か");
+        host.RenderFrame(new DisplayListBuilder());
+        surface.Engine().Document.Text.Should().Be("aかb");
+        surface.Engine().Composition.Should().BeNull();
+        surface.Engine().Undo();
+        surface.Engine().Document.Text.Should().Be("ab");
+    }
+
+    /// <summary>
+    /// A composition the model refuses is one the host does not claim. A read-only editor answers
+    /// false to it, and the host kept the marked text anyway and said so, and the platform asks the
+    /// host, not the model, whether anything is marked. Found in review.
+    /// </summary>
+    [Fact]
+    public void AReadOnlyEditorMarksNothing_AndTheHostDoesNotClaimItDid()
+    {
+        var editor = new CodeEditor("ab", "csharp") { ShowLineNumbers = false, ReadOnly = true };
+        var host = new PhotonHost(editor, PhotonTheme.Instance, ThemeMode.Light, 400, 300,
+            new FixedWidthMeasurer())
+        {
+            TextRasterizer = new FixedWidthRasterizer(),
+        };
+        host.RenderFrame(new DisplayListBuilder());
+        var region = host.RenderFrame(new DisplayListBuilder()).CodeRegions.Single();
+        Focus(host, region.Surface, region.Bounds);
+
+        host.SetMarkedText("k").Should().BeFalse("the model refused it");
+        host.HasMarkedText.Should().BeFalse("the platform asks the host whether anything is marked");
+        region.Surface.Engine().Document.Text.Should().Be("ab");
+        host.SetMarkedText("").Should().BeTrue("a cancellation still clears the host's own marker");
+    }
+
+    [Fact]
+    public void LeavingTheEditorCancelsAComposition()
+    {
+        var (host, surface, bounds) = Open("ab");
+        Focus(host, surface, bounds);
+        surface.Engine().Selection = new CodeRange(new CodePosition(0, 1));
+        host.SetMarkedText("x");
+        host.RenderFrame(new DisplayListBuilder());
+
+        // A press on empty space ends editing, as in every form on every platform.
+        host.PressDown(bounds.X + 2, bounds.Y + bounds.Height + 30);
+        host.PressUp(bounds.X + 2, bounds.Y + bounds.Height + 30);
+        host.RenderFrame(new DisplayListBuilder());
+
+        surface.Engine().Document.Text.Should().Be("ab");
+        surface.Engine().Composition.Should().BeNull();
+    }
+
+    /// <summary>
+    /// A caret the keyboard moved out of the viewport is brought back into it. Arrowing past the
+    /// bottom of a code viewport on Photon left you typing somewhere you could not see; the browser
+    /// already scrolled its caret into view, and now both hosts do it for the model's reason, the
+    /// caret having MOVED.
+    /// </summary>
+    [Fact]
+    public void ACaretMovedPastTheViewportIsBroughtIntoView()
+    {
+        var code = string.Join("\n", Enumerable.Range(0, 80).Select(i => $"line {i}"));
+        var editor = new CodeEditor(code, "csharp") { ShowLineNumbers = false, MaxHeight = 120 };
+        var host = new PhotonHost(editor, PhotonTheme.Instance, ThemeMode.Light, 400, 300,
+            new FixedWidthMeasurer())
+        {
+            TextRasterizer = new FixedWidthRasterizer(),
+        };
+        host.RenderFrame(new DisplayListBuilder());
+        var frame = host.RenderFrame(new DisplayListBuilder());
+        var region = frame.CodeRegions.Single();
+        Focus(host, region.Surface, region.Bounds);
+
+        for (var i = 0; i < 20; i++) Press(host, "ArrowDown");
+        host.RenderFrame(new DisplayListBuilder());
+        var after = host.RenderFrame(new DisplayListBuilder());
+
+        var viewport = after.ScrollRegions.First(r => r.Axis == ScrollAxis.Vertical
+            && region.Path.StartsWith(r.Path, StringComparison.Ordinal));
+        host.ScrollOffsetOf(viewport.Path).Should().BeGreaterThan(0, "the viewport followed the caret");
+
+        var code2 = after.CodeRegions.Single();
+        var caretY = code2.Bounds.Y + code2.Surface.Model.Carets[0].Y;
+        caretY.Should().BeInRange(viewport.Bounds.Y, viewport.Bounds.Y + viewport.Bounds.Height);
+    }
+
+    [Fact]
+    public void TheHostSaysWhichKeyboardTraditionItsUsersLiveIn()
+    {
+        var editor = new CodeEditor("one two three", "csharp") { ShowLineNumbers = false };
+        var host = new PhotonHost(editor, PhotonTheme.Instance, ThemeMode.Light, 400, 300,
+            new FixedWidthMeasurer())
+        {
+            TextRasterizer = new FixedWidthRasterizer(),
+            KeyboardConvention = KeyboardConvention.Standard,
+        };
+        host.RenderFrame(new DisplayListBuilder());
+        var region = host.RenderFrame(new DisplayListBuilder()).CodeRegions.Single();
+        Focus(host, region.Surface, region.Bounds);
+        region.Surface.Engine().Selection = new CodeRange(new CodePosition(0, 13));
+
+        Press(host, "ArrowLeft", KeyModifiers.Command);
+
+        region.Surface.Engine().Caret.Column.Should().Be(8, "Ctrl+← is one word back outside Apple's");
+    }
+
+    [Fact]
+    public void AnEditorWithNoCaptionIsNamedInTheLanguageOfItsInterface()
+    {
+        // The name was a literal, so a Portuguese screen reader heard "Code editor" in a window
+        // that said everything else in Portuguese.
+        var previous = System.Globalization.CultureInfo.CurrentUICulture;
+        try
+        {
+            System.Globalization.CultureInfo.CurrentUICulture =
+                System.Globalization.CultureInfo.GetCultureInfo("pt-BR");
+            Open("var x = 1;").Surface.Label.Should().Be("Editor de código");
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentUICulture = previous;
+        }
     }
 
     private static bool Covers(Rect outer, Rect inner) =>

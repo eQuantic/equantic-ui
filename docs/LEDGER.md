@@ -503,6 +503,231 @@ record of a release, the wiki's Upgrading page is the distillate.
   with its token. APCA joins WCAG 2 as a second contrast gate, and 14 dark values were re-solved to
   clear it, which moved 19 dark goldens and the web's cross-pins with them. The review's proposals
   are issues #338 to #351.
+- **2026-09-23 · Source maps compose without an npm package**: eqc composed each module's map
+  (JavaScript to TypeScript to C#) with a script over `@ampproject/remapping`, installed into the
+  SDK's own folder in the package cache on a consumer's first Debug build, and fetched by bun's
+  auto-install where that failed ([#356](https://github.com/eQuantic/equantic-ui/issues/356)). The
+  composition is C# now, with the script's rules: the dashboard sample's thirteen maps compose to
+  the same segments, sources and contents either way. It keeps bun's `debugId`, which the script
+  dropped although an `external` map exists to be matched by it. CI fails if a build leaves a
+  package manager's files beside eqc, and the template gate compares the SDK's package folder
+  before and after a Debug build.
+- **2026-09-23 · The code editor takes input the platform's way**: slice 1a of
+  [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#368](https://github.com/eQuantic/equantic-ui/pull/368)).
+  The web surface read characters off `keydown`, so a dead key, an input method, AltGr on a
+  European layout, a phone's keyboard and dictation never reached the document, and ⌘V was
+  cancelled before the browser could deliver a paste. Text now arrives through a textarea held at
+  the caret, as the platform's own input, composition and clipboard events, and an input method's
+  text lives in the document underlined until it commits as one edit. The keymap learned the
+  keyboard's two traditions (Ctrl+← went to the line's start on Windows and Linux), Escape releases
+  Tab, Photon brings a moved caret into view and shows the composition it used to track unseen, and
+  the selection is drawn by the component under the text. The server's arm for the surface was built
+  and withdrawn: the server measures text as 0 and hydration keeps its markup, so the adopted editor
+  kept a 12px gutter (the plan's SSR slice, which the standalone `CodeBlock` needs too). Found on the
+  way: a nullable field with no initializer began 0, false or unassigned in its twin, and the
+  editor's accessible name was English in every language. The served runtime grew from 137,801 to
+  140,267 bytes gzipped, the price of the input path.
+- **2026-09-23 · What the server could not measure, the client draws**: the code editor's SSR
+  slice ([#370](https://github.com/eQuantic/equantic-ui/pull/370)), which closes the last
+  node the server wrote nothing for. The server has no font, so a component whose geometry is text
+  geometry was built on zeros there, and hydration keeps the server's markup: every code block the
+  server sent kept a 12px gutter for as long as the page lived (the fenced code on `/markdown`), and
+  a server that wrote the editor's surface had the same zeros adopted. `WebRealizer` now hands
+  components a measurer with no fonts, which answers 0 and counts the questions, the component whose
+  own `Build` asked is marked `data-eq-unmeasured`, and hydration draws a marked subtree instead of
+  adopting it. The server writes `CodeSurface` (the code, its carets and its input), `/code`
+  hydrates whole where one missing child used to send it to a full re-render, and the block's gutter
+  is 26px where it was 12.
+- **2026-09-23 · The code editor counts what is drawn**: slice 1b of
+  [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#371](https://github.com/eQuantic/equantic-ui/pull/371)).
+  The engine counted one column per UTF-16 unit and placed every caret one cell per column, while
+  the browser drew a tab to the next eight-column stop and a wide character across two cells: the
+  caret stood beside the wrong glyph, and a Backspace on an emoji left half of its surrogate pair.
+  One map from a column to its cell (`CodeLineCells`) now serves the caret, the selection, the
+  click, the arrows, Backspace and the drawing, which draws a tab as spaces to its stop and a wide
+  character in a box two cells wide. Measured in Chromium, the glyph after an ideograph starts at
+  the pixel the caret before it stands on. Text elements come from the platform on both sides
+  (`StringInfo`, transpiled to `Intl.Segmenter`). The model's remaining defects went with it: Tab,
+  Shift+Tab and ⌘/ keep the selection they edit, a closing brace steps back to its block, typing
+  over a selection is one undo and a paste is its own, and C# raw strings are one string across
+  lines. Found on the way in eqc: the `(string, index)` overloads of the char classifiers tested
+  the whole string, and a code point read from a string reached tsc as `number | undefined`. Found
+  in review: a char method spliced its argument as a receiver, so over a conditional it read one
+  branch, and the bracket match walked to its pair with the caret's step, segmenting every line on
+  the way (110 ms a frame on 3000 lines, under one now that it scans). A second review of the model
+  found more: ⌘/ over three lines re-coloured only the first, so a line it emptied kept a comment
+  longer than itself and Photon's boundary replaced the editor with its failure panel; a `$` after an
+  operator was drawn twice, and `@$"""` coloured the rest of the file as a string; ✌🏻 took one cell
+  and drew two; a click kept the cell a run of ↓ had aimed at; Tab counted columns, not cells. The
+  width table was written by hand, so it is now compared, character by character and on both sides,
+  with the SDK's own Bun (`Bun.stringWidth`), which found the web twin reading every astral
+  character as one cell: eqc translated `char.IsSurrogatePair(char, char)` as the (string, index)
+  overload. A third review found a mark that begins an element taking cells (the voiced sound mark,
+  two) and a word step stopping between a letter and its accent: a nonspacing or enclosing mark
+  takes none now, read from `CharUnicodeInfo.GetUnicodeCategory`, which eqc translates for the
+  first time, and words step over whole elements. The served runtime grew from 143,104 bytes
+  gzipped, main's after #330, to 146,004.
+- **2026-09-23 · A publish sees the files this build wrote**: editing a component two pages share
+  and publishing failed on the first run ([#361](https://github.com/eQuantic/equantic-ui/issues/361)).
+  bun names a shared chunk by its content's hash, and the static web assets pipeline registered
+  wwwroot's files while the project evaluated, before eqc rewrote the folder, so the renamed
+  chunk's old name reached the publish's compression with no file behind it. The same order had the
+  build's compression packing the previous build's modules. eqc's folder leaves Content and is
+  defined as web assets from what is on disk once its writers have run, through the pipeline's own
+  hook for generated assets, and CI edits a shared component and publishes.
+- **2026-09-23 · A float is a single where it is produced**: eqc rounded a `float` only at a store,
+  arguing from what ECMA-335 permits, and RyuJIT rounds every operation — so a float-returning method
+  handed its caller a double and a bar's hit bound differed by one ULP between server and browser
+  ([#146](https://github.com/eQuantic/equantic-ui/issues/146)). Every float operation, increment,
+  wide-int conversion, constant and hydrated value now rounds where it is born; the numeric table
+  answers in single precision for the `float` home and serves `Math`/`MathF` from the same entries,
+  a call no model bound included; and `Math.Round` detects a midpoint exactly and honours every
+  `MidpointRounding`. A value the browser produces (a scroll offset, a drag's travel, a pointer's
+  position) enters C# through the runtime, which now rounds it at each of the five seams C# types
+  `float`; `FloatSeamsTests` derives them by reflection and requires a spec for each.
+- **2026-09-23 · An integer division refuses what .NET refuses**: `a / b` and `a % b` on integers
+  answered `Infinity`, `NaN` or 2147483648 where .NET throws, so a count of zero rendered `Infinity`
+  in the browser where the server threw; a long's BigInt threw a `RangeError` of its own for zero and
+  answered 2^63 for `long.MinValue / -1` ([#333](https://github.com/eQuantic/equantic-ui/issues/333)).
+  A divisor that can be zero, or -1 beside `MinValue`, goes through the runtime's check, the compound
+  and lifted forms included; a constant divisor other than 0 and -1 keeps the bare operator.
+- **2026-09-23 · A number reads and writes as .NET's**: a double and a float wrote their text through
+  JavaScript's `String()`, which keeps fixed notation up to 1e21, spells `1e+21` and drops the sign
+  of -0, where .NET writes `1E+17` and `-0` ([#336](https://github.com/eQuantic/equantic-ui/issues/336));
+  and a decimal read from text or from `Convert` was a JavaScript number, `parseFloat`'s, with none
+  of the methods decimal arithmetic calls next ([#358](https://github.com/eQuantic/equantic-ui/issues/358)).
+  The runtime now writes .NET's notation from the shortest digits, reads a number's text by .NET's
+  own grammar under the `NumberStyles` a call names, rounds it into a decimal as .NET's parser does,
+  and converts a double or a float by the steps of .NET's `DecCalc`; the runtime spec is generated
+  from what .NET printed, and the conformance suites run every form on both sides. Reading a number
+  says which culture it reads in, as formatting already did: `CultureInfo.InvariantCulture`,
+  recognised by the property a provider binds to and not by its name, crosses exactly; no provider
+  is EQ2110, and any other is EQ2108, since the browser has no parser for another culture's text.
+- **2026-09-24 · A thrown error's frame names its C# statement**: C# mapped member by member in the
+  browser, so a frame or a breakpoint anywhere in a body landed on its method's first line
+  ([#293](https://github.com/eQuantic/equantic-ui/issues/293)). A statement now carries the C# it
+  came from, the statement writer marks the line it lands on, and the source map carries a segment
+  per statement. Method and constructor bodies reach the writer as IR instead of text, which is what
+  dropped the origins, and eqc's bundling moved into the compiler library as `ModuleBundler`, so a
+  smoke test bundles, runs and throws through the same pipeline and reads each frame back to its
+  C# line. A line a strategy lowers belongs to the statement that produced it: a pattern switch's
+  arm maps to its case, a `using`'s dispose to the `using`, and a `do`'s condition to itself.
+- **2026-09-24 · A nullable number keeps null and its type's rule**: a compound assignment, an
+  increment and a unary `-`, `~` or `+` on an `int?`, a `float?`, a `byte?` or a `decimal?` reached
+  JavaScript's own operator, which reads null as 0, so `x += 1` and `x++` on a null `int?` answered 1
+  and `-x` answered -0, and a value met none of its type's rules: a `float?` added doubles, a `byte?`
+  never wrapped, a `decimal?` called a method on null
+  ([#372](https://github.com/eQuantic/equantic-ui/issues/372)). Each now takes the underlying type's
+  rule inside the runtime's lift, the same rule a non-nullable target takes, and a nullable division
+  is one case of it. Found on the way: a literal the C# compiler types `long` because no `int` or
+  `uint` holds it (`637000000000000000`) was emitted as a plain number, which lost its low digits and
+  threw at the first arithmetic with another long. And from the review, for every target: a uint's
+  `&`, `|`, `^` and `>>` answered JavaScript's signed 32 bits (`uint.MaxValue & uint.MaxValue` was -1),
+  a long's shift threw a TypeError for an int count, kept the bits C# discards and did not mask its
+  count, and a checked or explicitly unchecked negation neither threw .NET's message nor wrapped. A
+  uint's or a ulong's complement answered a negative number. A step on a dictionary entry whose key
+  is missing now throws as .NET does, through the guard compound assignments read with, which closes
+  three of the conversion gaps. A decimal remainder is exact and stays a decimal: the runtime's
+  Decimal had none, so `%` computed in doubles (`0.3m % 0.1m` was `0.09999999999999998`).
+- **2026-09-24 · A value is written as .NET writes it, through the formatter too**: a bool's
+  `ToString()` was JavaScript's `false` ([#381](https://github.com/eQuantic/equantic-ui/issues/381));
+  `string.Format` took a format provider for its template, which threw `CultureInfo is not defined`
+  in the browser ([#377](https://github.com/eQuantic/equantic-ui/issues/377)); and a float that
+  reached the formatter printed the double underneath, since a number cannot say it is a single
+  ([#378](https://github.com/eQuantic/equantic-ui/issues/378)). `ToString()` on a bool takes the
+  concatenation's conversion; `string.Format` binds its arguments by the method and follows the
+  formatting culture policy; the compiler tells the formatter a float's kind where it knows it, and
+  boxes a float passed to `string.Format` with it. `G`, `R` and a placeholder with no specifier write
+  .NET's notation, and a placeholder aligns. From the review: a null provider formats with the current
+  culture, as .NET reads it, and a params array passed whole spreads by the form C# bound, so a
+  `string[]` or a collection expression is formatted element by element, where it was one value.
+  Each value is passed in its parameter's slot and evaluated where it was written, a named argument
+  included, and with no model to bind the call a named culture is still known for the provider. An
+  invariant conversion writes the invariant culture's date patterns and the generic ¤, where it read
+  the reader's.
+
+- **2026-09-24 · The code editor is a component**: slice 1c of
+  [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#375](https://github.com/eQuantic/equantic-ui/pull/375)).
+  An IDE holds the editor in a pane, and without a height cap there was no viewport, so every
+  keystroke built every line: `Height` (Fill or a fixed height) bounds it now, and it builds what is
+  in view. On the web a capped box lays its child out as a column, so `MaxHeight` scrolls (the
+  scroller grew to 2827px inside 520), and a scroll view anchors nothing, since the browser's scroll
+  anchoring moved the offset whenever the line window swapped rows and slid a revealed match back
+  out of view. The find bar is a layer over code that keeps its place in the tree (opening it made
+  the surface a new one to every host: the scroll went back to the top and Photon's keyboard pointed
+  at nothing), its field takes the keyboard when it appears, Enter walks the matches and keeps the
+  field, Escape closes it and gives the keyboard back through a request the model carries and both
+  hosts honour (`RequestFocus`, `FocusVersion`), and the app hears a move as a move and an edit as an
+  edit. A build draws and measures the lines in view only (the marks, the selection's bands, the
+  matches of a search, found once per search, and the widest line, once per document), where a
+  select-all with a search on built 8001 boxes a frame over 4000 lines and a scroll step over 50,000
+  took 81 ms (3 now). An editor that stops being bounded lets its window go, and on the web a
+  viewport is measured once the render is written, and again when it resizes with no render at all:
+  a Fill editor in a pane that grew kept the rows it had built for the old height. On the way:
+  Photon honoured a field's `Autofocus` once per path for the life of a window and never a code
+  surface's, Enter left a field on Photon and stayed on the web (it stays on both), a key an app's
+  shortcut took still reached the editor on the web, a code block's corner lay over its whole first
+  line, and seven tests asserted nothing when their value was null.
+
+- **2026-09-24 · The code engine diffs two texts**: the engine half of slice 2b of
+  [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#386](https://github.com/eQuantic/equantic-ui/pull/386)).
+  `CodeDiffer` answers the lines that changed between two texts and, inside each change, the words:
+  Myers' shortest edit script over what is left once the common head and tail are trimmed, so the
+  cost follows the change and not the file, and the same algorithm over a change's tokens. Past
+  2,000 rounds two ranges are a rewrite, marked whole, counted in rounds rather than by a clock so
+  .NET and the web stop at the same point. Its counts are `git diff --minimal`'s own on five files of
+  this repository's history, and its twin answers change for change on 400 random pairs. On the way:
+  eqc named a method by its name alone, so two overloads reached a twin as one method, JavaScript
+  kept the last and a component's parser the first; the build now stops at the second declaration
+  and names the first (EQ1007). And white space is .NET's on the web: `char.IsWhiteSpace`, the
+  `Trim` family and `IsNullOrWhiteSpace` read one list, where JavaScript's left U+0085 and took
+  U+FEFF (the twin's word diff split on it), and a bare `Split()` splits on it instead of into
+  characters. The view's design, a row that is not a line, is the plan's ninth section.
+- **2026-09-24 · The BCL audit probes every arity**: a static surface was probed by name, so only
+  the shortest overload of each member was graded, and a group whose first overload takes an
+  `IFormatProvider` or an `IComparer` hid its siblings
+  ([#390](https://github.com/eQuantic/equantic-ui/pull/390)). Probed by name and arity, from the first
+  overload a probe can write, the baseline gained 59 lines, and each `native` or `eq` one is a claim
+  that `BclOverloadConformanceTests` runs on both sides: 161 of its 288 cases failed before the fixes.
+  `Convert` reads and writes an integer in a base as .NET does (a port of `ParseNumbers`), the
+  `TimeSpan` factories count every component and read a double to the tick, `string.Compare`,
+  `CompareOrdinal`, `Equals` with a comparison, `Concat` and a ranged `Join` answer as .NET's,
+  `char.IsWhiteSpace` reads the White_Space property, LINQ's `Max` and `Min` order by the type they
+  answer, `ToDictionary` refuses a key twice, and `DateOnly`/`TimeOnly.ParseExact` are EQ2004 where
+  they threw in the browser. The review found more of the kind, each measured on .NET before it was
+  fixed: a dictionary keyed by what a plain object cannot hold (a `DateTime`, a class, an enum with
+  aliases) is EQ1004 and a record key is held by value, `GroupBy` and `ToLookup` compare a record or
+  a date key by value, a named argument fills its own parameter, a double past 2^53 ticks multiplies
+  as .NET's does, an ordinal comparison that ignores case reads a surrogate pair as its code point,
+  `Max`/`Min` over a type with no `compareTo` here is EQ1004 where .NET's default comparer throws,
+  a LINQ operator called as `Enumerable.Count(source)` is EQ1004 where every strategy but `Max` and
+  `Min` read the type as its source, and a record holding NaN equals itself, as a double's `Equals`
+  holds it, while a tuple's `==` stays its elements'. Found on the way, each a task: the audit
+  grades `eq` without asking whether the member exists (9 lines are a TypeError in the browser),
+  overloads of one arity are still one probe (267 more lines by signature), a `Dictionary<int, T>`
+  loses insertion order, a decimal constant does not cross, a lone surrogate in a string literal
+  is written raw, and the date types' `Add*` round a double to the millisecond.
+- **0.2.0-preview.58 released** from `4a330275`: the numeric parity family (#330, #373, #374, #379,
+  #383, #389, #390, #391, #403, #405), the code engine in an assembly of its own (#359) with its
+  input, model and component slices (#368, #371, #375, #370), and a published app that no longer
+  ships its C# in its source maps (#357). *([v0.2.0-preview.58](https://github.com/eQuantic/equantic-ui/releases/tag/v0.2.0-preview.58))*
+- **The working agreement lives in the repository** (#410): the Workflow section, one text in
+  `CLAUDE.md` and `AGENTS.md` held so by `WorkflowSectionTests`; OpenSpec 1.13.2, pinned by a
+  lockfile and validated strictly in CI; and a `SessionStart` hook that gives a cloud container the
+  owner's identity, no foreign signature and the pinned .NET SDK, asserted by CI's `session-start` job.
+
+- **2026-09-26 · A record member starts as its declaration says**: a record's field initializer went
+  nowhere, and the defaults that crossed were copied as literals into every construction site, so a
+  decimal, a long, a float or a `new()` came out as a plain number or as null
+  ([#385](https://github.com/eQuantic/equantic-ui/issues/385)). The twin's constructor now writes
+  every member's default from its declaration, converted like any expression, and a construction
+  that skips a member leaves it to the constructor; a default and a base clause read the primary
+  constructor's parameters as its own. From the review: a zero built member by member names a struct
+  no syntax of the class does, and every emitter now imports it, and a base clause that computed
+  from a parameter read `this` before `super()`. Measured and left to their own issues: an
+  initializer's side effect when an object initializer sets its member
+  ([#413](https://github.com/eQuantic/equantic-ui/issues/413)), and statics read before C# would have
+  zeroed them ([#417](https://github.com/eQuantic/equantic-ui/issues/417)).
 
 ## Retired documents
 

@@ -1,6 +1,7 @@
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 
@@ -44,11 +45,14 @@ public class TimeSpanStrategy : ConversionStrategyBase
             case InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax ma } inv:
             {
                 var name = ma.Name.Identifier.Text;
-                var args = ConvertArgs(inv.ArgumentList, context);
                 if (IsStaticAccess(ma, context))
                 {
-                    return $"{Eq.TimeSpan}.{name.ToCamelCase()}({args})";
+                    var callee = $"{Eq.TimeSpan}.{name.ToCamelCase()}";
+                    return context.SemanticHelper.GetSymbol(inv) is IMethodSymbol method
+                        ? ByParameter(callee, inv, method, context)
+                        : $"{callee}({ConvertArgs(inv.ArgumentList, context)})";
                 }
+                var args = ConvertArgs(inv.ArgumentList, context);
                 var receiver = context.Converter.ConvertExpression(ma.Expression);
                 return $"{receiver}.{name.ToCamelCase()}({args})";
             }
@@ -68,6 +72,31 @@ public class TimeSpanStrategy : ConversionStrategyBase
             default:
                 return context.Unhandled(node, "TimeSpan");
         }
+    }
+
+    /// <summary>
+    /// A static call with each argument in its PARAMETER's place, for a twin that takes them by
+    /// position: an optional parameter the call leaves out is <c>undefined</c>, up to the last one it
+    /// fills. Passed as written, <c>TimeSpan.FromHours(1, seconds: 5)</c> put the 5 in the minutes.
+    /// The arguments stay in the order they were written, which is the order C# evaluates them, and
+    /// the template writer keeps it where the places do not follow it.
+    /// </summary>
+    private static string ByParameter(string callee, InvocationExpressionSyntax invocation, IMethodSymbol method,
+        ConversionContext context)
+    {
+        var arguments = invocation.ArgumentList.Arguments;
+        var places = new string?[method.Parameters.Length];
+        for (var i = 0; i < arguments.Count; i++)
+        {
+            var named = arguments[i].NameColon?.Name.Identifier.ValueText;
+            var ordinal = named is null ? i : method.Parameters.FirstOrDefault(p => p.Name == named)?.Ordinal ?? -1;
+            if (ordinal < 0 || ordinal >= places.Length) return $"{callee}({ConvertArgs(invocation.ArgumentList, context)})";
+            places[ordinal] = "{" + i + "}";
+        }
+        var filled = places.Take(System.Array.FindLastIndex(places, place => place is not null) + 1)
+            .Select(place => place ?? "undefined");
+        var parts = arguments.Select(argument => context.Converter.ConvertIr(argument.Expression)).ToArray();
+        return JsExprWriter.Write(JsExpr.Template($"{callee}({string.Join(", ", filled)})", parts, context.TypeAnnotations));
     }
 
     private static bool IsTimeSpanMember(MemberAccessExpressionSyntax ma, ConversionContext context)

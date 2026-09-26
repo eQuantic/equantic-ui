@@ -44,11 +44,10 @@ export function declareInView(path: string, declaration: InViewDeclaration): voi
  */
 export function scheduleInViewCommit(): void {
   if (declared.size === 0) return;
-  if (typeof queueMicrotask !== 'function') {
-    commitInViewObservers();
-    return;
-  }
-  queueMicrotask(commitInViewObservers);
+  // After the write on every engine: committing on the spot where there is no queueMicrotask
+  // looked for the elements before they existed, which is the defect this deferral removes.
+  if (typeof queueMicrotask === 'function') queueMicrotask(commitInViewObservers);
+  else void Promise.resolve().then(commitInViewObservers);
 }
 
 /**

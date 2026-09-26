@@ -7,8 +7,8 @@ namespace eQuantic.UI.Web;
 /// <summary>
 /// Text and the editable surfaces. <c>Text</c> is the single largest arm here — the type ramp, the
 /// runs, the clamp and the gradient ink all resolve in it — and the two surfaces are the pair whose
-/// SSR shape was settled one at a time: <c>SheetSurface</c> writes, and <c>CodeSurface</c> still
-/// does not and says why at its own arm.
+/// SSR shape was settled one at a time: <c>SheetSurface</c> first, and <c>CodeSurface</c> once the
+/// client could draw again what the server could not measure.
 /// </summary>
 internal sealed partial class WebLoweringVisitor
 {
@@ -137,6 +137,96 @@ internal sealed partial class WebLoweringVisitor
         if (Lower(sheet.Child, horizontalAxis) is { } child) element.Children.Add(child);
         return element;
     }
+
+    /// <summary>
+    /// An editable code surface, as the client builds it (lowering.ts, <c>lowerCodeSurface</c>):
+    /// the surface, its child in a stacking context of its own, the carets the MODEL answers, and
+    /// the input the keyboard types through, at the primary caret. A caret written here is never
+    /// seen early: the generated sheet hides it until the surface holds the keyboard
+    /// (<c>:focus-within</c>).
+    /// <para>
+    /// Its geometry is built on widths this side cannot measure, because the component that owns
+    /// the model measured its code through the context, and <see cref="FontlessMeasurer"/> answered
+    /// 0. That component is marked, and the client draws its subtree again at hydration: what this
+    /// arm is for is the CODE, in the server's HTML for a crawler and for a reader without
+    /// JavaScript, where there was a hole.
+    /// </para>
+    /// <para>
+    /// No events: the client attaches them. The input's own (<c>beforeinput</c>, the composition
+    /// events, the clipboard's) have no property on <c>HtmlElement</c> to declare them by, which is
+    /// why the component parity fixture cannot hold this surface yet.
+    /// </para>
+    /// </summary>
+    private HtmlElement LowerCodeSurface(CodeSurface surface)
+    {
+        var element = new RealizedElement("div")
+        {
+            ClassName = "eq-code-surface",
+            Style = new HtmlStyle
+            {
+                PointerEvents = "auto",
+                Position = Position.Relative,
+                Outline = "none",
+                // Token runs carry REAL spaces between words, which HTML would collapse.
+                WhiteSpace = "pre",
+                // A drag extends the MODEL's selection; the browser's own sweep would paint a
+                // second one over the band the component draws.
+                UserSelect = "none",
+                Cursor = "text",
+            },
+        };
+
+        // The child lowers with no inherited axis, as the client lowers it, and keeps its layers
+        // (the code's mark layer among them) in a stacking context of its own, so a layer it raised
+        // stays under the caret written after it.
+        if (Lower(surface.Child, null) is { } child)
+        {
+            if (child is RealizedElement realized)
+            {
+                realized.Style ??= new HtmlStyle();
+                realized.Style.Isolation = "isolate";
+            }
+            element.Children.Add(child);
+        }
+
+        var ink = TokenCss.Value(surface.CaretColor ?? _context.Theme.TextPrimary);
+        var carets = surface.Model.Carets;
+        foreach (var caret in carets)
+        {
+            element.Children.Add(new RealizedElement("div")
+            {
+                ClassName = "eq-code-caret",
+                RawAttributes = new Dictionary<string, string>
+                {
+                    ["style"] = $"position:absolute;left:{TokenCss.Px(caret.X)};top:{TokenCss.Px(caret.Y)};"
+                        + $"width:{TokenCss.Px(caret.Width)};height:{TokenCss.Px(caret.Height)};"
+                        + $"background-color:{ink};pointer-events:none;",
+                },
+            });
+        }
+
+        // THE INPUT, at the primary caret, so an input method's window opens where the text lands.
+        var input = new Dictionary<string, string>
+        {
+            ["style"] = carets.Count > 0
+                ? $"left:{TokenCss.Px(carets[0].X)};top:{TokenCss.Px(carets[0].Y)};height:{TokenCss.Px(carets[0].Height)};"
+                : "left:0;top:0;",
+            ["autocomplete"] = "off",
+            ["autocorrect"] = "off",
+            ["autocapitalize"] = "off",
+            ["spellcheck"] = "false",
+            ["aria-multiline"] = "true",
+        };
+        if (surface.Label is { Length: > 0 } label) input["aria-label"] = label;
+        if (surface.Autofocus) input["autofocus"] = "";
+        element.Children.Add(new RealizedElement("textarea")
+        {
+            ClassName = "eq-code-input",
+            RawAttributes = input,
+        });
+        return element;
+    }
+
     private HtmlElement LowerText(Text text)
     {
         // The face can come from the NODE (this text is code) or from the STYLE (this ROLE is

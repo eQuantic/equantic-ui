@@ -25,9 +25,11 @@ export interface ColorTokenValue {
 // re-export alone does not bring a name into this module's own scope.
 import type {
   CrossAlignValue,
+  KeyboardConventionValue,
   LiveRegionUrgencyValue,
   MainAlignValue,
   NavigableMoveValue,
+  PointerPhaseValue,
   SizeKindValue,
   VectorPaintKindValue,
 } from './enums.generated';
@@ -703,10 +705,10 @@ export interface CodeSurfaceNode extends VisualNodeValue {
   onChanged?: (() => void) | null;
   label?: string | null;
   autofocus?: boolean;
-  /** The marks' ink (C# `CodeSurface.CaretColor` / `SelectionColor`) — an editor on an inverse
-   * slab writes with an ink of its own, and the page theme's would vanish into the slab. */
+  /** The caret's ink (C# `CodeSurface.CaretColor`) — an editor on an inverse slab writes with an
+   * ink of its own, and the page theme's would vanish into the slab. The selection needs none here:
+   * the component draws it, in the code's own layers. */
   caretColor?: ColorTokenValue | null;
-  selectionColor?: ColorTokenValue | null;
 }
 
 /** A rectangle the model answers, in the surface's own coordinates. */
@@ -723,16 +725,30 @@ export interface SurfaceRectLike {
  * decides what a click means — that is the point of the interface.
  */
 export interface CodeSurfaceModelLike {
-  readonly selectionBands: readonly SurfaceRectLike[];
+  /** Every caret, the primary first — the one mark the realizer paints, on top, and blinks. */
   readonly carets: readonly SurfaceRectLike[];
-  handleKey(key: string, modifiers: number, clipboard: unknown): boolean;
+  /** Changes whenever the primary caret should be brought into view. */
+  readonly revealVersion: number;
+  /** Changes whenever the surface should take the keyboard; remembered per model, from 0. */
+  readonly focusVersion: number;
+  handleKey(
+    key: string,
+    modifiers: number,
+    convention: KeyboardConventionValue,
+    clipboard: unknown,
+  ): boolean;
   handleText(text: string): boolean;
+  setComposition(text: string): boolean;
+  copyText(): string;
+  cut(): string;
+  paste(text: string): boolean;
   handlePointer(
-    phase: 'down' | 'move' | 'up' | 'hover' | 'exit',
+    phase: PointerPhaseValue,
     position: { x: number; y: number },
     modifiers: number,
     clicks: number,
   ): boolean;
+  focusChanged(focused: boolean): void;
 }
 
 /** A live camera surface — the session id names the MediaStream the runtime attaches. */

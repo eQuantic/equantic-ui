@@ -1,8 +1,11 @@
-import { CellRef, SheetAxisValue, SheetCellSnapshot, SheetDocument, SheetEdit, SheetHistory, SheetMotionValue, SheetRange, TsvCodec } from "../runtime-exports";
+import { $eq, CellRef, SheetAxisValue, SheetCellSnapshot, SheetDocument, SheetEdit, SheetHistory, SheetMotionValue, SheetRange, TsvCodec } from "../runtime-exports";
 
 export class SheetController {
     constructor(rows: number = 1000, cols: number = 26, props?: any) {
-        this._selection = new SheetRange(new CellRef(0, 0)); this._active = new CellRef(0, 0); this.document = new SheetDocument(rows, cols); if (props && typeof props === 'object') Object.assign(this, props);
+        this._selection = new SheetRange(new CellRef(0, 0));
+        this._active = new CellRef(0, 0);
+        this.document = new SheetDocument(rows, cols);
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     _selection: SheetRange;
@@ -184,7 +187,7 @@ export class SheetController {
 
     resize(axis: SheetAxisValue, index: number, size: number) {
         let old = axis === 'rows' ? this.document.rowHeight(index) : this.document.colWidth(index);
-        if (Math.abs(old - size) < Math.fround(0.01)) return;
+        if (Math.abs(Math.fround(old - size)) < Math.fround(0.01)) return;
         if (axis === 'rows') this.document.setRowHeight(index, size); else this.document.setColWidth(index, size);
         this.commit(new SheetEdit({ kind: axis === 'rows' ? 'resizeRow' : 'resizeCol', at: index, oldSize: old, newSize: axis === 'rows' ? this.document.rowHeight(index) : this.document.colWidth(index), selectionBefore: this._selection, selectionAfter: this._selection }));
     }
@@ -280,7 +283,7 @@ export class SheetController {
     }
 
     static mod(value: number, size: number) {
-        return (value % size + size) % size;
+        return $eq.num.intRem($eq.num.intRem(value, size) + size, size);
     }
 
     fillDown() {

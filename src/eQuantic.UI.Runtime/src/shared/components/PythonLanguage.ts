@@ -30,7 +30,7 @@ export class PythonLanguage {
         return 'Python';
     }
 
-    rules: CodeLanguageRules = new CodeLanguageRules('#', null, [['(', ')'], ['[', ']'], ['{', '}']], ['"', '\''], [':', '(', '[', '{'], [')', ']', '}'], 4);
+    rules: CodeLanguageRules = new CodeLanguageRules('#', undefined, undefined, undefined, [':', '(', '[', '{'], [')', ']', '}'], 4);
 
     tokenize(line: string, state: number, into: CodeToken[]) {
         let i = 0;
@@ -46,7 +46,7 @@ export class PythonLanguage {
         }
         while (i < line.length) {
             let c = line[i];
-            if ((/^\s$/.test(c))) {
+            if ($eq.text.isWhiteSpace(c)) {
                 i++;
                 continue;
             }
@@ -119,7 +119,7 @@ export class PythonLanguage {
     }
 
     static nextNonSpace(line: string, from: number) {
-        for (let i = from; i < line.length; i++) if (!(/^\s$/.test(line[i]))) return line[i];
+        for (let i = from; i < line.length; i++) if (!$eq.text.isWhiteSpace(line[i])) return line[i];
         return '\0';
     }
 

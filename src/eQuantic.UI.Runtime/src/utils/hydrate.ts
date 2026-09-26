@@ -1,6 +1,7 @@
 import { dec, Decimal } from './decimal';
 import { long } from './long';
 import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './datetime';
+import { adoptMember } from './adopt-member';
 
 /**
  * TYPED hydration — the boundary where a value from the server (SSR state, a Server Action result)
@@ -13,6 +14,9 @@ import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './dateti
  *
  * A spec says what a value IS:
  *  - a tag (`'long'`, `'decimal'`, `'dateTime'`, …) — a compat scalar, restored by its factory;
+ *    `'single'` is the one whose wire form is already a number: a C# `float` travels as the
+ *    shortest text that names IT, which JavaScript reads as the nearest DOUBLE — so it rounds back
+ *    to the single here, before any arithmetic sees the difference;
  *  - `[spec]` — a list whose every element hydrates by the inner spec;
  *  - `{ dict: spec }` — a dictionary (plain-object twin): keys stay strings, values hydrate;
  *  - a class reference — a record/struct twin: the plain JSON object is rebuilt on the class's
@@ -27,6 +31,7 @@ import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './dateti
 export type HydrationTag =
   | 'decimal'
   | 'long'
+  | 'single'
   | 'dateTime'
   | 'timeSpan'
   | 'dateOnly'
@@ -44,7 +49,10 @@ export type HydrationSpec =
   | readonly [HydrationSpec]
   | { readonly dict: HydrationSpec }
   | { readonly tuple: readonly (HydrationSpec | null)[] }
-  | { readonly members: Readonly<Record<string, HydrationSpec>> }
+  | {
+      readonly members: Readonly<Record<string, HydrationSpec>>;
+      readonly of?: HydratableConstructor;
+    }
   | HydratableConstructor;
 
 /** The value coerced to what the spec says it is. Null and undefined pass through untouched. */
@@ -62,25 +70,36 @@ export function hydrate(incoming: unknown, spec: HydrationSpec): unknown {
     if (!Array.isArray(incoming)) return incoming;
     return incoming.map((element, i) => (parts[i] == null ? element : hydrate(element, parts[i]!)));
   }
-  // A type with NO twin — a domain record from a referenced assembly — coerces STRUCTURALLY: a
-  // shallow COPY of the plain object with the named members hydrated, everything else verbatim,
-  // and no prototype involved because there is none to rebuild. A copy, not a mutation: the
-  // payload object may still be read by whoever else holds it.
+  // A type from a referenced assembly coerces STRUCTURALLY: a shallow COPY of the plain object
+  // with the named members hydrated, everything else verbatim. A copy, not a mutation: the payload
+  // object may still be read by whoever else holds it. When the type is one the RUNTIME ships (a
+  // vocabulary value type such as Rect), `of` names its twin and the copy is built on that
+  // prototype; without it a Rect in a payload arrived as a plain object, and its getters and
+  // methods were gone.
   if ('members' in (spec as { members?: Readonly<Record<string, HydrationSpec>> })) {
-    const members = (spec as { members: Readonly<Record<string, HydrationSpec>> }).members;
+    const { members, of } = spec as {
+      members: Readonly<Record<string, HydrationSpec>>;
+      of?: HydratableConstructor;
+    };
     if (typeof incoming !== 'object' || Array.isArray(incoming)) return incoming;
+    if (of && incoming instanceof (of as unknown as new (...args: never[]) => object))
+      return incoming;
     const source = incoming as Record<string, unknown>;
-    const result: Record<string, unknown> = { ...source };
-    for (const key of Object.keys(members))
-      if (key in source) result[key] = hydrate(source[key], members[key]);
+    const result = (of ? Object.create(of.prototype) : {}) as object;
+    for (const key of Object.keys(source))
+      adoptMember(
+        result,
+        key,
+        ownSpec(members, key) !== undefined ? hydrate(source[key], members[key]) : source[key],
+      );
     return result;
   }
   if ('dict' in (spec as { dict?: HydrationSpec })) {
     const inner = (spec as { dict: HydrationSpec }).dict;
     if (typeof incoming !== 'object' || Array.isArray(incoming)) return incoming;
     const source = incoming as Record<string, unknown>;
-    const values: Record<string, unknown> = {};
-    for (const key of Object.keys(source)) values[key] = hydrate(source[key], inner);
+    const values = {};
+    for (const key of Object.keys(source)) adoptMember(values, key, hydrate(source[key], inner));
     return values;
   }
   return incoming;
@@ -101,6 +120,8 @@ function scalar(incoming: unknown, tag: HydrationTag): unknown {
         : typeof incoming === 'string' || typeof incoming === 'number'
           ? long(incoming)
           : incoming;
+    case 'single':
+      return typeof incoming === 'number' ? Math.fround(incoming) : incoming;
     case 'dateTime':
       return typeof incoming === 'string' ? dateTime.parse(incoming) : incoming;
     case 'timeSpan':
@@ -123,11 +144,23 @@ function instance(incoming: unknown, ctor: HydratableConstructor): unknown {
   if (incoming instanceof (ctor as unknown as new (...args: never[]) => object)) return incoming;
   if (typeof incoming !== 'object' || Array.isArray(incoming)) return incoming;
   const source = incoming as Record<string, unknown>;
-  const rebuilt = Object.create(ctor.prototype) as Record<string, unknown>;
-  const members = ctor.$hydration;
+  const rebuilt = Object.create(ctor.prototype) as object;
   for (const key of Object.keys(source)) {
-    const spec = members?.[key];
-    rebuilt[key] = spec !== undefined ? hydrate(source[key], spec) : source[key];
+    const spec = ownSpec(ctor.$hydration, key);
+    adoptMember(rebuilt, key, spec !== undefined ? hydrate(source[key], spec) : source[key]);
   }
   return rebuilt;
+}
+
+/**
+ * The spec a map gives `key` ITSELF. The key comes from the payload, and a plain lookup answers for
+ * `constructor` or `__proto__` with what every object inherits: a function, which reads as a twin.
+ */
+function ownSpec(
+  specs: Readonly<Record<string, HydrationSpec>> | undefined,
+  key: string,
+): HydrationSpec | undefined {
+  return specs !== undefined && Object.prototype.hasOwnProperty.call(specs, key)
+    ? specs[key]
+    : undefined;
 }

@@ -63,6 +63,24 @@ public static class JsExecutor
     /// <summary>The engine that will actually run scripts: "bun", "node", or "none".</summary>
     public static string EngineName => BunWorks() ? "bun" : NodeWorks() ? "node" : "none";
 
+    /// <summary>
+    /// The embedded Bun the SDK ships, for a test only Bun can answer: its bundler, its stack, its
+    /// <c>Bun.stringWidth</c>. Where it does not run the test is skipped, except under
+    /// <c>EQ_REQUIRE_JS=1</c>, where it FAILS: a runner that falls back to Node runs the rest of the
+    /// suite, and a Bun-only test that skipped there reported a pass for code nothing ran. The SDK
+    /// bundles with this same Bun, so a CI runner that cannot run it cannot build an app either.
+    /// </summary>
+    public static string RequireBun()
+    {
+        if (BunWorks()) return BunPath()!;
+        if (Environment.GetEnvironmentVariable("EQ_REQUIRE_JS") == "1")
+            throw new InvalidOperationException(
+                "EQ_REQUIRE_JS=1 but the embedded Bun does not run here, and this test only Bun can answer. " +
+                "It must FAIL loudly rather than skip — fix the runner environment.");
+        Xunit.Skip.If(true, "The embedded Bun does not run here.");
+        throw new InvalidOperationException("unreachable: Skip.If(true) throws");
+    }
+
     public static string Run(string jsProgram, int timeoutMs = 20000)
     {
         // The program is the TYPESCRIPT the SDK emits — a declaration whose type differs from its
@@ -178,12 +196,20 @@ public static class JsExecutor
         }
     }
 
-    private static (int exitCode, string stdout, string stderr) RunProcess(string fileName, string[] args, int timeoutMs)
+    /// <summary>Runs a process to its end and answers what it wrote. One that outlives
+    /// <paramref name="timeoutMs"/> is killed with every process it started, rather than left
+    /// running past the test that started it. What it wrote is read as UTF-8, which is what Bun and
+    /// Node write: left to the default, Windows decodes a redirected stream with its OEM code page,
+    /// and the one conformance case printing a character past ASCII (`¤`) read two characters there
+    /// and failed on Windows alone.</summary>
+    internal static (int exitCode, string stdout, string stderr) RunProcess(string fileName, string[] args, int timeoutMs)
     {
         var psi = new ProcessStartInfo(fileName)
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
+            StandardOutputEncoding = System.Text.Encoding.UTF8,
+            StandardErrorEncoding = System.Text.Encoding.UTF8,
             UseShellExecute = false,
             CreateNoWindow = true,
         };

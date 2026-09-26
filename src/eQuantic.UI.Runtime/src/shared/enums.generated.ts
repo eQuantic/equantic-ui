@@ -26,7 +26,7 @@ export type CodeCompletionKindValue =
   'text' | 'method' | 'function' | 'constructor' | 'field' | 'variable' | 'class' | 'interface'
   | 'module' | 'property' | 'enum' | 'keyword' | 'snippet' | 'file';
 
-export type CodeDecorationKindValue = 'highlight' | 'squiggle' | 'outline' | 'strike';
+export type CodeDecorationKindValue = 'highlight' | 'squiggle' | 'outline' | 'strike' | 'underline';
 
 export type CodeDiagnosticSeverityValue = 'hint' | 'information' | 'warning' | 'error';
 
@@ -68,6 +68,8 @@ export type IconsValue =
   | 'calendar' | 'clock';
 
 export type ImageFitValue = 'contain' | 'cover' | 'stretch';
+
+export type KeyboardConventionValue = 'standard' | 'apple';
 
 export type LiveRegionUrgencyValue = 'polite' | 'assertive';
 

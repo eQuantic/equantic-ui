@@ -12,6 +12,7 @@
  * "1.234,50" on a Brazilian one, from the same server response. The atom removes the question.
  */
 
+import { double, single } from './real-text';
 import { activeCurrency, activePattern, formatLocale } from './culture';
 
 /**
@@ -61,6 +62,24 @@ function asJsDate(value: unknown): Date | null {
   return null;
 }
 
+/** Which binary number a JavaScript number stands for. A number cannot say it is a single, so
+ * whoever knows passes it: the compiler, from the static type, at every call it writes. */
+export type NumberKind = 'double' | 'single';
+
+/**
+ * A float on its way into `string.Format`, whose arguments are objects in C#: boxed with its kind,
+ * which the formatter reads and nothing else ever sees. Anywhere else a boxed float is the plain
+ * number, and its kind is lost (#378).
+ */
+export class FormatSingle {
+  constructor(readonly value: number) {}
+}
+
+/** Boxes a float for `string.Format`; null stays null. */
+export function asSingle(value: number | null | undefined): FormatSingle | null | undefined {
+  return value == null ? value : new FormatSingle(value);
+}
+
 /**
  * @param value The value to format
  * @param format The format string (e.g. "C2", "N0", "yyyy-MM-dd")
@@ -68,35 +87,58 @@ function asJsDate(value: unknown): Date | null {
  * @param invariant Format against the INVARIANT culture rather than the active one — what
  *   `ToString(CultureInfo.InvariantCulture)` asks for, and the shape a number written for a
  *   machine (a CSS length, a key, a wire value) has to keep whoever is reading the page.
+ * @param kind A number's binary kind, when it is a single: the shortest digits that read back as
+ *   a float are not those of the double underneath (0.1f is 0.1, not 0.10000000149011612).
  */
 export function format(
   value: any,
   format: string | null,
   alignment?: number,
   invariant?: boolean,
+  kind?: NumberKind,
 ): string {
-  if (value === null || value === undefined) return '';
+  if (value instanceof FormatSingle) {
+    kind = 'single';
+    value = value.value;
+  }
+  // Null writes nothing, and nothing is still aligned: `$"[{n,4}]"` is "[    ]" for a null n.
+  if (value === null || value === undefined) return pad('', alignment);
   if (invariant) invariantDepth++;
   try {
-    return formatCore(value, format, alignment);
+    return formatCore(value, format, alignment, kind ?? 'double');
   } finally {
     if (invariant) invariantDepth--;
   }
 }
 
-function formatCore(value: any, format: string | null, alignment?: number): string {
-  // .NET spells a bool `True`/`False`; JavaScript lowercases it. Everything else reads the same.
-  let result = typeof value === 'boolean' ? (value ? 'True' : 'False') : String(value);
+function formatCore(value: any, format: string | null, alignment: number | undefined, kind: NumberKind): string {
+  // .NET spells a bool `True`/`False`, where JavaScript lowercases it, and writes a number with
+  // its own notation (1E+17, -0), where String() keeps fixed notation up to 1e21.
+  let result =
+    typeof value === 'boolean'
+      ? value
+        ? 'True'
+        : 'False'
+      : typeof value === 'number'
+        ? kind === 'single'
+          ? single(value)
+          : double(value)
+        : String(value);
 
   if (format) {
     const date = asJsDate(value);
     if (typeof value === 'number') {
-      result = formatNumber(value, format);
+      result = formatNumber(value, format, kind);
     } else if (date !== null) {
       result = formatDate(date, format);
     }
   }
 
+  return pad(result, alignment);
+}
+
+/** Text in a field of `|alignment|` characters: a positive width aligns right, a negative left. */
+function pad(result: string, alignment?: number): string {
   if (alignment) {
     const width = Math.abs(alignment);
     if (result.length < width) {
@@ -141,7 +183,8 @@ function formatCustomNumber(value: number, format: string): string {
  * prints the generic ¤ sign, so that is what this prints too rather than guessing a country.
  */
 function formatCurrency(value: number, precision: number): string {
-  const currency = activeCurrency();
+  // An invariant conversion has no currency of its own, whichever culture is reading.
+  const currency = invariantDepth > 0 ? null : activeCurrency();
   const locale = activeFormatLocale();
   const rounded = round(value, precision);
   if (currency !== null) {
@@ -161,7 +204,20 @@ function formatCurrency(value: number, precision: number): string {
   return rounded < 0 ? `-¤${number.replace('-', '')}` : `¤${number}`;
 }
 
-function formatNumber(value: number, format: string): string {
+/**
+ * The shortest digits that read back as the value, in .NET's notation (1E+21, -0), with the
+ * active culture's decimal separator: what `G` and `R` write, and a `string.Format` placeholder
+ * with no specifier, since .NET formats one with the value's `ToString(provider)`.
+ */
+function shortest(value: number, kind: NumberKind): string {
+  const text = kind === 'single' ? single(value) : double(value);
+  const separator =
+    new Intl.NumberFormat(activeFormatLocale()).formatToParts(1.5).find((part) => part.type === 'decimal')
+      ?.value ?? '.';
+  return separator === '.' ? text : text.replace('.', separator);
+}
+
+function formatNumber(value: number, format: string, kind: NumberKind = 'double'): string {
   // A standard specifier is a LETTER (optionally followed by a precision); anything drawn with
   // digit placeholders is a custom picture and is read as one.
   if (!/^[A-Za-z]/.test(format)) {
@@ -212,6 +268,10 @@ function formatNumber(value: number, format: string): string {
         .toString(16)
         .toUpperCase()
         .padStart(digits.length > 0 ? precision : 1, '0');
+    case 'R': // Round-trip, which .NET Core 3.0 made the shortest digits that read back
+      return shortest(value, kind);
+    case 'G': // General with no precision is the same shortest text; a precision is not modelled
+      return digits.length === 0 ? shortest(value, kind) : value.toString();
     default:
       return value.toString();
   }
@@ -236,6 +296,26 @@ const DATE_ROLES: Record<string, string[]> = {
   Y: ['yearMonth'],
   y: ['yearMonth'],
 };
+
+/**
+ * The invariant culture's date and time patterns, as .NET's `CultureInfo.InvariantCulture` holds
+ * them. An explicitly invariant conversion writes these whatever culture is reading, as it writes
+ * the invariant number conventions and the generic ¤ for a currency: read from the active culture,
+ * `string.Format(CultureInfo.InvariantCulture, "{0:G}", date)` followed the reader's patterns.
+ */
+const INVARIANT_PATTERNS: Readonly<Record<string, string>> = {
+  dateShort: 'MM/dd/yyyy',
+  dateLong: 'dddd, dd MMMM yyyy',
+  timeShort: 'HH:mm',
+  timeLong: 'HH:mm:ss',
+  monthDay: 'MMMM dd',
+  yearMonth: 'yyyy MMMM',
+};
+
+/** A pattern role in the culture the formatter is writing in. */
+function patternFor(role: string): string | null {
+  return invariantDepth > 0 ? (INVARIANT_PATTERNS[role] ?? null) : activePattern(role);
+}
 
 /** `Intl`'s fallback for a culture whose patterns did not travel (no catalog installed). Close,
  * not exact — which is why the patterns travel at all. */
@@ -377,7 +457,7 @@ function formatDate(value: Date, format: string): string {
   if (format === 's') return value.toISOString().slice(0, 19);
 
   if (format.length === 1 && DATE_ROLES[format] !== undefined) {
-    const patterns = DATE_ROLES[format].map(activePattern);
+    const patterns = DATE_ROLES[format].map(patternFor);
     // Every role must have travelled; a half-known composite would print half a date.
     if (patterns.every((pattern) => pattern !== null))
       return patterns.map((pattern) => renderPattern(value, pattern as string)).join(' ');
@@ -402,19 +482,37 @@ function formatDate(value: Date, format: string): string {
     .replace(/ss/g, ss);
 }
 
+const FORMAT_INDEX =
+  'Index (zero based) must be greater than or equal to zero and less than the size of the argument list.';
+
 /**
  * .NET `string.Format(template, ...args)`. Substitutes `{i}` / `{i:spec}` placeholders (the latter via
  * {@link format}, so `{0:F2}` formats arg 0 to 2 decimals) and unescapes `{{`/`}}` to `{`/`}`. Mirrors
  * the interpolation path (`$"{x:F2}"`), which already uses `format`.
  */
 export function stringFormat(template: string, ...args: unknown[]): string {
-  return template.replace(/\{\{|\}\}|\{(\d+)(?::([^}]*))?\}/g, (m, idx, spec) => {
+  return template.replace(/\{\{|\}\}|\{(\d+)(?:,(-?\d+))?(?::([^}]*))?\}/g, (m, idx, width, spec) => {
     if (m === '{{') return '{';
     if (m === '}}') return '}';
+    // A placeholder past the values is .NET's FormatException, where it was written as nothing.
+    if (Number(idx) >= args.length) throw new Error(FORMAT_INDEX);
     const v = args[Number(idx)];
-    if (spec != null) return format(v, spec);
-    return general(v);
+    // `{0,5}` aligns what the placeholder writes; it was left in the text as written.
+    const alignment = width != null ? Number(width) : undefined;
+    if (spec != null) return format(v, spec, alignment);
+    return pad(general(v), alignment);
   });
+}
+
+/** `string.Format(CultureInfo.InvariantCulture, template, …)`: every placeholder written in the
+ * invariant culture, whoever reads the page (#377). */
+export function stringFormatInvariant(template: string, ...args: unknown[]): string {
+  invariantDepth++;
+  try {
+    return stringFormat(template, ...args);
+  } finally {
+    invariantDepth--;
+  }
 }
 
 /**
@@ -425,13 +523,12 @@ export function stringFormat(template: string, ...args: unknown[]): string {
  */
 function general(value: unknown): string {
   if (value === null || value === undefined) return '';
-  if (typeof value === 'number') {
-    // .NET's default ("G") does not group; it only swaps the decimal separator.
-    return value.toLocaleString(activeFormatLocale(), {
-      useGrouping: false,
-      maximumFractionDigits: 20,
-    });
-  }
+  // .NET's default ("G") is the shortest text that reads back, in its notation (1E+21, which
+  // toLocaleString never writes), with the culture's decimal separator and no grouping; a float
+  // boxed for the call keeps its own digits.
+  if (value instanceof FormatSingle) return shortest(value.value, 'single');
+  if (typeof value === 'number') return shortest(value, 'double');
+  if (typeof value === 'boolean') return value ? 'True' : 'False';
   const date = asJsDate(value);
   if (date !== null) return formatDate(date, 'G');
   return String(value);

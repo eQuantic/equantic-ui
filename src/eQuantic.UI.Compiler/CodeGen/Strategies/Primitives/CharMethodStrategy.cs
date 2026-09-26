@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 
@@ -7,7 +8,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Primitives;
 /// Strategy for System.Char static methods. C# chars are JS single-character strings, so case
 /// methods map to string case methods and the Is* classifiers map to Unicode-aware regex tests.
 /// </summary>
-public class CharMethodStrategy : IConversionStrategy
+public class CharMethodStrategy : IExpressionIrStrategy
 {
     public bool CanConvert(SyntaxNode node, ConversionContext context)
     {
@@ -28,35 +29,62 @@ public class CharMethodStrategy : IConversionStrategy
             or "IsSeparator" or "IsSymbol" or "IsControl" or "IsAscii";
     }
 
-    public string Convert(SyntaxNode node, ConversionContext context)
+    public JsExpr ConvertIr(SyntaxNode node, ConversionContext context)
     {
         var invocation = (InvocationExpressionSyntax)node;
         var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
         var name = memberAccess.Name.Identifier.Text;
-        var args = invocation.ArgumentList.Arguments;
-        if (args.Count == 0) return "undefined";
+        var args = invocation.ArgumentList.Arguments
+            .Select(a => context.Converter.ConvertIr(a.Expression))
+            .ToArray();
+        if (args.Length == 0) return JsExpr.Identifier("undefined");
 
-        var c = context.Converter.ConvertExpression(args[0].Expression);
+        // The (string, index) overloads classify the character AT the index, and read a surrogate
+        // pair there as the one code point it is, which is what .NET does. They were handed the
+        // STRING, so `char.IsDigit("a1", 1)` tested "a1" against a one-character pattern and every
+        // one of them answered false.
+        //
+        // A template over PARAMETER holes: the writer fences a hole an operator or a member access
+        // touches, so `char.ToUpper(c ? a : b)` upper-cases the conditional's answer and not its
+        // last branch, and binds each part once, in the order C# evaluates the arguments, so a
+        // named argument written out of order (`char.IsLetter(index: 1, s: "1a")`) fills its own.
+        var method = (IMethodSymbol)context.SemanticHelper.GetSymbol(invocation)!;
+        var c = method.Parameters is [{ Type.SpecialType: SpecialType.System_String }, ..] && args.Length == 2
+            ? "String.fromCodePoint(Number({0}.codePointAt({1})))"
+            : "{0}";
 
-        return name switch
+        var template = name switch
         {
             "ToUpper" or "ToUpperInvariant" => $"{c}.toUpperCase()",
             "ToLower" or "ToLowerInvariant" => $"{c}.toLowerCase()",
-            "IsDigit" => $"(/^\\p{{Nd}}$/u.test({c}))",
-            "IsNumber" => $"(/^\\p{{N}}$/u.test({c}))",
-            "IsLetter" => $"(/^\\p{{L}}$/u.test({c}))",
-            "IsLetterOrDigit" => $"(/^[\\p{{L}}\\p{{Nd}}]$/u.test({c}))",
-            "IsWhiteSpace" => $"(/^\\s$/.test({c}))",
-            "IsUpper" => $"(/^\\p{{Lu}}$/u.test({c}))",
-            "IsLower" => $"(/^\\p{{Ll}}$/u.test({c}))",
-            "IsPunctuation" => $"(/^\\p{{P}}$/u.test({c}))",
-            "IsSeparator" => $"(/^\\p{{Z}}$/u.test({c}))",
-            "IsSymbol" => $"(/^\\p{{S}}$/u.test({c}))",
-            "IsControl" => $"(/^\\p{{Cc}}$/u.test({c}))",
-            "IsAscii" => $"({c}.codePointAt(0) < 128)",
-            _ => $"{c}"
+            "IsDigit" => Test(@"/^\p{Nd}$/u", c),
+            "IsNumber" => Test(@"/^\p{N}$/u", c),
+            "IsLetter" => Test(@"/^\p{L}$/u", c),
+            "IsLetterOrDigit" => Test(@"/^[\p{L}\p{Nd}]$/u", c),
+            // .NET's white space is the Unicode White_Space property. JavaScript's `\s` is not: it
+            // leaves out NEXT LINE (U+0085) and takes in the byte order mark (U+FEFF), and those
+            // are the whole difference over the BMP, measured on both sides. The runtime keeps the
+            // set in one place (utils/white-space), which Trim and Split read too, as a comparison
+            // per code unit: the code editor's tokenizers ask it of every character, and a pattern
+            // tested there measured about five times slower.
+            "IsWhiteSpace" => $"{Eq.IsWhiteSpace}({c})",
+            "IsUpper" => Test(@"/^\p{Lu}$/u", c),
+            "IsLower" => Test(@"/^\p{Ll}$/u", c),
+            "IsPunctuation" => Test(@"/^\p{P}$/u", c),
+            "IsSeparator" => Test(@"/^\p{Z}$/u", c),
+            "IsSymbol" => Test(@"/^\p{S}$/u", c),
+            "IsControl" => Test(@"/^\p{Cc}$/u", c),
+            // Number(): `codePointAt` answers `number | undefined`, which a strict tsc will not compare.
+            "IsAscii" => $"(Number({c}.codePointAt(0)) < 128)",
+            _ => c,
         };
+        if (name == "IsWhiteSpace") context.UsedHelpers.Add(Eq.Import);
+        return JsExpr.Template(PrimitiveStaticStrategy.BindNamedArguments(template, invocation, method),
+            args, context.TypeAnnotations);
     }
+
+    /// <summary>A pattern tested against the character, which is an argument of the test.</summary>
+    private static string Test(string pattern, string c) => $"({pattern}.test({c}))";
 
     public int Priority => 10;
 }

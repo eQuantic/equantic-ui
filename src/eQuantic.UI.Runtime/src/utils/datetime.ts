@@ -174,16 +174,72 @@ function ticksFromUnit(value: bigint | number, ticksPerUnit: bigint): bigint {
   );
 }
 
+const MAX_TICKS = 9_223_372_036_854_775_807n;
+const MIN_TICKS = -9_223_372_036_854_775_808n;
+/** `long.MaxValue` as the double .NET compares a scaled count with: 2^63, one past it. */
+const TICKS_BOUND = 2 ** 63;
+const TOO_LONG = 'TimeSpan overflowed because the duration is too long.';
+const NOT_A_NUMBER = 'TimeSpan does not accept floating point Not-a-Number values.';
+
+/** A tick count a span can hold, or .NET's refusal. */
+function checkedTicks(ticks: bigint): TimeSpan {
+  if (ticks > MAX_TICKS || ticks < MIN_TICKS) throw new Error(TOO_LONG);
+  return new TimeSpan(ticks);
+}
+
+/**
+ * A count of units, as .NET 7 and later read one. A long, which is a bigint here
+ * (`TimeSpan.FromSeconds(90)` binds .NET 9's long overload), is exact. A number is scaled to TICKS
+ * in doubles and truncated toward zero, as .NET's double overload does: `FromSeconds(0.00001)` is
+ * 100 ticks and `FromMilliseconds(0.5)` 5,000, where rounding to the millisecond, as .NET 6 and
+ * earlier did, answered 0 and 10,000, and an integral double past 2^53 ticks keeps the product's
+ * rounding. The int overloads (`FromDays(int)`, `FromHours(int)`) arrive as numbers too, and every
+ * count inside the range a span holds is exact in doubles for them. Each is checked against that
+ * range.
+ */
+function interval(value: bigint | number, ticksPerUnit: bigint): TimeSpan {
+  if (typeof value === 'bigint') return checkedTicks(value * ticksPerUnit);
+  if (Number.isNaN(value)) throw new Error(NOT_A_NUMBER);
+  const ticks = value * Number(ticksPerUnit);
+  if (ticks > TICKS_BOUND || ticks < -TICKS_BOUND) throw new Error(TOO_LONG);
+  // A product of exactly 2^63 passes that check, and is MaxValue in .NET.
+  return new TimeSpan(ticks === TICKS_BOUND ? MAX_TICKS : BigInt(Math.trunc(ticks)));
+}
+
+/** A component of .NET 9's factories: an int or a long, or one the call left out. */
+type Component = bigint | number | undefined;
+
+/** Microseconds in each component of .NET 9's factories, largest first. */
+const MICROSECONDS = [86_400_000_000n, 3_600_000_000n, 60_000_000n, 1_000_000n, 1_000n, 1n];
+
+/**
+ * .NET 9's component factories — `FromDays(days, hours, minutes, seconds, milliseconds,
+ * microseconds)` and the shorter ones that start lower — for the components from `unit` down:
+ * each may be negative, their sum is exact (an Int128 in .NET), and the span it makes is checked.
+ * An omitted component is 0. A single argument is the one-unit overload, read by `interval`.
+ */
+function components(unit: number, ticksPerUnit: bigint) {
+  return (value: bigint | number, ...rest: Component[]): TimeSpan => {
+    if (rest.length === 0) return interval(value, ticksPerUnit);
+    let microseconds = 0n;
+    [value, ...rest].forEach((part, i) => {
+      microseconds += BigInt(part ?? 0) * MICROSECONDS[unit + i];
+    });
+    return checkedTicks(microseconds * 10n);
+  };
+}
+
 export interface TimeSpanFactory {
   (ticks: bigint | number): TimeSpan;
   (hours: number, minutes: number, seconds: number): TimeSpan;
   (days: number, hours: number, minutes: number, seconds: number): TimeSpan;
   (days: number, hours: number, minutes: number, seconds: number, milliseconds: number): TimeSpan;
-  fromDays(value: bigint | number): TimeSpan;
-  fromHours(value: bigint | number): TimeSpan;
-  fromMinutes(value: bigint | number): TimeSpan;
-  fromSeconds(value: bigint | number): TimeSpan;
-  fromMilliseconds(value: bigint | number): TimeSpan;
+  fromDays(value: bigint | number, ...components: Component[]): TimeSpan;
+  fromHours(value: bigint | number, ...components: Component[]): TimeSpan;
+  fromMinutes(value: bigint | number, ...components: Component[]): TimeSpan;
+  fromSeconds(value: bigint | number, ...components: Component[]): TimeSpan;
+  fromMilliseconds(value: bigint | number, ...components: Component[]): TimeSpan;
+  fromMicroseconds(value: bigint | number): TimeSpan;
   fromTicks(value: bigint | number): TimeSpan;
   parse(text: string): TimeSpan;
   readonly zero: TimeSpan;
@@ -219,12 +275,12 @@ function timeSpanImpl(...args: number[] | bigint[]): TimeSpan {
 // Callable base + attached static factories (fromDays/parse/…): the impl is the overloaded call
 // signature and the statics are assigned just below, so the two-step `unknown` cast is required.
 export const timeSpan = timeSpanImpl as unknown as TimeSpanFactory;
-timeSpan.fromDays = (v) => new TimeSpan(ticksFromUnit(v, TICKS_PER_DAY));
-timeSpan.fromHours = (v) => new TimeSpan(ticksFromUnit(v, TICKS_PER_HOUR));
-timeSpan.fromMinutes = (v) => new TimeSpan(ticksFromUnit(v, TICKS_PER_MINUTE));
-timeSpan.fromSeconds = (v) => new TimeSpan(ticksFromUnit(v, TICKS_PER_SECOND));
-timeSpan.fromMilliseconds = (v) =>
-  new TimeSpan(BigInt(Math.round(asNumber(v))) * TICKS_PER_MILLISECOND);
+timeSpan.fromDays = components(0, TICKS_PER_DAY);
+timeSpan.fromHours = components(1, TICKS_PER_HOUR);
+timeSpan.fromMinutes = components(2, TICKS_PER_MINUTE);
+timeSpan.fromSeconds = components(3, TICKS_PER_SECOND);
+timeSpan.fromMilliseconds = components(4, TICKS_PER_MILLISECOND);
+timeSpan.fromMicroseconds = (v) => interval(v, 10n);
 timeSpan.fromTicks = (v) => new TimeSpan(typeof v === 'bigint' ? v : BigInt(Math.trunc(v)));
 timeSpan.parse = (text: string): TimeSpan => {
   // .NET "c" format: [-][d.]hh:mm:ss[.fffffff]
@@ -620,7 +676,8 @@ function tryParseDateOnly(text: string): DateOnly | null {
   const monthAt = pattern.indexOf('m');
   const yearAt = pattern.indexOf('y');
   const dayFirst = dayAt >= 0 && monthAt >= 0 && dayAt < monthAt;
-  const yearFirst = yearAt >= 0 && (dayAt < 0 || yearAt < dayAt) && (monthAt < 0 || yearAt < monthAt);
+  const yearFirst =
+    yearAt >= 0 && (dayAt < 0 || yearAt < dayAt) && (monthAt < 0 || yearAt < monthAt);
 
   const [, one, two, three] = parts;
   // Three digits or more is a year wherever it sits, and a year-first culture takes the leading
@@ -908,6 +965,10 @@ export interface DateTimeOffsetFactory {
   fromUnixTimeMilliseconds(ms: bigint | number): DateTimeOffset;
   now(): DateTimeOffset;
   utcNow(): DateTimeOffset;
+  /** `DateTimeOffset.MinValue`, which is also `default(DateTimeOffset)`: 0001-01-01 at +00:00. */
+  minValue(): DateTimeOffset;
+  /** `DateTimeOffset.MaxValue`: 9999-12-31 23:59:59.9999999 at +00:00. */
+  maxValue(): DateTimeOffset;
   parse(text: string): DateTimeOffset;
 }
 
@@ -942,6 +1003,8 @@ dateTimeOffset.fromUnixTimeMilliseconds = (ms) =>
   new DateTimeOffset(UNIX_EPOCH_TICKS + asBigInt(ms) * TICKS_PER_MILLISECOND, 0n);
 dateTimeOffset.now = () => new DateTimeOffset(dateTime.now().ticks, 0n);
 dateTimeOffset.utcNow = () => new DateTimeOffset(dateTime.utcNow().ticks, 0n);
+dateTimeOffset.minValue = () => new DateTimeOffset(0n, 0n);
+dateTimeOffset.maxValue = () => new DateTimeOffset(MAX_DATETIME_TICKS, 0n);
 dateTimeOffset.parse = (text: string): DateTimeOffset => {
   const t = text.trim();
   // yyyy-MM-ddTHH:mm:ss[.fff][(+|-)HH:mm | Z]

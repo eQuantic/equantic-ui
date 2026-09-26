@@ -2,7 +2,10 @@ import { CodeDocument, CodeToken } from "../runtime-exports";
 
 export class CodeHighlighter {
     constructor(language: any, props?: any) {
-        this._tokens = []; this._endStates = []; this.language = language; if (props && typeof props === 'object') Object.assign(this, props);
+        this._tokens = [];
+        this._endStates = [];
+        this.language = language;
+        if (props && typeof props === 'object') Object.assign(this, props);
     }
 
     _tokens: CodeToken[][];
@@ -31,10 +34,11 @@ export class CodeHighlighter {
             return document.lineCount - 1;
         }
         if (line >= this._tokens.length) return line;
-        let before = this._endStates[line];
-        this.retokenize(document, line);
-        if (this._endStates[line] === before) return line;
-        for (let next = line + 1; next < this._tokens.length; next++) {
+        let last = Math.min(line + linesInserted, this._tokens.length - 1);
+        let before = this._endStates[last];
+        for (let rewritten = line; rewritten <= last; rewritten++) this.retokenize(document, rewritten);
+        if (this._endStates[last] === before) return last;
+        for (let next = last + 1; next < this._tokens.length; next++) {
             let previous = this._endStates[next];
             this.retokenize(document, next);
             if (this._endStates[next] === previous) return next;

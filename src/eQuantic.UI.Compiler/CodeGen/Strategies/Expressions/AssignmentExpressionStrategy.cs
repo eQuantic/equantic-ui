@@ -54,18 +54,16 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
         // A COMPOUND write to a dictionary entry READS it first, and .NET throws when the key is
         // not there. Emitting `map[k] op= v` would answer undefined and walk it into the
         // arithmetic; emitting the guarded read as the TARGET does not even parse. So it is
-        // lowered: read through the guard, write plainly. The template binds the receiver and the
-        // key once each, so neither is evaluated twice.
-        if (assignment.Left is ElementAccessExpressionSyntax { ArgumentList.Arguments.Count: 1 } target
-            && !assignment.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression)
-            && context.SemanticHelper.GetType(target.Expression).IsDictionaryLike(out _))
+        // lowered: read through the guard, write plainly. That is only how the ENTRY is read and
+        // written: the value it takes follows every rule below, as any compound target's does. A
+        // template of its own had returned ahead of them, so a float entry's `+=` added doubles, a
+        // decimal's glued two texts together and a byte's never wrapped.
+        (DictionaryEntry Form, JsExpr Receiver, JsExpr Key)? entry = null;
+        if (!assignment.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression)
+            && DictionaryEntry.Of(assignment.Left, context) is { } target)
         {
-            context.UsedHelpers.Add(Eq.Import);
-            var compound = assignment.OperatorToken.Text[..^1];
-            return JsExpr.Template($"{{0}}[{{1}}] = {Eq.DictGet}({{0}}, {{1}}) {compound} {{2}}",
-                context.Converter.ConvertIr(target.Expression),
-                context.Converter.ConvertIr(target.ArgumentList.Arguments[0].Expression),
-                context.Converter.ConvertIr(assignment.Right));
+            entry = (target.Entry, context.Converter.ConvertIr(target.Access.Expression),
+                context.Converter.ConvertIr(target.Access.ArgumentList.Arguments[0].Expression));
         }
 
         var leftIr = context.Converter.ConvertIr(assignment.Left);
@@ -83,73 +81,129 @@ public class AssignmentExpressionStrategy : IExpressionIrStrategy
             return $"let {left} {op} {right}";
         }
 
+        // Every compound this strategy spells out as `target = next(target, value)` evaluates the
+        // target once, as JavaScript's own `op=` and C# both do (ReadModifyWrite): the text names it
+        // twice, so `values[i++] += x` would otherwise step `i` twice.
+        JsExpr Compound(Func<JsExpr, JsExpr, JsExpr> next) => entry is var (form, receiver, key)
+            ? ReadModifyWrite.AssignEntry(form,
+                receiver, key, [rightIr], (current, operands) => next(current, operands[0]), answerOld: false, context)
+            : ReadModifyWrite.Assign(
+                leftIr, [rightIr], (current, operands) => next(current, operands[0]), answerOld: false, context);
+
         // COMPOUND assignment through a USER-DEFINED operator: `m += other` is `m = Money.opAdd(m, other)`.
         if (context.SemanticHelper.GetOperation(assignment) is Microsoft.CodeAnalysis.Operations.ICompoundAssignmentOperation
             { OperatorMethod: { } compoundMethod }
-            && UserDefinedOperators.Binary(compoundMethod, op[..^1], left, right) is { } compoundCall)
-            return JsExpr.Binary(leftIr, "=", compoundCall);
-
-        // COMPOUND assignment on a decimal is arithmetic on the runtime Decimal — `total +=
-        // amount` emitted bare concatenates their text. A running money total read
-        // "R$ 01240.5089.90640.00": the seed, then each amount, glued end to end. The target IS a
-        // Decimal (typed world) and the VALUE arrives converted — the bound tree wraps a mixed
-        // value in the conversion, and ValueFlow settles it like any other flow.
-        if (op.Length == 2 && op[1] == '=' && "+-*/".Contains(op[0])
-            && context.SemanticHelper.GetType(assignment.Left).IsDecimal())
-        {
-            var method = op[0] switch { '+' => "add", '-' => "sub", '*' => "mul", _ => "div" };
-            return JsExpr.Binary(leftIr, "=",
-                JsExpr.Callish($"{JsExprWriter.WriteIn(leftIr, JsPrecedence.Call)}.{method}({right})"));
-        }
+            && UserDefinedOperators.Binary(compoundMethod, op[..^1], left, right) is not null)
+            return Compound((current, operand) => UserDefinedOperators.Binary(compoundMethod, op[..^1],
+                JsExprWriter.Write(current), JsExprWriter.Write(operand))!);
 
         var leftType = context.SemanticHelper.GetType(assignment.Left);
-        var rightType = context.SemanticHelper.GetType(assignment.Right);
-
-        // A float STORED is a single: the computed double rounds at the assignment (FloatStore).
-        if (op == "=" && leftType is { SpecialType: SpecialType.System_Single })
-            rightIr = FloatStore.Settle(assignment.Right, rightIr, context);
-
-        // A compound on a CHAR TARGET writes a character back: `c += 1` steps it. A char on the
-        // RIGHT arrives as its code unit already — ValueFlow settles the promotion the bound tree
-        // records, wherever C# applies it.
-        if (op.Length >= 2 && op[^1] == '=' && op != "==" && op != "!=" && op != "<=" && op != ">=")
+        if (op.Length >= 2 && op[^1] == '=' && op is not ("==" or "!=" or "<=" or ">=" or "??="))
         {
             var binaryOp = op[..^1];
-            if (leftType is { SpecialType: SpecialType.System_Char } && binaryOp is "+" or "-")
-                return JsExpr.Binary(leftIr, "=", JsExpr.Callish(
-                    $"String.fromCharCode({JsExprWriter.WriteIn(leftIr, JsPrecedence.Call)}.charCodeAt(0) {binaryOp} {JsExprWriter.WriteIn(rightIr, JsPrecedence.Additive)})"));
-
-            // A fixed-width target settles the compound result by its type (IntegerWidth), and a
-            // float target rounds it to single precision.
-            if (binaryOp is "+" or "-" or "*" or "<<" && IntegerWidth.Of(leftType) is { } width)
+            // A NULLABLE number follows its type's rule inside the lift, as C#'s lifted operator
+            // does (#372): a null target or a null value answers null, and a value is computed
+            // exactly as the underlying type computes it. JavaScript's own `op=` read a null target
+            // as 0, and no rule below reached a nullable target: a float? added doubles, a byte?
+            // never wrapped, and a decimal?'s `+=` called a method on null.
+            if (NullableLift.IsNullableNumber(leftType, out var value))
             {
-                var arithmetic = ArithmeticContext.Of(assignment, context);
-                if (arithmetic.IsChecked || arithmetic.ExplicitUnchecked || IntegerWidth.WrapsByDefault(width))
-                {
-                    var computed = binaryOp == "*" && width.Bits == 32 && !arithmetic.IsChecked
-                        ? (JsExpr)JsExpr.Callish($"Math.imul({left}, {JsExprWriter.Write(rightIr)})")
-                        : JsExpr.Binary(leftIr, binaryOp, rightIr);
-                    return JsExpr.Binary(leftIr, "=", IntegerWidth.Settle(computed, leftType,
-                        arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context));
-                }
+                var rule = Rule(binaryOp, value, assignment, context)
+                    ?? ((current, operand) => JsExpr.Binary(current, binaryOp, operand));
+                return Compound((current, operand) => NullableLift.Binary(current, operand, rule, context));
             }
-            if (binaryOp is "+" or "-" or "*" or "/" or "%" && leftType is { SpecialType: SpecialType.System_Single })
-                return JsExpr.Binary(leftIr, "=", FloatStore.Round(JsExpr.Binary(leftIr, binaryOp, rightIr)));
+            if (Rule(binaryOp, leftType, assignment, context) is { } typed) return Compound(typed);
         }
 
-        // `x /= y` on integers is integer division, exactly like `x = x / y` — the compound form
-        // used to reach JavaScript's `/=`, which divides as a double. NOT for a long target: its
-        // BigInt `/` already truncates, and Math.trunc rejects a BigInt outright.
-        // Built as IR, not as a template: a right-hand side that is a ternary (`x /= c ? 4 : 1`)
-        // has to be fenced under the `/`, and the writer is the one that knows.
-        if (op == "/=" && context.SemanticHelper.GetType(assignment.Left).IsIntegral()
-            && !context.SemanticHelper.GetType(assignment.Left).IsLong())
-            return JsExpr.Binary(leftIr, "=",
-                JsExpr.Call(JsExpr.Identifier("Math.trunc"), JsExpr.Binary(leftIr, "/", rightIr)));
+        // A dictionary entry has no operator of its own to fall back on: its read is the guard.
+        if (entry is not null) return Compound((current, operand) => JsExpr.Binary(current, op[..^1], operand));
 
         // An assignment NODE: right-associative at the loosest level, so `a = b = c` chains and
         // an assignment used as an operand is fenced by whoever places it.
         return JsExpr.Binary(leftIr, op, rightIr);
+    }
+
+    /// <summary>
+    /// The value a compound computes on a target of <paramref name="type"/> where JavaScript's own
+    /// operator would compute another, or null where it computes C#'s. The rule is written over the
+    /// current value and the operand, so a nullable target applies it to what the lift hands it.
+    /// </summary>
+    private static Func<JsExpr, JsExpr, JsExpr>? Rule(string binaryOp, ITypeSymbol? type,
+        AssignmentExpressionSyntax assignment, ConversionContext context)
+    {
+        // A DECIMAL is arithmetic on the runtime Decimal: `total += amount` emitted bare concatenates
+        // their text. A running money total read "R$ 01240.5089.90640.00": the seed, then each
+        // amount, glued end to end. The target IS a Decimal (typed world) and the VALUE arrives
+        // converted: the bound tree wraps a mixed value in the conversion, and ValueFlow settles it
+        // like any other flow.
+        if (binaryOp is "+" or "-" or "*" or "/" or "%" && type.IsDecimal())
+        {
+            var method = binaryOp switch { "+" => "add", "-" => "sub", "*" => "mul", "/" => "div", _ => "mod" };
+            return (current, operand) => JsExpr.Callish(
+                $"{JsExprWriter.WriteIn(current, JsPrecedence.Call)}.{method}({JsExprWriter.Write(operand)})");
+        }
+
+        // A CHAR target writes a character back: `c += 1` steps it. A char on the RIGHT arrives as
+        // its code unit already: ValueFlow settles the promotion the bound tree records, wherever C#
+        // applies it.
+        if (type is { SpecialType: SpecialType.System_Char } && binaryOp is "+" or "-")
+            return (current, operand) => JsExpr.Callish(
+                $"String.fromCharCode({JsExprWriter.WriteIn(current, JsPrecedence.Call)}.charCodeAt(0) {binaryOp} {JsExprWriter.WriteIn(operand, JsPrecedence.Additive)})");
+
+        // A 64-bit target shifts as C# shifts a long (IntegerWidth.LongShift): the count, an int,
+        // became a BigInt nowhere, so `l >>= 1` threw a TypeError.
+        if (binaryOp is "<<" or ">>" or ">>>" && IntegerWidth.Of(type) is { Bits: 64 } wide)
+        {
+            context.SemanticHelper.TryGetConstantValue(assignment.Right, out var count);
+            return (current, operand) => IntegerWidth.LongShift(binaryOp, current, operand, count, wide.Unsigned, context);
+        }
+
+        // A fixed-width target settles the compound result by its type (IntegerWidth), and a float
+        // target rounds it to single precision, every one of the five, because a double on the
+        // right makes it `(float)(x op y)`, and a remainder by a double is not a single.
+        if (binaryOp is "+" or "-" or "*" or "<<" && IntegerWidth.Of(type) is { } width)
+        {
+            var arithmetic = ArithmeticContext.Of(assignment, context);
+            if (arithmetic.IsChecked || arithmetic.ExplicitUnchecked || IntegerWidth.WrapsByDefault(width))
+            {
+                return (current, operand) => IntegerWidth.Settle(
+                    binaryOp == "*" && width.Bits == 32 && !arithmetic.IsChecked
+                        ? JsExpr.Callish($"Math.imul({JsExprWriter.Write(current)}, {JsExprWriter.Write(operand)})")
+                        : JsExpr.Binary(current, binaryOp, operand),
+                    type, arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context);
+            }
+        }
+        // A bitwise compound writes the target's width back (IntegerWidth.Bitwise): a uint's `&=`
+        // stored -1 for uint.MaxValue, and its `>>=` shifted a sign in.
+        if (binaryOp is "&" or "|" or "^" or ">>" or ">>>" && IntegerWidth.Of(type) is { } bits
+            && IntegerWidth.Bitwise(binaryOp, JsExpr.Identifier("a"), JsExpr.Identifier("b"), bits) is not null)
+            return (current, operand) => IntegerWidth.Bitwise(binaryOp, current, operand, bits)!;
+        if (binaryOp is "+" or "-" or "*" or "/" or "%" && SinglePrecision.Is(type))
+            return (current, operand) => SinglePrecision.Round(JsExpr.Binary(current, binaryOp, operand));
+
+        // `x /= y` on integers is integer division, exactly like `x = x / y`: the compound form
+        // used to reach JavaScript's `/=`, which divides as a double. Built as IR, not as a
+        // template: a right-hand side that is a ternary (`x /= c ? 4 : 1`) has to be fenced under
+        // the `/`, and the writer is the one that knows. The quotient goes back into the TARGET's
+        // width, as C#'s `x = (T)(x / y)` does: `sbyte s = -128; s /= -1` is -128, not 128.
+        // `%=` joins it where the divisor could throw (#333), and so do a long's two, whose BigInt
+        // operators answer a zero divisor with a RangeError of their own and long.MinValue / -1 with
+        // a quotient no long holds; a long's `/` already truncates. A divisor that settles it keeps
+        // JavaScript's own operator.
+        if (binaryOp is "/" or "%" && type.IsIntegral())
+        {
+            var check = IntegerDivision.NeedsCheck(assignment.Right, context);
+            if (type.IsLong())
+                return check ? (current, operand) => IntegerDivision.OfLongs(binaryOp, current, operand, check: true, context) : null;
+            if (binaryOp == "/" || check)
+            {
+                var arithmetic = ArithmeticContext.Of(assignment, context);
+                return (current, operand) => IntegerWidth.Settle(
+                    IntegerDivision.OfNumbers(binaryOp, current, operand, check, context),
+                    type, arithmetic.IsChecked, arithmetic.ExplicitUnchecked, context);
+            }
+        }
+        return null;
     }
 
     public int Priority => 10;

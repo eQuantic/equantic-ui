@@ -171,24 +171,6 @@ public sealed class CodeDocument
         return new CodeDocument(lines);
     }
 
-    /// <summary>The position one character BEFORE this one — which crosses a line break.</summary>
-    public CodePosition Previous(CodePosition position)
-    {
-        var here = Clamp(position);
-        if (here.Column > 0) return here with { Column = here.Column - 1 };
-        if (here.Line == 0) return CodePosition.Start;
-        return new CodePosition(here.Line - 1, _lines[here.Line - 1].Length);
-    }
-
-    /// <summary>The position one character AFTER this one.</summary>
-    public CodePosition Next(CodePosition position)
-    {
-        var here = Clamp(position);
-        if (here.Column < _lines[here.Line].Length) return here with { Column = here.Column + 1 };
-        if (here.Line == _lines.Count - 1) return here;
-        return new CodePosition(here.Line + 1, 0);
-    }
-
     /// <summary>
     /// Where HOME goes: the first non-blank character, and only the true start when the caret is
     /// already there. Every editor does this, and once you have used it the plain version feels

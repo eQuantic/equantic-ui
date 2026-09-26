@@ -69,7 +69,13 @@ internal sealed partial class WebLoweringVisitor
             // Positioned` missed the moment one came out of a component. It then degraded to its
             // child and joined the flow: a corner button rendered ABOVE the slab it belonged to,
             // silently, which is worse than not rendering at all.
+            var asked = _measurer.Asks;
             var child = ResolveForPositioning(raw);
+            // Counted HERE for a component this stack expanded itself, to see a Positioned through
+            // it: Visit(UiComponent) never runs for one, so a measured component in a Stack was
+            // adopted with the zeros it was built on. Counted before the resolved node lowers, so
+            // the components inside it answer for themselves.
+            var unmeasured = _measurer.Asks > asked;
             if (child is Positioned positioned)
             {
                 var lowered = Lower(positioned.Child, horizontalAxis: null);
@@ -95,6 +101,8 @@ internal sealed partial class WebLoweringVisitor
                         ZIndex = (positioned.Layer != 0 ? positioned.Layer : depth).ToString(),
                     },
                 };
+                // The ANCHOR is marked, not what it holds: its offsets came from the same Build.
+                if (unmeasured) MarkUnmeasured(anchor);
                 anchor.Children.Add(lowered);
                 element.Children.Add(anchor);
             }
@@ -102,6 +110,7 @@ internal sealed partial class WebLoweringVisitor
             {
                 var lowered = Lower(child, horizontalAxis: null);
                 if (lowered is null) continue;
+                if (unmeasured) MarkUnmeasured(lowered);
                 // The cell IS the stack's available space (the native MeasureStack contract): it
                 // stretches to the single grid cell and aligns its child via flex — so a Fill child
                 // covers the stack while a hug child sits at the Stack.Align anchor.
@@ -508,6 +517,11 @@ internal sealed partial class WebLoweringVisitor
                 MinWidth = "0",
                 MinHeight = "0",
                 MaxWidth = "100%",
+                // The offset is the app's and the reader's, never the browser's guess. Scroll
+                // anchoring moved it whenever a windowed list swapped the rows above what was on
+                // screen, and a match the code editor's find had brought into view slid back out.
+                // Photon anchors nothing (TS twin: lowerScrollView).
+                OverflowAnchor = "none",
             },
         };
         var child = Lower(scroll.Child, horizontalAxis: null);
@@ -610,6 +624,14 @@ internal sealed partial class WebLoweringVisitor
             {
                 // Photon borders draw INSIDE the bounds — border-box is the CSS-parity contract.
                 BoxSizing = "border-box",
+                // A CAP with no decided height bounds the child, as the layout engine does: as a
+                // flex column, a child that may shrink (a scroller, a Fill box, both `min-height:
+                // 0`) takes the capped height and scrolls, and any other child keeps the content
+                // height a block gave it. As a block, a scroller's `height: 100%` resolved against
+                // no height at all, it grew with its content inside a box that clipped it, and
+                // nothing scrolled (defect 4 of docs/CODE-EDITOR-PLAN.md).
+                Display = CapsItsChild(box) ? Display.Flex : null,
+                FlexDirection = CapsItsChild(box) ? FlexDirection.Column : null,
                 Width = Size(style.Width),
                 Height = Size(style.Height, vertical: true),
                 FlexShrink = Rigid(style.Width, style.Height),
@@ -735,6 +757,14 @@ internal sealed partial class WebLoweringVisitor
         }
         return element;
     }
+
+    /// <summary>Whether this box bounds its child by a cap alone: a height cap, no decided height,
+    /// and a child to bound (see <see cref="LowerBox"/>; the TypeScript twin is
+    /// <c>capsItsChild</c>).</summary>
+    private static bool CapsItsChild(Box box) =>
+        box.Child is not null
+        && box.Style.Height.Kind == SizeKind.Hug
+        && box.Style.MaxHeight.Kind != SizeKind.Hug;
 
     /// <summary>
     /// Whether this box hands its height down: the box decided one, and the child is an auto-sized

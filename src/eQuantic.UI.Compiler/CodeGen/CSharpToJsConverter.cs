@@ -75,6 +75,28 @@ public class CSharpToJsConverter
     }
 
     /// <summary>Names the array an ITERATOR method is filling — null outside one.</summary>
+    /// <summary>See <see cref="ConversionContext.ConstructorParametersInScope"/>.</summary>
+    /// <summary>
+    /// Converts with a constructor's parameters in scope as bare names (see
+    /// <see cref="ConversionContext.ConstructorParametersInScope"/>), and puts back the scope in
+    /// force before: a record's member defaults and its base clause both run where no member of the
+    /// instance is set yet, and a base clause runs before <c>super()</c>, where reading
+    /// <c>this</c> throws.
+    /// </summary>
+    public T WithConstructorParametersInScope<T>(Func<T> convert)
+    {
+        var previous = _context.ConstructorParametersInScope;
+        _context.ConstructorParametersInScope = true;
+        try
+        {
+            return convert();
+        }
+        finally
+        {
+            _context.ConstructorParametersInScope = previous;
+        }
+    }
+
     public void SetIteratorBuffer(string? buffer)
     {
         _context.IteratorBuffer = buffer;
@@ -118,6 +140,16 @@ public class CSharpToJsConverter
     /// <summary>See <see cref="ConversionContext.UsedRuntimeTypes"/> — output-introduced names the
     /// RUNTIME provides (the declarative factory surface).</summary>
     public HashSet<string> UsedRuntimeTypes => _context.UsedRuntimeTypes;
+
+    /// <summary>
+    /// The default of <paramref name="type"/> as this conversion writes it (<see cref="DefaultValue"/>),
+    /// so every struct the value constructs joins the module's imports, a nested one included, and so
+    /// does the helper. An emitter that asked the table on its own wrote <c>new Outer(new Inner(), 0)</c>
+    /// for a member of a struct whose zero is built member by member, in a module that imported
+    /// Outer, which its syntax names, and never Inner, which only the zero names (found in review,
+    /// #409). This is the door every emitter's default goes through.
+    /// </summary>
+    public string DefaultOf(ITypeSymbol? type) => DefaultValue.Of(type, _context);
 
     /// <summary>Diagnostics raised during the most recent conversion(s); call <see cref="ClearDiagnostics"/> between components.</summary>
     public IReadOnlyList<ConversionDiagnostic> Diagnostics => _context.Diagnostics;
@@ -186,9 +218,12 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<StringMethodStrategy>();
         _strategyRegistry.Register<StringStaticStrategy>(); // New Phase 7
         _strategyRegistry.Register<PrimitiveStaticStrategy>(); // .NET 7+ statics on the primitives themselves
+        _strategyRegistry.Register<TextElementStrategy>();     // StringInfo: grapheme clusters, from the platform
+        _strategyRegistry.Register<UnicodeCategoryStrategy>(); // a character's general category, from the platform
         _strategyRegistry.Register<BclSurfaceTailStrategy>();  // instance tail: Equals/String/Dictionary/List QoL
         _strategyRegistry.Register<ReverseStrategy>();
         _strategyRegistry.Register<LinqTableStrategy>(); // the LINQ surface as a table of shapes
+        _strategyRegistry.Register<LinqStaticFormStrategy>(); // Enumerable.Count(xs): refused, not misread
         _strategyRegistry.Register<ListMethodStrategy>();
         _strategyRegistry.Register<ArrayStaticStrategy>();
 
@@ -513,6 +548,24 @@ public class CSharpToJsConverter
         return sb.Append('"').ToString();
     }
 
+    /// <summary>
+    /// <paramref name="convert"/> run at the depth of a block's statements: where a member's
+    /// expression body sits once it is the one statement of the member's block, so what it lays
+    /// out (a lambda's block, say) indents as it would inside a block body.
+    /// </summary>
+    public T InBlock<T>(Func<T> convert)
+    {
+        _context.Depth++;
+        try
+        {
+            return convert();
+        }
+        finally
+        {
+            _context.Depth--;
+        }
+    }
+
     /// <summary>The block as text, laid out at the current depth — what a strategy still
     /// producing text splices for a nested body.</summary>
     public string ConvertBlock(BlockSyntax block) =>
@@ -549,6 +602,8 @@ public class CSharpToJsConverter
     /// try whose finally disposes the resource — also when the body throws or returns — and
     /// several in one block nest, each disposing in reverse order of declaration. Emitted as a
     /// bare const (which is what it was for a long time), the resource was simply never disposed.
+    /// The try is the declaration's own lowering, so its lines map to it (#293): the dispose that
+    /// throws names the <c>using</c>, not the last statement of the scope above it.
     /// </summary>
     private List<JsStatement> WithUsingDeclarations(IReadOnlyList<StatementSyntax> statements, int from)
     {
@@ -569,7 +624,7 @@ public class CSharpToJsConverter
             var disposes = usingDecl.Declaration.Variables.Reverse()
                 .Select(variable => Strategies.Statements.UsingLowering.Dispose(variable.Identifier.Text.ToJsIdentifier(), isAsync))
                 .ToList();
-            result.Add(JsStatement.Try(JsStatement.Block(rest), Array.Empty<JsCatch>(), JsStatement.Block(disposes)));
+            result.Add(JsStatement.Try(JsStatement.Block(rest), Array.Empty<JsCatch>(), JsStatement.Block(disposes)) with { Origin = usingDecl });
             return result;
         }
         return result;
@@ -579,13 +634,16 @@ public class CSharpToJsConverter
     public string ConvertStatement(StatementSyntax stmt) =>
         JsStatementWriter.Write(ConvertStatementIr(stmt), _context.Layout, _context.Depth);
 
-    /// <summary>The statement as IR — every statement strategy builds one.</summary>
+    /// <summary>The statement as IR — every statement strategy builds one — carrying the C# it
+    /// came from, so the writer can map the line it lands on back to it (#293). A block is left
+    /// unmarked: its statements carry their own origins, and its brace is no line to stop on.</summary>
     public JsStatement ConvertStatementIr(StatementSyntax stmt)
     {
         var strategy = _statementRegistry.FindStrategy(stmt, _context);
         if (strategy != null)
         {
-            return strategy.Convert(stmt, _context);
+            var converted = strategy.Convert(stmt, _context);
+            return stmt is BlockSyntax || converted.Origin is not null ? converted : converted with { Origin = stmt };
         }
 
         if (stmt is BlockSyntax block)

@@ -5,12 +5,12 @@ namespace eQuantic.UI.Primitives;
 /// host may TELL it and what it may ASK it.
 /// <para>
 /// A realizer does two things with a code surface and nothing else. It hands over what the platform
-/// reported — a key, some text, a pointer — and it paints what the model answers: the carets and the
-/// selection, as rectangles in the surface's own coordinates. It never turns a column into pixels and
-/// never decides what a click means. Both used to be decided twice, once in each host, and the two
-/// copies had drifted: the browser could not drag a selection or shift-click, the window could not
-/// shift-click either, and each did its own arithmetic from line and column to pixels
-/// (docs/CODE-EDITOR-PLAN.md, "the shape", §1).
+/// reported — a key, some text, a composition, a pointer, the clipboard's events, focus — and it
+/// paints the one thing that has to blink: the carets, as rectangles in the surface's own
+/// coordinates. Everything else a code surface shows — the selection, the active line, the matches —
+/// is drawn by the component above it, in the code's own layers, so it is the same on every target
+/// and under the text where it belongs. A realizer never turns a column into pixels and never decides
+/// what a click means (docs/CODE-EDITOR-PLAN.md, "the shape", §1).
 /// </para>
 /// <para>
 /// <em>How does Flutter solve it?</em> <c>EditableText</c> owns the editing protocol,
@@ -23,29 +23,63 @@ namespace eQuantic.UI.Primitives;
 /// </summary>
 public interface ICodeSurfaceModel
 {
-    /// <summary>
-    /// The selection to paint: one band per line each selected range covers, in the surface's own
-    /// coordinates. Empty when nothing is selected. A single rectangle over a multi-line range would
-    /// cover the indentation of lines the range never touched, which is why these are per line.
-    /// </summary>
-    IReadOnlyList<Rect> SelectionBands { get; }
-
-    /// <summary>Every caret, the primary first, in the surface's own coordinates.</summary>
+    /// <summary>Every caret, the primary first, in the surface's own coordinates — what a realizer
+    /// paints ON TOP of everything the surface's child drew, and blinks.</summary>
     IReadOnlyList<Rect> Carets { get; }
+
+    /// <summary>
+    /// Changes whenever the primary caret should be brought into view — a key moved it, a command
+    /// did, find stepped to a match. A realizer that sees a new value scrolls whatever contains the
+    /// surface until the caret is inside it; one that sees the same value leaves the scroll alone,
+    /// so a reader's own scrolling is never undone by a rebuild.
+    /// </summary>
+    int RevealVersion { get; }
+
+    /// <summary>
+    /// Changes whenever the surface should TAKE the keyboard: the app asked (a file opened, a panel
+    /// over the code closed), or the editor's own find bar gave it back. A realizer that sees a new
+    /// value gives the surface the keyboard, as a click on it would. It remembers the value per
+    /// MODEL, counting one it has never seen from 0: a request made before the surface was first
+    /// drawn is honoured when it is, and a surface drawn again somewhere else is not focused again
+    /// for a request already honoured.
+    /// </summary>
+    int FocusVersion { get; }
 
     /// <summary>
     /// A key the platform reported, by NAME ("ArrowLeft", "Enter", "Tab", "z"). Answers whether the
     /// editor CLAIMED it: false leaves the key to whatever is around the editor — Escape to the
-    /// dialog it sits in, Tab to the form when nothing can be indented.
+    /// dialog it sits in, Tab to the form once Escape has released it. The
+    /// <paramref name="convention"/> says which keyboard tradition the host's users live in, because
+    /// the same chord means different things in the two (<see cref="KeyboardConvention"/>).
+    /// <paramref name="clipboard"/> is null on a host whose clipboard arrives as events of its own
+    /// (a browser's copy, cut and paste): the copy keys are then left unclaimed, for those events.
     /// </summary>
-    bool HandleKey(string key, KeyModifiers modifiers, ITextClipboard? clipboard);
+    bool HandleKey(string key, KeyModifiers modifiers, KeyboardConvention convention, ITextClipboard? clipboard);
 
     /// <summary>
     /// Text the platform decided the user typed — one character, a dead key's result, an input
     /// method's commit. It arrives as a STRING because what a keystroke produces is the platform's
-    /// business: "á" may be one key or three. Answers whether the document took it.
+    /// business: "á" may be one key or three. A composition in flight is replaced by it. Answers
+    /// whether the document took it.
     /// </summary>
     bool HandleText(string text);
+
+    /// <summary>
+    /// The composition an input method is building, shown in the document as it grows and replaced
+    /// by the next one; <c>""</c> cancels it and leaves the document as it was before it began. The
+    /// platform commits it through <see cref="HandleText"/>.
+    /// </summary>
+    bool SetComposition(string text);
+
+    /// <summary>What a copy takes: the selection, or the caret's whole line when nothing is
+    /// selected.</summary>
+    string CopyText();
+
+    /// <summary>A copy that also removes what it took. Answers the text for the clipboard.</summary>
+    string Cut();
+
+    /// <summary>Text from the clipboard, placed the way a paste places it.</summary>
+    bool Paste(string text);
 
     /// <summary>
     /// A pointer over the surface, at <paramref name="position"/> in the surface's own coordinates.
@@ -54,4 +88,8 @@ public interface ICodeSurfaceModel
     /// the model changed.
     /// </summary>
     bool HandlePointer(PointerPhase phase, Point position, KeyModifiers modifiers, int clicks);
+
+    /// <summary>The surface gained or lost the keyboard. Losing it ends a typing run and cancels a
+    /// composition; gaining it traps Tab again.</summary>
+    void FocusChanged(bool focused);
 }

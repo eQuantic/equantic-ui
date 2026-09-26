@@ -47,13 +47,12 @@ public sealed class CodeSurface : SingleChildNode
     public bool Autofocus { get; init; }
 
     /// <summary>
-    /// The marks' ink, carried HERE rather than decided by each realizer: an editor on an inverse
+    /// The caret's ink, carried HERE rather than decided by each realizer: an editor on an inverse
     /// slab writes with an ink of its own, and a caret painted from the page's theme is invisible on
-    /// exactly the surface people type into. Null falls back to the theme (<c>TextPrimary</c> for
-    /// the caret, <c>FocusRing</c> for the band).
+    /// exactly the surface people type into. Null falls back to the theme's <c>TextPrimary</c>. (The
+    /// selection needs no ink here: the component draws it, in the code's own layers.)
     /// </summary>
     public ColorToken? CaretColor { get; init; }
-    public ColorToken? SelectionColor { get; init; }
 
     public sealed override TResult Accept<TState, TResult>(
         IVisualNodeVisitor<TState, TResult> visitor, TState state) => visitor.Visit(this, state);

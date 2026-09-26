@@ -1,4 +1,4 @@
-import { MermaidEdge, MermaidEdgeRef, MermaidGraph, MermaidMessage, MermaidNode, MermaidNodeRef } from "../runtime-exports";
+import { $eq, MermaidEdge, MermaidEdgeRef, MermaidGraph, MermaidMessage, MermaidNode, MermaidNodeRef } from "../runtime-exports";
 
 export class MermaidParser {
     static _skipWords: string[] | undefined;
@@ -19,7 +19,7 @@ export class MermaidParser {
         let graph = MermaidParser.headerOf(lines);
         if (graph == null) return null;
         for (let i = 0; i < lines.length; i++) {
-            let line = MermaidParser.stripComment(lines[i]).trim();
+            let line = $eq.text.trim(MermaidParser.stripComment(lines[i]));
             if (line.length === 0) continue;
             if (MermaidParser.isHeader(line)) continue;
             if (graph.kind === 'sequence') MermaidParser.parseSequenceLine(graph, line); else MermaidParser.parseFlowchartLine(graph, line);
@@ -30,11 +30,11 @@ export class MermaidParser {
 
     static headerOf(lines: string[]) {
         for (let i = 0; i < lines.length; i++) {
-            let line = MermaidParser.stripComment(lines[i]).trim();
+            let line = $eq.text.trim(MermaidParser.stripComment(lines[i]));
             if (line.length === 0) continue;
             if (line.startsWith('sequenceDiagram')) return new MermaidGraph({ kind: 'sequence' });
             let rest = '';
-            if (line.startsWith('flowchart')) rest = line.slice(9).trim(); else if (line.startsWith('graph')) rest = line.slice(5).trim(); else return null;
+            if (line.startsWith('flowchart')) rest = $eq.text.trim(line.slice(9)); else if (line.startsWith('graph')) rest = $eq.text.trim(line.slice(5)); else return null;
             if (rest === 'TD' || rest === 'TB') return new MermaidGraph({ vertical: true });
             if (rest === 'LR') return new MermaidGraph({ vertical: false });
             return null;
@@ -115,7 +115,7 @@ export class MermaidParser {
     static closeShape(text: string, from: number, closer: string, shape: string, node: MermaidNodeRef) {
         let close = text.indexOf(closer, from);
         if (close < 0) return null;
-        let label = text.slice(from, close).trim();
+        let label = $eq.text.trim(text.slice(from, close));
         if (label.startsWith('"') && label.endsWith('"') && label.length >= 2) label = label.slice(1, (label.length - 1));
         node.label = label;
         node.shape = shape;
@@ -139,7 +139,7 @@ export class MermaidParser {
         if (after < text.length && text[after] === '|') {
             let close = text.indexOf('|', after + 1);
             if (close > after) {
-                edge.label = text.slice((after + 1), close).trim();
+                edge.label = $eq.text.trim(text.slice((after + 1), close));
                 edge.end = close + 1;
             }
         }
@@ -148,26 +148,26 @@ export class MermaidParser {
 
     static parseSequenceLine(graph: MermaidGraph, line: string) {
         if (line.startsWith('participant ') || line.startsWith('actor ')) {
-            let rest = line.slice((line.indexOf(' ') + 1)).trim();
+            let rest = $eq.text.trim(line.slice((line.indexOf(' ') + 1)));
             let alias = rest;
             let display = rest;
             let asAt = rest.indexOf(' as ');
             if (asAt > 0) {
-                alias = rest.slice(0, asAt).trim();
-                display = rest.slice((asAt + 4)).trim();
+                alias = $eq.text.trim(rest.slice(0, asAt));
+                display = $eq.text.trim(rest.slice((asAt + 4)));
             }
             MermaidParser.declareParticipant(graph, alias, display);
             return;
         }
         let colon = line.indexOf(':');
         if (colon <= 0) return;
-        let head = line.slice(0, colon).trim();
-        let label = line.slice((colon + 1)).trim();
+        let head = $eq.text.trim(line.slice(0, colon));
+        let label = $eq.text.trim(line.slice((colon + 1)));
         for (const arrow of MermaidParser.messageArrows) {
             let at = head.indexOf(arrow);
             if (at <= 0) continue;
-            let from = head.slice(0, at).trim();
-            let to = head.slice((at + arrow.length)).trim();
+            let from = $eq.text.trim(head.slice(0, at));
+            let to = $eq.text.trim(head.slice((at + arrow.length)));
             if (from.length === 0 || to.length === 0) return;
             MermaidParser.declareParticipant(graph, from, from);
             MermaidParser.declareParticipant(graph, to, to);

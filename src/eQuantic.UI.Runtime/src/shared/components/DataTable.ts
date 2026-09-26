@@ -4,6 +4,11 @@ export class DataTable extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.DataTable';
     static rowHeight: number = 52;
     static checkboxTrack: number = 44;
+
+    static get $hydration() {
+        return { columns: [DataColumn] };
+    }
+
     declare columns: DataColumn[];
     declare rows: DataRow[];
     declare sortColumn: number;
@@ -48,7 +53,7 @@ export class DataTable extends StatelessComponent {
     }
 
     tracks() {
-        let tracks = new Array(this.columns.length + (this.selectable ? 1 : 0)).fill(null);
+        let tracks = new Array(this.columns.length + (this.selectable ? 1 : 0)).fill(undefined);
         let offset = 0;
         if (this.selectable) tracks[offset++] = GridTrack.fixed(DataTable.checkboxTrack);
         for (let i = 0; i < this.columns.length; i++) tracks[offset + i] = this.columns[i].track;

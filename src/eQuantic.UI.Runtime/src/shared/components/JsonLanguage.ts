@@ -1,4 +1,4 @@
-import { CodeLanguageRules, CodeToken } from "../runtime-exports";
+import { $eq, CodeLanguageRules, CodeToken } from "../runtime-exports";
 
 export class JsonLanguage {
     constructor(props?: any) {
@@ -9,13 +9,13 @@ export class JsonLanguage {
         return 'JSON';
     }
 
-    rules: CodeLanguageRules = new CodeLanguageRules(null, null, [['(', ')'], ['[', ']'], ['{', '}']], ['"'], ['{', '(', '['], ['}', ')', ']'], 2);
+    rules: CodeLanguageRules = new CodeLanguageRules(undefined, undefined, undefined, ['"'], undefined, undefined, 2);
 
     tokenize(line: string, _state: number, into: CodeToken[]) {
         let i = 0;
         while (i < line.length) {
             let c = line[i];
-            if ((/^\s$/.test(c))) {
+            if ($eq.text.isWhiteSpace(c)) {
                 i++;
                 continue;
             }
@@ -58,7 +58,7 @@ export class JsonLanguage {
     }
 
     static nextNonSpace(line: string, from: number) {
-        for (let i = from; i < line.length; i++) if (!(/^\s$/.test(line[i]))) return line[i];
+        for (let i = from; i < line.length; i++) if (!$eq.text.isWhiteSpace(line[i])) return line[i];
         return '\0';
     }
 }

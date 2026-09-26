@@ -25,8 +25,15 @@ public class CultureCrossingTests
             using System;
             using System.Globalization;
             using eQuantic.UI.Primitives;
+            using Cultures = System.Globalization.CultureInfo;
 
             namespace Demo;
+
+            // A member called InvariantCulture that is not CultureInfo's own: it may return any culture.
+            public static class Lookalike
+            {
+                public static CultureInfo InvariantCulture => CultureInfo.CurrentCulture;
+            }
 
             public sealed class Readout : StatelessComponent
             {
@@ -52,11 +59,13 @@ public class CultureCrossingTests
 
         var compiler = new ComponentCompiler();
         compiler.SetProjectCompilation(compilation);
-        return compiler.CompileSource(source, "Readout.cs").Single();
+        return compiler.CompileSource(source, "Readout.cs").Single(result => result.ComponentName == "Readout");
     }
 
-    /// <summary>The escape has to compile. `String(x)` IS .NET's invariant rendering of a
-    /// number, so the ask is answered exactly rather than approximated.</summary>
+    /// <summary>The escape has to compile, and the invariant ask is answered exactly: by the
+    /// printer that writes a float's own shortest digits, as .NET's invariant text does. `String()`
+    /// was taken for that rendering and is not one: of this 0.55f it writes 0.550000011920929, the
+    /// double underneath (#336).</summary>
     [Fact]
     public void TheInvariantCulture_CrossesAsPlainConversion()
     {
@@ -64,7 +73,7 @@ public class CultureCrossingTests
 
         Assert.True(result.Success);
         Assert.DoesNotContain("CultureInfo", result.TypeScript);
-        Assert.Contains("String(this._value)", result.TypeScript);
+        Assert.Contains("$eq.num.single(this._value)", result.TypeScript);
     }
 
     /// <summary>With a specifier, the invariance has to reach the FORMATTER: every path in it reads
@@ -77,7 +86,8 @@ public class CultureCrossingTests
 
         Assert.True(result.Success);
         Assert.DoesNotContain("CultureInfo", result.TypeScript);
-        Assert.Contains("$eq.text.format(this._value, '0.##', undefined, true)", result.TypeScript);
+        // The float says it is one (#378): its `G` and `R` digits are a single's.
+        Assert.Contains("$eq.text.format(this._value, '0.##', undefined, true, 'single')", result.TypeScript);
     }
 
     /// <summary>A specifier alone is the CULTURE-following shape, and it already crossed correctly.
@@ -89,7 +99,7 @@ public class CultureCrossingTests
         var result = Compile("_value.ToString(\"N2\")");
 
         Assert.True(result.Success);
-        Assert.Contains("$eq.text.format(this._value, 'N2')", result.TypeScript);
+        Assert.Contains("$eq.text.format(this._value, 'N2', undefined, undefined, 'single')", result.TypeScript);
     }
 
     /// <summary>The quiet one: the shape everybody writes, which means two different things.</summary>
@@ -115,7 +125,35 @@ public class CultureCrossingTests
 
         Assert.True(result.Success);
         Assert.DoesNotContain("CultureInfo", result.TypeScript);
-        Assert.Contains("String(", result.TypeScript);
+        Assert.Contains("$eq.num.single($eq.math.roundSingle(", result.TypeScript);
+    }
+
+    /// <summary>The culture is the PROPERTY the provider binds to, not its name: an alias names
+    /// CultureInfo's own and crosses, and a lookalike of another type is refused, since it may
+    /// return any culture. Reading a number follows the same rule, and so does the current culture:
+    /// the thread's is the same value, but only CultureInfo's property is taken for it.</summary>
+    [Theory]
+    [InlineData("_value.ToString(Cultures.InvariantCulture)", true)]
+    [InlineData("_value.ToString(Lookalike.InvariantCulture)", false)]
+    [InlineData("decimal.Parse(\"1.5\", Cultures.InvariantCulture).ToString(CultureInfo.InvariantCulture)", true)]
+    [InlineData("decimal.Parse(\"1.5\", Lookalike.InvariantCulture).ToString(CultureInfo.InvariantCulture)", false)]
+    // The thread's culture is the same value, but not CultureInfo's property: it is named as that.
+    [InlineData("_value.ToString(\"N2\", System.Threading.Thread.CurrentThread.CurrentCulture)", false)]
+    [InlineData("_value.ToString(\"N2\", Cultures.CurrentCulture)", true)]
+    public void ACulture_IsRecognisedByItsSymbol(string body, bool crosses)
+    {
+        var result = Compile(body);
+
+        if (crosses)
+        {
+            Assert.True(result.Success, string.Join("; ", result.Errors.Select(e => e.Message)));
+            Assert.DoesNotContain("CultureInfo", result.TypeScript);
+            Assert.DoesNotContain("Cultures", result.TypeScript);
+        }
+        else
+        {
+            Assert.Single(result.Errors, e => e.Code == "EQ2108");
+        }
     }
 
     /// <summary>A provider the subset cannot honour is refused where the developer can see it,

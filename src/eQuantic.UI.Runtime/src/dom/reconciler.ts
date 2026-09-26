@@ -6,6 +6,7 @@
  */
 
 import { HtmlNode, EventHandler } from '../core/types';
+import { claimedByShortcut } from './shortcuts';
 
 /**
  * The MOUNT hook: a reserved `events` key that is not a DOM event — the reconciler calls it once,
@@ -15,6 +16,14 @@ import { HtmlNode, EventHandler } from '../core/types';
  * separate steps of the same synchronous render).
  */
 export const MOUNTED_HOOK = 'eq:mounted';
+
+/**
+ * The server's mark on a subtree it laid out on widths it could not MEASURE (the C#
+ * `WebLoweringVisitor.UnmeasuredMark`, written as a data attribute): it has no fonts, so a
+ * component whose geometry is text geometry was built on zeros there. Hydration draws that subtree
+ * rather than adopting it.
+ */
+export const UNMEASURED_MARK = 'data-eq-unmeasured';
 
 function runMountHook(element: Element, handler: EventHandler): void {
   const run = () => (handler as unknown as (el: Element) => void)(element);
@@ -407,6 +416,10 @@ export class Reconciler {
    */
   private createEventHandler(eventName: string, handler: EventHandler): (e: Event) => void {
     return (e: Event) => {
+      // 0. A key a Shortcut took reaches no element's own handler (see claimedByShortcut). Escape
+      // closing the code editor's find bar also reached the editor, which released its Tab.
+      if (eventName === 'keydown' && claimedByShortcut(e)) return;
+
       // 1. Value Change Events (Input, Change)
       if (eventName === 'change' || eventName === 'input') {
         const value = this.extractEventValue(e);
@@ -900,6 +913,20 @@ export class Reconciler {
       return result;
     }
 
+    // DRAWN, not adopted: the server built this subtree on widths it could not measure. Adopting it
+    // kept those zeros for good, because nothing below this line touches the server's markup, and
+    // every code block the server sent kept a 12px gutter. Checked before the tag, because what
+    // the server wrote in there is a draft the client replaces, not a tree it has to agree with.
+    if (existingElement.hasAttribute(UNMEASURED_MARK)) {
+      existingElement.replaceWith(
+        this.createDomElement(virtualNode, existingElement.parentNode ?? undefined),
+      );
+      // Its listeners are attached all the same, and the diagnostics count them as the adopted
+      // path does.
+      result.attachedListeners += Reconciler.listenersIn(virtualNode);
+      return result;
+    }
+
     // Validate tag match
     if (existingElement.tagName.toLowerCase() !== virtualNode.tag.toLowerCase()) {
       result.warnings.push(
@@ -956,6 +983,13 @@ export class Reconciler {
     }
 
     return result;
+  }
+
+  /** How many listeners a virtual subtree carries, counted the way the adopted path counts them. */
+  private static listenersIn(node: HtmlNode): number {
+    let count = node.events ? Object.keys(node.events).length : 0;
+    for (const child of node.children ?? []) count += Reconciler.listenersIn(child);
+    return count;
   }
 
   /**

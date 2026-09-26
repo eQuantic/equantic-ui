@@ -143,6 +143,108 @@ public class CodeEditorControllerTests
         editor.Document.Line(0).Should().Be("    x", "indentation goes back the way it came");
     }
 
+    /// <summary>
+    /// The selection a Tab indents comes back as it was, each end moved by what its own line gained
+    /// and in its own direction. It was rebuilt from the caret the edit had left, anchored on the
+    /// first line and running to the end of the last, whatever had been selected.
+    /// </summary>
+    [Fact]
+    public void TabKeepsTheSelectionItIndented_EachEndMovedWithItsLine()
+    {
+        var editor = Editor("one\ntwo\nthree");
+        editor.Selection = new CodeRange(new CodePosition(2, 2), new CodePosition(0, 1));   // made upward
+        editor.Indent();
+
+        editor.Selection.Anchor.Should().Be(new CodePosition(2, 6));
+        editor.Selection.Focus.Should().Be(new CodePosition(0, 5));
+    }
+
+    [Fact]
+    public void AWholeLineSelectionStaysWhole_AcrossTabAndShiftTab()
+    {
+        var editor = Editor("one\ntwo\nthree");
+        var whole = new CodeRange(new CodePosition(0, 0), new CodePosition(2, 0));
+        editor.Selection = whole;
+
+        editor.Indent();
+        editor.Selection.Should().Be(whole, "an end at column 0 stays there, so the lines are still whole");
+        editor.Outdent();
+        editor.Document.Lines.Should().Equal("one", "two", "three");
+        editor.Selection.Should().Be(whole);
+    }
+
+    /// <summary>Shift+Tab takes up to one step off each line, and a line indented by less than a
+    /// step loses all of it: it used to lose one character.</summary>
+    [Fact]
+    public void ShiftTabMovesEachEndBackByWhatItsLineLost()
+    {
+        var editor = Editor("    one\n  two");
+        editor.Selection = new CodeRange(new CodePosition(0, 6), new CodePosition(1, 1));
+        editor.Outdent();
+
+        editor.Document.Lines.Should().Equal("one", "two");
+        editor.Selection.Anchor.Should().Be(new CodePosition(0, 2));
+        editor.Selection.Focus.Should().Be(new CodePosition(1, 0), "a column inside what went lands where it began");
+    }
+
+    /// <summary>
+    /// A closing brace typed where only indentation is before it steps back to its block, which is
+    /// what the language's <c>OutdentOn</c> has always said and nothing ever read.
+    /// </summary>
+    [Fact]
+    public void AClosingBraceTypedOnAnIndentedEmptyLineStepsBackToItsBlock()
+    {
+        var editor = Editor("if (x) {\n        ");
+        editor.Selection = new CodeRange(new CodePosition(1, 8));
+        editor.Type('}');
+
+        editor.Document.Line(1).Should().Be("    }");
+        editor.Caret.Should().Be(new CodePosition(1, 5));
+    }
+
+    [Fact]
+    public void AClosingBraceAfterCodeStaysWhereItIsTyped()
+    {
+        var editor = Editor("    x = {");
+        editor.Type('}');
+
+        editor.Document.Line(0).Should().Be("    x = {}");
+    }
+
+    /// <summary>
+    /// Typing over a selection is one step with the run typed after it: the history joined only an
+    /// edit that removed nothing, so the first character over a selection began a step of its own
+    /// and undo took two presses. Measured in Chromium while driving slice 1a.
+    /// </summary>
+    [Fact]
+    public void TypingOverASelectionIsOneUndoStep_WithTheRestOfTheRun()
+    {
+        var editor = Editor("var name = 1;");
+        editor.Selection = new CodeRange(new CodePosition(0, 4), new CodePosition(0, 8));
+        editor.Type('i');
+        editor.Type('d');
+        editor.Document.Line(0).Should().Be("var id = 1;");
+
+        editor.Undo();
+
+        editor.Document.Line(0).Should().Be("var name = 1;");
+    }
+
+    /// <summary>A paste is a step of its own, as the history's own comment says: typing after it
+    /// joined it, so one undo took the paste and the typing together.</summary>
+    [Fact]
+    public void APasteIsAStepOfItsOwn_NotTheStartOfATypingRun()
+    {
+        var editor = Editor("x");
+        editor.Paste("abc");
+        editor.Type('d');
+
+        editor.Undo();
+        editor.Document.Text.Should().Be("xabc");
+        editor.Undo();
+        editor.Document.Text.Should().Be("x");
+    }
+
     // ---- comments -------------------------------------------------------------------------------
 
     [Fact]
@@ -155,6 +257,24 @@ public class CodeEditorControllerTests
         editor.Selection = new CodeRange(new CodePosition(0, 0));
         editor.ToggleLineComment();
         editor.Document.Line(0).Should().Be("    var x = 1;");
+    }
+
+    /// <summary>⌘/ keeps the selection over what it commented, the markers inside it. It dropped
+    /// the selection to the caret the edit left, so a second ⌘/ could not take the markers back.</summary>
+    [Fact]
+    public void ToggleCommentKeepsTheSelection_OverWhatItCommented()
+    {
+        var editor = Editor("    one\n    two");
+        var before = new CodeRange(new CodePosition(0, 4), new CodePosition(1, 7));
+        editor.Selection = before;
+
+        editor.ToggleLineComment();
+        editor.Document.Lines.Should().Equal("    // one", "    // two");
+        editor.Selection.Should().Be(new CodeRange(new CodePosition(0, 4), new CodePosition(1, 10)));
+
+        editor.ToggleLineComment();
+        editor.Document.Lines.Should().Equal("    one", "    two");
+        editor.Selection.Should().Be(before);
     }
 
     [Fact]

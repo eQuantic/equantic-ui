@@ -47,4 +47,14 @@ describe('Structural equality ($eq.equals)', () => {
     // record holding a decimal field
     expect(equals({ price: dec('9.99') }, { price: dec('9.99') })).toBe(true);
   });
+
+  it("holds NaN equal to itself, as a double's Equals does", () => {
+    // EqualityComparer<double>.Default: two records with a NaN member are one key in .NET.
+    expect(equals(NaN, NaN)).toBe(true);
+    expect(equals({ x: NaN }, { x: NaN })).toBe(true);
+    expect(equals([NaN, 1], [NaN, 1])).toBe(true); // a tuple's Equals
+    expect(equals(0, -0)).toBe(true);
+    expect(equals(NaN, 0)).toBe(false);
+    expect(equals(1, 2)).toBe(false);
+  });
 });

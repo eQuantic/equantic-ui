@@ -6,37 +6,148 @@
  * differs from the JS built-ins.
  */
 
-/**
- * Rounds like .NET's `Math.Round` — banker's rounding (MidpointRounding.ToEven) — instead of
- * JavaScript's `Math.round` (which rounds halves toward +Infinity).
- *
- * Examples (matching .NET): round(2.5) === 2, round(3.5) === 4, round(-2.5) === -2,
- * round(2.345, 2) === 2.34.
- *
- * Note: this operates on IEEE-754 doubles, so midpoints that aren't exactly representable
- * (e.g. 2.675) follow the double's actual value, which can differ from .NET's decimal-aware
- * rounding. Exact decimal rounding belongs to the Decimal compat type.
- */
-export function round(value: number, digits = 0): number {
-  if (!Number.isFinite(value)) return value;
+/** A `MidpointRounding` as it crosses: enums are their member names on this side. */
+export type MidpointRounding =
+  | 'toEven'
+  | 'awayFromZero'
+  | 'toZero'
+  | 'toNegativeInfinity'
+  | 'toPositiveInfinity';
 
-  const factor = 10 ** digits;
-  const scaled = value * factor;
-  return roundHalfToEven(scaled) / factor;
+/**
+ * Rounds like .NET's `Math.Round(double, int, MidpointRounding)` — by default banker's rounding
+ * (ToEven), which JavaScript's `Math.round` is not (it sends every half toward +Infinity).
+ *
+ * The SAME arithmetic .NET runs, not an approximation of it: scale by the power of ten, round the
+ * scaled double, divide back — and leave a value at or past 1e16 alone, where every double is a
+ * whole number already. The midpoint is detected EXACTLY: `0.5015 * 1000` is 501.49999999999994,
+ * so .NET answers 0.501 and so does this — a tolerance here once called it a half and answered
+ * 0.502, and rounded 2.5000000001 down to 2. A digit count outside 0..15 throws, as .NET's does.
+ */
+export function round(value: number, digits = 0, mode: MidpointRounding = 'toEven'): number {
+  if (!Number.isInteger(digits) || digits < 0 || digits > 15) {
+    throw new RangeError('Rounding digits must be between 0 and 15, inclusive.');
+  }
+  if (!Number.isFinite(value) || Math.abs(value) >= 1e16) return value;
+  if (digits === 0) return roundBy(value, mode, false);
+  const power10 = 10 ** digits;
+  return roundBy(value * power10, mode, false) / power10;
 }
 
-function roundHalfToEven(x: number): number {
-  const floor = Math.floor(x);
-  const fraction = x - floor;
-  const EPSILON = 1e-9;
-
-  // Exact midpoint → round to the even neighbour.
-  if (Math.abs(fraction - 0.5) < EPSILON) {
-    return floor % 2 === 0 ? floor : floor + 1;
+/**
+ * Rounds like .NET's `MathF.Round(float, int, MidpointRounding)`: the same algorithm in SINGLE
+ * precision — the scaling multiply and the dividing back are float operations, each rounded, and
+ * the limit is 1e8. A digit count outside 0..6 throws, as .NET's does.
+ */
+export function roundSingle(value: number, digits = 0, mode: MidpointRounding = 'toEven'): number {
+  if (!Number.isInteger(digits) || digits < 0 || digits > 6) {
+    throw new RangeError('Rounding digits must be between 0 and 6, inclusive.');
   }
+  if (!Number.isFinite(value) || Math.abs(value) >= 1e8) return value;
+  if (digits === 0) return roundBy(value, mode, true);
+  const power10 = 10 ** digits;
+  return Math.fround(roundBy(Math.fround(value * power10), mode, true) / power10);
+}
 
-  // Otherwise normal rounding.
-  return Math.round(x);
+const MODES: ReadonlySet<string> = new Set<MidpointRounding>([
+  'toEven',
+  'awayFromZero',
+  'toZero',
+  'toNegativeInfinity',
+  'toPositiveInfinity',
+]);
+
+function requireMode(mode: MidpointRounding): void {
+  if (!MODES.has(mode)) {
+    throw new RangeError(
+      `The value '${String(mode)}' is not valid for this usage of the type MidpointRounding.`,
+    );
+  }
+}
+
+/**
+ * `Math.Round(double, MidpointRounding)`, the overload that takes a mode and no digits. .NET's reads
+ * the mode FIRST (a switch over it), so one that is not a mode throws even for a value not rounded,
+ * infinite or past 1e16. The digits overload returns such a value unread, which is what `round`
+ * does. Measured on .NET 10: `Math.Round(Infinity, (MidpointRounding)99)` throws and
+ * `Math.Round(Infinity, 2, (MidpointRounding)99)` answers Infinity.
+ */
+export function roundWithMode(value: number, mode: MidpointRounding): number {
+  requireMode(mode);
+  return round(value, 0, mode);
+}
+
+/** `MathF.Round(float, MidpointRounding)`: the same order in single precision. */
+export function roundSingleWithMode(value: number, mode: MidpointRounding): number {
+  requireMode(mode);
+  return roundSingle(value, 0, mode);
+}
+
+/**
+ * A whole number by .NET's rule for each mode. AwayFromZero is .NET's managed form, transcribed:
+ * add the largest value below one half, carrying the sign, and truncate — exact at every double
+ * (and, with `single`, at every single, the addition rounded as a float operation).
+ */
+function roundBy(x: number, mode: MidpointRounding, single: boolean): number {
+  switch (mode) {
+    case 'toEven':
+      return roundHalfToEven(x);
+    case 'awayFromZero': {
+      const almostHalf = single ? 0.4999999701976776 : 0.49999999999999994;
+      const nudged = x + (x < 0 || Object.is(x, -0) ? -almostHalf : almostHalf);
+      return Math.trunc(single ? Math.fround(nudged) : nudged);
+    }
+    case 'toZero':
+      return Math.trunc(x);
+    case 'toNegativeInfinity':
+      return Math.floor(x);
+    case 'toPositiveInfinity':
+      return Math.ceil(x);
+    default:
+      throw new RangeError(
+        `The value '${String(mode)}' is not valid for this usage of the type MidpointRounding.`,
+      );
+  }
+}
+
+/**
+ * The nearest whole number, a half going to the even neighbour. `Math.round` answers the nearest
+ * with halves UP; a half is recognised exactly because `r - x` is exact (the two lie within a
+ * factor of two of each other), and only then does an odd answer step down. The sign of zero is
+ * `Math.round`'s, which is .NET's: `Round(-0.4)` is -0.
+ */
+function roundHalfToEven(x: number): number {
+  const r = Math.round(x);
+  return r - x === 0.5 && r % 2 !== 0 ? r - 1 : r;
+}
+
+/**
+ * .NET's `Math.Log(a, newBase)` — and `MathF`'s with `single`: NaN for a base of 1, and for a base
+ * of 0 or +Infinity unless `a` is 1, where the bare quotient of the two logarithms answers a number.
+ */
+export function logBase(a: number, newBase: number, single = false): number {
+  if (Number.isNaN(a)) return a;
+  if (Number.isNaN(newBase)) return newBase;
+  if (newBase === 1) return NaN;
+  if (a !== 1 && (newBase === 0 || newBase === Infinity)) return NaN;
+  return single
+    ? Math.fround(Math.fround(Math.log(a)) / Math.fround(Math.log(newBase)))
+    : Math.log(a) / Math.log(newBase);
+}
+
+/**
+ * .NET's `float.Hypot`, transcribed: the squares and their root in DOUBLE, rounded once to a
+ * single — and an infinite side answers +Infinity even beside a NaN, as .NET's does.
+ */
+export function hypotSingle(x: number, y: number): number {
+  if (Number.isFinite(x) && Number.isFinite(y)) {
+    const ax = Math.abs(x);
+    const ay = Math.abs(y);
+    if (ax === 0) return ay;
+    if (ay === 0) return ax;
+    return Math.fround(Math.sqrt(ax * ax + ay * ay));
+  }
+  return x === Infinity || x === -Infinity || y === Infinity || y === -Infinity ? Infinity : NaN;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -176,7 +287,9 @@ export function sinPi(x: number): number {
     if (fractional <= 0.25)
       return fractional !== 0.0 ? sign * sinForIntervalPiBy4(fractional * Math.PI, 0.0) : x * 0.0;
     if (fractional <= 0.5)
-      return fractional !== 0.5 ? sign * cosForIntervalPiBy4((0.5 - fractional) * Math.PI, 0.0) : sign;
+      return fractional !== 0.5
+        ? sign * cosForIntervalPiBy4((0.5 - fractional) * Math.PI, 0.0)
+        : sign;
     if (fractional <= 0.75) return sign * cosForIntervalPiBy4((fractional - 0.5) * Math.PI, 0.0);
     return sign * sinForIntervalPiBy4((1.0 - fractional) * Math.PI, 0.0);
   }
@@ -205,7 +318,9 @@ export function cosPi(x: number): number {
     if (fractional <= 0.25)
       return fractional !== 0.0 ? sign * cosForIntervalPiBy4(fractional * Math.PI, 0.0) : sign;
     if (fractional <= 0.5)
-      return fractional !== 0.5 ? sign * sinForIntervalPiBy4((0.5 - fractional) * Math.PI, 0.0) : 0.0;
+      return fractional !== 0.5
+        ? sign * sinForIntervalPiBy4((0.5 - fractional) * Math.PI, 0.0)
+        : 0.0;
     if (fractional <= 0.75) return -sign * sinForIntervalPiBy4((fractional - 0.5) * Math.PI, 0.0);
     return -sign * cosForIntervalPiBy4((1.0 - fractional) * Math.PI, 0.0);
   }
@@ -235,10 +350,12 @@ export function tanPi(x: number): number {
       return sign * (integral % 2 === 1 ? -0.0 : 0.0);
     }
     if (fractional <= 0.5) {
-      if (fractional !== 0.5) return -sign * tanForIntervalPiBy4((0.5 - fractional) * Math.PI, 0.0, true);
+      if (fractional !== 0.5)
+        return -sign * tanForIntervalPiBy4((0.5 - fractional) * Math.PI, 0.0, true);
       return sign * (integral % 2 === 1 ? -Infinity : Infinity);
     }
-    if (fractional <= 0.75) return sign * tanForIntervalPiBy4((fractional - 0.5) * Math.PI, 0.0, true);
+    if (fractional <= 0.75)
+      return sign * tanForIntervalPiBy4((fractional - 0.5) * Math.PI, 0.0, true);
     return -sign * tanForIntervalPiBy4((1.0 - fractional) * Math.PI, 0.0, false);
   }
   if (ax >= 6.103515625e-5) return tanForIntervalPiBy4(x * Math.PI, 0.0, false);
@@ -275,6 +392,54 @@ export function bitDecrement(x: number): number {
   floatView[0] = x;
   bitsView[0] += x > 0 ? -1n : 1n;
   return floatView[0];
+}
+
+const singleView = new Float32Array(1);
+const singleBitsView = new Int32Array(singleView.buffer);
+
+/** The next representable SINGLE above x (.NET MathF.BitIncrement): ±0 → float.Epsilon,
+ * -∞ → float.MinValue. The value is a single already, so the 32-bit view holds it exactly. */
+export function bitIncrementSingle(x: number): number {
+  if (Number.isNaN(x) || x === Infinity) return x;
+  if (x === -Infinity) return -3.4028234663852886e38;
+  if (x === 0) return 1.401298464324817e-45;
+  singleView[0] = x;
+  singleBitsView[0] += x > 0 ? 1 : -1;
+  return singleView[0];
+}
+
+/** The next representable SINGLE below x (.NET MathF.BitDecrement): ±0 → -float.Epsilon,
+ * +∞ → float.MaxValue. */
+export function bitDecrementSingle(x: number): number {
+  if (Number.isNaN(x) || x === -Infinity) return x;
+  if (x === Infinity) return 3.4028234663852886e38;
+  if (x === 0) return -1.401298464324817e-45;
+  singleView[0] = x;
+  singleBitsView[0] += x > 0 ? -1 : 1;
+  return singleView[0];
+}
+
+/**
+ * The IEEE 754 remainder, as .NET computes it (`Math.IEEERemainder`, and `MathF`'s with
+ * `single`): from the exact `x % y`, choosing the alternative one divisor away when it is nearer —
+ * and, at an exact tie, the one whose quotient rounds half-to-even. Not `x - y·round(x / y)`,
+ * which rounds the quotient, the product and the difference, and answers a different last bit.
+ */
+export function ieeeRemainder(x: number, y: number, single = false): number {
+  const f = single ? Math.fround : (v: number) => v;
+  if (Number.isNaN(x)) return x;
+  if (Number.isNaN(y)) return y;
+  const regularMod = x % y;
+  if (Number.isNaN(regularMod)) return NaN;
+  if (regularMod === 0 && (x < 0 || Object.is(x, -0))) return -0;
+  const alternativeResult = f(regularMod - Math.abs(y) * (x > 0 ? 1 : x < 0 ? -1 : 0));
+  if (Math.abs(alternativeResult) === Math.abs(regularMod)) {
+    const divisionResult = f(x / y);
+    return Math.abs(roundHalfToEven(divisionResult)) > Math.abs(divisionResult)
+      ? alternativeResult
+      : regularMod;
+  }
+  return Math.abs(alternativeResult) < Math.abs(regularMod) ? alternativeResult : regularMod;
 }
 
 /** The unbiased base-2 exponent (.NET ILogB): subnormals count down from the mantissa's top bit;
@@ -314,6 +479,25 @@ export function fma(a: number, b: number, c: number): number {
   const cVirtual = sum - product;
   const sumError = product - (sum - cVirtual) + (c - cVirtual);
   return sum + (sumError + productError);
+}
+
+/**
+ * a·b + c with ONE rounding, to SINGLE precision (.NET `MathF.FusedMultiplyAdd`). The product of
+ * two singles is exact in a double, so only the sum can round: it is kept exact as hi + lo
+ * (TwoSum) and rounded once to a single — the low half breaking the one tie that rounding hi alone
+ * cannot see, when hi lands exactly between two singles.
+ */
+export function fmaSingle(a: number, b: number, c: number): number {
+  const product = a * b;
+  if (!Number.isFinite(product) || !Number.isFinite(c)) return Math.fround(product + c);
+  const hi = product + c;
+  const virtualC = hi - product;
+  const lo = product - (hi - virtualC) + (c - virtualC);
+  const rounded = Math.fround(hi);
+  if (lo === 0 || rounded === hi) return rounded;
+  const other = rounded > hi ? bitDecrementSingle(rounded) : bitIncrementSingle(rounded);
+  if ((rounded + other) / 2 !== hi) return rounded;
+  return lo > 0 === rounded > hi ? rounded : other;
 }
 
 // ---------------------------------------------------------------------------------------------

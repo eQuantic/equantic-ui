@@ -8,6 +8,7 @@ import { RenderManager } from '../dom/renderer';
 import { getRootServiceProvider, ServiceProvider } from './service-provider';
 import { hydrateValue } from '../utils/hydrate-value';
 import { hydrate, type HydrationSpec } from '../utils/hydrate';
+import { adoptMember, declaresMember } from '../utils/adopt-member';
 import { getCurrentRoute } from '../router/current-route';
 import {
   ComponentInstanceStore,
@@ -183,7 +184,6 @@ export function runComponentWalk<T>(root: object, adopt: boolean, run: () => T):
 }
 
 function applyServerFields(target: object, payload: Record<string, unknown>): boolean {
-  const self = target as Record<string, unknown>;
   // The class's TYPED boundary: the compiler emits `static $hydration` naming every field whose
   // wire form differs from its runtime type. A spec'd field is coerced by what it IS; the rest
   // keep the witness path (the default value reveals the type) for compat.
@@ -191,10 +191,17 @@ function applyServerFields(target: object, payload: Record<string, unknown>): bo
   let adopted = false;
   for (const key of Object.keys(payload)) {
     // Only fields the component actually declares: an unknown key is stale payload, never a new
-    // field (assigning it would silently create one no build ever reads).
-    if (!(key in self) || typeof payload[key] === 'function') continue;
+    // field (assigning it would silently create one no build ever reads). DECLARES, not `in`: every
+    // object answers `in` for `__proto__` and `constructor`, and assigning the first swapped the
+    // component's prototype for the payload's object.
+    if (!declaresMember(target, key) || typeof payload[key] === 'function') continue;
     const spec = specs?.[key];
-    self[key] = spec !== undefined ? hydrate(payload[key], spec) : hydrateValue(self[key], payload[key]);
+    const current = (target as Record<string, unknown>)[key];
+    adoptMember(
+      target,
+      key,
+      spec !== undefined ? hydrate(payload[key], spec) : hydrateValue(current, payload[key]),
+    );
     adopted = true;
   }
   // NOT DELETED once read, which the flat payload did: it was a single-render handoff to one owner,

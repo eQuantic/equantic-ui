@@ -21,6 +21,19 @@ public class HarnessSelfChecksTests
     }
 
     /// <summary>
+    /// The bundle every helper-using case imports LOADS. When it did not — a hydration map named a
+    /// class, as a static field initializer, inside an import cycle that had not defined it yet — a
+    /// few hundred cases failed at once, each naming its own expression and none naming the one
+    /// ReferenceError they shared.
+    /// </summary>
+    [SkippableFact]
+    public void TheRuntimeBundle_Loads()
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        Assert.Equal("object", ConformanceRunner.ImportTheRuntimeBundle());
+    }
+
+    /// <summary>
     /// Both sides parse with <c>LanguageVersion.Preview</c>, the same as eqc. On Roslyn's default
     /// — the latest RELEASED version — a construct eqc accepts would fail to parse in the harness
     /// and read as a translation bug rather than as a harness that lags.

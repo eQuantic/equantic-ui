@@ -98,6 +98,7 @@ static eQuantic.UI.SimpleIcons.SimpleIcons.Akiflow.get -> eQuantic.UI.Primitives
 static eQuantic.UI.SimpleIcons.SimpleIcons.Alacritty.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Alamy.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Albertheijn.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Albumoftheyear.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Alby.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Alchemy.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Aldinord.get -> eQuantic.UI.Primitives.IconGlyph
@@ -117,6 +118,7 @@ static eQuantic.UI.SimpleIcons.SimpleIcons.Alliedmodders.get -> eQuantic.UI.Prim
 static eQuantic.UI.SimpleIcons.SimpleIcons.Allocine.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Alltrails.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Almalinux.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Alphaxiv.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Alpinedotjs.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Alpinelinux.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Alternativeto.get -> eQuantic.UI.Primitives.IconGlyph
@@ -289,6 +291,7 @@ static eQuantic.UI.SimpleIcons.SimpleIcons.Atari.get -> eQuantic.UI.Primitives.I
 static eQuantic.UI.SimpleIcons.SimpleIcons.Atlasos.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Atlassian.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Atom.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Atomgit.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Auchan.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Audacity.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Audi.get -> eQuantic.UI.Primitives.IconGlyph
@@ -632,6 +635,7 @@ static eQuantic.UI.SimpleIcons.SimpleIcons.Coda.get -> eQuantic.UI.Primitives.Ic
 static eQuantic.UI.SimpleIcons.SimpleIcons.Codacy.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Codeberg.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Codeblocks.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Codebuddy.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Codecademy.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Codeceptjs.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Codechef.get -> eQuantic.UI.Primitives.IconGlyph
@@ -1252,6 +1256,7 @@ static eQuantic.UI.SimpleIcons.SimpleIcons.Go.get -> eQuantic.UI.Primitives.Icon
 static eQuantic.UI.SimpleIcons.SimpleIcons.Gocd.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Godaddy.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Godotengine.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Godox.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Gofundme.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Gogdotcom.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Gojek.get -> eQuantic.UI.Primitives.IconGlyph
@@ -1694,6 +1699,7 @@ static eQuantic.UI.SimpleIcons.SimpleIcons.Kicad.get -> eQuantic.UI.Primitives.I
 static eQuantic.UI.SimpleIcons.SimpleIcons.Kick.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Kickstarter.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Kik.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Kimi.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Kingstontechnology.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Kinopoisk.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Kinsta.get -> eQuantic.UI.Primitives.IconGlyph
@@ -2256,6 +2262,7 @@ static eQuantic.UI.SimpleIcons.SimpleIcons.Onlyfans.get -> eQuantic.UI.Primitive
 static eQuantic.UI.SimpleIcons.SimpleIcons.Onlyoffice.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Onnx.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Onstar.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Oomol.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Opel.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Open3d.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Openaccess.get -> eQuantic.UI.Primitives.IconGlyph
@@ -2913,6 +2920,7 @@ static eQuantic.UI.SimpleIcons.SimpleIcons.Similarweb.get -> eQuantic.UI.Primiti
 static eQuantic.UI.SimpleIcons.SimpleIcons.Simkl.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Simpleanalytics.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Simpleicons.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Simpleiconscdn.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Simplelocalize.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Simplelogin.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Simplenote.get -> eQuantic.UI.Primitives.IconGlyph
@@ -3182,6 +3190,7 @@ static eQuantic.UI.SimpleIcons.SimpleIcons.Telegraph.get -> eQuantic.UI.Primitiv
 static eQuantic.UI.SimpleIcons.SimpleIcons.Telenor.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Telequebec.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Temporal.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Tencenthy.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Tensorflow.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Teradata.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Teratail.get -> eQuantic.UI.Primitives.IconGlyph
@@ -3278,6 +3287,7 @@ static eQuantic.UI.SimpleIcons.SimpleIcons.Tplink.get -> eQuantic.UI.Primitives.
 static eQuantic.UI.SimpleIcons.SimpleIcons.Tqdm.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Traccar.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Tradingview.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Trae.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Traefikmesh.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Traefikproxy.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Trailforks.get -> eQuantic.UI.Primitives.IconGlyph
@@ -3288,6 +3298,7 @@ static eQuantic.UI.SimpleIcons.SimpleIcons.Transmission.get -> eQuantic.UI.Primi
 static eQuantic.UI.SimpleIcons.SimpleIcons.Transportforireland.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Transportforlondon.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Travisci.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Traxsource.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Treehouse.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Trello.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Trendmicro.get -> eQuantic.UI.Primitives.IconGlyph
@@ -3666,8 +3677,10 @@ static eQuantic.UI.SimpleIcons.SimpleIcons.Zazzle.get -> eQuantic.UI.Primitives.
 static eQuantic.UI.SimpleIcons.SimpleIcons.Zcash.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Zcool.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Zdf.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Zdotai.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Zebpay.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Zebratechnologies.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Zectrix.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Zedindustries.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Zelle.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Zenbrowser.get -> eQuantic.UI.Primitives.IconGlyph
@@ -3702,6 +3715,7 @@ static eQuantic.UI.SimpleIcons.SimpleIcons.Zotero.get -> eQuantic.UI.Primitives.
 static eQuantic.UI.SimpleIcons.SimpleIcons.Zsh.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Zulip.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Zwave.get -> eQuantic.UI.Primitives.IconGlyph
+static eQuantic.UI.SimpleIcons.SimpleIcons.Zx.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons.Zyte.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons._1001tracklists.get -> eQuantic.UI.Primitives.IconGlyph
 static eQuantic.UI.SimpleIcons.SimpleIcons._1and1.get -> eQuantic.UI.Primitives.IconGlyph

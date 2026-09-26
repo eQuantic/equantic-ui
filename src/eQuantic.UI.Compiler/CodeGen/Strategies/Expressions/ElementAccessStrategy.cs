@@ -40,14 +40,12 @@ public class ElementAccessStrategy : IExpressionIrStrategy
         // so the absence spread through the program instead of stopping it where .NET stops it —
         // and an undefined reaching a render is a blank, not an error anyone can trace. Only a
         // READ: the same syntax on the left of an assignment is how a key is ADDED.
-        if (elementAccess.ArgumentList.Arguments.Count == 1
-            && !IsAssignmentTarget(elementAccess)
-            && context.SemanticHelper.GetType(elementAccess.Expression).IsDictionaryLike(out _))
+        if (!IsAssignmentTarget(elementAccess) && DictionaryEntry.Of(elementAccess, context) is { Entry: var entry })
         {
             context.UsedHelpers.Add(Eq.Import);
             var map = context.Converter.ConvertExpression(elementAccess.Expression);
             var key = context.Converter.ConvertExpression(elementAccess.ArgumentList.Arguments[0].Expression);
-            return JsExpr.Callish($"{Eq.DictGet}({map}, {key})");
+            return JsExpr.Callish(entry.Read(map, key));
         }
 
         var indexed = context.Converter.ConvertIr(elementAccess.Expression);
@@ -79,9 +77,8 @@ public class ElementAccessStrategy : IExpressionIrStrategy
             AssignmentExpressionSyntax assignment =>
                 assignment.Left == node && assignment.IsKind(SyntaxKind.SimpleAssignmentExpression),
             // ++ and -- also read first, and .NET throws for a key that is not there — but the
-            // guarded read cannot BE the target (`$eq.dictGet(…)++` does not parse) and the
-            // postfix form's value is the OLD one, so lowering it needs more than a template.
-            // Left as a plain `m[k]++` and recorded in the conversion gaps.
+            // guarded read cannot BE the target (`$eq.dictGet(…)++` does not parse), so the target
+            // stays plain and the unary strategy reads it through the guard (ReadModifyWrite).
             PrefixUnaryExpressionSyntax prefix =>
                 prefix.IsKind(SyntaxKind.PreIncrementExpression) || prefix.IsKind(SyntaxKind.PreDecrementExpression),
             PostfixUnaryExpressionSyntax postfix =>

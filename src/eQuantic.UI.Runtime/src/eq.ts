@@ -1,15 +1,31 @@
-import { dec } from './utils/decimal';
+import {
+  dec,
+  decConvert,
+  decFromDouble,
+  decFromSingle,
+  decParse,
+  decTryParse,
+} from './utils/decimal';
 import { combineDelegate, removeDelegate } from './utils/delegates';
 import { hydrate } from './utils/hydrate';
 import { long } from './utils/long';
 import {
   round,
+  roundSingle,
+  roundWithMode,
+  roundSingleWithMode,
   sinPi,
   cosPi,
   tanPi,
   fma,
   bitIncrement,
   bitDecrement,
+  bitIncrementSingle,
+  bitDecrementSingle,
+  ieeeRemainder,
+  logBase,
+  hypotSingle,
+  fmaSingle,
   ilogb,
   rootN,
   maxMagnitude,
@@ -28,8 +44,42 @@ import {
   trailingZeroCount64,
   log2Of64,
 } from './utils/bits';
-import { checked, dictGet, single, substring } from './utils/overflow';
-import { format, parseEnum, stringFormat } from './utils/format';
+import {
+  checked,
+  dictGet,
+  mapGet,
+  mapSet,
+  divRem,
+  divRemLong,
+  intDiv,
+  intRem,
+  longDiv,
+  longRem,
+  singleFromLong,
+  substring,
+} from './utils/overflow';
+import { double, single } from './utils/real-text';
+import { fromBase, toBase } from './utils/convert-base';
+import {
+  intConvert,
+  intParse,
+  intTryParse,
+  realConvert,
+  realParse,
+  realTryParse,
+} from './utils/number-parse';
+import { max, min, toDictionary, toValueDictionary } from './utils/linq';
+import {
+  compare,
+  compareRange,
+  compareRangeBy,
+  equals as stringEquals,
+  joinRange,
+} from './utils/string-statics';
+import { asSingle, format, parseEnum, stringFormat, stringFormatInvariant } from './utils/format';
+import { nextTextElementLength, textElementStarts } from './utils/text-elements';
+import { unicodeCategory } from './utils/unicode-category';
+import { hasNonWhiteSpace, isWhiteSpace, splitOnWhiteSpace, trim, trimEnd, trimStart } from './utils/white-space';
 import { str } from './utils/culture';
 import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './utils/datetime';
 import { stringBuilder } from './utils/string-builder';
@@ -45,7 +95,7 @@ import {
   zip,
 } from './utils/collections';
 import { sortedSet, sortedDictionary, sortedList } from './utils/sorted';
-import { liftArith, liftCmp } from './utils/nullable';
+import { liftArith, liftCmp, liftUnary } from './utils/nullable';
 import { equals } from './utils/equals';
 import { resolveService } from './utils/services';
 import { StyleBuilder } from './utils/style-builder';
@@ -124,6 +174,8 @@ export const $eq = {
   entries,
   /** LINQ Zip: pairs stop with the shorter sequence. */
   zip,
+  /** LINQ's Max and Min by the type they answer, and ToDictionary with .NET's refusals. */
+  linq: { max, min, toDictionary, toValueDictionary },
   /** C# `with` over a runtime value type — prototype preserved. */
   withPatch,
   /** C# range indexing whose endpoints count from the end — see `slice`. */
@@ -132,18 +184,55 @@ export const $eq = {
   origin,
   /** The typed boundary: a server value coerced ONCE to its runtime type — see utils/hydrate. */
   hydrate,
-  /** Numeric compat: exact decimal and 64-bit integer. */
-  num: { dec, long, checked, single },
+  /** Numeric compat: exact decimal and 64-bit integer, every numeric type read from text as .NET
+   * reads it, and an integer read or written in a base. */
+  num: {
+    dec,
+    decParse,
+    decTryParse,
+    decFromDouble,
+    decFromSingle,
+    decConvert,
+    intParse,
+    intTryParse,
+    intConvert,
+    realParse,
+    realTryParse,
+    realConvert,
+    long,
+    checked,
+    divRem,
+    divRemLong,
+    intDiv,
+    intRem,
+    longDiv,
+    longRem,
+    single,
+    double,
+    singleFromLong,
+    fromBase,
+    toBase,
+  },
   /** Math with .NET semantics: banker's rounding, the *Pi family (exact at special angles),
-   * fused multiply-add, bit-adjacent doubles, sign-aware roots, and the min/max tie rules. */
+   * fused multiply-add, the neighbours of a double or a single, the IEEE remainder, sign-aware
+   * roots, and the min/max tie rules. */
   math: {
     round,
+    roundSingle,
+    roundWithMode,
+    roundSingleWithMode,
     sinPi,
     cosPi,
     tanPi,
     fma,
     bitIncrement,
     bitDecrement,
+    bitIncrementSingle,
+    bitDecrementSingle,
+    ieeeRemainder,
+    logBase,
+    hypotSingle,
+    fmaSingle,
     ilogb,
     rootN,
     maxMagnitude,
@@ -164,10 +253,37 @@ export const $eq = {
     trailingZeroCount64,
     log2Of64,
   },
-  /** Text: number/string formatting and StringBuilder. */
-  text: { format, stringFormat, stringBuilder, substring },
+  /** Text: number/string formatting, StringBuilder, StringInfo's text elements (grapheme clusters,
+   * from the platform's segmenter), a character's general category, string's comparisons and
+   * ranged join, and .NET's white space. */
+  text: {
+    format,
+    stringFormat,
+    stringFormatInvariant,
+    asSingle,
+    stringBuilder,
+    substring,
+    textElementStarts,
+    nextTextElementLength,
+    unicodeCategory,
+    compare,
+    compareRange,
+    compareRangeBy,
+    equals: stringEquals,
+    joinRange,
+    isWhiteSpace,
+    hasNonWhiteSpace,
+    trim,
+    trimStart,
+    trimEnd,
+    splitOnWhiteSpace,
+  },
   /** A dictionary read that fails on a missing key, the way .NET does. */
   dictGet,
+  /** The same read on a runtime map (a sorted or value-keyed dictionary), and its write, which
+   * answers the value written as C#'s assignment does. */
+  mapGet,
+  mapSet,
   /** Date and time, tick-precise. */
   time: { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset },
   /** Enum parsing (member-name string). */
@@ -191,7 +307,7 @@ export const $eq = {
     setAdd,
   },
   /** Nullable<T> lifted operators (null-propagating arithmetic, false-on-null relational). */
-  nullable: { arith: liftArith, cmp: liftCmp },
+  nullable: { arith: liftArith, cmp: liftCmp, unary: liftUnary },
   /** `bool | bool` and `bool & bool`: both operands evaluated, a bool answered — see `or`. */
   logic: { or, and },
   /**

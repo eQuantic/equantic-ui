@@ -1,0 +1,45 @@
+schema: spec-driven
+
+# House context, added to the instructions for every artifact. Keep it short: the working
+# agreement is the Workflow section of CLAUDE.md and AGENTS.md, the project guide is the rest of
+# CLAUDE.md, and the user documentation is the wiki. Everything here is prompt text, not a gate:
+# `openspec validate --all --strict` checks structure only.
+context: |
+  Repository: eQuantic.UI, a Flutter-inspired component framework for .NET. eqc, a Roslyn-based
+  transpiler, turns C# components into JavaScript at build time, and the same write-once
+  components realize on the web (server rendering and hydration) and natively through Photon,
+  its own GPU engine and shells. CLAUDE.md is the project guide and its Workflow section is the
+  working agreement; the GitHub wiki (https://github.com/eQuantic/equantic-ui/wiki) is the user
+  documentation, in English and Brazilian Portuguese. Write every artifact in English.
+  The product principle decides designs: a developer using the SDK writes only C#, appsettings
+  and fluent configuration in Program.cs, never a platform artifact (a plist, a manifest,
+  JavaScript, HTML, CSS). The vocabulary speaks no target's language.
+  The SDK is in preview: a signature widens and the old one goes, with no compatibility shim.
+  The public surface is declared in each project's PublicAPI.Shipped.txt/Unshipped.txt, and the
+  surface outside C# in tests/eQuantic.UI.Web.Tests/developer-surface.baseline.txt.
+  Every change belongs to an issue on the board (https://github.com/orgs/eQuantic/projects/11),
+  and its pull request closes that issue.
+
+rules:
+  proposal:
+    - "Open with the issue it closes (#N) and the epic or feature that issue is a sub-issue of"
+    - "Say what changes for a developer using the SDK, in their terms: the C# they write, the setting they set, what the browser or the native shell does differently"
+    - "Name every part the change reaches (eqc, the runtime, the web realizer, the Photon shells, the SDKs, the templates) and say whether the public surface or the developer surface moves"
+    - "A break is allowed in preview: name what goes, what replaces it, and the one migration line an upgrading app needs"
+  specs:
+    - "A capability gets its spec when a change first touches it, not before"
+    - "State behaviour as observable requirements, each with a scenario a test can execute; for a translation rule, the scenario is the C# input and the answer .NET gives for it"
+  design:
+    - "Answer how Flutter solves the same problem before inventing a mechanism, and cite docs/FLUTTER-PARITY.md where a row applies"
+    - "Prefer the structural fix to the patch and the mechanism .NET already has to a home-grown one; an instrument that fails beats one that warns"
+  tasks:
+    - "End every task group with the check that proves it against the real thing (the conformance suite executed on both sides, a sample in a browser, a shell in a simulator), not only a unit test"
+    - "Include the documentation in the same pull request: the wiki page in English and Portuguese, and one docs/LEDGER.md line citing the issue"
+
+operations:
+  apply:
+    guidance:
+      - "Commit in English as `emoji type: description`, with no co-authorship or attribution line"
+  archive:
+    guidance:
+      - "Archive inside the same pull request, before it merges, with `openspec archive <change> --yes`, so openspec/specs on main always matches the code on main"

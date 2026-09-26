@@ -26,13 +26,14 @@ public class LiteralExpressionStrategy : IExpressionIrStrategy
             SyntaxKind.TrueLiteralExpression => JsExpr.Literal("true"),
             SyntaxKind.FalseLiteralExpression => JsExpr.Literal("false"),
             SyntaxKind.NullLiteralExpression => JsExpr.Literal("null"),
-            SyntaxKind.NumericLiteralExpression => ConvertNumericLiteral(literal.Token.Text, context),
+            SyntaxKind.NumericLiteralExpression => ConvertNumericLiteral(literal.Token, context),
             _ => JsExpr.Literal(literal.Token.Text)
         };
     }
 
-    private static JsExpr ConvertNumericLiteral(string text, ConversionContext context)
+    private static JsExpr ConvertNumericLiteral(SyntaxToken token, ConversionContext context)
     {
+        var text = token.Text;
         var isHexOrBinary = text.StartsWith("0x") || text.StartsWith("0X")
             || text.StartsWith("0b") || text.StartsWith("0B");
 
@@ -49,9 +50,13 @@ public class LiteralExpressionStrategy : IExpressionIrStrategy
             ? text.TrimEnd('L', 'l', 'U', 'u')
             : text.TrimEnd('L', 'l', 'U', 'u', 'F', 'f', 'D', 'd');
 
-        // A long/ulong literal (suffix contains L) becomes a BigInt literal for exact 64-bit values.
+        // A long/ulong literal becomes a BigInt literal for exact 64-bit values. The TYPE decides,
+        // which the parser has already given the token's value: a literal written with no suffix is
+        // a long when int and uint cannot hold it, so `long ticks = 637000000000000000;` is a long
+        // with no `L` in sight, and as a plain number it lost its low digits and threw a TypeError
+        // at the first arithmetic with another long.
         var suffix = text[noSuffix.Length..];
-        if (suffix.IndexOfAny(new[] { 'L', 'l' }) >= 0)
+        if (token.Value is long or ulong)
         {
             return JsExpr.Literal($"{noSuffix}n");
         }

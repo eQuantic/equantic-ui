@@ -394,4 +394,12 @@ public static class TypeSymbolExtensions
         Services.RuntimeProvidedTypeScanner.IsRuntimeProvidedNamespace(
             type.ContainingNamespace?.ToDisplayString() ?? string.Empty)
         || type.GetAttributes().Any(a => a.AttributeClass?.Name == "RuntimeProvidedAttribute");
+
+    /// <summary>A vocabulary type the runtime ships NO export for: declared <c>[ServerOnly]</c>
+    /// outside this compilation. Its name must reach no emitted module, not even a hydration map,
+    /// and naming it in a component's shape is EQ2010. One definition, read by the import scanner
+    /// and by the hydration spec alike.</summary>
+    public static bool IsHostOnly(this INamedTypeSymbol type) =>
+        type.GetAttributes().Any(a => a.AttributeClass?.Name == "ServerOnlyAttribute")
+        && !type.Locations.Any(location => location.IsInSource);
 }
