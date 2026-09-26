@@ -43,6 +43,50 @@ jobs:
           EQ_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: ./scripts/check-commit-messages.sh --range "$EQ_BASE" "$EQ_HEAD"
 
+  # Every OpenSpec change and spec, validated strictly by the CLI tools/openspec/package-lock.json
+  # pins, through the same script a developer runs. The plain `openspec validate --all --strict`
+  # answers "No items found" and exits 0 on an empty tree, so the script also fails when nothing was
+  # validated: an openspec/ that lost its specs is not a state main can be in.
+  openspec:
+    runs-on: ubuntu-latest
+    # It reads the tree and nothing else.
+    permissions:
+      contents: read
+    env:
+      OPENSPEC_TELEMETRY: "0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # The CLI's own engine range starts at 20.19; 22 is what the other Node jobs here use.
+          node-version: 22
+
+      - name: Validate every change and spec, strictly
+        run: ./scripts/check-openspec.sh
+
+  # The SessionStart hook acts only in a cloud container, a path no laptop takes, so nothing else
+  # would notice the day it stopped working. This runs it the way a fresh container would (a hostile
+  # global git config, no dotnet on PATH) and asserts every promise, with two controls: a commit
+  # before the hook must fail, and a hook with a wrong SHA-256 must refuse the SDK.
+  session-start:
+    runs-on: ubuntu-latest
+    # It reads the tree and nothing else; the fixture's commits stay in a throwaway clone.
+    permissions:
+      contents: read
+    steps:
+      # Full history, so the fixture's clone of HEAD is an ordinary repository.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run the hook as a fresh cloud container, and assert what it promises
+        run: ./scripts/check-session-start.sh
+
   # The runtime's TypeScript, proven once: the command a developer runs, through the embedded bun
   # (bun.lock as pinned, tsc, vitest). It hands nothing on. The bundle an app runs is written by
   # the Server's own build, in every job that builds it, and a library build of the same sources
