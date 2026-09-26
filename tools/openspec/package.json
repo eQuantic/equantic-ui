@@ -1,0 +1,8 @@
+{
+  "name": "equantic-ui-openspec",
+  "private": true,
+  "description": "The OpenSpec CLI this repository pins. Run it through scripts/openspec.sh, which installs it from the lockfile.",
+  "devDependencies": {
+    "@fission-ai/openspec": "1.13.2"
+  }
+}

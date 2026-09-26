@@ -697,6 +697,14 @@ record of a release, the wiki's Upgrading page is the distillate.
   overloads of one arity are still one probe (267 more lines by signature), a `Dictionary<int, T>`
   loses insertion order, a decimal constant does not cross, a lone surrogate in a string literal
   is written raw, and the date types' `Add*` round a double to the millisecond.
+- **0.2.0-preview.58 released** from `4a330275`: the numeric parity family (#330, #373, #374, #379,
+  #383, #389, #390, #391, #403, #405), the code engine in an assembly of its own (#359) with its
+  input, model and component slices (#368, #371, #375, #370), and a published app that no longer
+  ships its C# in its source maps (#357). *([v0.2.0-preview.58](https://github.com/eQuantic/equantic-ui/releases/tag/v0.2.0-preview.58))*
+- **The working agreement lives in the repository** (#410): the Workflow section, one text in
+  `CLAUDE.md` and `AGENTS.md` held so by `WorkflowSectionTests`; OpenSpec 1.13.2, pinned by a
+  lockfile and validated strictly in CI; and a `SessionStart` hook that gives a cloud container the
+  owner's identity, no foreign signature and the pinned .NET SDK, asserted by CI's `session-start` job.
 
 ## Retired documents
 
