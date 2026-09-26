@@ -202,6 +202,18 @@ public class DefaultInterfaceMemberEmissionTests
             public interface IMarkP { string Mark() => "m"; }
             public sealed record Positional(int Mark) : IMarkP;
             """,
+        // A default that names a helper and a static only in nameof, which runs neither. Properties,
+        // since a method's name in nameof binds a method group and no one symbol.
+        ["Named.cs"] = """
+            namespace App;
+            public interface INamed
+            {
+                string Show() => nameof(Hidden) + nameof(Stat);
+                private string Hidden => "helper";
+                private static string Stat => "static";
+            }
+            public sealed class Named : INamed { public int Hidden; }
+            """,
         // Compiled into a referenced assembly below, not into this compilation.
         ["Voiced.cs"] = """
             namespace App;
@@ -381,6 +393,18 @@ public class DefaultInterfaceMemberEmissionTests
     public void APositionalParameterOnADefaultsNameIsRefusedOnce()
     {
         Compile("Positional", succeeds: false).Errors.Should().ContainSingle(error => error.Code == "EQ1007");
+    }
+
+    /// <summary>A name inside <c>nameof</c> is text, not a call (found in review, #418): the helper it
+    /// names is not copied, a class field on its name is no clash, and a static named there is not
+    /// one the default reaches.</summary>
+    [Fact]
+    public void ANameInsideNameofIsNotACall()
+    {
+        var result = Compile("Named");
+
+        result.Errors.Should().NotContain(error => error.Code == "EQ1007" || error.Code == "EQ1008");
+        result.TypeScript.Should().NotContain("'helper'").And.NotContain("'static'");
     }
 
     /// <summary>A static of the interface reached through a private helper is refused too (asked in
