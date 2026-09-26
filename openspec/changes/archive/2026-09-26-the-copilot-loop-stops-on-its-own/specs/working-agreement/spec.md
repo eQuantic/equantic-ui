@@ -9,8 +9,9 @@ finding of a Copilot round, those of the review's body included, as a defect (th
 request changes does the wrong thing, or a guard passes where it should fail), as hardening,
 documentation or a nit, or as wrong. A defect SHALL be fixed and proved both ways. Hardening,
 documentation or a nit SHALL be fixed in the same push or filed as an issue, and a wrong finding
-SHALL be answered with what shows so. A new round SHALL be requested only after a round that found
-a defect, once per push of fixes, and never after the third round.
+SHALL be answered with what shows so. Every thread SHALL be answered and resolved, since the ruleset
+refuses a merge while one is open. A new round SHALL be requested only after a round that found a
+defect, once per push of fixes, and never after the third round.
 
 #### Scenario: A round that finds only nits
 
