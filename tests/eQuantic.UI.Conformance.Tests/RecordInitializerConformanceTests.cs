@@ -55,6 +55,20 @@ public class RecordInitializerConformanceTests
         }
 
         public record Zeroed(long Count = default, decimal Total = default);
+
+        public struct Meter
+        {
+            public decimal Rate = 1.25m;
+            public long Ticks { get; set; } = 10;
+            public System.Collections.Generic.List<int> Marks = new();
+            public Meter() { }
+        }
+
+        public record struct Reading(int Id)
+        {
+            public string Unit { get; init; } = "kg";
+            public float Scale = 0.5f;
+        }
         """;
 
     [SkippableTheory]
@@ -93,6 +107,25 @@ public class RecordInitializerConformanceTests
     // `with` copies what the construction wrote, and changes only what it names.
     [InlineData("var f = new Fields() with { N = 1 }; return f.Log + f.N;")]                   // "x1"
     public void ARecordMember_StartsAsItsDeclarationSays(string statements)
+    {
+        Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
+        ConformanceRunner.AssertStatementsSameAsDotNet(statements, Prelude);
+    }
+
+    [SkippableTheory]
+    // A struct's twin is built by the same constructor, so `new` runs its initializers, and
+    // `default` runs none of them (#405 zeroes such a struct member by member).
+    [InlineData("return (new Meter().Rate + 1m).ToString();")]                                 // "2.25"
+    [InlineData("return (new Meter().Ticks + 1L).ToString();")]                                // "11"
+    [InlineData("var m = new Meter(); m.Marks.Add(1); return m.Marks.Count;")]                 // 1
+    [InlineData("var a = new Meter(); var b = new Meter(); a.Marks.Add(1); return b.Marks.Count;")] // 0
+    [InlineData("return new Meter { Ticks = 2 }.Rate.ToString();")]                            // "1.25"
+    [InlineData("return default(Meter).Rate + \"|\" + default(Meter).Ticks + \"|\" + (default(Meter).Marks == null);")] // "0|0|True"
+    [InlineData("return new Reading(3).Unit + new Reading(3).Id;")]                            // "kg3"
+    [InlineData("return (double)new Reading(1).Scale;")]                                       // 0.5
+    [InlineData("return default(Reading).Unit == null;")]                                      // true
+    [InlineData("var r = new Reading(2) with { Unit = \"g\" }; return r.Unit + r.Id + r.Scale;")] // "g20.5"
+    public void AStructMember_StartsAsItsDeclarationSays(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
         ConformanceRunner.AssertStatementsSameAsDotNet(statements, Prelude);
