@@ -19,8 +19,10 @@ internal static class WikiClone
 {
     private const string Variable = "EQ_WIKI_DIR";
 
-    private static readonly string? Named =
-        Environment.GetEnvironmentVariable(Variable) is { Length: > 0 } named ? named : null;
+    /// <summary>The variable as it is set, empty included: an unset variable is null, and an empty one
+    /// is a name that names nothing, which fails like any other (found in review, #431). A shell
+    /// expansion that came out empty would otherwise send every guard back to the shared clone.</summary>
+    private static readonly string? Named = Environment.GetEnvironmentVariable(Variable);
 
     /// <summary>CI clones the wiki beside the repository, so a run there without it is a failed clone.</summary>
     private static readonly bool OnCi = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true";
@@ -31,7 +33,7 @@ internal static class WikiClone
 
     private static string? Locate()
     {
-        if (Named is not null) return Directory.Exists(Named) ? Path.GetFullPath(Named) : null;
+        if (Named is not null) return Named.Length > 0 && Directory.Exists(Named) ? Path.GetFullPath(Named) : null;
         var here = new DirectoryInfo(AppContext.BaseDirectory);
         while (here is not null && !Directory.Exists(Path.Combine(here.FullName, "src", "eQuantic.UI.Runtime")))
             here = here.Parent;
@@ -42,25 +44,36 @@ internal static class WikiClone
 
     /// <summary>
     /// Whether there is no wiki to read, which a guard answers by returning. Where the wiki has to be
-    /// there it fails instead: when <c>EQ_WIKI_DIR</c> is set, since a typo in it would turn every guard
-    /// into a pass that read no page, and on CI, where the clone is expected. A directory without the
-    /// wiki's <c>Home.md</c> is not a wiki checkout, and fails the same way.
+    /// there it fails instead: when <c>EQ_WIKI_DIR</c> is set, empty included, since a typo in it would
+    /// turn every guard into a pass that read no page, and on CI, where the clone is expected. A
+    /// directory without the wiki's <c>Home.md</c> is not a wiki checkout, wherever it was found, and
+    /// fails the same way: the clone beside the repository too (found in review, #431).
     /// </summary>
     public static bool Absent()
     {
         if (Named is not null)
         {
+            Named.Should().NotBeEmpty(
+                $"{Variable} is set and empty: unset it to read the clone beside the repository, or name a checkout of the wiki");
             Location.Should().NotBeNull($"{Variable} names {Named}, and there is no directory there: every guard would read no page");
-            File.Exists(Path.Combine(Location!, "Home.md")).Should().BeTrue(
-                $"{Variable} names {Location}, which has no Home.md: it is not a checkout of the wiki");
+            IsWiki(Location!).Should().BeTrue($"{Variable} names {Location}, which has no Home.md: it is not a checkout of the wiki");
             return false;
         }
-        if (Location is not null) return false;
+        if (Location is not null)
+        {
+            IsWiki(Location).Should().BeTrue(
+                $"{Location} is where the wiki is cloned beside the repository, and it has no Home.md: it is not a checkout "
+                + "of the wiki, and every guard would read no page");
+            return false;
+        }
         OnCi.Should().BeFalse(
             "CI clones equantic-ui.wiki beside this repository (ci.yml, 'Check out the wiki'), and it is not "
             + "there: the clone failed, and the guard would pass having read no page");
         return true;
     }
+
+    /// <summary>The wiki's root page, which every checkout of it has.</summary>
+    private static bool IsWiki(string directory) => File.Exists(Path.Combine(directory, "Home.md"));
 
     /// <summary>What a guard read, for its failure message: the directory, and the branch and commit
     /// checked out there. A red run then names its input, which is what would have said in one line

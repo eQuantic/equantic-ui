@@ -148,8 +148,8 @@ public class WikiVocabularyTests
             .Select(a => $"{a.Page} / {a.Name}")
             .ToArray();
 
-        stale.Should().BeEmpty("these pages no longer contain the word they are allowed; remove the allowance: "
-            + string.Join(", ", stale));
+        stale.Should().BeEmpty($"these pages of {WikiClone.Describe()} no longer contain the word they are allowed; "
+            + "remove the allowance: " + string.Join(", ", stale));
     }
 
     [Fact]
@@ -158,7 +158,8 @@ public class WikiVocabularyTests
         if (NoWikiHere()) return;
 
         var pages = Pages().Select(Path.GetFileName).ToHashSet(StringComparer.Ordinal);
-        Allowed.Where(a => !pages.Contains(a.Page)).Should().BeEmpty("an allowance for a page that is not in the wiki is dead prose");
+        Allowed.Where(a => !pages.Contains(a.Page)).Should().BeEmpty(
+            $"an allowance for a page that is not in the wiki ({WikiClone.Describe()}) is dead prose");
         Allowed.Where(a => RetiredSpellings.All(r => r.Name != a.Name)).Should().BeEmpty("an allowance must name a listed spelling");
     }
 

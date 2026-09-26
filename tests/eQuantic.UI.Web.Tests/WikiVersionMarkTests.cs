@@ -152,7 +152,7 @@ public class WikiVersionMarkTests
         // prevent — pointed at itself. The mark spelling changed once under exactly these feet;
         // counting what was compared is what turns that from a green tick into a red one.
         checkedMarks.Should().BeGreaterThan(0,
-            "the wiki has version marks; parsing none means the spelling moved and this guard did not");
+            $"the wiki has version marks; parsing none in {WikiClone.Describe()} means the spelling moved and this guard did not");
 
         // Every one of them, not the first: finding these one round trip at a time is how a docs
         // audit turns into an afternoon.
