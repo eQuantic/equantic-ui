@@ -9,7 +9,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// <summary>
 /// The fallback for <c>receiver.Member</c> once every dedicated strategy has declined: a handful of
 /// well-known statics (<c>DateTime.Now</c>, <c>Guid.Empty</c>), the type-dependent <c>Count</c>
-/// (<c>size</c> on a Set, <c>Object.keys().length</c> on a dictionary, <c>length</c> on a sequence),
+/// (<c>size</c> on a Set, <c>length</c> on a sequence; a dictionary's is DictionaryStrategy's),
 /// C# 14 extension properties lowered to their static home, and otherwise the camelCased member
 /// on the converted receiver — with a method group bound to that receiver.
 /// </summary>
@@ -71,8 +71,8 @@ public class MemberAccessStrategy : IExpressionIrStrategy
         if (expr == "Guid" && name == "Empty") return JsExpr.Literal("''");
         if ((expr == "string" || expr == "String") && name == "Empty") return JsExpr.Literal("''");
 
-        // .Count is type-dependent: Set -> .size, Dictionary -> Object.keys(x).length,
-        // List/array/ICollection -> .length.
+        // .Count is type-dependent: Set -> .size, List/array/ICollection -> .length. A dictionary's
+        // is DictionaryStrategy's, which answers `size`.
         if (name == "Count")
         {
             var def = context.SemanticHelper.GetType(memberAccess.Expression)?.OriginalDefinition?.ToString() ?? "";
@@ -80,10 +80,6 @@ public class MemberAccessStrategy : IExpressionIrStrategy
                 def.StartsWith("System.Collections.Generic.ISet") ||
                 def.StartsWith("System.Collections.Generic.IReadOnlySet"))
                 return JsExpr.Member(receiver, "size");
-            if (def.StartsWith("System.Collections.Generic.Dictionary") ||
-                def.StartsWith("System.Collections.Generic.IDictionary") ||
-                def.StartsWith("System.Collections.Generic.IReadOnlyDictionary"))
-                return JsExpr.Member(JsExpr.Call(JsExpr.Identifier("Object.keys"), receiver), "length");
 
             // Same coin toss as `Contains`: a receiver typed only as a collection may be a Set at
             // run time, whose count is `size`. `.length` on one is undefined — and `undefined > 0`

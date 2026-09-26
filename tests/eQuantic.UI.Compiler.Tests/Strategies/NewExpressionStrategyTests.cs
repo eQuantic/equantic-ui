@@ -58,20 +58,11 @@ public class NewExpressionStrategyTests
     }
 
     [Fact]
-    public void Initializer_Dictionary_ConvertsToJSObject()
+    public void Initializer_Dictionary_SeedsTheRuntimesDictionary()
     {
+        // No model answers here, so the dictionary is known by the name the creation writes.
         var js = Convert("new Dictionary<string, int> { { \"a\", 1 } }");
-        // ObjectCreationStrategy might handle the new Dictionary part, but InitializerStrategy handles the body
-        // The result depends on how ObjectCreationStrategy calls ConvertInitializer
-        // Based on my fix, it should work.
-        // Wait, ObjectCreationStrategy might output "new Dictionary... { ... }" if not handled?
-        // No, ObjectCreationStrategy handles "new Dictionary<...>" -> "{}" or arguments.
-        // It converts initializer and appends/returns it.
-        // For new Dictionary { ... }, implicit creation logic might return just the initializer if it detects it.
-        // But let's test just the initializer expression itself?
-        // InitializerExpressionSyntax is usually part of ObjectCreation.
-        // Let's test `new Dictionary<string,int> { {"A", 1} }` as a whole expression.
-        Assert.Equal("{ 'a': 1 }", js);
+        Assert.Equal("$eq.collections.dictionary([['a', 1]])", js);
     }
 
     [Fact]

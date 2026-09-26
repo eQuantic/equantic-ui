@@ -37,20 +37,20 @@ export class CodeLanguages {
         return CodeLanguages._plainText ??= new PlainTextLanguage();
     }
 
-    static _known: Record<string, any> | undefined;
+    static _known: any | undefined;
 
-    static get known(): Record<string, any> {
-        return CodeLanguages._known ??= { ['c#']: CodeLanguages.cSharp, ['csharp']: CodeLanguages.cSharp, ['cs']: CodeLanguages.cSharp, ['typescript']: CodeLanguages.typeScript, ['ts']: CodeLanguages.typeScript, ['javascript']: CodeLanguages.typeScript, ['js']: CodeLanguages.typeScript, ['tsx']: CodeLanguages.typeScript, ['jsx']: CodeLanguages.typeScript, ['python']: CodeLanguages.python, ['py']: CodeLanguages.python, ['json']: CodeLanguages.json, ['xml']: CodeLanguages.xml, ['csproj']: CodeLanguages.xml, ['html']: CodeLanguages.xml, ['plist']: CodeLanguages.xml, ['text']: CodeLanguages.plainText, ['txt']: CodeLanguages.plainText, ['plain']: CodeLanguages.plainText };
+    static get known(): any {
+        return CodeLanguages._known ??= $eq.collections.dictionary([['c#', CodeLanguages.cSharp], ['csharp', CodeLanguages.cSharp], ['cs', CodeLanguages.cSharp], ['typescript', CodeLanguages.typeScript], ['ts', CodeLanguages.typeScript], ['javascript', CodeLanguages.typeScript], ['js', CodeLanguages.typeScript], ['tsx', CodeLanguages.typeScript], ['jsx', CodeLanguages.typeScript], ['python', CodeLanguages.python], ['py', CodeLanguages.python], ['json', CodeLanguages.json], ['xml', CodeLanguages.xml], ['csproj', CodeLanguages.xml], ['html', CodeLanguages.xml], ['plist', CodeLanguages.xml], ['text', CodeLanguages.plainText], ['txt', CodeLanguages.plainText], ['plain', CodeLanguages.plainText]]);
     }
 
     static register(name: string, language: any) {
-        return CodeLanguages.known[CodeLanguages.keyOf(name)] = language;
+        return $eq.mapSet(CodeLanguages.known, CodeLanguages.keyOf(name), language);
     }
 
     static for(name: string | null) {
         let language: any;
         if ((!$eq.text.hasNonWhiteSpace(name))) return CodeLanguages.plainText;
-        return (($0: any, $1: any) => (Object.prototype.hasOwnProperty.call($0, $1) ? ((language = $0[$1]), true) : ((language = null), false)))(CodeLanguages.known, CodeLanguages.keyOf(name)) ? language : CodeLanguages.plainText;
+        return (($0: any, $1: any) => ($0.has($1) ? ((language = $0.get($1)), true) : ((language = null), false)))(CodeLanguages.known, CodeLanguages.keyOf(name)) ? language : CodeLanguages.plainText;
     }
 
     static keyOf(name: string) {

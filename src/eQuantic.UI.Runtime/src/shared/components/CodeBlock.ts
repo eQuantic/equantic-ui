@@ -3,14 +3,14 @@ import { $eq, Box, BoxStyle, BuildContext, CodeDecoration, CodeDecorationKindVal
 export class CodeBlock extends StatelessComponent {
     static $typeId = 'eQuantic.UI.Components.CodeBlock';
     static selectionAlpha: number = Math.fround(0.28);
-    _cells: Record<string, any> = {};
+    _cells: any = $eq.collections.dictionary();
     static codeSlab: ColorToken = new ColorToken(Color.fromRgba(0x10, 0x14, 0x18, 0xFF));
     static codeInk: ColorToken = new ColorToken(Color.fromRgba(0xC9, 0xD4, 0xDE, 0xFF));
     static codeInkMuted: ColorToken = new ColorToken(Color.fromRgba(0x7C, 0x8A, 0x99, 0xFF));
     static codeSlabActive: ColorToken = new ColorToken(Color.fromRgba(0x1B, 0x22, 0x2B, 0xFF));
 
     static get $hydration() {
-        return { maxHeight: 'single', selectionBands: [{ of: Rect, members: { x: 'single', y: 'single', width: 'single', height: 'single' } }], metrics: CodeMetrics, viewportOffset: 'single', viewportHeight: 'single', viewportWidth: 'single' };
+        return { _cells: { dict: null, key: 'number' }, maxHeight: 'single', selectionBands: [{ of: Rect, members: { x: 'single', y: 'single', width: 'single', height: 'single' } }], metrics: CodeMetrics, viewportOffset: 'single', viewportHeight: 'single', viewportWidth: 'single' };
     }
 
     declare document: CodeDocument;
@@ -205,9 +205,9 @@ export class CodeBlock extends StatelessComponent {
 
     cellsOf(line: number) {
         let cells: any;
-        if ((($0: any) => (Object.prototype.hasOwnProperty.call($0, line) ? ((cells = $0[line]), true) : ((cells = null), false)))(this._cells)) return cells;
+        if ((($0: any) => ($0.has(line) ? ((cells = $0.get(line)), true) : ((cells = null), false)))(this._cells)) return cells;
         cells = new CodeLineCells(this.document.line(line), this.tabSize);
-        this._cells[line] = cells;
+        $eq.mapSet(this._cells, line, cells);
         return cells;
     }
 

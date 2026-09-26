@@ -227,48 +227,34 @@ public static class TypeSymbolExtensions
     }
 
     /// <summary>
-    /// True when <paramref name="type"/> is a generic dictionary (<c>Dictionary</c>, <c>IDictionary</c>
-    /// or <c>IReadOnlyDictionary</c>) whose KEY is a structural value type (record/struct/value tuple).
-    /// A plain JS object can't key on those — it coerces the key to a string via <c>toString</c>,
-    /// collapsing distinct values — so the transpiler routes these to the runtime
-    /// <c>$eq.collections.valueMap</c> (structural-equality keys). String/number/enum-keyed dictionaries
-    /// return <c>false</c> and keep the plain-object representation.
+    /// True when <paramref name="type"/> is one of the dictionaries of System.Collections.Generic:
+    /// <c>Dictionary</c>, <c>IDictionary</c>, <c>IReadOnlyDictionary</c>, <c>SortedDictionary</c> or
+    /// <c>SortedList</c>. Each is a runtime class on this side, the runtime's <c>Dictionary</c> or its
+    /// <c>SortedMap</c>, and <see cref="DictionaryFactory"/> names the factory that constructs it.
+    /// Matched on name, namespace and arity rather than a display-string prefix, which
+    /// <c>Dictionary&lt;,&gt;.KeyCollection</c> shares.
     /// </summary>
-    public static bool IsValueKeyedDictionary(this ITypeSymbol? type)
-    {
-        if (type is not INamedTypeSymbol named) return false;
-        var def = named.OriginalDefinition;
-        // Match on name + namespace + arity (not a display-string prefix) so nested helper types like
-        // `Dictionary<,>.KeyCollection` — whose display string also starts with "…Dictionary<" — don't
-        // get mistaken for the dictionary itself.
-        if (def?.ContainingNamespace?.ToDisplayString() != "System.Collections.Generic") return false;
-        var isDictionary = def.Name is "Dictionary" or "IDictionary" or "IReadOnlyDictionary";
-        return isDictionary
-            && named.TypeArguments.Length == 2
-            && named.TypeArguments[0].IsStructuralValueType();
-    }
+    internal static bool IsDictionary(this ITypeSymbol? type) => DictionaryName(type) is not null;
 
-    /// <summary>
-    /// True when <paramref name="type"/> is a key-sorted dictionary — <c>SortedDictionary&lt;K, V&gt;</c>
-    /// or the generic <c>SortedList&lt;K, V&gt;</c>. These keep their keys ordered, so they route to the
-    /// runtime <c>$eq.collections.sortedDictionary</c>/<c>sortedList</c> (sorted <c>Keys</c>/<c>Values</c>/
-    /// iteration) rather than the plain-object dictionary form. <see cref="SortedDictionaryFactory"/>
-    /// picks the matching runtime factory.
-    /// </summary>
-    public static bool IsSortedDictionary(this ITypeSymbol? type)
+    /// <summary>The runtime factory a dictionary of this type is constructed by: a sorted one's own,
+    /// or the runtime's <c>Dictionary</c>; null when the type is not a dictionary.</summary>
+    internal static string? DictionaryFactory(this ITypeSymbol? type) => DictionaryName(type) switch
     {
-        if (type is not INamedTypeSymbol named) return false;
-        var def = named.OriginalDefinition;
-        if (def?.ContainingNamespace?.ToDisplayString() != "System.Collections.Generic") return false;
-        return def.Name is "SortedDictionary" or "SortedList" && named.TypeArguments.Length == 2;
-    }
+        null => null,
+        "SortedDictionary" => Eq.SortedDictionary,
+        "SortedList" => Eq.SortedList,
+        _ => Eq.Dictionary,
+    };
 
-    /// <summary>The runtime factory (<c>$eq.collections.sortedDictionary</c>/<c>sortedList</c>) for a
-    /// sorted dictionary type, or <c>null</c> when it is not one.</summary>
-    public static string? SortedDictionaryFactory(this ITypeSymbol? type) =>
-        type is INamedTypeSymbol { OriginalDefinition.Name: "SortedList" } ? Eq.SortedList
-        : type.IsSortedDictionary() ? Eq.SortedDictionary
-        : null;
+    private static string? DictionaryName(ITypeSymbol? type)
+    {
+        if (type is not INamedTypeSymbol { TypeArguments.Length: 2 } named) return null;
+        var definition = named.OriginalDefinition;
+        if (definition.ContainingNamespace?.ToDisplayString() != "System.Collections.Generic") return null;
+        return definition.Name is "Dictionary" or "IDictionary" or "IReadOnlyDictionary" or "SortedDictionary" or "SortedList"
+            ? definition.Name
+            : null;
+    }
 
     /// <summary>
     /// Whether a receiver's STATIC type leaves its runtime shape open. An array, a List or a string
@@ -302,44 +288,6 @@ public static class TypeSymbolExtensions
             if (enumerable != null) return enumerable.TypeArguments[0];
         }
         return null;
-    }
-
-    /// <summary>
-    /// Whether the type is a Dictionary shape (Dictionary/IDictionary/IReadOnlyDictionary), and
-    /// whether its KEY is numeric. Transpiled dictionaries are plain JS objects — not iterable —
-    /// so every construct that ENUMERATES one (foreach, a List copy) must go through
-    /// <c>$eq.entries(obj, numericKeys)</c>, which yields destructurable [key, value] pairs that
-    /// also answer .key/.value, with numeric keys restored (Object.entries strings them, and a
-    /// stringified key silently turns later arithmetic into concatenation).
-    /// </summary>
-    public static bool IsDictionaryLike(this ITypeSymbol? type, out string keyForm)
-    {
-        // What `$eq.entries` restores each stringified object key as — the KEY TYPE the compiler
-        // saw: `'long'` a BigInt, `'decimal'` a runtime Decimal, `true` a plain number, `false`
-        // the string it already is. An object key is always a string at runtime; the C# key the
-        // loop binds is the exact type, or `key + 1` concatenates (or throws, for a BigInt).
-        keyForm = "false";
-        if (type is not INamedTypeSymbol named) return false;
-        var definition = named.OriginalDefinition.ToDisplayString();
-        var isDictionary = definition is "System.Collections.Generic.Dictionary<TKey, TValue>"
-            or "System.Collections.Generic.IDictionary<TKey, TValue>"
-            or "System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>";
-        if (!isDictionary || named.TypeArguments.Length != 2) return false;
-        var key = named.TypeArguments[0].SpecialType;
-        keyForm = key switch
-        {
-            SpecialType.System_Int64 or SpecialType.System_UInt64 => "'long'",
-            SpecialType.System_Decimal => "'decimal'",
-            SpecialType.System_Int32 or SpecialType.System_Single or SpecialType.System_Double
-                or SpecialType.System_Int16 or SpecialType.System_Byte => "true",
-            _ => "false",
-        };
-        // ONLY primitive-keyed dictionaries lower to plain objects. A record/struct key lowers to
-        // $eq.collections.valueMap, which is ITERABLE with .key/.value pairs already — wrapping it
-        // in Object.entries would enumerate the map's internals, not its entries (the conformance
-        // suite caught exactly that).
-        return keyForm != "false" || key == SpecialType.System_String
-            || named.TypeArguments[0] is INamedTypeSymbol { TypeKind: TypeKind.Enum };
     }
 
     /// <summary>

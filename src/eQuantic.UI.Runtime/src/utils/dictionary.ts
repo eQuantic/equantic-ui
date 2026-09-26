@@ -81,6 +81,22 @@ export class Dictionary<K, V> implements Iterable<Pair<K, V>> {
     return this;
   }
 
+  /** `TryAdd`: a key that is not there is added and answers true, one that is answers false and keeps its value. */
+  tryAdd(key: K, value: V): boolean {
+    if (key == null) throw new Error("Value cannot be null. (Parameter 'key')");
+    if (this.find(key) >= 0) return false;
+    this.set(key, value);
+    return true;
+  }
+
+  /**
+   * `ContainsValue`: whether a value is held, compared as .NET's default comparer compares the value
+   * type, by value when `byValue` says so and as SameValueZero otherwise.
+   */
+  containsValue(value: V, byValue = false): boolean {
+    return containsValue(this.slots, value, byValue);
+  }
+
   /** `Remove`: frees the key's slot for the next insertion, and answers whether the key was there. */
   delete(key: K): boolean {
     const slot = this.find(key);
@@ -148,6 +164,20 @@ export function wireObject<K, V>(entries: Iterable<{ key: K; value: V } | undefi
     });
   }
   return json;
+}
+
+/** Whether live entries hold `value`, by `$eq.equals` or by SameValueZero (NaN is NaN, as a double's Equals holds). */
+export function containsValue<V>(
+  entries: Iterable<{ value: V } | undefined>,
+  value: V,
+  byValue: boolean,
+): boolean {
+  for (const entry of entries) {
+    if (entry === undefined) continue;
+    const held = entry.value;
+    if (byValue ? equals(held, value) : held === value || (held !== held && value !== value)) return true;
+  }
+  return false;
 }
 
 /** A key as .NET's messages write it, by its `ToString`: a bool as True or False. */

@@ -230,7 +230,6 @@ public class CSharpToJsConverter
         // === Invocation Strategies (Priority 10) ===
         _strategyRegistry.Register<ConsoleStrategy>();
         _strategyRegistry.Register<MathStrategy>();
-        _strategyRegistry.Register<DictionaryStrategy>();
         _strategyRegistry.Register<ServiceProviderStrategy>();
         _strategyRegistry.Register<ToStringStrategy>();
         _strategyRegistry.Register<CollectionMaterializationStrategy>();
@@ -276,8 +275,7 @@ public class CSharpToJsConverter
         _strategyRegistry.Register<DateTimeOffsetStrategy>();
         _strategyRegistry.Register<StringBuilderStrategy>();
         _strategyRegistry.Register<QueueStackStrategy>();
-        _strategyRegistry.Register<ValueKeyedDictionaryStrategy>(); // Priority 25 - structurally-keyed dictionaries
-        _strategyRegistry.Register<SortedDictionaryStrategy>();     // Priority 25 - key-sorted dictionaries
+        _strategyRegistry.Register<DictionaryStrategy>(); // Priority 25 - every dictionary, a runtime class
         _strategyRegistry.Register<RegexStrategy>();
         _strategyRegistry.Register<HashSetStrategy>();
         _strategyRegistry.Register<NumericConstantStrategy>();

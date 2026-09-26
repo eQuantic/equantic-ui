@@ -63,7 +63,6 @@ ServiceProviderStrategy
 SingleStrategy
 SizeOfExpressionStrategy
 SkipStrategy
-SortedDictionaryStrategy
 StackAllocArrayCreationStrategy
 StringBuilderStrategy
 StringMethodStrategy
@@ -80,7 +79,6 @@ TupleExpressionStrategy
 TupleMemberAccessStrategy
 TypeofExpressionStrategy
 UnsupportedConstructStrategy
-ValueKeyedDictionaryStrategy
 WebPrimitiveStrategy
 WithExpressionStrategy
 ZipStrategy

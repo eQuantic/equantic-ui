@@ -10,7 +10,7 @@
  * of the string subsystem); pass simple/numeric keys for guaranteed .NET parity.
  */
 
-import { pair, wireObject, type Pair } from './dictionary';
+import { containsValue, pair, wireObject, type Pair } from './dictionary';
 
 /** `Comparer<T>.Default`-style ordering: numeric for numbers/bigint, relational otherwise. */
 export function defaultCompare<T>(a: T, b: T): number {
@@ -161,6 +161,19 @@ export class SortedMap<K, V> implements Iterable<Pair<K, V>> {
     if (i < 0) return false;
     this.entries.splice(i, 1);
     return true;
+  }
+
+  /** `TryAdd`: a key that is not there is added and answers true, one that is answers false. */
+  tryAdd(key: K, value: V): boolean {
+    if (key == null) throw new Error("Value cannot be null. (Parameter 'key')");
+    if (this.indexOf(key) >= 0) return false;
+    this.set(key, value);
+    return true;
+  }
+
+  /** `ContainsValue`, compared as the runtime's Dictionary compares one. */
+  containsValue(value: V, byValue = false): boolean {
+    return containsValue(this.entries, value, byValue);
   }
 
   clear(): void {

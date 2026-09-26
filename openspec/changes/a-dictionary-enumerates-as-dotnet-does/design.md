@@ -29,12 +29,18 @@ removal: it would enumerate `b,c,d` where .NET enumerates `d,b,c`.
 ### A key compares as the default comparer does, decided by eqc
 
 Where a key is found is the only place the key type matters. A number, a string, a char, a bool, a
-long, an enum's name, a `Guid` and a class instance that does not override `Equals` are found
-through a JavaScript `Map` of key to slot: its SameValueZero is .NET's default equality for each of
-them, NaN included. A record, a struct, a tuple, an anonymous type, a decimal, a date, a class that
-overrides `Equals`, `object` and an interface are found by `$eq.equals` over the live slots, which
-delegates to a twin's own `equals`. eqc knows the key type and passes the choice to the factory, so
-the runtime never guesses from a value.
+long, an enum, a `Guid` and a class instance that does not override `Equals` are found through a
+JavaScript `Map` of key to slot: its SameValueZero is .NET's default equality for each of them, NaN
+included. A record, a struct, a tuple, an anonymous type, a decimal, a date and a class that
+overrides `Equals` are found by `$eq.equals` over the live slots, which delegates to a twin's own
+`equals`. eqc knows the key type and passes the choice to the factory, so the runtime never guesses
+from a value. The rule is LINQ's for its keyed operators (`LinqKeys.ComparesByValue`) plus the
+`Equals` override, which LINQ's tuple equality must not take since a tuple's `==` is its elements'
+operators. `object`, an interface and a type parameter stay on the `Map`, as LINQ's keys do: a
+record behind one of them compares by reference, the limit GroupBy already has.
+
+`ContainsValue` compares a value by the same rule, applied to the value type, and `TryAdd` and
+`ContainsValue` are methods of the class, so each argument is evaluated once and in its place.
 
 ### A pair is both shapes C# reads
 
@@ -44,12 +50,18 @@ this way; the map path yielded `{ key, value }`, which is why its deconstructing
 
 ### One lowering
 
-Every `Dictionary`, `IDictionary` and `IReadOnlyDictionary` is owned by the map-backed strategy,
-with the factory chosen by the key's comparison. The plain-object strategy, `IsDictionaryLike`,
-`$eq.entries`, `$eq.dictGet` and the plain branches of the entry and lookup helpers go, with the
-tests that pinned their shapes. Construction takes a source dictionary (a copy, which was an alias)
-and an initializer of either form. `TryAdd`, `ContainsValue`, `Keys.Contains` and `Keys.Count` join
-the members the strategy lowers.
+One strategy, `DictionaryStrategy`, born on the IR, owns every `Dictionary`, `IDictionary`,
+`IReadOnlyDictionary`, `SortedDictionary` and `SortedList`, with the factory chosen by the type and
+the key's comparison. The plain-object strategy, the abstract map-backed one and its two
+subclasses, `IsDictionaryLike`, `$eq.entries`, `$eq.dictGet`, `$eq.collections.valueMap` and the
+plain branches of the entry and lookup helpers go, with the tests that pinned their shapes, and the
+entry and lookup helpers keep one form each. Construction takes a source dictionary (a copy, which
+was an alias), an initializer of either form, or both, and refuses a comparer. `Keys.Contains`,
+`Keys.Count`, `Values.Count` and `Remove(key, out value)` join the members lowered, and a
+null-conditional write (`d?[k] = v`) and a property pattern's `Count` (`d is { Count: > 0 }`) go
+through the class too. Where no model can be asked, a
+creation is known by the name it writes and a call by `ContainsKey` or `TryGetValue`, the two names
+only a dictionary answers.
 
 ### The wire keeps working, and says what it cannot keep
 
@@ -70,7 +82,11 @@ because the runtime's own nodes keep plain objects on the hot path.
 ### TypeScript annotations
 
 A dictionary member annotated `Record<string, any>` would not type-check against the class, and an
-`IDictionary` already degraded to `any`. Every dictionary annotation degrades to `any` alike.
+`IDictionary` already degraded to `any`. Every dictionary annotation degrades to `any` alike, an empty
+local included, which TypeScript would otherwise infer keyed and valued by `unknown`. Reading one
+goes through `$eq.mapGet`, whose value type defaults to `any`: inference from an `any` map finds no
+candidate and would land on `unknown`, refusing every read in a twin, while a typed map still infers
+its value.
 
 ## Risks / Trade-offs
 
@@ -85,5 +101,10 @@ A dictionary member annotated `Record<string, any>` would not type-check against
 - `HashSet<T>` reuses a removed slot the same way in .NET, and a JavaScript `Set` does not (#438).
 - LINQ over a dictionary as a sequence of pairs (`d.Where`, `d.Select`, `d.First()`) still reaches
   array templates that a dictionary does not answer, as it did as a plain object (#439).
-- A dictionary keyed by an enum with aliases compares the member names; `ToDictionary` keeps
+- `Add` of a key already there replaces its value where .NET throws, as it did (#440).
+- `string.Join` writes each element with JavaScript's `toString`, so `string.Join(",", d.Keys)` over
+  bool keys answers `true,false` (#441).
+- EqJson refuses a dictionary keyed by an enum in both directions, measured on .NET 10, and a flags
+  enum's key crosses as member names (#442).
+- A dictionary keyed by an enum with aliases compares the member names, and `ToDictionary` keeps
   refusing one.

@@ -53,9 +53,9 @@ declares: a number for a numeric key, a `long` as a long, a char as a char.
 ### Requirement: A key compares as .NET's default comparer compares it
 
 Two keys SHALL be the same key when .NET's default equality comparer for the key type says so: by
-value for a record, a struct, a tuple, a decimal and a date, by reference for a class that does not
-override `Equals`, and by value for a number (NaN equal to NaN), a string, a char, a bool, a long and
-a `Guid`.
+value for a record, a struct, a tuple, a decimal, a date and a class that overrides `Equals`, by
+reference for a class that does not, and by value for a number (NaN equal to NaN), a string, a char,
+a bool, a long, an enum and a `Guid`.
 
 #### Scenario: A date key
 

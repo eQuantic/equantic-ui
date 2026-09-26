@@ -18,7 +18,7 @@ export class CodeDiffer {
     }
 
     static compareLines(original: string[], modified: string[]) {
-        let ids: Record<string, number> = {};
+        let ids: any = $eq.collections.dictionary();
         let a = CodeDiffer.idsOf(original, ids);
         let b = CodeDiffer.idsOf(modified, ids);
         let removed = new Array(a.length).fill(false);
@@ -43,14 +43,14 @@ export class CodeDiffer {
         return changes;
     }
 
-    static idsOf(items: string[], ids: Record<string, any>) {
+    static idsOf(items: string[], ids: any) {
         let id: any;
         let result = new Array(items.length).fill(0);
-        let next = Object.keys(ids).length;
+        let next = ids.size;
         for (let i = 0; i < items.length; i++) {
-            if (!(($0: any, $1: any) => (Object.prototype.hasOwnProperty.call($0, $1) ? ((id = $0[$1]), true) : ((id = 0), false)))(ids, items[i])) {
+            if (!(($0: any, $1: any) => ($0.has($1) ? ((id = $0.get($1)), true) : ((id = 0), false)))(ids, items[i])) {
                 id = next++;
-                ids[items[i]] = id;
+                $eq.mapSet(ids, items[i], id);
             }
             result[i] = id;
         }
@@ -161,7 +161,7 @@ export class CodeDiffer {
         let bLines: number[] = [];
         let bColumns: number[] = [];
         if (!CodeDiffer.tokenize(original, originalStart, originalCount, aTexts, aLines, aColumns) || !CodeDiffer.tokenize(modified, modifiedStart, modifiedCount, bTexts, bLines, bColumns)) return [];
-        let ids: Record<string, number> = {};
+        let ids: any = $eq.collections.dictionary();
         let a = CodeDiffer.idsOf(aTexts, ids);
         let b = CodeDiffer.idsOf(bTexts, ids);
         let removed = new Array(a.length).fill(false);

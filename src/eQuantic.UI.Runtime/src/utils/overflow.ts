@@ -176,8 +176,13 @@ export function substring(value: string, start: number, length?: number): string
 /**
  * A dictionary's indexer read, on the runtime's `Dictionary` or a `SortedDictionary` or `SortedList`,
  * whose own `get` answers undefined for a key that is not there, where .NET throws.
+ *
+ * `V = any`, deliberately: eqc annotates every dictionary `any` (the class has no `Record` spelling),
+ * and inference from an `any` map finds no candidate for `V`, which would land on `unknown` and refuse
+ * every read in a transpiled twin. A typed map still infers its value type. The C# compiler is the
+ * type layer for what a dictionary holds.
  */
-export function mapGet<K, V>(map: { has(key: K): boolean; get(key: K): V | undefined }, key: K): V {
+export function mapGet<K, V = any>(map: { has(key: K): boolean; get(key: K): V | undefined }, key: K): V {
   if (key === null || key === undefined) throw new Error("Value cannot be null. (Parameter 'key')");
   // One lookup where the key is there: `has` is asked only when `get` answers undefined, which is
   // either a missing key or a stored undefined, and a value-keyed map finds a key by a linear scan.

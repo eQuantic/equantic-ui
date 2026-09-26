@@ -9,9 +9,8 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 
 /// <summary>
 /// <c>foreach (var (k, v) in pairs)</c> — a deconstructing loop becomes <c>for (const [k, v] of …)</c>.
-/// A transpiled Dictionary is a plain object — not iterable — so it enumerates through
-/// <c>$eq.entries</c>, which yields pairs that destructure AND answer <c>.key</c>/<c>.value</c>,
-/// with numeric keys restored as numbers.
+/// A dictionary is iterable as it is: the pairs its runtime class enumerates destructure AND answer
+/// <c>.key</c>/<c>.value</c>, each key in its own type.
 /// </summary>
 public class ForEachVariableStatementStrategy : IStatementStrategy
 {
@@ -25,12 +24,6 @@ public class ForEachVariableStatementStrategy : IStatementStrategy
         var foreachStmt = (ForEachVariableStatementSyntax)node;
         var pattern = ConvertDesignation(foreachStmt.Variable);
         var collection = context.Converter.ConvertExpression(foreachStmt.Expression);
-
-        if (context.SemanticHelper.GetType(foreachStmt.Expression).IsDictionaryLike(out var keyForm))
-        {
-            context.UsedHelpers.Add(Eq.Import);
-            collection = $"$eq.entries({collection}, {keyForm})";
-        }
 
         var body = context.Converter.ConvertStatementIr(foreachStmt.Statement);
         var loopType = foreachStmt.AwaitKeyword.Value != null ? "for await" : "for";

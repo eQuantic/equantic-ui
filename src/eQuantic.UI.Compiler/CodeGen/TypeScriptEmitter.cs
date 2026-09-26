@@ -2531,9 +2531,11 @@ public class TypeScriptEmitter
                 $"{(arguments.Count == 2 ? "value" : "arg" + (index + 1))}: {CSharpTypeToTypeScript(argument)}");
             tsType = $"({string.Join(", ", parameters)}) => {result}";
         }
+        // A dictionary is the runtime's dictionary class, which no `Record` describes; every
+        // dictionary type degrades to `any` alike, as an IDictionary already did.
         else if (tsType.StartsWith("Dictionary<") && tsType.EndsWith(">"))
         {
-            tsType = "Record<string, any>";
+            tsType = "any";
         }
 
         // A NULLABLE C# type is nullable in TypeScript too. The flag was computed and then dropped,

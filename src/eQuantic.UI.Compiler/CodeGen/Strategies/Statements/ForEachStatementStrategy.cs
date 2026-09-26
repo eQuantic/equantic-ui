@@ -7,8 +7,7 @@ using eQuantic.UI.Compiler.CodeGen.Ir;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Statements;
 
 /// <summary><c>foreach (var x in xs)</c> → <c>for (const x of xs)</c>; <c>await foreach</c> →
-/// <c>for await</c>. A dictionary enumerates through <c>$eq.entries</c>, since a transpiled
-/// Dictionary is a plain object and not iterable.</summary>
+/// <c>for await</c>. A dictionary is iterable as it is, its runtime class enumerating its pairs.</summary>
 public class ForEachStatementStrategy : IStatementStrategy
 {
     public bool CanConvert(StatementSyntax node, ConversionContext context)
@@ -21,13 +20,6 @@ public class ForEachStatementStrategy : IStatementStrategy
         var foreachStmt = (ForEachStatementSyntax)node;
         var item = foreachStmt.Identifier.Text.ToJsIdentifier();
         var collection = context.Converter.ConvertExpression(foreachStmt.Expression);
-
-        // See ForEachVariableStatementStrategy: dictionaries enumerate through $eq.entries.
-        if (context.SemanticHelper.GetType(foreachStmt.Expression).IsDictionaryLike(out var keyForm))
-        {
-            context.UsedHelpers.Add(Eq.Import);
-            collection = $"$eq.entries({collection}, {keyForm})";
-        }
 
         var body = context.Converter.ConvertStatementIr(foreachStmt.Statement);
         var loopType = foreachStmt.AwaitKeyword.Value != null ? "for await" : "for";

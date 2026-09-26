@@ -186,6 +186,29 @@ describe('Dictionary — keys found by value', () => {
   });
 });
 
+describe('Dictionary — TryAdd and ContainsValue', () => {
+  it('adds a key that is not there and keeps the value of one that is', () => {
+    const d = dictionary<string, number>([['a', 1]]);
+    expect(d.tryAdd('a', 2)).toBe(false);
+    expect(d.tryAdd('b', 3)).toBe(true);
+    expect(d.get('a')).toBe(1);
+    expect(d.size).toBe(2);
+    expect(() => d.tryAdd(null as unknown as string, 0)).toThrow("Value cannot be null. (Parameter 'key')");
+  });
+
+  it('finds a value as SameValueZero, or by value when asked', () => {
+    const d = dictionary<string, unknown>([
+      ['n', NaN],
+      ['p', { x: 1 }],
+    ]);
+    expect(d.containsValue(NaN)).toBe(true);
+    expect(d.containsValue({ x: 1 })).toBe(false);
+    expect(d.containsValue({ x: 1 }, true)).toBe(true);
+    d.delete('n');
+    expect(d.containsValue(NaN)).toBe(false);
+  });
+});
+
 describe('Dictionary — the pairs it enumerates', () => {
   it('destructures a pair and reads its key and value', () => {
     const d = dictionary<number, string>([

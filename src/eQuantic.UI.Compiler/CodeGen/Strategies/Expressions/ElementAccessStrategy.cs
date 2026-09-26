@@ -36,16 +36,15 @@ public class ElementAccessStrategy : IExpressionIrStrategy
         }
 
         // Each indexer argument is one subscript.
-        // A DICTIONARY READ fails for a key that is not there. A plain object answers `undefined`,
-        // so the absence spread through the program instead of stopping it where .NET stops it —
-        // and an undefined reaching a render is a blank, not an error anyone can trace. Only a
-        // READ: the same syntax on the left of an assignment is how a key is ADDED.
-        if (!IsAssignmentTarget(elementAccess) && DictionaryEntry.Of(elementAccess, context) is { Entry: var entry })
+        // A DICTIONARY READ fails for a key that is not there, where the class's own `get` answers
+        // `undefined`, so the absence would spread through the program instead of stopping it where
+        // .NET stops it. Only a READ: the same syntax on the left of an assignment is how a key is
+        // ADDED.
+        if (!IsAssignmentTarget(elementAccess) && DictionaryEntry.Of(elementAccess, context) is not null)
         {
             context.UsedHelpers.Add(Eq.Import);
-            var map = context.Converter.ConvertExpression(elementAccess.Expression);
-            var key = context.Converter.ConvertExpression(elementAccess.ArgumentList.Arguments[0].Expression);
-            return JsExpr.Callish(entry.Read(map, key));
+            return DictionaryEntry.Read(context.Converter.ConvertIr(elementAccess.Expression),
+                context.Converter.ConvertIr(elementAccess.ArgumentList.Arguments[0].Expression));
         }
 
         var indexed = context.Converter.ConvertIr(elementAccess.Expression);

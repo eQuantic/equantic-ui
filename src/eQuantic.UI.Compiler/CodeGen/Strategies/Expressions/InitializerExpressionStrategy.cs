@@ -1,6 +1,8 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using eQuantic.UI.Compiler.CodeGen.Ir;
+using eQuantic.UI.Compiler.CodeGen.Strategies.Types;
 
 namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 
@@ -9,7 +11,7 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies.Expressions;
 /// Handles:
 /// - { new A(), new B() } → [ new A(), new B() ]
 /// - { Prop = val } → { prop: val }
-/// - { {k, v} } → { k: v }
+/// - { {k, v} } → { k: v }, and the runtime's dictionary under a dictionary-typed member
 /// </summary>
 public class InitializerExpressionStrategy : IConversionStrategy
 {
@@ -26,11 +28,17 @@ public class InitializerExpressionStrategy : IConversionStrategy
     public string ConvertInitializer(InitializerExpressionSyntax initializer, ConversionContext context)
     {
         if (initializer == null) return "{}";
+
+        // An initializer nested under a dictionary-typed member (`Map = { ["a"] = 1 }`) seeds the
+        // runtime's dictionary class, as a constructed dictionary is seeded.
+        if (initializer.Parent is AssignmentExpressionSyntax { Left: var member } parent && parent.Right == initializer
+            && context.SemanticHelper.GetType(member) is { } memberType && memberType.IsDictionary())
+            return JsExprWriter.Write(DictionaryStrategy.Seeded(memberType, initializer, context));
         
         // Collection Initializer: { new A(), new B() } -> [ new A(), new B() ]
         if (initializer.Kind() == SyntaxKind.CollectionInitializerExpression)
         {
-            // Check if it's a Dictionary initializer: { {k, v}, {k, v} }
+            // Pairs for a target that is not a dictionary: { {k, v}, {k, v} }
             if (initializer.Expressions.Count > 0 && initializer.Expressions.All(e => e is InitializerExpressionSyntax ie && ie.Expressions.Count == 2))
             {
                 var pairs = initializer.Expressions.Cast<InitializerExpressionSyntax>()

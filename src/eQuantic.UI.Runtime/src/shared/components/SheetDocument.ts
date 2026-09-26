@@ -2,17 +2,17 @@ import { $eq, CellRef, SheetCellSnapshot } from "../runtime-exports";
 
 export class SheetDocument {
     constructor(rows: number = 1000, cols: number = 26, props?: any) {
-        this._cells = {};
-        this._rowHeights = {};
-        this._colWidths = {};
+        this._cells = $eq.collections.dictionary();
+        this._rowHeights = $eq.collections.dictionary();
+        this._colWidths = $eq.collections.dictionary();
         this.rows = Math.max(1, rows);
         this.cols = Math.max(1, Math.min(cols, 16384));
         if (props && typeof props === 'object') Object.assign(this, props);
     }
 
-    _cells: Record<string, any>;
-    _rowHeights: Record<string, any>;
-    _colWidths: Record<string, any>;
+    _cells: any;
+    _rowHeights: any;
+    _colWidths: any;
     static defaultRowHeight: number = 28;
     static defaultColWidth: number = 96;
     rows: number = 0;
@@ -24,29 +24,29 @@ export class SheetDocument {
 
     getCell(cell: CellRef) {
         let value: any;
-        return (($0: any, $1: any) => (Object.prototype.hasOwnProperty.call($0, $1) ? ((value = $0[$1]), true) : ((value = null), false)))(this._cells, cell.key) ? value : '';
+        return (($0: any, $1: any) => ($0.has($1) ? ((value = $0.get($1)), true) : ((value = null), false)))(this._cells, cell.key) ? value : '';
     }
 
     setCell(cell: CellRef, value: string) {
-        if (value.length === 0) delete this._cells[cell.key]; else this._cells[cell.key] = value;
+        if (value.length === 0) this._cells.delete(cell.key); else $eq.mapSet(this._cells, cell.key, value);
     }
 
     rowHeight(row: number) {
         let height: any;
-        return (($0: any) => (Object.prototype.hasOwnProperty.call($0, row) ? ((height = $0[row]), true) : ((height = 0), false)))(this._rowHeights) ? height : SheetDocument.defaultRowHeight;
+        return (($0: any) => ($0.has(row) ? ((height = $0.get(row)), true) : ((height = 0), false)))(this._rowHeights) ? height : SheetDocument.defaultRowHeight;
     }
 
     colWidth(col: number) {
         let width: any;
-        return (($0: any) => (Object.prototype.hasOwnProperty.call($0, col) ? ((width = $0[col]), true) : ((width = 0), false)))(this._colWidths) ? width : SheetDocument.defaultColWidth;
+        return (($0: any) => ($0.has(col) ? ((width = $0.get(col)), true) : ((width = 0), false)))(this._colWidths) ? width : SheetDocument.defaultColWidth;
     }
 
     setRowHeight(row: number, height: number) {
-        if (Math.abs(Math.fround(height - SheetDocument.defaultRowHeight)) < Math.fround(0.01)) delete this._rowHeights[row]; else this._rowHeights[row] = Math.max(12, height);
+        if (Math.abs(Math.fround(height - SheetDocument.defaultRowHeight)) < Math.fround(0.01)) this._rowHeights.delete(row); else $eq.mapSet(this._rowHeights, row, Math.max(12, height));
     }
 
     setColWidth(col: number, width: number) {
-        if (Math.abs(Math.fround(width - SheetDocument.defaultColWidth)) < Math.fround(0.01)) delete this._colWidths[col]; else this._colWidths[col] = Math.max(24, width);
+        if (Math.abs(Math.fround(width - SheetDocument.defaultColWidth)) < Math.fround(0.01)) this._colWidths.delete(col); else $eq.mapSet(this._colWidths, col, Math.max(24, width));
     }
 
     clamp(cell: CellRef) {
@@ -54,13 +54,13 @@ export class SheetDocument {
     }
 
     hasValue(cell: CellRef) {
-        return Object.prototype.hasOwnProperty.call(this._cells, cell.key);
+        return this._cells.has(cell.key);
     }
 
     shiftRows(atRow: number, delta: number) {
         let removed: SheetCellSnapshot[] = [];
         let moved: SheetCellSnapshot[] = [];
-        for (const [key, value] of $eq.entries(this._cells, true)) {
+        for (const [key, value] of this._cells) {
             let cell = CellRef.fromKey(key);
             if (cell.row < atRow) continue;
             if (delta < 0 && cell.row < atRow - delta) {
@@ -69,9 +69,9 @@ export class SheetDocument {
             }
             moved.push(new SheetCellSnapshot(cell, value));
         }
-        for (const snapshot of removed) delete this._cells[snapshot.cell.key];
-        for (const snapshot of moved) delete this._cells[snapshot.cell.key];
-        for (const snapshot of moved) this._cells[new CellRef(snapshot.cell.row + delta, snapshot.cell.col).key] = snapshot.value;
+        for (const snapshot of removed) this._cells.delete(snapshot.cell.key);
+        for (const snapshot of moved) this._cells.delete(snapshot.cell.key);
+        for (const snapshot of moved) $eq.mapSet(this._cells, new CellRef(snapshot.cell.row + delta, snapshot.cell.col).key, snapshot.value);
         SheetDocument.shiftSizes(this._rowHeights, atRow, delta);
         this.rows = Math.max(1, this.rows + delta);
         return removed;
@@ -80,7 +80,7 @@ export class SheetDocument {
     shiftCols(atCol: number, delta: number) {
         let removed: SheetCellSnapshot[] = [];
         let moved: SheetCellSnapshot[] = [];
-        for (const [key, value] of $eq.entries(this._cells, true)) {
+        for (const [key, value] of this._cells) {
             let cell = CellRef.fromKey(key);
             if (cell.col < atCol) continue;
             if (delta < 0 && cell.col < atCol - delta) {
@@ -89,25 +89,25 @@ export class SheetDocument {
             }
             moved.push(new SheetCellSnapshot(cell, value));
         }
-        for (const snapshot of removed) delete this._cells[snapshot.cell.key];
-        for (const snapshot of moved) delete this._cells[snapshot.cell.key];
-        for (const snapshot of moved) this._cells[new CellRef(snapshot.cell.row, snapshot.cell.col + delta).key] = snapshot.value;
+        for (const snapshot of removed) this._cells.delete(snapshot.cell.key);
+        for (const snapshot of moved) this._cells.delete(snapshot.cell.key);
+        for (const snapshot of moved) $eq.mapSet(this._cells, new CellRef(snapshot.cell.row, snapshot.cell.col + delta).key, snapshot.value);
         SheetDocument.shiftSizes(this._colWidths, atCol, delta);
         this.cols = Math.max(1, Math.min(this.cols + delta, 16384));
         return removed;
     }
 
-    static shiftSizes(sizes: Record<string, any>, at: number, delta: number) {
-        if (Object.keys(sizes).length === 0) return;
-        let entries = $eq.entries(sizes, true);
+    static shiftSizes(sizes: any, at: number, delta: number) {
+        if (sizes.size === 0) return;
+        let entries = [...sizes];
         for (const entry of entries) {
             if (entry.key < at) continue;
-            delete sizes[entry.key];
+            sizes.delete(entry.key);
         }
         for (const entry of entries) {
             if (entry.key < at) continue;
             if (delta < 0 && entry.key < at - delta) continue;
-            sizes[entry.key + delta] = entry.value;
+            $eq.mapSet(sizes, entry.key + delta, entry.value);
         }
     }
 }

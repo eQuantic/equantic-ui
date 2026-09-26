@@ -32,11 +32,12 @@ public class InvocationStrategyTests
     }
 
     [Fact]
-    public void DictionaryContainsKey_AsksForTheObjectsOwnKey()
+    public void DictionaryContainsKey_AsksTheClass()
     {
+        // Unbound where no model answers: ContainsKey is a name only a dictionary has.
         var code = "dict.ContainsKey(\"key\")";
         var js = ConvertExpression(code);
-        Assert.Equal("Object.prototype.hasOwnProperty.call(dict, 'key')", js);
+        Assert.Equal("dict.has('key')", js);
     }
     
     [Fact]

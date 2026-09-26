@@ -34,10 +34,10 @@ public class ExpressionStrategyTests
     }
 
     [Fact]
-    public void ObjectCreation_Dictionary_MapsTo_Object()
+    public void ObjectCreation_Dictionary_IsTheRuntimesDictionary()
     {
         var result = TestHelper.ConvertExpression("new Dictionary<string, int>()");
-        result.Should().Be("{}");
+        result.Should().Be("$eq.collections.dictionary()");
     }
 
     [Fact]

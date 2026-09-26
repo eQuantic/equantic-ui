@@ -52,10 +52,10 @@ internal static class BoolLogic
         context.UsedHelpers.Add(Eq.Import);
         var right = context.Converter.ConvertIr(assignment.Right);
 
-        if (DictionaryEntry.Of(assignment.Left, context) is { } found)
+        if (DictionaryEntry.Of(assignment.Left, context) is { } entry)
         {
-            var (entry, form) = found;
-            return JsExpr.Template($"({form.Write("{0}", "{1}", Combine(op, form.Read("{0}", "{1}"), "{2}"))})",
+            return JsExpr.Template(
+                $"({DictionaryEntry.Write("{0}", "{1}", Combine(op, DictionaryEntry.Read("{0}", "{1}"), "{2}"))})",
                 [context.Converter.ConvertIr(entry.Expression),
                  context.Converter.ConvertIr(entry.ArgumentList.Arguments[0].Expression),
                  right],

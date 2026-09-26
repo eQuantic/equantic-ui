@@ -5,14 +5,11 @@ using eQuantic.UI.Compiler.CodeGen.Ir;
 namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 
 /// <summary>
-/// The two LOOKUPS a dictionary answers beyond yes or no — <c>TryGetValue</c> and
-/// <c>GetValueOrDefault</c> — written once, over the two questions each representation asks in
-/// its own way: whether the key is there, and what it holds. A plain object asks for its OWN key,
-/// for the reason ContainsKey gives (a prototype member such as <c>"toString"</c> is a miss), and
-/// indexes; a runtime map (<c>$eq.collections.valueMap</c>, <c>sortedDictionary</c>…) asks
-/// <c>has</c> and <c>get</c>.
+/// The LOOKUPS a dictionary answers beyond yes or no — <c>TryGetValue</c>, <c>GetValueOrDefault</c> and
+/// <c>Remove(key, out value)</c> — over the two questions the runtime's dictionary classes answer:
+/// whether the key is there (<c>has</c>) and what it holds (<c>get</c>).
 /// <para>
-/// Each lowering kept its own copy of both before this, and the copies were wrong the same way:
+/// Written once, for what every copy of them had got wrong:
 /// </para>
 /// <list type="bullet">
 /// <item>The receiver and the key are named twice — in the question and in the read — so a call
@@ -30,29 +27,16 @@ namespace eQuantic.UI.Compiler.CodeGen.Strategies;
 /// — reads the dictionary its first argument passes, where the type's name was taken for it.</item>
 /// </list>
 /// </summary>
-internal sealed class DictionaryLookup
+internal static class DictionaryLookup
 {
-    /// <summary>A dictionary lowered to a plain object.</summary>
-    public static readonly DictionaryLookup PlainObject =
-        new("Object.prototype.hasOwnProperty.call({r}, {k})", "{r}[{k}]");
-
-    /// <summary>A dictionary lowered to a runtime map.</summary>
-    public static readonly DictionaryLookup RuntimeMap = new("{r}.has({k})", "{r}.get({k})");
-
     // Both over {r}, the dictionary, and {k}, the key.
-    private readonly string _has;
-    private readonly string _read;
-
-    private DictionaryLookup(string has, string read)
-    {
-        _has = has;
-        _read = read;
-    }
+    private const string Has = "{r}.has({k})";
+    private const string Get = "{r}.get({k})";
 
     /// <summary>
     /// The dictionary a lookup reads: the call's receiver, or — for an extension called in its
     /// static form, <c>CollectionExtensions.GetValueOrDefault(d, key)</c> — the argument its first
-    /// parameter takes. Which representation a lookup has is decided by THIS expression's type.
+    /// parameter takes. Whether a call is a dictionary's lookup is decided by THIS expression's type.
     /// </summary>
     public static ExpressionSyntax? DictionaryOf(InvocationExpressionSyntax invocation, IMethodSymbol? method) =>
         IsStaticForm(method)
@@ -60,7 +44,19 @@ internal sealed class DictionaryLookup
             : (invocation.Expression as MemberAccessExpressionSyntax)?.Expression;
 
     /// <summary><c>dictionary.TryGetValue(key, out value)</c>.</summary>
-    public JsExpr TryGetValue(InvocationExpressionSyntax invocation, ConversionContext context)
+    public static JsExpr TryGetValue(InvocationExpressionSyntax invocation, ConversionContext context) =>
+        IntoOut(invocation, "Dictionary.TryGetValue", Has, "true", context);
+
+    /// <summary><c>dictionary.Remove(key, out value)</c>: the value moves into the out and the key's
+    /// slot is freed, and a miss writes the default and answers false.</summary>
+    public static JsExpr Remove(InvocationExpressionSyntax invocation, ConversionContext context) =>
+        IntoOut(invocation, "Dictionary.Remove", "{r}.delete({k})", "{r}.delete({k})", context);
+
+    /// <summary>A lookup that writes what it found into an out: <paramref name="discarded"/> is the
+    /// whole call when the out is a discard, and <paramref name="hit"/> what a hit answers once the
+    /// value is written.</summary>
+    private static JsExpr IntoOut(InvocationExpressionSyntax invocation, string strategy, string discarded, string hit,
+        ConversionContext context)
     {
         var method = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
         var arguments = invocation.ArgumentList.Arguments;
@@ -69,24 +65,24 @@ internal sealed class DictionaryLookup
             || Filling(arguments, method, key) is not { } keyArgument
             || Filling(arguments, method, key + 1) is not { } valueArgument)
         {
-            return context.Unhandled(invocation, "Dictionary.TryGetValue");
+            return context.Unhandled(invocation, strategy);
         }
 
         parts.Add(arguments.IndexOf(keyArgument), "k", context.Converter.ConvertIr(keyArgument.Expression));
         // A discard receives nothing, so nothing is read for it: the question is the answer.
         if (OutArgument.IsDiscard(valueArgument, context))
-            return parts.Template(_has, context);
+            return parts.Template(discarded, context);
 
         // The parts the out reads (an element's array and index) are evaluated where it was written.
         var at = arguments.IndexOf(valueArgument);
         var place = OutArgument.Place(valueArgument, context, part => parts.Add(at, $"t{parts.Count}", part));
         var fallback = DefaultValue.Of(method?.Parameters.ElementAtOrDefault(key + 1)?.Type, context);
         return parts.Template(
-            $"({_has} ? (({place} = {_read}), true) : (({place} = {fallback}), false))", context);
+            $"({Has} ? (({place} = {Get}), {hit}) : (({place} = {fallback}), false))", context);
     }
 
     /// <summary><c>dictionary.GetValueOrDefault(key)</c> and <c>dictionary.GetValueOrDefault(key, defaultValue)</c>.</summary>
-    public JsExpr GetValueOrDefault(InvocationExpressionSyntax invocation, ConversionContext context)
+    public static JsExpr GetValueOrDefault(InvocationExpressionSyntax invocation, ConversionContext context)
     {
         var method = context.SemanticHelper.GetSymbol(invocation) as IMethodSymbol;
         var arguments = invocation.ArgumentList.Arguments;
@@ -101,7 +97,7 @@ internal sealed class DictionaryLookup
         if (Filling(arguments, method, key + 1) is not { } defaultArgument)
         {
             return parts.Template(
-                $"({_has} ? {_read} : {DefaultValue.Of(method?.ReturnType, context)})", context);
+                $"({Has} ? {Get} : {DefaultValue.Of(method?.ReturnType, context)})", context);
         }
 
         var value = context.Converter.ConvertIr(defaultArgument.Expression);
@@ -110,8 +106,8 @@ internal sealed class DictionaryLookup
         // evaluated whether or not it is needed, once, in its place among the arguments: every part
         // is then an argument of one arrow, where a hole in the miss branch would run only there.
         return JsExprWriter.IsInlinable(value)
-            ? parts.Template($"({_has} ? {_read} : {{d}})", context)
-            : parts.Arrow($"({_has} ? {_read} : {{d}})", context);
+            ? parts.Template($"({Has} ? {Get} : {{d}})", context)
+            : parts.Arrow($"({Has} ? {Get} : {{d}})", context);
     }
 
     /// <summary>The parts, started with the dictionary: first when it is the call's receiver, in
