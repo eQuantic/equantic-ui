@@ -131,9 +131,11 @@ Specs are versioned in the repository, under `openspec/`, with the project's con
 for each artifact in `openspec/config.yaml`.
 
 - Every change that creates or changes behaviour starts with a proposal (`/opsx:propose`) in the
-  same pull request as the code, and is archived (`/opsx:archive`, which runs
-  `openspec archive <change> --yes`) before the merge, so `openspec/specs` on `main` always matches
-  the code on `main`.
+  same pull request as the code, and is archived before the merge with
+  `openspec archive <change> --yes`, which moves it under `openspec/changes/archive/` and writes its
+  delta into the main specs in one step, so `openspec/specs` on `main` always matches the code on
+  `main`. `/opsx:archive` walks through the same step by hand; its `mkdir` and `mv` go through the
+  session's normal permissions, since a skill's `allowed-tools` pre-approves and forbids nothing.
 - A capability gets its spec when a change first touches it, not before.
 - The CLI is pinned by `tools/openspec/package-lock.json` and runs through `scripts/openspec.sh`,
   or as `openspec` in a session the hook prepared. CI's `openspec` job validates every change and
