@@ -648,12 +648,23 @@ public class RecordTypeEmitter
         }
 
         var isStatic = method.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword)) ? "static " : "";
-        // A tuple crosses as an array literal, which TypeScript reads as an array of the union of its
-        // elements, so its type is said (TypeScriptEmitter.TupleReturn has the class path's twin).
-        var returns = tsTypeDeclarations
-            && method.ReturnType is TupleTypeSyntax or NullableTypeSyntax { ElementType: TupleTypeSyntax }
-            ? $": {TypeScriptEmitter.CSharpTypeToTypeScript(method.ReturnType.ToString())}"
-            : "";
+        var returns = tsTypeDeclarations ? TupleReturn(method.ReturnType) : "";
         return $"{isStatic}{jsName}({pars}){returns} {{ {body} }}";
+    }
+
+    /// <summary>
+    /// The return annotation of a method that returns a TUPLE, and nothing for any other: a tuple
+    /// crosses as an array literal, which TypeScript reads as an array of the union of its elements,
+    /// so its type is said (TypeScriptEmitter.TupleReturn has the class path's twin). Each element
+    /// through the rule a member's type takes, so an enum among them is the member string it crosses
+    /// as, where the whole tuple's name wrote the enum's C# spelling, a type TypeScript does not have.
+    /// </summary>
+    private string TupleReturn(TypeSyntax returnType)
+    {
+        var tuple = returnType as TupleTypeSyntax ?? (returnType as NullableTypeSyntax)?.ElementType as TupleTypeSyntax;
+        if (tuple is null) return "";
+        var elements = "[" + string.Join(", ", tuple.Elements.Select(element =>
+            TypeDeclarationExtensions.TsTypeFor(element.Type, ModelFor(element.Type)))) + "]";
+        return ": " + (returnType is NullableTypeSyntax ? TypeScriptEmitter.OrNull(elements) : elements);
     }
 }

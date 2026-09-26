@@ -142,6 +142,33 @@ public class EmittedTypeSurfaceTests
     }
 
     /// <summary>
+    /// A tuple's element is annotated as it crosses, on a class and on a record alike: an enum is the
+    /// member string it is at runtime (its vocabulary union, for one of the vocabulary's), and never
+    /// its C# name, which TypeScript has no type for. The tuple's annotation read the C# spelling of
+    /// every element, so <c>(Side Side, int Line)</c> said <c>[Side, number]</c>.
+    /// </summary>
+    [Fact]
+    public void ATuplesEnumElement_IsAnnotatedAsItCrosses()
+    {
+        var ts = TestHelper.ConvertClass("""
+            public enum Side { Left, Right }
+            public (Side Side, int Line) Where() => (Side.Left, 1);
+            """);
+
+        ts.Should().Contain("where(): [string, number]");
+
+        var record = new ComponentCompiler().CompileSource("""
+            public enum Side { Left, Right }
+
+            public sealed record Layout(int Rows)
+            {
+                public static (Side Side, int Line) Where() => (Side.Left, 1);
+            }
+            """).Single(result => result.ComponentName == "Layout").TypeScript;
+        record.Should().Contain("static where(): [string, number]");
+    }
+
+    /// <summary>
     /// A record says the same about a value as a class does. Its mapper wrote its own nullable union,
     /// so a <c>Func&lt;int, string&gt;?</c> parameter came out <c>(value: number) =&gt; string | null</c>,
     /// a function that returns null where C# declares a function that may be missing (the diff

@@ -2385,11 +2385,14 @@ public class TypeScriptEmitter
     /// crosses as an array literal, which TypeScript reads as an array of the union of its elements,
     /// so a pair of lists of different things destructured into two lists of either and the
     /// runtime's own build refused every use of them. Every other return is left to inference,
-    /// which reads the value it returns right. A nullable tuple may be null.
+    /// which reads the value it returns right. A nullable tuple may be null. Written the way a
+    /// declared type is, which asks what each element IS: an enum among them crosses as its member
+    /// string, where the name alone wrote its C# spelling, a type TypeScript does not have.
     /// </summary>
     private string TupleReturn(TypeSyntax returnType) =>
         TypeAnnotations && returnType is TupleTypeSyntax or NullableTypeSyntax { ElementType: TupleTypeSyntax }
-            ? $": {Annotate(returnType.ToString())}"
+            && DeclaredType(returnType) is var annotation && annotation != "any"
+            ? $": {annotation}"
             : "";
 
     /// <summary>
