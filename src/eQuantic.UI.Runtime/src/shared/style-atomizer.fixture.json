@@ -6,8 +6,8 @@
   {"prop":"flex","value":"1 1 0%","rewritten":"1 1 0%","class":"eq-168ghzj"},
   {"prop":"background-color","value":"light-dark(#ffffff, #14181e)","rewritten":"var(--eq-color-surface, light-dark(#ffffff, #14181e))","class":"eq-5hocaj"},
   {"prop":"color","value":"light-dark(#171b21, #f2f4f7)","rewritten":"var(--eq-color-text-primary, light-dark(#171b21, #f2f4f7))","class":"eq-7gvrt4"},
-  {"prop":"border","value":"1px solid light-dark(#c9ced6, #3d4754)","rewritten":"1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #3d4754))","class":"eq-1e8yzyr"},
-  {"prop":"background-color","value":"light-dark(#0050a0, #5ca2e8)","rewritten":"var(--eq-color-primary-base, light-dark(#0050a0, #5ca2e8))","class":"eq-jq1py4"},
+  {"prop":"border","value":"1px solid light-dark(#c9ced6, #4c5664)","rewritten":"1px solid var(--eq-color-border-strong, light-dark(#c9ced6, #4c5664))","class":"eq-12kbhu0"},
+  {"prop":"background-color","value":"light-dark(#0050a0, #76baff)","rewritten":"var(--eq-color-primary-base, light-dark(#0050a0, #76baff))","class":"eq-1k117pa"},
   {"prop":"font-family","value":"var(--eq-font-mono, ui-monospace, \u0027SFMono-Regular\u0027, Menlo, Consolas, monospace)","rewritten":"var(--eq-font-mono, ui-monospace, \u0027SFMono-Regular\u0027, Menlo, Consolas, monospace)","class":"eq-swcwi"},
   {"prop":"backdrop-filter","value":"blur(8px)","rewritten":"blur(8px)","class":"eq-1maple4"},
   {"prop":"-webkit-backdrop-filter","value":"blur(8px)","rewritten":"blur(8px)","class":"eq-1maple4"}
