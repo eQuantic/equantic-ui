@@ -122,6 +122,22 @@ public class DefaultInterfaceMemberConformanceTests
         public record SoftSpeaker : ISpeaker;
         public record LoudSpeaker : SoftSpeaker, ILoudSpeaker;
 
+        public record Animal
+        {
+            public string Name { get; init; } = "animal";
+            public string Kind() => Name;
+        }
+        public record Dog : Animal;
+        public record Cat : Animal
+        {
+            public int Lives { get; init; } = 9;
+        }
+        public record GreetBase : IGreet
+        {
+            public int N { get; init; }
+        }
+        public record GreetDerived : GreetBase;
+
         public interface IMarked { string Mark() => "m"; }
         public record MarkedBase : IMarked;
         public record Remarked : MarkedBase, IMarked
@@ -160,6 +176,11 @@ public class DefaultInterfaceMemberConformanceTests
     [InlineData("ISpeaker l = new LoudSpeaker(); ISpeaker s = new SoftSpeaker(); return l.Speak() + s.Speak();")] // "LOUDsoft"
     // A derived member that re-implements the interface answers it, over the base's default.
     [InlineData("IMarked r = new Remarked(); IMarked b = new MarkedBase(); return r.Mark() + b.Mark();")]      // "rm"
+    // A base record named without arguments is extended, with or without members of the derived
+    // record's own, and the defaults the base takes reach the derived record (found in review, #418).
+    [InlineData("return new Dog().Kind() + \"|\" + new Cat().Kind() + new Cat().Lives;")]                     // "animal|animal9"
+    [InlineData("Animal a = new Dog(); return (a is Dog) + \"|\" + (a is Animal) + \"|\" + (new Cat() is Animal);")] // "True|True|True"
+    [InlineData("IGreet g = new GreetDerived(); return g.Hello();")]                                             // "hi"
     public void ADefaultInterfaceMember_ReachesTheTypesTwin(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

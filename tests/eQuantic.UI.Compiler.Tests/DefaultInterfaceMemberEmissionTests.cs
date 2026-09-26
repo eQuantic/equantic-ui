@@ -155,6 +155,24 @@ public class DefaultInterfaceMemberEmissionTests
             public class HelpedBase : IHelped { public int N; }
             public sealed class HelpedDerived : HelpedBase { public int Wrap; }
             """,
+        // A class over the foreign interface above, declared in the vocabulary's namespace.
+        ["Foreigner.cs"] = """
+            namespace App;
+            public sealed class Foreigner : eQuantic.UI.Code.IForeignLanguage { public int N; }
+            """,
+        // A default indexer: a twin has no form for one (#427).
+        ["Indexed.cs"] = """
+            namespace App;
+            public interface IIndexed { int this[int i] => i * 2; }
+            public sealed class Indexed : IIndexed { public int N; }
+            """,
+        // An explicit implementation of one interface beside another's default of the same name.
+        ["Twice.cs"] = """
+            namespace App;
+            public interface IOne { string M(); }
+            public interface ITwo { string M() => "two"; }
+            public sealed class Twice : IOne, ITwo { string IOne.M() => "one"; }
+            """,
         // Compiled into a referenced assembly below, not into this compilation.
         ["Voiced.cs"] = """
             namespace App;
@@ -166,11 +184,23 @@ public class DefaultInterfaceMemberEmissionTests
     };
 
     private const string Library = """
-        namespace Lib;
-        public interface IVoice
+        namespace Lib
         {
-            string Word { get; }
-            string Say() => Word + ".";
+            public interface IVoice
+            {
+                string Word { get; }
+                string Say() => Word + ".";
+            }
+        }
+
+        // Another assembly's interface in the code engine's namespace: the runtime carries none of
+        // its defaults, whatever its namespace says.
+        namespace eQuantic.UI.Code
+        {
+            public interface IForeignLanguage
+            {
+                string Greet() => "hi";
+            }
         }
         """;
 
@@ -408,6 +438,43 @@ public class DefaultInterfaceMemberEmissionTests
         result.Errors.Should().ContainSingle(error => error.Code == "EQ1007")
             .Which.Message.Should().Contain("'HelpedDerived.Wrap' lowers to `wrap`, and so does 'IHelped.Wrap', "
                 + "which it inherits from 'HelpedBase' with the defaults that call it");
+    }
+
+    /// <summary>An interface another assembly declares in the vocabulary's namespace is not one the
+    /// runtime carries (found in review, #418): delegating to it named an export the runtime does not
+    /// have, where the build had to refuse the class.</summary>
+    [Fact]
+    public void AForeignInterfaceInTheVocabularysNamespaceIsNotDelegated()
+    {
+        var result = Compile("Foreigner", succeeds: false);
+
+        result.Errors.Should().ContainSingle(error => error.Code == "EQ1008")
+            .Which.Message.Should().Contain("Foreigner relies on the default IForeignLanguage.Greet");
+        (result.TypeScript ?? "").Should().NotContain("IForeignLanguage.greet(this)");
+    }
+
+    /// <summary>A default indexer is refused by name (found in review, #418): it fell to the message for
+    /// a body compiled into another assembly, which it is not, and no twin has an indexer yet (#427).</summary>
+    [Fact]
+    public void ADefaultIndexerIsRefusedForWhatItIs()
+    {
+        var result = Compile("Indexed", succeeds: false);
+
+        result.Errors.Should().ContainSingle(error => error.Code == "EQ1008")
+            .Which.Message.Should().Contain("Indexed relies on the default indexer of IIndexed")
+            .And.Contain("#427")
+            .And.NotContain("compiled into");
+    }
+
+    /// <summary>An explicit implementation lowers under its member's own name (found in review, #418):
+    /// `IOne.M` and a default `ITwo.M` gave the twin two members named `m`.</summary>
+    [Fact]
+    public void AnExplicitImplementationOnADefaultsNameIsRefused()
+    {
+        var result = Compile("Twice", succeeds: false);
+
+        result.Errors.Should().ContainSingle(error => error.Code == "EQ1007")
+            .Which.Message.Should().Contain("'Twice' takes the default 'ITwo.M', which lowers to `m`, and so does 'Twice.IOne.M'");
     }
 
     /// <summary>A default whose body is compiled into a referenced assembly the runtime does not

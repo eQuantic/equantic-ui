@@ -72,6 +72,15 @@ public class VocabularyInterfaceDefaultsTests
         return char.ToLowerInvariant(name[0]) + name[1..];
     }
 
+    /// <summary>
+    /// The compiler asks <see cref="RuntimeProvidedTypeScanner.RuntimeAssemblies"/> whether the runtime
+    /// carries an interface's defaults, and this file reads the defaults of <see cref="Vocabulary"/>. The
+    /// two are one list, or a default could be delegated to a copy nothing here checks (#418).
+    /// </summary>
+    [Fact]
+    public void TheCompilersRuntimeAssemblies_AreTheOnesReadHere() =>
+        RuntimeProvidedTypeScanner.RuntimeAssemblies.Should().BeEquivalentTo(Vocabulary.Select(assembly => assembly.GetName().Name));
+
     [Fact]
     public void EveryVocabularyDefault_IsInTheRuntimesList()
     {
