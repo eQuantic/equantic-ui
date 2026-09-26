@@ -57,11 +57,29 @@ public class ConvertStrategy : IExpressionIrStrategy
         }
         if (name == "ToBoolean")
         {
-            if (!ReadsText(invocation, argExpr, context)) return ToBoolean(argExpr, context);
-            // A bool reads its text the same in every culture, so the provider is not consulted, as
-            // .NET does not consult it.
+            // A bool reads its text the same in every culture, so a provider is not consulted, as .NET
+            // does not consult it. It is still EVALUATED, after the value and before the conversion,
+            // as C# evaluates every argument it writes: a provider with a side effect or an exception
+            // went nowhere (found in review, #421). One CultureInfo names is left out, as ToString
+            // leaves it out: CultureInfo's own members read a culture and do nothing else, and have no
+            // twin to evaluate. The numeric readers need no such care: they accept only
+            // CultureInfo.InvariantCulture (ParseCulture).
+            var provider = providerExpr is null || NamesACulture(providerExpr, context)
+                ? null
+                : context.Converter.ConvertIr(providerExpr);
+            if (!ReadsText(invocation, argExpr, context))
+            {
+                var type = context.SemanticHelper.GetType(argExpr);
+                if (provider is null) return ToBoolean(context.Converter.ConvertIr(argExpr), type, context);
+                var parameters = context.TypeAnnotations ? "($v: any, _provider: unknown)" : "($v, _provider)";
+                return JsExpr.Template($"({parameters} => {{0}})({{1}}, {{2}})",
+                    [ToBoolean(JsExpr.Identifier("$v"), type, context), context.Converter.ConvertIr(argExpr), provider],
+                    context.TypeAnnotations);
+            }
             context.UsedHelpers.Add(Eq.Import);
-            return JsExpr.Template($"{Eq.BoolConvert}({{0}})", [context.Converter.ConvertIr(argExpr)], context.TypeAnnotations);
+            JsExpr[] parts = provider is null ? [context.Converter.ConvertIr(argExpr)] : [context.Converter.ConvertIr(argExpr), provider];
+            return JsExpr.Template(provider is null ? $"{Eq.BoolConvert}({{0}})" : $"{Eq.BoolConvert}({{0}}, {{1}})",
+                parts, context.TypeAnnotations);
         }
         if (ReadsText(invocation, argExpr, context) && TextReader(name) is { } text)
         {
@@ -229,6 +247,14 @@ public class ConvertStrategy : IExpressionIrStrategy
         return type.IsIntegral() ? Call(Eq.Dec) : Call(Eq.DecConvert);
     }
 
+    /// <summary>Whether a provider only names a culture: the invariant or the current one (a null
+    /// included), or any other member of <c>CultureInfo</c> itself, which reads a culture and does
+    /// nothing else.</summary>
+    private static bool NamesACulture(ExpressionSyntax provider, ConversionContext context) =>
+        NamedCulture.IsInvariant(provider, context)
+        || NamedCulture.IsCurrent(provider, context)
+        || context.SemanticHelper.GetSymbol(provider)?.ContainingType?.ToDisplayString() == "System.Globalization.CultureInfo";
+
     /// <summary>
     /// <c>Convert.ToBoolean</c> by the type of what it converts, as <see cref="ToDecimal"/> is (found in
     /// review, #421): a bool is itself; a number is whether it is not zero, a NaN included and a
@@ -239,10 +265,8 @@ public class ConvertStrategy : IExpressionIrStrategy
     /// (<c>0n !== 0</c>). An object is #401's: its type is the run time's to settle, and it still
     /// compares with zero.
     /// </summary>
-    private static JsExpr ToBoolean(ExpressionSyntax argument, ConversionContext context)
+    private static JsExpr ToBoolean(JsExpr value, ITypeSymbol? type, ConversionContext context)
     {
-        var value = context.Converter.ConvertIr(argument);
-        var type = context.SemanticHelper.GetType(argument);
         JsExpr Template(string template) => JsExpr.Template(template, [value], context.TypeAnnotations);
         switch (type?.SpecialType)
         {
