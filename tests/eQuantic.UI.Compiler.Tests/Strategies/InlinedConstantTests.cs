@@ -63,6 +63,155 @@ public class InlinedConstantTests
         return result.TypeScript;
     }
 
+    /// <summary>
+    /// A constant is written as its value in its C# type (#444): a decimal as the runtime's exact
+    /// Decimal, reached through its type or a <c>using static</c>, and a long as a BigInt. Neither had
+    /// a writer: <c>decimal.maxValue</c> was a ReferenceError, and <c>TimeSpan.TicksPerSecond</c> a
+    /// number the first long threw on. A const of the class's own source keeps its reference.
+    /// </summary>
+    [Fact]
+    public void AConstant_IsWrittenAsItsValue_InItsType()
+    {
+        var ts = Transpile("""
+            using static System.Decimal;
+            namespace App;
+            public class Prices
+            {
+                public const decimal Standard = 1.50m;
+                public decimal Max() => decimal.MaxValue;
+                public decimal Min() => MinValue;
+                public long Ticks() => System.TimeSpan.TicksPerSecond;
+                public ulong Top() => ulong.MaxValue;
+                public decimal Qualified() => Prices.Standard;
+                public decimal Bare() => Standard;
+            }
+            """);
+
+        ts.Should().Contain("$eq.num.dec(\"79228162514264337593543950335\")");
+        ts.Should().Contain("$eq.num.dec(\"-79228162514264337593543950335\")");
+        ts.Should().Contain("return 10000000n;");
+        ts.Should().Contain("return 18446744073709551615n;");
+        ts.Should().Contain("return $eq.num.dec(\"1.50\");");
+        ts.Should().Contain("return Prices.standard;");
+        ts.Should().NotContain("decimal.maxValue").And.NotContain("Decimal.minValue");
+    }
+
+    /// <summary>A constant's own static is annotated in its JavaScript type: a narrow integer as a
+    /// number and a ulong as a bigint, where each reached TypeScript verbatim, naming nothing there.</summary>
+    [Fact]
+    public void AConstantsStatic_IsAnnotatedInItsJavaScriptType()
+    {
+        var ts = Transpile("""
+            namespace App;
+            public class Limits
+            {
+                public const ulong Top = 18446744073709551615UL;
+                public const byte Small = 7;
+                public const ushort Port = 8080;
+                public const sbyte Signed = -3;
+                public ulong ReadTop() => Top;
+                public int Sum() => Small + Port + Signed;
+            }
+            """);
+
+        ts.Should().Contain("static get top(): bigint");
+        ts.Should().Contain("static small: number = 7;");
+        ts.Should().Contain("static port: number = 8080;");
+        ts.Should().Contain("static signed: number = -3;");
+        foreach (var raw in new[] { ": ulong", ": byte", ": ushort", ": sbyte" })
+            ts.Should().NotContain(raw);
+    }
+
+    /// <summary>
+    /// A parameter's default filled in for an argument a named one skips is the constant it is, in
+    /// the parameter's type: a char was written with no quotes (a bare identifier), a string with a
+    /// quote in it as a broken literal, a decimal and a long as numbers, and a float as its own text.
+    /// </summary>
+    [Fact]
+    public void ASkippedParametersDefault_IsWrittenAsItsValue_InItsType()
+    {
+        var ts = Transpile("""
+            namespace App;
+            public class Labels
+            {
+                public static string Label(char c = 'x', string s = "it's", decimal d = 1.5m, long l = 5,
+                    float f = 0.1f, int n = 0) => s;
+                public string Call() => Label(n: 1);
+            }
+            """);
+
+        ts.Should().Contain("Labels.label('x', 'it\\'s', $eq.num.dec(\"1.5\"), 5n, 0.10000000149011612, 1)");
+    }
+
+    /// <summary>A CREATION's skipped defaults take the same writer as an invocation's: the
+    /// constructor path fills them in on its own, so it is pinned on its own (found in review, #450).</summary>
+    [Fact]
+    public void ACreationsSkippedDefault_IsWrittenAsItsValue_InItsType()
+    {
+        var ts = Transpile("""
+            namespace App;
+            public class Label
+            {
+                public Label(char c = 'x', string s = "it's", decimal d = 1.5m, long l = 5, float f = 0.1f,
+                    System.AttributeTargets t = System.AttributeTargets.Class, int n = 0) { }
+                public static Label Make() => new Label(n: 1);
+            }
+            """);
+
+        ts.Should().Contain("new Label('x', 'it\\'s', $eq.num.dec(\"1.5\"), 5n, 0.10000000149011612, 4, 1)");
+    }
+
+    /// <summary>
+    /// A const whose TYPE is an enum is that enum's representation, and so is a skipped default of one:
+    /// a member's camelCase name, or a [Flags] enum's number. The value arrives as the underlying
+    /// integer: the const was written as that number, and a flags default as a member name.
+    /// </summary>
+    [Fact]
+    public void AnEnumTypedConstant_IsItsEnumsRepresentation()
+    {
+        var ts = Transpile("""
+            namespace App;
+            public class Schedule
+            {
+                public const System.DayOfWeek First = System.DayOfWeek.Monday;
+                public const System.AttributeTargets Both = System.AttributeTargets.Class | System.AttributeTargets.Method;
+                public System.DayOfWeek Day() => Schedule.First;
+                public System.AttributeTargets Targets() => Schedule.Both;
+                public static int Mask(System.AttributeTargets t = System.AttributeTargets.Class,
+                    System.DayOfWeek? d = System.DayOfWeek.Friday, int n = 0) => n;
+                public int Call() => Mask(n: 1);
+            }
+            """);
+
+        ts.Should().Contain("return 'monday';");
+        ts.Should().Contain("return 68;");
+        ts.Should().Contain("Schedule.mask(4, 'friday', 1)");
+    }
+
+    /// <summary>
+    /// A constant's text escapes what cannot stand for itself in the module: a LONE surrogate, which
+    /// UTF-8 cannot encode, so the module could not be written, a control character and a line
+    /// separator. A surrogate pair and a tab are written as they are. The const's own static and a
+    /// reference inlined through its class take the same writer.
+    /// </summary>
+    [Fact]
+    public void AConstantsText_EscapesWhatCannotStandForItself()
+    {
+        var ts = Transpile("""
+            namespace App;
+            public class Texts
+            {
+                public const string Odd = "a\0b\u2028c\uD800d\uD83D\uDE00e\tf";
+                public string Read() => Texts.Odd;
+            }
+            """);
+
+        // The escapes are TEXT in the module; the pair is the emoji itself, and the tab a tab.
+        var expected = "'a\\u0000b\\u2028c\\ud800d" + char.ConvertFromUtf32(0x1F600) + "e\tf'";
+        ts.Should().Contain("return " + expected + ";");
+        ts.Split(expected).Length.Should().Be(3, "the static and the inlined reference both write it");
+    }
+
     [Fact]
     public void PackGlyphAccess_InlinesTheConstructor_AtTheUseSite()
     {

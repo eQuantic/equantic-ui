@@ -152,7 +152,7 @@ public class ObjectCreationStrategy : IConversionStrategy
             {
                 if (emittedSlots < ctor.Parameters.Length)
                 {
-                    var defaults = ctor.Parameters.Skip(emittedSlots).Select(ParameterDefaultLiteral);
+                    var defaults = ctor.Parameters.Skip(emittedSlots).Select(parameter => DefaultLiteralFor(parameter, context));
                     var filler = string.Join(", ", defaults);
                     arguments = string.IsNullOrEmpty(arguments) ? filler : arguments + ", " + filler;
                 }
@@ -352,7 +352,7 @@ public class ObjectCreationStrategy : IConversionStrategy
         var lastSet = keep.FindLastIndex(i => slots[i] != null);
         var ordered = new List<string>();
         for (var k = 0; k <= lastSet; k++)
-            ordered.Add(slots[keep[k]] ?? ParameterDefaultLiteral(ctor.Parameters[keep[k]]));
+            ordered.Add(slots[keep[k]] ?? DefaultLiteralFor(ctor.Parameters[keep[k]], context));
         return ordered;
     }
 
@@ -370,12 +370,10 @@ public class ObjectCreationStrategy : IConversionStrategy
         return false;
     }
 
-    /// <summary>The TS literal for a parameter's C# default value — enum members lower to their
-    /// camelCase member-name string, matching the enum representation everywhere else. Shared with
+    /// <summary>The TS literal for a parameter's C# default value: the constant it is in the parameter's
+    /// type (<see cref="ConstantLiteral"/>), an enum's in the enum's representation. Shared with
     /// InvocationStrategy (named INVOCATION arguments reorder the same way creations do).</summary>
-    internal static string DefaultLiteralFor(IParameterSymbol parameter) => ParameterDefaultLiteral(parameter);
-
-    private static string ParameterDefaultLiteral(IParameterSymbol parameter)
+    internal static string DefaultLiteralFor(IParameterSymbol parameter, ConversionContext context)
     {
         // A non-nullable STRUCT parameter defaulted with `= default` (BoxStyle, EdgeInsets…) must
         // fill as `undefined`, never `null`: the hand-written twin declares its own default
@@ -386,27 +384,11 @@ public class ObjectCreationStrategy : IConversionStrategy
             && parameter.Type.OriginalDefinition?.SpecialType != SpecialType.System_Nullable_T)
             return "undefined";
         if (!parameter.HasExplicitDefaultValue || parameter.ExplicitDefaultValue is null) return "null";
-        var value = parameter.ExplicitDefaultValue;
 
-        var enumType = parameter.Type.TypeKind == TypeKind.Enum ? parameter.Type
-            : parameter.Type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable
-                ? nullable.TypeArguments[0]
-                : null;
-        if (enumType is { TypeKind: TypeKind.Enum })
-        {
-            var member = enumType.GetMembers().OfType<IFieldSymbol>()
-                .FirstOrDefault(f => f.HasConstantValue && Equals(f.ConstantValue, value));
-            if (member != null) return $"'{member.Name.ToCamelCase()}'";
-        }
-
-        return value switch
-        {
-            bool flag => flag ? "true" : "false",
-            string text => $"'{text}'",
-            float f => f.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            double d => d.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            _ => System.Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? "null",
-        };
+        // The constant in the parameter's type: a decimal default was written as a number, a long as a
+        // number, a float as its own shortest text, a char with no quotes (a bare identifier), a string
+        // with a quote in it as a broken literal, and a [Flags] member as a name its enum never holds.
+        return ConstantLiteral.Write(parameter.ExplicitDefaultValue, parameter.Type, context) ?? "null";
     }
 
     /// <summary>
@@ -529,7 +511,7 @@ public class ObjectCreationStrategy : IConversionStrategy
                 {
                     var supplied = creation.ArgumentList?.Arguments.Count ?? 0;
                     for (var i = supplied; i < ctor.Parameters.Length; i++)
-                        parts.Add(ParameterDefaultLiteral(ctor.Parameters[i]));
+                        parts.Add(DefaultLiteralFor(ctor.Parameters[i], context));
                     parts.Add(context.Converter.ConvertExpression(creation.Initializer));
                     return $"new {type.Name}({string.Join(", ", parts)})";
                 }
@@ -640,7 +622,7 @@ public class ObjectCreationStrategy : IConversionStrategy
                         $"new {target.Name}({string.Join(", ", ctorArgs)})", context);
                 }
                 if (ms != null && ctorArgs.Count < ms.Parameters.Length)
-                    ctorArgs.AddRange(ms.Parameters.Skip(ctorArgs.Count).Select(ParameterDefaultLiteral));
+                    ctorArgs.AddRange(ms.Parameters.Skip(ctorArgs.Count).Select(parameter => DefaultLiteralFor(parameter, context)));
                 ctorArgs.Add(context.Converter.ConvertExpression(creation.Initializer));
                 return $"new {target.Name}({string.Join(", ", ctorArgs)})";
             }

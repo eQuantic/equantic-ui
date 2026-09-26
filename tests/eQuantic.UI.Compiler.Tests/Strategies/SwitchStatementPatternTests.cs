@@ -69,4 +69,25 @@ public class SwitchStatementPatternTests
         ts.Should().Contain("switch (x) {");
         ts.Should().Contain("case 1:");
     }
+
+    /// <summary>A DECIMAL label takes the chain and compares by value: the runtime's Decimal is an
+    /// object, which a native switch's <c>===</c> never matched, whether the label is <c>1m</c>,
+    /// <c>decimal.One</c> or an int the switch converts to a decimal (found in review, #444).</summary>
+    [Fact]
+    public void DecimalLabels_TakeTheChain_AndCompareByValue()
+    {
+        var ts = Build("public string M(decimal d) { switch (d) { case decimal.One: return \"one\"; case 2: return \"two\"; default: return \"?\"; } }");
+        ts.Should().NotContain("switch (d)");
+        ts.Should().Contain("$eq.equals(_s, $eq.num.dec(\"1\"))");
+        ts.Should().Contain("$eq.equals(_s, $eq.num.dec(\"2\"))");
+    }
+
+    /// <summary>A decimal constant PATTERN compares by value too, whatever the input's static type.</summary>
+    [Fact]
+    public void DecimalConstantPattern_ComparesByValue()
+    {
+        var ts = Build("public bool M(decimal d, object o) => d is decimal.One && o is 1.5m;");
+        ts.Should().Contain("$eq.equals(d, $eq.num.dec(\"1\"))");
+        ts.Should().Contain("$eq.equals(o, $eq.num.dec(\"1.5\"))");
+    }
 }
