@@ -758,8 +758,8 @@ record of a release, the wiki's Upgrading page is the distillate.
   default shadowed it for every call through the interface); a default reaching an interface's static
   is EQ1008, and so is a default indexer, which no twin has a form for
   ([#427](https://github.com/eQuantic/equantic-ui/issues/427)); only the runtime's own assemblies'
-  interfaces delegate, whatever namespace another assembly declares; an explicit implementation takes
-  its member's name in the EQ1007 check; a derived class that lists an interface overriding its base's
+  interfaces delegate, whatever namespace another assembly declares; an explicit implementation and
+  an event take their member's name in the EQ1007 check; a derived class that lists an interface overriding its base's
   default takes the more specific one; a record with only a base list gets its twin, one named
   without arguments extends its base record, and a record's optional parameters and setters are kept.
   Proposed and archived through OpenSpec (`openspec/specs/transpiler-interfaces`).
