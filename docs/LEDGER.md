@@ -706,7 +706,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   lockfile and validated strictly in CI; and a `SessionStart` hook that gives a cloud container the
   owner's identity, no foreign signature and the pinned .NET SDK, asserted by CI's `session-start` job.
 - **2026-09-26 · The code diff view**: the view half of slice 2b of
-  [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#412](https://github.com/eQuantic/equantic-ui/pull/412)).
+  [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#420](https://github.com/eQuantic/equantic-ui/issues/420), [#412](https://github.com/eQuantic/equantic-ui/pull/412)).
   `CodeDiff` draws two texts, or one file of a patch, side by side (the sides level at every change)
   or inline (the removed lines between the lines that replaced them), washes a changed line and
   marks its changed words, folds an unchanged run into a row that opens on a press, steps through
