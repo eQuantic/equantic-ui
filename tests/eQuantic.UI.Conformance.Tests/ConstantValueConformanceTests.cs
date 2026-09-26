@@ -205,7 +205,8 @@ public class ConstantValueConformanceTests
     [InlineData("char c = '\\e'; return ((int)c).ToString();")]
     [InlineData("char c = '\\a'; return ((int)c).ToString();")]
     [InlineData("char c = '\\x041'; return ((int)c).ToString();")]
-    [InlineData("return \"x\" + '\\e' + '\\t';")]
+    // Read back as code points: each side's JSON spells a control character's escape in its own case.
+    [InlineData("var s = \"x\" + '\\e' + '\\t'; return ((int)s[1]).ToString() + \"|\" + ((int)s[2]).ToString();")]
     public void AConstantsText_MatchesDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
