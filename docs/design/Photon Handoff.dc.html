@@ -298,7 +298,7 @@ Hard rules (Handoff §03):
   · The engine never receives a path. Icons are glyphs; the Vector node is
     allowed because it rasterizes once into a cached A8 texture.
   · Touch targets ≥ 48dp on a finger (Comfortable). Under a pointer (Compact)
-    a target is its own visual bounds (Foundations §08, decided).
+    a target is its own visual bounds, never under 24dp (Foundations §08, decided).
   · Every gesture action mirrored as an accessibility custom action.
   · Light and dark in the same commit.
 

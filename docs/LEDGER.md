@@ -493,7 +493,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   32 layers once each layer's root path stopped being rebuilt every frame, under a ceiling one
   object tighter, and the harness runs alone. The definition's code-splitting per route is met by the module graph, and bun already
   splits what pages share into chunks.
-- **2026-09-23 · The handoff's own figures and statuses are held by tests**: the design system came
+- **2026-09-26 · The handoff's own figures and statuses are held by tests**: the design system came
   back from Claude Design with a review against Apple's and Google's guidance
   ([#337](https://github.com/eQuantic/equantic-ui/issues/337)). The pages called four shipped
   things requests (DatePicker, NavigationRail, `VariantColors.Hover`, the `SemanticNode` state
@@ -502,7 +502,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   and a token type `Tokens.cs` declares is scanned or named; a figure printed on a page is compared
   with its token. APCA joins WCAG 2 as a second contrast gate, and 14 dark values were re-solved to
   clear it, which moved 19 dark goldens and the web's cross-pins with them. The review's proposals
-  are issues #338 to #351.
+  are issues #338 to #351. Edgar confirmed its three decisions on 2026-09-26: the pointer exception
+  keeps a 24dp floor, whose change is [#430](https://github.com/eQuantic/equantic-ui/issues/430), and
+  continuous corners reach the web through `corner-shape`
+  ([#346](https://github.com/eQuantic/equantic-ui/issues/346)).
 - **2026-09-23 · Source maps compose without an npm package**: eqc composed each module's map
   (JavaScript to TypeScript to C#) with a script over `@ampproject/remapping`, installed into the
   SDK's own folder in the package cache on a consumer's first Debug build, and fetched by bun's

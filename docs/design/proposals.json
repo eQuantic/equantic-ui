@@ -286,13 +286,13 @@
     "note": "Standard dark values live in tokens.json 1.5.0; the SDK follows."
   },
   "decisions": {
-    "compactHitTarget": "Decided 2026-09-23: pointer exception (Foundations §08).",
-    "apca": "Adopted 2026-09-23 (Foundations §01).",
-    "continuousCorners": "Decided 2026-09-23: continuous on native, circular on the web until CSS can draw it (Foundations §04)."
+    "compactHitTarget": "Decided 2026-09-23 and confirmed 2026-09-26: pointer exception with a 24dp floor (Foundations §08). The floor is #430.",
+    "apca": "Adopted 2026-09-23, confirmed 2026-09-26 (Foundations §01).",
+    "continuousCorners": "Decided 2026-09-23, revised 2026-09-26: continuous wherever the target can draw it, on every native target and on the web through corner-shape where the browser supports it (Foundations §04, #346)."
   },
   "continuousCorners": {
     "status": "request",
-    "suggestedName": "CornerProfile { Circular, Continuous }",
-    "targets": "native only; web stays circular"
+    "suggestedName": "CornerProfile { Circular, Superellipse }",
+    "targets": "native, and the web through corner-shape where the browser supports it; circular elsewhere"
   }
 }

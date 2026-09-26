@@ -254,7 +254,7 @@
     },
     {
       "id": "continuous-corners",
-      "name": "Continuous corner profile on native",
+      "name": "Continuous corner profile, native and the web through corner-shape",
       "status": "request",
       "probe": {
         "apiContains": "CornerProfile",

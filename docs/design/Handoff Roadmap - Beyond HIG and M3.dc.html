@@ -99,7 +99,7 @@ a{color:var(--pri);text-decoration:none}a:hover{text-decoration:underline}
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx3)">1.5</span><span style="font-size:15.5px;font-weight:700">Both settled</span><span style="height:22px;padding:0 9px;border-radius:999px;background:var(--sucs);color:var(--onsucs);font-size:11px;font-weight:800;display:inline-flex;align-items:center">DECIDED</span></div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px;margin-top:10px">
           <div style="font-size:13.5px;line-height:1.55;color:var(--tx2)"><strong style="color:var(--tx1)">Springs, settled.</strong> No code reads SpringSpec: releases glide over 200ms with smoothstep in DragStore. So tokens.json was right and the SDK's comments were wrong, and the patch corrects the comments. Shipping the behaviour is 2.1.</div>
-          <div style="font-size:13.5px;line-height:1.55;color:var(--tx2)"><strong style="color:var(--tx1)">Compact hit target, decided.</strong> Pointer exception: under a pointer a target is its own visual bounds, on a finger it is at least 48dp. <a href="Photon%20DS%20-%20Foundations.dc.html#f-touch-pointer" style="font-weight:700">Foundations §08 →</a></div>
+          <div style="font-size:13.5px;line-height:1.55;color:var(--tx2)"><strong style="color:var(--tx1)">Compact hit target, decided.</strong> Pointer exception: under a pointer a target is its own visual bounds with a 24dp floor, on a finger it is at least 48dp. <a href="Photon%20DS%20-%20Foundations.dc.html#f-touch-pointer" style="font-weight:700">Foundations §08 →</a></div>
         </div>
       </div>
     </div>
@@ -172,7 +172,7 @@ a{color:var(--pri);text-decoration:none}a:hover{text-decoration:underline}
     <p style="margin:12px 0 0;max-width:720px;font-size:14.5px;line-height:1.6;color:var(--tx2)">Apple owns one platform and Google ships a library per platform, so neither can test a promise across all of them. One component tree can.</p>
     <div style="margin-top:14px;display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:12px;background:var(--infs);color:var(--oninfs);max-width:760px;box-sizing:border-box">
       <span style="font-size:11px;font-weight:800;letter-spacing:.08em;padding:2px 8px;border-radius:6px;background:var(--sf);flex:none;margin-top:1px">SPECIFIED</span>
-      <span style="font-size:13px;line-height:1.55">3.1 to 3.3 are REQUEST blocks on Foundations and the Handoff page. 3.4 and 3.5 were decisions, taken on 23 September: APCA is adopted and the dark palette re-solved, and native draws continuous corners while the web stays circular.</span>
+      <span style="font-size:13px;line-height:1.55">3.1 to 3.3 are REQUEST blocks on Foundations and the Handoff page. 3.4 and 3.5 were decisions, taken on 23 September and confirmed on 26 September: APCA is adopted and the dark palette re-solved, and continuous corners are drawn wherever the target can draw them, on every native target and on the web through corner-shape where the browser supports it.</span>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px;margin-top:20px">
 
@@ -208,7 +208,7 @@ a{color:var(--pri);text-decoration:none}a:hover{text-decoration:underline}
 
       <div style="background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:18px 20px;grid-column:1/-1">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx3)">3.5</span><span style="font-size:15.5px;font-weight:700">Continuous corners</span><span style="height:20px;padding:0 8px;border-radius:999px;background:var(--sucs);color:var(--onsucs);font-size:10.5px;font-weight:800;display:inline-flex;align-items:center">DECIDED · NATIVE</span></div>
-        <div style="font-size:13.5px;line-height:1.55;color:var(--tx2);margin-top:8px">Apple draws continuous-curvature corners and Material draws circular ones. Photon's signed-distance model could offer a continuous profile as a corner style, rendered identically on every native target and held by the goldens. On the web it needs a mask or a CSS corner-shape property that is not yet reliable everywhere, so it would stay fenced there until it is. Worth doing only if you want that Apple look on Android and Windows too.</div>
+        <div style="font-size:13.5px;line-height:1.55;color:var(--tx2);margin-top:8px">Apple draws continuous-curvature corners and Material draws circular ones. Photon's signed-distance model could offer a continuous profile as a corner style, rendered identically on every native target and held by the goldens. On the web, CSS corner-shape draws the same curve where the browser supports it, so the web takes it as a progressive enhancement and keeps the circular corner elsewhere (decided 26 September).</div>
         <a href="Photon%20DS%20-%20Foundations.dc.html#f-radius-profile" style="display:inline-block;margin-top:8px;font-size:12.5px;font-weight:700">Spec · Foundations §04 · Corner profile →</a>
       </div>
     </div>
