@@ -34,8 +34,9 @@ want="$(P="$dir/package.json" node -p 'require(process.env.P).devDependencies["@
 have="$(OPENSPEC_TELEMETRY=0 "$dir/node_modules/.bin/openspec" --version 2>/dev/null || true)"
 if [ "$have" != "$want" ]; then
     # npm ci installs exactly what the lockfile names and fails on an integrity mismatch. Its output
-    # goes to stderr so the CLI's own stdout stays the only stdout.
-    npm ci --prefix "$dir" --no-audit --no-fund --loglevel=error >&2
+    # goes to stderr so the CLI's own stdout stays the only stdout. --include=dev because the CLI is a
+    # devDependency, and a session with NODE_ENV=production would otherwise install everything but it.
+    npm ci --prefix "$dir" --include=dev --no-audit --no-fund --loglevel=error >&2
 fi
 
 export OPENSPEC_TELEMETRY=0

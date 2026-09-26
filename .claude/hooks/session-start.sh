@@ -41,10 +41,14 @@ note() { report+=("$1"); }
 required() { note "$2"; missing+=("$1"); }
 
 # Lines for the session's later Bash commands: Claude Code sources this file before each of them.
+# It FAILS when the file cannot be written, and every caller treats that as the step failing: a
+# tool installed but left off the session's PATH is a tool the session does not have.
 persist() {
     [ -n "$env_file" ] || return 0
     # Once: a session that starts again (a resume, a clear, a compact) must not grow the file.
-    grep -qxF -- "$1" "$env_file" 2>/dev/null || printf '%s\n' "$1" >> "$env_file"
+    grep -qxF -- "$1" "$env_file" 2>/dev/null && return 0
+    # Grouped, so a redirection that fails is silenced too (the report already says it failed).
+    { printf '%s\n' "$1" >> "$env_file"; } 2>/dev/null
 }
 
 sha256_of() {
@@ -68,8 +72,10 @@ prepare_openspec() {
         required "the OpenSpec CLI" "OpenSpec: installing the pinned CLI failed; run ./scripts/openspec.sh --version to see why"
         return
     fi
-    persist "export PATH=\"$bin:\$PATH\""
-    persist "export OPENSPEC_TELEMETRY=0"
+    if ! persist "export PATH=\"$bin:\$PATH\"" || ! persist "export OPENSPEC_TELEMETRY=0"; then
+        required "the OpenSpec CLI" "OpenSpec $version installed, but the session environment ($env_file) could not be written, so it is not on PATH"
+        return
+    fi
     note "OpenSpec $version on PATH, telemetry off"
 }
 
@@ -80,8 +86,10 @@ configure_git() {
     git -C "$root" config tag.gpgsign false
     # An identity given through the environment outranks every config file, so the session's own
     # commands carry the owner's too.
-    persist "export GIT_AUTHOR_NAME=\"$OWNER_NAME\" GIT_AUTHOR_EMAIL=\"$OWNER_EMAIL\""
-    persist "export GIT_COMMITTER_NAME=\"$OWNER_NAME\" GIT_COMMITTER_EMAIL=\"$OWNER_EMAIL\""
+    if ! persist "export GIT_AUTHOR_NAME=\"$OWNER_NAME\" GIT_AUTHOR_EMAIL=\"$OWNER_EMAIL\"" \
+        || ! persist "export GIT_COMMITTER_NAME=\"$OWNER_NAME\" GIT_COMMITTER_EMAIL=\"$OWNER_EMAIL\""; then
+        required "the owner's git identity" "git: the session environment ($env_file) could not be written, so the identity rests on the repository's config alone"
+    fi
     # Report what git will actually use, which is what matters if something else overrides it.
     local commit_signing tag_signing summary
     commit_signing="$(git -C "$root" config --get commit.gpgsign || echo unset)"
@@ -103,8 +111,10 @@ install_dotnet() {
         return
     fi
     if [ -x "$dest/dotnet" ] && "$dest/dotnet" --list-sdks 2>/dev/null | grep -q "^$DOTNET_VERSION "; then
-        persist "export DOTNET_ROOT=\"$dest\""
-        persist "export PATH=\"$dest:\$PATH\""
+        if ! persist "export DOTNET_ROOT=\"$dest\"" || ! persist "export PATH=\"$dest:\$PATH\""; then
+            required "the .NET SDK" ".NET SDK $DOTNET_VERSION is in $dest, but the session environment ($env_file) could not be written, so it is not on PATH"
+            return
+        fi
         note ".NET SDK $DOTNET_VERSION already in $dest"
         return
     fi
@@ -166,8 +176,10 @@ install_dotnet() {
         required "the .NET SDK" ".NET SDK: $DOTNET_VERSION is installed but global.json does not accept it; update the pin with global.json"
         return
     fi
-    persist "export DOTNET_ROOT=\"$dest\""
-    persist "export PATH=\"$dest:\$PATH\""
+    if ! persist "export DOTNET_ROOT=\"$dest\"" || ! persist "export PATH=\"$dest:\$PATH\""; then
+        required "the .NET SDK" ".NET SDK $DOTNET_VERSION installed in $dest, but the session environment ($env_file) could not be written, so it is not on PATH"
+        return
+    fi
     note ".NET SDK $DOTNET_VERSION installed in $dest, SHA-256 verified"
 }
 
