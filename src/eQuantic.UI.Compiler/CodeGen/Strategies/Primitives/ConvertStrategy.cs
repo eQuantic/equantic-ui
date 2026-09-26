@@ -60,11 +60,18 @@ public class ConvertStrategy : IExpressionIrStrategy
             // A bool reads its text the same in every culture, so a provider is not consulted, as .NET
             // does not consult it. It is still EVALUATED, after the value and before the conversion,
             // as C# evaluates every argument it writes: a provider with a side effect or an exception
-            // went nowhere (found in review, #421). One CultureInfo names is left out, as ToString
-            // leaves it out: CultureInfo's own members read a culture and do nothing else, and have no
-            // twin to evaluate. The numeric readers need no such care: they accept only
-            // CultureInfo.InvariantCulture (ParseCulture).
-            var provider = providerExpr is null || NamesACulture(providerExpr, context)
+            // went nowhere (found in review, #421). The invariant and the current culture, and a null,
+            // are reads with no effect, left out as ToString leaves them. Any other CultureInfo
+            // (GetCultureInfo(name), new CultureInfo(name)) may throw, and CultureInfo has no twin to
+            // evaluate it with, so it is EQ2108 rather than a call dropped in silence. The numeric
+            // readers accept only CultureInfo.InvariantCulture (ParseCulture).
+            if (providerExpr is not null && !NamedCulture.IsInvariant(providerExpr, context)
+                && !NamedCulture.IsCurrent(providerExpr, context) && BindsToCultureInfo(providerExpr, context))
+                context.Report(invocation, ConversionSeverity.Error, "EQ2108",
+                    "Convert.ToBoolean does not consult its provider, but C# evaluates it, and this culture cannot be "
+                    + "evaluated in the browser, where CultureInfo has no twin. Pass CultureInfo.InvariantCulture, or no provider.");
+            var provider = providerExpr is null || NamedCulture.IsInvariant(providerExpr, context)
+                || NamedCulture.IsCurrent(providerExpr, context) || BindsToCultureInfo(providerExpr, context)
                 ? null
                 : context.Converter.ConvertIr(providerExpr);
             var reads = ReadsText(invocation, argExpr, context);
@@ -255,13 +262,10 @@ public class ConvertStrategy : IExpressionIrStrategy
         return type.IsIntegral() ? Call(Eq.Dec) : Call(Eq.DecConvert);
     }
 
-    /// <summary>Whether a provider only names a culture: the invariant or the current one (a null
-    /// included), or any other member of <c>CultureInfo</c> itself, which reads a culture and does
-    /// nothing else.</summary>
-    private static bool NamesACulture(ExpressionSyntax provider, ConversionContext context) =>
-        NamedCulture.IsInvariant(provider, context)
-        || NamedCulture.IsCurrent(provider, context)
-        || context.SemanticHelper.GetSymbol(provider)?.ContainingType?.ToDisplayString() == "System.Globalization.CultureInfo";
+    /// <summary>Whether the provider is a member or a constructor of <c>CultureInfo</c> itself, which
+    /// has no twin to evaluate it with.</summary>
+    private static bool BindsToCultureInfo(ExpressionSyntax provider, ConversionContext context) =>
+        context.SemanticHelper.GetSymbol(provider)?.ContainingType?.ToDisplayString() == "System.Globalization.CultureInfo";
 
     /// <summary>
     /// <c>Convert.ToBoolean</c> by the type of what it converts, as <see cref="ToDecimal"/> is (found in
