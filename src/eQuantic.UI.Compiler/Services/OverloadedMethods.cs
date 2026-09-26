@@ -63,6 +63,7 @@ internal static class OverloadedMethods
         var errors = new List<CompilationError>();
         CheckOne(type, sourcePath, isComponent, errors);
         if (errors.Count == 0 && model is not null) CheckInherited(type, sourcePath, isComponent, model, errors);
+        if (errors.Count == 0 && model is not null) CheckDefaults(type, sourcePath, isComponent, model, errors);
         if (isComponent)
         {
             foreach (var nested in type.Members.OfType<ClassDeclarationSyntax>()
@@ -103,6 +104,162 @@ internal static class OverloadedMethods
             });
         }
     }
+
+    /// <summary>
+    /// Defaults the type takes from its interfaces (#414) that share a name with anything else along
+    /// its twin's chain. The twin of the class that first takes a default holds it as a member of its
+    /// own, one per name like any other, while C# reaches it only through its interface, so a second
+    /// member on its name answers in its place, or loses to it. In one class that is two defaults from
+    /// different interfaces, or a default and a member the class declares. Along the chain (found in
+    /// review, #418) it is a member a derived class declares on the name of a default its base takes,
+    /// which shadowed the default for every call through the interface; a default on the name of a
+    /// member a base declares; and two defaults of different interface members, one taken by a base
+    /// and one by the derived class. The chain is the bases the source declares, as it is for
+    /// <see cref="CheckInherited"/>, the runtime's own being EQ2011's. What the language itself picks
+    /// is not a clash: a derived class's default for the SAME interface member, more specific than its
+    /// base's, and a member that implements the default's interface member because the derived class
+    /// lists the interface again.
+    /// </summary>
+    private static void CheckDefaults(TypeDeclarationSyntax type, string sourcePath, bool isComponent, SemanticModel model,
+        List<CompilationError> errors)
+    {
+        if (model.SyntaxTree != type.SyntaxTree || model.GetDeclaredSymbol(type) is not INamedTypeSymbol declared)
+            return;
+        var position = type.Identifier.GetLocation().GetLineSpan().StartLinePosition;
+        void Refuse(string message) => errors.Add(new CompilationError
+        {
+            Code = "EQ1007",
+            Message = message,
+            SourcePath = sourcePath,
+            Line = position.Line + 1,
+            Column = position.Character + 1,
+        });
+
+        // What the bases' twins hold, the nearest base first: the members each declares, and what
+        // each takes from its interfaces.
+        var inherited = new Dictionary<string, Holder>();
+        var seen = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
+        for (var current = declared.BaseType;
+             current is { DeclaringSyntaxReferences.Length: > 0 } && seen.Add(current);
+             current = current.BaseType)
+        {
+            foreach (var member in InstanceMembers(current, isComponent))
+                inherited.TryAdd(Lowered(member), new Holder($"'{current.Name}.{Shown(member)}', which it inherits", FromInterface: false, Contract: null));
+            foreach (var parameter in PrimaryParameters(current))
+                inherited.TryAdd(parameter.ToCamelCase(),
+                    new Holder($"'{current.Name}({parameter})', a primary constructor's parameter it inherits as a field", FromInterface: false, Contract: null));
+            foreach (var (implementation, _, contract) in DefaultInterfaceMembers.Of(current, model.Compilation))
+            {
+                var owner = contract is null
+                    ? $"{Owner(implementation)}, which it inherits from '{current.Name}' with the defaults that call it"
+                    : $"the default {Owner(implementation)}, which it inherits from '{current.Name}'";
+                inherited.TryAdd(Lowered(implementation), new Holder(owner, FromInterface: true, contract));
+            }
+        }
+
+        var taken = new Dictionary<string, string>();
+        foreach (var member in InstanceMembers(declared, isComponent))
+        {
+            var name = Lowered(member);
+            taken.TryAdd(name, $"'{declared.Name}.{Shown(member)}'");
+            // On the name of what a base takes from an interface, the member answers the interface's
+            // calls in its place, unless it IS what the interface reaches for this class.
+            if (!inherited.TryGetValue(name, out var holder) || !holder.FromInterface
+                || (holder.Contract is { } contract
+                    && SymbolEqualityComparer.Default.Equals(declared.FindImplementationForInterfaceMember(contract), member)))
+                continue;
+            Refuse($"'{declared.Name}.{Shown(member)}' lowers to `{name}`, and so does {holder.Owner}. C# reaches "
+                + "that member only through its interface, and a JavaScript class chain has one member per name, so "
+                + $"'{declared.Name}.{Shown(member)}' would answer the interface's calls in its place. Give it its own name.");
+        }
+
+        // A primary constructor's parameter is a field of the twin, which the emitter always assigns
+        // (found in review, #418): `class C(int mark) : I` beside a default `I.Mark()` held `this.mark`
+        // over the prototype's `mark()`. A record's are its positional properties, counted above.
+        foreach (var parameter in PrimaryParameters(declared))
+        {
+            var name = parameter.ToCamelCase();
+            var shown = $"'{declared.Name}({parameter})', a primary constructor's parameter the twin holds as a field";
+            taken.TryAdd(name, shown);
+            if (!inherited.TryGetValue(name, out var holder) || !holder.FromInterface) continue;
+            Refuse($"{shown}, lowers to `{name}`, and so does {holder.Owner}. C# reaches that member only through its "
+                + "interface, and a JavaScript class chain has one member per name, so the field would answer the "
+                + "interface's calls in its place. Give it its own name.");
+        }
+
+        foreach (var (implementation, _, contract) in DefaultInterfaceMembers.Of(declared, model.Compilation))
+        {
+            var name = Lowered(implementation);
+            var owner = Owner(implementation);
+            if (taken.TryGetValue(name, out var earlier))
+            {
+                Refuse($"'{declared.Name}' takes the default {owner}, which lowers to `{name}`, and so does {earlier}. "
+                    + "C# reaches a default through its interface, and the twin holds it as a member of its own, one "
+                    + $"per name, so it would keep one of them. Declare {Simple(implementation.Name)} in "
+                    + $"'{declared.Name}', or give one of them its own name.");
+                continue;
+            }
+            taken[name] = owner;
+            // The same interface member's default, more specific here than in the base, is the
+            // override the language picks, and the prototype chain honours it.
+            if (!inherited.TryGetValue(name, out var holder)
+                || (holder.Contract is not null && contract is not null
+                    && SymbolEqualityComparer.Default.Equals(holder.Contract, contract)))
+                continue;
+            Refuse($"'{declared.Name}' takes the default {owner}, which lowers to `{name}`, and so does {holder.Owner}. "
+                + "A JavaScript class chain has one member per name, so one of them would answer the other's calls. "
+                + "Give one of them its own name.");
+        }
+    }
+
+    /// <summary>The parameters of a class's or a struct's primary constructor, which the twin assigns
+    /// to fields of the same name. A record's are its positional properties, members already.</summary>
+    private static IEnumerable<string> PrimaryParameters(INamedTypeSymbol type) =>
+        type.IsRecord
+            ? []
+            : type.DeclaringSyntaxReferences.Select(reference => reference.GetSyntax())
+                .OfType<TypeDeclarationSyntax>()
+                .SelectMany(declaration => declaration.ParameterList?.Parameters ?? default)
+                .Select(parameter => parameter.Identifier.Text);
+
+    /// <summary>A name along a twin's chain: who holds it, whether it came from an interface, and the
+    /// interface member it answers (none for a member a class declares, or for a private helper).</summary>
+    private readonly record struct Holder(string Owner, bool FromInterface, ISymbol? Contract);
+
+    /// <summary>An explicit implementation is named after its interface (`IShape.Describe`), and
+    /// lowers under the member's own name.</summary>
+    private static string Simple(string name) => name[(name.LastIndexOf('.') + 1)..];
+
+    private static string Lowered(ISymbol member) => Simple(member.Name).ToCamelCase();
+
+    /// <summary>How a member reads in a message: an explicit implementation by its interface and its
+    /// own name (<c>IOne.M</c>), which Roslyn names by the interface's full name.</summary>
+    private static string Shown(ISymbol member) => member switch
+    {
+        IMethodSymbol { ExplicitInterfaceImplementations: [var method, ..] } => $"{method.ContainingType.Name}.{method.Name}",
+        IPropertySymbol { ExplicitInterfaceImplementations: [var property, ..] } => $"{property.ContainingType.Name}.{property.Name}",
+        _ => member.Name,
+    };
+
+    private static string Owner(ISymbol implementation) =>
+        $"'{implementation.ContainingType.Name}.{Simple(implementation.Name)}'";
+
+    /// <summary>
+    /// The members a twin writes on an instance or its prototype: fields, events, properties and
+    /// methods, an explicit implementation under its member's own name, and nothing the compiler
+    /// declares itself. A field takes its name too: <c>class C : I { public int Mark; }</c> beside a
+    /// default <c>I.Mark()</c> gave the twin two members named <c>mark</c>, and so did an explicit
+    /// <c>IA.M()</c> beside a default <c>IB.M()</c>, and an event, which lowers to an instance field
+    /// (all found in review, #418). An indexer is written into no twin (#427), so it takes no name.
+    /// </summary>
+    private static IEnumerable<ISymbol> InstanceMembers(INamedTypeSymbol type, bool isComponent) =>
+        type.GetMembers().Where(member => !member.IsStatic && !member.IsImplicitlyDeclared
+            && member is IFieldSymbol or IEventSymbol or IPropertySymbol { IsIndexer: false }
+                or IMethodSymbol { MethodKind: MethodKind.Ordinary or MethodKind.ExplicitInterfaceImplementation }
+            // A component's server-only method never reaches its twin, so it takes no name there
+            // (asked in review, #418), as CheckInherited leaves it out too.
+            && !(isComponent && member is IMethodSymbol
+                && member.GetAttributes().Any(attribute => attribute.AttributeClass?.Name is "ServerOnlyAttribute" or "ServerOnly")));
 
     /// <summary>
     /// A method whose name a BASE already takes (see the type's remarks): the first inherited method

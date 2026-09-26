@@ -19,10 +19,10 @@ const token = (
 });
 
 // PhotonTheme values (pinned by the C# DesignTokenTests).
-const primaryBase = token([0x00, 0x50, 0xa0], [0x5c, 0xa2, 0xe8]);
-const borderStrong = token([0xc9, 0xce, 0xd6], [0x3d, 0x47, 0x54]);
+const primaryBase = token([0x00, 0x50, 0xa0], [0x76, 0xba, 0xff]);
+const borderStrong = token([0xc9, 0xce, 0xd6], [0x4c, 0x56, 0x64]);
 const textPrimary = token([0x17, 0x1b, 0x21], [0xf2, 0xf4, 0xf7]);
-const textMuted = token([0x5f, 0x6b, 0x7a], [0x8b, 0x95, 0xa3]);
+const textMuted = token([0x5f, 0x6b, 0x7a], [0xac, 0xb7, 0xc5]);
 
 const ctx = { textPrimary };
 
@@ -31,7 +31,7 @@ const box = (style: Record<string, unknown>, child?: VisualNodeValue): VisualNod
 
 describe('token → CSS formatting (mirrors C# TokenCss)', () => {
   it('formats light-dark pairs and collapses equal modes', () => {
-    expect(tokenValue(primaryBase)).toBe('light-dark(#0050a0, #5ca2e8)');
+    expect(tokenValue(primaryBase)).toBe('light-dark(#0050a0, #76baff)');
     expect(tokenValue(token([255, 255, 255], [255, 255, 255]))).toBe('#ffffff');
   });
 
@@ -78,7 +78,7 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
     expect(node.tag).toBe('div');
     // CROSS-PIN: this literal is asserted verbatim by WebRealizerTests.Box_ExactStyleString_CrossPin.
     expect(effectiveStyle(node)).toBe(
-      'background-color: light-dark(#0050a0, #5ca2e8); border-radius: 10px; border: 1px solid light-dark(#c9ced6, #3d4754); box-sizing: border-box; flex-shrink: 0; height: 40px; padding: 0 16px 0 16px; pointer-events: auto; width: 120px',
+      'background-color: light-dark(#0050a0, #76baff); border-radius: 10px; border: 1px solid light-dark(#c9ced6, #4c5664); box-sizing: border-box; flex-shrink: 0; height: 40px; padding: 0 16px 0 16px; pointer-events: auto; width: 120px',
     );
   });
 
@@ -124,7 +124,7 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
     const node = lowerVisualNode(text, ctx);
     expect(node.tag).toBe('span');
     expect(node.attributes['class']).toMatch(/^eq-type-caption(?: |$)/);
-    expect(effectiveStyle(node)).toContain('color: light-dark(#5f6b7a, #8b95a3)');
+    expect(effectiveStyle(node)).toContain('color: light-dark(#5f6b7a, #acb7c5)');
     expect(effectiveStyle(node)).toContain('white-space: nowrap');
     expect(effectiveStyle(node)).toContain('text-overflow: ellipsis');
     expect(node.children[0].textContent).toBe('Saldo disponível');
@@ -396,7 +396,7 @@ describe('lowering — cross-pinned with the C# WebRealizer', () => {
 
     const node = lowerVisualNode(component, ctx);
     expect(node.tag).toBe('div');
-    expect(effectiveStyle(node)).toContain('background-color: light-dark(#0050a0, #5ca2e8)');
+    expect(effectiveStyle(node)).toContain('background-color: light-dark(#0050a0, #76baff)');
     expect(node.children[0].tag).toBe('span');
   });
 });
