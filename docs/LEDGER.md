@@ -756,7 +756,8 @@ record of a release, the wiki's Upgrading page is the distillate.
   `Convert.ToBoolean` overload answers by the type C# binds (a false bool was true, and so was `0L`,
   a BigInt here), a tuple in Remove compares element by element as `Contains` compares it, a
   HashSet, a LinkedList, a SortedSet or a dictionary's pair reached through `ICollection<T>` removes
-  as it does directly, and the BCL
+  as it does directly, a pair compared half by half and a nullable tuple and an anonymous type by
+  value, a ToBoolean provider is evaluated in the order it is written, and the BCL
   audit's `(Object)` probes call the object overload instead of the string one beside it.
 
 ## Retired documents

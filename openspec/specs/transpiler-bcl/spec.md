@@ -9,7 +9,8 @@ What a BCL member answers in the browser, which is what it answers in .NET.
 
 `list.Remove(item)` SHALL remove the first item `EqualityComparer<T>.Default` finds equal to the value
 and answer whether it found one, evaluating the list and the item once each, in that order. A value
-tuple, a record and a struct SHALL compare by value, through the same equality `Contains` uses. Through
+tuple, a record and a struct SHALL compare by value, through the same equality `Contains` uses, and so
+SHALL a nullable one of those and an anonymous type. Through
 `ICollection<T>`, a HashSet or a LinkedList held when the call runs SHALL remove as it does when
 called directly, and so SHALL a dictionary through `ICollection<KeyValuePair<K, V>>`: the pair
 leaves only when its key is there with an equal value.
@@ -38,7 +39,8 @@ leaves only when its key is there with an equal value.
 
 `Convert.ToBoolean` SHALL answer a bool as itself; a number of any width, a decimal included, as
 whether it is not zero, a NaN being not zero and a negative zero being zero; and SHALL throw .NET's
-InvalidCastException for a char and a DateTime, after evaluating the argument.
+InvalidCastException for a char and a DateTime, after evaluating the argument. A provider SHALL be
+evaluated in the order the arguments are written, though it is not consulted.
 
 #### Scenario: A false bool and a zero long
 
