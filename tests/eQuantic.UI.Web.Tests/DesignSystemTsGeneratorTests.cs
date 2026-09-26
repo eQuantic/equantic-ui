@@ -85,9 +85,9 @@ public class DesignSystemTsGeneratorTests
     {
         var ts = DesignSystemTsGenerator.Generate(PhotonTheme.Instance);
 
-        // Primary.Base = #0050A0 light / #5CA2E8 dark — the same pair the CSS generator and the
+        // Primary.Base = #0050A0 light / #76BAFF dark — the same pair the CSS generator and the
         // cross-pinned lowering literal use.
         ts.Should().Contain("primary: new VariantColors(");
-        ts.Should().Contain("t(c(0, 80, 160, 255), c(92, 162, 232, 255))");
+        ts.Should().Contain("t(c(0, 80, 160, 255), c(118, 186, 255, 255))");
     }
 }
