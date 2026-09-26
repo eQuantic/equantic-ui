@@ -16,3 +16,7 @@ eQuantic.UI.Compiler.CodeGen.ValueMember.ValueMember(string! Display, string! Js
 eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.SetConstructorParametersInScope(bool inScope) -> void
 eQuantic.UI.Compiler.CodeGen.ConversionContext.ConstructorParametersInScope.get -> bool
 eQuantic.UI.Compiler.CodeGen.ConversionContext.ConstructorParametersInScope.set -> void
+eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.DefaultOf(Microsoft.CodeAnalysis.ITypeSymbol? type) -> string!
+*REMOVED*static eQuantic.UI.Compiler.CodeGen.Strategies.DefaultValue.Of(Microsoft.CodeAnalysis.ITypeSymbol? type) -> string!
+*REMOVED*eQuantic.UI.Compiler.Models.PropertyDefinition.ImplicitDefaultJs.get -> string?
+*REMOVED*eQuantic.UI.Compiler.Models.PropertyDefinition.ImplicitDefaultJs.set -> void

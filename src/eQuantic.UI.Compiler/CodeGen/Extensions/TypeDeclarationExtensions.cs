@@ -127,18 +127,6 @@ public static class TypeDeclarationExtensions
         return ts != "any" && raw.EndsWith("?") ? $"{ts} | null" : ts;
     }
 
-    /// <summary>
-    /// <c>default(T)</c> for a member with no default of its own, asked of the SYMBOL when there is a
-    /// model: the spelled name knows the common primitives and nothing else, so a struct-typed member
-    /// (a record's <c>Point Origin</c>), an enum or a <c>char</c> came out <c>null</c> — and a
-    /// <c>new CodeGrid()</c> on the web then held a null Point where C# holds (0, 0). Without a model
-    /// the name is all there is.
-    /// </summary>
-    internal static string DefaultOf(TypeSyntax? type, SemanticModel? model) =>
-        type is not null && model?.GetTypeInfo(type).Type is { TypeKind: not TypeKind.Error } symbol
-            ? Strategies.DefaultValue.Of(symbol)
-            : DefaultFor(type);
-
     /// <summary>JS literal for <c>default(T)</c> from the declared type syntax (name-based — the emitter
     /// runs pre-symbol). Nullable and reference types default to <c>null</c>. A name qualified with
     /// <c>System.</c> is the same type as its keyword, and a char's default is U+0000.</summary>

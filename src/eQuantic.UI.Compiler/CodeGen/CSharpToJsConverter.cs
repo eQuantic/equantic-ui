@@ -122,6 +122,16 @@ public class CSharpToJsConverter
     /// RUNTIME provides (the declarative factory surface).</summary>
     public HashSet<string> UsedRuntimeTypes => _context.UsedRuntimeTypes;
 
+    /// <summary>
+    /// The default of <paramref name="type"/> as this conversion writes it (<see cref="DefaultValue"/>),
+    /// so every struct the value constructs joins the module's imports, a nested one included, and so
+    /// does the helper. An emitter that asked the table on its own wrote <c>new Outer(new Inner(), 0)</c>
+    /// for a member of a struct whose zero is built member by member, in a module that imported
+    /// Outer, which its syntax names, and never Inner, which only the zero names (found in review,
+    /// #409). This is the door every emitter's default goes through.
+    /// </summary>
+    public string DefaultOf(ITypeSymbol? type) => DefaultValue.Of(type, _context);
+
     /// <summary>Diagnostics raised during the most recent conversion(s); call <see cref="ClearDiagnostics"/> between components.</summary>
     public IReadOnlyList<ConversionDiagnostic> Diagnostics => _context.Diagnostics;
 

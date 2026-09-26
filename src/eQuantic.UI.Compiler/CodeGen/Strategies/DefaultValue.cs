@@ -35,10 +35,6 @@ public static class DefaultValue
         || type.GetAttributes().Any(attribute => attribute.AttributeClass?.Name == "RuntimeProvidedAttribute")
         || !type.Locations.Any(location => location.IsInSource);
 
-    /// <summary>The default, with no context to tell about the helper import — the emitter's field
-    /// path already scans what it emits for <c>$eq.</c> and adds it.</summary>
-    public static string Of(ITypeSymbol? type) => Of(type, named: null);
-
     /// <param name="type">The type whose default to write.</param>
     /// <param name="named">Told of every struct the value constructs, for its import.</param>
     private static string Of(ITypeSymbol? type, Action<INamedTypeSymbol>? named)
@@ -163,7 +159,7 @@ public static class DefaultValue
         };
 
     /// <summary>Whether the twin of <paramref name="type"/> builds its zero instance from a bare
-    /// constructor — see <see cref="Of(ITypeSymbol?)"/>.</summary>
+    /// constructor — see <see cref="Of(ITypeSymbol?, ConversionContext)"/>.</summary>
     private static bool ZeroConstructs(INamedTypeSymbol type)
     {
         if (type.IsGenericType || type.SpecialType != SpecialType.None) return false;

@@ -92,11 +92,12 @@ public class RecordTypeEmitter
     /// The default of a declared type, asked of the SYMBOL where one is available. The syntax-only
     /// fallback cannot see through a name: it answers <c>null</c> for <c>char</c> and for every
     /// enum, where C# gives <c>'\0'</c> and the zero-valued member. A static of either type would
-    /// then hold a different value in the twin than on the server, silently.
+    /// then hold a different value in the twin than on the server, silently. It goes through the
+    /// converter, which registers every struct the zero constructs for this module's imports.
     /// </summary>
     private string DefaultOf(TypeSyntax type) =>
         ModelFor(type)?.GetTypeInfo(type).Type is { } symbol
-            ? DefaultValue.Of(symbol)
+            ? _converter.DefaultOf(symbol)
             : TypeDeclarationExtensions.DefaultFor(type);
 
     /// <summary>

@@ -1,4 +1,3 @@
-using System.Globalization;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -38,52 +37,6 @@ public class ComponentParser
         if (_semanticModelProvider == null) return null;
         try { return _semanticModelProvider.GetSemanticModel(tree); }
         catch { return null; }
-    }
-    /// <summary>
-    /// The JS literal for an uninitialized VALUE-TYPE property's C# default. A field of a value type
-    /// is zero in C# whether or not anyone wrote <c>= 0</c>; on the client it is <c>undefined</c>
-    /// unless someone writes it, and the two are not the same value.
-    /// <para>
-    /// This started at enums, where the divergence is loud: an unset enum is its zero member, lowered
-    /// as a string, so a <c>status === 'none'</c> test that is TRUE on the server takes the other
-    /// branch after hydration. Numbers were left out because <c>undefined</c> is falsy and reads like
-    /// <c>x > 0</c> behave the same — which is true right up to the first ARITHMETIC:
-    /// <c>Math.max(w, undefined)</c> is NaN, and a NaN width reaches the stylesheet as
-    /// <c>width:NaNpx</c>, a rule the CSS parser drops whole. It showed up on a code block, on a
-    /// client-rendered page only, because SSR computes the same property in C# where it is 0.
-    /// </para>
-    /// <para>
-    /// The value is answered by the one table (<see cref="CodeGen.Strategies.DefaultValue"/>), and it
-    /// has to be: a `long` defaults to 0n and a `decimal` to a Decimal, and answering plain `0` for
-    /// them put a NUMBER in a slot the twin declares `bigint`, so the first arithmetic on it threw
-    /// "Cannot mix BigInt and other types" — in the browser only, after hydration, on a page whose
-    /// server render was perfect.
-    /// </para>
-    /// <para>Null for reference types, where C#'s default and `undefined` really do behave alike.</para>
-    /// </summary>
-    /// <returns>The JS default, or null where there is none to write (a reference type, a nullable
-    /// value type, an enum with no zero member — C#'s default there is null or an unnamed value,
-    /// and `undefined` is the honest twin).</returns>
-    private string? ImplicitValueDefaultJs(PropertyDeclarationSyntax prop)
-    {
-        var type = TryGetSemanticModel(prop.SyntaxTree)?.GetTypeInfo(prop.Type).Type;
-        if (type is null) return null;
-
-        // An enum with no zero member: C#'s default is an unnamed value, so leave the slot alone
-        // rather than inventing a name for it. DefaultValue answers "0" there, which would be a
-        // number in a slot the twin declares as the member-name string.
-        if (type is INamedTypeSymbol { TypeKind: TypeKind.Enum } enumType
-            && !enumType.IsFlagsEnum()
-            && !enumType.GetMembers().OfType<IFieldSymbol>().Any(field => field.HasConstantValue
-                && Convert.ToInt64(field.ConstantValue, CultureInfo.InvariantCulture) == 0))
-        {
-            return null;
-        }
-
-        // A struct whose twin cannot build its zero answers `undefined`, which IS the slot left
-        // alone: writing it would only emit `if (this.width === undefined) this.width = undefined`.
-        var value = CodeGen.Strategies.DefaultValue.Of(type);
-        return value is "null" or "undefined" ? null : value;
     }
 
     /// <summary>
@@ -553,7 +506,6 @@ public class ComponentParser
                 Type = prop.Type.ToString(),
                 DefaultValue = prop.Initializer?.Value.ToString(),
                 DefaultValueNode = prop.Initializer?.Value,
-                ImplicitDefaultJs = prop.Initializer == null ? ImplicitValueDefaultJs(prop) : null,
                 IsPublic = isPublic,
                 IsStatic = prop.Modifiers.Any(SyntaxKind.StaticKeyword),
                 Node = prop
