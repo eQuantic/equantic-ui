@@ -26,16 +26,16 @@ was already broken on .57, because its controller read the same member.
   runtime's copy (`interface-defaults.ts`): `get data() { return IAppTheme.data(this); }`. Measured
   on the documentation site before this: its theme took three warnings on every build, and an app's
   own language without `Rules` would have met the same undefined as `PlainTextLanguage`.
-- **A default nothing can supply is said.** An interface compiled into any other referenced assembly
-  has neither source nor a runtime copy. Such a class gets the new warning EQ1008, which names the
-  member and says to declare it. It is a warning, as EQ1006 is, because the class may never reach
-  the browser.
+- **A default nothing can supply refuses the class.** An interface compiled into any other
+  referenced assembly has neither source nor a runtime copy. Such a class gets the new error EQ1008,
+  which names the member and the two ways out: declare it in the class, or keep the class out of
+  client code. Measured, nothing in the SDK, its samples, its template or the site raises it.
 - The runtime's `PlainTextLanguage` twin gains `rules`, the only twin in the SDK this changes.
 
 For a developer using the SDK: an interface they write with a default member now behaves on the web
 as it does in C#; their theme, language or completion provider takes the SDK's defaults in the
 browser as it does on the server; and a class relying on a default from any other referenced
-assembly gets a build warning where the browser used to meet undefined. Nothing is removed.
+assembly stops the build, where the browser used to meet undefined. Nothing is removed.
 
 The parts reached are eqc and the runtime, which exports `IAppTheme`, `ICodeLanguage` and
 `ICodeCompletionProvider` as its copies of their defaults. The public surface gains

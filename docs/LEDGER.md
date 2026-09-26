@@ -753,7 +753,9 @@ record of a release, the wiki's Upgrading page is the distillate.
   vocabulary's defaults and an app's theme, language or completion provider delegates to them
   ([#415](https://github.com/eQuantic/equantic-ui/issues/415)): measured on the site, its theme went
   from three warnings on every build to none. An interface from any other compiled assembly has
-  neither, and the build says so (EQ1008). The first change proposed and archived through OpenSpec
+  neither, and the build refuses the class (EQ1008). From the review: two defaults on one name are
+  EQ1007, a default reaching an interface's static is EQ1008, a record with only a base list gets
+  its twin, and a record's optional parameters and setters are kept. The first change proposed and archived through OpenSpec
   (`openspec/specs/transpiler-interfaces`).
 
 - **2026-09-26 · List.Remove and a bool from text answer as .NET does**: `list.Remove(item)` assigned

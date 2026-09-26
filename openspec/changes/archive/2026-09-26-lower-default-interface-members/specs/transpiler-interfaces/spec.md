@@ -36,6 +36,28 @@ base class already takes SHALL be left to the base class's twin.
 - **WHEN** `IGreeter.Greet()` calls `private string Wrap(string text)` of the same interface
 - **THEN** `((IGreeter)new Greeter("ana")).Greet()` answers `<hi ana>`
 
+#### Scenario: A record with no member of its own
+
+- **WHEN** `record Nobody : IGreet;` and `IGreet` declares only `string Hello() => "hi";`
+- **THEN** `((IGreet)new Nobody()).Hello()` answers `hi`
+
+#### Scenario: An optional parameter and a setter
+
+- **WHEN** a default method declares `string Mark(string suffix = "!")`, and a default property
+  `int Half { get => Width / 2; set => Width = value * 2; }`
+- **THEN** `Mark()` answers `m!`, and setting `Half` to 5 leaves `Width` at 10
+
+### Requirement: Two members on one name are refused
+
+eqc SHALL refuse with EQ1007 a class that takes two defaults which lower to one name, from different
+interfaces, or a default and an instance member the class declares under that name, since the twin
+holds one member per name.
+
+#### Scenario: Two interfaces, one name
+
+- **WHEN** `IAlpha` and `IBeta` each declare `string Mark()` with a body, and `class Doubled : IAlpha, IBeta`
+- **THEN** the build fails with EQ1007, naming both defaults
+
 ### Requirement: A class takes the SDK's defaults from the runtime
 
 For a default of an interface the runtime provides (the SDK's vocabulary: `IAppTheme`,
@@ -56,12 +78,19 @@ copy of every default of every such interface.
 
 ### Requirement: A default nothing can supply is said
 
-eqc SHALL report EQ1008, a warning naming the class and the member, for each default a class takes
-from an interface compiled into a referenced assembly the runtime does not provide.
+eqc SHALL refuse the class with EQ1008, an error naming the class, the member and the two ways out,
+for each default it takes from an interface compiled into a referenced assembly the runtime does not
+provide.
+
+#### Scenario: A default uses a static member of its interface
+
+- **WHEN** a default calls `private static string Wrap(string text)` of its interface
+- **THEN** the build fails with EQ1008, saying that an interface has no JavaScript form to hold the
+  static, and to declare the default in the class
 
 #### Scenario: An interface from another assembly
 
 - **WHEN** a class implements an interface of a referenced assembly and relies on its default
   method `Say()`
-- **THEN** the build reports EQ1008 saying the class relies on that default and to declare `Say`
-  in it, and the twin has no `say`
+- **THEN** the build fails with EQ1008, saying the class relies on that default and to declare `Say`
+  in it or keep it out of client code

@@ -46,6 +46,10 @@ every public interface of the vocabulary by reflection into a fixture, and fails
 changes; `interface-defaults.spec.ts` fails for any line with no function, and checks each value
 against the C# default.
 
+The copy of `IAppTheme.Code` is `codeTokenColor`, one switch transcribed by hand, so the fixture
+also carries the C# default's colour over the reference theme for every token kind, and the spec
+checks every one: a slip in any arm fails there.
+
 EQ1008 remains for an interface from any other assembly, which has neither a body nor a runtime
-copy. It warns rather than fails because the class may never be loaded in a browser; EQ1006 is a
-warning for the same reason.
+copy, and there it is an error: the developer can act on it, and with the SDK's own defaults
+carried, it fires nowhere in the SDK, its samples, its template or the documentation site.
