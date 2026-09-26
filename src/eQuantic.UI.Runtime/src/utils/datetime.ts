@@ -17,6 +17,7 @@
 
 import { activePattern } from './culture';
 
+const TICKS_PER_MICROSECOND = 10n;
 const TICKS_PER_MILLISECOND = 10_000n;
 const TICKS_PER_SECOND = 10_000_000n;
 const TICKS_PER_MINUTE = 600_000_000n;
@@ -156,24 +157,6 @@ export class TimeSpan {
   }
 }
 
-/**
- * A count that .NET types as `long` and C# lets you write as an int literal. Both cross: a
- * transpiled `long` is a bigint (`TimeSpan.FromSeconds(90)` binds .NET 9's long overload), while a
- * `double` count stays a number. Beyond 2^53 a bigint count loses precision here — the same span is
- * past `TimeSpan.MaxValue` in .NET, which throws, so no representable span is affected.
- */
-function asNumber(value: bigint | number): number {
-  return typeof value === 'bigint' ? Number(value) : value;
-}
-
-function ticksFromUnit(value: bigint | number, ticksPerUnit: bigint): bigint {
-  // .NET scales through milliseconds and rounds to the nearest tick.
-  return (
-    BigInt(Math.round(asNumber(value) * Number(ticksPerUnit / TICKS_PER_MILLISECOND))) *
-    TICKS_PER_MILLISECOND
-  );
-}
-
 const MAX_TICKS = 9_223_372_036_854_775_807n;
 const MIN_TICKS = -9_223_372_036_854_775_808n;
 /** `long.MaxValue` as the double .NET compares a scaled count with: 2^63, one past it. */
@@ -303,6 +286,47 @@ timeSpan.maxValue = () => new TimeSpan(9_223_372_036_854_775_807n);
 // DateTime
 // ---------------------------------------------------------------------------------------------
 
+/** A count past what a date can move by, as `DateTime.AddUnits` refuses one. */
+const ADD_OUT_OF_RANGE = "Value to add was out of range. (Parameter 'value')";
+/** A result outside 0001-01-01 to 9999-12-31, as `DateTime.AddTicks` refuses one. */
+const UNREPRESENTABLE =
+  "The added or subtracted value results in an un-representable DateTime. (Parameter 'value')";
+/** A `DateTimeOffset` whose UTC time leaves the calendar, as its `ValidateDate` refuses one. */
+const UTC_OUT_OF_RANGE =
+  "The UTC time represented when the offset is applied must be between year 0 and 10,000. (Parameter 'offset')";
+
+/**
+ * A double to a long, as .NET 9 and later convert one: toward zero, NaN to 0, and saturated at the
+ * ends of a long. `TimeOnly.AddHours(1e20)` saturates before it wraps, and a NaN count adds nothing.
+ */
+function toLong(value: number): bigint {
+  if (Number.isNaN(value)) return 0n;
+  if (value >= TICKS_BOUND) return MAX_TICKS;
+  if (value <= -TICKS_BOUND) return MIN_TICKS;
+  return BigInt(Math.trunc(value));
+}
+
+/**
+ * The ticks a count of units moves a date by, as .NET 10's `DateTime.AddUnits` computes them: a
+ * count past what a date can move by is refused, then the whole units and the fraction become ticks
+ * apart, in doubles where .NET uses doubles, and the fraction is truncated toward zero.
+ * `AddSeconds(0.00001)` is 100 ticks and `AddMilliseconds(0.5)` 5,000, where rounding to the
+ * millisecond, as .NET 6 and earlier did, answered 0 and 10,000.
+ */
+function unitTicks(value: number, ticksPerUnit: bigint): bigint {
+  if (Math.abs(value) > Number(MAX_DATETIME_TICKS / ticksPerUnit)) {
+    throw new Error(ADD_OUT_OF_RANGE);
+  }
+  const integral = Math.trunc(value);
+  return toLong(integral) * ticksPerUnit + toLong((value - integral) * Number(ticksPerUnit));
+}
+
+/** Ticks inside the calendar, or `DateTime.AddTicks`'s refusal. */
+function calendarTicks(ticks: bigint): bigint {
+  if (ticks < 0n || ticks > MAX_DATETIME_TICKS) throw new Error(UNREPRESENTABLE);
+  return ticks;
+}
+
 export class DateTime {
   constructor(readonly ticks: bigint) {}
 
@@ -350,23 +374,26 @@ export class DateTime {
   }
 
   addTicks(t: bigint): DateTime {
-    return new DateTime(this.ticks + t);
+    return new DateTime(calendarTicks(this.ticks + t));
   }
-  // Fractional Add* round to the nearest millisecond, like .NET.
+  // A fractional count lands on the tick .NET 7 and later land on: see unitTicks.
   addDays(value: number): DateTime {
-    return this.addTicks(ticksFromUnit(value, TICKS_PER_DAY));
+    return this.addTicks(unitTicks(value, TICKS_PER_DAY));
   }
   addHours(value: number): DateTime {
-    return this.addTicks(ticksFromUnit(value, TICKS_PER_HOUR));
+    return this.addTicks(unitTicks(value, TICKS_PER_HOUR));
   }
   addMinutes(value: number): DateTime {
-    return this.addTicks(ticksFromUnit(value, TICKS_PER_MINUTE));
+    return this.addTicks(unitTicks(value, TICKS_PER_MINUTE));
   }
   addSeconds(value: number): DateTime {
-    return this.addTicks(ticksFromUnit(value, TICKS_PER_SECOND));
+    return this.addTicks(unitTicks(value, TICKS_PER_SECOND));
   }
   addMilliseconds(value: number): DateTime {
-    return this.addTicks(BigInt(Math.round(value)) * TICKS_PER_MILLISECOND);
+    return this.addTicks(unitTicks(value, TICKS_PER_MILLISECOND));
+  }
+  addMicroseconds(value: number): DateTime {
+    return this.addTicks(unitTicks(value, TICKS_PER_MICROSECOND));
   }
 
   addMonths(months: number): DateTime {
@@ -741,11 +768,13 @@ export class TimeOnly {
     if (t < 0n) t += TICKS_PER_DAY;
     return new TimeOnly(t);
   }
+  // One product, converted as .NET 9 and later convert a double, then wrapped: TimeOnly does not
+  // split the count into whole units and a fraction, as DateTime does.
   addHours(value: number): TimeOnly {
-    return this.wrap(ticksFromUnit(value, TICKS_PER_HOUR));
+    return this.wrap(toLong(value * Number(TICKS_PER_HOUR)));
   }
   addMinutes(value: number): TimeOnly {
-    return this.wrap(ticksFromUnit(value, TICKS_PER_MINUTE));
+    return this.wrap(toLong(value * Number(TICKS_PER_MINUTE)));
   }
 
   compareTo(other: TimeOnly): number {
@@ -885,20 +914,30 @@ export class DateTimeOffset {
     return new TimeSpan(this.localTicks % TICKS_PER_DAY);
   }
 
+  /** Moves the clock time within the calendar, then checks the UTC time, as .NET's `Add` does. */
   addTicks(t: bigint): DateTimeOffset {
-    return new DateTimeOffset(this.localTicks + t, this.offsetTicks);
+    const local = calendarTicks(this.localTicks + t);
+    const utc = local - this.offsetTicks;
+    if (utc < 0n || utc > MAX_DATETIME_TICKS) throw new Error(UTC_OUT_OF_RANGE);
+    return new DateTimeOffset(local, this.offsetTicks);
   }
   addDays(v: number): DateTimeOffset {
-    return this.addTicks(ticksFromUnit(v, TICKS_PER_DAY));
+    return this.addTicks(unitTicks(v, TICKS_PER_DAY));
   }
   addHours(v: number): DateTimeOffset {
-    return this.addTicks(ticksFromUnit(v, TICKS_PER_HOUR));
+    return this.addTicks(unitTicks(v, TICKS_PER_HOUR));
   }
   addMinutes(v: number): DateTimeOffset {
-    return this.addTicks(ticksFromUnit(v, TICKS_PER_MINUTE));
+    return this.addTicks(unitTicks(v, TICKS_PER_MINUTE));
   }
   addSeconds(v: number): DateTimeOffset {
-    return this.addTicks(ticksFromUnit(v, TICKS_PER_SECOND));
+    return this.addTicks(unitTicks(v, TICKS_PER_SECOND));
+  }
+  addMilliseconds(v: number): DateTimeOffset {
+    return this.addTicks(unitTicks(v, TICKS_PER_MILLISECOND));
+  }
+  addMicroseconds(v: number): DateTimeOffset {
+    return this.addTicks(unitTicks(v, TICKS_PER_MICROSECOND));
   }
   addMonths(months: number): DateTimeOffset {
     return new DateTimeOffset(
