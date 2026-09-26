@@ -138,6 +138,21 @@ public class DefaultInterfaceMemberConformanceTests
         }
         public record GreetDerived : GreetBase;
 
+        public interface IWriteOnly
+        {
+            int Stored { get; set; }
+            int Twice { set => Stored = value * 2; }
+        }
+        public record Sink : IWriteOnly
+        {
+            public int Stored { get; set; }
+        }
+        public record Own
+        {
+            public int Backing;
+            public int Value { set => Backing = value + 1; }
+        }
+
         public interface IMarked { string Mark() => "m"; }
         public record MarkedBase : IMarked;
         public record Remarked : MarkedBase, IMarked
@@ -181,6 +196,9 @@ public class DefaultInterfaceMemberConformanceTests
     [InlineData("return new Dog().Kind() + \"|\" + new Cat().Kind() + new Cat().Lives;")]                     // "animal|animal9"
     [InlineData("Animal a = new Dog(); return (a is Dog) + \"|\" + (a is Animal) + \"|\" + (new Cat() is Animal);")] // "True|True|True"
     [InlineData("IGreet g = new GreetDerived(); return g.Hello();")]                                             // "hi"
+    // A default property with a setter and no getter, and a record's own (found in review, #418).
+    [InlineData("IWriteOnly w = new Sink(); w.Twice = 5; return w.Stored;")]                                    // 10
+    [InlineData("var o = new Own(); o.Value = 3; return o.Backing;")]                                           // 4
     public void ADefaultInterfaceMember_ReachesTheTypesTwin(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
