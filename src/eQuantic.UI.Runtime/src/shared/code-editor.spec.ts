@@ -783,6 +783,41 @@ describe('the block draws the cells the engine counts', () => {
 });
 
 /**
+ * A language that relies on its interface's default `Rules` keeps them in the browser (#414).
+ * `PlainTextLanguage` declares none, its twin had no `rules`, and on 0.2.0-preview.58 every
+ * plain-text block threw on `indentWidth` as it built, since the block reads its tab stop from the
+ * language: the documentation site's `plaintext` fences each became "This section could not be
+ * displayed". The C# and XML blocks, whose languages declare their own rules, were never touched.
+ */
+describe('a plain-text block', () => {
+  it('builds and lowers with the rules its language takes from the interface', async () => {
+    const { materializeTheme } = await import('./theme-bridge');
+    const photonData = (await import('./theme-bridge.photon.json')).default;
+    const { CodeBlock } = await import('./components/CodeBlock');
+    const theme = materializeTheme(photonData as never);
+    setPhotonTheme(theme);
+    const context = {
+      theme,
+      density: 'comfortable',
+      measureText: (text: string) => text.length * 7,
+      monoAdvance: () => 7,
+    };
+    const block = new CodeBlock('a\tb', 'text');
+    const node = lowerVisualNode(block.build(context as never) as never, context as never);
+    expect(node.tag).toBeTruthy();
+    // CodeLanguageRules.Default, which the interface's default hands to a language with no rules.
+    expect(CodeLanguages.plainText.rules.indentWidth).toBe(4);
+    setPhotonTheme(photonTheme);
+  });
+
+  it('edits with them too', () => {
+    // The editor read the same member for its indentation, and was broken on plain text since .57.
+    const editor = new CodeEditorController('x', CodeLanguages.plainText);
+    expect(editor.rules.indentWidth).toBe(4);
+  });
+});
+
+/**
  * A COMPONENT centres like any other node. In C# `Centered()` is an extension on VisualNode, and
  * a component is one — so `Card(…).Centered()` compiled there and called nothing here: the page
  * mounted with "centered is not a function" and the frame went blank.

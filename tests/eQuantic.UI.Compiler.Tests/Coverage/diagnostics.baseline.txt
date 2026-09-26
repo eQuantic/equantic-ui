@@ -8,6 +8,7 @@ EQ1004 eQuantic.UI.Compiler/CodeGen/ConversionContext.cs
 EQ1005 eQuantic.Build/Program.cs
 EQ1006 eQuantic.Build/Program.cs
 EQ1007 eQuantic.UI.Compiler/Services/OverloadedMethods.cs
+EQ1008 eQuantic.UI.Compiler/CodeGen/RecordTypeEmitter.cs eQuantic.UI.Compiler/CodeGen/TypeScriptEmitter.cs
 EQ2001 eQuantic.Build/Program.cs eQuantic.UI.Compiler/CodeGen/Strategies/Special/UnsupportedConstructStrategy.cs
 EQ2002 eQuantic.UI.Compiler/CodeGen/Strategies/Statements/GotoStatementStrategy.cs
 EQ2003 eQuantic.UI.Compiler/CodeGen/Strategies/Expressions/ObjectCreationStrategy.cs
