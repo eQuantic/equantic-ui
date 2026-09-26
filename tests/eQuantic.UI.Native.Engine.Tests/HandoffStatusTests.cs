@@ -46,8 +46,15 @@ public class HandoffStatusTests
                 continue;
             }
 
-            // A request whose final API name is not decided yet is checked by hand, and says so.
-            if (!item.TryGetProperty("probe", out var probe) || probe.ValueKind == JsonValueKind.Null) continue;
+            // An item the SDK cannot prove is checked by hand, and says WHY in "checkedByHand". A null
+            // probe used to be skipped with no reason at all, and that is how the APCA palette stayed a
+            // request in this file after the pull request that shipped it (found in review).
+            if (!item.TryGetProperty("probe", out var probe) || probe.ValueKind == JsonValueKind.Null)
+            {
+                if (!item.TryGetProperty("checkedByHand", out var why) || string.IsNullOrWhiteSpace(why.GetString()))
+                    offences.Add($"{id} has no probe and does not say why: give it one, or a \"checkedByHand\" reason");
+                continue;
+            }
 
             var found = Probe(probe);
             if (status == "request" && found.All)

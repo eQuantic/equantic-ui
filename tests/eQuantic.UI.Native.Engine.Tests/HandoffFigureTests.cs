@@ -93,7 +93,8 @@ public class HandoffFigureTests
             var text = match.Groups["text"].Value;
             if (!counted.TryGetValue(name, out var actual))
                 offences.Add($"{where}: data-figure=\"{name}\" is not a figure this test knows how to count");
-            else if (!TryShown(text, out var shown) || (int)shown != actual)
+            // Compared as read, never truncated first: a cast let "56.9" pass as the count 56.
+            else if (!TryShown(text, out var shown) || shown != actual)
                 offences.Add($"{where}: the page shows \"{text}\" and the SDK has {actual}");
         }
 

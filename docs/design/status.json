@@ -55,7 +55,7 @@
       "id": "C1-detents",
       "name": "BottomSheet detents + scroll handoff",
       "status": "request",
-      "probe": null,
+      "probe": { "apiContains": "Detent", "in": "eQuantic.UI.Components" },
       "claims": [
         "C1 ships without them",
         "BottomSheet detents + scroll handoff (the C1 gate)"
@@ -188,7 +188,7 @@
       "id": "dragged-state",
       "name": "Dragged as a derived state",
       "status": "request",
-      "probe": null,
+      "probe": { "apiContains": "Dragged", "in": "eQuantic.UI.Primitives" },
       "claims": []
     },
     {
@@ -220,6 +220,7 @@
       "name": "Semantics parity across targets",
       "status": "request",
       "probe": null,
+      "checkedByHand": "a cross-target test (#339): neither a public API entry nor a source reference can prove it",
       "claims": [
         "REQUEST · semantics parity"
       ]
@@ -241,6 +242,7 @@
       "name": "Live blocks on the handoff pages",
       "status": "request",
       "probe": null,
+      "checkedByHand": "a change to how the handoff pages are built (#347), outside the SDK's source",
       "claims": [
         "REQUEST · live blocks"
       ]
@@ -248,8 +250,9 @@
     {
       "id": "apca-dark-palette",
       "name": "APCA gate and the re-solved dark palette",
-      "status": "request",
+      "status": "shipped",
       "probe": null,
+      "checkedByHand": "palette values, held by DesignTokenApcaTests, which fails the build when a pair falls under its floor",
       "claims": []
     },
     {
