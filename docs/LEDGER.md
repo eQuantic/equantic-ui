@@ -727,7 +727,7 @@ record of a release, the wiki's Upgrading page is the distillate.
   toward zero, `TimeOnly` takes its one product as .NET 9 and later convert a double, and
   `DateTime.AddMicroseconds`, `DateTimeOffset.AddMilliseconds` and `AddMicroseconds`, which the
   audit graded native and no twin had, exist. An out-of-range count or result throws in .NET's
-  words where it built an invalid date. 34 of the 39 conformance cases failed before the port.
+  words where it built an invalid date. 38 of the 44 conformance cases failed before the port.
   Measured and left to its own issue: `Add(TimeSpan)`, the operators, `AddMonths` and `AddYears`
   at the calendar's edge ([#424](https://github.com/eQuantic/equantic-ui/issues/424)).
 
