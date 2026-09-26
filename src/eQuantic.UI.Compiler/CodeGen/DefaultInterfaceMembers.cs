@@ -93,14 +93,34 @@ internal static class DefaultInterfaceMembers
     }
 
     /// <summary>
-    /// The warning for a default whose body cannot be written and that the runtime does not carry:
+    /// The static member of an interface a default's body reaches, if any. An interface erases, so a
+    /// static of one has no JavaScript home, and the default would call a name nothing defines (found
+    /// in review, #418). A constant is inlined where it is read, so it needs none.
+    /// </summary>
+    public static ISymbol? InterfaceStaticIn(MemberDeclarationSyntax declaration, SemanticModel model) =>
+        declaration.DescendantNodes().OfType<SimpleNameSyntax>()
+            .Select(name => model.GetSymbolInfo(name).Symbol)
+            .FirstOrDefault(symbol => symbol is { IsStatic: true, ContainingType.TypeKind: TypeKind.Interface }
+                and not ITypeSymbol and not IFieldSymbol { IsConst: true });
+
+    /// <summary>The error for a default that reaches a static member of an interface.</summary>
+    public static string Homeless(INamedTypeSymbol type, ISymbol implementation, ISymbol reached) =>
+        $"{type.Name} relies on the default {implementation.ContainingType.Name}.{implementation.Name}, which uses "
+        + $"{reached.ContainingType.Name}.{reached.Name}, a static member of an interface, and an interface has no "
+        + $"JavaScript form to hold it, so the default cannot be written into {type.Name}'s twin. Declare "
+        + $"{implementation.Name} in {type.Name}, or keep {type.Name} out of client code.";
+
+    /// <summary>
+    /// The error for a default whose body cannot be written and that the runtime does not carry:
     /// its interface is compiled into a referenced assembly outside the vocabulary, so the
-    /// transpiler has its signature and not its code. A warning, as EQ1006 is one: the twin lacks a
-    /// member C# has, which only matters when client code calls it.
+    /// transpiler has its signature and not its code, and the twin would answer the member with
+    /// undefined. An error, since the SDK's own defaults reach every app through the runtime and
+    /// what is left is an interface the developer can act on: measured, the documentation site, the
+    /// dashboard sample and the app template raise it nowhere.
     /// </summary>
     public static string Unreadable(INamedTypeSymbol type, ISymbol implementation) =>
         $"{type.Name} relies on the default {implementation.ContainingType.Name}.{implementation.Name}, "
         + $"whose body is compiled into {implementation.ContainingAssembly?.Name ?? "a referenced assembly"} "
-        + $"and cannot be transpiled, so the browser's {type.Name} has no {implementation.Name}. "
-        + $"Declare {implementation.Name} in {type.Name} if client code uses it.";
+        + $"and cannot be transpiled, so the browser's {type.Name} would have no {implementation.Name}. "
+        + $"Declare {implementation.Name} in {type.Name}, or keep {type.Name} out of client code.";
 }

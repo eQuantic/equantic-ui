@@ -1221,6 +1221,29 @@ public class TypeScriptEmitter
              types.Add(typeName);
         }
 
+        // A PARAMETER's type is written into the signature's annotation, and an app type named only
+        // there was annotated without being imported: an inherited default's `Draw(Widget w)` was
+        // (found in review, #418), and a class's own method's the same.
+        // Asked of the model: an interface, an enum or a type parameter is annotated as something
+        // else (`any`, the member string) and has no module, so importing it names a file nobody writes.
+        foreach (var parameter in node.DescendantNodes().OfType<ParameterSyntax>())
+        {
+            if (parameter.Type is not { } declared || ModelFor(declared)?.GetTypeInfo(declared).Type is not { } typed)
+                continue;
+            var element = typed is IArrayTypeSymbol array ? array.ElementType : typed;
+            // A BCL generic (`List<Widget>`) carries the app type as its last argument.
+            var named = element is INamedTypeSymbol { IsGenericType: true, TypeArguments: [.., var last] } generic
+                && generic.ContainingNamespace?.ToDisplayString().StartsWith("System") == true
+                    ? last
+                    : element;
+            // Only a type declared in SOURCE becomes a module; a BCL or a metadata type (`string` is
+            // System.String) has none of its own here.
+            if (named is INamedTypeSymbol { TypeKind: TypeKind.Class or TypeKind.Struct, Name.Length: > 0 } candidate
+                && candidate.Locations.Any(location => location.IsInSource)
+                && (localNames == null || !localNames.Contains(candidate.Name)))
+                types.Add(candidate.Name);
+        }
+
         // A TARGET-TYPED `new(...)` states NO name — `ObjectCreationStrategy` recovers it from the
         // model and emits `new CatalogueEntry(...)`, so the import must be recovered the same way
         // (a declared type only covers the OUTERMOST creation; nested ones live inside arguments).
@@ -1830,7 +1853,7 @@ public class TypeScriptEmitter
     /// has no interface to hold them, so a class that did not declare one had no such member at all,
     /// and <c>PlainTextLanguage</c>'s twin answered <c>rules</c> with undefined. Each body converts
     /// under its interface's file, where its names resolve. A default the transpiler cannot read,
-    /// because its interface is compiled into a referenced assembly, is said instead (EQ1008).
+    /// because its interface is compiled into a referenced assembly the runtime does not carry, refuses the class (EQ1008).
     /// </summary>
     private void EmitInheritedDefaults(TypeDeclarationSyntax? declaration, TypeScriptCodeBuilder.ClassBuilder c)
     {
@@ -1838,6 +1861,13 @@ public class TypeScriptEmitter
             return;
         foreach (var (implementation, member) in DefaultInterfaceMembers.Of(self))
         {
+            if (member is not null && ModelFor(member) is { } memberModel
+                && DefaultInterfaceMembers.InterfaceStaticIn(member, memberModel) is { } reached)
+            {
+                _converter.Report(declaration, ConversionSeverity.Error, "EQ1008",
+                    DefaultInterfaceMembers.Homeless(self, implementation, reached));
+                continue;
+            }
             switch (member)
             {
                 case PropertyDeclarationSyntax property when property.ExpressionBody != null
@@ -1855,7 +1885,7 @@ public class TypeScriptEmitter
                     EmitDelegatedDefault(implementation, c);
                     break;
                 default:
-                    _converter.Report(declaration, ConversionSeverity.Warning, "EQ1008",
+                    _converter.Report(declaration, ConversionSeverity.Error, "EQ1008",
                         DefaultInterfaceMembers.Unreadable(self, implementation));
                     break;
             }

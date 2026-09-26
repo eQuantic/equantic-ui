@@ -31,10 +31,13 @@ public class RecordTypeEmitter
     }
 
     /// <summary>True for the value types this emitter handles: any record, or a struct, that exposes at
-    /// least one value member (positional parameter, auto-property, or public field).</summary>
+    /// least one value member (positional parameter, auto-property, or public field), a static
+    /// surface, or a base list. A base can give a type every member it has: a base record, or an
+    /// interface's defaults, which `record Nobody : IGreet;` takes whole, and with no twin the
+    /// default had nothing to be written into (found in review, #418).</summary>
     public static bool CanEmit(TypeDeclarationSyntax type) =>
         type is RecordDeclarationSyntax or StructDeclarationSyntax
-        && (type.ValueMembers().Count > 0 || HasStaticSurface(type));
+        && (type.ValueMembers().Count > 0 || HasStaticSurface(type) || type.BaseList is { Types.Count: > 0 });
 
     /// <summary>
     /// Whether this emitter writes a twin for <paramref name="type"/>: declared in source, by a
@@ -474,6 +477,13 @@ public class RecordTypeEmitter
         {
             foreach (var (implementation, member) in DefaultInterfaceMembers.Of(self))
             {
+                if (member is not null && ModelFor(member) is { } memberModel
+                    && DefaultInterfaceMembers.InterfaceStaticIn(member, memberModel) is { } reached)
+                {
+                    _converter.Report(type, ConversionSeverity.Error, "EQ1008",
+                        DefaultInterfaceMembers.Homeless(self, implementation, reached));
+                    continue;
+                }
                 switch (member)
                 {
                     case MethodDeclarationSyntax method when method.Body != null || method.ExpressionBody != null:
@@ -492,7 +502,7 @@ public class RecordTypeEmitter
                             : $"get {delegatedName}() {{ return {call}; }} ");
                         break;
                     default:
-                        _converter.Report(type, ConversionSeverity.Warning, "EQ1008",
+                        _converter.Report(type, ConversionSeverity.Error, "EQ1008",
                             DefaultInterfaceMembers.Unreadable(self, implementation));
                         break;
                 }
@@ -520,7 +530,9 @@ public class RecordTypeEmitter
             _ => null,
         };
 
-    /// <summary>A property with a body, as its getter; nothing for one that has none.</summary>
+    /// <summary>A property with a body, as its getter, and its setter where it has one with a body
+    /// (an interface's default property writes through its other members, found in review, #418);
+    /// nothing for a property with no getter body.</summary>
     private string ComputedProperty(PropertyDeclarationSyntax property, string className)
     {
         var getter = ComputedGetter(property);
@@ -528,9 +540,15 @@ public class RecordTypeEmitter
         _converter.SetCurrentClass(className);
         var prefix = property.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword)) ? "static " : "";
         var propertyName = property.Identifier.Text.ToCamelCase();
-        return getter is BlockSyntax block
+        var text = getter is BlockSyntax block
             ? $"{prefix}get {propertyName}() {{ {Unwrap(_converter.Convert(block))} }} "
             : $"{prefix}get {propertyName}() {{ return {_converter.Convert(getter)}; }} ";
+        var setter = property.AccessorList?.Accessors.FirstOrDefault(a => a.Keyword.Text is "set" or "init");
+        if (setter?.ExpressionBody is { } arrow)
+            text += $"{prefix}set {propertyName}(value) {{ {_converter.Convert(arrow.Expression)}; }} ";
+        else if (setter?.Body is { } body)
+            text += $"{prefix}set {propertyName}(value) {{ {Unwrap(_converter.Convert(body))} }} ";
+        return text;
     }
 
     /// <summary>
@@ -655,11 +673,15 @@ public class RecordTypeEmitter
         // `any` at every one of them and quietly ended the checking on the way in. Only in the .ts
         // emission, though: the conformance harness runs the same class as plain `.mjs`, where an
         // annotation is a parse error rather than a type.
-        var pars = string.Join(", ", method.ParameterList.Parameters
-            .Select(p => tsTypeDeclarations
-                ? $"{p.Identifier.Text.ToCamelCase()}: {TsTypeOf(p.Type)}"
-                : p.Identifier.Text.ToCamelCase()));
+        // An OPTIONAL parameter keeps its default, as the class emitter's does: a caller that omits
+        // it passes undefined, which runs the default, where `m(suffix)` handed the body undefined
+        // (found in review, #418).
         _converter.SetCurrentClass(className);
+        var pars = string.Join(", ", method.ParameterList.Parameters
+            .Select(p => (tsTypeDeclarations
+                    ? $"{p.Identifier.Text.ToCamelCase()}: {TsTypeOf(p.Type)}"
+                    : p.Identifier.Text.ToCamelCase())
+                + (p.Default is { } optional ? $" = {_converter.ConvertExpression(optional.Value, p.Type?.ToString())}" : "")));
 
         string body;
         if (method.Body != null)

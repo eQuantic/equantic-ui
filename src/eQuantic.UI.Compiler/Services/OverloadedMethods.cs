@@ -63,6 +63,7 @@ internal static class OverloadedMethods
         var errors = new List<CompilationError>();
         CheckOne(type, sourcePath, isComponent, errors);
         if (errors.Count == 0 && model is not null) CheckInherited(type, sourcePath, isComponent, model, errors);
+        if (errors.Count == 0 && model is not null) CheckDefaults(type, sourcePath, model, errors);
         if (isComponent)
         {
             foreach (var nested in type.Members.OfType<ClassDeclarationSyntax>()
@@ -97,6 +98,51 @@ internal static class OverloadedMethods
                     + $"and so does '{Signature(earlier)}' (line {earlierLine}). C# tells overloads apart by "
                     + "their parameters, and a JavaScript class has one member per name, so the twin would keep "
                     + "one of them and every call would reach it. Give each its own name.",
+                SourcePath = sourcePath,
+                Line = position.Line + 1,
+                Column = position.Character + 1,
+            });
+        }
+    }
+
+    /// <summary>
+    /// Defaults the type takes from its interfaces (#414) that land on one name: two from different
+    /// interfaces, or one and an instance member the type declares. C# dispatches a default through
+    /// its interface, and the twin holds the default as a member of its own, one per name, so it
+    /// would keep one of them and answer every call with it (found in review, #418).
+    /// </summary>
+    private static void CheckDefaults(TypeDeclarationSyntax type, string sourcePath, SemanticModel model,
+        List<CompilationError> errors)
+    {
+        if (model.SyntaxTree != type.SyntaxTree || model.GetDeclaredSymbol(type) is not INamedTypeSymbol declared)
+            return;
+        static string Simple(string name) => name[(name.LastIndexOf('.') + 1)..];
+        var taken = new Dictionary<string, string>();
+        foreach (var member in declared.GetMembers())
+        {
+            if (member.IsStatic || member.IsImplicitlyDeclared
+                || member is not (IPropertySymbol or IMethodSymbol { MethodKind: MethodKind.Ordinary }))
+                continue;
+            taken.TryAdd(Simple(member.Name).ToCamelCase(), $"'{declared.Name}.{Simple(member.Name)}'");
+        }
+        var position = type.Identifier.GetLocation().GetLineSpan().StartLinePosition;
+        foreach (var (implementation, _) in DefaultInterfaceMembers.Of(declared))
+        {
+            var name = Simple(implementation.Name).ToCamelCase();
+            var owner = $"'{implementation.ContainingType.Name}.{Simple(implementation.Name)}'";
+            if (!taken.TryGetValue(name, out var earlier))
+            {
+                taken[name] = owner;
+                continue;
+            }
+            errors.Add(new CompilationError
+            {
+                Code = "EQ1007",
+                Message =
+                    $"'{declared.Name}' takes the default {owner}, which lowers to `{name}`, and so does {earlier}. "
+                    + "C# reaches a default through its interface, and the twin holds it as a member of its own, one "
+                    + $"per name, so it would keep one of them. Declare {Simple(implementation.Name)} in "
+                    + $"'{declared.Name}', or give one of them its own name.",
                 SourcePath = sourcePath,
                 Line = position.Line + 1,
                 Column = position.Character + 1,
