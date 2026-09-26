@@ -32,3 +32,13 @@ the wiki from a workflow needs a credential and a setting the repository does no
 the step is loud: the next run on main, and every pull request without a wiki branch of its own, reads
 master without the rows and fails its guard. The step is written where the merge is, in the Workflow
 section's step 4.
+
+## One locator, and a named wiki fails rather than skips
+
+Three test files read the wiki, in four places, each with its own copy of "beside the repository".
+A variable that only some of them honoured would have been worse than none: one guard reading the
+shared clone while the others read the override. So there is one locator, and `EQ_WIKI_DIR` is read
+there. When the variable is set, a guard never skips: a missing directory, or one without the wiki's
+`Home.md`, fails every guard, because a typo would otherwise turn each of them into a green run that
+read no page. The version-mark guard used to return in silence when the clone was missing, on CI
+too; through the locator it now fails on CI like its two siblings.

@@ -166,7 +166,9 @@ page has an English canonical file and a Portuguese twin under `locale/pt-BR/<Pa
 edited in the **same wiki commit**; the documentation site fails its build
 when a translation is older than its canonical page. That commit goes on a wiki branch named exactly
 like the pull request's branch: CI reads it for the docs guards (`scripts/checkout-wiki.sh`), and it
-is merged into the wiki's master when the pull request merges. Version marks (`*Since **0.2.0-preview.N***`)
+is merged into the wiki's master when the pull request merges. To run the guards locally against
+that branch, point `EQ_WIKI_DIR` at a worktree of it and leave the clone beside the repository on
+master, since every local run reads that one. Version marks (`*Since **0.2.0-preview.N***`)
 are derived from git, never from memory. The project's word is *component* — never "widget".
 
 ## Reporting

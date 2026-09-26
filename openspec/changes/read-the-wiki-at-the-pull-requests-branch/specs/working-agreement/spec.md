@@ -34,6 +34,29 @@ listed, the checkout SHALL fail and leave nothing behind, rather than read the d
 - **WHEN** the head branch's name holds `$(touch pwned)` and a backquoted command
 - **THEN** nothing it names runs
 
+### Requirement: Every docs guard reads one wiki, which a local run can name
+
+Every test that reads the wiki SHALL find it through one locator: the directory `EQ_WIKI_DIR` names
+when the variable is set, and `equantic-ui.wiki` beside the repository otherwise. An `EQ_WIKI_DIR`
+that names no directory, or a directory that is not a checkout of the wiki, SHALL fail every guard
+rather than let it skip. A failing guard SHALL name the wiki it read: the directory, and the branch
+and commit checked out there.
+
+#### Scenario: A local run against a pull request's wiki branch
+
+- **WHEN** `EQ_WIKI_DIR` names a worktree of a pull request's wiki branch
+- **THEN** every guard reads that worktree, and the clone beside the repository is left as it is
+
+#### Scenario: A typo in the variable
+
+- **WHEN** `EQ_WIKI_DIR` names a directory that does not exist, or one without the wiki's `Home.md`
+- **THEN** every guard fails, saying what the variable names
+
+#### Scenario: A guard fails
+
+- **WHEN** a guard finds a row the docs do not have
+- **THEN** its message names the directory it read, and the branch and commit checked out there
+
 ### Requirement: The wiki's master moves with main
 
 A pull request that changes what the wiki must say SHALL carry its pages, in English and Portuguese

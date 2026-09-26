@@ -738,7 +738,10 @@ record of a release, the wiki's Upgrading page is the distillate.
   the wiki at the branch named like the pull request's own when there is one, and master otherwise,
   failing rather than guessing when the branches cannot be listed; a `wiki-checkout` job runs its
   self-test against a fixture wiki, and the Workflow section says the wiki branch merges into master
-  with its pull request.
+  with its pull request. Locally every guard now finds the wiki through one locator, which reads
+  `EQ_WIKI_DIR` for a worktree of a pull request's wiki branch (checking a branch out in the shared
+  clone had made #354's guards fail on #418's rows), fails when the variable names no wiki, and names
+  the directory, branch and commit a failing guard read.
 
 ## Retired documents
 

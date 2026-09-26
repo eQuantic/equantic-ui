@@ -229,7 +229,10 @@ docs guards when it exists (`scripts/checkout-wiki.sh`), so the pull request is 
 pages it brings, while every other one still reads master. When the pull request merges, its wiki
 branch is merged into the wiki's master (rebased on master first if master has moved) and deleted.
 A page pushed to master before its change merges fails the wiki guards of every other pull request
-(#406). `docs/LEDGER.md` keeps the history, one line per event, citing the issue.
+(#406). Locally the guards read `equantic-ui.wiki` beside the repository, which every local run
+shares, so keep that clone on master: to run them against a pull request's wiki branch, point
+`EQ_WIKI_DIR` at a worktree of it (`git -C ../equantic-ui.wiki worktree add <dir> <branch>`).
+`docs/LEDGER.md` keeps the history, one line per event, citing the issue.
 
 ### OpenSpec
 
