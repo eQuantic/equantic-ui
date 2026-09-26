@@ -156,6 +156,21 @@ public class CultureCrossingTests
         }
     }
 
+    /// <summary>A DateTime's ToString takes its provider as a number's does (#388): the invariant
+    /// culture writes the invariant patterns, and a named one is refused at the build, where it
+    /// crossed to the browser as a name no browser defines.</summary>
+    [Fact]
+    public void ADateTimesProvider_CrossesAsANumbersDoes()
+    {
+        var invariant = Compile("new DateTime(2026, 9, 24).ToString(\"D\", CultureInfo.InvariantCulture)");
+        Assert.True(invariant.Success, string.Join("; ", invariant.Errors.Select(e => e.Message)));
+        Assert.Contains("'D', undefined, true)", invariant.TypeScript);
+        Assert.DoesNotContain("CultureInfo", invariant.TypeScript);
+
+        var refused = Compile("new DateTime(2026, 9, 24).ToString(\"D\", CultureInfo.GetCultureInfo(\"de-DE\"))");
+        Assert.Single(refused.Errors, e => e.Code == "EQ2108");
+    }
+
     /// <summary>A provider the subset cannot honour is refused where the developer can see it,
     /// which is the whole reason this file exists.</summary>
     [Fact]
