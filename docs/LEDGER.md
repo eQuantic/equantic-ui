@@ -697,6 +697,20 @@ record of a release, the wiki's Upgrading page is the distillate.
   overloads of one arity are still one probe (267 more lines by signature), a `Dictionary<int, T>`
   loses insertion order, a decimal constant does not cross, a lone surrogate in a string literal
   is written raw, and the date types' `Add*` round a double to the millisecond.
+- **2026-09-26 · The code diff view**: the view half of slice 2b of
+  [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#412](https://github.com/eQuantic/equantic-ui/pull/412)).
+  `CodeDiff` draws two texts, or one file of a patch, side by side (the sides level at every change)
+  or inline (the removed lines between the lines that replaced them), washes a changed line and
+  marks its changed words, folds an unchanged run into a row that opens on a press, steps through
+  the changes with F7 and the toolbar, and edits the modified side, compared again after every edit.
+  Under it the engine maps a view's lines to rows (`CodeRows`), `CodeDiffLayout` lays out each side
+  and `CodePatch` reads a unified diff, and `CodeBlock` draws the rows. On the way, eqc's twins of
+  this code were the first to cross an array of a union, a tuple return, a local starting null, a
+  function-typed parameter and a negative declared default, and each crossed wrong; an extended
+  property pattern read `changes.Count`, which is undefined; a button drawn in a code surface never
+  heard its click on the web; a `Shortcut` answered for the whole page, so F7 in one diff stepped
+  another, and `FocusScoped` now makes a chord the subtree's own (FLUTTER-PARITY said SAME, and it
+  was not); and a Mac's function keys reached the host as the characters they type.
 
 ## Retired documents
 
