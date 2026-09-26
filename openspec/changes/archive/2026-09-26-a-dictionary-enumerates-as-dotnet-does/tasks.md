@@ -26,4 +26,4 @@
 - [x] 4.1 The six twins regenerated, and the served runtime's budget recording the new size
 - [x] 4.2 `docs/DOTNET-COVERAGE-PROGRAM.md` and the wiki's SupportedFeatures and Compiler dictionary passages in English and Portuguese, on the wiki branch named like the pull request's
 - [x] 4.3 One `docs/LEDGER.md` line citing #435
-- [ ] 4.4 Archive this change in the same pull request
+- [x] 4.4 Archive this change in the same pull request
