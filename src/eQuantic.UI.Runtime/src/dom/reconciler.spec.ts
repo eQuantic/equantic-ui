@@ -250,6 +250,26 @@ describe('Reconciler over a node built in C#', () => {
     reconciler.dispose();
   });
 
+  it('drops an attribute and a listener named like a prototype member when the next node drops it', () => {
+    const reconciler = new Reconciler();
+    const container = document.createElement('div');
+    let calls = 0;
+    const before = {
+      tag: 'button',
+      children: [],
+      attributes: dictionary([['toString', 'a'], ['constructor', 'b']]),
+      events: dictionary<string, EventHandler>([['toString', () => calls++]]),
+    } as unknown as HtmlNode;
+    reconciler.reconcile(container, null, before);
+    reconciler.reconcile(container, before, built([['id', 'b']]), 0);
+    const btn = container.firstChild as HTMLButtonElement;
+    btn.dispatchEvent(new Event('toString'));
+    expect(btn.hasAttribute('tostring')).toBe(false);
+    expect(btn.hasAttribute('constructor')).toBe(false);
+    expect(calls).toBe(0);
+    reconciler.dispose();
+  });
+
   it('updates an attribute and a listener from one such node to the next', () => {
     const reconciler = new Reconciler();
     const container = document.createElement('div');

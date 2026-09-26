@@ -7,6 +7,9 @@
 
 import { HtmlNode, EventHandler } from '../core/types';
 import { plainBag } from '../utils/dictionary';
+
+/** Whether a bag holds `key` itself, never through its prototype. */
+const hasOwn = (bag: object, key: string): boolean => Object.prototype.hasOwnProperty.call(bag, key);
 import { claimedByShortcut } from './shortcuts';
 
 /**
@@ -316,16 +319,17 @@ export class Reconciler {
     oldAttrs: Record<string, string | undefined>,
     newAttrs: Record<string, string | undefined>,
   ): void {
-    // Remove old attributes
+    // Remove old attributes. Own keys only: `in` walks the prototype, so a key a dictionary may
+    // hold ("toString", "constructor") stayed present after the next node dropped it.
     for (const key of Object.keys(oldAttrs)) {
-      if (!(key in newAttrs)) {
+      if (!hasOwn(newAttrs, key)) {
         this.applyAttribute(element, key, null);
       }
     }
 
     // Set new/updated attributes
     for (const [key, value] of Object.entries(newAttrs)) {
-      const oldValue = oldAttrs[key];
+      const oldValue = hasOwn(oldAttrs, key) ? oldAttrs[key] : undefined;
       if (value !== oldValue) {
         this.applyAttribute(element, key, value);
       }
@@ -365,9 +369,9 @@ export class Reconciler {
   ): void {
     const elementListeners = this.eventListeners.get(element) || new Map<string, EventHandler>();
 
-    // Remove old event listeners
+    // Remove old event listeners, by own key as the attributes are.
     for (const eventName of Object.keys(oldEvents)) {
-      if (!(eventName in newEvents)) {
+      if (!hasOwn(newEvents, eventName)) {
         const wrapped = elementListeners.get(eventName);
         if (wrapped) {
           element.removeEventListener(eventName, wrapped as unknown as EventListener);
@@ -378,7 +382,7 @@ export class Reconciler {
 
     // Add new/updated event listeners
     for (const [eventName, handler] of Object.entries(newEvents)) {
-      const oldHandler = oldEvents[eventName];
+      const oldHandler = hasOwn(oldEvents, eventName) ? oldEvents[eventName] : undefined;
       // The mount hook is not a DOM event: it fires once, when the element first carries it (a
       // re-render that keeps the hook must NOT re-run it — autofocus would steal focus back).
       if (eventName === MOUNTED_HOOK) {

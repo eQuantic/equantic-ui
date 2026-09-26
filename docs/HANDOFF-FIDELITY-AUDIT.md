@@ -278,7 +278,7 @@ the pill's 40 down.
   ```
   ListItem.cs:109  if (Trailing is { } trailing) row.Add(trailing);
   ListItem.cs:127-129  return OnPressed is null ? body : new Pressable(body, Disabled ? null : OnPressed)
-  reconciler.ts:435-438  if (eventName === 'click') { (handler as () => void)(); return; }
+  reconciler.ts:441-444  if (eventName === 'click') { (handler as () => void)(); return; }
   ```
 
 ### B2 List · ListItem · behaviour · **CONFIRMED**
