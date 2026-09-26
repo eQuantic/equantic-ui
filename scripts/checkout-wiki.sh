@@ -14,9 +14,10 @@
 #   scripts/checkout-wiki.sh <destination>   clone into <destination>, which must not exist
 #   scripts/checkout-wiki.sh --self-test     prove every path against a local fixture wiki
 #
-# EQ_WIKI_BRANCH  the pull request's head ref, empty outside a pull request. It is text someone else
-#                 wrote, so it is only ever compared and passed as one argument, never interpolated
-#                 into a command.
+# EQ_WIKI_BRANCH  the pull request's head ref, empty outside a pull request and for a pull request
+#                 from a fork, whose branch name can repeat one of this repository's (ci.yml). It is
+#                 text someone else wrote, so it is only ever compared and passed as one argument,
+#                 never interpolated into a command.
 # EQ_WIKI_URL     the wiki's repository; the self-test points it at its fixture.
 set -euo pipefail
 

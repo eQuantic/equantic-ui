@@ -326,9 +326,11 @@ jobs:
         env:
           # A pull request that changes what the wiki must say carries its pages on a wiki branch
           # named like its own, and the guards read that branch; anything else reads master (#406).
-          # Through the environment: a branch name is text someone else wrote, and `${{ }}`
-          # substitution happens before the shell ever sees it.
-          EQ_WIKI_BRANCH: ${{ github.head_ref }}
+          # Only this repository's pull requests: a branch name is unique here, and only here can
+          # anyone push a wiki branch, while a fork's branch can repeat one of ours and would read
+          # another pull request's pages. Through the environment: a branch name is text someone
+          # else wrote, and `${{ }}` substitution happens before the shell ever sees it.
+          EQ_WIKI_BRANCH: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.head_ref || '' }}
         run: ./scripts/checkout-wiki.sh ../equantic-ui.wiki
 
       - name: Test
@@ -434,9 +436,11 @@ jobs:
         env:
           # A pull request that changes what the wiki must say carries its pages on a wiki branch
           # named like its own, and the guards read that branch; anything else reads master (#406).
-          # Through the environment: a branch name is text someone else wrote, and `${{ }}`
-          # substitution happens before the shell ever sees it.
-          EQ_WIKI_BRANCH: ${{ github.head_ref }}
+          # Only this repository's pull requests: a branch name is unique here, and only here can
+          # anyone push a wiki branch, while a fork's branch can repeat one of ours and would read
+          # another pull request's pages. Through the environment: a branch name is text someone
+          # else wrote, and `${{ }}` substitution happens before the shell ever sees it.
+          EQ_WIKI_BRANCH: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.head_ref || '' }}
         run: ./scripts/checkout-wiki.sh ../equantic-ui.wiki
 
       - name: Test
