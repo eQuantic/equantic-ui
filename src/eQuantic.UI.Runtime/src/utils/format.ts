@@ -39,7 +39,19 @@ function activeFormatLocale(): string | undefined {
   return invariantDepth > 0 ? INVARIANT_LOCALE : formatLocale();
 }
 import { DateTime as DotNetDateTime } from './datetime';
-import { round } from './dotnet-math';
+import { Decimal } from './decimal';
+import {
+  exactOfBigInt,
+  exactOfDouble,
+  exactOfScaled,
+  isZero,
+  plainText,
+  roundSignificant,
+  scaled,
+  type ExactDecimal,
+  type Significant,
+  type Tie,
+} from './exact-decimal';
 
 /**
  * The compat `DateTime` (tick-based, what `new DateTime(…)` transpiles to), as a native Date in
@@ -62,22 +74,33 @@ function asJsDate(value: unknown): Date | null {
   return null;
 }
 
-/** Which binary number a JavaScript number stands for. A number cannot say it is a single, so
- * whoever knows passes it: the compiler, from the static type, at every call it writes. */
-export type NumberKind = 'double' | 'single';
+/** Which C# number a JavaScript number stands for. A number cannot say it is a single or an int,
+ * so whoever knows passes it: the compiler, from the static type, at every call it writes. A
+ * float's digits are not the double's (#378), and an integer rounds a formatted half away from
+ * zero where a double rounds it to even (#393). A long and a decimal say what they are on their
+ * own, as a BigInt and a Decimal. */
+export type NumberKind = 'double' | 'single' | 'integer';
 
 /**
- * A float on its way into `string.Format`, whose arguments are objects in C#: boxed with its kind,
- * which the formatter reads and nothing else ever sees. Anywhere else a boxed float is the plain
- * number, and its kind is lost (#378).
+ * A float or an integer on its way into `string.Format`, whose arguments are objects in C#: boxed
+ * with its kind, which the formatter reads and nothing else ever sees. Anywhere else a boxed
+ * number is the plain number, and its kind is lost (#378).
  */
-export class FormatSingle {
-  constructor(readonly value: number) {}
+export class FormatNumber {
+  constructor(
+    readonly value: number,
+    readonly kind: NumberKind,
+  ) {}
 }
 
 /** Boxes a float for `string.Format`; null stays null. */
-export function asSingle(value: number | null | undefined): FormatSingle | null | undefined {
-  return value == null ? value : new FormatSingle(value);
+export function asSingle(value: number | null | undefined): FormatNumber | null | undefined {
+  return value == null ? value : new FormatNumber(value, 'single');
+}
+
+/** Boxes an int, a short, a byte or their unsigned twins for `string.Format`; null stays null. */
+export function asInteger(value: number | null | undefined): FormatNumber | null | undefined {
+  return value == null ? value : new FormatNumber(value, 'integer');
 }
 
 /**
@@ -97,8 +120,8 @@ export function format(
   invariant?: boolean,
   kind?: NumberKind,
 ): string {
-  if (value instanceof FormatSingle) {
-    kind = 'single';
+  if (value instanceof FormatNumber) {
+    kind = value.kind;
     value = value.value;
   }
   // Null writes nothing, and nothing is still aligned: `$"[{n,4}]"` is "[    ]" for a null n.
@@ -111,7 +134,12 @@ export function format(
   }
 }
 
-function formatCore(value: any, format: string | null, alignment: number | undefined, kind: NumberKind): string {
+function formatCore(
+  value: any,
+  format: string | null,
+  alignment: number | undefined,
+  kind: NumberKind,
+): string {
   // .NET spells a bool `True`/`False`, where JavaScript lowercases it, and writes a number with
   // its own notation (1E+17, -0), where String() keeps fixed notation up to 1e21.
   let result =
@@ -127,7 +155,7 @@ function formatCore(value: any, format: string | null, alignment: number | undef
 
   if (format) {
     const date = asJsDate(value);
-    if (typeof value === 'number') {
+    if (typeof value === 'number' || typeof value === 'bigint' || value instanceof Decimal) {
       result = formatNumber(value, format, kind);
     } else if (date !== null) {
       result = formatDate(date, format);
@@ -151,6 +179,89 @@ function pad(result: string, alignment?: number): string {
 }
 
 /**
+ * The number the formatter was handed, as what writing it takes: its exact digits, how a half
+ * rounds, and whether a zero keeps its sign.
+ */
+interface Numeric {
+  readonly exact: ExactDecimal;
+  readonly tie: Tie;
+  /** A double's and a float's zero keeps its sign (`-0.00`, and so does a negative value that
+   * rounds to zero); a decimal's and an integer's does not (measured, #393). */
+  readonly signedZero: boolean;
+  /** How many significant digits .NET keeps before it draws a custom picture: 15 of a double's
+   * and 7 of a float's, then the picture rounds those half away from zero. A decimal and an integer
+   * are drawn from every digit they have. */
+  readonly pictureDigits: number | null;
+}
+
+function numeric(value: number | bigint | Decimal, kind: NumberKind): Numeric {
+  if (typeof value === 'bigint')
+    return {
+      exact: exactOfBigInt(value),
+      tie: 'halfExpand',
+      signedZero: false,
+      pictureDigits: null,
+    };
+  if (value instanceof Decimal) {
+    return {
+      exact: exactOfScaled(value.mantissa, value.scale),
+      tie: 'halfExpand',
+      signedZero: false,
+      pictureDigits: null,
+    };
+  }
+  const integer = kind === 'integer';
+  return {
+    exact: exactOfDouble(value),
+    tie: integer ? 'halfExpand' : 'halfEven',
+    signedZero: !integer,
+    pictureDigits: integer ? null : kind === 'single' ? 7 : 15,
+  };
+}
+
+/** `Intl.NumberFormat`'s options as the engines take them since NumberFormat v3, which ES2021's
+ * types predate: a rounding mode, and a sign shown for negative numbers but not for a zero. */
+type ExactOptions = Omit<Intl.NumberFormatOptions, 'signDisplay'> & {
+  roundingMode?: Tie;
+  signDisplay?: 'auto' | 'negative';
+};
+
+/**
+ * Formats a number from its exact digits. `Intl` reads a STRING digit for digit where it would
+ * read a number as its shortest text, so `(0.1).ToString("F20")` keeps the `555` .NET writes, and
+ * it rounds by the tie rule of the value's type. The scale-and-round this replaced turned 0.265
+ * into 0.26 under `F2`, where the double just above the half is 0.27, and threw past 15 digits.
+ */
+function exactly(
+  number: Numeric,
+  options: ExactOptions,
+  text: string = plainText(number.exact),
+): string {
+  const settings: ExactOptions = {
+    ...options,
+    roundingMode: number.tie,
+    signDisplay: number.signedZero ? 'auto' : 'negative',
+  };
+  return new Intl.NumberFormat(activeFormatLocale(), settings as Intl.NumberFormatOptions).format(
+    text as unknown as number,
+  );
+}
+
+/** The culture's decimal separator and minus sign, as `Intl` writes them in the locale in force. */
+function symbols(): { decimal: string; minus: string } {
+  const parts = new Intl.NumberFormat(activeFormatLocale()).formatToParts(-1.5);
+  return {
+    decimal: parts.find((part) => part.type === 'decimal')?.value ?? '.',
+    minus: parts.find((part) => part.type === 'minusSign')?.value ?? '-',
+  };
+}
+
+/** The sign a rounded number is written with: a zero keeps one only where its type does. */
+function signOf(number: Numeric, minus: string): string {
+  return number.exact.negative && (number.signedZero || !isZero(number.exact)) ? minus : '';
+}
+
+/**
  * A CUSTOM numeric format is a picture of the number — `0.0`, `#,##0.00`, `000` — rather than one
  * of the single-letter standard specifiers. `0` is a digit that is always shown (padded), `#` is
  * one shown only if it is there, and a `,` among them asks for group separators.
@@ -158,8 +269,12 @@ function pad(result: string, alignment?: number): string {
  * It used to fall through to `value.toString()`, so `$"{bytes / 1024.0:0.0} KB"` — ordinary C# —
  * reached the browser as `0.72265625 KB`. The C# side had already done its part: eqc emits the
  * specifier faithfully, and this is where it was dropped.
+ *
+ * .NET draws a double's picture from its first 15 significant digits (a float's 7) and rounds
+ * those half away from zero: `(1.005).ToString("0.00")` is `1.01`, where `F2` of the same double
+ * is `1.00`.
  */
-function formatCustomNumber(value: number, format: string): string {
+function formatCustomNumber(number: Numeric, format: string): string {
   const point = format.indexOf('.');
   const wholePart = point < 0 ? format : format.slice(0, point);
   const fractionPart = point < 0 ? '' : format.slice(point + 1);
@@ -168,40 +283,106 @@ function formatCustomNumber(value: number, format: string): string {
   const maximumFractionDigits = (fractionPart.match(/[0#]/g) ?? []).length;
   const minimumIntegerDigits = Math.max(1, (wholePart.match(/0/g) ?? []).length);
 
-  return value.toLocaleString(activeFormatLocale(), {
-    minimumIntegerDigits,
-    minimumFractionDigits,
-    maximumFractionDigits: Math.max(minimumFractionDigits, maximumFractionDigits),
-    useGrouping: wholePart.includes(','),
-  });
+  const drawn =
+    number.pictureDigits === null
+      ? number
+      : {
+          ...number,
+          exact: kept(roundSignificant(number.exact, number.pictureDigits, 'halfEven')),
+        };
+  return exactly(
+    { ...drawn, tie: 'halfExpand' },
+    {
+      minimumIntegerDigits,
+      minimumFractionDigits,
+      maximumFractionDigits: Math.max(minimumFractionDigits, maximumFractionDigits),
+      useGrouping: wholePart.includes(','),
+    },
+  );
+}
+
+/** Significant digits back as an exact decimal, the zeros they were padded with dropped. */
+function kept(rounded: Significant): ExactDecimal {
+  const digits = rounded.digits.replace(/0+$/, '');
+  return digits.length === 0
+    ? { negative: rounded.negative, digits: '0', exponent: 0 }
+    : { negative: rounded.negative, digits, exponent: rounded.scientific - digits.length + 1 };
 }
 
 /**
  * Currency, the one specifier that needs a fact the browser cannot derive: `Intl` wants an ISO
  * CODE and a locale alone does not carry one. The code rides in the culture catalog (the build
  * reads it from .NET's own `RegionInfo`), and when there is none — the invariant culture — .NET
- * prints the generic ¤ sign, so that is what this prints too rather than guessing a country.
+ * prints the generic ¤ sign, so that is what this prints too rather than guessing a country. With
+ * no precision, the currency's own digits apply, as .NET's culture takes them from the same ISO
+ * data (a yen has none).
  */
-function formatCurrency(value: number, precision: number): string {
+function formatCurrency(number: Numeric, precision: number | null): string {
   // An invariant conversion has no currency of its own, whichever culture is reading.
   const currency = invariantDepth > 0 ? null : activeCurrency();
-  const locale = activeFormatLocale();
-  const rounded = round(value, precision);
-  if (currency !== null) {
-    return rounded.toLocaleString(locale, {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: precision,
-      maximumFractionDigits: precision,
-    });
-  }
+  const digits: ExactOptions =
+    precision === null
+      ? {}
+      : { minimumFractionDigits: precision, maximumFractionDigits: precision };
+  if (currency !== null) return exactly(number, { style: 'currency', currency, ...digits });
 
   // .NET's invariant currency pattern is "¤n" with the invariant number conventions.
-  const number = rounded.toLocaleString(locale, {
-    minimumFractionDigits: precision,
-    maximumFractionDigits: precision,
-  });
-  return rounded < 0 ? `-¤${number.replace('-', '')}` : `¤${number}`;
+  const text = exactly(
+    number,
+    precision === null ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : digits,
+  );
+  const { minus } = symbols();
+  return text.startsWith(minus) ? `${minus}¤${text.slice(minus.length)}` : `¤${text}`;
+}
+
+/**
+ * `E` and `e`: one digit, the point, `precision` more (six by default), then the exponent with its
+ * sign and at least three digits — `1.23E+004`. The digits are the exact value's, rounded by the
+ * type's tie rule, so `(1.25).ToString("E1")` is `1.2E+000` and `(1.25m).ToString("E1")` is
+ * `1.3E+000`. It used to fall through to `toString()`, and `{0:E2}` passed EQ2100 to print
+ * `12345` where .NET prints `1.23E+004` (#393).
+ */
+function scientific(number: Numeric, precision: number, marker: 'E' | 'e'): string {
+  const rounded = roundSignificant(number.exact, precision + 1, number.tie);
+  const { decimal, minus } = symbols();
+  const mantissa = rounded.digits[0] + (precision > 0 ? decimal + rounded.digits.slice(1) : '');
+  const exponent = rounded.scientific;
+  const power = String(Math.abs(exponent)).padStart(3, '0');
+  return `${signOf(number, minus)}${mantissa}${marker}${exponent < 0 ? minus : '+'}${power}`;
+}
+
+/**
+ * `G` with a precision: that many significant digits, their trailing zeros dropped, in fixed
+ * notation while the exponent lies between -5 and the precision and in scientific notation past
+ * it, where the exponent takes at least two digits — `(12345.678m).ToString("G2")` is `1.2E+04`.
+ * It was not modelled, and wrote the value as JavaScript prints it.
+ */
+function generalWithPrecision(number: Numeric, precision: number, marker: 'E' | 'e'): string {
+  const rounded = roundSignificant(number.exact, precision, number.tie);
+  const { decimal, minus } = symbols();
+  const digits = rounded.digits.replace(/0+$/, '') || '0';
+  const exponent = rounded.scientific;
+  const sign = signOf(number, minus);
+  if (exponent > -5 && exponent < precision) {
+    const whole = exponent >= 0 ? digits.slice(0, exponent + 1).padEnd(exponent + 1, '0') : '0';
+    const fraction =
+      exponent >= 0 ? digits.slice(exponent + 1) : '0'.repeat(-exponent - 1) + digits;
+    return sign + whole + (fraction.length > 0 ? decimal + fraction : '');
+  }
+  const mantissa = digits[0] + (digits.length > 1 ? decimal + digits.slice(1) : '');
+  const power = String(Math.abs(exponent)).padStart(2, '0');
+  return `${sign}${mantissa}${marker}${exponent < 0 ? minus : '+'}${power}`;
+}
+
+/**
+ * A double's infinities and NaN are words, not digits: the culture's symbols (`∞`), which `Intl`
+ * writes from the same data .NET reads, and the invariant culture's own `Infinity` and `NaN`
+ * where no culture is in force.
+ */
+function nonFinite(value: number): string {
+  if (invariantDepth > 0 || formatLocale() === undefined)
+    return Number.isNaN(value) ? 'NaN' : value > 0 ? 'Infinity' : '-Infinity';
+  return value.toLocaleString(activeFormatLocale());
 }
 
 /**
@@ -210,40 +391,57 @@ function formatCurrency(value: number, precision: number): string {
  * with no specifier, since .NET formats one with the value's `ToString(provider)`.
  */
 function shortest(value: number, kind: NumberKind): string {
+  if (!Number.isFinite(value)) return nonFinite(value);
   const text = kind === 'single' ? single(value) : double(value);
-  const separator =
-    new Intl.NumberFormat(activeFormatLocale()).formatToParts(1.5).find((part) => part.type === 'decimal')
-      ?.value ?? '.';
-  return separator === '.' ? text : text.replace('.', separator);
+  const { decimal } = symbols();
+  return decimal === '.' ? text : text.replace('.', decimal);
 }
 
-function formatNumber(value: number, format: string, kind: NumberKind = 'double'): string {
-  // A standard specifier is a LETTER (optionally followed by a precision); anything drawn with
-  // digit placeholders is a custom picture and is read as one.
-  if (!/^[A-Za-z]/.test(format)) {
-    return /[0#]/.test(format) ? formatCustomNumber(value, format) : value.toString();
+/** A long's or a decimal's text with no specifier: all of its digits, a decimal's scale kept
+ * (`12.50m` is `12.50`), in the culture's decimal separator. */
+function plainDigits(value: bigint | Decimal): string {
+  const text = value.toString();
+  const { decimal, minus } = symbols();
+  return text.replace('.', decimal).replace('-', minus);
+}
+
+/** A standard specifier is ONE letter and an optional precision; anything else is a picture. */
+const STANDARD = /^([A-Za-z])(\d{0,9})$/;
+
+function formatNumber(
+  value: number | bigint | Decimal,
+  format: string,
+  kind: NumberKind = 'double',
+): string {
+  if (typeof value === 'number' && !Number.isFinite(value)) return nonFinite(value);
+  const number = numeric(value, kind);
+
+  const standard = STANDARD.exec(format);
+  if (standard === null) {
+    // Anything drawn with digit placeholders is a custom picture and is read as one.
+    return /[0#]/.test(format) ? formatCustomNumber(number, format) : value.toString();
   }
 
-  const specifier = format[0].toUpperCase();
-  const digits = format.slice(1);
-  const precision = digits.length > 0 ? parseInt(digits) : 2;
-  const locale = activeFormatLocale();
+  const letter = standard[1];
+  const digits = standard[2];
+  const specified = digits.length > 0 ? Math.min(parseInt(digits, 10), 100) : null;
+  const precision = specified ?? 2;
 
-  switch (specifier) {
+  switch (letter.toUpperCase()) {
     case 'C': // Currency
-      return formatCurrency(value, precision);
+      return formatCurrency(number, specified);
     case 'N': // Number — grouped, culture separators
-      // Pre-rounded with .NET's rule: formatting a midpoint rounds to EVEN there
-      // (1234.5:N0 is "1,234", 0.125:N2 is "0.12") and half-away-from-zero in Intl. The server
-      // and the browser printing different digits for the same value is the exact class of
-      // divergence this subset exists to remove.
-      return round(value, precision).toLocaleString(locale, {
+      return exactly(number, {
         minimumFractionDigits: precision,
         maximumFractionDigits: precision,
       });
-    case 'P': // Percentage — Intl multiplies by 100, exactly as .NET's P does
-      // .NET rounds the PERCENT value, so the rounding happens after the ×100.
-      return (round(value * 100, precision) / 100).toLocaleString(locale, {
+    case 'P': // Percentage — the exact value times 100, rounded where the percent is written
+      // The invariant culture writes `n %`, with a space `Intl`'s nearest locale leaves out.
+      if (invariantDepth > 0 || formatLocale() === undefined) {
+        const percent = scaled(number.exact, 2);
+        return `${exactly(number, { minimumFractionDigits: precision, maximumFractionDigits: precision }, plainText(percent))} %`;
+      }
+      return exactly(number, {
         style: 'percent',
         minimumFractionDigits: precision,
         maximumFractionDigits: precision,
@@ -251,27 +449,40 @@ function formatNumber(value: number, format: string, kind: NumberKind = 'double'
     case 'F': // Fixed point — culture decimal separator, NEVER grouped
       // `toFixed` was the old answer and it is invariant: a pt-BR page showed "1234.50" beside
       // numbers that used a comma everywhere else on the same line.
-      return round(value, precision).toLocaleString(locale, {
+      return exactly(number, {
         minimumFractionDigits: precision,
         maximumFractionDigits: precision,
         useGrouping: false,
       });
+    case 'E': // Scientific — six digits after the point unless told otherwise
+      return scientific(number, specified ?? 6, letter === 'e' ? 'e' : 'E');
     case 'D': // Decimal (integer pad) — culture-independent by definition in .NET
+      if (value instanceof Decimal) throw new Error('Format specifier was invalid.');
+      if (typeof value === 'bigint') {
+        const magnitude = (value < 0n ? -value : value).toString();
+        return (value < 0n ? '-' : '') + magnitude.padStart(specified ?? 1, '0');
+      }
       return (
         (value < 0 ? '-' : '') +
         Math.abs(Math.round(value))
           .toString()
           .padStart(digits.length > 0 ? precision : 1, '0')
       );
-    case 'X': // Hex — culture-independent
-      return Math.floor(value)
-        .toString(16)
-        .toUpperCase()
-        .padStart(digits.length > 0 ? precision : 1, '0');
+    case 'X': {
+      // Hex — culture-independent, and a long's negative is its 64-bit two's complement
+      if (value instanceof Decimal) throw new Error('Format specifier was invalid.');
+      const hex =
+        typeof value === 'bigint'
+          ? BigInt.asUintN(64, value).toString(16)
+          : Math.floor(value).toString(16);
+      return (letter === 'x' ? hex : hex.toUpperCase()).padStart(specified ?? 1, '0');
+    }
     case 'R': // Round-trip, which .NET Core 3.0 made the shortest digits that read back
-      return shortest(value, kind);
-    case 'G': // General with no precision is the same shortest text; a precision is not modelled
-      return digits.length === 0 ? shortest(value, kind) : value.toString();
+      return typeof value === 'number' ? shortest(value, kind) : plainDigits(value);
+    case 'G': // General: the shortest text with no precision, that many significant digits with one
+      if (specified === null || specified === 0)
+        return typeof value === 'number' ? shortest(value, kind) : plainDigits(value);
+      return generalWithPrecision(number, specified, letter === 'g' ? 'e' : 'E');
     default:
       return value.toString();
   }
@@ -491,17 +702,20 @@ const FORMAT_INDEX =
  * the interpolation path (`$"{x:F2}"`), which already uses `format`.
  */
 export function stringFormat(template: string, ...args: unknown[]): string {
-  return template.replace(/\{\{|\}\}|\{(\d+)(?:,(-?\d+))?(?::([^}]*))?\}/g, (m, idx, width, spec) => {
-    if (m === '{{') return '{';
-    if (m === '}}') return '}';
-    // A placeholder past the values is .NET's FormatException, where it was written as nothing.
-    if (Number(idx) >= args.length) throw new Error(FORMAT_INDEX);
-    const v = args[Number(idx)];
-    // `{0,5}` aligns what the placeholder writes; it was left in the text as written.
-    const alignment = width != null ? Number(width) : undefined;
-    if (spec != null) return format(v, spec, alignment);
-    return pad(general(v), alignment);
-  });
+  return template.replace(
+    /\{\{|\}\}|\{(\d+)(?:,(-?\d+))?(?::([^}]*))?\}/g,
+    (m, idx, width, spec) => {
+      if (m === '{{') return '{';
+      if (m === '}}') return '}';
+      // A placeholder past the values is .NET's FormatException, where it was written as nothing.
+      if (Number(idx) >= args.length) throw new Error(FORMAT_INDEX);
+      const v = args[Number(idx)];
+      // `{0,5}` aligns what the placeholder writes; it was left in the text as written.
+      const alignment = width != null ? Number(width) : undefined;
+      if (spec != null) return format(v, spec, alignment);
+      return pad(general(v), alignment);
+    },
+  );
 }
 
 /** `string.Format(CultureInfo.InvariantCulture, template, …)`: every placeholder written in the
@@ -526,8 +740,9 @@ function general(value: unknown): string {
   // .NET's default ("G") is the shortest text that reads back, in its notation (1E+21, which
   // toLocaleString never writes), with the culture's decimal separator and no grouping; a float
   // boxed for the call keeps its own digits.
-  if (value instanceof FormatSingle) return shortest(value.value, 'single');
+  if (value instanceof FormatNumber) return shortest(value.value, value.kind);
   if (typeof value === 'number') return shortest(value, 'double');
+  if (typeof value === 'bigint' || value instanceof Decimal) return plainDigits(value);
   if (typeof value === 'boolean') return value ? 'True' : 'False';
   const date = asJsDate(value);
   if (date !== null) return formatDate(date, 'G');
