@@ -815,6 +815,24 @@ record of a release, the wiki's Upgrading page is the distillate.
   over a named constant ([#451](https://github.com/eQuantic/equantic-ui/issues/451)) and an enum's
   `ToString` ([#452](https://github.com/eQuantic/equantic-ui/issues/452)).
 
+- **2026-09-26 · The Copilot loop stops on its own**: waiting for Copilot's light review to run dry
+  cost about one round per finding (69 findings in 47 rounds on six pull requests, 14 rounds for
+  #354). The author now reviews the whole diff before opening a pull request, a finding earns
+  another round only when it is a defect, and the loop ends at the first round without one, after
+  three rounds in any case. The ruleset no longer reviews on push, so a round is asked for once per
+  push of fixes ([#446](https://github.com/eQuantic/equantic-ui/issues/446)).
+
+- **2026-09-26 · A pull request merges against the current main**: the ruleset requires thirteen of
+  the CI's jobs, the whole dependency chain since GitHub counts a job skipped for a failed dependency
+  as passed, and a head up to date with main. Before it required only a review, so a workflow that
+  never ran read mergeable, and two pull requests that each passed alone broke main together (#453)
+  ([#287](https://github.com/eQuantic/equantic-ui/issues/287)).
+- **2026-09-26 · main's runtime suite is green again**: the interface-defaults fixture pinned
+  PhotonTheme's dark code colours from before #354 re-solved the dark palette, and #418 merged after
+  #354 without a CI run on a main that had it, so `test-runtime` and the fixture's C# pin failed on
+  main. The fixture is regenerated from the palette both sides now carry
+  ([#453](https://github.com/eQuantic/equantic-ui/issues/453)).
+
 ## Retired documents
 
 | document | what it was | where its substance lives now |

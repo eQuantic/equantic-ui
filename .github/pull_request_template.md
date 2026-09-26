@@ -34,11 +34,11 @@ Closes #
 ## Checklist
 
 - [ ] `dotnet test` on the affected test projects, and `dotnet build src/eQuantic.UI.Runtime -t:TestRuntime` if TypeScript changed (the embedded Bun runs `tsc`, then `vitest run`)
-- [ ] This PR's checks include a run named **CI** with jobs in it (`build-packages`, `test (ubuntu-latest)`, `test (windows-latest)`, `openspec`, `session-start`, `wiki-checkout`). A workflow whose expression does not parse creates zero jobs and the PR still reads mergeable; GitHub then lists the workflow by its file path instead of `CI`. While GitHub Actions has no credits, the same run is on eQuantic Space (`eqs runs ls`)
+- [ ] This PR's checks include a run named **CI** with jobs in it (`build-packages`, `test (ubuntu-latest)`, `test (windows-latest)`, `openspec`, `session-start`, `wiki-checkout`). A workflow whose expression does not parse creates zero jobs, and the ruleset's required checks then keep the PR blocked; GitHub lists the workflow by its file path instead of `CI`. While GitHub Actions has no credits, the same run is on eQuantic Space (`eqs runs ls`)
 - [ ] `./scripts/check-openspec.sh` passes: the OpenSpec change validates strictly, and it is archived before the merge
 - [ ] `dotnet build samples/DefaultUIDashboard` (and `PhotonDesktop` / `WalletMobile` if the native track changed) — CI's `samples` job builds all three on macOS only (#149); the other hosts are yours
 - [ ] A broken contract has a line in the migration notes (we are in preview: break freely, hide nothing)
 - [ ] The documentation changed with the behaviour: this repository's Markdown here, and the wiki page in English AND Portuguese, in one commit on a branch of the [wiki repository](https://github.com/eQuantic/equantic-ui/wiki) named exactly like this pull request's branch, merged into the wiki's master when this merges (the twin lives at `locale/pt-BR/<Page>-pt-BR.md` there)
 - [ ] One `docs/LEDGER.md` line for this event, citing the issue
-- [ ] Copilot's review requested (`gh pr edit <n> --add-reviewer @copilot`), every finding fixed or answered in its thread, every thread resolved, and requested again until a round found nothing new
+- [ ] The diff reviewed by its author before the PR opened (in Claude Code, `/code-review high`); every Copilot thread answered and resolved; a new round asked for (`gh pr edit <n> --add-reviewer @copilot`) only after a defect, and three rounds at most
 - [ ] No "widget" in prose; the project's word is *component*
