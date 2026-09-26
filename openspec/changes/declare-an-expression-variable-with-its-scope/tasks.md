@@ -1,0 +1,20 @@
+# Tasks
+
+## 1. One owner for expression variables
+
+- [x] 1.1 `ExpressionVariableScanner` replaces `PatternVariableScanner`, the method-top hoisting and the primitive Render path's copy
+- [x] 1.2 Every statement that holds an expression declares its variables with Roslyn's scope; a while and a for in the head's `let`
+- [x] 1.3 Initializers declare in an arrow of their own; a switch expression declares its arms' once
+- [x] 1.4 Check: `ExpressionVariableConformanceTests` run on both sides; 43 of its 47 cases fail on main without the harness's own declarations, and 28 with them
+
+## 2. Names and modes
+
+- [x] 2.1 Every declaration site crosses through `ToJsIdentifier`, whose list holds every keyword
+- [x] 2.2 Plain JavaScript carries no local annotation; a static property is written static
+- [x] 2.3 Check: `ExpressionVariableEmissionTests` run every member kind through `ComponentCompiler` in both modes against .NET; on main neither mode's modules load
+
+## 3. Documentation
+
+- [x] 3.1 The wiki's SupportedFeatures and Compiler pages in English and Portuguese, on the wiki branch named like this pull request's
+- [x] 3.2 One `docs/LEDGER.md` line citing #466
+- [x] 3.3 Archive this change in the same pull request
