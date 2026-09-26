@@ -97,6 +97,8 @@ import {
   linkedList,
   contains,
   remove,
+  sameItem,
+  pairComparer,
   count,
   setAdd,
   entries,
@@ -315,6 +317,8 @@ export const $eq = {
     count,
     setAdd,
     remove,
+    sameItem,
+    pairComparer,
   },
   /** `bool.Parse`, `bool.TryParse` and `Convert.ToBoolean(string)`, as .NET reads the text. */
   bool: { parse: boolParse, tryParse: boolTryParse, convert: boolConvert },

@@ -211,6 +211,13 @@ public static class Eq
     /// finds equal to the value, and answers whether there was one (#400).</summary>
     public const string ListRemove = "$eq.collections.remove";
 
+    /// <summary><c>EqualityComparer&lt;T&gt;.Default</c> for a type compared by reference or by its own
+    /// <c>Equals</c>: identity, NaN equal to NaN, and a twin's own <c>equals</c>.</summary>
+    public const string SameItem = "$eq.collections.sameItem";
+
+    /// <summary>A <c>KeyValuePair&lt;K, V&gt;</c>'s comparer, from each half's (#421).</summary>
+    public const string PairComparer = "$eq.collections.pairComparer";
+
     /// <summary>The container, for a constructor dependency — the browser's ActivatorUtilities.</summary>
     public const string ResolveService = "$eq.services.resolve";
 

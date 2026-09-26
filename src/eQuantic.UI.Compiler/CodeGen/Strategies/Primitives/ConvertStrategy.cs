@@ -67,19 +67,27 @@ public class ConvertStrategy : IExpressionIrStrategy
             var provider = providerExpr is null || NamesACulture(providerExpr, context)
                 ? null
                 : context.Converter.ConvertIr(providerExpr);
-            if (!ReadsText(invocation, argExpr, context))
+            var reads = ReadsText(invocation, argExpr, context);
+            if (reads) context.UsedHelpers.Add(Eq.Import);
+            JsExpr Of(JsExpr value) => reads
+                ? JsExpr.Template($"{Eq.BoolConvert}({{0}})", [value], context.TypeAnnotations)
+                : ToBoolean(value, context.SemanticHelper.GetType(argExpr), context);
+            if (provider is null) return Of(context.Converter.ConvertIr(argExpr));
+            // Both arguments in the order they are WRITTEN, which a named argument may reverse
+            // (`Convert.ToBoolean(provider: P(), value: V())` runs P first), then the conversion of
+            // the value (found in review, #421).
+            var providerFirst = providerExpr!.SpanStart < argExpr.SpanStart;
+            var value = context.Converter.ConvertIr(argExpr);
+            var parameters = (providerFirst, context.TypeAnnotations) switch
             {
-                var type = context.SemanticHelper.GetType(argExpr);
-                if (provider is null) return ToBoolean(context.Converter.ConvertIr(argExpr), type, context);
-                var parameters = context.TypeAnnotations ? "($v: any, _provider: unknown)" : "($v, _provider)";
-                return JsExpr.Template($"({parameters} => {{0}})({{1}}, {{2}})",
-                    [ToBoolean(JsExpr.Identifier("$v"), type, context), context.Converter.ConvertIr(argExpr), provider],
-                    context.TypeAnnotations);
-            }
-            context.UsedHelpers.Add(Eq.Import);
-            JsExpr[] parts = provider is null ? [context.Converter.ConvertIr(argExpr)] : [context.Converter.ConvertIr(argExpr), provider];
-            return JsExpr.Template(provider is null ? $"{Eq.BoolConvert}({{0}})" : $"{Eq.BoolConvert}({{0}}, {{1}})",
-                parts, context.TypeAnnotations);
+                (true, true) => "(_provider: unknown, $v: any)",
+                (true, false) => "(_provider, $v)",
+                (false, true) => "($v: any, _provider: unknown)",
+                (false, false) => "($v, _provider)",
+            };
+            return JsExpr.Template($"({parameters} => {{0}})({{1}}, {{2}})",
+                [Of(JsExpr.Identifier("$v")), providerFirst ? provider : value, providerFirst ? value : provider],
+                context.TypeAnnotations);
         }
         if (ReadsText(invocation, argExpr, context) && TextReader(name) is { } text)
         {

@@ -139,10 +139,42 @@ public class ListMethodStrategy : IConversionStrategy
     {
         if (args.Count == 0) return caller;
         context.UsedHelpers.Add(Eq.Import);
-        return element.IsStructuralValueType()
-            ? $"{Eq.ListRemove}({caller}, {args[0]}, {Eq.Equals})"
+        return Comparer(element) is { } comparer
+            ? $"{Eq.ListRemove}({caller}, {args[0]}, {comparer})"
             : $"{Eq.ListRemove}({caller}, {args[0]})";
     }
+
+    /// <summary>
+    /// The comparison <c>EqualityComparer&lt;T&gt;.Default</c> makes for the element, when it is not the
+    /// runtime's default: the structural one for an element compared by value, and for a
+    /// <c>KeyValuePair&lt;K, V&gt;</c> one that compares each half by its own type's rule, which is what
+    /// the pair's <c>Equals</c> does and what a dictionary's <c>ICollection&lt;KeyValuePair&lt;K, V&gt;&gt;.Remove</c>
+    /// does with the value (found in review, #421). A pair is compared by its fields, not walked as an
+    /// object: a dictionary's entries are arrays that carry <c>key</c> and <c>value</c>.
+    /// </summary>
+    private static string? Comparer(ITypeSymbol? element)
+    {
+        if (element is INamedTypeSymbol { Name: "KeyValuePair", ContainingNamespace: { } ns, TypeArguments.Length: 2 } pair
+            && ns.ToDisplayString() == "System.Collections.Generic")
+        {
+            static string Half(ITypeSymbol half) => ComparesByValue(half) ? Eq.Equals : Eq.SameItem;
+            return $"{Eq.PairComparer}({Half(pair.TypeArguments[0])}, {Half(pair.TypeArguments[1])})";
+        }
+        return ComparesByValue(element) ? Eq.Equals : null;
+    }
+
+    /// <summary>
+    /// Whether <c>EqualityComparer&lt;T&gt;.Default</c> compares the element by value: a tuple, a record
+    /// or a struct, a nullable one of those, and an anonymous type, whose <c>Equals</c> compares its
+    /// members (the last two found in review, #421). Asked here and not of
+    /// <c>IsStructuralValueType</c>, which <c>==</c> asks too, and an anonymous type's <c>==</c>
+    /// compares references.
+    /// </summary>
+    private static bool ComparesByValue(ITypeSymbol? element) =>
+        element.IsStructuralValueType()
+        || element is { IsAnonymousType: true }
+        || (element is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable
+            && nullable.TypeArguments[0].IsStructuralValueType());
 
     private string ConvertRemoveAt(string caller, List<string> args)
     {

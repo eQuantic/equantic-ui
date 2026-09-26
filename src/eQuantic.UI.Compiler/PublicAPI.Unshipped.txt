@@ -29,3 +29,5 @@ const eQuantic.UI.Compiler.CodeGen.Eq.ListRemove = "$eq.collections.remove" -> s
 const eQuantic.UI.Compiler.CodeGen.Eq.BoolParse = "$eq.bool.parse" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.BoolTryParse = "$eq.bool.tryParse" -> string!
 const eQuantic.UI.Compiler.CodeGen.Eq.BoolConvert = "$eq.bool.convert" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.SameItem = "$eq.collections.sameItem" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.PairComparer = "$eq.collections.pairComparer" -> string!

@@ -338,7 +338,7 @@ export function contains(collection: unknown, value: unknown): boolean {
  * NaN equals NaN, and identity for everything else, which is what a class that does not override
  * `Equals` compares by.
  */
-function sameItem(item: unknown, value: unknown): boolean {
+export function sameItem(item: unknown, value: unknown): boolean {
   if (item === value) return true;
   if (typeof item === 'number' && typeof value === 'number')
     return item !== item && value !== value;
@@ -366,13 +366,50 @@ function isDictionary(collection: unknown): collection is Dictionary<unknown, un
   );
 }
 
-/** `ICollection<KeyValuePair<K, V>>.Remove`: the pair leaves only when its key is there with an equal
- * value, and the answer says whether it did. */
-function removePair(dictionary: Dictionary<unknown, unknown>, pair: unknown): boolean {
+/** A primitive-keyed `Dictionary<K, V>`, which is a plain object here, its keys its property names. */
+function isPlainDictionary(collection: unknown): collection is Record<string, unknown> {
+  if (collection == null || typeof collection !== 'object' || Array.isArray(collection)) return false;
+  const prototype = Object.getPrototypeOf(collection);
+  return prototype === Object.prototype || prototype === null;
+}
+
+/** The plain object asked as a dictionary is asked: a key is there when it is an own property. */
+function plainDictionary(object: Record<string, unknown>): Dictionary<unknown, unknown> {
+  return {
+    has: (key) => Object.prototype.hasOwnProperty.call(object, key as PropertyKey),
+    get: (key) => object[key as string],
+    delete: (key) => delete object[key as string],
+  };
+}
+
+/**
+ * `ICollection<KeyValuePair<K, V>>.Remove`: the pair leaves only when its key is there with an equal
+ * value, and the answer says whether it did. The comparison is the pair's the compiler picked
+ * (`pairComparer`, found in review, #421), handed the stored pair and the one to remove; without one,
+ * the value is compared as `sameItem` compares it.
+ */
+function removePair<T>(dictionary: Dictionary<unknown, unknown>, pair: T, same: (a: T, b: T) => boolean): boolean {
   if (pair == null || typeof pair !== 'object' || !('key' in pair)) return false;
-  const { key, value } = pair as { key: unknown; value: unknown };
-  if (!dictionary.has(key) || !sameItem(dictionary.get(key), value)) return false;
-  return dictionary.delete(key);
+  const { key, value } = pair as unknown as { key: unknown; value: unknown };
+  if (!dictionary.has(key)) return false;
+  const stored = { key, value: dictionary.get(key) };
+  const equal = same === sameItem ? sameItem(stored.value, value) : same(stored as T, pair);
+  return equal && dictionary.delete(key);
+}
+
+/**
+ * `EqualityComparer<KeyValuePair<K, V>>.Default`, which compares the pair's two halves as each one's
+ * own comparer does (`ValueType.Equals` over its fields), and `Dictionary`'s
+ * `ICollection<KeyValuePair<K, V>>.Remove`, which compares the value by `V`'s. The compiler picks
+ * each half's comparison from its static type (found in review, #421): a tuple value is an array
+ * here, and only the type says it compares by value. It reads `.key` and `.value`, which both
+ * shapes of a pair have: a dictionary's entry (an array that carries them) and a plain pair.
+ */
+export function pairComparer<K, V>(
+  key: (a: K, b: K) => boolean,
+  value: (a: V, b: V) => boolean,
+): (a: { key: K; value: V }, b: { key: K; value: V }) => boolean {
+  return (a, b) => key(a.key, b.key) && value(a.value, b.value);
 }
 
 /**
@@ -388,7 +425,8 @@ function removePair(dictionary: Dictionary<unknown, unknown>, pair: unknown): bo
  * call runs (found in review, #421), and each removes as it does when called directly, as `contains`
  * asks the value what it is: a Set (`HashSet<T>`) through `delete`, the way `set.Remove(x)` lowers; a
  * dictionary (`ICollection<KeyValuePair<K, V>>`) the pair whose key it holds with an equal value, as
- * .NET's does; and a twin with a `remove` of its own (`LinkedList<T>`, `SortedSet<T>`) through it. An
+ * .NET's does, whether it is a plain object (a primitive key), a `ValueMap` or a sorted map; and a twin
+ * with a `remove` of its own (`LinkedList<T>`, `SortedSet<T>`) through it. An
  * array stands for a `List<T>` and for a `T[]` alike, and .NET throws for the second, which this side
  * cannot tell apart.
  */
@@ -398,7 +436,8 @@ export function remove<T>(
   same: (a: T, b: T) => boolean = sameItem,
 ): boolean {
   if (list instanceof Set) return list.delete(value);
-  if (isDictionary(list)) return removePair(list, value);
+  if (isDictionary(list)) return removePair(list, value, same);
+  if (isPlainDictionary(list)) return removePair(plainDictionary(list), value, same);
   if (!Array.isArray(list)) return (list as { remove(value: T): boolean }).remove(value);
   for (let index = 0; index < list.length; index++) {
     if (same(list[index], value)) {
