@@ -79,6 +79,7 @@ import {
 import { asSingle, format, parseEnum, stringFormat, stringFormatInvariant } from './utils/format';
 import { nextTextElementLength, textElementStarts } from './utils/text-elements';
 import { unicodeCategory } from './utils/unicode-category';
+import { hasNonWhiteSpace, isWhiteSpace, splitOnWhiteSpace, trim, trimEnd, trimStart } from './utils/white-space';
 import { str } from './utils/culture';
 import { dateTime, timeSpan, dateOnly, timeOnly, dateTimeOffset } from './utils/datetime';
 import { stringBuilder } from './utils/string-builder';
@@ -253,8 +254,8 @@ export const $eq = {
     log2Of64,
   },
   /** Text: number/string formatting, StringBuilder, StringInfo's text elements (grapheme clusters,
-   * from the platform's segmenter), a character's general category, and string's comparisons and
-   * ranged join. */
+   * from the platform's segmenter), a character's general category, string's comparisons and
+   * ranged join, and .NET's white space. */
   text: {
     format,
     stringFormat,
@@ -270,6 +271,12 @@ export const $eq = {
     compareRangeBy,
     equals: stringEquals,
     joinRange,
+    isWhiteSpace,
+    hasNonWhiteSpace,
+    trim,
+    trimStart,
+    trimEnd,
+    splitOnWhiteSpace,
   },
   /** A dictionary read that fails on a missing key, the way .NET does. */
   dictGet,

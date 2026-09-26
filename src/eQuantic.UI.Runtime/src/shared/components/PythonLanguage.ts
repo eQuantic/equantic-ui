@@ -46,7 +46,7 @@ export class PythonLanguage {
         }
         while (i < line.length) {
             let c = line[i];
-            if ((/^\p{White_Space}$/u.test(c))) {
+            if ($eq.text.isWhiteSpace(c)) {
                 i++;
                 continue;
             }
@@ -119,7 +119,7 @@ export class PythonLanguage {
     }
 
     static nextNonSpace(line: string, from: number) {
-        for (let i = from; i < line.length; i++) if (!(/^\p{White_Space}$/u.test(line[i]))) return line[i];
+        for (let i = from; i < line.length; i++) if (!$eq.text.isWhiteSpace(line[i])) return line[i];
         return '\0';
     }
 

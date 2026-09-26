@@ -338,6 +338,7 @@ public class ComponentParser
                 TypeIdentity = ClrIdentity(classDecl),
                 SourcePath = sourcePath,
                 SyntaxTree = tree,
+                ClassSyntax = classDecl,
                 Namespace = ns ?? "",
                 TypeParameters = classDecl.TypeParameterList?.Parameters.Select(p => p.Identifier.Text).ToList() ?? new List<string>(),
                 IsAbstract = classDecl.Modifiers.Any(SyntaxKind.AbstractKeyword),

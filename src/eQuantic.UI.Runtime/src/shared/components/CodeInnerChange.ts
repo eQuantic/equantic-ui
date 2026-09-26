@@ -1,0 +1,3 @@
+import { $eq, CodeRange } from "../runtime-exports";
+
+export class CodeInnerChange { declare original: CodeRange; declare modified: CodeRange; constructor(original: any = new CodeRange(), modified: any = new CodeRange()) { this.original = original; this.modified = modified; } equals(o: unknown) { return o instanceof CodeInnerChange && $eq.equals(this.original, o.original) && $eq.equals(this.modified, o.modified); } with(patch: any) { return new CodeInnerChange(('original' in patch ? patch.original : this.original), ('modified' in patch ? patch.modified : this.modified)); } toString() { return `CodeInnerChange { Original = ${this.original}, Modified = ${this.modified} }`; } }
