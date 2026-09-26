@@ -42,6 +42,9 @@ public class ListRemoveConformanceTests
     [InlineData("ICollection<int> c = new HashSet<int> { 1, 2 }; var removed = c.Remove(1); return removed + \"|\" + c.Count + \"|\" + c.Remove(5);")] // "True|1|False"
     [InlineData("var linked = new LinkedList<int>(new[] { 1, 2, 1 }); ICollection<int> c = linked; var removed = c.Remove(1); return removed + \"|\" + linked.Count + \"|\" + linked.First.Value;")] // "True|2|2"
     [InlineData("ICollection<int> c = new List<int> { 1, 2 }; return c.Remove(2) + \"|\" + c.Count;")]                                     // "True|1"
+    // A SortedSet through its own remove (found in review, #421). A dictionary's pairs are held in the
+    // runtime's own spec, since a KeyValuePair built by hand does not cross yet (#433).
+    [InlineData("var sorted = new SortedSet<int>(); sorted.Add(3); sorted.Add(1); sorted.Add(2); ICollection<int> c = sorted; return c.Remove(2) + \"|\" + sorted.Count + \"|\" + sorted.Contains(2);")] // "True|2|False"
     public void ListRemove_AnswersAsDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
