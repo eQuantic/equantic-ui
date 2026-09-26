@@ -9,13 +9,13 @@ export class MarkdownParser {
         let usedIds: Set<string> = new Set();
         for (let i = 0; i < lines.length; i++) {
             let line = lines[i];
-            let trimmed = line.trim();
+            let trimmed = $eq.text.trim(line);
             if (trimmed.startsWith('```')) {
                 paragraph = MarkdownParser.flushParagraph(paragraph, blocks);
-                let lang = trimmed.slice(3).trim();
+                let lang = $eq.text.trim(trimmed.slice(3));
                 let body: string[] = [];
                 i++;
-                while (i < lines.length && !lines[i].trimStart().startsWith('```')) {
+                while (i < lines.length && !$eq.text.trimStart(lines[i]).startsWith('```')) {
                     body.push(lines[i]);
                     i++;
                 }
@@ -31,7 +31,7 @@ export class MarkdownParser {
                 while (level < trimmed.length && trimmed[level] === '#') level++;
                 if (level <= 6 && level < trimmed.length && trimmed[level] === ' ') {
                     paragraph = MarkdownParser.flushParagraph(paragraph, blocks);
-                    let text = trimmed.slice(level).trim();
+                    let text = $eq.text.trim(trimmed.slice(level));
                     let id = MarkdownParser.slug(text);
                     let unique = id;
                     let n = 1;
@@ -54,9 +54,9 @@ export class MarkdownParser {
                 let table = new MarkdownBlock({ kind: 'table' });
                 for (const cell of MarkdownParser.splitRow(trimmed)) table.head.push(new MarkdownCell({ runs: MarkdownParser.inline(cell) }));
                 i += 2;
-                while (i < lines.length && lines[i].trim().startsWith('|')) {
+                while (i < lines.length && $eq.text.trim(lines[i]).startsWith('|')) {
                     let row = new MarkdownRow();
-                    for (const cell of MarkdownParser.splitRow(lines[i].trim())) row.cells.push(new MarkdownCell({ runs: MarkdownParser.inline(cell) }));
+                    for (const cell of MarkdownParser.splitRow($eq.text.trim(lines[i]))) row.cells.push(new MarkdownCell({ runs: MarkdownParser.inline(cell) }));
                     table.rows.push(row);
                     i++;
                 }
@@ -67,14 +67,14 @@ export class MarkdownParser {
             if (trimmed.startsWith('>')) {
                 paragraph = MarkdownParser.flushParagraph(paragraph, blocks);
                 let quoted = '';
-                while (i < lines.length && lines[i].trimStart().startsWith('>')) {
-                    let q = lines[i].trimStart();
-                    q = q.slice(1).trim();
+                while (i < lines.length && $eq.text.trimStart(lines[i]).startsWith('>')) {
+                    let q = $eq.text.trimStart(lines[i]);
+                    q = $eq.text.trim(q.slice(1));
                     quoted = quoted.length === 0 ? q : quoted + ' ' + q;
                     i++;
                 }
                 i--;
-                blocks.push(new MarkdownBlock({ kind: 'quote', runs: MarkdownParser.inline(quoted.trim()) }));
+                blocks.push(new MarkdownBlock({ kind: 'quote', runs: MarkdownParser.inline($eq.text.trim(quoted)) }));
                 continue;
             }
             let bullet = MarkdownParser.bulletOf(line);
@@ -84,15 +84,15 @@ export class MarkdownParser {
                 while (i < lines.length) {
                     let mark = MarkdownParser.bulletOf(lines[i]);
                     if (mark == null) {
-                        if (list.items.length > 0 && lines[i].startsWith('  ') && lines[i].trim().length > 0 && !lines[i].trimStart().startsWith('```')) {
+                        if (list.items.length > 0 && lines[i].startsWith('  ') && $eq.text.trim(lines[i]).length > 0 && !$eq.text.trimStart(lines[i]).startsWith('```')) {
                             let last = list.items[list.items.length - 1];
-                            for (const run of MarkdownParser.inline(' ' + lines[i].trim())) last.runs.push(run);
+                            for (const run of MarkdownParser.inline(' ' + $eq.text.trim(lines[i]))) last.runs.push(run);
                             i++;
                             continue;
                         }
                         break;
                     }
-                    let indent = lines[i].length - lines[i].trimStart().length;
+                    let indent = lines[i].length - $eq.text.trimStart(lines[i]).length;
                     list.items.push(new MarkdownListItem({ runs: MarkdownParser.inline(mark.content), depth: indent >= 2 ? 1 : 0, marker: mark.marker }));
                     i++;
                 }
@@ -118,7 +118,7 @@ export class MarkdownParser {
     }
 
     static flushParagraph(paragraph: string, blocks: MarkdownBlock[]) {
-        let joined = paragraph.trim();
+        let joined = $eq.text.trim(paragraph);
         if (joined.length === 0) return '';
         blocks.push(new MarkdownBlock({ kind: 'paragraph', runs: MarkdownParser.inline(joined) }));
         return '';
@@ -130,7 +130,7 @@ export class MarkdownParser {
         let open = false;
         for (let i = 0; i < lines.length; i++) {
             let line = lines[i];
-            if (line.trimStart().startsWith('```')) {
+            if ($eq.text.trimStart(line).startsWith('```')) {
                 fenced = !fenced;
                 clean.push(line);
                 continue;
@@ -160,13 +160,13 @@ export class MarkdownParser {
                 }
                 text = text.slice(0, start) + text.slice((end + 3));
             }
-            clean.push(text.trimEnd());
+            clean.push($eq.text.trimEnd(text));
         }
         return clean;
     }
 
     static isAlignmentRow(line: string) {
-        let t = line.trim();
+        let t = $eq.text.trim(line);
         if (!t.startsWith('|')) return false;
         let hasDash = false;
         for (let i = 0; i < t.length; i++) {
@@ -178,7 +178,7 @@ export class MarkdownParser {
 
     static splitRow(line: string) {
         let cells: string[] = [];
-        let t = line.trim();
+        let t = $eq.text.trim(line);
         if (t.length > 0 && t[0] === '|') t = t.slice(1);
         if (t.length > 0 && t[t.length - 1] === '|') t = t.slice(0, (t.length - 1));
         let cell = '';
@@ -187,22 +187,22 @@ export class MarkdownParser {
             let ch = t[i];
             if (ch === '`') inCode = !inCode;
             if (ch === '|' && !inCode) {
-                cells.push(cell.trim());
+                cells.push($eq.text.trim(cell));
                 cell = '';
                 continue;
             }
             cell += ch;
         }
-        cells.push(cell.trim());
+        cells.push($eq.text.trim(cell));
         return cells;
     }
 
     static bulletOf(line: string) {
-        let t = line.trimStart();
-        if (t.startsWith('- ') || t.startsWith('* ')) return new MarkdownBulletMatch({ marker: '•', content: t.slice(2).trim() });
+        let t = $eq.text.trimStart(line);
+        if (t.startsWith('- ') || t.startsWith('* ')) return new MarkdownBulletMatch({ marker: '•', content: $eq.text.trim(t.slice(2)) });
         let digits = 0;
         while (digits < t.length && (/^\p{Nd}$/u.test(t[digits]))) digits++;
-        if (digits > 0 && digits + 1 < t.length && t[digits] === '.' && t[digits + 1] === ' ') return new MarkdownBulletMatch({ marker: t.slice(0, digits) + '.', content: t.slice((digits + 2)).trim() });
+        if (digits > 0 && digits + 1 < t.length && t[digits] === '.' && t[digits + 1] === ' ') return new MarkdownBulletMatch({ marker: t.slice(0, digits) + '.', content: $eq.text.trim(t.slice((digits + 2))) });
         return null;
     }
 

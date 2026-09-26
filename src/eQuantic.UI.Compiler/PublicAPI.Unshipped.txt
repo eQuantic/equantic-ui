@@ -1,1 +1,9 @@
 #nullable enable
+const eQuantic.UI.Compiler.CodeGen.Eq.Trim = "$eq.text.trim" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.TrimStart = "$eq.text.trimStart" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.TrimEnd = "$eq.text.trimEnd" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.SplitOnWhiteSpace = "$eq.text.splitOnWhiteSpace" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.IsWhiteSpace = "$eq.text.isWhiteSpace" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.HasNonWhiteSpace = "$eq.text.hasNonWhiteSpace" -> string!
+eQuantic.UI.Compiler.Models.ComponentDefinition.ClassSyntax.get -> Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax?
+eQuantic.UI.Compiler.Models.ComponentDefinition.ClassSyntax.set -> void

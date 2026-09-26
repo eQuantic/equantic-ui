@@ -659,6 +659,20 @@ record of a release, the wiki's Upgrading page is the distillate.
   shortcut took still reached the editor on the web, a code block's corner lay over its whole first
   line, and seven tests asserted nothing when their value was null.
 
+- **2026-09-24 · The code engine diffs two texts**: the engine half of slice 2b of
+  [`CODE-EDITOR-PLAN.md`](CODE-EDITOR-PLAN.md) ([#386](https://github.com/eQuantic/equantic-ui/pull/386)).
+  `CodeDiffer` answers the lines that changed between two texts and, inside each change, the words:
+  Myers' shortest edit script over what is left once the common head and tail are trimmed, so the
+  cost follows the change and not the file, and the same algorithm over a change's tokens. Past
+  2,000 rounds two ranges are a rewrite, marked whole, counted in rounds rather than by a clock so
+  .NET and the web stop at the same point. Its counts are `git diff --minimal`'s own on five files of
+  this repository's history, and its twin answers change for change on 400 random pairs. On the way:
+  eqc named a method by its name alone, so two overloads reached a twin as one method, JavaScript
+  kept the last and a component's parser the first; the build now stops at the second declaration
+  and names the first (EQ1007). And white space is .NET's on the web: `char.IsWhiteSpace`, the
+  `Trim` family and `IsNullOrWhiteSpace` read one list, where JavaScript's left U+0085 and took
+  U+FEFF (the twin's word diff split on it), and a bare `Split()` splits on it instead of into
+  characters. The view's design, a row that is not a line, is the plan's ninth section.
 - **2026-09-24 · The BCL audit probes every arity**: a static surface was probed by name, so only
   the shortest overload of each member was graded, and a group whose first overload takes an
   `IFormatProvider` or an `IComparer` hid its siblings

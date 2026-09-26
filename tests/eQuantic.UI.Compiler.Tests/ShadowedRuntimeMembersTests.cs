@@ -145,6 +145,27 @@ public class ShadowedRuntimeMembersTests
     }
 
     /// <summary>
+    /// The chain is walked from the component's OWN declaration, not from the first class of its name
+    /// in the file: an empty <c>A.Child</c> ahead of <c>B.Child : Middle</c> stood in for it, its chain
+    /// ended at once, and the <c>mount</c> the real chain inherits went unrefused.
+    /// </summary>
+    [Fact]
+    public void TheChainIsWalkedFromTheComponentsOwnDeclaration_NotTheFirstOfItsName()
+    {
+        var results = new ComponentCompiler().CompileSource(
+            "using eQuantic.UI.Primitives; using eQuantic.UI.Web.Components; "
+            + "namespace A { public class Child { } } "
+            + "namespace B { "
+            + "public abstract class MyStatelessBase : StatelessComponent { "
+            + "  public override IComponent Build(RenderContext c) => new Text(\"base\"); } "
+            + "public abstract class Middle : MyStatelessBase { } "
+            + "public class Child : Middle { public void Mount() { } } }");
+
+        results.SelectMany(r => r.Errors)
+            .Should().Contain(error => error.Code == "EQ2011" && error.Message.Contains("`mount"));
+    }
+
+    /// <summary>
     /// The chain keeps the BRANCH, which is the half a walk could have flattened. An app base over
     /// <c>HtmlElement</c> inherits the DOM builders and does NOT inherit <c>mount</c> — so
     /// refusing <c>Mount</c> here would be round five's too-broad bug arriving by a new road.

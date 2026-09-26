@@ -113,6 +113,13 @@ public class ComponentDefinition
     public Microsoft.CodeAnalysis.SyntaxTree? SyntaxTree { get; set; }
 
     /// <summary>
+    /// The class a component was parsed from. A name is not an identity: two classes of one name in
+    /// two namespaces of one file are two types, and a search of the tree by name found the first, so
+    /// a page's own members were checked as another class's.
+    /// </summary>
+    public Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax? ClassSyntax { get; set; }
+
+    /// <summary>
     /// Runtime helpers used by the component (ClassBuilder, StyleBuilder, etc.)
     /// </summary>
     public HashSet<string> UsedHelpers { get; set; } = new();
