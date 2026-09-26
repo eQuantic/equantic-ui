@@ -120,7 +120,7 @@ export class PythonLanguage {
 
     static nextNonSpace(line: string, from: number) {
         for (let i = from; i < line.length; i++) if (!$eq.text.isWhiteSpace(line[i])) return line[i];
-        return '\0';
+        return '\u0000';
     }
 
     static add(into: CodeToken[], start: number, length: number, kind: CodeTokenKindValue) {

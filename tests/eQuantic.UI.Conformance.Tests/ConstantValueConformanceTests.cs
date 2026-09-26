@@ -186,8 +186,9 @@ public class ConstantValueConformanceTests
 
     /// <summary>
     /// A constant's text is escaped where it cannot stand for itself in the module: a LONE surrogate has
-    /// no UTF-8 bytes, so a module holding one could not be written at all, and a NUL or a line separator
-    /// is invisible there. A surrogate pair is one character, written as it is (found in review).
+    /// no UTF-8 bytes, so a module holding one could not be written at all, and a control character or a
+    /// line separator is invisible there. A surrogate pair is one character, written as it is (found in
+    /// review).
     /// </summary>
     [SkippableTheory]
     // A lone surrogate, a NUL and the line separators, in a default, a const and a literal.
@@ -198,8 +199,13 @@ public class ConstantValueConformanceTests
     [InlineData("return Texts.Pair.Length + \"|\" + char.IsSurrogatePair(Texts.Pair, 0);")]
     [InlineData("return ((int)\"\\uDC00x\"[0]).ToString();")]
     [InlineData("const string local = \"\\u2029\"; return ((int)local[0]).ToString();")]
-    // A tab stands for itself, and stays one.
+    // A tab is escaped as every control character is, and reads back as a tab.
     [InlineData("return (\"a\\tb\").Length + \"|\" + ((int)\"a\\tb\"[1]).ToString();")]
+    // A char literal is its value too: JavaScript has no \e, no \a and a two-digit \x (found in review).
+    [InlineData("char c = '\\e'; return ((int)c).ToString();")]
+    [InlineData("char c = '\\a'; return ((int)c).ToString();")]
+    [InlineData("char c = '\\x041'; return ((int)c).ToString();")]
+    [InlineData("return \"x\" + '\\e' + '\\t';")]
     public void AConstantsText_MatchesDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");

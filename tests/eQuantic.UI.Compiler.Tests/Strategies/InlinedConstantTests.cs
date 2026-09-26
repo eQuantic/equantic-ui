@@ -67,7 +67,9 @@ public class InlinedConstantTests
     /// A constant is written as its value in its C# type (#444): a decimal as the runtime's exact
     /// Decimal, reached through its type or a <c>using static</c>, and a long as a BigInt. Neither had
     /// a writer: <c>decimal.maxValue</c> was a ReferenceError, and <c>TimeSpan.TicksPerSecond</c> a
-    /// number the first long threw on. A const of the class's own source keeps its reference.
+    /// number the first long threw on. A const of the class's own source reached by its BARE name keeps
+    /// its reference to the static its module declares; reached through its class, it is written as
+    /// its value like any other, as C# itself writes a const at every use.
     /// </summary>
     [Fact]
     public void AConstant_IsWrittenAsItsValue_InItsType()
@@ -190,8 +192,8 @@ public class InlinedConstantTests
 
     /// <summary>
     /// A constant's text escapes what cannot stand for itself in the module: a LONE surrogate, which
-    /// UTF-8 cannot encode, so the module could not be written, a control character and a line
-    /// separator. A surrogate pair and a tab are written as they are. The const's own static and a
+    /// UTF-8 cannot encode, so the module could not be written, a control character (a tab included)
+    /// and a line separator. A surrogate pair is written as it is. The const's own static and a
     /// reference inlined through its class take the same writer.
     /// </summary>
     [Fact]
@@ -206,8 +208,8 @@ public class InlinedConstantTests
             }
             """);
 
-        // The escapes are TEXT in the module; the pair is the emoji itself, and the tab a tab.
-        var expected = "'a\\u0000b\\u2028c\\ud800d" + char.ConvertFromUtf32(0x1F600) + "e\tf'";
+        // The escapes are TEXT in the module, the tab's too; the pair is the emoji itself.
+        var expected = "'a\\u0000b\\u2028c\\uD800d" + char.ConvertFromUtf32(0x1F600) + "e\\tf'";
         ts.Should().Contain("return " + expected + ";");
         ts.Split(expected).Length.Should().Be(3, "the static and the inlined reference both write it");
     }

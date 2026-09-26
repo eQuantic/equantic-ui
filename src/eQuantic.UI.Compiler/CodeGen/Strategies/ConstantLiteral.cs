@@ -67,10 +67,12 @@ internal static class ConstantLiteral
 
     /// <summary>
     /// <paramref name="text"/> as a single-quoted JavaScript string. What cannot stand for itself in the
-    /// module is escaped: the quote and the backslash, a line terminator (CR, LF, U+2028, U+2029), a
-    /// control character other than the tab, and a LONE surrogate. UTF-8 has no bytes for a lone
-    /// surrogate, so a module holding one could not be written: a strict encoder throws, and a lenient
-    /// one writes U+FFFD, another character. A surrogate PAIR is one character, which UTF-8 writes.
+    /// module is escaped: the quote and the backslash, and every character with no glyph of its own (a
+    /// control, the tab and the line terminators included, a format character, a mark, a separator
+    /// other than the space, a code point unassigned or for private use) as <c>\uXXXX</c>, in the
+    /// upper case C# source spells them in. So is a LONE surrogate: UTF-8 has no bytes for one, so a
+    /// module holding it could not be written, a strict encoder throwing and a lenient one writing
+    /// U+FFFD, another character. A surrogate PAIR is one character, which UTF-8 writes as it is.
     /// </summary>
     public static string Quote(string text)
     {
@@ -89,10 +91,10 @@ internal static class ConstantLiteral
                 case '\'': quoted.Append("\\'"); break;
                 case '\n': quoted.Append("\\n"); break;
                 case '\r': quoted.Append("\\r"); break;
-                case '\t': quoted.Append(c); break;
+                case '\t': quoted.Append("\\t"); break;
                 default:
-                    if (char.IsControl(c) || char.IsSurrogate(c) || c is (char)0x2028 or (char)0x2029)
-                        quoted.Append("\\u").Append(((int)c).ToString("x4", CultureInfo.InvariantCulture));
+                    if (HasNoGlyph(c))
+                        quoted.Append("\\u").Append(((int)c).ToString("X4", CultureInfo.InvariantCulture));
                     else
                         quoted.Append(c);
                     break;
@@ -100,6 +102,18 @@ internal static class ConstantLiteral
         }
         return quoted.Append('\'').ToString();
     }
+
+    /// <summary>Whether a character shows nothing of its own where it stands: raw in the module, it is
+    /// text no reader can see, and a lone surrogate is text UTF-8 cannot hold.</summary>
+    private static bool HasNoGlyph(char c) => CharUnicodeInfo.GetUnicodeCategory(c) switch
+    {
+        UnicodeCategory.Control or UnicodeCategory.Format or UnicodeCategory.NonSpacingMark
+            or UnicodeCategory.EnclosingMark or UnicodeCategory.LineSeparator
+            or UnicodeCategory.ParagraphSeparator or UnicodeCategory.PrivateUse
+            or UnicodeCategory.OtherNotAssigned or UnicodeCategory.Surrogate => true,
+        UnicodeCategory.SpaceSeparator => c != ' ',
+        _ => false,
+    };
 
     /// <summary>An enum's constant in the enum's representation: the number for <c>[Flags]</c>, whose
     /// members exist to be OR-combined, otherwise the camelCase name of the member holding the value.
