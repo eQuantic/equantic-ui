@@ -85,7 +85,7 @@ public class ListMethodStrategy : IConversionStrategy
             "AddRange" => args.Count > 0 ? $"{caller}.push(...{args[0]})" : caller,
             "Insert" => ConvertInsert(caller, args),
             "InsertRange" => ConvertInsertRange(caller, args),
-            "Remove" => ConvertRemove(caller, args),
+            "Remove" => ConvertRemove(caller, args, context),
             "RemoveAt" => ConvertRemoveAt(caller, args),
             "RemoveRange" => ConvertRemoveRange(caller, args),
             "RemoveAll" => ConvertRemoveAll(caller, args),
@@ -122,11 +122,18 @@ public class ListMethodStrategy : IConversionStrategy
         return caller;
     }
 
-    private string ConvertRemove(string caller, List<string> args)
+    /// <summary>
+    /// <c>list.Remove(item)</c>, through the runtime, which answers the bool C# does and compares as
+    /// <c>EqualityComparer&lt;T&gt;.Default</c> does (#400). It assigned an index nothing declared
+    /// (<c>(_idx = list.indexOf(item)) &gt;= 0 &amp;&amp; list.splice(_idx, 1)</c>), so every call threw
+    /// a ReferenceError in a module, and would have answered the spliced array. The list and the item
+    /// are each evaluated once, in the order C# evaluates them.
+    /// </summary>
+    private static string ConvertRemove(string caller, List<string> args, ConversionContext context)
     {
         if (args.Count == 0) return caller;
-        // list.Remove(item) -> list.splice(list.indexOf(item), 1)
-        return $"((_idx = {caller}.indexOf({args[0]})) >= 0 && {caller}.splice(_idx, 1))";
+        context.UsedHelpers.Add(Eq.Import);
+        return $"{Eq.ListRemove}({caller}, {args[0]})";
     }
 
     private string ConvertRemoveAt(string caller, List<string> args)

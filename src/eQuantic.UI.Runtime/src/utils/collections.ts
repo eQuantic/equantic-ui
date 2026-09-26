@@ -333,6 +333,37 @@ export function contains(collection: unknown, value: unknown): boolean {
 }
 
 /**
+ * `EqualityComparer<T>.Default`, as a list's `Remove` asks it: a type's own `Equals` where its twin
+ * carries one (a record, a struct, a decimal, a date, a class that overrides it), a double's where
+ * NaN equals NaN, and identity for everything else, which is what a class that does not override
+ * `Equals` compares by.
+ */
+function sameItem(item: unknown, value: unknown): boolean {
+  if (item === value) return true;
+  if (typeof item === 'number' && typeof value === 'number')
+    return item !== item && value !== value;
+  if (item == null || value == null) return false;
+  const own = (item as { equals?: unknown }).equals;
+  return typeof own === 'function' && (own as (other: unknown) => boolean).call(item, value);
+}
+
+/**
+ * `List<T>.Remove`: takes out the FIRST item equal to the value and answers whether there was one
+ * (#400). It was lowered to `((_idx = list.indexOf(x)) >= 0 && list.splice(_idx, 1))`, which assigned
+ * a name nothing declared, so every call threw `ReferenceError: _idx is not defined` in a module, and
+ * would have answered the spliced array where C# answers a bool.
+ */
+export function remove<T>(list: T[], value: T): boolean {
+  for (let index = 0; index < list.length; index++) {
+    if (sameItem(list[index], value)) {
+      list.splice(index, 1);
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * `HashSet<T>.Add` — which answers whether the value was NEW, and is the whole reason
  * `if (!set.Add(x)) set.Remove(x)` toggles. A JS `Set.add` returns the set itself, always truthy,
  * so that idiom silently became "add, and never remove".
@@ -342,7 +373,11 @@ export function contains(collection: unknown, value: unknown): boolean {
  * longer one and hands the selector `undefined` for the missing partner, which for numbers is a
  * silent NaN. Both sources are read once here, so a side-effecting source stays a single read.
  */
-export function zip<A, B, R>(first: readonly A[], second: readonly B[], selector: (a: A, b: B) => R): R[] {
+export function zip<A, B, R>(
+  first: readonly A[],
+  second: readonly B[],
+  selector: (a: A, b: B) => R,
+): R[] {
   const length = Math.min(first.length, second.length);
   const result: R[] = new Array(length);
   for (let i = 0; i < length; i++) result[i] = selector(first[i], second[i]);

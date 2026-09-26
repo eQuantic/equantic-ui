@@ -1,14 +1,14 @@
 # eqc BCL surface audit — the coverage DENOMINATOR, one verdict per probed member.
 # native = a strategy mapped it to plain JS · eq = routed through a $eq compat helper
 # fenced:EQxxxx = refused with that diagnostic · invalid-probe = the probe itself doesn't compile
-# totals: eq=186 · fenced=42 · invalid-probe=6 · native=729
+# totals: eq=189 · fenced=42 · invalid-probe=6 · native=726
 native         Array.MaxLength
 native         Boolean.CompareTo(Boolean)
 native         Boolean.CompareTo(Object)
 native         Boolean.Equals(Boolean)
 native         Boolean.Equals(Object)
 native         Boolean.FalseString
-native         Boolean.Parse(String)
+eq             Boolean.Parse(String)
 eq             Boolean.ToString()
 native         Boolean.TrueString
 native         Char.CompareTo(Char)
@@ -74,7 +74,7 @@ fenced:EQ2004  Convert.FromBase64CharArray(Char[],Int32,Int32)
 fenced:EQ2004  Convert.FromBase64String(String)
 fenced:EQ2004  Convert.FromHexString(String)
 fenced:EQ2004  Convert.IsDBNull(Object)
-native         Convert.ToBoolean(Object)
+eq             Convert.ToBoolean(Object)
 eq             Convert.ToByte(Object)
 eq             Convert.ToByte(String,Int32)
 native         Convert.ToChar(Object)
@@ -547,7 +547,7 @@ native         List<Int32>.InsertRange(Int32,IEnumerable<Int32>)
 native         List<Int32>.LastIndexOf(Int32)
 native         List<Int32>.LastIndexOf(Int32,Int32)
 native         List<Int32>.LastIndexOf(Int32,Int32,Int32)
-native         List<Int32>.Remove(Int32)
+eq             List<Int32>.Remove(Int32)
 native         List<Int32>.RemoveAt(Int32)
 native         List<Int32>.RemoveRange(Int32,Int32)
 native         List<Int32>.Reverse()

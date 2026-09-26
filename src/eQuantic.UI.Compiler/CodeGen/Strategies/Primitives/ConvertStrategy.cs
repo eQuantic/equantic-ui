@@ -55,6 +55,13 @@ public class ConvertStrategy : IExpressionIrStrategy
                 ParseCulture.Check(invocation, providerExpr, context);
             return ToDecimal(argExpr, context);
         }
+        if (name == "ToBoolean" && ReadsText(invocation, argExpr, context))
+        {
+            // A bool reads its text the same in every culture, so the provider is not consulted, as
+            // .NET does not consult it.
+            context.UsedHelpers.Add(Eq.Import);
+            return JsExpr.Template($"{Eq.BoolConvert}({{0}})", [context.Converter.ConvertIr(argExpr)], context.TypeAnnotations);
+        }
         if (ReadsText(invocation, argExpr, context) && TextReader(name) is { } text)
         {
             // Text is read in a culture, and the browser reads the invariant one (see ParseCulture).
@@ -225,7 +232,6 @@ public class ConvertStrategy : IExpressionIrStrategy
     {
         var value = context.Converter.ConvertExpression(argExpr);
         var argType = context.SemanticHelper.GetType(argExpr);
-        var isStringArg = argType?.SpecialType == SpecialType.System_String;
 
         // Numeric → integer uses .NET banker's rounding via the $eq.math.round compat helper. Text
         // never gets here: it reads as the type's Parse does (TextReader).
@@ -252,9 +258,7 @@ public class ConvertStrategy : IExpressionIrStrategy
             // it reads as float.Parse and double.Parse do (TextReader).
             "ToSingle" => $"Math.fround(Number({value}))",
             "ToDouble" => $"Number({value})",
-            "ToBoolean" => isStringArg
-                ? $"(String({value}).trim().toLowerCase() === 'true')"
-                : $"(({value}) !== 0)",
+            "ToBoolean" => $"(({value}) !== 0)",
             "ToChar" => $"String.fromCharCode({value})",
             _ => $"String({value})"
         };

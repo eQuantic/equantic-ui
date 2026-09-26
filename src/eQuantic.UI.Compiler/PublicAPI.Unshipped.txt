@@ -20,3 +20,12 @@ eQuantic.UI.Compiler.CodeGen.CSharpToJsConverter.DefaultOf(Microsoft.CodeAnalysi
 *REMOVED*static eQuantic.UI.Compiler.CodeGen.Strategies.DefaultValue.Of(Microsoft.CodeAnalysis.ITypeSymbol? type) -> string!
 *REMOVED*eQuantic.UI.Compiler.Models.PropertyDefinition.ImplicitDefaultJs.get -> string?
 *REMOVED*eQuantic.UI.Compiler.Models.PropertyDefinition.ImplicitDefaultJs.set -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.BooleanMethodStrategy
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.BooleanMethodStrategy.BooleanMethodStrategy() -> void
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.BooleanMethodStrategy.CanConvert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> bool
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.BooleanMethodStrategy.Convert(Microsoft.CodeAnalysis.SyntaxNode! node, eQuantic.UI.Compiler.CodeGen.ConversionContext! context) -> string!
+*REMOVED*eQuantic.UI.Compiler.CodeGen.Strategies.Primitives.BooleanMethodStrategy.Priority.get -> int
+const eQuantic.UI.Compiler.CodeGen.Eq.ListRemove = "$eq.collections.remove" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.BoolParse = "$eq.bool.parse" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.BoolTryParse = "$eq.bool.tryParse" -> string!
+const eQuantic.UI.Compiler.CodeGen.Eq.BoolConvert = "$eq.bool.convert" -> string!

@@ -45,6 +45,13 @@ public static class Eq
     public const string IntTryParse = "$eq.num.intTryParse";
     /// <summary><c>Convert.ToInt32(string)</c> and its siblings: a null text is 0, any other reads as Parse does.</summary>
     public const string IntConvert = "$eq.num.intConvert";
+    /// <summary><c>bool.Parse</c>: "True" or "False" in any case, trimmed of white space and NULs, or
+    /// .NET's exception (#402).</summary>
+    public const string BoolParse = "$eq.bool.parse";
+    /// <summary><c>bool.TryParse</c>: the value, or undefined where Parse throws for the text.</summary>
+    public const string BoolTryParse = "$eq.bool.tryParse";
+    /// <summary><c>Convert.ToBoolean(string)</c>: a null text is false, any other reads as Parse does.</summary>
+    public const string BoolConvert = "$eq.bool.convert";
     /// <summary><c>double.Parse</c> and <c>float.Parse</c>: the text read by .NET's grammar under
     /// the call's NumberStyles or <c>Float | AllowThousands</c>, a float rounded once from the
     /// digits, or .NET's exception. Three args: the text, <c>'double'</c> or <c>'single'</c>, the style.</summary>
@@ -199,6 +206,10 @@ public static class Eq
     /// <summary><c>HashSet&lt;T&gt;.Add</c>, which answers whether the value was NEW — a JS
     /// <c>Set.add</c> returns the set, so the toggle idiom silently stops removing.</summary>
     public const string SetAdd = "$eq.collections.setAdd";
+
+    /// <summary><c>List&lt;T&gt;.Remove</c>: takes out the first item <c>EqualityComparer&lt;T&gt;.Default</c>
+    /// finds equal to the value, and answers whether there was one (#400).</summary>
+    public const string ListRemove = "$eq.collections.remove";
 
     /// <summary>The container, for a constructor dependency — the browser's ActivatorUtilities.</summary>
     public const string ResolveService = "$eq.services.resolve";
