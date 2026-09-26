@@ -71,7 +71,13 @@ env_file="$work/claude-env"
 out="$(cd "$work/repo" && env -u DOTNET_ROOT HOME="$work/home" PATH="$path_without_dotnet" \
     CLAUDE_CODE_REMOTE=true CLAUDE_PROJECT_DIR="$work/repo" CLAUDE_ENV_FILE="$env_file" \
     bash .claude/hooks/session-start.sh)"
-printf '%s\n' "$out"
+
+# The hook answers in JSON: the report for the model, and a warning for the person when a required
+# tool could not be set up.
+field() { printf '%s' "$1" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const o=JSON.parse(s);const v=process.argv[1]==="context"?o.hookSpecificOutput.additionalContext:(o.systemMessage??"");process.stdout.write(v)})' "$2"; }
+field "$out" context; echo
+warning="$(field "$out" warning)"
+[ -z "$warning" ] && pass "the hook reports every required tool as set up" || fail "the hook warns: $warning"
 
 # Every later command of the session sources the env file, so the assertions do too.
 session() {
@@ -121,10 +127,15 @@ sed 's/^DOTNET_SHA256_LINUX_X64=.*/DOTNET_SHA256_LINUX_X64="00000000000000000000
 tampered="$(cd "$work/repo" && env -u DOTNET_ROOT HOME="$work/home2" PATH="$path_without_dotnet" \
     CLAUDE_CODE_REMOTE=true CLAUDE_PROJECT_DIR="$work/repo" CLAUDE_ENV_FILE="$work/claude-env2" \
     bash "$work/tampered-hook.sh")"
-if printf '%s' "$tampered" | grep -q "SHA-256 mismatch, refused" && [ ! -e "$work/home2/.dotnet" ]; then
+if field "$tampered" context | grep -q "SHA-256 mismatch, refused" && [ ! -e "$work/home2/.dotnet" ]; then
     pass "a wrong SHA-256 refuses the archive and installs nothing"
 else
     fail "a hook with a wrong SHA-256 did not refuse the archive"
+fi
+if field "$tampered" warning | grep -q "the .NET SDK"; then
+    pass "the refused SDK reaches the person as a warning, not only the report"
+else
+    fail "a refused SDK raised no warning for the person in the session"
 fi
 
 if [ "$failures" -ne 0 ]; then

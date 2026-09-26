@@ -66,6 +66,17 @@ mismatch, leaving nothing installed.
 - **WHEN** the downloaded SDK archive's SHA-256 differs from the pinned digest
 - **THEN** the preparation reports the mismatch and installs nothing
 
+### Requirement: A preparation that falls short says so to the person
+
+When a tool the working agreement makes mandatory cannot be prepared (the OpenSpec CLI, and in a
+cloud container the .NET SDK or signing turned off), the preparation SHALL warn the person in the
+session, not only report it to the agent, and SHALL NOT block the session.
+
+#### Scenario: The pinned SDK is refused
+
+- **WHEN** the SDK archive's SHA-256 differs from the pinned digest
+- **THEN** the session starts, and the person in it sees a warning naming the .NET SDK
+
 ### Requirement: A local session is left as its owner set it up
 
 A session on a developer's own machine SHALL NOT change the git identity, the signing

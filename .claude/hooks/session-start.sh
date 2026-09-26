@@ -11,8 +11,11 @@
 #   - Docker, started when the container has it and allows it.
 #
 # Every installer this downloads is pinned by version AND SHA-256, and a mismatch refuses the
-# install. The hook never fails the session: each step reports what it did or why it could not, and
-# the report it prints on stdout becomes part of the session's context.
+# install. The hook never blocks the session: each step reports what it did or why it could not, and
+# the report becomes part of the session's context. What the Workflow section makes mandatory (the
+# OpenSpec CLI, and in a cloud container the .NET SDK and signing off) is also REQUIRED here: when
+# one of them could not be prepared, the person in the session is told, not only the model. Docker
+# stays best-effort.
 set -uo pipefail
 
 root="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
@@ -32,7 +35,10 @@ OWNER_NAME="Edgar Mesquita"
 OWNER_EMAIL="edgar@equantic.tech"
 
 report=()
+missing=()
 note() { report+=("$1"); }
+# A step the Workflow section makes mandatory, and that did not happen.
+required() { note "$2"; missing+=("$1"); }
 
 # Lines for the session's later Bash commands: Claude Code sources this file before each of them.
 persist() {
@@ -50,12 +56,18 @@ sha256_of() {
 prepare_openspec() {
     local bin="$root/tools/openspec/node_modules/.bin"
     if ! command -v node >/dev/null 2>&1; then
-        note "OpenSpec: node is not on PATH, so the CLI is not installed (it needs Node >= 20.19)"
+        # A laptop without Node can still build and test the SDK; a cloud container is expected to
+        # carry everything the Workflow section asks for.
+        if $cloud; then
+            required "the OpenSpec CLI" "OpenSpec: node is not on PATH, so the CLI is not installed (it needs Node >= 20.19)"
+        else
+            note "OpenSpec: node is not on PATH, so the CLI is not installed (it needs Node >= 20.19)"
+        fi
         return
     fi
     local version
     if ! version="$("$root/scripts/openspec.sh" --version 2>/dev/null)"; then
-        note "OpenSpec: installing the pinned CLI failed; run ./scripts/openspec.sh --version to see why"
+        required "the OpenSpec CLI" "OpenSpec: installing the pinned CLI failed; run ./scripts/openspec.sh --version to see why"
         return
     fi
     persist "export PATH=\"$bin:\$PATH\""
@@ -75,7 +87,9 @@ configure_git() {
     # Report what git will actually use, which is what matters if something else overrides it.
     local signing
     signing="$(git -C "$root" config --get commit.gpgsign || echo unset)"
-    note "git: $(git -C "$root" config --get user.name) <$(git -C "$root" config --get user.email)>, commit.gpgsign=$signing"
+    local summary
+    summary="git: $(git -C "$root" config --get user.name) <$(git -C "$root" config --get user.email)>, commit.gpgsign=$signing"
+    if [ "$signing" = "false" ]; then note "$summary"; else required "commit signing off" "$summary (something outranks the repository's config)"; fi
 }
 
 install_dotnet() {
@@ -97,7 +111,7 @@ install_dotnet() {
     case "$(uname -s)-$(uname -m)" in
         Linux-x86_64|Linux-amd64) arch="x64"; sha="$DOTNET_SHA256_LINUX_X64" ;;
         Linux-aarch64|Linux-arm64) arch="arm64"; sha="$DOTNET_SHA256_LINUX_ARM64" ;;
-        *) note ".NET SDK: no pinned archive for $(uname -s)-$(uname -m)"; return ;;
+        *) required "the .NET SDK" ".NET SDK: no pinned archive for $(uname -s)-$(uname -m)"; return ;;
     esac
 
     local url="https://builds.dotnet.microsoft.com/dotnet/Sdk/$DOTNET_VERSION/dotnet-sdk-$DOTNET_VERSION-linux-$arch.tar.gz"
@@ -105,14 +119,14 @@ install_dotnet() {
     archive="$(mktemp)"
     if ! curl -fsSL --retry 3 "$url" -o "$archive"; then
         rm -f "$archive"
-        note ".NET SDK: the download failed ($url)"
+        required "the .NET SDK" ".NET SDK: the download failed ($url)"
         return
     fi
     local got
     got="$(sha256_of "$archive")"
     if [ "$got" != "$sha" ]; then
         rm -f "$archive"
-        note ".NET SDK: SHA-256 mismatch, refused (expected $sha, got $got)"
+        required "the .NET SDK" ".NET SDK: SHA-256 mismatch, refused (expected $sha, got $got)"
         return
     fi
     # Extract beside the destination and check what came out before anything points at it: a
@@ -122,13 +136,13 @@ install_dotnet() {
     staging="$(mktemp -d "${dest}.staging.XXXXXX")"
     if ! tar -xzf "$archive" -C "$staging"; then
         rm -rf "$staging" "$archive"
-        note ".NET SDK: extracting the archive failed, nothing installed"
+        required "the .NET SDK" ".NET SDK: extracting the archive failed, nothing installed"
         return
     fi
     rm -f "$archive"
     if ! "$staging/dotnet" --list-sdks 2>/dev/null | grep -q "^$DOTNET_VERSION "; then
         rm -rf "$staging"
-        note ".NET SDK: the extracted archive does not answer SDK $DOTNET_VERSION, nothing installed"
+        required "the .NET SDK" ".NET SDK: the extracted archive does not answer SDK $DOTNET_VERSION, nothing installed"
         return
     fi
     if [ ! -e "$dest" ]; then
@@ -136,12 +150,12 @@ install_dotnet() {
     elif ! cp -a "$staging/." "$dest/"; then
         # $dest already exists (it may hold global tools), so the SDK joins it rather than replacing it.
         rm -rf "$staging"
-        note ".NET SDK: copying into $dest failed"
+        required "the .NET SDK" ".NET SDK: copying into $dest failed"
         return
     fi
     rm -rf "$staging"
     if ! "$dest/dotnet" --list-sdks 2>/dev/null | grep -q "^$DOTNET_VERSION "; then
-        note ".NET SDK: $dest does not answer SDK $DOTNET_VERSION after the install"
+        required "the .NET SDK" ".NET SDK: $dest does not answer SDK $DOTNET_VERSION after the install"
         return
     fi
     persist "export DOTNET_ROOT=\"$dest\""
@@ -196,6 +210,30 @@ else
     note "local session: git identity, SDKs and Docker are left as the machine has them"
 fi
 
-echo "Session prepared by .claude/hooks/session-start.sh:"
-for line in "${report[@]}"; do echo "- $line"; done
+text="Session prepared by .claude/hooks/session-start.sh:"
+for line in "${report[@]}"; do text+=$'\n'"- $line"; done
+
+warning=""
+if [ "${#missing[@]}" -gt 0 ]; then
+    list="${missing[0]}"
+    for ((i = 1; i < ${#missing[@]}; i++)); do
+        if [ "$i" -eq $((${#missing[@]} - 1)) ]; then list="$list and ${missing[$i]}"; else list="$list, ${missing[$i]}"; fi
+    done
+    warning="This session is not fully prepared: $list could not be set up (the SessionStart report in the context says why)."
+fi
+
+# JSON, so the report reaches the model (additionalContext) and a failure reaches the person
+# (systemMessage). Without python3 to encode it, the plain report still reaches the model, and the
+# warning goes to stderr.
+if command -v python3 >/dev/null 2>&1; then
+    TEXT="$text" WARNING="$warning" python3 -c '
+import json, os
+out = {"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": os.environ["TEXT"]}}
+if os.environ["WARNING"]:
+    out["systemMessage"] = os.environ["WARNING"]
+print(json.dumps(out))'
+else
+    printf '%s\n' "$text"
+    [ -n "$warning" ] && echo "$warning" >&2
+fi
 exit 0

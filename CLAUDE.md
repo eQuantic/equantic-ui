@@ -252,7 +252,8 @@ session it puts the pinned OpenSpec CLI on PATH. In a cloud container (`CLAUDE_C
 also sets the git identity, turns signing off, installs the .NET SDK that `global.json` pins, and
 starts Docker where the container allows it; on a laptop it leaves all of that as the owner set it
 up. Every installer it downloads is pinned by version AND SHA-256 and refused on a mismatch, and npm
-packages are pinned by the lockfile's integrity hashes. CI's `session-start` job runs the hook the
+packages are pinned by the lockfile's integrity hashes. When a tool it is responsible for cannot be
+set up, the person in the session sees a warning naming it, and the session still starts. CI's `session-start` job runs the hook the
 way a fresh container would and asserts every promise (`scripts/check-session-start.sh`).
 
 ## Project Overview
