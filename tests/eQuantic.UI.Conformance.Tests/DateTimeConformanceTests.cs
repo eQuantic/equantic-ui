@@ -68,6 +68,12 @@ public class DateTimeConformanceTests
     [InlineData("try { DateTime.MinValue.AddMilliseconds(-0.0001); return \"no\"; } catch (Exception e) { return e.Message; }")]                   // "The added or subtracted value results in an un-representable DateTime. (Parameter 'value')"
     [InlineData("try { DateTime.MaxValue.AddTicks(1); return \"no\"; } catch (Exception e) { return e.Message; }")]                                // "The added or subtracted value results in an un-representable DateTime. (Parameter 'value')"
     [InlineData("return DateTime.MinValue.AddMilliseconds(-0.00001) == DateTime.MinValue;")]                                                       // true: the fraction truncates to no tick
+    // At each unit's limit the count is checked against the whole units, as a double, as .NET does.
+    [InlineData("try { return DateTime.MinValue.AddDays(3652058.0).Ticks.ToString(); } catch (Exception e) { return e.Message; }")] // "3155378112000000000": the most whole days
+    [InlineData("try { return DateTime.MinValue.AddDays(3652058.5).Ticks.ToString(); } catch (Exception e) { return e.Message; }")] // "Value to add was out of range.": refused by the count, although the date would fit
+    [InlineData("try { return DateTime.MaxValue.AddDays(-3652058.5).Ticks.ToString(); } catch (Exception e) { return e.Message; }")] // "Value to add was out of range."
+    [InlineData("try { return DateTime.MinValue.AddMilliseconds(315537897599999.5).Ticks.ToString(); } catch (Exception e) { return e.Message; }")] // "Value to add was out of range."
+    [InlineData("try { return DateTime.MinValue.AddMicroseconds(315537897599999999.0).Ticks.ToString(); } catch (Exception e) { return e.Message; }")] // "...un-representable DateTime.": the limit is a double too, so the count passes
     public void DateTimeAdd_MatchesDotNet(string statements)
     {
         Skip.IfNot(JsExecutor.IsAvailable, "No JS engine available.");
