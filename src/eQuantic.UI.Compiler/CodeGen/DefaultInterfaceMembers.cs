@@ -61,7 +61,7 @@ internal static class DefaultInterfaceMembers
             var declaration = pending.Dequeue();
             if (!compilation.ContainsSyntaxTree(declaration.SyntaxTree)) continue;
             var model = compilation.GetSemanticModel(declaration.SyntaxTree);
-            foreach (var name in declaration.DescendantNodes().OfType<SimpleNameSyntax>())
+            foreach (var name in RunTimeNames(declaration, model))
             {
                 if (model.GetSymbolInfo(name).Symbol is not { IsStatic: false, IsAbstract: false } helper
                     || helper.DeclaredAccessibility != Accessibility.Private
@@ -76,6 +76,20 @@ internal static class DefaultInterfaceMembers
         }
         return inherited;
     }
+
+    /// <summary>
+    /// The names a declaration reaches when it RUNS: every name in it, except one inside
+    /// <c>nameof(…)</c>, which the compiler turns into text, and one in an attribute, which is metadata
+    /// (found in review, #418). <c>Show() => nameof(Hidden)</c> copied the private <c>Hidden()</c> into
+    /// the twin and took its name from a field of the class, and a static named only there read as
+    /// one the default calls.
+    /// </summary>
+    private static IEnumerable<SimpleNameSyntax> RunTimeNames(MemberDeclarationSyntax declaration, SemanticModel model) =>
+        declaration.DescendantNodes(node => node is not AttributeListSyntax)
+            .OfType<SimpleNameSyntax>()
+            .Where(name => !name.Ancestors().OfType<InvocationExpressionSyntax>().Any(invocation =>
+                invocation.Expression is IdentifierNameSyntax { Identifier.ValueText: "nameof" }
+                && model.GetOperation(invocation) is Microsoft.CodeAnalysis.Operations.INameOfOperation));
 
     private static MemberDeclarationSyntax? DeclarationOf(ISymbol member) =>
         member.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() as MemberDeclarationSyntax;
@@ -116,7 +130,7 @@ internal static class DefaultInterfaceMembers
     /// in review, #418). A constant is inlined where it is read, so it needs none.
     /// </summary>
     public static ISymbol? InterfaceStaticIn(MemberDeclarationSyntax declaration, SemanticModel model) =>
-        declaration.DescendantNodes().OfType<SimpleNameSyntax>()
+        RunTimeNames(declaration, model)
             .Select(name => model.GetSymbolInfo(name).Symbol)
             .FirstOrDefault(symbol => symbol is { IsStatic: true, ContainingType.TypeKind: TypeKind.Interface }
                 and not ITypeSymbol and not IFieldSymbol { IsConst: true });
