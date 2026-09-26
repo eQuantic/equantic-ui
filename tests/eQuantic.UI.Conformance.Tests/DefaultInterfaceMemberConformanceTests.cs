@@ -80,6 +80,15 @@ public class DefaultInterfaceMemberConformanceTests
 
         public record Greeter(string Who) : IGreeter;
 
+        public interface IChain
+        {
+            string First() => Second() + "1";
+            private string Second() => Third() + "2";
+            private string Third() => "3";
+        }
+
+        public record Chained : IChain;
+
         public interface IGreet
         {
             string Hello() => "hi";
@@ -126,6 +135,8 @@ public class DefaultInterfaceMemberConformanceTests
     [InlineData("ICounter k = new Tally(); k.Bump(); k.Bump(); return k.Count;")]     // 2
     // A default that calls a private member of its interface, which no type implements.
     [InlineData("IGreeter g = new Greeter(\"ana\"); return g.Greet();")]              // "<hi ana>"
+    // A helper reached through another helper travels too.
+    [InlineData("IChain c = new Chained(); return c.First();")]                        // "321"
     // A record with no member of its own takes every member from its interface (found in review).
     [InlineData("IGreet n = new Nobody(); return n.Hello();")]                        // "hi"
     // An optional parameter keeps its default, on a default method and on the record's own.

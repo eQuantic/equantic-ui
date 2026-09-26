@@ -87,6 +87,28 @@ public class DefaultInterfaceMemberEmissionTests
             public interface IDraw { string Draw(Spacing gap) => "drawn"; }
             public sealed class Canvas : IDraw { public int N; }
             """,
+        // A field on the name of a default: the twin would hold two members named `mark`.
+        ["FieldClash.cs"] = """
+            namespace App;
+            public interface IFielded { string Mark() => "m"; }
+            public sealed class FieldClash : IFielded { public int Mark; }
+            """,
+        // A private helper no default calls, on a name the class uses: neither copied nor a clash.
+        ["Quiet.cs"] = """
+            namespace App;
+            public interface IHidden
+            {
+                string Show() => "shown";
+                private string Hidden() => "helper";
+            }
+            public sealed class Quiet : IHidden { public int Hidden; }
+            """,
+        // A type named only inside a generic argument of a default's parameter.
+        ["Converter.cs"] = """
+            namespace App;
+            public interface IConvert { int Convert(System.Func<Spacing, int> measure) => 0; }
+            public sealed class Converter : IConvert { public int N; }
+            """,
         // Compiled into a referenced assembly below, not into this compilation.
         ["Voiced.cs"] = """
             namespace App;
@@ -233,6 +255,39 @@ public class DefaultInterfaceMemberEmissionTests
         var ts = Compile("Canvas").TypeScript;
 
         ts.Should().MatchRegex(@"draw\(_?gap(: Spacing)?\)");
+        ts.Should().Contain("import { Spacing } from \"./Spacing\"");
+    }
+
+    /// <summary>A field on the name of a default (found in review, #418): the twin holds one member
+    /// per name, fields included.</summary>
+    [Fact]
+    public void AFieldOnADefaultsNameIsRefused()
+    {
+        var result = Compile("FieldClash", succeeds: false);
+
+        result.Errors.Should().ContainSingle(error => error.Code == "EQ1007")
+            .Which.Message.Should().Contain("'FieldClash' takes the default 'IFielded.Mark'");
+    }
+
+    /// <summary>A private helper no default calls travels nowhere (found in review, #418): it is not
+    /// written into the twin, and a class member on its name is no clash.</summary>
+    [Fact]
+    public void AnUncalledHelperIsNotCopied()
+    {
+        var result = Compile("Quiet");
+
+        result.Errors.Should().NotContain(error => error.Code == "EQ1007");
+        result.TypeScript.Should().Contain("'shown'");
+        result.TypeScript.Should().NotContain("'helper'");
+    }
+
+    /// <summary>A type named only in a generic argument of a default's parameter is imported (found in
+    /// review, #418): a scan that kept a generic's last argument read `int` from `Func&lt;Spacing, int&gt;`.</summary>
+    [Fact]
+    public void ATypeInsideAGenericArgumentIsImported()
+    {
+        var ts = Compile("Converter").TypeScript;
+
         ts.Should().Contain("import { Spacing } from \"./Spacing\"");
     }
 
